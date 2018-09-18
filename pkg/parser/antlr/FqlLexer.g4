@@ -1,0 +1,107 @@
+lexer grammar FqlLexer;
+
+// Skip
+MultiLineComment: '/*' .*? '*/'             -> channel(HIDDEN);
+SingleLineComment: '//' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
+WhiteSpaces: [\t\u000B\u000C\u0020\u00A0]+ -> channel(HIDDEN);
+LineTerminator: [\r\n\u2028\u2029] -> channel(HIDDEN);
+
+// Punctuation
+Colon: ':';
+SemiColon: ';';
+Comma: ',';
+Dot: '.';
+Ellipsis: '...';
+OpenBracket: '[';
+CloseBracket: ']';
+OpenParen: '(';
+CloseParen: ')';
+OpenBrace: '{';
+CloseBrace: '}';
+
+// Comparison operators
+Gt: '>';
+Lt: '<';
+Eq: '==';
+Gte: '>=';
+Lte: '<=';
+Neq: '!=';
+
+// Arithmetic operators
+Plus: '+';
+Minus: '-';
+MinusMinus: '--';
+PlusPlus: '++';
+Multi: '*';
+Div: '/';
+Mod: '%';
+
+// Logical operators
+And: 'AND' | '&&';
+Or: 'OR' | '||';
+
+// Other operators
+Assign: '=';
+Range: '..';
+QuestionMark: '?';
+RegexNotMatch: '!~';
+RegexMatch: '=~';
+
+// Keywords
+// Common Keywords
+For: 'FOR';
+Return: 'RETURN';
+Distinct: 'DISTINCT';
+Filter: 'FILTER';
+Sort: 'SORT';
+Limit: 'LIMIT';
+Let: 'LET';
+Collect: 'COLLECT';
+SortDirection: 'ASC' | 'DESC';
+None: 'NONE';
+Null: 'NULL';
+BooleanLiteral: 'TRUE' | 'true' | 'FALSE' | 'false';
+
+// Group operators
+Into: 'INTO';
+Keep: 'KEEP';
+With: 'WITH';
+Count: 'COUNT';
+All: 'ALL';
+Any: 'ANY';
+Aggregate: 'AGGREGATE';
+
+// Unary operators
+Like: 'LIKE';
+Not: 'NOT' | '!';
+In: 'IN';
+
+// Literals
+Identifier: Letter+ (Digit)*;
+StringLiteral: SQString | DQSring;
+IntegerLiteral: [0-9]+;
+FloatLiteral
+    : DecimalIntegerLiteral '.' [0-9]* ExponentPart?
+    | '.' [0-9]+ ExponentPart?
+    | DecimalIntegerLiteral ExponentPart?
+    ;
+
+// Fragments
+fragment HexDigit
+    : [0-9a-fA-F]
+    ;
+fragment DecimalIntegerLiteral
+    : '0'
+    | [1-9] [0-9]*
+    ;
+fragment ExponentPart
+    : [eE] [+-]? [0-9]+
+    ;
+fragment Letter
+    : 'A'..'Z' | 'a'..'z'
+    ;
+fragment Digit
+    : '0'..'9'
+    ;
+fragment DQSring: '"' ( '\\'. | '""' | ~('"'| '\\') )* '"';
+fragment SQString: '\'' ('\\'. | '\'\'' | ~('\'' | '\\'))* '\'';

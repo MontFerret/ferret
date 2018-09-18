@@ -1,0 +1,4 @@
+LET doc = DOCUMENT('https://news.ycombinator.com/')
+
+FOR post IN ELEMENTS(doc, '.storylink')
+    RETURN post.attributes.href

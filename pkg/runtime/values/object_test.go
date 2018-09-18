@@ -1,0 +1,247 @@
+package values_test
+
+import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
+)
+
+func TestObject(t *testing.T) {
+	Convey("#constructor", t, func() {
+		Convey("Should create an empty object", func() {
+			obj := values.NewObject()
+
+			So(obj.Length(), ShouldEqual, 0)
+		})
+
+		Convey("Should create an object, from passed values", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("none", values.None),
+				values.NewObjectProperty("boolean", values.False),
+				values.NewObjectProperty("int", values.NewInt(1)),
+				values.NewObjectProperty("float", values.Float(1)),
+				values.NewObjectProperty("string", values.NewString("1")),
+				values.NewObjectProperty("array", values.NewArray(10)),
+				values.NewObjectProperty("object", values.NewObject()),
+			)
+
+			So(obj.Length(), ShouldEqual, 7)
+		})
+	})
+
+	Convey(".MarshalJSON", t, func() {
+		Convey("Should serialize an empty object", func() {
+			obj := values.NewObject()
+			marshaled, err := obj.MarshalJSON()
+
+			So(err, ShouldBeNil)
+
+			So(string(marshaled), ShouldEqual, "{}")
+		})
+
+		Convey("Should serialize full object", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("none", values.None),
+				values.NewObjectProperty("boolean", values.False),
+				values.NewObjectProperty("int", values.NewInt(1)),
+				values.NewObjectProperty("float", values.Float(1)),
+				values.NewObjectProperty("string", values.NewString("1")),
+				values.NewObjectProperty("array", values.NewArray(10)),
+				values.NewObjectProperty("object", values.NewObject()),
+			)
+			marshaled, err := obj.MarshalJSON()
+
+			So(err, ShouldBeNil)
+
+			So(string(marshaled), ShouldEqual, "{\"array\":[],\"boolean\":false,\"float\":1,\"int\":1,\"none\":null,\"object\":{},\"string\":\"1\"}")
+		})
+	})
+
+	Convey(".Type", t, func() {
+		Convey("Should return type", func() {
+			obj := values.NewObject()
+
+			So(obj.Type(), ShouldEqual, core.ObjectType)
+		})
+	})
+
+	Convey(".Unwrap", t, func() {
+		Convey("Should return an unwrapped value", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.NewString("foo")),
+				values.NewObjectProperty("bar", values.NewString("bar")),
+			)
+
+			for _, val := range obj.Unwrap().(map[string]interface{}) {
+				So(val, ShouldHaveSameTypeAs, "")
+			}
+		})
+	})
+
+	Convey(".String", t, func() {
+		Convey("Should return a string representation ", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.NewString("bar")),
+			)
+
+			So(obj.String(), ShouldEqual, "{\"foo\":\"bar\"}")
+		})
+	})
+
+	Convey(".Compare", t, func() {
+		Convey("It should return 1 for all non-object values", func() {
+			arr := []core.Value{
+				values.None,
+				values.False,
+				values.NewInt(1),
+				values.Float(1),
+				values.NewString("1"),
+				values.NewArray(10),
+			}
+			obj := values.NewObject()
+
+			for _, val := range arr {
+				So(obj.Compare(val), ShouldEqual, 1)
+			}
+		})
+
+		Convey("It should return -1 for all object values", func() {
+			arr := values.NewArrayWith(values.ZeroInt, values.ZeroInt)
+			obj := values.NewObject()
+
+			So(arr.Compare(obj), ShouldEqual, -1)
+		})
+
+		Convey("It should return 0 when both objects are empty", func() {
+			obj1 := values.NewObject()
+			obj2 := values.NewObject()
+
+			So(obj1.Compare(obj2), ShouldEqual, 0)
+		})
+
+		Convey("It should return 1 when other array is empty", func() {
+			obj1 := values.NewObjectWith(values.NewObjectProperty("foo", values.NewString("bar")))
+			obj2 := values.NewObject()
+
+			So(obj1.Compare(obj2), ShouldEqual, 1)
+		})
+
+		Convey("It should return 1 when values are bigger", func() {
+			obj1 := values.NewObjectWith(values.NewObjectProperty("foo", values.NewFloat(3)))
+			obj2 := values.NewObjectWith(values.NewObjectProperty("foo", values.NewFloat(2)))
+
+			So(obj1.Compare(obj2), ShouldEqual, 1)
+		})
+
+		Convey("It should return 1 when values are less", func() {
+			obj1 := values.NewObjectWith(values.NewObjectProperty("foo", values.NewFloat(1)))
+			obj2 := values.NewObjectWith(values.NewObjectProperty("foo", values.NewFloat(2)))
+
+			So(obj1.Compare(obj2), ShouldEqual, -1)
+		})
+	})
+
+	Convey(".Length", t, func() {
+		Convey("Should return 0 when empty", func() {
+			obj := values.NewObject()
+
+			So(obj.Length(), ShouldEqual, 0)
+		})
+
+		Convey("Should return greater than 0 when not empty", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.ZeroInt),
+				values.NewObjectProperty("bar", values.ZeroInt),
+			)
+
+			So(obj.Length(), ShouldEqual, 2)
+		})
+	})
+
+	Convey(".ForEach", t, func() {
+		Convey("Should iterate over elements", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.ZeroInt),
+				values.NewObjectProperty("bar", values.ZeroInt),
+			)
+			counter := 0
+
+			obj.ForEach(func(value core.Value, key string) bool {
+				counter += 1
+
+				return true
+			})
+
+			So(counter, ShouldEqual, obj.Length())
+		})
+
+		Convey("Should not iterate when empty", func() {
+			obj := values.NewObject()
+			counter := 0
+
+			obj.ForEach(func(value core.Value, key string) bool {
+				counter += 1
+
+				return true
+			})
+
+			So(counter, ShouldEqual, obj.Length())
+		})
+
+		Convey("Should break iteration when false returned", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("1", values.NewInt(1)),
+				values.NewObjectProperty("2", values.NewInt(2)),
+				values.NewObjectProperty("3", values.NewInt(3)),
+				values.NewObjectProperty("4", values.NewInt(4)),
+				values.NewObjectProperty("5", values.NewInt(5)),
+			)
+			threshold := 3
+			counter := 0
+
+			obj.ForEach(func(value core.Value, key string) bool {
+				counter += 1
+
+				return counter < threshold
+			})
+
+			So(counter, ShouldEqual, threshold)
+		})
+	})
+
+	Convey(".Get", t, func() {
+		Convey("Should return item by key", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.NewInt(1)),
+				values.NewObjectProperty("bar", values.NewInt(2)),
+				values.NewObjectProperty("qaz", values.NewInt(3)),
+			)
+
+			el, _ := obj.Get("foo")
+
+			So(el.Compare(values.NewInt(1)), ShouldEqual, 0)
+		})
+
+		Convey("Should return None when no value", func() {
+			obj := values.NewObject()
+
+			el, _ := obj.Get("foo")
+
+			So(el.Compare(values.None), ShouldEqual, 0)
+		})
+	})
+
+	Convey(".Set", t, func() {
+		Convey("Should set item by index", func() {
+			obj := values.NewObject()
+
+			obj.Set("foo", values.NewInt(1))
+
+			So(obj.Length(), ShouldEqual, 1)
+
+			v, _ := obj.Get("foo")
+			So(v.Compare(values.NewInt(1)), ShouldEqual, 0)
+		})
+	})
+}
