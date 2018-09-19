@@ -108,7 +108,6 @@ Please use `exit` or `Ctrl-D` to exit this program.
 ```ferret``` is a very modular system and therefore, can be easily be embedded into your Go application.
 
 ```go
-
 package main
 
 import (
@@ -179,14 +178,13 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 
 	return res, nil
 }
-
 ```
 
 ## Extensibility
 
 That said, ```ferret``` is a very modular system which also allows not only embed it, but extend its standard library.
 
-```
+```go
 package main
 
 import (
@@ -272,9 +270,7 @@ func getStrings() ([]string, error) {
 On top of that, you can completely turn off standard library, by passing the following option:
 
 ```go
-
 comp := compiler.New(compiler.WithoutStdlib())
-
 ```
 
 And after that, you can easily provide your own implementation of functions from standard library.    
@@ -288,7 +284,6 @@ import (
     "github.com/MontFerret/ferret/pkg/compiler"
     "github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
-
 
 func main() {
     comp := compiler.New(compiler.WithoutStdlib())
