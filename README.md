@@ -21,18 +21,18 @@ make build
 * Extensible
 
 ## Motivation
-Nowadays data is everything and who owns data - owns the world.
-I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.
-After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.
-```Ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.
+Nowadays data is everything and who owns data - owns the world.    
+I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
+After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
+```Ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.    
 
 ## Inspiration
-FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).
-But due to the domain specifics, there are some differences in how things work.
+FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
+But due to the domain specifics, there are some differences in how things work.     
 
 ## WIP
-Be aware, the the project is under heavy development. There is no documentation and some things may change in the final release.
-For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.
+Be aware, the the project is under heavy development. There is no documentation and some things may change in the final release.    
+For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
 
 ## Quick start
 
@@ -65,17 +65,17 @@ go run ./cmd/cli/main.go ./docs/examples/hackernews.fql
 
 ### Browser mode
 
-By default, ``ferret`` loads HTML pages via http protocol, because it's faster.
-But nowadays, there are more and more websites rendered with JavaScript, and therefore, this 'old school' approach does not really work.
-For such cases, you may fetch documents using Chrome or Chromium via Chrome DevTools protocol (aka CDP).
-First, you need to make sure that you launched Chrome with ```remote-debugging-port=9222``` flag.
-Second, you need to pass the address to ```ferret``` CLI.
+By default, ``ferret`` loads HTML pages via http protocol, because it's faster.    
+But nowadays, there are more and more websites rendered with JavaScript, and therefore, this 'old school' approach does not really work.    
+For such cases, you may fetch documents using Chrome or Chromium via Chrome DevTools protocol (aka CDP).    
+First, you need to make sure that you launched Chrome with ```remote-debugging-port=9222``` flag.    
+Second, you need to pass the address to ```ferret``` CLI.    
 
 ```
 ./bin/ferret --cdp http://127.0.0.1:9222
 ```
 
-**NOTE:** By default, ```ferret``` will try to use this local address as a default one, so it makes sense to explicitly pass the parameter only in case of either different port number or remote address.
+**NOTE:** By default, ```ferret``` will try to use this local address as a default one, so it makes sense to explicitly pass the parameter only in case of either different port number or remote address.    
 
 Alternatively, you can tell CLI to launch Chrome for you.
 
@@ -83,7 +83,7 @@ Alternatively, you can tell CLI to launch Chrome for you.
 go run ./cmd/cli/main.go --cdp-launch
 ```
 
-**Note:** Launch command is currently broken on MacOS.
+**NOTE:** Launch command is currently broken on MacOS.
 
 Once ```ferret``` knows how to communicate with Chrome, you can use a function ```DOCUMENT(url, isJsRendered)``` with ```true``` boolean value for loading JS rendered pages:
 
@@ -105,7 +105,7 @@ Please use `exit` or `Ctrl-D` to exit this program.
 
 ### Embedded mode
 
-```ferret``` is very modular system and therefore, can be easily be embedded into your Go application.
+```ferret``` is a very modular system and therefore, can be easily be embedded into your Go application.
 
 ```go
 
@@ -184,7 +184,7 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 
 ## Extensibility
 
-That said, ```ferret``` is very modular system which also allows not only embed it, but extend its standard library.
+That said, ```ferret``` is a very modular system which also allows not only embed it, but extend its standard library.
 
 ```
 package main
@@ -277,9 +277,9 @@ comp := compiler.New(compiler.WithoutStdlib())
 
 ```
 
-And after that, you can easily provide your own implementation of functions from standard library.
+And after that, you can easily provide your own implementation of functions from standard library.    
 
-If you don't need a particular set of functions from standard library, you can turn off the entire ```stdlib``` and register separate packages from that:
+If you don't need a particular set of functions from standard library, you can turn off the entire ```stdlib``` and register separate packages from that:    
 
 ```go
 package main
