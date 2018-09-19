@@ -6,13 +6,27 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 type FqlCompiler struct {
 	funcs map[string]core.Function
 }
 
-func New() *FqlCompiler {
+func New(setters ...Option) *FqlCompiler {
+	c := &FqlCompiler{}
+	opts := &Options{}
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	if !opts.noStdlib {
+		c.funcs = stdlib.NewLib()
+	} else {
+		c.funcs = make(map[string]core.Function)
+	}
+
 	return &FqlCompiler{
 		stdlib.NewLib(),
 	}
@@ -25,7 +39,17 @@ func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
 		return errors.Errorf("function already exists: %s", name)
 	}
 
-	c.funcs[name] = fun
+	c.funcs[strings.ToUpper(name)] = fun
+
+	return nil
+}
+
+func (c *FqlCompiler) RegisterFunctions(funcs map[string]core.Function) error {
+	for name, fun := range funcs {
+		if err := c.RegisterFunction(name, fun); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

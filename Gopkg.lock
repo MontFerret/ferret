@@ -195,6 +195,7 @@
     "github.com/pkg/errors",
     "github.com/sethgrid/pester",
     "github.com/smartystreets/goconvey/convey",
+    "golang.org/x/net/html",
     "golang.org/x/sync/errgroup",
   ]
   solver-name = "gps-cdcl"

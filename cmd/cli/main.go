@@ -25,7 +25,7 @@ var (
 
 	conn = flag.String(
 		"cdp",
-		"",
+		"http://127.0.0.1:9222",
 		"Chrome DevTools Protocol address",
 	)
 
