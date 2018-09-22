@@ -757,6 +757,36 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return operators.NewMathOperator(v.getSourceMap(mathOp), left, right, mathOp.GetText())
 	}
 
+	questionCtx := ctx.QuestionMark()
+
+	if questionCtx != nil {
+		exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var test core.Expression
+		var consequent core.Expression
+		var alternate core.Expression
+
+		if len(exps) == 3 {
+			test = exps[0]
+			consequent = exps[1]
+			alternate = exps[2]
+		} else {
+			test = exps[0]
+			alternate = exps[1]
+		}
+
+		return expressions.NewConditionExpression(
+			v.getSourceMap(ctx),
+			test,
+			consequent,
+			alternate,
+		)
+	}
+
 	seq := ctx.ExpressionSequence()
 
 	if seq != nil {

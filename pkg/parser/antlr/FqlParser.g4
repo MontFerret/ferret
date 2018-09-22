@@ -197,10 +197,6 @@ arguments
     : OpenParen(expression (Comma expression)*)?CloseParen
     ;
 
-//ternaryExpression
-//    : expression QuestionMark expression Colon expression
-//    ;
-
 expression
     : expression equalityOperator expression
     | expression logicalOperator expression
@@ -214,7 +210,7 @@ expression
     | Plus expression
     | Minus expression
     | Not expression
-    | expression QuestionMark expression Colon expression
+    | expression QuestionMark expression? Colon expression
     | stringLiteral
     | integerLiteral
     | floatLiteral
