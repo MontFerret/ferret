@@ -1,0 +1,56 @@
+package strings
+
+import (
+	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+)
+
+/*
+ * Returns a value indicating whether a specified substring occurs within a string.
+ * @param src (String) - The source string.
+ * @param search (String) - The string to seek.
+ * @param returnIndex (Boolean) - Values which indicates whether to return the character position of the match is returned instead of a boolean.
+ * The default is false.
+ * @returns (Boolean|Int)
+ */
+func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 2, 3)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	var text values.String
+	var search values.String
+	returnIndex := values.False
+
+	arg1 := args[0]
+	arg2 := args[1]
+
+	if arg1.Type() == core.StringType {
+		text = arg1.(values.String)
+	} else {
+		text = values.NewString(arg1.String())
+	}
+
+	if arg2.Type() == core.StringType {
+		search = arg2.(values.String)
+	} else {
+		search = values.NewString(arg2.String())
+	}
+
+	if len(args) > 2 {
+		arg3 := args[2]
+
+		if arg3.Type() == core.BooleanType {
+			returnIndex = arg3.(values.Boolean)
+		}
+	}
+
+	if returnIndex == values.True {
+		return text.IndexOf(search), nil
+	}
+
+	return text.Contains(search), nil
+}

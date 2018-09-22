@@ -7,15 +7,16 @@ import (
 )
 
 var (
-	ErrMissedArgument   = errors.New("missed argument")
-	ErrInvalidArgument  = errors.New("invalid argument")
-	ErrInvalidType      = errors.New("invalid type")
-	ErrInvalidOperation = errors.New("invalid operation")
-	ErrNotFound         = errors.New("not found")
-	ErrNotUnique        = errors.New("not unique")
-	ErrTerminated       = errors.New("operation is terminated")
-	ErrUnexpected       = errors.New("unexpected error")
-	ErrNotImplemented   = errors.New("not implemented")
+	ErrMissedArgument        = errors.New("missed argument")
+	ErrInvalidArgument       = errors.New("invalid argument")
+	ErrInvalidArgumentNumber = errors.New("invalid argument number")
+	ErrInvalidType           = errors.New("invalid type")
+	ErrInvalidOperation      = errors.New("invalid operation")
+	ErrNotFound              = errors.New("not found")
+	ErrNotUnique             = errors.New("not unique")
+	ErrTerminated            = errors.New("operation is terminated")
+	ErrUnexpected            = errors.New("unexpected error")
+	ErrNotImplemented        = errors.New("not implemented")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"

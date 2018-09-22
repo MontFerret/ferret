@@ -180,6 +180,25 @@
   pruneopts = "UT"
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
+[[projects]]
+  digest = "1:45ed1634373de798161249f031804bac6f5ec7707bbae94047ecd8e69875936c"
+  name = "golang.org/x/text"
+  packages = [
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "search",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm",
+  ]
+  pruneopts = "UT"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -197,6 +216,7 @@
     "github.com/smartystreets/goconvey/convey",
     "golang.org/x/net/html",
     "golang.org/x/sync/errgroup",
+    "golang.org/x/text/search",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

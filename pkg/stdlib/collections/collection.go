@@ -8,7 +8,7 @@ import (
 )
 
 func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(inputs, 1)
+	err := core.ValidateArgs(inputs, 1, 1)
 
 	if err != nil {
 		return values.None, err

@@ -22,6 +22,14 @@ func NewString(input string) String {
 	return String(input)
 }
 
+func NewStringFromRunes(input []rune) String {
+	if len(input) == 0 {
+		return EmptyString
+	}
+
+	return String(input)
+}
+
 func ParseString(input interface{}) (String, error) {
 	if core.IsNil(input) {
 		return EmptyString, nil
