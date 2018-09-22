@@ -379,6 +379,12 @@ func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext
 		return v.doVisitMemberExpression(memberExp.(*fql.MemberExpressionContext), scope)
 	}
 
+	rangeOp := ctx.RangeOperator()
+
+	if rangeOp != nil {
+		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
+	}
+
 	return nil, core.Error(ErrInvalidDataSource, ctx.GetText())
 }
 
@@ -626,6 +632,28 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 	)
 }
 
+func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *scope) (collections.IterableExpression, error) {
+	ints := ctx.AllIntegerLiteral()
+
+	left, err := v.doVisitIntegerLiteral(ints[0].(*fql.IntegerLiteralContext))
+
+	if err != nil {
+		return nil, err
+	}
+
+	right, err := v.doVisitIntegerLiteral(ints[1].(*fql.IntegerLiteralContext))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return operators.NewRangeOperator(
+		v.getSourceMap(ctx),
+		left,
+		right,
+	)
+}
+
 func (v *visitor) doVisitChildren(node antlr.RuleNode, scope *scope) ([]core.Expression, error) {
 	children := node.GetChildren()
 
@@ -785,6 +813,12 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 			consequent,
 			alternate,
 		)
+	}
+
+	rangeOp := ctx.RangeOperator()
+
+	if rangeOp != nil {
+		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
 	}
 
 	seq := ctx.ExpressionSequence()

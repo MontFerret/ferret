@@ -85,6 +85,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#variable.
 	VisitVariable(ctx *VariableContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#rangeOperator.
+	VisitRangeOperator(ctx *RangeOperatorContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#arrayLiteral.
 	VisitArrayLiteral(ctx *ArrayLiteralContext) interface{}
 
@@ -135,12 +138,6 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#expression.
 	VisitExpression(ctx *ExpressionContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#reservedWord.
-	VisitReservedWord(ctx *ReservedWordContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#keyword.
-	VisitKeyword(ctx *KeywordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}

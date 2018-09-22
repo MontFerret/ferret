@@ -46,6 +46,7 @@ forExpressionSource
     | objectLiteral
     | variable
     | memberExpression
+    | rangeOperator
     ;
 
 forExpressionClause
@@ -64,7 +65,7 @@ limitClause
     ;
 
 sortClause
-    : Sort sortClauseExpression (',' sortClauseExpression)*
+    : Sort sortClauseExpression (Comma sortClauseExpression)*
     ;
 
 sortClauseExpression
@@ -127,6 +128,10 @@ variableDeclaration
 
 variable
     : Identifier
+    ;
+
+rangeOperator
+    : integerLiteral Range integerLiteral
     ;
 
 arrayLiteral
@@ -211,6 +216,7 @@ expression
     | Minus expression
     | Not expression
     | expression QuestionMark expression? Colon expression
+    | rangeOperator
     | stringLiteral
     | integerLiteral
     | floatLiteral
@@ -220,28 +226,6 @@ expression
     | variable
     | memberExpression
     | noneLiteral
-    ;
-
-reservedWord
-    : keyword
-    ;
-
-keyword
-    : Return
-    | In
-    | Filter
-    | Sort
-    | SortDirection
-    | Limit
-    | Let
-    | Collect
-    | Distinct
-    | BooleanLiteral
-    | None
-    | Null
-    | All
-    | Any
-    | Aggregate
     ;
 
 equalityOperator

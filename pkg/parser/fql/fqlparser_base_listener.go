@@ -180,6 +180,12 @@ func (s *BaseFqlParserListener) EnterVariable(ctx *VariableContext) {}
 // ExitVariable is called when production variable is exited.
 func (s *BaseFqlParserListener) ExitVariable(ctx *VariableContext) {}
 
+// EnterRangeOperator is called when production rangeOperator is entered.
+func (s *BaseFqlParserListener) EnterRangeOperator(ctx *RangeOperatorContext) {}
+
+// ExitRangeOperator is called when production rangeOperator is exited.
+func (s *BaseFqlParserListener) ExitRangeOperator(ctx *RangeOperatorContext) {}
+
 // EnterArrayLiteral is called when production arrayLiteral is entered.
 func (s *BaseFqlParserListener) EnterArrayLiteral(ctx *ArrayLiteralContext) {}
 
@@ -281,18 +287,6 @@ func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
 
 // ExitExpression is called when production expression is exited.
 func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
-
-// EnterReservedWord is called when production reservedWord is entered.
-func (s *BaseFqlParserListener) EnterReservedWord(ctx *ReservedWordContext) {}
-
-// ExitReservedWord is called when production reservedWord is exited.
-func (s *BaseFqlParserListener) ExitReservedWord(ctx *ReservedWordContext) {}
-
-// EnterKeyword is called when production keyword is entered.
-func (s *BaseFqlParserListener) EnterKeyword(ctx *KeywordContext) {}
-
-// ExitKeyword is called when production keyword is exited.
-func (s *BaseFqlParserListener) ExitKeyword(ctx *KeywordContext) {}
 
 // EnterEqualityOperator is called when production equalityOperator is entered.
 func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorContext) {}

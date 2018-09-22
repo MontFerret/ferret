@@ -85,6 +85,9 @@ type FqlParserListener interface {
 	// EnterVariable is called when entering the variable production.
 	EnterVariable(c *VariableContext)
 
+	// EnterRangeOperator is called when entering the rangeOperator production.
+	EnterRangeOperator(c *RangeOperatorContext)
+
 	// EnterArrayLiteral is called when entering the arrayLiteral production.
 	EnterArrayLiteral(c *ArrayLiteralContext)
 
@@ -135,12 +138,6 @@ type FqlParserListener interface {
 
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
-
-	// EnterReservedWord is called when entering the reservedWord production.
-	EnterReservedWord(c *ReservedWordContext)
-
-	// EnterKeyword is called when entering the keyword production.
-	EnterKeyword(c *KeywordContext)
 
 	// EnterEqualityOperator is called when entering the equalityOperator production.
 	EnterEqualityOperator(c *EqualityOperatorContext)
@@ -232,6 +229,9 @@ type FqlParserListener interface {
 	// ExitVariable is called when exiting the variable production.
 	ExitVariable(c *VariableContext)
 
+	// ExitRangeOperator is called when exiting the rangeOperator production.
+	ExitRangeOperator(c *RangeOperatorContext)
+
 	// ExitArrayLiteral is called when exiting the arrayLiteral production.
 	ExitArrayLiteral(c *ArrayLiteralContext)
 
@@ -282,12 +282,6 @@ type FqlParserListener interface {
 
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)
-
-	// ExitReservedWord is called when exiting the reservedWord production.
-	ExitReservedWord(c *ReservedWordContext)
-
-	// ExitKeyword is called when exiting the keyword production.
-	ExitKeyword(c *KeywordContext)
 
 	// ExitEqualityOperator is called when exiting the equalityOperator production.
 	ExitEqualityOperator(c *EqualityOperatorContext)

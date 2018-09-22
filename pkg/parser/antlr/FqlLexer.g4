@@ -9,9 +9,8 @@ LineTerminator: [\r\n\u2028\u2029] -> channel(HIDDEN);
 // Punctuation
 Colon: ':';
 SemiColon: ';';
-Comma: ',';
 Dot: '.';
-Ellipsis: '...';
+Comma: ',';
 OpenBracket: '[';
 CloseBracket: ']';
 OpenParen: '(';
@@ -41,8 +40,8 @@ And: 'AND' | '&&';
 Or: 'OR' | '||';
 
 // Other operators
+Range: Dot Dot;
 Assign: '=';
-Range: '..';
 QuestionMark: '?';
 RegexNotMatch: '!~';
 RegexMatch: '=~';
@@ -81,8 +80,7 @@ Identifier: Letter+ (Digit)*;
 StringLiteral: SQString | DQSring;
 IntegerLiteral: [0-9]+;
 FloatLiteral
-    : DecimalIntegerLiteral '.' [0-9]* ExponentPart?
-    | '.' [0-9]+ ExponentPart?
+    : DecimalIntegerLiteral Dot [0-9]+ ExponentPart?
     | DecimalIntegerLiteral ExponentPart?
     ;
 

@@ -111,6 +111,10 @@ func (v *BaseFqlParserVisitor) VisitVariable(ctx *VariableContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitRangeOperator(ctx *RangeOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitArrayLiteral(ctx *ArrayLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -176,14 +180,6 @@ func (v *BaseFqlParserVisitor) VisitArguments(ctx *ArgumentsContext) interface{}
 }
 
 func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitReservedWord(ctx *ReservedWordContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitKeyword(ctx *KeywordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
