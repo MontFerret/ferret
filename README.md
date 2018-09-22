@@ -1,5 +1,31 @@
 # Ferret
-> Web scraping query language
+> Write what you want, not how you want
+
+## What is it?
+```ferret``` is a webscraping system aiming to simplify data extraction from the web for such things like machine learning and analytics.    
+Having it's own declaritive language, ```ferret``` abstracts away technical datails and complexity of the underlying technologies, helping to focus on the data itself.    
+It's extremely portable, extensible and fast.
+
+## Features
+
+* Declarative language
+* Support of both static and dynamic web pages
+* Embeddable
+* Extensible
+
+## Motivation
+Nowadays data is everything and who owns data - owns the world.    
+I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
+After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
+```Ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.    
+## Inspiration
+FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
+But due to the domain specifics, there are some differences in how things work.     
+
+## WIP
+Be aware, the the project is under heavy development. There is no documentation and some things may change in the final release.    
+For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
+
 
 ## Installation
 
@@ -12,27 +38,6 @@
 ```sh
 make build
 ```
-
-## Features
-
-* Declarative language
-* Support of JS-rendered pages
-* Embeddable
-* Extensible
-
-## Motivation
-Nowadays data is everything and who owns data - owns the world.    
-I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
-After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
-```Ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.    
-
-## Inspiration
-FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
-But due to the domain specifics, there are some differences in how things work.     
-
-## WIP
-Be aware, the the project is under heavy development. There is no documentation and some things may change in the final release.    
-For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
 
 ## Quick start
 
