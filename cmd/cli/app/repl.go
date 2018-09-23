@@ -28,6 +28,7 @@ func Repl(version string, opts Options) {
 	defer rl.Close()
 
 	var commands []string
+	var multiline bool
 
 	timer := NewTimer()
 
@@ -44,15 +45,24 @@ func Repl(version string, opts Options) {
 			continue
 		}
 
-		if strings.HasSuffix(line, "\\") {
-			commands = append(commands, line[:len(line)-1])
+		if strings.HasPrefix(line, "%") {
+			line = line[1:]
+
+			multiline = !multiline
+		}
+
+		if multiline {
+			commands = append(commands, line)
 			continue
 		}
 
 		commands = append(commands, line)
-		query := strings.Join(commands, "\n")
-
+		query := strings.TrimSpace(strings.Join(commands, "\n"))
 		commands = make([]string, 0, 10)
+
+		if query == "" {
+			continue
+		}
 
 		program, err := ferret.Compile(query)
 

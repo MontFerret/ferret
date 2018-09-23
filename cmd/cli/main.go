@@ -83,10 +83,12 @@ func main() {
 		cdpConn,
 	}
 
-	// check whether the app is getting a query via standard input
-	std := bufio.NewReader(os.Stdin)
+	stat, _ := os.Stdin.Stat()
 
-	if std.Size() > 0 {
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		// check whether the app is getting a query via standard input
+		std := bufio.NewReader(os.Stdin)
+
 		b, err := ioutil.ReadAll(std)
 
 		if err != nil {
