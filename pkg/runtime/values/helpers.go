@@ -209,3 +209,20 @@ func Parse(input interface{}) core.Value {
 
 	return None
 }
+
+func ToBoolean(input core.Value) core.Value {
+	switch input.Type() {
+	case core.BooleanType:
+		return input
+	case core.NoneType:
+		return False
+	case core.StringType:
+		return NewBoolean(input.String() != "")
+	case core.IntType:
+		return NewBoolean(input.(Int) != 0)
+	case core.FloatType:
+		return NewBoolean(input.(Float) != 0)
+	default:
+		return True
+	}
+}

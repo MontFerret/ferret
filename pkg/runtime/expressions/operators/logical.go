@@ -57,18 +57,22 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 		return nil, err
 	}
 
-	left = operator.ensureType(left)
-
 	if operator.value == NotType {
 		return Not(left, values.None), nil
 	}
 
-	if operator.value == AndType && left == values.False {
-		return values.False, nil
+	leftBool := values.ToBoolean(left)
+
+	if operator.value == AndType && leftBool == values.False {
+		if left.Type() == core.BooleanType {
+			return values.False, nil
+		}
+
+		return left, nil
 	}
 
-	if operator.value == OrType && left == values.True {
-		return values.True, nil
+	if operator.value == OrType && leftBool == values.True {
+		return left, nil
 	}
 
 	right, err := operator.right.Exec(ctx, scope)
@@ -77,17 +81,5 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 		return nil, err
 	}
 
-	return operator.ensureType(right), nil
-}
-
-func (operator *LogicalOperator) ensureType(value core.Value) core.Value {
-	if value.Type() != core.BooleanType {
-		if value.Type() == core.NoneType {
-			return values.False
-		}
-
-		return values.True
-	}
-
-	return value
+	return right, nil
 }

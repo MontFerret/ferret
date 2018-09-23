@@ -72,13 +72,13 @@ func GreaterOrEqual(left, right core.Value) core.Value {
 }
 
 func Not(left, _ core.Value) core.Value {
-	if left == values.True {
+	b := values.ToBoolean(left)
+
+	if b == values.True {
 		return values.False
-	} else if left == values.False {
-		return values.True
 	}
 
-	return values.False
+	return values.True
 }
 
 // Adds numbers
@@ -86,33 +86,33 @@ func Not(left, _ core.Value) core.Value {
 func Add(left, right core.Value) core.Value {
 	if left.Type() == core.IntType {
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(int)
+			l := left.(values.Int)
+			r := right.(values.Int)
 
-			return values.NewInt(l + r)
+			return l + r
 		}
 
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(float64)
+			l := left.(values.Int)
+			r := right.(values.Float)
 
-			return values.Float(float64(l) + r)
+			return values.Float(l) + r
 		}
 	}
 
 	if left.Type() == core.FloatType {
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(float64)
+			l := left.(values.Float)
+			r := right.(values.Float)
 
-			return values.Float(l + r)
+			return l + r
 		}
 
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(int)
+			l := left.(values.Float)
+			r := right.(values.Int)
 
-			return values.Float(l + float64(r))
+			return l + values.Float(r)
 		}
 	}
 
@@ -122,33 +122,33 @@ func Add(left, right core.Value) core.Value {
 func Subtract(left, right core.Value) core.Value {
 	if left.Type() == core.IntType {
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(int)
+			l := left.(values.Int)
+			r := right.(values.Int)
 
-			return values.NewInt(l - r)
+			return l - r
 		}
 
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(float64)
+			l := left.(values.Int)
+			r := right.(values.Float)
 
-			return values.Float(float64(l) - r)
+			return values.Float(l) - r
 		}
 	}
 
 	if left.Type() == core.FloatType {
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(float64)
+			l := left.(values.Float)
+			r := right.(values.Float)
 
-			return values.Float(l - r)
+			return l - r
 		}
 
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(int)
+			l := left.(values.Float)
+			r := right.(values.Int)
 
-			return values.Float(l - float64(r))
+			return l - values.Float(r)
 		}
 	}
 
@@ -158,33 +158,33 @@ func Subtract(left, right core.Value) core.Value {
 func Multiply(left, right core.Value) core.Value {
 	if left.Type() == core.IntType {
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(int)
+			l := left.(values.Int)
+			r := right.(values.Int)
 
-			return values.NewInt(l * r)
+			return l * r
 		}
 
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(float64)
+			l := left.(values.Int)
+			r := right.(values.Float)
 
-			return values.Float(float64(l) * r)
+			return values.Float(l) * r
 		}
 	}
 
 	if left.Type() == core.FloatType {
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(float64)
+			l := left.(values.Float)
+			r := right.(values.Float)
 
-			return values.Float(l * r)
+			return l * r
 		}
 
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(int)
+			l := left.(values.Float)
+			r := right.(values.Int)
 
-			return values.Float(l * float64(r))
+			return l * values.Float(r)
 		}
 	}
 
@@ -194,33 +194,33 @@ func Multiply(left, right core.Value) core.Value {
 func Divide(left, right core.Value) core.Value {
 	if left.Type() == core.IntType {
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(int)
+			l := left.(values.Int)
+			r := right.(values.Int)
 
-			return values.NewInt(l / r)
+			return l / r
 		}
 
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(float64)
+			l := left.(values.Int)
+			r := right.(values.Float)
 
-			return values.Float(float64(l) / r)
+			return values.Float(l) / r
 		}
 	}
 
 	if left.Type() == core.FloatType {
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(float64)
+			l := left.(values.Float)
+			r := right.(values.Float)
 
-			return values.Float(l / r)
+			return l / r
 		}
 
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(int)
+			l := left.(values.Float)
+			r := right.(values.Int)
 
-			return values.Float(l / float64(r))
+			return l / values.Float(r)
 		}
 	}
 
@@ -230,33 +230,33 @@ func Divide(left, right core.Value) core.Value {
 func Modulus(left, right core.Value) core.Value {
 	if left.Type() == core.IntType {
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(int)
+			l := left.(values.Int)
+			r := right.(values.Int)
 
-			return values.NewInt(l % r)
+			return l % r
 		}
 
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(int)
-			r := right.Unwrap().(float64)
+			l := left.(values.Int)
+			r := right.(values.Float)
 
-			return values.Float(l % int(r))
+			return l % values.Int(r)
 		}
 	}
 
 	if left.Type() == core.FloatType {
 		if right.Type() == core.FloatType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(float64)
+			l := left.(values.Float)
+			r := right.(values.Float)
 
-			return values.Float(int(l) % int(r))
+			return values.Int(l) % values.Int(r)
 		}
 
 		if right.Type() == core.IntType {
-			l := left.Unwrap().(float64)
-			r := right.Unwrap().(int)
+			l := left.(values.Float)
+			r := right.(values.Int)
 
-			return values.Float(int(l) % r)
+			return values.Int(l) % r
 		}
 	}
 
@@ -265,15 +265,15 @@ func Modulus(left, right core.Value) core.Value {
 
 func Increment(left, _ core.Value) core.Value {
 	if left.Type() == core.IntType {
-		l := left.Unwrap().(int)
+		l := left.(values.Int)
 
-		return values.NewInt(l + 1)
+		return l + 1
 	}
 
 	if left.Type() == core.FloatType {
-		l := left.Unwrap().(float64)
+		l := left.(values.Float)
 
-		return values.Float(l + 1)
+		return l + 1
 	}
 
 	return values.None
@@ -281,15 +281,15 @@ func Increment(left, _ core.Value) core.Value {
 
 func Decrement(left, _ core.Value) core.Value {
 	if left.Type() == core.IntType {
-		l := left.Unwrap().(int)
+		l := left.(values.Int)
 
-		return values.NewInt(l - 1)
+		return l - 1
 	}
 
 	if left.Type() == core.FloatType {
-		l := left.Unwrap().(float64)
+		l := left.(values.Float)
 
-		return values.Float(l - 1)
+		return l - 1
 	}
 
 	return values.None

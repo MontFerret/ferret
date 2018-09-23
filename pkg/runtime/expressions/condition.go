@@ -42,7 +42,7 @@ func (e *ConditionExpression) Exec(ctx context.Context, scope *core.Scope) (core
 		return values.None, core.SourceError(e.src, err)
 	}
 
-	cond := e.evalTestValue(out)
+	cond := values.ToBoolean(out)
 
 	var next core.Expression
 
@@ -64,21 +64,4 @@ func (e *ConditionExpression) Exec(ctx context.Context, scope *core.Scope) (core
 	}
 
 	return res, nil
-}
-
-func (e *ConditionExpression) evalTestValue(value core.Value) values.Boolean {
-	switch value.Type() {
-	case core.BooleanType:
-		return value.(values.Boolean)
-	case core.NoneType:
-		return values.False
-	case core.StringType:
-		return values.NewBoolean(value.String() != "")
-	case core.IntType:
-		return values.NewBoolean(value.(values.Int) != 0)
-	case core.FloatType:
-		return values.NewBoolean(value.(values.Float) != 0)
-	default:
-		return values.True
-	}
 }

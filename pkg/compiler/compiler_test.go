@@ -978,6 +978,81 @@ func TestLogicalOperators(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "true")
 	})
+
+	Convey("1 || 7  should return 1", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN 1 || 7
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "1")
+	})
+
+	Convey("NONE || 'foo'  should return 'foo'", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN NONE || 'foo'
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `"foo"`)
+	})
+
+	Convey("NONE && true  should return null", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN NONE && true
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `null`)
+	})
+
+	Convey("'' && true  should return ''", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN '' && true
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `""`)
+	})
+
+	Convey("true && 23  should return '23", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN true && 23 
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `23`)
+	})
 }
 
 func TestMathOperators(t *testing.T) {
