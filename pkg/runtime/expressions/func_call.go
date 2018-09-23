@@ -42,21 +42,30 @@ func (e *FunctionCallExpression) Iterate(ctx context.Context, scope *core.Scope)
 }
 
 func (e *FunctionCallExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+	var out core.Value
+	var err error
+
 	if len(e.args) == 0 {
-		return e.fun(ctx)
-	}
+		out, err = e.fun(ctx)
+	} else {
+		args := make([]core.Value, len(e.args))
 
-	args := make([]core.Value, len(e.args))
+		for idx, arg := range e.args {
+			out, err := arg.Exec(ctx, scope)
 
-	for idx, arg := range e.args {
-		out, err := arg.Exec(ctx, scope)
+			if err != nil {
+				return values.None, core.SourceError(e.src, err)
+			}
 
-		if err != nil {
-			return values.None, core.SourceError(e.src, err)
+			args[idx] = out
 		}
 
-		args[idx] = out
+		out, err = e.fun(ctx, args...)
 	}
 
-	return e.fun(ctx, args...)
+	if err != nil {
+		return values.None, core.SourceError(e.src, err)
+	}
+
+	return out, nil
 }

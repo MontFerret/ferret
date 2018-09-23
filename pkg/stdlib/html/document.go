@@ -18,13 +18,13 @@ func Document(ctx context.Context, inputs ...core.Value) (core.Value, error) {
 	var drv driver.Driver
 
 	if !js {
-		drv = driver.FromContext(ctx, driver.Http)
+		drv, err = driver.FromContext(ctx, driver.Http)
 	} else {
-		drv = driver.FromContext(ctx, driver.Cdp)
+		drv, err = driver.FromContext(ctx, driver.Cdp)
 	}
 
-	if drv == nil {
-		return values.None, core.Error(core.ErrNotFound, "dom driver")
+	if err != nil {
+		return values.None, err
 	}
 
 	return drv.GetDocument(ctx, url.String())
@@ -43,10 +43,10 @@ func DocumentParse(ctx context.Context, inputs ...core.Value) (core.Value, error
 		return arg1, core.Error(core.TypeError(a1.Type(), core.StringType), "arg 1")
 	}
 
-	drv := driver.FromContext(ctx, driver.Http)
+	drv, err := driver.FromContext(ctx, driver.Http)
 
-	if drv == nil {
-		return values.None, core.Error(core.ErrNotFound, "dom driver")
+	if err != nil {
+		return values.None, err
 	}
 
 	return drv.(*http.HttpDriver).ParseDocument(ctx, arg1.String())

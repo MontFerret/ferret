@@ -21,5 +21,5 @@ func (s SourceMap) Column() int {
 }
 
 func (s SourceMap) String() string {
-	return fmt.Sprintf("at %d:%d", s.line, s.column)
+	return fmt.Sprintf("%s at %d:%d", s.text, s.line, s.column)
 }

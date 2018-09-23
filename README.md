@@ -101,16 +101,15 @@ go run ./cmd/cli/main.go --cdp-launch
 
 **NOTE:** Launch command is currently broken on MacOS.
 
-Once ```ferret``` knows how to communicate with Chrome, you can use a function ```DOCUMENT(url, isJsRendered)``` with ```true``` boolean value for loading JS rendered pages:
+Once ```ferret``` knows how to communicate with Chrome, you can use a function ```DOCUMENT(url, isDynamic)``` with ```true``` boolean value for dynamic pages:
 
 ```shell
 Welcome to Ferret REPL
 Please use `exit` or `Ctrl-D` to exit this program.
 >%
 >LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
->SLEEP(2000) // WAIT WHEN THE PAGE GETS RENDERED
+>WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 >LET tracks = ELEMENTS(doc, '.chartTrack__details')
->LOG("found", LENGTH(tracks), "tracks")
 >FOR track IN tracks
 >    LET username = ELEMENT(track, '.chartTrack__username')
 >    LET title = ELEMENT(track, '.chartTrack__title')

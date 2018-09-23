@@ -2,6 +2,8 @@ package driver
 
 import (
 	"context"
+	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/http"
@@ -19,16 +21,16 @@ func ToContext(ctx context.Context, name string, drv Driver) context.Context {
 	return context.WithValue(ctx, name, drv)
 }
 
-func FromContext(ctx context.Context, name string) Driver {
+func FromContext(ctx context.Context, name string) (Driver, error) {
 	val := ctx.Value(name)
 
 	drv, ok := val.(Driver)
 
 	if ok {
-		return drv
+		return drv, nil
 	}
 
-	return nil
+	return nil, core.Error(core.ErrNotFound, fmt.Sprintf("%s driver", name))
 }
 
 func WithCdpDriver(ctx context.Context, addr string) context.Context {

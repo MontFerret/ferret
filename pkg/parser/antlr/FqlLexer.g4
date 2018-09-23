@@ -76,7 +76,7 @@ Not: 'NOT' | '!';
 In: 'IN';
 
 // Literals
-Identifier: Letter+ (Digit)*;
+Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
 StringLiteral: SQString | DQSring;
 IntegerLiteral: [0-9]+;
 FloatLiteral
@@ -98,6 +98,7 @@ fragment ExponentPart
 fragment Letter
     : 'A'..'Z' | 'a'..'z'
     ;
+fragment Symbols: '_';
 fragment Digit
     : '0'..'9'
     ;

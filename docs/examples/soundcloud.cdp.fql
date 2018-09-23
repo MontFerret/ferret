@@ -1,20 +1,14 @@
 LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
 
-// TODO: We need a better way of waiting for page loading
-// Something line WAIT_FOR(doc, selector)
-SLEEP(2000)
+WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 
 LET tracks = ELEMENTS(doc, '.chartTrack__details')
 
-LOG("found", LENGTH(tracks), "tracks")
+// LOG("found", LENGTH(tracks), "tracks")
 
 FOR track IN tracks
     LET username = ELEMENT(track, '.chartTrack__username')
     LET title = ELEMENT(track, '.chartTrack__title')
-
-    // LOG("NODE", track.nodeName)
-
-    SLEEP(500)
 
     RETURN {
         artist: username.innerText,

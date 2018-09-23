@@ -2,11 +2,14 @@ package browser
 
 import (
 	"context"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/rpcc"
 	"strings"
+	"time"
 )
 
 type HtmlDocument struct {
@@ -107,4 +110,24 @@ func (doc *HtmlDocument) Compare(other core.Value) int {
 
 		return 1
 	}
+}
+
+func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.Int) error {
+	task := NewWaitTask(
+		doc.client,
+		fmt.Sprintf(`
+			el = document.querySelector("%s");
+
+			if (el != null) {
+				return true;
+			}
+
+			return null;
+		`, selector),
+		time.Millisecond*time.Duration(timeout),
+	)
+
+	_, err := task.Run()
+
+	return err
 }

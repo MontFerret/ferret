@@ -8,5 +8,6 @@ func NewLib() map[string]core.Function {
 		"DOCUMENT_PARSE": DocumentParse,
 		"ELEMENT":        Element,
 		"ELEMENTS":       Elements,
+		"WAIT_ELEMENT":   WaitElement,
 	}
 }

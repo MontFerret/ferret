@@ -16,13 +16,14 @@ var (
 	ErrNotUnique             = errors.New("not unique")
 	ErrTerminated            = errors.New("operation is terminated")
 	ErrUnexpected            = errors.New("unexpected error")
+	ErrTimeout               = errors.New("operation timed out")
 	ErrNotImplemented        = errors.New("not implemented")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"
 
 func SourceError(src SourceMap, err error) error {
-	return errors.Errorf("%s  %s", err.Error(), src.String())
+	return errors.Errorf("%s: %s", err.Error(), src.String())
 }
 
 func TypeError(actual Type, expected ...Type) error {
