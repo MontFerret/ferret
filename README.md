@@ -2,8 +2,8 @@
 > Write what you want, not how you want
 
 ## What is it?
-```ferret``` is a webscraping system aiming to simplify data extraction from the web for such things like machine learning and analytics.    
-Having it's own declaritive language, ```ferret``` abstracts away technical datails and complexity of the underlying technologies, helping to focus on the data itself.    
+```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like machine learning and analytics.    
+Having it's own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
 It's extremely portable, extensible and fast.
 
 ## Features
@@ -17,7 +17,8 @@ It's extremely portable, extensible and fast.
 Nowadays data is everything and who owns data - owns the world.    
 I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
 After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
-```Ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.    
+```ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.    
+
 ## Inspiration
 FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
 But due to the domain specifics, there are some differences in how things work.     
@@ -53,18 +54,28 @@ go run ./cmd/cli/main.go
 ```shell
 Welcome to Ferret REPL
 Please use `Ctrl-D` to exit this program.
->LET doc = DOCUMENT('https://news.ycombinator.com/')\
->FOR post IN ELEMENTS(doc, '.storylink')\
+>%
+>LET doc = DOCUMENT('https://news.ycombinator.com/')
+>FOR post IN ELEMENTS(doc, '.storylink')
 >RETURN post.attributes.href
+>%
 
 ```
 
-**Note:** blackslash is used for multiline queries.
+**Note:** symbol ```%``` is used to start and end multi line queries. You also can use heredoc format.
 
 If you want to execute a query stored in a file, just pass a file name:
 
 ```
 go run ./cmd/cli/main.go ./docs/examples/hackernews.fql
+```
+
+```
+cat ./docs/examples/hackernews.fql | go run ./cmd/cli/main.go 
+```
+
+```
+go run ./cmd/cli/main.go < ./docs/examples/hackernews.fql
 ```
 
 
@@ -77,7 +88,7 @@ First, you need to make sure that you launched Chrome with ```remote-debugging-p
 Second, you need to pass the address to ```ferret``` CLI.    
 
 ```
-./bin/ferret --cdp http://127.0.0.1:9222
+go run ./cmd/cli/main.go --cdp http://127.0.0.1:9222
 ```
 
 **NOTE:** By default, ```ferret``` will try to use this local address as a default one, so it makes sense to explicitly pass the parameter only in case of either different port number or remote address.    
@@ -95,6 +106,7 @@ Once ```ferret``` knows how to communicate with Chrome, you can use a function `
 ```shell
 Welcome to Ferret REPL
 Please use `exit` or `Ctrl-D` to exit this program.
+>%
 >LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
 >SLEEP(2000) // WAIT WHEN THE PAGE GETS RENDERED
 >LET tracks = ELEMENTS(doc, '.chartTrack__details')
@@ -106,6 +118,7 @@ Please use `exit` or `Ctrl-D` to exit this program.
 >       artist: username.innerText,
 >        track: title.innerText
 >    }
+>%
 ```
 
 ### Embedded mode
