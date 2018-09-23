@@ -136,3 +136,16 @@ func (t *Array) Push(item core.Value) {
 func (t *Array) Slice(from, to Int) []core.Value {
 	return t.value[from:to]
 }
+
+func (t *Array) IndexOf(item core.Value) Int {
+	res := Int(-1)
+
+	for idx, el := range t.value {
+		if el.Compare(item) == 0 {
+			res = Int(idx)
+			break
+		}
+	}
+
+	return res
+}

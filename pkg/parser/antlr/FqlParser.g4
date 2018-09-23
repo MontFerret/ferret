@@ -208,12 +208,9 @@ expression
     | expression mathOperator expression
     | functionCallExpression
     | OpenParen expressionSequence CloseParen
-    | expression PlusPlus
-    | expression MinusMinus
-    | PlusPlus expression
-    | MinusMinus expression
     | Plus expression
     | Minus expression
+    | expression (Not)? In expression
     | Not expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator

@@ -815,6 +815,45 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		)
 	}
 
+	inOp := ctx.In()
+
+	if inOp != nil {
+		exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		left := exps[0]
+		right := exps[1]
+
+		return operators.NewInOperator(
+			v.getSourceMap(ctx),
+			left,
+			right,
+			ctx.Not() != nil,
+		)
+	}
+
+	notOp := ctx.Not()
+
+	if notOp != nil {
+		exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		exp := exps[0]
+
+		return operators.NewLogicalOperator(
+			v.getSourceMap(ctx),
+			nil,
+			exp,
+			"NOT",
+		)
+	}
+
 	rangeOp := ctx.RangeOperator()
 
 	if rangeOp != nil {

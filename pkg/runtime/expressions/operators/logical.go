@@ -51,14 +51,20 @@ func NewLogicalOperator(
 }
 
 func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+	if operator.value == NotType {
+		val, err := operator.right.Exec(ctx, scope)
+
+		if err != nil {
+			return values.None, core.SourceError(operator.src, err)
+		}
+
+		return Not(val, values.None), nil
+	}
+
 	left, err := operator.left.Exec(ctx, scope)
 
 	if err != nil {
-		return nil, err
-	}
-
-	if operator.value == NotType {
-		return Not(left, values.None), nil
+		return values.None, core.SourceError(operator.src, err)
 	}
 
 	leftBool := values.ToBoolean(left)
@@ -78,7 +84,7 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 	right, err := operator.right.Exec(ctx, scope)
 
 	if err != nil {
-		return nil, err
+		return values.None, core.SourceError(operator.src, err)
 	}
 
 	return right, nil
