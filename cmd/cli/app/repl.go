@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func Repl(version, cdpConn string) {
+func Repl(version string, opts Options) {
 	ferret := compiler.New()
 
 	fmt.Printf("Welcome to Ferret REPL %s\n", version)
@@ -28,6 +28,7 @@ func Repl(version, cdpConn string) {
 	defer rl.Close()
 
 	var commands []string
+
 	timer := NewTimer()
 
 	for {
@@ -63,7 +64,10 @@ func Repl(version, cdpConn string) {
 
 		timer.Start()
 
-		out, err := program.Run(context.Background(), runtime.WithBrowser(cdpConn))
+		out, err := program.Run(
+			context.Background(),
+			runtime.WithBrowser(opts.Cdp),
+		)
 
 		timer.Stop()
 		fmt.Println(timer.Print())

@@ -14,7 +14,7 @@ type (
 
 func newOptions() *Options {
 	return &Options{
-		cdp:       "",
+		cdp:       "http://127.0.0.1:9222",
 		variables: make(map[string]interface{}),
 	}
 }

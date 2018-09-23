@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/MontFerret/ferret/cmd/cli/app"
 	"github.com/MontFerret/ferret/pkg/browser"
+	"io/ioutil"
 	"os"
 )
 
@@ -26,19 +28,13 @@ var (
 	conn = flag.String(
 		"cdp",
 		"http://127.0.0.1:9222",
-		"Chrome DevTools Protocol address",
+		"set CDP address",
 	)
 
 	launchBrowser = flag.Bool(
 		"cdp-launch",
 		false,
 		"launch Chrome",
-	)
-
-	noUserData = flag.Bool(
-		"no-user-data",
-		false,
-		"do not create a separate location for browser sessions",
 	)
 )
 
@@ -83,11 +79,32 @@ func main() {
 		defer b.Close()
 	}
 
-	// no files to execute
-	// run REPL
-	if flag.NArg() == 0 {
-		app.Repl(Version, cdpConn)
-	} else {
-		app.Exec(flag.Arg(0), cdpConn)
+	opts := app.Options{
+		cdpConn,
 	}
+
+	// check whether the app is getting a query via standard input
+	std := bufio.NewReader(os.Stdin)
+
+	if std.Size() > 0 {
+		b, err := ioutil.ReadAll(std)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+			return
+		}
+
+		app.Exec(string(b), opts)
+		return
+	}
+
+	// filename was passed
+	if flag.NArg() > 0 {
+		app.ExecFile(flag.Arg(0), opts)
+		return
+	}
+
+	// nothing was passed, run REPL
+	app.Repl(Version, opts)
 }

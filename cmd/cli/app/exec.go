@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func Exec(pathToFile, cdpConn string) {
+func ExecFile(pathToFile string, opts Options) {
 	query, err := ioutil.ReadFile(pathToFile)
 
 	if err != nil {
@@ -18,9 +18,13 @@ func Exec(pathToFile, cdpConn string) {
 		return
 	}
 
+	Exec(string(query), opts)
+}
+
+func Exec(query string, opts Options) {
 	ferret := compiler.New()
 
-	prog, err := ferret.Compile(string(query))
+	prog, err := ferret.Compile(query)
 
 	if err != nil {
 		fmt.Println("Failed to compile the query")
@@ -29,14 +33,10 @@ func Exec(pathToFile, cdpConn string) {
 		return
 	}
 
-	timer := NewTimer()
-	timer.Start()
-
-	out, err := prog.Run(context.Background(), runtime.WithBrowser(cdpConn))
-
-	timer.Stop()
-
-	fmt.Println(timer.Print())
+	out, err := prog.Run(
+		context.Background(),
+		runtime.WithBrowser(opts.Cdp),
+	)
 
 	if err != nil {
 		fmt.Println("Failed to execute the query")
