@@ -169,8 +169,6 @@ func NewHtmlDocument(
 		doc.Lock()
 		defer doc.Unlock()
 
-		fmt.Println("NAVIGATED")
-
 		updated, err := getRootElement(client)
 
 		if err != nil {

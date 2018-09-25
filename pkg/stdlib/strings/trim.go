@@ -21,13 +21,12 @@ func Trim(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	text := args[0].String()
-	chars := " "
 
 	if len(args) > 1 {
-		chars = args[1].String()
+		return values.NewString(strings.Trim(text, args[1].String())), nil
 	}
 
-	return values.NewString(strings.Trim(text, chars)), nil
+	return values.NewString(strings.TrimSpace(text)), nil
 }
 
 /*

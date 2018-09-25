@@ -165,7 +165,7 @@ func (broker *EventBroker) Close() error {
 	defer broker.Unlock()
 
 	if broker.cancel != nil {
-		broker.Stop()
+		broker.cancel()
 	}
 
 	for _, event := range broker.events {
