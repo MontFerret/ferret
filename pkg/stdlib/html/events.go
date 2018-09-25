@@ -38,3 +38,37 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	return values.None, doc.WaitForSelector(values.NewString(selector), timeout)
 }
+
+func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 1, 2)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	err = core.ValidateType(args[0], core.HtmlDocumentType)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	doc, ok := args[0].(*browser.HtmlDocument)
+
+	if !ok {
+		return values.None, core.Error(core.ErrInvalidType, "expected dynamic document")
+	}
+
+	timeout := values.NewInt(5000)
+
+	if len(args) > 1 {
+		err = core.ValidateType(args[1], core.IntType)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		timeout = args[1].(values.Int)
+	}
+
+	return values.None, doc.WaitForNavigation(timeout)
+}

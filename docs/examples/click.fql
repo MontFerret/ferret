@@ -1,9 +1,11 @@
 LET doc = DOCUMENT("https://github.com/", true)
 LET btn = ELEMENT(doc, ".HeaderMenu a")
-LET clicked = CLICK(btn)
 
-WAIT_ELEMENT(doc, '.IconNav', 5000)
-WAIT(5000)
+CLICK(btn)
+WAIT_NAVIGATION(doc)
+WAIT_ELEMENT(doc, '.IconNav')
+
+LOG("FOUND ELEMENT")
 
 FOR el IN ELEMENTS(doc, '.IconNav a')
-    RETURN el.innerText
+    RETURN TRIM(el.innerText)

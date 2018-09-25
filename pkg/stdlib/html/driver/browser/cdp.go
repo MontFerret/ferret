@@ -54,7 +54,7 @@ func (drv *CdpDriver) GetDocument(ctx context.Context, url string) (values.HtmlN
 		return nil, err
 	}
 
-	return NewHtmlDocument(ctx, conn, url)
+	return LoadHtmlDocument(ctx, conn, url)
 }
 
 func (drv *CdpDriver) Close() error {

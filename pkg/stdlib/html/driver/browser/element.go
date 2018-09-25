@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/events"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
@@ -287,7 +288,7 @@ func (el *HtmlElement) Click() (values.Boolean, error) {
 
 	defer cancel()
 
-	return DispatchEvent(ctx, el.client, el.id, "click")
+	return events.DispatchEvent(ctx, el.client, el.id, "click")
 }
 
 func createCtx() (context.Context, context.CancelFunc) {

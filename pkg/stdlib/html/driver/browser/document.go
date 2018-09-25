@@ -2,9 +2,12 @@ package browser
 
 import (
 	"context"
+	"crypto/sha512"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/eval"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/events"
 	"github.com/corpix/uarand"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
@@ -12,18 +15,20 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"strings"
+	"sync"
 	"time"
 )
 
 type HtmlDocument struct {
-	*HtmlElement
-	conn   *rpcc.Conn
-	client *cdp.Client
-	events *EventBroker
-	url    string
+	sync.Mutex
+	conn    *rpcc.Conn
+	client  *cdp.Client
+	events  *events.EventBroker
+	url     string
+	element *HtmlElement
 }
 
-func NewHtmlDocument(
+func LoadHtmlDocument(
 	ctx context.Context,
 	conn *rpcc.Conn,
 	url string,
@@ -76,29 +81,19 @@ func NewHtmlDocument(
 		return nil, err
 	}
 
-	root, err := getRootElement(ctx, client)
+	root, err := getRootElement(client)
 
 	if err != nil {
 		return nil, err
 	}
 
-	events, err := createEventBroker(ctx, client)
+	broker, err := createEventBroker(client)
 
 	if err != nil {
 		return nil, err
 	}
 
-	doc := &HtmlDocument{
-		NewHtmlElement(client, root.NodeID, root),
-		conn,
-		client,
-		events,
-		url,
-	}
-
-	doc.init()
-
-	return doc, nil
+	return NewHtmlDocument(conn, client, root, broker), nil
 }
 
 func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
@@ -117,11 +112,11 @@ func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
 	return loadEventFired.Close()
 }
 
-func getRootElement(ctx context.Context, client *cdp.Client) (dom.Node, error) {
+func getRootElement(client *cdp.Client) (dom.Node, error) {
 	args := dom.NewGetDocumentArgs()
-	args.Depth = PointerInt(-1) // lets load the entire document
+	args.Depth = PointerInt(1) // lets load the entire document
 
-	d, err := client.DOM.GetDocument(ctx, args)
+	d, err := client.DOM.GetDocument(context.Background(), args)
 
 	if err != nil {
 		return dom.Node{}, err
@@ -130,23 +125,79 @@ func getRootElement(ctx context.Context, client *cdp.Client) (dom.Node, error) {
 	return d.Root, nil
 }
 
-func createEventBroker(ctx context.Context, client *cdp.Client) (*EventBroker, error) {
-	lfc, err := client.Page.LifecycleEvent(ctx)
+func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
+	load, err := client.Page.LoadEventFired(context.Background())
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewEventBroker(lfc), nil
+	broker := events.NewEventBroker()
+	broker.AddEventStream("load", load, func() interface{} {
+		return new(page.LoadEventFiredReply)
+	})
+
+	err = broker.Start()
+
+	if err != nil {
+		broker.Close()
+
+		return nil, err
+	}
+
+	return broker, nil
 }
 
-func (doc *HtmlDocument) Close() error {
-	doc.events.Stop()
-	doc.events.Close()
+func NewHtmlDocument(
+	conn *rpcc.Conn,
+	client *cdp.Client,
+	root dom.Node,
+	broker *events.EventBroker,
+) *HtmlDocument {
+	doc := new(HtmlDocument)
+	doc.conn = conn
+	doc.client = client
+	doc.events = broker
+	doc.element = NewHtmlElement(client, root.NodeID, root)
+	doc.url = ""
 
-	doc.client.Page.Close(context.Background())
+	if root.BaseURL != nil {
+		doc.url = *root.BaseURL
+	}
 
-	return doc.conn.Close()
+	broker.AddEventListener("load", func(_ interface{}) {
+		doc.Lock()
+		defer doc.Unlock()
+
+		fmt.Println("NAVIGATED")
+
+		updated, err := getRootElement(client)
+
+		if err != nil {
+			// TODO: We need somehow log all errors outside of stdout
+			return
+		}
+
+		// close an old root element
+		doc.element.Close()
+
+		// create a new root element wrapper
+		doc.element = NewHtmlElement(client, updated.NodeID, updated)
+		doc.url = ""
+
+		if updated.BaseURL != nil {
+			doc.url = *updated.BaseURL
+		}
+	})
+
+	return doc
+}
+
+func (doc *HtmlDocument) MarshalJSON() ([]byte, error) {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.MarshalJSON()
 }
 
 func (doc *HtmlDocument) Type() core.Type {
@@ -154,10 +205,38 @@ func (doc *HtmlDocument) Type() core.Type {
 }
 
 func (doc *HtmlDocument) String() string {
+	doc.Lock()
+	defer doc.Unlock()
+
 	return doc.url
 }
 
+func (doc *HtmlDocument) Unwrap() interface{} {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element
+}
+
+func (doc *HtmlDocument) Hash() int {
+	doc.Lock()
+	defer doc.Unlock()
+
+	h := sha512.New()
+
+	out, err := h.Write([]byte(doc.url))
+
+	if err != nil {
+		return 0
+	}
+
+	return out
+}
+
 func (doc *HtmlDocument) Compare(other core.Value) int {
+	doc.Lock()
+	defer doc.Unlock()
+
 	switch other.Type() {
 	case core.HtmlDocumentType:
 		other := other.(*HtmlDocument)
@@ -172,8 +251,104 @@ func (doc *HtmlDocument) Compare(other core.Value) int {
 	}
 }
 
+func (doc *HtmlDocument) Close() error {
+	doc.Lock()
+	defer doc.Unlock()
+
+	doc.events.Stop()
+	doc.events.Close()
+
+	doc.client.Page.Close(context.Background())
+
+	return doc.conn.Close()
+}
+
+func (doc *HtmlDocument) NodeType() values.Int {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.NodeType()
+}
+
+func (doc *HtmlDocument) NodeName() values.String {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.NodeName()
+}
+
+func (doc *HtmlDocument) Length() values.Int {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.Length()
+}
+
+func (doc *HtmlDocument) InnerText() values.String {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.InnerText()
+}
+
+func (doc *HtmlDocument) InnerHtml() values.String {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.InnerHtml()
+}
+
+func (doc *HtmlDocument) Value() core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.Value()
+}
+
+func (doc *HtmlDocument) GetAttributes() core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.GetAttributes()
+}
+
+func (doc *HtmlDocument) GetAttribute(name values.String) core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.GetAttribute(name)
+}
+
+func (doc *HtmlDocument) GetChildNodes() core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.GetChildNodes()
+}
+
+func (doc *HtmlDocument) GetChildNode(idx values.Int) core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.GetChildNode(idx)
+}
+
+func (doc *HtmlDocument) QuerySelector(selector values.String) core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.QuerySelector(selector)
+}
+
+func (doc *HtmlDocument) QuerySelectorAll(selector values.String) core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.QuerySelectorAll(selector)
+}
+
 func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
-	res, err := Eval(
+	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector("%s");
@@ -203,7 +378,7 @@ func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean
 }
 
 func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.Int) error {
-	task := NewWaitTask(
+	task := events.NewWaitTask(
 		doc.client,
 		fmt.Sprintf(`
 			el = document.querySelector("%s");
@@ -215,7 +390,7 @@ func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.
 			return null;
 		`, selector),
 		time.Millisecond*time.Duration(timeout),
-		DefaultPolling,
+		events.DefaultPolling,
 	)
 
 	_, err := task.Run()
@@ -223,19 +398,26 @@ func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.
 	return err
 }
 
-func (doc *HtmlDocument) init() {
-	// doc.events.AddListener("")
-}
-
-func (doc *HtmlDocument) reload() error {
-	root, err := getRootElement(context.Background(), doc.client)
-
-	if err != nil {
-		return err
+func (doc *HtmlDocument) WaitForNavigation(timeout values.Int) error {
+	timer := time.NewTimer(time.Millisecond * time.Duration(timeout))
+	onEvent := make(chan bool)
+	listener := func(_ interface{}) {
+		onEvent <- true
 	}
 
-	doc.url = *root.BaseURL
-	doc.id = root.NodeID
+	defer doc.events.RemoveEventListener("load", listener)
+	defer close(onEvent)
 
-	return nil
+	doc.events.AddEventListener("load", listener)
+
+	for {
+		select {
+		case <-onEvent:
+			timer.Stop()
+
+			return nil
+		case <-timer.C:
+			return core.ErrTimeout
+		}
+	}
 }

@@ -80,7 +80,7 @@ func main() {
 	}
 
 	opts := app.Options{
-		cdpConn,
+		Cdp: cdpConn,
 	}
 
 	stat, _ := os.Stdin.Stat()

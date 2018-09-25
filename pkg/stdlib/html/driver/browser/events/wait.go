@@ -1,8 +1,9 @@
-package browser
+package events
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/eval"
 	"github.com/mafredri/cdp"
 	"time"
 )
@@ -38,7 +39,12 @@ func (task *WaitTask) Run() (core.Value, error) {
 		case <-timer.C:
 			return values.None, core.ErrTimeout
 		default:
-			out, err := task.eval()
+			out, err := eval.Eval(
+				task.client,
+				task.predicate,
+				true,
+				false,
+			)
 
 			// JS expression failed
 			// terminating
@@ -60,16 +66,4 @@ func (task *WaitTask) Run() (core.Value, error) {
 			time.Sleep(task.polling)
 		}
 	}
-
-	// TODO: Do we need this code?
-	return values.None, core.ErrTimeout
-}
-
-func (task *WaitTask) eval() (core.Value, error) {
-	return Eval(
-		task.client,
-		task.predicate,
-		true,
-		false,
-	)
 }
