@@ -1,8 +1,0 @@
-LET reddit = DOCUMENT("https://www.reddit.com/")
-LET urls = ELEMENTS(reddit, 'a[data-click-id="body"]')
-
-FOR url IN urls
-    LET subreddit = DOCUMENT("https://www.reddit.com" + TRIM(url.attributes.href))
-    LET post = ELEMENT(subreddit, 'div[data-test-id="post-content"] > div:nth-child(2) > div')
-
-    RETURN { title: post.children[0].innerText }

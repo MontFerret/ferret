@@ -1,0 +1,9 @@
+LET doc = DOCUMENT("https://github.com/", true)
+LET btn = ELEMENT(doc, ".HeaderMenu a")
+LET clicked = CLICK(btn)
+
+WAIT_ELEMENT(doc, '.IconNav', 5000)
+WAIT(5000)
+
+FOR el IN ELEMENTS(doc, '.IconNav a')
+    RETURN el.innerText

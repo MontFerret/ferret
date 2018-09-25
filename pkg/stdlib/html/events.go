@@ -16,7 +16,7 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arg := args[0]
 	selector := args[1].String()
-	timeout := values.NewInt(1000)
+	timeout := values.NewInt(5000)
 
 	if len(args) > 2 {
 		if args[2].Type() == core.IntType {
@@ -30,7 +30,11 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := arg.(*browser.HtmlDocument)
+	doc, ok := arg.(*browser.HtmlDocument)
+
+	if !ok {
+		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
+	}
 
 	return values.None, doc.WaitForSelector(values.NewString(selector), timeout)
 }

@@ -66,7 +66,7 @@
   version = "v4.2.1"
 
 [[projects]]
-  digest = "1:383ac09778833e583aa5f74cf52a71367c72ba43a7de1460e8ff95182ad93b3b"
+  digest = "1:7ffdd69928c5153fc351132aa80bbcc18a8f8122de1ba592cf42dccb65732361"
   name = "github.com/mafredri/cdp"
   packages = [
     ".",
@@ -115,6 +115,7 @@
     "protocol/tethering",
     "protocol/tracing",
     "rpcc",
+    "session",
   ]
   pruneopts = "UT"
   revision = "75b0ecc5efcff27ac756a33ec71f0db75dc3d21c"
@@ -180,25 +181,6 @@
   pruneopts = "UT"
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
-[[projects]]
-  digest = "1:45ed1634373de798161249f031804bac6f5ec7707bbae94047ecd8e69875936c"
-  name = "golang.org/x/text"
-  packages = [
-    "internal/colltab",
-    "internal/gen",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "language",
-    "search",
-    "transform",
-    "unicode/cldr",
-    "unicode/norm",
-  ]
-  pruneopts = "UT"
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -210,13 +192,17 @@
     "github.com/mafredri/cdp",
     "github.com/mafredri/cdp/devtool",
     "github.com/mafredri/cdp/protocol/dom",
+    "github.com/mafredri/cdp/protocol/emulation",
+    "github.com/mafredri/cdp/protocol/input",
+    "github.com/mafredri/cdp/protocol/page",
+    "github.com/mafredri/cdp/protocol/runtime",
     "github.com/mafredri/cdp/rpcc",
+    "github.com/mafredri/cdp/session",
     "github.com/pkg/errors",
     "github.com/sethgrid/pester",
     "github.com/smartystreets/goconvey/convey",
     "golang.org/x/net/html",
     "golang.org/x/sync/errgroup",
-    "golang.org/x/text/search",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

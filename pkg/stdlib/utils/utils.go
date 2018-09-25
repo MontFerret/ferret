@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func Sleep(_ context.Context, inputs ...core.Value) (core.Value, error) {
+func Wait(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(inputs, 1, 1)
 
 	if err != nil {

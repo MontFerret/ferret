@@ -11,7 +11,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"log"
 	"strconv"
 	"time"
 )
@@ -19,13 +18,17 @@ import (
 const DefaultTimeout = time.Second * 30
 
 type HtmlElement struct {
-	client     *cdp.Client
-	id         dom.NodeID
-	node       dom.Node
-	attributes *values.Object
+	client         *cdp.Client
+	id             dom.NodeID
+	nodeType       values.Int
+	nodeName       values.String
+	value          string
+	attributes     *values.Object
+	children       []dom.NodeID
+	loadedChildren *values.Array
 }
 
-func NewHtmlElement(
+func LoadElement(
 	client *cdp.Client,
 	id dom.NodeID,
 ) (*HtmlElement, error) {
@@ -42,15 +45,46 @@ func NewHtmlElement(
 		dom.
 			NewDescribeNodeArgs().
 			SetNodeID(id).
-			SetDepth(-1),
+			SetDepth(1),
 	)
 
 	if err != nil {
-		log.Println("ERROR:", err)
 		return nil, core.Error(err, strconv.Itoa(int(id)))
 	}
 
-	return &HtmlElement{client, id, node.Node, nil}, nil
+	return NewHtmlElement(client, id, node.Node), nil
+}
+
+func NewHtmlElement(
+	client *cdp.Client,
+	id dom.NodeID,
+	node dom.Node,
+) *HtmlElement {
+	el := new(HtmlElement)
+	el.client = client
+	el.id = id
+	el.nodeType = values.NewInt(node.NodeType)
+	el.nodeName = values.NewString(node.NodeName)
+	el.value = ""
+	el.attributes = parseAttrs(node.Attributes)
+
+	var childCount int
+
+	if node.ChildNodeCount != nil {
+		childCount = *node.ChildNodeCount
+	}
+
+	if node.Value != nil {
+		el.value = *node.Value
+	}
+
+	el.children = make([]dom.NodeID, childCount)
+
+	for idx, child := range node.Children {
+		el.children[idx] = child.NodeID
+	}
+
+	return el
 }
 
 func (el *HtmlElement) Close() error {
@@ -69,19 +103,19 @@ func (el *HtmlElement) MarshalJSON() ([]byte, error) {
 	defer cancelFn()
 
 	args := dom.NewGetOuterHTMLArgs()
-	args.NodeID = &el.node.NodeID
+	args.NodeID = &el.id
 
 	reply, err := el.client.DOM.GetOuterHTML(ctx, args)
 
 	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(el.node.NodeID)))
+		return nil, core.Error(err, strconv.Itoa(int(el.id)))
 	}
 
 	return json.Marshal(reply.OuterHTML)
 }
 
 func (el *HtmlElement) String() string {
-	return *el.node.Value
+	return el.value
 }
 
 func (el *HtmlElement) Compare(other core.Value) int {
@@ -89,8 +123,8 @@ func (el *HtmlElement) Compare(other core.Value) int {
 	case core.HtmlDocumentType:
 		other := other.(*HtmlElement)
 
-		id := int(el.node.NodeID)
-		otherId := int(other.node.NodeID)
+		id := int(el.id)
+		otherId := int(other.id)
 
 		if id == otherId {
 			return 0
@@ -111,13 +145,13 @@ func (el *HtmlElement) Compare(other core.Value) int {
 }
 
 func (el *HtmlElement) Unwrap() interface{} {
-	return el.node
+	return el
 }
 
 func (el *HtmlElement) Hash() int {
 	h := sha512.New()
 
-	out, err := h.Write([]byte(*el.node.Value))
+	out, err := h.Write([]byte(el.value))
 
 	if err != nil {
 		return 0
@@ -131,34 +165,22 @@ func (el *HtmlElement) Value() core.Value {
 }
 
 func (el *HtmlElement) Length() values.Int {
-	if el.node.ChildNodeCount == nil {
-		return values.ZeroInt
-	}
-
-	return values.NewInt(*el.node.ChildNodeCount)
+	return values.NewInt(len(el.children))
 }
 
 func (el *HtmlElement) NodeType() values.Int {
-	return values.NewInt(el.node.NodeType)
+	return el.nodeType
 }
 
 func (el *HtmlElement) NodeName() values.String {
-	return values.NewString(el.node.NodeName)
+	return el.nodeName
 }
 
 func (el *HtmlElement) GetAttributes() core.Value {
-	if el.attributes == nil {
-		el.attributes = el.parseAttrs()
-	}
-
 	return el.attributes
 }
 
 func (el *HtmlElement) GetAttribute(name values.String) core.Value {
-	if el.attributes == nil {
-		el.attributes = el.parseAttrs()
-	}
-
 	val, found := el.attributes.Get(name)
 
 	if !found {
@@ -169,27 +191,19 @@ func (el *HtmlElement) GetAttribute(name values.String) core.Value {
 }
 
 func (el *HtmlElement) GetChildNodes() core.Value {
-	arr := values.NewArray(len(el.node.Children))
-
-	for idx := range el.node.Children {
-		el := el.GetChildNode(values.NewInt(idx))
-
-		if el != values.None {
-			arr.Push(el)
-		}
+	if el.loadedChildren == nil {
+		el.loadedChildren = loadNodes(el.client, el.children)
 	}
 
-	return arr
+	return el.loadedChildren
 }
 
 func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
-	if el.Length() < idx {
-		return values.None
+	if el.loadedChildren == nil {
+		el.loadedChildren = loadNodes(el.client, el.children)
 	}
 
-	childNode := el.node.Children[idx]
-
-	return &HtmlElement{el.client, childNode.NodeID, childNode, nil}
+	return el.loadedChildren.Get(idx)
 }
 
 func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
@@ -199,11 +213,10 @@ func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
 
 	if err != nil {
-		el.logErr(err, selector.String())
 		return values.None
 	}
 
-	res, err := NewHtmlElement(el.client, found.NodeID)
+	res, err := LoadElement(el.client, found.NodeID)
 
 	if err != nil {
 		return values.None
@@ -219,14 +232,13 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
-		el.logErr(err, selector.String())
 		return values.None
 	}
 
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for _, id := range res.NodeIDs {
-		childEl, err := NewHtmlElement(el.client, id)
+		childEl, err := LoadElement(el.client, id)
 
 		if err != nil {
 			return values.None
@@ -257,31 +269,37 @@ func (el *HtmlElement) InnerText() values.String {
 }
 
 func (el *HtmlElement) InnerHtml() values.String {
-	ctx, cancelFn := el.createCtx()
+	ctx, cancelFn := createCtx()
 
 	defer cancelFn()
 
 	res, err := el.client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(el.id))
 
 	if err != nil {
-		el.logErr(err)
-
 		return values.EmptyString
 	}
 
 	return values.NewString(res.OuterHTML)
 }
 
-func (el *HtmlElement) createCtx() (context.Context, context.CancelFunc) {
+func (el *HtmlElement) Click() (values.Boolean, error) {
+	ctx, cancel := createCtx()
+
+	defer cancel()
+
+	return DispatchEvent(ctx, el.client, el.id, "click")
+}
+
+func createCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), DefaultTimeout)
 }
 
-func (el *HtmlElement) parseAttrs() *values.Object {
+func parseAttrs(attrs []string) *values.Object {
 	var attr values.String
 
 	res := values.NewObject()
 
-	for _, el := range el.node.Attributes {
+	for _, el := range attrs {
 		str := values.NewString(el)
 
 		if common.IsAttribute(el) {
@@ -299,11 +317,18 @@ func (el *HtmlElement) parseAttrs() *values.Object {
 	return res
 }
 
-func (el *HtmlElement) logErr(values ...interface{}) {
-	args := make([]interface{}, 0, len(values)+1)
-	args = append(args, "ERROR:")
-	args = append(args, values...)
-	args = append(args, "id:", el.node.NodeID)
+func loadNodes(client *cdp.Client, nodes []dom.NodeID) *values.Array {
+	arr := values.NewArray(len(nodes))
 
-	log.Println(args...)
+	for _, id := range nodes {
+		child, err := LoadElement(client, id)
+
+		if err != nil {
+			break
+		}
+
+		arr.Push(child)
+	}
+
+	return arr
 }

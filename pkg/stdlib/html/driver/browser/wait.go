@@ -1,13 +1,9 @@
 package browser
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/runtime"
 	"time"
 )
 
@@ -15,82 +11,65 @@ type WaitTask struct {
 	client    *cdp.Client
 	predicate string
 	timeout   time.Duration
+	polling   time.Duration
 }
+
+const DefaultPolling = time.Millisecond * time.Duration(200)
 
 func NewWaitTask(
 	client *cdp.Client,
 	predicate string,
 	timeout time.Duration,
+	polling time.Duration,
 ) *WaitTask {
 	return &WaitTask{
 		client,
-		fmt.Sprintf("((function () {%s})())", predicate),
+		predicate,
 		timeout,
+		polling,
 	}
 }
 
 func (task *WaitTask) Run() (core.Value, error) {
-	var result core.Value = values.None
-	var err error
-	var done bool
 	timer := time.NewTimer(task.timeout)
 
-	for !done {
+	for {
 		select {
 		case <-timer.C:
-			err = core.ErrTimeout
-			done = true
+			return values.None, core.ErrTimeout
 		default:
-			out, e := task.exec()
+			out, err := task.eval()
 
-			if e != nil {
-				done = true
+			// JS expression failed
+			// terminating
+			if err != nil {
 				timer.Stop()
-				err = e
 
-				break
+				return values.None, err
 			}
 
+			// JS output is not empty
+			// terminating
 			if out != values.None {
 				timer.Stop()
 
-				result = out
-				done = true
-				break
+				return out, nil
 			}
+
+			// Nothing yet, let's wait before the next try
+			time.Sleep(task.polling)
 		}
 	}
 
-	return result, err
+	// TODO: Do we need this code?
+	return values.None, core.ErrTimeout
 }
 
-func (task *WaitTask) exec() (core.Value, error) {
-	args := runtime.NewEvaluateArgs(task.predicate).SetReturnByValue(true)
-	out, err := task.client.Runtime.Evaluate(context.Background(), args)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if out.ExceptionDetails != nil {
-		ex := out.ExceptionDetails
-		return values.None, core.Error(
-			core.ErrUnexpected,
-			fmt.Sprintf("%s %s", ex.Text, *ex.Exception.Description),
-		)
-	}
-
-	if out.Result.Type != "undefined" {
-		var o interface{}
-
-		err := json.Unmarshal(out.Result.Value, &o)
-
-		if err != nil {
-			return values.None, core.Error(core.ErrUnexpected, err.Error())
-		}
-
-		return values.Parse(o), nil
-	}
-
-	return values.None, nil
+func (task *WaitTask) eval() (core.Value, error) {
+	return Eval(
+		task.client,
+		task.predicate,
+		true,
+		false,
+	)
 }

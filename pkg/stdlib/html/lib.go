@@ -9,5 +9,6 @@ func NewLib() map[string]core.Function {
 		"ELEMENT":        Element,
 		"ELEMENTS":       Elements,
 		"WAIT_ELEMENT":   WaitElement,
+		"CLICK":          Click,
 	}
 }
