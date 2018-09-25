@@ -14,6 +14,7 @@ import (
 	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
+	"github.com/pkg/errors"
 	"strings"
 	"sync"
 	"time"
@@ -43,7 +44,7 @@ func LoadHtmlDocument(
 
 	client := cdp.NewClient(conn)
 
-	err := RunBatch(
+	err := runBatch(
 		func() error {
 			return client.Page.Enable(ctx)
 		},
@@ -96,25 +97,9 @@ func LoadHtmlDocument(
 	return NewHtmlDocument(conn, client, root, broker), nil
 }
 
-func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
-	loadEventFired, err := client.Page.LoadEventFired(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = loadEventFired.Recv()
-
-	if err != nil {
-		return err
-	}
-
-	return loadEventFired.Close()
-}
-
 func getRootElement(client *cdp.Client) (dom.Node, error) {
 	args := dom.NewGetDocumentArgs()
-	args.Depth = PointerInt(1) // lets load the entire document
+	args.Depth = pointerInt(1) // lets load the entire document
 
 	d, err := client.DOM.GetDocument(context.Background(), args)
 
@@ -418,4 +403,19 @@ func (doc *HtmlDocument) WaitForNavigation(timeout values.Int) error {
 			return core.ErrTimeout
 		}
 	}
+}
+
+func (doc *HtmlDocument) Navigate(url values.String) error {
+	ctx := context.Background()
+	repl, err := doc.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
+
+	if err != nil {
+		return err
+	}
+
+	if repl.ErrorText != nil {
+		return errors.New(*repl.ErrorText)
+	}
+
+	return waitForLoadEvent(ctx, doc.client)
 }

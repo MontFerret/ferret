@@ -1,0 +1,13 @@
+LET doc = DOCUMENT("https://github.com/", true)
+
+LET main = ELEMENT(doc, '.application-main')
+LOG('innerText:start')
+LET mainTxt = main.innerText
+LOG('innerText:end')
+
+NAVIGATE(doc, "https://github.com/features")
+
+LET features = ELEMENT(doc, '.application-main')
+LET featuresTxt = features.innerText
+
+RETURN mainTxt == featuresTxt

@@ -1,16 +1,18 @@
 package browser
 
 import (
+	"context"
+	"github.com/mafredri/cdp"
 	"golang.org/x/sync/errgroup"
 )
 
-func PointerInt(input int) *int {
+func pointerInt(input int) *int {
 	return &input
 }
 
-type BatchFunc = func() error
+type batchFunc = func() error
 
-func RunBatch(funcs ...BatchFunc) error {
+func runBatch(funcs ...batchFunc) error {
 	eg := errgroup.Group{}
 
 	for _, f := range funcs {
@@ -18,4 +20,24 @@ func RunBatch(funcs ...BatchFunc) error {
 	}
 
 	return eg.Wait()
+}
+
+func contextWithTimeout() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), DefaultTimeout)
+}
+
+func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
+	loadEventFired, err := client.Page.LoadEventFired(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = loadEventFired.Recv()
+
+	if err != nil {
+		return err
+	}
+
+	return loadEventFired.Close()
 }

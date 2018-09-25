@@ -1,6 +1,7 @@
 package values
 
 import (
+	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"time"
 )
@@ -208,6 +209,18 @@ func Parse(input interface{}) core.Value {
 	}
 
 	return None
+}
+
+func Unmarshal(value json.RawMessage) (core.Value, error) {
+	var o interface{}
+
+	err := json.Unmarshal(value, &o)
+
+	if err != nil {
+		return None, err
+	}
+
+	return Parse(o), nil
 }
 
 func ToBoolean(input core.Value) core.Value {
