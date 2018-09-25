@@ -1,6 +1,8 @@
 # Ferret
 > Write what you want, not how you want
 
+![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
+
 ## What is it?
 ```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like machine learning and analytics.    
 Having it's own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
@@ -117,6 +119,22 @@ Please use `exit` or `Ctrl-D` to exit this program.
 >       artist: username.innerText,
 >        track: title.innerText
 >    }
+>%
+```
+
+```shell
+Welcome to Ferret REPL
+Please use `exit` or `Ctrl-D` to exit this program.
+>%
+>LET doc = DOCUMENT("https://github.com/", true)
+>LET btn = ELEMENT(doc, ".HeaderMenu a")
+
+>CLICK(btn)
+>WAIT_NAVIGATION(doc)
+>WAIT_ELEMENT(doc, '.IconNav')
+
+>FOR el IN ELEMENTS(doc, '.IconNav a')
+>    RETURN TRIM(el.innerText)
 >%
 ```
 
