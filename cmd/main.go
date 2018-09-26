@@ -1,10 +1,10 @@
-package main
+package cmd
 
 import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/cmd/cli/app"
+	"github.com/MontFerret/ferret/cmd/cli"
 	"github.com/MontFerret/ferret/pkg/browser"
 	"io/ioutil"
 	"os"
@@ -79,7 +79,7 @@ func main() {
 		defer b.Close()
 	}
 
-	opts := app.Options{
+	opts := cli.Options{
 		Cdp: cdpConn,
 	}
 
@@ -97,16 +97,16 @@ func main() {
 			return
 		}
 
-		app.Exec(string(b), opts)
+		cli.Exec(string(b), opts)
 		return
 	}
 
 	// filename was passed
 	if flag.NArg() > 0 {
-		app.ExecFile(flag.Arg(0), opts)
+		cli.ExecFile(flag.Arg(0), opts)
 		return
 	}
 
 	// nothing was passed, run REPL
-	app.Repl(Version, opts)
+	cli.Repl(Version, opts)
 }

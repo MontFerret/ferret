@@ -11,17 +11,10 @@ default: build
 
 build: install vet generate test compile
 
-compile: compile_cli compile_server
-
-compile_cli:
+compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	-ldflags "-X main.Version=${VERSION}" \
-	${DIR_CMD}/cli/main.go
-
-compile_server:
-	go build -v -o ${DIR_BIN}/ferret_server \
-	-ldflags "-X main.Version=${VERSION}" \
-	${DIR_CMD}/server/main.go
+	${DIR_CMD}/main.go
 
 install:
 	dep ensure
