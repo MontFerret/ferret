@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
@@ -29,7 +30,7 @@ type HtmlElement struct {
 	nodeName       values.String
 	innerHtml      values.String
 	innerText      *common.LazyValue
-	value          values.String
+	value          core.Value
 	attributes     *common.LazyValue
 	children       []dom.NodeID
 	loadedChildren *common.LazyValue
@@ -203,7 +204,7 @@ func (el *HtmlElement) Unwrap() interface{} {
 func (el *HtmlElement) Hash() int {
 	h := sha512.New()
 
-	out, err := h.Write([]byte(el.value))
+	out, err := h.Write([]byte(strconv.Itoa(int(el.id))))
 
 	if err != nil {
 		return 0
@@ -213,7 +214,22 @@ func (el *HtmlElement) Hash() int {
 }
 
 func (el *HtmlElement) Value() core.Value {
-	return values.None
+	if !el.IsConnected() {
+		return el.value
+	}
+
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	val, err := eval.Property(ctx, el.client, el.id, "value")
+
+	if err != nil {
+		return el.value
+	}
+
+	el.value = val
+
+	return val
 }
 
 func (el *HtmlElement) Clone() core.Value {
