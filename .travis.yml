@@ -15,7 +15,7 @@ go:
 addons:
  apt:
   sources:
-   - deb http://ppa.launchpad.net/jonathonf/antlr4/ubuntu trusty main
+   - sourceline: 'deb http://ppa.launchpad.net/jonathonf/antlr4/ubuntu trusty main'
   packages:
    - oracle-java8-set-default
    - antlr4
