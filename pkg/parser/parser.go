@@ -1,4 +1,3 @@
-//go:generate antlr4 -Xexact-output-dir -o fql -package fql -visitor -Dlanguage=Go antlr/FqlLexer.g4 antlr/FqlParser.g4
 package parser
 
 import (

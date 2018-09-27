@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlLexer.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from /Users/timofei.voronov/Work/src/github.com/MontFerret/ferret/pkg/parser/antlr/FqlLexer.g4 by ANTLR 4.7.1. DO NOT EDIT.
 
 package fql
 
