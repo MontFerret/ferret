@@ -1,4 +1,4 @@
-// Code generated from /Users/timofei.voronov/Work/src/github.com/MontFerret/ferret/pkg/parser/antlr/FqlParser.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"

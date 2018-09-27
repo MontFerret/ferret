@@ -6,7 +6,6 @@ VERSION ?= $(shell git describe --tags --always --dirty)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_CMD = ./cmd
-DIR_PKG_PARSER = ${PWD}/pkg/parser
 
 default: build
 
@@ -24,13 +23,7 @@ test:
 	go test ${DIR_PKG}/...
 
 generate:
-	antlr4 -Xexact-output-dir \
-	 -o ${DIR_PKG_PARSER}/fql \
-	 -package fql \
-	 -visitor \
-	 -Dlanguage=Go \
-	 ${DIR_PKG_PARSER}/antlr/FqlLexer.g4 \
-	 ${DIR_PKG_PARSER}/antlr/FqlParser.g4
+	go generate ${DIR_PKG}/...
 
 doc:
 	godoc -http=:6060 -index
