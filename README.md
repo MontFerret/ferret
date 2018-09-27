@@ -10,27 +10,37 @@ It's extremely portable, extensible and fast.
 
 ## Give me an example
 The following example demonstrates use of dynamic pages.    
-Here we are getting the top songs from SoundCloud.    
-Since the page is rendered dynamically, there data doesn't get showed up immediately.    
-Therefore, we need to handle it.   
-First, we load the document with ``true`` flag, which instructs ``ferret`` to load this page using Chrome.   
-Second, we wait for a specific element gets rendered.    
-Third, once it appears we get all elements with this class name and iterate over the elements extracting data. 
+We are loading main Google Search page, type search criteria into a input box and click search button.   
+The click action triggers a redirect, so we wait till it ends.   
+Once the page loaded, we iterate over all search elements and assign result to a variable.   
+The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
 ```aql
-LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
+LET g = DOCUMENT("https://www.google.com/", true)
+LET inputBox = ELEMENT(g, 'input[name="q"]')
 
-WAIT_ELEMENT(doc, '.chartTrack__details')
-LET tracks = ELEMENTS(doc, '.chartTrack__details')
+INPUT(inputBox, "ferret")
 
-FOR track IN tracks
-    LET username = ELEMENT(track, '.chartTrack__username')
-    LET title = ELEMENT(track, '.chartTrack__title')
-    
-    RETURN {
-       artist: username.innerText,
-        track: title.innerText
-    }
+LET searchBtn = ELEMENT(g, 'input[name="btnK"]')
+
+CLICK(searchBtn)
+
+WAIT_NAVIGATION(g)
+
+LET result = (
+    FOR result IN ELEMENTS(g, '.g')
+       RETURN {
+           title: ELEMENT(result, 'h3 > a'),
+           description: ELEMENT(result, '.st'),
+           url: ELEMENT(result, 'cite')
+       }
+)
+
+RETURN (
+    FOR i IN result
+    FILTER i.title != NONE
+    RETURN i
+)
 ```
 
 ## Features
