@@ -5,11 +5,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/http"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 )
 
 func Document(ctx context.Context, inputs ...core.Value) (core.Value, error) {
-	url, js, err := documentArgs(inputs)
+	url, dynamic, err := documentArgs(inputs)
 
 	if err != nil {
 		return values.None, err
@@ -17,10 +17,10 @@ func Document(ctx context.Context, inputs ...core.Value) (core.Value, error) {
 
 	var drv driver.Driver
 
-	if !js {
-		drv, err = driver.FromContext(ctx, driver.Http)
+	if !dynamic {
+		drv, err = driver.FromContext(ctx, driver.Static)
 	} else {
-		drv, err = driver.FromContext(ctx, driver.Cdp)
+		drv, err = driver.FromContext(ctx, driver.Dynamic)
 	}
 
 	if err != nil {
@@ -43,13 +43,13 @@ func DocumentParse(ctx context.Context, inputs ...core.Value) (core.Value, error
 		return arg1, core.Error(core.TypeError(a1.Type(), core.StringType), "arg 1")
 	}
 
-	drv, err := driver.FromContext(ctx, driver.Http)
+	drv, err := driver.FromContext(ctx, driver.Static)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	return drv.(*http.HttpDriver).ParseDocument(ctx, arg1.String())
+	return drv.(*static.Driver).ParseDocument(ctx, arg1.String())
 }
 
 func documentArgs(inputs []core.Value) (values.String, values.Boolean, error) {

@@ -5,23 +5,27 @@ import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/http"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 )
 
-const Cdp = "cdp"
-const Http = "http"
+type DriverName string
+
+const (
+	Dynamic DriverName = "dynamic"
+	Static  DriverName = "static"
+)
 
 type Driver interface {
 	GetDocument(ctx context.Context, url string) (values.HtmlNode, error)
 	Close() error
 }
 
-func ToContext(ctx context.Context, name string, drv Driver) context.Context {
+func ToContext(ctx context.Context, name DriverName, drv Driver) context.Context {
 	return context.WithValue(ctx, name, drv)
 }
 
-func FromContext(ctx context.Context, name string) (Driver, error) {
+func FromContext(ctx context.Context, name DriverName) (Driver, error) {
 	val := ctx.Value(name)
 
 	drv, ok := val.(Driver)
@@ -33,10 +37,10 @@ func FromContext(ctx context.Context, name string) (Driver, error) {
 	return nil, core.Error(core.ErrNotFound, fmt.Sprintf("%s driver", name))
 }
 
-func WithCdpDriver(ctx context.Context, addr string) context.Context {
-	return context.WithValue(ctx, Cdp, browser.NewDriver(addr))
+func WithDynamicDriver(ctx context.Context, addr string) context.Context {
+	return context.WithValue(ctx, Dynamic, dynamic.NewDriver(addr))
 }
 
-func WithHttpDriver(ctx context.Context, opts ...http.Option) context.Context {
-	return context.WithValue(ctx, Http, http.NewDriver(opts...))
+func WithStaticDriver(ctx context.Context, opts ...static.Option) context.Context {
+	return context.WithValue(ctx, Static, static.NewDriver(opts...))
 }

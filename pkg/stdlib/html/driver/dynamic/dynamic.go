@@ -1,4 +1,4 @@
-package browser
+package dynamic
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-type CdpDriver struct {
+type Driver struct {
 	sync.Mutex
 	dev       *devtool.DevTools
 	conn      *rpcc.Conn
@@ -21,14 +21,14 @@ type CdpDriver struct {
 	contextID target.BrowserContextID
 }
 
-func NewDriver(address string) *CdpDriver {
-	drv := new(CdpDriver)
+func NewDriver(address string) *Driver {
+	drv := new(Driver)
 	drv.dev = devtool.New(address)
 
 	return drv
 }
 
-func (drv *CdpDriver) GetDocument(ctx context.Context, url string) (values.HtmlNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode, error) {
 	err := drv.init(ctx)
 
 	if err != nil {
@@ -57,7 +57,7 @@ func (drv *CdpDriver) GetDocument(ctx context.Context, url string) (values.HtmlN
 	return LoadHtmlDocument(ctx, conn, url)
 }
 
-func (drv *CdpDriver) Close() error {
+func (drv *Driver) Close() error {
 	drv.Lock()
 	defer drv.Unlock()
 
@@ -70,7 +70,7 @@ func (drv *CdpDriver) Close() error {
 	return nil
 }
 
-func (drv *CdpDriver) init(ctx context.Context) error {
+func (drv *Driver) init(ctx context.Context) error {
 	drv.Lock()
 	defer drv.Unlock()
 

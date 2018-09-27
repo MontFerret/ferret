@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
 )
 
 /*
@@ -29,7 +29,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		el, ok := arg1.(*browser.HtmlElement)
+		el, ok := arg1.(*dynamic.HtmlElement)
 
 		if !ok {
 			return values.False, core.Error(core.ErrInvalidType, "expected dynamic element")
@@ -47,7 +47,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		doc, ok := arg1.(*browser.HtmlDocument)
+		doc, ok := arg1.(*dynamic.HtmlDocument)
 
 		if !ok {
 			return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -83,7 +83,7 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(*browser.HtmlDocument)
+	doc, ok := args[0].(*dynamic.HtmlDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")

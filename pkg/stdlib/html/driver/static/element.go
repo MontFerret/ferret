@@ -1,4 +1,4 @@
-package http
+package static
 
 import (
 	"crypto/sha512"

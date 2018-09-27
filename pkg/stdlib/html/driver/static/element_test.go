@@ -1,8 +1,8 @@
-package http_test
+package static_test
 
 import (
 	"bytes"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/http"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -250,7 +250,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("body"))
+		el, err := static.NewHtmlElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -266,7 +266,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("body"))
+		el, err := static.NewHtmlElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -290,7 +290,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("body"))
+		el, err := static.NewHtmlElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -315,7 +315,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("#q"))
+		el, err := static.NewHtmlElement(doc.Find("#q"))
 
 		So(err, ShouldBeNil)
 
@@ -342,7 +342,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("h2"))
+		el, err := static.NewHtmlElement(doc.Find("h2"))
 
 		So(err, ShouldBeNil)
 
@@ -369,7 +369,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("#content"))
+		el, err := static.NewHtmlElement(doc.Find("#content"))
 
 		So(err, ShouldBeNil)
 
@@ -385,7 +385,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHtmlElement(doc.Find("body .card-img-top:nth-child(1)"))
+		el, err := static.NewHtmlElement(doc.Find("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
 

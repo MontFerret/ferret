@@ -1,4 +1,4 @@
-package browser
+package dynamic
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/eval"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/events"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
 	"github.com/corpix/uarand"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
@@ -27,6 +27,7 @@ type HtmlDocument struct {
 	events  *events.EventBroker
 	url     string
 	element *HtmlElement
+	history []*HtmlElement
 }
 
 func LoadHtmlDocument(
@@ -82,7 +83,7 @@ func LoadHtmlDocument(
 		return nil, err
 	}
 
-	root, err := getRootElement(client)
+	root, innerHtml, err := getRootElement(client)
 
 	if err != nil {
 		return nil, err
@@ -94,56 +95,42 @@ func LoadHtmlDocument(
 		return nil, err
 	}
 
-	return NewHtmlDocument(conn, client, root, broker), nil
+	return NewHtmlDocument(conn, client, broker, root, innerHtml), nil
 }
 
-func getRootElement(client *cdp.Client) (dom.Node, error) {
+func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
 	args := dom.NewGetDocumentArgs()
 	args.Depth = pointerInt(1) // lets load the entire document
+	ctx := context.Background()
 
-	d, err := client.DOM.GetDocument(context.Background(), args)
-
-	if err != nil {
-		return dom.Node{}, err
-	}
-
-	return d.Root, nil
-}
-
-func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
-	load, err := client.Page.LoadEventFired(context.Background())
+	d, err := client.DOM.GetDocument(ctx, args)
 
 	if err != nil {
-		return nil, err
+		return dom.Node{}, values.EmptyString, err
 	}
 
-	broker := events.NewEventBroker()
-	broker.AddEventStream("load", load, func() interface{} {
-		return new(page.LoadEventFiredReply)
-	})
-
-	err = broker.Start()
+	innerHtml, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
 
 	if err != nil {
-		broker.Close()
-
-		return nil, err
+		return dom.Node{}, values.EmptyString, err
 	}
 
-	return broker, nil
+	return d.Root, values.NewString(innerHtml.OuterHTML), nil
 }
 
 func NewHtmlDocument(
 	conn *rpcc.Conn,
 	client *cdp.Client,
-	root dom.Node,
 	broker *events.EventBroker,
+	root dom.Node,
+	innerHtml values.String,
 ) *HtmlDocument {
 	doc := new(HtmlDocument)
 	doc.conn = conn
 	doc.client = client
 	doc.events = broker
-	doc.element = NewHtmlElement(client, root.NodeID, root)
+	doc.element = NewHtmlElement(client, broker, root.NodeID, root, innerHtml)
+	doc.history = make([]*HtmlElement, 0, 10)
 	doc.url = ""
 
 	if root.BaseURL != nil {
@@ -154,18 +141,18 @@ func NewHtmlDocument(
 		doc.Lock()
 		defer doc.Unlock()
 
-		updated, err := getRootElement(client)
+		updated, innerHtml, err := getRootElement(client)
 
 		if err != nil {
 			// TODO: We need somehow log all errors outside of stdout
 			return
 		}
 
-		// close an old root element
-		doc.element.Close()
+		// put the root element in a history list, since it might be still used
+		doc.history = append(doc.history, doc.element)
 
 		// create a new root element wrapper
-		doc.element = NewHtmlElement(client, updated.NodeID, updated)
+		doc.element = NewHtmlElement(client, broker, updated.NodeID, updated, innerHtml)
 		doc.url = ""
 
 		if updated.BaseURL != nil {
@@ -241,6 +228,11 @@ func (doc *HtmlDocument) Close() error {
 	doc.events.Stop()
 	doc.events.Close()
 
+	for _, h := range doc.history {
+		h.Close()
+	}
+
+	doc.element.Close()
 	doc.client.Page.Close(context.Background())
 
 	return doc.conn.Close()

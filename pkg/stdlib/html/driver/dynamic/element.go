@@ -1,4 +1,4 @@
-package browser
+package dynamic
 
 import (
 	"bytes"
@@ -7,30 +7,37 @@ import (
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser/events"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"strconv"
+	"sync"
 	"time"
 )
 
 const DefaultTimeout = time.Second * 30
 
 type HtmlElement struct {
+	sync.Mutex
 	client         *cdp.Client
+	broker         *events.EventBroker
+	connected      bool
 	id             dom.NodeID
 	nodeType       values.Int
 	nodeName       values.String
+	innerHtml      values.String
+	innerText      *common.LazyValue
 	value          string
-	attributes     *values.Object
+	attributes     *common.LazyValue
 	children       []dom.NodeID
-	loadedChildren *values.Array
+	loadedChildren *common.LazyValue
 }
 
 func LoadElement(
 	client *cdp.Client,
+	broker *events.EventBroker,
 	id dom.NodeID,
 ) (*HtmlElement, error) {
 	if client == nil {
@@ -46,28 +53,70 @@ func LoadElement(
 		dom.
 			NewDescribeNodeArgs().
 			SetNodeID(id).
-			SetDepth(1),
+			SetDepth(-1),
 	)
 
 	if err != nil {
 		return nil, core.Error(err, strconv.Itoa(int(id)))
 	}
 
-	return NewHtmlElement(client, id, node.Node), nil
+	innerHtml, err := client.DOM.GetOuterHTML(
+		ctx,
+		dom.NewGetOuterHTMLArgs().SetNodeID(id),
+	)
+
+	if err != nil {
+		return nil, core.Error(err, strconv.Itoa(int(id)))
+	}
+
+	return NewHtmlElement(
+		client,
+		broker,
+		id,
+		node.Node,
+		values.NewString(innerHtml.OuterHTML),
+	), nil
 }
 
 func NewHtmlElement(
 	client *cdp.Client,
+	broker *events.EventBroker,
 	id dom.NodeID,
 	node dom.Node,
+	innerHtml values.String,
 ) *HtmlElement {
 	el := new(HtmlElement)
 	el.client = client
+	el.broker = broker
+	el.connected = true
 	el.id = id
 	el.nodeType = values.NewInt(node.NodeType)
 	el.nodeName = values.NewString(node.NodeName)
+	el.innerHtml = innerHtml
+	el.innerText = common.NewLazyValue(func() (core.Value, error) {
+		h := el.InnerHtml()
+
+		if h == values.EmptyString {
+			return h, nil
+		}
+
+		buff := bytes.NewBuffer([]byte(h))
+
+		parsed, err := goquery.NewDocumentFromReader(buff)
+
+		if err != nil {
+			return values.EmptyString, err
+		}
+
+		return values.NewString(parsed.Text()), nil
+	})
+	el.attributes = common.NewLazyValue(func() (core.Value, error) {
+		return parseAttrs(node.Attributes), nil
+	})
 	el.value = ""
-	el.attributes = parseAttrs(node.Attributes)
+	el.loadedChildren = common.NewLazyValue(func() (core.Value, error) {
+		return loadNodes(client, broker, el.children)
+	})
 
 	var childCount int
 
@@ -89,8 +138,6 @@ func NewHtmlElement(
 }
 
 func (el *HtmlElement) Close() error {
-	// el.client = nil
-
 	return nil
 }
 
@@ -178,11 +225,23 @@ func (el *HtmlElement) NodeName() values.String {
 }
 
 func (el *HtmlElement) GetAttributes() core.Value {
-	return el.attributes
+	val, err := el.attributes.Value()
+
+	if err != nil {
+		return values.None
+	}
+
+	return val
 }
 
 func (el *HtmlElement) GetAttribute(name values.String) core.Value {
-	val, found := el.attributes.Get(name)
+	attrs, err := el.attributes.Value()
+
+	if err != nil {
+		return values.None
+	}
+
+	val, found := attrs.(*values.Object).Get(name)
 
 	if !found {
 		return values.None
@@ -192,19 +251,23 @@ func (el *HtmlElement) GetAttribute(name values.String) core.Value {
 }
 
 func (el *HtmlElement) GetChildNodes() core.Value {
-	if el.loadedChildren == nil {
-		el.loadedChildren = loadNodes(el.client, el.children)
+	val, err := el.loadedChildren.Value()
+
+	if err != nil {
+		return values.NewArray(0)
 	}
 
-	return el.loadedChildren
+	return val
 }
 
 func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
-	if el.loadedChildren == nil {
-		el.loadedChildren = loadNodes(el.client, el.children)
+	val, err := el.loadedChildren.Value()
+
+	if err != nil {
+		return values.None
 	}
 
-	return el.loadedChildren.Get(idx)
+	return val.(*values.Array).Get(idx)
 }
 
 func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
@@ -217,7 +280,7 @@ func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 		return values.None
 	}
 
-	res, err := LoadElement(el.client, found.NodeID)
+	res, err := LoadElement(el.client, el.broker, found.NodeID)
 
 	if err != nil {
 		return values.None
@@ -239,7 +302,7 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for _, id := range res.NodeIDs {
-		childEl, err := LoadElement(el.client, id)
+		childEl, err := LoadElement(el.client, el.broker, id)
 
 		if err != nil {
 			return values.None
@@ -252,84 +315,23 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 }
 
 func (el *HtmlElement) InnerText() values.String {
-	h := el.InnerHtml()
-
-	if h == values.EmptyString {
-		return h
-	}
-
-	buff := bytes.NewBuffer([]byte(h))
-
-	parsed, err := goquery.NewDocumentFromReader(buff)
+	val, err := el.innerText.Value()
 
 	if err != nil {
 		return values.EmptyString
 	}
 
-	return values.NewString(parsed.Text())
+	return val.(values.String)
 }
 
 func (el *HtmlElement) InnerHtml() values.String {
-	ctx, cancelFn := createCtx()
-
-	defer cancelFn()
-
-	res, err := el.client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(el.id))
-
-	if err != nil {
-		return values.EmptyString
-	}
-
-	return values.NewString(res.OuterHTML)
+	return el.innerHtml
 }
 
 func (el *HtmlElement) Click() (values.Boolean, error) {
-	ctx, cancel := createCtx()
+	ctx, cancel := contextWithTimeout()
 
 	defer cancel()
 
 	return events.DispatchEvent(ctx, el.client, el.id, "click")
-}
-
-func createCtx() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), DefaultTimeout)
-}
-
-func parseAttrs(attrs []string) *values.Object {
-	var attr values.String
-
-	res := values.NewObject()
-
-	for _, el := range attrs {
-		str := values.NewString(el)
-
-		if common.IsAttribute(el) {
-			attr = str
-			res.Set(str, values.EmptyString)
-		} else {
-			current, ok := res.Get(attr)
-
-			if ok {
-				res.Set(attr, current.(values.String).Concat(values.SpaceString).Concat(str))
-			}
-		}
-	}
-
-	return res
-}
-
-func loadNodes(client *cdp.Client, nodes []dom.NodeID) *values.Array {
-	arr := values.NewArray(len(nodes))
-
-	for _, id := range nodes {
-		child, err := LoadElement(client, id)
-
-		if err != nil {
-			break
-		}
-
-		arr.Push(child)
-	}
-
-	return arr
 }

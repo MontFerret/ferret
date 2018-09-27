@@ -1,4 +1,4 @@
-package http
+package static
 
 import (
 	"bytes"
@@ -11,11 +11,11 @@ import (
 	httpx "net/http"
 )
 
-type HttpDriver struct {
+type Driver struct {
 	client *pester.Client
 }
 
-func NewDriver(setters ...Option) *HttpDriver {
+func NewDriver(setters ...Option) *Driver {
 	client := pester.New()
 	client.Concurrency = 3
 	client.MaxRetries = 5
@@ -25,10 +25,10 @@ func NewDriver(setters ...Option) *HttpDriver {
 		setter(client)
 	}
 
-	return &HttpDriver{client}
+	return &Driver{client}
 }
 
-func (d *HttpDriver) GetDocument(ctx context.Context, url string) (values.HtmlNode, error) {
+func (d *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode, error) {
 	req, err := httpx.NewRequest(httpx.MethodGet, url, nil)
 
 	if err != nil {
@@ -58,7 +58,7 @@ func (d *HttpDriver) GetDocument(ctx context.Context, url string) (values.HtmlNo
 	return NewHtmlDocument(url, doc)
 }
 
-func (d *HttpDriver) ParseDocument(ctx context.Context, str string) (values.HtmlNode, error) {
+func (d *Driver) ParseDocument(ctx context.Context, str string) (values.HtmlNode, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)
@@ -70,7 +70,7 @@ func (d *HttpDriver) ParseDocument(ctx context.Context, str string) (values.Html
 	return NewHtmlDocument("#string", doc)
 }
 
-func (d *HttpDriver) Close() error {
+func (d *Driver) Close() error {
 	d.client = nil
 
 	return nil

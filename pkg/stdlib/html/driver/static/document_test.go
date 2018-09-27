@@ -1,8 +1,8 @@
-package http_test
+package static_test
 
 import (
 	"bytes"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/http"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -228,7 +228,7 @@ func TestDocument(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			el, err := http.NewHtmlElement(doc.Selection)
+			el, err := static.NewHtmlElement(doc.Selection)
 
 			So(err, ShouldBeNil)
 

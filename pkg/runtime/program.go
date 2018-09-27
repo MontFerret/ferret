@@ -27,8 +27,8 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 	}
 
 	ctx = opts.withContext(ctx)
-	ctx = driver.WithCdpDriver(ctx, opts.cdp)
-	ctx = driver.WithHttpDriver(ctx)
+	ctx = driver.WithDynamicDriver(ctx, opts.cdp)
+	ctx = driver.WithStaticDriver(ctx)
 
 	out, err := p.exp.Exec(ctx, scope)
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/browser"
+	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
 )
 
 func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
@@ -30,7 +30,7 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg.(*browser.HtmlDocument)
+	doc, ok := arg.(*dynamic.HtmlDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -52,7 +52,7 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(*browser.HtmlDocument)
+	doc, ok := args[0].(*dynamic.HtmlDocument)
 
 	if !ok {
 		return values.None, core.Error(core.ErrInvalidType, "expected dynamic document")
