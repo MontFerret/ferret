@@ -19,5 +19,5 @@ addons:
 
 before_install:
  - sudo add-apt-repository ppa:jonathonf/antlr4 -y
- - sudo apt-get update
- - sudo apt-get install -y antlr4
+ - sudo apt-get update -q
+ - sudo apt-get install antlr4 -y
