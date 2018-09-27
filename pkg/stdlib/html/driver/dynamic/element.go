@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha512"
 	"encoding/json"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
@@ -161,9 +162,6 @@ func (el *HtmlElement) Type() core.Type {
 }
 
 func (el *HtmlElement) MarshalJSON() ([]byte, error) {
-	el.Lock()
-	defer el.Unlock()
-
 	val, err := el.innerText.Value()
 
 	if err != nil {
