@@ -27,7 +27,6 @@ type HtmlDocument struct {
 	events  *events.EventBroker
 	url     string
 	element *HtmlElement
-	history []*HtmlElement
 }
 
 func LoadHtmlDocument(
@@ -130,7 +129,6 @@ func NewHtmlDocument(
 	doc.client = client
 	doc.events = broker
 	doc.element = NewHtmlElement(client, broker, root.NodeID, root, innerHtml)
-	doc.history = make([]*HtmlElement, 0, 10)
 	doc.url = ""
 
 	if root.BaseURL != nil {
@@ -148,8 +146,8 @@ func NewHtmlDocument(
 			return
 		}
 
-		// put the root element in a history list, since it might be still used
-		doc.history = append(doc.history, doc.element)
+		// close the prev element
+		doc.element.Close()
 
 		// create a new root element wrapper
 		doc.element = NewHtmlElement(client, broker, updated.NodeID, updated, innerHtml)
@@ -227,10 +225,6 @@ func (doc *HtmlDocument) Close() error {
 
 	doc.events.Stop()
 	doc.events.Close()
-
-	for _, h := range doc.history {
-		h.Close()
-	}
 
 	doc.element.Close()
 	doc.client.Page.Close(context.Background())

@@ -125,230 +125,33 @@ func NewHtmlElement(
 
 	el.children = createChildrenArray(node.Children)
 
-	broker.AddEventListener("reload", func(_ interface{}) {
-		el.Lock()
-		defer el.Unlock()
-
-		el.connected = false
-	})
-
-	broker.AddEventListener("attr:modified", func(message interface{}) {
-		reply, ok := message.(*dom.AttributeModifiedReply)
-
-		// well....
-		if !ok {
-			return
-		}
-
-		// it's not for this element
-		if reply.NodeID != el.id {
-			return
-		}
-
-		// they are not event loaded
-		// just ignore the event
-		if !el.attributes.Ready() {
-			return
-		}
-
-		val, err := el.attributes.Value()
-
-		// failed to load
-		// TODO: Log
-		if err != nil {
-			return
-		}
-
-		attrs, ok := val.(*values.Object)
-
-		// TODO: Log
-		if !ok {
-			return
-		}
-
-		// TODO: actually, we need to sync it too...
-		attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
-	})
-
-	broker.AddEventListener("attr:removed", func(message interface{}) {
-		reply, ok := message.(*dom.AttributeRemovedReply)
-
-		// well....
-		if !ok {
-			return
-		}
-
-		// it's not for this element
-		if reply.NodeID != el.id {
-			return
-		}
-
-		// they are not event loaded
-		// just ignore the event
-		if !el.attributes.Ready() {
-			return
-		}
-
-		val, err := el.attributes.Value()
-
-		// failed to load
-		// TODO: Log
-		if err != nil {
-			return
-		}
-
-		attrs, ok := val.(*values.Object)
-
-		// TODO: Log
-		if !ok {
-			return
-		}
-
-		// TODO: actually, we need to sync it too...
-		attrs.Remove(values.NewString(reply.Name))
-	})
-
-	broker.AddEventListener("children:count", func(message interface{}) {
-		reply, ok := message.(*dom.ChildNodeCountUpdatedReply)
-
-		if !ok {
-			return
-		}
-
-		if reply.NodeID != el.id {
-			return
-		}
-
-		node, err := client.DOM.DescribeNode(context.Background(), dom.NewDescribeNodeArgs())
-
-		if err != nil {
-			return
-		}
-
-		el.Lock()
-		defer el.Unlock()
-
-		el.children = createChildrenArray(node.Node.Children)
-	})
-
-	broker.AddEventListener("children:inserted", func(message interface{}) {
-		reply, ok := message.(*dom.ChildNodeInsertedReply)
-
-		if !ok {
-			return
-		}
-
-		if reply.ParentNodeID != el.id {
-			return
-		}
-
-		targetIdx := -1
-		prevId := reply.PreviousNodeID
-		nextId := reply.Node.NodeID
-
-		el.Lock()
-		defer el.Unlock()
-
-		for idx, id := range el.children {
-			if id == prevId {
-				targetIdx = idx
-				break
-			}
-		}
-
-		if targetIdx == -1 {
-			return
-		}
-
-		arr := el.children
-		el.children = append(arr[:targetIdx], append([]dom.NodeID{nextId}, arr[targetIdx:]...)...)
-
-		if !el.loadedChildren.Ready() {
-			return
-		}
-
-		loaded, err := el.loadedChildren.Value()
-
-		if err != nil {
-			return
-		}
-
-		loadedArr := loaded.(*values.Array)
-
-		loadedEl, err := LoadElement(el.client, el.broker, nextId)
-
-		if err != nil {
-			return
-		}
-
-		loadedArr.Insert(values.NewInt(targetIdx), loadedEl)
-
-		newInnerHtml, err := loadInnerHtml(el.client, el.id)
-
-		if err != nil {
-			return
-		}
-
-		el.innerHtml = newInnerHtml
-	})
-
-	broker.AddEventListener("children:deleted", func(message interface{}) {
-		reply, ok := message.(*dom.ChildNodeRemovedReply)
-
-		if !ok {
-			return
-		}
-
-		if reply.ParentNodeID != el.id {
-			return
-		}
-
-		targetIdx := -1
-		targetId := reply.NodeID
-
-		el.Lock()
-		defer el.Unlock()
-
-		for idx, id := range el.children {
-			if id == targetId {
-				targetIdx = idx
-				break
-			}
-		}
-
-		if targetIdx == -1 {
-			return
-		}
-
-		arr := el.children
-		el.children = append(arr[:targetIdx], arr[targetIdx+1:]...)
-
-		if !el.loadedChildren.Ready() {
-			return
-		}
-
-		loaded, err := el.loadedChildren.Value()
-
-		if err != nil {
-			return
-		}
-
-		loadedArr := loaded.(*values.Array)
-		loadedArr.RemoveAt(values.NewInt(targetIdx))
-
-		newInnerHtml, err := loadInnerHtml(el.client, el.id)
-
-		if err != nil {
-			return
-		}
-
-		el.innerHtml = newInnerHtml
-	})
+	broker.AddEventListener("reload", el.handlePageReload)
+	broker.AddEventListener("attr:modified", el.handleAttrModified)
+	broker.AddEventListener("attr:removed", el.handleAttrRemoved)
+	broker.AddEventListener("children:count", el.handleChildrenCountChanged)
+	broker.AddEventListener("children:inserted", el.handleChildInserted)
+	broker.AddEventListener("children:deleted", el.handleChildDeleted)
 
 	return el
 }
 
 func (el *HtmlElement) Close() error {
+	el.Lock()
+	defer el.Unlock()
+
+	// already closed
+	if !el.connected {
+		return nil
+	}
+
+	el.connected = false
+	el.broker.RemoveEventListener("reload", el.handlePageReload)
+	el.broker.RemoveEventListener("attr:modified", el.handleAttrModified)
+	el.broker.RemoveEventListener("attr:removed", el.handleAttrRemoved)
+	el.broker.RemoveEventListener("children:count", el.handleChildrenCountChanged)
+	el.broker.RemoveEventListener("children:inserted", el.handleChildInserted)
+	el.broker.RemoveEventListener("children:deleted", el.handleChildDeleted)
+
 	return nil
 }
 
@@ -553,4 +356,221 @@ func (el *HtmlElement) IsConnected() values.Boolean {
 	defer el.Unlock()
 
 	return el.connected
+}
+
+func (el *HtmlElement) handlePageReload(message interface{}) {
+	el.Close()
+}
+
+func (el *HtmlElement) handleAttrModified(message interface{}) {
+	reply, ok := message.(*dom.AttributeModifiedReply)
+
+	// well....
+	if !ok {
+		return
+	}
+
+	// it's not for this element
+	if reply.NodeID != el.id {
+		return
+	}
+
+	// they are not event loaded
+	// just ignore the event
+	if !el.attributes.Ready() {
+		return
+	}
+
+	val, err := el.attributes.Value()
+
+	// failed to load
+	// TODO: Log
+	if err != nil {
+		return
+	}
+
+	attrs, ok := val.(*values.Object)
+
+	// TODO: Log
+	if !ok {
+		return
+	}
+
+	// TODO: actually, we need to sync it too...
+	attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
+}
+
+func (el *HtmlElement) handleAttrRemoved(message interface{}) {
+	reply, ok := message.(*dom.AttributeRemovedReply)
+
+	// well....
+	if !ok {
+		return
+	}
+
+	// it's not for this element
+	if reply.NodeID != el.id {
+		return
+	}
+
+	// they are not event loaded
+	// just ignore the event
+	if !el.attributes.Ready() {
+		return
+	}
+
+	val, err := el.attributes.Value()
+
+	// failed to load
+	// TODO: Log
+	if err != nil {
+		return
+	}
+
+	attrs, ok := val.(*values.Object)
+
+	// TODO: Log
+	if !ok {
+		return
+	}
+
+	// TODO: actually, we need to sync it too...
+	attrs.Remove(values.NewString(reply.Name))
+}
+
+func (el *HtmlElement) handleChildrenCountChanged(message interface{}) {
+	reply, ok := message.(*dom.ChildNodeCountUpdatedReply)
+
+	if !ok {
+		return
+	}
+
+	if reply.NodeID != el.id {
+		return
+	}
+
+	node, err := el.client.DOM.DescribeNode(context.Background(), dom.NewDescribeNodeArgs())
+
+	if err != nil {
+		return
+	}
+
+	el.Lock()
+	defer el.Unlock()
+
+	el.children = createChildrenArray(node.Node.Children)
+}
+
+func (el *HtmlElement) handleChildInserted(message interface{}) {
+	reply, ok := message.(*dom.ChildNodeInsertedReply)
+
+	if !ok {
+		return
+	}
+
+	if reply.ParentNodeID != el.id {
+		return
+	}
+
+	targetIdx := -1
+	prevId := reply.PreviousNodeID
+	nextId := reply.Node.NodeID
+
+	el.Lock()
+	defer el.Unlock()
+
+	for idx, id := range el.children {
+		if id == prevId {
+			targetIdx = idx
+			break
+		}
+	}
+
+	if targetIdx == -1 {
+		return
+	}
+
+	arr := el.children
+	el.children = append(arr[:targetIdx], append([]dom.NodeID{nextId}, arr[targetIdx:]...)...)
+
+	if !el.loadedChildren.Ready() {
+		return
+	}
+
+	loaded, err := el.loadedChildren.Value()
+
+	if err != nil {
+		return
+	}
+
+	loadedArr := loaded.(*values.Array)
+
+	loadedEl, err := LoadElement(el.client, el.broker, nextId)
+
+	if err != nil {
+		return
+	}
+
+	loadedArr.Insert(values.NewInt(targetIdx), loadedEl)
+
+	newInnerHtml, err := loadInnerHtml(el.client, el.id)
+
+	if err != nil {
+		return
+	}
+
+	el.innerHtml = newInnerHtml
+}
+
+func (el *HtmlElement) handleChildDeleted(message interface{}) {
+	reply, ok := message.(*dom.ChildNodeRemovedReply)
+
+	if !ok {
+		return
+	}
+
+	if reply.ParentNodeID != el.id {
+		return
+	}
+
+	targetIdx := -1
+	targetId := reply.NodeID
+
+	el.Lock()
+	defer el.Unlock()
+
+	for idx, id := range el.children {
+		if id == targetId {
+			targetIdx = idx
+			break
+		}
+	}
+
+	if targetIdx == -1 {
+		return
+	}
+
+	arr := el.children
+	el.children = append(arr[:targetIdx], arr[targetIdx+1:]...)
+
+	if !el.loadedChildren.Ready() {
+		return
+	}
+
+	loaded, err := el.loadedChildren.Value()
+
+	if err != nil {
+		return
+	}
+
+	loadedArr := loaded.(*values.Array)
+	loadedArr.RemoveAt(values.NewInt(targetIdx))
+
+	newInnerHtml, err := loadInnerHtml(el.client, el.id)
+
+	if err != nil {
+		return
+	}
+
+	el.innerHtml = newInnerHtml
 }
