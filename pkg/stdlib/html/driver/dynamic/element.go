@@ -23,13 +23,13 @@ type HtmlElement struct {
 	sync.Mutex
 	client         *cdp.Client
 	broker         *events.EventBroker
-	connected      *common.SyncValue
+	connected      values.Boolean
 	id             dom.NodeID
 	nodeType       values.Int
 	nodeName       values.String
-	innerHtml      *common.SyncValue
+	innerHtml      values.String
 	innerText      *common.LazyValue
-	value          string
+	value          values.String
 	attributes     *common.LazyValue
 	children       []dom.NodeID
 	loadedChildren *common.LazyValue
@@ -85,11 +85,11 @@ func NewHtmlElement(
 	el := new(HtmlElement)
 	el.client = client
 	el.broker = broker
-	el.connected = common.NewSyncValue(values.True)
+	el.connected = values.True
 	el.id = id
 	el.nodeType = values.NewInt(node.NodeType)
 	el.nodeName = values.NewString(node.NodeName)
-	el.innerHtml = common.NewSyncValue(innerHtml)
+	el.innerHtml = innerHtml
 	el.innerText = common.NewLazyValue(func() (core.Value, error) {
 		h := el.InnerHtml()
 
@@ -110,7 +110,7 @@ func NewHtmlElement(
 	el.attributes = common.NewLazyValue(func() (core.Value, error) {
 		return parseAttrs(node.Attributes), nil
 	})
-	el.value = ""
+	el.value = values.EmptyString
 	el.loadedChildren = common.NewLazyValue(func() (core.Value, error) {
 		if !el.IsConnected() {
 			return values.NewArray(0), nil
@@ -120,13 +120,16 @@ func NewHtmlElement(
 	})
 
 	if node.Value != nil {
-		el.value = *node.Value
+		el.value = values.NewString(*node.Value)
 	}
 
 	el.children = createChildrenArray(node.Children)
 
 	broker.AddEventListener("reload", func(_ interface{}) {
-		el.connected.Set(values.False)
+		el.Lock()
+		defer el.Unlock()
+
+		el.connected = false
 	})
 
 	broker.AddEventListener("attr:modified", func(message interface{}) {
@@ -286,7 +289,7 @@ func NewHtmlElement(
 			return
 		}
 
-		el.innerHtml.Set(newInnerHtml)
+		el.innerHtml = newInnerHtml
 	})
 
 	broker.AddEventListener("children:deleted", func(message interface{}) {
@@ -339,7 +342,7 @@ func NewHtmlElement(
 			return
 		}
 
-		el.innerHtml.Set(newInnerHtml)
+		el.innerHtml = newInnerHtml
 	})
 
 	return el
@@ -354,24 +357,14 @@ func (el *HtmlElement) Type() core.Type {
 }
 
 func (el *HtmlElement) MarshalJSON() ([]byte, error) {
-	ctx, cancelFn := context.WithTimeout(context.Background(), DefaultTimeout)
+	el.Lock()
+	defer el.Unlock()
 
-	defer cancelFn()
-
-	args := dom.NewGetOuterHTMLArgs()
-	args.NodeID = &el.id
-
-	reply, err := el.client.DOM.GetOuterHTML(ctx, args)
-
-	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(el.id)))
-	}
-
-	return json.Marshal(reply.OuterHTML)
+	return json.Marshal(el.innerHtml)
 }
 
 func (el *HtmlElement) String() string {
-	return el.value
+	return el.value.String()
 }
 
 func (el *HtmlElement) Compare(other core.Value) int {
@@ -479,6 +472,10 @@ func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
 }
 
 func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
+	if !el.IsConnected() {
+		return values.NewArray(0)
+	}
+
 	ctx := context.Background()
 
 	selectorArgs := dom.NewQuerySelectorArgs(el.id, selector.String())
@@ -498,6 +495,10 @@ func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 }
 
 func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
+	if !el.IsConnected() {
+		return values.NewArray(0)
+	}
+
 	ctx := context.Background()
 
 	selectorArgs := dom.NewQuerySelectorAllArgs(el.id, selector.String())
@@ -533,7 +534,10 @@ func (el *HtmlElement) InnerText() values.String {
 }
 
 func (el *HtmlElement) InnerHtml() values.String {
-	return el.innerHtml.Get().(values.String)
+	el.Lock()
+	defer el.Unlock()
+
+	return el.innerHtml
 }
 
 func (el *HtmlElement) Click() (values.Boolean, error) {
@@ -545,5 +549,8 @@ func (el *HtmlElement) Click() (values.Boolean, error) {
 }
 
 func (el *HtmlElement) IsConnected() values.Boolean {
-	return el.connected.Get().(values.Boolean)
+	el.Lock()
+	defer el.Unlock()
+
+	return el.connected
 }
