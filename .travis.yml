@@ -1,5 +1,8 @@
 language: go
 
+before_install:
+ - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
 go:
 - "1.8"
 - "1.9"
