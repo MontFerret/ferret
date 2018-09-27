@@ -201,6 +201,10 @@ func (doc *HtmlDocument) Hash() int {
 	return out
 }
 
+func (doc *HtmlDocument) Clone() core.Value {
+	return values.None
+}
+
 func (doc *HtmlDocument) Compare(other core.Value) int {
 	doc.Lock()
 	defer doc.Unlock()

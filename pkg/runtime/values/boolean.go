@@ -109,3 +109,7 @@ func (t Boolean) Hash() int {
 
 	return out
 }
+
+func (t Boolean) Clone() core.Value {
+	return t
+}

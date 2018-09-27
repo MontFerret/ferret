@@ -45,6 +45,7 @@ type Value interface {
 	Compare(other Value) int
 	Unwrap() interface{}
 	Hash() int
+	Clone() Value
 }
 
 func IsTypeOf(value Value, check Type) bool {

@@ -74,6 +74,14 @@ func (b *Binary) Hash() int {
 	return out
 }
 
+func (b *Binary) Clone() core.Value {
+	c := make([]byte, len(b.values))
+
+	copy(c, b.values)
+
+	return NewBinary(c)
+}
+
 func (b *Binary) Length() Int {
 	return NewInt(len(b.values))
 }

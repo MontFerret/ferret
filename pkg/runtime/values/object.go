@@ -106,6 +106,16 @@ func (t *Object) Hash() int {
 	return out
 }
 
+func (t *Object) Clone() core.Value {
+	c := NewObject()
+
+	for k, v := range t.value {
+		c.Set(NewString(k), v)
+	}
+
+	return c
+}
+
 func (t *Object) Length() Int {
 	return Int(len(t.value))
 }

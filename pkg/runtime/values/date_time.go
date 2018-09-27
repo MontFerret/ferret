@@ -97,3 +97,7 @@ func (t DateTime) Hash() int {
 
 	return out
 }
+
+func (t DateTime) Clone() core.Value {
+	return NewDateTime(t.Time)
+}

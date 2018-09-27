@@ -216,6 +216,10 @@ func (el *HtmlElement) Value() core.Value {
 	return values.None
 }
 
+func (el *HtmlElement) Clone() core.Value {
+	return values.None
+}
+
 func (el *HtmlElement) Length() values.Int {
 	return values.NewInt(len(el.children))
 }
@@ -235,7 +239,8 @@ func (el *HtmlElement) GetAttributes() core.Value {
 		return values.None
 	}
 
-	return val
+	// returning shallow copy
+	return val.Clone()
 }
 
 func (el *HtmlElement) GetAttribute(name values.String) core.Value {
@@ -384,19 +389,19 @@ func (el *HtmlElement) handleAttrModified(message interface{}) {
 	val, err := el.attributes.Value()
 
 	// failed to load
-	// TODO: Log
 	if err != nil {
 		return
 	}
 
+	el.Lock()
+	defer el.Unlock()
+
 	attrs, ok := val.(*values.Object)
 
-	// TODO: Log
 	if !ok {
 		return
 	}
 
-	// TODO: actually, we need to sync it too...
 	attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
 }
 
@@ -422,14 +427,15 @@ func (el *HtmlElement) handleAttrRemoved(message interface{}) {
 	val, err := el.attributes.Value()
 
 	// failed to load
-	// TODO: Log
 	if err != nil {
 		return
 	}
 
+	el.Lock()
+	defer el.Unlock()
+
 	attrs, ok := val.(*values.Object)
 
-	// TODO: Log
 	if !ok {
 		return
 	}

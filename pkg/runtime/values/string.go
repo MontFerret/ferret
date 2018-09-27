@@ -105,6 +105,10 @@ func (t String) Hash() int {
 	return out
 }
 
+func (t String) Clone() core.Value {
+	return t
+}
+
 func (t String) Length() Int {
 	return Int(len(t))
 }

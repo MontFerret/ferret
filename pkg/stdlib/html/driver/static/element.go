@@ -77,6 +77,12 @@ func (el *HtmlElement) Hash() int {
 	return out
 }
 
+func (el *HtmlElement) Clone() core.Value {
+	c, _ := NewHtmlElement(el.selection.Clone())
+
+	return c
+}
+
 func (el *HtmlElement) NodeType() values.Int {
 	nodes := el.selection.Nodes
 

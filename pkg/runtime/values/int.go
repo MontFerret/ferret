@@ -113,3 +113,7 @@ func (t Int) Unwrap() interface{} {
 func (t Int) Hash() int {
 	return int(t)
 }
+
+func (t Int) Clone() core.Value {
+	return t
+}

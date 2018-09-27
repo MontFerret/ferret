@@ -1288,11 +1288,11 @@ func TestFunctionCall(t *testing.T) {
 		So(string(out), ShouldEqual, `"int"`)
 	})
 
-	Convey("Should compile SLEEP(10) RETURN 1", t, func() {
+	Convey("Should compile WAIT(10) RETURN 1", t, func() {
 		c := compiler.New()
 
 		prog, err := c.Compile(`
-			SLEEP(10)
+			WAIT(10)
 			RETURN 1
 		`)
 
@@ -1305,13 +1305,13 @@ func TestFunctionCall(t *testing.T) {
 		So(string(out), ShouldEqual, `1`)
 	})
 
-	Convey("Should compile LET duration = 10 SLEEP(duration) RETURN 1", t, func() {
+	Convey("Should compile LET duration = 10 WAIT(duration) RETURN 1", t, func() {
 		c := compiler.New()
 
 		prog, err := c.Compile(`
 			LET duration = 10
 
-			SLEEP(duration)
+			WAIT(duration)
 
 			RETURN 1
 		`)
@@ -1332,7 +1332,7 @@ func TestFunctionCall(t *testing.T) {
 			FOR i IN [1, 2, 3, 4]
 				LET duration = 10
 
-				SLEEP(duration)
+				WAIT(duration)
 
 				RETURN i * 2
 		`)

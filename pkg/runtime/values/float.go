@@ -129,3 +129,7 @@ func (t Float) Hash() int {
 
 	return out
 }
+
+func (t Float) Clone() core.Value {
+	return t
+}

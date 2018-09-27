@@ -95,6 +95,16 @@ func (t *Array) Hash() int {
 	return out
 }
 
+func (t *Array) Clone() core.Value {
+	c := NewArray(len(t.value))
+
+	for _, el := range t.value {
+		c.Push(el)
+	}
+
+	return c
+}
+
 func (t *Array) Length() Int {
 	return Int(len(t.value))
 }

@@ -36,3 +36,7 @@ func (t *none) Unwrap() interface{} {
 func (t *none) Hash() int {
 	return 0
 }
+
+func (t *none) Clone() core.Value {
+	return None
+}
