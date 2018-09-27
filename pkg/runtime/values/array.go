@@ -149,3 +149,18 @@ func (t *Array) IndexOf(item core.Value) Int {
 
 	return res
 }
+
+func (t *Array) Insert(idx Int, value core.Value) {
+	t.value = append(t.value[:idx], append([]core.Value{value}, t.value[idx:]...)...)
+}
+
+func (t *Array) RemoveAt(idx Int) {
+	i := int(idx)
+	max := len(t.value) - 1
+
+	if i > max {
+		return
+	}
+
+	t.value = append(t.value[:i], t.value[i+1:]...)
+}

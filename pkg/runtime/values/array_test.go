@@ -271,4 +271,89 @@ func TestArray(t *testing.T) {
 			So(len(s2), ShouldEqual, arr.Length()-2)
 		})
 	})
+
+	Convey(".Insert", t, func() {
+		Convey("Should insert an item in the middle of an array", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(0),
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+				values.NewInt(4),
+				values.NewInt(5),
+			)
+
+			lenBefore := arr.Length()
+
+			arr.Insert(3, values.NewInt(100))
+
+			lenAfter := arr.Length()
+
+			So(lenAfter, ShouldBeGreaterThan, lenBefore)
+			So(arr.Get(3), ShouldEqual, 100)
+		})
+	})
+
+	Convey(".RemoveAt", t, func() {
+		Convey("Should remove an item from the middle", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(0),
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+				values.NewInt(4),
+				values.NewInt(5),
+			)
+
+			lenBefore := arr.Length()
+
+			arr.RemoveAt(3)
+
+			lenAfter := arr.Length()
+
+			So(lenAfter, ShouldBeLessThan, lenBefore)
+			So(arr.Get(3), ShouldEqual, 4)
+		})
+
+		Convey("Should remove an item from the end", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(0),
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+				values.NewInt(4),
+				values.NewInt(5),
+			)
+
+			lenBefore := arr.Length()
+
+			arr.RemoveAt(5)
+
+			lenAfter := arr.Length()
+
+			So(lenAfter, ShouldBeLessThan, lenBefore)
+			So(lenAfter, ShouldEqual, 5)
+			So(arr.Get(4), ShouldEqual, 4)
+		})
+
+		Convey("Should remove an item from the beginning", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(0),
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+				values.NewInt(4),
+				values.NewInt(5),
+			)
+
+			lenBefore := arr.Length()
+
+			arr.RemoveAt(0)
+
+			lenAfter := arr.Length()
+
+			So(lenAfter, ShouldBeLessThan, lenBefore)
+			So(arr.Get(0), ShouldEqual, 1)
+		})
+	})
 }

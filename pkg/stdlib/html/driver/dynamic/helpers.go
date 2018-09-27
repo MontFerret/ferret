@@ -50,6 +50,26 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
+func loadInnerHtml(client *cdp.Client, id dom.NodeID) (values.String, error) {
+	res, err := client.DOM.GetOuterHTML(context.Background(), dom.NewGetOuterHTMLArgs().SetNodeID(id))
+
+	if err != nil {
+		return "", err
+	}
+
+	return values.NewString(res.OuterHTML), err
+}
+
+func createChildrenArray(nodes []dom.Node) []dom.NodeID {
+	children := make([]dom.NodeID, len(nodes))
+
+	for idx, child := range nodes {
+		children[idx] = child.NodeID
+	}
+
+	return children
+}
+
 func loadNodes(client *cdp.Client, broker *events.EventBroker, nodes []dom.NodeID) (*values.Array, error) {
 	arr := values.NewArray(len(nodes))
 

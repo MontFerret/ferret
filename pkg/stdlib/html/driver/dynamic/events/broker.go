@@ -177,14 +177,20 @@ func (broker *EventBroker) Close() error {
 
 func (broker *EventBroker) emit(name string, message interface{}) {
 	broker.Lock()
-	defer broker.Unlock()
+
 	listeners, ok := broker.listeners[name]
 
 	if !ok {
+		broker.Unlock()
 		return
 	}
 
-	for _, listener := range listeners {
+	// we copy the list of listeners and unlock the broker before the execution.
+	// we do it in order to avoid deadlocks during calls of event listeners
+	snapshot := listeners[:]
+	broker.Unlock()
+
+	for _, listener := range snapshot {
 		listener(message)
 	}
 }

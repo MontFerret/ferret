@@ -150,6 +150,10 @@ func (t *Object) Set(key String, value core.Value) {
 	}
 }
 
+func (t *Object) Remove(key String) {
+	delete(t.value, string(key))
+}
+
 func (t *Object) SetIn(path []core.Value, value core.Value) error {
 	return SetIn(t, path, value)
 }

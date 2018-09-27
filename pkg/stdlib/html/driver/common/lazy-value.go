@@ -27,6 +27,13 @@ func NewLazyValue(factory LazyFactory) *LazyValue {
 	return lz
 }
 
+func (lv *LazyValue) Ready() bool {
+	lv.Lock()
+	defer lv.Unlock()
+
+	return lv.ready
+}
+
 func (lv *LazyValue) Value() (core.Value, error) {
 	lv.Lock()
 	defer lv.Unlock()
