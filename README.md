@@ -60,8 +60,8 @@ For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3
 ### Prerequisites
 * Go >=1.6
 * GoDep
-* Chrome (optional)
 * GNU Make
+* Chrome or Docker (optional)
 
 ```sh
 make build
