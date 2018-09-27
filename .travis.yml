@@ -19,7 +19,8 @@ addons:
 
 before_install:
  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
- - sudo curl -O http://www.antlr.org/download/antlr-4.7.1-complete.jar
- - export CLASSPATH=".:/home/travis/build/christoph2/pyA2L/antlr-4.6-complete.jar:$CLASSPATH"
+ - sudo curl -O https://www.antlr.org/download/antlr-4.7.1-complete.jar
+ - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
  - alias antlr4='java -jar /usr/local/lib/antlr-4.7.1-complete.jar'
- - java -version
+ - alias grun='java org.antlr.v4.gui.TestRig'
+ - which antlr4
