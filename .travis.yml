@@ -14,10 +14,8 @@ go:
 
 addons:
  apt:
-   packages:
+  sources:
+   - deb http://ppa.launchpad.net/jonathonf/antlr4/ubuntu trusty main
+  packages:
    - oracle-java8-set-default
-
-before_install:
- - sudo add-apt-repository ppa:jonathonf/antlr4 -y
- - sudo apt-get update -q
- - sudo apt-get install antlr4 -y
+   - antlr4
