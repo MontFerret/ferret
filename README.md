@@ -1,5 +1,7 @@
 # Ferret
 > Write what you want, not how you want
+[![Build Status](https://secure.travis-ci.org/MontFerret/ferret.svg?branch=master)](http://travis-ci.org/MontFerret/ferret)  
+
 
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
