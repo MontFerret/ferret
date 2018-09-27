@@ -139,6 +139,9 @@ type FqlParserListener interface {
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
 
+	// EnterForTernaryExpression is called when entering the forTernaryExpression production.
+	EnterForTernaryExpression(c *ForTernaryExpressionContext)
+
 	// EnterEqualityOperator is called when entering the equalityOperator production.
 	EnterEqualityOperator(c *EqualityOperatorContext)
 
@@ -282,6 +285,9 @@ type FqlParserListener interface {
 
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)
+
+	// ExitForTernaryExpression is called when exiting the forTernaryExpression production.
+	ExitForTernaryExpression(c *ForTernaryExpressionContext)
 
 	// ExitEqualityOperator is called when exiting the equalityOperator production.
 	ExitEqualityOperator(c *EqualityOperatorContext)

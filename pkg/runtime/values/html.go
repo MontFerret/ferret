@@ -2,30 +2,38 @@ package values
 
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
-type HtmlNode interface {
-	core.Value
+type (
+	HtmlNode interface {
+		core.Value
 
-	NodeType() Int
+		NodeType() Int
 
-	NodeName() String
+		NodeName() String
 
-	Length() Int
+		Length() Int
 
-	InnerText() String
+		InnerText() String
 
-	InnerHtml() String
+		InnerHtml() String
 
-	Value() core.Value
+		Value() core.Value
 
-	GetAttributes() core.Value
+		GetAttributes() core.Value
 
-	GetAttribute(name String) core.Value
+		GetAttribute(name String) core.Value
 
-	GetChildNodes() core.Value
+		GetChildNodes() core.Value
 
-	GetChildNode(idx Int) core.Value
+		GetChildNode(idx Int) core.Value
 
-	QuerySelector(selector String) core.Value
+		QuerySelector(selector String) core.Value
 
-	QuerySelectorAll(selector String) core.Value
-}
+		QuerySelectorAll(selector String) core.Value
+	}
+
+	HtmlDocument interface {
+		HtmlNode
+
+		Url() core.Value
+	}
+)

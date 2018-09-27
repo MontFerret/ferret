@@ -12,5 +12,6 @@ func NewLib() map[string]core.Function {
 		"WAIT_NAVIGATION": WaitNavigation,
 		"CLICK":           Click,
 		"NAVIGATE":        Navigate,
+		"INPUT":           Input,
 	}
 }

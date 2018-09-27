@@ -24,13 +24,7 @@ func NewHtmlElement(node *goquery.Selection) (*HtmlElement, error) {
 }
 
 func (el *HtmlElement) MarshalJSON() ([]byte, error) {
-	html, err := el.selection.Html()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(html)
+	return json.Marshal(el.InnerText().String())
 }
 
 func (el *HtmlElement) Type() core.Type {
@@ -38,7 +32,7 @@ func (el *HtmlElement) Type() core.Type {
 }
 
 func (el *HtmlElement) String() string {
-	return el.selection.Text()
+	return el.InnerHtml().String()
 }
 
 func (el *HtmlElement) Compare(other core.Value) int {

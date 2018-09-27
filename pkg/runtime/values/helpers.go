@@ -67,6 +67,14 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 					result = el.GetChildNodes()
 				case "length":
 					result = el.Length()
+				case "url":
+					if result.Type() == core.HtmlDocumentType {
+						doc, ok := result.(HtmlDocument)
+
+						if ok {
+							result = doc.Url()
+						}
+					}
 				default:
 					result = None
 				}

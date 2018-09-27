@@ -23,6 +23,7 @@ bodyExpression
 returnExpression
     : Return (Distinct)? expression
     | Return (Distinct)? OpenParen forExpression CloseParen
+    | Return forTernaryExpression
     ;
 
 forExpression
@@ -124,6 +125,7 @@ forExpressionReturn
 variableDeclaration
     : Let Identifier Assign expression
     | Let Identifier Assign OpenParen forExpression CloseParen
+    | Let Identifier Assign forTernaryExpression
     ;
 
 variable
@@ -225,6 +227,12 @@ expression
     | noneLiteral
     ;
 
+forTernaryExpression
+    : expression QuestionMark expression? Colon OpenParen forExpression CloseParen
+    | expression QuestionMark OpenParen forExpression CloseParen Colon expression
+    | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen forExpression CloseParen
+    ;
+
 equalityOperator
     : Gt
     | Lt
@@ -249,7 +257,7 @@ mathOperator
 
 unaryOperator
     : Not
-    | Plus 
+    | Plus
     | Minus
     | Like
     ;

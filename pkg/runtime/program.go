@@ -40,3 +40,13 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 
 	return out.MarshalJSON()
 }
+
+func (p *Program) RunP(ctx context.Context, setters ...Option) []byte {
+	out, err := p.Run(ctx, setters...)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}

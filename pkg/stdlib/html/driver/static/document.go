@@ -2,12 +2,13 @@ package static
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 )
 
 type HtmlDocument struct {
 	*HtmlElement
-	url string
+	url values.String
 }
 
 func NewHtmlDocument(
@@ -28,7 +29,7 @@ func NewHtmlDocument(
 		return nil, err
 	}
 
-	return &HtmlDocument{el, url}, nil
+	return &HtmlDocument{el, values.NewString(url)}, nil
 }
 
 func (el *HtmlDocument) Type() core.Type {
@@ -38,8 +39,9 @@ func (el *HtmlDocument) Type() core.Type {
 func (el *HtmlDocument) Compare(other core.Value) int {
 	switch other.Type() {
 	case core.HtmlDocumentType:
-		// TODO: complete the comparison
-		return -1
+		otherDoc := other.(values.HtmlDocument)
+
+		return el.url.Compare(otherDoc.Url())
 	default:
 		if other.Type() > core.HtmlDocumentType {
 			return -1
@@ -47,4 +49,8 @@ func (el *HtmlDocument) Compare(other core.Value) int {
 
 		return 1
 	}
+}
+
+func (el *HtmlDocument) Url() core.Value {
+	return el.url
 }

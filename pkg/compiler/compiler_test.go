@@ -1602,6 +1602,92 @@ func TestInOperator(t *testing.T) {
 	})
 }
 
+func TestForTernaryExpression(t *testing.T) {
+	Convey("RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)", t, func() {
+		c := compiler.New()
+
+		out1, err := c.CompileP(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `[2,4,6,8,10]`)
+
+		out2, err := c.CompileP(`
+			LET foo = TRUE
+			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out2), ShouldEqual, `true`)
+	})
+
+	Convey("RETURN foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)", t, func() {
+		c := compiler.New()
+
+		out1, err := c.CompileP(`
+			LET foo = FALSE
+			RETURN foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `[2,4,6,8,10]`)
+
+		out2, err := c.CompileP(`
+			LET foo = TRUE
+			RETURN foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out2), ShouldEqual, `[1,2,3,4,5]`)
+	})
+
+	Convey("LET res =  foo ? TRUE : (FOR i IN 1..5 RETURN i*2)", t, func() {
+		c := compiler.New()
+
+		out1, err := c.CompileP(`
+			LET foo = FALSE
+			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2) 
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `[2,4,6,8,10]`)
+
+		out2, err := c.CompileP(`
+			LET foo = TRUE
+			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out2), ShouldEqual, `true`)
+	})
+
+	Convey("LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)", t, func() {
+		c := compiler.New()
+
+		out1, err := c.CompileP(`
+			LET foo = FALSE
+			LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `[2,4,6,8,10]`)
+
+		out2, err := c.CompileP(`
+			LET foo = TRUE
+			LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out2), ShouldEqual, `[1,2,3,4,5]`)
+	})
+}
+
 //func TestHtml(t *testing.T) {
 //	Convey("Should load a document", t, func() {
 //		c := compiler.New()

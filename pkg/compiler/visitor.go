@@ -117,7 +117,13 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 		}
 
 		exp = out
-	} else {
+
+		return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
+	}
+
+	forIn := ctx.ForExpression()
+
+	if forIn != nil {
 		out, err := v.doVisitForExpression(ctx.ForExpression().(*fql.ForExpressionContext), scope.Fork())
 
 		if err != nil {
@@ -125,9 +131,23 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 		}
 
 		exp = out
+
+		return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
 	}
 
-	return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
+	forInTernary := ctx.ForTernaryExpression()
+
+	if forInTernary != nil {
+		out, err := v.doVisitForTernaryExpression(forInTernary.(*fql.ForTernaryExpressionContext), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return expressions.NewReturnExpression(v.getSourceMap(ctx), out)
+	}
+
+	return nil, ErrNotImplemented
 }
 
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
@@ -609,11 +629,21 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 
 	if exp != nil {
 		init, err = v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
-	} else {
+	}
+
+	if init == nil && err == nil {
 		forIn := ctx.ForExpression()
 
 		if forIn != nil {
 			init, err = v.doVisitForExpression(forIn.(*fql.ForExpressionContext), scope)
+		}
+	}
+
+	if init == nil && err == nil {
+		forTer := ctx.ForTernaryExpression()
+
+		if forTer != nil {
+			init, err = v.doVisitForTernaryExpression(forTer.(*fql.ForTernaryExpressionContext), scope)
 		}
 	}
 
@@ -661,16 +691,22 @@ func (v *visitor) doVisitChildren(node antlr.RuleNode, scope *scope) ([]core.Exp
 		return make([]core.Expression, 0, 0), nil
 	}
 
-	result := make([]core.Expression, len(children))
+	result := make([]core.Expression, 0, len(children))
 
-	for idx, child := range children {
+	for _, child := range children {
+		_, ok := child.(antlr.TerminalNode)
+
+		if ok {
+			continue
+		}
+
 		out, err := v.visit(child, scope)
 
 		if err != nil {
 			return nil, err
 		}
 
-		result[idx] = out
+		result = append(result, out)
 	}
 
 	return result, nil
@@ -794,24 +830,10 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 			return nil, err
 		}
 
-		var test core.Expression
-		var consequent core.Expression
-		var alternate core.Expression
-
-		if len(exps) == 3 {
-			test = exps[0]
-			consequent = exps[1]
-			alternate = exps[2]
-		} else {
-			test = exps[0]
-			alternate = exps[1]
-		}
-
-		return expressions.NewConditionExpression(
+		return v.createTernaryOperator(
 			v.getSourceMap(ctx),
-			test,
-			consequent,
-			alternate,
+			exps,
+			scope,
 		)
 	}
 
@@ -858,14 +880,6 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 
 	if rangeOp != nil {
 		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
-	}
-
-	seq := ctx.ExpressionSequence()
-
-	if seq != nil {
-		// seq := seq.(*fql.ExpressionSequenceContext)
-
-		return nil, core.Error(ErrNotImplemented, "expression sequence")
 	}
 
 	// TODO: Complete it
@@ -979,6 +993,42 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 	}
 
 	return out, err
+}
+
+func (v *visitor) doVisitForTernaryExpression(ctx *fql.ForTernaryExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
+	exps, err := v.doVisitChildren(ctx, scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return v.createTernaryOperator(
+		v.getSourceMap(ctx),
+		exps,
+		scope,
+	)
+}
+
+func (v *visitor) createTernaryOperator(src core.SourceMap, exps []core.Expression, scope *scope) (*expressions.ConditionExpression, error) {
+	var test core.Expression
+	var consequent core.Expression
+	var alternate core.Expression
+
+	if len(exps) == 3 {
+		test = exps[0]
+		consequent = exps[1]
+		alternate = exps[2]
+	} else {
+		test = exps[0]
+		alternate = exps[1]
+	}
+
+	return expressions.NewConditionExpression(
+		src,
+		test,
+		consequent,
+		alternate,
+	)
 }
 
 func (v *visitor) unexpectedToken(node antlr.Tree) error {

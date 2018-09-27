@@ -15,7 +15,6 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
-	"strings"
 	"sync"
 	"time"
 )
@@ -25,7 +24,7 @@ type HtmlDocument struct {
 	conn    *rpcc.Conn
 	client  *cdp.Client
 	events  *events.EventBroker
-	url     string
+	url     values.String
 	element *HtmlElement
 }
 
@@ -132,7 +131,7 @@ func NewHtmlDocument(
 	doc.url = ""
 
 	if root.BaseURL != nil {
-		doc.url = *root.BaseURL
+		doc.url = values.NewString(*root.BaseURL)
 	}
 
 	broker.AddEventListener("load", func(_ interface{}) {
@@ -154,7 +153,7 @@ func NewHtmlDocument(
 		doc.url = ""
 
 		if updated.BaseURL != nil {
-			doc.url = *updated.BaseURL
+			doc.url = values.NewString(*updated.BaseURL)
 		}
 	})
 
@@ -176,7 +175,7 @@ func (doc *HtmlDocument) String() string {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.url
+	return doc.url.String()
 }
 
 func (doc *HtmlDocument) Unwrap() interface{} {
@@ -213,7 +212,7 @@ func (doc *HtmlDocument) Compare(other core.Value) int {
 	case core.HtmlDocumentType:
 		other := other.(*HtmlDocument)
 
-		return strings.Compare(doc.url, other.url)
+		return doc.url.Compare(other.url)
 	default:
 		if other.Type() > core.HtmlDocumentType {
 			return -1
@@ -318,6 +317,10 @@ func (doc *HtmlDocument) QuerySelectorAll(selector values.String) core.Value {
 	defer doc.Unlock()
 
 	return doc.element.QuerySelectorAll(selector)
+}
+
+func (doc *HtmlDocument) Url() core.Value {
+	return doc.url
 }
 
 func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean, error) {

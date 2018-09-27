@@ -164,11 +164,17 @@ func (el *HtmlElement) MarshalJSON() ([]byte, error) {
 	el.Lock()
 	defer el.Unlock()
 
-	return json.Marshal(el.innerHtml)
+	val, err := el.innerText.Value()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(val.String())
 }
 
 func (el *HtmlElement) String() string {
-	return el.value.String()
+	return el.InnerHtml().String()
 }
 
 func (el *HtmlElement) Compare(other core.Value) int {
@@ -370,6 +376,13 @@ func (el *HtmlElement) Click() (values.Boolean, error) {
 	defer cancel()
 
 	return events.DispatchEvent(ctx, el.client, el.id, "click")
+}
+
+func (el *HtmlElement) Input(value core.Value, timeout values.Int) error {
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	return el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id, "value", value.String()))
 }
 
 func (el *HtmlElement) IsConnected() values.Boolean {

@@ -288,6 +288,12 @@ func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
 // ExitExpression is called when production expression is exited.
 func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
 
+// EnterForTernaryExpression is called when production forTernaryExpression is entered.
+func (s *BaseFqlParserListener) EnterForTernaryExpression(ctx *ForTernaryExpressionContext) {}
+
+// ExitForTernaryExpression is called when production forTernaryExpression is exited.
+func (s *BaseFqlParserListener) ExitForTernaryExpression(ctx *ForTernaryExpressionContext) {}
+
 // EnterEqualityOperator is called when production equalityOperator is entered.
 func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorContext) {}
 

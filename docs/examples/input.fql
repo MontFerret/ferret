@@ -1,0 +1,24 @@
+LET g = DOCUMENT("https://www.google.com/", true)
+LET inputBox = ELEMENT(g, 'input[name="q"]')
+
+INPUT(inputBox, "ferrer")
+
+LET searchBtn = ELEMENT(g, 'input[name="btnK"]')
+
+CLICK(searchBtn)
+
+WAIT_NAVIGATION(g)
+
+LET result = ELEMENTS(g, '.g')
+
+LOG(result ? 'element' : 'no element')
+
+RETURN result ? (
+    FOR result IN ELEMENTS(g, '.g')
+        LOG('iterate')
+        RETURN {
+            title: ELEMENT(result, 'h3 > a'),
+            description: ELEMENT(result, '.st'),
+            url: ELEMENT(result, 'cite')
+        }
+) : 'no results'

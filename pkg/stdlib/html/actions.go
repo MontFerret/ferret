@@ -91,3 +91,32 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	return values.None, doc.Navigate(args[1].(values.String))
 }
+
+func Input(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 2, 3)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	// TYPE(el, "foobar")
+	if len(args) == 2 {
+		arg1 := args[0]
+
+		err := core.ValidateType(arg1, core.HtmlElementType)
+
+		if err != nil {
+			return values.False, err
+		}
+
+		el, ok := arg1.(*dynamic.HtmlElement)
+
+		if !ok {
+			return values.False, core.Error(core.ErrInvalidType, "expected dynamic element")
+		}
+
+		return values.None, el.Input(args[1], values.NewInt(100))
+	}
+
+	return values.None, nil
+}
