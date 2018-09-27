@@ -8,6 +8,31 @@
 Having it's own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
 It's extremely portable, extensible and fast.
 
+## Give me an example
+The following example demonstrates use of dynamic pages.    
+Here we are getting the top songs from SoundCloud.    
+Since the page is rendered dynamically, there data doesn't get showed up immediately.    
+Therefore, we need to handle it.   
+First, we load the document with ``true`` flag, which instructs ``ferret`` to load this page using Chrome.   
+Second, we wait for a specific element gets rendered.    
+Third, once it appears we get all elements with this class name and iterate over the elements extracting data. 
+
+```aql
+LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
+
+WAIT_ELEMENT(doc, '.chartTrack__details')
+LET tracks = ELEMENTS(doc, '.chartTrack__details')
+
+FOR track IN tracks
+    LET username = ELEMENT(track, '.chartTrack__username')
+    LET title = ELEMENT(track, '.chartTrack__title')
+    
+    RETURN {
+       artist: username.innerText,
+        track: title.innerText
+    }
+```
+
 ## Features
 
 * Declarative language
