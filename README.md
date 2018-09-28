@@ -10,10 +10,11 @@ It's extremely portable, extensible and fast.
 
 ## Show me some code
 ![example](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/example.jpg)    
-The following example demonstrates use of dynamic pages.    
-We are loading main Google Search page, type search criteria into a input box and click search button.   
-The click action triggers a redirect, so we wait till it ends.   
-Once the page loaded, we iterate over all search elements and assign result to a variable.   
+
+The following example demonstrates the use of dynamic pages.    
+First of all, we load the main Google Search page, type search criteria into an input box and then click a search button.   
+The click action triggers a redirect, so we wait till its end.   
+Once the page gets loaded, we iterate over all elements in search results and assign output to a variable.   
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
 ```aql
