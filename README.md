@@ -9,7 +9,7 @@ Having it's own declarative language, ```ferret``` abstracts away technical deta
 It's extremely portable, extensible and fast.
 
 ## Show me some code
-![code](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/show-me.jpg)
+![example](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/example.jpg)    
 The following example demonstrates use of dynamic pages.    
 We are loading main Google Search page, type search criteria into a input box and click search button.   
 The click action triggers a redirect, so we wait till it ends.   
