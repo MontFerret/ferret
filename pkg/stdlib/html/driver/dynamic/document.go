@@ -5,6 +5,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
@@ -15,12 +16,14 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"sync"
 	"time"
 )
 
 type HtmlDocument struct {
 	sync.Mutex
+	logger  *zerolog.Logger
 	conn    *rpcc.Conn
 	client  *cdp.Client
 	events  *events.EventBroker
@@ -93,7 +96,14 @@ func LoadHtmlDocument(
 		return nil, err
 	}
 
-	return NewHtmlDocument(conn, client, broker, root, innerHtml), nil
+	return NewHtmlDocument(
+		logging.From(ctx),
+		conn,
+		client,
+		broker,
+		root,
+		innerHtml,
+	), nil
 }
 
 func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
@@ -117,6 +127,7 @@ func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
 }
 
 func NewHtmlDocument(
+	logger *zerolog.Logger,
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
@@ -124,10 +135,11 @@ func NewHtmlDocument(
 	innerHtml values.String,
 ) *HtmlDocument {
 	doc := new(HtmlDocument)
+	doc.logger = logger
 	doc.conn = conn
 	doc.client = client
 	doc.events = broker
-	doc.element = NewHtmlElement(client, broker, root.NodeID, root, innerHtml)
+	doc.element = NewHtmlElement(doc.logger, client, broker, root.NodeID, root, innerHtml)
 	doc.url = ""
 
 	if root.BaseURL != nil {
@@ -141,7 +153,11 @@ func NewHtmlDocument(
 		updated, innerHtml, err := getRootElement(client)
 
 		if err != nil {
-			// TODO: We need somehow log all errors outside of stdout
+			doc.logger.Error().
+				Timestamp().
+				Err(err).
+				Msg("failed to get root node after page load")
+
 			return
 		}
 
@@ -149,7 +165,7 @@ func NewHtmlDocument(
 		doc.element.Close()
 
 		// create a new root element wrapper
-		doc.element = NewHtmlElement(client, broker, updated.NodeID, updated, innerHtml)
+		doc.element = NewHtmlElement(doc.logger, client, broker, updated.NodeID, updated, innerHtml)
 		doc.url = ""
 
 		if updated.BaseURL != nil {
@@ -226,11 +242,47 @@ func (doc *HtmlDocument) Close() error {
 	doc.Lock()
 	defer doc.Unlock()
 
-	doc.events.Stop()
-	doc.events.Close()
+	var err error
 
-	doc.element.Close()
-	doc.client.Page.Close(context.Background())
+	err = doc.events.Stop()
+
+	if err != nil {
+		doc.logger.Warn().
+			Timestamp().
+			Str("url", doc.url.String()).
+			Err(err).
+			Msg("failed to stop event broker")
+	}
+
+	err = doc.events.Close()
+
+	if err != nil {
+		doc.logger.Warn().
+			Timestamp().
+			Str("url", doc.url.String()).
+			Err(err).
+			Msg("failed to close event broker")
+	}
+
+	err = doc.element.Close()
+
+	if err != nil {
+		doc.logger.Warn().
+			Timestamp().
+			Str("url", doc.url.String()).
+			Err(err).
+			Msg("failed to close root element")
+	}
+
+	err = doc.client.Page.Close(context.Background())
+
+	if err != nil {
+		doc.logger.Warn().
+			Timestamp().
+			Str("url", doc.url.String()).
+			Err(err).
+			Msg("failed to close browser page")
+	}
 
 	return doc.conn.Close()
 }
@@ -354,13 +406,18 @@ func (doc *HtmlDocument) InnerHtmlBySelectorAll(selector values.String) (*values
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
+			var result = [];
 			var elements = document.querySelectorAll(%s);
 
 			if (elements == null) {
-				return [];
+				return result;
 			}
 
-			return elements.map(i => i.innerHtml);
+			elements.forEach((i) => {
+				result.push(i.innerHtml);
+			});
+
+			return result;
 		`, eval.ParamString(selector.String())),
 		true,
 		false,
@@ -408,13 +465,18 @@ func (doc *HtmlDocument) InnerTextBySelectorAll(selector values.String) (*values
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
+			var result = [];
 			var elements = document.querySelectorAll(%s);
 
 			if (elements == null) {
-				return [];
+				return result;
 			}
 
-			return elements.map(i => i.innerText);
+			elements.forEach((i) => {
+				result.push(i.innerText);
+			});
+
+			return result;
 		`, eval.ParamString(selector.String())),
 		true,
 		false,

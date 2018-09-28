@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"io/ioutil"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func ExecFile(pathToFile string, opts Options) {
@@ -33,9 +36,25 @@ func Exec(query string, opts Options) {
 		return
 	}
 
+	l := NewLogger()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP)
+
+	go func() {
+		for {
+			<-c
+			cancel()
+			l.Close()
+		}
+	}()
+
 	out, err := prog.Run(
-		context.Background(),
+		ctx,
 		runtime.WithBrowser(opts.Cdp),
+		runtime.WithLog(l),
+		runtime.WithLogLevel(logging.DebugLevel),
 	)
 
 	if err != nil {

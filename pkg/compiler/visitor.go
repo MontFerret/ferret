@@ -18,13 +18,14 @@ import (
 
 type visitor struct {
 	*fql.BaseFqlParserVisitor
-
+	src   string
 	funcs map[string]core.Function
 }
 
-func newVisitor(funcs map[string]core.Function) *visitor {
+func newVisitor(src string, funcs map[string]core.Function) *visitor {
 	return &visitor{
 		&fql.BaseFqlParserVisitor{},
+		src,
 		funcs,
 	}
 }
@@ -38,7 +39,7 @@ func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 			return nil, err
 		}
 
-		return runtime.NewProgram(block), nil
+		return runtime.NewProgram(v.src, block)
 	})
 }
 

@@ -1688,39 +1688,24 @@ func TestForTernaryExpression(t *testing.T) {
 	})
 }
 
-//func TestHtml(t *testing.T) {
-//	Convey("Should load a document", t, func() {
-//		c := compiler.New()
-//
-//		prog, err := c.Compile(`
-//LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
-//
-//// TODO: We need a better way of waiting for page loading
-//// Something line WAIT_FOR(doc, selector)
-//SLEEP(2000)
-//
-//LET tracks = ELEMENTS(doc, '.chartTrack__details')
-//
-//LOG("found", LENGTH(tracks), "tracks")
-//
-//FOR track IN tracks
-//    // LET username = ELEMENT(track, '.chartTrack__username')
-//    // LET title = ELEMENT(track, '.chartTrack__title')
-//
-//    // LOG("NODE", track.nodeName)
-//
-//    SLEEP(500)
-//
-//    RETURN track.innerHtml
-//
-//		`)
-//
-//		So(err, ShouldBeNil)
-//
-//		out, err := prog.Run(context.Background(), runtime.WithBrowser("http://127.0.0.1:9222"))
-//
-//		So(err, ShouldBeNil)
-//
-//		So(string(out), ShouldEqual, `"int"`)
-//	})
-//}
+func TestHtml(t *testing.T) {
+	Convey("Should load a document", t, func() {
+		c := compiler.New()
+
+		out, err := c.MustCompile(`
+LET doc = DOCUMENT("https://github.com/", true)
+LET btn = ELEMENT(doc, ".HeaderMenu a")
+
+CLICK(btn)
+WAIT_NAVIGATION(doc)
+WAIT_ELEMENT(doc, '.IconNav')
+
+RETURN INNER_HTML_ALL(doc, '.IconNav a')
+
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+
+		So(string(out), ShouldEqual, `"int"`)
+	})
+}

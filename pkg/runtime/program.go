@@ -8,11 +8,24 @@ import (
 )
 
 type Program struct {
-	exp core.Expression
+	src  string
+	body core.Expression
 }
 
-func NewProgram(exp core.Expression) *Program {
-	return &Program{exp}
+func NewProgram(src string, body core.Expression) (*Program, error) {
+	if src == "" {
+		return nil, core.Error(core.ErrMissedArgument, "source")
+	}
+
+	if core.IsNil(body) {
+		return nil, core.Error(core.ErrMissedArgument, "body")
+	}
+
+	return &Program{src, body}, nil
+}
+
+func (p *Program) Source() string {
+	return p.src
 }
 
 func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
@@ -30,7 +43,7 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 	ctx = driver.WithDynamicDriver(ctx, opts.cdp)
 	ctx = driver.WithStaticDriver(ctx)
 
-	out, err := p.exp.Exec(ctx, scope)
+	out, err := p.body.Exec(ctx, scope)
 
 	if err != nil {
 		js, _ := values.None.MarshalJSON()

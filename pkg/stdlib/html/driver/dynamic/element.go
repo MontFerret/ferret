@@ -13,6 +13,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/rs/zerolog"
 	"strconv"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ const DefaultTimeout = time.Second * 30
 
 type HtmlElement struct {
 	sync.Mutex
+	logger         *zerolog.Logger
 	client         *cdp.Client
 	broker         *events.EventBroker
 	connected      values.Boolean
@@ -31,12 +33,14 @@ type HtmlElement struct {
 	innerHtml      values.String
 	innerText      *common.LazyValue
 	value          core.Value
+	rawAttrs       []string
 	attributes     *common.LazyValue
 	children       []dom.NodeID
 	loadedChildren *common.LazyValue
 }
 
 func LoadElement(
+	logger *zerolog.Logger,
 	client *cdp.Client,
 	broker *events.EventBroker,
 	id dom.NodeID,
@@ -68,6 +72,7 @@ func LoadElement(
 	}
 
 	return NewHtmlElement(
+		logger,
 		client,
 		broker,
 		id,
@@ -77,6 +82,7 @@ func LoadElement(
 }
 
 func NewHtmlElement(
+	logger *zerolog.Logger,
 	client *cdp.Client,
 	broker *events.EventBroker,
 	id dom.NodeID,
@@ -84,6 +90,7 @@ func NewHtmlElement(
 	innerHtml values.String,
 ) *HtmlElement {
 	el := new(HtmlElement)
+	el.logger = logger
 	el.client = client
 	el.broker = broker
 	el.connected = values.True
@@ -91,34 +98,11 @@ func NewHtmlElement(
 	el.nodeType = values.NewInt(node.NodeType)
 	el.nodeName = values.NewString(node.NodeName)
 	el.innerHtml = innerHtml
-	el.innerText = common.NewLazyValue(func() (core.Value, error) {
-		h := el.InnerHtml()
-
-		if h == values.EmptyString {
-			return h, nil
-		}
-
-		buff := bytes.NewBuffer([]byte(h))
-
-		parsed, err := goquery.NewDocumentFromReader(buff)
-
-		if err != nil {
-			return values.EmptyString, err
-		}
-
-		return values.NewString(parsed.Text()), nil
-	})
-	el.attributes = common.NewLazyValue(func() (core.Value, error) {
-		return parseAttrs(node.Attributes), nil
-	})
+	el.innerText = common.NewLazyValue(el.loadInnerText)
+	el.rawAttrs = node.Attributes[:]
+	el.attributes = common.NewLazyValue(el.loadAttrs)
 	el.value = values.EmptyString
-	el.loadedChildren = common.NewLazyValue(func() (core.Value, error) {
-		if !el.IsConnected() {
-			return values.NewArray(0), nil
-		}
-
-		return loadNodes(client, broker, el.children)
-	})
+	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 
 	if node.Value != nil {
 		el.value = values.NewString(*node.Value)
@@ -205,11 +189,19 @@ func (el *HtmlElement) Unwrap() interface{} {
 }
 
 func (el *HtmlElement) Hash() int {
+	el.Lock()
+	defer el.Unlock()
+
 	h := sha512.New()
 
-	out, err := h.Write([]byte(strconv.Itoa(int(el.id))))
+	out, err := h.Write([]byte(el.innerHtml))
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Msg("failed to calculate hash value")
+
 		return 0
 	}
 
@@ -227,6 +219,11 @@ func (el *HtmlElement) Value() core.Value {
 	val, err := eval.Property(ctx, el.client, el.id, "value")
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Msg("failed to get node value")
+
 		return el.value
 	}
 
@@ -309,12 +306,24 @@ func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Str("selector", selector.String()).
+			Err(err).
+			Msg("failed to retrieve a node by selector")
+
 		return values.None
 	}
 
-	res, err := LoadElement(el.client, el.broker, found.NodeID)
+	res, err := LoadElement(el.logger, el.client, el.broker, found.NodeID)
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Str("selector", selector.String()).
+			Err(err).
+			Msg("failed to load a child node by selector")
+
 		return values.None
 	}
 
@@ -332,15 +341,27 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Str("selector", selector.String()).
+			Err(err).
+			Msg("failed to retrieve nodes by selector")
+
 		return values.None
 	}
 
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for _, id := range res.NodeIDs {
-		childEl, err := LoadElement(el.client, el.broker, id)
+		childEl, err := LoadElement(el.logger, el.client, el.broker, id)
 
 		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Str("selector", selector.String()).
+				Err(err).
+				Msg("failed to load nodes by selector")
+
 			return values.None
 		}
 
@@ -387,6 +408,54 @@ func (el *HtmlElement) IsConnected() values.Boolean {
 	defer el.Unlock()
 
 	return el.connected
+}
+
+func (el *HtmlElement) loadInnerText() (core.Value, error) {
+	h := el.InnerHtml()
+
+	if h == values.EmptyString {
+		return h, nil
+	}
+
+	buff := bytes.NewBuffer([]byte(h))
+
+	parsed, err := goquery.NewDocumentFromReader(buff)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Msg("failed to parse inner html")
+
+		return values.EmptyString, err
+	}
+
+	return values.NewString(parsed.Text()), nil
+}
+
+func (el *HtmlElement) loadAttrs() (core.Value, error) {
+	return parseAttrs(el.rawAttrs), nil
+}
+
+func (el *HtmlElement) loadChildren() (core.Value, error) {
+	if !el.IsConnected() {
+		return values.NewArray(0), nil
+	}
+
+	loaded, err := loadNodes(el.logger, el.client, el.broker, el.children)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Msg("failed to load child nodes")
+
+		return values.None, err
+	}
+
+	return loaded, nil
 }
 
 func (el *HtmlElement) handlePageReload(message interface{}) {
@@ -484,6 +553,12 @@ func (el *HtmlElement) handleChildrenCountChanged(message interface{}) {
 	node, err := el.client.DOM.DescribeNode(context.Background(), dom.NewDescribeNodeArgs())
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Msg("failed to update node")
+
 		return
 	}
 
@@ -536,10 +611,15 @@ func (el *HtmlElement) handleChildInserted(message interface{}) {
 	}
 
 	loadedArr := loaded.(*values.Array)
-
-	loadedEl, err := LoadElement(el.client, el.broker, nextId)
+	loadedEl, err := LoadElement(el.logger, el.client, el.broker, nextId)
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Msg("failed to load an inserted node")
+
 		return
 	}
 
@@ -548,6 +628,12 @@ func (el *HtmlElement) handleChildInserted(message interface{}) {
 	newInnerHtml, err := loadInnerHtml(el.client, el.id)
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Msg("failed to update node")
+
 		return
 	}
 
@@ -601,6 +687,12 @@ func (el *HtmlElement) handleChildDeleted(message interface{}) {
 	newInnerHtml, err := loadInnerHtml(el.client, el.id)
 
 	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Msg("failed to update node")
+
 		return
 	}
 

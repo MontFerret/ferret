@@ -78,7 +78,7 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 		}
 	}()
 
-	l := newVisitor(c.funcs)
+	l := newVisitor(query, c.funcs)
 
 	res := p.Visit(l).(*result)
 

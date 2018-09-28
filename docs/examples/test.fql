@@ -1,9 +1,0 @@
-LET g = DOCUMENT("https://www.google.com/", true)
-
-INPUT(ELEMENT(g, 'input[name="q"]'), "ferret")
-
-CLICK(g, 'input[name="btnK"]')
-
-WAIT_NAVIGATION(g)
-
-RETURN 1

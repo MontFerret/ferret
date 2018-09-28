@@ -42,6 +42,14 @@
   revision = "2b8494104d86337cdd41d0a49cbed8e4583c0ab4"
 
 [[projects]]
+  digest = "1:ce579162ae1341f3e5ab30c0dce767f28b1eb6a81359aad01723f1ba6b4becdf"
+  name = "github.com/gofrs/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "370558f003bfe29580cd0f698d8640daccdcc45c"
+  version = "v3.1.1"
+
+[[projects]]
   branch = "master"
   digest = "1:f14d1b50e0075fb00177f12a96dd7addf93d1e2883c25befd17285b779549795"
   name = "github.com/gopherjs/gopherjs"
@@ -122,12 +130,32 @@
   version = "v0.19.0"
 
 [[projects]]
+  digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
+  name = "github.com/natefinch/lumberjack"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
+  version = "v2.1"
+
+[[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  digest = "1:5bc8f93f977b72a7a5264725c3bab275e69de0cc3e5c0dc1ee56feb564c33f03"
+  name = "github.com/rs/zerolog"
+  packages = [
+    ".",
+    "internal/cbor",
+    "internal/json",
+  ]
+  pruneopts = "UT"
+  revision = "338f9bc14084d22cb8eeacd6492861f8449d715c"
+  version = "v1.9.1"
 
 [[projects]]
   digest = "1:4ca145a665316d3c020a39c0741780fa3636b9152b824206796c4dce541f4a24"
@@ -189,6 +217,7 @@
     "github.com/antlr/antlr4/runtime/Go/antlr",
     "github.com/chzyer/readline",
     "github.com/corpix/uarand",
+    "github.com/gofrs/uuid",
     "github.com/mafredri/cdp",
     "github.com/mafredri/cdp/devtool",
     "github.com/mafredri/cdp/protocol/dom",
@@ -198,7 +227,9 @@
     "github.com/mafredri/cdp/protocol/target",
     "github.com/mafredri/cdp/rpcc",
     "github.com/mafredri/cdp/session",
+    "github.com/natefinch/lumberjack",
     "github.com/pkg/errors",
+    "github.com/rs/zerolog",
     "github.com/sethgrid/pester",
     "github.com/smartystreets/goconvey/convey",
     "golang.org/x/net/html",

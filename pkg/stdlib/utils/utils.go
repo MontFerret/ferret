@@ -3,8 +3,8 @@ package utils
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"log"
 	"time"
 )
 
@@ -30,16 +30,16 @@ func Wait(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	return values.None, nil
 }
 
-func Log(_ context.Context, inputs ...core.Value) (core.Value, error) {
+func Log(ctx context.Context, inputs ...core.Value) (core.Value, error) {
 	args := make([]interface{}, 0, len(inputs)+1)
-
-	args = append(args, "LOG:")
 
 	for _, input := range inputs {
 		args = append(args, input)
 	}
 
-	log.Println(args...)
+	logger := logging.From(ctx)
+
+	logger.Print(args...)
 
 	return values.None, nil
 }

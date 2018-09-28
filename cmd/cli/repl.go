@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/chzyer/readline"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 func Repl(version string, opts Options) {
@@ -31,6 +35,20 @@ func Repl(version string, opts Options) {
 	var multiline bool
 
 	timer := NewTimer()
+
+	l := NewLogger()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP)
+
+	go func() {
+		for {
+			<-c
+			cancel()
+			l.Close()
+		}
+	}()
 
 	for {
 		line, err := rl.Readline()
@@ -75,8 +93,10 @@ func Repl(version string, opts Options) {
 		timer.Start()
 
 		out, err := program.Run(
-			context.Background(),
+			ctx,
 			runtime.WithBrowser(opts.Cdp),
+			runtime.WithLog(l),
+			runtime.WithLogLevel(logging.DebugLevel),
 		)
 
 		timer.Stop()
