@@ -91,7 +91,7 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 	return program, err
 }
 
-func (c *FqlCompiler) CompileP(query string) *runtime.Program {
+func (c *FqlCompiler) MustCompile(query string) *runtime.Program {
 	program, err := c.Compile(query)
 
 	if err != nil {
