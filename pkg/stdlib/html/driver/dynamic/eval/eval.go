@@ -14,6 +14,10 @@ func PrepareEval(exp string) string {
 	return fmt.Sprintf("((function () {%s})())", exp)
 }
 
+func ParamString(param string) string {
+	return "`" + param + "`"
+}
+
 func Eval(client *cdp.Client, exp string, ret bool, async bool) (core.Value, error) {
 	args := runtime.
 		NewEvaluateArgs(PrepareEval(exp)).

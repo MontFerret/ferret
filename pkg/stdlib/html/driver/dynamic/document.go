@@ -327,7 +327,7 @@ func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
-			var el = document.querySelector("%s");
+			var el = document.querySelector(%s);
 
 			if (el == null) {
 				return false;
@@ -337,7 +337,43 @@ func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean
 			el.dispatchEvent(evt);
 
 			return true;
-		`, selector),
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	if res.Type() == core.BooleanType {
+		return res.(values.Boolean), nil
+	}
+
+	return values.False, nil
+}
+
+func (doc *HtmlDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(
+			`
+			var el = document.querySelector(%s);
+
+			if (el == null) {
+				return false;
+			}
+
+			var evt = new window.Event('input', { bubbles: true });
+
+			el.value = %s
+			el.dispatchEvent(evt);
+
+			return true;
+		`,
+			eval.ParamString(selector.String()),
+			eval.ParamString(value.String()),
+		),
 		true,
 		false,
 	)
@@ -357,14 +393,14 @@ func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.
 	task := events.NewWaitTask(
 		doc.client,
 		fmt.Sprintf(`
-			el = document.querySelector("%s");
+			el = document.querySelector(%s);
 
 			if (el != null) {
 				return true;
 			}
 
 			return null;
-		`, selector),
+		`, eval.ParamString(selector.String())),
 		time.Millisecond*time.Duration(timeout),
 		events.DefaultPolling,
 	)

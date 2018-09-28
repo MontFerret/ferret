@@ -36,25 +36,25 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return el.Click()
-	} else {
-		// CLICK(doc, selector)
-		arg1 := args[0]
-		selector := args[1].String()
-
-		err = core.ValidateType(arg1, core.HtmlDocumentType)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		doc, ok := arg1.(*dynamic.HtmlDocument)
-
-		if !ok {
-			return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
-		}
-
-		return doc.ClickBySelector(values.NewString(selector))
 	}
+
+	// CLICK(doc, selector)
+	arg1 := args[0]
+	selector := args[1].String()
+
+	err = core.ValidateType(arg1, core.HtmlDocumentType)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	doc, ok := arg1.(*dynamic.HtmlDocument)
+
+	if !ok {
+		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
+	}
+
+	return doc.ClickBySelector(values.NewString(selector))
 }
 
 /*
@@ -92,6 +92,13 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.None, doc.Navigate(args[1].(values.String))
 }
 
+/*
+ * Sends a value to an underlying input element.
+ * @param source (Document | Element) - Event target.
+ * @param valueOrSelector (String) - Selector or a value.
+ * @param value (String) - Target value.
+ * @returns (Boolean) - Returns true if an element was found.
+ */
 func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -115,8 +122,36 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, core.Error(core.ErrInvalidType, "expected dynamic element")
 		}
 
-		return values.None, el.Input(args[1], values.NewInt(100))
+		err = el.Input(args[1])
+
+		if err != nil {
+			return values.False, err
+		}
+
+		return values.True, nil
 	}
 
-	return values.None, nil
+	arg1 := args[0]
+
+	err = core.ValidateType(arg1, core.HtmlDocumentType)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	arg2 := args[1]
+
+	err = core.ValidateType(arg2, core.StringType)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	doc, ok := arg1.(*dynamic.HtmlDocument)
+
+	if !ok {
+		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
+	}
+
+	return doc.InputBySelector(arg2.(values.String), args[2])
 }

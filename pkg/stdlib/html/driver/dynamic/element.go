@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha512"
 	"encoding/json"
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
@@ -376,7 +375,7 @@ func (el *HtmlElement) Click() (values.Boolean, error) {
 	return events.DispatchEvent(ctx, el.client, el.id, "click")
 }
 
-func (el *HtmlElement) Input(value core.Value, timeout values.Int) error {
+func (el *HtmlElement) Input(value core.Value) error {
 	ctx, cancel := contextWithTimeout()
 	defer cancel()
 

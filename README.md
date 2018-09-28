@@ -17,13 +17,9 @@ The final for loop filters out empty elements that might be because of inaccurat
 
 ```aql
 LET g = DOCUMENT("https://www.google.com/", true)
-LET inputBox = ELEMENT(g, 'input[name="q"]')
 
-INPUT(inputBox, "ferret")
-
-LET searchBtn = ELEMENT(g, 'input[name="btnK"]')
-
-CLICK(searchBtn)
+INPUT(g, 'input[name="q"]', "ferret")
+CLICK(g, 'input[name="btnK"]')
 
 WAIT_NAVIGATION(g)
 
