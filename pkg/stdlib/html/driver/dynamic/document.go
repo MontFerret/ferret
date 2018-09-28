@@ -323,6 +323,114 @@ func (doc *HtmlDocument) Url() core.Value {
 	return doc.url
 }
 
+func (doc *HtmlDocument) InnerHtmlBySelector(selector values.String) (values.String, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var el = document.querySelector(%s);
+
+			if (el == null) {
+				return "";
+			}
+
+			return el.innerHtml;
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	if res.Type() == core.StringType {
+		return res.(values.String), nil
+	}
+
+	return values.EmptyString, nil
+}
+
+func (doc *HtmlDocument) InnerHtmlBySelectorAll(selector values.String) (*values.Array, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var elements = document.querySelectorAll(%s);
+
+			if (elements == null) {
+				return [];
+			}
+
+			return elements.map(i => i.innerHtml);
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
+	if res.Type() == core.ArrayType {
+		return res.(*values.Array), nil
+	}
+
+	return values.NewArray(0), nil
+}
+
+func (doc *HtmlDocument) InnerTextBySelector(selector values.String) (values.String, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var el = document.querySelector(%s);
+
+			if (el == null) {
+				return "";
+			}
+
+			return el.innerText;
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	if res.Type() == core.StringType {
+		return res.(values.String), nil
+	}
+
+	return values.EmptyString, nil
+}
+
+func (doc *HtmlDocument) InnerTextBySelectorAll(selector values.String) (*values.Array, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var elements = document.querySelectorAll(%s);
+
+			if (elements == null) {
+				return [];
+			}
+
+			return elements.map(i => i.innerText);
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
+	if res.Type() == core.ArrayType {
+		return res.(*values.Array), nil
+	}
+
+	return values.NewArray(0), nil
+}
+
 func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
 		doc.client,
@@ -335,6 +443,38 @@ func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean
 
 			var evt = new window.MouseEvent('click', { bubbles: true });
 			el.dispatchEvent(evt);
+
+			return true;
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	if res.Type() == core.BooleanType {
+		return res.(values.Boolean), nil
+	}
+
+	return values.False, nil
+}
+
+func (doc *HtmlDocument) ClickBySelectorAll(selector values.String) (values.Boolean, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var elements = document.querySelectorAll(%s);
+
+			if (elements == null) {
+				return false;
+			}
+
+			elements.forEach((el) => {
+				var evt = new window.MouseEvent('click', { bubbles: true });
+				el.dispatchEvent(evt);	
+			});
 
 			return true;
 		`, eval.ParamString(selector.String())),

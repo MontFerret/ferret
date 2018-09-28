@@ -58,6 +58,37 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 /*
+ * Dispatches click event on all matched element
+ * @param source (Document) - Document.
+ * @param selector (String) - Selector.
+ * @returns (Boolean) - Returns true if matched at least one element.
+ */
+func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 2, 2)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	arg1 := args[0]
+	selector := args[1].String()
+
+	err = core.ValidateType(arg1, core.HtmlDocumentType)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	doc, ok := arg1.(*dynamic.HtmlDocument)
+
+	if !ok {
+		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
+	}
+
+	return doc.ClickBySelectorAll(values.NewString(selector))
+}
+
+/*
  * Navigates a document to a new resource.
  * The operation blocks the execution until the page gets loaded.
  * Which means there is no need in WAIT_NAVIGATION function.
