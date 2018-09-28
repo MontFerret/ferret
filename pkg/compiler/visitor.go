@@ -664,19 +664,18 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 }
 
 func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *scope) (collections.IterableExpression, error) {
-	ints := ctx.AllIntegerLiteral()
-
-	left, err := v.doVisitIntegerLiteral(ints[0].(*fql.IntegerLiteralContext))
+	exp, err := v.doVisitChildren(ctx, scope)
 
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := v.doVisitIntegerLiteral(ints[1].(*fql.IntegerLiteralContext))
-
-	if err != nil {
-		return nil, err
+	if len(exp) < 2 {
+		return nil, errors.Wrap(ErrInvalidToken, ctx.GetText())
 	}
+
+	left := exp[0]
+	right := exp[1]
 
 	return operators.NewRangeOperator(
 		v.getSourceMap(ctx),

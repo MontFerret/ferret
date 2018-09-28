@@ -1553,6 +1553,36 @@ func TestRangeOperator(t *testing.T) {
 
 		So(string(out), ShouldEqual, `[2,4,6,8,10,12,14,16,18,20]`)
 	})
+
+	Convey("Should use variables", t, func() {
+		out := compiler.New().MustCompile(`
+				LET max = 10
+				
+				FOR i IN 1..max
+					RETURN i * 2
+		`).MustRun(context.Background())
+
+		So(string(out), ShouldEqual, `[2,4,6,8,10,12,14,16,18,20]`)
+
+		out2 := compiler.New().MustCompile(`
+				LET min = 1
+				
+				FOR i IN min..10
+					RETURN i * 2
+		`).MustRun(context.Background())
+
+		So(string(out2), ShouldEqual, `[2,4,6,8,10,12,14,16,18,20]`)
+
+		out3 := compiler.New().MustCompile(`
+				LET min = 1
+				LET max = 10
+				
+				FOR i IN min..max
+					RETURN i * 2
+		`).MustRun(context.Background())
+
+		So(string(out3), ShouldEqual, `[2,4,6,8,10,12,14,16,18,20]`)
+	})
 }
 
 func TestInOperator(t *testing.T) {

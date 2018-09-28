@@ -133,7 +133,7 @@ variable
     ;
 
 rangeOperator
-    : integerLiteral Range integerLiteral
+    : (integerLiteral | variable) Range (integerLiteral | variable)
     ;
 
 arrayLiteral
