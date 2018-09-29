@@ -107,6 +107,10 @@ func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclaration
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitParam(ctx *ParamContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitVariable(ctx *VariableContext) interface{} {
 	return v.VisitChildren(ctx)
 }

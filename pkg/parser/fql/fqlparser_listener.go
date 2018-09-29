@@ -82,6 +82,9 @@ type FqlParserListener interface {
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
 
+	// EnterParam is called when entering the param production.
+	EnterParam(c *ParamContext)
+
 	// EnterVariable is called when entering the variable production.
 	EnterVariable(c *VariableContext)
 
@@ -228,6 +231,9 @@ type FqlParserListener interface {
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)
+
+	// ExitParam is called when exiting the param production.
+	ExitParam(c *ParamContext)
 
 	// ExitVariable is called when exiting the variable production.
 	ExitVariable(c *VariableContext)

@@ -37,7 +37,7 @@ func Log(ctx context.Context, inputs ...core.Value) (core.Value, error) {
 		args = append(args, input)
 	}
 
-	logger := logging.From(ctx)
+	logger := logging.FromContext(ctx)
 
 	logger.Print(args...)
 

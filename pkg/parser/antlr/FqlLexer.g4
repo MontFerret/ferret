@@ -76,6 +76,7 @@ Not: 'NOT' | '!';
 In: 'IN';
 
 // Literals
+Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
 StringLiteral: SQString | DQSring;
 IntegerLiteral: [0-9]+;

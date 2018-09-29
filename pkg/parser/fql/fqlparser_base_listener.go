@@ -174,6 +174,12 @@ func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclaratio
 // ExitVariableDeclaration is called when production variableDeclaration is exited.
 func (s *BaseFqlParserListener) ExitVariableDeclaration(ctx *VariableDeclarationContext) {}
 
+// EnterParam is called when production param is entered.
+func (s *BaseFqlParserListener) EnterParam(ctx *ParamContext) {}
+
+// ExitParam is called when production param is exited.
+func (s *BaseFqlParserListener) ExitParam(ctx *ParamContext) {}
+
 // EnterVariable is called when production variable is entered.
 func (s *BaseFqlParserListener) EnterVariable(ctx *VariableContext) {}
 

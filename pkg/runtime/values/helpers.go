@@ -3,6 +3,7 @@ package values
 import (
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"reflect"
 	"time"
 )
 
@@ -214,9 +215,53 @@ func Parse(input interface{}) core.Value {
 		return obj
 	case []byte:
 		return NewBinary(input.([]byte))
-	}
+	default:
+		v := reflect.ValueOf(input)
+		t := reflect.TypeOf(input)
+		kind := t.Kind()
 
-	return None
+		if kind == reflect.Slice || kind == reflect.Array {
+			size := v.Len()
+			arr := NewArray(size)
+
+			for i := 0; i < size; i += 1 {
+				value := v.Index(i)
+				arr.Push(Parse(value.Interface()))
+			}
+
+			return arr
+		}
+
+		if kind == reflect.Map {
+			keys := v.MapKeys()
+			obj := NewObject()
+
+			for _, k := range keys {
+				key := Parse(k.Interface())
+				value := v.MapIndex(k)
+
+				obj.Set(NewString(key.String()), Parse(value.Interface()))
+			}
+
+			return obj
+		}
+
+		if kind == reflect.Struct {
+			obj := NewObject()
+			size := t.NumField()
+
+			for i := 0; i < size; i += 1 {
+				field := t.Field(i)
+				value := v.Field(i)
+
+				obj.Set(NewString(field.Name), Parse(value.Interface()))
+			}
+
+			return obj
+		}
+
+		return None
+	}
 }
 
 func Unmarshal(value json.RawMessage) (core.Value, error) {

@@ -48,6 +48,7 @@ forExpressionSource
     | variable
     | memberExpression
     | rangeOperator
+    | param
     ;
 
 forExpressionClause
@@ -128,12 +129,16 @@ variableDeclaration
     | Let Identifier Assign forTernaryExpression
     ;
 
+param
+    : Param Identifier
+    ;
+
 variable
     : Identifier
     ;
 
 rangeOperator
-    : (integerLiteral | variable) Range (integerLiteral | variable)
+    : (integerLiteral | variable | param) Range (integerLiteral | variable | param)
     ;
 
 arrayLiteral
@@ -225,6 +230,7 @@ expression
     | variable
     | memberExpression
     | noneLiteral
+    | param
     ;
 
 forTernaryExpression

@@ -82,6 +82,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#param.
+	VisitParam(ctx *ParamContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#variable.
 	VisitVariable(ctx *VariableContext) interface{}
 

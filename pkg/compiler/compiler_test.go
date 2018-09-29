@@ -1718,24 +1718,80 @@ func TestForTernaryExpression(t *testing.T) {
 	})
 }
 
-func TestHtml(t *testing.T) {
-	Convey("Should load a document", t, func() {
-		c := compiler.New()
+func TestParam(t *testing.T) {
+	Convey("Should be possible to use as a return value", t, func() {
+		out := compiler.New().
+			MustCompile(`
+			RETURN @param
+		`).
+			MustRun(context.Background(), runtime.WithParam("param", "foobar"))
 
-		out, err := c.MustCompile(`
-LET doc = DOCUMENT("https://github.com/", true)
-LET btn = ELEMENT(doc, ".HeaderMenu a")
-
-CLICK(btn)
-WAIT_NAVIGATION(doc)
-WAIT_ELEMENT(doc, '.IconNav')
-
-RETURN INNER_HTML_ALL(doc, '.IconNav a')
-
-		`).Run(context.Background())
-
-		So(err, ShouldBeNil)
-
-		So(string(out), ShouldEqual, `"int"`)
+		So(string(out), ShouldEqual, `"foobar"`)
 	})
+
+	Convey("Should be possible to use as a FOR source", t, func() {
+		out := compiler.New().
+			MustCompile(`
+			FOR i IN @values
+			SORT i
+			RETURN i
+		`).
+			MustRun(context.Background(), runtime.WithParam("values", []int{1, 2, 3, 4}))
+
+		So(string(out), ShouldEqual, `[1,2,3,4]`)
+
+		out2 := compiler.New().
+			MustCompile(`
+			FOR i IN @values
+			SORT i
+			RETURN i
+		`).
+			MustRun(context.Background(), runtime.WithParam("values", map[string]int{
+				"foo": 1,
+				"bar": 2,
+				"faz": 3,
+				"qaz": 4,
+			}))
+
+		So(string(out2), ShouldEqual, `[1,2,3,4]`)
+	})
+
+	Convey("Should be possible to use in range", t, func() {
+		out := compiler.New().
+			MustCompile(`
+			FOR i IN @start..@end
+			SORT i
+			RETURN i
+		`).
+			MustRun(
+				context.Background(),
+				runtime.WithParam("start", 1),
+				runtime.WithParam("end", 4),
+			)
+
+		So(string(out), ShouldEqual, `[1,2,3,4]`)
+
+	})
+}
+
+func TestHtml(t *testing.T) {
+	//	Convey("Should load a document", t, func() {
+	//		c := compiler.New()
+	//
+	//		out, err := c.MustCompile(`
+	//LET doc = DOCUMENT("https://github.com/", true)
+	//LET btn = ELEMENT(doc, ".HeaderMenu a")
+	//
+	//CLICK(btn)
+	//WAIT_NAVIGATION(doc)
+	//WAIT_ELEMENT(doc, '.IconNav')
+	//
+	//RETURN INNER_HTML_ALL(doc, '.IconNav a')
+	//
+	//		`).Run(context.Background())
+	//
+	//		So(err, ShouldBeNil)
+	//
+	//		So(string(out), ShouldEqual, `"int"`)
+	//	})
 }

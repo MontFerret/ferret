@@ -97,7 +97,7 @@ func LoadHtmlDocument(
 	}
 
 	return NewHtmlDocument(
-		logging.From(ctx),
+		logging.FromContext(ctx),
 		conn,
 		client,
 		broker,

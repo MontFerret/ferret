@@ -1,5 +1,6 @@
 package cli
 
 type Options struct {
-	Cdp string
+	Cdp    string
+	Params map[string]interface{}
 }

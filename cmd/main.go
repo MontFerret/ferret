@@ -2,15 +2,55 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/MontFerret/ferret/cmd/cli"
 	"github.com/MontFerret/ferret/pkg/browser"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 var Version string
+
+type Params []string
+
+func (p *Params) String() string {
+	return "[" + strings.Join(*p, ",") + "]"
+}
+
+func (p *Params) Set(value string) error {
+	*p = append(*p, value)
+	return nil
+}
+
+func (p *Params) ToMap() (map[string]interface{}, error) {
+	res := make(map[string]interface{})
+
+	for _, entry := range *p {
+		pair := strings.Split(entry, ":")
+
+		if len(pair) < 2 {
+			return nil, core.Error(core.ErrInvalidArgument, entry)
+		}
+
+		var value interface{}
+		key := pair[0]
+
+		err := json.Unmarshal([]byte(pair[1]), &value)
+
+		if err != nil {
+			fmt.Println(pair[1])
+			return nil, err
+		}
+
+		res[key] = value
+	}
+
+	return res, nil
+}
 
 var (
 	help = flag.Bool(
@@ -39,6 +79,14 @@ var (
 )
 
 func main() {
+	var params Params
+
+	flag.Var(
+		&params,
+		"param",
+		`query parameter (--param=foo:\"bar\", --param=id:1)`,
+	)
+
 	flag.Parse()
 
 	if *help {
@@ -79,8 +127,16 @@ func main() {
 		defer b.Close()
 	}
 
+	p, err := params.ToMap()
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	opts := cli.Options{
-		Cdp: cdpConn,
+		Cdp:    cdpConn,
+		Params: p,
 	}
 
 	stat, _ := os.Stdin.Stat()

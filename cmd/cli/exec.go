@@ -55,6 +55,7 @@ func Exec(query string, opts Options) {
 		runtime.WithBrowser(opts.Cdp),
 		runtime.WithLog(l),
 		runtime.WithLogLevel(logging.DebugLevel),
+		runtime.WithParams(opts.Params),
 	)
 
 	if err != nil {

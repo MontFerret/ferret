@@ -406,6 +406,12 @@ func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext
 		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
 	}
 
+	param := ctx.Param()
+
+	if param != nil {
+		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
+	}
+
 	return nil, core.Error(ErrInvalidDataSource, ctx.GetText())
 }
 
@@ -684,32 +690,62 @@ func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *sco
 	)
 }
 
-func (v *visitor) doVisitChildren(node antlr.RuleNode, scope *scope) ([]core.Expression, error) {
-	children := node.GetChildren()
+func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (collections.IterableExpression, error) {
+	args := make([]core.Expression, 0, 5)
+	argsCtx := context.Arguments()
 
-	if children == nil {
-		return make([]core.Expression, 0, 0), nil
+	if argsCtx != nil {
+		argsCtx := argsCtx.(*fql.ArgumentsContext)
+
+		for _, arg := range argsCtx.AllExpression() {
+			exp, err := v.doVisitExpression(arg.(*fql.ExpressionContext), scope)
+
+			if err != nil {
+				return nil, err
+			}
+
+			args = append(args, exp)
+		}
 	}
 
-	result := make([]core.Expression, 0, len(children))
+	funcName := context.Identifier().GetText()
 
-	for _, child := range children {
-		_, ok := child.(antlr.TerminalNode)
+	fun, exists := v.funcs[funcName]
 
-		if ok {
-			continue
-		}
+	if !exists {
+		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", funcName))
+	}
 
-		out, err := v.visit(child, scope)
+	return expressions.NewFunctionCallExpression(
+		v.getSourceMap(context),
+		fun,
+		args...,
+	)
+}
+
+func (v *visitor) doVisitParamContext(context *fql.ParamContext, scope *scope) (collections.IterableExpression, error) {
+	name := context.Identifier().GetText()
+
+	return expressions.NewParameterExpression(
+		v.getSourceMap(context),
+		name,
+	)
+}
+
+func (v *visitor) doVisitAllExpressions(contexts []fql.IExpressionContext, scope *scope) ([]core.Expression, error) {
+	ret := make([]core.Expression, 0, len(contexts))
+
+	for _, ctx := range contexts {
+		exp, err := v.doVisitExpression(ctx.(*fql.ExpressionContext), scope)
 
 		if err != nil {
 			return nil, err
 		}
 
-		result = append(result, out)
+		ret = append(ret, exp)
 	}
 
-	return result, nil
+	return ret, nil
 }
 
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
@@ -882,77 +918,42 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
 	}
 
+	param := ctx.Param()
+
+	if param != nil {
+		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
+	}
+
 	// TODO: Complete it
 	return nil, ErrNotImplemented
 }
 
-func (v *visitor) doVisitAllExpressions(contexts []fql.IExpressionContext, scope *scope) ([]core.Expression, error) {
-	ret := make([]core.Expression, 0, len(contexts))
+func (v *visitor) doVisitChildren(node antlr.RuleNode, scope *scope) ([]core.Expression, error) {
+	children := node.GetChildren()
 
-	for _, ctx := range contexts {
-		exp, err := v.doVisitExpression(ctx.(*fql.ExpressionContext), scope)
-
-		if err != nil {
-			return nil, err
-		}
-
-		ret = append(ret, exp)
-	}
-
-	return ret, nil
-}
-
-func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (collections.IterableExpression, error) {
-	args := make([]core.Expression, 0, 5)
-	argsCtx := context.Arguments()
-
-	if argsCtx != nil {
-		argsCtx := argsCtx.(*fql.ArgumentsContext)
-
-		for _, arg := range argsCtx.AllExpression() {
-			exp, err := v.doVisitExpression(arg.(*fql.ExpressionContext), scope)
-
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, exp)
-		}
-	}
-
-	funcName := context.Identifier().GetText()
-
-	fun, exists := v.funcs[funcName]
-
-	if !exists {
-		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", funcName))
-	}
-
-	return expressions.NewFunctionCallExpression(
-		v.getSourceMap(context),
-		fun,
-		args...,
-	)
-}
-
-func (v *visitor) visitAll(nodes []antlr.Tree, scope *scope) ([]core.Expression, error) {
-	if nodes == nil {
+	if children == nil {
 		return make([]core.Expression, 0, 0), nil
 	}
 
-	res := make([]core.Expression, 0, len(nodes))
+	result := make([]core.Expression, 0, len(children))
 
-	for idx, node := range nodes {
-		out, err := v.visit(node, scope)
+	for _, child := range children {
+		_, ok := child.(antlr.TerminalNode)
+
+		if ok {
+			continue
+		}
+
+		out, err := v.visit(child, scope)
 
 		if err != nil {
 			return nil, err
 		}
 
-		res[idx] = out
+		result = append(result, out)
 	}
 
-	return res, nil
+	return result, nil
 }
 
 func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) {
@@ -988,6 +989,8 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 		out, err = v.doVisitVariableDeclaration(node.(*fql.VariableDeclarationContext), scope)
 	case *fql.FunctionCallExpressionContext:
 		out, err = v.doVisitFunctionCallExpression(node.(*fql.FunctionCallExpressionContext), scope)
+	case *fql.ParamContext:
+		out, err = v.doVisitParamContext(node.(*fql.ParamContext), scope)
 	default:
 		err = v.unexpectedToken(node)
 	}
