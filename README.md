@@ -75,6 +75,13 @@ For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3
 make build
 ```
 
+You can use your local cop of Chrome, but for ease of use it's recommended to use Docker:
+
+```sh
+docker pull alpeware/chrome-headless-trunk
+docker run -d -p=0.0.0.0:9222:9222 --name=chrome-headless -v /tmp/chromedata/:/data alpeware/chrome-headless-trunk
+```
+
 ## Quick start
 
 ### Browserless mode
