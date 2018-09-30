@@ -2,6 +2,7 @@ package stdlib
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/html"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
@@ -21,6 +22,7 @@ func NewLib() map[string]core.Function {
 	add(types.NewLib())
 	add(strings.NewLib())
 	add(collections.NewLib())
+	add(arrays.NewLib())
 	add(html.NewLib())
 	add(utils.NewLib())
 
