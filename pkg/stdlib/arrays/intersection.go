@@ -14,6 +14,10 @@ import (
  * The element order is random. Duplicates are removed.
  */
 func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
+	return sections(args, len(args))
+}
+
+func sections(args []core.Value, count int) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
@@ -54,7 +58,7 @@ func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	result := values.NewArray(capacity)
-	required := len(args)
+	required := count
 
 	for _, bucket := range intersections {
 		if len(bucket) == required {
