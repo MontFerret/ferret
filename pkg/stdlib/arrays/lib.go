@@ -9,5 +9,6 @@ func NewLib() map[string]core.Function {
 		"FLATTEN":      Flatten,
 		"INTERSECTION": Intersection,
 		"LAST":         Last,
+		"MINUS":        Minus,
 	}
 }

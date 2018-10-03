@@ -10,7 +10,8 @@ import (
  * Return the intersection of all arrays specified.
  * The result is an array of values that occur in all arguments.
  * @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
- * @returns (Array) - A single array with only the elements, which exist in all provided arrays. The element order is random. Duplicates are removed.
+ * @returns (Array) - A single array with only the elements, which exist in all provided arrays.
+ * The element order is random. Duplicates are removed.
  */
 func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
