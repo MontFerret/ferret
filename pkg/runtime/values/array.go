@@ -120,6 +120,10 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 func (t *Array) Get(idx Int) core.Value {
 	l := len(t.value) - 1
 
+	if l < 0 {
+		return None
+	}
+
 	if int(idx) > l {
 		return None
 	}

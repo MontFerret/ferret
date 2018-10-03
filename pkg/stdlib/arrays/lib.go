@@ -8,5 +8,6 @@ func NewLib() map[string]core.Function {
 		"FIRST":        First,
 		"FLATTEN":      Flatten,
 		"INTERSECTION": Intersection,
+		"LAST":         Last,
 	}
 }
