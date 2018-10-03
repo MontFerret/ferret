@@ -10,5 +10,6 @@ func NewLib() map[string]core.Function {
 		"INTERSECTION": Intersection,
 		"LAST":         Last,
 		"MINUS":        Minus,
+		"NTH":          Nth,
 	}
 }
