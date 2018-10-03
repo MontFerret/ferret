@@ -12,5 +12,6 @@ func NewLib() map[string]core.Function {
 		"MINUS":        Minus,
 		"NTH":          Nth,
 		"OUTERSECTION": Outersection,
+		"POP":          Pop,
 	}
 }
