@@ -4,7 +4,7 @@
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
 ## What is it?
-```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like machine learning and analytics.    
+```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like ui testing, machine learning and analytics.    
 Having it's own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
 It's extremely portable, extensible and fast.
 
@@ -18,15 +18,15 @@ Once the page gets loaded, we iterate over all elements in search results and as
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
 ```aql
-LET g = DOCUMENT("https://www.google.com/", true)
+LET google = DOCUMENT("https://www.google.com/", true)
 
-INPUT(g, 'input[name="q"]', "ferret")
-CLICK(g, 'input[name="btnK"]')
+INPUT(google, 'input[name="q"]', "ferret")
+CLICK(google, 'input[name="btnK"]')
 
-WAIT_NAVIGATION(g)
+WAIT_NAVIGATION(google)
 
 LET result = (
-    FOR result IN ELEMENTS(g, '.g')
+    FOR result IN ELEMENTS(google, '.g')
        RETURN {
            title: ELEMENT(result, 'h3 > a'),
            description: ELEMENT(result, '.st'),
@@ -35,9 +35,9 @@ LET result = (
 )
 
 RETURN (
-    FOR i IN result
-    FILTER i.title != NONE
-    RETURN i
+    FOR page IN result
+    FILTER page.title != NONE
+    RETURN page
 )
 ```
 
@@ -60,7 +60,7 @@ But due to the domain specifics, there are some differences in how things work.
 
 ## WIP
 Be aware, the the project is under heavy development. There is no documentation and some things may change in the final release.    
-For query syntax, you may go to [ArrangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
+For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
 
 
 ## Installation
