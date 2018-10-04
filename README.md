@@ -1,6 +1,5 @@
 # Ferret
 [![Build Status](https://travis-ci.com/MontFerret/ferret.svg?branch=master)](https://travis-ci.com/MontFerret/ferret)  
-
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
 ## What is it?
