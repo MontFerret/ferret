@@ -15,5 +15,6 @@ func NewLib() map[string]core.Function {
 		"POP":          Pop,
 		"POSITION":     Position,
 		"PUSH":         Push,
+		"REMOVE_NTH":   RemoveNth,
 	}
 }
