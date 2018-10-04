@@ -18,5 +18,6 @@ func NewLib() map[string]core.Function {
 		"REMOVE_NTH":    RemoveNth,
 		"REMOVE_VALUE":  RemoveValue,
 		"REMOVE_VALUES": RemoveValues,
+		"REVERSE":       Reverse,
 	}
 }
