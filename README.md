@@ -8,9 +8,7 @@
 Having it's own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
 It's extremely portable, extensible and fast.
 
-## Show me some code
-![example](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/example.jpg)    
-
+## Show me some code    
 The following example demonstrates the use of dynamic pages.    
 First of all, we load the main Google Search page, type search criteria into an input box and then click a search button.   
 The click action triggers a redirect, so we wait till its end.   
