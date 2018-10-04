@@ -1,4 +1,4 @@
-//go:generate antlr4 -Xexact-output-dir -o fql -package fql -visitor -Dlanguage=Go antlr/FqlLexer.g4 antlr/FqlParser.g4
+//go:generate java -jar /usr/local/lib/antlr-4.7.1-complete.jar -Xexact-output-dir -o fql -package fql -visitor -Dlanguage=Go antlr/FqlLexer.g4 antlr/FqlParser.g4
 package parser
 
 import (

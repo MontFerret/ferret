@@ -20,6 +20,7 @@ before_install:
 - shopt -s expand_aliases
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 - sudo curl -O https://www.antlr.org/download/antlr-4.7.1-complete.jar
+- sudo mv antlr-4.7.1-complete.jar /usr/local/lib
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
 - alias antlr4='java -jar /usr/local/lib/antlr-4.7.1-complete.jar'
 - alias grun='java org.antlr.v4.gui.TestRig'
