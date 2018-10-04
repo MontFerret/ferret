@@ -3,12 +3,13 @@ package static
 import (
 	"bytes"
 	"context"
+	httpx "net/http"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/sethgrid/pester"
-	httpx "net/http"
 )
 
 type Driver struct {
@@ -39,7 +40,7 @@ func (d *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode, 
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9,ru;q=0.8")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
-	req.Header.Set("User-Agent", uarand.GetRandom())
+	req.Header.Set("User-Agent", utils.GetRandomUserAgent())
 
 	resp, err := d.client.Do(req)
 

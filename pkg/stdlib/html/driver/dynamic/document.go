@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
-	"github.com/corpix/uarand"
+	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/emulation"
@@ -69,7 +69,7 @@ func LoadHtmlDocument(
 		func() error {
 			return client.Emulation.SetUserAgentOverride(
 				ctx,
-				emulation.NewSetUserAgentOverrideArgs(uarand.GetRandom()),
+				emulation.NewSetUserAgentOverrideArgs(utils.GetRandomUserAgent()),
 			)
 		},
 	)
