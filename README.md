@@ -79,6 +79,12 @@ docker pull alpeware/chrome-headless-trunk
 docker run -d -p=0.0.0.0:9222:9222 --name=chrome-headless -v /tmp/chromedata/:/data alpeware/chrome-headless-trunk
 ```
 
+But if you want to see what's happening during query execution, just start your Chrome with remote debugging port:
+
+```sh
+chrome.exe --remote-debugging-port=9222
+```
+
 ## Quick start
 
 ### Browserless mode
