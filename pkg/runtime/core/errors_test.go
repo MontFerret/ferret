@@ -3,7 +3,7 @@ package core_test
 import (
 	"testing"
 
-	"github.com/esell/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
