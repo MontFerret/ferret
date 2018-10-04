@@ -85,7 +85,7 @@ docker run -d -p=0.0.0.0:9222:9222 --name=chrome-headless -v /tmp/chromedata/:/d
 
 If you want to play with ```fql``` and check its syntax, you can run CLI with the following commands:
 ```
-go run ./cmd/cli/main.go
+go run ./cmd/main.go
 ```
 
 ```ferret``` will run in REPL mode.
@@ -106,15 +106,15 @@ Please use `Ctrl-D` to exit this program.
 If you want to execute a query stored in a file, just pass a file name:
 
 ```
-go run ./cmd/cli/main.go ./docs/examples/hackernews.fql
+go run ./cmd/main.go ./docs/examples/hackernews.fql
 ```
 
 ```
-cat ./docs/examples/hackernews.fql | go run ./cmd/cli/main.go 
+cat ./docs/examples/hackernews.fql | go run ./cmd/main.go
 ```
 
 ```
-go run ./cmd/cli/main.go < ./docs/examples/hackernews.fql
+go run ./cmd/main.go < ./docs/examples/hackernews.fql
 ```
 
 
@@ -127,7 +127,7 @@ First, you need to make sure that you launched Chrome with ```remote-debugging-p
 Second, you need to pass the address to ```ferret``` CLI.    
 
 ```
-go run ./cmd/cli/main.go --cdp http://127.0.0.1:9222
+go run ./cmd/main.go --cdp http://127.0.0.1:9222
 ```
 
 **NOTE:** By default, ```ferret``` will try to use this local address as a default one, so it makes sense to explicitly pass the parameter only in case of either different port number or remote address.    
@@ -135,7 +135,7 @@ go run ./cmd/cli/main.go --cdp http://127.0.0.1:9222
 Alternatively, you can tell CLI to launch Chrome for you.
 
 ```shell
-go run ./cmd/cli/main.go --cdp-launch
+go run ./cmd/main.go --cdp-launch
 ```
 
 **NOTE:** Launch command is currently broken on MacOS.
