@@ -19,22 +19,6 @@ func TestJsonParse(t *testing.T) {
 		})
 	})
 
-	Convey("It should parse none", t, func() {
-		val := values.None
-
-		b, err := val.MarshalJSON()
-
-		So(err, ShouldBeNil)
-
-		out, err := strings.JsonParse(
-			context.Background(),
-			values.NewString(string(b)),
-		)
-
-		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.NoneType)
-	})
-
 	Convey("It should parse a string", t, func() {
 		val := values.NewString("foobar")
 

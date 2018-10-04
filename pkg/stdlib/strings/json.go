@@ -27,6 +27,9 @@ func JsonParse(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
+	if val == nil {
+		return values.None, nil
+	}
 	return values.Parse(val), nil
 }
 
