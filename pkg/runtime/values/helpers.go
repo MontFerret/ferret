@@ -215,11 +215,9 @@ func Parse(input interface{}) core.Value {
 		return obj
 	case []byte:
 		return NewBinary(input.([]byte))
+	case nil:
+		return None
 	default:
-		if core.IsNil(input) {
-			return None
-		}
-
 		v := reflect.ValueOf(input)
 		t := reflect.TypeOf(input)
 		kind := t.Kind()
