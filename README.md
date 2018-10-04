@@ -69,7 +69,7 @@ For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.
 * Chrome or Docker (optional)
 
 ```sh
-make build
+make install && make compile
 ```
 
 You can use your local copy of Google Chrome / Chromium, but for ease of use it's recommended to run it inside a Docker container:
