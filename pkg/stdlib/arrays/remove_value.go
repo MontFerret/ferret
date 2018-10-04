@@ -1,0 +1,60 @@
+package arrays
+
+import (
+	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+)
+
+/*
+ * Returns a new array with removed all occurrences of value in a given array.
+ * Optionally with a limit to the number of removals.
+ * @param array (Array) - Source array.
+ * @param value (Value) - Target value.
+ * @param limit (Int, optional) - A limit to the number of removals.
+ * @returns (Array) - A new array with removed all occurrences of value in a given array.
+ */
+func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 2, 3)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	err = core.ValidateType(args[0], core.ArrayType)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	arr := args[0].(*values.Array)
+	value := args[1]
+	limit := -1
+
+	if len(args) > 2 {
+		if args[2].Type() == core.IntType {
+			limit = int(args[2].(values.Int))
+		}
+	}
+
+	result := values.NewArray(int(arr.Length()))
+
+	counter := 0
+	arr.ForEach(func(item core.Value, idx int) bool {
+		remove := item.Compare(value) == 0
+
+		if remove {
+			if counter == limit {
+				result.Push(item)
+			}
+
+			counter += 1
+		} else {
+			result.Push(item)
+		}
+
+		return true
+	})
+
+	return result, nil
+}
