@@ -21,5 +21,6 @@ func NewLib() map[string]core.Function {
 		"REVERSE":       Reverse,
 		"SHIFT":         Shift,
 		"SLICE":         Slice,
+		"SORTED":        Sorted,
 	}
 }
