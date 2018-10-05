@@ -26,5 +26,6 @@ func NewLib() map[string]core.Function {
 		"UNION":          Union,
 		"UNION_DISTINCT": UnionDistinct,
 		"UNIQUE":         Unique,
+		"UNSHIFT":        Unshift,
 	}
 }
