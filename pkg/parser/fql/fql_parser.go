@@ -384,56 +384,56 @@ const (
 
 // FqlParser rules.
 const (
-	FqlParserRULEProgram                    = 0
-	FqlParserRULEBody                       = 1
-	FqlParserRULEBodyStatement              = 2
-	FqlParserRULEBodyExpression             = 3
-	FqlParserRULEReturnExpression           = 4
-	FqlParserRULEForExpression              = 5
-	FqlParserRULEForExpressionValueVariable = 6
-	FqlParserRULEForExpressionKeyVariable   = 7
-	FqlParserRULEForExpressionSource        = 8
-	FqlParserRULEForExpressionClause        = 9
-	FqlParserRULEFilterClause               = 10
-	FqlParserRULELimitClause                = 11
-	FqlParserRULESortClause                 = 12
-	FqlParserRULESortClauseExpression       = 13
-	FqlParserRULECollectClause              = 14
-	FqlParserRULECollectVariable            = 15
-	FqlParserRULECollectGroupVariable       = 16
-	FqlParserRULECollectKeepVariable        = 17
-	FqlParserRULECollectCountVariable       = 18
-	FqlParserRULECollectAggregateVariable   = 19
-	FqlParserRULECollectAggregateExpression = 20
-	FqlParserRULECollectOption              = 21
-	FqlParserRULEForExpressionBody          = 22
-	FqlParserRULEForExpressionReturn        = 23
-	FqlParserRULEVariableDeclaration        = 24
-	FqlParserRULEParam                      = 25
-	FqlParserRULEVariable                   = 26
-	FqlParserRULERangeOperator              = 27
-	FqlParserRULEArrayLiteral               = 28
-	FqlParserRULEObjectLiteral              = 29
-	FqlParserRULEBooleanLiteral             = 30
-	FqlParserRULEStringLiteral              = 31
-	FqlParserRULEIntegerLiteral             = 32
-	FqlParserRULEFloatLiteral               = 33
-	FqlParserRULENoneLiteral                = 34
-	FqlParserRULEArrayElementList           = 35
-	FqlParserRULEPropertyAssignment         = 36
-	FqlParserRULEMemberExpression           = 37
-	FqlParserRULEShorthandPropertyName      = 38
-	FqlParserRULEComputedPropertyName       = 39
-	FqlParserRULEPropertyName               = 40
-	FqlParserRULEExpressionSequence         = 41
-	FqlParserRULEFunctionCallExpression     = 42
-	FqlParserRULEArguments                  = 43
-	FqlParserRULEExpression                 = 44
-	FqlParserRULEForTernaryExpression       = 45
-	FqlParserRULEEqualityOperator           = 46
-	FqlParserRULELogicalOperator            = 47
-	FqlParserRULEMathOperator               = 48
-	FqlParserRULEUnaryOperator              = 49
+	FqlParserRULE_program                    = 0
+	FqlParserRULE_body                       = 1
+	FqlParserRULE_bodyStatement              = 2
+	FqlParserRULE_bodyExpression             = 3
+	FqlParserRULE_returnExpression           = 4
+	FqlParserRULE_forExpression              = 5
+	FqlParserRULE_forExpressionValueVariable = 6
+	FqlParserRULE_forExpressionKeyVariable   = 7
+	FqlParserRULE_forExpressionSource        = 8
+	FqlParserRULE_forExpressionClause        = 9
+	FqlParserRULE_filterClause               = 10
+	FqlParserRULE_limitClause                = 11
+	FqlParserRULE_sortClause                 = 12
+	FqlParserRULE_sortClauseExpression       = 13
+	FqlParserRULE_collectClause              = 14
+	FqlParserRULE_collectVariable            = 15
+	FqlParserRULE_collectGroupVariable       = 16
+	FqlParserRULE_collectKeepVariable        = 17
+	FqlParserRULE_collectCountVariable       = 18
+	FqlParserRULE_collectAggregateVariable   = 19
+	FqlParserRULE_collectAggregateExpression = 20
+	FqlParserRULE_collectOption              = 21
+	FqlParserRULE_forExpressionBody          = 22
+	FqlParserRULE_forExpressionReturn        = 23
+	FqlParserRULE_variableDeclaration        = 24
+	FqlParserRULE_param                      = 25
+	FqlParserRULE_variable                   = 26
+	FqlParserRULE_rangeOperator              = 27
+	FqlParserRULE_arrayLiteral               = 28
+	FqlParserRULE_objectLiteral              = 29
+	FqlParserRULE_booleanLiteral             = 30
+	FqlParserRULE_stringLiteral              = 31
+	FqlParserRULE_integerLiteral             = 32
+	FqlParserRULE_floatLiteral               = 33
+	FqlParserRULE_noneLiteral                = 34
+	FqlParserRULE_arrayElementList           = 35
+	FqlParserRULE_propertyAssignment         = 36
+	FqlParserRULE_memberExpression           = 37
+	FqlParserRULE_shorthandPropertyName      = 38
+	FqlParserRULE_computedPropertyName       = 39
+	FqlParserRULE_propertyName               = 40
+	FqlParserRULE_expressionSequence         = 41
+	FqlParserRULE_functionCallExpression     = 42
+	FqlParserRULE_arguments                  = 43
+	FqlParserRULE_expression                 = 44
+	FqlParserRULE_forTernaryExpression       = 45
+	FqlParserRULE_equalityOperator           = 46
+	FqlParserRULE_logicalOperator            = 47
+	FqlParserRULE_mathOperator               = 48
+	FqlParserRULE_unaryOperator              = 49
 )
 
 // IProgramContext is an interface to support dynamic dispatch.
@@ -455,7 +455,7 @@ type ProgramContext struct {
 func NewEmptyProgramContext() *ProgramContext {
 	var p = new(ProgramContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEProgram
+	p.RuleIndex = FqlParserRULE_program
 	return p
 }
 
@@ -467,7 +467,7 @@ func NewProgramContext(parser antlr.Parser, parent antlr.ParserRuleContext, invo
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEProgram
+	p.RuleIndex = FqlParserRULE_program
 
 	return p
 }
@@ -516,7 +516,7 @@ func (s *ProgramContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 
 func (p *FqlParser) Program() (localctx IProgramContext) {
 	localctx = NewProgramContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 0, FqlParserRULEProgram)
+	p.EnterRule(localctx, 0, FqlParserRULE_program)
 
 	defer func() {
 		p.ExitRule()
@@ -562,7 +562,7 @@ type BodyContext struct {
 func NewEmptyBodyContext() *BodyContext {
 	var p = new(BodyContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEBody
+	p.RuleIndex = FqlParserRULE_body
 	return p
 }
 
@@ -574,7 +574,7 @@ func NewBodyContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokin
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEBody
+	p.RuleIndex = FqlParserRULE_body
 
 	return p
 }
@@ -646,7 +646,7 @@ func (s *BodyContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 
 func (p *FqlParser) Body() (localctx IBodyContext) {
 	localctx = NewBodyContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 2, FqlParserRULEBody)
+	p.EnterRule(localctx, 2, FqlParserRULE_body)
 	var _la int
 
 	defer func() {
@@ -707,7 +707,7 @@ type BodyStatementContext struct {
 func NewEmptyBodyStatementContext() *BodyStatementContext {
 	var p = new(BodyStatementContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEBodyStatement
+	p.RuleIndex = FqlParserRULE_bodyStatement
 	return p
 }
 
@@ -719,7 +719,7 @@ func NewBodyStatementContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEBodyStatement
+	p.RuleIndex = FqlParserRULE_bodyStatement
 
 	return p
 }
@@ -778,7 +778,7 @@ func (s *BodyStatementContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) BodyStatement() (localctx IBodyStatementContext) {
 	localctx = NewBodyStatementContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 4, FqlParserRULEBodyStatement)
+	p.EnterRule(localctx, 4, FqlParserRULE_bodyStatement)
 
 	defer func() {
 		p.ExitRule()
@@ -840,7 +840,7 @@ type BodyExpressionContext struct {
 func NewEmptyBodyExpressionContext() *BodyExpressionContext {
 	var p = new(BodyExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEBodyExpression
+	p.RuleIndex = FqlParserRULE_bodyExpression
 	return p
 }
 
@@ -852,7 +852,7 @@ func NewBodyExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContex
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEBodyExpression
+	p.RuleIndex = FqlParserRULE_bodyExpression
 
 	return p
 }
@@ -911,7 +911,7 @@ func (s *BodyExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interface
 
 func (p *FqlParser) BodyExpression() (localctx IBodyExpressionContext) {
 	localctx = NewBodyExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 6, FqlParserRULEBodyExpression)
+	p.EnterRule(localctx, 6, FqlParserRULE_bodyExpression)
 
 	defer func() {
 		p.ExitRule()
@@ -973,7 +973,7 @@ type ReturnExpressionContext struct {
 func NewEmptyReturnExpressionContext() *ReturnExpressionContext {
 	var p = new(ReturnExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEReturnExpression
+	p.RuleIndex = FqlParserRULE_returnExpression
 	return p
 }
 
@@ -985,7 +985,7 @@ func NewReturnExpressionContext(parser antlr.Parser, parent antlr.ParserRuleCont
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEReturnExpression
+	p.RuleIndex = FqlParserRULE_returnExpression
 
 	return p
 }
@@ -1070,7 +1070,7 @@ func (s *ReturnExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 
 func (p *FqlParser) ReturnExpression() (localctx IReturnExpressionContext) {
 	localctx = NewReturnExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 8, FqlParserRULEReturnExpression)
+	p.EnterRule(localctx, 8, FqlParserRULE_returnExpression)
 	var _la int
 
 	defer func() {
@@ -1179,7 +1179,7 @@ type ForExpressionContext struct {
 func NewEmptyForExpressionContext() *ForExpressionContext {
 	var p = new(ForExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpression
+	p.RuleIndex = FqlParserRULE_forExpression
 	return p
 }
 
@@ -1191,7 +1191,7 @@ func NewForExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpression
+	p.RuleIndex = FqlParserRULE_forExpression
 
 	return p
 }
@@ -1328,7 +1328,7 @@ func (s *ForExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 	localctx = NewForExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 10, FqlParserRULEForExpression)
+	p.EnterRule(localctx, 10, FqlParserRULE_forExpression)
 	var _la int
 
 	defer func() {
@@ -1434,7 +1434,7 @@ type ForExpressionValueVariableContext struct {
 func NewEmptyForExpressionValueVariableContext() *ForExpressionValueVariableContext {
 	var p = new(ForExpressionValueVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpressionValueVariable
+	p.RuleIndex = FqlParserRULE_forExpressionValueVariable
 	return p
 }
 
@@ -1446,7 +1446,7 @@ func NewForExpressionValueVariableContext(parser antlr.Parser, parent antlr.Pars
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpressionValueVariable
+	p.RuleIndex = FqlParserRULE_forExpressionValueVariable
 
 	return p
 }
@@ -1489,7 +1489,7 @@ func (s *ForExpressionValueVariableContext) Accept(visitor antlr.ParseTreeVisito
 
 func (p *FqlParser) ForExpressionValueVariable() (localctx IForExpressionValueVariableContext) {
 	localctx = NewForExpressionValueVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 12, FqlParserRULEForExpressionValueVariable)
+	p.EnterRule(localctx, 12, FqlParserRULE_forExpressionValueVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -1535,7 +1535,7 @@ type ForExpressionKeyVariableContext struct {
 func NewEmptyForExpressionKeyVariableContext() *ForExpressionKeyVariableContext {
 	var p = new(ForExpressionKeyVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpressionKeyVariable
+	p.RuleIndex = FqlParserRULE_forExpressionKeyVariable
 	return p
 }
 
@@ -1547,7 +1547,7 @@ func NewForExpressionKeyVariableContext(parser antlr.Parser, parent antlr.Parser
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpressionKeyVariable
+	p.RuleIndex = FqlParserRULE_forExpressionKeyVariable
 
 	return p
 }
@@ -1590,7 +1590,7 @@ func (s *ForExpressionKeyVariableContext) Accept(visitor antlr.ParseTreeVisitor)
 
 func (p *FqlParser) ForExpressionKeyVariable() (localctx IForExpressionKeyVariableContext) {
 	localctx = NewForExpressionKeyVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 14, FqlParserRULEForExpressionKeyVariable)
+	p.EnterRule(localctx, 14, FqlParserRULE_forExpressionKeyVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -1636,7 +1636,7 @@ type ForExpressionSourceContext struct {
 func NewEmptyForExpressionSourceContext() *ForExpressionSourceContext {
 	var p = new(ForExpressionSourceContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpressionSource
+	p.RuleIndex = FqlParserRULE_forExpressionSource
 	return p
 }
 
@@ -1648,7 +1648,7 @@ func NewForExpressionSourceContext(parser antlr.Parser, parent antlr.ParserRuleC
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpressionSource
+	p.RuleIndex = FqlParserRULE_forExpressionSource
 
 	return p
 }
@@ -1757,7 +1757,7 @@ func (s *ForExpressionSourceContext) Accept(visitor antlr.ParseTreeVisitor) inte
 
 func (p *FqlParser) ForExpressionSource() (localctx IForExpressionSourceContext) {
 	localctx = NewForExpressionSourceContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 16, FqlParserRULEForExpressionSource)
+	p.EnterRule(localctx, 16, FqlParserRULE_forExpressionSource)
 
 	defer func() {
 		p.ExitRule()
@@ -1851,7 +1851,7 @@ type ForExpressionClauseContext struct {
 func NewEmptyForExpressionClauseContext() *ForExpressionClauseContext {
 	var p = new(ForExpressionClauseContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpressionClause
+	p.RuleIndex = FqlParserRULE_forExpressionClause
 	return p
 }
 
@@ -1863,7 +1863,7 @@ func NewForExpressionClauseContext(parser antlr.Parser, parent antlr.ParserRuleC
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpressionClause
+	p.RuleIndex = FqlParserRULE_forExpressionClause
 
 	return p
 }
@@ -1942,7 +1942,7 @@ func (s *ForExpressionClauseContext) Accept(visitor antlr.ParseTreeVisitor) inte
 
 func (p *FqlParser) ForExpressionClause() (localctx IForExpressionClauseContext) {
 	localctx = NewForExpressionClauseContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 18, FqlParserRULEForExpressionClause)
+	p.EnterRule(localctx, 18, FqlParserRULE_forExpressionClause)
 
 	defer func() {
 		p.ExitRule()
@@ -2018,7 +2018,7 @@ type FilterClauseContext struct {
 func NewEmptyFilterClauseContext() *FilterClauseContext {
 	var p = new(FilterClauseContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEFilterClause
+	p.RuleIndex = FqlParserRULE_filterClause
 	return p
 }
 
@@ -2030,7 +2030,7 @@ func NewFilterClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext,
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEFilterClause
+	p.RuleIndex = FqlParserRULE_filterClause
 
 	return p
 }
@@ -2083,7 +2083,7 @@ func (s *FilterClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 
 func (p *FqlParser) FilterClause() (localctx IFilterClauseContext) {
 	localctx = NewFilterClauseContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 20, FqlParserRULEFilterClause)
+	p.EnterRule(localctx, 20, FqlParserRULE_filterClause)
 
 	defer func() {
 		p.ExitRule()
@@ -2133,7 +2133,7 @@ type LimitClauseContext struct {
 func NewEmptyLimitClauseContext() *LimitClauseContext {
 	var p = new(LimitClauseContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULELimitClause
+	p.RuleIndex = FqlParserRULE_limitClause
 	return p
 }
 
@@ -2145,7 +2145,7 @@ func NewLimitClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, 
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULELimitClause
+	p.RuleIndex = FqlParserRULE_limitClause
 
 	return p
 }
@@ -2200,7 +2200,7 @@ func (s *LimitClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{} 
 
 func (p *FqlParser) LimitClause() (localctx ILimitClauseContext) {
 	localctx = NewLimitClauseContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 22, FqlParserRULELimitClause)
+	p.EnterRule(localctx, 22, FqlParserRULE_limitClause)
 	var _la int
 
 	defer func() {
@@ -2266,7 +2266,7 @@ type SortClauseContext struct {
 func NewEmptySortClauseContext() *SortClauseContext {
 	var p = new(SortClauseContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULESortClause
+	p.RuleIndex = FqlParserRULE_sortClause
 	return p
 }
 
@@ -2278,7 +2278,7 @@ func NewSortClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, i
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULESortClause
+	p.RuleIndex = FqlParserRULE_sortClause
 
 	return p
 }
@@ -2352,7 +2352,7 @@ func (s *SortClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 
 func (p *FqlParser) SortClause() (localctx ISortClauseContext) {
 	localctx = NewSortClauseContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 24, FqlParserRULESortClause)
+	p.EnterRule(localctx, 24, FqlParserRULE_sortClause)
 	var _la int
 
 	defer func() {
@@ -2421,7 +2421,7 @@ type SortClauseExpressionContext struct {
 func NewEmptySortClauseExpressionContext() *SortClauseExpressionContext {
 	var p = new(SortClauseExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULESortClauseExpression
+	p.RuleIndex = FqlParserRULE_sortClauseExpression
 	return p
 }
 
@@ -2433,7 +2433,7 @@ func NewSortClauseExpressionContext(parser antlr.Parser, parent antlr.ParserRule
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULESortClauseExpression
+	p.RuleIndex = FqlParserRULE_sortClauseExpression
 
 	return p
 }
@@ -2486,7 +2486,7 @@ func (s *SortClauseExpressionContext) Accept(visitor antlr.ParseTreeVisitor) int
 
 func (p *FqlParser) SortClauseExpression() (localctx ISortClauseExpressionContext) {
 	localctx = NewSortClauseExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 26, FqlParserRULESortClauseExpression)
+	p.EnterRule(localctx, 26, FqlParserRULE_sortClauseExpression)
 	var _la int
 
 	defer func() {
@@ -2544,7 +2544,7 @@ type CollectClauseContext struct {
 func NewEmptyCollectClauseContext() *CollectClauseContext {
 	var p = new(CollectClauseContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectClause
+	p.RuleIndex = FqlParserRULE_collectClause
 	return p
 }
 
@@ -2556,7 +2556,7 @@ func NewCollectClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectClause
+	p.RuleIndex = FqlParserRULE_collectClause
 
 	return p
 }
@@ -2697,7 +2697,7 @@ func (s *CollectClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
 	localctx = NewCollectClauseContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 28, FqlParserRULECollectClause)
+	p.EnterRule(localctx, 28, FqlParserRULE_collectClause)
 
 	defer func() {
 		p.ExitRule()
@@ -2935,7 +2935,7 @@ type CollectVariableContext struct {
 func NewEmptyCollectVariableContext() *CollectVariableContext {
 	var p = new(CollectVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectVariable
+	p.RuleIndex = FqlParserRULE_collectVariable
 	return p
 }
 
@@ -2947,7 +2947,7 @@ func NewCollectVariableContext(parser antlr.Parser, parent antlr.ParserRuleConte
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectVariable
+	p.RuleIndex = FqlParserRULE_collectVariable
 
 	return p
 }
@@ -2990,7 +2990,7 @@ func (s *CollectVariableContext) Accept(visitor antlr.ParseTreeVisitor) interfac
 
 func (p *FqlParser) CollectVariable() (localctx ICollectVariableContext) {
 	localctx = NewCollectVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 30, FqlParserRULECollectVariable)
+	p.EnterRule(localctx, 30, FqlParserRULE_collectVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -3036,7 +3036,7 @@ type CollectGroupVariableContext struct {
 func NewEmptyCollectGroupVariableContext() *CollectGroupVariableContext {
 	var p = new(CollectGroupVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectGroupVariable
+	p.RuleIndex = FqlParserRULE_collectGroupVariable
 	return p
 }
 
@@ -3048,7 +3048,7 @@ func NewCollectGroupVariableContext(parser antlr.Parser, parent antlr.ParserRule
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectGroupVariable
+	p.RuleIndex = FqlParserRULE_collectGroupVariable
 
 	return p
 }
@@ -3091,7 +3091,7 @@ func (s *CollectGroupVariableContext) Accept(visitor antlr.ParseTreeVisitor) int
 
 func (p *FqlParser) CollectGroupVariable() (localctx ICollectGroupVariableContext) {
 	localctx = NewCollectGroupVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 32, FqlParserRULECollectGroupVariable)
+	p.EnterRule(localctx, 32, FqlParserRULE_collectGroupVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -3137,7 +3137,7 @@ type CollectKeepVariableContext struct {
 func NewEmptyCollectKeepVariableContext() *CollectKeepVariableContext {
 	var p = new(CollectKeepVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectKeepVariable
+	p.RuleIndex = FqlParserRULE_collectKeepVariable
 	return p
 }
 
@@ -3149,7 +3149,7 @@ func NewCollectKeepVariableContext(parser antlr.Parser, parent antlr.ParserRuleC
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectKeepVariable
+	p.RuleIndex = FqlParserRULE_collectKeepVariable
 
 	return p
 }
@@ -3192,7 +3192,7 @@ func (s *CollectKeepVariableContext) Accept(visitor antlr.ParseTreeVisitor) inte
 
 func (p *FqlParser) CollectKeepVariable() (localctx ICollectKeepVariableContext) {
 	localctx = NewCollectKeepVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 34, FqlParserRULECollectKeepVariable)
+	p.EnterRule(localctx, 34, FqlParserRULE_collectKeepVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -3238,7 +3238,7 @@ type CollectCountVariableContext struct {
 func NewEmptyCollectCountVariableContext() *CollectCountVariableContext {
 	var p = new(CollectCountVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectCountVariable
+	p.RuleIndex = FqlParserRULE_collectCountVariable
 	return p
 }
 
@@ -3250,7 +3250,7 @@ func NewCollectCountVariableContext(parser antlr.Parser, parent antlr.ParserRule
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectCountVariable
+	p.RuleIndex = FqlParserRULE_collectCountVariable
 
 	return p
 }
@@ -3293,7 +3293,7 @@ func (s *CollectCountVariableContext) Accept(visitor antlr.ParseTreeVisitor) int
 
 func (p *FqlParser) CollectCountVariable() (localctx ICollectCountVariableContext) {
 	localctx = NewCollectCountVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 36, FqlParserRULECollectCountVariable)
+	p.EnterRule(localctx, 36, FqlParserRULE_collectCountVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -3339,7 +3339,7 @@ type CollectAggregateVariableContext struct {
 func NewEmptyCollectAggregateVariableContext() *CollectAggregateVariableContext {
 	var p = new(CollectAggregateVariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectAggregateVariable
+	p.RuleIndex = FqlParserRULE_collectAggregateVariable
 	return p
 }
 
@@ -3351,7 +3351,7 @@ func NewCollectAggregateVariableContext(parser antlr.Parser, parent antlr.Parser
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectAggregateVariable
+	p.RuleIndex = FqlParserRULE_collectAggregateVariable
 
 	return p
 }
@@ -3394,7 +3394,7 @@ func (s *CollectAggregateVariableContext) Accept(visitor antlr.ParseTreeVisitor)
 
 func (p *FqlParser) CollectAggregateVariable() (localctx ICollectAggregateVariableContext) {
 	localctx = NewCollectAggregateVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 38, FqlParserRULECollectAggregateVariable)
+	p.EnterRule(localctx, 38, FqlParserRULE_collectAggregateVariable)
 
 	defer func() {
 		p.ExitRule()
@@ -3440,7 +3440,7 @@ type CollectAggregateExpressionContext struct {
 func NewEmptyCollectAggregateExpressionContext() *CollectAggregateExpressionContext {
 	var p = new(CollectAggregateExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectAggregateExpression
+	p.RuleIndex = FqlParserRULE_collectAggregateExpression
 	return p
 }
 
@@ -3452,7 +3452,7 @@ func NewCollectAggregateExpressionContext(parser antlr.Parser, parent antlr.Pars
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectAggregateExpression
+	p.RuleIndex = FqlParserRULE_collectAggregateExpression
 
 	return p
 }
@@ -3501,7 +3501,7 @@ func (s *CollectAggregateExpressionContext) Accept(visitor antlr.ParseTreeVisito
 
 func (p *FqlParser) CollectAggregateExpression() (localctx ICollectAggregateExpressionContext) {
 	localctx = NewCollectAggregateExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 40, FqlParserRULECollectAggregateExpression)
+	p.EnterRule(localctx, 40, FqlParserRULE_collectAggregateExpression)
 
 	defer func() {
 		p.ExitRule()
@@ -3547,7 +3547,7 @@ type CollectOptionContext struct {
 func NewEmptyCollectOptionContext() *CollectOptionContext {
 	var p = new(CollectOptionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULECollectOption
+	p.RuleIndex = FqlParserRULE_collectOption
 	return p
 }
 
@@ -3559,7 +3559,7 @@ func NewCollectOptionContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULECollectOption
+	p.RuleIndex = FqlParserRULE_collectOption
 
 	return p
 }
@@ -3597,7 +3597,7 @@ func (s *CollectOptionContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) CollectOption() (localctx ICollectOptionContext) {
 	localctx = NewCollectOptionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 42, FqlParserRULECollectOption)
+	p.EnterRule(localctx, 42, FqlParserRULE_collectOption)
 
 	defer func() {
 		p.ExitRule()
@@ -3639,7 +3639,7 @@ type ForExpressionBodyContext struct {
 func NewEmptyForExpressionBodyContext() *ForExpressionBodyContext {
 	var p = new(ForExpressionBodyContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpressionBody
+	p.RuleIndex = FqlParserRULE_forExpressionBody
 	return p
 }
 
@@ -3651,7 +3651,7 @@ func NewForExpressionBodyContext(parser antlr.Parser, parent antlr.ParserRuleCon
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpressionBody
+	p.RuleIndex = FqlParserRULE_forExpressionBody
 
 	return p
 }
@@ -3710,7 +3710,7 @@ func (s *ForExpressionBodyContext) Accept(visitor antlr.ParseTreeVisitor) interf
 
 func (p *FqlParser) ForExpressionBody() (localctx IForExpressionBodyContext) {
 	localctx = NewForExpressionBodyContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 44, FqlParserRULEForExpressionBody)
+	p.EnterRule(localctx, 44, FqlParserRULE_forExpressionBody)
 
 	defer func() {
 		p.ExitRule()
@@ -3772,7 +3772,7 @@ type ForExpressionReturnContext struct {
 func NewEmptyForExpressionReturnContext() *ForExpressionReturnContext {
 	var p = new(ForExpressionReturnContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForExpressionReturn
+	p.RuleIndex = FqlParserRULE_forExpressionReturn
 	return p
 }
 
@@ -3784,7 +3784,7 @@ func NewForExpressionReturnContext(parser antlr.Parser, parent antlr.ParserRuleC
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForExpressionReturn
+	p.RuleIndex = FqlParserRULE_forExpressionReturn
 
 	return p
 }
@@ -3843,7 +3843,7 @@ func (s *ForExpressionReturnContext) Accept(visitor antlr.ParseTreeVisitor) inte
 
 func (p *FqlParser) ForExpressionReturn() (localctx IForExpressionReturnContext) {
 	localctx = NewForExpressionReturnContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 46, FqlParserRULEForExpressionReturn)
+	p.EnterRule(localctx, 46, FqlParserRULE_forExpressionReturn)
 
 	defer func() {
 		p.ExitRule()
@@ -3905,7 +3905,7 @@ type VariableDeclarationContext struct {
 func NewEmptyVariableDeclarationContext() *VariableDeclarationContext {
 	var p = new(VariableDeclarationContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEVariableDeclaration
+	p.RuleIndex = FqlParserRULE_variableDeclaration
 	return p
 }
 
@@ -3917,7 +3917,7 @@ func NewVariableDeclarationContext(parser antlr.Parser, parent antlr.ParserRuleC
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEVariableDeclaration
+	p.RuleIndex = FqlParserRULE_variableDeclaration
 
 	return p
 }
@@ -4006,7 +4006,7 @@ func (s *VariableDeclarationContext) Accept(visitor antlr.ParseTreeVisitor) inte
 
 func (p *FqlParser) VariableDeclaration() (localctx IVariableDeclarationContext) {
 	localctx = NewVariableDeclarationContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 48, FqlParserRULEVariableDeclaration)
+	p.EnterRule(localctx, 48, FqlParserRULE_variableDeclaration)
 
 	defer func() {
 		p.ExitRule()
@@ -4116,7 +4116,7 @@ type ParamContext struct {
 func NewEmptyParamContext() *ParamContext {
 	var p = new(ParamContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEParam
+	p.RuleIndex = FqlParserRULE_param
 	return p
 }
 
@@ -4128,7 +4128,7 @@ func NewParamContext(parser antlr.Parser, parent antlr.ParserRuleContext, invoki
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEParam
+	p.RuleIndex = FqlParserRULE_param
 
 	return p
 }
@@ -4175,7 +4175,7 @@ func (s *ParamContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 
 func (p *FqlParser) Param() (localctx IParamContext) {
 	localctx = NewParamContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 50, FqlParserRULEParam)
+	p.EnterRule(localctx, 50, FqlParserRULE_param)
 
 	defer func() {
 		p.ExitRule()
@@ -4225,7 +4225,7 @@ type VariableContext struct {
 func NewEmptyVariableContext() *VariableContext {
 	var p = new(VariableContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEVariable
+	p.RuleIndex = FqlParserRULE_variable
 	return p
 }
 
@@ -4237,7 +4237,7 @@ func NewVariableContext(parser antlr.Parser, parent antlr.ParserRuleContext, inv
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEVariable
+	p.RuleIndex = FqlParserRULE_variable
 
 	return p
 }
@@ -4280,7 +4280,7 @@ func (s *VariableContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 
 func (p *FqlParser) Variable() (localctx IVariableContext) {
 	localctx = NewVariableContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 52, FqlParserRULEVariable)
+	p.EnterRule(localctx, 52, FqlParserRULE_variable)
 
 	defer func() {
 		p.ExitRule()
@@ -4326,7 +4326,7 @@ type RangeOperatorContext struct {
 func NewEmptyRangeOperatorContext() *RangeOperatorContext {
 	var p = new(RangeOperatorContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULERangeOperator
+	p.RuleIndex = FqlParserRULE_rangeOperator
 	return p
 }
 
@@ -4338,7 +4338,7 @@ func NewRangeOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULERangeOperator
+	p.RuleIndex = FqlParserRULE_rangeOperator
 
 	return p
 }
@@ -4450,7 +4450,7 @@ func (s *RangeOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) RangeOperator() (localctx IRangeOperatorContext) {
 	localctx = NewRangeOperatorContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 54, FqlParserRULERangeOperator)
+	p.EnterRule(localctx, 54, FqlParserRULE_rangeOperator)
 
 	defer func() {
 		p.ExitRule()
@@ -4546,7 +4546,7 @@ type ArrayLiteralContext struct {
 func NewEmptyArrayLiteralContext() *ArrayLiteralContext {
 	var p = new(ArrayLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEArrayLiteral
+	p.RuleIndex = FqlParserRULE_arrayLiteral
 	return p
 }
 
@@ -4558,7 +4558,7 @@ func NewArrayLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext,
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEArrayLiteral
+	p.RuleIndex = FqlParserRULE_arrayLiteral
 
 	return p
 }
@@ -4615,7 +4615,7 @@ func (s *ArrayLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 
 func (p *FqlParser) ArrayLiteral() (localctx IArrayLiteralContext) {
 	localctx = NewArrayLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 56, FqlParserRULEArrayLiteral)
+	p.EnterRule(localctx, 56, FqlParserRULE_arrayLiteral)
 	var _la int
 
 	defer func() {
@@ -4677,7 +4677,7 @@ type ObjectLiteralContext struct {
 func NewEmptyObjectLiteralContext() *ObjectLiteralContext {
 	var p = new(ObjectLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEObjectLiteral
+	p.RuleIndex = FqlParserRULE_objectLiteral
 	return p
 }
 
@@ -4689,7 +4689,7 @@ func NewObjectLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEObjectLiteral
+	p.RuleIndex = FqlParserRULE_objectLiteral
 
 	return p
 }
@@ -4767,7 +4767,7 @@ func (s *ObjectLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) ObjectLiteral() (localctx IObjectLiteralContext) {
 	localctx = NewObjectLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 58, FqlParserRULEObjectLiteral)
+	p.EnterRule(localctx, 58, FqlParserRULE_objectLiteral)
 	var _la int
 
 	defer func() {
@@ -4862,7 +4862,7 @@ type BooleanLiteralContext struct {
 func NewEmptyBooleanLiteralContext() *BooleanLiteralContext {
 	var p = new(BooleanLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEBooleanLiteral
+	p.RuleIndex = FqlParserRULE_booleanLiteral
 	return p
 }
 
@@ -4874,7 +4874,7 @@ func NewBooleanLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContex
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEBooleanLiteral
+	p.RuleIndex = FqlParserRULE_booleanLiteral
 
 	return p
 }
@@ -4917,7 +4917,7 @@ func (s *BooleanLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface
 
 func (p *FqlParser) BooleanLiteral() (localctx IBooleanLiteralContext) {
 	localctx = NewBooleanLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 60, FqlParserRULEBooleanLiteral)
+	p.EnterRule(localctx, 60, FqlParserRULE_booleanLiteral)
 
 	defer func() {
 		p.ExitRule()
@@ -4963,7 +4963,7 @@ type StringLiteralContext struct {
 func NewEmptyStringLiteralContext() *StringLiteralContext {
 	var p = new(StringLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEStringLiteral
+	p.RuleIndex = FqlParserRULE_stringLiteral
 	return p
 }
 
@@ -4975,7 +4975,7 @@ func NewStringLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEStringLiteral
+	p.RuleIndex = FqlParserRULE_stringLiteral
 
 	return p
 }
@@ -5018,7 +5018,7 @@ func (s *StringLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) StringLiteral() (localctx IStringLiteralContext) {
 	localctx = NewStringLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 62, FqlParserRULEStringLiteral)
+	p.EnterRule(localctx, 62, FqlParserRULE_stringLiteral)
 
 	defer func() {
 		p.ExitRule()
@@ -5064,7 +5064,7 @@ type IntegerLiteralContext struct {
 func NewEmptyIntegerLiteralContext() *IntegerLiteralContext {
 	var p = new(IntegerLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEIntegerLiteral
+	p.RuleIndex = FqlParserRULE_integerLiteral
 	return p
 }
 
@@ -5076,7 +5076,7 @@ func NewIntegerLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContex
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEIntegerLiteral
+	p.RuleIndex = FqlParserRULE_integerLiteral
 
 	return p
 }
@@ -5119,7 +5119,7 @@ func (s *IntegerLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface
 
 func (p *FqlParser) IntegerLiteral() (localctx IIntegerLiteralContext) {
 	localctx = NewIntegerLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 64, FqlParserRULEIntegerLiteral)
+	p.EnterRule(localctx, 64, FqlParserRULE_integerLiteral)
 
 	defer func() {
 		p.ExitRule()
@@ -5165,7 +5165,7 @@ type FloatLiteralContext struct {
 func NewEmptyFloatLiteralContext() *FloatLiteralContext {
 	var p = new(FloatLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEFloatLiteral
+	p.RuleIndex = FqlParserRULE_floatLiteral
 	return p
 }
 
@@ -5177,7 +5177,7 @@ func NewFloatLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext,
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEFloatLiteral
+	p.RuleIndex = FqlParserRULE_floatLiteral
 
 	return p
 }
@@ -5220,7 +5220,7 @@ func (s *FloatLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 
 func (p *FqlParser) FloatLiteral() (localctx IFloatLiteralContext) {
 	localctx = NewFloatLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 66, FqlParserRULEFloatLiteral)
+	p.EnterRule(localctx, 66, FqlParserRULE_floatLiteral)
 
 	defer func() {
 		p.ExitRule()
@@ -5266,7 +5266,7 @@ type NoneLiteralContext struct {
 func NewEmptyNoneLiteralContext() *NoneLiteralContext {
 	var p = new(NoneLiteralContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULENoneLiteral
+	p.RuleIndex = FqlParserRULE_noneLiteral
 	return p
 }
 
@@ -5278,7 +5278,7 @@ func NewNoneLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, 
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULENoneLiteral
+	p.RuleIndex = FqlParserRULE_noneLiteral
 
 	return p
 }
@@ -5325,7 +5325,7 @@ func (s *NoneLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{} 
 
 func (p *FqlParser) NoneLiteral() (localctx INoneLiteralContext) {
 	localctx = NewNoneLiteralContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 68, FqlParserRULENoneLiteral)
+	p.EnterRule(localctx, 68, FqlParserRULE_noneLiteral)
 	var _la int
 
 	defer func() {
@@ -5379,7 +5379,7 @@ type ArrayElementListContext struct {
 func NewEmptyArrayElementListContext() *ArrayElementListContext {
 	var p = new(ArrayElementListContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEArrayElementList
+	p.RuleIndex = FqlParserRULE_arrayElementList
 	return p
 }
 
@@ -5391,7 +5391,7 @@ func NewArrayElementListContext(parser antlr.Parser, parent antlr.ParserRuleCont
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEArrayElementList
+	p.RuleIndex = FqlParserRULE_arrayElementList
 
 	return p
 }
@@ -5461,7 +5461,7 @@ func (s *ArrayElementListContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 
 func (p *FqlParser) ArrayElementList() (localctx IArrayElementListContext) {
 	localctx = NewArrayElementListContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 70, FqlParserRULEArrayElementList)
+	p.EnterRule(localctx, 70, FqlParserRULE_arrayElementList)
 	var _la int
 
 	defer func() {
@@ -5536,7 +5536,7 @@ type PropertyAssignmentContext struct {
 func NewEmptyPropertyAssignmentContext() *PropertyAssignmentContext {
 	var p = new(PropertyAssignmentContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEPropertyAssignment
+	p.RuleIndex = FqlParserRULE_propertyAssignment
 	return p
 }
 
@@ -5548,7 +5548,7 @@ func NewPropertyAssignmentContext(parser antlr.Parser, parent antlr.ParserRuleCo
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEPropertyAssignment
+	p.RuleIndex = FqlParserRULE_propertyAssignment
 
 	return p
 }
@@ -5631,7 +5631,7 @@ func (s *PropertyAssignmentContext) Accept(visitor antlr.ParseTreeVisitor) inter
 
 func (p *FqlParser) PropertyAssignment() (localctx IPropertyAssignmentContext) {
 	localctx = NewPropertyAssignmentContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 72, FqlParserRULEPropertyAssignment)
+	p.EnterRule(localctx, 72, FqlParserRULE_propertyAssignment)
 
 	defer func() {
 		p.ExitRule()
@@ -5713,7 +5713,7 @@ type MemberExpressionContext struct {
 func NewEmptyMemberExpressionContext() *MemberExpressionContext {
 	var p = new(MemberExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEMemberExpression
+	p.RuleIndex = FqlParserRULE_memberExpression
 	return p
 }
 
@@ -5725,7 +5725,7 @@ func NewMemberExpressionContext(parser antlr.Parser, parent antlr.ParserRuleCont
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEMemberExpression
+	p.RuleIndex = FqlParserRULE_memberExpression
 
 	return p
 }
@@ -5822,7 +5822,7 @@ func (s *MemberExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 
 func (p *FqlParser) MemberExpression() (localctx IMemberExpressionContext) {
 	localctx = NewMemberExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 74, FqlParserRULEMemberExpression)
+	p.EnterRule(localctx, 74, FqlParserRULE_memberExpression)
 
 	defer func() {
 		p.ExitRule()
@@ -5998,7 +5998,7 @@ type ShorthandPropertyNameContext struct {
 func NewEmptyShorthandPropertyNameContext() *ShorthandPropertyNameContext {
 	var p = new(ShorthandPropertyNameContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEShorthandPropertyName
+	p.RuleIndex = FqlParserRULE_shorthandPropertyName
 	return p
 }
 
@@ -6010,7 +6010,7 @@ func NewShorthandPropertyNameContext(parser antlr.Parser, parent antlr.ParserRul
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEShorthandPropertyName
+	p.RuleIndex = FqlParserRULE_shorthandPropertyName
 
 	return p
 }
@@ -6059,7 +6059,7 @@ func (s *ShorthandPropertyNameContext) Accept(visitor antlr.ParseTreeVisitor) in
 
 func (p *FqlParser) ShorthandPropertyName() (localctx IShorthandPropertyNameContext) {
 	localctx = NewShorthandPropertyNameContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 76, FqlParserRULEShorthandPropertyName)
+	p.EnterRule(localctx, 76, FqlParserRULE_shorthandPropertyName)
 
 	defer func() {
 		p.ExitRule()
@@ -6105,7 +6105,7 @@ type ComputedPropertyNameContext struct {
 func NewEmptyComputedPropertyNameContext() *ComputedPropertyNameContext {
 	var p = new(ComputedPropertyNameContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEComputedPropertyName
+	p.RuleIndex = FqlParserRULE_computedPropertyName
 	return p
 }
 
@@ -6117,7 +6117,7 @@ func NewComputedPropertyNameContext(parser antlr.Parser, parent antlr.ParserRule
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEComputedPropertyName
+	p.RuleIndex = FqlParserRULE_computedPropertyName
 
 	return p
 }
@@ -6174,7 +6174,7 @@ func (s *ComputedPropertyNameContext) Accept(visitor antlr.ParseTreeVisitor) int
 
 func (p *FqlParser) ComputedPropertyName() (localctx IComputedPropertyNameContext) {
 	localctx = NewComputedPropertyNameContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 78, FqlParserRULEComputedPropertyName)
+	p.EnterRule(localctx, 78, FqlParserRULE_computedPropertyName)
 
 	defer func() {
 		p.ExitRule()
@@ -6228,7 +6228,7 @@ type PropertyNameContext struct {
 func NewEmptyPropertyNameContext() *PropertyNameContext {
 	var p = new(PropertyNameContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEPropertyName
+	p.RuleIndex = FqlParserRULE_propertyName
 	return p
 }
 
@@ -6240,7 +6240,7 @@ func NewPropertyNameContext(parser antlr.Parser, parent antlr.ParserRuleContext,
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEPropertyName
+	p.RuleIndex = FqlParserRULE_propertyName
 
 	return p
 }
@@ -6283,7 +6283,7 @@ func (s *PropertyNameContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 
 func (p *FqlParser) PropertyName() (localctx IPropertyNameContext) {
 	localctx = NewPropertyNameContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 80, FqlParserRULEPropertyName)
+	p.EnterRule(localctx, 80, FqlParserRULE_propertyName)
 
 	defer func() {
 		p.ExitRule()
@@ -6329,7 +6329,7 @@ type ExpressionSequenceContext struct {
 func NewEmptyExpressionSequenceContext() *ExpressionSequenceContext {
 	var p = new(ExpressionSequenceContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEExpressionSequence
+	p.RuleIndex = FqlParserRULE_expressionSequence
 	return p
 }
 
@@ -6341,7 +6341,7 @@ func NewExpressionSequenceContext(parser antlr.Parser, parent antlr.ParserRuleCo
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEExpressionSequence
+	p.RuleIndex = FqlParserRULE_expressionSequence
 
 	return p
 }
@@ -6411,7 +6411,7 @@ func (s *ExpressionSequenceContext) Accept(visitor antlr.ParseTreeVisitor) inter
 
 func (p *FqlParser) ExpressionSequence() (localctx IExpressionSequenceContext) {
 	localctx = NewExpressionSequenceContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 82, FqlParserRULEExpressionSequence)
+	p.EnterRule(localctx, 82, FqlParserRULE_expressionSequence)
 	var _la int
 
 	defer func() {
@@ -6476,7 +6476,7 @@ type FunctionCallExpressionContext struct {
 func NewEmptyFunctionCallExpressionContext() *FunctionCallExpressionContext {
 	var p = new(FunctionCallExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEFunctionCallExpression
+	p.RuleIndex = FqlParserRULE_functionCallExpression
 	return p
 }
 
@@ -6488,7 +6488,7 @@ func NewFunctionCallExpressionContext(parser antlr.Parser, parent antlr.ParserRu
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEFunctionCallExpression
+	p.RuleIndex = FqlParserRULE_functionCallExpression
 
 	return p
 }
@@ -6541,7 +6541,7 @@ func (s *FunctionCallExpressionContext) Accept(visitor antlr.ParseTreeVisitor) i
 
 func (p *FqlParser) FunctionCallExpression() (localctx IFunctionCallExpressionContext) {
 	localctx = NewFunctionCallExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 84, FqlParserRULEFunctionCallExpression)
+	p.EnterRule(localctx, 84, FqlParserRULE_functionCallExpression)
 
 	defer func() {
 		p.ExitRule()
@@ -6591,7 +6591,7 @@ type ArgumentsContext struct {
 func NewEmptyArgumentsContext() *ArgumentsContext {
 	var p = new(ArgumentsContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEArguments
+	p.RuleIndex = FqlParserRULE_arguments
 	return p
 }
 
@@ -6603,7 +6603,7 @@ func NewArgumentsContext(parser antlr.Parser, parent antlr.ParserRuleContext, in
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEArguments
+	p.RuleIndex = FqlParserRULE_arguments
 
 	return p
 }
@@ -6681,7 +6681,7 @@ func (s *ArgumentsContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 
 func (p *FqlParser) Arguments() (localctx IArgumentsContext) {
 	localctx = NewArgumentsContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 86, FqlParserRULEArguments)
+	p.EnterRule(localctx, 86, FqlParserRULE_arguments)
 	var _la int
 
 	defer func() {
@@ -6761,7 +6761,7 @@ type ExpressionContext struct {
 func NewEmptyExpressionContext() *ExpressionContext {
 	var p = new(ExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEExpression
+	p.RuleIndex = FqlParserRULE_expression
 	return p
 }
 
@@ -6773,7 +6773,7 @@ func NewExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, i
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEExpression
+	p.RuleIndex = FqlParserRULE_expression
 
 	return p
 }
@@ -7036,7 +7036,7 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 	var _prevctx IExpressionContext = localctx
 	var _ antlr.ParserRuleContext = _prevctx // TODO: To prevent unused variable warning.
 	_startState := 88
-	p.EnterRecursionRule(localctx, 88, FqlParserRULEExpression, _p)
+	p.EnterRecursionRule(localctx, 88, FqlParserRULE_expression, _p)
 	var _la int
 
 	defer func() {
@@ -7194,7 +7194,7 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 			switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 40, p.GetParserRuleContext()) {
 			case 1:
 				localctx = NewExpressionContext(p, _parentctx, _parentState)
-				p.PushNewRecursionContext(localctx, _startState, FqlParserRULEExpression)
+				p.PushNewRecursionContext(localctx, _startState, FqlParserRULE_expression)
 				p.SetState(459)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 21)) {
@@ -7211,7 +7211,7 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 
 			case 2:
 				localctx = NewExpressionContext(p, _parentctx, _parentState)
-				p.PushNewRecursionContext(localctx, _startState, FqlParserRULEExpression)
+				p.PushNewRecursionContext(localctx, _startState, FqlParserRULE_expression)
 				p.SetState(463)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 20)) {
@@ -7228,7 +7228,7 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 
 			case 3:
 				localctx = NewExpressionContext(p, _parentctx, _parentState)
-				p.PushNewRecursionContext(localctx, _startState, FqlParserRULEExpression)
+				p.PushNewRecursionContext(localctx, _startState, FqlParserRULE_expression)
 				p.SetState(467)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 19)) {
@@ -7245,7 +7245,7 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 
 			case 4:
 				localctx = NewExpressionContext(p, _parentctx, _parentState)
-				p.PushNewRecursionContext(localctx, _startState, FqlParserRULEExpression)
+				p.PushNewRecursionContext(localctx, _startState, FqlParserRULE_expression)
 				p.SetState(471)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 14)) {
@@ -7273,7 +7273,7 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 
 			case 5:
 				localctx = NewExpressionContext(p, _parentctx, _parentState)
-				p.PushNewRecursionContext(localctx, _startState, FqlParserRULEExpression)
+				p.PushNewRecursionContext(localctx, _startState, FqlParserRULE_expression)
 				p.SetState(477)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 12)) {
@@ -7333,7 +7333,7 @@ type ForTernaryExpressionContext struct {
 func NewEmptyForTernaryExpressionContext() *ForTernaryExpressionContext {
 	var p = new(ForTernaryExpressionContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEForTernaryExpression
+	p.RuleIndex = FqlParserRULE_forTernaryExpression
 	return p
 }
 
@@ -7345,7 +7345,7 @@ func NewForTernaryExpressionContext(parser antlr.Parser, parent antlr.ParserRule
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEForTernaryExpression
+	p.RuleIndex = FqlParserRULE_forTernaryExpression
 
 	return p
 }
@@ -7454,7 +7454,7 @@ func (s *ForTernaryExpressionContext) Accept(visitor antlr.ParseTreeVisitor) int
 
 func (p *FqlParser) ForTernaryExpression() (localctx IForTernaryExpressionContext) {
 	localctx = NewForTernaryExpressionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 90, FqlParserRULEForTernaryExpression)
+	p.EnterRule(localctx, 90, FqlParserRULE_forTernaryExpression)
 	var _la int
 
 	defer func() {
@@ -7608,7 +7608,7 @@ type EqualityOperatorContext struct {
 func NewEmptyEqualityOperatorContext() *EqualityOperatorContext {
 	var p = new(EqualityOperatorContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEEqualityOperator
+	p.RuleIndex = FqlParserRULE_equalityOperator
 	return p
 }
 
@@ -7620,7 +7620,7 @@ func NewEqualityOperatorContext(parser antlr.Parser, parent antlr.ParserRuleCont
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEEqualityOperator
+	p.RuleIndex = FqlParserRULE_equalityOperator
 
 	return p
 }
@@ -7683,7 +7683,7 @@ func (s *EqualityOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 
 func (p *FqlParser) EqualityOperator() (localctx IEqualityOperatorContext) {
 	localctx = NewEqualityOperatorContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 92, FqlParserRULEEqualityOperator)
+	p.EnterRule(localctx, 92, FqlParserRULE_equalityOperator)
 	var _la int
 
 	defer func() {
@@ -7737,7 +7737,7 @@ type LogicalOperatorContext struct {
 func NewEmptyLogicalOperatorContext() *LogicalOperatorContext {
 	var p = new(LogicalOperatorContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULELogicalOperator
+	p.RuleIndex = FqlParserRULE_logicalOperator
 	return p
 }
 
@@ -7749,7 +7749,7 @@ func NewLogicalOperatorContext(parser antlr.Parser, parent antlr.ParserRuleConte
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULELogicalOperator
+	p.RuleIndex = FqlParserRULE_logicalOperator
 
 	return p
 }
@@ -7796,7 +7796,7 @@ func (s *LogicalOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interfac
 
 func (p *FqlParser) LogicalOperator() (localctx ILogicalOperatorContext) {
 	localctx = NewLogicalOperatorContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 94, FqlParserRULELogicalOperator)
+	p.EnterRule(localctx, 94, FqlParserRULE_logicalOperator)
 	var _la int
 
 	defer func() {
@@ -7850,7 +7850,7 @@ type MathOperatorContext struct {
 func NewEmptyMathOperatorContext() *MathOperatorContext {
 	var p = new(MathOperatorContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEMathOperator
+	p.RuleIndex = FqlParserRULE_mathOperator
 	return p
 }
 
@@ -7862,7 +7862,7 @@ func NewMathOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext,
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEMathOperator
+	p.RuleIndex = FqlParserRULE_mathOperator
 
 	return p
 }
@@ -7921,7 +7921,7 @@ func (s *MathOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 
 func (p *FqlParser) MathOperator() (localctx IMathOperatorContext) {
 	localctx = NewMathOperatorContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 96, FqlParserRULEMathOperator)
+	p.EnterRule(localctx, 96, FqlParserRULE_mathOperator)
 	var _la int
 
 	defer func() {
@@ -7975,7 +7975,7 @@ type UnaryOperatorContext struct {
 func NewEmptyUnaryOperatorContext() *UnaryOperatorContext {
 	var p = new(UnaryOperatorContext)
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
-	p.RuleIndex = FqlParserRULEUnaryOperator
+	p.RuleIndex = FqlParserRULE_unaryOperator
 	return p
 }
 
@@ -7987,7 +7987,7 @@ func NewUnaryOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext
 	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
 
 	p.parser = parser
-	p.RuleIndex = FqlParserRULEUnaryOperator
+	p.RuleIndex = FqlParserRULE_unaryOperator
 
 	return p
 }
@@ -8042,7 +8042,7 @@ func (s *UnaryOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 
 func (p *FqlParser) UnaryOperator() (localctx IUnaryOperatorContext) {
 	localctx = NewUnaryOperatorContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 98, FqlParserRULEUnaryOperator)
+	p.EnterRule(localctx, 98, FqlParserRULE_unaryOperator)
 	var _la int
 
 	defer func() {
@@ -8084,14 +8084,14 @@ func (p *FqlParser) Sempred(localctx antlr.RuleContext, ruleIndex, predIndex int
 		if localctx != nil {
 			t = localctx.(*ExpressionContext)
 		}
-		return p.ExpressionSempred(t, predIndex)
+		return p.Expression_Sempred(t, predIndex)
 
 	default:
 		panic("No predicate with index: " + fmt.Sprint(ruleIndex))
 	}
 }
 
-func (p *FqlParser) ExpressionSempred(localctx antlr.RuleContext, predIndex int) bool {
+func (p *FqlParser) Expression_Sempred(localctx antlr.RuleContext, predIndex int) bool {
 	switch predIndex {
 	case 0:
 		return p.Precpred(p.GetParserRuleContext(), 21)
