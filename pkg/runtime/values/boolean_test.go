@@ -70,4 +70,16 @@ func TestBoolean(t *testing.T) {
 			So(values.False.Compare(values.True), ShouldEqual, -1)
 		})
 	})
+
+	Convey(".Hash", t, func() {
+		Convey("It should calculate hash", func() {
+			So(values.True.Hash(), ShouldBeGreaterThan, 0)
+			So(values.False.Hash(), ShouldBeGreaterThan, 0)
+		})
+
+		Convey("Hash sum should be consistent", func() {
+			So(values.True.Hash(), ShouldEqual, values.True.Hash())
+			So(values.False.Hash(), ShouldEqual, values.False.Hash())
+		})
+	})
 }

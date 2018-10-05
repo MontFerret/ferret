@@ -70,10 +70,10 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 	}
 
 	// Hash map for a check for uniqueness
-	var hashes map[int]bool
+	var hashes map[uint64]bool
 
 	if e.distinct {
-		hashes = make(map[int]bool)
+		hashes = make(map[uint64]bool)
 	}
 
 	res := values.NewArray(10)

@@ -1,9 +1,9 @@
 package values
 
 import (
-	"crypto/sha512"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"hash/fnv"
 	"io"
 	"io/ioutil"
 )
@@ -62,16 +62,14 @@ func (b *Binary) Unwrap() interface{} {
 	return b.values
 }
 
-func (b *Binary) Hash() int {
-	h := sha512.New()
+func (b *Binary) Hash() uint64 {
+	h := fnv.New64a()
 
-	out, err := h.Write(b.values)
+	h.Write([]byte(b.Type().String()))
+	h.Write([]byte(":"))
+	h.Write(b.values)
 
-	if err != nil {
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (b *Binary) Clone() core.Value {
