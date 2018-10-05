@@ -5,7 +5,7 @@ export GOPATH
 VERSION ?= $(shell git describe --tags --always --dirty)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
-DIR_CMD = ./cmd
+DIR_CLI = ./cli
 
 default: build
 
@@ -14,7 +14,7 @@ build: install vet generate test compile
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	-ldflags "-X main.Version=${VERSION}" \
-	${DIR_CMD}/main.go
+	./main.go
 
 install:
 	dep ensure
@@ -30,14 +30,14 @@ doc:
 
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
-	go fmt ${DIR_CMD}/... ${DIR_PKG}/...
+	go fmt ${DIR_CLI}/... ${DIR_PKG}/...
 
 # https://github.com/golang/lint
 # go get github.com/golang/lint/golint
 lint:
-	golint ${DIR_CMD}/... ${DIR_PKG}/...
+	golint ${DIR_CLI}/... ${DIR_PKG}/...
 
 # http://godoc.org/code.google.com/p/go.tools/cmd/vet
 # go get code.google.com/p/go.tools/cmd/vet
 vet:
-	go vet ${DIR_CMD}/... ${DIR_PKG}/...
+	go vet ${DIR_CLI}/... ${DIR_PKG}/...

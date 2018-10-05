@@ -45,7 +45,7 @@ type Value interface {
 	String() string
 	Compare(other Value) int
 	Unwrap() interface{}
-	Hash() int
+	Hash() uint64
 	Clone() Value
 }
 

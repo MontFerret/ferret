@@ -3,7 +3,6 @@ package dynamic
 import (
 	"bytes"
 	"context"
-	"crypto/sha512"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -14,6 +13,7 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/rs/zerolog"
+	"hash/fnv"
 	"strconv"
 	"sync"
 	"time"
@@ -188,24 +188,18 @@ func (el *HTMLElement) Unwrap() interface{} {
 	return el
 }
 
-func (el *HTMLElement) Hash() int {
+
+func (el *HTMLElement) Hash() uint64 {
 	el.Lock()
 	defer el.Unlock()
 
-	h := sha512.New()
+	h := fnv.New64a()
 
-	out, err := h.Write([]byte(el.innerHTML))
+	h.Write([]byte(el.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(el.innerHTML))
 
-	if err != nil {
-		el.logger.Error().
-			Timestamp().
-			Err(err).
-			Msg("failed to calculate hash value")
-
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (el *HTMLElement) Value() core.Value {
@@ -297,7 +291,7 @@ func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
 
 func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	if !el.IsConnected() {
-		return values.NewArray(0)
+		return values.None
 	}
 
 	ctx := context.Background()

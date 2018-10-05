@@ -2,7 +2,6 @@ package dynamic
 
 import (
 	"context"
-	"crypto/sha512"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -17,9 +16,13 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"hash/fnv"
 	"sync"
 	"time"
 )
+
+
+const BlankPageUrl = "about:blank"
 
 type HTMLDocument struct {
 	sync.Mutex
@@ -78,10 +81,12 @@ func LoadHTMLDocument(
 		return nil, err
 	}
 
-	err = waitForLoadEvent(ctx, client)
+	if url != BlankPageUrl {
+		err = waitForLoadEvent(ctx, client)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	root, innerHTML, err := getRootElement(client)
@@ -201,19 +206,17 @@ func (doc *HTMLDocument) Unwrap() interface{} {
 	return doc.element
 }
 
-func (doc *HTMLDocument) Hash() int {
+func (doc *HTMLDocument) Hash() uint64 {
 	doc.Lock()
 	defer doc.Unlock()
 
-	h := sha512.New()
+	h := fnv.New64a()
 
-	out, err := h.Write([]byte(doc.url))
+	h.Write([]byte(doc.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(doc.url))
 
-	if err != nil {
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
@@ -637,6 +640,10 @@ func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 }
 
 func (doc *HTMLDocument) Navigate(url values.String) error {
+	if url == "" {
+		url = BlankPageUrl
+	}
+
 	ctx := context.Background()
 	repl, err := doc.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
 
@@ -648,5 +655,5 @@ func (doc *HTMLDocument) Navigate(url values.String) error {
 		return errors.New(*repl.ErrorText)
 	}
 
-	return waitForLoadEvent(ctx, doc.client)
+	return doc.WaitForNavigation(5000)
 }
