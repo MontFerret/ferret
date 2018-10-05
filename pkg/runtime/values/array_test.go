@@ -119,6 +119,45 @@ func TestArray(t *testing.T) {
 		})
 	})
 
+	Convey(".Hash", t, func() {
+		Convey("It should calculate hash of non-empty array", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+			)
+
+			h := arr.Hash()
+
+			So(h, ShouldBeGreaterThan, 0)
+		})
+
+		Convey("It should calculate hash of empty array", func() {
+			arr := values.NewArrayWith()
+
+			h := arr.Hash()
+
+			So(h, ShouldBeGreaterThan, 0)
+		})
+
+		Convey("Hash sum should be consistent", func() {
+			arr := values.NewArrayWith(
+				values.True,
+				values.NewInt(1),
+				values.NewFloat(1.1),
+				values.NewString("foobar"),
+				values.NewCurrentDateTime(),
+				values.NewArrayWith(values.NewInt(1), values.True),
+				values.NewObjectWith(values.NewObjectProperty("foo", values.NewString("bar"))),
+			)
+
+			h1 := arr.Hash()
+			h2 := arr.Hash()
+
+			So(h1, ShouldEqual, h2)
+		})
+	})
+
 	Convey(".Length", t, func() {
 		Convey("Should return 0 when empty", func() {
 			arr := values.NewArray(1)

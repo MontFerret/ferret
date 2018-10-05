@@ -2,7 +2,6 @@ package dynamic
 
 import (
 	"context"
-	"crypto/sha512"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -17,6 +16,7 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"hash/fnv"
 	"sync"
 	"time"
 )
@@ -205,19 +205,17 @@ func (doc *HtmlDocument) Unwrap() interface{} {
 	return doc.element
 }
 
-func (doc *HtmlDocument) Hash() int {
+func (doc *HtmlDocument) Hash() uint64 {
 	doc.Lock()
 	defer doc.Unlock()
 
-	h := sha512.New()
+	h := fnv.New64a()
 
-	out, err := h.Write([]byte(doc.url))
+	h.Write([]byte(doc.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(doc.url))
 
-	if err != nil {
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (doc *HtmlDocument) Clone() core.Value {

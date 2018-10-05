@@ -1,10 +1,11 @@
 package values
 
 import (
-	"crypto/sha512"
+	"encoding/binary"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
+	"hash/fnv"
 )
 
 type (
@@ -77,22 +78,29 @@ func (t *Array) Unwrap() interface{} {
 	return arr
 }
 
-func (t *Array) Hash() int {
-	bytes, err := t.MarshalJSON()
+func (t *Array) Hash() uint64 {
+	h := fnv.New64a()
 
-	if err != nil {
-		return 0
+	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte("["))
+
+	endIndex := len(t.value) - 1
+
+	for i, el := range t.value {
+		bytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bytes, el.Hash())
+
+		h.Write(bytes)
+
+		if i != endIndex {
+			h.Write([]byte(","))
+		}
 	}
 
-	h := sha512.New()
+	h.Write([]byte("]"))
 
-	out, err := h.Write(bytes)
-
-	if err != nil {
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (t *Array) Clone() core.Value {
