@@ -1774,29 +1774,29 @@ func TestParam(t *testing.T) {
 	})
 }
 
-func TestHtml(t *testing.T) {
-	Convey("Should load a document", t, func() {
-		c := compiler.New()
-
-		out, err := c.MustCompile(`
-LET doc = DOCUMENT("https://github.com/", true)
-LET main = ELEMENT(doc, '.application-main')
-LET mainTxt = main.innerText
-
-NAVIGATE(doc, "https://github.com/features")
-
-LET features = ELEMENT(doc, '.application-main')
-LET featuresTxt = features.innerText
-
-LOG("featuresTxt:", featuresTxt)
-
-RETURN mainTxt == featuresTxt
-
-	
-			`).Run(context.Background())
-
-		So(err, ShouldBeNil)
-
-		So(string(out), ShouldEqual, `"int"`)
-	})
-}
+//func TestHtml(t *testing.T) {
+//	Convey("Should load a document", t, func() {
+//		c := compiler.New()
+//
+//		out, err := c.MustCompile(`
+//LET doc = DOCUMENT("https://github.com/", true)
+//LET main = ELEMENT(doc, '.application-main')
+//LET mainTxt = main.innerText
+//
+//NAVIGATE(doc, "https://github.com/features")
+//
+//LET features = ELEMENT(doc, '.application-main')
+//LET featuresTxt = features.innerText
+//
+//LOG("featuresTxt:", featuresTxt)
+//
+//RETURN mainTxt == featuresTxt
+//
+//
+//			`).Run(context.Background())
+//
+//		So(err, ShouldBeNil)
+//
+//		So(string(out), ShouldEqual, `"int"`)
+//	})
+//}
