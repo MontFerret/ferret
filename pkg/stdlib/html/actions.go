@@ -23,13 +23,13 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) == 1 {
 		arg1 := args[0]
 
-		err := core.ValidateType(arg1, core.HtmlElementType)
+		err := core.ValidateType(arg1, core.HTMLElementType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		el, ok := arg1.(*dynamic.HtmlElement)
+		el, ok := arg1.(*dynamic.HTMLElement)
 
 		if !ok {
 			return values.False, core.Error(core.ErrInvalidType, "expected dynamic element")
@@ -42,13 +42,13 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -73,13 +73,13 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -102,7 +102,7 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.HtmlDocumentType)
+	err = core.ValidateType(args[0], core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
@@ -114,7 +114,7 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(*dynamic.HtmlDocument)
+	doc, ok := args[0].(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -141,13 +141,13 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) == 2 {
 		arg1 := args[0]
 
-		err := core.ValidateType(arg1, core.HtmlElementType)
+		err := core.ValidateType(arg1, core.HTMLElementType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		el, ok := arg1.(*dynamic.HtmlElement)
+		el, ok := arg1.(*dynamic.HTMLElement)
 
 		if !ok {
 			return values.False, core.Error(core.ErrInvalidType, "expected dynamic element")
@@ -164,7 +164,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arg1 := args[0]
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.False, err
@@ -178,7 +178,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")

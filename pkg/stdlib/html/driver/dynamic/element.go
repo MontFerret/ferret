@@ -160,7 +160,7 @@ func (el *HTMLElement) String() string {
 
 func (el *HTMLElement) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HtmlDocumentType:
+	case core.HTMLDocumentType:
 		other := other.(*HTMLElement)
 
 		id := int(el.id)

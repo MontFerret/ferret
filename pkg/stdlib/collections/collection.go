@@ -20,8 +20,8 @@ func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 		core.StringType,
 		core.ArrayType,
 		core.ObjectType,
-		core.HtmlElementType,
-		core.HtmlDocumentType,
+		core.HTMLElementType,
+		core.HTMLDocumentType,
 		core.BinaryType,
 	)
 

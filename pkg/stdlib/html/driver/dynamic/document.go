@@ -31,7 +31,7 @@ type HTMLDocument struct {
 	client  *cdp.Client
 	events  *events.EventBroker
 	url     values.String
-	element *HtmlElement
+	element *HTMLElement
 }
 
 func LoadHTMLDocument(
@@ -144,7 +144,7 @@ func NewHTMLDocument(
 	doc.conn = conn
 	doc.client = client
 	doc.events = broker
-	doc.element = NewHtmlElement(doc.logger, client, broker, root.NodeID, root, innerHTML)
+	doc.element = NewHTMLElement(doc.logger, client, broker, root.NodeID, root, innerHTML)
 	doc.url = ""
 
 	if root.BaseURL != nil {
@@ -170,7 +170,7 @@ func NewHTMLDocument(
 		doc.element.Close()
 
 		// create a new root element wrapper
-		doc.element = NewHtmlElement(doc.logger, client, broker, updated.NodeID, updated, innerHTML)
+		doc.element = NewHTMLElement(doc.logger, client, broker, updated.NodeID, updated, innerHTML)
 		doc.url = ""
 
 		if updated.BaseURL != nil {

@@ -7,7 +7,7 @@ import (
 )
 
 type HTMLDocument struct {
-	*HtmlElement
+	*HTMLElement
 	url values.String
 }
 
@@ -23,7 +23,7 @@ func NewHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "document root selection")
 	}
 
-	el, err := NewHtmlElement(node.Selection)
+	el, err := NewHTMLElement(node.Selection)
 
 	if err != nil {
 		return nil, err

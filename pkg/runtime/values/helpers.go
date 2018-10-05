@@ -59,7 +59,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				case "innerText":
 					result = el.InnerText()
 				case "innerHtml":
-					result = el.InnerHtml()
+					result = el.InnerHTML()
 				case "value":
 					result = el.Value()
 				case "attributes":
@@ -73,7 +73,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 						doc, ok := result.(HTMLDocument)
 
 						if ok {
-							result = doc.Url()
+							result = doc.URL()
 						}
 					}
 				default:

@@ -17,7 +17,7 @@ const (
 )
 
 type Driver interface {
-	GetDocument(ctx context.Context, url string) (values.HtmlNode, error)
+	GetDocument(ctx context.Context, url string) (values.HTMLNode, error)
 	Close() error
 }
 

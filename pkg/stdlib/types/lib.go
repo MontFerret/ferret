@@ -18,8 +18,8 @@ func NewLib() map[string]core.Function {
 		"IS_DATETIME":      IsDateTime,
 		"IS_ARRAY":         IsArray,
 		"IS_OBJECT":        IsObject,
-		"IS_HTML_ELEMENT":  IsHtmlElement,
-		"IS_HTML_DOCUMENT": IsHtmlDocument,
+		"IS_HTML_ELEMENT":  IsHTMLElement,
+		"IS_HTML_DOCUMENT": IsHTMLDocument,
 		"IS_BINARY":        IsBinary,
 		"TYPENAME":         TypeName,
 	}

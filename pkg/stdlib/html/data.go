@@ -23,13 +23,13 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -54,13 +54,13 @@ func InnerHTMLAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -85,13 +85,13 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -116,13 +116,13 @@ func InnerTextAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HtmlDocumentType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HtmlDocument)
+	doc, ok := arg1.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")

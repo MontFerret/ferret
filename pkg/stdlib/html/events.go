@@ -24,13 +24,13 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	err = core.ValidateType(arg, core.HtmlDocumentType)
+	err = core.ValidateType(arg, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg.(*dynamic.HtmlDocument)
+	doc, ok := arg.(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Error(core.ErrInvalidType, "expected dynamic document")
@@ -46,13 +46,13 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.HtmlDocumentType)
+	err = core.ValidateType(args[0], core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(*dynamic.HtmlDocument)
+	doc, ok := args[0].(*dynamic.HTMLDocument)
 
 	if !ok {
 		return values.None, core.Error(core.ErrInvalidType, "expected dynamic document")

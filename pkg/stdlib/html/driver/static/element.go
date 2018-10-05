@@ -83,7 +83,7 @@ func (el *HTMLElement) NodeType() values.Int {
 		return 0
 	}
 
-	return values.NewInt(common.ToHtmlType(nodes[0].Type))
+	return values.NewInt(common.ToHTMLType(nodes[0].Type))
 }
 
 func (el *HTMLElement) NodeName() values.String {

@@ -55,15 +55,15 @@ func ToIterator(value core.Value) (Iterator, error) {
 		return NewArrayIterator(value.(*values.Array)), nil
 	case core.ObjectType:
 		return NewObjectIterator(value.(*values.Object)), nil
-	case core.HtmlElementType, core.HtmlDocumentType:
+	case core.HTMLElementType, core.HTMLDocumentType:
 		return NewHTMLNodeIterator(value.(values.HTMLNode)), nil
 	default:
 		return nil, core.TypeError(
 			value.Type(),
 			core.ArrayType,
 			core.ObjectType,
-			core.HtmlDocumentType,
-			core.HtmlElementType,
+			core.HTMLDocumentType,
+			core.HTMLElementType,
 		)
 	}
 }

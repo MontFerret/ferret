@@ -28,7 +28,7 @@ func NewDriver(setters ...Option) *Driver {
 	return &Driver{client}
 }
 
-func (d *Driver) GetDocument(_ context.Context, url string) (values.HtmlNode, error) {
+func (d *Driver) GetDocument(_ context.Context, url string) (values.HTMLNode, error) {
 	req, err := httpx.NewRequest(httpx.MethodGet, url, nil)
 
 	if err != nil {
@@ -55,10 +55,10 @@ func (d *Driver) GetDocument(_ context.Context, url string) (values.HtmlNode, er
 		return nil, errors.Wrapf(err, "failed to parse a document %s", url)
 	}
 
-	return NewHtmlDocument(url, doc)
+	return NewHTMLDocument(url, doc)
 }
 
-func (d *Driver) ParseDocument(_ context.Context, str string) (values.HtmlNode, error) {
+func (d *Driver) ParseDocument(_ context.Context, str string) (values.HTMLNode, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)
@@ -67,7 +67,7 @@ func (d *Driver) ParseDocument(_ context.Context, str string) (values.HtmlNode, 
 		return nil, errors.Wrap(err, "failed to parse a document")
 	}
 
-	return NewHtmlDocument("#string", doc)
+	return NewHTMLDocument("#string", doc)
 }
 
 func (d *Driver) Close() error {

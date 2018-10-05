@@ -228,7 +228,7 @@ func TestDocument(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			el, err := static.NewHtmlElement(doc.Selection)
+			el, err := static.NewHTMLElement(doc.Selection)
 
 			So(err, ShouldBeNil)
 
