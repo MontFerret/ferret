@@ -43,8 +43,8 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 			result = arr.Get(segment.(Int))
 
 			break
-		case core.HtmlElementType, core.HtmlDocumentType:
-			el := result.(HtmlNode)
+		case core.HTMLElementType, core.HTMLDocumentType:
+			el := result.(HTMLNode)
 
 			if segmentType == core.IntType {
 				result = el.GetChildNode(segment.(Int))
@@ -69,8 +69,8 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				case "length":
 					result = el.Length()
 				case "url":
-					if result.Type() == core.HtmlDocumentType {
-						doc, ok := result.(HtmlDocument)
+					if result.Type() == core.HTMLDocumentType {
+						doc, ok := result.(HTMLDocument)
 
 						if ok {
 							result = doc.Url()
@@ -92,8 +92,8 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				from.Type(),
 				core.ArrayType,
 				core.ObjectType,
-				core.HtmlDocumentType,
-				core.HtmlElementType,
+				core.HTMLDocumentType,
+				core.HTMLElementType,
 			)
 		}
 	}
