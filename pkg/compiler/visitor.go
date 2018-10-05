@@ -536,7 +536,7 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 	return literals.NewObjectLiteralWith(props...), nil
 }
 
-func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, scope *scope) (core.Expression, error) {
+func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *scope) (core.Expression, error) {
 	return literals.NewStringLiteral(ctx.Identifier().GetText()), nil
 }
 
@@ -611,7 +611,7 @@ func (v *visitor) doVisitBooleanLiteral(ctx *fql.BooleanLiteralContext) (core.Ex
 	return literals.NewBooleanLiteral(strings.ToUpper(ctx.GetText()) == "TRUE"), nil
 }
 
-func (v *visitor) doVisitNoneLiteral(ctx *fql.NoneLiteralContext) (core.Expression, error) {
+func (v *visitor) doVisitNoneLiteral(_ *fql.NoneLiteralContext) (core.Expression, error) {
 	return literals.None, nil
 }
 
@@ -723,7 +723,7 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 	)
 }
 
-func (v *visitor) doVisitParamContext(context *fql.ParamContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitParamContext(context *fql.ParamContext, _ *scope) (collections.IterableExpression, error) {
 	name := context.Identifier().GetText()
 
 	return expressions.NewParameterExpression(
@@ -1012,7 +1012,7 @@ func (v *visitor) doVisitForTernaryExpression(ctx *fql.ForTernaryExpressionConte
 	)
 }
 
-func (v *visitor) createTernaryOperator(src core.SourceMap, exps []core.Expression, scope *scope) (*expressions.ConditionExpression, error) {
+func (v *visitor) createTernaryOperator(src core.SourceMap, exps []core.Expression, _ *scope) (*expressions.ConditionExpression, error) {
 	var test core.Expression
 	var consequent core.Expression
 	var alternate core.Expression

@@ -458,7 +458,7 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 	return loaded, nil
 }
 
-func (el *HTMLElement) handlePageReload(message interface{}) {
+func (el *HTMLElement) handlePageReload(_ interface{}) {
 	el.Close()
 }
 

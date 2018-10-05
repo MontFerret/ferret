@@ -12,6 +12,6 @@ func NewFloatLiteral(value float64) FloatLiteral {
 	return FloatLiteral(value)
 }
 
-func (l FloatLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (l FloatLiteral) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
 	return values.NewFloat(float64(l)), nil
 }

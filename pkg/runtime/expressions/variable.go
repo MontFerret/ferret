@@ -58,7 +58,7 @@ func (e *VariableExpression) Iterate(ctx context.Context, scope *core.Scope) (co
 	return iter, nil
 }
 
-func (e *VariableExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (e *VariableExpression) Exec(_ context.Context, scope *core.Scope) (core.Value, error) {
 	return scope.GetVariable(e.name)
 }
 
