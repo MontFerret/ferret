@@ -30,4 +30,3 @@ warningCode = 0
 [rule.unused-parameter]
 [rule.unreachable-code]
 [rule.redefines-builtin-id]
-  severity = "warning"

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 )
 
+//revive:disable-next-line redefines-builtin-id
 type Type int64
 
 const (
