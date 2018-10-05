@@ -18,6 +18,7 @@ addons:
 
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+- go get -u github.com/mgechev/revive
 - sudo curl -o /usr/local/lib/antlr-4.7.1-complete.jar https://www.antlr.org/download/antlr-4.7.1-complete.jar
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
 - mkdir $HOME/travis-bin
@@ -25,3 +26,6 @@ before_install:
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
+
+script:
+- revive -config revive.toml -formatter friendly ./...
