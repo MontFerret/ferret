@@ -21,6 +21,8 @@ import (
 	"time"
 )
 
+const BlankPageUrl = "about:blank"
+
 type HtmlDocument struct {
 	sync.Mutex
 	logger  *zerolog.Logger
@@ -78,10 +80,12 @@ func LoadHtmlDocument(
 		return nil, err
 	}
 
-	err = waitForLoadEvent(ctx, client)
+	if url != BlankPageUrl {
+		err = waitForLoadEvent(ctx, client)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	root, innerHtml, err := getRootElement(client)
@@ -637,6 +641,10 @@ func (doc *HtmlDocument) WaitForNavigation(timeout values.Int) error {
 }
 
 func (doc *HtmlDocument) Navigate(url values.String) error {
+	if url == "" {
+		url = BlankPageUrl
+	}
+
 	ctx := context.Background()
 	repl, err := doc.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
 
@@ -648,5 +656,5 @@ func (doc *HtmlDocument) Navigate(url values.String) error {
 		return errors.New(*repl.ErrorText)
 	}
 
-	return waitForLoadEvent(ctx, doc.client)
+	return doc.WaitForNavigation(5000)
 }
