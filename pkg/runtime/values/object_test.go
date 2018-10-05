@@ -142,6 +142,45 @@ func TestObject(t *testing.T) {
 		})
 	})
 
+	Convey(".Hash", t, func() {
+		Convey("It should calculate hash of non-empty object", func() {
+			v := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.NewString("bar")),
+				values.NewObjectProperty("faz", values.NewInt(1)),
+				values.NewObjectProperty("qaz", values.True),
+			)
+
+			h := v.Hash()
+
+			So(h, ShouldBeGreaterThan, 0)
+		})
+
+		Convey("It should calculate hash of empty object", func() {
+			v := values.NewObject()
+
+			h := v.Hash()
+
+			So(h, ShouldBeGreaterThan, 0)
+		})
+
+		Convey("Hash sum should be consistent", func() {
+			v := values.NewObjectWith(
+				values.NewObjectProperty("boolean", values.True),
+				values.NewObjectProperty("int", values.NewInt(1)),
+				values.NewObjectProperty("float", values.NewFloat(1.1)),
+				values.NewObjectProperty("string", values.NewString("foobar")),
+				values.NewObjectProperty("datetime", values.NewCurrentDateTime()),
+				values.NewObjectProperty("array", values.NewArrayWith(values.NewInt(1), values.True)),
+				values.NewObjectProperty("object", values.NewObjectWith(values.NewObjectProperty("foo", values.NewString("bar")))),
+			)
+
+			h1 := v.Hash()
+			h2 := v.Hash()
+
+			So(h1, ShouldEqual, h2)
+		})
+	})
+
 	Convey(".Length", t, func() {
 		Convey("Should return 0 when empty", func() {
 			obj := values.NewObject()

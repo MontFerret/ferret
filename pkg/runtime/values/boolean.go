@@ -1,10 +1,10 @@
 package values
 
 import (
-	"crypto/sha512"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
+	"hash/fnv"
 	"strings"
 )
 
@@ -98,16 +98,14 @@ func (t Boolean) Unwrap() interface{} {
 	return bool(t)
 }
 
-func (t Boolean) Hash() int {
-	h := sha512.New()
+func (t Boolean) Hash() uint64 {
+	h := fnv.New64a()
 
-	out, err := h.Write([]byte(t.String()))
+	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(t.String()))
 
-	if err != nil {
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (t Boolean) Clone() core.Value {

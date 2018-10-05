@@ -1,12 +1,12 @@
 package static
 
 import (
-	"crypto/sha512"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
 	"github.com/PuerkitoBio/goquery"
+	"hash/fnv"
 )
 
 type HTMLElement struct {
@@ -53,22 +53,21 @@ func (el *HTMLElement) Unwrap() interface{} {
 	return el.selection
 }
 
-func (el *HTMLElement) Hash() int {
-	h := sha512.New()
 
+func (el *HTMLElement) Hash() uint64 {
 	str, err := el.selection.Html()
 
 	if err != nil {
 		return 0
 	}
 
-	out, err := h.Write([]byte(str))
+	h := fnv.New64a()
 
-	if err != nil {
-		return 0
-	}
+	h.Write([]byte(el.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(str))
 
-	return out
+	return h.Sum64()
 }
 
 func (el *HTMLElement) Clone() core.Value {
