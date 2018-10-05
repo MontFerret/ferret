@@ -22,5 +22,6 @@ func NewLib() map[string]core.Function {
 		"SHIFT":         Shift,
 		"SLICE":         Slice,
 		"SORTED":        Sorted,
+		"SORTED_UNIQUE": SortedUnique,
 	}
 }

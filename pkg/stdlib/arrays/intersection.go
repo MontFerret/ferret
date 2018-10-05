@@ -24,7 +24,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 		return values.None, err
 	}
 
-	intersections := make(map[int][]core.Value)
+	intersections := make(map[uint64][]core.Value)
 	capacity := len(args)
 
 	for _, i := range args {

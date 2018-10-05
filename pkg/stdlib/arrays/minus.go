@@ -19,7 +19,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	intersections := make(map[int]core.Value)
+	intersections := make(map[uint64]core.Value)
 	capacity := values.NewInt(0)
 
 	for idx, i := range args {
