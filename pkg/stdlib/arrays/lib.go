@@ -25,5 +25,6 @@ func NewLib() map[string]core.Function {
 		"SORTED_UNIQUE":  SortedUnique,
 		"UNION":          Union,
 		"UNION_DISTINCT": UnionDistinct,
+		"UNIQUE":         Unique,
 	}
 }
