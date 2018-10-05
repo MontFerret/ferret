@@ -1,9 +1,11 @@
 package values
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
+	"hash/fnv"
 	"strconv"
 )
 
@@ -110,8 +112,17 @@ func (t Int) Unwrap() interface{} {
 	return int(t)
 }
 
-func (t Int) Hash() int {
-	return int(t)
+func (t Int) Hash() uint64 {
+	h := fnv.New64a()
+
+	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(":"))
+
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, uint64(t))
+	h.Write(bytes)
+
+	return h.Sum64()
 }
 
 func (t Int) Clone() core.Value {

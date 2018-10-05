@@ -1,11 +1,11 @@
 package values
 
 import (
-	"crypto/sha512"
 	"encoding/json"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
+	"hash/fnv"
 	"strings"
 )
 
@@ -93,16 +93,14 @@ func (t String) Unwrap() interface{} {
 	return string(t)
 }
 
-func (t String) Hash() int {
-	h := sha512.New()
+func (t String) Hash() uint64 {
+	h := fnv.New64a()
 
-	out, err := h.Write([]byte(t))
+	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(t))
 
-	if err != nil {
-		return 0
-	}
-
-	return out
+	return h.Sum64()
 }
 
 func (t String) Clone() core.Value {

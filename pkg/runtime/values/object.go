@@ -1,15 +1,17 @@
 package values
 
 import (
-	"crypto/sha512"
+	"encoding/binary"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"hash/fnv"
+	"sort"
 )
 
 type (
 	ObjectPredicate = func(value core.Value, key string) bool
 	ObjectProperty  struct {
-		name  string
+		key   string
 		value core.Value
 	}
 	Object struct {
@@ -29,7 +31,7 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 	obj := NewObject()
 
 	for _, prop := range props {
-		obj.value[prop.name] = prop.value
+		obj.value[prop.key] = prop.value
 	}
 
 	return obj
@@ -88,22 +90,43 @@ func (t *Object) Unwrap() interface{} {
 	return obj
 }
 
-func (t *Object) Hash() int {
-	bytes, err := t.MarshalJSON()
+func (t *Object) Hash() uint64 {
+	h := fnv.New64a()
 
-	if err != nil {
-		return 0
+	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte("{"))
+
+	keys := make([]string, 0, len(t.value))
+
+	for key := range t.value {
+		keys = append(keys, key)
 	}
 
-	h := sha512.New()
+	// order does not really matter
+	// but it will give us a consistent hash sum
+	sort.Strings(keys)
+	endIndex := len(keys) - 1
 
-	out, err := h.Write(bytes)
+	for idx, key := range keys {
+		h.Write([]byte(key))
+		h.Write([]byte(":"))
 
-	if err != nil {
-		return 0
+		el := t.value[key]
+
+		bytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bytes, el.Hash())
+
+		h.Write(bytes)
+
+		if idx != endIndex {
+			h.Write([]byte(","))
+		}
 	}
 
-	return out
+	h.Write([]byte("}"))
+
+	return h.Sum64()
 }
 
 func (t *Object) Clone() core.Value {
