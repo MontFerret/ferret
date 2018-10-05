@@ -14,8 +14,7 @@ type (
 	}
 )
 
-var (
-	//revive:disable-next-line var-declaration
+const (
 	AndType LogicalOperatorType = 0
 	OrType  LogicalOperatorType = 1
 	NotType LogicalOperatorType = 2
