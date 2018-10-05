@@ -6,12 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns the union of all passed arrays.
- * @param arrays (Array, repeated) - List of arrays to combine.
- * @returns (Array) - All array elements combined in a single array, in any order.
- */
-func Union(_ context.Context, args ...core.Value) (core.Value, error) {
+func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
@@ -26,6 +21,7 @@ func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	firstArrLen := args[0].(*values.Array).Length()
 	result := values.NewArray(len(args) * int(firstArrLen))
+	hashes := make(map[uint64]bool)
 
 	for _, arg := range args {
 		err := core.ValidateType(arg, core.ArrayType)
@@ -37,7 +33,15 @@ func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 		arr := arg.(*values.Array)
 
 		arr.ForEach(func(value core.Value, _ int) bool {
-			result.Push(value)
+			h := value.Hash()
+
+			_, exists := hashes[h]
+
+			if !exists {
+				hashes[h] = true
+				result.Push(value)
+			}
+
 			return true
 		})
 	}
