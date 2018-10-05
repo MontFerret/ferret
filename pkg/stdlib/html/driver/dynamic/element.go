@@ -297,7 +297,7 @@ func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
 
 func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 	if !el.IsConnected() {
-		return values.NewArray(0)
+		return values.None
 	}
 
 	ctx := context.Background()
