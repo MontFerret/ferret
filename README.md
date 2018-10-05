@@ -112,15 +112,15 @@ Please use `Ctrl-D` to exit this program.
 If you want to execute a query stored in a file, just pass a file name:
 
 ```
-ferret ./docs/examples/hackernews.fql
+ferret ./docs/examples/static-page.fql
 ```
 
 ```
-cat ./docs/examples/hackernews.fql | ferret
+cat ./docs/examples/static-page.fql | ferret
 ```
 
 ```
-ferret < ./docs/examples/hackernews.fql
+ferret < ./docs/examples/static-page.fql
 ```
 
 
