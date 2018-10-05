@@ -31,9 +31,13 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	uniq := false
 
 	if len(args) > 2 {
-		if args[2].Type() == core.BooleanType {
-			uniq = args[2].Compare(values.True) == 0
+		err = core.ValidateType(args[2], core.BooleanType)
+
+		if err != nil {
+			return values.None, err
 		}
+
+		uniq = args[2].Compare(values.True) == 0
 	}
 
 	result := values.NewArray(int(arr.Length() + 1))

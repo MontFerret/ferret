@@ -30,9 +30,13 @@ func Position(_ context.Context, args ...core.Value) (core.Value, error) {
 	retIdx := false
 
 	if len(args) > 2 {
-		if args[2].Type() == core.BooleanType {
-			retIdx = args[2].Compare(values.True) == 0
+		err = core.ValidateType(args[2], core.BooleanType)
+
+		if err != nil {
+			return values.None, err
 		}
+
+		retIdx = args[2].Compare(values.True) == 0
 	}
 
 	position := arr.IndexOf(el)

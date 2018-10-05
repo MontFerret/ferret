@@ -32,9 +32,13 @@ func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
 	limit := -1
 
 	if len(args) > 2 {
-		if args[2].Type() == core.IntType {
-			limit = int(args[2].(values.Int))
+		err = core.ValidateType(args[2], core.IntType)
+
+		if err != nil {
+			return values.None, err
 		}
+
+		limit = int(args[2].(values.Int))
 	}
 
 	result := values.NewArray(int(arr.Length()))
