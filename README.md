@@ -3,15 +3,15 @@
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
 ## What is it?
-```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like ui testing, machine learning and analytics.    
-Having it's own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
+```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like UI testing, machine learning and analytics.    
+Having its own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
 It's extremely portable, extensible and fast.
 
 ## Show me some code
 The following example demonstrates the use of dynamic pages.    
 First of all, we load the main Google Search page, type search criteria into an input box and then click a search button.   
 The click action triggers a redirect, so we wait till its end.   
-Once the page gets loaded, we iterate over all elements in search results and assign output to a variable.   
+Once the page gets loaded, we iterate over all elements in search results and assign the output to a variable.   
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
 ```aql
@@ -49,27 +49,32 @@ RETURN (
 Nowadays data is everything and who owns data - owns the world.    
 I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
 After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
-```ferret``` project is an ambitious initiative trying to bring universal platform for writing scrapers without any hassle.    
+```ferret``` project is an ambitious initiative trying to bring the universal platform for writing scrapers without any hassle.    
 
 ## Inspiration
 FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
 But due to the domain specifics, there are some differences in how things work.     
 
 ## WIP
-Be aware, the the project is under heavy development. There is no documentation and some things may change in the final release.    
+Be aware, that the project is under heavy development. There is no documentation and some things may change in the final release.    
 For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
 
 
 ## Installation
 
 ### Prerequisites
-* Go >=1.6
+#### Production
+* Go >=1.9
+* Chrome or Docker
+
+#### Development
 * GoDep
 * GNU Make
-* Chrome or Docker (optional)
+* ANTLR4 >=4.7.1
+
 
 ```sh
-make install && make compile
+go get github.com/MontFerret/ferret
 ```
 
 You can use your local copy of Google Chrome / Chromium, but for ease of use it's recommended to run it inside a Docker container:
@@ -91,7 +96,7 @@ chrome.exe --remote-debugging-port=9222
 
 If you want to play with ```fql``` and check its syntax, you can run CLI with the following commands:
 ```
-go run ./cmd/main.go
+ferret
 ```
 
 ```ferret``` will run in REPL mode.
@@ -107,33 +112,33 @@ Please use `Ctrl-D` to exit this program.
 
 ```
 
-**Note:** symbol ```%``` is used to start and end multi line queries. You also can use heredoc format.
+**Note:** symbol ```%``` is used to start and end multi-line queries. You also can use the heredoc format.
 
 If you want to execute a query stored in a file, just pass a file name:
 
 ```
-go run ./cmd/main.go ./docs/examples/hackernews.fql
+ferret ./docs/examples/static-page.fql
 ```
 
 ```
-cat ./docs/examples/hackernews.fql | go run ./cmd/main.go
+cat ./docs/examples/static-page.fql | ferret
 ```
 
 ```
-go run ./cmd/main.go < ./docs/examples/hackernews.fql
+ferret < ./docs/examples/static-page.fql
 ```
 
 
 ### Browser mode
 
-By default, ``ferret`` loads HTML pages via http protocol, because it's faster.    
+By default, ``ferret`` loads HTML pages via HTTP protocol, because it's faster.    
 But nowadays, there are more and more websites rendered with JavaScript, and therefore, this 'old school' approach does not really work.    
 For such cases, you may fetch documents using Chrome or Chromium via Chrome DevTools protocol (aka CDP).    
 First, you need to make sure that you launched Chrome with ```remote-debugging-port=9222``` flag.    
 Second, you need to pass the address to ```ferret``` CLI.    
 
 ```
-go run ./cmd/main.go --cdp http://127.0.0.1:9222
+ferret --cdp http://127.0.0.1:9222
 ```
 
 **NOTE:** By default, ```ferret``` will try to use this local address as a default one, so it makes sense to explicitly pass the parameter only in case of either different port number or remote address.    
@@ -141,7 +146,7 @@ go run ./cmd/main.go --cdp http://127.0.0.1:9222
 Alternatively, you can tell CLI to launch Chrome for you.
 
 ```shell
-go run ./cmd/main.go --cdp-launch
+ferret --cdp-launch
 ```
 
 **NOTE:** Launch command is currently broken on MacOS.
@@ -345,7 +350,7 @@ func getStrings() ([]string, error) {
 }
 ```
 
-On top of that, you can completely turn off standard library, by passing the following option:
+On top of that, you can completely turn off the standard library, bypassing the following option:
 
 ```go
 comp := compiler.New(compiler.WithoutStdlib())

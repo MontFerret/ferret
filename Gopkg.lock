@@ -138,6 +138,14 @@
   version = "v2.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:f7aa53146bf79462509d4ce136826ebbd64907e4679e1b04e62758da6b68e589"
+  name = "github.com/orcaman/concurrent-map"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b28018939af9022337862b94a463abb18abb3e0e"
+
+[[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -228,6 +236,7 @@
     "github.com/mafredri/cdp/rpcc",
     "github.com/mafredri/cdp/session",
     "github.com/natefinch/lumberjack",
+    "github.com/orcaman/concurrent-map",
     "github.com/pkg/errors",
     "github.com/rs/zerolog",
     "github.com/sethgrid/pester",

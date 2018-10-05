@@ -33,7 +33,7 @@ func (t *none) Unwrap() interface{} {
 	return nil
 }
 
-func (t *none) Hash() int {
+func (t *none) Hash() uint64 {
 	return 0
 }
 

@@ -1,8 +1,8 @@
 package values
 
 import (
-	"crypto/sha512"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"hash/fnv"
 	"time"
 )
 
@@ -10,6 +10,10 @@ const defaultTimeLayout = time.RFC3339
 
 type DateTime struct {
 	time.Time
+}
+
+func NewCurrentDateTime() DateTime {
+	return DateTime{time.Now()}
 }
 
 func NewDateTime(time time.Time) DateTime {
@@ -84,18 +88,21 @@ func (t DateTime) Unwrap() interface{} {
 	return t.Time
 }
 
-func (t DateTime) Hash() int {
-	h := sha512.New()
+func (t DateTime) Hash() uint64 {
+	h := fnv.New64a()
 
-	t.Time.MarshalJSON()
+	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(":"))
 
-	out, err := h.Write([]byte(t.Time.String()))
+	bytes, err := t.Time.GobEncode()
 
 	if err != nil {
 		return 0
 	}
 
-	return out
+	h.Write(bytes)
+
+	return h.Sum64()
 }
 
 func (t DateTime) Clone() core.Value {

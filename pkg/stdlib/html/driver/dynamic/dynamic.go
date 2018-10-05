@@ -38,6 +38,10 @@ func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode
 	ctx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 
+	if url == "" {
+		url = BlankPageUrl
+	}
+
 	// Create a new target belonging to the browser context, similar
 	// to opening a new tab in an incognito window.
 	createTargetArgs := target.NewCreateTargetArgs(url).SetBrowserContextID(drv.contextID)
