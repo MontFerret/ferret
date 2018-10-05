@@ -51,7 +51,7 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHtml(client *cdp.Client, id dom.NodeID) (values.String, error) {
+func loadInnerHTML(client *cdp.Client, id dom.NodeID) (values.String, error) {
 	res, err := client.DOM.GetOuterHTML(context.Background(), dom.NewGetOuterHTMLArgs().SetNodeID(id))
 
 	if err != nil {

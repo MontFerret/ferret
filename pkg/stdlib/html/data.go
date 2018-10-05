@@ -13,7 +13,7 @@ import (
  * @param selector (String) - Selector
  * @returns str (String) - String value of inner html.
  */
-func InnerHtml(_ context.Context, args ...core.Value) (core.Value, error) {
+func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -35,7 +35,7 @@ func InnerHtml(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
 	}
 
-	return doc.InnerHtmlBySelector(values.NewString(selector))
+	return doc.InnerHTMLBySelector(values.NewString(selector))
 }
 
 /*
@@ -44,7 +44,7 @@ func InnerHtml(_ context.Context, args ...core.Value) (core.Value, error) {
  * @param selector (String) - Selector
  * @returns array (Array) - Array of string values.
  */
-func InnerHtmlAll(_ context.Context, args ...core.Value) (core.Value, error) {
+func InnerHTMLAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -66,7 +66,7 @@ func InnerHtmlAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
 	}
 
-	return doc.InnerHtmlBySelectorAll(values.NewString(selector))
+	return doc.InnerHTMLBySelectorAll(values.NewString(selector))
 }
 
 /*
@@ -97,7 +97,7 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
 	}
 
-	return doc.InnerHtmlBySelector(values.NewString(selector))
+	return doc.InnerHTMLBySelector(values.NewString(selector))
 }
 
 /*
@@ -128,5 +128,5 @@ func InnerTextAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, core.Error(core.ErrInvalidType, "expected dynamic document")
 	}
 
-	return doc.InnerHtmlBySelectorAll(values.NewString(selector))
+	return doc.InnerHTMLBySelectorAll(values.NewString(selector))
 }

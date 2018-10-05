@@ -11,7 +11,7 @@ import (
 type Topic struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Url         string `json:"url"`
+	URL         string `json:"url"`
 }
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	for _, topic := range topics {
-		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.Url))
+		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.URL))
 	}
 }
 

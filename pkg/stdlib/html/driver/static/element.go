@@ -9,39 +9,39 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type HtmlElement struct {
+type HTMLElement struct {
 	selection *goquery.Selection
 	attrs     *values.Object
 	children  *values.Array
 }
 
-func NewHtmlElement(node *goquery.Selection) (*HtmlElement, error) {
+func NewHTMLElement(node *goquery.Selection) (*HTMLElement, error) {
 	if node == nil {
 		return nil, core.Error(core.ErrMissedArgument, "element selection")
 	}
 
-	return &HtmlElement{node, nil, nil}, nil
+	return &HTMLElement{node, nil, nil}, nil
 }
 
-func (el *HtmlElement) MarshalJSON() ([]byte, error) {
+func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 	return json.Marshal(el.InnerText().String())
 }
 
-func (el *HtmlElement) Type() core.Type {
-	return core.HtmlElementType
+func (el *HTMLElement) Type() core.Type {
+	return core.HTMLElementType
 }
 
-func (el *HtmlElement) String() string {
-	return el.InnerHtml().String()
+func (el *HTMLElement) String() string {
+	return el.InnerHTML().String()
 }
 
-func (el *HtmlElement) Compare(other core.Value) int {
+func (el *HTMLElement) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HtmlElementType:
+	case core.HTMLElementType:
 		// TODO: complete the comparison
 		return -1
 	default:
-		if other.Type() > core.HtmlElementType {
+		if other.Type() > core.HTMLElementType {
 			return -1
 		}
 
@@ -49,11 +49,11 @@ func (el *HtmlElement) Compare(other core.Value) int {
 	}
 }
 
-func (el *HtmlElement) Unwrap() interface{} {
+func (el *HTMLElement) Unwrap() interface{} {
 	return el.selection
 }
 
-func (el *HtmlElement) Hash() int {
+func (el *HTMLElement) Hash() int {
 	h := sha512.New()
 
 	str, err := el.selection.Html()
@@ -71,13 +71,13 @@ func (el *HtmlElement) Hash() int {
 	return out
 }
 
-func (el *HtmlElement) Clone() core.Value {
-	c, _ := NewHtmlElement(el.selection.Clone())
+func (el *HTMLElement) Clone() core.Value {
+	c, _ := NewHTMLElement(el.selection.Clone())
 
 	return c
 }
 
-func (el *HtmlElement) NodeType() values.Int {
+func (el *HTMLElement) NodeType() values.Int {
 	nodes := el.selection.Nodes
 
 	if len(nodes) == 0 {
@@ -87,11 +87,11 @@ func (el *HtmlElement) NodeType() values.Int {
 	return values.NewInt(common.ToHtmlType(nodes[0].Type))
 }
 
-func (el *HtmlElement) NodeName() values.String {
+func (el *HTMLElement) NodeName() values.String {
 	return values.NewString(goquery.NodeName(el.selection))
 }
 
-func (el *HtmlElement) Length() values.Int {
+func (el *HTMLElement) Length() values.Int {
 	if el.children == nil {
 		el.children = el.parseChildren()
 	}
@@ -99,7 +99,7 @@ func (el *HtmlElement) Length() values.Int {
 	return el.children.Length()
 }
 
-func (el *HtmlElement) Value() core.Value {
+func (el *HTMLElement) Value() core.Value {
 	val, ok := el.selection.Attr("value")
 
 	if ok {
@@ -109,11 +109,11 @@ func (el *HtmlElement) Value() core.Value {
 	return values.EmptyString
 }
 
-func (el *HtmlElement) InnerText() values.String {
+func (el *HTMLElement) InnerText() values.String {
 	return values.NewString(el.selection.Text())
 }
 
-func (el *HtmlElement) InnerHtml() values.String {
+func (el *HTMLElement) InnerHTML() values.String {
 	h, err := el.selection.Html()
 
 	if err != nil {
@@ -123,7 +123,7 @@ func (el *HtmlElement) InnerHtml() values.String {
 	return values.NewString(h)
 }
 
-func (el *HtmlElement) GetAttributes() core.Value {
+func (el *HTMLElement) GetAttributes() core.Value {
 	if el.attrs == nil {
 		el.attrs = el.parseAttrs()
 	}
@@ -131,7 +131,7 @@ func (el *HtmlElement) GetAttributes() core.Value {
 	return el.attrs
 }
 
-func (el *HtmlElement) GetAttribute(name values.String) core.Value {
+func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 	v, ok := el.selection.Attr(name.String())
 
 	if ok {
@@ -141,7 +141,7 @@ func (el *HtmlElement) GetAttribute(name values.String) core.Value {
 	return values.None
 }
 
-func (el *HtmlElement) GetChildNodes() core.Value {
+func (el *HTMLElement) GetChildNodes() core.Value {
 	if el.children == nil {
 		el.children = el.parseChildren()
 	}
@@ -149,7 +149,7 @@ func (el *HtmlElement) GetChildNodes() core.Value {
 	return el.children
 }
 
-func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
+func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
 	if el.children == nil {
 		el.children = el.parseChildren()
 	}
@@ -157,14 +157,14 @@ func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
 	return el.children.Get(idx)
 }
 
-func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
+func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
 		return values.None
 	}
 
-	res, err := NewHtmlElement(selection)
+	res, err := NewHTMLElement(selection)
 
 	if err != nil {
 		return values.None
@@ -173,7 +173,7 @@ func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 	return res
 }
 
-func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
+func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
@@ -183,7 +183,7 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 	arr := values.NewArray(selection.Length())
 
 	selection.Each(func(i int, selection *goquery.Selection) {
-		el, err := NewHtmlElement(selection)
+		el, err := NewHTMLElement(selection)
 
 		if err == nil {
 			arr.Push(el)
@@ -193,7 +193,7 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 	return arr
 }
 
-func (el *HtmlElement) parseAttrs() *values.Object {
+func (el *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 
 	for _, name := range common.Attributes {
@@ -207,7 +207,7 @@ func (el *HtmlElement) parseAttrs() *values.Object {
 	return obj
 }
 
-func (el *HtmlElement) parseChildren() *values.Array {
+func (el *HTMLElement) parseChildren() *values.Array {
 	children := el.selection.Children()
 
 	arr := values.NewArray(10)
@@ -215,14 +215,14 @@ func (el *HtmlElement) parseChildren() *values.Array {
 	children.Each(func(i int, selection *goquery.Selection) {
 		//name := goquery.NodeName(selection)
 		//if name != "#text" && name != "#comment" {
-		//	child, err := NewHtmlElement(selection)
+		//	child, err := NewHTMLElement(selection)
 		//
 		//	if err == nil {
 		//		arr.Push(child)
 		//	}
 		//}
 
-		child, err := NewHtmlElement(selection)
+		child, err := NewHTMLElement(selection)
 
 		if err == nil {
 			arr.Push(child)

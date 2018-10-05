@@ -74,20 +74,20 @@ func IsObject(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	return isTypeof(inputs[0], core.ObjectType), nil
 }
 
-func IsHtmlElement(_ context.Context, inputs ...core.Value) (core.Value, error) {
+func IsHTMLElement(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	if len(inputs) == 0 {
 		return values.None, core.ErrMissedArgument
 	}
 
-	return isTypeof(inputs[0], core.HtmlElementType), nil
+	return isTypeof(inputs[0], core.HTMLElementType), nil
 }
 
-func IsHtmlDocument(_ context.Context, inputs ...core.Value) (core.Value, error) {
+func IsHTMLDocument(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	if len(inputs) == 0 {
 		return values.None, core.ErrMissedArgument
 	}
 
-	return isTypeof(inputs[0], core.HtmlDocumentType), nil
+	return isTypeof(inputs[0], core.HTMLDocumentType), nil
 }
 
 func IsBinary(_ context.Context, inputs ...core.Value) (core.Value, error) {

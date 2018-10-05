@@ -43,8 +43,8 @@ type (
 		pos    int
 	}
 
-	HtmlNodeIterator struct {
-		values values.HtmlNode
+	HTMLNodeIterator struct {
+		values values.HTMLNode
 		pos    int
 	}
 )
@@ -56,7 +56,7 @@ func ToIterator(value core.Value) (Iterator, error) {
 	case core.ObjectType:
 		return NewObjectIterator(value.(*values.Object)), nil
 	case core.HtmlElementType, core.HtmlDocumentType:
-		return NewHtmlNodeIterator(value.(values.HtmlNode)), nil
+		return NewHTMLNodeIterator(value.(values.HTMLNode)), nil
 	default:
 		return nil, core.TypeError(
 			value.Type(),
@@ -214,15 +214,15 @@ func (iterator *ObjectIterator) Next() (core.Value, core.Value, error) {
 	return values.None, values.None, ErrExhausted
 }
 
-func NewHtmlNodeIterator(input values.HtmlNode) *HtmlNodeIterator {
-	return &HtmlNodeIterator{input, 0}
+func NewHTMLNodeIterator(input values.HTMLNode) *HTMLNodeIterator {
+	return &HTMLNodeIterator{input, 0}
 }
 
-func (iterator *HtmlNodeIterator) HasNext() bool {
+func (iterator *HTMLNodeIterator) HasNext() bool {
 	return iterator.values.Length() > values.NewInt(iterator.pos)
 }
 
-func (iterator *HtmlNodeIterator) Next() (core.Value, core.Value, error) {
+func (iterator *HTMLNodeIterator) Next() (core.Value, core.Value, error) {
 	if iterator.values.Length() > values.NewInt(iterator.pos) {
 		idx := iterator.pos
 		val := iterator.values.GetChildNode(values.NewInt(idx))
