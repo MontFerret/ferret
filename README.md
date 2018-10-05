@@ -63,7 +63,7 @@ For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.
 ## Installation
 
 ### Prerequisites
-* Go >=1.6
+* Go >=1.9
 * GoDep
 * GNU Make
 * Chrome or Docker (optional)
