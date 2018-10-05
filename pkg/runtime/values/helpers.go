@@ -226,7 +226,7 @@ func Parse(input interface{}) core.Value {
 			size := v.Len()
 			arr := NewArray(size)
 
-			for i := 0; i < size; i += 1 {
+			for i := 0; i < size; i++ {
 				value := v.Index(i)
 				arr.Push(Parse(value.Interface()))
 			}
@@ -252,7 +252,7 @@ func Parse(input interface{}) core.Value {
 			obj := NewObject()
 			size := t.NumField()
 
-			for i := 0; i < size; i += 1 {
+			for i := 0; i < size; i++ {
 				field := t.Field(i)
 				value := v.Field(i)
 

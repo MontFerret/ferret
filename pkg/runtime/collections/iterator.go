@@ -128,7 +128,7 @@ func (iterator *SliceIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.values) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values[idx]
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewInt(idx), nil
 	}
@@ -148,7 +148,7 @@ func (iterator *MapIterator) HasNext() bool {
 		i := 0
 		for k := range iterator.values {
 			keys[i] = k
-			i += 1
+			i++
 		}
 
 		iterator.keys = keys
@@ -161,7 +161,7 @@ func (iterator *MapIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewString(key), nil
 	}
@@ -181,7 +181,7 @@ func (iterator *ArrayIterator) Next() (core.Value, core.Value, error) {
 	if int(iterator.values.Length()) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values.Get(values.NewInt(idx))
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewInt(idx), nil
 	}
@@ -206,7 +206,7 @@ func (iterator *ObjectIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val, _ := iterator.values.Get(values.NewString(key))
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewString(key), nil
 	}
@@ -227,7 +227,7 @@ func (iterator *HTMLNodeIterator) Next() (core.Value, core.Value, error) {
 		idx := iterator.pos
 		val := iterator.values.GetChildNode(values.NewInt(idx))
 
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewInt(idx), nil
 	}
