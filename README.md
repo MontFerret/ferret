@@ -63,10 +63,15 @@ For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.
 ## Installation
 
 ### Prerequisites
+#### Production
 * Go >=1.9
+* Chrome or Docker
+
+#### Development
 * GoDep
 * GNU Make
-* Chrome or Docker (optional)
+* ANTLR4 >=4.7.1
+
 
 ```sh
 go get github.com/MontFerret/ferret
