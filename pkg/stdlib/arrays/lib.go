@@ -23,5 +23,6 @@ func NewLib() map[string]core.Function {
 		"SLICE":         Slice,
 		"SORTED":        Sorted,
 		"SORTED_UNIQUE": SortedUnique,
+		"UNION":         Union,
 	}
 }
