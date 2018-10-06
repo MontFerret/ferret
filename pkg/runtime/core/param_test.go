@@ -16,9 +16,12 @@ func TestParamsWith(t *testing.T) {
 		p["val2"] = values.NewString("test")
 
 		pc := core.ParamsWith(context.Background(), p)
-
 		So(pc, ShouldNotBeNil)
-		So(pc.Value("params"), ShouldEqual, p)
+
+		out, err := core.ParamsFrom(pc)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, p)
 	})
 }
 
@@ -36,8 +39,15 @@ func TestParamsFrom(t *testing.T) {
 		pf, err := core.ParamsFrom(ctx)
 
 		So(err, ShouldNotBeNil)
+		So(pf, ShouldBeNil)
 
 		ctx = context.WithValue(context.Background(), "params", p)
+		pf, err = core.ParamsFrom(ctx)
+
+		So(err, ShouldNotBeNil)
+		So(pf, ShouldBeNil)
+
+		ctx = core.ParamsWith(context.Background(), p)
 		pf, err = core.ParamsFrom(ctx)
 
 		So(err, ShouldBeNil)
@@ -60,7 +70,7 @@ func TestParamFrom(t *testing.T) {
 
 		So(err, ShouldNotBeNil)
 
-		ctx = context.WithValue(context.Background(), "params", p)
+		ctx = core.ParamsWith(context.Background(), p)
 		v, err := core.ParamFrom(ctx, "val1")
 
 		So(err, ShouldBeNil)
