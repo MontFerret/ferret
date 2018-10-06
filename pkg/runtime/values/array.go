@@ -128,6 +128,10 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 func (t *Array) Get(idx Int) core.Value {
 	l := len(t.value) - 1
 
+	if l < 0 {
+		return None
+	}
+
 	if int(idx) > l {
 		return None
 	}
@@ -151,8 +155,21 @@ func (t *Array) Push(item core.Value) {
 	t.value = append(t.value, item)
 }
 
-func (t *Array) Slice(from, to Int) []core.Value {
-	return t.value[from:to]
+func (t *Array) Slice(from, to Int) *Array {
+	length := t.Length()
+
+	if from >= length {
+		return NewArray(0)
+	}
+
+	if to > length {
+		to = length
+	}
+
+	result := new(Array)
+	result.value = t.value[from:to]
+
+	return result
 }
 
 func (t *Array) IndexOf(item core.Value) Int {

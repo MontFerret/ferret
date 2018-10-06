@@ -1,0 +1,67 @@
+package arrays
+
+import (
+	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+)
+
+/*
+ * Turn an array of arrays into a flat array.
+ * All array elements in array will be expanded in the result array.
+ * Non-array elements are added as they are.
+ * The function will recurse into sub-arrays up to the specified depth.
+ * Duplicates will not be removed.
+ * @param arr (Array) - Target array.
+ * @param depth (Int, optional) - Depth level.
+ * @returns (Array) - Flat array.
+ */
+func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 1, 2)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	err = core.ValidateType(args[0], core.ArrayType)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	arr := args[0].(*values.Array)
+	level := 1
+
+	if len(args) > 1 {
+		err = core.ValidateType(args[1], core.IntType)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		level = int(args[1].(values.Int))
+	}
+
+	currentLevel := 0
+	result := values.NewArray(int(arr.Length()) * 2)
+	var unwrap func(input *values.Array)
+
+	unwrap = func(input *values.Array) {
+		currentLevel++
+
+		input.ForEach(func(value core.Value, idx int) bool {
+			if value.Type() != core.ArrayType || currentLevel > level {
+				result.Push(value)
+			} else {
+				unwrap(value.(*values.Array))
+				currentLevel--
+			}
+
+			return true
+		})
+	}
+
+	unwrap(arr)
+
+	return result, nil
+}

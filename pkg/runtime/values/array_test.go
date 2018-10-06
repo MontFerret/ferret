@@ -302,12 +302,12 @@ func TestArray(t *testing.T) {
 
 			s := arr.Slice(0, 1)
 
-			So(len(s), ShouldEqual, 1)
-			So(s[0].Compare(values.ZeroInt), ShouldEqual, 0)
+			So(s.Length(), ShouldEqual, 1)
+			So(s.Get(0).Compare(values.ZeroInt), ShouldEqual, 0)
 
 			s2 := arr.Slice(2, arr.Length())
 
-			So(len(s2), ShouldEqual, arr.Length()-2)
+			So(s2.Length(), ShouldEqual, arr.Length()-2)
 		})
 	})
 
