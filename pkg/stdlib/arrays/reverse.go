@@ -28,7 +28,7 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 	size := int(arr.Length())
 	result := values.NewArray(size)
 
-	for i := size - 1; i >= 0; i -= 1 {
+	for i := size - 1; i >= 0; i-- {
 		result.Push(arr.Get(values.NewInt(i)))
 	}
 

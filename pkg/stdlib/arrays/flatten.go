@@ -47,14 +47,14 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	var unwrap func(input *values.Array)
 
 	unwrap = func(input *values.Array) {
-		currentLevel += 1
+		currentLevel++
 
 		input.ForEach(func(value core.Value, idx int) bool {
 			if value.Type() != core.ArrayType || currentLevel > level {
 				result.Push(value)
 			} else {
 				unwrap(value.(*values.Array))
-				currentLevel -= 1
+				currentLevel--
 			}
 
 			return true

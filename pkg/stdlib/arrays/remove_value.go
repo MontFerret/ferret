@@ -52,7 +52,7 @@ func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
 				result.Push(item)
 			}
 
-			counter += 1
+			counter++
 		} else {
 			result.Push(item)
 		}
