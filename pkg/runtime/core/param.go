@@ -2,7 +2,9 @@ package core
 
 import "context"
 
-const paramsKey = "params"
+type key int
+
+const paramsKey key = 0
 
 func ParamsWith(ctx context.Context, params map[string]Value) context.Context {
 	return context.WithValue(ctx, paramsKey, params)

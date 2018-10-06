@@ -43,8 +43,8 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 			result = arr.Get(segment.(Int))
 
 			break
-		case core.HtmlElementType, core.HtmlDocumentType:
-			el := result.(HtmlNode)
+		case core.HTMLElementType, core.HTMLDocumentType:
+			el := result.(HTMLNode)
 
 			if segmentType == core.IntType {
 				result = el.GetChildNode(segment.(Int))
@@ -59,7 +59,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				case "innerText":
 					result = el.InnerText()
 				case "innerHtml":
-					result = el.InnerHtml()
+					result = el.InnerHTML()
 				case "value":
 					result = el.Value()
 				case "attributes":
@@ -69,11 +69,11 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				case "length":
 					result = el.Length()
 				case "url":
-					if result.Type() == core.HtmlDocumentType {
-						doc, ok := result.(HtmlDocument)
+					if result.Type() == core.HTMLDocumentType {
+						doc, ok := result.(HTMLDocument)
 
 						if ok {
-							result = doc.Url()
+							result = doc.URL()
 						}
 					}
 				default:
@@ -92,8 +92,8 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				from.Type(),
 				core.ArrayType,
 				core.ObjectType,
-				core.HtmlDocumentType,
-				core.HtmlElementType,
+				core.HTMLDocumentType,
+				core.HTMLElementType,
 			)
 		}
 	}
@@ -226,7 +226,7 @@ func Parse(input interface{}) core.Value {
 			size := v.Len()
 			arr := NewArray(size)
 
-			for i := 0; i < size; i += 1 {
+			for i := 0; i < size; i++ {
 				value := v.Index(i)
 				arr.Push(Parse(value.Interface()))
 			}
@@ -252,7 +252,7 @@ func Parse(input interface{}) core.Value {
 			obj := NewObject()
 			size := t.NumField()
 
-			for i := 0; i < size; i += 1 {
+			for i := 0; i < size; i++ {
 				field := t.Field(i)
 				value := v.Field(i)
 

@@ -21,7 +21,7 @@ import (
 
 const DefaultTimeout = time.Second * 30
 
-type HtmlElement struct {
+type HTMLElement struct {
 	sync.Mutex
 	logger         *zerolog.Logger
 	client         *cdp.Client
@@ -30,7 +30,7 @@ type HtmlElement struct {
 	id             dom.NodeID
 	nodeType       values.Int
 	nodeName       values.String
-	innerHtml      values.String
+	innerHTML      values.String
 	innerText      *common.LazyValue
 	value          core.Value
 	rawAttrs       []string
@@ -44,7 +44,7 @@ func LoadElement(
 	client *cdp.Client,
 	broker *events.EventBroker,
 	id dom.NodeID,
-) (*HtmlElement, error) {
+) (*HTMLElement, error) {
 	if client == nil {
 		return nil, core.Error(core.ErrMissedArgument, "client")
 	}
@@ -65,31 +65,31 @@ func LoadElement(
 		return nil, core.Error(err, strconv.Itoa(int(id)))
 	}
 
-	innerHtml, err := loadInnerHtml(client, id)
+	innerHTML, err := loadInnerHTML(client, id)
 
 	if err != nil {
 		return nil, core.Error(err, strconv.Itoa(int(id)))
 	}
 
-	return NewHtmlElement(
+	return NewHTMLElement(
 		logger,
 		client,
 		broker,
 		id,
 		node.Node,
-		innerHtml,
+		innerHTML,
 	), nil
 }
 
-func NewHtmlElement(
+func NewHTMLElement(
 	logger *zerolog.Logger,
 	client *cdp.Client,
 	broker *events.EventBroker,
 	id dom.NodeID,
 	node dom.Node,
-	innerHtml values.String,
-) *HtmlElement {
-	el := new(HtmlElement)
+	innerHTML values.String,
+) *HTMLElement {
+	el := new(HTMLElement)
 	el.logger = logger
 	el.client = client
 	el.broker = broker
@@ -97,7 +97,7 @@ func NewHtmlElement(
 	el.id = id
 	el.nodeType = values.NewInt(node.NodeType)
 	el.nodeName = values.NewString(node.NodeName)
-	el.innerHtml = innerHtml
+	el.innerHTML = innerHTML
 	el.innerText = common.NewLazyValue(el.loadInnerText)
 	el.rawAttrs = node.Attributes[:]
 	el.attributes = common.NewLazyValue(el.loadAttrs)
@@ -120,7 +120,7 @@ func NewHtmlElement(
 	return el
 }
 
-func (el *HtmlElement) Close() error {
+func (el *HTMLElement) Close() error {
 	el.Lock()
 	defer el.Unlock()
 
@@ -140,11 +140,11 @@ func (el *HtmlElement) Close() error {
 	return nil
 }
 
-func (el *HtmlElement) Type() core.Type {
-	return core.HtmlElementType
+func (el *HTMLElement) Type() core.Type {
+	return core.HTMLElementType
 }
 
-func (el *HtmlElement) MarshalJSON() ([]byte, error) {
+func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 	val, err := el.innerText.Value()
 
 	if err != nil {
@@ -154,29 +154,29 @@ func (el *HtmlElement) MarshalJSON() ([]byte, error) {
 	return json.Marshal(val.String())
 }
 
-func (el *HtmlElement) String() string {
-	return el.InnerHtml().String()
+func (el *HTMLElement) String() string {
+	return el.InnerHTML().String()
 }
 
-func (el *HtmlElement) Compare(other core.Value) int {
+func (el *HTMLElement) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HtmlDocumentType:
-		other := other.(*HtmlElement)
+	case core.HTMLDocumentType:
+		other := other.(*HTMLElement)
 
 		id := int(el.id)
-		otherId := int(other.id)
+		otherID := int(other.id)
 
-		if id == otherId {
+		if id == otherID {
 			return 0
 		}
 
-		if id > otherId {
+		if id > otherID {
 			return 1
 		}
 
 		return -1
 	default:
-		if other.Type() > core.HtmlElementType {
+		if other.Type() > core.HTMLElementType {
 			return -1
 		}
 
@@ -184,11 +184,12 @@ func (el *HtmlElement) Compare(other core.Value) int {
 	}
 }
 
-func (el *HtmlElement) Unwrap() interface{} {
+func (el *HTMLElement) Unwrap() interface{} {
 	return el
 }
 
-func (el *HtmlElement) Hash() uint64 {
+
+func (el *HTMLElement) Hash() uint64 {
 	el.Lock()
 	defer el.Unlock()
 
@@ -196,12 +197,12 @@ func (el *HtmlElement) Hash() uint64 {
 
 	h.Write([]byte(el.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(el.innerHtml))
+	h.Write([]byte(el.innerHTML))
 
 	return h.Sum64()
 }
 
-func (el *HtmlElement) Value() core.Value {
+func (el *HTMLElement) Value() core.Value {
 	if !el.IsConnected() {
 		return el.value
 	}
@@ -225,23 +226,23 @@ func (el *HtmlElement) Value() core.Value {
 	return val
 }
 
-func (el *HtmlElement) Clone() core.Value {
+func (el *HTMLElement) Clone() core.Value {
 	return values.None
 }
 
-func (el *HtmlElement) Length() values.Int {
+func (el *HTMLElement) Length() values.Int {
 	return values.NewInt(len(el.children))
 }
 
-func (el *HtmlElement) NodeType() values.Int {
+func (el *HTMLElement) NodeType() values.Int {
 	return el.nodeType
 }
 
-func (el *HtmlElement) NodeName() values.String {
+func (el *HTMLElement) NodeName() values.String {
 	return el.nodeName
 }
 
-func (el *HtmlElement) GetAttributes() core.Value {
+func (el *HTMLElement) GetAttributes() core.Value {
 	val, err := el.attributes.Value()
 
 	if err != nil {
@@ -252,7 +253,7 @@ func (el *HtmlElement) GetAttributes() core.Value {
 	return val.Clone()
 }
 
-func (el *HtmlElement) GetAttribute(name values.String) core.Value {
+func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 	attrs, err := el.attributes.Value()
 
 	if err != nil {
@@ -268,7 +269,7 @@ func (el *HtmlElement) GetAttribute(name values.String) core.Value {
 	return val
 }
 
-func (el *HtmlElement) GetChildNodes() core.Value {
+func (el *HTMLElement) GetChildNodes() core.Value {
 	val, err := el.loadedChildren.Value()
 
 	if err != nil {
@@ -278,7 +279,7 @@ func (el *HtmlElement) GetChildNodes() core.Value {
 	return val
 }
 
-func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
+func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
 	val, err := el.loadedChildren.Value()
 
 	if err != nil {
@@ -288,7 +289,7 @@ func (el *HtmlElement) GetChildNode(idx values.Int) core.Value {
 	return val.(*values.Array).Get(idx)
 }
 
-func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
+func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	if !el.IsConnected() {
 		return values.None
 	}
@@ -323,7 +324,7 @@ func (el *HtmlElement) QuerySelector(selector values.String) core.Value {
 	return res
 }
 
-func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
+func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	if !el.IsConnected() {
 		return values.NewArray(0)
 	}
@@ -364,7 +365,7 @@ func (el *HtmlElement) QuerySelectorAll(selector values.String) core.Value {
 	return arr
 }
 
-func (el *HtmlElement) InnerText() values.String {
+func (el *HTMLElement) InnerText() values.String {
 	val, err := el.innerText.Value()
 
 	if err != nil {
@@ -374,14 +375,14 @@ func (el *HtmlElement) InnerText() values.String {
 	return val.(values.String)
 }
 
-func (el *HtmlElement) InnerHtml() values.String {
+func (el *HTMLElement) InnerHTML() values.String {
 	el.Lock()
 	defer el.Unlock()
 
-	return el.innerHtml
+	return el.innerHTML
 }
 
-func (el *HtmlElement) Click() (values.Boolean, error) {
+func (el *HTMLElement) Click() (values.Boolean, error) {
 	ctx, cancel := contextWithTimeout()
 
 	defer cancel()
@@ -389,22 +390,22 @@ func (el *HtmlElement) Click() (values.Boolean, error) {
 	return events.DispatchEvent(ctx, el.client, el.id, "click")
 }
 
-func (el *HtmlElement) Input(value core.Value) error {
+func (el *HTMLElement) Input(value core.Value) error {
 	ctx, cancel := contextWithTimeout()
 	defer cancel()
 
 	return el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id, "value", value.String()))
 }
 
-func (el *HtmlElement) IsConnected() values.Boolean {
+func (el *HTMLElement) IsConnected() values.Boolean {
 	el.Lock()
 	defer el.Unlock()
 
 	return el.connected
 }
 
-func (el *HtmlElement) loadInnerText() (core.Value, error) {
-	h := el.InnerHtml()
+func (el *HTMLElement) loadInnerText() (core.Value, error) {
+	h := el.InnerHTML()
 
 	if h == values.EmptyString {
 		return h, nil
@@ -427,11 +428,11 @@ func (el *HtmlElement) loadInnerText() (core.Value, error) {
 	return values.NewString(parsed.Text()), nil
 }
 
-func (el *HtmlElement) loadAttrs() (core.Value, error) {
+func (el *HTMLElement) loadAttrs() (core.Value, error) {
 	return parseAttrs(el.rawAttrs), nil
 }
 
-func (el *HtmlElement) loadChildren() (core.Value, error) {
+func (el *HTMLElement) loadChildren() (core.Value, error) {
 	if !el.IsConnected() {
 		return values.NewArray(0), nil
 	}
@@ -451,11 +452,11 @@ func (el *HtmlElement) loadChildren() (core.Value, error) {
 	return loaded, nil
 }
 
-func (el *HtmlElement) handlePageReload(message interface{}) {
+func (el *HTMLElement) handlePageReload(_ interface{}) {
 	el.Close()
 }
 
-func (el *HtmlElement) handleAttrModified(message interface{}) {
+func (el *HTMLElement) handleAttrModified(message interface{}) {
 	reply, ok := message.(*dom.AttributeModifiedReply)
 
 	// well....
@@ -493,7 +494,7 @@ func (el *HtmlElement) handleAttrModified(message interface{}) {
 	attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
 }
 
-func (el *HtmlElement) handleAttrRemoved(message interface{}) {
+func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 	reply, ok := message.(*dom.AttributeRemovedReply)
 
 	// well....
@@ -532,7 +533,7 @@ func (el *HtmlElement) handleAttrRemoved(message interface{}) {
 	attrs.Remove(values.NewString(reply.Name))
 }
 
-func (el *HtmlElement) handleChildrenCountChanged(message interface{}) {
+func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
 	reply, ok := message.(*dom.ChildNodeCountUpdatedReply)
 
 	if !ok {
@@ -561,7 +562,7 @@ func (el *HtmlElement) handleChildrenCountChanged(message interface{}) {
 	el.children = createChildrenArray(node.Node.Children)
 }
 
-func (el *HtmlElement) handleChildInserted(message interface{}) {
+func (el *HTMLElement) handleChildInserted(message interface{}) {
 	reply, ok := message.(*dom.ChildNodeInsertedReply)
 
 	if !ok {
@@ -572,26 +573,26 @@ func (el *HtmlElement) handleChildInserted(message interface{}) {
 		return
 	}
 
-	targetIdx := -1
-	prevId := reply.PreviousNodeID
-	nextId := reply.Node.NodeID
+	targetIDx := -1
+	prevID := reply.PreviousNodeID
+	nextID := reply.Node.NodeID
 
 	el.Lock()
 	defer el.Unlock()
 
 	for idx, id := range el.children {
-		if id == prevId {
-			targetIdx = idx
+		if id == prevID {
+			targetIDx = idx
 			break
 		}
 	}
 
-	if targetIdx == -1 {
+	if targetIDx == -1 {
 		return
 	}
 
 	arr := el.children
-	el.children = append(arr[:targetIdx], append([]dom.NodeID{nextId}, arr[targetIdx:]...)...)
+	el.children = append(arr[:targetIDx], append([]dom.NodeID{nextID}, arr[targetIDx:]...)...)
 
 	if !el.loadedChildren.Ready() {
 		return
@@ -604,7 +605,7 @@ func (el *HtmlElement) handleChildInserted(message interface{}) {
 	}
 
 	loadedArr := loaded.(*values.Array)
-	loadedEl, err := LoadElement(el.logger, el.client, el.broker, nextId)
+	loadedEl, err := LoadElement(el.logger, el.client, el.broker, nextID)
 
 	if err != nil {
 		el.logger.Error().
@@ -616,9 +617,9 @@ func (el *HtmlElement) handleChildInserted(message interface{}) {
 		return
 	}
 
-	loadedArr.Insert(values.NewInt(targetIdx), loadedEl)
+	loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
 
-	newInnerHtml, err := loadInnerHtml(el.client, el.id)
+	newInnerHTML, err := loadInnerHTML(el.client, el.id)
 
 	if err != nil {
 		el.logger.Error().
@@ -630,10 +631,10 @@ func (el *HtmlElement) handleChildInserted(message interface{}) {
 		return
 	}
 
-	el.innerHtml = newInnerHtml
+	el.innerHTML = newInnerHTML
 }
 
-func (el *HtmlElement) handleChildDeleted(message interface{}) {
+func (el *HTMLElement) handleChildDeleted(message interface{}) {
 	reply, ok := message.(*dom.ChildNodeRemovedReply)
 
 	if !ok {
@@ -644,25 +645,25 @@ func (el *HtmlElement) handleChildDeleted(message interface{}) {
 		return
 	}
 
-	targetIdx := -1
-	targetId := reply.NodeID
+	targetIDx := -1
+	targetID := reply.NodeID
 
 	el.Lock()
 	defer el.Unlock()
 
 	for idx, id := range el.children {
-		if id == targetId {
-			targetIdx = idx
+		if id == targetID {
+			targetIDx = idx
 			break
 		}
 	}
 
-	if targetIdx == -1 {
+	if targetIDx == -1 {
 		return
 	}
 
 	arr := el.children
-	el.children = append(arr[:targetIdx], arr[targetIdx+1:]...)
+	el.children = append(arr[:targetIDx], arr[targetIDx+1:]...)
 
 	if !el.loadedChildren.Ready() {
 		return
@@ -675,9 +676,9 @@ func (el *HtmlElement) handleChildDeleted(message interface{}) {
 	}
 
 	loadedArr := loaded.(*values.Array)
-	loadedArr.RemoveAt(values.NewInt(targetIdx))
+	loadedArr.RemoveAt(values.NewInt(targetIDx))
 
-	newInnerHtml, err := loadInnerHtml(el.client, el.id)
+	newInnerHTML, err := loadInnerHTML(el.client, el.id)
 
 	if err != nil {
 		el.logger.Error().
@@ -689,5 +690,5 @@ func (el *HtmlElement) handleChildDeleted(message interface{}) {
 		return
 	}
 
-	el.innerHtml = newInnerHtml
+	el.innerHTML = newInnerHTML
 }

@@ -2,7 +2,7 @@ package common
 
 import "golang.org/x/net/html"
 
-func ToHtmlType(nt html.NodeType) int {
+func ToHTMLType(nt html.NodeType) int {
 	switch nt {
 	case html.DocumentNode:
 		return 9

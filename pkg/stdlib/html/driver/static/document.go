@@ -6,15 +6,15 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type HtmlDocument struct {
-	*HtmlElement
+type HTMLDocument struct {
+	*HTMLElement
 	url values.String
 }
 
-func NewHtmlDocument(
+func NewHTMLDocument(
 	url string,
 	node *goquery.Document,
-) (*HtmlDocument, error) {
+) (*HTMLDocument, error) {
 	if url == "" {
 		return nil, core.Error(core.ErrMissedArgument, "document url")
 	}
@@ -23,27 +23,27 @@ func NewHtmlDocument(
 		return nil, core.Error(core.ErrMissedArgument, "document root selection")
 	}
 
-	el, err := NewHtmlElement(node.Selection)
+	el, err := NewHTMLElement(node.Selection)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &HtmlDocument{el, values.NewString(url)}, nil
+	return &HTMLDocument{el, values.NewString(url)}, nil
 }
 
-func (el *HtmlDocument) Type() core.Type {
-	return core.HtmlDocumentType
+func (el *HTMLDocument) Type() core.Type {
+	return core.HTMLDocumentType
 }
 
-func (el *HtmlDocument) Compare(other core.Value) int {
+func (el *HTMLDocument) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HtmlDocumentType:
-		otherDoc := other.(values.HtmlDocument)
+	case core.HTMLDocumentType:
+		otherDoc := other.(values.HTMLDocument)
 
-		return el.url.Compare(otherDoc.Url())
+		return el.url.Compare(otherDoc.URL())
 	default:
-		if other.Type() > core.HtmlDocumentType {
+		if other.Type() > core.HTMLDocumentType {
 			return -1
 		}
 
@@ -51,6 +51,6 @@ func (el *HtmlDocument) Compare(other core.Value) int {
 	}
 }
 
-func (el *HtmlDocument) Url() core.Value {
+func (el *HTMLDocument) URL() core.Value {
 	return el.url
 }

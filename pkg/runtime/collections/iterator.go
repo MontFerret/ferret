@@ -43,8 +43,8 @@ type (
 		pos    int
 	}
 
-	HtmlNodeIterator struct {
-		values values.HtmlNode
+	HTMLNodeIterator struct {
+		values values.HTMLNode
 		pos    int
 	}
 )
@@ -55,15 +55,15 @@ func ToIterator(value core.Value) (Iterator, error) {
 		return NewArrayIterator(value.(*values.Array)), nil
 	case core.ObjectType:
 		return NewObjectIterator(value.(*values.Object)), nil
-	case core.HtmlElementType, core.HtmlDocumentType:
-		return NewHtmlNodeIterator(value.(values.HtmlNode)), nil
+	case core.HTMLElementType, core.HTMLDocumentType:
+		return NewHTMLNodeIterator(value.(values.HTMLNode)), nil
 	default:
 		return nil, core.TypeError(
 			value.Type(),
 			core.ArrayType,
 			core.ObjectType,
-			core.HtmlDocumentType,
-			core.HtmlElementType,
+			core.HTMLDocumentType,
+			core.HTMLElementType,
 		)
 	}
 }
@@ -128,7 +128,7 @@ func (iterator *SliceIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.values) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values[idx]
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewInt(idx), nil
 	}
@@ -148,7 +148,7 @@ func (iterator *MapIterator) HasNext() bool {
 		i := 0
 		for k := range iterator.values {
 			keys[i] = k
-			i += 1
+			i++
 		}
 
 		iterator.keys = keys
@@ -161,7 +161,7 @@ func (iterator *MapIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewString(key), nil
 	}
@@ -181,7 +181,7 @@ func (iterator *ArrayIterator) Next() (core.Value, core.Value, error) {
 	if int(iterator.values.Length()) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values.Get(values.NewInt(idx))
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewInt(idx), nil
 	}
@@ -206,7 +206,7 @@ func (iterator *ObjectIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val, _ := iterator.values.Get(values.NewString(key))
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewString(key), nil
 	}
@@ -214,20 +214,20 @@ func (iterator *ObjectIterator) Next() (core.Value, core.Value, error) {
 	return values.None, values.None, ErrExhausted
 }
 
-func NewHtmlNodeIterator(input values.HtmlNode) *HtmlNodeIterator {
-	return &HtmlNodeIterator{input, 0}
+func NewHTMLNodeIterator(input values.HTMLNode) *HTMLNodeIterator {
+	return &HTMLNodeIterator{input, 0}
 }
 
-func (iterator *HtmlNodeIterator) HasNext() bool {
+func (iterator *HTMLNodeIterator) HasNext() bool {
 	return iterator.values.Length() > values.NewInt(iterator.pos)
 }
 
-func (iterator *HtmlNodeIterator) Next() (core.Value, core.Value, error) {
+func (iterator *HTMLNodeIterator) Next() (core.Value, core.Value, error) {
 	if iterator.values.Length() > values.NewInt(iterator.pos) {
 		idx := iterator.pos
 		val := iterator.values.GetChildNode(values.NewInt(idx))
 
-		iterator.pos += 1
+		iterator.pos++
 
 		return val, values.NewInt(idx), nil
 	}

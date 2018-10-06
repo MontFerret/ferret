@@ -21,23 +21,24 @@ import (
 	"time"
 )
 
-const BlankPageUrl = "about:blank"
 
-type HtmlDocument struct {
+const BlankPageURL = "about:blank"
+
+type HTMLDocument struct {
 	sync.Mutex
 	logger  *zerolog.Logger
 	conn    *rpcc.Conn
 	client  *cdp.Client
 	events  *events.EventBroker
 	url     values.String
-	element *HtmlElement
+	element *HTMLElement
 }
 
-func LoadHtmlDocument(
+func LoadHTMLDocument(
 	ctx context.Context,
 	conn *rpcc.Conn,
 	url string,
-) (*HtmlDocument, error) {
+) (*HTMLDocument, error) {
 	if conn == nil {
 		return nil, core.Error(core.ErrMissedArgument, "connection")
 	}
@@ -80,7 +81,7 @@ func LoadHtmlDocument(
 		return nil, err
 	}
 
-	if url != BlankPageUrl {
+	if url != BlankPageURL {
 		err = waitForLoadEvent(ctx, client)
 
 		if err != nil {
@@ -88,7 +89,7 @@ func LoadHtmlDocument(
 		}
 	}
 
-	root, innerHtml, err := getRootElement(client)
+	root, innerHTML, err := getRootElement(client)
 
 	if err != nil {
 		return nil, err
@@ -100,13 +101,13 @@ func LoadHtmlDocument(
 		return nil, err
 	}
 
-	return NewHtmlDocument(
+	return NewHTMLDocument(
 		logging.FromContext(ctx),
 		conn,
 		client,
 		broker,
 		root,
-		innerHtml,
+		innerHTML,
 	), nil
 }
 
@@ -121,29 +122,29 @@ func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
 		return dom.Node{}, values.EmptyString, err
 	}
 
-	innerHtml, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
+	innerHTML, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
 
 	if err != nil {
 		return dom.Node{}, values.EmptyString, err
 	}
 
-	return d.Root, values.NewString(innerHtml.OuterHTML), nil
+	return d.Root, values.NewString(innerHTML.OuterHTML), nil
 }
 
-func NewHtmlDocument(
+func NewHTMLDocument(
 	logger *zerolog.Logger,
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
 	root dom.Node,
-	innerHtml values.String,
-) *HtmlDocument {
-	doc := new(HtmlDocument)
+	innerHTML values.String,
+) *HTMLDocument {
+	doc := new(HTMLDocument)
 	doc.logger = logger
 	doc.conn = conn
 	doc.client = client
 	doc.events = broker
-	doc.element = NewHtmlElement(doc.logger, client, broker, root.NodeID, root, innerHtml)
+	doc.element = NewHTMLElement(doc.logger, client, broker, root.NodeID, root, innerHTML)
 	doc.url = ""
 
 	if root.BaseURL != nil {
@@ -154,7 +155,7 @@ func NewHtmlDocument(
 		doc.Lock()
 		defer doc.Unlock()
 
-		updated, innerHtml, err := getRootElement(client)
+		updated, innerHTML, err := getRootElement(client)
 
 		if err != nil {
 			doc.logger.Error().
@@ -169,7 +170,7 @@ func NewHtmlDocument(
 		doc.element.Close()
 
 		// create a new root element wrapper
-		doc.element = NewHtmlElement(doc.logger, client, broker, updated.NodeID, updated, innerHtml)
+		doc.element = NewHTMLElement(doc.logger, client, broker, updated.NodeID, updated, innerHTML)
 		doc.url = ""
 
 		if updated.BaseURL != nil {
@@ -180,32 +181,32 @@ func NewHtmlDocument(
 	return doc
 }
 
-func (doc *HtmlDocument) MarshalJSON() ([]byte, error) {
+func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.MarshalJSON()
 }
 
-func (doc *HtmlDocument) Type() core.Type {
-	return core.HtmlDocumentType
+func (doc *HTMLDocument) Type() core.Type {
+	return core.HTMLDocumentType
 }
 
-func (doc *HtmlDocument) String() string {
+func (doc *HTMLDocument) String() string {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.url.String()
 }
 
-func (doc *HtmlDocument) Unwrap() interface{} {
+func (doc *HTMLDocument) Unwrap() interface{} {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element
 }
 
-func (doc *HtmlDocument) Hash() uint64 {
+func (doc *HTMLDocument) Hash() uint64 {
 	doc.Lock()
 	defer doc.Unlock()
 
@@ -218,21 +219,21 @@ func (doc *HtmlDocument) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (doc *HtmlDocument) Clone() core.Value {
+func (doc *HTMLDocument) Clone() core.Value {
 	return values.None
 }
 
-func (doc *HtmlDocument) Compare(other core.Value) int {
+func (doc *HTMLDocument) Compare(other core.Value) int {
 	doc.Lock()
 	defer doc.Unlock()
 
 	switch other.Type() {
-	case core.HtmlDocumentType:
-		other := other.(*HtmlDocument)
+	case core.HTMLDocumentType:
+		other := other.(*HTMLDocument)
 
 		return doc.url.Compare(other.url)
 	default:
-		if other.Type() > core.HtmlDocumentType {
+		if other.Type() > core.HTMLDocumentType {
 			return -1
 		}
 
@@ -240,7 +241,7 @@ func (doc *HtmlDocument) Compare(other core.Value) int {
 	}
 }
 
-func (doc *HtmlDocument) Close() error {
+func (doc *HTMLDocument) Close() error {
 	doc.Lock()
 	defer doc.Unlock()
 
@@ -289,95 +290,95 @@ func (doc *HtmlDocument) Close() error {
 	return doc.conn.Close()
 }
 
-func (doc *HtmlDocument) NodeType() values.Int {
+func (doc *HTMLDocument) NodeType() values.Int {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.NodeType()
 }
 
-func (doc *HtmlDocument) NodeName() values.String {
+func (doc *HTMLDocument) NodeName() values.String {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.NodeName()
 }
 
-func (doc *HtmlDocument) Length() values.Int {
+func (doc *HTMLDocument) Length() values.Int {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.Length()
 }
 
-func (doc *HtmlDocument) InnerText() values.String {
+func (doc *HTMLDocument) InnerText() values.String {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.InnerText()
 }
 
-func (doc *HtmlDocument) InnerHtml() values.String {
+func (doc *HTMLDocument) InnerHTML() values.String {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.InnerHtml()
+	return doc.element.InnerHTML()
 }
 
-func (doc *HtmlDocument) Value() core.Value {
+func (doc *HTMLDocument) Value() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.Value()
 }
 
-func (doc *HtmlDocument) GetAttributes() core.Value {
+func (doc *HTMLDocument) GetAttributes() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.GetAttributes()
 }
 
-func (doc *HtmlDocument) GetAttribute(name values.String) core.Value {
+func (doc *HTMLDocument) GetAttribute(name values.String) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.GetAttribute(name)
 }
 
-func (doc *HtmlDocument) GetChildNodes() core.Value {
+func (doc *HTMLDocument) GetChildNodes() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.GetChildNodes()
 }
 
-func (doc *HtmlDocument) GetChildNode(idx values.Int) core.Value {
+func (doc *HTMLDocument) GetChildNode(idx values.Int) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.GetChildNode(idx)
 }
 
-func (doc *HtmlDocument) QuerySelector(selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelector(selector values.String) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.QuerySelector(selector)
 }
 
-func (doc *HtmlDocument) QuerySelectorAll(selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.element.QuerySelectorAll(selector)
 }
 
-func (doc *HtmlDocument) Url() core.Value {
+func (doc *HTMLDocument) URL() core.Value {
 	return doc.url
 }
 
-func (doc *HtmlDocument) InnerHtmlBySelector(selector values.String) (values.String, error) {
+func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) (values.String, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -387,7 +388,7 @@ func (doc *HtmlDocument) InnerHtmlBySelector(selector values.String) (values.Str
 				return "";
 			}
 
-			return el.innerHtml;
+			return el.innerHTML;
 		`, eval.ParamString(selector.String())),
 		true,
 		false,
@@ -404,7 +405,7 @@ func (doc *HtmlDocument) InnerHtmlBySelector(selector values.String) (values.Str
 	return values.EmptyString, nil
 }
 
-func (doc *HtmlDocument) InnerHtmlBySelectorAll(selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) (*values.Array, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -416,7 +417,7 @@ func (doc *HtmlDocument) InnerHtmlBySelectorAll(selector values.String) (*values
 			}
 
 			elements.forEach((i) => {
-				result.push(i.innerHtml);
+				result.push(i.innerHTML);
 			});
 
 			return result;
@@ -436,7 +437,7 @@ func (doc *HtmlDocument) InnerHtmlBySelectorAll(selector values.String) (*values
 	return values.NewArray(0), nil
 }
 
-func (doc *HtmlDocument) InnerTextBySelector(selector values.String) (values.String, error) {
+func (doc *HTMLDocument) InnerTextBySelector(selector values.String) (values.String, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -463,7 +464,7 @@ func (doc *HtmlDocument) InnerTextBySelector(selector values.String) (values.Str
 	return values.EmptyString, nil
 }
 
-func (doc *HtmlDocument) InnerTextBySelectorAll(selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) (*values.Array, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -495,7 +496,7 @@ func (doc *HtmlDocument) InnerTextBySelectorAll(selector values.String) (*values
 	return values.NewArray(0), nil
 }
 
-func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -525,7 +526,7 @@ func (doc *HtmlDocument) ClickBySelector(selector values.String) (values.Boolean
 	return values.False, nil
 }
 
-func (doc *HtmlDocument) ClickBySelectorAll(selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -557,7 +558,7 @@ func (doc *HtmlDocument) ClickBySelectorAll(selector values.String) (values.Bool
 	return values.False, nil
 }
 
-func (doc *HtmlDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
+func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(
@@ -593,7 +594,7 @@ func (doc *HtmlDocument) InputBySelector(selector values.String, value core.Valu
 	return values.False, nil
 }
 
-func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
 	task := events.NewWaitTask(
 		doc.client,
 		fmt.Sprintf(`
@@ -614,7 +615,7 @@ func (doc *HtmlDocument) WaitForSelector(selector values.String, timeout values.
 	return err
 }
 
-func (doc *HtmlDocument) WaitForNavigation(timeout values.Int) error {
+func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 	timer := time.NewTimer(time.Millisecond * time.Duration(timeout))
 	onEvent := make(chan bool)
 	listener := func(_ interface{}) {
@@ -638,9 +639,9 @@ func (doc *HtmlDocument) WaitForNavigation(timeout values.Int) error {
 	}
 }
 
-func (doc *HtmlDocument) Navigate(url values.String) error {
+func (doc *HTMLDocument) Navigate(url values.String) error {
 	if url == "" {
-		url = BlankPageUrl
+		url = BlankPageURL
 	}
 
 	ctx := context.Background()

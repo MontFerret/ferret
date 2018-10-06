@@ -87,7 +87,7 @@ func (broker *EventBroker) RemoveEventListener(event string, listener EventListe
 		return
 	}
 
-	var modifiedListeners []EventListener = nil
+	var modifiedListeners []EventListener
 
 	if len(listeners) > 1 {
 		modifiedListeners = append(listeners[:idx], listeners[idx+1:]...)
@@ -114,7 +114,7 @@ func (broker *EventBroker) Start() error {
 
 		for {
 			for name, event := range broker.events {
-				counter += 1
+				counter++
 
 				select {
 				case <-ctx.Done():

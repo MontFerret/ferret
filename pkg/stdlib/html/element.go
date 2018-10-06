@@ -26,7 +26,7 @@ func Elements(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	return el.QuerySelectorAll(selector), nil
 }
 
-func elementArgs(inputs []core.Value) (values.HtmlNode, values.String, error) {
+func elementArgs(inputs []core.Value) (values.HTMLNode, values.String, error) {
 	if len(inputs) == 0 {
 		return nil, values.EmptyString, core.Error(core.ErrMissedArgument, "element and arg2")
 	}
@@ -38,14 +38,14 @@ func elementArgs(inputs []core.Value) (values.HtmlNode, values.String, error) {
 	arg1 := inputs[0]
 	arg2 := inputs[1]
 
-	if arg1.Type() != core.HtmlDocumentType &&
-		arg1.Type() != core.HtmlElementType {
-		return nil, values.EmptyString, core.TypeError(arg1.Type(), core.HtmlDocumentType, core.HtmlElementType)
+	if arg1.Type() != core.HTMLDocumentType &&
+		arg1.Type() != core.HTMLElementType {
+		return nil, values.EmptyString, core.TypeError(arg1.Type(), core.HTMLDocumentType, core.HTMLElementType)
 	}
 
 	if arg2.Type() != core.StringType {
 		return nil, values.EmptyString, core.TypeError(arg2.Type(), core.StringType)
 	}
 
-	return arg1.(values.HtmlNode), arg2.(values.String), nil
+	return arg1.(values.HTMLNode), arg2.(values.String), nil
 }

@@ -32,10 +32,10 @@ doc:
 fmt:
 	go fmt ${DIR_CLI}/... ${DIR_PKG}/...
 
-# https://github.com/golang/lint
-# go get github.com/golang/lint/golint
+# https://github.com/mgechev/revive
+# go get github.com/mgechev/revive
 lint:
-	golint ${DIR_CLI}/... ${DIR_PKG}/...
+	revive -config revive.toml -formatter friendly -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
 
 # http://godoc.org/code.google.com/p/go.tools/cmd/vet
 # go get code.google.com/p/go.tools/cmd/vet

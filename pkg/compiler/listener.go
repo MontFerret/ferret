@@ -9,6 +9,6 @@ type errorListener struct {
 	*antlr.DefaultErrorListener
 }
 
-func (d *errorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+func (d *errorListener) SyntaxError(_ antlr.Recognizer, _ interface{}, line, column int, msg string, _ antlr.RecognitionException) {
 	panic(errors.Errorf("%s at %d:%d", msg, line, column))
 }
