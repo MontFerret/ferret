@@ -22,7 +22,7 @@ import (
 )
 
 
-const BlankPageUrl = "about:blank"
+const BlankPageURL = "about:blank"
 
 type HTMLDocument struct {
 	sync.Mutex
@@ -81,7 +81,7 @@ func LoadHTMLDocument(
 		return nil, err
 	}
 
-	if url != BlankPageUrl {
+	if url != BlankPageURL {
 		err = waitForLoadEvent(ctx, client)
 
 		if err != nil {
@@ -641,7 +641,7 @@ func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 
 func (doc *HTMLDocument) Navigate(url values.String) error {
 	if url == "" {
-		url = BlankPageUrl
+		url = BlankPageURL
 	}
 
 	ctx := context.Background()

@@ -39,7 +39,7 @@ func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HTMLNode
 	defer cancel()
 
 	if url == "" {
-		url = BlankPageUrl
+		url = BlankPageURL
 	}
 
 	// Create a new target belonging to the browser context, similar
