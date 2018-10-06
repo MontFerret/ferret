@@ -250,7 +250,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("body"))
+		el, err := static.NewHTMLElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -266,7 +266,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("body"))
+		el, err := static.NewHTMLElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -290,7 +290,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("body"))
+		el, err := static.NewHTMLElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -315,7 +315,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("#q"))
+		el, err := static.NewHTMLElement(doc.Find("#q"))
 
 		So(err, ShouldBeNil)
 
@@ -342,7 +342,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("h2"))
+		el, err := static.NewHTMLElement(doc.Find("h2"))
 
 		So(err, ShouldBeNil)
 
@@ -369,11 +369,11 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("#content"))
+		el, err := static.NewHTMLElement(doc.Find("#content"))
 
 		So(err, ShouldBeNil)
 
-		v := el.InnerHtml()
+		v := el.InnerHTML()
 
 		So(v, ShouldEqual, "<h2>Ferret</h2>")
 	})
@@ -385,7 +385,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHtmlElement(doc.Find("body .card-img-top:nth-child(1)"))
+		el, err := static.NewHTMLElement(doc.Find("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
 

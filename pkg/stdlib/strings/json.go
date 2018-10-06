@@ -12,7 +12,7 @@ import (
  * @params text (String) - The string to parse as JSON.
  * @returns FQL value (Value)
  */
-func JsonParse(_ context.Context, args ...core.Value) (core.Value, error) {
+func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -35,7 +35,7 @@ func JsonParse(_ context.Context, args ...core.Value) (core.Value, error) {
  * @params value (Value) - The input value to serialize.
  * @returns json (String)
  */
-func JsonStringify(_ context.Context, args ...core.Value) (core.Value, error) {
+func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {

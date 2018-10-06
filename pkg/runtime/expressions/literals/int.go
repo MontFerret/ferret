@@ -12,6 +12,6 @@ func NewIntLiteral(value int) IntLiteral {
 	return IntLiteral(value)
 }
 
-func (l IntLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (l IntLiteral) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
 	return values.NewInt(int(l)), nil
 }

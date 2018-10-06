@@ -12,7 +12,7 @@ func NewBooleanLiteral(val bool) BooleanLiteral {
 	return BooleanLiteral(val)
 }
 
-func (l BooleanLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (l BooleanLiteral) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
 	if l == true {
 		return values.True, nil
 	}

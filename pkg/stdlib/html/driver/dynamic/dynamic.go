@@ -28,7 +28,7 @@ func NewDriver(address string) *Driver {
 	return drv
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HTMLNode, error) {
 	err := drv.init(ctx)
 
 	if err != nil {
@@ -39,7 +39,7 @@ func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode
 	defer cancel()
 
 	if url == "" {
-		url = BlankPageUrl
+		url = BlankPageURL
 	}
 
 	// Create a new target belonging to the browser context, similar
@@ -58,7 +58,7 @@ func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HtmlNode
 		return nil, err
 	}
 
-	return LoadHtmlDocument(ctx, conn, url)
+	return LoadHTMLDocument(ctx, conn, url)
 }
 
 func (drv *Driver) Close() error {

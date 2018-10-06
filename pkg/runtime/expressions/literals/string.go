@@ -12,6 +12,6 @@ func NewStringLiteral(str string) StringLiteral {
 	return StringLiteral(str)
 }
 
-func (l StringLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (l StringLiteral) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
 	return values.NewString(string(l)), nil
 }

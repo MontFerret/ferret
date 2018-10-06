@@ -47,10 +47,10 @@ func DispatchEvent(
 		return values.False, nil
 	}
 
-	evtId := evt.Result.ObjectID
+	evtID := evt.Result.ObjectID
 
 	// release the event object
-	defer client.Runtime.ReleaseObject(ctx, runtime.NewReleaseObjectArgs(*evtId))
+	defer client.Runtime.ReleaseObject(ctx, runtime.NewReleaseObjectArgs(*evtID))
 
 	res, err := client.Runtime.CallFunctionOn(
 		ctx,

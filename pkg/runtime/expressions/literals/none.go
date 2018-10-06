@@ -10,6 +10,6 @@ type noneLiteral struct{}
 
 var None = &noneLiteral{}
 
-func (l noneLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (l noneLiteral) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
 	return values.None, nil
 }

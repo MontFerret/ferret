@@ -36,7 +36,7 @@ func (e *ParameterExpression) Iterate(ctx context.Context, scope *core.Scope) (c
 	return iter, nil
 }
 
-func (e *ParameterExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (e *ParameterExpression) Exec(ctx context.Context, _ *core.Scope) (core.Value, error) {
 	param, err := core.ParamFrom(ctx, e.name)
 
 	if err != nil {

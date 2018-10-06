@@ -3,7 +3,7 @@ package values
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 type (
-	HtmlNode interface {
+	HTMLNode interface {
 		core.Value
 
 		NodeType() Int
@@ -14,7 +14,7 @@ type (
 
 		InnerText() String
 
-		InnerHtml() String
+		InnerHTML() String
 
 		Value() core.Value
 
@@ -31,9 +31,9 @@ type (
 		QuerySelectorAll(selector String) core.Value
 	}
 
-	HtmlDocument interface {
-		HtmlNode
+	HTMLDocument interface {
+		HTMLNode
 
-		Url() core.Value
+		URL() core.Value
 	}
 )

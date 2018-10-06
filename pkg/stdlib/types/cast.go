@@ -60,8 +60,8 @@ func ToArray(_ context.Context, inputs ...core.Value) (core.Value, error) {
 		core.FloatType,
 		core.StringType,
 		core.DateTimeType,
-		core.HtmlElementType,
-		core.HtmlDocumentType:
+		core.HTMLElementType,
+		core.HTMLDocumentType:
 		return values.NewArrayWith(value), nil
 	case core.ArrayType:
 		return value, nil

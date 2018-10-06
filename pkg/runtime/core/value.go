@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 )
 
+//revive:disable-next-line redefines-builtin-id
 type Type int64
 
 const (
@@ -15,8 +16,8 @@ const (
 	DateTimeType     Type = 5
 	ArrayType        Type = 6
 	ObjectType       Type = 7
-	HtmlElementType  Type = 8
-	HtmlDocumentType Type = 9
+	HTMLElementType  Type = 8
+	HTMLDocumentType Type = 9
 	BinaryType       Type = 10
 )
 
@@ -29,8 +30,8 @@ var typestr = map[Type]string{
 	DateTimeType:     "datetime",
 	ArrayType:        "array",
 	ObjectType:       "object",
-	HtmlElementType:  "HTMLElement",
-	HtmlDocumentType: "HTMLDocument",
+	HTMLElementType:  "HTMLElement",
+	HTMLDocumentType: "HTMLDocument",
 	BinaryType:       "BinaryType",
 }
 

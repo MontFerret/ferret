@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-func TestJsonParse(t *testing.T) {
+func TestJSONParse(t *testing.T) {
 	Convey("When args are not passed", t, func() {
 		Convey("It should return an error", func() {
 			var err error
-			_, err = strings.JsonParse(context.Background())
+			_, err = strings.JSONParse(context.Background())
 
 			So(err, ShouldBeError)
 		})
@@ -26,7 +26,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -42,7 +42,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -58,7 +58,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -74,7 +74,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -90,7 +90,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -110,7 +110,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -128,7 +128,7 @@ func TestJsonParse(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonParse(
+		out, err := strings.JSONParse(
 			context.Background(),
 			values.NewString(string(b)),
 		)
@@ -139,18 +139,18 @@ func TestJsonParse(t *testing.T) {
 	})
 }
 
-func TestJsonStringify(t *testing.T) {
+func TestJSONStringify(t *testing.T) {
 	Convey("When args are not passed", t, func() {
 		Convey("It should return an error", func() {
 			var err error
-			_, err = strings.JsonStringify(context.Background())
+			_, err = strings.JSONStringify(context.Background())
 
 			So(err, ShouldBeError)
 		})
 	})
 
 	Convey("It should serialize none", t, func() {
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			values.None,
 		)
@@ -160,7 +160,7 @@ func TestJsonStringify(t *testing.T) {
 	})
 
 	Convey("It should serialize boolean", t, func() {
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			values.False,
 		)
@@ -170,7 +170,7 @@ func TestJsonStringify(t *testing.T) {
 	})
 
 	Convey("It should serialize string", t, func() {
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			values.NewString("foobar"),
 		)
@@ -180,7 +180,7 @@ func TestJsonStringify(t *testing.T) {
 	})
 
 	Convey("It should serialize int", t, func() {
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			values.NewInt(1),
 		)
@@ -190,7 +190,7 @@ func TestJsonStringify(t *testing.T) {
 	})
 
 	Convey("It should serialize float", t, func() {
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			values.NewFloat(1.1),
 		)
@@ -200,7 +200,7 @@ func TestJsonStringify(t *testing.T) {
 	})
 
 	Convey("It should serialize array", t, func() {
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			values.NewArrayWith(
 				values.NewString("foo"),
@@ -216,7 +216,7 @@ func TestJsonStringify(t *testing.T) {
 		obj := values.NewObject()
 		obj.Set(values.NewString("foo"), values.NewString("bar"))
 
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			obj,
 		)
@@ -230,7 +230,7 @@ func TestJsonStringify(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := strings.JsonStringify(
+		out, err := strings.JSONStringify(
 			context.Background(),
 			obj,
 		)

@@ -14,7 +14,7 @@ type baseOperator struct {
 	right core.Expression
 }
 
-func (operator *baseOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+func (operator *baseOperator) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
 	return values.None, core.ErrInvalidOperation
 }
 

@@ -32,7 +32,7 @@ func (i *LimitIterator) HasNext() bool {
 
 func (i *LimitIterator) Next() (core.Value, core.Value, error) {
 	if i.counter() <= i.count {
-		i.currCount += 1
+		i.currCount++
 
 		return i.src.Next()
 	}
@@ -54,7 +54,7 @@ func (i *LimitIterator) verifyOffset() {
 	}
 
 	for (i.offset > i.currCount) && i.src.HasNext() {
-		i.currCount += 1
+		i.currCount++
 		i.src.Next()
 	}
 }
