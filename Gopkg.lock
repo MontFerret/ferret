@@ -2,41 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:b464fe4a2262c37c82c16ff76dd77ae8efb85036d2f6b13b428a3e63bce3d562"
-  name = "github.com/MontFerret/ferret"
-  packages = [
-    "cli",
-    "cli/browser",
-    "pkg/compiler",
-    "pkg/parser",
-    "pkg/parser/fql",
-    "pkg/runtime",
-    "pkg/runtime/collections",
-    "pkg/runtime/core",
-    "pkg/runtime/expressions",
-    "pkg/runtime/expressions/clauses",
-    "pkg/runtime/expressions/literals",
-    "pkg/runtime/expressions/operators",
-    "pkg/runtime/logging",
-    "pkg/runtime/values",
-    "pkg/stdlib",
-    "pkg/stdlib/collections",
-    "pkg/stdlib/html",
-    "pkg/stdlib/html/driver",
-    "pkg/stdlib/html/driver/common",
-    "pkg/stdlib/html/driver/dynamic",
-    "pkg/stdlib/html/driver/dynamic/eval",
-    "pkg/stdlib/html/driver/dynamic/events",
-    "pkg/stdlib/html/driver/static",
-    "pkg/stdlib/strings",
-    "pkg/stdlib/types",
-    "pkg/stdlib/utils",
-  ]
-  pruneopts = "UT"
-  revision = "51d794d6c1b3cbc5e4d3a654000a601f974b0288"
-
-[[projects]]
   digest = "1:a62f6ed230a8cd138a9efbe718e7d0b0294f139266f5f55cd942769a9aac8de2"
   name = "github.com/PuerkitoBio/goquery"
   packages = ["."]
@@ -248,32 +213,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/MontFerret/ferret/cli",
-    "github.com/MontFerret/ferret/cli/browser",
-    "github.com/MontFerret/ferret/pkg/compiler",
-    "github.com/MontFerret/ferret/pkg/parser",
-    "github.com/MontFerret/ferret/pkg/parser/fql",
-    "github.com/MontFerret/ferret/pkg/runtime",
-    "github.com/MontFerret/ferret/pkg/runtime/collections",
-    "github.com/MontFerret/ferret/pkg/runtime/core",
-    "github.com/MontFerret/ferret/pkg/runtime/expressions",
-    "github.com/MontFerret/ferret/pkg/runtime/expressions/clauses",
-    "github.com/MontFerret/ferret/pkg/runtime/expressions/literals",
-    "github.com/MontFerret/ferret/pkg/runtime/expressions/operators",
-    "github.com/MontFerret/ferret/pkg/runtime/logging",
-    "github.com/MontFerret/ferret/pkg/runtime/values",
-    "github.com/MontFerret/ferret/pkg/stdlib",
-    "github.com/MontFerret/ferret/pkg/stdlib/collections",
-    "github.com/MontFerret/ferret/pkg/stdlib/html",
-    "github.com/MontFerret/ferret/pkg/stdlib/html/driver",
-    "github.com/MontFerret/ferret/pkg/stdlib/html/driver/common",
-    "github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic",
-    "github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval",
-    "github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events",
-    "github.com/MontFerret/ferret/pkg/stdlib/html/driver/static",
-    "github.com/MontFerret/ferret/pkg/stdlib/strings",
-    "github.com/MontFerret/ferret/pkg/stdlib/types",
-    "github.com/MontFerret/ferret/pkg/stdlib/utils",
     "github.com/PuerkitoBio/goquery",
     "github.com/antlr/antlr4/runtime/Go/antlr",
     "github.com/chzyer/readline",
