@@ -8,24 +8,24 @@ import (
 	"time"
 )
 
-type WaitTask struct {
-	client    *cdp.Client
-	predicate string
-	timeout   time.Duration
-	polling   time.Duration
-}
+type (
+	Function func() (core.Value, error)
+	WaitTask struct {
+		fun     Function
+		timeout time.Duration
+		polling time.Duration
+	}
+)
 
 const DefaultPolling = time.Millisecond * time.Duration(200)
 
 func NewWaitTask(
-	client *cdp.Client,
-	predicate string,
+	fun Function,
 	timeout time.Duration,
 	polling time.Duration,
 ) *WaitTask {
 	return &WaitTask{
-		client,
-		predicate,
+		fun,
 		timeout,
 		polling,
 	}
@@ -39,14 +39,9 @@ func (task *WaitTask) Run() (core.Value, error) {
 		case <-timer.C:
 			return values.None, core.ErrTimeout
 		default:
-			out, err := eval.Eval(
-				task.client,
-				task.predicate,
-				true,
-				false,
-			)
+			out, err := task.fun()
 
-			// JS expression failed
+			// expression failed
 			// terminating
 			if err != nil {
 				timer.Stop()
@@ -54,7 +49,7 @@ func (task *WaitTask) Run() (core.Value, error) {
 				return values.None, err
 			}
 
-			// JS output is not empty
+			// output is not empty
 			// terminating
 			if out != values.None {
 				timer.Stop()
@@ -66,4 +61,24 @@ func (task *WaitTask) Run() (core.Value, error) {
 			time.Sleep(task.polling)
 		}
 	}
+}
+
+func NewEvalWaitTask(
+	client *cdp.Client,
+	predicate string,
+	timeout time.Duration,
+	polling time.Duration,
+) *WaitTask {
+	return NewWaitTask(
+		func() (core.Value, error) {
+			return eval.Eval(
+				client,
+				predicate,
+				true,
+				false,
+			)
+		},
+		timeout,
+		polling,
+	)
 }

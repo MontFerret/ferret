@@ -1,6 +1,15 @@
 package html
 
-import "github.com/MontFerret/ferret/pkg/runtime/core"
+import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
+)
+
+const defaultTimeout = 5000
+
+var (
+	ErrNotDynamic = errors.New("expected dynamic document or element")
+)
 
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
@@ -10,6 +19,8 @@ func NewLib() map[string]core.Function {
 		"ELEMENTS":        Elements,
 		"WAIT_ELEMENT":    WaitElement,
 		"WAIT_NAVIGATION": WaitNavigation,
+		"WAIT_CLASS":      WaitClass,
+		"WAIT_CLASS_ALL":  WaitClassAll,
 		"CLICK":           Click,
 		"CLICK_ALL":       ClickAll,
 		"NAVIGATE":        Navigate,

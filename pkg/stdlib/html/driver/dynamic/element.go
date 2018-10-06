@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	"hash/fnv"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -187,7 +188,6 @@ func (el *HTMLElement) Compare(other core.Value) int {
 func (el *HTMLElement) Unwrap() interface{} {
 	return el
 }
-
 
 func (el *HTMLElement) Hash() uint64 {
 	el.Lock()
@@ -363,6 +363,36 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	}
 
 	return arr
+}
+
+func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) error {
+	task := events.NewWaitTask(
+		func() (core.Value, error) {
+			current := el.GetAttribute("class")
+
+			if current.Type() != core.StringType {
+				return values.None, nil
+			}
+
+			str := current.(values.String)
+			classStr := string(class)
+			classes := strings.Split(string(str), "")
+
+			for _, c := range classes {
+				if c == classStr {
+					return values.True, nil
+				}
+			}
+
+			return values.None, nil
+		},
+		time.Millisecond*time.Duration(timeout),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run()
+
+	return err
 }
 
 func (el *HTMLElement) InnerText() values.String {

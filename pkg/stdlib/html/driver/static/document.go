@@ -32,16 +32,16 @@ func NewHTMLDocument(
 	return &HTMLDocument{el, values.NewString(url)}, nil
 }
 
-func (el *HTMLDocument) Type() core.Type {
+func (doc *HTMLDocument) Type() core.Type {
 	return core.HTMLDocumentType
 }
 
-func (el *HTMLDocument) Compare(other core.Value) int {
+func (doc *HTMLDocument) Compare(other core.Value) int {
 	switch other.Type() {
 	case core.HTMLDocumentType:
 		otherDoc := other.(values.HTMLDocument)
 
-		return el.url.Compare(otherDoc.URL())
+		return doc.url.Compare(otherDoc.URL())
 	default:
 		if other.Type() > core.HTMLDocumentType {
 			return -1
@@ -51,6 +51,52 @@ func (el *HTMLDocument) Compare(other core.Value) int {
 	}
 }
 
-func (el *HTMLDocument) URL() core.Value {
-	return el.url
+func (doc *HTMLDocument) URL() core.Value {
+	return doc.url
+}
+
+func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
+	selection := doc.selection.Find(selector.String())
+
+	str, err := selection.Html()
+
+	// TODO: log error
+	if err != nil {
+		return values.EmptyString
+	}
+
+	return values.NewString(str)
+}
+
+func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) *values.Array {
+	selection := doc.selection.Find(selector.String())
+	arr := values.NewArray(selection.Length())
+
+	selection.Each(func(_ int, selection *goquery.Selection) {
+		str, err := selection.Html()
+
+		// TODO: log error
+		if err == nil {
+			arr.Push(values.NewString(str))
+		}
+	})
+
+	return arr
+}
+
+func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.String {
+	selection := doc.selection.Find(selector.String())
+
+	return values.NewString(selection.Text())
+}
+
+func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
+	selection := doc.selection.Find(selector.String())
+	arr := values.NewArray(selection.Length())
+
+	selection.Each(func(_ int, selection *goquery.Selection) {
+		arr.Push(values.NewString(selection.Text()))
+	})
+
+	return arr
 }
