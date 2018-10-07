@@ -3,9 +3,10 @@ package values
 import (
 	"encoding/binary"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"hash/fnv"
 	"sort"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
@@ -161,14 +162,14 @@ func (t *Object) ForEach(predicate ObjectPredicate) {
 	}
 }
 
-func (t *Object) Get(key String) (core.Value, bool) {
+func (t *Object) Get(key String) (core.Value, Boolean) {
 	val, found := t.value[string(key)]
 
 	if found {
-		return val, found
+		return val, NewBoolean(found)
 	}
 
-	return None, found
+	return None, NewBoolean(found)
 }
 
 func (t *Object) GetIn(path []core.Value) (core.Value, error) {
