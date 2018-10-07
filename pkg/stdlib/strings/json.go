@@ -10,7 +10,7 @@ import (
 /*
  * Returns a FQL value described by the JSON-encoded input string.
  * @params text (String) - The string to parse as JSON.
- * @returns FQL value (Value)
+ * @returns FQL value (Read)
  */
 func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
@@ -32,7 +32,7 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 
 /*
  * Returns a JSON string representation of the input value.
- * @params value (Value) - The input value to serialize.
+ * @params value (Read) - The input value to serialize.
  * @returns json (String)
  */
 func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {

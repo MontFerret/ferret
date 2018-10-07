@@ -27,6 +27,10 @@ func NewLazyValue(factory LazyFactory) *LazyValue {
 	return lz
 }
 
+/*
+ * Indicates whether the value is ready.
+ * @returns (Boolean) - Boolean value indicating whether the value is ready.
+ */
 func (lv *LazyValue) Ready() bool {
 	lv.Lock()
 	defer lv.Unlock()
@@ -34,25 +38,42 @@ func (lv *LazyValue) Ready() bool {
 	return lv.ready
 }
 
-func (lv *LazyValue) Value() (core.Value, error) {
+/*
+ * Returns an underlying value.
+ * Not thread safe. Should not mutated.
+ * @returns (Value) - Underlying value if successfully loaded, otherwise error
+ */
+func (lv *LazyValue) Read() (core.Value, error) {
 	lv.Lock()
 	defer lv.Unlock()
 
 	if !lv.ready {
-		val, err := lv.factory()
-
-		if err == nil {
-			lv.value = val
-			lv.err = nil
-		} else {
-			lv.value = values.None
-			lv.err = err
-		}
+		lv.load()
 	}
 
 	return lv.value, lv.err
 }
 
+/*
+ * Safely mutates an underlying value.
+ * Loads a value if it's not ready.
+ * Thread safe.
+ */
+func (lv *LazyValue) Write(writer func(v core.Value, err error)) {
+	lv.Lock()
+	defer lv.Unlock()
+
+	if !lv.ready {
+		lv.load()
+	}
+
+	writer(lv.value, lv.err)
+}
+
+/*
+ * Resets the storage.
+ * Next call of Read will trigger the factory function again.
+ */
 func (lv *LazyValue) Reset() {
 	lv.Lock()
 	defer lv.Unlock()
@@ -60,4 +81,18 @@ func (lv *LazyValue) Reset() {
 	lv.ready = false
 	lv.value = values.None
 	lv.err = nil
+}
+
+func (lv *LazyValue) load() {
+	val, err := lv.factory()
+
+	if err == nil {
+		lv.value = val
+		lv.err = nil
+	} else {
+		lv.value = values.None
+		lv.err = err
+	}
+
+	lv.ready = true
 }

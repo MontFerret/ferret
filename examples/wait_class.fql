@@ -1,0 +1,13 @@
+LET doc = DOCUMENT("http://getbootstrap.com/docs/4.1/components/collapse/", true)
+
+LET el = ELEMENT(doc, "#accordionExample > div:nth-child(2)")
+LET btn = ELEMENT(el, "button")
+LET body = ELEMENT(el, "div:nth-child(2)")
+
+CLICK(btn)
+WAIT_CLASS(body, "show")
+
+RETURN {
+    class: body.attributes.class,
+    id: body.attributes.id
+}

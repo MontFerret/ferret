@@ -9,8 +9,8 @@ import (
 /*
  * Create a new array with appended value.
  * @param array (Array) - Source array.
- * @param value (Value) - Target value.
- * @param unique (Boolean, optional) - Value indicating whether to do uniqueness check.
+ * @param value (Read) - Target value.
+ * @param unique (Boolean, optional) - Read indicating whether to do uniqueness check.
  * @returns (Array) - A new array with appended value.
  */
 func Push(_ context.Context, args ...core.Value) (core.Value, error) {

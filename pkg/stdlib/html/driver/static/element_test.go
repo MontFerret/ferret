@@ -297,7 +297,7 @@ func TestElement(t *testing.T) {
 		So(el.Length(), ShouldEqual, 4)
 	})
 
-	Convey(".Value", t, func() {
+	Convey(".Read", t, func() {
 		buff := bytes.NewBuffer([]byte(`
 			<html>
 				<head></head>

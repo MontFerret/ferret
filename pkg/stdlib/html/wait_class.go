@@ -68,7 +68,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, doc.WaitForClass(selector, class, timeout)
 	case *dynamic.HTMLElement:
 		el := args[0].(*dynamic.HTMLElement)
-		class := args[0].(values.String)
+		class := args[1].(values.String)
 
 		if len(args) == 3 {
 			err = core.ValidateType(args[2], core.IntType)

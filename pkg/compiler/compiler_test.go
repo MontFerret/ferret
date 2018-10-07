@@ -1779,20 +1779,20 @@ func TestParam(t *testing.T) {
 //		c := compiler.New()
 //
 //		out, err := c.MustCompile(`
-//LET doc = DOCUMENT("https://github.com/", true)
-//LET main = ELEMENT(doc, '.application-main')
-//LET mainTxt = main.innerText
+//LET doc = DOCUMENT("http://getbootstrap.com/docs/4.1/components/collapse/", true)
 //
-//NAVIGATE(doc, "https://github.com/features")
+//LET el = ELEMENT(doc, "#accordionExample > div:nth-child(2)")
+//LET btn = ELEMENT(el, "button")
+//LET body = ELEMENT(el, "div:nth-child(2)")
 //
-//LET features = ELEMENT(doc, '.application-main')
-//LET featuresTxt = features.innerText
+//CLICK(btn)
+//WAIT(1000)
+//// WAIT_CLASS(body, "show")
 //
-//LOG("featuresTxt:", featuresTxt)
-//
-//RETURN mainTxt == featuresTxt
-//
-//
+//RETURN {
+//    class: body.attributes.class,
+//    id: body.attributes.id
+//}
 //			`).Run(context.Background())
 //
 //		So(err, ShouldBeNil)

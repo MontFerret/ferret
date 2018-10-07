@@ -10,7 +10,7 @@ import (
  * Appends a new item to an array and returns a new array with a given element.
  * If ``uniqueOnly`` is set to true, then will add the item only if it's unique.
  * @param arr (Array) - Target array.
- * @param item (Value) - Target value to add.
+ * @param item (Read) - Target value to add.
  * @returns arr (Array) - New array.
  */
 func Append(_ context.Context, args ...core.Value) (core.Value, error) {

@@ -10,7 +10,7 @@ import (
  * Returns a new array with removed all occurrences of value in a given array.
  * Optionally with a limit to the number of removals.
  * @param array (Array) - Source array.
- * @param value (Value) - Target value.
+ * @param value (Read) - Target value.
  * @param limit (Int, optional) - A limit to the number of removals.
  * @returns (Array) - A new array with removed all occurrences of value in a given array.
  */
