@@ -1,5 +1,7 @@
 package common
 
+import "strings"
+
 var Attributes = []string{
 	"abbr",
 	"accept",
@@ -147,7 +149,12 @@ func init() {
 }
 
 func IsAttribute(name string) bool {
-	_, yes := attrMap[name]
+	_, isDefault := attrMap[name]
 
-	return yes
+	if isDefault {
+		return true
+	}
+
+	return strings.HasPrefix(name, "data-") ||
+		strings.HasPrefix(name, "aria-")
 }

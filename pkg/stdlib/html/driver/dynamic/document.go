@@ -21,7 +21,6 @@ import (
 	"time"
 )
 
-
 const BlankPageURL = "about:blank"
 
 type HTMLDocument struct {
@@ -378,7 +377,7 @@ func (doc *HTMLDocument) URL() core.Value {
 	return doc.url
 }
 
-func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) (values.String, error) {
+func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -395,17 +394,23 @@ func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) (values.Str
 	)
 
 	if err != nil {
-		return values.EmptyString, err
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Str("selector", selector.String()).
+			Msg("failed to get inner HTML by selector")
+
+		return values.EmptyString
 	}
 
 	if res.Type() == core.StringType {
-		return res.(values.String), nil
+		return res.(values.String)
 	}
 
-	return values.EmptyString, nil
+	return values.EmptyString
 }
 
-func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) *values.Array {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -427,17 +432,23 @@ func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) (*values
 	)
 
 	if err != nil {
-		return values.NewArray(0), err
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Str("selector", selector.String()).
+			Msg("failed to get an array of inner HTML by selector")
+
+		return values.NewArray(0)
 	}
 
 	if res.Type() == core.ArrayType {
-		return res.(*values.Array), nil
+		return res.(*values.Array)
 	}
 
-	return values.NewArray(0), nil
+	return values.NewArray(0)
 }
 
-func (doc *HTMLDocument) InnerTextBySelector(selector values.String) (values.String, error) {
+func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.String {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -454,17 +465,23 @@ func (doc *HTMLDocument) InnerTextBySelector(selector values.String) (values.Str
 	)
 
 	if err != nil {
-		return values.EmptyString, err
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Str("selector", selector.String()).
+			Msg("failed to get inner text by selector")
+
+		return values.EmptyString
 	}
 
 	if res.Type() == core.StringType {
-		return res.(values.String), nil
+		return res.(values.String)
 	}
 
-	return values.EmptyString, nil
+	return values.EmptyString
 }
 
-func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
 	res, err := eval.Eval(
 		doc.client,
 		fmt.Sprintf(`
@@ -486,14 +503,20 @@ func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) (*values
 	)
 
 	if err != nil {
-		return values.NewArray(0), err
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Str("selector", selector.String()).
+			Msg("failed to get an array inner text by selector")
+
+		return values.NewArray(0)
 	}
 
 	if res.Type() == core.ArrayType {
-		return res.(*values.Array), nil
+		return res.(*values.Array)
 	}
 
-	return values.NewArray(0), nil
+	return values.NewArray(0)
 }
 
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
@@ -595,17 +618,90 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 }
 
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
-	task := events.NewWaitTask(
+	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
-			el = document.querySelector(%s);
+			var el = document.querySelector(%s);
 
 			if (el != null) {
 				return true;
 			}
 
+			// null means we need to repeat
 			return null;
 		`, eval.ParamString(selector.String())),
+		time.Millisecond*time.Duration(timeout),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run()
+
+	return err
+}
+
+func (doc *HTMLDocument) WaitForClass(selector, class values.String, timeout values.Int) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		fmt.Sprintf(`
+			var el = document.querySelector(%s);
+
+			if (el == null) {
+				return false;
+			}
+
+			var className = %s;
+			var found = el.className.split(' ').find(i => i === className);
+
+			if (found != null) {
+				return true;
+			}
+			
+			// null means we need to repeat
+			return null;
+		`,
+			eval.ParamString(selector.String()),
+			eval.ParamString(class.String()),
+		),
+		time.Millisecond*time.Duration(timeout),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run()
+
+	return err
+}
+
+func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout values.Int) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		fmt.Sprintf(`
+			var elements = document.querySelectorAll(%s);
+
+			if (elements == null || elements.length === 0) {
+				return false;
+			}
+
+			var className = %s;
+			var foundCount = 0;
+
+			elements.forEach((el) => {
+				var found = el.className.split(' ').find(i => i === className);
+
+				if (found != null) {
+					foundCount++;
+				}
+			});
+
+			if (foundCount === elements.length) {
+				return true;
+			}
+			
+			// null means we need to repeat
+			return null;
+		`,
+			eval.ParamString(selector.String()),
+			eval.ParamString(class.String()),
+		),
 		time.Millisecond*time.Duration(timeout),
 		events.DefaultPolling,
 	)

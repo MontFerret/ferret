@@ -7,7 +7,7 @@ import (
 )
 
 /*
- * Concatenates one or more instances of Value, or an Array.
+ * Concatenates one or more instances of Read, or an Array.
  * @params src (String...|Array) - The source string / array.
  * @returns String
  */
@@ -42,7 +42,7 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 /*
- * Concatenates one or more instances of Value, or an Array with a given separator.
+ * Concatenates one or more instances of Read, or an Array with a given separator.
  * @params separator (string) - The separator string.
  * @params src (string...|array) - The source string / array.
  * @returns string

@@ -28,7 +28,7 @@ func NewDriver(address string) *Driver {
 	return drv
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HTMLNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
 	err := drv.init(ctx)
 
 	if err != nil {
@@ -37,6 +37,8 @@ func (drv *Driver) GetDocument(ctx context.Context, url string) (values.HTMLNode
 
 	ctx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
+
+	url := targetURL.String()
 
 	if url == "" {
 		url = BlankPageURL

@@ -10,6 +10,7 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
+	"strings"
 )
 
 func pointerInt(input int) *int {
@@ -34,6 +35,7 @@ func parseAttrs(attrs []string) *values.Object {
 	res := values.NewObject()
 
 	for _, el := range attrs {
+		el = strings.TrimSpace(el)
 		str := values.NewString(el)
 
 		if common.IsAttribute(el) {
@@ -43,7 +45,11 @@ func parseAttrs(attrs []string) *values.Object {
 			current, ok := res.Get(attr)
 
 			if ok {
-				res.Set(attr, current.(values.String).Concat(values.SpaceString).Concat(str))
+				if current.String() != "" {
+					res.Set(attr, current.(values.String).Concat(values.SpaceString).Concat(str))
+				} else {
+					res.Set(attr, str)
+				}
 			}
 		}
 	}

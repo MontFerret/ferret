@@ -12,6 +12,10 @@ type DateTime struct {
 	time.Time
 }
 
+var ZeroDateTime = DateTime{
+	time.Time{},
+}
+
 func NewCurrentDateTime() DateTime {
 	return DateTime{time.Now()}
 }

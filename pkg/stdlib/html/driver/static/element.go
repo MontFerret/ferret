@@ -53,7 +53,6 @@ func (el *HTMLElement) Unwrap() interface{} {
 	return el.selection
 }
 
-
 func (el *HTMLElement) Hash() uint64 {
 	str, err := el.selection.Html()
 
