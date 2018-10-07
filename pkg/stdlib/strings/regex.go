@@ -96,7 +96,7 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 /*
- * Splits the given string text into a list of strings, using the separator.
+ * Test wether the regexp has at least one match in the given text.
  * @param text (String) - The string to split.
  * @param regex (String) - A regular expression to use for splitting the text.
  * @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
@@ -130,7 +130,7 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 /*
- * Splits the given string text into a list of strings, using the separator.
+ * Replace every substring matched with the regexp with a given string.
  * @param text (String) - The string to split.
  * @param regex (String) - A regular expression search pattern.
  * @param replacement (String) - The string to replace the search pattern with

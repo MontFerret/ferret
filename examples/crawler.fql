@@ -1,0 +1,12 @@
+LET doc = DOCUMENT('https://www.theverge.com/tech', true)
+WAIT_ELEMENT(doc, '.c-compact-river__entry', 5000)
+LET articles = ELEMENTS(doc, '.c-entry-box--compact__image-wrapper')
+LET links = (
+    FOR article IN articles
+        RETURN article.attributes.href
+)
+FOR link IN links
+    NAVIGATE(doc, link)
+    WAIT_ELEMENT(doc, '.c-entry-content', 5000)
+    LET texter = ELEMENT(doc, '.c-entry-content')
+    RETURN texter.innerText

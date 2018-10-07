@@ -38,6 +38,8 @@ RETURN (
 )
 ```
 
+More examples you can find [here](./examples)
+
 ## Features
 
 * Declarative language
