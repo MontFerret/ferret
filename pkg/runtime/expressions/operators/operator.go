@@ -19,7 +19,7 @@ func (operator *baseOperator) Exec(_ context.Context, _ *core.Scope) (core.Value
 	return values.None, core.ErrInvalidOperation
 }
 
-func (operator *baseOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
+func (operator *baseOperator) Eval(_ context.Context, _, _ core.Value) (core.Value, error) {
 	return values.None, core.ErrInvalidOperation
 }
 
