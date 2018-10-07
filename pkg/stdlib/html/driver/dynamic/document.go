@@ -627,6 +627,7 @@ func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.
 				return true;
 			}
 
+			// null means we need to repeat
 			return null;
 		`, eval.ParamString(selector.String())),
 		time.Millisecond*time.Duration(timeout),
@@ -651,7 +652,12 @@ func (doc *HTMLDocument) WaitForClass(selector, class values.String, timeout val
 			var className = %s;
 			var found = el.className.split(' ').find(i => i === className);
 
-			return found != null;
+			if (found != null) {
+				return true;
+			}
+			
+			// null means we need to repeat
+			return null;
 		`,
 			eval.ParamString(selector.String()),
 			eval.ParamString(class.String()),
@@ -686,7 +692,12 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 				}
 			});
 
-			return foundCount === elements.length;
+			if (foundCount === elements.length) {
+				return true;
+			}
+			
+			// null means we need to repeat
+			return null;
 		`,
 			eval.ParamString(selector.String()),
 			eval.ParamString(class.String()),

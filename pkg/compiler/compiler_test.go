@@ -1774,29 +1774,21 @@ func TestParam(t *testing.T) {
 	})
 }
 
-//func TestHtml(t *testing.T) {
-//	Convey("Should load a document", t, func() {
-//		c := compiler.New()
-//
-//		out, err := c.MustCompile(`
-//LET doc = DOCUMENT("http://getbootstrap.com/docs/4.1/components/collapse/", true)
-//
-//LET el = ELEMENT(doc, "#accordionExample > div:nth-child(2)")
-//LET btn = ELEMENT(el, "button")
-//LET body = ELEMENT(el, "div:nth-child(2)")
-//
-//CLICK(btn)
-//WAIT(1000)
-//// WAIT_CLASS(body, "show")
-//
-//RETURN {
-//    class: body.attributes.class,
-//    id: body.attributes.id
-//}
-//			`).Run(context.Background())
-//
-//		So(err, ShouldBeNil)
-//
-//		So(string(out), ShouldEqual, `"int"`)
-//	})
-//}
+func TestHtml(t *testing.T) {
+	Convey("Should load a document", t, func() {
+		c := compiler.New()
+
+		out, err := c.MustCompile(`
+LET doc = DOCUMENT("http://getbootstrap.com/docs/4.1/components/collapse/", true)
+
+CLICK(doc, "#headingTwo > h5 > button")
+WAIT_CLASS(doc, "#collapseTwo", "bar")
+
+RETURN TRUE
+			`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+
+		So(string(out), ShouldEqual, `"int"`)
+	})
+}
