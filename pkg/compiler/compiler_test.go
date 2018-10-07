@@ -1630,6 +1630,51 @@ func TestInOperator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `true`)
 	})
+
+	Convey("[1,2,3] ALL IN [1,2,3] should return true", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN [1,2,3] ALL IN [1,2,3]
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	Convey("[1,2,4] ALL IN [1,2,3] should return true", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN [1,2,4] ALL IN [1,2,3]
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `false`)
+	})
+
+	Convey("[1,2,4] ALL NOT IN [1,2,3] should return true", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			RETURN [1,2,4] ALL NOT IN [1,2,3]
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
 }
 
 func TestForTernaryExpression(t *testing.T) {

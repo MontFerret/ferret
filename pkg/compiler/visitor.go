@@ -899,6 +899,7 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 			v.getSourceMap(ctx),
 			left,
 			right,
+			ctx.All() != nil,
 			ctx.Not() != nil,
 		)
 	}
