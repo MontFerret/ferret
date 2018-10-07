@@ -36,5 +36,5 @@ func Has(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	_, has := obj.Get(keyName)
 
-	return values.NewBoolean(bool(has)), nil
+	return has, nil
 }
