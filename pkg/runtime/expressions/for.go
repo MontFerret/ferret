@@ -15,7 +15,6 @@ type ForExpression struct {
 	keyVar     string
 	dataSource collections.IterableExpression
 	predicate  core.Expression
-	distinct   bool
 	spread     bool
 }
 
@@ -25,7 +24,6 @@ func NewForExpression(
 	keyVar string,
 	dataSource collections.IterableExpression,
 	predicate core.Expression,
-	distinct bool,
 	spread bool,
 ) (*ForExpression, error) {
 	if valVar == "" {
@@ -45,7 +43,6 @@ func NewForExpression(
 		valVar, keyVar,
 		dataSource,
 		predicate,
-		distinct,
 		spread,
 	}, nil
 }
@@ -62,18 +59,15 @@ func (e *ForExpression) AddSort(src core.SourceMap, sorters ...*clauses.SorterEx
 	e.dataSource = clauses.NewSortClause(src, e.dataSource, e.valVar, sorters...)
 }
 
+func (e *ForExpression) AddDistinct(src core.SourceMap) {
+	e.dataSource = clauses.NewDistinctClause(src, e.dataSource)
+}
+
 func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
 	iterator, err := e.dataSource.Iterate(ctx, scope)
 
 	if err != nil {
 		return values.None, err
-	}
-
-	// Hash map for a check for uniqueness
-	var hashes map[uint64]bool
-
-	if e.distinct {
-		hashes = make(map[uint64]bool)
 	}
 
 	res := values.NewArray(10)
@@ -98,35 +92,20 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 			return values.None, err
 		}
 
-		var el core.Value
-
-		// The result shouldn't be distinct
-		// Just add the output
-		if !e.distinct {
-			el = out
+		if !e.spread {
+			res.Push(out)
 		} else {
-			// We need to check whether the value already exists in the result set
-			hash := out.Hash()
-			_, exists := hashes[hash]
+			elements, ok := out.(*values.Array)
 
-			if !exists {
-				hashes[hash] = true
-				el = out
+			if !ok {
+				return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
 			}
-		}
 
-		if el != nil {
-			if !e.spread {
-				res.Push(el)
-			} else {
-				elements := el.(*values.Array)
+			elements.ForEach(func(i core.Value, _ int) bool {
+				res.Push(i)
 
-				elements.ForEach(func(i core.Value, _ int) bool {
-					res.Push(i)
-
-					return true
-				})
-			}
+				return true
+			})
 		}
 	}
 

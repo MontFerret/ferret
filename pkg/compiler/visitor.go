@@ -192,6 +192,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 	var spread bool
 	var distinct bool
+	var distinctSrc core.SourceMap
 	forRetCtx := ctx.ForExpressionReturn().(*fql.ForExpressionReturnContext)
 	returnCtx := forRetCtx.ReturnExpression()
 
@@ -203,7 +204,13 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 			return nil, err
 		}
 
-		distinct = returnCtx.Distinct() != nil
+		distinctCtx := returnCtx.Distinct()
+
+		if distinctCtx != nil {
+			distinct = true
+			token := distinctCtx.GetSymbol()
+			distinctSrc = core.NewSourceMap(token.GetText(), token.GetLine(), token.GetColumn())
+		}
 
 		predicate.Add(returnExp)
 	} else {
@@ -225,12 +232,15 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		keyVarName,
 		src,
 		predicate,
-		distinct,
 		spread,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if distinct {
+		forExp.AddDistinct(distinctSrc)
 	}
 
 	for _, clause := range ctx.AllForExpressionClause() {
