@@ -35,5 +35,13 @@ type (
 		HTMLNode
 
 		URL() core.Value
+
+		InnerHTMLBySelector(selector String) String
+
+		InnerHTMLBySelectorAll(selector String) *Array
+
+		InnerTextBySelector(selector String) String
+
+		InnerTextBySelectorAll(selector String) *Array
 	}
 )

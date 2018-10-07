@@ -11,7 +11,7 @@ import (
  * It is the same as anyArray[position] for positive positions, but does not support negative positions.
  * @param array (Array) - An array with elements of arbitrary type.
  * @param index (Int) - Position of desired element in array, positions start at 0.
- * @returns (Value) - The array element at the given position.
+ * @returns (Read) - The array element at the given position.
  * If position is negative or beyond the upper bound of the array, then NONE will be returned.
  */
 func Nth(_ context.Context, args ...core.Value) (core.Value, error) {

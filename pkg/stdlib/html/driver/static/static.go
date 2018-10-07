@@ -28,7 +28,8 @@ func NewDriver(setters ...Option) *Driver {
 	return &Driver{client}
 }
 
-func (d *Driver) GetDocument(_ context.Context, url string) (values.HTMLNode, error) {
+func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values.HTMLNode, error) {
+	url := targetURL.String()
 	req, err := httpx.NewRequest(httpx.MethodGet, url, nil)
 
 	if err != nil {
@@ -58,7 +59,7 @@ func (d *Driver) GetDocument(_ context.Context, url string) (values.HTMLNode, er
 	return NewHTMLDocument(url, doc)
 }
 
-func (d *Driver) ParseDocument(_ context.Context, str string) (values.HTMLNode, error) {
+func (d *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLNode, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)

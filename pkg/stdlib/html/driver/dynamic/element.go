@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	"hash/fnv"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -145,7 +146,7 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	val, err := el.innerText.Value()
+	val, err := el.innerText.Read()
 
 	if err != nil {
 		return nil, err
@@ -187,7 +188,6 @@ func (el *HTMLElement) Compare(other core.Value) int {
 func (el *HTMLElement) Unwrap() interface{} {
 	return el
 }
-
 
 func (el *HTMLElement) Hash() uint64 {
 	el.Lock()
@@ -243,7 +243,7 @@ func (el *HTMLElement) NodeName() values.String {
 }
 
 func (el *HTMLElement) GetAttributes() core.Value {
-	val, err := el.attributes.Value()
+	val, err := el.attributes.Read()
 
 	if err != nil {
 		return values.None
@@ -254,7 +254,7 @@ func (el *HTMLElement) GetAttributes() core.Value {
 }
 
 func (el *HTMLElement) GetAttribute(name values.String) core.Value {
-	attrs, err := el.attributes.Value()
+	attrs, err := el.attributes.Read()
 
 	if err != nil {
 		return values.None
@@ -270,7 +270,7 @@ func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 }
 
 func (el *HTMLElement) GetChildNodes() core.Value {
-	val, err := el.loadedChildren.Value()
+	val, err := el.loadedChildren.Read()
 
 	if err != nil {
 		return values.NewArray(0)
@@ -280,7 +280,7 @@ func (el *HTMLElement) GetChildNodes() core.Value {
 }
 
 func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
-	val, err := el.loadedChildren.Value()
+	val, err := el.loadedChildren.Read()
 
 	if err != nil {
 		return values.None
@@ -365,8 +365,38 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	return arr
 }
 
+func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) error {
+	task := events.NewWaitTask(
+		func() (core.Value, error) {
+			current := el.GetAttribute("class")
+
+			if current.Type() != core.StringType {
+				return values.None, nil
+			}
+
+			str := current.(values.String)
+			classStr := string(class)
+			classes := strings.Split(string(str), " ")
+
+			for _, c := range classes {
+				if c == classStr {
+					return values.True, nil
+				}
+			}
+
+			return values.None, nil
+		},
+		time.Millisecond*time.Duration(timeout),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run()
+
+	return err
+}
+
 func (el *HTMLElement) InnerText() values.String {
-	val, err := el.innerText.Value()
+	val, err := el.innerText.Read()
 
 	if err != nil {
 		return values.EmptyString
@@ -469,29 +499,25 @@ func (el *HTMLElement) handleAttrModified(message interface{}) {
 		return
 	}
 
-	// they are not event loaded
-	// just ignore the event
-	if !el.attributes.Ready() {
-		return
-	}
+	el.attributes.Write(func(v core.Value, err error) {
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Msg("failed to update node")
 
-	val, err := el.attributes.Value()
+			return
+		}
 
-	// failed to load
-	if err != nil {
-		return
-	}
+		attrs, ok := v.(*values.Object)
 
-	el.Lock()
-	defer el.Unlock()
+		if !ok {
+			return
+		}
 
-	attrs, ok := val.(*values.Object)
-
-	if !ok {
-		return
-	}
-
-	attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
+		attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
+	})
 }
 
 func (el *HTMLElement) handleAttrRemoved(message interface{}) {
@@ -513,24 +539,25 @@ func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 		return
 	}
 
-	val, err := el.attributes.Value()
+	el.attributes.Write(func(v core.Value, err error) {
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Msg("failed to update node")
 
-	// failed to load
-	if err != nil {
-		return
-	}
+			return
+		}
 
-	el.Lock()
-	defer el.Unlock()
+		attrs, ok := v.(*values.Object)
 
-	attrs, ok := val.(*values.Object)
+		if !ok {
+			return
+		}
 
-	if !ok {
-		return
-	}
-
-	// TODO: actually, we need to sync it too...
-	attrs.Remove(values.NewString(reply.Name))
+		attrs.Remove(values.NewString(reply.Name))
+	})
 }
 
 func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
@@ -598,40 +625,36 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		return
 	}
 
-	loaded, err := el.loadedChildren.Value()
+	el.loadedChildren.Write(func(v core.Value, err error) {
+		loadedArr := v.(*values.Array)
+		loadedEl, err := LoadElement(el.logger, el.client, el.broker, nextID)
 
-	if err != nil {
-		return
-	}
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Msg("failed to load an inserted node")
 
-	loadedArr := loaded.(*values.Array)
-	loadedEl, err := LoadElement(el.logger, el.client, el.broker, nextID)
+			return
+		}
 
-	if err != nil {
-		el.logger.Error().
-			Timestamp().
-			Err(err).
-			Int("id", int(el.id)).
-			Msg("failed to load an inserted node")
+		loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
 
-		return
-	}
+		newInnerHTML, err := loadInnerHTML(el.client, el.id)
 
-	loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Msg("failed to update node")
 
-	newInnerHTML, err := loadInnerHTML(el.client, el.id)
+			return
+		}
 
-	if err != nil {
-		el.logger.Error().
-			Timestamp().
-			Err(err).
-			Int("id", int(el.id)).
-			Msg("failed to update node")
-
-		return
-	}
-
-	el.innerHTML = newInnerHTML
+		el.innerHTML = newInnerHTML
+	})
 }
 
 func (el *HTMLElement) handleChildDeleted(message interface{}) {
@@ -669,26 +692,32 @@ func (el *HTMLElement) handleChildDeleted(message interface{}) {
 		return
 	}
 
-	loaded, err := el.loadedChildren.Value()
+	el.loadedChildren.Write(func(v core.Value, err error) {
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Msg("failed to update node")
 
-	if err != nil {
-		return
-	}
+			return
+		}
 
-	loadedArr := loaded.(*values.Array)
-	loadedArr.RemoveAt(values.NewInt(targetIDx))
+		loadedArr := v.(*values.Array)
+		loadedArr.RemoveAt(values.NewInt(targetIDx))
 
-	newInnerHTML, err := loadInnerHTML(el.client, el.id)
+		newInnerHTML, err := loadInnerHTML(el.client, el.id)
 
-	if err != nil {
-		el.logger.Error().
-			Timestamp().
-			Err(err).
-			Int("id", int(el.id)).
-			Msg("failed to update node")
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Msg("failed to update node")
 
-		return
-	}
+			return
+		}
 
-	el.innerHTML = newInnerHTML
+		el.innerHTML = newInnerHTML
+	})
 }

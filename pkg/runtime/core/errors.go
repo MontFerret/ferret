@@ -49,3 +49,13 @@ func TypeError(actual Type, expected ...Type) error {
 func Error(err error, msg string) error {
 	return errors.Errorf("%s: %s", err.Error(), msg)
 }
+
+func Errors(err ...error) error {
+	message := ""
+
+	for _, e := range err {
+		message += ": " + e.Error()
+	}
+
+	return errors.New(message)
+}

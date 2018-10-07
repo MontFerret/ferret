@@ -6,8 +6,15 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func Element(_ context.Context, inputs ...core.Value) (core.Value, error) {
-	el, selector, err := elementArgs(inputs)
+/*
+ * Finds an element by a given CSS selector.
+ * Returns NONE if element not found.
+ * @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
+ * @param selector (String) - CSS selector.
+ * @returns (HTMLElement | None) - Returns an HTMLElement if found, otherwise NONE.
+ */
+func Element(_ context.Context, args ...core.Value) (core.Value, error) {
+	el, selector, err := queryArgs(args)
 
 	if err != nil {
 		return values.None, err
@@ -16,36 +23,24 @@ func Element(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	return el.QuerySelector(selector), nil
 }
 
-func Elements(_ context.Context, inputs ...core.Value) (core.Value, error) {
-	el, selector, err := elementArgs(inputs)
+func queryArgs(args []core.Value) (values.HTMLNode, values.String, error) {
+	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return nil, values.EmptyString, err
 	}
 
-	return el.QuerySelectorAll(selector), nil
-}
+	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
 
-func elementArgs(inputs []core.Value) (values.HTMLNode, values.String, error) {
-	if len(inputs) == 0 {
-		return nil, values.EmptyString, core.Error(core.ErrMissedArgument, "element and arg2")
+	if err != nil {
+		return nil, values.EmptyString, err
 	}
 
-	if len(inputs) == 1 {
-		return nil, values.EmptyString, core.Error(core.ErrMissedArgument, "arg2")
+	err = core.ValidateType(args[1], core.StringType)
+
+	if err != nil {
+		return nil, values.EmptyString, err
 	}
 
-	arg1 := inputs[0]
-	arg2 := inputs[1]
-
-	if arg1.Type() != core.HTMLDocumentType &&
-		arg1.Type() != core.HTMLElementType {
-		return nil, values.EmptyString, core.TypeError(arg1.Type(), core.HTMLDocumentType, core.HTMLElementType)
-	}
-
-	if arg2.Type() != core.StringType {
-		return nil, values.EmptyString, core.TypeError(arg2.Type(), core.StringType)
-	}
-
-	return arg1.(values.HTMLNode), arg2.(values.String), nil
+	return args[0].(values.HTMLNode), args[1].(values.String), nil
 }

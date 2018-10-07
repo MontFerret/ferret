@@ -9,23 +9,23 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 )
 
-type DriverName string
+type Name string
 
 const (
-	Dynamic DriverName = "dynamic"
-	Static  DriverName = "static"
+	Dynamic Name = "dynamic"
+	Static  Name = "static"
 )
 
 type Driver interface {
-	GetDocument(ctx context.Context, url string) (values.HTMLNode, error)
+	GetDocument(ctx context.Context, url values.String) (values.HTMLNode, error)
 	Close() error
 }
 
-func ToContext(ctx context.Context, name DriverName, drv Driver) context.Context {
+func ToContext(ctx context.Context, name Name, drv Driver) context.Context {
 	return context.WithValue(ctx, name, drv)
 }
 
-func FromContext(ctx context.Context, name DriverName) (Driver, error) {
+func FromContext(ctx context.Context, name Name) (Driver, error) {
 	val := ctx.Value(name)
 
 	drv, ok := val.(Driver)
