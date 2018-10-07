@@ -44,13 +44,17 @@ func (operator *RangeOperator) Exec(ctx context.Context, scope *core.Scope) (cor
 		return values.None, core.SourceError(operator.src, err)
 	}
 
-	err = core.ValidateType(left, core.IntType)
+	right, err := operator.right.Exec(ctx, scope)
 
 	if err != nil {
 		return values.None, core.SourceError(operator.src, err)
 	}
 
-	right, err := operator.right.Exec(ctx, scope)
+	return operator.Eval(ctx, left, right)
+}
+
+func (operator *RangeOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
+	err := core.ValidateType(left, core.IntType)
 
 	if err != nil {
 		return values.None, core.SourceError(operator.src, err)

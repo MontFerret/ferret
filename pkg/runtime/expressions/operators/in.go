@@ -2,14 +2,12 @@ package operators
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type InOperator struct {
 	*baseOperator
-	all bool
 	not bool
 }
 
@@ -17,7 +15,6 @@ func NewInOperator(
 	src core.SourceMap,
 	left core.Expression,
 	right core.Expression,
-	all bool,
 	not bool,
 ) (*InOperator, error) {
 	if left == nil {
@@ -28,13 +25,7 @@ func NewInOperator(
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 
-	base := &baseOperator{src, left, right}
-
-	return &InOperator{
-		base,
-		all,
-		not,
-	}, nil
+	return &InOperator{&baseOperator{src, left, right}, not}, nil
 }
 
 func (operator *InOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
@@ -50,49 +41,19 @@ func (operator *InOperator) Exec(ctx context.Context, scope *core.Scope) (core.V
 		return values.False, core.SourceError(operator.src, err)
 	}
 
-	err = core.ValidateType(right, core.ArrayType)
+	return operator.Eval(ctx, left, right)
+}
+
+func (operator *InOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
+	err := core.ValidateType(right, core.ArrayType)
 
 	if err != nil {
 		// TODO: Return the error? AQL just returns false
 		return values.False, nil
 	}
 
-	var found bool
-	rightArr := right.(*values.Array)
-
-	// it means that left value must be an array too
-	if operator.all {
-		err = core.ValidateType(left, core.ArrayType)
-
-		if err != nil {
-			// TODO: Return the error? AQL just returns false
-			return values.False, nil
-		}
-
-		hashTable, err := collections.ToHashTable(collections.NewArrayIterator(rightArr))
-
-		if err != nil {
-			return values.False, err
-		}
-
-		leftArr := left.(*values.Array)
-
-		leftArr.ForEach(func(value core.Value, _ int) bool {
-			h := value.Hash()
-
-			_, exists := hashTable[h]
-
-			if !exists {
-				found = false
-				return false
-			}
-
-			found = true
-			return true
-		})
-	} else {
-		found = rightArr.IndexOf(left) > -1
-	}
+	arr := right.(*values.Array)
+	found := arr.IndexOf(left) > -1
 
 	if operator.not {
 		return values.NewBoolean(found == false), nil

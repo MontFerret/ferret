@@ -6,15 +6,20 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type Operator func(left, right core.Value) core.Value
-
-type baseOperator struct {
-	src   core.SourceMap
-	left  core.Expression
-	right core.Expression
-}
+type (
+	OperatorFunc func(left, right core.Value) core.Value
+	baseOperator struct {
+		src   core.SourceMap
+		left  core.Expression
+		right core.Expression
+	}
+)
 
 func (operator *baseOperator) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
+	return values.None, core.ErrInvalidOperation
+}
+
+func (operator *baseOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
 	return values.None, core.ErrInvalidOperation
 }
 
