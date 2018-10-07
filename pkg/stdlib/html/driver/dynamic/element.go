@@ -376,7 +376,7 @@ func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) err
 
 			str := current.(values.String)
 			classStr := string(class)
-			classes := strings.Split(string(str), "")
+			classes := strings.Split(string(str), " ")
 
 			for _, c := range classes {
 				if c == classStr {
