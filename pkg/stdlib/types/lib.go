@@ -1,6 +1,9 @@
 package types
 
-import "github.com/MontFerret/ferret/pkg/runtime/core"
+import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+)
 
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
@@ -23,4 +26,8 @@ func NewLib() map[string]core.Function {
 		"IS_BINARY":        IsBinary,
 		"TYPENAME":         TypeName,
 	}
+}
+
+func isTypeof(value core.Value, ctype core.Type) core.Value {
+	return values.NewBoolean(core.IsTypeOf(value, ctype))
 }
