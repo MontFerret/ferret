@@ -17,11 +17,11 @@ func NewInOperator(
 	right core.Expression,
 	not bool,
 ) (*InOperator, error) {
-	if core.IsNil(left) {
+	if left == nil {
 		return nil, core.Error(core.ErrMissedArgument, "left expression")
 	}
 
-	if core.IsNil(right) {
+	if right == nil {
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 
@@ -41,7 +41,11 @@ func (operator *InOperator) Exec(ctx context.Context, scope *core.Scope) (core.V
 		return values.False, core.SourceError(operator.src, err)
 	}
 
-	err = core.ValidateType(right, core.ArrayType)
+	return operator.Eval(ctx, left, right)
+}
+
+func (operator *InOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
+	err := core.ValidateType(right, core.ArrayType)
 
 	if err != nil {
 		// TODO: Return the error? AQL just returns false

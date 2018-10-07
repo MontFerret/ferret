@@ -191,6 +191,14 @@ func (v *BaseFqlParserVisitor) VisitForTernaryExpression(ctx *ForTernaryExpressi
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitArrayOperator(ctx *ArrayOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInOperator(ctx *InOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitEqualityOperator(ctx *EqualityOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }

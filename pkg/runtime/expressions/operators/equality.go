@@ -8,11 +8,11 @@ import (
 type (
 	EqualityOperator struct {
 		*baseOperator
-		fn Operator
+		fn OperatorFunc
 	}
 )
 
-var equalityOperators = map[string]Operator{
+var equalityOperators = map[string]OperatorFunc{
 	"==": Equal,
 	"!=": NotEqual,
 	">":  Greater,
@@ -30,7 +30,7 @@ func NewEqualityOperator(
 	fn, exists := equalityOperators[operator]
 
 	if !exists {
-		return nil, core.Error(core.ErrInvalidArgument, "operator")
+		return nil, core.Error(core.ErrInvalidArgument, "aotype")
 	}
 
 	return &EqualityOperator{
@@ -52,5 +52,9 @@ func (operator *EqualityOperator) Exec(ctx context.Context, scope *core.Scope) (
 		return nil, err
 	}
 
+	return operator.Eval(ctx, left, right)
+}
+
+func (operator *EqualityOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
 	return operator.fn(left, right), nil
 }

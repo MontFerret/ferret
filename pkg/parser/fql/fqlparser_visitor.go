@@ -145,6 +145,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#forTernaryExpression.
 	VisitForTernaryExpression(ctx *ForTernaryExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#arrayOperator.
+	VisitArrayOperator(ctx *ArrayOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inOperator.
+	VisitInOperator(ctx *InOperatorContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
 

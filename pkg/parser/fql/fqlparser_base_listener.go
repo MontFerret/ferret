@@ -300,6 +300,18 @@ func (s *BaseFqlParserListener) EnterForTernaryExpression(ctx *ForTernaryExpress
 // ExitForTernaryExpression is called when production forTernaryExpression is exited.
 func (s *BaseFqlParserListener) ExitForTernaryExpression(ctx *ForTernaryExpressionContext) {}
 
+// EnterArrayOperator is called when production arrayOperator is entered.
+func (s *BaseFqlParserListener) EnterArrayOperator(ctx *ArrayOperatorContext) {}
+
+// ExitArrayOperator is called when production arrayOperator is exited.
+func (s *BaseFqlParserListener) ExitArrayOperator(ctx *ArrayOperatorContext) {}
+
+// EnterInOperator is called when production inOperator is entered.
+func (s *BaseFqlParserListener) EnterInOperator(ctx *InOperatorContext) {}
+
+// ExitInOperator is called when production inOperator is exited.
+func (s *BaseFqlParserListener) ExitInOperator(ctx *InOperatorContext) {}
+
 // EnterEqualityOperator is called when production equalityOperator is entered.
 func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorContext) {}
 

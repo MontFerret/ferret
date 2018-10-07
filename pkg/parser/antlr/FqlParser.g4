@@ -122,7 +122,6 @@ forExpressionReturn
     | forExpression
     ;
 
-
 variableDeclaration
     : Let Identifier Assign expression
     | Let Identifier Assign OpenParen forExpression CloseParen
@@ -217,7 +216,8 @@ expression
     | OpenParen expressionSequence CloseParen
     | Plus expression
     | Minus expression
-    | expression (Not)? In expression
+    | expression arrayOperator (Not)? (inOperator | equalityOperator) expression
+    | expression (Not)? inOperator expression
     | Not expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
@@ -237,6 +237,16 @@ forTernaryExpression
     : expression QuestionMark expression? Colon OpenParen forExpression CloseParen
     | expression QuestionMark OpenParen forExpression CloseParen Colon expression
     | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen forExpression CloseParen
+    ;
+
+arrayOperator
+    : All
+    | Any
+    | None
+    ;
+
+inOperator
+    : In
     ;
 
 equalityOperator

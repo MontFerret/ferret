@@ -15,17 +15,17 @@ type (
 )
 
 const (
-	AndType LogicalOperatorType = 0
-	OrType  LogicalOperatorType = 1
-	NotType LogicalOperatorType = 2
+	LogicalOperatorTypeAnd LogicalOperatorType = 0
+	LogicalOperatorTypeOr  LogicalOperatorType = 1
+	LogicalOperatorTypeNot LogicalOperatorType = 2
 )
 
 var logicalOperators = map[string]LogicalOperatorType{
-	"&&":  AndType,
-	"AND": AndType,
-	"||":  OrType,
-	"OR":  OrType,
-	"NOT": NotType,
+	"&&":  LogicalOperatorTypeAnd,
+	"AND": LogicalOperatorTypeAnd,
+	"||":  LogicalOperatorTypeOr,
+	"OR":  LogicalOperatorTypeOr,
+	"NOT": LogicalOperatorTypeNot,
 }
 
 func NewLogicalOperator(
@@ -51,7 +51,7 @@ func NewLogicalOperator(
 }
 
 func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	if operator.value == NotType {
+	if operator.value == LogicalOperatorTypeNot {
 		val, err := operator.right.Exec(ctx, scope)
 
 		if err != nil {
@@ -69,7 +69,7 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 
 	leftBool := values.ToBoolean(left)
 
-	if operator.value == AndType && leftBool == values.False {
+	if operator.value == LogicalOperatorTypeAnd && leftBool == values.False {
 		if left.Type() == core.BooleanType {
 			return values.False, nil
 		}
@@ -77,7 +77,7 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 		return left, nil
 	}
 
-	if operator.value == OrType && leftBool == values.True {
+	if operator.value == LogicalOperatorTypeOr && leftBool == values.True {
 		return left, nil
 	}
 
@@ -85,6 +85,28 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 
 	if err != nil {
 		return values.None, core.SourceError(operator.src, err)
+	}
+
+	return right, nil
+}
+
+func (operator *LogicalOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
+	if operator.value == LogicalOperatorTypeNot {
+		return Not(right, values.None), nil
+	}
+
+	leftBool := values.ToBoolean(left)
+
+	if operator.value == LogicalOperatorTypeAnd && leftBool == values.False {
+		if left.Type() == core.BooleanType {
+			return values.False, nil
+		}
+
+		return left, nil
+	}
+
+	if operator.value == LogicalOperatorTypeOr && leftBool == values.True {
+		return left, nil
 	}
 
 	return right, nil
