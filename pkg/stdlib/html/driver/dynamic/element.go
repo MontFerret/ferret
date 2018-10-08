@@ -216,6 +216,7 @@ func (el *HTMLElement) Value() core.Value {
 		el.logger.Error().
 			Timestamp().
 			Err(err).
+			Int("id", int(el.id)).
 			Msg("failed to get node value")
 
 		return el.value
@@ -302,8 +303,9 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	if err != nil {
 		el.logger.Error().
 			Timestamp().
-			Str("selector", selector.String()).
 			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
 			Msg("failed to retrieve a node by selector")
 
 		return values.None
@@ -314,8 +316,9 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	if err != nil {
 		el.logger.Error().
 			Timestamp().
-			Str("selector", selector.String()).
 			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
 			Msg("failed to load a child node by selector")
 
 		return values.None
@@ -337,8 +340,9 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	if err != nil {
 		el.logger.Error().
 			Timestamp().
-			Str("selector", selector.String()).
 			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
 			Msg("failed to retrieve nodes by selector")
 
 		return values.None
@@ -352,9 +356,19 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 		if err != nil {
 			el.logger.Error().
 				Timestamp().
-				Str("selector", selector.String()).
 				Err(err).
+				Int("id", int(el.id)).
+				Str("selector", selector.String()).
 				Msg("failed to load nodes by selector")
+
+			// close elements that are already loaded, but won't be used because of the error
+			if arr.Length() > 0 {
+				arr.ForEach(func(e core.Value, _ int) bool {
+					e.(*HTMLElement).Close()
+
+					return true
+				})
+			}
 
 			return values.None
 		}
