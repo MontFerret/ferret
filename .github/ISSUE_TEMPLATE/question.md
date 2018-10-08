@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Describe your question
+about: Ask your question
 
 ---
 
