@@ -3,6 +3,10 @@ package dynamic
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"sync"
+	"time"
+	
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -16,9 +20,6 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"sync"
-	"time"
 )
 
 const BlankPageURL = "about:blank"
@@ -775,4 +776,67 @@ func (doc *HTMLDocument) onError(val interface{}) {
 		Timestamp().
 		Err(err).
 		Msg("unexpected error")
+}
+
+type ScreenshotFormat string
+
+const (
+	ScreenshotFormatPNG  ScreenshotFormat = "png"
+	ScreenshotFormatJPEG ScreenshotFormat = "jpeg"
+)
+
+func IsScreenshotFormatValid(format string) bool {
+	value := ScreenshotFormat(format)
+	return value == ScreenshotFormatPNG || value == ScreenshotFormatJPEG
+}
+
+type ScreenshotArgs struct {
+	X       float64
+	Y       float64
+	Width   float64
+	Height  float64
+	Format  ScreenshotFormat
+	Quality int
+}
+
+func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
+	ctx := context.Background()
+	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
+
+	if params.Format == ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
+		params.Quality = 100
+	}
+	if params.X < 0 {
+		params.X = 0
+	}
+	if params.Y < 0 {
+		params.Y = 0
+	}
+	if params.Width <= 0 {
+		params.Width = float64(metrics.LayoutViewport.ClientWidth) - params.X
+	}
+	if params.Height <= 0 {
+		params.Height = float64(metrics.LayoutViewport.ClientHeight) - params.Y
+	}
+	clip := page.Viewport{
+		X:      params.X,
+		Y:      params.Y,
+		Width:  params.Width,
+		Height: params.Height,
+		Scale:  1.0,
+	}
+
+	format := string(params.Format)
+	screenshotArgs := page.CaptureScreenshotArgs{
+		Format:  &format,
+		Quality: &params.Quality,
+		Clip:    &clip,
+	}
+
+	reply, err := doc.client.Page.CaptureScreenshot(ctx, &screenshotArgs)
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.NewBinary(reply.Data), nil
 }
