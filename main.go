@@ -82,6 +82,12 @@ var (
 		"",
 		"address of proxy server to use (only applicable for static pages)",
 	)
+
+	userAgent = flag.String(
+		"user-agent",
+		"",
+		"set custom user agent. '*' triggers UA generation",
+	)
 )
 
 func main() {
@@ -141,9 +147,10 @@ func main() {
 	}
 
 	opts := cli.Options{
-		Cdp:    cdpConn,
-		Params: p,
-		Proxy:  *proxyAddress,
+		Cdp:       cdpConn,
+		Params:    p,
+		Proxy:     *proxyAddress,
+		UserAgent: *userAgent,
 	}
 
 	stat, _ := os.Stdin.Stat()

@@ -99,6 +99,7 @@ func Repl(version string, opts Options) {
 			runtime.WithLogLevel(logging.DebugLevel),
 			runtime.WithParams(opts.Params),
 			runtime.WithProxy(opts.Proxy),
+			runtime.WithUserAgent(opts.UserAgent),
 		)
 
 		timer.Stop()

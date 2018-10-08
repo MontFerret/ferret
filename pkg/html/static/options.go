@@ -11,6 +11,7 @@ type (
 		maxRetries  int
 		concurrency int
 		proxy       string
+		userAgent   string
 	}
 )
 
@@ -47,5 +48,11 @@ func WithConcurrency(value int) Option {
 func WithProxy(address string) Option {
 	return func(opts *Options) {
 		opts.proxy = address
+	}
+}
+
+func WithUserAgent(value string) Option {
+	return func(opts *Options) {
+		opts.userAgent = value
 	}
 }

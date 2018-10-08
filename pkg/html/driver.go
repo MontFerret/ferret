@@ -10,11 +10,15 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type Name string
+type (
+	DriverName    string
+	dynamicCtxKey struct{}
+	staticCtxKey  struct{}
+)
 
 const (
-	Dynamic Name = "dynamic"
-	Static  Name = "static"
+	Dynamic DriverName = "dynamic"
+	Static  DriverName = "static"
 )
 
 type Driver interface {
@@ -22,12 +26,34 @@ type Driver interface {
 	Close() error
 }
 
-func ToContext(ctx context.Context, name Name, drv Driver) context.Context {
-	return context.WithValue(ctx, name, drv)
+func ToContext(ctx context.Context, name DriverName, drv Driver) context.Context {
+	var key interface{}
+
+	switch name {
+	case Dynamic:
+		key = dynamicCtxKey{}
+	case Static:
+		key = staticCtxKey{}
+	default:
+		return ctx
+	}
+
+	return context.WithValue(ctx, key, drv)
 }
 
-func FromContext(ctx context.Context, name Name) (Driver, error) {
-	val := ctx.Value(name)
+func FromContext(ctx context.Context, name DriverName) (Driver, error) {
+	var key interface{}
+
+	switch name {
+	case Dynamic:
+		key = dynamicCtxKey{}
+	case Static:
+		key = staticCtxKey{}
+	default:
+		return nil, core.Error(core.ErrInvalidArgument, fmt.Sprintf("%s driver", name))
+	}
+
+	val := ctx.Value(key)
 
 	drv, ok := val.(Driver)
 
@@ -43,10 +69,11 @@ func WithDynamicDriver(ctx context.Context) context.Context {
 
 	return context.WithValue(
 		ctx,
-		Dynamic,
+		dynamicCtxKey{},
 		dynamic.NewDriver(
 			e.CDPAddress,
 			dynamic.WithProxy(e.ProxyAddress),
+			dynamic.WithUserAgent(e.UserAgent),
 		),
 	)
 }
@@ -56,9 +83,10 @@ func WithStaticDriver(ctx context.Context) context.Context {
 
 	return context.WithValue(
 		ctx,
-		Static,
+		staticCtxKey{},
 		static.NewDriver(
 			static.WithProxy(e.ProxyAddress),
+			static.WithUserAgent(e.UserAgent),
 		),
 	)
 }

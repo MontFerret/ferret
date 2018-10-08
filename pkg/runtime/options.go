@@ -12,10 +12,11 @@ import (
 
 type (
 	Options struct {
-		proxy   string
-		cdp     string
-		params  map[string]core.Value
-		logging *logging.Options
+		proxy     string
+		cdp       string
+		params    map[string]core.Value
+		logging   *logging.Options
+		userAgent string
 	}
 
 	Option func(*Options)
@@ -58,6 +59,18 @@ func WithProxy(address string) Option {
 	}
 }
 
+func WithUserAgent(value string) Option {
+	return func(options *Options) {
+		options.userAgent = value
+	}
+}
+
+func WithRandomUserAgent() Option {
+	return func(options *Options) {
+		options.userAgent = env.RandomUserAgent
+	}
+}
+
 func WithLog(writer io.Writer) Option {
 	return func(options *Options) {
 		options.logging.Writer = writer
@@ -76,6 +89,7 @@ func (opts *Options) withContext(parent context.Context) context.Context {
 	ctx = env.WithContext(ctx, env.Environment{
 		CDPAddress:   opts.cdp,
 		ProxyAddress: opts.proxy,
+		UserAgent:    opts.userAgent,
 	})
 
 	return ctx
