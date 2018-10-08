@@ -49,13 +49,13 @@ func NewDriver(opts ...Option) *Driver {
 }
 
 func newClientWithProxy(options *Options) (*http.Client, error) {
-	proxyUrl, err := url.Parse(options.proxy)
+	proxyURL, err := url.Parse(options.proxy)
 
 	if err != nil {
 		return nil, err
 	}
 
-	proxy := http.ProxyURL(proxyUrl)
+	proxy := http.ProxyURL(proxyURL)
 	tr := &http.Transport{Proxy: proxy}
 
 	return &http.Client{Transport: tr}, nil
