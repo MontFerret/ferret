@@ -320,149 +320,38 @@ func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
 }
 
 func (doc *HTMLDocument) URL() core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
 	return doc.url
 }
 
 func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (el == null) {
-				return "";
-			}
-
-			return el.innerHTML;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get inner HTML by selector")
-
-		return values.EmptyString
-	}
-
-	if res.Type() == core.StringType {
-		return res.(values.String)
-	}
-
-	return values.EmptyString
+	return doc.element.InnerHTMLBySelector(selector)
 }
 
 func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) *values.Array {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var result = [];
-			var elements = document.querySelectorAll(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (elements == null) {
-				return result;
-			}
-
-			elements.forEach((i) => {
-				result.push(i.innerHTML);
-			});
-
-			return result;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get an array of inner HTML by selector")
-
-		return values.NewArray(0)
-	}
-
-	if res.Type() == core.ArrayType {
-		return res.(*values.Array)
-	}
-
-	return values.NewArray(0)
+	return doc.element.InnerHTMLBySelectorAll(selector)
 }
 
 func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.String {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (el == null) {
-				return "";
-			}
-
-			return el.innerText;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get inner text by selector")
-
-		return values.EmptyString
-	}
-
-	if res.Type() == core.StringType {
-		return res.(values.String)
-	}
-
-	return values.EmptyString
+	return doc.element.InnerHTMLBySelector(selector)
 }
 
 func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var result = [];
-			var elements = document.querySelectorAll(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (elements == null) {
-				return result;
-			}
-
-			elements.forEach((i) => {
-				result.push(i.innerText);
-			});
-
-			return result;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get an array inner text by selector")
-
-		return values.NewArray(0)
-	}
-
-	if res.Type() == core.ArrayType {
-		return res.(*values.Array)
-	}
-
-	return values.NewArray(0)
+	return doc.element.InnerTextBySelectorAll(selector)
 }
 
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
