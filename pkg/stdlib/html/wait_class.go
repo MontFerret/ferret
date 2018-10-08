@@ -2,9 +2,9 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
 )
 
 /*

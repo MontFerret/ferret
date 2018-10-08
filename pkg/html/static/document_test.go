@@ -2,7 +2,7 @@ package static_test
 
 import (
 	"bytes"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
+	"github.com/MontFerret/ferret/pkg/html/static"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"

@@ -3,21 +3,20 @@ package dynamic
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
-	"sync"
-	"time"
-
+	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"hash/fnv"
+	"sync"
+	"time"
 )
 
 const BlankPageURL = "about:blank"

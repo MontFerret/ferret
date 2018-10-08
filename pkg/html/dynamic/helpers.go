@@ -2,9 +2,9 @@ package dynamic
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"

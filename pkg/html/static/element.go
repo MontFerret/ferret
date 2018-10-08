@@ -2,9 +2,9 @@ package static
 
 import (
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
 	"github.com/PuerkitoBio/goquery"
 	"hash/fnv"
 )

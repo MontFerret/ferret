@@ -2,9 +2,9 @@ package runtime
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver"
 )
 
 type Program struct {
@@ -40,9 +40,8 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 	}
 
 	ctx = opts.withContext(ctx)
-	// TODO: Decouple from STDLIB
-	ctx = driver.WithDynamicDriver(ctx)
-	ctx = driver.WithStaticDriver(ctx)
+	ctx = html.WithDynamicDriver(ctx)
+	ctx = html.WithStaticDriver(ctx)
 
 	out, err := p.body.Exec(ctx, scope)
 

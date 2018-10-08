@@ -2,10 +2,10 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html"
+	"github.com/MontFerret/ferret/pkg/html/static"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 )
 
 /*
@@ -27,7 +27,7 @@ func DocumentParse(ctx context.Context, args ...core.Value) (core.Value, error) 
 		return values.None, err
 	}
 
-	drv, err := driver.FromContext(ctx, driver.Static)
+	drv, err := html.FromContext(ctx, html.Static)
 
 	if err != nil {
 		return values.None, err

@@ -1,11 +1,11 @@
 package html
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 
+	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
@@ -79,9 +79,9 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			}
 			if !dynamic.IsScreenshotFormatValid(format.String()) {
 				return values.None, core.Error(
-					core.ErrInvalidArgument, 
+					core.ErrInvalidArgument,
 					fmt.Sprintf("format is not valid, expected jpeg or png, but got %s", format.String()))
-			} 
+			}
 			screenshotParams.Format = dynamic.ScreenshotFormat(format.String())
 		}
 		x, found := params.Get("x")

@@ -1,13 +1,13 @@
-package driver
+package html
 
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/html/dynamic"
+	"github.com/MontFerret/ferret/pkg/html/static"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/env"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
 )
 
 type Name string
