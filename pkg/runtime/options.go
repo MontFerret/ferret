@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/env"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"io"
@@ -53,7 +54,6 @@ func WithBrowser(address string) Option {
 
 func WithProxy(address string) Option {
 	return func(options *Options) {
-		// TODO: add implementation
 		options.proxy = address
 	}
 }
@@ -73,6 +73,10 @@ func WithLogLevel(lvl logging.Level) Option {
 func (opts *Options) withContext(parent context.Context) context.Context {
 	ctx := core.ParamsWith(parent, opts.params)
 	ctx = logging.WithContext(ctx, opts.logging)
+	ctx = env.WithContext(ctx, env.Environment{
+		CDPAddress:   opts.cdp,
+		ProxyAddress: opts.proxy,
+	})
 
 	return ctx
 }

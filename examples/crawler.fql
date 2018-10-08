@@ -7,7 +7,7 @@ LET links = (
 )
 FOR link IN links
     // The Verge has pretty heavy pages, so let's increase the navigation wait time
-    NAVIGATE(doc, link, 10000)
+    NAVIGATE(doc, link, 20000)
     WAIT_ELEMENT(doc, '.c-entry-content', 5000)
     LET texter = ELEMENT(doc, '.c-entry-content')
     RETURN texter.innerText

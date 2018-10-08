@@ -6,16 +6,14 @@ import (
 	"hash/fnv"
 	"sync"
 	"time"
-	
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
-	"github.com/corpix/uarand"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
@@ -24,19 +22,43 @@ import (
 
 const BlankPageURL = "about:blank"
 
-type HTMLDocument struct {
-	sync.Mutex
-	logger  *zerolog.Logger
-	conn    *rpcc.Conn
-	client  *cdp.Client
-	events  *events.EventBroker
-	url     values.String
-	element *HTMLElement
+type (
+	ScreenshotFormat string
+	ScreenshotArgs   struct {
+		X       float64
+		Y       float64
+		Width   float64
+		Height  float64
+		Format  ScreenshotFormat
+		Quality int
+	}
+
+	HTMLDocument struct {
+		sync.Mutex
+		logger  *zerolog.Logger
+		conn    *rpcc.Conn
+		client  *cdp.Client
+		events  *events.EventBroker
+		url     values.String
+		element *HTMLElement
+	}
+)
+
+const (
+	ScreenshotFormatPNG  ScreenshotFormat = "png"
+	ScreenshotFormatJPEG ScreenshotFormat = "jpeg"
+)
+
+func IsScreenshotFormatValid(format string) bool {
+	value := ScreenshotFormat(format)
+
+	return value == ScreenshotFormatPNG || value == ScreenshotFormatJPEG
 }
 
 func LoadHTMLDocument(
 	ctx context.Context,
 	conn *rpcc.Conn,
+	client *cdp.Client,
 	url string,
 ) (*HTMLDocument, error) {
 	if conn == nil {
@@ -47,39 +69,7 @@ func LoadHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "url")
 	}
 
-	client := cdp.NewClient(conn)
-
-	err := runBatch(
-		func() error {
-			return client.Page.Enable(ctx)
-		},
-
-		func() error {
-			return client.Page.SetLifecycleEventsEnabled(
-				ctx,
-				page.NewSetLifecycleEventsEnabledArgs(true),
-			)
-		},
-
-		func() error {
-			return client.DOM.Enable(ctx)
-		},
-
-		func() error {
-			return client.Runtime.Enable(ctx)
-		},
-
-		func() error {
-			return client.Emulation.SetUserAgentOverride(
-				ctx,
-				emulation.NewSetUserAgentOverrideArgs(uarand.GetRandom()),
-			)
-		},
-	)
-
-	if err != nil {
-		return nil, err
-	}
+	var err error
 
 	if url != BlankPageURL {
 		err = waitForLoadEvent(ctx, client)
@@ -109,26 +99,6 @@ func LoadHTMLDocument(
 		root,
 		innerHTML,
 	), nil
-}
-
-func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
-	args := dom.NewGetDocumentArgs()
-	args.Depth = pointerInt(1) // lets load the entire document
-	ctx := context.Background()
-
-	d, err := client.DOM.GetDocument(ctx, args)
-
-	if err != nil {
-		return dom.Node{}, values.EmptyString, err
-	}
-
-	innerHTML, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
-
-	if err != nil {
-		return dom.Node{}, values.EmptyString, err
-	}
-
-	return d.Root, values.NewString(innerHTML.OuterHTML), nil
 }
 
 func NewHTMLDocument(
@@ -731,6 +701,54 @@ func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
 	return doc.WaitForNavigation(timeout)
 }
 
+func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
+	ctx := context.Background()
+	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
+
+	if params.Format == ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
+		params.Quality = 100
+	}
+
+	if params.X < 0 {
+		params.X = 0
+	}
+
+	if params.Y < 0 {
+		params.Y = 0
+	}
+
+	if params.Width <= 0 {
+		params.Width = float64(metrics.LayoutViewport.ClientWidth) - params.X
+	}
+
+	if params.Height <= 0 {
+		params.Height = float64(metrics.LayoutViewport.ClientHeight) - params.Y
+	}
+
+	clip := page.Viewport{
+		X:      params.X,
+		Y:      params.Y,
+		Width:  params.Width,
+		Height: params.Height,
+		Scale:  1.0,
+	}
+
+	format := string(params.Format)
+	screenshotArgs := page.CaptureScreenshotArgs{
+		Format:  &format,
+		Quality: &params.Quality,
+		Clip:    &clip,
+	}
+
+	reply, err := doc.client.Page.CaptureScreenshot(ctx, &screenshotArgs)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.NewBinary(reply.Data), nil
+}
+
 func (doc *HTMLDocument) onLoad(_ interface{}) {
 	doc.Lock()
 	defer doc.Unlock()
@@ -776,67 +794,4 @@ func (doc *HTMLDocument) onError(val interface{}) {
 		Timestamp().
 		Err(err).
 		Msg("unexpected error")
-}
-
-type ScreenshotFormat string
-
-const (
-	ScreenshotFormatPNG  ScreenshotFormat = "png"
-	ScreenshotFormatJPEG ScreenshotFormat = "jpeg"
-)
-
-func IsScreenshotFormatValid(format string) bool {
-	value := ScreenshotFormat(format)
-	return value == ScreenshotFormatPNG || value == ScreenshotFormatJPEG
-}
-
-type ScreenshotArgs struct {
-	X       float64
-	Y       float64
-	Width   float64
-	Height  float64
-	Format  ScreenshotFormat
-	Quality int
-}
-
-func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
-	ctx := context.Background()
-	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
-
-	if params.Format == ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
-		params.Quality = 100
-	}
-	if params.X < 0 {
-		params.X = 0
-	}
-	if params.Y < 0 {
-		params.Y = 0
-	}
-	if params.Width <= 0 {
-		params.Width = float64(metrics.LayoutViewport.ClientWidth) - params.X
-	}
-	if params.Height <= 0 {
-		params.Height = float64(metrics.LayoutViewport.ClientHeight) - params.Y
-	}
-	clip := page.Viewport{
-		X:      params.X,
-		Y:      params.Y,
-		Width:  params.Width,
-		Height: params.Height,
-		Scale:  1.0,
-	}
-
-	format := string(params.Format)
-	screenshotArgs := page.CaptureScreenshotArgs{
-		Format:  &format,
-		Quality: &params.Quality,
-		Clip:    &clip,
-	}
-
-	reply, err := doc.client.Page.CaptureScreenshot(ctx, &screenshotArgs)
-	if err != nil {
-		return values.None, err
-	}
-
-	return values.NewBinary(reply.Data), nil
 }

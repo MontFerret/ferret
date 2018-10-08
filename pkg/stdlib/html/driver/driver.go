@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/env"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic"
 	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/static"
@@ -37,10 +38,27 @@ func FromContext(ctx context.Context, name Name) (Driver, error) {
 	return nil, core.Error(core.ErrNotFound, fmt.Sprintf("%s driver", name))
 }
 
-func WithDynamicDriver(ctx context.Context, addr string) context.Context {
-	return context.WithValue(ctx, Dynamic, dynamic.NewDriver(addr))
+func WithDynamicDriver(ctx context.Context) context.Context {
+	e := env.FromContext(ctx)
+
+	return context.WithValue(
+		ctx,
+		Dynamic,
+		dynamic.NewDriver(
+			e.CDPAddress,
+			dynamic.WithProxy(e.ProxyAddress),
+		),
+	)
 }
 
-func WithStaticDriver(ctx context.Context, opts ...static.Option) context.Context {
-	return context.WithValue(ctx, Static, static.NewDriver(opts...))
+func WithStaticDriver(ctx context.Context) context.Context {
+	e := env.FromContext(ctx)
+
+	return context.WithValue(
+		ctx,
+		Static,
+		static.NewDriver(
+			static.WithProxy(e.ProxyAddress),
+		),
+	)
 }

@@ -29,6 +29,26 @@ func runBatch(funcs ...batchFunc) error {
 	return eg.Wait()
 }
 
+func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
+	args := dom.NewGetDocumentArgs()
+	args.Depth = pointerInt(1) // lets load the entire document
+	ctx := context.Background()
+
+	d, err := client.DOM.GetDocument(ctx, args)
+
+	if err != nil {
+		return dom.Node{}, values.EmptyString, err
+	}
+
+	innerHTML, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
+
+	if err != nil {
+		return dom.Node{}, values.EmptyString, err
+	}
+
+	return d.Root, values.NewString(innerHTML.OuterHTML), nil
+}
+
 func parseAttrs(attrs []string) *values.Object {
 	var attr values.String
 

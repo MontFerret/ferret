@@ -1,37 +1,51 @@
 package static
 
-import "github.com/sethgrid/pester"
+import (
+	"github.com/sethgrid/pester"
+)
 
 type (
-	Option func(opts *pester.Client)
+	Option  func(opts *Options)
+	Options struct {
+		backoff     pester.BackoffStrategy
+		maxRetries  int
+		concurrency int
+		proxy       string
+	}
 )
 
 func WithDefaultBackoff() Option {
-	return func(opts *pester.Client) {
-		opts.Backoff = pester.DefaultBackoff
+	return func(opts *Options) {
+		opts.backoff = pester.DefaultBackoff
 	}
 }
 
 func WithLinearBackoff() Option {
-	return func(opts *pester.Client) {
-		opts.Backoff = pester.LinearBackoff
+	return func(opts *Options) {
+		opts.backoff = pester.LinearBackoff
 	}
 }
 
 func WithExponentialBackoff() Option {
-	return func(opts *pester.Client) {
-		opts.Backoff = pester.ExponentialBackoff
+	return func(opts *Options) {
+		opts.backoff = pester.ExponentialBackoff
 	}
 }
 
 func WithMaxRetries(value int) Option {
-	return func(opts *pester.Client) {
-		opts.MaxRetries = value
+	return func(opts *Options) {
+		opts.maxRetries = value
 	}
 }
 
 func WithConcurrency(value int) Option {
-	return func(opts *pester.Client) {
-		opts.Concurrency = value
+	return func(opts *Options) {
+		opts.concurrency = value
+	}
+}
+
+func WithProxy(address string) Option {
+	return func(opts *Options) {
+		opts.proxy = address
 	}
 }
