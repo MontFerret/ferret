@@ -2,18 +2,15 @@ package common
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/env"
-	"github.com/corpix/uarand"
+	"github.com/malisit/kolpa"
 )
 
-func GetUserAgent(val string) string {
-	if val == "" {
-		return val
-	}
+var k = kolpa.C()
 
+func GetUserAgent(val string) string {
 	if val != env.RandomUserAgent {
 		return val
 	}
 
-	// TODO: Change the implementation
-	return uarand.GetRandom()
+	return k.UserAgent()
 }
