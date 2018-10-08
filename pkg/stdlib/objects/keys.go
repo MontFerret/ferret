@@ -8,6 +8,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+/*
+ * Returns string array of object's keys
+ * @params obj (Object) - The object whose keys you want to extract
+ * @params sort (Boolean, optional) - If sort is true, then the returned keys will be sorted.
+ * @returns (Array of String) - Array that contains object keys.
+ */
 func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {
