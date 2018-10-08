@@ -3,8 +3,11 @@ package dynamic
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/corpix/uarand"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/emulation"
+	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
@@ -19,11 +22,17 @@ type Driver struct {
 	client    *cdp.Client
 	session   *session.Manager
 	contextID target.BrowserContextID
+	opts      *Options
 }
 
-func NewDriver(address string) *Driver {
+func NewDriver(address string, opts ...Option) *Driver {
 	drv := new(Driver)
 	drv.dev = devtool.New(address)
+	drv.opts = new(Options)
+
+	for _, opt := range opts {
+		opt(drv.opts)
+	}
 
 	return drv
 }
@@ -60,7 +69,37 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 		return nil, err
 	}
 
-	return LoadHTMLDocument(ctx, conn, url)
+	client := cdp.NewClient(conn)
+
+	err = runBatch(
+		func() error {
+			return client.Page.Enable(ctx)
+		},
+
+		func() error {
+			return client.Page.SetLifecycleEventsEnabled(
+				ctx,
+				page.NewSetLifecycleEventsEnabledArgs(true),
+			)
+		},
+
+		func() error {
+			return client.DOM.Enable(ctx)
+		},
+
+		func() error {
+			return client.Runtime.Enable(ctx)
+		},
+
+		func() error {
+			return client.Emulation.SetUserAgentOverride(
+				ctx,
+				emulation.NewSetUserAgentOverrideArgs(uarand.GetRandom()),
+			)
+		},
+	)
+
+	return LoadHTMLDocument(ctx, conn, client, url)
 }
 
 func (drv *Driver) Close() error {

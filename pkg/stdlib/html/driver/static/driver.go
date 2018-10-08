@@ -8,29 +8,62 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/sethgrid/pester"
-	httpx "net/http"
+	"net/http"
+	"net/url"
 )
 
 type Driver struct {
-	client *pester.Client
+	client  *pester.Client
+	options *Options
 }
 
-func NewDriver(setters ...Option) *Driver {
-	client := pester.New()
-	client.Concurrency = 3
-	client.MaxRetries = 5
-	client.Backoff = pester.ExponentialBackoff
-
-	for _, setter := range setters {
-		setter(client)
+func NewDriver(opts ...Option) *Driver {
+	drv := new(Driver)
+	drv.options = &Options{
+		concurrency: 3,
+		maxRetries:  5,
+		backoff:     pester.ExponentialBackoff,
 	}
 
-	return &Driver{client}
+	for _, opt := range opts {
+		opt(drv.options)
+	}
+
+	if drv.options.proxy == "" {
+		drv.client = pester.New()
+	} else {
+		client, err := newClientWithProxy(drv.options)
+
+		if err != nil {
+			drv.client = pester.New()
+		} else {
+			drv.client = pester.NewExtendedClient(client)
+		}
+	}
+
+	drv.client.Concurrency = drv.options.concurrency
+	drv.client.MaxRetries = drv.options.maxRetries
+	drv.client.Backoff = drv.options.backoff
+
+	return drv
+}
+
+func newClientWithProxy(options *Options) (*http.Client, error) {
+	proxyUrl, err := url.Parse(options.proxy)
+
+	if err != nil {
+		return nil, err
+	}
+
+	proxy := http.ProxyURL(proxyUrl)
+	tr := &http.Transport{Proxy: proxy}
+
+	return &http.Client{Transport: tr}, nil
 }
 
 func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values.HTMLNode, error) {
-	url := targetURL.String()
-	req, err := httpx.NewRequest(httpx.MethodGet, url, nil)
+	u := targetURL.String()
+	req, err := http.NewRequest(http.MethodGet, u, nil)
 
 	if err != nil {
 		return nil, err
@@ -45,7 +78,7 @@ func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values
 	resp, err := d.client.Do(req)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve a document %s", url)
+		return nil, errors.Wrapf(err, "failed to retrieve a document %s", u)
 	}
 
 	defer resp.Body.Close()
@@ -53,10 +86,10 @@ func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse a document %s", url)
+		return nil, errors.Wrapf(err, "failed to parse a document %s", u)
 	}
 
-	return NewHTMLDocument(url, doc)
+	return NewHTMLDocument(u, doc)
 }
 
 func (d *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLNode, error) {

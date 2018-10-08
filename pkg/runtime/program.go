@@ -40,7 +40,8 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 	}
 
 	ctx = opts.withContext(ctx)
-	ctx = driver.WithDynamicDriver(ctx, opts.cdp)
+	// TODO: Decouple from STDLIB
+	ctx = driver.WithDynamicDriver(ctx)
 	ctx = driver.WithStaticDriver(ctx)
 
 	out, err := p.body.Exec(ctx, scope)

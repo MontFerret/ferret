@@ -56,6 +56,7 @@ func Exec(query string, opts Options) {
 		runtime.WithLog(l),
 		runtime.WithLogLevel(logging.DebugLevel),
 		runtime.WithParams(opts.Params),
+		runtime.WithProxy(opts.Proxy),
 	)
 
 	if err != nil {

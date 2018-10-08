@@ -76,6 +76,12 @@ var (
 		false,
 		"launch Chrome",
 	)
+
+	proxyAddress = flag.String(
+		"proxy",
+		"",
+		"address of proxy server to use (only applicable for static pages)",
+	)
 )
 
 func main() {
@@ -137,6 +143,7 @@ func main() {
 	opts := cli.Options{
 		Cdp:    cdpConn,
 		Params: p,
+		Proxy:  *proxyAddress,
 	}
 
 	stat, _ := os.Stdin.Stat()

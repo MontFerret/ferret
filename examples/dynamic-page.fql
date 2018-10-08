@@ -9,6 +9,6 @@ FOR track IN tracks
     LET title = ELEMENT(track, '.chartTrack__title')
 
     RETURN {
-        artist: username.innerText,
-        track: title.innerText
+        artist: TRIM(username.innerText),
+        track: TRIM(title.innerText)
     }
