@@ -53,18 +53,6 @@ func (p *Params) ToMap() (map[string]interface{}, error) {
 }
 
 var (
-	help = flag.Bool(
-		"help",
-		false,
-		"show this list",
-	)
-
-	version = flag.Bool(
-		"version",
-		false,
-		"show REPL version",
-	)
-
 	conn = flag.String(
 		"cdp",
 		"http://0.0.0.0:9222",
@@ -80,13 +68,25 @@ var (
 	proxyAddress = flag.String(
 		"proxy",
 		"",
-		"address of proxy server to use (only applicable for static pages)",
+		"address of proxy server to use (only applicable to static pages, proxy for dynamic pages controlled by Chrome)",
 	)
 
 	userAgent = flag.String(
 		"user-agent",
 		"",
 		"set custom user agent. '*' triggers UA generation",
+	)
+
+	version = flag.Bool(
+		"version",
+		false,
+		"show REPL version",
+	)
+
+	help = flag.Bool(
+		"help",
+		false,
+		"show this list",
 	)
 )
 

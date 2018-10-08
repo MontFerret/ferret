@@ -120,8 +120,8 @@ func NewHTMLDocument(
 		doc.url = values.NewString(*root.BaseURL)
 	}
 
-	broker.AddEventListener("load", doc.onLoad)
-	broker.AddEventListener("error", doc.onError)
+	broker.AddEventListener("load", doc.handlePageLoad)
+	broker.AddEventListener("error", doc.handleError)
 
 	return doc
 }
@@ -748,7 +748,7 @@ func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, 
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) onLoad(_ interface{}) {
+func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 	doc.Lock()
 	defer doc.Unlock()
 
@@ -782,7 +782,7 @@ func (doc *HTMLDocument) onLoad(_ interface{}) {
 	}
 }
 
-func (doc *HTMLDocument) onError(val interface{}) {
+func (doc *HTMLDocument) handleError(val interface{}) {
 	err, ok := val.(error)
 
 	if !ok {
