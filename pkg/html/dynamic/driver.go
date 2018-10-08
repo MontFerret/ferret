@@ -3,6 +3,7 @@ package dynamic
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
@@ -38,9 +39,17 @@ func NewDriver(address string, opts ...Option) *Driver {
 }
 
 func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
+	logger := logging.FromContext(ctx)
+
 	err := drv.init(ctx)
 
 	if err != nil {
+		logger.
+			Error().
+			Err(err).
+			Str("driver", "dynamic").
+			Msg("failed to initialize the driver")
+
 		return nil, err
 	}
 
@@ -59,6 +68,12 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
 
 	if err != nil {
+		logger.
+			Error().
+			Err(err).
+			Str("driver", "dynamic").
+			Msg("failed to create a browser target")
+
 		return nil, err
 	}
 
@@ -66,6 +81,12 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	conn, err := drv.session.Dial(ctx, createTarget.TargetID)
 
 	if err != nil {
+		logger.
+			Error().
+			Err(err).
+			Str("driver", "dynamic").
+			Msg("failed to establish a connection")
+
 		return nil, err
 	}
 
@@ -93,6 +114,11 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 
 		func() error {
 			ua := common.GetUserAgent(drv.options.userAgent)
+
+			logger.
+				Debug().
+				Str("user-agent", ua).
+				Msg("using User-Agent")
 
 			// do not use custom user agent
 			if ua == "" {
