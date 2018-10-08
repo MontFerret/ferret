@@ -497,9 +497,11 @@ func TestFor(t *testing.T) {
 	Convey("Should compile query with LIMIT 2, 2", t, func() {
 		c := compiler.New()
 
+		// 4 is offset
+		// 2 is count
 		prog, err := c.Compile(`
-			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
-				LIMIT 2, 2
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LIMIT 4, 2
 				RETURN i
 		`)
 
@@ -509,7 +511,7 @@ func TestFor(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(string(out), ShouldEqual, `[3,4]`)
+		So(string(out), ShouldEqual, `[5,6]`)
 	})
 
 	Convey("Should compile query with FILTER i > 2", t, func() {

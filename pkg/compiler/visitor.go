@@ -292,29 +292,37 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 }
 
 func (v *visitor) createLimit(ctx *fql.LimitClauseContext) (int, int, error) {
-	var limit int
+	var err error
+	var count int
 	var offset int
 
 	intLiterals := ctx.AllIntegerLiteral()
 
-	limitLiteral := intLiterals[0]
-	limit, err := strconv.Atoi(limitLiteral.GetText())
-
-	if err != nil {
-		return 0, 0, err
-	}
-
 	if len(intLiterals) > 1 {
-		offsetLiteral := intLiterals[1]
+		offset, err = v.parseInt(intLiterals[0])
 
-		offset, err = strconv.Atoi(offsetLiteral.GetText())
+		if err != nil {
+			return 0, 0, err
+		}
+
+		count, err = v.parseInt(intLiterals[1])
+
+		if err != nil {
+			return 0, 0, err
+		}
+	} else {
+		count, err = strconv.Atoi(intLiterals[0].GetText())
 
 		if err != nil {
 			return 0, 0, err
 		}
 	}
 
-	return limit, offset, nil
+	return count, offset, nil
+}
+
+func (v *visitor) parseInt(node antlr.TerminalNode) (int, error) {
+	return strconv.Atoi(node.GetText())
 }
 
 func (v *visitor) createFilter(ctx *fql.FilterClauseContext, scope *scope) (core.Expression, error) {
