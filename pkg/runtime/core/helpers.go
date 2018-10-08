@@ -11,12 +11,13 @@ func IsNil(input interface{}) bool {
 		reflect.Array,
 		reflect.Slice,
 		reflect.Map,
-		reflect.Struct,
 		reflect.Func,
 		reflect.Interface,
-		reflect.Chan,
-		reflect.UnsafePointer:
+		reflect.Chan:
 		return val.IsNil()
+	case reflect.Struct,
+		reflect.UnsafePointer:
+		return false
 	case reflect.Invalid:
 		return true
 	default:
