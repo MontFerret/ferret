@@ -2,7 +2,8 @@ package dynamic
 
 type (
 	Options struct {
-		proxy string
+		proxy     string
+		userAgent string
 	}
 
 	Option func(opts *Options)
@@ -11,5 +12,11 @@ type (
 func WithProxy(address string) Option {
 	return func(opts *Options) {
 		opts.proxy = address
+	}
+}
+
+func WithUserAgent(value string) Option {
+	return func(opts *Options) {
+		opts.userAgent = value
 	}
 }

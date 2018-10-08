@@ -2,8 +2,8 @@ package dynamic
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/corpix/uarand"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/emulation"
@@ -22,16 +22,16 @@ type Driver struct {
 	client    *cdp.Client
 	session   *session.Manager
 	contextID target.BrowserContextID
-	opts      *Options
+	options   *Options
 }
 
 func NewDriver(address string, opts ...Option) *Driver {
 	drv := new(Driver)
 	drv.dev = devtool.New(address)
-	drv.opts = new(Options)
+	drv.options = new(Options)
 
 	for _, opt := range opts {
-		opt(drv.opts)
+		opt(drv.options)
 	}
 
 	return drv
@@ -92,9 +92,16 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 		},
 
 		func() error {
+			ua := common.GetUserAgent(drv.options.userAgent)
+
+			// do not use custom user agent
+			if ua == "" {
+				return nil
+			}
+
 			return client.Emulation.SetUserAgentOverride(
 				ctx,
-				emulation.NewSetUserAgentOverrideArgs(uarand.GetRandom()),
+				emulation.NewSetUserAgentOverrideArgs(ua),
 			)
 		},
 	)

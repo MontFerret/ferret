@@ -47,6 +47,7 @@ func WithDynamicDriver(ctx context.Context) context.Context {
 		dynamic.NewDriver(
 			e.CDPAddress,
 			dynamic.WithProxy(e.ProxyAddress),
+			dynamic.WithUserAgent(e.UserAgent),
 		),
 	)
 }
@@ -59,6 +60,7 @@ func WithStaticDriver(ctx context.Context) context.Context {
 		Static,
 		static.NewDriver(
 			static.WithProxy(e.ProxyAddress),
+			static.WithUserAgent(e.UserAgent),
 		),
 	)
 }

@@ -3,6 +3,7 @@ package static
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/corpix/uarand"
@@ -61,7 +62,7 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 	return &http.Client{Transport: tr}, nil
 }
 
-func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values.HTMLNode, error) {
+func (drv *Driver) GetDocument(_ context.Context, targetURL values.String) (values.HTMLNode, error) {
 	u := targetURL.String()
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 
@@ -73,9 +74,15 @@ func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9,ru;q=0.8")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
-	req.Header.Set("User-Agent", uarand.GetRandom())
 
-	resp, err := d.client.Do(req)
+	ua := common.GetUserAgent(drv.options.userAgent)
+
+	// use custom user agent
+	if ua != "" {
+		req.Header.Set("User-Agent", uarand.GetRandom())
+	}
+
+	resp, err := drv.client.Do(req)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to retrieve a document %s", u)
@@ -92,7 +99,7 @@ func (d *Driver) GetDocument(_ context.Context, targetURL values.String) (values
 	return NewHTMLDocument(u, doc)
 }
 
-func (d *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLNode, error) {
+func (drv *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLNode, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)
@@ -104,8 +111,8 @@ func (d *Driver) ParseDocument(_ context.Context, str values.String) (values.HTM
 	return NewHTMLDocument("#string", doc)
 }
 
-func (d *Driver) Close() error {
-	d.client = nil
+func (drv *Driver) Close() error {
+	drv.client = nil
 
 	return nil
 }
