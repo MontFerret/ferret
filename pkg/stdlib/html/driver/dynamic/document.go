@@ -150,32 +150,8 @@ func NewHTMLDocument(
 		doc.url = values.NewString(*root.BaseURL)
 	}
 
-	broker.AddEventListener("load", func(_ interface{}) {
-		doc.Lock()
-		defer doc.Unlock()
-
-		updated, innerHTML, err := getRootElement(client)
-
-		if err != nil {
-			doc.logger.Error().
-				Timestamp().
-				Err(err).
-				Msg("failed to get root node after page load")
-
-			return
-		}
-
-		// close the prev element
-		doc.element.Close()
-
-		// create a new root element wrapper
-		doc.element = NewHTMLElement(doc.logger, client, broker, updated.NodeID, updated, innerHTML)
-		doc.url = ""
-
-		if updated.BaseURL != nil {
-			doc.url = values.NewString(*updated.BaseURL)
-		}
-	})
+	broker.AddEventListener("load", doc.onLoad)
+	broker.AddEventListener("error", doc.onError)
 
 	return doc
 }
@@ -735,7 +711,7 @@ func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 	}
 }
 
-func (doc *HTMLDocument) Navigate(url values.String) error {
+func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -751,5 +727,52 @@ func (doc *HTMLDocument) Navigate(url values.String) error {
 		return errors.New(*repl.ErrorText)
 	}
 
-	return doc.WaitForNavigation(5000)
+	return doc.WaitForNavigation(timeout)
+}
+
+func (doc *HTMLDocument) onLoad(_ interface{}) {
+	doc.Lock()
+	defer doc.Unlock()
+
+	updated, innerHTML, err := getRootElement(doc.client)
+
+	if err != nil {
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Msg("failed to get root node after page load")
+
+		return
+	}
+
+	// close the prev element
+	doc.element.Close()
+
+	// create a new root element wrapper
+	doc.element = NewHTMLElement(
+		doc.logger,
+		doc.client,
+		doc.events,
+		updated.NodeID,
+		updated,
+		innerHTML,
+	)
+	doc.url = ""
+
+	if updated.BaseURL != nil {
+		doc.url = values.NewString(*updated.BaseURL)
+	}
+}
+
+func (doc *HTMLDocument) onError(val interface{}) {
+	err, ok := val.(error)
+
+	if !ok {
+		return
+	}
+
+	doc.logger.Error().
+		Timestamp().
+		Err(err).
+		Msg("unexpected error")
 }
