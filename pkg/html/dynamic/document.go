@@ -3,6 +3,10 @@ package dynamic
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"sync"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -10,13 +14,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"sync"
-	"time"
 )
 
 const BlankPageURL = "about:blank"
@@ -525,6 +527,49 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 	}
 
 	return values.False, nil
+}
+
+func (doc *HTMLDocument) TypeInput(selector values.String, value core.Value) (values.Boolean, error) {
+
+	valStr := value.String()
+
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var el = document.querySelector(%s);
+			if (el == null) {
+				return false;
+			}
+			el.focus();
+			return true;
+		`, eval.ParamString(selector.String())),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	if res.Type() == core.BooleanType && res.(values.Boolean) == values.False {
+		return values.False, nil
+	}
+
+	inputClient := input.NewClient(doc.conn)
+
+	time.Sleep(time.Millisecond * 250)
+
+	for _, ch := range valStr {
+		for _, ev := range []string{"keyDown", "keyUp"} {
+			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
+			if err := inputClient.DispatchKeyEvent(nil, ke); err != nil {
+				return values.False, err
+			}
+			time.Sleep(time.Millisecond * 50)
+		}
+	}
+
+	return values.True, nil
 }
 
 func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
