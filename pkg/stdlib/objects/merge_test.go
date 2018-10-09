@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 
@@ -30,7 +32,27 @@ func TestMergeObjects(t *testing.T) {
 		mergedObj := merged.(*values.Object)
 
 		So(err, ShouldEqual, nil)
-		So(mergedObj.Compare(resultObj), ShouldEqual, 0)
+		So(isEqual(mergedObj, resultObj), ShouldEqual, true)
+	})
+
+	Convey("When keys are repeated", t, func() {
+		obj1 := values.NewObjectWith(
+			values.NewObjectProperty("prop1", values.NewInt(1)),
+			values.NewObjectProperty("prop2", values.NewString("str")),
+		)
+		obj2 := values.NewObjectWith(
+			values.NewObjectProperty("prop1", values.NewInt(3)),
+		)
+		resultObj := values.NewObjectWith(
+			values.NewObjectProperty("prop1", values.NewInt(3)),
+			values.NewObjectProperty("prop2", values.NewString("str")),
+		)
+
+		merged, err := objects.Merge(context.Background(), obj1, obj2)
+		mergedObj := merged.(*values.Object)
+
+		So(err, ShouldEqual, nil)
+		So(isEqual(mergedObj, resultObj), ShouldEqual, true)
 	})
 
 	Convey("When not enought arguments", t, func() {
@@ -77,7 +99,7 @@ func TestMergeArray(t *testing.T) {
 		mergedObj := merged.(*values.Object)
 
 		So(err, ShouldEqual, nil)
-		So(mergedObj.Compare(resultObj), ShouldEqual, 0)
+		So(isEqual(mergedObj, resultObj), ShouldEqual, true)
 	})
 
 	Convey("Merge empty array", t, func() {
@@ -88,7 +110,7 @@ func TestMergeArray(t *testing.T) {
 		mergedObj := merged.(*values.Object)
 
 		So(err, ShouldEqual, nil)
-		So(mergedObj.Compare(resultObj), ShouldEqual, 0)
+		So(isEqual(mergedObj, resultObj), ShouldEqual, true)
 	})
 
 	Convey("When there is not object element inside the array", t, func() {
@@ -123,4 +145,25 @@ func TestMergeArray(t *testing.T) {
 		So(err, ShouldBeError)
 		So(obj, ShouldEqual, values.None)
 	})
+}
+
+func isEqual(obj1 *values.Object, obj2 *values.Object) bool {
+	var val1 core.Value
+	var val2 core.Value
+
+	for _, key := range obj1.Keys() {
+		val1, _ = obj1.Get(values.NewString(key))
+		val2, _ = obj2.Get(values.NewString(key))
+		if val1.Compare(val2) != 0 {
+			return false
+		}
+	}
+	for _, key := range obj2.Keys() {
+		val1, _ = obj1.Get(values.NewString(key))
+		val2, _ = obj2.Get(values.NewString(key))
+		if val2.Compare(val1) != 0 {
+			return false
+		}
+	}
+	return true
 }
