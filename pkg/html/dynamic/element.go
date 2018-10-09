@@ -3,6 +3,12 @@ package dynamic
 import (
 	"context"
 	"encoding/json"
+	"hash/fnv"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
@@ -10,12 +16,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/input"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 const DefaultTimeout = time.Second * 30
@@ -586,11 +588,31 @@ func (el *HTMLElement) Click() (values.Boolean, error) {
 	return events.DispatchEvent(ctx, el.client, el.id, "click")
 }
 
-func (el *HTMLElement) Input(value core.Value) error {
+func (el *HTMLElement) Input(value core.Value, delay values.Int) error {
 	ctx, cancel := contextWithTimeout()
 	defer cancel()
 
-	return el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id, "value", value.String()))
+	if err := el.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(el.id)); err != nil {
+		return err
+	}
+
+	delayMs := time.Duration(delay)
+
+	time.Sleep(delayMs * time.Millisecond)
+
+	valStr := value.String()
+
+	for _, ch := range valStr {
+		for _, ev := range []string{"keyDown", "keyUp"} {
+			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
+			if err := el.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
+				return err
+			}
+			time.Sleep(delayMs * time.Millisecond)
+		}
+	}
+
+	return nil
 }
 
 func (el *HTMLElement) IsConnected() values.Boolean {

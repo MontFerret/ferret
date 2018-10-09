@@ -3,6 +3,10 @@ package dynamic
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"sync"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -10,13 +14,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"sync"
-	"time"
 )
 
 const BlankPageURL = "about:blank"
@@ -416,27 +418,21 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 	return values.False, nil
 }
 
-func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
+func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
+	ctx := context.Background()
+
+	valStr := value.String()
+
 	res, err := eval.Eval(
 		doc.client,
-		fmt.Sprintf(
-			`
+		fmt.Sprintf(`
 			var el = document.querySelector(%s);
-
 			if (el == null) {
 				return false;
 			}
-
-			var evt = new window.Event('input', { bubbles: true });
-
-			el.value = %s
-			el.dispatchEvent(evt);
-
+			el.focus();
 			return true;
-		`,
-			eval.ParamString(selector.String()),
-			eval.ParamString(value.String()),
-		),
+		`, eval.ParamString(selector.String())),
 		true,
 		false,
 	)
@@ -445,11 +441,25 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType {
-		return res.(values.Boolean), nil
+	if res.Type() == core.BooleanType && res.(values.Boolean) == values.False {
+		return values.False, nil
 	}
 
-	return values.False, nil
+	delayMs := time.Duration(delay)
+
+	time.Sleep(delayMs * time.Millisecond)
+
+	for _, ch := range valStr {
+		for _, ev := range []string{"keyDown", "keyUp"} {
+			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
+			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
+				return values.False, err
+			}
+			time.Sleep(delayMs * time.Millisecond)
+		}
+	}
+
+	return values.True, nil
 }
 
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
