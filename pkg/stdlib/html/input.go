@@ -23,15 +23,15 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
+	arg1 := args[0]
+	err = core.ValidateType(arg1, core.HTMLDocumentType, core.HTMLElementType)
+
+	if err != nil {
+		return values.False, err
+	}
+
 	switch args[0].(type) {
 	case *dynamic.HTMLDocument:
-		arg1 := args[0]
-
-		err = core.ValidateType(arg1, core.HTMLDocumentType)
-
-		if err != nil {
-			return values.False, err
-		}
 
 		doc, ok := arg1.(*dynamic.HTMLDocument)
 
@@ -62,14 +62,6 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		return doc.InputBySelector(arg2.(values.String), args[2], delay)
 
 	case *dynamic.HTMLElement:
-		arg1 := args[0]
-
-		err := core.ValidateType(arg1, core.HTMLElementType)
-
-		if err != nil {
-			return values.False, err
-		}
-
 		el, ok := arg1.(*dynamic.HTMLElement)
 
 		if !ok {

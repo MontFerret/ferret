@@ -1,6 +1,6 @@
 LET g = DOCUMENT("https://www.google.com/", true)
 
-INPUT(g, 'input[name="q"]', "ferret")
+INPUT(g, 'input[name="q"]', "ferret", 25)
 CLICK(g, 'input[name="btnK"]')
 
 WAIT_NAVIGATION(g)
