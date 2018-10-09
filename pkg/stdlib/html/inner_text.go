@@ -8,9 +8,9 @@ import (
 
 /*
  * Returns inner text of a matched element
- * @param doc (Document) - Parent document.
+ * @param doc (HTMLDocument|HTMLElement) - Parent document or element.
  * @param selector (String) - String of CSS selector.
- * @returns (String) - Inner text if an element found, otherwise NONE.
+ * @returns (String) - Inner text if an element found, otherwise empty string.
  */
 func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
@@ -19,7 +19,7 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], core.HTMLDocumentType)
+	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -31,7 +31,7 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := args[0].(values.HTMLDocument)
+	doc := args[0].(values.HTMLNode)
 	selector := args[1].(values.String)
 
 	return doc.InnerTextBySelector(selector), nil

@@ -1,10 +1,12 @@
 package dynamic
 
 import (
+	"bytes"
 	"context"
 	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
@@ -85,6 +87,32 @@ func loadInnerHTML(client *cdp.Client, id dom.NodeID) (values.String, error) {
 	}
 
 	return values.NewString(res.OuterHTML), err
+}
+
+func loadInnerText(client *cdp.Client, id dom.NodeID) (values.String, error) {
+	h, err := loadInnerHTML(client, id)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	if h == values.EmptyString {
+		return h, nil
+	}
+
+	return parseInnerText(h.String())
+}
+
+func parseInnerText(innerHTML string) (values.String, error) {
+	buff := bytes.NewBuffer([]byte(innerHTML))
+
+	parsed, err := goquery.NewDocumentFromReader(buff)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.NewString(parsed.Text()), nil
 }
 
 func createChildrenArray(nodes []dom.Node) []dom.NodeID {

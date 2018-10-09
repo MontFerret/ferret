@@ -1,7 +1,6 @@
 package dynamic
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/html/common"
@@ -9,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/rs/zerolog"
@@ -419,11 +417,165 @@ func (el *HTMLElement) InnerText() values.String {
 	return val.(values.String)
 }
 
+func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String {
+	if !el.IsConnected() {
+		return values.EmptyString
+	}
+
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorArgs(el.id, selector.String())
+	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.EmptyString
+	}
+
+	text, err := loadInnerText(el.client, found.NodeID)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to load inner text for found child element")
+
+		return values.EmptyString
+	}
+
+	return text
+}
+
+func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id, selector.String())
+	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.NewArray(0)
+	}
+
+	arr := values.NewArray(len(res.NodeIDs))
+
+	for _, id := range res.NodeIDs {
+		text, err := loadInnerText(el.client, id)
+
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Str("selector", selector.String()).
+				Msg("failed to load inner text for found child element")
+
+			// return what we have
+			return arr
+		}
+
+		arr.Push(text)
+	}
+
+	return arr
+}
+
 func (el *HTMLElement) InnerHTML() values.String {
 	el.Lock()
 	defer el.Unlock()
 
 	return el.innerHTML
+}
+
+func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String {
+	if !el.IsConnected() {
+		return values.EmptyString
+	}
+
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorArgs(el.id, selector.String())
+	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.EmptyString
+	}
+
+	text, err := loadInnerHTML(el.client, found.NodeID)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to load inner HTML for found child element")
+
+		return values.EmptyString
+	}
+
+	return text
+}
+
+func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id, selector.String())
+	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.NewArray(0)
+	}
+
+	arr := values.NewArray(len(res.NodeIDs))
+
+	for _, id := range res.NodeIDs {
+		text, err := loadInnerHTML(el.client, id)
+
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Str("selector", selector.String()).
+				Msg("failed to load inner HTML for found child element")
+
+			// return what we have
+			return arr
+		}
+
+		arr.Push(text)
+	}
+
+	return arr
 }
 
 func (el *HTMLElement) Click() (values.Boolean, error) {
@@ -455,9 +607,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		return h, nil
 	}
 
-	buff := bytes.NewBuffer([]byte(h))
-
-	parsed, err := goquery.NewDocumentFromReader(buff)
+	parser, err := parseInnerText(h.String())
 
 	if err != nil {
 		el.logger.Error().
@@ -469,7 +619,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	return values.NewString(parsed.Text()), nil
+	return parser, nil
 }
 
 func (el *HTMLElement) loadAttrs() (core.Value, error) {

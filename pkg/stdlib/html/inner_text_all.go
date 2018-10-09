@@ -8,7 +8,7 @@ import (
 
 /*
  * Returns an array of inner text of matched elements.
- * @param doc (Document) - Parent document.
+ * @param doc (HTMLDocument|HTMLElement) - Parent document or element.
  * @param selector (String) - String of CSS selector.
  * @returns (String) - An array of inner text if any element found, otherwise empty array.
  */
@@ -19,7 +19,7 @@ func InnerTextAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.HTMLDocumentType)
+	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -31,7 +31,7 @@ func InnerTextAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := args[0].(values.HTMLDocument)
+	doc := args[0].(values.HTMLNode)
 	selector := args[1].(values.String)
 
 	return doc.InnerTextBySelectorAll(selector), nil
