@@ -1,14 +1,14 @@
 package main
 
-import (
+import(
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"os"
 )
-
-type Topic struct {
+//struct
+type Topic struct{
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	URL         string `json:"url"`
