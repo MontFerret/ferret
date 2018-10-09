@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -73,7 +73,7 @@ func TestKeepStrings(t *testing.T) {
 		afterKeep, err := objects.Keep(context.Background(), obj, values.NewString("c"))
 
 		So(err, ShouldEqual, nil)
-		So(afterKeep.Compare(resultObj), ShouldEqual, 0)
+		So(isEqualObjects(afterKeep.(*values.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("Keep when there are more keys than object properties", t, func() {
@@ -91,7 +91,7 @@ func TestKeepStrings(t *testing.T) {
 		)
 
 		So(err, ShouldEqual, nil)
-		So(afterKeep.Compare(resultObj), ShouldEqual, 0)
+		So(isEqualObjects(afterKeep.(*values.Object), resultObj), ShouldEqual, true)
 	})
 }
 
@@ -109,7 +109,7 @@ func TestKeepArray(t *testing.T) {
 		afterKeep, err := objects.Keep(context.Background(), obj, keys)
 
 		So(err, ShouldEqual, nil)
-		So(afterKeep.Compare(resultObj), ShouldEqual, 0)
+		So(isEqualObjects(afterKeep.(*values.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("Keep empty array", t, func() {
@@ -123,7 +123,7 @@ func TestKeepArray(t *testing.T) {
 		afterKeep, err := objects.Keep(context.Background(), obj, keys)
 
 		So(err, ShouldEqual, nil)
-		So(afterKeep.Compare(resultObj), ShouldEqual, 0)
+		So(isEqualObjects(afterKeep.(*values.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("Keep when there are more keys than object properties", t, func() {
@@ -142,7 +142,7 @@ func TestKeepArray(t *testing.T) {
 		afterKeep, err := objects.Keep(context.Background(), obj, keys)
 
 		So(err, ShouldEqual, nil)
-		So(afterKeep.Compare(resultObj), ShouldEqual, 0)
+		So(isEqualObjects(afterKeep.(*values.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("When there is not string key", t, func() {
@@ -160,4 +160,25 @@ func TestKeepArray(t *testing.T) {
 		So(err, ShouldBeError)
 		So(afterKeep, ShouldEqual, values.None)
 	})
+}
+
+func isEqualObjects(obj1 *values.Object, obj2 *values.Object) bool {
+	var val1 core.Value
+	var val2 core.Value
+
+	for _, key := range obj1.Keys() {
+		val1, _ = obj1.Get(values.NewString(key))
+		val2, _ = obj2.Get(values.NewString(key))
+		if val1.Compare(val2) != 0 {
+			return false
+		}
+	}
+	for _, key := range obj2.Keys() {
+		val1, _ = obj1.Get(values.NewString(key))
+		val2, _ = obj2.Get(values.NewString(key))
+		if val2.Compare(val1) != 0 {
+			return false
+		}
+	}
+	return true
 }
