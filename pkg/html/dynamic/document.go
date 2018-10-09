@@ -530,6 +530,7 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 }
 
 func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
+	ctx := context.Background()
 
 	valStr := value.String()
 
@@ -562,7 +563,7 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 	for _, ch := range valStr {
 		for _, ev := range []string{"keyDown", "keyUp"} {
 			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
-			if err := doc.client.Input.DispatchKeyEvent(nil, ke); err != nil {
+			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
 				return values.False, err
 			}
 			time.Sleep(delayMs * time.Millisecond)
