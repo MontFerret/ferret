@@ -7,65 +7,37 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+/*
+ * Merge the given objects into a single object.
+ * @params objs (Array Of Object OR Objects) - objects to merge.
+ * @returns (Object) - Object created by merging.
+ */
 func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
-	if err != nil {
-		return values.None, err
-	}
-
-	var mergedObj *values.Object
-
-	var arr *values.Array
-	objs := make([]*values.Object, len(args))
-	isArr := false
-
-	if len(args) == 1 {
-		err = core.ValidateType(args[0], core.ArrayType)
-		if err == nil {
-			isArr = true
-			arr = args[0].(*values.Array)
-			err = validateArray(arr)
-		}
-	} else {
-		for i, arg := range args {
-			err = core.ValidateType(arg, core.ObjectType)
-			if err != nil {
-				break
-			}
-			objs[i] = arg.(*values.Object)
-		}
-	}
 
 	if err != nil {
 		return values.None, err
 	}
 
-	if isArr {
-		mergedObj = mergeArray(arr)
-	} else {
-		mergedObj = mergeObjects(objs...)
+	objs := values.NewArrayWith(args...)
+
+	if len(args) == 1 && args[0].Type() == core.ArrayType {
+		objs = args[0].(*values.Array)
 	}
 
-	return mergedObj, nil
+	err = validateTopLevelObjects(objs)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return mergeArray(objs), nil
+}
+
+func validateTopLevelObjects(arr *values.Array) error {
+	return nil
 }
 
 func mergeArray(arr *values.Array) *values.Object {
 	return values.NewObject()
-}
-
-func mergeObjects(objs ...*values.Object) *values.Object {
-	return values.NewObject()
-}
-
-func validateArray(arr *values.Array) (err error) {
-	var value core.Value
-
-	for i := 0; i < int(arr.Length()); i++ {
-		value = arr.Get(values.NewInt(i))
-		err = core.ValidateType(value, core.ObjectType)
-		if err != nil {
-			break
-		}
-	}
-	return
 }
