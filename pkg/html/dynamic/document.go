@@ -529,7 +529,7 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 	return values.False, nil
 }
 
-func (doc *HTMLDocument) TypeInput(selector values.String, value core.Value) (values.Boolean, error) {
+func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
 
 	valStr := value.String()
 
@@ -555,57 +555,21 @@ func (doc *HTMLDocument) TypeInput(selector values.String, value core.Value) (va
 		return values.False, nil
 	}
 
-	inputClient := input.NewClient(doc.conn)
+	delayMs := time.Duration(delay)
 
-	time.Sleep(time.Millisecond * 250)
+	time.Sleep(delayMs * time.Millisecond)
 
 	for _, ch := range valStr {
 		for _, ev := range []string{"keyDown", "keyUp"} {
 			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
-			if err := inputClient.DispatchKeyEvent(nil, ke); err != nil {
+			if err := doc.client.Input.DispatchKeyEvent(nil, ke); err != nil {
 				return values.False, err
 			}
-			time.Sleep(time.Millisecond * 50)
+			time.Sleep(delayMs * time.Millisecond)
 		}
 	}
 
 	return values.True, nil
-}
-
-func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(
-			`
-			var el = document.querySelector(%s);
-
-			if (el == null) {
-				return false;
-			}
-
-			var evt = new window.Event('input', { bubbles: true });
-
-			el.value = %s
-			el.dispatchEvent(evt);
-
-			return true;
-		`,
-			eval.ParamString(selector.String()),
-			eval.ParamString(value.String()),
-		),
-		true,
-		false,
-	)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	if res.Type() == core.BooleanType {
-		return res.(values.Boolean), nil
-	}
-
-	return values.False, nil
 }
 
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {

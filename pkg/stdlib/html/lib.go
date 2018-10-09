@@ -25,7 +25,6 @@ func NewLib() map[string]core.Function {
 		"CLICK_ALL":       ClickAll,
 		"NAVIGATE":        Navigate,
 		"INPUT":           Input,
-		"TYPE_INPUT":      TypeInput,
 		"INNER_HTML":      InnerHTML,
 		"INNER_HTML_ALL":  InnerHTMLAll,
 		"INNER_TEXT":      InnerText,
