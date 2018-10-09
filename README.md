@@ -17,25 +17,19 @@ The final for loop filters out empty elements that might be because of inaccurat
 ```aql
 LET google = DOCUMENT("https://www.google.com/", true)
 
-INPUT(google, 'input[name="q"]', "ferret")
+INPUT(google, 'input[name="q"]', "ferret", 25)
 CLICK(google, 'input[name="btnK"]')
 
 WAIT_NAVIGATION(google)
 
-LET result = (
-    FOR result IN ELEMENTS(google, '.g')
-       RETURN {
-           title: ELEMENT(result, 'h3 > a'),
-           description: ELEMENT(result, '.st'),
-           url: ELEMENT(result, 'cite')
-       }
-)
-
-RETURN (
-    FOR page IN result
-    FILTER page.title != NONE
-    RETURN page
-)
+FOR result IN ELEMENTS(google, '.g')
+    // filter out extra elements like videos and 'People also ask'
+    FILTER TRIM(result.attributes.class) == 'g'
+    RETURN {
+        title: INNER_TEXT(result, 'h3'),
+        description: INNER_TEXT(result, '.st'),
+        url: INNER_TEXT(result, 'cite')
+    }
 ```
 
 More examples you can find [here](./examples)
