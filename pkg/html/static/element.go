@@ -2,9 +2,9 @@ package static
 
 import (
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
 	"github.com/PuerkitoBio/goquery"
 	"hash/fnv"
 )
@@ -186,6 +186,52 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 		if err == nil {
 			arr.Push(el)
 		}
+	})
+
+	return arr
+}
+
+func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String {
+	selection := el.selection.Find(selector.String())
+
+	str, err := selection.Html()
+
+	// TODO: log error
+	if err != nil {
+		return values.EmptyString
+	}
+
+	return values.NewString(str)
+}
+
+func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
+	selection := el.selection.Find(selector.String())
+	arr := values.NewArray(selection.Length())
+
+	selection.Each(func(_ int, selection *goquery.Selection) {
+		str, err := selection.Html()
+
+		// TODO: log error
+		if err == nil {
+			arr.Push(values.NewString(str))
+		}
+	})
+
+	return arr
+}
+
+func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String {
+	selection := el.selection.Find(selector.String())
+
+	return values.NewString(selection.Text())
+}
+
+func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
+	selection := el.selection.Find(selector.String())
+	arr := values.NewArray(selection.Length())
+
+	selection.Each(func(_ int, selection *goquery.Selection) {
+		arr.Push(values.NewString(selection.Text()))
 	})
 
 	return arr

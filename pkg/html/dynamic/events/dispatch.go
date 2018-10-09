@@ -3,8 +3,8 @@ package events
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"

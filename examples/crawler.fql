@@ -6,7 +6,8 @@ LET links = (
         RETURN article.attributes.href
 )
 FOR link IN links
-    NAVIGATE(doc, link)
+    // The Verge has pretty heavy pages, so let's increase the navigation wait time
+    NAVIGATE(doc, link, 20000)
     WAIT_ELEMENT(doc, '.c-entry-content', 5000)
     LET texter = ELEMENT(doc, '.c-entry-content')
     RETURN texter.innerText

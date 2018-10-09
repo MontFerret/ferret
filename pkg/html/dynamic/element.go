@@ -1,23 +1,23 @@
 package dynamic
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/rs/zerolog"
 	"hash/fnv"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/input"
+	"github.com/rs/zerolog"
 )
 
 const DefaultTimeout = time.Second * 30
@@ -216,6 +216,7 @@ func (el *HTMLElement) Value() core.Value {
 		el.logger.Error().
 			Timestamp().
 			Err(err).
+			Int("id", int(el.id)).
 			Msg("failed to get node value")
 
 		return el.value
@@ -302,8 +303,9 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	if err != nil {
 		el.logger.Error().
 			Timestamp().
-			Str("selector", selector.String()).
 			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
 			Msg("failed to retrieve a node by selector")
 
 		return values.None
@@ -314,8 +316,9 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	if err != nil {
 		el.logger.Error().
 			Timestamp().
-			Str("selector", selector.String()).
 			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
 			Msg("failed to load a child node by selector")
 
 		return values.None
@@ -337,8 +340,9 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	if err != nil {
 		el.logger.Error().
 			Timestamp().
-			Str("selector", selector.String()).
 			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
 			Msg("failed to retrieve nodes by selector")
 
 		return values.None
@@ -352,9 +356,19 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 		if err != nil {
 			el.logger.Error().
 				Timestamp().
-				Str("selector", selector.String()).
 				Err(err).
+				Int("id", int(el.id)).
+				Str("selector", selector.String()).
 				Msg("failed to load nodes by selector")
+
+			// close elements that are already loaded, but won't be used because of the error
+			if arr.Length() > 0 {
+				arr.ForEach(func(e core.Value, _ int) bool {
+					e.(*HTMLElement).Close()
+
+					return true
+				})
+			}
 
 			return values.None
 		}
@@ -405,11 +419,165 @@ func (el *HTMLElement) InnerText() values.String {
 	return val.(values.String)
 }
 
+func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String {
+	if !el.IsConnected() {
+		return values.EmptyString
+	}
+
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorArgs(el.id, selector.String())
+	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.EmptyString
+	}
+
+	text, err := loadInnerText(el.client, found.NodeID)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to load inner text for found child element")
+
+		return values.EmptyString
+	}
+
+	return text
+}
+
+func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id, selector.String())
+	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.NewArray(0)
+	}
+
+	arr := values.NewArray(len(res.NodeIDs))
+
+	for _, id := range res.NodeIDs {
+		text, err := loadInnerText(el.client, id)
+
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Str("selector", selector.String()).
+				Msg("failed to load inner text for found child element")
+
+			// return what we have
+			return arr
+		}
+
+		arr.Push(text)
+	}
+
+	return arr
+}
+
 func (el *HTMLElement) InnerHTML() values.String {
 	el.Lock()
 	defer el.Unlock()
 
 	return el.innerHTML
+}
+
+func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String {
+	if !el.IsConnected() {
+		return values.EmptyString
+	}
+
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorArgs(el.id, selector.String())
+	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.EmptyString
+	}
+
+	text, err := loadInnerHTML(el.client, found.NodeID)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to load inner HTML for found child element")
+
+		return values.EmptyString
+	}
+
+	return text
+}
+
+func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
+	ctx := context.Background()
+
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id, selector.String())
+	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+
+	if err != nil {
+		el.logger.Error().
+			Timestamp().
+			Err(err).
+			Int("id", int(el.id)).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.NewArray(0)
+	}
+
+	arr := values.NewArray(len(res.NodeIDs))
+
+	for _, id := range res.NodeIDs {
+		text, err := loadInnerHTML(el.client, id)
+
+		if err != nil {
+			el.logger.Error().
+				Timestamp().
+				Err(err).
+				Int("id", int(el.id)).
+				Str("selector", selector.String()).
+				Msg("failed to load inner HTML for found child element")
+
+			// return what we have
+			return arr
+		}
+
+		arr.Push(text)
+	}
+
+	return arr
 }
 
 func (el *HTMLElement) Click() (values.Boolean, error) {
@@ -420,11 +588,31 @@ func (el *HTMLElement) Click() (values.Boolean, error) {
 	return events.DispatchEvent(ctx, el.client, el.id, "click")
 }
 
-func (el *HTMLElement) Input(value core.Value) error {
+func (el *HTMLElement) Input(value core.Value, delay values.Int) error {
 	ctx, cancel := contextWithTimeout()
 	defer cancel()
 
-	return el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id, "value", value.String()))
+	if err := el.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(el.id)); err != nil {
+		return err
+	}
+
+	delayMs := time.Duration(delay)
+
+	time.Sleep(delayMs * time.Millisecond)
+
+	valStr := value.String()
+
+	for _, ch := range valStr {
+		for _, ev := range []string{"keyDown", "keyUp"} {
+			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
+			if err := el.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
+				return err
+			}
+			time.Sleep(delayMs * time.Millisecond)
+		}
+	}
+
+	return nil
 }
 
 func (el *HTMLElement) IsConnected() values.Boolean {
@@ -441,9 +629,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		return h, nil
 	}
 
-	buff := bytes.NewBuffer([]byte(h))
-
-	parsed, err := goquery.NewDocumentFromReader(buff)
+	parser, err := parseInnerText(h.String())
 
 	if err != nil {
 		el.logger.Error().
@@ -455,7 +641,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	return values.NewString(parsed.Text()), nil
+	return parser, nil
 }
 
 func (el *HTMLElement) loadAttrs() (core.Value, error) {

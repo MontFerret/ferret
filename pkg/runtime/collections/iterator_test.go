@@ -304,7 +304,7 @@ func TestObjectIterator(t *testing.T) {
 
 			expected, exists := m.Get(values.NewString(key.String()))
 
-			So(exists, ShouldBeTrue)
+			So(bool(exists), ShouldBeTrue)
 			So(expected, ShouldEqual, item)
 
 			res = append(res, item)

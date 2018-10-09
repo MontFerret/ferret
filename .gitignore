@@ -125,3 +125,4 @@ $RECYCLE.BIN/
 vendor
 bin
 *.log
+*.orig

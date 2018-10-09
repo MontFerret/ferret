@@ -29,12 +29,6 @@ type (
 		QuerySelector(selector String) core.Value
 
 		QuerySelectorAll(selector String) core.Value
-	}
-
-	HTMLDocument interface {
-		HTMLNode
-
-		URL() core.Value
 
 		InnerHTMLBySelector(selector String) String
 
@@ -43,5 +37,11 @@ type (
 		InnerTextBySelector(selector String) String
 
 		InnerTextBySelectorAll(selector String) *Array
+	}
+
+	HTMLDocument interface {
+		HTMLNode
+
+		URL() core.Value
 	}
 )

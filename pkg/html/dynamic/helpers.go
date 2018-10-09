@@ -1,10 +1,12 @@
 package dynamic
 
 import (
+	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/common"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
@@ -27,6 +29,26 @@ func runBatch(funcs ...batchFunc) error {
 	}
 
 	return eg.Wait()
+}
+
+func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
+	args := dom.NewGetDocumentArgs()
+	args.Depth = pointerInt(1) // lets load the entire document
+	ctx := context.Background()
+
+	d, err := client.DOM.GetDocument(ctx, args)
+
+	if err != nil {
+		return dom.Node{}, values.EmptyString, err
+	}
+
+	innerHTML, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
+
+	if err != nil {
+		return dom.Node{}, values.EmptyString, err
+	}
+
+	return d.Root, values.NewString(innerHTML.OuterHTML), nil
 }
 
 func parseAttrs(attrs []string) *values.Object {
@@ -65,6 +87,32 @@ func loadInnerHTML(client *cdp.Client, id dom.NodeID) (values.String, error) {
 	}
 
 	return values.NewString(res.OuterHTML), err
+}
+
+func loadInnerText(client *cdp.Client, id dom.NodeID) (values.String, error) {
+	h, err := loadInnerHTML(client, id)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	if h == values.EmptyString {
+		return h, nil
+	}
+
+	return parseInnerText(h.String())
+}
+
+func parseInnerText(innerHTML string) (values.String, error) {
+	buff := bytes.NewBuffer([]byte(innerHTML))
+
+	parsed, err := goquery.NewDocumentFromReader(buff)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.NewString(parsed.Text()), nil
 }
 
 func createChildrenArray(nodes []dom.Node) []dom.NodeID {

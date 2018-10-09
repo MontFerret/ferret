@@ -2,9 +2,13 @@ package dynamic
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/emulation"
+	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
@@ -19,19 +23,33 @@ type Driver struct {
 	client    *cdp.Client
 	session   *session.Manager
 	contextID target.BrowserContextID
+	options   *Options
 }
 
-func NewDriver(address string) *Driver {
+func NewDriver(address string, opts ...Option) *Driver {
 	drv := new(Driver)
 	drv.dev = devtool.New(address)
+	drv.options = new(Options)
+
+	for _, opt := range opts {
+		opt(drv.options)
+	}
 
 	return drv
 }
 
 func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
+	logger := logging.FromContext(ctx)
+
 	err := drv.init(ctx)
 
 	if err != nil {
+		logger.
+			Error().
+			Err(err).
+			Str("driver", "dynamic").
+			Msg("failed to initialize the driver")
+
 		return nil, err
 	}
 
@@ -50,6 +68,12 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
 
 	if err != nil {
+		logger.
+			Error().
+			Err(err).
+			Str("driver", "dynamic").
+			Msg("failed to create a browser target")
+
 		return nil, err
 	}
 
@@ -57,10 +81,58 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	conn, err := drv.session.Dial(ctx, createTarget.TargetID)
 
 	if err != nil {
+		logger.
+			Error().
+			Err(err).
+			Str("driver", "dynamic").
+			Msg("failed to establish a connection")
+
 		return nil, err
 	}
 
-	return LoadHTMLDocument(ctx, conn, url)
+	client := cdp.NewClient(conn)
+
+	err = runBatch(
+		func() error {
+			return client.Page.Enable(ctx)
+		},
+
+		func() error {
+			return client.Page.SetLifecycleEventsEnabled(
+				ctx,
+				page.NewSetLifecycleEventsEnabledArgs(true),
+			)
+		},
+
+		func() error {
+			return client.DOM.Enable(ctx)
+		},
+
+		func() error {
+			return client.Runtime.Enable(ctx)
+		},
+
+		func() error {
+			ua := common.GetUserAgent(drv.options.userAgent)
+
+			logger.
+				Debug().
+				Str("user-agent", ua).
+				Msg("using User-Agent")
+
+			// do not use custom user agent
+			if ua == "" {
+				return nil
+			}
+
+			return client.Emulation.SetUserAgentOverride(
+				ctx,
+				emulation.NewSetUserAgentOverrideArgs(ua),
+			)
+		},
+	)
+
+	return LoadHTMLDocument(ctx, conn, client, url)
 }
 
 func (drv *Driver) Close() error {

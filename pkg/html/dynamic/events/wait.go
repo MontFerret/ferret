@@ -1,9 +1,9 @@
 package events
 
 import (
+	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
 	"github.com/mafredri/cdp"
 	"time"
 )

@@ -3,39 +3,63 @@ package dynamic
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"sync"
+	"time"
+
+	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/eval"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver/dynamic/events"
-	"github.com/corpix/uarand"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/emulation"
+	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"sync"
-	"time"
 )
 
 const BlankPageURL = "about:blank"
 
-type HTMLDocument struct {
-	sync.Mutex
-	logger  *zerolog.Logger
-	conn    *rpcc.Conn
-	client  *cdp.Client
-	events  *events.EventBroker
-	url     values.String
-	element *HTMLElement
+type (
+	ScreenshotFormat string
+	ScreenshotArgs   struct {
+		X       float64
+		Y       float64
+		Width   float64
+		Height  float64
+		Format  ScreenshotFormat
+		Quality int
+	}
+
+	HTMLDocument struct {
+		sync.Mutex
+		logger  *zerolog.Logger
+		conn    *rpcc.Conn
+		client  *cdp.Client
+		events  *events.EventBroker
+		url     values.String
+		element *HTMLElement
+	}
+)
+
+const (
+	ScreenshotFormatPNG  ScreenshotFormat = "png"
+	ScreenshotFormatJPEG ScreenshotFormat = "jpeg"
+)
+
+func IsScreenshotFormatValid(format string) bool {
+	value := ScreenshotFormat(format)
+
+	return value == ScreenshotFormatPNG || value == ScreenshotFormatJPEG
 }
 
 func LoadHTMLDocument(
 	ctx context.Context,
 	conn *rpcc.Conn,
+	client *cdp.Client,
 	url string,
 ) (*HTMLDocument, error) {
 	if conn == nil {
@@ -46,39 +70,7 @@ func LoadHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "url")
 	}
 
-	client := cdp.NewClient(conn)
-
-	err := runBatch(
-		func() error {
-			return client.Page.Enable(ctx)
-		},
-
-		func() error {
-			return client.Page.SetLifecycleEventsEnabled(
-				ctx,
-				page.NewSetLifecycleEventsEnabledArgs(true),
-			)
-		},
-
-		func() error {
-			return client.DOM.Enable(ctx)
-		},
-
-		func() error {
-			return client.Runtime.Enable(ctx)
-		},
-
-		func() error {
-			return client.Emulation.SetUserAgentOverride(
-				ctx,
-				emulation.NewSetUserAgentOverrideArgs(uarand.GetRandom()),
-			)
-		},
-	)
-
-	if err != nil {
-		return nil, err
-	}
+	var err error
 
 	if url != BlankPageURL {
 		err = waitForLoadEvent(ctx, client)
@@ -110,26 +102,6 @@ func LoadHTMLDocument(
 	), nil
 }
 
-func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
-	args := dom.NewGetDocumentArgs()
-	args.Depth = pointerInt(1) // lets load the entire document
-	ctx := context.Background()
-
-	d, err := client.DOM.GetDocument(ctx, args)
-
-	if err != nil {
-		return dom.Node{}, values.EmptyString, err
-	}
-
-	innerHTML, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
-
-	if err != nil {
-		return dom.Node{}, values.EmptyString, err
-	}
-
-	return d.Root, values.NewString(innerHTML.OuterHTML), nil
-}
-
 func NewHTMLDocument(
 	logger *zerolog.Logger,
 	conn *rpcc.Conn,
@@ -150,32 +122,8 @@ func NewHTMLDocument(
 		doc.url = values.NewString(*root.BaseURL)
 	}
 
-	broker.AddEventListener("load", func(_ interface{}) {
-		doc.Lock()
-		defer doc.Unlock()
-
-		updated, innerHTML, err := getRootElement(client)
-
-		if err != nil {
-			doc.logger.Error().
-				Timestamp().
-				Err(err).
-				Msg("failed to get root node after page load")
-
-			return
-		}
-
-		// close the prev element
-		doc.element.Close()
-
-		// create a new root element wrapper
-		doc.element = NewHTMLElement(doc.logger, client, broker, updated.NodeID, updated, innerHTML)
-		doc.url = ""
-
-		if updated.BaseURL != nil {
-			doc.url = values.NewString(*updated.BaseURL)
-		}
-	})
+	broker.AddEventListener("load", doc.handlePageLoad)
+	broker.AddEventListener("error", doc.handleError)
 
 	return doc
 }
@@ -374,149 +322,38 @@ func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
 }
 
 func (doc *HTMLDocument) URL() core.Value {
+	doc.Lock()
+	defer doc.Unlock()
+
 	return doc.url
 }
 
 func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (el == null) {
-				return "";
-			}
-
-			return el.innerHTML;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get inner HTML by selector")
-
-		return values.EmptyString
-	}
-
-	if res.Type() == core.StringType {
-		return res.(values.String)
-	}
-
-	return values.EmptyString
+	return doc.element.InnerHTMLBySelector(selector)
 }
 
 func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) *values.Array {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var result = [];
-			var elements = document.querySelectorAll(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (elements == null) {
-				return result;
-			}
-
-			elements.forEach((i) => {
-				result.push(i.innerHTML);
-			});
-
-			return result;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get an array of inner HTML by selector")
-
-		return values.NewArray(0)
-	}
-
-	if res.Type() == core.ArrayType {
-		return res.(*values.Array)
-	}
-
-	return values.NewArray(0)
+	return doc.element.InnerHTMLBySelectorAll(selector)
 }
 
 func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.String {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (el == null) {
-				return "";
-			}
-
-			return el.innerText;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get inner text by selector")
-
-		return values.EmptyString
-	}
-
-	if res.Type() == core.StringType {
-		return res.(values.String)
-	}
-
-	return values.EmptyString
+	return doc.element.InnerHTMLBySelector(selector)
 }
 
 func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
-	res, err := eval.Eval(
-		doc.client,
-		fmt.Sprintf(`
-			var result = [];
-			var elements = document.querySelectorAll(%s);
+	doc.Lock()
+	defer doc.Unlock()
 
-			if (elements == null) {
-				return result;
-			}
-
-			elements.forEach((i) => {
-				result.push(i.innerText);
-			});
-
-			return result;
-		`, eval.ParamString(selector.String())),
-		true,
-		false,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("selector", selector.String()).
-			Msg("failed to get an array inner text by selector")
-
-		return values.NewArray(0)
-	}
-
-	if res.Type() == core.ArrayType {
-		return res.(*values.Array)
-	}
-
-	return values.NewArray(0)
+	return doc.element.InnerTextBySelectorAll(selector)
 }
 
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
@@ -581,27 +418,21 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 	return values.False, nil
 }
 
-func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value) (values.Boolean, error) {
+func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
+	ctx := context.Background()
+
+	valStr := value.String()
+
 	res, err := eval.Eval(
 		doc.client,
-		fmt.Sprintf(
-			`
+		fmt.Sprintf(`
 			var el = document.querySelector(%s);
-
 			if (el == null) {
 				return false;
 			}
-
-			var evt = new window.Event('input', { bubbles: true });
-
-			el.value = %s
-			el.dispatchEvent(evt);
-
+			el.focus();
 			return true;
-		`,
-			eval.ParamString(selector.String()),
-			eval.ParamString(value.String()),
-		),
+		`, eval.ParamString(selector.String())),
 		true,
 		false,
 	)
@@ -610,11 +441,25 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType {
-		return res.(values.Boolean), nil
+	if res.Type() == core.BooleanType && res.(values.Boolean) == values.False {
+		return values.False, nil
 	}
 
-	return values.False, nil
+	delayMs := time.Duration(delay)
+
+	time.Sleep(delayMs * time.Millisecond)
+
+	for _, ch := range valStr {
+		for _, ev := range []string{"keyDown", "keyUp"} {
+			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
+			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
+				return values.False, err
+			}
+			time.Sleep(delayMs * time.Millisecond)
+		}
+	}
+
+	return values.True, nil
 }
 
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
@@ -712,30 +557,24 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 }
 
 func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
-	timer := time.NewTimer(time.Millisecond * time.Duration(timeout))
-	onEvent := make(chan bool)
+	onEvent := make(chan struct{})
 	listener := func(_ interface{}) {
-		onEvent <- true
+		close(onEvent)
 	}
 
 	defer doc.events.RemoveEventListener("load", listener)
-	defer close(onEvent)
 
 	doc.events.AddEventListener("load", listener)
 
-	for {
-		select {
-		case <-onEvent:
-			timer.Stop()
-
-			return nil
-		case <-timer.C:
-			return core.ErrTimeout
-		}
+	select {
+	case <-onEvent:
+		return nil
+	case <-time.After(time.Millisecond * time.Duration(timeout)):
+		return core.ErrTimeout
 	}
 }
 
-func (doc *HTMLDocument) Navigate(url values.String) error {
+func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -751,5 +590,100 @@ func (doc *HTMLDocument) Navigate(url values.String) error {
 		return errors.New(*repl.ErrorText)
 	}
 
-	return doc.WaitForNavigation(5000)
+	return doc.WaitForNavigation(timeout)
+}
+
+func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
+	ctx := context.Background()
+	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
+
+	if params.Format == ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
+		params.Quality = 100
+	}
+
+	if params.X < 0 {
+		params.X = 0
+	}
+
+	if params.Y < 0 {
+		params.Y = 0
+	}
+
+	if params.Width <= 0 {
+		params.Width = float64(metrics.LayoutViewport.ClientWidth) - params.X
+	}
+
+	if params.Height <= 0 {
+		params.Height = float64(metrics.LayoutViewport.ClientHeight) - params.Y
+	}
+
+	clip := page.Viewport{
+		X:      params.X,
+		Y:      params.Y,
+		Width:  params.Width,
+		Height: params.Height,
+		Scale:  1.0,
+	}
+
+	format := string(params.Format)
+	screenshotArgs := page.CaptureScreenshotArgs{
+		Format:  &format,
+		Quality: &params.Quality,
+		Clip:    &clip,
+	}
+
+	reply, err := doc.client.Page.CaptureScreenshot(ctx, &screenshotArgs)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.NewBinary(reply.Data), nil
+}
+
+func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
+	doc.Lock()
+	defer doc.Unlock()
+
+	updated, innerHTML, err := getRootElement(doc.client)
+
+	if err != nil {
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Msg("failed to get root node after page load")
+
+		return
+	}
+
+	// close the prev element
+	doc.element.Close()
+
+	// create a new root element wrapper
+	doc.element = NewHTMLElement(
+		doc.logger,
+		doc.client,
+		doc.events,
+		updated.NodeID,
+		updated,
+		innerHTML,
+	)
+	doc.url = ""
+
+	if updated.BaseURL != nil {
+		doc.url = values.NewString(*updated.BaseURL)
+	}
+}
+
+func (doc *HTMLDocument) handleError(val interface{}) {
+	err, ok := val.(error)
+
+	if !ok {
+		return
+	}
+
+	doc.logger.Error().
+		Timestamp().
+		Err(err).
+		Msg("unexpected error")
 }

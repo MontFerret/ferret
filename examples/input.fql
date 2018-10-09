@@ -1,21 +1,15 @@
-LET g = DOCUMENT("https://www.google.com/", true)
+LET google = DOCUMENT("https://www.google.com/", true)
 
-INPUT(g, 'input[name="q"]', "ferret")
-CLICK(g, 'input[name="btnK"]')
+INPUT(google, 'input[name="q"]', "ferret", 25)
+CLICK(google, 'input[name="btnK"]')
 
-WAIT_NAVIGATION(g)
+WAIT_NAVIGATION(google)
 
-LET result = (
-    FOR result IN ELEMENTS(g, '.g')
-       RETURN {
-           title: ELEMENT(result, 'h3 > a'),
-           description: ELEMENT(result, '.st'),
-           url: ELEMENT(result, 'cite')
-       }
-)
-
-RETURN (
-    FOR i IN result
-    FILTER i.title != NONE
-    RETURN i
-)
+FOR result IN ELEMENTS(google, '.g')
+    // filter out extra elements like videos and 'People also ask'
+    FILTER TRIM(result.attributes.class) == 'g'
+    RETURN {
+        title: INNER_TEXT(result, 'h3'),
+        description: INNER_TEXT(result, '.st'),
+        url: INNER_TEXT(result, 'cite')
+    }

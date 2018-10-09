@@ -2,9 +2,9 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/html"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/html/driver"
 )
 
 /*
@@ -37,12 +37,12 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 		dynamic = args[1].(values.Boolean)
 	}
 
-	var drv driver.Driver
+	var drv html.Driver
 
 	if !dynamic {
-		drv, err = driver.FromContext(ctx, driver.Static)
+		drv, err = html.FromContext(ctx, html.Static)
 	} else {
-		drv, err = driver.FromContext(ctx, driver.Dynamic)
+		drv, err = html.FromContext(ctx, html.Dynamic)
 	}
 
 	if err != nil {
