@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
@@ -49,29 +48,12 @@ func Eval(client *cdp.Client, exp string, ret bool, async bool) (core.Value, err
 func Property(
 	ctx context.Context,
 	client *cdp.Client,
-	id dom.NodeID,
+	objectId runtime.RemoteObjectID,
 	propName string,
 ) (core.Value, error) {
-	// get a ref to remote object representing the node
-	obj, err := client.DOM.ResolveNode(
-		ctx,
-		dom.NewResolveNodeArgs().
-			SetNodeID(id),
-	)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if obj.Object.ObjectID == nil {
-		return values.None, core.Error(core.ErrNotFound, fmt.Sprintf("element %d", id))
-	}
-
-	defer client.Runtime.ReleaseObject(ctx, runtime.NewReleaseObjectArgs(*obj.Object.ObjectID))
-
 	res, err := client.Runtime.GetProperties(
 		ctx,
-		runtime.NewGetPropertiesArgs(*obj.Object.ObjectID),
+		runtime.NewGetPropertiesArgs(objectId),
 	)
 
 	if err != nil {

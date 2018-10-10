@@ -6,31 +6,15 @@ import (
 	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 func DispatchEvent(
 	ctx context.Context,
 	client *cdp.Client,
-	id dom.NodeID,
+	objectId runtime.RemoteObjectID,
 	eventName string,
 ) (values.Boolean, error) {
-	// get a ref to remote object representing the node
-	obj, err := client.DOM.ResolveNode(
-		ctx,
-		dom.NewResolveNodeArgs().
-			SetNodeID(id),
-	)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	if obj.Object.ObjectID == nil {
-		return values.False, nil
-	}
-
 	evt, err := client.Runtime.Evaluate(ctx, runtime.NewEvaluateArgs(eval.PrepareEval(fmt.Sprintf(`
 		return new window.MouseEvent('%s', { bubbles: true })
 	`, eventName))))
@@ -55,7 +39,7 @@ func DispatchEvent(
 	res, err := client.Runtime.CallFunctionOn(
 		ctx,
 		runtime.NewCallFunctionOnArgs("dispatchEvent").
-			SetObjectID(*obj.Object.ObjectID).
+			SetObjectID(objectId).
 			SetArguments([]runtime.CallArgument{
 				{
 					ObjectID: evt.Result.ObjectID,

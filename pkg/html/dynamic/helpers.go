@@ -15,10 +15,6 @@ import (
 	"strings"
 )
 
-func pointerInt(input int) *int {
-	return &input
-}
-
 type batchFunc = func() error
 
 func runBatch(funcs ...batchFunc) error {
@@ -31,24 +27,14 @@ func runBatch(funcs ...batchFunc) error {
 	return eg.Wait()
 }
 
-func getRootElement(client *cdp.Client) (dom.Node, values.String, error) {
-	args := dom.NewGetDocumentArgs()
-	args.Depth = pointerInt(1) // lets load the entire document
-	ctx := context.Background()
-
-	d, err := client.DOM.GetDocument(ctx, args)
+func getRootElement(ctx context.Context, client *cdp.Client) (*dom.GetDocumentReply, error) {
+	d, err := client.DOM.GetDocument(ctx, dom.NewGetDocumentArgs().SetDepth(1))
 
 	if err != nil {
-		return dom.Node{}, values.EmptyString, err
+		return nil, err
 	}
 
-	innerHTML, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetNodeID(d.Root.NodeID))
-
-	if err != nil {
-		return dom.Node{}, values.EmptyString, err
-	}
-
-	return d.Root, values.NewString(innerHTML.OuterHTML), nil
+	return d, nil
 }
 
 func parseAttrs(attrs []string) *values.Object {
@@ -79,8 +65,18 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(client *cdp.Client, id dom.NodeID) (values.String, error) {
-	res, err := client.DOM.GetOuterHTML(context.Background(), dom.NewGetOuterHTMLArgs().SetNodeID(id))
+func loadInnerHTML(client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+	var args *dom.GetOuterHTMLArgs
+
+	if id.objectID != "" {
+		args = dom.NewGetOuterHTMLArgs().SetObjectID(id.objectID)
+	} else if id.backendID > 0 {
+		args = dom.NewGetOuterHTMLArgs().SetBackendNodeID(id.backendID)
+	} else {
+		args = dom.NewGetOuterHTMLArgs().SetNodeID(id.nodeID)
+	}
+
+	res, err := client.DOM.GetOuterHTML(context.Background(), args)
 
 	if err != nil {
 		return "", err
@@ -89,7 +85,7 @@ func loadInnerHTML(client *cdp.Client, id dom.NodeID) (values.String, error) {
 	return values.NewString(res.OuterHTML), err
 }
 
-func loadInnerText(client *cdp.Client, id dom.NodeID) (values.String, error) {
+func loadInnerText(client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
 	h, err := loadInnerHTML(client, id)
 
 	if err != nil {
@@ -115,21 +111,30 @@ func parseInnerText(innerHTML string) (values.String, error) {
 	return values.NewString(parsed.Text()), nil
 }
 
-func createChildrenArray(nodes []dom.Node) []dom.NodeID {
-	children := make([]dom.NodeID, len(nodes))
+func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
+	children := make([]*HTMLElementIdentity, len(nodes))
 
 	for idx, child := range nodes {
-		children[idx] = child.NodeID
+		children[idx] = &HTMLElementIdentity{
+			nodeID:    child.NodeID,
+			backendID: child.BackendNodeID,
+		}
 	}
 
 	return children
 }
 
-func loadNodes(logger *zerolog.Logger, client *cdp.Client, broker *events.EventBroker, nodes []dom.NodeID) (*values.Array, error) {
+func loadNodes(
+	ctx context.Context,
+	logger *zerolog.Logger,
+	client *cdp.Client,
+	broker *events.EventBroker,
+	nodes []*HTMLElementIdentity,
+) (*values.Array, error) {
 	arr := values.NewArray(len(nodes))
 
 	for _, id := range nodes {
-		child, err := LoadElement(logger, client, broker, id)
+		child, err := LoadElement(ctx, logger, client, broker, id.nodeID, id.backendID)
 
 		if err != nil {
 			return nil, err
