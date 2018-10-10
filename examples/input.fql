@@ -4,7 +4,7 @@ INPUT(google, 'input[name="q"]', "ferret", 25)
 CLICK(google, 'input[name="btnK"]')
 
 WAIT_NAVIGATION(google)
-WAIT_ELEMENT(google, '.g')
+WAIT_ELEMENT(google, '.g', 5000)
 
 FOR result IN ELEMENTS(google, '.g')
     // filter out extra elements like videos and 'People also ask'

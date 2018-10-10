@@ -65,7 +65,7 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
 	var args *dom.GetOuterHTMLArgs
 
 	if id.objectID != "" {
@@ -76,27 +76,13 @@ func loadInnerHTML(client *cdp.Client, id *HTMLElementIdentity) (values.String, 
 		args = dom.NewGetOuterHTMLArgs().SetNodeID(id.nodeID)
 	}
 
-	res, err := client.DOM.GetOuterHTML(context.Background(), args)
+	res, err := client.DOM.GetOuterHTML(ctx, args)
 
 	if err != nil {
 		return "", err
 	}
 
 	return values.NewString(res.OuterHTML), err
-}
-
-func loadInnerText(client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
-	h, err := loadInnerHTML(client, id)
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	if h == values.EmptyString {
-		return h, nil
-	}
-
-	return parseInnerText(h.String())
 }
 
 func parseInnerText(innerHTML string) (values.String, error) {
@@ -137,7 +123,7 @@ func loadNodes(
 		child, err := LoadElement(ctx, logger, client, broker, id.nodeID, id.backendID)
 
 		if err != nil {
-			return nil, err
+			return arr, err
 		}
 
 		arr.Push(child)

@@ -36,23 +36,20 @@ func DispatchEvent(
 	// release the event object
 	defer client.Runtime.ReleaseObject(ctx, runtime.NewReleaseObjectArgs(*evtID))
 
-	res, err := client.Runtime.CallFunctionOn(
+	_, err = eval.Method(
 		ctx,
-		runtime.NewCallFunctionOnArgs("dispatchEvent").
-			SetObjectID(objectId).
-			SetArguments([]runtime.CallArgument{
-				{
-					ObjectID: evt.Result.ObjectID,
-				},
-			}),
+		client,
+		objectId,
+		"dispatchEvent",
+		[]runtime.CallArgument{
+			{
+				ObjectID: evt.Result.ObjectID,
+			},
+		},
 	)
 
 	if err != nil {
 		return values.False, err
-	}
-
-	if res.ExceptionDetails != nil {
-		return values.False, res.ExceptionDetails
 	}
 
 	return values.True, nil

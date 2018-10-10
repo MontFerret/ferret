@@ -19,15 +19,14 @@ LET result = (
 
         LET items = (
             FOR el IN ELEMENTS(amazon, resultItemSelector)
+                LET priceTxtMain = INNER_TEXT(el, priceSelector)
+                LET priceTxt = priceTxtMain != "" ? priceTxtMain : INNER_TEXT(el, altPriceSelector)
 
-            LET priceTxtMain = INNER_TEXT(el, priceSelector)
-            LET priceTxt = priceTxtMain != "" ? priceTxtMain : INNER_TEXT(el, altPriceSelector)
-
-            RETURN {
-                title: INNER_TEXT(el, 'h2'),
-                vendor: INNER_TEXT(el, vendorSelector),
-                price: TO_FLOAT(SUBSTITUTE(priceTxt, "$", ""))
-            }
+                RETURN {
+                    title: INNER_TEXT(el, 'h2'),
+                    vendor: INNER_TEXT(el, vendorSelector),
+                    price: TO_FLOAT(SUBSTITUTE(priceTxt, "$", ""))
+                }
         )
 
         RETURN items

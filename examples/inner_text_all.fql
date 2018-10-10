@@ -1,0 +1,8 @@
+LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
+
+WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
+
+LET tracks = ELEMENTS(doc, '.chartTrack')
+
+FOR track IN tracks
+    RETURN INNER_TEXT_ALL(track, '.chartTrack__details')
