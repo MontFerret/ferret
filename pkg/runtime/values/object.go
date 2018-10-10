@@ -64,34 +64,26 @@ func (t *Object) Compare(other core.Value) int {
 		if t.Length() == 0 && other.Length() == 0 {
 			return 0
 		}
+		if t.Length() < other.Length() {
+			return -1
+		}
+		if t.Length() > other.Length() {
+			return 1
+		}
 
-		var res = 1
+		var res = 0
 
 		var val core.Value
 		var exists bool
 
-		// check other contains t
 		other.ForEach(func(otherVal core.Value, key string) bool {
-			res = -1
+			res = 0
 
 			if val, exists = t.value[key]; exists {
-				res = otherVal.Compare(val)
+				res = val.Compare(otherVal)
 			}
 
-			return res != -1
-		})
-
-		// check t contains other
-		// if t contains other and other contains t,
-		// then t equal to other
-		t.ForEach(func(tVal core.Value, key string) bool {
-			res = 1
-
-			if val, exists = other.value[key]; exists {
-				res = tVal.Compare(val)
-			}
-
-			return res != 1
+			return res != 0
 		})
 
 		return res
