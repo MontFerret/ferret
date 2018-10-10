@@ -567,26 +567,20 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 }
 
 func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
-	timer := time.NewTimer(time.Millisecond * time.Duration(timeout))
-	onEvent := make(chan bool)
+	onEvent := make(chan struct{})
 	listener := func(_ interface{}) {
-		onEvent <- true
+		close(onEvent)
 	}
 
 	defer doc.events.RemoveEventListener("load", listener)
-	defer close(onEvent)
 
 	doc.events.AddEventListener("load", listener)
 
-	for {
-		select {
-		case <-onEvent:
-			timer.Stop()
-
-			return nil
-		case <-timer.C:
-			return core.ErrTimeout
-		}
+	select {
+	case <-onEvent:
+		return nil
+	case <-time.After(time.Millisecond * time.Duration(timeout)):
+		return core.ErrTimeout
 	}
 }
 
