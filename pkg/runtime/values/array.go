@@ -3,9 +3,10 @@ package values
 import (
 	"encoding/binary"
 	"encoding/json"
+	"hash/fnv"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
-	"hash/fnv"
 )
 
 type (
@@ -103,7 +104,7 @@ func (t *Array) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *Array) Clone() core.Value {
+func (t *Array) Copy() core.Value {
 	c := NewArray(len(t.value))
 
 	for _, el := range t.value {

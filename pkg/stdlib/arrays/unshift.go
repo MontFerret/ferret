@@ -72,7 +72,7 @@ func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		if !ok {
 			// value is not unique, just return a new copy with same elements
-			return arr.Clone(), nil
+			return arr.Copy(), nil
 		}
 	}
 

@@ -2,10 +2,11 @@ package values
 
 import (
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"hash/fnv"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
 )
 
 type Boolean bool
@@ -108,6 +109,6 @@ func (t Boolean) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t Boolean) Clone() core.Value {
+func (t Boolean) Copy() core.Value {
 	return t
 }

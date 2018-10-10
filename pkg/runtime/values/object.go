@@ -141,7 +141,7 @@ func (t *Object) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *Object) Clone() core.Value {
+func (t *Object) Copy() core.Value {
 	c := NewObject()
 
 	for k, v := range t.value {

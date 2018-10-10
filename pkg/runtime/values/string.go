@@ -3,10 +3,11 @@ package values
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"hash/fnv"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
 )
 
 type String string
@@ -103,7 +104,7 @@ func (t String) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t String) Clone() core.Value {
+func (t String) Copy() core.Value {
 	return t
 }
 
