@@ -59,21 +59,32 @@ func (t *Object) String() string {
 func (t *Object) Compare(other core.Value) int {
 	switch other.Type() {
 	case core.ObjectType:
-		arr := other.(*Object)
+		other := other.(*Object)
 
-		if t.Length() == 0 && arr.Length() == 0 {
+		if t.Length() == 0 && other.Length() == 0 {
 			return 0
 		}
-
-		var res = 1
-
-		for _, val := range t.value {
-			arr.ForEach(func(otherVal core.Value, key string) bool {
-				res = val.Compare(otherVal)
-
-				return res != -1
-			})
+		if t.Length() < other.Length() {
+			return -1
 		}
+		if t.Length() > other.Length() {
+			return 1
+		}
+
+		var res = 0
+
+		var val core.Value
+		var exists bool
+
+		other.ForEach(func(otherVal core.Value, key string) bool {
+			res = -1
+
+			if val, exists = t.value[key]; exists {
+				res = val.Compare(otherVal)
+			}
+
+			return res == 0
+		})
 
 		return res
 	default:
