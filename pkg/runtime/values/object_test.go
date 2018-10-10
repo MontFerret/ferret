@@ -1,10 +1,11 @@
 package values_test
 
 import (
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestObject(t *testing.T) {
@@ -118,6 +119,22 @@ func TestObject(t *testing.T) {
 			obj2 := values.NewObject()
 
 			So(obj1.Compare(obj2), ShouldEqual, 0)
+		})
+
+		Convey("It should return 0 when both objects are equal (independent of key order)", func() {
+			obj1 := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.NewString("foo")),
+				values.NewObjectProperty("bar", values.NewString("bar")),
+			)
+			obj2 := values.NewObjectWith(
+				values.NewObjectProperty("foo", values.NewString("foo")),
+				values.NewObjectProperty("bar", values.NewString("bar")),
+			)
+
+			So(obj1.Compare(obj1), ShouldEqual, 0)
+			So(obj2.Compare(obj2), ShouldEqual, 0)
+			So(obj1.Compare(obj2), ShouldEqual, 0)
+			So(obj2.Compare(obj1), ShouldEqual, 0)
 		})
 
 		Convey("It should return 1 when other array is empty", func() {
