@@ -558,8 +558,15 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 
 func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 	onEvent := make(chan struct{})
+	closed := false
+	var mu sync.Mutex
 	listener := func(_ interface{}) {
-		close(onEvent)
+		mu.Lock()
+		if !closed {
+			close(onEvent)
+			closed = true
+		}
+		mu.Unlock()
 	}
 
 	defer doc.events.RemoveEventListener("load", listener)
