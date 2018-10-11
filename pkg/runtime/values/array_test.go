@@ -2,10 +2,11 @@ package values_test
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestArray(t *testing.T) {
@@ -116,6 +117,112 @@ func TestArray(t *testing.T) {
 			arr2 := values.NewArrayWith(values.ZeroInt)
 
 			So(arr1.Compare(arr2), ShouldEqual, 1)
+		})
+
+		Convey("It should return 0 when arrays are equal", func() {
+			Convey("When only simple types are nested", func() {
+				arr1 := values.NewArrayWith(
+					values.NewInt(0), values.NewString("str"),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewInt(0), values.NewString("str"),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
+
+			Convey("When object and array are nested at the same time", func() {
+				arr1 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty("one", values.NewInt(1)),
+					),
+					values.NewArrayWith(
+						values.NewInt(2),
+					),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty("one", values.NewInt(1)),
+					),
+					values.NewArrayWith(
+						values.NewInt(2),
+					),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
+
+			Convey("When only objects are nested", func() {
+				arr1 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty("one", values.NewInt(1)),
+					),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty("one", values.NewInt(1)),
+					),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
+
+			Convey("When only arrays are nested", func() {
+				arr1 := values.NewArrayWith(
+					values.NewArrayWith(
+						values.NewInt(2),
+					),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewArrayWith(
+						values.NewInt(2),
+					),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
+
+			Convey("When simple and complex types at the same time", func() {
+				arr1 := values.NewArrayWith(
+					values.NewInt(0),
+					values.NewObjectWith(
+						values.NewObjectProperty("one", values.NewInt(1)),
+					),
+					values.NewArrayWith(
+						values.NewInt(2),
+					),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewInt(0),
+					values.NewObjectWith(
+						values.NewObjectProperty("one", values.NewInt(1)),
+					),
+					values.NewArrayWith(
+						values.NewInt(2),
+					),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
+
+			Convey("When custom complex type", func() {
+				arr1 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty(
+							"arr", values.NewArrayWith(values.NewObject()),
+						),
+					),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty(
+							"arr", values.NewArrayWith(values.NewObject()),
+						),
+					),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
 		})
 	})
 
