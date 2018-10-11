@@ -3,9 +3,10 @@ package values
 import (
 	"encoding/binary"
 	"encoding/json"
+	"hash/fnv"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
-	"hash/fnv"
 )
 
 type (
@@ -44,21 +45,27 @@ func (t *Array) String() string {
 func (t *Array) Compare(other core.Value) int {
 	switch other.Type() {
 	case core.ArrayType:
-		arr := other.(*Array)
+		other := other.(*Array)
 
-		if t.Length() == 0 && arr.Length() == 0 {
+		if t.Length() == 0 && other.Length() == 0 {
 			return 0
 		}
-
-		var res = 1
-
-		for _, val := range t.value {
-			arr.ForEach(func(otherVal core.Value, idx int) bool {
-				res = val.Compare(otherVal)
-
-				return res != -1
-			})
+		if t.Length() < other.Length() {
+			return -1
 		}
+		if t.Length() > other.Length() {
+			return 1
+		}
+
+		var res = 0
+		var val core.Value
+
+		other.ForEach(func(otherVal core.Value, idx int) bool {
+			val = t.Get(NewInt(idx))
+			res = val.Compare(otherVal)
+
+			return res == 0
+		})
 
 		return res
 	case core.ObjectType:
