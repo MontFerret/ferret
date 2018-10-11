@@ -50,6 +50,13 @@ func Exec(query string, opts Options) {
 		}
 	}()
 
+	var timer *Timer
+
+	if opts.ShowTime {
+		timer = NewTimer()
+		timer.Start()
+	}
+
 	out, err := prog.Run(
 		ctx,
 		runtime.WithBrowser(opts.Cdp),
@@ -60,6 +67,10 @@ func Exec(query string, opts Options) {
 		runtime.WithUserAgent(opts.UserAgent),
 	)
 
+	if opts.ShowTime {
+		timer.Stop()
+	}
+
 	if err != nil {
 		fmt.Println("Failed to execute the query")
 		fmt.Println(err)
@@ -68,4 +79,8 @@ func Exec(query string, opts Options) {
 	}
 
 	fmt.Println(string(out))
+
+	if opts.ShowTime {
+		fmt.Println(timer.Print())
+	}
 }

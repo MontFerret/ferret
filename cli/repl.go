@@ -34,7 +34,11 @@ func Repl(version string, opts Options) {
 	var commands []string
 	var multiline bool
 
-	timer := NewTimer()
+	var timer *Timer
+
+	if opts.ShowTime {
+		timer = NewTimer()
+	}
 
 	l := NewLogger()
 
@@ -90,7 +94,9 @@ func Repl(version string, opts Options) {
 			continue
 		}
 
-		timer.Start()
+		if opts.ShowTime {
+			timer.Start()
+		}
 
 		out, err := program.Run(
 			ctx,
@@ -102,9 +108,6 @@ func Repl(version string, opts Options) {
 			runtime.WithUserAgent(opts.UserAgent),
 		)
 
-		timer.Stop()
-		fmt.Println(timer.Print())
-
 		if err != nil {
 			fmt.Println("Failed to execute the query")
 			fmt.Println(err)
@@ -112,5 +115,10 @@ func Repl(version string, opts Options) {
 		}
 
 		fmt.Println(string(out))
+
+		if opts.ShowTime {
+			timer.Stop()
+			fmt.Println(timer.Print())
+		}
 	}
 }

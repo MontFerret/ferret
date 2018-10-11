@@ -2104,12 +2104,22 @@ func TestParam(t *testing.T) {
 //		c := compiler.New()
 //
 //		out, err := c.MustCompile(`
-//LET doc = DOCUMENT("http://getbootstrap.com/docs/4.1/components/collapse/", true)
+//LET google = DOCUMENT("https://www.google.com/", true)
 //
-//CLICK(doc, "#headingTwo > h5 > button")
-//WAIT_CLASS(doc, "#collapseTwo", "bar")
+//INPUT(google, 'input[name="q"]', "ferret", 25)
+//CLICK(google, 'input[name="btnK"]')
 //
-//RETURN TRUE
+//WAIT_NAVIGATION(google)
+//WAIT_ELEMENT(google, '.g', 5000)
+//
+//FOR result IN ELEMENTS(google, '.g')
+//    // filter out extra elements like videos and 'People also ask'
+//    FILTER TRIM(result.attributes.class) == 'g'
+//    RETURN {
+//        title: INNER_TEXT(result, 'h3'),
+//        description: INNER_TEXT(result, '.st'),
+//        url: INNER_TEXT(result, 'cite')
+//    }
 //			`).Run(context.Background())
 //
 //		So(err, ShouldBeNil)

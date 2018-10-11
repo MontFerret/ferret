@@ -5,4 +5,5 @@ type Options struct {
 	Params    map[string]interface{}
 	Proxy     string
 	UserAgent string
+	ShowTime  bool
 }
