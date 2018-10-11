@@ -26,5 +26,14 @@ func TestScope(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, "test")
+
+		c := s.Fork()
+
+		So(c.HasVariable("a"), ShouldBeTrue)
+
+		cv, err := c.GetVariable("a")
+
+		So(err, ShouldBeNil)
+		So(cv, ShouldEqual, "test")
 	})
 }
