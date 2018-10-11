@@ -2,10 +2,11 @@ package values_test
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestArray(t *testing.T) {
@@ -393,6 +394,64 @@ func TestArray(t *testing.T) {
 
 			So(lenAfter, ShouldBeLessThan, lenBefore)
 			So(arr.Get(0), ShouldEqual, 1)
+		})
+	})
+
+	Convey(".Clone", t, func() {
+		Convey("Cloned array should be equal to source array", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(0),
+				values.NewObjectWith(
+					values.NewObjectProperty("one", values.NewInt(1)),
+				),
+				values.NewArrayWith(
+					values.NewInt(2),
+				),
+			)
+
+			clone := arr.Clone().(*values.Array)
+
+			So(arr.Length(), ShouldEqual, clone.Length())
+			So(arr.Compare(clone), ShouldEqual, 0)
+		})
+
+		Convey("Cloned array should be independent of the source array", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(0),
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+				values.NewInt(4),
+				values.NewInt(5),
+			)
+
+			clone := arr.Clone().(*values.Array)
+
+			arr.Push(values.NewInt(6))
+
+			So(arr.Length(), ShouldNotEqual, clone.Length())
+			So(arr.Compare(clone), ShouldNotEqual, 0)
+		})
+
+		Convey("Cloned object must contain copies of the nested objects", func() {
+			arr := values.NewArrayWith(
+				values.NewArrayWith(
+					values.NewInt(0),
+					values.NewInt(1),
+					values.NewInt(2),
+					values.NewInt(3),
+					values.NewInt(4),
+				),
+			)
+
+			clone := arr.Clone().(*values.Array)
+
+			nestedInArr := arr.Get(values.NewInt(0)).(*values.Array)
+			nestedInArr.Push(values.NewInt(5))
+
+			nestedInClone := clone.Get(values.NewInt(0)).(*values.Array)
+
+			So(nestedInArr.Length(), ShouldNotEqual, nestedInClone)
 		})
 	})
 }
