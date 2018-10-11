@@ -38,7 +38,7 @@ type (
 		sync.Mutex
 		logger         *zerolog.Logger
 		client         *cdp.Client
-		broker         *events.EventBroker
+		events         *events.EventBroker
 		connected      values.Boolean
 		id             *HTMLElementIdentity
 		nodeType       values.Int
@@ -149,7 +149,7 @@ func NewHTMLElement(
 	el := new(HTMLElement)
 	el.logger = logger
 	el.client = client
-	el.broker = broker
+	el.events = broker
 	el.connected = values.True
 	el.id = id
 	el.nodeType = values.NewInt(nodeType)
@@ -183,12 +183,12 @@ func (el *HTMLElement) Close() error {
 	}
 
 	el.connected = false
-	el.broker.RemoveEventListener("reload", el.handlePageReload)
-	el.broker.RemoveEventListener("attr:modified", el.handleAttrModified)
-	el.broker.RemoveEventListener("attr:removed", el.handleAttrRemoved)
-	el.broker.RemoveEventListener("children:count", el.handleChildrenCountChanged)
-	el.broker.RemoveEventListener("children:inserted", el.handleChildInserted)
-	el.broker.RemoveEventListener("children:deleted", el.handleChildDeleted)
+	el.events.RemoveEventListener("reload", el.handlePageReload)
+	el.events.RemoveEventListener("attr:modified", el.handleAttrModified)
+	el.events.RemoveEventListener("attr:removed", el.handleAttrRemoved)
+	el.events.RemoveEventListener("children:count", el.handleChildrenCountChanged)
+	el.events.RemoveEventListener("children:inserted", el.handleChildInserted)
+	el.events.RemoveEventListener("children:deleted", el.handleChildDeleted)
 
 	return nil
 }
@@ -358,7 +358,7 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 		return values.None
 	}
 
-	res, err := LoadElement(ctx, el.logger, el.client, el.broker, found.NodeID, emptyBackendID)
+	res, err := LoadElement(ctx, el.logger, el.client, el.events, found.NodeID, emptyBackendID)
 
 	if err != nil {
 		el.logError(err).
@@ -394,7 +394,7 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for _, id := range res.NodeIDs {
-		childEl, err := LoadElement(ctx, el.logger, el.client, el.broker, id, emptyBackendID)
+		childEl, err := LoadElement(ctx, el.logger, el.client, el.events, id, emptyBackendID)
 
 		if err != nil {
 			el.logError(err).
@@ -697,13 +697,28 @@ func (el *HTMLElement) IsConnected() values.Boolean {
 }
 
 func (el *HTMLElement) loadInnerText() (core.Value, error) {
+	if el.IsConnected() {
+		ctx, cancel := contextWithTimeout()
+		defer cancel()
+
+		text, err := eval.Property(ctx, el.client, el.id.objectID, "innerText")
+
+		if err == nil {
+			return text, nil
+		}
+
+		el.logError(err).Msg("failed to read 'innerText' property of remote object")
+
+		// and just parse innerHTML
+	}
+
 	h := el.InnerHTML()
 
 	if h == values.EmptyString {
 		return h, nil
 	}
 
-	parser, err := parseInnerText(h.String())
+	parsed, err := parseInnerText(h.String())
 
 	if err != nil {
 		el.logError(err).Msg("failed to parse inner html")
@@ -711,7 +726,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	return parser, nil
+	return parsed, nil
 }
 
 func (el *HTMLElement) loadAttrs() (core.Value, error) {
@@ -726,13 +741,25 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 	ctx, cancel := contextWithTimeout()
 	defer cancel()
 
-	loaded, err := loadNodes(ctx, el.logger, el.client, el.broker, el.children)
+	loaded := values.NewArray(len(el.children))
 
-	if err != nil {
-		el.logError(err).Msg("failed to load child nodes")
+	for _, childId := range el.children {
+		child, err := LoadElement(
+			ctx,
+			el.logger,
+			el.client,
+			el.events,
+			childId.nodeID,
+			childId.backendID,
+		)
 
-		// return what we could load
-		return loaded, nil
+		if err != nil {
+			el.logError(err).Msg("failed to load child nodes")
+
+			continue
+		}
+
+		loaded.Push(child)
 	}
 
 	return loaded, nil
@@ -885,7 +912,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		defer cancel()
 
 		loadedArr := v.(*values.Array)
-		loadedEl, err := LoadElement(ctx, el.logger, el.client, el.broker, nextID, emptyBackendID)
+		loadedEl, err := LoadElement(ctx, el.logger, el.client, el.events, nextID, emptyBackendID)
 
 		if err != nil {
 			el.logError(err).Msg("failed to load an inserted node")
@@ -904,6 +931,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		}
 
 		el.innerHTML = newInnerHTML
+		el.innerText.Reset()
 	})
 }
 
@@ -972,6 +1000,7 @@ func (el *HTMLElement) handleChildDeleted(message interface{}) {
 		}
 
 		el.innerHTML = newInnerHTML
+		el.innerText.Reset()
 	})
 }
 

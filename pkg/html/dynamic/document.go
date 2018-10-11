@@ -88,7 +88,7 @@ func LoadHTMLDocument(
 	broker, err := createEventBroker(client)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create event broker")
+		return nil, errors.Wrap(err, "failed to create event events")
 	}
 
 	logger := logging.FromContext(ctx)
@@ -211,7 +211,7 @@ func (doc *HTMLDocument) Close() error {
 			Timestamp().
 			Str("url", doc.url.String()).
 			Err(err).
-			Msg("failed to stop event broker")
+			Msg("failed to stop event events")
 	}
 
 	err = doc.events.Close()
@@ -221,7 +221,7 @@ func (doc *HTMLDocument) Close() error {
 			Timestamp().
 			Str("url", doc.url.String()).
 			Err(err).
-			Msg("failed to close event broker")
+			Msg("failed to close event events")
 	}
 
 	err = doc.element.Close()

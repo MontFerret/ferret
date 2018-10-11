@@ -10,7 +10,6 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 	"strings"
 )
@@ -108,28 +107,6 @@ func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
 	}
 
 	return children
-}
-
-func loadNodes(
-	ctx context.Context,
-	logger *zerolog.Logger,
-	client *cdp.Client,
-	broker *events.EventBroker,
-	nodes []*HTMLElementIdentity,
-) (*values.Array, error) {
-	arr := values.NewArray(len(nodes))
-
-	for _, id := range nodes {
-		child, err := LoadElement(ctx, logger, client, broker, id.nodeID, id.backendID)
-
-		if err != nil {
-			return arr, err
-		}
-
-		arr.Push(child)
-	}
-
-	return arr, nil
 }
 
 func contextWithTimeout() (context.Context, context.CancelFunc) {
