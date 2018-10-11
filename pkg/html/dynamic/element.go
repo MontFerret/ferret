@@ -24,6 +24,7 @@ import (
 
 const DefaultTimeout = time.Second * 30
 
+var emptyNodeID = dom.NodeID(0)
 var emptyBackendID = dom.BackendNodeID(0)
 var emptyObjectID = ""
 
@@ -358,6 +359,14 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 		return values.None
 	}
 
+	if found.NodeID == emptyNodeID {
+		el.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to find a node by selector. returned 0 NodeID")
+
+		return values.None
+	}
+
 	res, err := LoadElement(ctx, el.logger, el.client, el.events, found.NodeID, emptyBackendID)
 
 	if err != nil {
@@ -394,6 +403,14 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for _, id := range res.NodeIDs {
+		if id == emptyNodeID {
+			el.logError(err).
+				Str("selector", selector.String()).
+				Msg("failed to find a node by selector. returned 0 NodeID")
+
+			continue
+		}
+
 		childEl, err := LoadElement(ctx, el.logger, el.client, el.events, id, emptyBackendID)
 
 		if err != nil {
@@ -478,6 +495,14 @@ func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String
 		return values.EmptyString
 	}
 
+	if found.NodeID == emptyNodeID {
+		el.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to find a node by selector. returned 0 NodeID")
+
+		return values.EmptyString
+	}
+
 	childNodeID := found.NodeID
 
 	obj, err := el.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(childNodeID))
@@ -534,6 +559,14 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for idx, id := range res.NodeIDs {
+		if id == emptyNodeID {
+			el.logError(err).
+				Str("selector", selector.String()).
+				Msg("failed to find a node by selector. returned 0 NodeID")
+
+			continue
+		}
+
 		obj, err := el.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id))
 
 		if err != nil {
