@@ -46,11 +46,15 @@ func Repl(version string, opts Options) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP)
 
+	exit := func() {
+		cancel()
+		l.Close()
+	}
+
 	go func() {
 		for {
 			<-c
-			cancel()
-			l.Close()
+			exit()
 		}
 	}()
 
@@ -84,6 +88,12 @@ func Repl(version string, opts Options) {
 
 		if query == "" {
 			continue
+		}
+
+		if query == "exit" {
+			exit()
+			os.Exit(0)
+			return
 		}
 
 		program, err := ferret.Compile(query)
