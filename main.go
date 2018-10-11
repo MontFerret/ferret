@@ -77,6 +77,12 @@ var (
 		"set custom user agent. '*' triggers UA generation",
 	)
 
+	showTime = flag.Bool(
+		"time",
+		false,
+		"show how much time was taken to execute a query",
+	)
+
 	version = flag.Bool(
 		"version",
 		false,
@@ -151,6 +157,7 @@ func main() {
 		Params:    p,
 		Proxy:     *proxyAddress,
 		UserAgent: *userAgent,
+		ShowTime:  *showTime,
 	}
 
 	stat, _ := os.Stdin.Stat()
