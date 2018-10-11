@@ -539,7 +539,7 @@ func TestArray(t *testing.T) {
 			So(arr.Compare(clone), ShouldNotEqual, 0)
 		})
 
-		Convey("Cloned object must contain copies of the nested objects", func() {
+		Convey("Cloned array must contain copies of the nested objects", func() {
 			arr := values.NewArrayWith(
 				values.NewArrayWith(
 					values.NewInt(0),
@@ -557,7 +557,7 @@ func TestArray(t *testing.T) {
 
 			nestedInClone := clone.Get(values.NewInt(0)).(*values.Array)
 
-			So(nestedInArr.Length(), ShouldNotEqual, nestedInClone)
+			So(nestedInArr.Compare(nestedInClone), ShouldNotEqual, 0)
 		})
 	})
 }
