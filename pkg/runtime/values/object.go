@@ -202,3 +202,20 @@ func (t *Object) Remove(key String) {
 func (t *Object) SetIn(path []core.Value, value core.Value) error {
 	return SetIn(t, path, value)
 }
+
+func (t *Object) Clone() core.Cloneable {
+	cloned := NewObject()
+
+	var value core.Value
+	var keyString String
+	for _, key := range t.Keys() {
+		keyString = NewString(key)
+		value, _ = t.Get(keyString)
+		if core.IsCloneable(value) {
+			value = value.(core.Cloneable).Clone()
+		}
+		cloned.Set(keyString, value)
+	}
+
+	return cloned
+}
