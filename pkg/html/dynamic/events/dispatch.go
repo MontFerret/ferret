@@ -12,7 +12,7 @@ import (
 func DispatchEvent(
 	ctx context.Context,
 	client *cdp.Client,
-	objectId runtime.RemoteObjectID,
+	objectID runtime.RemoteObjectID,
 	eventName string,
 ) (values.Boolean, error) {
 	evt, err := client.Runtime.Evaluate(ctx, runtime.NewEvaluateArgs(eval.PrepareEval(fmt.Sprintf(`
@@ -39,7 +39,7 @@ func DispatchEvent(
 	_, err = eval.Method(
 		ctx,
 		client,
-		objectId,
+		objectID,
 		"dispatchEvent",
 		[]runtime.CallArgument{
 			{

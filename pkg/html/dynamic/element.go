@@ -743,14 +743,14 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 
 	loaded := values.NewArray(len(el.children))
 
-	for _, childId := range el.children {
+	for _, childID := range el.children {
 		child, err := LoadElement(
 			ctx,
 			el.logger,
 			el.client,
 			el.events,
-			childId.nodeID,
-			childId.backendID,
+			childID.nodeID,
+			childID.backendID,
 		)
 
 		if err != nil {
