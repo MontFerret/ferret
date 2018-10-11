@@ -204,6 +204,25 @@ func TestArray(t *testing.T) {
 
 				So(arr1.Compare(arr2), ShouldEqual, 0)
 			})
+
+			Convey("When custom complex type", func() {
+				arr1 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty(
+							"arr", values.NewArrayWith(values.NewObject()),
+						),
+					),
+				)
+				arr2 := values.NewArrayWith(
+					values.NewObjectWith(
+						values.NewObjectProperty(
+							"arr", values.NewArrayWith(values.NewObject()),
+						),
+					),
+				)
+
+				So(arr1.Compare(arr2), ShouldEqual, 0)
+			})
 		})
 	})
 
