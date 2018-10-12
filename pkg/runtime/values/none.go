@@ -37,6 +37,6 @@ func (t *none) Hash() uint64 {
 	return 0
 }
 
-func (t *none) Clone() core.Value {
+func (t *none) Copy() core.Value {
 	return None
 }

@@ -110,7 +110,7 @@ func (t *Array) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *Array) Clone() core.Value {
+func (t *Array) Copy() core.Value {
 	c := NewArray(len(t.value))
 
 	for _, el := range t.value {
@@ -205,4 +205,19 @@ func (t *Array) RemoveAt(idx Int) {
 	}
 
 	t.value = append(t.value[:i], t.value[i+1:]...)
+}
+
+func (t *Array) Clone() core.Cloneable {
+	cloned := NewArray(0)
+
+	var value core.Value
+	for idx := NewInt(0); idx < t.Length(); idx++ {
+		value = t.Get(idx)
+		if IsCloneable(value) {
+			value = value.(core.Cloneable).Clone()
+		}
+		cloned.Push(value)
+	}
+
+	return cloned
 }

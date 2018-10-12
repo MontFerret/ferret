@@ -2,10 +2,11 @@ package values
 
 import (
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"hash/fnv"
 	"io"
 	"io/ioutil"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Binary struct {
@@ -72,7 +73,7 @@ func (b *Binary) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (b *Binary) Clone() core.Value {
+func (b *Binary) Copy() core.Value {
 	c := make([]byte, len(b.values))
 
 	copy(c, b.values)

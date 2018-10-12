@@ -13,7 +13,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
@@ -80,25 +79,40 @@ func LoadHTMLDocument(
 		}
 	}
 
-	root, innerHTML, err := getRootElement(client)
+	node, err := getRootElement(ctx, client)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get root element")
 	}
 
 	broker, err := createEventBroker(client)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create event events")
+	}
+
+	logger := logging.FromContext(ctx)
+
+	rootElement, err := LoadElement(
+		ctx,
+		logger,
+		client,
+		broker,
+		node.Root.NodeID,
+		node.Root.BackendNodeID,
+	)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load root element")
 	}
 
 	return NewHTMLDocument(
-		logging.FromContext(ctx),
+		logger,
 		conn,
 		client,
 		broker,
-		root,
-		innerHTML,
+		values.NewString(url),
+		rootElement,
 	), nil
 }
 
@@ -107,20 +121,16 @@ func NewHTMLDocument(
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
-	root dom.Node,
-	innerHTML values.String,
+	url values.String,
+	rootElement *HTMLElement,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
 	doc.logger = logger
 	doc.conn = conn
 	doc.client = client
 	doc.events = broker
-	doc.element = NewHTMLElement(doc.logger, client, broker, root.NodeID, root, innerHTML)
-	doc.url = ""
-
-	if root.BaseURL != nil {
-		doc.url = values.NewString(*root.BaseURL)
-	}
+	doc.url = url
+	doc.element = rootElement
 
 	broker.AddEventListener("load", doc.handlePageLoad)
 	broker.AddEventListener("error", doc.handleError)
@@ -166,7 +176,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (doc *HTMLDocument) Clone() core.Value {
+func (doc *HTMLDocument) Copy() core.Value {
 	return values.None
 }
 
@@ -201,7 +211,7 @@ func (doc *HTMLDocument) Close() error {
 			Timestamp().
 			Str("url", doc.url.String()).
 			Err(err).
-			Msg("failed to stop event broker")
+			Msg("failed to stop event events")
 	}
 
 	err = doc.events.Close()
@@ -211,7 +221,7 @@ func (doc *HTMLDocument) Close() error {
 			Timestamp().
 			Str("url", doc.url.String()).
 			Err(err).
-			Msg("failed to close event broker")
+			Msg("failed to close event events")
 	}
 
 	err = doc.element.Close()
@@ -645,7 +655,10 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 	doc.Lock()
 	defer doc.Unlock()
 
-	updated, innerHTML, err := getRootElement(doc.client)
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	node, err := getRootElement(ctx, doc.client)
 
 	if err != nil {
 		doc.logger.Error().
@@ -656,22 +669,33 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 		return
 	}
 
+	updated, err := LoadElement(
+		ctx,
+		doc.logger,
+		doc.client,
+		doc.events,
+		node.Root.NodeID,
+		node.Root.BackendNodeID,
+	)
+
+	if err != nil {
+		doc.logger.Error().
+			Timestamp().
+			Err(err).
+			Msg("failed to load root node after page load")
+
+		return
+	}
+
 	// close the prev element
 	doc.element.Close()
 
 	// create a new root element wrapper
-	doc.element = NewHTMLElement(
-		doc.logger,
-		doc.client,
-		doc.events,
-		updated.NodeID,
-		updated,
-		innerHTML,
-	)
+	doc.element = updated
 	doc.url = ""
 
-	if updated.BaseURL != nil {
-		doc.url = values.NewString(*updated.BaseURL)
+	if node.Root.BaseURL != nil {
+		doc.url = values.NewString(*node.Root.BaseURL)
 	}
 }
 

@@ -2,11 +2,11 @@ package eval
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
@@ -49,29 +49,12 @@ func Eval(client *cdp.Client, exp string, ret bool, async bool) (core.Value, err
 func Property(
 	ctx context.Context,
 	client *cdp.Client,
-	id dom.NodeID,
+	objectID runtime.RemoteObjectID,
 	propName string,
 ) (core.Value, error) {
-	// get a ref to remote object representing the node
-	obj, err := client.DOM.ResolveNode(
-		ctx,
-		dom.NewResolveNodeArgs().
-			SetNodeID(id),
-	)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if obj.Object.ObjectID == nil {
-		return values.None, core.Error(core.ErrNotFound, fmt.Sprintf("element %d", id))
-	}
-
-	defer client.Runtime.ReleaseObject(ctx, runtime.NewReleaseObjectArgs(*obj.Object.ObjectID))
-
 	res, err := client.Runtime.GetProperties(
 		ctx,
-		runtime.NewGetPropertiesArgs(*obj.Object.ObjectID),
+		runtime.NewGetPropertiesArgs(objectID),
 	)
 
 	if err != nil {
@@ -107,6 +90,64 @@ func Property(
 	}
 
 	return values.None, nil
+}
+
+func Method(
+	ctx context.Context,
+	client *cdp.Client,
+	objectID runtime.RemoteObjectID,
+	methodName string,
+	args []runtime.CallArgument,
+) (*runtime.RemoteObject, error) {
+	found, err := client.Runtime.CallFunctionOn(
+		ctx,
+		runtime.NewCallFunctionOnArgs(methodName).
+			SetObjectID(objectID).
+			SetArguments(args),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if found.ExceptionDetails != nil {
+		return nil, found.ExceptionDetails
+	}
+
+	if found.Result.ObjectID == nil {
+		return nil, nil
+	}
+
+	return &found.Result, nil
+}
+
+func MethodQuerySelector(
+	ctx context.Context,
+	client *cdp.Client,
+	objectID runtime.RemoteObjectID,
+	selector string,
+) (runtime.RemoteObjectID, error) {
+	bytes, err := json.Marshal(selector)
+
+	if err != nil {
+		return "", err
+	}
+
+	obj, err := Method(ctx, client, objectID, "querySelector", []runtime.CallArgument{
+		{
+			Value: json.RawMessage(bytes),
+		},
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if obj.ObjectID == nil {
+		return "", nil
+	}
+
+	return *obj.ObjectID, nil
 }
 
 func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
