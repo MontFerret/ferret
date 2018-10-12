@@ -70,8 +70,3 @@ func ValidateType(value Value, required ...Type) error {
 
 	return nil
 }
-
-func IsCloneable(value Value) bool {
-	_, ok := cloneableTypes[value.Type()]
-	return ok
-}

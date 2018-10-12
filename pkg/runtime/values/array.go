@@ -213,7 +213,7 @@ func (t *Array) Clone() core.Cloneable {
 	var value core.Value
 	for idx := NewInt(0); idx < t.Length(); idx++ {
 		value = t.Get(idx)
-		if core.IsCloneable(value) {
+		if IsCloneable(value) {
 			value = value.(core.Cloneable).Clone()
 		}
 		cloned.Push(value)
