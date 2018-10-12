@@ -366,6 +366,13 @@ func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.
 	return doc.element.InnerTextBySelectorAll(selector)
 }
 
+func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.CountBySelector(selector)
+}
+
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
 		doc.client,

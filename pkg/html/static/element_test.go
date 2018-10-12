@@ -3,6 +3,7 @@ package static_test
 import (
 	"bytes"
 	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -297,7 +298,7 @@ func TestElement(t *testing.T) {
 		So(el.Length(), ShouldEqual, 4)
 	})
 
-	Convey(".Read", t, func() {
+	Convey(".Value", t, func() {
 		buff := bytes.NewBuffer([]byte(`
 			<html>
 				<head></head>
@@ -385,14 +386,34 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := static.NewHTMLElement(doc.Find("body .card-img-top:nth-child(1)"))
+		el, err := static.NewHTMLElement(doc.Selection)
 
 		So(err, ShouldBeNil)
 
-		v := el.NodeName()
+		found := el.QuerySelector(values.NewString("body .card-img-top:nth-child(1)"))
+
+		So(found, ShouldNotEqual, values.None)
+
+		v := found.(values.HTMLNode).NodeName()
 
 		So(err, ShouldBeNil)
 
 		So(v, ShouldEqual, "img")
+	})
+
+	Convey(".CountBySelector", t, func() {
+		buff := bytes.NewBuffer([]byte(doc))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := static.NewHTMLElement(doc.Selection)
+
+		So(err, ShouldBeNil)
+
+		v := el.CountBySelector(values.NewString("head meta"))
+
+		So(v, ShouldEqual, 4)
 	})
 }
