@@ -643,6 +643,49 @@ func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (valu
 	return values.True, nil
 }
 
+func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (values.Boolean, error) {
+	ctx := context.Background()
+	history, err := doc.client.Page.GetNavigationHistory(ctx)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	length := len(history.Entries)
+	lastIndex := length - 1
+
+	// nowhere to go forward
+	if history.CurrentIndex == lastIndex {
+		return values.False, nil
+	}
+
+	if skip < 1 {
+		skip = 1
+	}
+
+	to := int(skip) + history.CurrentIndex
+
+	if to > lastIndex {
+		// TODO: Return error?
+		return values.False, nil
+	}
+
+	next := history.Entries[to]
+	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(next.ID))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	err = doc.WaitForNavigation(timeout)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
+}
+
 func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
 	ctx := context.Background()
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
