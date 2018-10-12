@@ -2,9 +2,10 @@ package values
 
 import (
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"reflect"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
@@ -292,5 +293,16 @@ func ToBoolean(input core.Value) core.Value {
 		return NewBoolean(input.(Float) != 0)
 	default:
 		return True
+	}
+}
+
+func IsCloneable(value core.Value) Boolean {
+	switch value.Type() {
+	case core.ArrayType:
+		return NewBoolean(true)
+	case core.ObjectType:
+		return NewBoolean(true)
+	default:
+		return NewBoolean(false)
 	}
 }

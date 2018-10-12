@@ -276,7 +276,7 @@ func (el *HTMLElement) Value() core.Value {
 	return val
 }
 
-func (el *HTMLElement) Clone() core.Value {
+func (el *HTMLElement) Copy() core.Value {
 	return values.None
 }
 
@@ -300,7 +300,7 @@ func (el *HTMLElement) GetAttributes() core.Value {
 	}
 
 	// returning shallow copy
-	return val.Clone()
+	return val.Copy()
 }
 
 func (el *HTMLElement) GetAttribute(name values.String) core.Value {

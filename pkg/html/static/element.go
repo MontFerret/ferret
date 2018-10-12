@@ -2,11 +2,12 @@ package static
 
 import (
 	"encoding/json"
+	"hash/fnv"
+
 	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
-	"hash/fnv"
 )
 
 type HTMLElement struct {
@@ -69,7 +70,7 @@ func (el *HTMLElement) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (el *HTMLElement) Clone() core.Value {
+func (el *HTMLElement) Copy() core.Value {
 	c, _ := NewHTMLElement(el.selection.Clone())
 
 	return c

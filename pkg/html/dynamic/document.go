@@ -176,7 +176,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (doc *HTMLDocument) Clone() core.Value {
+func (doc *HTMLDocument) Copy() core.Value {
 	return values.None
 }
 

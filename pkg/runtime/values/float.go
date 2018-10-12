@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"hash/fnv"
 	"math"
 	"strconv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
 )
 
 type Float float64
@@ -127,6 +128,6 @@ func (t Float) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t Float) Clone() core.Value {
+func (t Float) Copy() core.Value {
 	return t
 }

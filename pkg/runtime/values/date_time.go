@@ -1,9 +1,10 @@
 package values
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"hash/fnv"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 const defaultTimeLayout = time.RFC3339
@@ -109,6 +110,6 @@ func (t DateTime) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t DateTime) Clone() core.Value {
+func (t DateTime) Copy() core.Value {
 	return NewDateTime(t.Time)
 }

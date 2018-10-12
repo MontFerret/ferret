@@ -300,4 +300,49 @@ func TestObject(t *testing.T) {
 			So(v.Compare(values.NewInt(1)), ShouldEqual, 0)
 		})
 	})
+
+	Convey(".Clone", t, func() {
+		Convey("Cloned object should be equal to source object", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("one", values.NewInt(1)),
+				values.NewObjectProperty("two", values.NewInt(2)),
+			)
+
+			clone := obj.Clone().(*values.Object)
+
+			So(obj.Compare(clone), ShouldEqual, 0)
+		})
+
+		Convey("Cloned object should be independent of the source object", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("one", values.NewInt(1)),
+				values.NewObjectProperty("two", values.NewInt(2)),
+			)
+
+			clone := obj.Clone().(*values.Object)
+
+			obj.Remove(values.NewString("one"))
+
+			So(obj.Compare(clone), ShouldNotEqual, 0)
+		})
+
+		Convey("Cloned object must contain copies of the nested objects", func() {
+			obj := values.NewObjectWith(
+				values.NewObjectProperty(
+					"arr", values.NewArrayWith(values.NewInt(1)),
+				),
+			)
+
+			clone := obj.Clone().(*values.Object)
+
+			nestedInObj, _ := obj.Get(values.NewString("arr"))
+			nestedInObjArr := nestedInObj.(*values.Array)
+			nestedInObjArr.Push(values.NewInt(2))
+
+			nestedInClone, _ := clone.Get(values.NewString("arr"))
+			nestedInCloneArr := nestedInClone.(*values.Array)
+
+			So(nestedInObjArr.Compare(nestedInCloneArr), ShouldNotEqual, 0)
+		})
+	})
 }
