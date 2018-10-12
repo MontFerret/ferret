@@ -2099,28 +2099,28 @@ func TestParam(t *testing.T) {
 	})
 }
 
-func TestHtml(t *testing.T) {
-	Convey("Should load a document", t, func() {
-		c := compiler.New()
-
-		out, err := c.MustCompile(`
-LET origin = "https://github.com/"
-LET doc = DOCUMENT(origin, true)
-
-NAVIGATE(doc, "https://github.com/features")
-
-LOG("NAVIGATE", doc.url)
-
-NAVIGATE_BACK(doc)
-
-LOG("NAVIGATE_BACK", doc.url)
-
-RETURN doc.url == origin
-
-			`).Run(context.Background())
-
-		So(err, ShouldBeNil)
-
-		So(string(out), ShouldEqual, `"int"`)
-	})
-}
+//func TestHtml(t *testing.T) {
+//	Convey("Should load a document", t, func() {
+//		c := compiler.New()
+//
+//		out, err := c.MustCompile(`
+//LET origin = "https://github.com/"
+//LET doc = DOCUMENT(origin, true)
+//
+//NAVIGATE(doc, "https://github.com/features")
+//
+//LOG("NAVIGATE", doc.url)
+//
+//NAVIGATE_BACK(doc)
+//
+//LOG("NAVIGATE_BACK", doc.url)
+//
+//RETURN doc.url == origin
+//
+//			`).Run(context.Background())
+//
+//		So(err, ShouldBeNil)
+//
+//		So(string(out), ShouldEqual, `"int"`)
+//	})
+//}
