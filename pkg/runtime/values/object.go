@@ -208,7 +208,7 @@ func (t *Object) Clone() core.Cloneable {
 
 	var value core.Value
 	var keyString String
-	for _, key := range t.Keys() {
+	for key := range t.value {
 		keyString = NewString(key)
 		value, _ = t.Get(keyString)
 		if core.IsCloneable(value) {
