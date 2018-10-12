@@ -9,7 +9,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/rpcc"
 	"golang.org/x/sync/errgroup"
 	"strings"
 )
@@ -130,96 +130,101 @@ func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
 }
 
 func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
+	var err error
+	var onLoad rpcc.Stream
+	var onReload rpcc.Stream
+	var onAttrModified rpcc.Stream
+	var onAttrRemoved rpcc.Stream
+	var onChildCountUpdated rpcc.Stream
+	var onChildNodeInserted rpcc.Stream
+	var onChildNodeRemoved rpcc.Stream
 	ctx := context.Background()
-	load, err := client.Page.LoadEventFired(ctx)
+
+	onLoad, err = client.Page.LoadEventFired(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	broker := events.NewEventBroker()
-	broker.AddEventStream("load", load, func() interface{} {
-		return new(page.LoadEventFiredReply)
-	})
+	onReload, err = client.DOM.DocumentUpdated(ctx)
+
+	if err != nil {
+		onLoad.Close()
+		return nil, err
+	}
+
+	onAttrModified, err = client.DOM.AttributeModified(ctx)
+
+	if err != nil {
+		onLoad.Close()
+		onReload.Close()
+		return nil, err
+	}
+
+	onAttrRemoved, err = client.DOM.AttributeRemoved(ctx)
+
+	if err != nil {
+		onLoad.Close()
+		onReload.Close()
+		onAttrModified.Close()
+		return nil, err
+	}
+
+	onChildCountUpdated, err = client.DOM.ChildNodeCountUpdated(ctx)
+
+	if err != nil {
+		onLoad.Close()
+		onReload.Close()
+		onAttrModified.Close()
+		onAttrRemoved.Close()
+		return nil, err
+	}
+
+	onChildNodeInserted, err = client.DOM.ChildNodeInserted(ctx)
+
+	if err != nil {
+		onLoad.Close()
+		onReload.Close()
+		onAttrModified.Close()
+		onAttrRemoved.Close()
+		onChildCountUpdated.Close()
+		return nil, err
+	}
+
+	onChildNodeRemoved, err = client.DOM.ChildNodeRemoved(ctx)
+
+	if err != nil {
+		onLoad.Close()
+		onReload.Close()
+		onAttrModified.Close()
+		onAttrRemoved.Close()
+		onChildCountUpdated.Close()
+		onChildNodeInserted.Close()
+		return nil, err
+	}
+
+	broker := events.NewEventBroker(
+		onLoad,
+		onReload,
+		onAttrModified,
+		onAttrRemoved,
+		onChildCountUpdated,
+		onChildNodeInserted,
+		onChildNodeRemoved,
+	)
 
 	err = broker.Start()
 
 	if err != nil {
-		broker.Close()
-
+		onLoad.Close()
+		onReload.Close()
+		onAttrModified.Close()
+		onAttrRemoved.Close()
+		onChildCountUpdated.Close()
+		onChildNodeInserted.Close()
+		onChildNodeRemoved.Close()
 		return nil, err
 	}
-
-	destroy, err := client.DOM.DocumentUpdated(ctx)
-
-	if err != nil {
-		broker.Close()
-		return nil, err
-	}
-
-	broker.AddEventStream("reload", destroy, func() interface{} {
-		return new(dom.DocumentUpdatedReply)
-	})
-
-	attrModified, err := client.DOM.AttributeModified(ctx)
-
-	if err != nil {
-		broker.Close()
-
-		return nil, err
-	}
-
-	broker.AddEventStream("attr:modified", attrModified, func() interface{} {
-		return new(dom.AttributeModifiedReply)
-	})
-
-	attrRemoved, err := client.DOM.AttributeRemoved(ctx)
-
-	if err != nil {
-		broker.Close()
-
-		return nil, err
-	}
-
-	broker.AddEventStream("attr:removed", attrRemoved, func() interface{} {
-		return new(dom.AttributeRemovedReply)
-	})
-
-	childrenCount, err := client.DOM.ChildNodeCountUpdated(ctx)
-
-	if err != nil {
-		broker.Close()
-
-		return nil, err
-	}
-
-	broker.AddEventStream("children:count", childrenCount, func() interface{} {
-		return new(dom.ChildNodeCountUpdatedReply)
-	})
-
-	childrenInsert, err := client.DOM.ChildNodeInserted(ctx)
-
-	if err != nil {
-		broker.Close()
-
-		return nil, err
-	}
-
-	broker.AddEventStream("children:inserted", childrenInsert, func() interface{} {
-		return new(dom.ChildNodeInsertedReply)
-	})
-
-	childDeleted, err := client.DOM.ChildNodeRemoved(ctx)
-
-	if err != nil {
-		broker.Close()
-
-		return nil, err
-	}
-
-	broker.AddEventStream("children:deleted", childDeleted, func() interface{} {
-		return new(dom.ChildNodeRemovedReply)
-	})
 
 	return broker, nil
 }
