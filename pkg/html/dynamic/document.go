@@ -611,26 +611,23 @@ func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (valu
 		return values.False, err
 	}
 
+	// we are in the beginning
+	if history.CurrentIndex == 0 {
+		return values.False, nil
+	}
+
 	if skip < 1 {
 		skip = 1
 	}
 
-	to := int(skip + 1)
-	length := len(history.Entries)
+	to := history.CurrentIndex - int(skip)
 
-	// no history
-	if length < to {
-		return values.False, nil
-	}
-
-	index := length - to
-
-	if index < 0 {
+	if to < 0 {
 		// TODO: Return error?
 		return values.False, nil
 	}
 
-	prev := history.Entries[length-to]
+	prev := history.Entries[to]
 	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(prev.ID))
 
 	if err != nil {
