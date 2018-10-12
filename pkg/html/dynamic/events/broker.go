@@ -174,32 +174,32 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		broker.emit(EventLoad, msg, err)
 	case <-broker.onReload.Ready():
 		msg := new(dom.DocumentUpdatedReply)
-		err := broker.onLoad.RecvMsg(msg)
+		err := broker.onReload.RecvMsg(msg)
 
 		broker.emit(EventReload, msg, err)
 	case <-broker.onAttrModified.Ready():
 		msg := new(dom.AttributeModifiedReply)
-		err := broker.onLoad.RecvMsg(msg)
+		err := broker.onAttrModified.RecvMsg(msg)
 
 		broker.emit(EventAttrModified, msg, err)
 	case <-broker.onAttrRemoved.Ready():
 		msg := new(dom.AttributeRemovedReply)
-		err := broker.onLoad.RecvMsg(msg)
+		err := broker.onAttrRemoved.RecvMsg(msg)
 
 		broker.emit(EventAttrRemoved, msg, err)
 	case <-broker.onChildrenCountUpdated.Ready():
 		msg := new(dom.ChildNodeCountUpdatedReply)
-		err := broker.onLoad.RecvMsg(msg)
+		err := broker.onChildrenCountUpdated.RecvMsg(msg)
 
 		broker.emit(EventChildrenCountUpdated, msg, err)
 	case <-broker.onChildNodeInserted.Ready():
 		msg := new(dom.ChildNodeInsertedReply)
-		err := broker.onLoad.RecvMsg(msg)
+		err := broker.onChildNodeInserted.RecvMsg(msg)
 
 		broker.emit(EventChildNodeInserted, msg, err)
 	case <-broker.onChildNodeRemoved.Ready():
 		msg := new(dom.ChildNodeRemovedReply)
-		err := broker.onLoad.RecvMsg(msg)
+		err := broker.onChildNodeRemoved.RecvMsg(msg)
 
 		broker.emit(EventChildNodeRemoved, msg, err)
 	}
@@ -220,7 +220,8 @@ func (broker *EventBroker) emit(event Event, message interface{}, err error) {
 		return
 	}
 
-	snapshot := listeners[:]
+	snapshot := make([]EventListener, 0, len(listeners))
+	copy(snapshot, listeners)
 
 	go func() {
 		for _, listener := range snapshot {
