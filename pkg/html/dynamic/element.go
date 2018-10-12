@@ -330,6 +330,7 @@ func (el *HTMLElement) GetChildNodes() core.Value {
 }
 
 func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
+	// TODO: Add lazy loading
 	val, err := el.loadedChildren.Read()
 
 	if err != nil {

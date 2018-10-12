@@ -220,7 +220,7 @@ func (broker *EventBroker) emit(event Event, message interface{}, err error) {
 		return
 	}
 
-	snapshot := make([]EventListener, 0, len(listeners))
+	snapshot := make([]EventListener, len(listeners))
 	copy(snapshot, listeners)
 
 	go func() {
