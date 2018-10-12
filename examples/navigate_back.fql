@@ -1,0 +1,7 @@
+LET origin = "https://github.com/"
+LET doc = DOCUMENT(origin, true)
+
+NAVIGATE(doc, "https://github.com/features")
+NAVIGATE_BACK(doc)
+
+RETURN doc.url == origin
