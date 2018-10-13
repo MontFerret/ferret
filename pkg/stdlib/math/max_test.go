@@ -9,9 +9,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestAverage(t *testing.T) {
+func TestMax(t *testing.T) {
 	Convey("Should return average value", t, func() {
-		out, err := math.Average(context.Background(), values.NewArrayWith(
+		out, err := math.Max(context.Background(), values.NewArrayWith(
 			values.NewInt(5),
 			values.NewInt(2),
 			values.NewInt(9),
@@ -19,18 +19,18 @@ func TestAverage(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 4.5)
+		So(out, ShouldEqual, 9)
 
-		out, err = math.Average(context.Background(), values.NewArrayWith(
+		out, err = math.Max(context.Background(), values.NewArrayWith(
 			values.NewInt(-3),
 			values.NewInt(-5),
 			values.NewInt(2),
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, -2)
+		So(out, ShouldEqual, 2)
 
-		out, err = math.Average(context.Background(), values.NewArrayWith(
+		out, err = math.Max(context.Background(), values.NewArrayWith(
 			values.None,
 			values.NewInt(-5),
 			values.False,

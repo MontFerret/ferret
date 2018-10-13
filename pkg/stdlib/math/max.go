@@ -7,11 +7,11 @@ import (
 )
 
 /*
- * Returns the average (arithmetic mean) of the values in array.
+ * Returns the greatest (arithmetic mean) of the values in array.
  * @param array (Array) - Array of numbers.
- * @returns (Float) - The average of the values in array.
+ * @returns (Float) - The greatest of the values in array.
  */
-func Average(_ context.Context, args ...core.Value) (core.Value, error) {
+func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 	var err error
 	err = core.ValidateArgs(args, 1, 1)
 
@@ -27,7 +27,7 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr := args[0].(*values.Array)
 
-	var sum float64
+	var max float64
 
 	arr.ForEach(func(value core.Value, idx int) bool {
 		err = core.ValidateType(value, core.FloatType, core.IntType)
@@ -36,7 +36,11 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 			return false
 		}
 
-		sum += toFloat(value)
+		fv := toFloat(value)
+
+		if fv > max {
+			max = fv
+		}
 
 		return true
 	})
@@ -45,7 +49,5 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	count := arr.Length()
-
-	return values.Float(sum / float64(count)), nil
+	return values.NewFloat(max), nil
 }
