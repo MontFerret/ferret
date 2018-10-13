@@ -2,17 +2,16 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Return the intersection of all arrays specified.
- * The result is an array of values that occur in all arguments.
- * @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
- * @returns (Array) - A single array with only the elements, which exist in all provided arrays.
- * The element order is random. Duplicates are removed.
- */
+// Intersection return the intersection of all arrays specified.
+// The result is an array of values that occur in all arguments.
+// @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
+// @returns (Array) - A single array with only the elements, which exist in all provided arrays.
+// The element order is random. Duplicates are removed.
 func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
 	return sections(args, len(args))
 }
