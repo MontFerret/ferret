@@ -19,6 +19,7 @@ func NewLib() map[string]core.Function {
 		"EXP":     Exp,
 		"EXP2":    Exp2,
 		"FLOOR":   Floor,
+		"LOG":     Log,
 	}
 }
 
