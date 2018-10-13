@@ -698,6 +698,17 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 	return values.True, nil
 }
 
+func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, error) {
+	ctx := context.Background()
+	
+	reply, err := doc.client.Page.PrintToPDF(ctx, params)
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.NewBinary(reply.Data), nil
+}
+
 func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
 	ctx := context.Background()
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
