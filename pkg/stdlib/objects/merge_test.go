@@ -36,6 +36,30 @@ func TestMerge(t *testing.T) {
 		So(err, ShouldBeError)
 		So(obj.Compare(values.None), ShouldEqual, 0)
 	})
+
+	Convey("Merged object should be independent of source objects", t, func() {
+		obj1 := values.NewObjectWith(
+			values.NewObjectProperty("prop1", values.NewInt(1)),
+			values.NewObjectProperty("prop2", values.NewString("str")),
+		)
+		obj2 := values.NewObjectWith(
+			values.NewObjectProperty("prop3", values.NewInt(3)),
+		)
+
+		result := values.NewObjectWith(
+			values.NewObjectProperty("prop1", values.NewInt(1)),
+			values.NewObjectProperty("prop2", values.NewString("str")),
+			values.NewObjectProperty("prop3", values.NewInt(3)),
+		)
+
+		merged, err := objects.Merge(context.Background(), obj1, obj2)
+
+		So(err, ShouldBeNil)
+
+		obj1.Remove(values.NewString("prop1"))
+
+		So(merged.Compare(result), ShouldEqual, 0)
+	})
 }
 
 func TestMergeObjects(t *testing.T) {
