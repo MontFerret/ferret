@@ -105,7 +105,7 @@ func TestZip(t *testing.T) {
 
 		actual, err := objects.Zip(context.Background(), keys, vals)
 
-		So(err, ShouldBeError)
+		So(err, ShouldBeNil)
 		So(actual.Compare(expected), ShouldEqual, 0)
 	})
 
@@ -127,7 +127,7 @@ func TestZip(t *testing.T) {
 
 		actual, err := objects.Zip(context.Background(), keys, vals)
 
-		So(err, ShouldBeError)
+		So(err, ShouldBeNil)
 		So(actual.Compare(expected), ShouldEqual, 0)
 	})
 }
