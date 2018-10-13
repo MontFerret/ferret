@@ -26,6 +26,7 @@ func NewLib() map[string]core.Function {
 		"MEDIAN":     Median,
 		"MIN":        Min,
 		"PERCENTILE": Percentile,
+		"PI":         Pi,
 	}
 }
 
