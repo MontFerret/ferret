@@ -25,11 +25,5 @@ func Acos(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	arg := args[0]
-
-	if arg.Type() == core.IntType {
-		return values.NewFloat(math.Acos(float64(arg.(values.Int)))), nil
-	}
-
-	return values.NewFloat(math.Acos(float64(arg.(values.Float)))), nil
+	return values.NewFloat(math.Acos(toFloat(args[0]))), nil
 }

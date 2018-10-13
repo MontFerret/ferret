@@ -8,11 +8,11 @@ import (
 )
 
 /*
- * Returns the arcsine, in radians, of a given number.
+ * Returns the cosine of a given number.
  * @param number (Int|Float) - Input number.
- * @returns (Float) - The arcsine, in radians, of a given number.
+ * @returns (Float) - The cosine of a given number.
  */
-func Asin(_ context.Context, args ...core.Value) (core.Value, error) {
+func Cos(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -25,5 +25,5 @@ func Asin(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.NewFloat(math.Asin(toFloat(args[0]))), nil
+	return values.NewFloat(math.Cos(toFloat(args[0]))), nil
 }

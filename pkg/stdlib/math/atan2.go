@@ -32,20 +32,8 @@ func Atan2(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	var arg1 float64
-	var arg2 float64
-
-	if args[0].Type() == core.IntType {
-		arg1 = float64(args[0].(values.Int))
-	} else {
-		arg1 = float64(args[0].(values.Float))
-	}
-
-	if args[1].Type() == core.IntType {
-		arg2 = float64(args[1].(values.Int))
-	} else {
-		arg2 = float64(args[1].(values.Float))
-	}
+	arg1 := toFloat(args[0])
+	arg2 := toFloat(args[1])
 
 	return values.NewFloat(math.Atan2(arg1, arg2)), nil
 }

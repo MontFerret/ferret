@@ -36,15 +36,7 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 			return false
 		}
 
-		var fv float64
-
-		if value.Type() == core.IntType {
-			fv = float64(value.(values.Int))
-		} else {
-			fv = float64(value.(values.Float))
-		}
-
-		sum += fv
+		sum += toFloat(value)
 
 		return true
 	})

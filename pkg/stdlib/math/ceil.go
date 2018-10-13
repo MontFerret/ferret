@@ -25,14 +25,5 @@ func Ceil(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	arg := args[0]
-	var fv float64
-
-	if arg.Type() == core.IntType {
-		fv = float64(arg.(values.Int))
-	} else {
-		fv = float64(arg.(values.Float))
-	}
-
-	return values.NewInt(int(math.Ceil(fv))), nil
+	return values.NewInt(int(math.Ceil(toFloat(args[0])))), nil
 }
