@@ -7,5 +7,6 @@ func NewLib() map[string]core.Function {
 		"ABS":  Abs,
 		"ACOS": Acos,
 		"ASIN": Asin,
+		"ATAN": Atan,
 	}
 }
