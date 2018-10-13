@@ -9,7 +9,7 @@ import (
 )
 
 /*
- * Return the nth percentile of the values in a given array.
+ * Returns the nth percentile of the values in a given array.
  * @param array (Array) - Array of numbers.
  * @param numb (Int) - A number which must be between 0 (excluded) and 100 (included).
  * @param method (String, optional) - "rank" (default) or "interpolation".

@@ -7,6 +7,10 @@ import (
 	"math"
 )
 
+/*
+ * Returns Pi value.
+ * @returns (Float) - Pi value.
+ */
 func Pi(_ context.Context, _ ...core.Value) (core.Value, error) {
 	return values.NewFloat(math.Pi), nil
 }

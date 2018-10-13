@@ -27,6 +27,7 @@ func NewLib() map[string]core.Function {
 		"MIN":        Min,
 		"PERCENTILE": Percentile,
 		"PI":         Pi,
+		"POW":        Pow,
 	}
 }
 
