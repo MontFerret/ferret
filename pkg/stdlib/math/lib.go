@@ -24,6 +24,7 @@ func NewLib() map[string]core.Function {
 		"LOG10":   Log10,
 		"MAX":     Max,
 		"MEDIAN":  Median,
+		"MIN":     Min,
 	}
 }
 

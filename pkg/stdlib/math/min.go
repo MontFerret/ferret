@@ -7,11 +7,11 @@ import (
 )
 
 /*
- * Returns the greatest (arithmetic mean) of the values in array.
+ * Returns the smallest (arithmetic mean) of the values in array.
  * @param array (Array) - Array of numbers.
- * @returns (Float) - The greatest of the values in array.
+ * @returns (Float) - The smallest of the values in array.
  */
-func Max(_ context.Context, args ...core.Value) (core.Value, error) {
+func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 	var err error
 	err = core.ValidateArgs(args, 1, 1)
 
@@ -31,7 +31,7 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	var max float64
+	var min float64
 
 	arr.ForEach(func(value core.Value, idx int) bool {
 		err = core.ValidateType(value, core.FloatType, core.IntType)
@@ -42,8 +42,8 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		fv := toFloat(value)
 
-		if fv > max {
-			max = fv
+		if min > fv || idx == 0 {
+			min = fv
 		}
 
 		return true
@@ -53,5 +53,5 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	return values.NewFloat(max), nil
+	return values.NewFloat(min), nil
 }

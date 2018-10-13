@@ -27,6 +27,10 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr := args[0].(*values.Array)
 
+	if arr.Length() == 0 {
+		return values.None, nil
+	}
+
 	var sum float64
 
 	arr.ForEach(func(value core.Value, idx int) bool {
