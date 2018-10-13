@@ -10,7 +10,7 @@ import (
 )
 
 func TestCos(t *testing.T) {
-	Convey("Should return the least integer value", t, func() {
+	Convey("Should return a value", t, func() {
 		out, err := math.Cos(context.Background(), values.NewFloat(1))
 
 		So(err, ShouldBeNil)

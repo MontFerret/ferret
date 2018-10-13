@@ -15,6 +15,7 @@ func NewLib() map[string]core.Function {
 		"AVERAGE": Average,
 		"CEIL":    Ceil,
 		"COS":     Cos,
+		"DEGREES": Degrees,
 	}
 }
 
