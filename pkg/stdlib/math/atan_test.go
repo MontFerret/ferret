@@ -10,7 +10,7 @@ import (
 )
 
 func TestAtan(t *testing.T) {
-	Convey("Should return arcsine value", t, func() {
+	Convey("Should return arctangent value", t, func() {
 		out, err := math.Atan(context.Background(), values.NewInt(-1))
 
 		So(err, ShouldBeNil)
