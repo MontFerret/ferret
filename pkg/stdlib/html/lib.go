@@ -17,6 +17,7 @@ func NewLib() map[string]core.Function {
 		"DOCUMENT_PARSE":   DocumentParse,
 		"ELEMENT":          Element,
 		"ELEMENTS":         Elements,
+		"ELEMENTS_COUNT":   ElementsCount,
 		"WAIT_ELEMENT":     WaitElement,
 		"WAIT_NAVIGATION":  WaitNavigation,
 		"WAIT_CLASS":       WaitClass,
