@@ -63,6 +63,10 @@ func ParseFloatP(input interface{}) Float {
 	return res
 }
 
+func IsNaN(input Float) Boolean {
+	return NewBoolean(math.IsNaN(float64(input)))
+}
+
 func (t Float) MarshalJSON() ([]byte, error) {
 	return json.Marshal(float64(t))
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestAcos(t *testing.T) {
-	Convey("Should return absolute value", t, func() {
+	Convey("Should return arccosine", t, func() {
 		out, err := math.Acos(context.Background(), values.NewInt(-1))
 
 		So(err, ShouldBeNil)
