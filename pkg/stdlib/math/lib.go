@@ -3,6 +3,14 @@ package math
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"math"
+)
+
+const (
+	RadToDeg  = 180 / math.Pi
+	DegToRad  = math.Pi / 180
+	RadToGrad = 200 / math.Pi
+	GradToDeg = math.Pi / 200
 )
 
 func NewLib() map[string]core.Function {
@@ -28,6 +36,7 @@ func NewLib() map[string]core.Function {
 		"PERCENTILE": Percentile,
 		"PI":         Pi,
 		"POW":        Pow,
+		"RADIANS":    Radians,
 	}
 }
 

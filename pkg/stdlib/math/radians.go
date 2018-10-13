@@ -7,11 +7,11 @@ import (
 )
 
 /*
- * Returns the angle converted from radians to degrees.
+ * Returns the angle converted from degrees to radians.
  * @param number (Float|Int) - The input number.
- * @returns (Float) - The angle in degrees.
+ * @returns (Float) - The angle in radians.
  */
-func Degrees(_ context.Context, args ...core.Value) (core.Value, error) {
+func Radians(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -26,5 +26,5 @@ func Degrees(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	r := toFloat(args[0])
 
-	return values.NewFloat(r * RadToDeg), nil
+	return values.NewFloat(r * DegToRad), nil
 }
