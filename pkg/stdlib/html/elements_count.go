@@ -11,7 +11,7 @@ import (
  * Returns an empty array if element not found.
  * @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
  * @param selector (String) - CSS selector.
- * @returns (Array) - A number of found HTML elements by a given CSS selector.
+ * @returns (Int) - A number of found HTML elements by a given CSS selector.
  */
 func ElementsCount(_ context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
