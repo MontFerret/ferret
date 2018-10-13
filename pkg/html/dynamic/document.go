@@ -574,6 +574,11 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 }
 
 func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
+	// do not wait
+	if timeout == 0 {
+		return nil
+	}
+
 	onEvent := make(chan struct{})
 	listener := func(_ interface{}) {
 		close(onEvent)
