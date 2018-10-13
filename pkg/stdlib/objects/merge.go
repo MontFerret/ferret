@@ -25,7 +25,7 @@ func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 		objs = args[0].(*values.Array)
 	}
 
-	err = validateTopLevelObjects(objs)
+	err = validateArrayOf(core.ObjectType, objs)
 
 	if err != nil {
 		return values.None, err
@@ -34,10 +34,34 @@ func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 	return mergeArray(objs), nil
 }
 
-func validateTopLevelObjects(arr *values.Array) error {
-	return nil
+func mergeArray(arr *values.Array) *values.Object {
+	merged := values.NewObject()
+
+	var val core.Value
+	var k values.String
+	var obj *values.Object
+
+	for idx := values.NewInt(0); idx < arr.Length(); idx++ {
+		obj = arr.Get(idx).(*values.Object)
+		for _, key := range obj.Keys() {
+			k = values.NewString(key)
+			val, _ = obj.Get(k)
+			if values.IsCloneable(val) {
+				val = val.(core.Cloneable).Clone()
+			}
+			merged.Set(k, val)
+		}
+	}
+
+	return merged
 }
 
-func mergeArray(arr *values.Array) *values.Object {
-	return values.NewObject()
+func validateArrayOf(typ core.Type, arr *values.Array) (err error) {
+	for idx := values.NewInt(0); idx < arr.Length(); idx++ {
+		if err != nil {
+			break
+		}
+		err = core.ValidateType(arr.Get(idx), typ)
+	}
+	return
 }
