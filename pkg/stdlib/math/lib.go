@@ -10,5 +10,6 @@ func NewLib() map[string]core.Function {
 		"ATAN":    Atan,
 		"ATAN2":   Atan2,
 		"AVERAGE": Average,
+		"CEIL":    Ceil,
 	}
 }
