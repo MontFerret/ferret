@@ -67,6 +67,10 @@ func IsNaN(input Float) Boolean {
 	return NewBoolean(math.IsNaN(float64(input)))
 }
 
+func IsInf(input Float, sign Int) Boolean {
+	return NewBoolean(math.IsInf(float64(input), int(sign)))
+}
+
 func (t Float) MarshalJSON() ([]byte, error) {
 	return json.Marshal(float64(t))
 }

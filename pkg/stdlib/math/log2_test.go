@@ -9,19 +9,19 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestLog(t *testing.T) {
+func TestLog2(t *testing.T) {
 	Convey("Should return a value", t, func() {
-		out, err := math.Log(context.Background(), values.NewFloat(2.718281828459045))
+		out, err := math.Log2(context.Background(), values.NewFloat(1024))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1)
+		So(out, ShouldEqual, 10)
 
-		out, err = math.Log(context.Background(), values.NewFloat(10))
+		out, err = math.Log2(context.Background(), values.NewFloat(8))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2.302585092994046)
+		So(out, ShouldEqual, 3)
 
-		out, err = math.Log(context.Background(), values.NewFloat(0))
+		out, err = math.Log2(context.Background(), values.NewFloat(0))
 
 		So(err, ShouldBeNil)
 		So(values.IsInf(out.(values.Float), -1).Unwrap(), ShouldBeTrue)
