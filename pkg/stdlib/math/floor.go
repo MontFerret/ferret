@@ -8,11 +8,11 @@ import (
 )
 
 /*
- * Returns the least integer value greater than or equal to a given value.
+ * Returns the greatest integer value less than or equal to a given value.
  * @param number (Int|Float) - Input number.
- * @returns (Int) - The least integer value greater than or equal to a given value.
+ * @returns (Int) - The greatest integer value less than or equal to a given value.
  */
-func Ceil(_ context.Context, args ...core.Value) (core.Value, error) {
+func Floor(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -25,5 +25,5 @@ func Ceil(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.NewInt(int(math.Ceil(toFloat(args[0])))), nil
+	return values.NewInt(int(math.Floor(toFloat(args[0])))), nil
 }
