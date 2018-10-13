@@ -35,23 +35,19 @@ func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 func mergeArray(arr *values.Array) *values.Object {
-	merged := values.NewObject()
+	merged, obj := values.NewObject(), values.NewObject()
 
-	var val core.Value
-	var k values.String
-	var obj *values.Object
-
-	for idx := values.NewInt(0); idx < arr.Length(); idx++ {
-		obj = arr.Get(idx).(*values.Object)
-		for _, key := range obj.Keys() {
-			k = values.NewString(key)
-			val, _ = obj.Get(k)
-			if values.IsCloneable(val) {
-				val = val.(core.Cloneable).Clone()
+	arr.ForEach(func(arrValue core.Value, arrIdx int) bool {
+		obj = arrValue.(*values.Object)
+		obj.ForEach(func(objValue core.Value, objKey string) bool {
+			if values.IsCloneable(objValue) {
+				objValue = objValue.(core.Cloneable).Clone()
 			}
-			merged.Set(k, val)
-		}
-	}
+			merged.Set(values.NewString(objKey), objValue)
+			return true
+		})
+		return true
+	})
 
 	return merged
 }
