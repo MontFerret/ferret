@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 )
 
 type (
@@ -19,13 +20,15 @@ type (
 	}
 
 	Result struct {
-		name string
-		err  error
+		name     string
+		duration time.Duration
+		err      error
 	}
 
-	Stats struct {
-		passed int
-		failed int
+	Summary struct {
+		passed   int
+		failed   int
+		duration time.Duration
 	}
 
 	Runner struct {
@@ -42,27 +45,32 @@ func New(logger zerolog.Logger, settings Settings) *Runner {
 }
 
 func (r *Runner) Run() error {
-	static, err := r.runQueries(filepath.Join(r.settings.Dir, "static"))
+	results, err := r.runQueries(r.settings.Dir)
 
 	if err != nil {
 		return err
 	}
 
-	ss := r.report(static)
+	sum := r.report(results)
 
-	dynamic, err := r.runQueries(filepath.Join(r.settings.Dir, "dynamic"))
+	var event *zerolog.Event
 
-	if err != nil {
-		r.stat(ss)
-		return err
+	if sum.failed == 0 {
+		event = r.logger.Info()
+	} else {
+		event = r.logger.Error()
 	}
 
-	ds := r.report(dynamic)
+	event.
+		Timestamp().
+		Int("passed", sum.passed).
+		Int("failed", sum.failed).
+		Dur("time", sum.duration).
+		Msg("Completed")
 
-	r.stat(Stats{
-		passed: ss.passed + ds.passed,
-		failed: ss.failed + ds.failed,
-	})
+	if sum.failed > 0 {
+		return errors.New("failed")
+	}
 
 	return nil
 }
@@ -106,25 +114,31 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 }
 
 func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
+	start := time.Now()
+
 	p, err := c.Compile(script)
 
 	if err != nil {
 		return Result{
-			name: name,
-			err:  errors.Wrap(err, "failed to compile query"),
+			name:     name,
+			duration: time.Duration(0) * time.Millisecond,
+			err:      errors.Wrap(err, "failed to compile query"),
 		}
 	}
 
 	out, err := p.Run(
 		context.Background(),
 		runtime.WithBrowser(r.settings.CDPAddress),
-		runtime.WithParam("url", r.settings.ServerAddress),
+		runtime.WithParam("server", r.settings.ServerAddress),
 	)
+
+	duration := time.Now().Sub(start)
 
 	if err != nil {
 		return Result{
-			name: name,
-			err:  errors.Wrap(err, "failed to execute query"),
+			name:     name,
+			duration: duration,
+			err:      errors.Wrap(err, "failed to execute query"),
 		}
 	}
 
@@ -134,18 +148,22 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 
 	if result == "" {
 		return Result{
-			name: name,
+			name:     name,
+			duration: duration,
 		}
 	}
 
 	return Result{
-		name: name,
-		err:  errors.New(result),
+		name:     name,
+		duration: duration,
+		err:      errors.New(result),
 	}
 }
 
-func (r *Runner) report(results []Result) Stats {
-	s := Stats{}
+func (r *Runner) report(results []Result) Summary {
+	var failed int
+	var passed int
+	var sumDuration time.Duration
 
 	for _, res := range results {
 		if res.err != nil {
@@ -153,26 +171,26 @@ func (r *Runner) report(results []Result) Stats {
 				Timestamp().
 				Err(res.err).
 				Str("file", res.name).
+				Dur("time", res.duration).
 				Msg("Test failed")
 
-			s.failed++
+			failed++
 		} else {
 			r.logger.Info().
 				Timestamp().
 				Str("file", res.name).
+				Dur("time", res.duration).
 				Msg("Test passed")
 
-			s.passed++
+			passed++
 		}
+
+		sumDuration += res.duration
 	}
 
-	return s
-}
-
-func (r *Runner) stat(stats Stats) {
-	r.logger.Info().
-		Timestamp().
-		Int("passed", stats.passed).
-		Int("failed", stats.failed).
-		Msg("Done")
+	return Summary{
+		passed:   passed,
+		failed:   failed,
+		duration: sumDuration,
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo"
-	"path/filepath"
 )
 
 type (
@@ -23,7 +22,7 @@ func New(settings Settings) *Server {
 	e.Debug = false
 	e.HideBanner = true
 
-	e.Static("/static", filepath.Join(settings.Dir, "static"))
+	e.Static("/", settings.Dir)
 
 	return &Server{e, settings}
 }

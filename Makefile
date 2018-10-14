@@ -24,7 +24,7 @@ test:
 	go test ${DIR_PKG}/...
 
 e2e:
-	go run ${DIR_E2E}/main.go --dir ${DIR_E2E}/tests
+	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
 
 generate:
 	go generate ${DIR_PKG}/...

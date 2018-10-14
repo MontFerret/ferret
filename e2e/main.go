@@ -50,7 +50,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start server
 	go func() {
 		if err := s.Start(); err != nil {
 			logger.Info().Timestamp().Msg("shutting down the server")
@@ -84,6 +83,6 @@ func main() {
 	}
 
 	if err != nil {
-		logger.Fatal().Timestamp().Err(err).Msg("failed to run tests")
+		os.Exit(1)
 	}
 }
