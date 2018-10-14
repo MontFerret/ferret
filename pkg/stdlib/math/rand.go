@@ -11,6 +11,12 @@ import (
  * Return a pseudo-random number between 0 and 1.
  * @returns (Float) - A number greater than 0 and less than 1.
  */
-func Rand(_ context.Context, _ ...core.Value) (core.Value, error) {
+func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 0, 0)
+
+	if err != nil {
+		return values.None, err
+	}
+
 	return values.NewFloat(rand.Float64()), nil
 }

@@ -11,6 +11,12 @@ import (
  * Returns Pi value.
  * @returns (Float) - Pi value.
  */
-func Pi(_ context.Context, _ ...core.Value) (core.Value, error) {
+func Pi(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 0, 0)
+
+	if err != nil {
+		return values.None, err
+	}
+
 	return values.NewFloat(math.Pi), nil
 }
