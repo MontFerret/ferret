@@ -700,7 +700,7 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 
 func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, error) {
 	ctx := context.Background()
-	
+
 	reply, err := doc.client.Page.PrintToPDF(ctx, params)
 	if err != nil {
 		return values.None, err
