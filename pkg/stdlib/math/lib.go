@@ -42,6 +42,7 @@ func NewLib() map[string]core.Function {
 		"ROUND":      Round,
 		"SIN":        Sin,
 		"SQRT":       Sqrt,
+		"TAN":        Tan,
 	}
 }
 
