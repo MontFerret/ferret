@@ -6,7 +6,6 @@ os:
 - linux
 
 go:
-- "1.9"
 - "1.10"
 - "1.11"
 - master
@@ -15,6 +14,7 @@ addons:
   apt:
     packages:
     - oracle-java8-set-default
+  chrome: stable
 
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -27,5 +27,31 @@ before_install:
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
 
-script:
-- revive -config revive.toml -formatter friendly -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
+install:
+- make install
+
+stages:
+- lint
+- compile
+- test
+- e2e
+
+jobs:
+  include:
+  - stage: lint
+    script:
+    - make vet
+    - make lint
+  - stage: compile
+    script:
+    - make generate
+    - make compile
+  - stage: test
+    script: make test
+  - stage: e2e
+    script:
+    - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
+    - make e2e
+
+after_script:
+- killall google-chrome-stable

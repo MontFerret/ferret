@@ -1,0 +1,10 @@
+// LET url = @server + '/bootstrap/overview.html'
+// LET doc = DOCUMENT(url, true)
+// LET selector = '.section-nav'
+
+// LET expected = '<li class="toc-entry toc-h2"><a href="#containers">Containers</a></li><li class="toc-entry toc-h2"><a href="#responsive-breakpoints">Responsive breakpoints</a></li><li class="toc-entry toc-h2"><a href="#z-index">Z-index</a></li>'
+// LET actual = INNER_HTML(doc, selector)
+
+// RETURN EXPECT(REGEXP_REPLACE(expected, '\s', ''), REGEXP_REPLACE(TRIM(actual), '(\n|\s)', ''))
+
+RETURN ""
