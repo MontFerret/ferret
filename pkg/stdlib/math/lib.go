@@ -39,6 +39,7 @@ func NewLib() map[string]core.Function {
 		"RADIANS":    Radians,
 		"RAND":       Rand,
 		"RANGE":      Range,
+		"ROUND":      Round,
 	}
 }
 
