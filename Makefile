@@ -1,4 +1,4 @@
-.PHONY: build install test doc fmt lint vet
+.PHONY: build compile install test e2e doc fmt lint vet release
 
 export GOPATH
 
@@ -6,6 +6,7 @@ VERSION ?= $(shell git describe --tags --always --dirty)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_CLI = ./cli
+DIR_E2E = ./e2e
 
 default: build
 
@@ -21,6 +22,9 @@ install:
 
 test:
 	go test ${DIR_PKG}/...
+
+e2e:
+	go run ${DIR_E2E}/main.go --dir ${DIR_E2E}/tests
 
 generate:
 	go generate ${DIR_PKG}/...
