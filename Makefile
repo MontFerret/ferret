@@ -13,7 +13,7 @@ build: install vet generate test compile
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
-	-ldflags "-X main.Version=${VERSION}" \
+	-ldflags "-X main.version=${VERSION}" \
 	./main.go
 
 install:
