@@ -84,7 +84,6 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		// Find the average of the index and following values
 		percentile, _ = mean(values.NewArrayWith(sorted.Get(i-1), sorted.Get(i)))
-
 	} else {
 		return values.NewFloat(math.NaN()), errors.New("input is outside of range")
 	}
