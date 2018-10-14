@@ -3,15 +3,14 @@ package strings
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a FQL value described by the JSON-encoded input string.
- * @params text (String) - The string to parse as JSON.
- * @returns FQL value (Read)
- */
+// JSONParse returns a FQL value described by the JSON-encoded input string.
+// @params text (String) - The string to parse as JSON.
+// @returns FQL value (Read)
 func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -30,11 +29,9 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.Parse(val), nil
 }
 
-/*
- * Returns a JSON string representation of the input value.
- * @params value (Read) - The input value to serialize.
- * @returns json (String)
- */
+// JSONStringify returns a JSON string representation of the input value.
+// @params value (Read) - The input value to serialize.
+// @returns json (String)
 func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

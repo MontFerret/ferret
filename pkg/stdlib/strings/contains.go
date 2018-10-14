@@ -2,18 +2,17 @@ package strings
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a value indicating whether a specified substring occurs within a string.
- * @param src (String) - The source string.
- * @param search (String) - The string to seek.
- * @param returnIndex (Boolean) - Values which indicates whether to return the character position of the match is returned instead of a boolean.
- * The default is false.
- * @returns (Boolean|Int)
- */
+// Contains returns a value indicating whether a specified substring occurs within a string.
+// @param src (String) - The source string.
+// @param search (String) - The string to seek.
+// @param returnIndex (Boolean) - Values which indicates whether to return the character position of the match is returned instead of a boolean.
+// The default is false.
+// @returns (Boolean|Int)
 func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

@@ -2,16 +2,15 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns an array of inner text of matched elements.
- * @param doc (HTMLDocument|HTMLElement) - Parent document or element.
- * @param selector (String) - String of CSS selector.
- * @returns (String) - An array of inner text if any element found, otherwise empty array.
- */
+// InnerTextAll returns an array of inner text of matched elements.
+// @param doc (HTMLDocument|HTMLElement) - Parent document or element.
+// @param selector (String) - String of CSS selector.
+// @returns (String) - An array of inner text if any element found, otherwise empty array.
 func InnerTextAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

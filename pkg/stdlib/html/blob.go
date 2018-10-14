@@ -10,18 +10,16 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-/*
- * Take a screenshot of the current page.
- * @param source (Document) - Document.
- * @param params (Object) - Optional, An object containing the following properties :
- * 		x (Float|Int) - Optional, X position of the viewport.
- * 		x (Float|Int) - Optional,Y position of the viewport.
- * 		width (Float|Int) - Optional, Width of the viewport.
- * 		height (Float|Int) - Optional, Height of the viewport.
- * 		format (String) - Optional, Either "jpeg" or "png".
- * 		quality (Int) - Optional, Quality, in [0, 100], only for jpeg format.
- * @returns data (Binary) - Returns a base64 encoded string in binary format.
- */
+// Screenshot take a screenshot of the current page.
+// @param source (Document) - Document.
+// @param params (Object) - Optional, An object containing the following properties :
+// 		x (Float|Int) - Optional, X position of the viewport.
+// 		x (Float|Int) - Optional,Y position of the viewport.
+// 		width (Float|Int) - Optional, Width of the viewport.
+// 		height (Float|Int) - Optional, Height of the viewport.
+// 		format (String) - Optional, Either "jpeg" or "png".
+// 		quality (Int) - Optional, Quality, in [0, 100], only for jpeg format.
+// @returns data (Binary) - Returns a base64 encoded string in binary format.
 func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {

@@ -2,17 +2,16 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Waits for document to navigate to a new url.
- * Stops the execution until the navigation ends or operation times out.
- * @param doc (HTMLDocument) - Dynamic HTMLDocument.
- * @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
- */
+// WaitNavigation waits for document to navigate to a new url.
+// Stops the execution until the navigation ends or operation times out.
+// @param doc (HTMLDocument) - Dynamic HTMLDocument.
+// @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
 func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

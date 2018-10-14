@@ -2,15 +2,14 @@ package types
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Checks whether value is an object value.
- * @param value (Value) - Input value of arbitrary type.
- * @returns (Boolean) - Returns true if value is object, otherwise false.
- */
+// IsObject checks whether value is an object value.
+// @param value (Value) - Input value of arbitrary type.
+// @returns (Boolean) - Returns true if value is object, otherwise false.
 func IsObject(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

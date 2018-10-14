@@ -2,15 +2,14 @@ package strings
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns the reverse of the string value.
- * @param text (String) - The string to revers
- * @returns (String) - Returns a reversed version of the string.
- */
+// Reverse returns the reverse of the string value.
+// @param text (String) - The string to revers
+// @returns (String) - Returns a reversed version of the string.
 func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
