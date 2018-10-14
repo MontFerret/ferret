@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the median of the values in array.
- * @param array (Array) - Array of numbers.
- * @returns (Float) - The median of the values in array.
- */
+// Median returns the median of the values in array.
+// @param array (Array) - Array of numbers.
+// @returns (Float) - The median of the values in array.
 func Median(_ context.Context, args ...core.Value) (core.Value, error) {
 	var err error
 	err = core.ValidateArgs(args, 1, 1)

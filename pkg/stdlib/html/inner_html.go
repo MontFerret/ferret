@@ -2,16 +2,15 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns inner HTML string of a matched element
- * @param doc (Document|Element) - Parent document or element.
- * @param selector (String) - String of CSS selector.
- * @returns (String) - Inner HTML string if an element found, otherwise empty string.
- */
+// InnerHTML Returns inner HTML string of a matched element
+// @param doc (Document|Element) - Parent document or element.
+// @param selector (String) - String of CSS selector.
+// @returns (String) - Inner HTML string if an element found, otherwise empty string.
 func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

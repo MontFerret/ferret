@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the arcsine, in radians, of a given number.
- * @param number (Int|Float) - Input number.
- * @returns (Float) - The arcsine, in radians, of a given number.
- */
+// Asin returns the arcsine, in radians, of a given number.
+// @param number (Int|Float) - Input number.
+// @returns (Float) - The arcsine, in radians, of a given number.
 func Asin(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

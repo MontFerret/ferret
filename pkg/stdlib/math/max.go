@@ -2,15 +2,14 @@ package math
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns the greatest (arithmetic mean) of the values in array.
- * @param array (Array) - Array of numbers.
- * @returns (Float) - The greatest of the values in array.
- */
+// Max returns the greatest (arithmetic mean) of the values in array.
+// @param array (Array) - Array of numbers.
+// @returns (Float) - The greatest of the values in array.
 func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 	var err error
 	err = core.ValidateArgs(args, 1, 1)

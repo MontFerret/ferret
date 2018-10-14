@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the population standard deviation of the values in a given array.
- * @params (Array) - Array of numbers.
- * @returns (Float) - The population standard deviation.
- */
+// StandardDeviationPopulation returns the population standard deviation of the values in a given array.
+// @params (Array) - Array of numbers.
+// @returns (Float) - The population standard deviation.
 func StandardDeviationPopulation(_ context.Context, args ...core.Value) (core.Value, error) {
 	var err error
 	err = core.ValidateArgs(args, 1, 1)

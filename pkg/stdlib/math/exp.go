@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns Euler's constant (2.71828...) raised to the power of value.
- * @param number (Int|Float) - Input number.
- * @returns (Float) - Euler's constant raised to the power of value.
- */
+// Exp returns Euler's constant (2.71828...) raised to the power of value.
+// @param number (Int|Float) - Input number.
+// @returns (Float) - Euler's constant raised to the power of value.
 func Exp(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

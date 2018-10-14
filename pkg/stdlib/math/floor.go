@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the greatest integer value less than or equal to a given value.
- * @param number (Int|Float) - Input number.
- * @returns (Int) - The greatest integer value less than or equal to a given value.
- */
+// Floor returns the greatest integer value less than or equal to a given value.
+// @param number (Int|Float) - Input number.
+// @returns (Int) - The greatest integer value less than or equal to a given value.
 func Floor(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

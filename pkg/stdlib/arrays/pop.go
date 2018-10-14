@@ -2,15 +2,14 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a new array without last element.
- * @param array (Array) - Target array.
- * @returns (Array) - Copy of an array without last element.
- */
+// Pop returns a new array without last element.
+// @param array (Array) - Target array.
+// @returns (Array) - Copy of an array without last element.
 func Pop(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -2,19 +2,18 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Navigates a document to a new resource.
- * The operation blocks the execution until the page gets loaded.
- * Which means there is no need in WAIT_NAVIGATION function.
- * @param doc (Document) - Target document.
- * @param url (String) - Target url to navigate.
- * @param timeout (Int, optional) - Optional timeout. Default is 5000.
- */
+// Navigate navigates a document to a new resource.
+// The operation blocks the execution until the page gets loaded.
+// Which means there is no need in WAIT_NAVIGATION function.
+// @param doc (Document) - Target document.
+// @param url (String) - Target url to navigate.
+// @param timeout (Int, optional) - Optional timeout. Default is 5000.
 func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

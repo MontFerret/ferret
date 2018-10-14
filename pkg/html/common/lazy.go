@@ -1,9 +1,10 @@
 package common
 
 import (
+	"sync"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"sync"
 )
 
 type (
@@ -27,10 +28,8 @@ func NewLazyValue(factory LazyFactory) *LazyValue {
 	return lz
 }
 
-/*
- * Indicates whether the value is ready.
- * @returns (Boolean) - Boolean value indicating whether the value is ready.
- */
+// Ready indicates whether the value is ready.
+// @returns (Boolean) - Boolean value indicating whether the value is ready.
 func (lv *LazyValue) Ready() bool {
 	lv.Lock()
 	defer lv.Unlock()
@@ -38,11 +37,9 @@ func (lv *LazyValue) Ready() bool {
 	return lv.ready
 }
 
-/*
- * Returns an underlying value.
- * Not thread safe. Should not mutated.
- * @returns (Value) - Underlying value if successfully loaded, otherwise error
- */
+// Read returns an underlying value.
+// Not thread safe. Should not mutated.
+// @returns (Value) - Underlying value if successfully loaded, otherwise error
 func (lv *LazyValue) Read() (core.Value, error) {
 	lv.Lock()
 	defer lv.Unlock()
@@ -54,11 +51,9 @@ func (lv *LazyValue) Read() (core.Value, error) {
 	return lv.value, lv.err
 }
 
-/*
- * Safely mutates an underlying value.
- * Loads a value if it's not ready.
- * Thread safe.
- */
+// Write safely mutates an underlying value.
+// Loads a value if it's not ready.
+// Thread safe.
 func (lv *LazyValue) Write(writer func(v core.Value, err error)) {
 	lv.Lock()
 	defer lv.Unlock()
@@ -70,10 +65,8 @@ func (lv *LazyValue) Write(writer func(v core.Value, err error)) {
 	writer(lv.value, lv.err)
 }
 
-/*
- * Resets the storage.
- * Next call of Read will trigger the factory function again.
- */
+// Reset resets the storage.
+// Next call of Read will trigger the factory function again.
 func (lv *LazyValue) Reset() {
 	lv.Lock()
 	defer lv.Unlock()

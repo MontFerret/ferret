@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns an array of numbers in the specified range, optionally with increments other than 1.
- * @param start (Int|Float) - The value to start the range at (inclusive).
- * @param end (Int|Float) - The value to end the range with (inclusive).
- * @param step (Int|Float, optional) - How much to increment in every step, the default is 1.0.
- */
+// Range returns an array of numbers in the specified range, optionally with increments other than 1.
+// @param start (Int|Float) - The value to start the range at (inclusive).
+// @param end (Int|Float) - The value to end the range with (inclusive).
+// @param step (Int|Float, optional) - How much to increment in every step, the default is 1.0.
 func Range(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

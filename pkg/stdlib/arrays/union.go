@@ -2,15 +2,14 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns the union of all passed arrays.
- * @param arrays (Array, repeated) - List of arrays to combine.
- * @returns (Array) - All array elements combined in a single array, in any order.
- */
+// Union returns the union of all passed arrays.
+// @param arrays (Array, repeated) - List of arrays to combine.
+// @returns (Array) - All array elements combined in a single array, in any order.
 func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

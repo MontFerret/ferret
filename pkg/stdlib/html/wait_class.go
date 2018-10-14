@@ -2,22 +2,21 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Waits for a class to appear on a given element.
- * Stops the execution until the navigation ends or operation times out.
- * @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
- * @param selectorOrClass (String) - If document is passed, this param must represent an element selector.
- * Otherwise target class.
- * @param classOrTimeout (String|Int, optional) - If document is passed, this param must represent target class name.
- * Otherwise timeout.
- * @param timeout (Int, optional) - If document is passed, this param must represent timeout.
- * Otherwise not passed.
- */
+// WaitClass waits for a class to appear on a given element.
+// Stops the execution until the navigation ends or operation times out.
+// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
+// @param selectorOrClass (String) - If document is passed, this param must represent an element selector.
+// Otherwise target class.
+// @param classOrTimeout (String|Int, optional) - If document is passed, this param must represent target class name.
+// Otherwise timeout.
+// @param timeout (Int, optional) - If document is passed, this param must represent timeout.
+// Otherwise not passed.
 func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

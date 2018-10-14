@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the nearest integer, rounding half away from zero.
- * @param number (Int|Float) - Input number.
- * @returns (Int) - The nearest integer, rounding half away from zero.
- */
+// Round returns the nearest integer, rounding half away from zero.
+// @param number (Int|Float) - Input number.
+// @returns (Int) - The nearest integer, rounding half away from zero.
 func Round(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

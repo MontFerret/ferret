@@ -7,12 +7,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a new object with only given keys.
- * @params src (Object) - source object.
- * @params keys (Array Of String OR Strings) - keys that need to be keeped.
- * @returns (Object) - New Object with only given keys.
- */
+// Keep returns a new object with only given keys.
+// @params src (Object) - source object.
+// @params keys (Array Of String OR Strings) - keys that need to be keeped.
+// @returns (Object) - New Object with only given keys.
 func Keep(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

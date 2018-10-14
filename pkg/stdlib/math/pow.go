@@ -2,17 +2,16 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the base to the exponent value.
- * @param base (Int|Float) - The base value.
- * @param exp (Int|Float) - The exponent value.
- * @returns (Float) - The exponentiated value.
- */
+// Pow returns the base to the exponent value.
+// @param base (Int|Float) - The base value.
+// @param exp (Int|Float) - The exponent value.
+// @returns (Float) - The exponentiated value.
 func Pow(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

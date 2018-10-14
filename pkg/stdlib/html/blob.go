@@ -38,18 +38,16 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 	return doc, nil
 }
 
-/*
- * Take a screenshot of the current page.
- * @param source (Document) - Document.
- * @param params (Object) - Optional, An object containing the following properties :
- * 		x (Float|Int) - Optional, X position of the viewport.
- * 		x (Float|Int) - Optional,Y position of the viewport.
- * 		width (Float|Int) - Optional, Width of the viewport.
- * 		height (Float|Int) - Optional, Height of the viewport.
- * 		format (String) - Optional, Either "jpeg" or "png".
- * 		quality (Int) - Optional, Quality, in [0, 100], only for jpeg format.
- * @returns data (Binary) - Returns a base64 encoded string in binary format.
- */
+// Screenshot take a screenshot of the current page.
+// @param source (Document) - Document.
+// @param params (Object) - Optional, An object containing the following properties :
+// 		x (Float|Int) - Optional, X position of the viewport.
+// 		x (Float|Int) - Optional,Y position of the viewport.
+// 		width (Float|Int) - Optional, Width of the viewport.
+// 		height (Float|Int) - Optional, Height of the viewport.
+// 		format (String) - Optional, Either "jpeg" or "png".
+// 		quality (Int) - Optional, Quality, in [0, 100], only for jpeg format.
+// @returns data (Binary) - Returns a base64 encoded string in binary format.
 func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {
@@ -172,27 +170,25 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 	return match, nil
 }
 
-/*
- * Print a PDF of the current page.
- * @param source (Document) - Document.
- * @param params (Object) - Optional, An object containing the following properties :
- *   Landscape (Bool) - Paper orientation. Defaults to false.
- *   DisplayHeaderFooter (Bool) - Display header and footer. Defaults to false.
- *   PrintBackground (Bool) - Print background graphics. Defaults to false.
- *   Scale (Float64) - Scale of the webpage rendering. Defaults to 1.
- *   PaperWidth (Float64) - Paper width in inches. Defaults to 8.5 inches.
- *   PaperHeight (Float64) - Paper height in inches. Defaults to 11 inches.
- *   MarginTop (Float64) - Top margin in inches. Defaults to 1cm (~0.4 inches).
- *   MarginBottom (Float64) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
- *   MarginLeft (Float64) - Left margin in inches. Defaults to 1cm (~0.4 inches).
- *   MarginRight (Float64) - Right margin in inches. Defaults to 1cm (~0.4 inches).
- *   PageRanges (String) - Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
- *   IgnoreInvalidPageRanges (Bool) - to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
- *   HeaderTemplate (String) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document For example, `<span class=title></span>` would generate span containing the title.
- *   FooterTemplate (String) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
- *   PreferCSSPageSize (Bool) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size. *
- * @returns data (Binary) - Returns a base64 encoded string in binary format.
- */
+// PDF print a PDF of the current page.
+// @param source (Document) - Document.
+// @param params (Object) - Optional, An object containing the following properties :
+//   Landscape (Bool) - Paper orientation. Defaults to false.
+//   DisplayHeaderFooter (Bool) - Display header and footer. Defaults to false.
+//   PrintBackground (Bool) - Print background graphics. Defaults to false.
+//   Scale (Float64) - Scale of the webpage rendering. Defaults to 1.
+//   PaperWidth (Float64) - Paper width in inches. Defaults to 8.5 inches.
+//   PaperHeight (Float64) - Paper height in inches. Defaults to 11 inches.
+//   MarginTop (Float64) - Top margin in inches. Defaults to 1cm (~0.4 inches).
+//   MarginBottom (Float64) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
+//   MarginLeft (Float64) - Left margin in inches. Defaults to 1cm (~0.4 inches).
+//   MarginRight (Float64) - Right margin in inches. Defaults to 1cm (~0.4 inches).
+//   PageRanges (String) - Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
+//   IgnoreInvalidPageRanges (Bool) - to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
+//   HeaderTemplate (String) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document For example, `<span class=title></span>` would generate span containing the title.
+//   FooterTemplate (String) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
+//   PreferCSSPageSize (Bool) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size. *
+// @returns data (Binary) - Returns a base64 encoded string in binary format.
 func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {

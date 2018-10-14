@@ -2,17 +2,16 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Sorts all elements in anyArray.
- * The function will use the default comparison order for FQL value types.
- * @param array (Array) - Target array.
- * @returns (Array) - Sorted array.
- */
+// Sorted sorts all elements in anyArray.
+// The function will use the default comparison order for FQL value types.
+// @param array (Array) - Target array.
+// @returns (Array) - Sorted array.
 func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -2,17 +2,16 @@ package strings
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a substring of value.
- * @params value (String) - The source string.
- * @param offset (Int) - Start at offset, offsets start at position 0.
- * @param length (Int, optional) - At most length characters, omit to get the substring from offset to the end of the string. Optional.
- * @returns substring (String) - A substring of value.
- */
+// Substring returns a substring of value.
+// @params value (String) - The source string.
+// @param offset (Int) - Start at offset, offsets start at position 0.
+// @param length (Int, optional) - At most length characters, omit to get the substring from offset to the end of the string. Optional.
+// @returns substring (String) - A substring of value.
 func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -55,12 +54,10 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewStringFromRunes(substr), nil
 }
 
-/*
- * Returns the leftmost characters of the string value by index.
- * @param src (String) - The source string.
- * @params length (Int) - The amount of characters to return.
- * @returns substr (String)
- */
+// Left returns the leftmost characters of the string value by index.
+// @param src (String) - The source string.
+// @params length (Int) - The amount of characters to return.
+// @returns substr (String)
 func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
@@ -84,12 +81,10 @@ func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewStringFromRunes(runes[0:pos]), nil
 }
 
-/*
- * Returns the rightmost characters of the string value.
- * @param src (String) - The source string.
- * @params length (Int) - The amount of characters to return.
- * @returns substr (String)
- */
+// Right returns the rightmost characters of the string value.
+// @param src (String) - The source string.
+// @params length (Int) - The amount of characters to return.
+// @returns substr (String)
 func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

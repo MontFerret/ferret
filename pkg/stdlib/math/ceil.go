@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the least integer value greater than or equal to a given value.
- * @param number (Int|Float) - Input number.
- * @returns (Int) - The least integer value greater than or equal to a given value.
- */
+// Ceil returns the least integer value greater than or equal to a given value.
+// @param number (Int|Float) - Input number.
+// @returns (Int) - The least integer value greater than or equal to a given value.
 func Ceil(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

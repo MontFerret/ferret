@@ -2,17 +2,16 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Finds HTML elements by a given CSS selector.
- * Returns an empty array if element not found.
- * @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
- * @param selector (String) - CSS selector.
- * @returns (Array) - Returns an array of found HTML element.
- */
+// Elements finds HTML elements by a given CSS selector.
+// Returns an empty array if element not found.
+// @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
+// @param selector (String) - CSS selector.
+// @returns (Array) - Returns an array of found HTML element.
 func Elements(_ context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 

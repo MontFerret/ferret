@@ -2,16 +2,15 @@ package math
 
 import (
 	"context"
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
-/*
- * Returns the tangent of a given number.
- * @param value (Int|Float) - A number.
- * @returns (Float) - The tangent.
- */
+// Tan returns the tangent of a given number.
+// @param value (Int|Float) - A number.
+// @returns (Float) - The tangent.
 func Tan(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

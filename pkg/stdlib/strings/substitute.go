@@ -2,19 +2,18 @@ package strings
 
 import (
 	"context"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"strings"
 )
 
-/*
- * Replaces search values in the string value.
- * @params text (String) - The string to modify
- * @params search (String) - The string representing a search pattern
- * @params replace (String) - The string representing a replace value
- * @param limit (Int) - The cap the number of replacements to this value.
- * @return (String) - Returns a string with replace substring.
- */
+// Substitute replaces search values in the string value.
+// @params text (String) - The string to modify
+// @params search (String) - The string representing a search pattern
+// @params replace (String) - The string representing a replace value
+// @param limit (Int) - The cap the number of replacements to this value.
+// @return (String) - Returns a string with replace substring.
 func Substitute(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

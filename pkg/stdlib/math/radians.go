@@ -2,15 +2,14 @@ package math
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns the angle converted from degrees to radians.
- * @param number (Float|Int) - The input number.
- * @returns (Float) - The angle in radians.
- */
+// Radians returns the angle converted from degrees to radians.
+// @param number (Float|Int) - The input number.
+// @returns (Float) - The angle in radians.
 func Radians(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

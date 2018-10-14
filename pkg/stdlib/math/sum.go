@@ -2,15 +2,14 @@ package math
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns the sum of the values in a given array.
- * @param array (Array) - Array of numbers.
- * @returns (Float) - The sum of the values.
- */
+// Sum returns the sum of the values in a given array.
+// @param array (Array) - Array of numbers.
+// @returns (Float) - The sum of the values.
 func Sum(_ context.Context, args ...core.Value) (core.Value, error) {
 	var err error
 	err = core.ValidateArgs(args, 1, 1)

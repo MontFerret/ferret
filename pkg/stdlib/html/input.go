@@ -8,14 +8,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Types a value to an underlying input element.
- * @param source (Document | Element) - Event target.
- * @param valueOrSelector (String) - Selector or a value.
- * @param value (String) - Target value.
- * @param delay (Int, optional) - Waits delay milliseconds between keystrokes
- * @returns (Boolean) - Returns true if an element was found.
- */
+// Input types a value to an underlying input element.
+// @param source (Document | Element) - Event target.
+// @param valueOrSelector (String) - Selector or a value.
+// @param value (String) - Target value.
+// @param delay (Int, optional) - Waits delay milliseconds between keystrokes
+// @returns (Boolean) - Returns true if an element was found.
 func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
