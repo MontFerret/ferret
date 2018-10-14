@@ -58,7 +58,10 @@ For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.
 
 ## Installation
 
-### Prerequisites
+### Binary
+You can download latest binaries from [here](https://github.com/MontFerret/ferret/releases).
+
+### Source code
 #### Production
 * Go >=1.9
 * Chrome or Docker
@@ -73,7 +76,10 @@ For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.
 go get github.com/MontFerret/ferret
 ```
 
-You can use your local copy of Google Chrome / Chromium, but for ease of use it's recommended to run it inside a Docker container:
+## Environment
+
+In order to use all Ferret features, you will need to have Chrome either installed locally or running in Docker.
+For ease of use we recommend to run Chrome inside a Docker container:
 
 ```sh
 docker pull alpeware/chrome-headless-trunk

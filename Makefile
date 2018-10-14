@@ -13,7 +13,7 @@ build: install vet generate test compile
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
-	-ldflags "-X main.Version=${VERSION}" \
+	-ldflags "-X main.version=${VERSION}" \
 	./main.go
 
 install:
@@ -41,3 +41,6 @@ lint:
 # go get code.google.com/p/go.tools/cmd/vet
 vet:
 	go vet ${DIR_CLI}/... ${DIR_PKG}/...
+
+release:
+	goreleaser
