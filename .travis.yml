@@ -15,6 +15,7 @@ addons:
   apt:
     packages:
     - oracle-java8-set-default
+  chrome: stable
 
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -26,6 +27,11 @@ before_install:
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
+- google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
 
 script:
 - revive -config revive.toml -formatter friendly -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
+- make e2e
+
+after_script:
+- killall google-chrome-stable
