@@ -24,6 +24,7 @@ func NewLib() map[string]core.Function {
 		"IS_HTML_ELEMENT":  IsHTMLElement,
 		"IS_HTML_DOCUMENT": IsHTMLDocument,
 		"IS_BINARY":        IsBinary,
+		"IS_NAN":           IsNaN,
 		"TYPENAME":         TypeName,
 	}
 }

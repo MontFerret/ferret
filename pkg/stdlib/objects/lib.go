@@ -8,5 +8,6 @@ func NewLib() map[string]core.Function {
 		"KEYS":  Keys,
 		"KEEP":  Keep,
 		"MERGE": Merge,
+		"ZIP":   Zip,
 	}
 }

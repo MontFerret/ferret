@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"hash/fnv"
+	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
@@ -220,4 +221,18 @@ func (t *Array) Clone() core.Cloneable {
 	}
 
 	return cloned
+}
+
+func (t *Array) Sort() *Array {
+	c := make([]core.Value, len(t.value))
+	copy(c, t.value)
+
+	sort.SliceStable(c, func(i, j int) bool {
+		return c[i].Compare(c[j]) == 0
+	})
+
+	res := new(Array)
+	res.value = c
+
+	return res
 }
