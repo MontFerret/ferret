@@ -46,6 +46,9 @@ func Keep(_ context.Context, args ...core.Value) (core.Value, error) {
 	for idx := values.NewInt(0); idx < keys.Length(); idx++ {
 		key = keys.Get(idx).(values.String)
 		if val, exists = obj.Get(key); exists {
+			if values.IsCloneable(val) {
+				val = val.(core.Cloneable).Clone()
+			}
 			resultObj.Set(key, val)
 		}
 	}
