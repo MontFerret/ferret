@@ -580,8 +580,20 @@ func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 	}
 
 	onEvent := make(chan struct{})
+
+	// There's an issue where the callback can get called more than once, thus
+	// causing a panic for trying to close a previously closed channel. This
+	// is a little hacky but is meant to prevent panics from attempting to close
+	// the channel again
+	closed := false
+	var mu sync.Mutex
 	listener := func(_ interface{}) {
-		close(onEvent)
+		mu.Lock()
+		if !closed {
+			close(onEvent)
+			closed = true
+		}
+		mu.Unlock()
 	}
 
 	defer doc.events.RemoveEventListener("load", listener)
