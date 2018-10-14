@@ -29,9 +29,25 @@ before_install:
 - export PATH=$PATH:$HOME/travis-bin
 - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
 
-script:
-- make lint
-- make e2e
+install:
+- make install
+
+stages:
+- lint
+- compile
+- test
+- e2e
+
+jobs:
+  include:
+  - stage: lint
+    script: make lint
+  - stage: compile
+    script: make generate && make compile
+  - stage: test
+    script: make test
+  - stage: e2e
+    script: make e2e
 
 after_script:
 - killall google-chrome-stable
