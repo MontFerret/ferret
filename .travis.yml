@@ -30,7 +30,7 @@ before_install:
 - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
 
 script:
-- revive -config revive.toml -formatter friendly -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
+- make lint
 - make e2e
 
 after_script:
