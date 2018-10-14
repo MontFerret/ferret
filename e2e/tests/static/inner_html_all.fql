@@ -1,0 +1,19 @@
+LET doc = DOCUMENT(@url + '/static/blog.html')
+
+LET expected = [
+'<a href="#">March 2014</a>',
+'<a href="#">February 2014</a>',
+'<a href="#">January 2014</a>',
+'<a href="#">December 2013</a>',
+'<a href="#">November 2013</a>',
+'<a href="#">October 2013</a>',
+'<a href="#">September 2013</a>',
+'<a href="#">August 2013</a>',
+'<a href="#">July 2013</a>',
+'<a href="#">June 2013</a>',
+'<a href="#">May 2013</a>',
+'<a href="#">April 2013</a>'
+]
+LET actual = INNER_HTML_ALL(doc, 'body > main > div > aside > div:nth-child(2) > ol li')
+
+RETURN EXPECT(expected, actual)

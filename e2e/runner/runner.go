@@ -83,6 +83,7 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 	results := make([]Result, 0, len(files))
 
 	c := compiler.New()
+	c.RegisterFunctions(Assertions())
 
 	// read scripts
 	for _, f := range files {
@@ -117,7 +118,7 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	out, err := p.Run(
 		context.Background(),
 		runtime.WithBrowser(r.settings.CDPAddress),
-		runtime.WithParam("server", r.settings.ServerAddress),
+		runtime.WithParam("url", r.settings.ServerAddress),
 	)
 
 	if err != nil {

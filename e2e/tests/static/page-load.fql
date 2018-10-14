@@ -1,1 +1,3 @@
-RETURN ""
+LET doc = DOCUMENT(@url + "/static/dashboard.html")
+
+RETURN doc.innerHtml == "" ? "failed to load page" : ""

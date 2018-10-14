@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo"
+	"path/filepath"
 )
 
 type (
 	Settings struct {
 		Port uint64
+		Dir  string
 	}
 	Server struct {
 		engine   *echo.Echo
@@ -18,6 +20,10 @@ type (
 
 func New(settings Settings) *Server {
 	e := echo.New()
+	e.Debug = false
+	e.HideBanner = true
+
+	e.Static("/static", filepath.Join(settings.Dir, "static"))
 
 	return &Server{e, settings}
 }
