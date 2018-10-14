@@ -40,6 +40,7 @@ func NewLib() map[string]core.Function {
 		"RAND":       Rand,
 		"RANGE":      Range,
 		"ROUND":      Round,
+		"SIN":        Sin,
 	}
 }
 
