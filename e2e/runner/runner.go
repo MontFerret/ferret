@@ -154,14 +154,14 @@ func (r *Runner) report(results []Result) Stats {
 				Str("file", res.name).
 				Msg("Test failed")
 
-			s.failed += 1
+			s.failed++
 		} else {
 			r.logger.Info().
 				Timestamp().
 				Str("file", res.name).
 				Msg("Test passed")
 
-			s.passed += 1
+			s.passed++
 		}
 	}
 
