@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var Version string
-
 type Params []string
 
 func (p *Params) String() string {
@@ -53,6 +51,8 @@ func (p *Params) ToMap() (map[string]interface{}, error) {
 }
 
 var (
+	version string
+
 	conn = flag.String(
 		"cdp",
 		"http://0.0.0.0:9222",
@@ -83,7 +83,7 @@ var (
 		"show how much time was taken to execute a query",
 	)
 
-	version = flag.Bool(
+	showVersion = flag.Bool(
 		"version",
 		false,
 		"show REPL version",
@@ -113,8 +113,8 @@ func main() {
 		return
 	}
 
-	if *version {
-		fmt.Println(Version)
+	if *showVersion {
+		fmt.Println(version)
 		os.Exit(0)
 		return
 	}
@@ -185,5 +185,5 @@ func main() {
 	}
 
 	// nothing was passed, run REPL
-	cli.Repl(Version, opts)
+	cli.Repl(version, opts)
 }
