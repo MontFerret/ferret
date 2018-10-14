@@ -41,3 +41,6 @@ lint:
 # go get code.google.com/p/go.tools/cmd/vet
 vet:
 	go vet ${DIR_CLI}/... ${DIR_PKG}/...
+
+release:
+	goreleaser
