@@ -6,7 +6,6 @@ os:
 - linux
 
 go:
-- "1.9"
 - "1.10"
 - "1.11"
 - master
@@ -27,7 +26,6 @@ before_install:
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
-- google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
 
 install:
 - make install
@@ -41,13 +39,19 @@ stages:
 jobs:
   include:
   - stage: lint
-    script: make lint
+    script:
+    - make vet
+    - make lint
   - stage: compile
-    script: make generate && make compile
+    script:
+    - make generate
+    - make compile
   - stage: test
     script: make test
   - stage: e2e
-    script: make e2e
+    script:
+    - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
+    - make e2e
 
 after_script:
 - killall google-chrome-stable
