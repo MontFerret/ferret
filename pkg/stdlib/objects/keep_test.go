@@ -45,6 +45,24 @@ func TestKeep(t *testing.T) {
 		So(err, ShouldBeError)
 		So(obj, ShouldEqual, values.None)
 	})
+
+	Convey("Result object is independent of the source object", t, func() {
+		arr := values.NewArrayWith(values.Int(0))
+		obj := values.NewObjectWith(
+			values.NewObjectProperty("a", arr),
+		)
+		resultObj := values.NewObjectWith(
+			values.NewObjectProperty("a", values.NewArrayWith(values.Int(0))),
+		)
+
+		afterKeep, err := objects.Keep(context.Background(), obj, values.NewString("a"))
+
+		So(err, ShouldBeNil)
+
+		arr.Push(values.NewInt(1))
+
+		So(afterKeep.Compare(resultObj), ShouldEqual, 0)
+	})
 }
 
 func TestKeepStrings(t *testing.T) {
