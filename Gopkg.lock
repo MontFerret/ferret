@@ -74,6 +74,25 @@
   version = "v4.2.1"
 
 [[projects]]
+  digest = "1:63801c64679bdeef1b63206f065d5a1f4c3a75ed66a3fbbd909bf98766542980"
+  name = "github.com/labstack/echo"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1abaa3049251d17932e4313c2d6165073fd07fd8"
+  version = "v3.3.6"
+
+[[projects]]
+  digest = "1:faee5b9f53eb1ae4eb04708c040c8c4dd685ce46509671e57a08520a15c54368"
+  name = "github.com/labstack/gommon"
+  packages = [
+    "color",
+    "log",
+  ]
+  pruneopts = "UT"
+  revision = "2a618302b929cc20862dda3aa6f02f64dbe740dd"
+  version = "v0.2.7"
+
+[[projects]]
   digest = "1:7ffdd69928c5153fc351132aa80bbcc18a8f8122de1ba592cf42dccb65732361"
   name = "github.com/mafredri/cdp"
   packages = [
@@ -128,6 +147,22 @@
   pruneopts = "UT"
   revision = "75b0ecc5efcff27ac756a33ec71f0db75dc3d21c"
   version = "v0.19.0"
+
+[[projects]]
+  digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  digest = "1:0981502f9816113c9c8c4ac301583841855c8cf4da8c72f696b3ebedf6d0e4e5"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
@@ -190,6 +225,33 @@
   version = "1.6.3"
 
 [[projects]]
+  digest = "1:c468422f334a6b46a19448ad59aaffdfc0a36b08fdcc1c749a0b29b6453d7e59"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:268b8bce0064e8c057d7b913605459f9a26dcab864c0886a56d196540fbf003f"
+  name = "github.com/valyala/fasttemplate"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:dedf20eb0d3e8d6aa8a4d3d2fae248222b688ed528201995e152cc497899123c"
+  name = "golang.org/x/crypto"
+  packages = [
+    "acme",
+    "acme/autocert",
+  ]
+  pruneopts = "UT"
+  revision = "a92615f3c49003920a58dedcf32cf55022cefb8d"
+
+[[projects]]
   branch = "master"
   digest = "1:24641a15105cc4281b8a4a701ac4019194618102c327b1495485b3f19ffdd53e"
   name = "golang.org/x/net"
@@ -209,6 +271,14 @@
   pruneopts = "UT"
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
+[[projects]]
+  branch = "master"
+  digest = "1:0a40b0bdd57a93e741d8557465be3a2edeec408e9b6399586ad65bbe8e355796"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  pruneopts = "UT"
+  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -218,10 +288,12 @@
     "github.com/chzyer/readline",
     "github.com/corpix/uarand",
     "github.com/gofrs/uuid",
+    "github.com/labstack/echo",
     "github.com/mafredri/cdp",
     "github.com/mafredri/cdp/devtool",
     "github.com/mafredri/cdp/protocol/dom",
     "github.com/mafredri/cdp/protocol/emulation",
+    "github.com/mafredri/cdp/protocol/input",
     "github.com/mafredri/cdp/protocol/page",
     "github.com/mafredri/cdp/protocol/runtime",
     "github.com/mafredri/cdp/protocol/target",
