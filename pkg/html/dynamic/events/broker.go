@@ -29,6 +29,7 @@ type (
 )
 
 var (
+	//revive:disable-next-line var-declaration
 	EventError                 Event = 0
 	EventLoad                  Event = 1
 	EventReload                Event = 2
