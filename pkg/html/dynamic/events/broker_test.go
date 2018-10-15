@@ -90,6 +90,10 @@ func (es *TestLoadEventFiredClient) Recv() (*page.LoadEventFiredReply, error) {
 	return reply, nil
 }
 
+func (es *TestLoadEventFiredClient) EmitDefault() {
+	es.TestEventStream.Emit(&page.LoadEventFiredReply{})
+}
+
 func (es *TestDocumentUpdatedClient) Recv() (*dom.DocumentUpdatedReply, error) {
 	r := <-es.message
 	reply := r.(*dom.DocumentUpdatedReply)
@@ -239,7 +243,7 @@ func TestEventBroker(t *testing.T) {
 				b.AddEventListener(events.EventLoad, listener)
 
 				StressTestAsync(func() error {
-					b.OnLoad.Emit(&page.LoadEventFiredReply{})
+					b.OnLoad.EmitDefault()
 
 					return nil
 				}, 250)
@@ -276,6 +280,36 @@ func TestEventBroker(t *testing.T) {
 			}, 250)
 
 			So(b.ListenerCount(events.EventLoad), ShouldEqual, 0)
+			So(counter, ShouldEqual, 1)
+		})
+	})
+
+	Convey(".Stop", t, func() {
+		Convey("Should stop emitting events", func() {
+			b := NewTestEventBroker()
+			b.Start()
+
+			counter := 0
+			b.AddEventListener(events.EventLoad, func(message interface{}) {
+				counter++
+			})
+
+			b.OnLoad.EmitDefault()
+
+			time.Sleep(time.Duration(5) * time.Millisecond)
+
+			b.Stop()
+
+			go func() {
+				b.OnLoad.EmitDefault()
+			}()
+
+			go func() {
+				b.OnLoad.EmitDefault()
+			}()
+
+			time.Sleep(time.Duration(5) * time.Millisecond)
+
 			So(counter, ShouldEqual, 1)
 		})
 	})
