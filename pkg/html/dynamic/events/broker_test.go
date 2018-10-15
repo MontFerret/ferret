@@ -263,15 +263,19 @@ func TestEventBroker(t *testing.T) {
 			defer b.Stop()
 
 			counter := 0
-			listener := func(message interface{}) {
+
+			var listener events.EventListener
+
+			listener = func(message interface{}) {
 				counter += 1
+
+				b.RemoveEventListener(events.EventLoad, listener)
 			}
 
 			b.AddEventListener(events.EventLoad, listener)
 			b.OnLoad.Emit(&page.LoadEventFiredReply{})
 
 			time.Sleep(time.Duration(10) * time.Millisecond)
-			b.RemoveEventListener(events.EventLoad, listener)
 
 			StressTestAsync(func() error {
 				b.OnLoad.Emit(&page.LoadEventFiredReply{})
@@ -292,13 +296,12 @@ func TestEventBroker(t *testing.T) {
 			counter := 0
 			b.AddEventListener(events.EventLoad, func(message interface{}) {
 				counter++
+				b.Stop()
 			})
 
 			b.OnLoad.EmitDefault()
 
 			time.Sleep(time.Duration(5) * time.Millisecond)
-
-			b.Stop()
 
 			go func() {
 				b.OnLoad.EmitDefault()

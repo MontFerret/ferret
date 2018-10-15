@@ -184,7 +184,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onLoad.Ready():
 			reply, err := broker.onLoad.Recv()
 
-			broker.emit(EventLoad, reply, err)
+			broker.emit(ctx, EventLoad, reply, err)
 		default:
 		}
 
@@ -194,7 +194,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onReload.Ready():
 			reply, err := broker.onReload.Recv()
 
-			broker.emit(EventReload, reply, err)
+			broker.emit(ctx, EventReload, reply, err)
 		default:
 		}
 
@@ -204,7 +204,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onAttrModified.Ready():
 			reply, err := broker.onAttrModified.Recv()
 
-			broker.emit(EventAttrModified, reply, err)
+			broker.emit(ctx, EventAttrModified, reply, err)
 		default:
 		}
 
@@ -214,7 +214,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onAttrRemoved.Ready():
 			reply, err := broker.onAttrRemoved.Recv()
 
-			broker.emit(EventAttrRemoved, reply, err)
+			broker.emit(ctx, EventAttrRemoved, reply, err)
 		default:
 		}
 
@@ -224,7 +224,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onChildNodeCountUpdated.Ready():
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
-			broker.emit(EventChildNodeCountUpdated, reply, err)
+			broker.emit(ctx, EventChildNodeCountUpdated, reply, err)
 		default:
 
 		}
@@ -235,7 +235,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onChildNodeInserted.Ready():
 			reply, err := broker.onChildNodeInserted.Recv()
 
-			broker.emit(EventChildNodeInserted, reply, err)
+			broker.emit(ctx, EventChildNodeInserted, reply, err)
 		default:
 		}
 
@@ -245,13 +245,13 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onChildNodeRemoved.Ready():
 			reply, err := broker.onChildNodeRemoved.Recv()
 
-			broker.emit(EventChildNodeRemoved, reply, err)
+			broker.emit(ctx, EventChildNodeRemoved, reply, err)
 		default:
 		}
 	}
 }
 
-func (broker *EventBroker) emit(event Event, message interface{}, err error) {
+func (broker *EventBroker) emit(ctx context.Context, event Event, message interface{}, err error) {
 	if err != nil {
 		event = EventError
 		message = err
@@ -271,7 +271,12 @@ func (broker *EventBroker) emit(event Event, message interface{}, err error) {
 
 	go func() {
 		for _, listener := range snapshot {
-			listener(message)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				listener(message)
+			}
 		}
 	}()
 }
