@@ -185,30 +185,68 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 			reply, err := broker.onLoad.Recv()
 
 			broker.emit(EventLoad, reply, err)
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-broker.onReload.Ready():
 			reply, err := broker.onReload.Recv()
 
 			broker.emit(EventReload, reply, err)
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-broker.onAttrModified.Ready():
 			reply, err := broker.onAttrModified.Recv()
 
 			broker.emit(EventAttrModified, reply, err)
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-broker.onAttrRemoved.Ready():
 			reply, err := broker.onAttrRemoved.Recv()
 
 			broker.emit(EventAttrRemoved, reply, err)
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-broker.onChildNodeCountUpdated.Ready():
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
 			broker.emit(EventChildNodeCountUpdated, reply, err)
+		default:
+
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-broker.onChildNodeInserted.Ready():
 			reply, err := broker.onChildNodeInserted.Recv()
 
 			broker.emit(EventChildNodeInserted, reply, err)
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-broker.onChildNodeRemoved.Ready():
 			reply, err := broker.onChildNodeRemoved.Recv()
 
 			broker.emit(EventChildNodeRemoved, reply, err)
+		default:
 		}
 	}
 }
