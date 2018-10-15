@@ -167,7 +167,7 @@ func NewHTMLElement(
 	broker.AddEventListener(events.EventReload, el.handlePageReload)
 	broker.AddEventListener(events.EventAttrModified, el.handleAttrModified)
 	broker.AddEventListener(events.EventAttrRemoved, el.handleAttrRemoved)
-	broker.AddEventListener(events.EventChildrenCountUpdated, el.handleChildrenCountChanged)
+	broker.AddEventListener(events.EventChildNodeCountUpdated, el.handleChildrenCountChanged)
 	broker.AddEventListener(events.EventChildNodeInserted, el.handleChildInserted)
 	broker.AddEventListener(events.EventChildNodeRemoved, el.handleChildRemoved)
 
@@ -187,7 +187,7 @@ func (el *HTMLElement) Close() error {
 	el.events.RemoveEventListener(events.EventReload, el.handlePageReload)
 	el.events.RemoveEventListener(events.EventAttrModified, el.handleAttrModified)
 	el.events.RemoveEventListener(events.EventAttrRemoved, el.handleAttrRemoved)
-	el.events.RemoveEventListener(events.EventChildrenCountUpdated, el.handleChildrenCountChanged)
+	el.events.RemoveEventListener(events.EventChildNodeCountUpdated, el.handleChildrenCountChanged)
 	el.events.RemoveEventListener(events.EventChildNodeInserted, el.handleChildInserted)
 	el.events.RemoveEventListener(events.EventChildNodeRemoved, el.handleChildRemoved)
 

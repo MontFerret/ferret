@@ -9,7 +9,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/rpcc"
+	"github.com/mafredri/cdp/protocol/page"
 	"golang.org/x/sync/errgroup"
 	"strings"
 )
@@ -131,13 +131,13 @@ func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
 
 func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	var err error
-	var onLoad rpcc.Stream
-	var onReload rpcc.Stream
-	var onAttrModified rpcc.Stream
-	var onAttrRemoved rpcc.Stream
-	var onChildCountUpdated rpcc.Stream
-	var onChildNodeInserted rpcc.Stream
-	var onChildNodeRemoved rpcc.Stream
+	var onLoad page.LoadEventFiredClient
+	var onReload dom.DocumentUpdatedClient
+	var onAttrModified dom.AttributeModifiedClient
+	var onAttrRemoved dom.AttributeRemovedClient
+	var onChildCountUpdated dom.ChildNodeCountUpdatedClient
+	var onChildNodeInserted dom.ChildNodeInsertedClient
+	var onChildNodeRemoved dom.ChildNodeRemovedClient
 	ctx := context.Background()
 
 	onLoad, err = client.Page.LoadEventFired(ctx)

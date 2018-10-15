@@ -5,7 +5,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/mafredri/cdp/rpcc"
 	"reflect"
 	"sync"
 )
@@ -16,38 +15,38 @@ type (
 	EventListener func(message interface{})
 
 	EventBroker struct {
-		mu                     sync.Mutex
-		listeners              map[Event][]EventListener
-		cancel                 context.CancelFunc
-		onLoad                 rpcc.Stream
-		onReload               rpcc.Stream
-		onAttrModified         rpcc.Stream
-		onAttrRemoved          rpcc.Stream
-		onChildrenCountUpdated rpcc.Stream
-		onChildNodeInserted    rpcc.Stream
-		onChildNodeRemoved     rpcc.Stream
+		mu                      sync.Mutex
+		listeners               map[Event][]EventListener
+		cancel                  context.CancelFunc
+		onLoad                  page.LoadEventFiredClient
+		onReload                dom.DocumentUpdatedClient
+		onAttrModified          dom.AttributeModifiedClient
+		onAttrRemoved           dom.AttributeRemovedClient
+		onChildNodeCountUpdated dom.ChildNodeCountUpdatedClient
+		onChildNodeInserted     dom.ChildNodeInsertedClient
+		onChildNodeRemoved      dom.ChildNodeRemovedClient
 	}
 )
 
 var (
-	EventError                Event = 0
-	EventLoad                 Event = 1
-	EventReload               Event = 2
-	EventAttrModified         Event = 3
-	EventAttrRemoved          Event = 4
-	EventChildrenCountUpdated Event = 5
-	EventChildNodeInserted    Event = 6
-	EventChildNodeRemoved     Event = 7
+	EventError                 Event = 0
+	EventLoad                  Event = 1
+	EventReload                Event = 2
+	EventAttrModified          Event = 3
+	EventAttrRemoved           Event = 4
+	EventChildNodeCountUpdated Event = 5
+	EventChildNodeInserted     Event = 6
+	EventChildNodeRemoved      Event = 7
 )
 
 func NewEventBroker(
-	onLoad rpcc.Stream,
-	onReload rpcc.Stream,
-	onAttrModified rpcc.Stream,
-	onAttrRemoved rpcc.Stream,
-	onChildrenCountUpdated rpcc.Stream,
-	onChildNodeInserted rpcc.Stream,
-	onChildNodeRemoved rpcc.Stream,
+	onLoad page.LoadEventFiredClient,
+	onReload dom.DocumentUpdatedClient,
+	onAttrModified dom.AttributeModifiedClient,
+	onAttrRemoved dom.AttributeRemovedClient,
+	onChildNodeCountUpdated dom.ChildNodeCountUpdatedClient,
+	onChildNodeInserted dom.ChildNodeInsertedClient,
+	onChildNodeRemoved dom.ChildNodeRemovedClient,
 ) *EventBroker {
 	broker := new(EventBroker)
 	broker.listeners = make(map[Event][]EventListener)
@@ -55,7 +54,7 @@ func NewEventBroker(
 	broker.onReload = onReload
 	broker.onAttrModified = onAttrModified
 	broker.onAttrRemoved = onAttrRemoved
-	broker.onChildrenCountUpdated = onChildrenCountUpdated
+	broker.onChildNodeCountUpdated = onChildNodeCountUpdated
 	broker.onChildNodeInserted = onChildNodeInserted
 	broker.onChildNodeRemoved = onChildNodeRemoved
 
@@ -156,7 +155,7 @@ func (broker *EventBroker) Close() error {
 	broker.onReload.Close()
 	broker.onAttrModified.Close()
 	broker.onAttrRemoved.Close()
-	broker.onChildrenCountUpdated.Close()
+	broker.onChildNodeCountUpdated.Close()
 	broker.onChildNodeInserted.Close()
 	broker.onChildNodeRemoved.Close()
 
@@ -164,44 +163,39 @@ func (broker *EventBroker) Close() error {
 }
 
 func (broker *EventBroker) runLoop(ctx context.Context) {
-	select {
-	case <-ctx.Done():
-		return
-	case <-broker.onLoad.Ready():
-		msg := new(page.LoadEventFiredReply)
-		err := broker.onLoad.RecvMsg(msg)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-broker.onLoad.Ready():
+			reply, err := broker.onLoad.Recv()
 
-		broker.emit(EventLoad, msg, err)
-	case <-broker.onReload.Ready():
-		msg := new(dom.DocumentUpdatedReply)
-		err := broker.onReload.RecvMsg(msg)
+			broker.emit(EventLoad, reply, err)
+		case <-broker.onReload.Ready():
+			reply, err := broker.onReload.Recv()
 
-		broker.emit(EventReload, msg, err)
-	case <-broker.onAttrModified.Ready():
-		msg := new(dom.AttributeModifiedReply)
-		err := broker.onAttrModified.RecvMsg(msg)
+			broker.emit(EventReload, reply, err)
+		case <-broker.onAttrModified.Ready():
+			reply, err := broker.onAttrModified.Recv()
 
-		broker.emit(EventAttrModified, msg, err)
-	case <-broker.onAttrRemoved.Ready():
-		msg := new(dom.AttributeRemovedReply)
-		err := broker.onAttrRemoved.RecvMsg(msg)
+			broker.emit(EventAttrModified, reply, err)
+		case <-broker.onAttrRemoved.Ready():
+			reply, err := broker.onAttrRemoved.Recv()
 
-		broker.emit(EventAttrRemoved, msg, err)
-	case <-broker.onChildrenCountUpdated.Ready():
-		msg := new(dom.ChildNodeCountUpdatedReply)
-		err := broker.onChildrenCountUpdated.RecvMsg(msg)
+			broker.emit(EventAttrRemoved, reply, err)
+		case <-broker.onChildNodeCountUpdated.Ready():
+			reply, err := broker.onChildNodeCountUpdated.Recv()
 
-		broker.emit(EventChildrenCountUpdated, msg, err)
-	case <-broker.onChildNodeInserted.Ready():
-		msg := new(dom.ChildNodeInsertedReply)
-		err := broker.onChildNodeInserted.RecvMsg(msg)
+			broker.emit(EventChildNodeCountUpdated, reply, err)
+		case <-broker.onChildNodeInserted.Ready():
+			reply, err := broker.onChildNodeInserted.Recv()
 
-		broker.emit(EventChildNodeInserted, msg, err)
-	case <-broker.onChildNodeRemoved.Ready():
-		msg := new(dom.ChildNodeRemovedReply)
-		err := broker.onChildNodeRemoved.RecvMsg(msg)
+			broker.emit(EventChildNodeInserted, reply, err)
+		case <-broker.onChildNodeRemoved.Ready():
+			reply, err := broker.onChildNodeRemoved.Recv()
 
-		broker.emit(EventChildNodeRemoved, msg, err)
+			broker.emit(EventChildNodeRemoved, reply, err)
+		}
 	}
 }
 
