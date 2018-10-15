@@ -163,7 +163,11 @@ func TestValues(t *testing.T) {
 		obj := values.NewObjectWith(
 			values.NewObjectProperty("arr", arr),
 		)
-		expected := values.NewArrayWith(values.NewInt(0))
+		expected := values.NewArrayWith(
+			values.NewArrayWith(
+				values.NewInt(0),
+			),
+		)
 
 		actual, err := objects.Values(context.Background(), obj)
 		actualSorted := actual.(*values.Array).Sort()
