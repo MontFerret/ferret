@@ -1,0 +1,9 @@
+LET doc = DOCUMENT("https://github.com/", true)
+
+NAVIGATE(doc, "https://github.com/features")
+NAVIGATE(doc, "https://github.com/business")
+NAVIGATE(doc, "https://github.com/marketplace")
+NAVIGATE_BACK(doc, 3)
+NAVIGATE_FORWARD(doc, 2)
+
+RETURN doc.url == "https://github.com/business"

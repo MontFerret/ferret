@@ -2,17 +2,16 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Appends a new item to an array and returns a new array with a given element.
- * If ``uniqueOnly`` is set to true, then will add the item only if it's unique.
- * @param arr (Array) - Target array.
- * @param item (Read) - Target value to add.
- * @returns arr (Array) - New array.
- */
+// Append appends a new item to an array and returns a new array with a given element.
+// If ``uniqueOnly`` is set to true, then will add the item only if it's unique.
+// @param arr (Array) - Target array.
+// @param item (Read) - Target value to add.
+// @returns arr (Array) - New array.
 func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

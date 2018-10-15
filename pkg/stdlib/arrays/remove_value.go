@@ -2,18 +2,17 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a new array with removed all occurrences of value in a given array.
- * Optionally with a limit to the number of removals.
- * @param array (Array) - Source array.
- * @param value (Read) - Target value.
- * @param limit (Int, optional) - A limit to the number of removals.
- * @returns (Array) - A new array with removed all occurrences of value in a given array.
- */
+// RemoveValue returns a new array with removed all occurrences of value in a given array.
+// Optionally with a limit to the number of removals.
+// @param array (Array) - Source array.
+// @param value (Read) - Target value.
+// @param limit (Int, optional) - A limit to the number of removals.
+// @returns (Array) - A new array with removed all occurrences of value in a given array.
 func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

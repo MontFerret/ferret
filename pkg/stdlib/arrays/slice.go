@@ -2,17 +2,16 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns a new sliced array.
- * @param array (Array) - Source array.
- * @param start (Int) - Start position of extraction.
- * @param length (Int, optional) - Read indicating how many elements to extract.
- * @returns (Array) - Sliced array.
- */
+// Slice returns a new sliced array.
+// @param array (Array) - Source array.
+// @param start (Int) - Start position of extraction.
+// @param length (Int, optional) - Read indicating how many elements to extract.
+// @returns (Array) - Sliced array.
 func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

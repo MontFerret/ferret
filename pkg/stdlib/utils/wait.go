@@ -2,15 +2,14 @@ package utils
 
 import (
 	"context"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"time"
 )
 
-/*
- * Pauses the execution for a given period.
- * @param timeout (Int) - Integer value indication for how long to pause.
- */
+// Wait pauses the execution for a given period.
+// @param timeout (Int) - Integer value indication for how long to pause.
 func Wait(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(inputs, 1, 1)
 

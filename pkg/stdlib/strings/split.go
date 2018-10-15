@@ -2,18 +2,17 @@ package strings
 
 import (
 	"context"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"strings"
 )
 
-/*
- * Splits the given string value into a list of strings, using the separator.
- * @params text (String) - The string to split.
- * @params separator (String) - The sperator.
- * @params limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
- * @returns strings (Array<String>) - Array of strings.
- */
+// Split splits the given string value into a list of strings, using the separator.
+// @params text (String) - The string to split.
+// @params separator (String) - The sperator.
+// @params limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
+// @returns strings (Array<String>) - Array of strings.
 func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

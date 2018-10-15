@@ -2,16 +2,15 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Dispatches click event on a given element
- * @param source (Document | Element) - Event source.
- * @param selector (String, optional) - Optional selector. Only used when a document instance is passed.
- */
+// Click dispatches click event on a given element
+// @param source (Document | Element) - Event source.
+// @param selector (String, optional) - Optional selector. Only used when a document instance is passed.
 func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

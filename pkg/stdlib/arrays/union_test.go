@@ -2,17 +2,16 @@ package arrays_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
-/*
- * Returns the union of distinct values of all passed arrays.
- * @param arrays (Array, repeated) - List of arrays to combine.
- * @returns (Array) - All array elements combined in a single array, without duplicates, in any order.
- */
+// TestUnion returns the union of distinct values of all passed arrays.
+// @param arrays (Array, repeated) - List of arrays to combine.
+// @returns (Array) - All array elements combined in a single array, without duplicates, in any order.
 func TestUnion(t *testing.T) {
 	Convey("Should union all arrays", t, func() {
 		arr1 := values.NewArrayWith(

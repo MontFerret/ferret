@@ -2,15 +2,14 @@ package strings
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Concatenates one or more instances of Read, or an Array.
- * @params src (String...|Array) - The source string / array.
- * @returns String
- */
+// Concat concatenates one or more instances of Read, or an Array.
+// @params src (String...|Array) - The source string / array.
+// @returns String
 func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
@@ -41,12 +40,10 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-/*
- * Concatenates one or more instances of Read, or an Array with a given separator.
- * @params separator (string) - The separator string.
- * @params src (string...|array) - The source string / array.
- * @returns string
- */
+// ConcatWithSeparator concatenates one or more instances of Read, or an Array with a given separator.
+// @params separator (string) - The separator string.
+// @params src (string...|array) - The source string / array.
+// @returns string
 func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

@@ -1,4 +1,4 @@
-.PHONY: build install test doc fmt lint vet
+.PHONY: build compile install test e2e doc fmt lint vet release
 
 export GOPATH
 
@@ -6,6 +6,7 @@ VERSION ?= $(shell git describe --tags --always --dirty)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_CLI = ./cli
+DIR_E2E = ./e2e
 
 default: build
 
@@ -13,7 +14,7 @@ build: install vet generate test compile
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
-	-ldflags "-X main.Version=${VERSION}" \
+	-ldflags "-X main.version=${VERSION}" \
 	./main.go
 
 install:
@@ -21,6 +22,9 @@ install:
 
 test:
 	go test ${DIR_PKG}/...
+
+e2e:
+	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
 
 generate:
 	go generate ${DIR_PKG}/...
@@ -41,3 +45,6 @@ lint:
 # go get code.google.com/p/go.tools/cmd/vet
 vet:
 	go vet ${DIR_CLI}/... ${DIR_PKG}/...
+
+release:
+	goreleaser

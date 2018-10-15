@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"hash/fnv"
 	"math"
 	"strconv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
 )
 
 type Float float64
@@ -60,6 +61,14 @@ func ParseFloatP(input interface{}) Float {
 	}
 
 	return res
+}
+
+func IsNaN(input Float) Boolean {
+	return NewBoolean(math.IsNaN(float64(input)))
+}
+
+func IsInf(input Float, sign Int) Boolean {
+	return NewBoolean(math.IsInf(float64(input), int(sign)))
 }
 
 func (t Float) MarshalJSON() ([]byte, error) {
@@ -127,6 +136,6 @@ func (t Float) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t Float) Clone() core.Value {
+func (t Float) Copy() core.Value {
 	return t
 }

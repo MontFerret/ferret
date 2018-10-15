@@ -2,16 +2,15 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Returns all unique elements from a given array.
- * @param array (Array) - Target array.
- * @returns (Array) - New array without duplicates.
- */
+// Unique returns all unique elements from a given array.
+// @param array (Array) - Target array.
+// @returns (Array) - New array without duplicates.
 func Unique(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

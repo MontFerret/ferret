@@ -2,18 +2,17 @@ package strings
 
 import (
 	"context"
+	"regexp"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"regexp"
 )
 
-/*
- * Returns the matches in the given string text, using the regex.
- * @param text (String) - The string to search in.
- * @param regex (String) - A regular expression to use for matching the text.
- * @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
- * @return (Array) - An array of strings containing the matches.
- */
+// RegexMatch returns the matches in the given string text, using the regex.
+// @param text (String) - The string to search in.
+// @param regex (String) - A regular expression to use for matching the text.
+// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
+// @return (Array) - An array of strings containing the matches.
 func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -50,14 +49,12 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-/*
- * Splits the given string text into a list of strings, using the separator.
- * @param text (String) - The string to split.
- * @param regex (String) - A regular expression to use for splitting the text.
- * @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
- * @param limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
- * @return (Array) - An array of strings splited by teh expression.
- */
+// RegexSplit splits the given string text into a list of strings, using the separator.
+// @param text (String) - The string to split.
+// @param regex (String) - A regular expression to use for splitting the text.
+// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
+// @param limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
+// @return (Array) - An array of strings splited by teh expression.
 func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
@@ -95,13 +92,11 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-/*
- * Test wether the regexp has at least one match in the given text.
- * @param text (String) - The string to split.
- * @param regex (String) - A regular expression to use for splitting the text.
- * @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
- * @return (Boolean) - Returns true if the pattern is contained in text, and false otherwise.
- */
+// RegexTest test wether the regexp has at least one match in the given text.
+// @param text (String) - The string to split.
+// @param regex (String) - A regular expression to use for splitting the text.
+// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
+// @return (Boolean) - Returns true if the pattern is contained in text, and false otherwise.
 func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -129,14 +124,12 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewBoolean(matches), nil
 }
 
-/*
- * Replace every substring matched with the regexp with a given string.
- * @param text (String) - The string to split.
- * @param regex (String) - A regular expression search pattern.
- * @param replacement (String) - The string to replace the search pattern with
- * @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
- * @return (String) - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
- */
+// RegexReplace replace every substring matched with the regexp with a given string.
+// @param text (String) - The string to split.
+// @param regex (String) - A regular expression search pattern.
+// @param replacement (String) - The string to replace the search pattern with
+// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
+// @return (String) - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
 func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 

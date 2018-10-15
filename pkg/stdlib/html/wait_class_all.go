@@ -2,19 +2,18 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Waits for a class to appear on all matched elements.
- * Stops the execution until the navigation ends or operation times out.
- * @param doc (HTMLDocument) - Parent document.
- * @param selector (String) - String of CSS selector.
- * @param class (String) - String of target CSS class.
- * @param timeout (Int, optional) - Optional timeout.
- */
+// WaitClassAll waits for a class to appear on all matched elements.
+// Stops the execution until the navigation ends or operation times out.
+// @param doc (HTMLDocument) - Parent document.
+// @param selector (String) - String of CSS selector.
+// @param class (String) - String of target CSS class.
+// @param timeout (Int, optional) - Optional timeout.
 func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 

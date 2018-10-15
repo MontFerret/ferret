@@ -2,10 +2,11 @@ package strings
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"math/rand"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const (
@@ -15,11 +16,9 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-/*
- * Generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
- * @param length (Int) - The desired string length for the token. It must be greater than 0 and at most 65536.
- * @return (String) - A generated token consisting of lowercase letters, uppercase letters and numbers.
- */
+// RandomToken generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
+// @param length (Int) - The desired string length for the token. It must be greater than 0 and at most 65536.
+// @return (String) - A generated token consisting of lowercase letters, uppercase letters and numbers.
 func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

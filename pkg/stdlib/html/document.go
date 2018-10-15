@@ -2,19 +2,18 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/html"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Loads a document by a given url.
- * By default, loads a document by http call - resulted document does not support any interactions.
- * If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
- * @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
- * @param dynamic (Boolean) - Optional boolean value indicating whether to use dynamic document.
- * @returns (HTMLDocument) - Returns loaded HTML document.
- */
+// Document loads a document by a given url.
+// By default, loads a document by http call - resulted document does not support any interactions.
+// If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
+// @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
+// @param dynamic (Boolean) - Optional boolean value indicating whether to use dynamic document.
+// @returns (HTMLDocument) - Returns loaded HTML document.
 func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

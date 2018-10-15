@@ -37,6 +37,8 @@ type (
 		InnerTextBySelector(selector String) String
 
 		InnerTextBySelectorAll(selector String) *Array
+
+		CountBySelector(selector String) Int
 	}
 
 	HTMLDocument interface {

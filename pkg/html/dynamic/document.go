@@ -176,7 +176,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (doc *HTMLDocument) Clone() core.Value {
+func (doc *HTMLDocument) Copy() core.Value {
 	return values.None
 }
 
@@ -364,6 +364,13 @@ func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.
 	defer doc.Unlock()
 
 	return doc.element.InnerTextBySelectorAll(selector)
+}
+
+func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.CountBySelector(selector)
 }
 
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
@@ -567,6 +574,11 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 }
 
 func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
+	// do not wait
+	if timeout == 0 {
+		return nil
+	}
+
 	onEvent := make(chan struct{})
 	listener := func(_ interface{}) {
 		close(onEvent)
@@ -601,6 +613,100 @@ func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
 	}
 
 	return doc.WaitForNavigation(timeout)
+}
+
+func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (values.Boolean, error) {
+	ctx := context.Background()
+	history, err := doc.client.Page.GetNavigationHistory(ctx)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	// we are in the beginning
+	if history.CurrentIndex == 0 {
+		return values.False, nil
+	}
+
+	if skip < 1 {
+		skip = 1
+	}
+
+	to := history.CurrentIndex - int(skip)
+
+	if to < 0 {
+		// TODO: Return error?
+		return values.False, nil
+	}
+
+	prev := history.Entries[to]
+	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(prev.ID))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	err = doc.WaitForNavigation(timeout)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
+}
+
+func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (values.Boolean, error) {
+	ctx := context.Background()
+	history, err := doc.client.Page.GetNavigationHistory(ctx)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	length := len(history.Entries)
+	lastIndex := length - 1
+
+	// nowhere to go forward
+	if history.CurrentIndex == lastIndex {
+		return values.False, nil
+	}
+
+	if skip < 1 {
+		skip = 1
+	}
+
+	to := int(skip) + history.CurrentIndex
+
+	if to > lastIndex {
+		// TODO: Return error?
+		return values.False, nil
+	}
+
+	next := history.Entries[to]
+	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(next.ID))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	err = doc.WaitForNavigation(timeout)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
+}
+
+func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, error) {
+	ctx := context.Background()
+
+	reply, err := doc.client.Page.PrintToPDF(ctx, params)
+	if err != nil {
+		return values.None, err
+	}
+
+	return values.NewBinary(reply.Data), nil
 }
 
 func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {

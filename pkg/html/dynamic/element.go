@@ -276,7 +276,7 @@ func (el *HTMLElement) Value() core.Value {
 	return val
 }
 
-func (el *HTMLElement) Clone() core.Value {
+func (el *HTMLElement) Copy() core.Value {
 	return values.None
 }
 
@@ -300,7 +300,7 @@ func (el *HTMLElement) GetAttributes() core.Value {
 	}
 
 	// returning shallow copy
-	return val.Clone()
+	return val.Copy()
 }
 
 func (el *HTMLElement) GetAttribute(name values.String) core.Value {
@@ -680,6 +680,29 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Ar
 	}
 
 	return arr
+}
+
+func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
+	if !el.IsConnected() {
+		return values.ZeroInt
+	}
+
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
+	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+
+	if err != nil {
+		el.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.ZeroInt
+	}
+
+	return values.NewInt(len(res.NodeIDs))
 }
 
 func (el *HTMLElement) Click() (values.Boolean, error) {

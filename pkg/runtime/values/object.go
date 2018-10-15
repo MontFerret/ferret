@@ -141,7 +141,7 @@ func (t *Object) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *Object) Clone() core.Value {
+func (t *Object) Copy() core.Value {
 	c := NewObject()
 
 	for k, v := range t.value {
@@ -201,4 +201,21 @@ func (t *Object) Remove(key String) {
 
 func (t *Object) SetIn(path []core.Value, value core.Value) error {
 	return SetIn(t, path, value)
+}
+
+func (t *Object) Clone() core.Cloneable {
+	cloned := NewObject()
+
+	var value core.Value
+	var keyString String
+	for key := range t.value {
+		keyString = NewString(key)
+		value, _ = t.Get(keyString)
+		if IsCloneable(value) {
+			value = value.(core.Cloneable).Clone()
+		}
+		cloned.Set(keyString, value)
+	}
+
+	return cloned
 }

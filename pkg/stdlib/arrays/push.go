@@ -2,17 +2,16 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-/*
- * Create a new array with appended value.
- * @param array (Array) - Source array.
- * @param value (Read) - Target value.
- * @param unique (Boolean, optional) - Read indicating whether to do uniqueness check.
- * @returns (Array) - A new array with appended value.
- */
+// Push create a new array with appended value.
+// @param array (Array) - Source array.
+// @param value (Read) - Target value.
+// @param unique (Boolean, optional) - Read indicating whether to do uniqueness check.
+// @returns (Array) - A new array with appended value.
 func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

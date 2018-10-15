@@ -3,10 +3,11 @@ package values
 import (
 	"encoding/binary"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"hash/fnv"
 	"strconv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
 )
 
 type Int int
@@ -125,6 +126,6 @@ func (t Int) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t Int) Clone() core.Value {
+func (t Int) Copy() core.Value {
 	return t
 }

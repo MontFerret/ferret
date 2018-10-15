@@ -2099,31 +2099,28 @@ func TestParam(t *testing.T) {
 	})
 }
 
-func TestHtml(t *testing.T) {
-	Convey("Should load a document", t, func() {
-		c := compiler.New()
-
-		out, err := c.MustCompile(`
-LET google = DOCUMENT("https://www.google.com/", true)
-
-INPUT(google, 'input[name="q"]', "ferret", 25)
-CLICK(google, 'input[name="btnK"]')
-
-WAIT_NAVIGATION(google)
-WAIT_ELEMENT(google, '.g', 5000)
-
-FOR result IN ELEMENTS(google, '.g')
-   // filter out extra elements like videos and 'People also ask'
-   FILTER TRIM(result.attributes.class) == 'g'
-   RETURN {
-       title: INNER_TEXT(result, 'h3'),
-       description: INNER_TEXT(result, '.st'),
-       url: INNER_TEXT(result, 'cite')
-   }
-			`).Run(context.Background())
-
-		So(err, ShouldBeNil)
-
-		So(string(out), ShouldEqual, `"int"`)
-	})
-}
+//func TestHtml(t *testing.T) {
+//	Convey("Should load a document", t, func() {
+//		c := compiler.New()
+//
+//		out, err := c.MustCompile(`
+//LET origin = "https://github.com/"
+//LET doc = DOCUMENT(origin, true)
+//
+//NAVIGATE(doc, "https://github.com/features")
+//
+//LOG("NAVIGATE", doc.url)
+//
+//NAVIGATE_BACK(doc)
+//
+//LOG("NAVIGATE_BACK", doc.url)
+//
+//RETURN doc.url == origin
+//
+//			`).Run(context.Background())
+//
+//		So(err, ShouldBeNil)
+//
+//		So(string(out), ShouldEqual, `"int"`)
+//	})
+//}
