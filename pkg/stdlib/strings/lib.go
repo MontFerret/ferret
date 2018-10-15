@@ -31,7 +31,7 @@ func NewLib() map[string]core.Function {
 		"SUBSTITUTE":           Substitute,
 		"SUBSTRING":            Substring,
 		"TO_BASE64":            ToBase64,
-		"FROM_BASE64":					FromBase64,
+		"FROM_BASE64":          FromBase64,
 		"TRIM":                 Trim,
 		"UPPER":                Upper,
 	}

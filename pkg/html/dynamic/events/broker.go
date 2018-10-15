@@ -112,6 +112,19 @@ func (broker *EventBroker) RemoveEventListener(event Event, listener EventListen
 	broker.listeners[event] = modifiedListeners
 }
 
+func (broker *EventBroker) ListenerCount(event Event) int {
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
+
+	listeners, ok := broker.listeners[event]
+
+	if !ok {
+		return 0
+	}
+
+	return len(listeners)
+}
+
 func (broker *EventBroker) Start() error {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
