@@ -202,3 +202,26 @@ func TestValues(t *testing.T) {
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 }
+
+func TestValuesStress(t *testing.T) {
+	Convey("Stress", t, func() {
+		for i := 0; i < 100; i++ {
+			obj1 := values.NewObjectWith(
+				values.NewObjectProperty("int0", values.NewInt(0)),
+			)
+			obj2 := values.NewObjectWith(
+				values.NewObjectProperty("int1", values.NewInt(1)),
+			)
+			obj := values.NewObjectWith(
+				values.NewObjectProperty("k1", obj1),
+				values.NewObjectProperty("k2", obj2),
+			)
+			expected := values.NewArrayWith(obj1, obj2).Sort()
+
+			actual, _ := objects.Values(context.Background(), obj)
+			actualSorted := actual.(*values.Array).Sort()
+
+			So(actualSorted.Compare(expected), ShouldEqual, 0)
+		}
+	})
+}
