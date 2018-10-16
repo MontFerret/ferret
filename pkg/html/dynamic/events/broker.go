@@ -258,7 +258,6 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 	}
 
 	broker.mu.Lock()
-	defer broker.mu.Unlock()
 
 	listeners, ok := broker.listeners[event]
 
@@ -269,14 +268,14 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 	snapshot := make([]EventListener, len(listeners))
 	copy(snapshot, listeners)
 
-	go func() {
-		for _, listener := range snapshot {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				listener(message)
-			}
+	broker.mu.Unlock()
+
+	for _, listener := range snapshot {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			listener(message)
 		}
-	}()
+	}
 }
