@@ -132,8 +132,8 @@ func NewHTMLDocument(
 	doc.url = url
 	doc.element = rootElement
 
-	broker.AddEventListener("load", doc.handlePageLoad)
-	broker.AddEventListener("error", doc.handleError)
+	broker.AddEventListener(events.EventLoad, doc.handlePageLoad)
+	broker.AddEventListener(events.EventError, doc.handleError)
 
 	return doc
 }
@@ -584,9 +584,9 @@ func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 		close(onEvent)
 	}
 
-	defer doc.events.RemoveEventListener("load", listener)
+	defer doc.events.RemoveEventListener(events.EventLoad, listener)
 
-	doc.events.AddEventListener("load", listener)
+	doc.events.AddEventListener(events.EventLoad, listener)
 
 	select {
 	case <-onEvent:

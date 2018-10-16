@@ -36,7 +36,7 @@ type (
 	}
 
 	HTMLElement struct {
-		sync.Mutex
+		mu             sync.Mutex
 		logger         *zerolog.Logger
 		client         *cdp.Client
 		events         *events.EventBroker
@@ -164,32 +164,32 @@ func NewHTMLElement(
 	el.value = values.NewString(value)
 	el.children = children
 
-	broker.AddEventListener("reload", el.handlePageReload)
-	broker.AddEventListener("attr:modified", el.handleAttrModified)
-	broker.AddEventListener("attr:removed", el.handleAttrRemoved)
-	broker.AddEventListener("children:count", el.handleChildrenCountChanged)
-	broker.AddEventListener("children:inserted", el.handleChildInserted)
-	broker.AddEventListener("children:deleted", el.handleChildDeleted)
+	broker.AddEventListener(events.EventReload, el.handlePageReload)
+	broker.AddEventListener(events.EventAttrModified, el.handleAttrModified)
+	broker.AddEventListener(events.EventAttrRemoved, el.handleAttrRemoved)
+	broker.AddEventListener(events.EventChildNodeCountUpdated, el.handleChildrenCountChanged)
+	broker.AddEventListener(events.EventChildNodeInserted, el.handleChildInserted)
+	broker.AddEventListener(events.EventChildNodeRemoved, el.handleChildRemoved)
 
 	return el
 }
 
 func (el *HTMLElement) Close() error {
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	// already closed
 	if !el.connected {
 		return nil
 	}
 
-	el.connected = false
-	el.events.RemoveEventListener("reload", el.handlePageReload)
-	el.events.RemoveEventListener("attr:modified", el.handleAttrModified)
-	el.events.RemoveEventListener("attr:removed", el.handleAttrRemoved)
-	el.events.RemoveEventListener("children:count", el.handleChildrenCountChanged)
-	el.events.RemoveEventListener("children:inserted", el.handleChildInserted)
-	el.events.RemoveEventListener("children:deleted", el.handleChildDeleted)
+	el.connected = values.False
+	el.events.RemoveEventListener(events.EventReload, el.handlePageReload)
+	el.events.RemoveEventListener(events.EventAttrModified, el.handleAttrModified)
+	el.events.RemoveEventListener(events.EventAttrRemoved, el.handleAttrRemoved)
+	el.events.RemoveEventListener(events.EventChildNodeCountUpdated, el.handleChildrenCountChanged)
+	el.events.RemoveEventListener(events.EventChildNodeInserted, el.handleChildInserted)
+	el.events.RemoveEventListener(events.EventChildNodeRemoved, el.handleChildRemoved)
 
 	return nil
 }
@@ -243,8 +243,8 @@ func (el *HTMLElement) Unwrap() interface{} {
 }
 
 func (el *HTMLElement) Hash() uint64 {
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	h := fnv.New64a()
 
@@ -330,6 +330,7 @@ func (el *HTMLElement) GetChildNodes() core.Value {
 }
 
 func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
+	// TODO: Add lazy loading
 	val, err := el.loadedChildren.Read()
 
 	if err != nil {
@@ -603,8 +604,8 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 }
 
 func (el *HTMLElement) InnerHTML() values.String {
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	return el.innerHTML
 }
@@ -746,8 +747,8 @@ func (el *HTMLElement) Input(value core.Value, delay values.Int) error {
 }
 
 func (el *HTMLElement) IsConnected() values.Boolean {
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	return el.connected
 }
@@ -916,8 +917,8 @@ func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
 		return
 	}
 
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	el.children = createChildrenArray(node.Node.Children)
 }
@@ -937,8 +938,8 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 	prevID := reply.PreviousNodeID
 	nextID := reply.Node.NodeID
 
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	for idx, id := range el.children {
 		if id.nodeID == prevID {
@@ -991,7 +992,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 	})
 }
 
-func (el *HTMLElement) handleChildDeleted(message interface{}) {
+func (el *HTMLElement) handleChildRemoved(message interface{}) {
 	reply, ok := message.(*dom.ChildNodeRemovedReply)
 
 	if !ok {
@@ -1005,8 +1006,8 @@ func (el *HTMLElement) handleChildDeleted(message interface{}) {
 	targetIDx := -1
 	targetID := reply.NodeID
 
-	el.Lock()
-	defer el.Unlock()
+	el.mu.Lock()
+	defer el.mu.Unlock()
 
 	for idx, id := range el.children {
 		if id.nodeID == targetID {

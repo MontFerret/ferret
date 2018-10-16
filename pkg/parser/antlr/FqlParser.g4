@@ -154,6 +154,7 @@ booleanLiteral
 
 stringLiteral
     : StringLiteral
+    | TemplateStringLiteral
     ;
 
 integerLiteral
