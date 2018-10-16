@@ -79,6 +79,7 @@ In: 'IN';
 Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
 StringLiteral: SQString | DQSring;
+TemplateStringLiteral: '`' ('\\`' | ~'`')* '`';
 IntegerLiteral: [0-9]+;
 FloatLiteral
     : DecimalIntegerLiteral Dot [0-9]+ ExponentPart?
