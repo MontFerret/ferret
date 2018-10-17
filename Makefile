@@ -21,7 +21,10 @@ install:
 	dep ensure
 
 test:
-	go test ${DIR_PKG}/...
+	go test -race ${DIR_PKG}/...
+
+cover:
+	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/...
 
 e2e:
 	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
