@@ -37,7 +37,7 @@ func NewLogicalOperator(
 	op, exists := logicalOperators[operator]
 
 	if !exists {
-		return nil, core.Error(core.ErrInvalidArgument, "value")
+		return nil, core.Error(core.ErrInvalidArgument, "operator")
 	}
 
 	return &LogicalOperator{

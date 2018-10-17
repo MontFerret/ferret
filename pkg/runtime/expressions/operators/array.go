@@ -59,7 +59,7 @@ func NewArrayOperator(
 	}
 
 	if IsValidArrayOperatorType(aotype) == false {
-		return nil, core.Error(core.ErrInvalidArgument, "operator type")
+		return nil, core.Error(core.ErrInvalidArgument, "operator")
 	}
 
 	if comparator == nil {
