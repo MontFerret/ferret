@@ -6,6 +6,7 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/sync/errgroup"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -293,9 +294,10 @@ func TestEventBroker(t *testing.T) {
 			b := NewTestEventBroker()
 			b.Start()
 
-			counter := 0
+			var counter int64
+
 			b.AddEventListener(events.EventLoad, func(message interface{}) {
-				counter++
+				atomic.AddInt64(&counter, 1)
 				b.Stop()
 			})
 
@@ -313,7 +315,7 @@ func TestEventBroker(t *testing.T) {
 
 			time.Sleep(time.Duration(5) * time.Millisecond)
 
-			So(counter, ShouldEqual, 1)
+			So(atomic.LoadInt64(&counter), ShouldEqual, 1)
 		})
 	})
 }
