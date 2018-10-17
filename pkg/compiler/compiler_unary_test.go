@@ -65,4 +65,28 @@ func TestUnaryOperator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out2), ShouldEqual, `{"enabled":false}`)
 	})
+
+	Convey("RETURN -v", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			LET v = 1
+			RETURN -v
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `-1`)
+	})
+
+	Convey("RETURN +v", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			LET v = -1
+			RETURN +v
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `-1`)
+	})
 }

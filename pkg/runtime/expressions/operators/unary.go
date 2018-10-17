@@ -7,30 +7,35 @@ import (
 )
 
 type (
-	UnaryOperatorType int
+	UnaryOperatorType string
 	UnaryOperator     struct {
 		*baseOperator
-		value UnaryOperatorType
+		fn OperatorFunc
 	}
 )
 
 const (
-	UnaryOperatorTypeNot UnaryOperatorType = 0
-	UnaryOperatorTypeYes UnaryOperatorType = 1
+	UnaryOperatorTypeNoop     UnaryOperatorType = ""
+	UnaryOperatorTypeNot      UnaryOperatorType = "!"
+	UnaryOperatorTypeNot2     UnaryOperatorType = "NOT"
+	UnaryOperatorTypeNegative UnaryOperatorType = "-"
+	UnaryOperatorTypePositive UnaryOperatorType = "+"
 )
 
-var unaryOperators = map[string]UnaryOperatorType{
-	"!":   UnaryOperatorTypeNot,
-	"NOT": UnaryOperatorTypeNot,
-	"":    UnaryOperatorTypeYes,
+var unaryOperators = map[UnaryOperatorType]OperatorFunc{
+	UnaryOperatorTypeNoop:     ToBoolean,
+	UnaryOperatorTypeNot:      Not,
+	UnaryOperatorTypeNot2:     Not,
+	UnaryOperatorTypeNegative: Negative,
+	UnaryOperatorTypePositive: Positive,
 }
 
 func NewUnaryOperator(
 	src core.SourceMap,
 	exp core.Expression,
-	operator string,
+	operator UnaryOperatorType,
 ) (*UnaryOperator, error) {
-	op, exists := unaryOperators[operator]
+	fn, exists := unaryOperators[operator]
 
 	if !exists {
 		return nil, core.Error(core.ErrInvalidArgument, "operator")
@@ -42,7 +47,7 @@ func NewUnaryOperator(
 			exp,
 			nil,
 		},
-		op,
+		fn,
 	}, nil
 }
 
@@ -57,9 +62,5 @@ func (operator *UnaryOperator) Exec(ctx context.Context, scope *core.Scope) (cor
 }
 
 func (operator *UnaryOperator) Eval(_ context.Context, left, _ core.Value) (core.Value, error) {
-	if operator.value == UnaryOperatorTypeNot {
-		return Not(left, values.None), nil
-	}
-
-	return values.ToBoolean(left), nil
+	return operator.fn(left, values.None), nil
 }

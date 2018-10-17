@@ -804,7 +804,7 @@ func (v *visitor) doVisitUnaryOperator(ctx *fql.ExpressionContext, scope *scope)
 	return operators.NewUnaryOperator(
 		v.getSourceMap(ctx),
 		exp,
-		op.GetText(),
+		operators.UnaryOperatorType(op.GetText()),
 	)
 }
 

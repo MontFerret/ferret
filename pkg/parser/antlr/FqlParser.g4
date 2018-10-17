@@ -216,8 +216,6 @@ expression
     | expression mathOperator expression
     | functionCallExpression
     | OpenParen expressionSequence CloseParen
-    | Plus expression
-    | Minus expression
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
     | expression QuestionMark expression? Colon expression
