@@ -59,7 +59,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 					result = el.NodeName()
 				case "innerText":
 					result = el.InnerText()
-				case "innerHtml":
+				case "innerHTML":
 					result = el.InnerHTML()
 				case "value":
 					result = el.Value()
