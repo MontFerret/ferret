@@ -22,7 +22,7 @@ type (
 	Option func(*Options)
 )
 
-func newOptions() *Options {
+func NewOptions() *Options {
 	return &Options{
 		cdp:    "http://0.0.0.0:9222",
 		params: make(map[string]core.Value),
@@ -83,7 +83,15 @@ func WithLogLevel(lvl logging.Level) Option {
 	}
 }
 
-func (opts *Options) withContext(parent context.Context) context.Context {
+func (opts *Options) Apply(setters ...Option) *Options {
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return opts
+}
+
+func (opts *Options) WithContext(parent context.Context) context.Context {
 	ctx := core.ParamsWith(parent, opts.params)
 	ctx = logging.WithContext(ctx, opts.logging)
 	ctx = env.WithContext(ctx, env.Environment{

@@ -1,6 +1,9 @@
 # Ferret
 <p align="center">
   <a href="https://travis-ci.com/MontFerret/ferret"><img alt="Build Status" src="https://travis-ci.com/MontFerret/ferret.svg?branch=master"></a>
+<a href="https://codecov.io/gh/MontFerret/ferret">
+  <img src="https://codecov.io/gh/MontFerret/ferret/branch/master/graph/badge.svg" />
+</a>
   <a href="https://discord.gg/kzet32U"><img alt="Discord Chat" src="https://img.shields.io/discord/501533080880676864.svg"></a>
 	<a href="http://opensource.org/licenses/MIT"><img alt="MIT License" src="http://img.shields.io/badge/license-MIT-brightgreen.svg"></a>
 </p>

@@ -3,6 +3,8 @@ package html
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"regexp"
 
 	"github.com/mafredri/cdp/protocol/page"
@@ -372,4 +374,29 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	return pdf, nil
+}
+
+// Download a ressource from the given URL.
+// @param URL (String) - URL to download.
+// @returns data (Binary) - Returns a base64 encoded string in binary format.
+func Download(_ context.Context, args ...core.Value) (core.Value, error) {
+	err := core.ValidateArgs(args, 1, 1)
+	if err != nil {
+		return values.None, err
+	}
+
+	arg1 := args[0]
+	err = core.ValidateType(arg1, core.StringType)
+	if err != nil {
+		return values.None, err
+	}
+	resp, err := http.Get(arg1.String())
+	if err != nil {
+		return values.None, err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return values.None, err
+	}
+	return values.NewBinary(data), nil
 }
