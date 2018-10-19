@@ -2,9 +2,9 @@ package expressions
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
 )
@@ -13,7 +13,7 @@ type ForExpression struct {
 	src        core.SourceMap
 	valVar     string
 	keyVar     string
-	dataSource collections.DataSource
+	dataSource source.DataSource
 	predicate  core.Expression
 	spread     bool
 }
@@ -22,7 +22,7 @@ func NewForExpression(
 	src core.SourceMap,
 	valVar string,
 	keyVar string,
-	dataSource collections.DataSource,
+	dataSource source.DataSource,
 	predicate core.Expression,
 	spread bool,
 ) (*ForExpression, error) {

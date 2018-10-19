@@ -4,12 +4,13 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type FilterClause struct {
 	src        core.SourceMap
-	dataSource collections.DataSource
+	dataSource source.DataSource
 	valVar     string
 	keyVar     string
 	predicate  core.Expression
@@ -17,7 +18,7 @@ type FilterClause struct {
 
 func NewFilterClause(
 	src core.SourceMap,
-	dataSource collections.DataSource,
+	dataSource source.DataSource,
 	valVar string,
 	keyVar string,
 	predicate core.Expression,
@@ -28,6 +29,10 @@ func NewFilterClause(
 		keyVar,
 		predicate,
 	}
+}
+
+func (clause *FilterClause) Variables() []string {
+	return clause.dataSource.Variables()
 }
 
 func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
