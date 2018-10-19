@@ -1,4 +1,4 @@
-package source
+package datasource
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/collections"

@@ -4,26 +4,26 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 )
 
 type LimitClause struct {
 	src        core.SourceMap
-	dataSource source.DataSource
+	dataSource datasource.DataSource
 	count      int
 	offset     int
 }
 
 func NewLimitClause(
 	src core.SourceMap,
-	dataSource source.DataSource,
+	dataSource datasource.DataSource,
 	count int,
 	offset int,
 ) *LimitClause {
 	return &LimitClause{src, dataSource, count, offset}
 }
 
-func (clause *LimitClause) Variables() source.Variables {
+func (clause *LimitClause) Variables() datasource.Variables {
 	return clause.dataSource.Variables()
 }
 

@@ -4,19 +4,19 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type FilterClause struct {
 	src        core.SourceMap
-	dataSource source.DataSource
+	dataSource datasource.DataSource
 	predicate  core.Expression
 }
 
 func NewFilterClause(
 	src core.SourceMap,
-	dataSource source.DataSource,
+	dataSource datasource.DataSource,
 	predicate core.Expression,
 ) *FilterClause {
 	return &FilterClause{
@@ -25,7 +25,7 @@ func NewFilterClause(
 	}
 }
 
-func (clause *FilterClause) Variables() source.Variables {
+func (clause *FilterClause) Variables() datasource.Variables {
 	return clause.dataSource.Variables()
 }
 

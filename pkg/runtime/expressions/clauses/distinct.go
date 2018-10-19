@@ -4,22 +4,22 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 )
 
 type DistinctClause struct {
 	src        core.SourceMap
-	dataSource source.DataSource
+	dataSource datasource.DataSource
 }
 
 func NewDistinctClause(
 	src core.SourceMap,
-	dataSource source.DataSource,
+	dataSource datasource.DataSource,
 ) *DistinctClause {
 	return &DistinctClause{src, dataSource}
 }
 
-func (clause *DistinctClause) Variables() source.Variables {
+func (clause *DistinctClause) Variables() datasource.Variables {
 	return clause.dataSource.Variables()
 }
 

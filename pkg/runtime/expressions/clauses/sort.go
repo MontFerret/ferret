@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 )
 
 type (
@@ -14,7 +14,7 @@ type (
 	}
 	SortClause struct {
 		src        core.SourceMap
-		dataSource source.DataSource
+		dataSource datasource.DataSource
 		sorters    []*SorterExpression
 	}
 )
@@ -33,13 +33,13 @@ func NewSorterExpression(expression core.Expression, direction collections.SortD
 
 func NewSortClause(
 	src core.SourceMap,
-	dataSource source.DataSource,
+	dataSource datasource.DataSource,
 	sorters ...*SorterExpression,
 ) *SortClause {
 	return &SortClause{src, dataSource, sorters}
 }
 
-func (clause *SortClause) Variables() source.Variables {
+func (clause *SortClause) Variables() datasource.Variables {
 	return clause.dataSource.Variables()
 }
 

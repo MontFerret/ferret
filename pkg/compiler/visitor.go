@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/source"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/pkg/errors"
 	"strconv"
@@ -174,7 +174,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		return nil, err
 	}
 
-	src, err := source.NewExpressionDataSource([]string{valVarName, keyVarName}, srcExp)
+	src, err := datasource.NewExpressionDataSource([]string{valVarName, keyVarName}, srcExp)
 
 	body := ctx.AllForExpressionBody()
 	predicate := expressions.NewBlockExpression(len(body) + 1)
