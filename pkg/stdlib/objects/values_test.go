@@ -218,9 +218,11 @@ func TestValuesStress(t *testing.T) {
 			)
 			expected := values.NewArrayWith(obj1, obj2).Sort()
 
-			actual, _ := objects.Values(context.Background(), obj)
+			actual, err := objects.Values(context.Background(), obj)
 			actualSorted := actual.(*values.Array).Sort()
 
+			So(err, ShouldBeNil)
+			So(actualSorted.Length(), ShouldEqual, expected.Length())
 			So(actualSorted.Compare(expected), ShouldEqual, 0)
 		}
 	})
