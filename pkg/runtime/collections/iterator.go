@@ -21,28 +21,6 @@ type (
 		Iterate(ctx context.Context, scope *core.Scope) (Iterator, error)
 	}
 
-	SliceIterator struct {
-		values []core.Value
-		pos    int
-	}
-
-	MapIterator struct {
-		values map[string]core.Value
-		keys   []string
-		pos    int
-	}
-
-	ArrayIterator struct {
-		values *values.Array
-		pos    int
-	}
-
-	ObjectIterator struct {
-		values *values.Object
-		keys   []string
-		pos    int
-	}
-
 	HTMLNodeIterator struct {
 		values values.HTMLNode
 		pos    int
@@ -114,104 +92,6 @@ func ToArray(iterator Iterator) (*values.Array, error) {
 	}
 
 	return res, nil
-}
-
-func NewSliceIterator(input []core.Value) *SliceIterator {
-	return &SliceIterator{input, 0}
-}
-
-func (iterator *SliceIterator) HasNext() bool {
-	return len(iterator.values) > iterator.pos
-}
-
-func (iterator *SliceIterator) Next() (core.Value, core.Value, error) {
-	if len(iterator.values) > iterator.pos {
-		idx := iterator.pos
-		val := iterator.values[idx]
-		iterator.pos++
-
-		return val, values.NewInt(idx), nil
-	}
-
-	return values.None, values.None, ErrExhausted
-}
-
-func NewMapIterator(input map[string]core.Value) *MapIterator {
-	return &MapIterator{input, nil, 0}
-}
-
-func (iterator *MapIterator) HasNext() bool {
-	// lazy initialization
-	if iterator.keys == nil {
-		keys := make([]string, len(iterator.values))
-
-		i := 0
-		for k := range iterator.values {
-			keys[i] = k
-			i++
-		}
-
-		iterator.keys = keys
-	}
-
-	return len(iterator.keys) > iterator.pos
-}
-
-func (iterator *MapIterator) Next() (core.Value, core.Value, error) {
-	if len(iterator.keys) > iterator.pos {
-		key := iterator.keys[iterator.pos]
-		val := iterator.values[key]
-		iterator.pos++
-
-		return val, values.NewString(key), nil
-	}
-
-	return values.None, values.None, ErrExhausted
-}
-
-func NewArrayIterator(input *values.Array) *ArrayIterator {
-	return &ArrayIterator{input, 0}
-}
-
-func (iterator *ArrayIterator) HasNext() bool {
-	return int(iterator.values.Length()) > iterator.pos
-}
-
-func (iterator *ArrayIterator) Next() (core.Value, core.Value, error) {
-	if int(iterator.values.Length()) > iterator.pos {
-		idx := iterator.pos
-		val := iterator.values.Get(values.NewInt(idx))
-		iterator.pos++
-
-		return val, values.NewInt(idx), nil
-	}
-
-	return values.None, values.None, ErrExhausted
-}
-
-func NewObjectIterator(input *values.Object) *ObjectIterator {
-	return &ObjectIterator{input, nil, 0}
-}
-
-func (iterator *ObjectIterator) HasNext() bool {
-	// lazy initialization
-	if iterator.keys == nil {
-		iterator.keys = iterator.values.Keys()
-	}
-
-	return len(iterator.keys) > iterator.pos
-}
-
-func (iterator *ObjectIterator) Next() (core.Value, core.Value, error) {
-	if len(iterator.keys) > iterator.pos {
-		key := iterator.keys[iterator.pos]
-		val, _ := iterator.values.Get(values.NewString(key))
-		iterator.pos++
-
-		return val, values.NewString(key), nil
-	}
-
-	return values.None, values.None, ErrExhausted
 }
 
 func NewHTMLNodeIterator(input values.HTMLNode) *HTMLNodeIterator {
