@@ -33,13 +33,7 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 
 	defer closeFn()
 
-	opts := newOptions()
-
-	for _, setter := range setters {
-		setter(opts)
-	}
-
-	ctx = opts.withContext(ctx)
+	ctx = NewOptions().Apply(setters...).WithContext(ctx)
 	ctx = html.WithDynamicDriver(ctx)
 	ctx = html.WithStaticDriver(ctx)
 
