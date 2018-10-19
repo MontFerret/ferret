@@ -12,7 +12,8 @@ type (
 		direction  collections.SortDirection
 	}
 	SortClause struct {
-		*baseClause
+		src          core.SourceMap
+		dataSource   collections.DataSource
 		variableName string
 		sorters      []*SorterExpression
 	}
@@ -32,11 +33,11 @@ func NewSorterExpression(expression core.Expression, direction collections.SortD
 
 func NewSortClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
+	dataSource collections.DataSource,
 	variableName string,
 	sorters ...*SorterExpression,
 ) *SortClause {
-	return &SortClause{&baseClause{src, dataSource}, variableName, sorters}
+	return &SortClause{src, dataSource, variableName, sorters}
 }
 
 func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {

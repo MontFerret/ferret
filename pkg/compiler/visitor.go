@@ -167,11 +167,13 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		forInScope.SetVariable(keyVarName)
 	}
 
-	src, err := v.doVisitForExpressionSource(ctx.ForExpressionSource().(*fql.ForExpressionSourceContext), forInScope)
+	srcExp, err := v.doVisitForExpressionSource(ctx.ForExpressionSource().(*fql.ForExpressionSourceContext), forInScope)
 
 	if err != nil {
 		return nil, err
 	}
+
+	src, err := collections.NewExpressionDataSource(srcExp)
 
 	body := ctx.AllForExpressionBody()
 	predicate := expressions.NewBlockExpression(len(body) + 1)
@@ -392,7 +394,7 @@ func (v *visitor) createSort(ctx *fql.SortClauseContext, scope *scope) ([]*claus
 	return res, nil
 }
 
-func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext, scope *scope) (core.Expression, error) {
 	arr := ctx.ArrayLiteral()
 
 	if arr != nil {
@@ -454,7 +456,7 @@ func (v *visitor) doVisitForExpressionBody(ctx *fql.ForExpressionBodyContext, sc
 	return nil, v.unexpectedToken(ctx)
 }
 
-func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scope *scope) (core.Expression, error) {
 	varName := ctx.Identifier().GetText()
 
 	_, err := scope.GetVariable(varName)
@@ -516,7 +518,7 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 	return member, nil
 }
 
-func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *scope) (core.Expression, error) {
 	assignments := ctx.AllPropertyAssignment()
 	props := make([]*literals.ObjectPropertyAssignment, 0, len(assignments))
 
@@ -579,7 +581,7 @@ func (v *visitor) doVisitShorthandPropertyNameContext(ctx *fql.ShorthandProperty
 	return literals.NewStringLiteral(ctx.Variable().GetText()), nil
 }
 
-func (v *visitor) doVisitArrayLiteral(ctx *fql.ArrayLiteralContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitArrayLiteral(ctx *fql.ArrayLiteralContext, scope *scope) (core.Expression, error) {
 	listCtx := ctx.ArrayElementList()
 
 	if listCtx == nil {
@@ -638,7 +640,7 @@ func (v *visitor) doVisitNoneLiteral(_ *fql.NoneLiteralContext) (core.Expression
 	return literals.None, nil
 }
 
-func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (core.Expression, error) {
 	name := ctx.Identifier().GetText()
 
 	// check whether the variable is defined
@@ -692,7 +694,7 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 	)
 }
 
-func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *scope) (core.Expression, error) {
 	exp, err := v.doVisitChildren(ctx, scope)
 
 	if err != nil {
@@ -713,7 +715,7 @@ func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *sco
 	)
 }
 
-func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (core.Expression, error) {
 	args := make([]core.Expression, 0, 5)
 	argsCtx := context.Arguments()
 
@@ -746,7 +748,7 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 	)
 }
 
-func (v *visitor) doVisitParamContext(context *fql.ParamContext, _ *scope) (collections.IterableExpression, error) {
+func (v *visitor) doVisitParamContext(context *fql.ParamContext, _ *scope) (core.Expression, error) {
 	name := context.Identifier().GetText()
 
 	return expressions.NewParameterExpression(

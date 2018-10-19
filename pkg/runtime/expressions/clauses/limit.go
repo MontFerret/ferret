@@ -7,18 +7,19 @@ import (
 )
 
 type LimitClause struct {
-	*baseClause
-	count  int
-	offset int
+	src        core.SourceMap
+	dataSource collections.DataSource
+	count      int
+	offset     int
 }
 
 func NewLimitClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
+	dataSource collections.DataSource,
 	count int,
 	offset int,
 ) *LimitClause {
-	return &LimitClause{&baseClause{src, dataSource}, count, offset}
+	return &LimitClause{src, dataSource, count, offset}
 }
 
 func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {

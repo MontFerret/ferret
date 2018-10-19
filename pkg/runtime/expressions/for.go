@@ -13,7 +13,7 @@ type ForExpression struct {
 	src        core.SourceMap
 	valVar     string
 	keyVar     string
-	dataSource collections.IterableExpression
+	dataSource collections.DataSource
 	predicate  core.Expression
 	spread     bool
 }
@@ -22,7 +22,7 @@ func NewForExpression(
 	src core.SourceMap,
 	valVar string,
 	keyVar string,
-	dataSource collections.IterableExpression,
+	dataSource collections.DataSource,
 	predicate core.Expression,
 	spread bool,
 ) (*ForExpression, error) {

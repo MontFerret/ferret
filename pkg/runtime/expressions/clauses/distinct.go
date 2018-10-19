@@ -7,14 +7,15 @@ import (
 )
 
 type DistinctClause struct {
-	*baseClause
+	src        core.SourceMap
+	dataSource collections.DataSource
 }
 
 func NewDistinctClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
+	dataSource collections.DataSource,
 ) *DistinctClause {
-	return &DistinctClause{&baseClause{src, dataSource}}
+	return &DistinctClause{src, dataSource}
 }
 
 func (clause *DistinctClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {

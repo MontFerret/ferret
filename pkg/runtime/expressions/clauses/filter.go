@@ -8,21 +8,22 @@ import (
 )
 
 type FilterClause struct {
-	*baseClause
-	valVar    string
-	keyVar    string
-	predicate core.Expression
+	src        core.SourceMap
+	dataSource collections.DataSource
+	valVar     string
+	keyVar     string
+	predicate  core.Expression
 }
 
 func NewFilterClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
+	dataSource collections.DataSource,
 	valVar string,
 	keyVar string,
 	predicate core.Expression,
 ) *FilterClause {
 	return &FilterClause{
-		&baseClause{src, dataSource},
+		src, dataSource,
 		valVar,
 		keyVar,
 		predicate,
