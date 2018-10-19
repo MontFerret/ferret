@@ -18,11 +18,19 @@ func NewFilterClause(
 	src core.SourceMap,
 	dataSource datasource.DataSource,
 	predicate core.Expression,
-) *FilterClause {
+) (datasource.DataSource, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
+	}
+
+	if predicate == nil {
+		return nil, core.Error(core.ErrMissedArgument, "predicate")
+	}
+
 	return &FilterClause{
 		src, dataSource,
 		predicate,
-	}
+	}, nil
 }
 
 func (clause *FilterClause) Variables() datasource.Variables {

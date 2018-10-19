@@ -8,7 +8,7 @@ import (
 type (
 	GroupIterator struct {
 		src       Iterator
-		selectors []*GroupSelector
+		selectors []GroupSelector
 		ready     bool
 		values    *MapIterator
 	}
@@ -16,8 +16,8 @@ type (
 
 func NewGroupIterator(
 	src Iterator,
-	selectors ...*GroupSelector,
-) (*GroupIterator, error) {
+	selectors ...GroupSelector,
+) (Iterator, error) {
 	if core.IsNil(src) {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}

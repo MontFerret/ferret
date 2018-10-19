@@ -3,21 +3,27 @@ package collections
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 type (
-	Selector      func(set ResultSet) (core.Value, error)
-	GroupSelector struct {
-		key   Selector
-		value Selector
+	GroupSelector interface {
+		Key(set ResultSet) (core.Value, error)
+		Value(set ResultSet) (core.Value, error)
+	}
+
+	GenericSelectorFn func(set ResultSet) (core.Value, error)
+
+	GenericGroupSelector struct {
+		key   GenericSelectorFn
+		value GenericSelectorFn
 	}
 )
 
-func NewGroupSelector(key, value Selector) *GroupSelector {
-	return &GroupSelector{key, value}
+func NewGenericGroupSelector(key, value GenericSelectorFn) GroupSelector {
+	return &GenericGroupSelector{key, value}
 }
 
-func (selector *GroupSelector) Key(set ResultSet) (core.Value, error) {
+func (selector *GenericGroupSelector) Key(set ResultSet) (core.Value, error) {
 	return selector.key(set)
 }
 
-func (selector *GroupSelector) Value(set ResultSet) (core.Value, error) {
+func (selector *GenericGroupSelector) Value(set ResultSet) (core.Value, error) {
 	return selector.value(set)
 }

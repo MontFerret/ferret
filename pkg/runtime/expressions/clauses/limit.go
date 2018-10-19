@@ -19,8 +19,12 @@ func NewLimitClause(
 	dataSource datasource.DataSource,
 	count int,
 	offset int,
-) *LimitClause {
-	return &LimitClause{src, dataSource, count, offset}
+) (datasource.DataSource, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
+	}
+
+	return &LimitClause{src, dataSource, count, offset}, nil
 }
 
 func (clause *LimitClause) Variables() datasource.Variables {

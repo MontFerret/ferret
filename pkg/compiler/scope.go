@@ -58,6 +58,18 @@ func (s *scope) SetVariable(name string) error {
 	return nil
 }
 
+func (s *scope) RemoveVariable(name string) error {
+	_, exists := s.vars[name]
+
+	if !exists {
+		return errors.Wrap(ErrVariableNotFound, name)
+	}
+
+	delete(s.vars, name)
+
+	return nil
+}
+
 func (s *scope) Fork() *scope {
 	return newScope(s)
 }

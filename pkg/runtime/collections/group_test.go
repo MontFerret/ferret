@@ -33,7 +33,7 @@ func TestGroup(t *testing.T) {
 
 		iter, err := collections.NewGroupIterator(
 			collections.NewSliceIterator(arr),
-			collections.NewGroupSelector(
+			collections.NewGenericGroupSelector(
 				func(set collections.ResultSet) (core.Value, error) {
 					val, _ := set[0].(*values.Object).Get("gender")
 

@@ -38,20 +38,64 @@ func NewForExpression(
 	}, nil
 }
 
-func (e *ForExpression) AddLimit(src core.SourceMap, size, count int) {
-	e.dataSource = clauses.NewLimitClause(src, e.dataSource, size, count)
+func (e *ForExpression) AddLimit(src core.SourceMap, size, count int) error {
+	limit, err := clauses.NewLimitClause(src, e.dataSource, size, count)
+
+	if err != nil {
+		return err
+	}
+
+	e.dataSource = limit
+
+	return nil
 }
 
-func (e *ForExpression) AddFilter(src core.SourceMap, exp core.Expression) {
-	e.dataSource = clauses.NewFilterClause(src, e.dataSource, exp)
+func (e *ForExpression) AddFilter(src core.SourceMap, exp core.Expression) error {
+	filter, err := clauses.NewFilterClause(src, e.dataSource, exp)
+
+	if err != nil {
+		return err
+	}
+
+	e.dataSource = filter
+
+	return nil
 }
 
-func (e *ForExpression) AddSort(src core.SourceMap, sorters ...*clauses.SorterExpression) {
-	e.dataSource = clauses.NewSortClause(src, e.dataSource, sorters...)
+func (e *ForExpression) AddSort(src core.SourceMap, sorters ...*clauses.SorterExpression) error {
+	sort, err := clauses.NewSortClause(src, e.dataSource, sorters...)
+
+	if err != nil {
+		return err
+	}
+
+	e.dataSource = sort
+
+	return nil
 }
 
-func (e *ForExpression) AddDistinct(src core.SourceMap) {
-	e.dataSource = clauses.NewDistinctClause(src, e.dataSource)
+func (e *ForExpression) AddDistinct(src core.SourceMap) error {
+	distinct, err := clauses.NewDistinctClause(src, e.dataSource)
+
+	if err != nil {
+		return err
+	}
+
+	e.dataSource = distinct
+
+	return nil
+}
+
+func (e *ForExpression) AddCollect(src core.SourceMap, params clauses.CollectParams) error {
+	collect, err := clauses.NewCollect(src, e.dataSource, params)
+
+	if err != nil {
+		return err
+	}
+
+	e.dataSource = collect
+
+	return nil
 }
 
 func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {

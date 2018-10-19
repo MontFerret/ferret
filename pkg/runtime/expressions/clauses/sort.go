@@ -35,8 +35,16 @@ func NewSortClause(
 	src core.SourceMap,
 	dataSource datasource.DataSource,
 	sorters ...*SorterExpression,
-) *SortClause {
-	return &SortClause{src, dataSource, sorters}
+) (datasource.DataSource, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
+	}
+
+	if len(sorters) == 0 {
+		return nil, core.Error(core.ErrMissedArgument, "sorters")
+	}
+
+	return &SortClause{src, dataSource, sorters}, nil
 }
 
 func (clause *SortClause) Variables() datasource.Variables {

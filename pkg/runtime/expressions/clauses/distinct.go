@@ -15,8 +15,12 @@ type DistinctClause struct {
 func NewDistinctClause(
 	src core.SourceMap,
 	dataSource datasource.DataSource,
-) *DistinctClause {
-	return &DistinctClause{src, dataSource}
+) (datasource.DataSource, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
+	}
+
+	return &DistinctClause{src, dataSource}, nil
 }
 
 func (clause *DistinctClause) Variables() datasource.Variables {
