@@ -20,8 +20,8 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				return first.Compare(second), nil
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				return first.First().Compare(second.First()), nil
 			},
 			collections.SortDirectionAsc,
 		)
@@ -54,8 +54,8 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				return first.Compare(second), nil
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				return first.First().Compare(second.First()), nil
 			},
 			collections.SortDirectionDesc,
 		)
@@ -100,9 +100,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("one")
-				o2, _ := second.(*values.Object).Get("one")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("one")
+				o2, _ := second.First().(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -110,9 +110,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("two")
-				o2, _ := second.(*values.Object).Get("two")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("two")
+				o2, _ := second.First().(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -158,9 +158,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("one")
-				o2, _ := second.(*values.Object).Get("one")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("one")
+				o2, _ := second.First().(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -168,9 +168,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("two")
-				o2, _ := second.(*values.Object).Get("two")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("two")
+				o2, _ := second.First().(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -216,9 +216,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("one")
-				o2, _ := second.(*values.Object).Get("one")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("one")
+				o2, _ := second.First().(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -226,9 +226,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("two")
-				o2, _ := second.(*values.Object).Get("two")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("two")
+				o2, _ := second.First().(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -274,9 +274,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("one")
-				o2, _ := second.(*values.Object).Get("one")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("one")
+				o2, _ := second.First().(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -284,9 +284,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first core.Value, second core.Value) (int, error) {
-				o1, _ := first.(*values.Object).Get("two")
-				o2, _ := second.(*values.Object).Get("two")
+			func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+				o1, _ := first.First().(*values.Object).Get("two")
+				o2, _ := second.First().(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},

@@ -29,11 +29,12 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			set, err := src.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(len(res), ShouldEqual, 1)
@@ -59,11 +60,12 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			set, err := src.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(len(res), ShouldEqual, 2)
@@ -90,11 +92,12 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			set, err := src.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(len(res), ShouldEqual, 2)
@@ -128,11 +131,12 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			set, err := src.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(len(res), ShouldEqual, 2)
@@ -166,11 +170,12 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			set, err := src.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(len(res), ShouldEqual, 1)

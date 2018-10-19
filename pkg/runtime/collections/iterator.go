@@ -3,12 +3,13 @@ package collections
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"strconv"
 )
 
 type (
 	Iterator interface {
 		HasNext() bool
-		Next() (value core.Value, key core.Value, err error)
+		Next() (ResultSet, error)
 	}
 
 	Iterable interface {
@@ -39,13 +40,17 @@ func ToSlice(iterator Iterator) ([]core.Value, error) {
 	res := make([]core.Value, 0, 10)
 
 	for iterator.HasNext() {
-		item, _, err := iterator.Next()
+		set, err := iterator.Next()
 
 		if err != nil {
 			return nil, err
 		}
 
-		res = append(res, item)
+		if len(set) == 0 {
+			continue
+		}
+
+		res = append(res, set[0])
 	}
 
 	return res, nil
@@ -54,14 +59,26 @@ func ToSlice(iterator Iterator) ([]core.Value, error) {
 func ToMap(iterator Iterator) (map[string]core.Value, error) {
 	res := make(map[string]core.Value)
 
+	counter := 0
+
 	for iterator.HasNext() {
-		item, key, err := iterator.Next()
+		set, err := iterator.Next()
 
 		if err != nil {
 			return nil, err
 		}
 
-		res[key.String()] = item
+		if len(set) == 0 {
+			continue
+		}
+
+		if len(set) == 1 {
+			res[strconv.Itoa(counter)] = set[0]
+		} else {
+			res[set[1].String()] = set[0]
+		}
+
+		counter++
 	}
 
 	return res, nil
@@ -71,13 +88,37 @@ func ToArray(iterator Iterator) (*values.Array, error) {
 	res := values.NewArray(10)
 
 	for iterator.HasNext() {
-		item, _, err := iterator.Next()
+		set, err := iterator.Next()
 
 		if err != nil {
 			return nil, err
 		}
 
-		res.Push(item)
+		if len(set) == 0 {
+			continue
+		}
+
+		res.Push(set[0])
+	}
+
+	return res, nil
+}
+
+func ToSliceResultSet(iterator Iterator) ([]ResultSet, error) {
+	res := make([]ResultSet, 0, 10)
+
+	for iterator.HasNext() {
+		set, err := iterator.Next()
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(set) == 0 {
+			continue
+		}
+
+		res = append(res, set)
 	}
 
 	return res, nil

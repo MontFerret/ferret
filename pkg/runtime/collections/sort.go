@@ -10,7 +10,7 @@ import (
 type (
 	SortDirection int
 
-	Comparator func(first core.Value, second core.Value) (int, error)
+	Comparator func(first ResultSet, second ResultSet) (int, error)
 
 	Sorter struct {
 		fn        Comparator
@@ -21,7 +21,7 @@ type (
 		src     Iterator
 		sorters []*Sorter
 		ready   bool
-		values  *SliceIterator
+		values  Iterator
 	}
 )
 
@@ -81,8 +81,8 @@ func (iterator *SortIterator) HasNext() bool {
 		values, err := iterator.sort()
 
 		if err != nil {
-			// set to true because we do not want to initialize next time anymore
-			iterator.values = NewSliceIterator(make([]core.Value, 0, 0))
+			// result to true because we do not want to initialize next time anymore
+			iterator.values = NewResultSetIterator(make([]ResultSet, 0, 0))
 
 			return false
 		}
@@ -93,18 +93,17 @@ func (iterator *SortIterator) HasNext() bool {
 	return iterator.values.HasNext()
 }
 
-func (iterator *SortIterator) Next() (core.Value, core.Value, error) {
+func (iterator *SortIterator) Next() (ResultSet, error) {
 	return iterator.values.Next()
 }
 
-func (iterator *SortIterator) sort() (*SliceIterator, error) {
-	res, err := ToSlice(iterator.src)
+func (iterator *SortIterator) sort() (Iterator, error) {
+	var failure error
+	res, err := ToSliceResultSet(iterator.src)
 
 	if err != nil {
 		return nil, err
 	}
-
-	var failure error
 
 	sort.SliceStable(res, func(i, j int) bool {
 		// ignore next execution
@@ -147,5 +146,5 @@ func (iterator *SortIterator) sort() (*SliceIterator, error) {
 		return nil, failure
 	}
 
-	return NewSliceIterator(res), nil
+	return NewResultSetIterator(res), nil
 }

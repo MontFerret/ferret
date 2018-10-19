@@ -13,10 +13,9 @@ type (
 		direction  collections.SortDirection
 	}
 	SortClause struct {
-		src          core.SourceMap
-		dataSource   source.DataSource
-		variableName string
-		sorters      []*SorterExpression
+		src        core.SourceMap
+		dataSource source.DataSource
+		sorters    []*SorterExpression
 	}
 )
 
@@ -35,13 +34,12 @@ func NewSorterExpression(expression core.Expression, direction collections.SortD
 func NewSortClause(
 	src core.SourceMap,
 	dataSource source.DataSource,
-	variableName string,
 	sorters ...*SorterExpression,
 ) *SortClause {
-	return &SortClause{src, dataSource, variableName, sorters}
+	return &SortClause{src, dataSource, sorters}
 }
 
-func (clause *SortClause) Variables() []string {
+func (clause *SortClause) Variables() source.Variables {
 	return clause.dataSource.Variables()
 }
 
@@ -53,12 +51,16 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 	}
 
 	sorters := make([]*collections.Sorter, len(clause.sorters))
+	variables := clause.dataSource.Variables()
 
 	// converting sorter expression into collections.Sorter
 	for idx, srt := range clause.sorters {
-		sorter, err := collections.NewSorter(func(first core.Value, second core.Value) (int, error) {
+		sorter, err := collections.NewSorter(func(first collections.ResultSet, second collections.ResultSet) (int, error) {
 			scope1 := scope.Fork()
-			scope1.SetVariable(clause.variableName, first)
+
+			if err := variables.Apply(scope1, first); err != nil {
+				return -1, err
+			}
 
 			f, err := srt.expression.Exec(ctx, scope1)
 
@@ -67,7 +69,10 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 			}
 
 			scope2 := scope.Fork()
-			scope2.SetVariable(clause.variableName, second)
+
+			if err := variables.Apply(scope2, second); err != nil {
+				return -1, err
+			}
 
 			s, err := srt.expression.Exec(ctx, scope2)
 

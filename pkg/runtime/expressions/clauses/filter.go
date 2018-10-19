@@ -11,27 +11,21 @@ import (
 type FilterClause struct {
 	src        core.SourceMap
 	dataSource source.DataSource
-	valVar     string
-	keyVar     string
 	predicate  core.Expression
 }
 
 func NewFilterClause(
 	src core.SourceMap,
 	dataSource source.DataSource,
-	valVar string,
-	keyVar string,
 	predicate core.Expression,
 ) *FilterClause {
 	return &FilterClause{
 		src, dataSource,
-		valVar,
-		keyVar,
 		predicate,
 	}
 }
 
-func (clause *FilterClause) Variables() []string {
+func (clause *FilterClause) Variables() source.Variables {
 	return clause.dataSource.Variables()
 }
 
@@ -42,13 +36,15 @@ func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (col
 		return nil, err
 	}
 
-	return collections.NewFilterIterator(src, func(val core.Value, key core.Value) (bool, error) {
+	variables := clause.dataSource.Variables()
+
+	return collections.NewFilterIterator(src, func(set collections.ResultSet) (bool, error) {
 		innerScope := scope.Fork()
 
-		innerScope.SetVariable(clause.valVar, val)
+		err := variables.Apply(innerScope, set)
 
-		if clause.keyVar != "" {
-			innerScope.SetVariable(clause.keyVar, key)
+		if err != nil {
+			return false, core.SourceError(clause.src, err)
 		}
 
 		ret, err := clause.predicate.Exec(ctx, innerScope)

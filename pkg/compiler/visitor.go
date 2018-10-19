@@ -231,8 +231,6 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 	forExp, err := expressions.NewForExpression(
 		v.getSourceMap(ctx),
-		valVarName,
-		keyVarName,
 		src,
 		predicate,
 		spread,

@@ -19,7 +19,7 @@ func NewDistinctClause(
 	return &DistinctClause{src, dataSource}
 }
 
-func (clause *DistinctClause) Variables() []string {
+func (clause *DistinctClause) Variables() source.Variables {
 	return clause.dataSource.Variables()
 }
 

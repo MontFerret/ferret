@@ -6,28 +6,27 @@ import (
 )
 
 type (
-	GroupKey      func(value core.Value) (core.Value, error)
 	GroupIterator struct {
-		src    Iterator
-		keys   []GroupKey
-		ready  bool
-		values *MapIterator
+		src       Iterator
+		selectors []*GroupSelector
+		ready     bool
+		values    *MapIterator
 	}
 )
 
 func NewGroupIterator(
 	src Iterator,
-	keys ...GroupKey,
+	selectors ...*GroupSelector,
 ) (*GroupIterator, error) {
 	if core.IsNil(src) {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
-	if len(keys) == 0 {
+	if len(selectors) == 0 {
 		return nil, core.Error(core.ErrMissedArgument, "key(s)")
 	}
 
-	return &GroupIterator{src, keys, false, nil}, nil
+	return &GroupIterator{src, selectors, false, nil}, nil
 }
 
 func (iterator *GroupIterator) HasNext() bool {
@@ -47,7 +46,7 @@ func (iterator *GroupIterator) HasNext() bool {
 	return iterator.values.HasNext()
 }
 
-func (iterator *GroupIterator) Next() (core.Value, core.Value, error) {
+func (iterator *GroupIterator) Next() (ResultSet, error) {
 	return iterator.values.Next()
 }
 
@@ -55,14 +54,18 @@ func (iterator *GroupIterator) group() (*MapIterator, error) {
 	groups := make(map[string]core.Value)
 
 	for iterator.src.HasNext() {
-		for _, keyFn := range iterator.keys {
-			val, _, err := iterator.src.Next()
+		for _, selector := range iterator.selectors {
+			set, err := iterator.src.Next()
 
 			if err != nil {
 				return nil, err
 			}
 
-			keyVal, err := keyFn(val)
+			if len(set) == 0 {
+				continue
+			}
+
+			keyVal, err := selector.Key(set)
 
 			if err != nil {
 				return nil, err
@@ -75,6 +78,12 @@ func (iterator *GroupIterator) group() (*MapIterator, error) {
 			if !exists {
 				group = values.NewArray(10)
 				groups[key] = group
+			}
+
+			val, err := selector.Value(set)
+
+			if err != nil {
+				return nil, err
 			}
 
 			group.(*values.Array).Push(val)

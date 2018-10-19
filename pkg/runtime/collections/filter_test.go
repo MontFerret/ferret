@@ -20,8 +20,8 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(val core.Value, _ core.Value) (bool, error) {
-			i := float64(val.Unwrap().(int))
+		predicate := func(set collections.ResultSet) (bool, error) {
+			i := float64(set[0].Unwrap().(int))
 			calc := float64(i / 2)
 
 			return calc == math.Floor(calc), nil
@@ -37,17 +37,18 @@ func TestFilter(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(res, ShouldHaveLength, 2)
 	})
 
-	Convey("Should filter out non-even keys", t, func() {
+	Convey("Should filter out non-even selectors", t, func() {
 		arr := []core.Value{
 			values.NewInt(1),
 			values.NewInt(2),
@@ -56,8 +57,8 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ core.Value, key core.Value) (bool, error) {
-			i := float64(key.Unwrap().(int))
+		predicate := func(set collections.ResultSet) (bool, error) {
+			i := float64(set[1].Unwrap().(int))
 
 			if i == 0 {
 				return false, nil
@@ -78,11 +79,12 @@ func TestFilter(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(res, ShouldHaveLength, 2)
@@ -97,7 +99,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(val core.Value, _ core.Value) (bool, error) {
+		predicate := func(_ collections.ResultSet) (bool, error) {
 			return false, nil
 		}
 
@@ -111,11 +113,12 @@ func TestFilter(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(res, ShouldHaveLength, 0)
@@ -130,7 +133,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(val core.Value, _ core.Value) (bool, error) {
+		predicate := func(_ collections.ResultSet) (bool, error) {
 			return true, nil
 		}
 
@@ -144,11 +147,12 @@ func TestFilter(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(res, ShouldHaveLength, len(arr))
@@ -163,7 +167,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(val core.Value, _ core.Value) (bool, error) {
+		predicate := func(_ collections.ResultSet) (bool, error) {
 			return true, nil
 		}
 
@@ -177,15 +181,17 @@ func TestFilter(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
-		_, _, err = iter.Next()
+		set, err := iter.Next()
 
+		So(set, ShouldBeNil)
 		So(err, ShouldBeError)
 	})
 
@@ -199,13 +205,13 @@ func TestFilter(t *testing.T) {
 		}
 
 		// i < 5
-		predicate1 := func(val core.Value, _ core.Value) (bool, error) {
-			return val.Compare(values.NewInt(5)) == -1, nil
+		predicate1 := func(set collections.ResultSet) (bool, error) {
+			return set[0].Compare(values.NewInt(5)) == -1, nil
 		}
 
 		// i > 2
-		predicate2 := func(val core.Value, _ core.Value) (bool, error) {
-			return val.Compare(values.NewInt(2)) == 1, nil
+		predicate2 := func(set collections.ResultSet) (bool, error) {
+			return set[0].Compare(values.NewInt(2)) == 1, nil
 		}
 
 		it, _ := collections.NewFilterIterator(

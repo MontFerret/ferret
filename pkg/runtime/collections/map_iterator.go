@@ -32,14 +32,14 @@ func (iterator *MapIterator) HasNext() bool {
 	return len(iterator.keys) > iterator.pos
 }
 
-func (iterator *MapIterator) Next() (core.Value, core.Value, error) {
+func (iterator *MapIterator) Next() (ResultSet, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
 		iterator.pos++
 
-		return val, values.NewString(key), nil
+		return ResultSet{val, values.NewString(key)}, nil
 	}
 
-	return values.None, values.None, ErrExhausted
+	return nil, ErrExhausted
 }

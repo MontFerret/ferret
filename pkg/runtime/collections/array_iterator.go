@@ -1,7 +1,6 @@
 package collections
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -18,14 +17,14 @@ func (iterator *ArrayIterator) HasNext() bool {
 	return int(iterator.values.Length()) > iterator.pos
 }
 
-func (iterator *ArrayIterator) Next() (core.Value, core.Value, error) {
+func (iterator *ArrayIterator) Next() (ResultSet, error) {
 	if int(iterator.values.Length()) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values.Get(values.NewInt(idx))
 		iterator.pos++
 
-		return val, values.NewInt(idx), nil
+		return ResultSet{val, values.NewInt(idx)}, nil
 	}
 
-	return values.None, values.None, ErrExhausted
+	return nil, ErrExhausted
 }

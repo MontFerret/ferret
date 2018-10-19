@@ -23,16 +23,17 @@ func TestObjectIterator(t *testing.T) {
 		res := make([]core.Value, 0, m.Length())
 
 		for iter.HasNext() {
-			item, key, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			expected, exists := m.Get(values.NewString(key.String()))
+			expected, exists := m.Get(values.NewString(set[1].String()))
 
 			So(bool(exists), ShouldBeTrue)
-			So(expected, ShouldEqual, item)
+			So(expected, ShouldEqual, set[0])
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
 		So(res, ShouldHaveLength, m.Length())
@@ -52,16 +53,17 @@ func TestObjectIterator(t *testing.T) {
 		res := make([]core.Value, 0, m.Length())
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			set, err := iter.Next()
 
 			So(err, ShouldBeNil)
+			So(set, ShouldHaveLength, 2)
 
-			res = append(res, item)
+			res = append(res, set[0])
 		}
 
-		item, _, err := iter.Next()
+		set, err := iter.Next()
 
-		So(item, ShouldEqual, values.None)
+		So(set, ShouldBeNil)
 		So(err, ShouldBeError)
 	})
 

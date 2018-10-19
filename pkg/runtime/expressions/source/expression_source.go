@@ -7,12 +7,12 @@ import (
 )
 
 type ExpressionDataSource struct {
-	variables []string
+	variables Variables
 	exp       core.Expression
 }
 
 func NewExpressionDataSource(
-	variables []string,
+	variables Variables,
 	exp core.Expression,
 ) (DataSource, error) {
 	if variables == nil {
@@ -30,7 +30,7 @@ func NewExpressionDataSource(
 	return &ExpressionDataSource{variables, exp}, nil
 }
 
-func (ds *ExpressionDataSource) Variables() []string {
+func (ds *ExpressionDataSource) Variables() Variables {
 	return ds.variables
 }
 

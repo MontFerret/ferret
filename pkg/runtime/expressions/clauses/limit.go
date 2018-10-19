@@ -23,7 +23,7 @@ func NewLimitClause(
 	return &LimitClause{src, dataSource, count, offset}
 }
 
-func (clause *LimitClause) Variables() []string {
+func (clause *LimitClause) Variables() source.Variables {
 	return clause.dataSource.Variables()
 }
 

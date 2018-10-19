@@ -11,8 +11,6 @@ import (
 
 type ForExpression struct {
 	src        core.SourceMap
-	valVar     string
-	keyVar     string
 	dataSource source.DataSource
 	predicate  core.Expression
 	spread     bool
@@ -20,16 +18,10 @@ type ForExpression struct {
 
 func NewForExpression(
 	src core.SourceMap,
-	valVar string,
-	keyVar string,
 	dataSource source.DataSource,
 	predicate core.Expression,
 	spread bool,
 ) (*ForExpression, error) {
-	if valVar == "" {
-		return nil, errors.Wrap(core.ErrInvalidArgument, "valVar is empty")
-	}
-
 	if core.IsNil(dataSource) {
 		return nil, errors.Wrap(core.ErrMissedArgument, "missed source expression")
 	}
@@ -40,7 +32,6 @@ func NewForExpression(
 
 	return &ForExpression{
 		src,
-		valVar, keyVar,
 		dataSource,
 		predicate,
 		spread,
@@ -52,11 +43,11 @@ func (e *ForExpression) AddLimit(src core.SourceMap, size, count int) {
 }
 
 func (e *ForExpression) AddFilter(src core.SourceMap, exp core.Expression) {
-	e.dataSource = clauses.NewFilterClause(src, e.dataSource, e.valVar, e.keyVar, exp)
+	e.dataSource = clauses.NewFilterClause(src, e.dataSource, exp)
 }
 
 func (e *ForExpression) AddSort(src core.SourceMap, sorters ...*clauses.SorterExpression) {
-	e.dataSource = clauses.NewSortClause(src, e.dataSource, e.valVar, sorters...)
+	e.dataSource = clauses.NewSortClause(src, e.dataSource, sorters...)
 }
 
 func (e *ForExpression) AddDistinct(src core.SourceMap) {
@@ -71,19 +62,20 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 	}
 
 	res := values.NewArray(10)
+	variables := e.dataSource.Variables()
 
 	for iterator.HasNext() {
-		val, key, err := iterator.Next()
+		set, err := iterator.Next()
 
 		if err != nil {
 			return values.None, core.SourceError(e.src, err)
 		}
 
 		innerScope := scope.Fork()
-		innerScope.SetVariable(e.valVar, val)
 
-		if e.keyVar != "" {
-			innerScope.SetVariable(e.keyVar, key)
+		// assign returned values to variables for the nested scope
+		if err := variables.Apply(innerScope, set); err != nil {
+			return values.None, core.SourceError(e.src, err)
 		}
 
 		out, err := e.predicate.Exec(ctx, innerScope)

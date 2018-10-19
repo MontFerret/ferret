@@ -31,8 +31,8 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewArray(0), nil
 	}
 
-	sorter, err := collections.NewSorter(func(first core.Value, second core.Value) (int, error) {
-		return first.Compare(second), nil
+	sorter, err := collections.NewSorter(func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+		return first.First().Compare(second.First()), nil
 	}, collections.SortDirectionAsc)
 
 	if err != nil {

@@ -2,17 +2,16 @@ package collections
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
 )
 
 type (
-	FilterPredicate func(val core.Value, key core.Value) (bool, error)
-	FilterIterator  struct {
+	FilterPredicate func(set ResultSet) (bool, error)
+
+	FilterIterator struct {
 		src       Iterator
 		predicate FilterPredicate
-		value     core.Value
-		key       core.Value
+		result    ResultSet
 		ready     bool
 	}
 )
@@ -35,34 +34,33 @@ func (iterator *FilterIterator) HasNext() bool {
 		iterator.ready = true
 	}
 
-	return iterator.value != nil && iterator.value.Type() != core.NoneType
+	return iterator.result != nil
 }
 
-func (iterator *FilterIterator) Next() (core.Value, core.Value, error) {
+func (iterator *FilterIterator) Next() (ResultSet, error) {
 	if iterator.HasNext() == true {
-		val := iterator.value
-		key := iterator.key
+		result := iterator.result
 
 		iterator.filter()
 
-		return val, key, nil
+		return result, nil
 	}
 
-	return values.None, values.None, ErrExhausted
+	return nil, ErrExhausted
 }
 
 func (iterator *FilterIterator) filter() {
 	var doNext bool
 
 	for iterator.src.HasNext() {
-		val, key, err := iterator.src.Next()
+		result, err := iterator.src.Next()
 
 		if err != nil {
 			doNext = false
 			break
 		}
 
-		take, err := iterator.predicate(val, key)
+		take, err := iterator.predicate(result)
 
 		if err != nil {
 			doNext = false
@@ -71,14 +69,12 @@ func (iterator *FilterIterator) filter() {
 
 		if take == true {
 			doNext = true
-			iterator.value = val
-			iterator.key = key
+			iterator.result = result
 			break
 		}
 	}
 
 	if doNext == false {
-		iterator.value = nil
-		iterator.key = nil
+		iterator.result = nil
 	}
 }
