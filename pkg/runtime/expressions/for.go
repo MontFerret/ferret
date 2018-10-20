@@ -2,24 +2,26 @@ package expressions
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
 )
 
 type ForExpression struct {
 	src        core.SourceMap
-	dataSource datasource.DataSource
+	dataSource collections.Iterable
 	predicate  core.Expression
+	distinct   bool
 	spread     bool
 }
 
 func NewForExpression(
 	src core.SourceMap,
-	dataSource datasource.DataSource,
+	dataSource collections.Iterable,
 	predicate core.Expression,
+	distinct,
 	spread bool,
 ) (*ForExpression, error) {
 	if core.IsNil(dataSource) {
@@ -34,6 +36,7 @@ func NewForExpression(
 		src,
 		dataSource,
 		predicate,
+		distinct,
 		spread,
 	}, nil
 }
@@ -74,18 +77,6 @@ func (e *ForExpression) AddSort(src core.SourceMap, sorters ...*clauses.SorterEx
 	return nil
 }
 
-func (e *ForExpression) AddDistinct(src core.SourceMap) error {
-	distinct, err := clauses.NewDistinctClause(src, e.dataSource)
-
-	if err != nil {
-		return err
-	}
-
-	e.dataSource = distinct
-
-	return nil
-}
-
 func (e *ForExpression) AddCollect(src core.SourceMap, params clauses.CollectParams) error {
 	collect, err := clauses.NewCollect(src, e.dataSource, params)
 
@@ -105,11 +96,18 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 		return values.None, err
 	}
 
+	// Hash map for a check for uniqueness
+	var hashTable map[uint64]bool
+
+	if e.distinct {
+		hashTable = make(map[uint64]bool)
+	}
+
 	res := values.NewArray(10)
 	variables := e.dataSource.Variables()
 
 	for iterator.HasNext() {
-		set, err := iterator.Next()
+		ds, err := iterator.Next()
 
 		if err != nil {
 			return values.None, core.SourceError(e.src, err)
@@ -117,9 +115,8 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 
 		innerScope := scope.Fork()
 
-		// assign returned values to variables for the nested scope
-		if err := variables.Apply(innerScope, set); err != nil {
-			return values.None, core.SourceError(e.src, err)
+		if err := ds.Apply(innerScope, variables); err != nil {
+			return values.None, err
 		}
 
 		out, err := e.predicate.Exec(ctx, innerScope)
@@ -128,20 +125,39 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 			return values.None, err
 		}
 
-		if !e.spread {
-			res.Push(out)
+		var add bool
+
+		// The result shouldn't be distinct
+		// Just add the output
+		if !e.distinct {
+			add = true
 		} else {
-			elements, ok := out.(*values.Array)
+			// We need to check whether the value already exists in the result set
+			hash := out.Hash()
+			_, exists := hashTable[hash]
 
-			if !ok {
-				return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
+			if !exists {
+				hashTable[hash] = true
+				add = true
 			}
+		}
 
-			elements.ForEach(func(i core.Value, _ int) bool {
-				res.Push(i)
+		if add {
+			if !e.spread {
+				res.Push(out)
+			} else {
+				elements, ok := out.(*values.Array)
 
-				return true
-			})
+				if !ok {
+					return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
+				}
+
+				elements.ForEach(func(i core.Value, _ int) bool {
+					res.Push(i)
+
+					return true
+				})
+			}
 		}
 	}
 

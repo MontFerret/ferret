@@ -4,21 +4,20 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type FilterClause struct {
 	src        core.SourceMap
-	dataSource datasource.DataSource
+	dataSource collections.Iterable
 	predicate  core.Expression
 }
 
 func NewFilterClause(
 	src core.SourceMap,
-	dataSource datasource.DataSource,
+	dataSource collections.Iterable,
 	predicate core.Expression,
-) (datasource.DataSource, error) {
+) (collections.Iterable, error) {
 	if dataSource == nil {
 		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
 	}
@@ -33,7 +32,7 @@ func NewFilterClause(
 	}, nil
 }
 
-func (clause *FilterClause) Variables() datasource.Variables {
+func (clause *FilterClause) Variables() collections.Variables {
 	return clause.dataSource.Variables()
 }
 
@@ -46,10 +45,10 @@ func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (col
 
 	variables := clause.dataSource.Variables()
 
-	return collections.NewFilterIterator(src, func(set collections.ResultSet) (bool, error) {
+	return collections.NewFilterIterator(src, func(set collections.DataSet) (bool, error) {
 		innerScope := scope.Fork()
 
-		err := variables.Apply(innerScope, set)
+		err := set.Apply(innerScope, variables)
 
 		if err != nil {
 			return false, core.SourceError(clause.src, err)

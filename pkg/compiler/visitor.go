@@ -8,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
@@ -173,13 +172,19 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		forInScope.SetVariable(keyVarName)
 	}
 
-	srcExp, err := v.doVisitForExpressionSource(ctx.ForExpressionSource().(*fql.ForExpressionSourceContext), forInScope)
+	srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
+	srcExp, err := v.doVisitForExpressionSource(srcCtx, forInScope)
 
 	if err != nil {
 		return nil, err
 	}
 
-	src, err := datasource.NewExpressionDataSource([]string{valVarName, keyVarName}, srcExp)
+	src, err := expressions.NewDataSource(
+		v.getSourceMap(srcCtx),
+		valVarName,
+		keyVarName,
+		srcExp,
+	)
 
 	// Clauses.
 	// We put clauses parsing before parsing the query body because COLLECT clause overrides scope variables
@@ -275,7 +280,6 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 	var spread bool
 	var distinct bool
-	var distinctSrc core.SourceMap
 	forRetCtx := ctx.ForExpressionReturn().(*fql.ForExpressionReturnContext)
 	returnCtx := forRetCtx.ReturnExpression()
 
@@ -291,8 +295,6 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 		if distinctCtx != nil {
 			distinct = true
-			token := distinctCtx.GetSymbol()
-			distinctSrc = core.NewSourceMap(token.GetText(), token.GetLine(), token.GetColumn())
 		}
 
 		predicate.Add(returnExp)
@@ -313,15 +315,12 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		v.getSourceMap(ctx),
 		src,
 		predicate,
+		distinct,
 		spread,
 	)
 
 	if err != nil {
 		return nil, err
-	}
-
-	if distinct {
-		forExp.AddDistinct(distinctSrc)
 	}
 
 	// add all available clauses

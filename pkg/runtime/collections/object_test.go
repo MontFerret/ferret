@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+func objectIterator(obj *values.Object) collections.Iterator {
+	return collections.NewObjectIterator(valVar, keyVar, obj)
+}
+
 func TestObjectIterator(t *testing.T) {
 	Convey("Should iterate over a map", t, func() {
 		m := values.NewObjectWith(
@@ -18,12 +22,12 @@ func TestObjectIterator(t *testing.T) {
 			values.NewObjectProperty("five", values.NewInt(5)),
 		)
 
-		iter := collections.NewObjectIterator(m)
+		iter := objectIterator(m)
 
 		res := make([]core.Value, 0, m.Length())
 
 		for iter.HasNext() {
-			item, key, err := iter.Next()
+			item, key, err := next(iter)
 
 			So(err, ShouldBeNil)
 
@@ -47,28 +51,28 @@ func TestObjectIterator(t *testing.T) {
 			values.NewObjectProperty("five", values.NewInt(5)),
 		)
 
-		iter := collections.NewObjectIterator(m)
+		iter := objectIterator(m)
 
 		res := make([]core.Value, 0, m.Length())
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			item, _, err := next(iter)
 
 			So(err, ShouldBeNil)
 
 			res = append(res, item)
 		}
 
-		item, _, err := iter.Next()
+		item, _, err := next(iter)
 
-		So(item, ShouldEqual, values.None)
+		So(item, ShouldBeNil)
 		So(err, ShouldBeError)
 	})
 
 	Convey("Should NOT iterate over a empty map", t, func() {
 		m := values.NewObject()
 
-		iter := collections.NewObjectIterator(m)
+		iter := objectIterator(m)
 
 		var iterated bool
 

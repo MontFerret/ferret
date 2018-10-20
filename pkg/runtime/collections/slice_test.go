@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+func sliceIterator(value []core.Value) collections.Iterator {
+	return collections.NewSliceIterator(
+		valVar,
+		keyVar,
+		value,
+	)
+}
+
 func TestSliceIterator(t *testing.T) {
 	Convey("Should iterate over a slice", t, func() {
 		arr := []core.Value{
@@ -18,14 +26,14 @@ func TestSliceIterator(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		iter := collections.NewSliceIterator(arr)
+		iter := sliceIterator(arr)
 
 		res := make([]core.Value, 0, len(arr))
 
 		pos := 0
 
 		for iter.HasNext() {
-			item, key, err := iter.Next()
+			item, key, err := next(iter)
 
 			So(err, ShouldBeNil)
 			So(key.Unwrap(), ShouldEqual, pos)
@@ -47,12 +55,12 @@ func TestSliceIterator(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		iter := collections.NewSliceIterator(arr)
+		iter := sliceIterator(arr)
 
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			item, _, err := next(iter)
 
 			So(err, ShouldBeNil)
 
@@ -76,28 +84,28 @@ func TestSliceIterator(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		iter := collections.NewSliceIterator(arr)
+		iter := sliceIterator(arr)
 
 		res := make([]core.Value, 0, len(arr))
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			item, _, err := next(iter)
 
 			So(err, ShouldBeNil)
 
 			res = append(res, item)
 		}
 
-		item, _, err := iter.Next()
+		item, _, err := next(iter)
 
-		So(item, ShouldEqual, values.None)
+		So(item, ShouldBeNil)
 		So(err, ShouldBeError)
 	})
 
 	Convey("Should NOT iterate over an empty slice", t, func() {
 		arr := []core.Value{}
 
-		iter := collections.NewSliceIterator(arr)
+		iter := sliceIterator(arr)
 
 		var iterated bool
 

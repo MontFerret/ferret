@@ -6,13 +6,19 @@ import (
 )
 
 type MapIterator struct {
+	valVar string
+	keyVar string
 	values map[string]core.Value
 	keys   []string
 	pos    int
 }
 
-func NewMapIterator(input map[string]core.Value) Iterator {
-	return &MapIterator{input, nil, 0}
+func NewMapIterator(
+	valVar,
+	keyVar string,
+	input map[string]core.Value,
+) Iterator {
+	return &MapIterator{valVar, keyVar, input, nil, 0}
 }
 
 func (iterator *MapIterator) HasNext() bool {
@@ -32,14 +38,17 @@ func (iterator *MapIterator) HasNext() bool {
 	return len(iterator.keys) > iterator.pos
 }
 
-func (iterator *MapIterator) Next() (core.Value, core.Value, error) {
+func (iterator *MapIterator) Next() (DataSet, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
 		iterator.pos++
 
-		return val, values.NewString(key), nil
+		return DataSet{
+			iterator.valVar: val,
+			iterator.keyVar: values.NewString(key),
+		}, nil
 	}
 
-	return values.None, values.None, ErrExhausted
+	return nil, ErrExhausted
 }

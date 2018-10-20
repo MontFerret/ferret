@@ -8,7 +8,34 @@ import (
 	"testing"
 )
 
+const (
+	valVar = "value"
+	keyVar = "key"
+)
+
+func next(iterator collections.Iterator) (core.Value, core.Value, error) {
+	ds, err := iterator.Next()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	val := ds[valVar]
+	key := ds[keyVar]
+
+	return val, key, nil
+}
+
+func arrayIterator(arr *values.Array) collections.Iterator {
+	return collections.NewArrayIterator(
+		valVar,
+		keyVar,
+		arr,
+	)
+}
+
 func TestArrayIterator(t *testing.T) {
+
 	Convey("Should iterate over an array", t, func() {
 		arr := values.NewArrayWith(
 			values.NewInt(1),
@@ -18,14 +45,14 @@ func TestArrayIterator(t *testing.T) {
 			values.NewInt(5),
 		)
 
-		iter := collections.NewArrayIterator(arr)
+		iter := arrayIterator(arr)
 
 		res := make([]core.Value, 0, arr.Length())
 
 		pos := 0
 
 		for iter.HasNext() {
-			item, key, err := iter.Next()
+			item, key, err := next(iter)
 
 			So(err, ShouldBeNil)
 			So(key.Unwrap(), ShouldEqual, pos)
@@ -47,12 +74,12 @@ func TestArrayIterator(t *testing.T) {
 			values.NewInt(5),
 		)
 
-		iter := collections.NewArrayIterator(arr)
+		iter := arrayIterator(arr)
 
 		res := make([]core.Value, 0, arr.Length())
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			item, _, err := next(iter)
 
 			So(err, ShouldBeNil)
 
@@ -77,28 +104,28 @@ func TestArrayIterator(t *testing.T) {
 			values.NewInt(5),
 		)
 
-		iter := collections.NewArrayIterator(arr)
+		iter := arrayIterator(arr)
 
 		res := make([]core.Value, 0, arr.Length())
 
 		for iter.HasNext() {
-			item, _, err := iter.Next()
+			item, _, err := next(iter)
 
 			So(err, ShouldBeNil)
 
 			res = append(res, item)
 		}
 
-		item, _, err := iter.Next()
+		item, _, err := next(iter)
 
-		So(item, ShouldEqual, values.None)
+		So(item, ShouldBeNil)
 		So(err, ShouldBeError)
 	})
 
 	Convey("Should NOT iterate over an empty array", t, func() {
 		arr := values.NewArray(10)
 
-		iter := collections.NewArrayIterator(arr)
+		iter := arrayIterator(arr)
 
 		var iterated bool
 

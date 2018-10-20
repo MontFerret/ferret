@@ -31,12 +31,13 @@ func Unique(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	iterator, err := collections.NewUniqueIterator(
-		collections.NewArrayIterator(arr),
+		toArrayIterator(arr),
+		iteratorValVar,
 	)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	return collections.ToArray(iterator)
+	return toArray(iterator)
 }

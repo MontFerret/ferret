@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 )
 
 type (
@@ -14,7 +13,7 @@ type (
 	}
 	SortClause struct {
 		src        core.SourceMap
-		dataSource datasource.DataSource
+		dataSource collections.Iterable
 		sorters    []*SorterExpression
 	}
 )
@@ -33,9 +32,9 @@ func NewSorterExpression(expression core.Expression, direction collections.SortD
 
 func NewSortClause(
 	src core.SourceMap,
-	dataSource datasource.DataSource,
+	dataSource collections.Iterable,
 	sorters ...*SorterExpression,
-) (datasource.DataSource, error) {
+) (collections.Iterable, error) {
 	if dataSource == nil {
 		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
 	}
@@ -47,7 +46,7 @@ func NewSortClause(
 	return &SortClause{src, dataSource, sorters}, nil
 }
 
-func (clause *SortClause) Variables() datasource.Variables {
+func (clause *SortClause) Variables() collections.Variables {
 	return clause.dataSource.Variables()
 }
 
@@ -63,12 +62,9 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 
 	// converting sorter expression into collections.Sorter
 	for idx, srt := range clause.sorters {
-		sorter, err := collections.NewSorter(func(first collections.ResultSet, second collections.ResultSet) (int, error) {
+		sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
 			scope1 := scope.Fork()
-
-			if err := variables.Apply(scope1, first); err != nil {
-				return -1, err
-			}
+			first.Apply(scope1, variables)
 
 			f, err := srt.expression.Exec(ctx, scope1)
 
@@ -77,10 +73,7 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 			}
 
 			scope2 := scope.Fork()
-
-			if err := variables.Apply(scope2, second); err != nil {
-				return -1, err
-			}
+			second.Apply(scope2, variables)
 
 			s, err := srt.expression.Exec(ctx, scope2)
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions/datasource"
 )
 
 type (
@@ -14,16 +13,16 @@ type (
 
 	CollectClause struct {
 		src        core.SourceMap
-		dataSource datasource.DataSource
+		dataSource collections.Iterable
 		params     CollectParams
 	}
 )
 
 func NewCollect(
 	src core.SourceMap,
-	dataSource datasource.DataSource,
+	dataSource collections.Iterable,
 	params CollectParams,
-) (datasource.DataSource, error) {
+) (collections.Iterable, error) {
 	if dataSource == nil {
 		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
 	}
@@ -31,8 +30,8 @@ func NewCollect(
 	return &CollectClause{src, dataSource, params}, nil
 }
 
-func (clause *CollectClause) Variables() datasource.Variables {
-	vars := make(datasource.Variables, 0, len(clause.params.Grouping))
+func (clause *CollectClause) Variables() collections.Variables {
+	vars := make(collections.Variables, 0, len(clause.params.Grouping))
 
 	for _, selector := range clause.params.Grouping {
 		vars = append(vars, selector.variable)

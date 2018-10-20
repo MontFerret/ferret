@@ -1,18 +1,23 @@
 package collections
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type ObjectIterator struct {
+	valVar string
+	keyVar string
 	values *values.Object
 	keys   []string
 	pos    int
 }
 
-func NewObjectIterator(input *values.Object) Iterator {
-	return &ObjectIterator{input, nil, 0}
+func NewObjectIterator(
+	valVar,
+	keyVar string,
+	input *values.Object,
+) Iterator {
+	return &ObjectIterator{valVar, keyVar, input, nil, 0}
 }
 
 func (iterator *ObjectIterator) HasNext() bool {
@@ -24,14 +29,17 @@ func (iterator *ObjectIterator) HasNext() bool {
 	return len(iterator.keys) > iterator.pos
 }
 
-func (iterator *ObjectIterator) Next() (core.Value, core.Value, error) {
+func (iterator *ObjectIterator) Next() (DataSet, error) {
 	if len(iterator.keys) > iterator.pos {
-		key := iterator.keys[iterator.pos]
-		val, _ := iterator.values.Get(values.NewString(key))
+		key := values.NewString(iterator.keys[iterator.pos])
+		val, _ := iterator.values.Get(key)
 		iterator.pos++
 
-		return val, values.NewString(key), nil
+		return DataSet{
+			iterator.valVar: val,
+			iterator.keyVar: key,
+		}, nil
 	}
 
-	return values.None, values.None, ErrExhausted
+	return nil, ErrExhausted
 }
