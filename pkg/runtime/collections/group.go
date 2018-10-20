@@ -6,27 +6,28 @@ import (
 )
 
 type (
+	GroupKey      func(value core.Value) (core.Value, error)
 	GroupIterator struct {
-		src       Iterator
-		selectors []GroupSelector
-		ready     bool
-		values    *MapIterator
+		src    Iterator
+		keys   []GroupKey
+		ready  bool
+		values Iterator
 	}
 )
 
 func NewGroupIterator(
 	src Iterator,
-	selectors ...GroupSelector,
-) (Iterator, error) {
+	keys ...GroupKey,
+) (*GroupIterator, error) {
 	if core.IsNil(src) {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
-	if len(selectors) == 0 {
+	if len(keys) == 0 {
 		return nil, core.Error(core.ErrMissedArgument, "key(s)")
 	}
 
-	return &GroupIterator{src, selectors, false, nil}, nil
+	return &GroupIterator{src, keys, false, nil}, nil
 }
 
 func (iterator *GroupIterator) HasNext() bool {
@@ -35,7 +36,7 @@ func (iterator *GroupIterator) HasNext() bool {
 		groups, err := iterator.group()
 
 		if err != nil {
-			iterator.values = NewMapIterator(map[string]core.Value{})
+			iterator.values = NoopIterator
 
 			return false
 		}
@@ -46,26 +47,22 @@ func (iterator *GroupIterator) HasNext() bool {
 	return iterator.values.HasNext()
 }
 
-func (iterator *GroupIterator) Next() (ResultSet, error) {
+func (iterator *GroupIterator) Next() (core.Value, core.Value, error) {
 	return iterator.values.Next()
 }
 
-func (iterator *GroupIterator) group() (*MapIterator, error) {
+func (iterator *GroupIterator) group() (Iterator, error) {
 	groups := make(map[string]core.Value)
 
 	for iterator.src.HasNext() {
-		for _, selector := range iterator.selectors {
-			set, err := iterator.src.Next()
+		for _, keyFn := range iterator.keys {
+			val, _, err := iterator.src.Next()
 
 			if err != nil {
 				return nil, err
 			}
 
-			if len(set) == 0 {
-				continue
-			}
-
-			keyVal, err := selector.Key(set)
+			keyVal, err := keyFn(val)
 
 			if err != nil {
 				return nil, err
@@ -78,12 +75,6 @@ func (iterator *GroupIterator) group() (*MapIterator, error) {
 			if !exists {
 				group = values.NewArray(10)
 				groups[key] = group
-			}
-
-			val, err := selector.Value(set)
-
-			if err != nil {
-				return nil, err
 			}
 
 			group.(*values.Array).Push(val)

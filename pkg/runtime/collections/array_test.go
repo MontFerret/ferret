@@ -25,13 +25,12 @@ func TestArrayIterator(t *testing.T) {
 		pos := 0
 
 		for iter.HasNext() {
-			set, err := iter.Next()
+			item, key, err := iter.Next()
 
 			So(err, ShouldBeNil)
-			So(set, ShouldHaveLength, 2)
-			So(set[1].Unwrap(), ShouldEqual, pos)
+			So(key.Unwrap(), ShouldEqual, pos)
 
-			res = append(res, set[0])
+			res = append(res, item)
 
 			pos += 1
 		}
@@ -53,12 +52,11 @@ func TestArrayIterator(t *testing.T) {
 		res := make([]core.Value, 0, arr.Length())
 
 		for iter.HasNext() {
-			set, err := iter.Next()
+			item, _, err := iter.Next()
 
 			So(err, ShouldBeNil)
-			So(set, ShouldHaveLength, 2)
 
-			res = append(res, set[0])
+			res = append(res, item)
 		}
 
 		arr.ForEach(func(expected core.Value, idx int) bool {
@@ -84,17 +82,16 @@ func TestArrayIterator(t *testing.T) {
 		res := make([]core.Value, 0, arr.Length())
 
 		for iter.HasNext() {
-			set, err := iter.Next()
+			item, _, err := iter.Next()
 
 			So(err, ShouldBeNil)
-			So(set, ShouldHaveLength, 2)
 
-			res = append(res, set[0])
+			res = append(res, item)
 		}
 
-		set, err := iter.Next()
+		item, _, err := iter.Next()
 
-		So(set, ShouldBeNil)
+		So(item, ShouldEqual, values.None)
 		So(err, ShouldBeError)
 	})
 

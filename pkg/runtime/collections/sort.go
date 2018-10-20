@@ -10,7 +10,7 @@ import (
 type (
 	SortDirection int
 
-	Comparator func(first ResultSet, second ResultSet) (int, error)
+	Comparator func(first core.Value, second core.Value) (int, error)
 
 	Sorter struct {
 		fn        Comparator
@@ -81,8 +81,8 @@ func (iterator *SortIterator) HasNext() bool {
 		values, err := iterator.sort()
 
 		if err != nil {
-			// result to true because we do not want to initialize next time anymore
-			iterator.values = NewResultSetIterator(make([]ResultSet, 0, 0))
+			// set to true because we do not want to initialize next time anymore
+			iterator.values = NoopIterator
 
 			return false
 		}
@@ -93,17 +93,18 @@ func (iterator *SortIterator) HasNext() bool {
 	return iterator.values.HasNext()
 }
 
-func (iterator *SortIterator) Next() (ResultSet, error) {
+func (iterator *SortIterator) Next() (core.Value, core.Value, error) {
 	return iterator.values.Next()
 }
 
 func (iterator *SortIterator) sort() (Iterator, error) {
-	var failure error
-	res, err := ToSliceResultSet(iterator.src)
+	res, err := ToSlice(iterator.src)
 
 	if err != nil {
 		return nil, err
 	}
+
+	var failure error
 
 	sort.SliceStable(res, func(i, j int) bool {
 		// ignore next execution
@@ -146,5 +147,5 @@ func (iterator *SortIterator) sort() (Iterator, error) {
 		return nil, failure
 	}
 
-	return NewResultSetIterator(res), nil
+	return NewSliceIterator(res), nil
 }

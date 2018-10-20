@@ -18,14 +18,14 @@ func (iterator *SliceIterator) HasNext() bool {
 	return len(iterator.values) > iterator.pos
 }
 
-func (iterator *SliceIterator) Next() (ResultSet, error) {
+func (iterator *SliceIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.values) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values[idx]
 		iterator.pos++
 
-		return ResultSet{val, values.NewInt(idx)}, nil
+		return val, values.NewInt(idx), nil
 	}
 
-	return nil, ErrExhausted
+	return values.None, values.None, ErrExhausted
 }

@@ -11,7 +11,7 @@ type MapIterator struct {
 	pos    int
 }
 
-func NewMapIterator(input map[string]core.Value) *MapIterator {
+func NewMapIterator(input map[string]core.Value) Iterator {
 	return &MapIterator{input, nil, 0}
 }
 
@@ -32,14 +32,14 @@ func (iterator *MapIterator) HasNext() bool {
 	return len(iterator.keys) > iterator.pos
 }
 
-func (iterator *MapIterator) Next() (ResultSet, error) {
+func (iterator *MapIterator) Next() (core.Value, core.Value, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
 		iterator.pos++
 
-		return ResultSet{val, values.NewString(key)}, nil
+		return val, values.NewString(key), nil
 	}
 
-	return nil, ErrExhausted
+	return values.None, values.None, ErrExhausted
 }

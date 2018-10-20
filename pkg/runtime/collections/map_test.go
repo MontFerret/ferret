@@ -23,17 +23,16 @@ func TestMapIterator(t *testing.T) {
 		res := make([]core.Value, 0, len(m))
 
 		for iter.HasNext() {
-			set, err := iter.Next()
+			item, key, err := iter.Next()
 
 			So(err, ShouldBeNil)
-			So(set, ShouldHaveLength, 2)
 
-			expected, exists := m[set[1].String()]
+			expected, exists := m[key.String()]
 
 			So(exists, ShouldBeTrue)
-			So(expected, ShouldEqual, set[0])
+			So(expected, ShouldEqual, item)
 
-			res = append(res, set[0])
+			res = append(res, item)
 		}
 
 		So(res, ShouldHaveLength, len(m))
@@ -53,17 +52,16 @@ func TestMapIterator(t *testing.T) {
 		res := make([]core.Value, 0, len(m))
 
 		for iter.HasNext() {
-			set, err := iter.Next()
+			item, _, err := iter.Next()
 
 			So(err, ShouldBeNil)
-			So(set, ShouldHaveLength, 2)
 
-			res = append(res, set[0])
+			res = append(res, item)
 		}
 
-		set, err := iter.Next()
+		item, _, err := iter.Next()
 
-		So(set, ShouldBeNil)
+		So(item, ShouldEqual, values.None)
 		So(err, ShouldBeError)
 	})
 

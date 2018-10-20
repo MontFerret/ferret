@@ -30,14 +30,14 @@ func (i *LimitIterator) HasNext() bool {
 	return i.counter() < i.count
 }
 
-func (i *LimitIterator) Next() (ResultSet, error) {
+func (i *LimitIterator) Next() (core.Value, core.Value, error) {
 	if i.counter() <= i.count {
 		i.currCount++
 
 		return i.src.Next()
 	}
 
-	return nil, ErrExhausted
+	return nil, nil, ErrExhausted
 }
 
 func (i *LimitIterator) counter() int {

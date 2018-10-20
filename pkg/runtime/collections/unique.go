@@ -8,7 +8,8 @@ type (
 	UniqueIterator struct {
 		src    Iterator
 		hashes map[uint64]bool
-		result ResultSet
+		value  core.Value
+		key    core.Value
 		err    error
 	}
 )
@@ -31,21 +32,30 @@ func (iterator *UniqueIterator) HasNext() bool {
 
 	iterator.doNext()
 
-	return iterator.result != nil
+	if iterator.err != nil {
+		return false
+	}
+
+	if !core.IsNil(iterator.value) {
+		return true
+	}
+
+	return false
 }
 
-func (iterator *UniqueIterator) Next() (ResultSet, error) {
-	return iterator.result, iterator.err
+func (iterator *UniqueIterator) Next() (core.Value, core.Value, error) {
+	return iterator.value, iterator.key, iterator.err
 }
 
 func (iterator *UniqueIterator) doNext() {
 	// reset state
 	iterator.err = nil
-	iterator.result = nil
+	iterator.value = nil
+	iterator.key = nil
 
 	// iterate over source until we find a non-unique item
 	for iterator.src.HasNext() {
-		set, err := iterator.src.Next()
+		val, key, err := iterator.src.Next()
 
 		if err != nil {
 			iterator.err = err
@@ -53,11 +63,7 @@ func (iterator *UniqueIterator) doNext() {
 			return
 		}
 
-		if len(set) == 0 {
-			continue
-		}
-
-		h := set[0].Hash()
+		h := val.Hash()
 
 		_, exists := iterator.hashes[h]
 
@@ -66,7 +72,8 @@ func (iterator *UniqueIterator) doNext() {
 		}
 
 		iterator.hashes[h] = true
-		iterator.result = set
+		iterator.key = key
+		iterator.value = val
 
 		return
 	}
