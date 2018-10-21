@@ -4,27 +4,27 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type ObjectIterator struct {
+type KeyedIterator struct {
 	valVar string
 	keyVar string
-	values *values.Object
+	values KeyedCollection
 	keys   []string
 	pos    int
 }
 
-func NewObjectIterator(
+func NewKeyedIterator(
 	valVar,
 	keyVar string,
-	input *values.Object,
+	input KeyedCollection,
 ) Iterator {
-	return &ObjectIterator{valVar, keyVar, input, nil, 0}
+	return &KeyedIterator{valVar, keyVar, input, nil, 0}
 }
 
-func NewDefaultObjectIterator(input *values.Object) Iterator {
-	return NewObjectIterator(DefaultValueVar, DefaultKeyVar, input)
+func NewDefaultKeyedIterator(input KeyedCollection) Iterator {
+	return NewKeyedIterator(DefaultValueVar, DefaultKeyVar, input)
 }
 
-func (iterator *ObjectIterator) HasNext() bool {
+func (iterator *KeyedIterator) HasNext() bool {
 	// lazy initialization
 	if iterator.keys == nil {
 		iterator.keys = iterator.values.Keys()
@@ -33,7 +33,7 @@ func (iterator *ObjectIterator) HasNext() bool {
 	return len(iterator.keys) > iterator.pos
 }
 
-func (iterator *ObjectIterator) Next() (DataSet, error) {
+func (iterator *KeyedIterator) Next() (DataSet, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := values.NewString(iterator.keys[iterator.pos])
 		val, _ := iterator.values.Get(key)

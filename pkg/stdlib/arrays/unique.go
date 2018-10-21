@@ -31,7 +31,7 @@ func Unique(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	iterator, err := collections.NewUniqueIterator(
-		collections.NewDefaultArrayIterator(arr),
+		collections.NewDefaultIndexedIterator(arr),
 		collections.DefaultValueVar,
 	)
 

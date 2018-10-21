@@ -22,7 +22,7 @@ func next(iterator collections.Iterator) (core.Value, core.Value, error) {
 }
 
 func arrayIterator(arr *values.Array) collections.Iterator {
-	return collections.NewDefaultArrayIterator(arr)
+	return collections.NewDefaultIndexedIterator(arr)
 }
 
 func TestArrayIterator(t *testing.T) {

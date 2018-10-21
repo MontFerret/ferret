@@ -41,7 +41,7 @@ func SortedUnique(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	uniqIterator, err := collections.NewUniqueIterator(
-		collections.NewDefaultArrayIterator(arr),
+		collections.NewDefaultIndexedIterator(arr),
 		collections.DefaultValueVar,
 	)
 

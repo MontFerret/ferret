@@ -40,7 +40,7 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	iterator, err := collections.NewSortIterator(
-		collections.NewDefaultArrayIterator(arr),
+		collections.NewDefaultIndexedIterator(arr),
 		sorter,
 	)
 

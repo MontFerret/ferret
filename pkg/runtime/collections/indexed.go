@@ -9,32 +9,32 @@ const (
 	DefaultKeyVar   = "key"
 )
 
-type ArrayIterator struct {
+type IndexedIterator struct {
 	valVar string
 	keyVar string
-	values *values.Array
+	values IndexedCollection
 	pos    int
 }
 
-func NewArrayIterator(
+func NewIndexedIterator(
 	valVar,
 	keyVar string,
-	input *values.Array,
+	input IndexedCollection,
 ) Iterator {
-	return &ArrayIterator{valVar, keyVar, input, 0}
+	return &IndexedIterator{valVar, keyVar, input, 0}
 }
 
-func NewDefaultArrayIterator(
-	input *values.Array,
+func NewDefaultIndexedIterator(
+	input IndexedCollection,
 ) Iterator {
-	return &ArrayIterator{DefaultValueVar, DefaultKeyVar, input, 0}
+	return &IndexedIterator{DefaultValueVar, DefaultKeyVar, input, 0}
 }
 
-func (iterator *ArrayIterator) HasNext() bool {
+func (iterator *IndexedIterator) HasNext() bool {
 	return int(iterator.values.Length()) > iterator.pos
 }
 
-func (iterator *ArrayIterator) Next() (DataSet, error) {
+func (iterator *IndexedIterator) Next() (DataSet, error) {
 	if int(iterator.values.Length()) > iterator.pos {
 		idx := values.NewInt(iterator.pos)
 		val := iterator.values.Get(idx)

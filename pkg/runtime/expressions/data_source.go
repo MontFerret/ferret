@@ -46,18 +46,26 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 
 	switch data.Type() {
 	case core.ArrayType:
-		return collections.NewArrayIterator(valVar, keyVar, data.(*values.Array)), nil
+		return collections.NewIndexedIterator(valVar, keyVar, data.(collections.IndexedCollection)), nil
 	case core.ObjectType:
-		return collections.NewObjectIterator(valVar, keyVar, data.(*values.Object)), nil
+		return collections.NewKeyedIterator(valVar, keyVar, data.(collections.KeyedCollection)), nil
 	case core.HTMLElementType, core.HTMLDocumentType:
 		return collections.NewHTMLNodeIterator(valVar, keyVar, data.(values.HTMLNode)), nil
 	default:
-		return nil, core.TypeError(
-			data.Type(),
-			core.ArrayType,
-			core.ObjectType,
-			core.HTMLDocumentType,
-			core.HTMLElementType,
-		)
+		// fallback to user defined types
+		switch data.(type) {
+		case collections.KeyedCollection:
+			return collections.NewIndexedIterator(valVar, keyVar, data.(collections.IndexedCollection)), nil
+		case collections.IndexedCollection:
+			return collections.NewKeyedIterator(valVar, keyVar, data.(collections.KeyedCollection)), nil
+		default:
+			return nil, core.TypeError(
+				data.Type(),
+				core.ArrayType,
+				core.ObjectType,
+				core.HTMLDocumentType,
+				core.HTMLElementType,
+			)
+		}
 	}
 }
