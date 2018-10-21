@@ -33,7 +33,10 @@ func SortedUnique(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-		return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
+		firstVal, _ := first.Get(collections.DefaultValueVar)
+		secondVal, _ := second.Get(collections.DefaultValueVar)
+
+		return firstVal.Compare(secondVal), nil
 	}, collections.SortDirectionAsc)
 
 	if err != nil {

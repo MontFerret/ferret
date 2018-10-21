@@ -5,8 +5,8 @@ import (
 )
 
 type KeyedIterator struct {
-	valVar string
-	keyVar string
+	valVar values.String
+	keyVar values.String
 	values KeyedCollection
 	keys   []string
 	pos    int
@@ -14,7 +14,7 @@ type KeyedIterator struct {
 
 func NewKeyedIterator(
 	valVar,
-	keyVar string,
+	keyVar values.String,
 	input KeyedCollection,
 ) Iterator {
 	return &KeyedIterator{valVar, keyVar, input, nil, 0}

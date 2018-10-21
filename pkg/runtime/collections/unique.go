@@ -2,19 +2,20 @@ package collections
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
 	UniqueIterator struct {
 		src     Iterator
 		hashes  map[uint64]bool
-		hashKey string
+		hashKey values.String
 		dataSet DataSet
 		err     error
 	}
 )
 
-func NewUniqueIterator(src Iterator, hashKey string) (*UniqueIterator, error) {
+func NewUniqueIterator(src Iterator, hashKey values.String) (*UniqueIterator, error) {
 	if src == nil {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
@@ -63,7 +64,8 @@ func (iterator *UniqueIterator) doNext() {
 			return
 		}
 
-		h := ds.Get(iterator.hashKey).Hash()
+		v, _ := ds.Get(iterator.hashKey)
+		h := v.Hash()
 
 		_, exists := iterator.hashes[h]
 

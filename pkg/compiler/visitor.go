@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/pkg/errors"
 	"strconv"
@@ -181,8 +182,8 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 	src, err := expressions.NewDataSource(
 		v.getSourceMap(srcCtx),
-		valVarName,
-		keyVarName,
+		values.NewString(valVarName),
+		values.NewString(keyVarName),
 		srcExp,
 	)
 
@@ -454,7 +455,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope) (cl
 
 			grouping = append(grouping, selector)
 
-			if err := scope.SetVariable(selector.Variable()); err != nil {
+			if err := scope.SetVariable(selector.Variable().String()); err != nil {
 				return params, err
 			}
 		}
@@ -473,7 +474,7 @@ func (v *visitor) createCollectSelector(ctx *fql.CollectSelectorContext, scope *
 		return nil, err
 	}
 
-	return clauses.NewCollectSelector(variable, exp)
+	return clauses.NewCollectSelector(values.NewString(variable), exp)
 }
 
 func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext, scope *scope) (core.Expression, error) {

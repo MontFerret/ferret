@@ -16,7 +16,7 @@ type DataSource struct {
 func NewDataSource(
 	src core.SourceMap,
 	valVariable,
-	keyVariable string,
+	keyVariable values.String,
 	exp core.Expression,
 ) (collections.Iterable, error) {
 	if exp == nil {

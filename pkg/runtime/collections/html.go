@@ -5,15 +5,15 @@ import (
 )
 
 type HTMLNodeIterator struct {
-	valVar string
-	keyVar string
+	valVar values.String
+	keyVar values.String
 	values values.HTMLNode
 	pos    int
 }
 
 func NewHTMLNodeIterator(
 	valVar,
-	keyVar string,
+	keyVar values.String,
 	input values.HTMLNode,
 ) Iterator {
 	return &HTMLNodeIterator{valVar, keyVar, input, 0}

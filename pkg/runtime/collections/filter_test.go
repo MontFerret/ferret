@@ -21,7 +21,7 @@ func TestFilter(t *testing.T) {
 		}
 
 		predicate := func(ds collections.DataSet) (bool, error) {
-			i := float64(ds.Get(collections.DefaultValueVar).Unwrap().(int))
+			i := float64(ds.GetOrDefault(collections.DefaultValueVar).Unwrap().(int))
 			calc := float64(i / 2)
 
 			return calc == math.Floor(calc), nil
@@ -57,7 +57,7 @@ func TestFilter(t *testing.T) {
 		}
 
 		predicate := func(ds collections.DataSet) (bool, error) {
-			i := float64(ds.Get(collections.DefaultKeyVar).Unwrap().(int))
+			i := float64(ds.GetOrDefault(collections.DefaultKeyVar).Unwrap().(int))
 
 			if i == 0 {
 				return false, nil
@@ -201,12 +201,12 @@ func TestFilter(t *testing.T) {
 
 		// i < 5
 		predicate1 := func(ds collections.DataSet) (bool, error) {
-			return ds.Get(collections.DefaultValueVar).Compare(values.NewInt(5)) == -1, nil
+			return ds.GetOrDefault(collections.DefaultValueVar).Compare(values.NewInt(5)) == -1, nil
 		}
 
 		// i > 2
 		predicate2 := func(ds collections.DataSet) (bool, error) {
-			return ds.Get(collections.DefaultValueVar).Compare(values.NewInt(2)) == 1, nil
+			return ds.GetOrDefault(collections.DefaultValueVar).Compare(values.NewInt(2)) == 1, nil
 		}
 
 		it, _ := collections.NewFilterIterator(
