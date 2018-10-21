@@ -216,7 +216,7 @@ func TestValuesStress(t *testing.T) {
 				values.NewObjectProperty("k1", obj1),
 				values.NewObjectProperty("k2", obj2),
 			)
-			expected := values.NewArrayWith(obj1, obj2).Sort()
+			expected := values.NewArrayWith(obj2, obj1).Sort()
 
 			actual, err := objects.Values(context.Background(), obj)
 			actualSorted := actual.(*values.Array).Sort()

@@ -77,8 +77,6 @@ func (t *Object) Compare(other core.Value) int {
 		var exists bool
 
 		other.ForEach(func(otherVal core.Value, key string) bool {
-			res = -1
-
 			if val, exists = t.value[key]; exists {
 				res = val.Compare(otherVal)
 			}
