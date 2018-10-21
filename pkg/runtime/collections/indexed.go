@@ -4,16 +4,21 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+const (
+	DefaultValueVar = "value"
+	DefaultKeyVar   = "key"
+)
+
 type IndexedIterator struct {
-	valVar values.String
-	keyVar values.String
+	valVar string
+	keyVar string
 	values IndexedCollection
 	pos    int
 }
 
 func NewIndexedIterator(
 	valVar,
-	keyVar values.String,
+	keyVar string,
 	input IndexedCollection,
 ) Iterator {
 	return &IndexedIterator{valVar, keyVar, input, 0}

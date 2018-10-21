@@ -13,7 +13,7 @@ func toValues(sets []collections.DataSet) []core.Value {
 	res := make([]core.Value, 0, len(sets))
 
 	for _, ds := range sets {
-		res = append(res, ds.GetOrDefault(collections.DefaultValueVar))
+		res = append(res, ds.Get(collections.DefaultValueVar))
 	}
 
 	return res
@@ -35,7 +35,7 @@ func TestSort(t *testing.T) {
 
 		s, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				return first.GetOrDefault(collections.DefaultValueVar).Compare(second.GetOrDefault(collections.DefaultValueVar)), nil
+				return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionAsc,
 		)
@@ -54,7 +54,7 @@ func TestSort(t *testing.T) {
 		numbers := []int{1, 2, 3, 4, 5}
 
 		for idx, num := range numbers {
-			So(res[idx].GetOrDefault(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
+			So(res[idx].Get(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
 		}
 	})
 
@@ -69,7 +69,7 @@ func TestSort(t *testing.T) {
 
 		s, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				return first.GetOrDefault(collections.DefaultValueVar).Compare(second.GetOrDefault(collections.DefaultValueVar)), nil
+				return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionDesc,
 		)
@@ -88,7 +88,7 @@ func TestSort(t *testing.T) {
 		numbers := []int{5, 4, 3, 2, 1}
 
 		for idx, num := range numbers {
-			So(res[idx].GetOrDefault(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
+			So(res[idx].Get(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
 		}
 	})
 
@@ -115,8 +115,8 @@ func TestSort(t *testing.T) {
 
 		s1, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -125,8 +125,8 @@ func TestSort(t *testing.T) {
 
 		s2, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -175,8 +175,8 @@ func TestSort(t *testing.T) {
 
 		s1, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -185,8 +185,8 @@ func TestSort(t *testing.T) {
 
 		s2, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -235,8 +235,8 @@ func TestSort(t *testing.T) {
 
 		s1, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -245,8 +245,8 @@ func TestSort(t *testing.T) {
 
 		s2, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -295,8 +295,8 @@ func TestSort(t *testing.T) {
 
 		s1, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("one")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -305,8 +305,8 @@ func TestSort(t *testing.T) {
 
 		s2, _ := collections.NewSorter(
 			func(first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.GetOrDefault(collections.DefaultValueVar).(*values.Object).Get("two")
+				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},

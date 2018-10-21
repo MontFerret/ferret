@@ -44,9 +44,7 @@ func toArray(iterator collections.Iterator) (core.Value, error) {
 			return values.None, err
 		}
 
-		val, _ := ds.Get(collections.DefaultValueVar)
-
-		arr.Push(val)
+		arr.Push(ds.Get(collections.DefaultValueVar))
 	}
 
 	return arr, nil

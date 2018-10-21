@@ -32,10 +32,7 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-		firstVal, _ := first.Get(collections.DefaultValueVar)
-		secondVal, _ := second.Get(collections.DefaultValueVar)
-
-		return firstVal.Compare(secondVal), nil
+		return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 	}, collections.SortDirectionAsc)
 
 	if err != nil {

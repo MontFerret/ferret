@@ -6,15 +6,15 @@ import (
 )
 
 type SliceIterator struct {
-	valVar values.String
-	keyVar values.String
+	valVar string
+	keyVar string
 	values []core.Value
 	pos    int
 }
 
 func NewSliceIterator(
 	valVar,
-	keyVar values.String,
+	keyVar string,
 	input []core.Value,
 ) Iterator {
 	return &SliceIterator{valVar, keyVar, input, 0}

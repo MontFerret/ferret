@@ -6,8 +6,8 @@ import (
 )
 
 type MapIterator struct {
-	valVar values.String
-	keyVar values.String
+	valVar string
+	keyVar string
 	values map[string]core.Value
 	keys   []string
 	pos    int
@@ -15,7 +15,7 @@ type MapIterator struct {
 
 func NewMapIterator(
 	valVar,
-	keyVar values.String,
+	keyVar string,
 	input map[string]core.Value,
 ) Iterator {
 	return &MapIterator{valVar, keyVar, input, nil, 0}

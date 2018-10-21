@@ -1,16 +1,13 @@
 package clauses
 
-import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-)
+import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 type CollectSelector struct {
-	variable values.String
+	variable string
 	exp      core.Expression
 }
 
-func NewCollectSelector(variable values.String, exp core.Expression) (*CollectSelector, error) {
+func NewCollectSelector(variable string, exp core.Expression) (*CollectSelector, error) {
 	if variable == "" {
 		return nil, core.Error(core.ErrMissedArgument, "selector variable")
 	}
@@ -22,7 +19,7 @@ func NewCollectSelector(variable values.String, exp core.Expression) (*CollectSe
 	return &CollectSelector{variable, exp}, nil
 }
 
-func (selector *CollectSelector) Variable() values.String {
+func (selector *CollectSelector) Variable() string {
 	return selector.variable
 }
 

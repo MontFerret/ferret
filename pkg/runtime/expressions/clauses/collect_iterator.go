@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type CollectGroupingIterator struct {
@@ -60,9 +59,8 @@ func (iterator *CollectGroupingIterator) Next() (collections.DataSet, error) {
 }
 
 func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
-	// key is selector variable
-	// value is map of values
-	hashTable := make(map[values.String]map[uint64][]core.Value)
+	hashTable := make(map[uint64]bool)
+	collectedValues := make([]collections.DataSet, 0, 10)
 	// sorters := make([]*collections.Sorter, 0, 10)
 	iterCounter := -1
 
@@ -90,7 +88,7 @@ func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
 
 		// result list of the current iteration
 		// if there are no unique values, it will be nil
-		// var result collections.DataSet
+		var result collections.DataSet
 
 		// iterate over each selector for a current data set
 		for _, selector := range iterator.selectors {
@@ -117,24 +115,26 @@ func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
 				return nil, err
 			}
 
-			// use value hash as a hash for grouping
-			hash := value.Hash()
+			// use value hash as a key for grouping
+			key := value.Hash()
 
-			// check whether the selector is already added to the hash table
-			selectorValues, exists := hashTable[selector.variable]
-
-			if !exists {
-				selectorValues = make(map[uint64][]core.Value)
-				hashTable[selector.variable] = selectorValues
-			}
-
-			collectedValues, exists := selectorValues[hash]
+			// check whether the value already is added to the hash table
+			_, exists := hashTable[key]
 
 			if !exists {
-				collectedValues = make([]core.Value, 0, 10)
-			}
+				hashTable[key] = true
 
-			collectedValues = append(collectedValues, value)
+				if result == nil {
+					result = make(collections.DataSet)
+				}
+
+				// result[selector.variable] =
+			}
+		}
+
+		// put the data set of the current iteration to the final list
+		if result != nil {
+			collectedValues = append(collectedValues, result)
 		}
 	}
 
