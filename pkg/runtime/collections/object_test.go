@@ -9,7 +9,7 @@ import (
 )
 
 func objectIterator(obj *values.Object) collections.Iterator {
-	return collections.NewObjectIterator(valVar, keyVar, obj)
+	return collections.NewDefaultObjectIterator(obj)
 }
 
 func TestObjectIterator(t *testing.T) {

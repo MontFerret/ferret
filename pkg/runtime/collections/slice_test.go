@@ -9,11 +9,7 @@ import (
 )
 
 func sliceIterator(value []core.Value) collections.Iterator {
-	return collections.NewSliceIterator(
-		valVar,
-		keyVar,
-		value,
-	)
+	return collections.NewDefaultSliceIterator(value)
 }
 
 func TestSliceIterator(t *testing.T) {

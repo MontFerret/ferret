@@ -4,6 +4,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+const (
+	DefaultValueVar = "value"
+	DefaultKeyVar   = "key"
+)
+
 type ArrayIterator struct {
 	valVar string
 	keyVar string
@@ -17,6 +22,12 @@ func NewArrayIterator(
 	input *values.Array,
 ) Iterator {
 	return &ArrayIterator{valVar, keyVar, input, 0}
+}
+
+func NewDefaultArrayIterator(
+	input *values.Array,
+) Iterator {
+	return &ArrayIterator{DefaultValueVar, DefaultKeyVar, input, 0}
 }
 
 func (iterator *ArrayIterator) HasNext() bool {

@@ -6,11 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-const (
-	iteratorValVar = "value"
-	iteratorKeyVar = "key"
-)
-
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
 		"APPEND":         Append,
@@ -39,14 +34,6 @@ func NewLib() map[string]core.Function {
 	}
 }
 
-func toArrayIterator(arr *values.Array) collections.Iterator {
-	return collections.NewArrayIterator(
-		iteratorValVar,
-		iteratorKeyVar,
-		arr,
-	)
-}
-
 func toArray(iterator collections.Iterator) (core.Value, error) {
 	arr := values.NewArray(10)
 
@@ -57,7 +44,7 @@ func toArray(iterator collections.Iterator) (core.Value, error) {
 			return values.None, err
 		}
 
-		arr.Push(ds.Get(iteratorValVar))
+		arr.Push(ds.Get(collections.DefaultValueVar))
 	}
 
 	return arr, nil

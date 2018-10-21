@@ -9,7 +9,7 @@ import (
 )
 
 func mapIterator(m map[string]core.Value) collections.Iterator {
-	return collections.NewMapIterator(valVar, keyVar, m)
+	return collections.NewDefaultMapIterator(m)
 }
 
 func TestMapIterator(t *testing.T) {

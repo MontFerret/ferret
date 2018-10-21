@@ -32,7 +32,7 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-		return first.Get(iteratorValVar).Compare(second.Get(iteratorValVar)), nil
+		return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 	}, collections.SortDirectionAsc)
 
 	if err != nil {
@@ -40,7 +40,7 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	iterator, err := collections.NewSortIterator(
-		toArrayIterator(arr),
+		collections.NewDefaultArrayIterator(arr),
 		sorter,
 	)
 

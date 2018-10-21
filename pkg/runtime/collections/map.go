@@ -21,6 +21,12 @@ func NewMapIterator(
 	return &MapIterator{valVar, keyVar, input, nil, 0}
 }
 
+func NewDefaultMapIterator(
+	input map[string]core.Value,
+) Iterator {
+	return &MapIterator{DefaultValueVar, DefaultKeyVar, input, nil, 0}
+}
+
 func (iterator *MapIterator) HasNext() bool {
 	// lazy initialization
 	if iterator.keys == nil {

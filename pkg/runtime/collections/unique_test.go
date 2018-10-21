@@ -25,7 +25,7 @@ func TestUniqueIterator(t *testing.T) {
 
 		iter, err := collections.NewUniqueIterator(
 			sliceIterator(arr),
-			valVar,
+			collections.DefaultValueVar,
 		)
 
 		So(err, ShouldBeNil)
@@ -51,7 +51,7 @@ func TestUniqueIterator(t *testing.T) {
 
 		iter, err := collections.NewUniqueIterator(
 			sliceIterator(arr),
-			valVar,
+			collections.DefaultValueVar,
 		)
 
 		So(err, ShouldBeNil)
@@ -82,7 +82,7 @@ func TestUniqueIterator(t *testing.T) {
 
 		iter, err := collections.NewUniqueIterator(
 			sliceIterator(arr),
-			valVar,
+			collections.DefaultValueVar,
 		)
 
 		So(err, ShouldBeNil)

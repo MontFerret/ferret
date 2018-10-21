@@ -33,7 +33,7 @@ func SortedUnique(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-		return first.Get(iteratorValVar).Compare(second.Get(iteratorValVar)), nil
+		return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 	}, collections.SortDirectionAsc)
 
 	if err != nil {
@@ -41,8 +41,8 @@ func SortedUnique(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	uniqIterator, err := collections.NewUniqueIterator(
-		toArrayIterator(arr),
-		iteratorValVar,
+		collections.NewDefaultArrayIterator(arr),
+		collections.DefaultValueVar,
 	)
 
 	if err != nil {

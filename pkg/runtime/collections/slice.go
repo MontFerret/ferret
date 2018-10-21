@@ -20,6 +20,10 @@ func NewSliceIterator(
 	return &SliceIterator{valVar, keyVar, input, 0}
 }
 
+func NewDefaultSliceIterator(input []core.Value) Iterator {
+	return NewSliceIterator(DefaultValueVar, DefaultKeyVar, input)
+}
+
 func (iterator *SliceIterator) HasNext() bool {
 	return len(iterator.values) > iterator.pos
 }

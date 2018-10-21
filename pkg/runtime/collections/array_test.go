@@ -8,11 +8,6 @@ import (
 	"testing"
 )
 
-const (
-	valVar = "value"
-	keyVar = "key"
-)
-
 func next(iterator collections.Iterator) (core.Value, core.Value, error) {
 	ds, err := iterator.Next()
 
@@ -20,18 +15,14 @@ func next(iterator collections.Iterator) (core.Value, core.Value, error) {
 		return nil, nil, err
 	}
 
-	val := ds[valVar]
-	key := ds[keyVar]
+	val := ds[collections.DefaultValueVar]
+	key := ds[collections.DefaultKeyVar]
 
 	return val, key, nil
 }
 
 func arrayIterator(arr *values.Array) collections.Iterator {
-	return collections.NewArrayIterator(
-		valVar,
-		keyVar,
-		arr,
-	)
+	return collections.NewDefaultArrayIterator(arr)
 }
 
 func TestArrayIterator(t *testing.T) {

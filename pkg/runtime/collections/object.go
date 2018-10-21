@@ -20,6 +20,10 @@ func NewObjectIterator(
 	return &ObjectIterator{valVar, keyVar, input, nil, 0}
 }
 
+func NewDefaultObjectIterator(input *values.Object) Iterator {
+	return NewObjectIterator(DefaultValueVar, DefaultKeyVar, input)
+}
+
 func (iterator *ObjectIterator) HasNext() bool {
 	// lazy initialization
 	if iterator.keys == nil {
