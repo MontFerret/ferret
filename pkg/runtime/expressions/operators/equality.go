@@ -30,7 +30,7 @@ func NewEqualityOperator(
 	fn, exists := equalityOperators[operator]
 
 	if !exists {
-		return nil, core.Error(core.ErrInvalidArgument, "aotype")
+		return nil, core.Error(core.ErrInvalidArgument, "operator")
 	}
 
 	return &EqualityOperator{

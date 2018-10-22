@@ -195,6 +195,7 @@ computedPropertyName
 
 propertyName
     : Identifier
+    | stringLiteral
     ;
 
 expressionSequence
@@ -210,16 +211,14 @@ arguments
     ;
 
 expression
-    : expression equalityOperator expression
+    : unaryOperator expression
+    | expression equalityOperator expression
     | expression logicalOperator expression
     | expression mathOperator expression
     | functionCallExpression
     | OpenParen expressionSequence CloseParen
-    | Plus expression
-    | Minus expression
-    | expression arrayOperator (Not)? (inOperator | equalityOperator) expression
-    | expression (Not)? inOperator expression
-    | Not expression
+    | expression arrayOperator (inOperator | equalityOperator) expression
+    | expression inOperator expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
     | stringLiteral
@@ -248,6 +247,7 @@ arrayOperator
 
 inOperator
     : In
+    | Not In
     ;
 
 equalityOperator

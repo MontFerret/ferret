@@ -56,6 +56,9 @@ func (t *Object) String() string {
 	return string(marshaled)
 }
 
+// Compare compares the source object with other core.Value
+// The behavior of the Compare is similar
+// to the comparison of objects in ArangoDB
 func (t *Object) Compare(other core.Value) int {
 	switch other.Type() {
 	case core.ObjectType:
@@ -73,18 +76,33 @@ func (t *Object) Compare(other core.Value) int {
 
 		var res = 0
 
-		var val core.Value
-		var exists bool
+		sortedT := sort.StringSlice(t.Keys())
+		sortedT.Sort()
 
-		other.ForEach(func(otherVal core.Value, key string) bool {
-			res = -1
+		sortedOther := sort.StringSlice(other.Keys())
+		sortedOther.Sort()
 
-			if val, exists = t.value[key]; exists {
-				res = val.Compare(otherVal)
+		var tVal, otherVal core.Value
+		var tKey, otherKey string
+
+		for i := 0; i < len(t.value) && res == 0; i++ {
+			tKey, otherKey = sortedT[i], sortedOther[i]
+
+			if tKey == otherKey {
+				tVal, _ = t.Get(NewString(tKey))
+				otherVal, _ = other.Get(NewString(tKey))
+				res = tVal.Compare(otherVal)
+				continue
 			}
 
-			return res == 0
-		})
+			if tKey < otherKey {
+				res = 1
+			} else {
+				res = -1
+			}
+
+			break
+		}
 
 		return res
 	default:

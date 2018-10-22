@@ -334,19 +334,24 @@ func (v *visitor) createFilter(ctx *fql.FilterClauseContext, scope *scope) (core
 		return nil, err
 	}
 
-	left := exps[0]
-	right := exps[1]
+	if len(exps) == 2 {
+		left := exps[0]
+		right := exps[1]
 
-	equalityOp := exp.EqualityOperator()
+		equalityOp := exp.EqualityOperator()
 
-	if equalityOp != nil {
-		return operators.NewEqualityOperator(v.getSourceMap(ctx), left, right, equalityOp.GetText())
-	}
+		if equalityOp != nil {
+			return operators.NewEqualityOperator(v.getSourceMap(ctx), left, right, equalityOp.GetText())
+		}
 
-	logicalOp := exp.LogicalOperator()
+		logicalOp := exp.LogicalOperator()
 
-	if logicalOp != nil {
-		return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalOp.GetText())
+		if logicalOp != nil {
+			return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalOp.GetText())
+		}
+	} else {
+		// should be unary operator
+		return v.doVisitExpression(exp, scope)
 	}
 
 	return nil, core.Error(ErrInvalidToken, ctx.GetText())
@@ -555,7 +560,26 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 }
 
 func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *scope) (core.Expression, error) {
-	return literals.NewStringLiteral(ctx.Identifier().GetText()), nil
+	var name string
+
+	identifier := ctx.Identifier()
+
+	if identifier != nil {
+		name = identifier.GetText()
+	} else {
+		stringLiteral := ctx.StringLiteral()
+
+		if stringLiteral != nil {
+			runes := []rune(stringLiteral.GetText())
+			name = string(runes[1 : len(runes)-1])
+		}
+	}
+
+	if name == "" {
+		return nil, core.Error(core.ErrNotFound, "property name")
+	}
+
+	return literals.NewStringLiteral(name), nil
 }
 
 func (v *visitor) doVisitComputedPropertyNameContext(ctx *fql.ComputedPropertyNameContext, scope *scope) (core.Expression, error) {
@@ -785,7 +809,9 @@ func (v *visitor) doVisitMathOperator(ctx *fql.ExpressionContext, scope *scope) 
 	)
 }
 
-func (v *visitor) doVisitNotOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
+func (v *visitor) doVisitUnaryOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
+	op := ctx.UnaryOperator().(*fql.UnaryOperatorContext)
+
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 	if err != nil {
@@ -794,11 +820,10 @@ func (v *visitor) doVisitNotOperator(ctx *fql.ExpressionContext, scope *scope) (
 
 	exp := exps[0]
 
-	return operators.NewLogicalOperator(
+	return operators.NewUnaryOperator(
 		v.getSourceMap(ctx),
-		nil,
 		exp,
-		"NOT",
+		operators.UnaryOperatorType(op.GetText()),
 	)
 }
 
@@ -837,6 +862,8 @@ func (v *visitor) doVisitInOperator(ctx *fql.ExpressionContext, scope *scope) (c
 		return nil, err
 	}
 
+	op := ctx.InOperator().(*fql.InOperatorContext)
+
 	left := exps[0]
 	right := exps[1]
 
@@ -848,7 +875,7 @@ func (v *visitor) doVisitInOperator(ctx *fql.ExpressionContext, scope *scope) (c
 		v.getSourceMap(ctx),
 		left,
 		right,
-		ctx.Not() != nil,
+		op.Not() != nil,
 	)
 }
 
@@ -893,6 +920,12 @@ func (v *visitor) doVisitArrayOperator(ctx *fql.ExpressionContext, scope *scope)
 }
 
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
+	notOp := ctx.UnaryOperator()
+
+	if notOp != nil {
+		return v.doVisitUnaryOperator(ctx, scope)
+	}
+
 	variable := ctx.Variable()
 
 	if variable != nil {
@@ -997,12 +1030,6 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 			exps,
 			scope,
 		)
-	}
-
-	notOp := ctx.Not()
-
-	if notOp != nil {
-		return v.doVisitNotOperator(ctx, scope)
 	}
 
 	rangeOp := ctx.RangeOperator()
