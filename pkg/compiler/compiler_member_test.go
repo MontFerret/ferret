@@ -2,6 +2,7 @@ package compiler_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -54,6 +55,42 @@ func TestMember(t *testing.T) {
 
 				RETURN obj["qaz"]
 			`)
+
+			So(err, ShouldBeNil)
+
+			out, err := prog.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `"wsx"`)
+		})
+
+		Convey("Object by literal with property defined as a string", func() {
+			c := compiler.New()
+
+			prog, err := c.Compile(`
+				LET obj = { "foo": "bar", "qaz": "wsx"}
+
+				RETURN obj["qaz"]
+			`)
+
+			So(err, ShouldBeNil)
+
+			out, err := prog.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `"wsx"`)
+		})
+
+		Convey("Object by literal with property defined as a multi line string", func() {
+			c := compiler.New()
+
+			prog, err := c.Compile(fmt.Sprintf(`
+				LET obj = { "foo": "bar", %s: "wsx"}
+
+				RETURN obj["qaz"]
+			`, "`qaz`"))
 
 			So(err, ShouldBeNil)
 
