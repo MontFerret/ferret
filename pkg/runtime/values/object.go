@@ -82,7 +82,6 @@ func (t *Object) Compare(other core.Value) int {
 		sortedOther := sort.StringSlice(other.Keys())
 		sortedOther.Sort()
 
-		// var tKey, otherKey string
 		var tVal, otherVal core.Value
 
 		for i := 0; i < len(t.value) && res == 0; i++ {
