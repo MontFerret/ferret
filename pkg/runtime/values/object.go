@@ -82,24 +82,23 @@ func (t *Object) Compare(other core.Value) int {
 		sortedOther := sort.StringSlice(other.Keys())
 		sortedOther.Sort()
 
-		var tKey, otherKey String
+		// var tKey, otherKey string
 		var tVal, otherVal core.Value
 
 		for i := 0; i < len(t.value) && res == 0; i++ {
-			tKey, otherKey = NewString(sortedT[i]), NewString(sortedOther[i])
-
-			switch tKey.Compare(otherKey) {
-			case 0:
-				tVal, _ = t.Get(tKey)
-				otherVal, _ = other.Get(otherKey)
+			if sortedT[i] == sortedOther[i] {
+				tVal, _ = t.Get(NewString(sortedT[i]))
+				otherVal, _ = other.Get(NewString(sortedOther[i]))
 				res = tVal.Compare(otherVal)
-			case 1:
-				res = -1
-				break
-			case -1:
+				continue
+			}
+
+			if sortedT[i] < sortedOther[i] {
 				res = 1
 				break
 			}
+
+			res = -1
 		}
 
 		return res
