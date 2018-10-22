@@ -56,6 +56,9 @@ func (t *Object) String() string {
 	return string(marshaled)
 }
 
+// Compare compares the source object with other core.Value
+// The behavior of the Compare is similar
+// to the comparison of objects in ArangoDB
 func (t *Object) Compare(other core.Value) int {
 	switch other.Type() {
 	case core.ObjectType:
