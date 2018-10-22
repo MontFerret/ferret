@@ -157,6 +157,68 @@ func TestObject(t *testing.T) {
 
 			So(obj1.Compare(obj2), ShouldEqual, -1)
 		})
+
+		Convey("ArangoDB compatibility", func() {
+			Convey("It should return 1 when {a:1} and {b:2}", func() {
+				obj1 := values.NewObjectWith(values.NewObjectProperty("a", values.NewInt(1)))
+				obj2 := values.NewObjectWith(values.NewObjectProperty("b", values.NewInt(2)))
+
+				So(obj1.Compare(obj2), ShouldEqual, 1)
+			})
+
+			Convey("It should return 0 when {a:1} and {a:1}", func() {
+				obj1 := values.NewObjectWith(values.NewObjectProperty("a", values.NewInt(1)))
+				obj2 := values.NewObjectWith(values.NewObjectProperty("a", values.NewInt(1)))
+
+				So(obj1.Compare(obj2), ShouldEqual, 0)
+			})
+
+			Convey("It should return 0 {a:1, c:2} and {c:2, a:1}", func() {
+				obj1 := values.NewObjectWith(
+					values.NewObjectProperty("a", values.NewInt(1)),
+					values.NewObjectProperty("c", values.NewInt(2)),
+				)
+				obj2 := values.NewObjectWith(
+					values.NewObjectProperty("c", values.NewInt(2)),
+					values.NewObjectProperty("a", values.NewInt(1)),
+				)
+
+				So(obj1.Compare(obj2), ShouldEqual, 0)
+			})
+
+			Convey("It should return -1 when {a:1} and {a:2}", func() {
+				obj1 := values.NewObjectWith(values.NewObjectProperty("a", values.NewInt(1)))
+				obj2 := values.NewObjectWith(values.NewObjectProperty("a", values.NewInt(2)))
+
+				So(obj1.Compare(obj2), ShouldEqual, -1)
+			})
+
+			Convey("It should return 1 when {a:1, c:2} and {c:2, b:2}", func() {
+				obj1 := values.NewObjectWith(
+					values.NewObjectProperty("a", values.NewInt(1)),
+					values.NewObjectProperty("c", values.NewInt(2)),
+				)
+				obj2 := values.NewObjectWith(
+					values.NewObjectProperty("c", values.NewInt(2)),
+					values.NewObjectProperty("b", values.NewInt(2)),
+				)
+
+				So(obj1.Compare(obj2), ShouldEqual, 1)
+			})
+
+			Convey("It should return 1 {a:1, c:3} and {c:2, a:1}", func() {
+				obj1 := values.NewObjectWith(
+					values.NewObjectProperty("a", values.NewInt(1)),
+					values.NewObjectProperty("c", values.NewInt(3)),
+				)
+				obj2 := values.NewObjectWith(
+					values.NewObjectProperty("c", values.NewInt(2)),
+					values.NewObjectProperty("a", values.NewInt(1)),
+				)
+
+				So(obj1.Compare(obj2), ShouldEqual, 1)
+			})
+		})
 	})
 
 	Convey(".Hash", t, func() {
