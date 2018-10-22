@@ -73,16 +73,22 @@ func (t *Object) Compare(other core.Value) int {
 
 		var res = 0
 
-		var val core.Value
-		var exists bool
+		sortedT := sort.StringSlice(t.Keys())
+		sortedT.Sort()
 
-		other.ForEach(func(otherVal core.Value, key string) bool {
-			if val, exists = t.value[key]; exists {
-				res = val.Compare(otherVal)
+		sortedOther := sort.StringSlice(other.Keys())
+		sortedOther.Sort()
+
+		for i := 0; i < len(t.value) && res == 0; i++ {
+			if sortedT[i] == sortedOther[i] {
+				continue
 			}
-
-			return res == 0
-		})
+			if sortedT[i] < sortedOther[i] {
+				res = 1
+				continue
+			}
+			res = -1
+		}
 
 		return res
 	default:
