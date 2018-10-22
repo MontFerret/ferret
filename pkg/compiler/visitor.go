@@ -560,7 +560,26 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 }
 
 func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *scope) (core.Expression, error) {
-	return literals.NewStringLiteral(ctx.Identifier().GetText()), nil
+	var name string
+
+	identifier := ctx.Identifier()
+
+	if identifier != nil {
+		name = identifier.GetText()
+	} else {
+		stringLiteral := ctx.StringLiteral()
+
+		if stringLiteral != nil {
+			runes := []rune(stringLiteral.GetText())
+			name = string(runes[1 : len(runes)-1])
+		}
+	}
+
+	if name == "" {
+		return nil, core.Error(core.ErrNotFound, "property name")
+	}
+
+	return literals.NewStringLiteral(name), nil
 }
 
 func (v *visitor) doVisitComputedPropertyNameContext(ctx *fql.ComputedPropertyNameContext, scope *scope) (core.Expression, error) {
