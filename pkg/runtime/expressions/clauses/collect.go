@@ -8,20 +8,21 @@ import (
 
 type (
 	CollectParams struct {
-		Grouping []*CollectSelector
+		Grouping   []*CollectSelector
+		Projection *CollectProjection
 	}
 
 	CollectClause struct {
 		src        core.SourceMap
 		dataSource collections.Iterable
-		params     CollectParams
+		params     *CollectParams
 	}
 )
 
 func NewCollect(
 	src core.SourceMap,
 	dataSource collections.Iterable,
-	params CollectParams,
+	params *CollectParams,
 ) (collections.Iterable, error) {
 	if dataSource == nil {
 		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
@@ -33,8 +34,14 @@ func NewCollect(
 func (clause *CollectClause) Variables() collections.Variables {
 	vars := make(collections.Variables, 0, len(clause.params.Grouping))
 
-	for _, selector := range clause.params.Grouping {
-		vars = append(vars, selector.variable)
+	if clause.params.Grouping != nil {
+		for _, selector := range clause.params.Grouping {
+			vars = append(vars, selector.variable)
+		}
+	}
+
+	if clause.params.Projection != nil {
+		vars = append(vars, clause.params.Projection.selector.variable)
 	}
 
 	return vars
@@ -51,10 +58,10 @@ func (clause *CollectClause) Iterate(ctx context.Context, scope *core.Scope) (co
 
 	return NewCollectGroupingIterator(
 		clause.src,
-		clause.params.Grouping,
+		clause.params,
 		srcIterator,
 		srcVariables,
 		ctx,
 		scope,
-	), nil
+	)
 }

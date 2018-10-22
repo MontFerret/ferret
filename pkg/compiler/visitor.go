@@ -243,7 +243,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		if collectCtx != nil {
 			collectCtx := collectCtx.(*fql.CollectClauseContext)
 
-			params, err := v.createCollect(collectCtx, forInScope)
+			params, err := v.createCollect(collectCtx, forInScope, valVarName)
 
 			if err != nil {
 				return nil, err
@@ -434,8 +434,8 @@ func (v *visitor) createSort(ctx *fql.SortClauseContext, scope *scope) ([]*claus
 	return res, nil
 }
 
-func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope) (clauses.CollectParams, error) {
-	params := clauses.CollectParams{}
+func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, valVarName string) (*clauses.CollectParams, error) {
+	params := &clauses.CollectParams{}
 
 	groupingCtx := ctx.CollectGrouping()
 
@@ -460,6 +460,67 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope) (cl
 		}
 
 		params.Grouping = grouping
+
+		projectionCtx := ctx.CollectGroupVariable()
+
+		if projectionCtx != nil {
+			projectionCtx := projectionCtx.(*fql.CollectGroupVariableContext)
+			projectionSelectorCtx := projectionCtx.CollectSelector()
+			var projectionSelector *clauses.CollectSelector
+
+			if projectionSelectorCtx != nil {
+				selector, err := v.createCollectSelector(projectionSelectorCtx.(*fql.CollectSelectorContext), scope)
+
+				if err != nil {
+					return nil, err
+				}
+
+				projectionSelector = selector
+			} else {
+				projectionIdentifier := projectionCtx.Identifier(0)
+
+				if projectionIdentifier != nil {
+					varExp, err := expressions.NewVariableExpression(v.getSourceMap(projectionCtx), valVarName)
+
+					if err != nil {
+						return nil, err
+					}
+
+					strLitExp := literals.NewStringLiteral(valVarName)
+
+					propExp, err := literals.NewObjectPropertyAssignment(
+						strLitExp,
+						varExp,
+					)
+
+					if err != nil {
+						return nil, err
+					}
+
+					projectionSelectorExp := literals.NewObjectLiteralWith(propExp)
+
+					if err != nil {
+						return nil, err
+					}
+
+					selector, err := clauses.NewCollectSelector(projectionIdentifier.GetText(), projectionSelectorExp)
+
+					if err != nil {
+						return nil, err
+					}
+
+					projectionSelector = selector
+				}
+			}
+
+			if projectionSelector != nil {
+				if err := scope.SetVariable(projectionSelector.Variable()); err != nil {
+					return params, err
+				}
+
+				params.Projection = clauses.NewCollectProjection(projectionSelector)
+			}
+		}
 	}
 
 	return params, nil
@@ -637,7 +698,13 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 			return nil, err
 		}
 
-		props = append(props, literals.NewObjectPropertyAssignment(name, value))
+		pa, err := literals.NewObjectPropertyAssignment(name, value)
+
+		if err != nil {
+			return nil, err
+		}
+
+		props = append(props, pa)
 	}
 
 	return literals.NewObjectLiteralWith(props...), nil

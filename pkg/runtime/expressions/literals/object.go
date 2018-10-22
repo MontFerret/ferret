@@ -17,8 +17,16 @@ type (
 	}
 )
 
-func NewObjectPropertyAssignment(name, value core.Expression) *ObjectPropertyAssignment {
-	return &ObjectPropertyAssignment{name, value}
+func NewObjectPropertyAssignment(name, value core.Expression) (*ObjectPropertyAssignment, error) {
+	if name == nil {
+		return nil, core.Error(core.ErrMissedArgument, "property name expression")
+	}
+
+	if value == nil {
+		return nil, core.Error(core.ErrMissedArgument, "property value expression")
+	}
+
+	return &ObjectPropertyAssignment{name, value}, nil
 }
 
 func NewObjectLiteralWith(props ...*ObjectPropertyAssignment) *ObjectLiteral {

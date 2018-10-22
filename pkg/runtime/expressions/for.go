@@ -77,7 +77,7 @@ func (e *ForExpression) AddSort(src core.SourceMap, sorters ...*clauses.SorterEx
 	return nil
 }
 
-func (e *ForExpression) AddCollect(src core.SourceMap, params clauses.CollectParams) error {
+func (e *ForExpression) AddCollect(src core.SourceMap, params *clauses.CollectParams) error {
 	collect, err := clauses.NewCollect(src, e.dataSource, params)
 
 	if err != nil {

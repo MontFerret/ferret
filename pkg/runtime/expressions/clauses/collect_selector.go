@@ -3,8 +3,8 @@ package clauses
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 type CollectSelector struct {
-	variable string
-	exp      core.Expression
+	variable   string
+	expression core.Expression
 }
 
 func NewCollectSelector(variable string, exp core.Expression) (*CollectSelector, error) {
@@ -24,5 +24,5 @@ func (selector *CollectSelector) Variable() string {
 }
 
 func (selector *CollectSelector) Expression() core.Expression {
-	return selector.exp
+	return selector.expression
 }
