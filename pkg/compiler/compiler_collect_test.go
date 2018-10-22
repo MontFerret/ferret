@@ -144,7 +144,7 @@ func TestCollect(t *testing.T) {
 			]
 			FOR i IN users
 				COLLECT gender = i.gender, age = i.age
-				RETURN {gender, age}
+				RETURN {age, gender}
 		`)
 
 		So(err, ShouldBeNil)
@@ -153,6 +153,6 @@ func TestCollect(t *testing.T) {
 		out, err := prog.Run(context.Background())
 
 		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, `["f","m"]`)
+		So(string(out), ShouldEqual, `[{"age":25,"gender":"f"},{"age":45,"gender":"f"},{"age":31,"gender":"m"},{"age":36,"gender":"m"},{"age":69,"gender":"m"}]`)
 	})
 }

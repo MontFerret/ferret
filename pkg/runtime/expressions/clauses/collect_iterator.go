@@ -4,11 +4,13 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"sort"
 )
 
 type CollectGroupingIterator struct {
 	ready      bool
-	result     collections.Iterator
+	values     []collections.DataSet
+	pos        int
 	src        core.SourceMap
 	selectors  []*CollectSelector
 	dataSource collections.Iterator
@@ -28,6 +30,7 @@ func NewCollectGroupingIterator(
 	return &CollectGroupingIterator{
 		false,
 		nil,
+		0,
 		src,
 		selectors,
 		dataSource,
@@ -43,26 +46,31 @@ func (iterator *CollectGroupingIterator) HasNext() bool {
 		groups, err := iterator.group()
 
 		if err != nil {
-			iterator.result = collections.NoopIterator
+			iterator.values = nil
 
 			return false
 		}
 
-		iterator.result = groups
+		iterator.values = groups
 	}
 
-	return iterator.result.HasNext()
+	return len(iterator.values) > iterator.pos
 }
 
 func (iterator *CollectGroupingIterator) Next() (collections.DataSet, error) {
-	return iterator.result.Next()
+	if len(iterator.values) > iterator.pos {
+		val := iterator.values[iterator.pos]
+		iterator.pos++
+
+		return val, nil
+	}
+
+	return nil, collections.ErrExhausted
 }
 
-func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
+func (iterator *CollectGroupingIterator) group() ([]collections.DataSet, error) {
 	hashTable := make(map[uint64]bool)
-	collectedValues := make([]collections.DataSet, 0, 10)
-	// sorters := make([]*collections.Sorter, 0, 10)
-	iterCounter := -1
+	collected := make([]collections.DataSet, 0, 10)
 
 	// iterating over underlying data source
 	for iterator.dataSource.HasNext() {
@@ -71,8 +79,6 @@ func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		iterCounter++
 
 		if len(set) == 0 {
 			continue
@@ -86,27 +92,11 @@ func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
 			return nil, err
 		}
 
-		// result list of the current iteration
-		// if there are no unique values, it will be nil
-		var result collections.DataSet
+		// represents a data of a given iteration with values retrieved by selectors
+		ds := collections.NewDataSet()
 
 		// iterate over each selector for a current data set
 		for _, selector := range iterator.selectors {
-			//if iterCounter == 0 {
-			//	sorter, err := collections.NewSorter(
-			//		func(first collections.ResultSet, second collections.ResultSet) (int, error) {
-			//			return first.First().Compare(second.First()), nil
-			//		},
-			//		collections.SortDirectionAsc,
-			//	)
-			//
-			//	if err != nil {
-			//		return nil, err
-			//	}
-			//
-			//	sorters = append(sorters, sorter)
-			//}
-
 			// execute a selector and get a value
 			// e.g. COLLECT age = u.age
 			value, err := selector.exp.Exec(iterator.ctx, childScope)
@@ -115,28 +105,25 @@ func (iterator *CollectGroupingIterator) group() (collections.Iterator, error) {
 				return nil, err
 			}
 
-			// use value hash as a key for grouping
-			key := value.Hash()
-
-			// check whether the value already is added to the hash table
-			_, exists := hashTable[key]
-
-			if !exists {
-				hashTable[key] = true
-
-				if result == nil {
-					result = make(collections.DataSet)
-				}
-
-				// result[selector.variable] =
-			}
+			ds.Set(selector.variable, value)
 		}
 
-		// put the data set of the current iteration to the final list
-		if result != nil {
-			collectedValues = append(collectedValues, result)
+		h := ds.Hash()
+
+		_, exists := hashTable[h]
+
+		if !exists {
+			hashTable[h] = true
+			collected = append(collected, ds)
 		}
 	}
 
-	return collections.NoopIterator, nil
+	sort.SliceStable(collected, func(i, j int) bool {
+		iDS := collected[i]
+		jDS := collected[j]
+
+		return iDS.Compare(jDS) < 0
+	})
+
+	return collected, nil
 }
