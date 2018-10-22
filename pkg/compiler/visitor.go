@@ -468,6 +468,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 			projectionSelectorCtx := projectionCtx.CollectSelector()
 			var projectionSelector *clauses.CollectSelector
 
+			// if projection expression is defined like WITH group = { foo: i.bar }
 			if projectionSelectorCtx != nil {
 				selector, err := v.createCollectSelector(projectionSelectorCtx.(*fql.CollectSelectorContext), scope)
 
@@ -477,6 +478,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 
 				projectionSelector = selector
 			} else {
+				// otherwise, use default expression WITH group = { i }
 				projectionIdentifier := projectionCtx.Identifier(0)
 
 				if projectionIdentifier != nil {
