@@ -114,4 +114,58 @@ func TestCollectInto(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `[{"gender":"f","values":[{"active":true},{"active":true}]},{"gender":"m","values":[{"active":true},{"active":true},{"active":false}]}]`)
 	})
+
+	Convey("Should create custom projection grouped by miltiple keys", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender, age = i.age INTO genders = { active: i.active }
+				RETURN {
+					age,
+					gender,
+					values: genders
+				}
+		`)
+
+		So(err, ShouldBeNil)
+		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `[{"age":25,"gender":"f","values":[{"active":true}]},{"age":45,"gender":"f","values":[{"active":true}]},{"age":31,"gender":"m","values":[{"active":true}]},{"age":36,"gender":"m","values":[{"active":true}]},{"age":69,"gender":"m","values":[{"active":false}]}]`)
+	})
 }

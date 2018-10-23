@@ -7,48 +7,54 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type CollectGroupingIterator struct {
+type CollectIterator struct {
 	ready      bool
 	values     []collections.DataSet
 	pos        int
 	src        core.SourceMap
-	params     *CollectParams
+	params     *Collect
 	dataSource collections.Iterator
 	variables  collections.Variables
 	ctx        context.Context
 	scope      *core.Scope
 }
 
-func NewCollectGroupingIterator(
+func NewCollectIterator(
 	src core.SourceMap,
-	params *CollectParams,
+	params *Collect,
 	dataSource collections.Iterator,
 	variables collections.Variables,
 	ctx context.Context,
 	scope *core.Scope,
-) (*CollectGroupingIterator, error) {
+) (*CollectIterator, error) {
 	if params.Grouping != nil {
-		var err error
-		sorters := make([]*collections.Sorter, len(params.Grouping))
+		if params.Grouping.Selectors != nil {
+			var err error
+			sorters := make([]*collections.Sorter, len(params.Grouping.Selectors))
 
-		for i, selector := range params.Grouping {
-			sorter, err := newGroupSorter(ctx, scope, variables, selector)
+			for i, selector := range params.Grouping.Selectors {
+				sorter, err := newGroupSorter(ctx, scope, variables, selector)
+
+				if err != nil {
+					return nil, err
+				}
+
+				sorters[i] = sorter
+			}
+
+			dataSource, err = collections.NewSortIterator(dataSource, sorters...)
 
 			if err != nil {
 				return nil, err
 			}
-
-			sorters[i] = sorter
 		}
 
-		dataSource, err = collections.NewSortIterator(dataSource, sorters...)
-
-		if err != nil {
-			return nil, err
+		if params.Grouping.Count != nil && params.Grouping.Projection != nil {
+			return nil, core.Error(core.ErrInvalidArgumentNumber, "counter and projection cannot be used together")
 		}
 	}
 
-	return &CollectGroupingIterator{
+	return &CollectIterator{
 		false,
 		nil,
 		0,
@@ -85,7 +91,7 @@ func newGroupSorter(ctx context.Context, scope *core.Scope, variables collection
 	}, collections.SortDirectionAsc)
 }
 
-func (iterator *CollectGroupingIterator) HasNext() bool {
+func (iterator *CollectIterator) HasNext() bool {
 	if !iterator.ready {
 		iterator.ready = true
 		groups, err := iterator.init()
@@ -102,7 +108,7 @@ func (iterator *CollectGroupingIterator) HasNext() bool {
 	return len(iterator.values) > iterator.pos
 }
 
-func (iterator *CollectGroupingIterator) Next() (collections.DataSet, error) {
+func (iterator *CollectIterator) Next() (collections.DataSet, error) {
 	if len(iterator.values) > iterator.pos {
 		val := iterator.values[iterator.pos]
 		iterator.pos++
@@ -113,10 +119,26 @@ func (iterator *CollectGroupingIterator) Next() (collections.DataSet, error) {
 	return nil, collections.ErrExhausted
 }
 
-func (iterator *CollectGroupingIterator) init() ([]collections.DataSet, error) {
-	hashTable := make(map[uint64]core.Value)
+func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
+	if iterator.params.Grouping != nil {
+		return iterator.group()
+	}
+
+	return nil, core.ErrNotImplemented
+}
+
+func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
+	// slice of groups
 	collected := make([]collections.DataSet, 0, 10)
+	// hash table of unique values
+	// key is a DataSet hash
+	// value is its index in result slice (collected)
+	hashTable := make(map[uint64]int)
 	ctx := iterator.ctx
+
+	groupSelectors := iterator.params.Grouping.Selectors
+	proj := iterator.params.Grouping.Projection
+	count := iterator.params.Grouping.Count
 
 	// iterating over underlying data source
 	for iterator.dataSource.HasNext() {
@@ -130,61 +152,81 @@ func (iterator *CollectGroupingIterator) init() ([]collections.DataSet, error) {
 			continue
 		}
 
+		// creating a new scope for all further operations
 		childScope := iterator.scope.Fork()
 
-		// populate child scope for further init operation
-		// with results from an underlying source and its exposed variables
+		// populate the new scope with results from an underlying source and its exposed variables
 		if err := set.Apply(childScope, iterator.variables); err != nil {
 			return nil, err
 		}
 
-		// represents a data of a given iteration with values retrieved by selectors
+		// this data set represents a data of a given iteration with values retrieved by selectors
 		ds := collections.NewDataSet()
-		grouping := iterator.params.Grouping
-		proj := iterator.params.Projection
-		applyProjection := proj != nil
 
-		// grouping can be omitted
-		if grouping != nil {
-			// iterate over each selector for a current data set
-			for _, selector := range grouping {
-				// execute a selector and get a value
-				// e.g. COLLECT age = u.age
-				value, err := selector.expression.Exec(ctx, childScope)
+		// iterate over each selector for a current data set
+		for _, selector := range groupSelectors {
+			// execute a selector and get a value
+			// e.g. COLLECT age = u.age
+			value, err := selector.expression.Exec(ctx, childScope)
 
-				if err != nil {
-					return nil, err
-				}
-
-				ds.Set(selector.variable, value)
+			if err != nil {
+				return nil, err
 			}
 
-			h := ds.Hash()
+			ds.Set(selector.variable, value)
+		}
 
-			groupValue, exists := hashTable[h]
+		// it important to get hash value before projection and counting
+		// otherwise hash value will be inaccurate
+		h := ds.Hash()
 
-			if !exists {
-				if !applyProjection {
-					groupValue = values.True
-				} else {
-					groupValue = values.NewArray(10)
-				}
+		_, exists := hashTable[h]
 
-				hashTable[h] = groupValue
-				collected = append(collected, ds)
+		if !exists {
+			collected = append(collected, ds)
+			hashTable[h] = len(collected) - 1
+
+			if proj != nil {
+				// create a new variable for keeping projection
+				ds.Set(proj.selector.variable, values.NewArray(10))
+			} else if count != nil {
+				// create a new variable for keeping counter
+				ds.Set(count.variable, values.ZeroInt)
+			}
+		}
+
+		if proj != nil {
+			idx := hashTable[h]
+			ds := collected[idx]
+			groupValue := ds.Get(proj.selector.variable)
+
+			arr, ok := groupValue.(*values.Array)
+
+			if !ok {
+				return nil, core.TypeError(groupValue.Type(), core.IntType)
 			}
 
-			if applyProjection {
-				value, err := proj.selector.expression.Exec(ctx, childScope)
+			value, err := proj.selector.expression.Exec(ctx, childScope)
 
-				if err != nil {
-					return nil, err
-				}
-
-				(groupValue.(*values.Array)).Push(value)
-
-				ds.Set(proj.selector.variable, groupValue)
+			if err != nil {
+				return nil, err
 			}
+
+			arr.Push(value)
+		} else if count != nil {
+			idx := hashTable[h]
+			ds := collected[idx]
+			groupValue := ds.Get(count.variable)
+
+			counter, ok := groupValue.(values.Int)
+
+			if !ok {
+				return nil, core.TypeError(groupValue.Type(), core.IntType)
+			}
+
+			groupValue = counter + 1
+			// set a new value
+			ds.Set(count.variable, groupValue)
 		}
 	}
 

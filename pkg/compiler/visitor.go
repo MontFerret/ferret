@@ -434,32 +434,38 @@ func (v *visitor) createSort(ctx *fql.SortClauseContext, scope *scope) ([]*claus
 	return res, nil
 }
 
-func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, valVarName string) (*clauses.CollectParams, error) {
-	params := &clauses.CollectParams{}
+func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, valVarName string) (*clauses.Collect, error) {
+	params := &clauses.Collect{}
 
 	groupingCtx := ctx.CollectGrouping()
 
 	if groupingCtx != nil {
+		params.Grouping = &clauses.CollectGrouping{}
+		grouping := params.Grouping
+
 		groupingCtx := groupingCtx.(*fql.CollectGroupingContext)
 		collectSelectors := groupingCtx.AllCollectSelector()
 
-		grouping := make([]*clauses.CollectSelector, 0, len(collectSelectors))
+		// group selectors
+		if collectSelectors != nil && len(collectSelectors) > 0 {
+			grouping.Selectors = make([]*clauses.CollectSelector, 0, len(collectSelectors))
 
-		for _, cs := range collectSelectors {
-			selector, err := v.createCollectSelector(cs.(*fql.CollectSelectorContext), scope)
+			for _, cs := range collectSelectors {
+				selector, err := v.createCollectSelector(cs.(*fql.CollectSelectorContext), scope)
 
-			if err != nil {
-				return params, err
+				if err != nil {
+					return params, err
+				}
+
+				grouping.Selectors = append(grouping.Selectors, selector)
+
+				if err := scope.SetVariable(selector.Variable()); err != nil {
+					return nil, err
+				}
 			}
 
-			grouping = append(grouping, selector)
-
-			if err := scope.SetVariable(selector.Variable()); err != nil {
-				return params, err
-			}
+			params.Grouping = grouping
 		}
-
-		params.Grouping = grouping
 
 		projectionCtx := ctx.CollectGroupVariable()
 
@@ -520,8 +526,21 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 					return params, err
 				}
 
-				params.Projection = clauses.NewCollectProjection(projectionSelector)
+				grouping.Projection = clauses.NewCollectProjection(projectionSelector)
 			}
+		}
+
+		counterCtx := ctx.CollectCounter()
+
+		if counterCtx != nil {
+			counterCtx := counterCtx.(*fql.CollectCounterContext)
+			variable := counterCtx.Identifier().GetText()
+
+			if err := scope.SetVariable(variable); err != nil {
+				return nil, err
+			}
+
+			grouping.Count = clauses.NewCollectCount(variable)
 		}
 	}
 
