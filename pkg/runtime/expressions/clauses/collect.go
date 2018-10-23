@@ -9,6 +9,7 @@ import (
 type (
 	Collect struct {
 		Grouping *CollectGrouping
+		Count    *CollectCount
 	}
 
 	CollectGrouping struct {
@@ -54,13 +55,12 @@ func NewCollectClause(
 
 func (clause *CollectClause) Variables() collections.Variables {
 	vars := make(collections.Variables, 0, 10)
-	grouping := clause.params.Grouping
 
-	if grouping != nil {
-		if grouping.Selectors != nil {
-			for _, selector := range grouping.Selectors {
-				vars = append(vars, selector.variable)
-			}
+	if clause.params.Grouping != nil {
+		grouping := clause.params.Grouping
+
+		for _, selector := range grouping.Selectors {
+			vars = append(vars, selector.variable)
 		}
 
 		if grouping.Projection != nil {
@@ -70,6 +70,8 @@ func (clause *CollectClause) Variables() collections.Variables {
 		if grouping.Count != nil {
 			vars = append(vars, clause.params.Grouping.Count.variable)
 		}
+	} else if clause.params.Count != nil {
+		vars = append(vars, clause.params.Count.variable)
 	}
 
 	return vars

@@ -124,6 +124,10 @@ func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
 		return iterator.group()
 	}
 
+	if iterator.params.Count != nil {
+		return iterator.count()
+	}
+
 	return nil, core.ErrNotImplemented
 }
 
@@ -231,4 +235,25 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	}
 
 	return collected, nil
+}
+
+func (iterator *CollectIterator) count() ([]collections.DataSet, error) {
+	var counter int
+
+	// iterating over underlying data source
+	for iterator.dataSource.HasNext() {
+		_, err := iterator.dataSource.Next()
+
+		if err != nil {
+			return nil, err
+		}
+
+		counter++
+	}
+
+	return []collections.DataSet{
+		{
+			iterator.params.Count.variable: values.NewInt(counter),
+		},
+	}, nil
 }

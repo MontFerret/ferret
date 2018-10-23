@@ -542,6 +542,19 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 
 			grouping.Count = clauses.NewCollectCount(variable)
 		}
+	} else {
+		countCtx := ctx.CollectCounter()
+
+		if countCtx != nil {
+			countCtx := countCtx.(*fql.CollectCounterContext)
+			variable := countCtx.Identifier().GetText()
+
+			if err := scope.SetVariable(variable); err != nil {
+				return nil, err
+			}
+
+			params.Count = clauses.NewCollectCount(variable)
+		}
 	}
 
 	return params, nil
