@@ -23,30 +23,12 @@ func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	merged := values.NewObject()
-	var object *values.Object
-	var srcVal core.Value
-	var exists values.Boolean
-	var k values.String
 
 	for _, arg := range args {
-		object = arg.(*values.Object)
-		object.ForEach(func(val core.Value, key string) bool {
-			k = values.NewString(key)
-
-			if values.IsCloneable(val) {
-				val = val.(core.Cloneable).Clone()
-			}
-
-			if srcVal, exists = merged.Get(k); exists {
-				val = merge(srcVal, val)
-			}
-
-			merged.Set(k, val)
-			return true
-		})
+		merged = merge(merged, arg.(*values.Object)).(*values.Object)
 	}
 
-	return merged, nil
+	return merged.Clone(), nil
 }
 
 func merge(src, dst core.Value) core.Value {
