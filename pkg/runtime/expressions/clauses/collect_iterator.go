@@ -27,12 +27,12 @@ func NewCollectIterator(
 	ctx context.Context,
 	scope *core.Scope,
 ) (*CollectIterator, error) {
-	if params.Group != nil {
-		if params.Group.Selectors != nil {
+	if params.group != nil {
+		if params.group.selectors != nil {
 			var err error
-			sorters := make([]*collections.Sorter, len(params.Group.Selectors))
+			sorters := make([]*collections.Sorter, len(params.group.selectors))
 
-			for i, selector := range params.Group.Selectors {
+			for i, selector := range params.group.selectors {
 				sorter, err := newGroupSorter(ctx, scope, variables, selector)
 
 				if err != nil {
@@ -49,7 +49,7 @@ func NewCollectIterator(
 			}
 		}
 
-		if params.Group.Count != nil && params.Group.Projection != nil {
+		if params.group.count != nil && params.group.projection != nil {
 			return nil, core.Error(core.ErrInvalidArgumentNumber, "counter and projection cannot be used together")
 		}
 	}
@@ -120,15 +120,15 @@ func (iterator *CollectIterator) Next() (collections.DataSet, error) {
 }
 
 func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
-	if iterator.params.Group != nil {
+	if iterator.params.group != nil {
 		return iterator.group()
 	}
 
-	if iterator.params.Count != nil {
+	if iterator.params.count != nil {
 		return iterator.count()
 	}
 
-	if iterator.params.Aggregate != nil {
+	if iterator.params.aggregate != nil {
 		return iterator.aggregate()
 	}
 
@@ -144,9 +144,9 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	hashTable := make(map[uint64]int)
 	ctx := iterator.ctx
 
-	groupSelectors := iterator.params.Group.Selectors
-	proj := iterator.params.Group.Projection
-	count := iterator.params.Group.Count
+	groupSelectors := iterator.params.group.selectors
+	proj := iterator.params.group.projection
+	count := iterator.params.group.count
 
 	// iterating over underlying data source
 	for iterator.dataSource.HasNext() {
@@ -257,7 +257,7 @@ func (iterator *CollectIterator) count() ([]collections.DataSet, error) {
 
 	return []collections.DataSet{
 		{
-			iterator.params.Count.variable: values.NewInt(counter),
+			iterator.params.count.variable: values.NewInt(counter),
 		},
 	}, nil
 }
@@ -271,7 +271,7 @@ func (iterator *CollectIterator) aggregate() ([]collections.DataSet, error) {
 	// x is a string key where a nested array is an array of all values of argN expressions
 	aggregated := make(map[string][]core.Value)
 	ctx := iterator.ctx
-	selectors := iterator.params.Aggregate.Selectors
+	selectors := iterator.params.aggregate.selectors
 
 	// iterating over underlying data source
 	for iterator.dataSource.HasNext() {

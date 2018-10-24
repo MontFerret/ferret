@@ -435,36 +435,35 @@ func (v *visitor) createSort(ctx *fql.SortClauseContext, scope *scope) ([]*claus
 }
 
 func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, valVarName string) (*clauses.Collect, error) {
-	params := &clauses.Collect{}
+	var err error
+	var selectors []*clauses.CollectSelector
+	var projection *clauses.CollectProjection
+	var count *clauses.CollectCount
+	var aggregate *clauses.CollectAggregate
 
 	groupingCtx := ctx.CollectGrouping()
 
 	if groupingCtx != nil {
-		params.Group = &clauses.CollectGroup{}
-		grouping := params.Group
-
 		groupingCtx := groupingCtx.(*fql.CollectGroupingContext)
 		collectSelectors := groupingCtx.AllCollectSelector()
 
 		// group selectors
 		if collectSelectors != nil && len(collectSelectors) > 0 {
-			grouping.Selectors = make([]*clauses.CollectSelector, 0, len(collectSelectors))
+			selectors = make([]*clauses.CollectSelector, 0, len(collectSelectors))
 
 			for _, cs := range collectSelectors {
 				selector, err := v.createCollectSelector(cs.(*fql.CollectSelectorContext), scope)
 
 				if err != nil {
-					return params, err
+					return nil, err
 				}
 
-				grouping.Selectors = append(grouping.Selectors, selector)
+				selectors = append(selectors, selector)
 
 				if err := scope.SetVariable(selector.Variable()); err != nil {
 					return nil, err
 				}
 			}
-
-			params.Group = grouping
 		}
 
 		projectionCtx := ctx.CollectGroupVariable()
@@ -523,27 +522,16 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 
 			if projectionSelector != nil {
 				if err := scope.SetVariable(projectionSelector.Variable()); err != nil {
-					return params, err
+					return nil, err
 				}
 
-				grouping.Projection = clauses.NewCollectProjection(projectionSelector)
+				projection, err = clauses.NewCollectProjection(projectionSelector)
+
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
-
-		counterCtx := ctx.CollectCounter()
-
-		if counterCtx != nil {
-			counterCtx := counterCtx.(*fql.CollectCounterContext)
-			variable := counterCtx.Identifier().GetText()
-
-			if err := scope.SetVariable(variable); err != nil {
-				return nil, err
-			}
-
-			grouping.Count = clauses.NewCollectCount(variable)
-		}
-
-		return params, nil
 	}
 
 	countCtx := ctx.CollectCounter()
@@ -556,9 +544,11 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 			return nil, err
 		}
 
-		params.Count = clauses.NewCollectCount(variable)
+		count, err = clauses.NewCollectCount(variable)
 
-		return params, nil
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	aggrCtx := ctx.CollectAggregator()
@@ -579,10 +569,14 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 			selectors = append(selectors, selector)
 		}
 
-		params.Aggregate = &clauses.CollectAggregate{Selectors: selectors}
+		aggregate, err = clauses.NewCollectAggregate(selectors)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return params, nil
+	return clauses.NewCollect(selectors, projection, count, aggregate)
 }
 
 func (v *visitor) createCollectSelector(ctx *fql.CollectSelectorContext, scope *scope) (*clauses.CollectSelector, error) {

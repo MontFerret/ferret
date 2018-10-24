@@ -277,7 +277,7 @@ var symbolicNames = []string{
 	"And", "Or", "Range", "Assign", "QuestionMark", "RegexNotMatch", "RegexMatch",
 	"For", "Return", "Distinct", "Filter", "Sort", "Limit", "Let", "Collect",
 	"SortDirection", "None", "Null", "BooleanLiteral", "Into", "Keep", "With",
-	"Count", "All", "Any", "Aggregate", "Like", "Not", "In", "Param", "Identifier",
+	"count", "All", "Any", "aggregate", "Like", "Not", "In", "Param", "Identifier",
 	"StringLiteral", "TemplateStringLiteral", "IntegerLiteral", "FloatLiteral",
 }
 
