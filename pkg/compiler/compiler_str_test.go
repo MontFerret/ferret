@@ -21,3 +21,16 @@ BAR
 		So(string(out), ShouldEqual, `"\nFOO\nBAR\n"`)
 	})
 }
+
+func BenchmarkStringLiteral(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			RETURN "
+FOO
+BAR
+"
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
