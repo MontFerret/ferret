@@ -19,6 +19,7 @@ type CollectIterator struct {
 	scope      *core.Scope
 }
 
+//revive:disable context-as-argument
 func NewCollectIterator(
 	src core.SourceMap,
 	params *Collect,
