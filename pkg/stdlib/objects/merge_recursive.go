@@ -72,13 +72,11 @@ func merge(src, dst core.Value) core.Value {
 	dstObj.ForEach(func(val core.Value, key string) bool {
 		keyObj = values.NewString(key)
 
-		srcVal, exists = srcObj.Get(keyObj)
-		if !exists {
-			srcObj.Set(keyObj, val)
-			return true
+		if srcVal, exists = srcObj.Get(keyObj); exists {
+			val = merge(srcVal, val)
 		}
 
-		srcObj.Set(keyObj, merge(srcVal, val))
+		srcObj.Set(keyObj, val)
 		return true
 	})
 
