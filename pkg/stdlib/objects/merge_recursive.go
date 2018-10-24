@@ -37,12 +37,11 @@ func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 				val = val.(core.Cloneable).Clone()
 			}
 
-			if srcVal, exists = merged.Get(k); !exists {
-				merged.Set(k, val)
-				return true
+			if srcVal, exists = merged.Get(k); exists {
+				val = merge(srcVal, val)
 			}
 
-			merged.Set(k, merge(srcVal, val))
+			merged.Set(k, val)
 			return true
 		})
 	}
