@@ -13,7 +13,7 @@ func TestMember(t *testing.T) {
 		Convey("Array by literal", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 				LET arr = [1,2,3,4]
 
 				RETURN arr[1]
@@ -21,7 +21,7 @@ func TestMember(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 
@@ -31,7 +31,7 @@ func TestMember(t *testing.T) {
 		Convey("Array by variable", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 				LET arr = [1,2,3,4]
 				LET idx = 1
 
@@ -40,7 +40,7 @@ func TestMember(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 
@@ -50,7 +50,7 @@ func TestMember(t *testing.T) {
 		Convey("Object by literal", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 				LET obj = { foo: "bar", qaz: "wsx"}
 
 				RETURN obj["qaz"]
@@ -58,7 +58,7 @@ func TestMember(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 
@@ -68,7 +68,7 @@ func TestMember(t *testing.T) {
 		Convey("Object by literal with property defined as a string", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 				LET obj = { "foo": "bar", "qaz": "wsx"}
 
 				RETURN obj["qaz"]
@@ -76,7 +76,7 @@ func TestMember(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 
@@ -86,7 +86,7 @@ func TestMember(t *testing.T) {
 		Convey("Object by literal with property defined as a multi line string", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(fmt.Sprintf(`
+			p, err := c.Compile(fmt.Sprintf(`
 				LET obj = { "foo": "bar", %s: "wsx"}
 
 				RETURN obj["qaz"]
@@ -94,7 +94,7 @@ func TestMember(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 
@@ -104,7 +104,7 @@ func TestMember(t *testing.T) {
 		Convey("Object by variable", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 				LET obj = { foo: "bar", qaz: "wsx"}
 				LET key = "qaz"
 
@@ -113,11 +113,47 @@ func TestMember(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 
 			So(string(out), ShouldEqual, `"wsx"`)
 		})
 	})
+}
+
+func BenchmarkMemberArray(b *testing.B) {
+	p := compiler.New().MustCompile(`
+				LET arr = [1]
+
+				RETURN arr[0]
+			`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkMemberObject(b *testing.B) {
+	p := compiler.New().MustCompile(`
+				LET obj = { "foo": "bar"}
+
+				RETURN obj.foo
+			`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkMemberObjectComputed(b *testing.B) {
+	p := compiler.New().MustCompile(`
+				LET obj = { "foo": "bar"}
+
+				RETURN obj["foo"]
+			`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
 }
