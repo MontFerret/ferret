@@ -92,7 +92,11 @@ collectGrouping
     ;
 
 collectAggregator
-    : Aggregate collectSelector (Comma collectSelector)*
+    : Aggregate collectAggregateSelector (Comma collectAggregateSelector)*
+    ;
+
+collectAggregateSelector
+    : Identifier Assign functionCallExpression
     ;
 
 collectGroupVariable

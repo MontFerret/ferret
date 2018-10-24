@@ -61,6 +61,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectAggregator.
 	VisitCollectAggregator(ctx *CollectAggregatorContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#collectAggregateSelector.
+	VisitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#collectGroupVariable.
 	VisitCollectGroupVariable(ctx *CollectGroupVariableContext) interface{}
 

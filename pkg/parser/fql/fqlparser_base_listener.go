@@ -130,6 +130,12 @@ func (s *BaseFqlParserListener) EnterCollectAggregator(ctx *CollectAggregatorCon
 // ExitCollectAggregator is called when production collectAggregator is exited.
 func (s *BaseFqlParserListener) ExitCollectAggregator(ctx *CollectAggregatorContext) {}
 
+// EnterCollectAggregateSelector is called when production collectAggregateSelector is entered.
+func (s *BaseFqlParserListener) EnterCollectAggregateSelector(ctx *CollectAggregateSelectorContext) {}
+
+// ExitCollectAggregateSelector is called when production collectAggregateSelector is exited.
+func (s *BaseFqlParserListener) ExitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) {}
+
 // EnterCollectGroupVariable is called when production collectGroupVariable is entered.
 func (s *BaseFqlParserListener) EnterCollectGroupVariable(ctx *CollectGroupVariableContext) {}
 

@@ -79,6 +79,10 @@ func (v *BaseFqlParserVisitor) VisitCollectAggregator(ctx *CollectAggregatorCont
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitCollectGroupVariable(ctx *CollectGroupVariableContext) interface{} {
 	return v.VisitChildren(ctx)
 }

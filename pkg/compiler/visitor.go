@@ -440,8 +440,8 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 	groupingCtx := ctx.CollectGrouping()
 
 	if groupingCtx != nil {
-		params.Grouping = &clauses.CollectGrouping{}
-		grouping := params.Grouping
+		params.Group = &clauses.CollectGroup{}
+		grouping := params.Group
 
 		groupingCtx := groupingCtx.(*fql.CollectGroupingContext)
 		collectSelectors := groupingCtx.AllCollectSelector()
@@ -464,7 +464,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 				}
 			}
 
-			params.Grouping = grouping
+			params.Group = grouping
 		}
 
 		projectionCtx := ctx.CollectGroupVariable()
@@ -542,19 +542,44 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 
 			grouping.Count = clauses.NewCollectCount(variable)
 		}
-	} else {
-		countCtx := ctx.CollectCounter()
 
-		if countCtx != nil {
-			countCtx := countCtx.(*fql.CollectCounterContext)
-			variable := countCtx.Identifier().GetText()
+		return params, nil
+	}
 
-			if err := scope.SetVariable(variable); err != nil {
+	countCtx := ctx.CollectCounter()
+
+	if countCtx != nil {
+		countCtx := countCtx.(*fql.CollectCounterContext)
+		variable := countCtx.Identifier().GetText()
+
+		if err := scope.SetVariable(variable); err != nil {
+			return nil, err
+		}
+
+		params.Count = clauses.NewCollectCount(variable)
+
+		return params, nil
+	}
+
+	aggrCtx := ctx.CollectAggregator()
+
+	if aggrCtx != nil {
+		aggrCtx := aggrCtx.(*fql.CollectAggregatorContext)
+
+		selectorCtxs := aggrCtx.AllCollectAggregateSelector()
+		selectors := make([]*clauses.CollectAggregateSelector, 0, len(selectorCtxs))
+
+		for _, sc := range selectorCtxs {
+			selector, err := v.createCollectAggregateSelector(sc.(*fql.CollectAggregateSelectorContext), scope)
+
+			if err != nil {
 				return nil, err
 			}
 
-			params.Count = clauses.NewCollectCount(variable)
+			selectors = append(selectors, selector)
 		}
+
+		params.Aggregate = &clauses.CollectAggregate{Selectors: selectors}
 	}
 
 	return params, nil
@@ -569,6 +594,33 @@ func (v *visitor) createCollectSelector(ctx *fql.CollectSelectorContext, scope *
 	}
 
 	return clauses.NewCollectSelector(variable, exp)
+}
+
+func (v *visitor) createCollectAggregateSelector(ctx *fql.CollectAggregateSelectorContext, scope *scope) (*clauses.CollectAggregateSelector, error) {
+	variable := ctx.Identifier().GetText()
+	fnCtx := ctx.FunctionCallExpression()
+
+	if fnCtx != nil {
+		exp, err := v.doVisitFunctionCallExpression(fnCtx.(*fql.FunctionCallExpressionContext), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		fnExp, ok := exp.(*expressions.FunctionCallExpression)
+
+		if !ok {
+			return nil, core.Error(core.ErrInvalidType, "expected function expression")
+		}
+
+		if err := scope.SetVariable(variable); err != nil {
+			return nil, err
+		}
+
+		return clauses.NewCollectAggregateSelector(variable, fnExp.Arguments(), fnExp.Function())
+	}
+
+	return nil, core.Error(core.ErrNotFound, "function expression")
 }
 
 func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext, scope *scope) (core.Expression, error) {

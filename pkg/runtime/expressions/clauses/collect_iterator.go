@@ -27,12 +27,12 @@ func NewCollectIterator(
 	ctx context.Context,
 	scope *core.Scope,
 ) (*CollectIterator, error) {
-	if params.Grouping != nil {
-		if params.Grouping.Selectors != nil {
+	if params.Group != nil {
+		if params.Group.Selectors != nil {
 			var err error
-			sorters := make([]*collections.Sorter, len(params.Grouping.Selectors))
+			sorters := make([]*collections.Sorter, len(params.Group.Selectors))
 
-			for i, selector := range params.Grouping.Selectors {
+			for i, selector := range params.Group.Selectors {
 				sorter, err := newGroupSorter(ctx, scope, variables, selector)
 
 				if err != nil {
@@ -49,7 +49,7 @@ func NewCollectIterator(
 			}
 		}
 
-		if params.Grouping.Count != nil && params.Grouping.Projection != nil {
+		if params.Group.Count != nil && params.Group.Projection != nil {
 			return nil, core.Error(core.ErrInvalidArgumentNumber, "counter and projection cannot be used together")
 		}
 	}
@@ -120,7 +120,7 @@ func (iterator *CollectIterator) Next() (collections.DataSet, error) {
 }
 
 func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
-	if iterator.params.Grouping != nil {
+	if iterator.params.Group != nil {
 		return iterator.group()
 	}
 
@@ -128,7 +128,11 @@ func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
 		return iterator.count()
 	}
 
-	return nil, core.ErrNotImplemented
+	if iterator.params.Aggregate != nil {
+		return iterator.aggregate()
+	}
+
+	return nil, core.ErrInvalidOperation
 }
 
 func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
@@ -140,9 +144,9 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	hashTable := make(map[uint64]int)
 	ctx := iterator.ctx
 
-	groupSelectors := iterator.params.Grouping.Selectors
-	proj := iterator.params.Grouping.Projection
-	count := iterator.params.Grouping.Count
+	groupSelectors := iterator.params.Group.Selectors
+	proj := iterator.params.Group.Projection
+	count := iterator.params.Group.Count
 
 	// iterating over underlying data source
 	for iterator.dataSource.HasNext() {
@@ -256,4 +260,83 @@ func (iterator *CollectIterator) count() ([]collections.DataSet, error) {
 			iterator.params.Count.variable: values.NewInt(counter),
 		},
 	}, nil
+}
+
+func (iterator *CollectIterator) aggregate() ([]collections.DataSet, error) {
+	ds := collections.NewDataSet()
+	// matrix of aggregated expressions
+	// string key of the map is a selector variable
+	// value of the map is a matrix of arguments
+	// e.g. x = CONCAT(arg1, arg2, argN...)
+	// x is a string key where a nested array is an array of all values of argN expressions
+	aggregated := make(map[string][]core.Value)
+	ctx := iterator.ctx
+	selectors := iterator.params.Aggregate.Selectors
+
+	// iterating over underlying data source
+	for iterator.dataSource.HasNext() {
+		set, err := iterator.dataSource.Next()
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(set) == 0 {
+			continue
+		}
+
+		// creating a new scope for all further operations
+		childScope := iterator.scope.Fork()
+
+		// populate the new scope with results from an underlying source and its exposed variables
+		if err := set.Apply(childScope, iterator.variables); err != nil {
+			return nil, err
+		}
+
+		// iterate over each selector for a current data set
+		for _, selector := range selectors {
+			vv, exists := aggregated[selector.variable]
+
+			if !exists {
+				vv = make([]core.Value, len(selector.aggregators))
+				aggregated[selector.variable] = vv
+			}
+
+			// execute a selector and get a value
+			// e.g. AGGREGATE age = CONCAT(u.age, u.dob)
+			// u.age and u.dob get executed
+			for idx, exp := range selector.aggregators {
+				arg, err := exp.Exec(ctx, childScope)
+
+				if err != nil {
+					return nil, err
+				}
+
+				var args *values.Array
+
+				if vv[idx] == nil {
+					args = values.NewArray(10)
+					vv[idx] = args
+				} else {
+					args = vv[idx].(*values.Array)
+				}
+
+				args.Push(arg)
+			}
+		}
+	}
+
+	for _, selector := range selectors {
+		matrix := aggregated[selector.variable]
+
+		reduced, err := selector.reducer(ctx, matrix...)
+
+		if err != nil {
+			return nil, err
+		}
+
+		ds.Set(selector.variable, reduced)
+	}
+
+	return []collections.DataSet{ds}, nil
 }

@@ -20,7 +20,7 @@ type (
 
 func NewSorterExpression(expression core.Expression, direction collections.SortDirection) (*SorterExpression, error) {
 	if expression == nil {
-		return nil, core.Error(core.ErrMissedArgument, "expression")
+		return nil, core.Error(core.ErrMissedArgument, "reducer")
 	}
 
 	if !collections.IsValidSortDirection(direction) {
@@ -60,7 +60,7 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 	sorters := make([]*collections.Sorter, len(clause.sorters))
 	variables := clause.dataSource.Variables()
 
-	// converting sorter expression into collections.Sorter
+	// converting sorter reducer into collections.Sorter
 	for idx, srt := range clause.sorters {
 		sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
 			scope1 := scope.Fork()

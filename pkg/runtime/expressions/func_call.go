@@ -24,6 +24,14 @@ func NewFunctionCallExpression(
 	return &FunctionCallExpression{src, fun, args}, nil
 }
 
+func (e *FunctionCallExpression) Arguments() []core.Expression {
+	return e.args
+}
+
+func (e *FunctionCallExpression) Function() core.Function {
+	return e.fun
+}
+
 func (e *FunctionCallExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
 	var out core.Value
 	var err error

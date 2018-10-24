@@ -8,14 +8,16 @@ import (
 
 type (
 	Collect struct {
-		Grouping *CollectGrouping
-		Count    *CollectCount
+		Group     *CollectGroup
+		Count     *CollectCount
+		Aggregate *CollectAggregate
 	}
 
-	CollectGrouping struct {
+	CollectGroup struct {
 		Selectors  []*CollectSelector
 		Projection *CollectProjection
 		Count      *CollectCount
+		Aggregate  *CollectAggregate
 	}
 
 	CollectCount struct {
@@ -24,6 +26,10 @@ type (
 
 	CollectProjection struct {
 		selector *CollectSelector
+	}
+
+	CollectAggregate struct {
+		Selectors []*CollectAggregateSelector
 	}
 
 	CollectClause struct {
@@ -56,22 +62,32 @@ func NewCollectClause(
 func (clause *CollectClause) Variables() collections.Variables {
 	vars := make(collections.Variables, 0, 10)
 
-	if clause.params.Grouping != nil {
-		grouping := clause.params.Grouping
+	if clause.params.Group != nil {
+		grouping := clause.params.Group
 
 		for _, selector := range grouping.Selectors {
 			vars = append(vars, selector.variable)
 		}
 
 		if grouping.Projection != nil {
-			vars = append(vars, clause.params.Grouping.Projection.selector.variable)
+			vars = append(vars, clause.params.Group.Projection.selector.variable)
 		}
 
 		if grouping.Count != nil {
-			vars = append(vars, clause.params.Grouping.Count.variable)
+			vars = append(vars, clause.params.Group.Count.variable)
+		}
+
+		if grouping.Aggregate != nil {
+			for _, selector := range grouping.Aggregate.Selectors {
+				vars = append(vars, selector.variable)
+			}
 		}
 	} else if clause.params.Count != nil {
 		vars = append(vars, clause.params.Count.variable)
+	} else if clause.params.Aggregate != nil {
+		for _, selector := range clause.params.Aggregate.Selectors {
+			vars = append(vars, selector.variable)
+		}
 	}
 
 	return vars

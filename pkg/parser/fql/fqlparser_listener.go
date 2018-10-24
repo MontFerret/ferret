@@ -61,6 +61,9 @@ type FqlParserListener interface {
 	// EnterCollectAggregator is called when entering the collectAggregator production.
 	EnterCollectAggregator(c *CollectAggregatorContext)
 
+	// EnterCollectAggregateSelector is called when entering the collectAggregateSelector production.
+	EnterCollectAggregateSelector(c *CollectAggregateSelectorContext)
+
 	// EnterCollectGroupVariable is called when entering the collectGroupVariable production.
 	EnterCollectGroupVariable(c *CollectGroupVariableContext)
 
@@ -210,6 +213,9 @@ type FqlParserListener interface {
 
 	// ExitCollectAggregator is called when exiting the collectAggregator production.
 	ExitCollectAggregator(c *CollectAggregatorContext)
+
+	// ExitCollectAggregateSelector is called when exiting the collectAggregateSelector production.
+	ExitCollectAggregateSelector(c *CollectAggregateSelectorContext)
 
 	// ExitCollectGroupVariable is called when exiting the collectGroupVariable production.
 	ExitCollectGroupVariable(c *CollectGroupVariableContext)
