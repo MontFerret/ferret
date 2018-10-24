@@ -12,14 +12,14 @@ func TestEqualityOperators(t *testing.T) {
 	Convey("Should compile RETURN 2 > 1", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 2 > 1
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "true")

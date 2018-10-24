@@ -11,13 +11,13 @@ func TestRangeOperator(t *testing.T) {
 	Convey("Should compile RETURN 1..10", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 				RETURN 1..10
 			`)
 
 		So(err, ShouldBeNil)
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 
@@ -27,14 +27,14 @@ func TestRangeOperator(t *testing.T) {
 	Convey("Should compile FOR i IN 1..10 RETURN i * 2", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 				FOR i IN 1..10
 					RETURN i * 2
 			`)
 
 		So(err, ShouldBeNil)
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 
@@ -44,7 +44,7 @@ func TestRangeOperator(t *testing.T) {
 	Convey("Should compile LET arr = 1..10 FOR i IN arr RETURN i * 2", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 				LET arr = 1..10
 				FOR i IN arr
 					RETURN i * 2
@@ -52,7 +52,7 @@ func TestRangeOperator(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 
@@ -88,4 +88,14 @@ func TestRangeOperator(t *testing.T) {
 
 		So(string(out3), ShouldEqual, `[2,4,6,8,10,12,14,16,18,20]`)
 	})
+}
+
+func BenchmarkRangeOperator(b *testing.B) {
+	p := compiler.New().MustCompile(`
+				RETURN 1..10
+			`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
 }
