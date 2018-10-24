@@ -282,27 +282,28 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 		}
 	}
 
-	for _, ds := range collected {
-		for _, selector := range aggr.selectors {
-			arr := ds[selector.variable].(*values.Array)
+	if aggr != nil {
+		for _, ds := range collected {
+			for _, selector := range aggr.selectors {
+				arr := ds[selector.variable].(*values.Array)
 
-			// TODO: remove when Array becomes a type alias
-			matrix := make([]core.Value, arr.Length())
+				matrix := make([]core.Value, arr.Length())
 
-			arr.ForEach(func(value core.Value, idx int) bool {
-				matrix[idx] = value
+				arr.ForEach(func(value core.Value, idx int) bool {
+					matrix[idx] = value
 
-				return true
-			})
+					return true
+				})
 
-			reduced, err := selector.reducer(ctx, matrix...)
+				reduced, err := selector.reducer(ctx, matrix...)
 
-			if err != nil {
-				return nil, err
+				if err != nil {
+					return nil, err
+				}
+
+				// replace value with calculated one
+				ds.Set(selector.variable, reduced)
 			}
-
-			// replace value with calculated one
-			ds.Set(selector.variable, reduced)
 		}
 	}
 
