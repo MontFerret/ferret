@@ -111,4 +111,59 @@ func TestAggregate(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `[[31,25,36,69,45,31,25,36,69,45]]`)
 	})
+
+	Convey("Should aggregate values with grouping", t, func() {
+		c := compiler.New()
+
+		prog, err := c.Compile(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
+  				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+  				RETURN {
+					ageGroup,
+    				minAge, 
+    				maxAge 
+  				}
+		`)
+
+		So(err, ShouldBeNil)
+		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := prog.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `[{"ageGroup":25,"maxAge":25,"minAge":25},{"ageGroup":30,"maxAge":31,"minAge":31},{"ageGroup":35,"maxAge":36,"minAge":36},{"ageGroup":45,"maxAge":45,"minAge":45},{"ageGroup":65,"maxAge":69,"minAge":69}]`)
+	})
 }

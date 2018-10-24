@@ -136,6 +136,7 @@ func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
 }
 
 func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
+	// TODO: honestly, this code is ugly. it needs to be refactored in more chained way with much less if statements
 	// slice of groups
 	collected := make([]collections.DataSet, 0, 10)
 	// hash table of unique values
@@ -147,6 +148,7 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	groupSelectors := iterator.params.group.selectors
 	proj := iterator.params.group.projection
 	count := iterator.params.group.count
+	aggr := iterator.params.group.aggregate
 
 	// iterating over underlying data source
 	for iterator.dataSource.HasNext() {
@@ -200,6 +202,17 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 			} else if count != nil {
 				// create a new variable for keeping counter
 				ds.Set(count.variable, values.ZeroInt)
+			} else if aggr != nil {
+				// create a new variable for keeping aggregated values
+				for _, selector := range aggr.selectors {
+					arr := values.NewArray(len(selector.aggregators))
+
+					for range selector.aggregators {
+						arr.Push(values.None)
+					}
+
+					ds.Set(selector.variable, arr)
+				}
 			}
 		}
 
@@ -235,6 +248,61 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 			groupValue = counter + 1
 			// set a new value
 			ds.Set(count.variable, groupValue)
+		} else if aggr != nil {
+			idx := hashTable[h]
+			ds := collected[idx]
+
+			// iterate over each selector for a current data set
+			for _, selector := range aggr.selectors {
+				vv := ds.Get(selector.variable).(*values.Array)
+
+				// execute a selector and get a value
+				// e.g. AGGREGATE age = CONCAT(u.age, u.dob)
+				// u.age and u.dob get executed
+				for idx, exp := range selector.aggregators {
+					arg, err := exp.Exec(ctx, childScope)
+
+					if err != nil {
+						return nil, err
+					}
+
+					var args *values.Array
+					idx := values.NewInt(idx)
+
+					if vv.Get(idx) == values.None {
+						args = values.NewArray(10)
+						vv.Set(idx, args)
+					} else {
+						args = vv.Get(idx).(*values.Array)
+					}
+
+					args.Push(arg)
+				}
+			}
+		}
+	}
+
+	for _, ds := range collected {
+		for _, selector := range aggr.selectors {
+			arr := ds[selector.variable].(*values.Array)
+
+			// TODO: remove when Array becomes a type alias
+			matrix := make([]core.Value, arr.Length())
+
+			arr.ForEach(func(value core.Value, idx int) bool {
+				matrix[idx] = value
+
+				return true
+			})
+
+			reduced, err := selector.reducer(ctx, matrix...)
+
+			if err != nil {
+				return nil, err
+			}
+
+			// replace value with calculated one
+			ds.Set(selector.variable, reduced)
 		}
 	}
 
