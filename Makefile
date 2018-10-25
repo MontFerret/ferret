@@ -3,6 +3,7 @@
 export GOPATH
 
 VERSION ?= $(shell git describe --tags --always --dirty)
+RELEASE_VERSION ?= $(version)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_CLI = ./cli
@@ -53,4 +54,10 @@ vet:
 	go vet ${DIR_CLI}/... ${DIR_PKG}/...
 
 release:
+ifeq ($(RELEASE_VERSION), )
+	echo "Release version is required"
+else
+	git tag -a v$(RELEASE_VERSION) -m "New $(RELEASE_VERSION) version" && \
+	git push origin v$(RELEASE_VERSION) && \
 	goreleaser
+endif
