@@ -5,9 +5,13 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+<<<<<<< HEAD
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+=======
+>>>>>>> 1c32d2a... rename method Clone to Copy
 )
 
-const defaultTimeLayout = time.RFC3339
+const DefaultTimeLayout = time.RFC3339
 
 type DateTime struct {
 	time.Time
@@ -26,13 +30,13 @@ func NewDateTime(time time.Time) DateTime {
 }
 
 func ParseDateTime(input interface{}) (DateTime, error) {
-	return ParseDateTimeWith(input, defaultTimeLayout)
+	return ParseDateTimeWith(input, DefaultTimeLayout)
 }
 
 func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
-	switch input.(type) {
+	switch value := input.(type) {
 	case string:
-		t, err := time.Parse(layout, input.(string))
+		t, err := time.Parse(layout, value)
 
 		if err != nil {
 			return DateTime{time.Now()}, err
@@ -44,7 +48,7 @@ func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
 	}
 }
 
-func ParseDateTimeP(input interface{}) DateTime {
+func MustParseDateTime(input interface{}) DateTime {
 	dt, err := ParseDateTime(input)
 
 	if err != nil {
@@ -59,16 +63,15 @@ func (t DateTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t DateTime) Type() core.Type {
-	return core.DateTimeType
+	return types.DateTime
 }
 
 func (t DateTime) String() string {
 	return t.Time.String()
 }
 
-func (t DateTime) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.DateTimeType:
+func (t DateTime) Compare(other core.Value) int64 {
+	if other.Type() == types.DateTime {
 		other := other.(DateTime)
 
 		if t.After(other.Time) {
@@ -80,13 +83,9 @@ func (t DateTime) Compare(other core.Value) int {
 		}
 
 		return 0
-	default:
-		if other.Type() > core.DateTimeType {
-			return -1
-		}
-
-		return 1
 	}
+
+	return types.Compare(types.DateTime, other.Type())
 }
 
 func (t DateTime) Unwrap() interface{} {

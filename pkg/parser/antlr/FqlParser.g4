@@ -28,7 +28,6 @@ returnExpression
 
 forExpression
     : For forExpressionValueVariable (Comma forExpressionKeyVariable)? In forExpressionSource
-     (forExpressionClause)*
      (forExpressionBody)*
       forExpressionReturn
     ;
@@ -58,12 +57,32 @@ forExpressionClause
     | collectClause
     ;
 
+forExpressionStatement
+    : variableDeclaration
+    | functionCallExpression
+    ;
+
+forExpressionBody
+    : forExpressionStatement
+    | forExpressionClause
+    ;
+
+forExpressionReturn
+    : returnExpression
+    | forExpression
+    ;
+
 filterClause
     : Filter expression
     ;
 
 limitClause
-    : Limit IntegerLiteral (Comma IntegerLiteral)?
+    : Limit limitClauseValue (Comma limitClauseValue)?
+    ;
+
+limitClauseValue
+    : IntegerLiteral
+    | param
     ;
 
 sortClause
@@ -106,16 +125,6 @@ collectGroupVariable
 
 collectCounter
     : With Count Into Identifier
-    ;
-
-forExpressionBody
-    : variableDeclaration
-    | functionCallExpression
-    ;
-
-forExpressionReturn
-    : returnExpression
-    | forExpression
     ;
 
 variableDeclaration
@@ -194,8 +203,8 @@ propertyName
     | stringLiteral
     ;
 
-expressionSequence
-    : expression (Comma expression)*
+expressionGroup
+    : OpenParen expression CloseParen
     ;
 
 functionCallExpression
@@ -208,13 +217,15 @@ arguments
 
 expression
     : unaryOperator expression
-    | expression equalityOperator expression
-    | expression logicalOperator expression
-    | expression mathOperator expression
+    | expression multiplicativeOperator expression
+    | expression additiveOperator expression
     | functionCallExpression
-    | OpenParen expressionSequence CloseParen
+    | expressionGroup
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
+    | expression equalityOperator expression
+    | expression logicalAndOperator expression
+    | expression logicalOrOperator expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
     | stringLiteral
@@ -255,17 +266,23 @@ equalityOperator
     | Neq
     ;
 
-logicalOperator
+logicalAndOperator
     : And
-    | Or
     ;
 
-mathOperator
-    : Plus
-    | Minus
-    | Multi
+logicalOrOperator
+    : Or
+    ;
+
+multiplicativeOperator
+    : Multi
     | Div
     | Mod
+    ;
+
+additiveOperator
+    : Plus
+    | Minus
     ;
 
 unaryOperator

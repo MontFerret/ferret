@@ -24,17 +24,14 @@ func TestSourceError(t *testing.T) {
 
 func TestTypeError(t *testing.T) {
 	Convey("Should match", t, func() {
-		e := core.TypeError(core.BooleanType)
+		e := core.TypeError(TypeA{})
 		So(e, ShouldNotBeNil)
 
-		e = core.TypeError(core.BooleanType, core.BooleanType)
+		e = core.TypeError(TypeA{}, TypeB{})
 		So(e, ShouldNotBeNil)
 
-		e = core.TypeError(core.BooleanType, core.BooleanType, core.IntType, core.FloatType)
-		So(e, ShouldNotBeNil)
-
-		cause := errors.New("invalid type: expected none or boolean or int or float, but got none")
-		e = core.TypeError(core.NoneType, core.NoneType, core.BooleanType, core.IntType, core.FloatType)
+		cause := errors.New("invalid type: expected type_b or type_c, but got type_a")
+		e = core.TypeError(TypeA{}, TypeB{}, TypeC{})
 		So(e.Error(), ShouldEqual, cause.Error())
 	})
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -19,7 +18,7 @@ func NewReturnExpression(
 	predicate core.Expression,
 ) (*ReturnExpression, error) {
 	if predicate == nil {
-		return nil, errors.Wrap(core.ErrMissedArgument, "expression")
+		return nil, core.Error(core.ErrMissedArgument, "expression")
 	}
 
 	return &ReturnExpression{
@@ -29,11 +28,16 @@ func NewReturnExpression(
 }
 
 func (e *ReturnExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	val, err := e.predicate.Exec(ctx, scope)
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
+	default:
+		val, err := e.predicate.Exec(ctx, scope)
 
-	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		if err != nil {
+			return values.None, core.SourceError(e.src, err)
+		}
+
+		return val, nil
 	}
-
-	return val, nil
 }

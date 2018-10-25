@@ -3,7 +3,11 @@ package html
 import (
 	"context"
 
+<<<<<<< HEAD
+	"github.com/MontFerret/ferret/pkg/drivers"
+=======
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
+>>>>>>> 9f24172... rewrite comments
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -12,7 +16,11 @@ import (
 // @param source (Document) - Document.
 // @param selector (String) - Selector.
 // @returns (Boolean) - Returns true if matched at least one element.
+<<<<<<< HEAD
+func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
+=======
 func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
+>>>>>>> 9f24172... rewrite comments
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -22,17 +30,17 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HTMLDocumentType)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HTMLDocument)
+	doc, err := toDocument(args[0])
 
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	if err != nil {
+		return values.None, err
 	}
 
-	return doc.ClickBySelectorAll(values.NewString(selector))
+	return doc.ClickBySelectorAll(ctx, values.NewString(selector))
 }

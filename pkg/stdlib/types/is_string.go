@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // IsString checks whether value is a string value.
@@ -17,5 +18,5 @@ func IsString(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return isTypeof(args[0], core.StringType), nil
+	return isTypeof(args[0], types.String), nil
 }

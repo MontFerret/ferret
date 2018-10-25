@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // IsNaN checks whether value is NaN.
@@ -17,7 +18,7 @@ func IsNaN(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	if args[0].Type() != core.FloatType {
+	if args[0].Type() != types.Float {
 		return values.False, nil
 	}
 

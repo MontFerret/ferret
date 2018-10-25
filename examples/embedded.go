@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/compiler"
 	"os"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 type Topic struct {
@@ -52,7 +56,17 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 		return nil, err
 	}
 
-	out, err := program.Run(context.Background())
+	// create a root context
+	ctx := context.Background()
+
+	// enable HTML drivers
+	// by default, Ferret Runtime does not know about any HTML drivers
+	// all HTML manipulations are done via functions from standard library
+	// that assume that at least one driver is available
+	ctx = drivers.WithContext(ctx, cdp.NewDriver())
+	ctx = drivers.WithContext(ctx, http.NewDriver(), drivers.AsDefault())
+
+	out, err := program.Run(ctx)
 
 	if err != nil {
 		return nil, err

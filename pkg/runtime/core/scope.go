@@ -1,35 +1,77 @@
 package core
 
 import (
-	"github.com/pkg/errors"
 	"io"
 )
 
 type (
-	CloseFunc func()
+	CloseFunc func() error
+
+	RootScope struct {
+		closed      bool
+		disposables []io.Closer
+	}
 
 	Scope struct {
-		closed   bool
-		vars     map[string]Value
-		parent   *Scope
-		children []*Scope
+		root   *RootScope
+		parent *Scope
+		vars   map[string]Value
 	}
 )
 
 func NewRootScope() (*Scope, CloseFunc) {
-	scope := NewScope(nil)
+	root := &RootScope{
+		closed:      false,
+		disposables: make([]io.Closer, 0, 10),
+	}
 
-	return scope, func() {
-		scope.close()
+	return newScope(root, nil), func() error {
+		return root.Close()
 	}
 }
 
-func NewScope(parent *Scope) *Scope {
+func (s *RootScope) AddDisposable(disposable io.Closer) {
+	if s.closed {
+		return
+	}
+
+	if disposable != nil {
+		s.disposables = append(s.disposables, disposable)
+	}
+}
+
+func (s *RootScope) Close() error {
+	if s.closed {
+		return Error(ErrInvalidOperation, "scope is already closed")
+	}
+
+	s.closed = true
+
+	var errors []error
+
+	// close all values implemented io.Close
+	for _, c := range s.disposables {
+		if err := c.Close(); err != nil {
+			if errors == nil {
+				errors = make([]error, 0, len(s.disposables))
+			}
+
+			errors = append(errors, err)
+		}
+	}
+
+	if errors == nil {
+		return nil
+	}
+
+	return Errors(errors...)
+}
+
+func newScope(root *RootScope, parent *Scope) *Scope {
 	return &Scope{
-		closed:   false,
-		vars:     make(map[string]Value),
-		parent:   parent,
-		children: make([]*Scope, 0, 5),
+		root:   root,
+		parent: parent,
+		vars:   make(map[string]Value),
 	}
 }
 
@@ -38,7 +80,13 @@ func (s *Scope) SetVariable(name string, val Value) error {
 
 	// it already has been declared in the current scope
 	if exists {
-		return errors.Wrapf(ErrNotUnique, "variable is already declared '%s'", name)
+		return Errorf(ErrNotUnique, "variable is already declared: '%s'", name)
+	}
+
+	disposable, ok := val.(io.Closer)
+
+	if ok {
+		s.root.AddDisposable(disposable)
 	}
 
 	s.vars[name] = val
@@ -70,45 +118,36 @@ func (s *Scope) GetVariable(name string) (Value, error) {
 			return s.parent.GetVariable(name)
 		}
 
-		return nil, errors.Wrapf(ErrNotFound, "variable '%s'", name)
+		return nil, Errorf(ErrNotFound, "variable: '%s'", name)
 	}
 
 	return out, nil
 }
 
-func (s *Scope) Fork() *Scope {
-	child := NewScope(s)
+func (s *Scope) MustGetVariable(name string) Value {
+	out, err := s.GetVariable(name)
 
-	s.children = append(s.children, child)
+	if err != nil {
+		panic(err)
+	}
 
-	return child
+	return out
 }
 
-func (s *Scope) close() error {
-	if s.closed {
-		return errors.Wrap(ErrInvalidOperation, "scope is already closed")
+func (s *Scope) UpdateVariable(name string, val Value) error {
+	_, exists := s.vars[name]
+
+	if !exists {
+		return Errorf(ErrNotFound, "variable: '%s'", name)
 	}
 
-	s.closed = true
+	delete(s.vars, name)
 
-	// close all active child scopes
-	for _, c := range s.children {
-		c.close()
-	}
+	return s.SetVariable(name, val)
+}
 
-	// do clean up
-	// if some of the variables implements io.Closer interface
-	// we need to close them
-	for _, v := range s.vars {
-		closer, ok := v.(io.Closer)
+func (s *Scope) Fork() *Scope {
+	child := newScope(s.root, s)
 
-		if ok {
-			closer.Close()
-		}
-	}
-
-	s.children = nil
-	s.vars = nil
-
-	return nil
+	return child
 }

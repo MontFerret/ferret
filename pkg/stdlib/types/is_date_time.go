@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // IsDateTime checks whether value is a date time value.
@@ -17,5 +18,5 @@ func IsDateTime(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return isTypeof(args[0], core.DateTimeType), nil
+	return isTypeof(args[0], types.DateTime), nil
 }

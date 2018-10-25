@@ -2,30 +2,60 @@ package html
 
 import (
 	"context"
+<<<<<<< HEAD
+	"github.com/MontFerret/ferret/pkg/drivers"
+=======
 
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
+>>>>>>> 9f24172... rewrite comments
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // WaitElement waits for element to appear in the DOM.
 // Stops the execution until it finds an element or operation times out.
+<<<<<<< HEAD
+// @param doc (HTMLDocument) - Driver HTMLDocument.
+// @param selector (String) - Target element's selector.
+// @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
+func WaitElement(ctx context.Context, args ...core.Value) (core.Value, error) {
+	return waitElementWhen(ctx, args, drivers.WaitEventPresence)
+}
+
+// WaitNoElements waits for element to disappear in the DOM.
+// Stops the execution until it does not find an element or operation times out.
+// @param doc (HTMLDocument) - Driver HTMLDocument.
+// @param selector (String) - Target element's selector.
+// @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
+func WaitNoElement(ctx context.Context, args ...core.Value) (core.Value, error) {
+	return waitElementWhen(ctx, args, drivers.WaitEventAbsence)
+}
+
+func waitElementWhen(ctx context.Context, args []core.Value, when drivers.WaitEvent) (core.Value, error) {
+=======
 // @param doc (HTMLDocument) - Dynamic HTMLDocument.
 // @param selector (String) - Target element's selector.
 // @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
 func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
+>>>>>>> 9f24172... rewrite comments
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	arg := args[0]
+	doc, err := toDocument(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	selector := args[1].String()
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.IntType)
+		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
 			return values.None, err
@@ -34,17 +64,8 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[2].(values.Int)
 	}
 
-	err = core.ValidateType(arg, core.HTMLDocumentType)
+	ctx, fn := waitTimeout(ctx, timeout)
+	defer fn()
 
-	if err != nil {
-		return values.None, err
-	}
-
-	doc, ok := arg.(*dynamic.HTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-	}
-
-	return values.None, doc.WaitForSelector(values.NewString(selector), timeout)
+	return values.None, doc.WaitForElement(ctx, values.NewString(selector), when)
 }

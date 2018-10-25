@@ -7,6 +7,10 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+<<<<<<< HEAD
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+=======
+>>>>>>> 9f24172... rewrite comments
 )
 
 const (
@@ -26,7 +30,7 @@ func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], core.IntType)
+	err = core.ValidateType(args[0], types.Int)
 
 	if err != nil {
 		return values.EmptyString, err

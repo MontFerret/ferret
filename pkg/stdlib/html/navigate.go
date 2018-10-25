@@ -2,10 +2,14 @@ package html
 
 import (
 	"context"
+<<<<<<< HEAD
+=======
 
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
+>>>>>>> 9f24172... rewrite comments
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Navigate navigates a document to a new resource.
@@ -14,35 +18,33 @@ import (
 // @param doc (Document) - Target document.
 // @param url (String) - Target url to navigate.
 // @param timeout (Int, optional) - Optional timeout. Default is 5000.
+<<<<<<< HEAD
+func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
+=======
 func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
+>>>>>>> 9f24172... rewrite comments
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.HTMLDocumentType)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
-	}
-
-	doc, ok := args[0].(*dynamic.HTMLDocument)
-
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.IntType)
+		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
 			return values.None, err
@@ -51,5 +53,8 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[2].(values.Int)
 	}
 
-	return values.None, doc.Navigate(args[1].(values.String), timeout)
+	ctx, fn := waitTimeout(ctx, timeout)
+	defer fn()
+
+	return values.None, doc.Navigate(ctx, args[1].(values.String))
 }

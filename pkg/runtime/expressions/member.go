@@ -2,9 +2,9 @@ package expressions
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type MemberExpression struct {
@@ -15,11 +15,11 @@ type MemberExpression struct {
 
 func NewMemberExpression(src core.SourceMap, variableName string, path []core.Expression) (*MemberExpression, error) {
 	if variableName == "" {
-		return nil, errors.Wrap(core.ErrMissedArgument, "variable name")
+		return nil, core.Error(core.ErrMissedArgument, "variable name")
 	}
 
 	if path == nil || len(path) == 0 {
-		return nil, errors.Wrap(core.ErrMissedArgument, "path expressions")
+		return nil, core.Error(core.ErrMissedArgument, "path expressions")
 	}
 
 	return &MemberExpression{src, variableName, path}, nil
@@ -47,7 +47,7 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		strPath[idx] = segment
 	}
 
-	out, err := values.GetIn(val, strPath)
+	out, err := values.GetIn(ctx, val, strPath)
 
 	if err != nil {
 		return values.None, core.SourceError(e.src, err)

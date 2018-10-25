@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.2. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -82,6 +82,24 @@ func (s *BaseFqlParserListener) EnterForExpressionClause(ctx *ForExpressionClaus
 // ExitForExpressionClause is called when production forExpressionClause is exited.
 func (s *BaseFqlParserListener) ExitForExpressionClause(ctx *ForExpressionClauseContext) {}
 
+// EnterForExpressionStatement is called when production forExpressionStatement is entered.
+func (s *BaseFqlParserListener) EnterForExpressionStatement(ctx *ForExpressionStatementContext) {}
+
+// ExitForExpressionStatement is called when production forExpressionStatement is exited.
+func (s *BaseFqlParserListener) ExitForExpressionStatement(ctx *ForExpressionStatementContext) {}
+
+// EnterForExpressionBody is called when production forExpressionBody is entered.
+func (s *BaseFqlParserListener) EnterForExpressionBody(ctx *ForExpressionBodyContext) {}
+
+// ExitForExpressionBody is called when production forExpressionBody is exited.
+func (s *BaseFqlParserListener) ExitForExpressionBody(ctx *ForExpressionBodyContext) {}
+
+// EnterForExpressionReturn is called when production forExpressionReturn is entered.
+func (s *BaseFqlParserListener) EnterForExpressionReturn(ctx *ForExpressionReturnContext) {}
+
+// ExitForExpressionReturn is called when production forExpressionReturn is exited.
+func (s *BaseFqlParserListener) ExitForExpressionReturn(ctx *ForExpressionReturnContext) {}
+
 // EnterFilterClause is called when production filterClause is entered.
 func (s *BaseFqlParserListener) EnterFilterClause(ctx *FilterClauseContext) {}
 
@@ -93,6 +111,12 @@ func (s *BaseFqlParserListener) EnterLimitClause(ctx *LimitClauseContext) {}
 
 // ExitLimitClause is called when production limitClause is exited.
 func (s *BaseFqlParserListener) ExitLimitClause(ctx *LimitClauseContext) {}
+
+// EnterLimitClauseValue is called when production limitClauseValue is entered.
+func (s *BaseFqlParserListener) EnterLimitClauseValue(ctx *LimitClauseValueContext) {}
+
+// ExitLimitClauseValue is called when production limitClauseValue is exited.
+func (s *BaseFqlParserListener) ExitLimitClauseValue(ctx *LimitClauseValueContext) {}
 
 // EnterSortClause is called when production sortClause is entered.
 func (s *BaseFqlParserListener) EnterSortClause(ctx *SortClauseContext) {}
@@ -147,18 +171,6 @@ func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) 
 
 // ExitCollectCounter is called when production collectCounter is exited.
 func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
-
-// EnterForExpressionBody is called when production forExpressionBody is entered.
-func (s *BaseFqlParserListener) EnterForExpressionBody(ctx *ForExpressionBodyContext) {}
-
-// ExitForExpressionBody is called when production forExpressionBody is exited.
-func (s *BaseFqlParserListener) ExitForExpressionBody(ctx *ForExpressionBodyContext) {}
-
-// EnterForExpressionReturn is called when production forExpressionReturn is entered.
-func (s *BaseFqlParserListener) EnterForExpressionReturn(ctx *ForExpressionReturnContext) {}
-
-// ExitForExpressionReturn is called when production forExpressionReturn is exited.
-func (s *BaseFqlParserListener) ExitForExpressionReturn(ctx *ForExpressionReturnContext) {}
 
 // EnterVariableDeclaration is called when production variableDeclaration is entered.
 func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}
@@ -262,11 +274,11 @@ func (s *BaseFqlParserListener) EnterPropertyName(ctx *PropertyNameContext) {}
 // ExitPropertyName is called when production propertyName is exited.
 func (s *BaseFqlParserListener) ExitPropertyName(ctx *PropertyNameContext) {}
 
-// EnterExpressionSequence is called when production expressionSequence is entered.
-func (s *BaseFqlParserListener) EnterExpressionSequence(ctx *ExpressionSequenceContext) {}
+// EnterExpressionGroup is called when production expressionGroup is entered.
+func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
 
-// ExitExpressionSequence is called when production expressionSequence is exited.
-func (s *BaseFqlParserListener) ExitExpressionSequence(ctx *ExpressionSequenceContext) {}
+// ExitExpressionGroup is called when production expressionGroup is exited.
+func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
 
 // EnterFunctionCallExpression is called when production functionCallExpression is entered.
 func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
@@ -310,17 +322,29 @@ func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorConte
 // ExitEqualityOperator is called when production equalityOperator is exited.
 func (s *BaseFqlParserListener) ExitEqualityOperator(ctx *EqualityOperatorContext) {}
 
-// EnterLogicalOperator is called when production logicalOperator is entered.
-func (s *BaseFqlParserListener) EnterLogicalOperator(ctx *LogicalOperatorContext) {}
+// EnterLogicalAndOperator is called when production logicalAndOperator is entered.
+func (s *BaseFqlParserListener) EnterLogicalAndOperator(ctx *LogicalAndOperatorContext) {}
 
-// ExitLogicalOperator is called when production logicalOperator is exited.
-func (s *BaseFqlParserListener) ExitLogicalOperator(ctx *LogicalOperatorContext) {}
+// ExitLogicalAndOperator is called when production logicalAndOperator is exited.
+func (s *BaseFqlParserListener) ExitLogicalAndOperator(ctx *LogicalAndOperatorContext) {}
 
-// EnterMathOperator is called when production mathOperator is entered.
-func (s *BaseFqlParserListener) EnterMathOperator(ctx *MathOperatorContext) {}
+// EnterLogicalOrOperator is called when production logicalOrOperator is entered.
+func (s *BaseFqlParserListener) EnterLogicalOrOperator(ctx *LogicalOrOperatorContext) {}
 
-// ExitMathOperator is called when production mathOperator is exited.
-func (s *BaseFqlParserListener) ExitMathOperator(ctx *MathOperatorContext) {}
+// ExitLogicalOrOperator is called when production logicalOrOperator is exited.
+func (s *BaseFqlParserListener) ExitLogicalOrOperator(ctx *LogicalOrOperatorContext) {}
+
+// EnterMultiplicativeOperator is called when production multiplicativeOperator is entered.
+func (s *BaseFqlParserListener) EnterMultiplicativeOperator(ctx *MultiplicativeOperatorContext) {}
+
+// ExitMultiplicativeOperator is called when production multiplicativeOperator is exited.
+func (s *BaseFqlParserListener) ExitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) {}
+
+// EnterAdditiveOperator is called when production additiveOperator is entered.
+func (s *BaseFqlParserListener) EnterAdditiveOperator(ctx *AdditiveOperatorContext) {}
+
+// ExitAdditiveOperator is called when production additiveOperator is exited.
+func (s *BaseFqlParserListener) ExitAdditiveOperator(ctx *AdditiveOperatorContext) {}
 
 // EnterUnaryOperator is called when production unaryOperator is entered.
 func (s *BaseFqlParserListener) EnterUnaryOperator(ctx *UnaryOperatorContext) {}

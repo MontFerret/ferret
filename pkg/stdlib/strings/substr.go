@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Substring returns a substring of value.
@@ -19,7 +20,7 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[1], core.IntType)
+	err = core.ValidateType(args[1], types.Int)
 
 	if err != nil {
 		return values.EmptyString, err
@@ -32,7 +33,7 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	length := size
 
 	if len(args) > 2 {
-		if args[2].Type() == core.IntType {
+		if args[2].Type() == types.Int {
 			length = int(args[2].(values.Int))
 		}
 	}
@@ -70,7 +71,7 @@ func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	var pos int
 
-	if args[1].Type() == core.IntType {
+	if args[1].Type() == types.Int {
 		pos = int(args[1].(values.Int))
 	}
 
@@ -97,7 +98,7 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	size := len(runes)
 	pos := size
 
-	if args[1].Type() == core.IntType {
+	if args[1].Type() == types.Int {
 		pos = int(args[1].(values.Int))
 	}
 
@@ -105,5 +106,5 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewString(string(text)), nil
 	}
 
-	return values.NewStringFromRunes(runes[pos:size]), nil
+	return values.NewStringFromRunes(runes[size-pos : size]), nil
 }

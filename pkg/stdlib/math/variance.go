@@ -1,9 +1,11 @@
 package math
 
 import (
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func variance(input *values.Array, sample values.Int) (values.Float, error) {
@@ -17,7 +19,7 @@ func variance(input *values.Array, sample values.Int) (values.Float, error) {
 	var variance values.Float
 
 	input.ForEach(func(value core.Value, idx int) bool {
-		err = core.ValidateType(value, core.IntType, core.FloatType)
+		err = core.ValidateType(value, types.Int, types.Float)
 
 		if err != nil {
 			return false

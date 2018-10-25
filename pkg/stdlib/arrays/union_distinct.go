@@ -2,8 +2,10 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
@@ -13,7 +15,7 @@ func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -24,7 +26,7 @@ func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
 	hashes := make(map[uint64]bool)
 
 	for _, arg := range args {
-		err := core.ValidateType(arg, core.ArrayType)
+		err := core.ValidateType(arg, types.Array)
 
 		if err != nil {
 			return values.None, err

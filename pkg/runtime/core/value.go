@@ -1,9 +1,24 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 )
 
+<<<<<<< HEAD
+type (
+	// Value represents an interface of
+	// any type that needs to be used during runtime
+	Value interface {
+		json.Marshaler
+		Type() Type
+		String() string
+		Compare(other Value) int64
+		Unwrap() interface{}
+		Hash() uint64
+		Copy() Value
+	}
+=======
 //revive:disable-next-line redefines-builtin-id
 type Type int64
 
@@ -48,25 +63,47 @@ type Value interface {
 	Hash() uint64
 	Copy() Value
 }
+>>>>>>> 1c32d2a... rename method Clone to Copy
 
-func IsTypeOf(value Value, check Type) bool {
-	return value.Type() == check
-}
-
-func ValidateType(value Value, required ...Type) error {
-	var valid bool
-	ct := value.Type()
-
-	for _, t := range required {
-		if ct == t {
-			valid = true
-			break
-		}
+	// Iterable represents an interface of a value that can be iterated by using an iterator.
+	Iterable interface {
+		Iterate(ctx context.Context) (Iterator, error)
 	}
 
-	if !valid {
-		return TypeError(value.Type(), required...)
+	// Iterator represents an interface of a value iterator.
+	// When iterator is exhausted it must return None as a value.
+	Iterator interface {
+		Next(ctx context.Context) (value Value, key Value, err error)
 	}
 
+	// Getter represents an interface of
+	// complex types that needs to be used to read values by path.
+	// The interface is created to let user-defined types be used in dot notation data access.
+	Getter interface {
+		GetIn(ctx context.Context, path []Value) (Value, error)
+	}
+
+	// Setter represents an interface of
+	// complex types that needs to be used to write values by path.
+	// The interface is created to let user-defined types be used in dot notation assignment.
+	Setter interface {
+		SetIn(ctx context.Context, path []Value, value Value) error
+	}
+
+<<<<<<< HEAD
+	// PairValueType is a supporting
+	// structure that used in validateValueTypePairs.
+	PairValueType struct {
+		Value Value
+		Types []Type
+	}
+)
+=======
 	return nil
 }
+
+func IsCloneable(value Value) bool {
+	_, ok := cloneableTypes[value.Type()]
+	return ok
+}
+>>>>>>> 6a1f475... move core.IsCloneable to value.go

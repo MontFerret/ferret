@@ -8,8 +8,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+<<<<<<< HEAD
+// Print writes messages into the system log.
+func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
+=======
 // Log writes messages into the system log.
 func Log(ctx context.Context, args ...core.Value) (core.Value, error) {
+>>>>>>> 9f24172... rewrite comments
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
 	if err != nil {

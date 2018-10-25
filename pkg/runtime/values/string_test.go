@@ -26,4 +26,12 @@ func TestString(t *testing.T) {
 			So(v.Hash(), ShouldEqual, v.Hash())
 		})
 	})
+
+	Convey(".Length", t, func() {
+		Convey("Should return unicode length", func() {
+			str := values.NewString("Спутник")
+
+			So(str.Length(), ShouldEqual, 7)
+		})
+	})
 }

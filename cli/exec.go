@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"syscall"
 )
 
 func ExecFile(pathToFile string, opts Options) {
@@ -38,9 +37,10 @@ func Exec(query string, opts Options) {
 
 	l := NewLogger()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := opts.WithContext(context.Background())
+
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGHUP)
+	signal.Notify(c, os.Interrupt)
 
 	go func() {
 		for {
@@ -59,12 +59,9 @@ func Exec(query string, opts Options) {
 
 	out, err := prog.Run(
 		ctx,
-		runtime.WithBrowser(opts.Cdp),
 		runtime.WithLog(l),
 		runtime.WithLogLevel(logging.DebugLevel),
 		runtime.WithParams(opts.Params),
-		runtime.WithProxy(opts.Proxy),
-		runtime.WithUserAgent(opts.UserAgent),
 	)
 
 	if opts.ShowTime {

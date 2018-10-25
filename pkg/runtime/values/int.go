@@ -7,15 +7,19 @@ import (
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+<<<<<<< HEAD
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+=======
 	"github.com/pkg/errors"
+>>>>>>> 1c32d2a... rename method Clone to Copy
 )
 
-type Int int
+type Int int64
 
-var ZeroInt = Int(0)
+const ZeroInt = Int(0)
 
 func NewInt(input int) Int {
-	return Int(input)
+	return Int(int64(input))
 }
 
 func ParseInt(input interface{}) (Int, error) {
@@ -23,21 +27,19 @@ func ParseInt(input interface{}) (Int, error) {
 		return ZeroInt, nil
 	}
 
-	i, ok := input.(int)
-
-	if ok {
-		if i == 0 {
-			return ZeroInt, nil
-		}
-
-		return Int(i), nil
-	}
-
-	// try to cast
-	str, ok := input.(string)
-
-	if ok {
-		i, err := strconv.Atoi(str)
+	switch input.(type) {
+	case int:
+		return Int(input.(int)), nil
+	case int64:
+		return Int(input.(int64)), nil
+	case int32:
+		return Int(input.(int32)), nil
+	case int16:
+		return Int(input.(int16)), nil
+	case int8:
+		return Int(input.(int8)), nil
+	case string:
+		i, err := strconv.Atoi(input.(string))
 
 		if err == nil {
 			if i == 0 {
@@ -46,12 +48,14 @@ func ParseInt(input interface{}) (Int, error) {
 
 			return Int(i), nil
 		}
-	}
 
-	return ZeroInt, errors.Wrap(core.ErrInvalidType, "expected 'int'")
+		return ZeroInt, err
+	default:
+		return ZeroInt, core.Error(core.ErrInvalidType, "expected 'int'")
+	}
 }
 
-func ParseIntP(input interface{}) Int {
+func MustParseInt(input interface{}) Int {
 	res, err := ParseInt(input)
 
 	if err != nil {
@@ -62,51 +66,50 @@ func ParseIntP(input interface{}) Int {
 }
 
 func (t Int) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int(t))
+	return json.Marshal(int64(t))
 }
 
 func (t Int) Type() core.Type {
-	return core.IntType
+	return types.Int
 }
 
 func (t Int) String() string {
 	return strconv.Itoa(int(t))
 }
 
-func (t Int) Compare(other core.Value) int {
-	raw := int(t)
+func (t Int) Compare(other core.Value) int64 {
+	otherType := other.Type()
 
-	switch other.Type() {
-	case core.IntType:
-		i := other.Unwrap().(int)
+	if otherType == types.Int {
+		i := other.(Int)
 
-		if raw == i {
+		if t == i {
 			return 0
 		}
 
-		if raw < i {
+		if t < i {
 			return -1
 		}
 
 		return +1
-	case core.FloatType:
-		f := other.Unwrap().(float64)
-		i := int(f)
-
-		if raw == i {
-			return 0
-		}
-
-		if raw < i {
-			return -1
-		}
-
-		return +1
-	case core.BooleanType, core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	if otherType == types.Float {
+		f := other.(Float)
+		f2 := Float(t)
+
+		if f2 == f {
+			return 0
+		}
+
+		if f2 < f {
+			return -1
+		}
+
+		return +1
+	}
+
+	return types.Compare(types.Int, otherType)
 }
 
 func (t Int) Unwrap() interface{} {

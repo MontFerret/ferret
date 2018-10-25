@@ -238,16 +238,6 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 	return arr
 }
 
-func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
-	selection := el.selection.Find(selector.String())
-
-	if selection == nil {
-		return values.ZeroInt
-	}
-
-	return values.NewInt(selection.Size())
-}
-
 func (el *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 

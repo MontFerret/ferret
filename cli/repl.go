@@ -3,14 +3,17 @@ package cli
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/parser/fql"
+	"os"
+	"os/signal"
+	"strings"
+
+	"github.com/MontFerret/ferret/pkg/parser/fql"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/chzyer/readline"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 )
 
 func Repl(version string, opts Options) {
@@ -23,6 +26,11 @@ func Repl(version string, opts Options) {
 		Prompt:          "> ",
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
+		AutoComplete: NewAutoCompleter(
+			append(
+				fqlLiterals(),
+				ferret.RegisteredFunctions()...,
+			)),
 	})
 
 	if err != nil {
@@ -42,9 +50,10 @@ func Repl(version string, opts Options) {
 
 	l := NewLogger()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := opts.WithContext(context.Background())
+
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGHUP)
+	signal.Notify(c, os.Interrupt)
 
 	exit := func() {
 		cancel()
@@ -110,12 +119,9 @@ func Repl(version string, opts Options) {
 
 		out, err := program.Run(
 			ctx,
-			runtime.WithBrowser(opts.Cdp),
 			runtime.WithLog(l),
 			runtime.WithLogLevel(logging.DebugLevel),
 			runtime.WithParams(opts.Params),
-			runtime.WithProxy(opts.Proxy),
-			runtime.WithUserAgent(opts.UserAgent),
 		)
 
 		if err != nil {
@@ -131,4 +137,14 @@ func Repl(version string, opts Options) {
 			fmt.Println(timer.Print())
 		}
 	}
+}
+
+func fqlLiterals() (literals []string) {
+	lns := fql.NewFqlLexer(nil).LiteralNames
+
+	for _, ln := range lns {
+		literals = append(literals, strings.Trim(ln, "'"))
+	}
+
+	return
 }

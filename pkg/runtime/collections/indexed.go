@@ -1,6 +1,8 @@
 package collections
 
 import (
+	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -19,32 +21,46 @@ type IndexedIterator struct {
 func NewIndexedIterator(
 	valVar,
 	keyVar string,
-	input IndexedCollection,
-) Iterator {
-	return &IndexedIterator{valVar, keyVar, input, 0}
+	values IndexedCollection,
+) (Iterator, error) {
+	if valVar == "" {
+		return nil, core.Error(core.ErrMissedArgument, "value variable")
+	}
+
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "result")
+	}
+
+	return &IndexedIterator{valVar, keyVar, values, 0}, nil
 }
 
 func NewDefaultIndexedIterator(
-	input IndexedCollection,
-) Iterator {
-	return &IndexedIterator{DefaultValueVar, DefaultKeyVar, input, 0}
+	values IndexedCollection,
+) (Iterator, error) {
+	return NewIndexedIterator(DefaultValueVar, DefaultKeyVar, values)
 }
 
-func (iterator *IndexedIterator) HasNext() bool {
-	return int(iterator.values.Length()) > iterator.pos
-}
-
-func (iterator *IndexedIterator) Next() (DataSet, error) {
+func (iterator *IndexedIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
 	if int(iterator.values.Length()) > iterator.pos {
 		idx := values.NewInt(iterator.pos)
 		val := iterator.values.Get(idx)
+
 		iterator.pos++
 
-		return DataSet{
-			iterator.valVar: val,
-			iterator.keyVar: idx,
-		}, nil
+		nextScope := scope.Fork()
+
+		if err := nextScope.SetVariable(iterator.valVar, val); err != nil {
+			return nil, err
+		}
+
+		if iterator.keyVar != "" {
+			if err := nextScope.SetVariable(iterator.keyVar, idx); err != nil {
+				return nil, err
+			}
+		}
+
+		return nextScope, nil
 	}
 
-	return nil, ErrExhausted
+	return nil, nil
 }

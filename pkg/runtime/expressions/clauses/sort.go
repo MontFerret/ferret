@@ -11,6 +11,7 @@ type (
 		expression core.Expression
 		direction  collections.SortDirection
 	}
+
 	SortClause struct {
 		src        core.SourceMap
 		dataSource collections.Iterable
@@ -46,10 +47,6 @@ func NewSortClause(
 	return &SortClause{src, dataSource, sorters}, nil
 }
 
-func (clause *SortClause) Variables() collections.Variables {
-	return clause.dataSource.Variables()
-}
-
 func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
 	src, err := clause.dataSource.Iterate(ctx, scope)
 
@@ -58,31 +55,10 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 	}
 
 	sorters := make([]*collections.Sorter, len(clause.sorters))
-	variables := clause.dataSource.Variables()
 
 	// converting sorter reducer into collections.Sorter
 	for idx, srt := range clause.sorters {
-		sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-			scope1 := scope.Fork()
-			first.Apply(scope1, variables)
-
-			f, err := srt.expression.Exec(ctx, scope1)
-
-			if err != nil {
-				return -1, err
-			}
-
-			scope2 := scope.Fork()
-			second.Apply(scope2, variables)
-
-			s, err := srt.expression.Exec(ctx, scope2)
-
-			if err != nil {
-				return -1, err
-			}
-
-			return f.Compare(s), nil
-		}, srt.direction)
+		sorter, err := newSorter(srt)
 
 		if err != nil {
 			return nil, err
@@ -92,4 +68,22 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 	}
 
 	return collections.NewSortIterator(src, sorters...)
+}
+
+func newSorter(srt *SorterExpression) (*collections.Sorter, error) {
+	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int64, error) {
+		f, err := srt.expression.Exec(ctx, first)
+
+		if err != nil {
+			return -1, err
+		}
+
+		s, err := srt.expression.Exec(ctx, second)
+
+		if err != nil {
+			return -1, err
+		}
+
+		return f.Compare(s), nil
+	}, srt.direction)
 }

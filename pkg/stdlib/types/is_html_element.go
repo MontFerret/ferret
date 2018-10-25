@@ -3,6 +3,10 @@ package types
 import (
 	"context"
 
+<<<<<<< HEAD
+	"github.com/MontFerret/ferret/pkg/drivers"
+=======
+>>>>>>> 9f24172... rewrite comments
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -17,5 +21,5 @@ func IsHTMLElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return isTypeof(args[0], core.HTMLElementType), nil
+	return isTypeof(args[0], drivers.HTMLElementType), nil
 }

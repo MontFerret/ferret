@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -21,7 +20,7 @@ type (
 
 func NewVariableExpression(src core.SourceMap, name string) (*VariableExpression, error) {
 	if name == "" {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed variable name")
+		return nil, core.Error(core.ErrMissedArgument, "missed variable name")
 	}
 
 	return &VariableExpression{src, name}, nil
@@ -34,8 +33,8 @@ func NewVariableDeclarationExpression(src core.SourceMap, name string, init core
 		return nil, err
 	}
 
-	if core.IsNil(init) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed variable initializer")
+	if init == nil {
+		return nil, core.Error(core.ErrMissedArgument, "missed variable initializer")
 	}
 
 	return &VariableDeclarationExpression{v, init}, nil

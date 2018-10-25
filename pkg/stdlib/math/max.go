@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Max returns the greatest (arithmetic mean) of the values in array.
@@ -18,7 +19,7 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -33,7 +34,7 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 	var max float64
 
 	arr.ForEach(func(value core.Value, idx int) bool {
-		err = core.ValidateType(value, core.FloatType, core.IntType)
+		err = core.ValidateType(value, types.Int, types.Float)
 
 		if err != nil {
 			return false

@@ -13,6 +13,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
@@ -79,40 +80,25 @@ func LoadHTMLDocument(
 		}
 	}
 
-	node, err := getRootElement(ctx, client)
+	root, innerHTML, err := getRootElement(client)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get root element")
+		return nil, err
 	}
 
 	broker, err := createEventBroker(client)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create event events")
-	}
-
-	logger := logging.FromContext(ctx)
-
-	rootElement, err := LoadElement(
-		ctx,
-		logger,
-		client,
-		broker,
-		node.Root.NodeID,
-		node.Root.BackendNodeID,
-	)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load root element")
+		return nil, err
 	}
 
 	return NewHTMLDocument(
-		logger,
+		logging.FromContext(ctx),
 		conn,
 		client,
 		broker,
-		values.NewString(url),
-		rootElement,
+		root,
+		innerHTML,
 	), nil
 }
 
@@ -121,19 +107,23 @@ func NewHTMLDocument(
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
-	url values.String,
-	rootElement *HTMLElement,
+	root dom.Node,
+	innerHTML values.String,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
 	doc.logger = logger
 	doc.conn = conn
 	doc.client = client
 	doc.events = broker
-	doc.url = url
-	doc.element = rootElement
+	doc.element = NewHTMLElement(doc.logger, client, broker, root.NodeID, root, innerHTML)
+	doc.url = ""
 
-	broker.AddEventListener(events.EventLoad, doc.handlePageLoad)
-	broker.AddEventListener(events.EventError, doc.handleError)
+	if root.BaseURL != nil {
+		doc.url = values.NewString(*root.BaseURL)
+	}
+
+	broker.AddEventListener("load", doc.handlePageLoad)
+	broker.AddEventListener("error", doc.handleError)
 
 	return doc
 }
@@ -211,7 +201,7 @@ func (doc *HTMLDocument) Close() error {
 			Timestamp().
 			Str("url", doc.url.String()).
 			Err(err).
-			Msg("failed to stop event events")
+			Msg("failed to stop event broker")
 	}
 
 	err = doc.events.Close()
@@ -221,7 +211,7 @@ func (doc *HTMLDocument) Close() error {
 			Timestamp().
 			Str("url", doc.url.String()).
 			Err(err).
-			Msg("failed to close event events")
+			Msg("failed to close event broker")
 	}
 
 	err = doc.element.Close()
@@ -364,13 +354,6 @@ func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.
 	defer doc.Unlock()
 
 	return doc.element.InnerTextBySelectorAll(selector)
-}
-
-func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.CountBySelector(selector)
 }
 
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
@@ -574,19 +557,14 @@ func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout 
 }
 
 func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
-	// do not wait
-	if timeout == 0 {
-		return nil
-	}
-
 	onEvent := make(chan struct{})
 	listener := func(_ interface{}) {
 		close(onEvent)
 	}
 
-	defer doc.events.RemoveEventListener(events.EventLoad, listener)
+	defer doc.events.RemoveEventListener("load", listener)
 
-	doc.events.AddEventListener(events.EventLoad, listener)
+	doc.events.AddEventListener("load", listener)
 
 	select {
 	case <-onEvent:
@@ -613,100 +591,6 @@ func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
 	}
 
 	return doc.WaitForNavigation(timeout)
-}
-
-func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (values.Boolean, error) {
-	ctx := context.Background()
-	history, err := doc.client.Page.GetNavigationHistory(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	// we are in the beginning
-	if history.CurrentIndex == 0 {
-		return values.False, nil
-	}
-
-	if skip < 1 {
-		skip = 1
-	}
-
-	to := history.CurrentIndex - int(skip)
-
-	if to < 0 {
-		// TODO: Return error?
-		return values.False, nil
-	}
-
-	prev := history.Entries[to]
-	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(prev.ID))
-
-	if err != nil {
-		return values.False, err
-	}
-
-	err = doc.WaitForNavigation(timeout)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
-}
-
-func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (values.Boolean, error) {
-	ctx := context.Background()
-	history, err := doc.client.Page.GetNavigationHistory(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	length := len(history.Entries)
-	lastIndex := length - 1
-
-	// nowhere to go forward
-	if history.CurrentIndex == lastIndex {
-		return values.False, nil
-	}
-
-	if skip < 1 {
-		skip = 1
-	}
-
-	to := int(skip) + history.CurrentIndex
-
-	if to > lastIndex {
-		// TODO: Return error?
-		return values.False, nil
-	}
-
-	next := history.Entries[to]
-	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(next.ID))
-
-	if err != nil {
-		return values.False, err
-	}
-
-	err = doc.WaitForNavigation(timeout)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
-}
-
-func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, error) {
-	ctx := context.Background()
-
-	reply, err := doc.client.Page.PrintToPDF(ctx, params)
-	if err != nil {
-		return values.None, err
-	}
-
-	return values.NewBinary(reply.Data), nil
 }
 
 func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
@@ -761,10 +645,7 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 	doc.Lock()
 	defer doc.Unlock()
 
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
-	node, err := getRootElement(ctx, doc.client)
+	updated, innerHTML, err := getRootElement(doc.client)
 
 	if err != nil {
 		doc.logger.Error().
@@ -775,33 +656,22 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 		return
 	}
 
-	updated, err := LoadElement(
-		ctx,
-		doc.logger,
-		doc.client,
-		doc.events,
-		node.Root.NodeID,
-		node.Root.BackendNodeID,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Msg("failed to load root node after page load")
-
-		return
-	}
-
 	// close the prev element
 	doc.element.Close()
 
 	// create a new root element wrapper
-	doc.element = updated
+	doc.element = NewHTMLElement(
+		doc.logger,
+		doc.client,
+		doc.events,
+		updated.NodeID,
+		updated,
+		innerHTML,
+	)
 	doc.url = ""
 
-	if node.Root.BaseURL != nil {
-		doc.url = values.NewString(*node.Root.BaseURL)
+	if updated.BaseURL != nil {
+		doc.url = values.NewString(*updated.BaseURL)
 	}
 }
 
