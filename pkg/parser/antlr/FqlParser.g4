@@ -75,41 +75,37 @@ sortClauseExpression
     ;
 
 collectClause
-    : Collect collectVariable Assign expression
-    | Collect collectVariable Assign expression Into collectGroupVariable
-    | Collect collectVariable Assign expression Into collectGroupVariable Keep collectKeepVariable
-    | Collect collectVariable Assign expression With Count collectCountVariable
-    | Collect collectVariable Assign expression Aggregate collectAggregateVariable Assign collectAggregateExpression
-    | Collect Aggregate collectAggregateVariable Assign collectAggregateExpression
-    | Collect With Count Into collectCountVariable
+    : Collect collectCounter
+    | Collect collectAggregator
+    | Collect collectGrouping collectAggregator
+    | Collect collectGrouping collectGroupVariable
+    | Collect collectGrouping collectCounter
+    | Collect collectGrouping
     ;
 
-collectVariable
-    : Identifier
+collectSelector
+    : Identifier Assign expression
+    ;
+
+collectGrouping
+    : collectSelector (Comma collectSelector)*
+    ;
+
+collectAggregator
+    : Aggregate collectAggregateSelector (Comma collectAggregateSelector)*
+    ;
+
+collectAggregateSelector
+    : Identifier Assign functionCallExpression
     ;
 
 collectGroupVariable
-    : Identifier
+    : Into collectSelector
+    | Into Identifier (Keep Identifier)?
     ;
 
-collectKeepVariable
-    : Identifier
-    ;
-
-collectCountVariable
-    : Identifier
-    ;
-
-collectAggregateVariable
-    : Identifier
-    ;
-
-collectAggregateExpression
-    : expression
-    ;
-
-collectOption
-    :
+collectCounter
+    : With Count Into Identifier
     ;
 
 forExpressionBody

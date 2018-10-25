@@ -67,7 +67,19 @@ func (v *BaseFqlParserVisitor) VisitCollectClause(ctx *CollectClauseContext) int
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitCollectVariable(ctx *CollectVariableContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitCollectSelector(ctx *CollectSelectorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitCollectGrouping(ctx *CollectGroupingContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitCollectAggregator(ctx *CollectAggregatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -75,23 +87,7 @@ func (v *BaseFqlParserVisitor) VisitCollectGroupVariable(ctx *CollectGroupVariab
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitCollectKeepVariable(ctx *CollectKeepVariableContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitCollectCountVariable(ctx *CollectCountVariableContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitCollectAggregateVariable(ctx *CollectAggregateVariableContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitCollectAggregateExpression(ctx *CollectAggregateExpressionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitCollectOption(ctx *CollectOptionContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitCollectCounter(ctx *CollectCounterContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

@@ -2,7 +2,6 @@ package expressions
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
@@ -24,22 +23,6 @@ func NewMemberExpression(src core.SourceMap, variableName string, path []core.Ex
 	}
 
 	return &MemberExpression{src, variableName, path}, nil
-}
-
-func (e *MemberExpression) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-	value, err := e.Exec(ctx, scope)
-
-	if err != nil {
-		return nil, core.SourceError(e.src, err)
-	}
-
-	iter, err := collections.ToIterator(value)
-
-	if err != nil {
-		return nil, core.SourceError(e.src, err)
-	}
-
-	return iter, nil
 }
 
 func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {

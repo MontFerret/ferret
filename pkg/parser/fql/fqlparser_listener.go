@@ -52,26 +52,23 @@ type FqlParserListener interface {
 	// EnterCollectClause is called when entering the collectClause production.
 	EnterCollectClause(c *CollectClauseContext)
 
-	// EnterCollectVariable is called when entering the collectVariable production.
-	EnterCollectVariable(c *CollectVariableContext)
+	// EnterCollectSelector is called when entering the collectSelector production.
+	EnterCollectSelector(c *CollectSelectorContext)
+
+	// EnterCollectGrouping is called when entering the collectGrouping production.
+	EnterCollectGrouping(c *CollectGroupingContext)
+
+	// EnterCollectAggregator is called when entering the collectAggregator production.
+	EnterCollectAggregator(c *CollectAggregatorContext)
+
+	// EnterCollectAggregateSelector is called when entering the collectAggregateSelector production.
+	EnterCollectAggregateSelector(c *CollectAggregateSelectorContext)
 
 	// EnterCollectGroupVariable is called when entering the collectGroupVariable production.
 	EnterCollectGroupVariable(c *CollectGroupVariableContext)
 
-	// EnterCollectKeepVariable is called when entering the collectKeepVariable production.
-	EnterCollectKeepVariable(c *CollectKeepVariableContext)
-
-	// EnterCollectCountVariable is called when entering the collectCountVariable production.
-	EnterCollectCountVariable(c *CollectCountVariableContext)
-
-	// EnterCollectAggregateVariable is called when entering the collectAggregateVariable production.
-	EnterCollectAggregateVariable(c *CollectAggregateVariableContext)
-
-	// EnterCollectAggregateExpression is called when entering the collectAggregateExpression production.
-	EnterCollectAggregateExpression(c *CollectAggregateExpressionContext)
-
-	// EnterCollectOption is called when entering the collectOption production.
-	EnterCollectOption(c *CollectOptionContext)
+	// EnterCollectCounter is called when entering the collectCounter production.
+	EnterCollectCounter(c *CollectCounterContext)
 
 	// EnterForExpressionBody is called when entering the forExpressionBody production.
 	EnterForExpressionBody(c *ForExpressionBodyContext)
@@ -208,26 +205,23 @@ type FqlParserListener interface {
 	// ExitCollectClause is called when exiting the collectClause production.
 	ExitCollectClause(c *CollectClauseContext)
 
-	// ExitCollectVariable is called when exiting the collectVariable production.
-	ExitCollectVariable(c *CollectVariableContext)
+	// ExitCollectSelector is called when exiting the collectSelector production.
+	ExitCollectSelector(c *CollectSelectorContext)
+
+	// ExitCollectGrouping is called when exiting the collectGrouping production.
+	ExitCollectGrouping(c *CollectGroupingContext)
+
+	// ExitCollectAggregator is called when exiting the collectAggregator production.
+	ExitCollectAggregator(c *CollectAggregatorContext)
+
+	// ExitCollectAggregateSelector is called when exiting the collectAggregateSelector production.
+	ExitCollectAggregateSelector(c *CollectAggregateSelectorContext)
 
 	// ExitCollectGroupVariable is called when exiting the collectGroupVariable production.
 	ExitCollectGroupVariable(c *CollectGroupVariableContext)
 
-	// ExitCollectKeepVariable is called when exiting the collectKeepVariable production.
-	ExitCollectKeepVariable(c *CollectKeepVariableContext)
-
-	// ExitCollectCountVariable is called when exiting the collectCountVariable production.
-	ExitCollectCountVariable(c *CollectCountVariableContext)
-
-	// ExitCollectAggregateVariable is called when exiting the collectAggregateVariable production.
-	ExitCollectAggregateVariable(c *CollectAggregateVariableContext)
-
-	// ExitCollectAggregateExpression is called when exiting the collectAggregateExpression production.
-	ExitCollectAggregateExpression(c *CollectAggregateExpressionContext)
-
-	// ExitCollectOption is called when exiting the collectOption production.
-	ExitCollectOption(c *CollectOptionContext)
+	// ExitCollectCounter is called when exiting the collectCounter production.
+	ExitCollectCounter(c *CollectCounterContext)
 
 	// ExitForExpressionBody is called when exiting the forExpressionBody production.
 	ExitForExpressionBody(c *ForExpressionBodyContext)

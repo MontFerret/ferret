@@ -276,7 +276,7 @@ var lexerSymbolicNames = []string{
 	"And", "Or", "Range", "Assign", "QuestionMark", "RegexNotMatch", "RegexMatch",
 	"For", "Return", "Distinct", "Filter", "Sort", "Limit", "Let", "Collect",
 	"SortDirection", "None", "Null", "BooleanLiteral", "Into", "Keep", "With",
-	"Count", "All", "Any", "Aggregate", "Like", "Not", "In", "Param", "Identifier",
+	"count", "All", "Any", "aggregate", "Like", "Not", "In", "Param", "Identifier",
 	"StringLiteral", "TemplateStringLiteral", "IntegerLiteral", "FloatLiteral",
 }
 
@@ -288,7 +288,7 @@ var lexerRuleNames = []string{
 	"And", "Or", "Range", "Assign", "QuestionMark", "RegexNotMatch", "RegexMatch",
 	"For", "Return", "Distinct", "Filter", "Sort", "Limit", "Let", "Collect",
 	"SortDirection", "None", "Null", "BooleanLiteral", "Into", "Keep", "With",
-	"Count", "All", "Any", "Aggregate", "Like", "Not", "In", "Param", "Identifier",
+	"count", "All", "Any", "aggregate", "Like", "Not", "In", "Param", "Identifier",
 	"StringLiteral", "TemplateStringLiteral", "IntegerLiteral", "FloatLiteral",
 	"HexDigit", "DecimalIntegerLiteral", "ExponentPart", "Letter", "Symbols",
 	"Digit", "DQSring", "SQString",

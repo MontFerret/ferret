@@ -47,17 +47,18 @@ func TestParam(t *testing.T) {
 	})
 
 	Convey("Should be possible to use in range", t, func() {
-		out := compiler.New().
+		prog := compiler.New().
 			MustCompile(`
 			FOR i IN @start..@end
 			SORT i
 			RETURN i
-		`).
-			MustRun(
-				context.Background(),
-				runtime.WithParam("start", 1),
-				runtime.WithParam("end", 4),
-			)
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("start", 1),
+			runtime.WithParam("end", 4),
+		)
 
 		So(string(out), ShouldEqual, `[1,2,3,4]`)
 

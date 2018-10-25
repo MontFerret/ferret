@@ -24,14 +24,17 @@ func TestUniqueIterator(t *testing.T) {
 		}
 
 		iter, err := collections.NewUniqueIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
+			collections.DefaultValueVar,
 		)
 
 		So(err, ShouldBeNil)
 
-		res, err := collections.ToArray(iter)
+		sets, err := collections.ToSlice(iter)
 
 		So(err, ShouldBeNil)
+
+		res := toArrayOfValues(sets)
 
 		So(res.String(), ShouldEqual, `[1,2,3,4,5,6]`)
 	})
@@ -47,14 +50,17 @@ func TestUniqueIterator(t *testing.T) {
 		}
 
 		iter, err := collections.NewUniqueIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
+			collections.DefaultValueVar,
 		)
 
 		So(err, ShouldBeNil)
 
-		res, err := collections.ToArray(iter)
+		sets, err := collections.ToSlice(iter)
 
 		So(err, ShouldBeNil)
+
+		res := toArrayOfValues(sets)
 
 		So(res.String(), ShouldEqual, `[1]`)
 	})
@@ -75,14 +81,17 @@ func TestUniqueIterator(t *testing.T) {
 		}
 
 		iter, err := collections.NewUniqueIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
+			collections.DefaultValueVar,
 		)
 
 		So(err, ShouldBeNil)
 
-		res, err := collections.ToArray(iter)
+		sets, err := collections.ToSlice(iter)
 
 		So(err, ShouldBeNil)
+
+		res := toArrayOfValues(sets)
 
 		So(res.String(), ShouldEqual, `["a","b","c","d","e","f"]`)
 	})
