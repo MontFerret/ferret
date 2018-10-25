@@ -25,7 +25,11 @@ test:
 	go test -v -race ${DIR_PKG}/...
 
 cover:
+ifneq ($(CODECOV_TOKEN), )
 	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/...
+else
+	$(error "CODECOV_TOKEN token is required")
+endif
 
 e2e:
 	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
@@ -55,9 +59,9 @@ vet:
 
 release:
 ifeq ($(RELEASE_VERSION), )
-	echo "Release version is required (version=x)"
+	$(error "Release version is required (version=x)")
 else ifeq ($(GITHUB_TOKEN), )
-	echo "GitHub token is required (GITHUB_TOKEN)"
+	$(error "GitHub token is required (GITHUB_TOKEN)")
 else
 	rm -rf ./dist && \
 	git tag -a v$(RELEASE_VERSION) -m "New $(RELEASE_VERSION) version" && \
