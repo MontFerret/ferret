@@ -156,3 +156,94 @@ func TestCollect(t *testing.T) {
 		So(string(out), ShouldEqual, `[{"age":25,"gender":"f"},{"age":45,"gender":"f"},{"age":31,"gender":"m"},{"age":36,"gender":"m"},{"age":69,"gender":"m"}]`)
 	})
 }
+
+func BenchmarkCollect(b *testing.B) {
+	p := compiler.New().MustCompile(`
+		LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender
+				RETURN {
+					user: i,
+					gender: gender
+				}
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkCollect2(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender, age = i.age
+				RETURN {age, gender}
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}

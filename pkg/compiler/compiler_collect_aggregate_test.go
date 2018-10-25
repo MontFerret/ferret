@@ -167,3 +167,143 @@ func TestAggregate(t *testing.T) {
 		So(string(out), ShouldEqual, `[{"ageGroup":25,"maxAge":25,"minAge":25},{"ageGroup":30,"maxAge":31,"minAge":31},{"ageGroup":35,"maxAge":36,"minAge":36},{"ageGroup":45,"maxAge":45,"minAge":45},{"ageGroup":65,"maxAge":69,"minAge":69}]`)
 	})
 }
+
+func BenchmarkAggregate(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+  				RETURN {
+    				minAge, 
+    				maxAge 
+  				}
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkAggregate2(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT AGGREGATE ages = UNION(u.age, u.age)
+  				RETURN ages
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkAggregate3(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
+  				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+  				RETURN {
+					ageGroup,
+    				minAge, 
+    				maxAge 
+  				}
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}

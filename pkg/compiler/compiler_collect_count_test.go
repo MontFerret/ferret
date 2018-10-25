@@ -59,3 +59,47 @@ func TestCollectCount(t *testing.T) {
 		So(string(out), ShouldEqual, `[5]`)
 	})
 }
+
+func BenchmarkCollectCount(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT WITH COUNT INTO c
+				RETURN c
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}

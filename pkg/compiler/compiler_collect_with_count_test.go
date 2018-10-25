@@ -109,3 +109,91 @@ func TestCollectWithCount(t *testing.T) {
 		So(string(out), ShouldEqual, `[{"gender":"f","genders":1,"married":false},{"gender":"f","genders":1,"married":true},{"gender":"m","genders":1,"married":false},{"gender":"m","genders":2,"married":true}]`)
 	})
 }
+
+func BenchmarkWithCount(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender WITH COUNT INTO genders
+				RETURN {gender, genders}
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkWithCount2(b *testing.B) {
+	p := compiler.New().MustCompile(`
+						LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender, married = i.married WITH COUNT INTO genders
+				RETURN {gender, married, genders}
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
