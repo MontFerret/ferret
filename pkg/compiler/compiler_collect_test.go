@@ -159,7 +159,7 @@ func TestCollect(t *testing.T) {
 
 func BenchmarkCollect(b *testing.B) {
 	p := compiler.New().MustCompile(`
-		LET users = [
+LET users = [
 				{
 					active: true,
 					married: true,
@@ -193,10 +193,7 @@ func BenchmarkCollect(b *testing.B) {
 			]
 			FOR i IN users
 				COLLECT gender = i.gender
-				RETURN {
-					user: i,
-					gender: gender
-				}
+				RETURN gender
 		`)
 
 	for n := 0; n < b.N; n++ {
