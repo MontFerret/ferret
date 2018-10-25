@@ -57,6 +57,7 @@ release:
 ifeq ($(RELEASE_VERSION), )
 	echo "Release version is required"
 else
+	rm -rf ./dist && \
 	git tag -a v$(RELEASE_VERSION) -m "New $(RELEASE_VERSION) version" && \
 	git push origin v$(RELEASE_VERSION) && \
 	goreleaser
