@@ -57,7 +57,7 @@ release:
 ifeq ($(RELEASE_VERSION), )
 	echo "Release version is required (version=x)"
 else ifeq ($(GITHUB_TOKEN), )
-	echo "GitHub token is required ($GITHUB_TOKEN)"
+	echo "GitHub token is required (GITHUB_TOKEN)"
 else
 	rm -rf ./dist && \
 	git tag -a v$(RELEASE_VERSION) -m "New $(RELEASE_VERSION) version" && \
