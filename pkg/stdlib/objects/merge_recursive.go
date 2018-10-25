@@ -25,7 +25,7 @@ func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 	merged := values.NewObject()
 
 	for _, arg := range args {
-		merged = merge(merged, arg.(*values.Object)).(*values.Object)
+		merged = merge(merged, arg).(*values.Object)
 	}
 
 	return merged.Clone(), nil
@@ -44,7 +44,7 @@ func merge(src, dst core.Value) core.Value {
 	dstObj := dst.(*values.Object)
 
 	if dstObj.Length() == 0 {
-		return srcObj
+		return src
 	}
 
 	keyObj := values.NewString("")
