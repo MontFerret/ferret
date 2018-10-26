@@ -25,10 +25,13 @@ test:
 	go test -v -race ${DIR_PKG}/...
 
 cover:
-ifneq ($(CODECOV_TOKEN), )
 	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/...
+ifeq ($(TRAVIS_BRANCH)$(TRAVIS_PULL_REQUEST), masterfalse)
+ifneq ($(CODECOV_TOKEN), )
+	bash <(curl -s https://codecov.io/bash)
 else
 	$(error "CODECOV_TOKEN token is required")
+endif
 endif
 
 e2e:
