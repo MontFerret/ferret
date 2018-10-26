@@ -16,7 +16,6 @@ func arrayIterator(arr *values.Array) collections.Iterator {
 }
 
 func TestArrayIterator(t *testing.T) {
-
 	Convey("Should iterate over an array", t, func() {
 		arr := values.NewArrayWith(
 			values.NewInt(1),
