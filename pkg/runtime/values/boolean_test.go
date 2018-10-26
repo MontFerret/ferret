@@ -9,7 +9,7 @@ import (
 
 func TestBoolean(t *testing.T) {
 	Convey(".MarshalJSON", t, func() {
-		Convey("Should serialize a boolean value", func() {
+		Convey("Should serialize a boolean items", func() {
 			b := values.True
 			marshaled, err := b.MarshalJSON()
 
@@ -26,7 +26,7 @@ func TestBoolean(t *testing.T) {
 	})
 
 	Convey(".Unwrap", t, func() {
-		Convey("Should return an unwrapped value", func() {
+		Convey("Should return an unwrapped items", func() {
 			So(values.True.Unwrap(), ShouldHaveSameTypeAs, true)
 		})
 	})

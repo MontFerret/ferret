@@ -164,7 +164,5 @@ func (clause *CollectClause) Iterate(ctx context.Context, scope *core.Scope) (co
 		clause.params,
 		srcIterator,
 		srcVariables,
-		ctx,
-		scope,
 	)
 }

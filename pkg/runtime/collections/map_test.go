@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -9,7 +10,9 @@ import (
 )
 
 func mapIterator(m map[string]core.Value) collections.Iterator {
-	return collections.NewDefaultMapIterator(m)
+	iter, _ := collections.NewDefaultMapIterator(m)
+
+	return iter
 }
 
 func TestMapIterator(t *testing.T) {
@@ -25,11 +28,20 @@ func TestMapIterator(t *testing.T) {
 		iter := mapIterator(m)
 
 		res := make([]core.Value, 0, len(m))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for iter.HasNext() {
-			item, key, err := next(iter)
+		for {
+			ds, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
+
+			if ds == nil {
+				break
+			}
+
+			key := ds.Get(collections.DefaultKeyVar)
+			item := ds.Get(collections.DefaultValueVar)
 
 			expected, exists := m[key.String()]
 
@@ -52,21 +64,16 @@ func TestMapIterator(t *testing.T) {
 		}
 
 		iter := mapIterator(m)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		res := make([]core.Value, 0, len(m))
+		_, err := collections.ToSlice(ctx, scope, iter)
+		So(err, ShouldBeNil)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
-		item, _, err := next(iter)
+		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeError)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Should NOT iterate over a empty map", t, func() {
@@ -74,12 +81,12 @@ func TestMapIterator(t *testing.T) {
 
 		iter := mapIterator(m)
 
-		var iterated bool
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for iter.HasNext() {
-			iterated = true
-		}
+		item, err := iter.Next(ctx, scope)
 
-		So(iterated, ShouldBeFalse)
+		So(item, ShouldBeNil)
+		So(err, ShouldBeNil)
 	})
 }

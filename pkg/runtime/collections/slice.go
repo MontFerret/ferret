@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -15,20 +16,20 @@ type SliceIterator struct {
 func NewSliceIterator(
 	valVar,
 	keyVar string,
-	input []core.Value,
-) Iterator {
-	return &SliceIterator{valVar, keyVar, input, 0}
+	values []core.Value,
+) (Iterator, error) {
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "result")
+	}
+
+	return &SliceIterator{valVar, keyVar, values, 0}, nil
 }
 
-func NewDefaultSliceIterator(input []core.Value) Iterator {
+func NewDefaultSliceIterator(input []core.Value) (Iterator, error) {
 	return NewSliceIterator(DefaultValueVar, DefaultKeyVar, input)
 }
 
-func (iterator *SliceIterator) HasNext() bool {
-	return len(iterator.values) > iterator.pos
-}
-
-func (iterator *SliceIterator) Next() (DataSet, error) {
+func (iterator *SliceIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
 	if len(iterator.values) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values[idx]
@@ -40,5 +41,5 @@ func (iterator *SliceIterator) Next() (DataSet, error) {
 		}, nil
 	}
 
-	return nil, ErrExhausted
+	return nil, nil
 }

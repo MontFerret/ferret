@@ -1,6 +1,8 @@
 package collections
 
 import (
+	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -15,25 +17,28 @@ type KeyedIterator struct {
 func NewKeyedIterator(
 	valVar,
 	keyVar string,
-	input KeyedCollection,
-) Iterator {
-	return &KeyedIterator{valVar, keyVar, input, nil, 0}
+	values KeyedCollection,
+) (Iterator, error) {
+	if valVar == "" {
+		return nil, core.Error(core.ErrMissedArgument, "value variable")
+	}
+
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "result")
+	}
+
+	return &KeyedIterator{valVar, keyVar, values, nil, 0}, nil
 }
 
-func NewDefaultKeyedIterator(input KeyedCollection) Iterator {
+func NewDefaultKeyedIterator(input KeyedCollection) (Iterator, error) {
 	return NewKeyedIterator(DefaultValueVar, DefaultKeyVar, input)
 }
 
-func (iterator *KeyedIterator) HasNext() bool {
-	// lazy initialization
+func (iterator *KeyedIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
 	if iterator.keys == nil {
 		iterator.keys = iterator.values.Keys()
 	}
 
-	return len(iterator.keys) > iterator.pos
-}
-
-func (iterator *KeyedIterator) Next() (DataSet, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := values.NewString(iterator.keys[iterator.pos])
 		val, _ := iterator.values.Get(key)
@@ -45,5 +50,5 @@ func (iterator *KeyedIterator) Next() (DataSet, error) {
 		}, nil
 	}
 
-	return nil, ErrExhausted
+	return nil, nil
 }

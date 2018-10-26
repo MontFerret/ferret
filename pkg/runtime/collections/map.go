@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -16,18 +17,24 @@ type MapIterator struct {
 func NewMapIterator(
 	valVar,
 	keyVar string,
-	input map[string]core.Value,
-) Iterator {
-	return &MapIterator{valVar, keyVar, input, nil, 0}
+	values map[string]core.Value,
+) (Iterator, error) {
+	if valVar == "" {
+		return nil, core.Error(core.ErrMissedArgument, "value variable")
+	}
+
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "result")
+	}
+
+	return &MapIterator{valVar, keyVar, values, nil, 0}, nil
 }
 
-func NewDefaultMapIterator(
-	input map[string]core.Value,
-) Iterator {
-	return &MapIterator{DefaultValueVar, DefaultKeyVar, input, nil, 0}
+func NewDefaultMapIterator(values map[string]core.Value) (Iterator, error) {
+	return NewMapIterator(DefaultValueVar, DefaultKeyVar, values)
 }
 
-func (iterator *MapIterator) HasNext() bool {
+func (iterator *MapIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
 	// lazy initialization
 	if iterator.keys == nil {
 		keys := make([]string, len(iterator.values))
@@ -41,10 +48,6 @@ func (iterator *MapIterator) HasNext() bool {
 		iterator.keys = keys
 	}
 
-	return len(iterator.keys) > iterator.pos
-}
-
-func (iterator *MapIterator) Next() (DataSet, error) {
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
@@ -56,5 +59,5 @@ func (iterator *MapIterator) Next() (DataSet, error) {
 		}, nil
 	}
 
-	return nil, ErrExhausted
+	return nil, nil
 }

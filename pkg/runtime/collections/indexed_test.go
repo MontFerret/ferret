@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -8,21 +9,10 @@ import (
 	"testing"
 )
 
-func next(iterator collections.Iterator) (core.Value, core.Value, error) {
-	ds, err := iterator.Next()
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	val := ds[collections.DefaultValueVar]
-	key := ds[collections.DefaultKeyVar]
-
-	return val, key, nil
-}
-
 func arrayIterator(arr *values.Array) collections.Iterator {
-	return collections.NewDefaultIndexedIterator(arr)
+	iterator, _ := collections.NewDefaultIndexedIterator(arr)
+
+	return iterator
 }
 
 func TestArrayIterator(t *testing.T) {
@@ -42,13 +32,19 @@ func TestArrayIterator(t *testing.T) {
 
 		pos := 0
 
-		for iter.HasNext() {
-			item, key, err := next(iter)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		for {
+			ds, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
-			So(key.Unwrap(), ShouldEqual, pos)
 
-			res = append(res, item)
+			if ds == nil {
+				break
+			}
+
+			res = append(res, ds.Get(collections.DefaultValueVar))
 
 			pos += 1
 		}
@@ -69,12 +65,19 @@ func TestArrayIterator(t *testing.T) {
 
 		res := make([]core.Value, 0, arr.Length())
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		for {
+			ds, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
 
-			res = append(res, item)
+			if ds == nil {
+				break
+			}
+
+			res = append(res, ds.Get(collections.DefaultValueVar))
 		}
 
 		arr.ForEach(func(expected core.Value, idx int) bool {
@@ -99,18 +102,25 @@ func TestArrayIterator(t *testing.T) {
 
 		res := make([]core.Value, 0, arr.Length())
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		for {
+			ds, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
 
-			res = append(res, item)
+			if ds == nil {
+				break
+			}
+
+			res = append(res, ds.Get(collections.DefaultValueVar))
 		}
 
-		item, _, err := next(iter)
+		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeError)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Should NOT iterate over an empty array", t, func() {
@@ -118,12 +128,12 @@ func TestArrayIterator(t *testing.T) {
 
 		iter := arrayIterator(arr)
 
-		var iterated bool
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for iter.HasNext() {
-			iterated = true
-		}
+		ds, err := iter.Next(ctx, scope)
 
-		So(iterated, ShouldBeFalse)
+		So(err, ShouldBeNil)
+		So(ds, ShouldBeNil)
 	})
 }

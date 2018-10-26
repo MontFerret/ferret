@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -29,8 +30,10 @@ func TestUniqueIterator(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		sets, err := collections.ToSlice(iter)
+		sets, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -56,7 +59,10 @@ func TestUniqueIterator(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(iter)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		sets, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -87,7 +93,10 @@ func TestUniqueIterator(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(iter)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		sets, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 

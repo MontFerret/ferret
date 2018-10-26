@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
 	"sort"
@@ -10,7 +11,7 @@ import (
 type (
 	SortDirection int
 
-	Comparator func(first DataSet, second DataSet) (int, error)
+	Comparator func(ctx context.Context, scope *core.Scope, first DataSet, second DataSet) (int, error)
 
 	Sorter struct {
 		fn        Comparator
@@ -18,11 +19,10 @@ type (
 	}
 
 	SortIterator struct {
-		src     Iterator
+		values  Iterator
 		sorters []*Sorter
 		ready   bool
-		values  []DataSet
-		err     error
+		result  []DataSet
 		pos     int
 	}
 )
@@ -62,11 +62,11 @@ func NewSorter(fn Comparator, direction SortDirection) (*Sorter, error) {
 }
 
 func NewSortIterator(
-	src Iterator,
+	values Iterator,
 	comparators ...*Sorter,
 ) (*SortIterator, error) {
-	if core.IsNil(src) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "source")
+	if values == nil {
+		return nil, errors.Wrap(core.ErrMissedArgument, "values")
 	}
 
 	if comparators == nil || len(comparators) == 0 {
@@ -74,53 +74,40 @@ func NewSortIterator(
 	}
 
 	return &SortIterator{
-		src,
+		values,
 		comparators,
 		false,
-		nil, nil,
+		nil,
 		0,
 	}, nil
 }
 
-func (iterator *SortIterator) HasNext() bool {
+func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (DataSet, error) {
 	// we need to initialize the iterator
 	if iterator.ready == false {
 		iterator.ready = true
-		sorted, err := iterator.sort()
+		sorted, err := iterator.sort(ctx, scope)
 
 		if err != nil {
-			// dataSet to true because we do not want to initialize next time anymore
-			iterator.values = nil
-			iterator.err = err
-
-			// if there is an error, we need to show it during Next()
-			return true
+			return nil, err
 		}
 
-		iterator.values = sorted
+		iterator.result = sorted
 	}
 
-	return iterator.values != nil && len(iterator.values) > iterator.pos
-}
-
-func (iterator *SortIterator) Next() (DataSet, error) {
-	if iterator.err != nil {
-		return nil, iterator.err
-	}
-
-	if len(iterator.values) > iterator.pos {
+	if len(iterator.result) > iterator.pos {
 		idx := iterator.pos
-		val := iterator.values[idx]
+		val := iterator.result[idx]
 		iterator.pos++
 
 		return val, nil
 	}
 
-	return nil, ErrExhausted
+	return nil, nil
 }
 
-func (iterator *SortIterator) sort() ([]DataSet, error) {
-	res, err := ToSlice(iterator.src)
+func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]DataSet, error) {
+	res, err := ToSlice(ctx, scope, iterator.values)
 
 	if err != nil {
 		return nil, err
@@ -140,7 +127,7 @@ func (iterator *SortIterator) sort() ([]DataSet, error) {
 			left := res[i]
 			right := res[j]
 
-			eq, err := comp.fn(left, right)
+			eq, err := comp.fn(ctx, scope, left, right)
 
 			if err != nil {
 				failure = err

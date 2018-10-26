@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -34,20 +35,23 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionAsc,
 		)
 
-		src, err := collections.NewSortIterator(
+		iter, err := collections.NewSortIterator(
 			sliceIterator(arr),
 			s,
 		)
 
 		So(err, ShouldBeNil)
 
-		res, err := collections.ToSlice(src)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		res, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -68,20 +72,22 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionDesc,
 		)
 
-		src, err := collections.NewSortIterator(
+		iter, err := collections.NewSortIterator(
 			sliceIterator(arr),
 			s,
 		)
 
 		So(err, ShouldBeNil)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		res, err := collections.ToSlice(src)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -114,7 +120,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -124,7 +130,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -133,7 +139,7 @@ func TestSort(t *testing.T) {
 			collections.SortDirectionAsc,
 		)
 
-		src, err := collections.NewSortIterator(
+		iter, err := collections.NewSortIterator(
 			sliceIterator(arr),
 			s1,
 			s2,
@@ -141,7 +147,10 @@ func TestSort(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(src)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		sets, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -174,7 +183,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -184,7 +193,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -193,7 +202,7 @@ func TestSort(t *testing.T) {
 			collections.SortDirectionDesc,
 		)
 
-		src, err := collections.NewSortIterator(
+		iter, err := collections.NewSortIterator(
 			sliceIterator(arr),
 			s1,
 			s2,
@@ -201,7 +210,10 @@ func TestSort(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(src)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		sets, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -234,7 +246,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -244,7 +256,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -253,7 +265,7 @@ func TestSort(t *testing.T) {
 			collections.SortDirectionDesc,
 		)
 
-		src, err := collections.NewSortIterator(
+		iter, err := collections.NewSortIterator(
 			sliceIterator(arr),
 			s1,
 			s2,
@@ -261,7 +273,10 @@ func TestSort(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(src)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		sets, err := collections.ToSlice(ctx, scope, iter)
 
 		So(err, ShouldBeNil)
 
@@ -294,7 +309,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -304,7 +319,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(first collections.DataSet, second collections.DataSet) (int, error) {
+			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -321,7 +336,10 @@ func TestSort(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(src)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		sets, err := collections.ToSlice(ctx, scope, src)
 
 		So(err, ShouldBeNil)
 

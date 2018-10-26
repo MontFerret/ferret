@@ -62,27 +62,7 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 
 	// converting sorter reducer into collections.Sorter
 	for idx, srt := range clause.sorters {
-		sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-			scope1 := scope.Fork()
-			first.Apply(scope1, variables)
-
-			f, err := srt.expression.Exec(ctx, scope1)
-
-			if err != nil {
-				return -1, err
-			}
-
-			scope2 := scope.Fork()
-			second.Apply(scope2, variables)
-
-			s, err := srt.expression.Exec(ctx, scope2)
-
-			if err != nil {
-				return -1, err
-			}
-
-			return f.Compare(s), nil
-		}, srt.direction)
+		sorter, err := newSorter(srt, variables)
 
 		if err != nil {
 			return nil, err
@@ -92,4 +72,28 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 	}
 
 	return collections.NewSortIterator(src, sorters...)
+}
+
+func newSorter(srt *SorterExpression, vars collections.Variables) (*collections.Sorter, error) {
+	return collections.NewSorter(func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
+		scope1 := scope.Fork()
+		first.Apply(scope1, vars)
+
+		f, err := srt.expression.Exec(ctx, scope1)
+
+		if err != nil {
+			return -1, err
+		}
+
+		scope2 := scope.Fork()
+		second.Apply(scope2, vars)
+
+		s, err := srt.expression.Exec(ctx, scope2)
+
+		if err != nil {
+			return -1, err
+		}
+
+		return f.Compare(s), nil
+	}, srt.direction)
 }

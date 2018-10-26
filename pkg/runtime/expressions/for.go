@@ -106,14 +106,19 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 	res := values.NewArray(10)
 	variables := e.dataSource.Variables()
 
-	for iterator.HasNext() {
-		ds, err := iterator.Next()
+	for {
+		innerScope := scope.Fork()
+
+		ds, err := iterator.Next(ctx, innerScope)
 
 		if err != nil {
 			return values.None, core.SourceError(e.src, err)
 		}
 
-		innerScope := scope.Fork()
+		// no data anymore
+		if ds == nil {
+			break
+		}
 
 		if err := ds.Apply(innerScope, variables); err != nil {
 			return values.None, err

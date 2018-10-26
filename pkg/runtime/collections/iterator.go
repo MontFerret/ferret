@@ -9,8 +9,7 @@ type (
 	Variables []string
 
 	Iterator interface {
-		HasNext() bool
-		Next() (DataSet, error)
+		Next(ctx context.Context, scope *core.Scope) (DataSet, error)
 	}
 
 	Iterable interface {
@@ -19,14 +18,18 @@ type (
 	}
 )
 
-func ToSlice(iterator Iterator) ([]DataSet, error) {
+func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]DataSet, error) {
 	res := make([]DataSet, 0, 10)
 
-	for iterator.HasNext() {
-		ds, err := iterator.Next()
+	for {
+		ds, err := iterator.Next(ctx, scope)
 
 		if err != nil {
 			return nil, err
+		}
+
+		if ds == nil {
+			return res, nil
 		}
 
 		res = append(res, ds)

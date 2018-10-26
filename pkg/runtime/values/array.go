@@ -12,21 +12,24 @@ import (
 
 type (
 	ArrayPredicate = func(value core.Value, idx int) bool
-	Array          struct {
-		value []core.Value
+
+	ArraySorter = func(first, second core.Value) bool
+
+	Array struct {
+		items []core.Value
 	}
 )
 
 func NewArray(size int) *Array {
-	return &Array{value: make([]core.Value, 0, size)}
+	return &Array{items: make([]core.Value, 0, size)}
 }
 
 func NewArrayWith(values ...core.Value) *Array {
-	return &Array{value: values}
+	return &Array{items: values}
 }
 
 func (t *Array) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.value)
+	return json.Marshal(t.items)
 }
 
 func (t *Array) Type() core.Type {
@@ -79,7 +82,7 @@ func (t *Array) Compare(other core.Value) int {
 func (t *Array) Unwrap() interface{} {
 	arr := make([]interface{}, t.Length())
 
-	for idx, val := range t.value {
+	for idx, val := range t.items {
 		arr[idx] = val.Unwrap()
 	}
 
@@ -93,9 +96,9 @@ func (t *Array) Hash() uint64 {
 	h.Write([]byte(":"))
 	h.Write([]byte("["))
 
-	endIndex := len(t.value) - 1
+	endIndex := len(t.items) - 1
 
-	for i, el := range t.value {
+	for i, el := range t.items {
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
 
@@ -112,9 +115,9 @@ func (t *Array) Hash() uint64 {
 }
 
 func (t *Array) Copy() core.Value {
-	c := NewArray(len(t.value))
+	c := NewArray(len(t.items))
 
-	for _, el := range t.value {
+	for _, el := range t.items {
 		c.Push(el)
 	}
 
@@ -122,11 +125,11 @@ func (t *Array) Copy() core.Value {
 }
 
 func (t *Array) Length() Int {
-	return Int(len(t.value))
+	return Int(len(t.items))
 }
 
 func (t *Array) ForEach(predicate ArrayPredicate) {
-	for idx, val := range t.value {
+	for idx, val := range t.items {
 		if predicate(val, idx) == false {
 			break
 		}
@@ -134,7 +137,7 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 }
 
 func (t *Array) Get(idx Int) core.Value {
-	l := len(t.value) - 1
+	l := len(t.items) - 1
 
 	if l < 0 {
 		return None
@@ -144,14 +147,14 @@ func (t *Array) Get(idx Int) core.Value {
 		return None
 	}
 
-	return t.value[idx]
+	return t.items[idx]
 }
 
 func (t *Array) Set(idx Int, value core.Value) error {
-	last := len(t.value) - 1
+	last := len(t.items) - 1
 
 	if last >= int(idx) {
-		t.value[idx] = value
+		t.items[idx] = value
 
 		return nil
 	}
@@ -160,7 +163,7 @@ func (t *Array) Set(idx Int, value core.Value) error {
 }
 
 func (t *Array) Push(item core.Value) {
-	t.value = append(t.value, item)
+	t.items = append(t.items, item)
 }
 
 func (t *Array) Slice(from, to Int) *Array {
@@ -175,7 +178,7 @@ func (t *Array) Slice(from, to Int) *Array {
 	}
 
 	result := new(Array)
-	result.value = t.value[from:to]
+	result.items = t.items[from:to]
 
 	return result
 }
@@ -183,7 +186,7 @@ func (t *Array) Slice(from, to Int) *Array {
 func (t *Array) IndexOf(item core.Value) Int {
 	res := Int(-1)
 
-	for idx, el := range t.value {
+	for idx, el := range t.items {
 		if el.Compare(item) == 0 {
 			res = Int(idx)
 			break
@@ -194,18 +197,18 @@ func (t *Array) IndexOf(item core.Value) Int {
 }
 
 func (t *Array) Insert(idx Int, value core.Value) {
-	t.value = append(t.value[:idx], append([]core.Value{value}, t.value[idx:]...)...)
+	t.items = append(t.items[:idx], append([]core.Value{value}, t.items[idx:]...)...)
 }
 
 func (t *Array) RemoveAt(idx Int) {
 	i := int(idx)
-	max := len(t.value) - 1
+	max := len(t.items) - 1
 
 	if i > max {
 		return
 	}
 
-	t.value = append(t.value[:i], t.value[i+1:]...)
+	t.items = append(t.items[:i], t.items[i+1:]...)
 }
 
 func (t *Array) Clone() core.Cloneable {
@@ -224,15 +227,21 @@ func (t *Array) Clone() core.Cloneable {
 }
 
 func (t *Array) Sort() *Array {
-	c := make([]core.Value, len(t.value))
-	copy(c, t.value)
+	return t.SortWith(func(first, second core.Value) bool {
+		return first.Compare(second) == -1
+	})
+}
+
+func (t *Array) SortWith(sorter ArraySorter) *Array {
+	c := make([]core.Value, len(t.items))
+	copy(c, t.items)
 
 	sort.SliceStable(c, func(i, j int) bool {
-		return c[i].Compare(c[j]) == -1
+		return sorter(c[i], c[j])
 	})
 
 	res := new(Array)
-	res.value = c
+	res.items = c
 
 	return res
 }

@@ -61,7 +61,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 					result = el.InnerText()
 				case "innerHTML":
 					result = el.InnerHTML()
-				case "value":
+				case "items":
 					result = el.Value()
 				case "attributes":
 					result = el.GetAttributes()

@@ -15,18 +15,13 @@ type CollectIterator struct {
 	params     *Collect
 	dataSource collections.Iterator
 	variables  collections.Variables
-	ctx        context.Context
-	scope      *core.Scope
 }
 
-//revive:disable context-as-argument
 func NewCollectIterator(
 	src core.SourceMap,
 	params *Collect,
 	dataSource collections.Iterator,
 	variables collections.Variables,
-	ctx context.Context,
-	scope *core.Scope,
 ) (*CollectIterator, error) {
 	if params.group != nil {
 		if params.group.selectors != nil {
@@ -34,7 +29,7 @@ func NewCollectIterator(
 			sorters := make([]*collections.Sorter, len(params.group.selectors))
 
 			for i, selector := range params.group.selectors {
-				sorter, err := newGroupSorter(ctx, scope, variables, selector)
+				sorter, err := newGroupSorter(variables, selector)
 
 				if err != nil {
 					return nil, err
@@ -63,13 +58,11 @@ func NewCollectIterator(
 		params,
 		dataSource,
 		variables,
-		ctx,
-		scope,
 	}, nil
 }
 
-func newGroupSorter(ctx context.Context, scope *core.Scope, variables collections.Variables, selector *CollectSelector) (*collections.Sorter, error) {
-	return collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
+func newGroupSorter(variables collections.Variables, selector *CollectSelector) (*collections.Sorter, error) {
+	return collections.NewSorter(func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 		scope1 := scope.Fork()
 		first.Apply(scope1, variables)
 
@@ -92,24 +85,18 @@ func newGroupSorter(ctx context.Context, scope *core.Scope, variables collection
 	}, collections.SortDirectionAsc)
 }
 
-func (iterator *CollectIterator) HasNext() bool {
+func (iterator *CollectIterator) Next(ctx context.Context, scope *core.Scope) (collections.DataSet, error) {
 	if !iterator.ready {
 		iterator.ready = true
-		groups, err := iterator.init()
+		groups, err := iterator.init(ctx, scope)
 
 		if err != nil {
-			iterator.values = nil
-
-			return false
+			return nil, err
 		}
 
 		iterator.values = groups
 	}
 
-	return len(iterator.values) > iterator.pos
-}
-
-func (iterator *CollectIterator) Next() (collections.DataSet, error) {
 	if len(iterator.values) > iterator.pos {
 		val := iterator.values[iterator.pos]
 		iterator.pos++
@@ -117,26 +104,26 @@ func (iterator *CollectIterator) Next() (collections.DataSet, error) {
 		return val, nil
 	}
 
-	return nil, collections.ErrExhausted
+	return nil, nil
 }
 
-func (iterator *CollectIterator) init() ([]collections.DataSet, error) {
+func (iterator *CollectIterator) init(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
 	if iterator.params.group != nil {
-		return iterator.group()
+		return iterator.group(ctx, scope)
 	}
 
 	if iterator.params.count != nil {
-		return iterator.count()
+		return iterator.count(ctx, scope)
 	}
 
 	if iterator.params.aggregate != nil {
-		return iterator.aggregate()
+		return iterator.aggregate(ctx, scope)
 	}
 
 	return nil, core.ErrInvalidOperation
 }
 
-func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
+func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
 	// TODO: honestly, this code is ugly. it needs to be refactored in more chained way with much less if statements
 	// slice of groups
 	collected := make([]collections.DataSet, 0, 10)
@@ -144,7 +131,6 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	// key is a DataSet hash
 	// value is its index in result slice (collected)
 	hashTable := make(map[uint64]int)
-	ctx := iterator.ctx
 
 	groupSelectors := iterator.params.group.selectors
 	proj := iterator.params.group.projection
@@ -152,11 +138,15 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	aggr := iterator.params.group.aggregate
 
 	// iterating over underlying data source
-	for iterator.dataSource.HasNext() {
-		set, err := iterator.dataSource.Next()
+	for {
+		set, err := iterator.dataSource.Next(ctx, scope)
 
 		if err != nil {
 			return nil, err
+		}
+
+		if set == nil {
+			break
 		}
 
 		if len(set) == 0 {
@@ -164,7 +154,7 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 		}
 
 		// creating a new scope for all further operations
-		childScope := iterator.scope.Fork()
+		childScope := scope.Fork()
 
 		// populate the new scope with results from an underlying source and its exposed variables
 		if err := set.Apply(childScope, iterator.variables); err != nil {
@@ -311,15 +301,19 @@ func (iterator *CollectIterator) group() ([]collections.DataSet, error) {
 	return collected, nil
 }
 
-func (iterator *CollectIterator) count() ([]collections.DataSet, error) {
+func (iterator *CollectIterator) count(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
 	var counter int
 
 	// iterating over underlying data source
-	for iterator.dataSource.HasNext() {
-		_, err := iterator.dataSource.Next()
+	for {
+		ds, err := iterator.dataSource.Next(ctx, scope)
 
 		if err != nil {
 			return nil, err
+		}
+
+		if ds == nil {
+			break
 		}
 
 		counter++
@@ -332,7 +326,7 @@ func (iterator *CollectIterator) count() ([]collections.DataSet, error) {
 	}, nil
 }
 
-func (iterator *CollectIterator) aggregate() ([]collections.DataSet, error) {
+func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
 	ds := collections.NewDataSet()
 	// matrix of aggregated expressions
 	// string key of the map is a selector variable
@@ -340,23 +334,26 @@ func (iterator *CollectIterator) aggregate() ([]collections.DataSet, error) {
 	// e.g. x = CONCAT(arg1, arg2, argN...)
 	// x is a string key where a nested array is an array of all values of argN expressions
 	aggregated := make(map[string][]core.Value)
-	ctx := iterator.ctx
 	selectors := iterator.params.aggregate.selectors
 
 	// iterating over underlying data source
-	for iterator.dataSource.HasNext() {
-		set, err := iterator.dataSource.Next()
+	for {
+		set, err := iterator.dataSource.Next(ctx, scope)
 
 		if err != nil {
 			return nil, err
 		}
 
+		if set == nil {
+			break
+		}
+
 		if len(set) == 0 {
-			continue
+			break
 		}
 
 		// creating a new scope for all further operations
-		childScope := iterator.scope.Fork()
+		childScope := scope.Fork()
 
 		// populate the new scope with results from an underlying source and its exposed variables
 		if err := set.Apply(childScope, iterator.variables); err != nil {

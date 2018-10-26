@@ -11,6 +11,7 @@ type FilterClause struct {
 	src        core.SourceMap
 	dataSource collections.Iterable
 	predicate  core.Expression
+	variables  collections.Variables
 }
 
 func NewFilterClause(
@@ -29,6 +30,7 @@ func NewFilterClause(
 	return &FilterClause{
 		src, dataSource,
 		predicate,
+		dataSource.Variables(),
 	}, nil
 }
 
@@ -43,27 +45,27 @@ func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (col
 		return nil, err
 	}
 
-	variables := clause.dataSource.Variables()
+	return collections.NewFilterIterator(src, clause.filter)
+}
 
-	return collections.NewFilterIterator(src, func(set collections.DataSet) (bool, error) {
-		innerScope := scope.Fork()
+func (clause *FilterClause) filter(ctx context.Context, scope *core.Scope, set collections.DataSet) (bool, error) {
+	innerScope := scope.Fork()
 
-		err := set.Apply(innerScope, variables)
+	err := set.Apply(innerScope, clause.variables)
 
-		if err != nil {
-			return false, core.SourceError(clause.src, err)
-		}
+	if err != nil {
+		return false, core.SourceError(clause.src, err)
+	}
 
-		ret, err := clause.predicate.Exec(ctx, innerScope)
+	ret, err := clause.predicate.Exec(ctx, innerScope)
 
-		if err != nil {
-			return false, err
-		}
+	if err != nil {
+		return false, err
+	}
 
-		if ret == values.True {
-			return true, nil
-		}
+	if ret == values.True {
+		return true, nil
+	}
 
-		return false, nil
-	})
+	return false, nil
 }
