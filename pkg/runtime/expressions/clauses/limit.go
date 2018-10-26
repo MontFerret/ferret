@@ -7,26 +7,45 @@ import (
 )
 
 type LimitClause struct {
-	*baseClause
-	count  int
-	offset int
+	src        core.SourceMap
+	dataSource collections.Iterable
+	count      int
+	offset     int
 }
 
 func NewLimitClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
+	dataSource collections.Iterable,
 	count int,
 	offset int,
-) *LimitClause {
-	return &LimitClause{&baseClause{src, dataSource}, count, offset}
+) (collections.Iterable, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
+	}
+
+	return &LimitClause{src, dataSource, count, offset}, nil
+}
+
+func (clause *LimitClause) Variables() collections.Variables {
+	return clause.dataSource.Variables()
 }
 
 func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
 	src, err := clause.dataSource.Iterate(ctx, scope)
 
 	if err != nil {
-		return nil, err
+		return nil, core.SourceError(clause.src, err)
 	}
 
-	return collections.NewLimitIterator(src, clause.count, clause.offset)
+	iterator, err := collections.NewLimitIterator(
+		src,
+		clause.count,
+		clause.offset,
+	)
+
+	if err != nil {
+		return nil, core.SourceError(clause.src, err)
+	}
+
+	return iterator, nil
 }

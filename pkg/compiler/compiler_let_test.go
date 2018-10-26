@@ -12,15 +12,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = NONE RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = NONE
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "null")
@@ -29,15 +29,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = TRUE RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = TRUE
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "true")
@@ -46,15 +46,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = 1 RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = 1
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "1")
@@ -63,15 +63,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = 1.1 RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = 1.1
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "1.1")
@@ -80,15 +80,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = 'foo' RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = "foo"
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "\"foo\"")
@@ -97,15 +97,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = [] RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = []
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[]")
@@ -114,15 +114,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = [1, 2, 3] RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = [1, 2, 3]
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[1,2,3]")
@@ -131,15 +131,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = {} RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = {}
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "{}")
@@ -148,15 +148,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = {a: 'foo', b: 1, c: TRUE, d: [], e: {}} RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = {a: 'foo', b: 1, c: TRUE, d: [], e: {}}
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "{\"a\":\"foo\",\"b\":1,\"c\":true,\"d\":[],\"e\":{}}")
@@ -165,15 +165,15 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = (FOR i IN [1,2,3] RETURN i) RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET i = (FOR i IN [1,2,3] RETURN i)
 			RETURN i
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[1,2,3]")
@@ -182,7 +182,7 @@ func TestLet(t *testing.T) {
 	Convey("Should compile LET i = { items: [1,2,3]}  FOR el IN i.items RETURN i", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			LET obj = { items: [1,2,3] }
 	
 			FOR i IN obj.items
@@ -190,9 +190,9 @@ func TestLet(t *testing.T) {
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[1,2,3]")

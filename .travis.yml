@@ -35,6 +35,7 @@ stages:
 - compile
 - test
 - e2e
+- bench
 
 jobs:
   include:
@@ -47,11 +48,15 @@ jobs:
     - make generate
     - make compile
   - stage: test
-    script: make test
-  - stage: e2e
     script:
+    - make cover
+  - stage: e2e
+    before_script:
     - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
+    script:
     - make e2e
-
-after_script:
-- killall google-chrome-stable
+    after_script:
+    - killall google-chrome-stable
+  - stage: bench
+    script:
+    - make bench

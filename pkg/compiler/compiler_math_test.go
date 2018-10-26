@@ -13,14 +13,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 1 + 1", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 1 + 1
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "2")
@@ -29,14 +29,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 1 - 1", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 1 - 1
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "0")
@@ -45,14 +45,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 2*2", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 2*2
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "4")
@@ -61,14 +61,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 4/2", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 4/2
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "2")
@@ -77,14 +77,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 5 % 2", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 5 % 2
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "1")
@@ -95,14 +95,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 1.2 + 1", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 1.2 + 1
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "2.2")
@@ -111,14 +111,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 1.1 - 1", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 1.1 - 1
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "0.10000000000000009")
@@ -127,14 +127,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 2.1*2", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 2.1*2
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "4.2")
@@ -143,14 +143,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 4.4/2", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 4.4/2
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "2.2")
@@ -159,14 +159,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should compile RETURN 5.5 % 2", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 5.5 % 2
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, "1")
@@ -177,14 +177,14 @@ func TestMathOperators(t *testing.T) {
 		Convey("Should concat two strings RETURN 'Foo' + 'Bar'", func() {
 			c := compiler.New()
 
-			prog, err := c.Compile(`
+			p, err := c.Compile(`
 			RETURN 'Foo' + 'Bar'
 		`)
 
 			So(err, ShouldBeNil)
-			So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-			out, err := prog.Run(context.Background())
+			out, err := p.Run(context.Background())
 
 			So(err, ShouldBeNil)
 			So(string(out), ShouldEqual, `"FooBar"`)

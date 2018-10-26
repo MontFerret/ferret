@@ -12,14 +12,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN NONE", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN NONE
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "null")
@@ -28,14 +28,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN TRUE", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN TRUE
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "true")
@@ -44,14 +44,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN 1", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 1
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "1")
@@ -60,14 +60,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN 1.1", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 1.1
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "1.1")
@@ -76,14 +76,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN 'foo'", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 'foo'
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "\"foo\"")
@@ -92,14 +92,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN \"foo\"", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN "foo"
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "\"foo\"")
@@ -108,14 +108,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN \"\"", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN ""
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "\"\"")
@@ -124,14 +124,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN []", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN []
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[]")
@@ -140,14 +140,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN [1, 2, 3, 4]", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN [1, 2, 3, 4]
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[1,2,3,4]")
@@ -156,14 +156,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN ['foo', 'bar', 'qaz']", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN ['foo', 'bar', 'qaz']
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[\"foo\",\"bar\",\"qaz\"]")
@@ -172,14 +172,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN ['foo', 'bar', 1, 2]", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN ['foo', 'bar', 1, 2]
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[\"foo\",\"bar\",1,2]")
@@ -188,14 +188,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN {}", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN {}
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "{}")
@@ -204,14 +204,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN {a: 'foo', b: 'bar'}", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN { a: "foo", b: "bar" }
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "{\"a\":\"foo\",\"b\":\"bar\"}")
@@ -220,14 +220,14 @@ func TestReturn(t *testing.T) {
 	Convey("Should compile RETURN {['a']: 'foo'}", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN { ["a"]: "foo" }
 		`)
 
 		So(err, ShouldBeNil)
-		So(prog, ShouldHaveSameTypeAs, &runtime.Program{})
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "{\"a\":\"foo\"}")

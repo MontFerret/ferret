@@ -50,6 +50,10 @@ func Error(err error, msg string) error {
 	return errors.Errorf("%s: %s", err.Error(), msg)
 }
 
+func Errorf(err error, format string, args ...interface{}) error {
+	return errors.Errorf("%s: %s", err.Error(), fmt.Sprintf(format, args...))
+}
+
 func Errors(err ...error) error {
 	message := ""
 

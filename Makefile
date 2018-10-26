@@ -3,6 +3,7 @@
 export GOPATH
 
 VERSION ?= $(shell git describe --tags --always --dirty)
+RELEASE_VERSION ?= $(version)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_CLI = ./cli
@@ -21,10 +22,23 @@ install:
 	dep ensure
 
 test:
-	go test ${DIR_PKG}/...
+	go test -v -race ${DIR_PKG}/...
+
+cover:
+	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/...
+ifeq ($(TRAVIS_BRANCH)$(TRAVIS_PULL_REQUEST), masterfalse)
+ifneq ($(CODECOV_TOKEN), )
+	curl -s https://codecov.io/bash | bash
+else
+	$(error "CODECOV_TOKEN token is required")
+endif
+endif
 
 e2e:
 	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
+
+bench:
+	go test -run=XXX -bench=. ${DIR_PKG}/...
 
 generate:
 	go generate ${DIR_PKG}/...
@@ -47,4 +61,13 @@ vet:
 	go vet ${DIR_CLI}/... ${DIR_PKG}/...
 
 release:
+ifeq ($(RELEASE_VERSION), )
+	$(error "Release version is required (version=x)")
+else ifeq ($(GITHUB_TOKEN), )
+	$(error "GitHub token is required (GITHUB_TOKEN)")
+else
+	rm -rf ./dist && \
+	git tag -a v$(RELEASE_VERSION) -m "New $(RELEASE_VERSION) version" && \
+	git push origin v$(RELEASE_VERSION) && \
 	goreleaser
+endif

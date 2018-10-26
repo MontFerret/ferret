@@ -299,3 +299,35 @@ func Decrement(left, _ core.Value) core.Value {
 
 	return values.None
 }
+
+func Negative(value, _ core.Value) core.Value {
+	err := core.ValidateType(value, core.IntType, core.FloatType)
+
+	if err != nil {
+		return values.ZeroInt
+	}
+
+	if value.Type() == core.IntType {
+		return -value.(values.Int)
+	}
+
+	return -value.(values.Float)
+}
+
+func Positive(value, _ core.Value) core.Value {
+	err := core.ValidateType(value, core.IntType, core.FloatType)
+
+	if err != nil {
+		return values.ZeroInt
+	}
+
+	if value.Type() == core.IntType {
+		return +value.(values.Int)
+	}
+
+	return +value.(values.Float)
+}
+
+func ToBoolean(value, _ core.Value) core.Value {
+	return values.ToBoolean(value)
+}

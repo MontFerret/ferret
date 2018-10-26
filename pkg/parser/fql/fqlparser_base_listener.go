@@ -112,11 +112,29 @@ func (s *BaseFqlParserListener) EnterCollectClause(ctx *CollectClauseContext) {}
 // ExitCollectClause is called when production collectClause is exited.
 func (s *BaseFqlParserListener) ExitCollectClause(ctx *CollectClauseContext) {}
 
-// EnterCollectVariable is called when production collectVariable is entered.
-func (s *BaseFqlParserListener) EnterCollectVariable(ctx *CollectVariableContext) {}
+// EnterCollectSelector is called when production collectSelector is entered.
+func (s *BaseFqlParserListener) EnterCollectSelector(ctx *CollectSelectorContext) {}
 
-// ExitCollectVariable is called when production collectVariable is exited.
-func (s *BaseFqlParserListener) ExitCollectVariable(ctx *CollectVariableContext) {}
+// ExitCollectSelector is called when production collectSelector is exited.
+func (s *BaseFqlParserListener) ExitCollectSelector(ctx *CollectSelectorContext) {}
+
+// EnterCollectGrouping is called when production collectGrouping is entered.
+func (s *BaseFqlParserListener) EnterCollectGrouping(ctx *CollectGroupingContext) {}
+
+// ExitCollectGrouping is called when production collectGrouping is exited.
+func (s *BaseFqlParserListener) ExitCollectGrouping(ctx *CollectGroupingContext) {}
+
+// EnterCollectAggregator is called when production collectAggregator is entered.
+func (s *BaseFqlParserListener) EnterCollectAggregator(ctx *CollectAggregatorContext) {}
+
+// ExitCollectAggregator is called when production collectAggregator is exited.
+func (s *BaseFqlParserListener) ExitCollectAggregator(ctx *CollectAggregatorContext) {}
+
+// EnterCollectAggregateSelector is called when production collectAggregateSelector is entered.
+func (s *BaseFqlParserListener) EnterCollectAggregateSelector(ctx *CollectAggregateSelectorContext) {}
+
+// ExitCollectAggregateSelector is called when production collectAggregateSelector is exited.
+func (s *BaseFqlParserListener) ExitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) {}
 
 // EnterCollectGroupVariable is called when production collectGroupVariable is entered.
 func (s *BaseFqlParserListener) EnterCollectGroupVariable(ctx *CollectGroupVariableContext) {}
@@ -124,37 +142,11 @@ func (s *BaseFqlParserListener) EnterCollectGroupVariable(ctx *CollectGroupVaria
 // ExitCollectGroupVariable is called when production collectGroupVariable is exited.
 func (s *BaseFqlParserListener) ExitCollectGroupVariable(ctx *CollectGroupVariableContext) {}
 
-// EnterCollectKeepVariable is called when production collectKeepVariable is entered.
-func (s *BaseFqlParserListener) EnterCollectKeepVariable(ctx *CollectKeepVariableContext) {}
+// EnterCollectCounter is called when production collectCounter is entered.
+func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) {}
 
-// ExitCollectKeepVariable is called when production collectKeepVariable is exited.
-func (s *BaseFqlParserListener) ExitCollectKeepVariable(ctx *CollectKeepVariableContext) {}
-
-// EnterCollectCountVariable is called when production collectCountVariable is entered.
-func (s *BaseFqlParserListener) EnterCollectCountVariable(ctx *CollectCountVariableContext) {}
-
-// ExitCollectCountVariable is called when production collectCountVariable is exited.
-func (s *BaseFqlParserListener) ExitCollectCountVariable(ctx *CollectCountVariableContext) {}
-
-// EnterCollectAggregateVariable is called when production collectAggregateVariable is entered.
-func (s *BaseFqlParserListener) EnterCollectAggregateVariable(ctx *CollectAggregateVariableContext) {}
-
-// ExitCollectAggregateVariable is called when production collectAggregateVariable is exited.
-func (s *BaseFqlParserListener) ExitCollectAggregateVariable(ctx *CollectAggregateVariableContext) {}
-
-// EnterCollectAggregateExpression is called when production collectAggregateExpression is entered.
-func (s *BaseFqlParserListener) EnterCollectAggregateExpression(ctx *CollectAggregateExpressionContext) {
-}
-
-// ExitCollectAggregateExpression is called when production collectAggregateExpression is exited.
-func (s *BaseFqlParserListener) ExitCollectAggregateExpression(ctx *CollectAggregateExpressionContext) {
-}
-
-// EnterCollectOption is called when production collectOption is entered.
-func (s *BaseFqlParserListener) EnterCollectOption(ctx *CollectOptionContext) {}
-
-// ExitCollectOption is called when production collectOption is exited.
-func (s *BaseFqlParserListener) ExitCollectOption(ctx *CollectOptionContext) {}
+// ExitCollectCounter is called when production collectCounter is exited.
+func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
 
 // EnterForExpressionBody is called when production forExpressionBody is entered.
 func (s *BaseFqlParserListener) EnterForExpressionBody(ctx *ForExpressionBodyContext) {}

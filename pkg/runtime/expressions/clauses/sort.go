@@ -12,15 +12,15 @@ type (
 		direction  collections.SortDirection
 	}
 	SortClause struct {
-		*baseClause
-		variableName string
-		sorters      []*SorterExpression
+		src        core.SourceMap
+		dataSource collections.Iterable
+		sorters    []*SorterExpression
 	}
 )
 
 func NewSorterExpression(expression core.Expression, direction collections.SortDirection) (*SorterExpression, error) {
 	if expression == nil {
-		return nil, core.Error(core.ErrMissedArgument, "expression")
+		return nil, core.Error(core.ErrMissedArgument, "reducer")
 	}
 
 	if !collections.IsValidSortDirection(direction) {
@@ -32,11 +32,22 @@ func NewSorterExpression(expression core.Expression, direction collections.SortD
 
 func NewSortClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
-	variableName string,
+	dataSource collections.Iterable,
 	sorters ...*SorterExpression,
-) *SortClause {
-	return &SortClause{&baseClause{src, dataSource}, variableName, sorters}
+) (collections.Iterable, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
+	}
+
+	if len(sorters) == 0 {
+		return nil, core.Error(core.ErrMissedArgument, "sorters")
+	}
+
+	return &SortClause{src, dataSource, sorters}, nil
+}
+
+func (clause *SortClause) Variables() collections.Variables {
+	return clause.dataSource.Variables()
 }
 
 func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
@@ -47,12 +58,13 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 	}
 
 	sorters := make([]*collections.Sorter, len(clause.sorters))
+	variables := clause.dataSource.Variables()
 
-	// converting sorter expression into collections.Sorter
+	// converting sorter reducer into collections.Sorter
 	for idx, srt := range clause.sorters {
-		sorter, err := collections.NewSorter(func(first core.Value, second core.Value) (int, error) {
+		sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
 			scope1 := scope.Fork()
-			scope1.SetVariable(clause.variableName, first)
+			first.Apply(scope1, variables)
 
 			f, err := srt.expression.Exec(ctx, scope1)
 
@@ -61,7 +73,7 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 			}
 
 			scope2 := scope.Fork()
-			scope2.SetVariable(clause.variableName, second)
+			second.Apply(scope2, variables)
 
 			s, err := srt.expression.Exec(ctx, scope2)
 

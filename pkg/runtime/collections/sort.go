@@ -10,7 +10,7 @@ import (
 type (
 	SortDirection int
 
-	Comparator func(first core.Value, second core.Value) (int, error)
+	Comparator func(first DataSet, second DataSet) (int, error)
 
 	Sorter struct {
 		fn        Comparator
@@ -21,7 +21,9 @@ type (
 		src     Iterator
 		sorters []*Sorter
 		ready   bool
-		values  *SliceIterator
+		values  []DataSet
+		err     error
+		pos     int
 	}
 )
 
@@ -71,33 +73,53 @@ func NewSortIterator(
 		return nil, errors.Wrap(core.ErrMissedArgument, "comparator")
 	}
 
-	return &SortIterator{src, comparators, false, nil}, nil
+	return &SortIterator{
+		src,
+		comparators,
+		false,
+		nil, nil,
+		0,
+	}, nil
 }
 
 func (iterator *SortIterator) HasNext() bool {
 	// we need to initialize the iterator
 	if iterator.ready == false {
 		iterator.ready = true
-		values, err := iterator.sort()
+		sorted, err := iterator.sort()
 
 		if err != nil {
-			// set to true because we do not want to initialize next time anymore
-			iterator.values = NewSliceIterator(make([]core.Value, 0, 0))
+			// dataSet to true because we do not want to initialize next time anymore
+			iterator.values = nil
+			iterator.err = err
 
-			return false
+			// if there is an error, we need to show it during Next()
+			return true
 		}
 
-		iterator.values = values
+		iterator.values = sorted
 	}
 
-	return iterator.values.HasNext()
+	return iterator.values != nil && len(iterator.values) > iterator.pos
 }
 
-func (iterator *SortIterator) Next() (core.Value, core.Value, error) {
-	return iterator.values.Next()
+func (iterator *SortIterator) Next() (DataSet, error) {
+	if iterator.err != nil {
+		return nil, iterator.err
+	}
+
+	if len(iterator.values) > iterator.pos {
+		idx := iterator.pos
+		val := iterator.values[idx]
+		iterator.pos++
+
+		return val, nil
+	}
+
+	return nil, ErrExhausted
 }
 
-func (iterator *SortIterator) sort() (*SliceIterator, error) {
+func (iterator *SortIterator) sort() ([]DataSet, error) {
 	res, err := ToSlice(iterator.src)
 
 	if err != nil {
@@ -147,5 +169,5 @@ func (iterator *SortIterator) sort() (*SliceIterator, error) {
 		return nil, failure
 	}
 
-	return NewSliceIterator(res), nil
+	return res, nil
 }

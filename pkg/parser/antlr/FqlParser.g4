@@ -75,41 +75,37 @@ sortClauseExpression
     ;
 
 collectClause
-    : Collect collectVariable Assign expression
-    | Collect collectVariable Assign expression Into collectGroupVariable
-    | Collect collectVariable Assign expression Into collectGroupVariable Keep collectKeepVariable
-    | Collect collectVariable Assign expression With Count collectCountVariable
-    | Collect collectVariable Assign expression Aggregate collectAggregateVariable Assign collectAggregateExpression
-    | Collect Aggregate collectAggregateVariable Assign collectAggregateExpression
-    | Collect With Count Into collectCountVariable
+    : Collect collectCounter
+    | Collect collectAggregator
+    | Collect collectGrouping collectAggregator
+    | Collect collectGrouping collectGroupVariable
+    | Collect collectGrouping collectCounter
+    | Collect collectGrouping
     ;
 
-collectVariable
-    : Identifier
+collectSelector
+    : Identifier Assign expression
+    ;
+
+collectGrouping
+    : collectSelector (Comma collectSelector)*
+    ;
+
+collectAggregator
+    : Aggregate collectAggregateSelector (Comma collectAggregateSelector)*
+    ;
+
+collectAggregateSelector
+    : Identifier Assign functionCallExpression
     ;
 
 collectGroupVariable
-    : Identifier
+    : Into collectSelector
+    | Into Identifier (Keep Identifier)?
     ;
 
-collectKeepVariable
-    : Identifier
-    ;
-
-collectCountVariable
-    : Identifier
-    ;
-
-collectAggregateVariable
-    : Identifier
-    ;
-
-collectAggregateExpression
-    : expression
-    ;
-
-collectOption
-    :
+collectCounter
+    : With Count Into Identifier
     ;
 
 forExpressionBody
@@ -195,6 +191,7 @@ computedPropertyName
 
 propertyName
     : Identifier
+    | stringLiteral
     ;
 
 expressionSequence
@@ -210,16 +207,14 @@ arguments
     ;
 
 expression
-    : expression equalityOperator expression
+    : unaryOperator expression
+    | expression equalityOperator expression
     | expression logicalOperator expression
     | expression mathOperator expression
     | functionCallExpression
     | OpenParen expressionSequence CloseParen
-    | Plus expression
-    | Minus expression
-    | expression arrayOperator (Not)? (inOperator | equalityOperator) expression
-    | expression (Not)? inOperator expression
-    | Not expression
+    | expression arrayOperator (inOperator | equalityOperator) expression
+    | expression inOperator expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
     | stringLiteral
@@ -248,6 +243,7 @@ arrayOperator
 
 inOperator
     : In
+    | Not In
     ;
 
 equalityOperator

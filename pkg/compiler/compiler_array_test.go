@@ -329,3 +329,103 @@ func TestArrayOperator(t *testing.T) {
 		})
 	})
 }
+
+func BenchmarkArrayOperatorALL(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [1,2,3] ALL IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorALL2(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [1,2,4] ALL IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorANY(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [1,2,3] ANY IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorANY2(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [4,5,6] ANY IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorANY3(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [4,5,6] ANY NOT IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorANY4(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [1,2,3 ] ANY == 2
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorNONE(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [1,2,3] NONE IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorNONE2(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [4,5,6] NONE IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorNONE3(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [4,5,6] NONE NOT IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkArrayOperatorNONE4(b *testing.B) {
+	p := compiler.New().MustCompile(`
+RETURN [1,2,3] NONE < 99
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}

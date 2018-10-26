@@ -11,13 +11,13 @@ func TestInOperator(t *testing.T) {
 	Convey("1 IN [1,2,3] should return true", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 1 IN [1,2,3]
 		`)
 
 		So(err, ShouldBeNil)
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `true`)
@@ -26,13 +26,13 @@ func TestInOperator(t *testing.T) {
 	Convey("4 IN [1,2,3] should return false", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 4 IN [1,2,3]
 		`)
 
 		So(err, ShouldBeNil)
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `false`)
@@ -41,15 +41,35 @@ func TestInOperator(t *testing.T) {
 	Convey("4 NOT IN [1,2,3] should return true", t, func() {
 		c := compiler.New()
 
-		prog, err := c.Compile(`
+		p, err := c.Compile(`
 			RETURN 4 NOT IN [1,2,3]
 		`)
 
 		So(err, ShouldBeNil)
 
-		out, err := prog.Run(context.Background())
+		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `true`)
 	})
+}
+
+func BenchmarkInOperator(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			RETURN 1 IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkInOperatorNot(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			RETURN 4 NOT IN [1,2,3]
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
 }

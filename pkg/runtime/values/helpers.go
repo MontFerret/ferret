@@ -59,7 +59,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 					result = el.NodeName()
 				case "innerText":
 					result = el.InnerText()
-				case "innerHtml":
+				case "innerHTML":
 					result = el.InnerHTML()
 				case "value":
 					result = el.Value()
@@ -279,6 +279,17 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	return Parse(o), nil
 }
 
+func IsCloneable(value core.Value) Boolean {
+	switch value.Type() {
+	case core.ArrayType:
+		return NewBoolean(true)
+	case core.ObjectType:
+		return NewBoolean(true)
+	default:
+		return NewBoolean(false)
+	}
+}
+
 func ToBoolean(input core.Value) core.Value {
 	switch input.Type() {
 	case core.BooleanType:
@@ -296,13 +307,54 @@ func ToBoolean(input core.Value) core.Value {
 	}
 }
 
-func IsCloneable(value core.Value) Boolean {
-	switch value.Type() {
+func ToArray(input core.Value) core.Value {
+	switch input.Type() {
+	case core.BooleanType,
+		core.IntType,
+		core.FloatType,
+		core.StringType,
+		core.DateTimeType:
+
+		return NewArrayWith(input)
+	case core.HTMLElementType,
+		core.HTMLDocumentType:
+		val := input.(HTMLNode)
+		attrs := val.GetAttributes()
+
+		obj, ok := attrs.(*Object)
+
+		if !ok {
+			return NewArray(0)
+		}
+
+		arr := NewArray(int(obj.Length()))
+
+		obj.ForEach(func(value core.Value, key string) bool {
+			arr.Push(value)
+
+			return true
+		})
+
+		return obj
 	case core.ArrayType:
-		return NewBoolean(true)
+		return input.Copy()
 	case core.ObjectType:
-		return NewBoolean(true)
+		obj, ok := input.(*Object)
+
+		if !ok {
+			return NewArray(0)
+		}
+
+		arr := NewArray(int(obj.Length()))
+
+		obj.ForEach(func(value core.Value, key string) bool {
+			arr.Push(value)
+
+			return true
+		})
+
+		return obj
 	default:
-		return NewBoolean(false)
+		return NewArray(0)
 	}
 }
