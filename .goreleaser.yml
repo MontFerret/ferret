@@ -20,7 +20,7 @@ builds:
 archive:
   name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   replacements:
-    darwin: macOS
+    darwin: darwin
     linux: linux
     windows: windows
     386: i386

@@ -52,26 +52,23 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectClause.
 	VisitCollectClause(ctx *CollectClauseContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#collectVariable.
-	VisitCollectVariable(ctx *CollectVariableContext) interface{}
+	// Visit a parse tree produced by FqlParser#collectSelector.
+	VisitCollectSelector(ctx *CollectSelectorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#collectGrouping.
+	VisitCollectGrouping(ctx *CollectGroupingContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#collectAggregator.
+	VisitCollectAggregator(ctx *CollectAggregatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#collectAggregateSelector.
+	VisitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#collectGroupVariable.
 	VisitCollectGroupVariable(ctx *CollectGroupVariableContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#collectKeepVariable.
-	VisitCollectKeepVariable(ctx *CollectKeepVariableContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#collectCountVariable.
-	VisitCollectCountVariable(ctx *CollectCountVariableContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#collectAggregateVariable.
-	VisitCollectAggregateVariable(ctx *CollectAggregateVariableContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#collectAggregateExpression.
-	VisitCollectAggregateExpression(ctx *CollectAggregateExpressionContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#collectOption.
-	VisitCollectOption(ctx *CollectOptionContext) interface{}
+	// Visit a parse tree produced by FqlParser#collectCounter.
+	VisitCollectCounter(ctx *CollectCounterContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#forExpressionBody.
 	VisitForExpressionBody(ctx *ForExpressionBodyContext) interface{}

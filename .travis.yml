@@ -35,6 +35,7 @@ stages:
 - compile
 - test
 - e2e
+- bench
 
 jobs:
   include:
@@ -49,8 +50,6 @@ jobs:
   - stage: test
     script:
     - make cover
-    after_success:
-    - if [ $TRAVIS_BRANCH == "master" && $TRAVIS_PULL_REQUEST == "false" ]; then bash <(curl -s https://codecov.io/bash); fi
   - stage: e2e
     before_script:
     - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
@@ -58,3 +57,6 @@ jobs:
     - make e2e
     after_script:
     - killall google-chrome-stable
+  - stage: bench
+    script:
+    - make bench

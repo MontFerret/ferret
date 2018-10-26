@@ -6,22 +6,23 @@ import (
 
 type (
 	UniqueIterator struct {
-		src    Iterator
-		hashes map[uint64]bool
-		value  core.Value
-		key    core.Value
-		err    error
+		src     Iterator
+		hashes  map[uint64]bool
+		hashKey string
+		dataSet DataSet
+		err     error
 	}
 )
 
-func NewUniqueIterator(src Iterator) (*UniqueIterator, error) {
+func NewUniqueIterator(src Iterator, hashKey string) (*UniqueIterator, error) {
 	if src == nil {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
 	return &UniqueIterator{
-		src:    src,
-		hashes: make(map[uint64]bool),
+		src:     src,
+		hashes:  make(map[uint64]bool),
+		hashKey: hashKey,
 	}, nil
 }
 
@@ -36,26 +37,25 @@ func (iterator *UniqueIterator) HasNext() bool {
 		return false
 	}
 
-	if !core.IsNil(iterator.value) {
+	if iterator.dataSet != nil {
 		return true
 	}
 
 	return false
 }
 
-func (iterator *UniqueIterator) Next() (core.Value, core.Value, error) {
-	return iterator.value, iterator.key, iterator.err
+func (iterator *UniqueIterator) Next() (DataSet, error) {
+	return iterator.dataSet, iterator.err
 }
 
 func (iterator *UniqueIterator) doNext() {
 	// reset state
 	iterator.err = nil
-	iterator.value = nil
-	iterator.key = nil
+	iterator.dataSet = nil
 
 	// iterate over source until we find a non-unique item
 	for iterator.src.HasNext() {
-		val, key, err := iterator.src.Next()
+		ds, err := iterator.src.Next()
 
 		if err != nil {
 			iterator.err = err
@@ -63,7 +63,7 @@ func (iterator *UniqueIterator) doNext() {
 			return
 		}
 
-		h := val.Hash()
+		h := ds.Get(iterator.hashKey).Hash()
 
 		_, exists := iterator.hashes[h]
 
@@ -72,8 +72,7 @@ func (iterator *UniqueIterator) doNext() {
 		}
 
 		iterator.hashes[h] = true
-		iterator.key = key
-		iterator.value = val
+		iterator.dataSet = ds
 
 		return
 	}

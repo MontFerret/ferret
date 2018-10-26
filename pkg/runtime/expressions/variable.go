@@ -2,7 +2,6 @@ package expressions
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
@@ -40,22 +39,6 @@ func NewVariableDeclarationExpression(src core.SourceMap, name string, init core
 	}
 
 	return &VariableDeclarationExpression{v, init}, nil
-}
-
-func (e *VariableExpression) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-	value, err := e.Exec(ctx, scope)
-
-	if err != nil {
-		return nil, core.SourceError(e.src, err)
-	}
-
-	iter, err := collections.ToIterator(value)
-
-	if err != nil {
-		return nil, core.SourceError(e.src, err)
-	}
-
-	return iter, nil
 }
 
 func (e *VariableExpression) Exec(_ context.Context, scope *core.Scope) (core.Value, error) {

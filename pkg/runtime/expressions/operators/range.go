@@ -2,7 +2,6 @@ package operators
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -25,16 +24,6 @@ func NewRangeOperator(
 	}
 
 	return &RangeOperator{&baseOperator{src, left, right}}, nil
-}
-
-func (operator *RangeOperator) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-	arr, err := operator.Exec(ctx, scope)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return collections.NewArrayIterator(arr.(*values.Array)), nil
 }
 
 func (operator *RangeOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {

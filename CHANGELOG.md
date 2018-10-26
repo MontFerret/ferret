@@ -1,5 +1,14 @@
 ## Changelog
 
+### 0.4.0
+#### Added
+- ``COLLECT`` keyword [#141](https://github.com/MontFerret/ferret/pull/141)
+- ``VALUES`` function [#128](https://github.com/MontFerret/ferret/pull/128) 
+- ``MERGE_RECURSIVE`` function [#140](https://github.com/MontFerret/ferret/pull/140) 
+
+#### Fixed
+- Unable to use string literals as object properties [commit](https://github.com/MontFerret/ferret/commit/685c5872aaed42852ce32e7ab8b69b1a269185be)
+
 ### 0.3.0
 
 #### Added

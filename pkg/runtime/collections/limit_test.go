@@ -19,7 +19,7 @@ func TestLimit(t *testing.T) {
 		}
 
 		src, err := collections.NewLimitIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
 			1,
 			0,
 		)
@@ -29,7 +29,7 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			item, _, err := next(src)
 
 			So(err, ShouldBeNil)
 
@@ -49,7 +49,7 @@ func TestLimit(t *testing.T) {
 		}
 
 		src, err := collections.NewLimitIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
 			2,
 			0,
 		)
@@ -59,7 +59,7 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			item, _, err := next(src)
 
 			So(err, ShouldBeNil)
 
@@ -80,7 +80,7 @@ func TestLimit(t *testing.T) {
 
 		offset := 2
 		src, err := collections.NewLimitIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
 			2,
 			offset,
 		)
@@ -90,7 +90,7 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			item, _, err := next(src)
 
 			So(err, ShouldBeNil)
 
@@ -118,7 +118,7 @@ func TestLimit(t *testing.T) {
 		offset := 3
 
 		src, err := collections.NewLimitIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
 			2,
 			offset,
 		)
@@ -128,7 +128,7 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			item, _, err := next(src)
 
 			So(err, ShouldBeNil)
 
@@ -156,7 +156,7 @@ func TestLimit(t *testing.T) {
 		offset := 4
 
 		src, err := collections.NewLimitIterator(
-			collections.NewSliceIterator(arr),
+			sliceIterator(arr),
 			2,
 			offset,
 		)
@@ -166,7 +166,7 @@ func TestLimit(t *testing.T) {
 		res := make([]core.Value, 0, len(arr))
 
 		for src.HasNext() {
-			item, _, err := src.Next()
+			item, _, err := next(src)
 
 			So(err, ShouldBeNil)
 

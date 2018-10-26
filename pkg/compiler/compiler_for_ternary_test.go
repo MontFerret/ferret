@@ -92,3 +92,14 @@ func TestForTernaryExpression(t *testing.T) {
 		So(string(out2), ShouldEqual, `[1,2,3,4,5]`)
 	})
 }
+
+func BenchmarkForTernary(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}

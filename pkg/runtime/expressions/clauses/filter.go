@@ -8,25 +8,32 @@ import (
 )
 
 type FilterClause struct {
-	*baseClause
-	valVar    string
-	keyVar    string
-	predicate core.Expression
+	src        core.SourceMap
+	dataSource collections.Iterable
+	predicate  core.Expression
 }
 
 func NewFilterClause(
 	src core.SourceMap,
-	dataSource collections.IterableExpression,
-	valVar string,
-	keyVar string,
+	dataSource collections.Iterable,
 	predicate core.Expression,
-) *FilterClause {
-	return &FilterClause{
-		&baseClause{src, dataSource},
-		valVar,
-		keyVar,
-		predicate,
+) (collections.Iterable, error) {
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
 	}
+
+	if predicate == nil {
+		return nil, core.Error(core.ErrMissedArgument, "predicate")
+	}
+
+	return &FilterClause{
+		src, dataSource,
+		predicate,
+	}, nil
+}
+
+func (clause *FilterClause) Variables() collections.Variables {
+	return clause.dataSource.Variables()
 }
 
 func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
@@ -36,13 +43,15 @@ func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (col
 		return nil, err
 	}
 
-	return collections.NewFilterIterator(src, func(val core.Value, key core.Value) (bool, error) {
+	variables := clause.dataSource.Variables()
+
+	return collections.NewFilterIterator(src, func(set collections.DataSet) (bool, error) {
 		innerScope := scope.Fork()
 
-		innerScope.SetVariable(clause.valVar, val)
+		err := set.Apply(innerScope, variables)
 
-		if clause.keyVar != "" {
-			innerScope.SetVariable(clause.keyVar, key)
+		if err != nil {
+			return false, core.SourceError(clause.src, err)
 		}
 
 		ret, err := clause.predicate.Exec(ctx, innerScope)

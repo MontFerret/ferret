@@ -228,7 +228,7 @@ func (t *Array) Sort() *Array {
 	copy(c, t.value)
 
 	sort.SliceStable(c, func(i, j int) bool {
-		return c[i].Compare(c[j]) == 0
+		return c[i].Compare(c[j]) == -1
 	})
 
 	res := new(Array)

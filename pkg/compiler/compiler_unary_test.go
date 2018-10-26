@@ -90,3 +90,35 @@ func TestUnaryOperator(t *testing.T) {
 		So(string(out1), ShouldEqual, `-1`)
 	})
 }
+
+func BenchmarkUnaryOperatorExcl(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			RETURN !TRUE
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkUnaryOperatorQ(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET foo = TRUE
+			RETURN !foo ? TRUE : FALSE
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkUnaryOperatorN(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			LET v = 1
+			RETURN -v
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
