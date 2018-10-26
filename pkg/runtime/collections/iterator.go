@@ -6,14 +6,11 @@ import (
 )
 
 type (
-	Variables []string
-
 	Iterator interface {
 		Next(ctx context.Context, scope *core.Scope) (DataSet, error)
 	}
 
 	Iterable interface {
-		Variables() Variables
 		Iterate(ctx context.Context, scope *core.Scope) (Iterator, error)
 	}
 )

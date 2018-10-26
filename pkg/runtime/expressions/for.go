@@ -104,8 +104,6 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 	}
 
 	res := values.NewArray(10)
-	variables := e.dataSource.Variables()
-
 	for {
 		innerScope := scope.Fork()
 
@@ -120,9 +118,7 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 			break
 		}
 
-		if err := ds.Apply(innerScope, variables); err != nil {
-			return values.None, err
-		}
+		ds.Apply(innerScope)
 
 		out, err := e.predicate.Exec(ctx, innerScope)
 

@@ -14,14 +14,12 @@ type CollectIterator struct {
 	src        core.SourceMap
 	params     *Collect
 	dataSource collections.Iterator
-	variables  collections.Variables
 }
 
 func NewCollectIterator(
 	src core.SourceMap,
 	params *Collect,
 	dataSource collections.Iterator,
-	variables collections.Variables,
 ) (*CollectIterator, error) {
 	if params.group != nil {
 		if params.group.selectors != nil {
@@ -29,7 +27,7 @@ func NewCollectIterator(
 			sorters := make([]*collections.Sorter, len(params.group.selectors))
 
 			for i, selector := range params.group.selectors {
-				sorter, err := newGroupSorter(variables, selector)
+				sorter, err := newGroupSorter(selector)
 
 				if err != nil {
 					return nil, err
@@ -57,14 +55,13 @@ func NewCollectIterator(
 		src,
 		params,
 		dataSource,
-		variables,
 	}, nil
 }
 
-func newGroupSorter(variables collections.Variables, selector *CollectSelector) (*collections.Sorter, error) {
+func newGroupSorter(selector *CollectSelector) (*collections.Sorter, error) {
 	return collections.NewSorter(func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
 		scope1 := scope.Fork()
-		first.Apply(scope1, variables)
+		first.Apply(scope1)
 
 		f, err := selector.expression.Exec(ctx, scope1)
 
@@ -73,7 +70,7 @@ func newGroupSorter(variables collections.Variables, selector *CollectSelector) 
 		}
 
 		scope2 := scope.Fork()
-		second.Apply(scope2, variables)
+		second.Apply(scope2)
 
 		s, err := selector.expression.Exec(ctx, scope2)
 
@@ -157,7 +154,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 		childScope := scope.Fork()
 
 		// populate the new scope with results from an underlying source and its exposed variables
-		if err := set.Apply(childScope, iterator.variables); err != nil {
+		if err := set.Apply(childScope); err != nil {
 			return nil, err
 		}
 
@@ -356,7 +353,7 @@ func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scop
 		childScope := scope.Fork()
 
 		// populate the new scope with results from an underlying source and its exposed variables
-		if err := set.Apply(childScope, iterator.variables); err != nil {
+		if err := set.Apply(childScope); err != nil {
 			return nil, err
 		}
 

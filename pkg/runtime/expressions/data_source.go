@@ -8,9 +8,10 @@ import (
 )
 
 type DataSource struct {
-	src       core.SourceMap
-	variables collections.Variables
-	exp       core.Expression
+	src         core.SourceMap
+	valVariable string
+	keyVariable string
+	exp         core.Expression
 }
 
 func NewDataSource(
@@ -25,13 +26,10 @@ func NewDataSource(
 
 	return &DataSource{
 		src,
-		collections.Variables{valVariable, keyVariable},
+		valVariable,
+		keyVariable,
 		exp,
 	}, nil
-}
-
-func (ds *DataSource) Variables() collections.Variables {
-	return ds.variables
 }
 
 func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
@@ -41,23 +39,20 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 		return nil, core.SourceError(ds.src, err)
 	}
 
-	valVar := ds.variables[0]
-	keyVar := ds.variables[1]
-
 	switch data.Type() {
 	case core.ArrayType:
-		return collections.NewIndexedIterator(valVar, keyVar, data.(collections.IndexedCollection))
+		return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
 	case core.ObjectType:
-		return collections.NewKeyedIterator(valVar, keyVar, data.(collections.KeyedCollection))
+		return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
 	case core.HTMLElementType, core.HTMLDocumentType:
-		return collections.NewHTMLNodeIterator(valVar, keyVar, data.(values.HTMLNode))
+		return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
 	default:
 		// fallback to user defined types
 		switch data.(type) {
 		case collections.KeyedCollection:
-			return collections.NewIndexedIterator(valVar, keyVar, data.(collections.IndexedCollection))
+			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
 		case collections.IndexedCollection:
-			return collections.NewKeyedIterator(valVar, keyVar, data.(collections.KeyedCollection))
+			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
 		default:
 			return nil, core.TypeError(
 				data.Type(),

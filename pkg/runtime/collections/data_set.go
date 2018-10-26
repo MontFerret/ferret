@@ -14,19 +14,9 @@ func NewDataSet() DataSet {
 	return make(DataSet)
 }
 
-func (ds DataSet) Apply(scope *core.Scope, variables Variables) error {
-	if err := ValidateDataSet(ds, variables); err != nil {
-		return err
-	}
-
-	for _, variable := range variables {
+func (ds DataSet) Apply(scope *core.Scope) error {
+	for variable, value := range ds {
 		if variable != "" {
-			value, found := ds[variable]
-
-			if !found {
-				return core.Errorf(core.ErrNotFound, "variable not found in a given data set: %s", variable)
-			}
-
 			scope.SetVariable(variable, value)
 		}
 	}
