@@ -34,7 +34,7 @@ func NewVariableDeclarationExpression(src core.SourceMap, name string, init core
 		return nil, err
 	}
 
-	if core.IsNil(init) {
+	if init == nil {
 		return nil, errors.Wrap(core.ErrMissedArgument, "missed variable initializer")
 	}
 

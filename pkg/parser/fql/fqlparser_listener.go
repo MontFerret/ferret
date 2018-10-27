@@ -37,6 +37,15 @@ type FqlParserListener interface {
 	// EnterForExpressionClause is called when entering the forExpressionClause production.
 	EnterForExpressionClause(c *ForExpressionClauseContext)
 
+	// EnterForExpressionStatement is called when entering the forExpressionStatement production.
+	EnterForExpressionStatement(c *ForExpressionStatementContext)
+
+	// EnterForExpressionBody is called when entering the forExpressionBody production.
+	EnterForExpressionBody(c *ForExpressionBodyContext)
+
+	// EnterForExpressionReturn is called when entering the forExpressionReturn production.
+	EnterForExpressionReturn(c *ForExpressionReturnContext)
+
 	// EnterFilterClause is called when entering the filterClause production.
 	EnterFilterClause(c *FilterClauseContext)
 
@@ -69,12 +78,6 @@ type FqlParserListener interface {
 
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
-
-	// EnterForExpressionBody is called when entering the forExpressionBody production.
-	EnterForExpressionBody(c *ForExpressionBodyContext)
-
-	// EnterForExpressionReturn is called when entering the forExpressionReturn production.
-	EnterForExpressionReturn(c *ForExpressionReturnContext)
 
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
@@ -190,6 +193,15 @@ type FqlParserListener interface {
 	// ExitForExpressionClause is called when exiting the forExpressionClause production.
 	ExitForExpressionClause(c *ForExpressionClauseContext)
 
+	// ExitForExpressionStatement is called when exiting the forExpressionStatement production.
+	ExitForExpressionStatement(c *ForExpressionStatementContext)
+
+	// ExitForExpressionBody is called when exiting the forExpressionBody production.
+	ExitForExpressionBody(c *ForExpressionBodyContext)
+
+	// ExitForExpressionReturn is called when exiting the forExpressionReturn production.
+	ExitForExpressionReturn(c *ForExpressionReturnContext)
+
 	// ExitFilterClause is called when exiting the filterClause production.
 	ExitFilterClause(c *FilterClauseContext)
 
@@ -222,12 +234,6 @@ type FqlParserListener interface {
 
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)
-
-	// ExitForExpressionBody is called when exiting the forExpressionBody production.
-	ExitForExpressionBody(c *ForExpressionBodyContext)
-
-	// ExitForExpressionReturn is called when exiting the forExpressionReturn production.
-	ExitForExpressionReturn(c *ForExpressionReturnContext)
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)

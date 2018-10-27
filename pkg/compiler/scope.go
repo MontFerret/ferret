@@ -70,6 +70,10 @@ func (s *scope) RemoveVariable(name string) error {
 	return nil
 }
 
+func (s *scope) ClearVariables() {
+	s.vars = make(map[string]core.Type)
+}
+
 func (s *scope) Fork() *scope {
 	return newScope(s)
 }

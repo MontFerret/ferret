@@ -34,6 +34,10 @@ func (iterator *TapIterator) Next(ctx context.Context, scope *core.Scope) (DataS
 			break
 		}
 
+		if err := ds.Apply(scope); err != nil {
+			return nil, err
+		}
+
 		_, err = iterator.predicate.Exec(ctx, scope)
 
 		if err != nil {

@@ -82,6 +82,24 @@ func (s *BaseFqlParserListener) EnterForExpressionClause(ctx *ForExpressionClaus
 // ExitForExpressionClause is called when production forExpressionClause is exited.
 func (s *BaseFqlParserListener) ExitForExpressionClause(ctx *ForExpressionClauseContext) {}
 
+// EnterForExpressionStatement is called when production forExpressionStatement is entered.
+func (s *BaseFqlParserListener) EnterForExpressionStatement(ctx *ForExpressionStatementContext) {}
+
+// ExitForExpressionStatement is called when production forExpressionStatement is exited.
+func (s *BaseFqlParserListener) ExitForExpressionStatement(ctx *ForExpressionStatementContext) {}
+
+// EnterForExpressionBody is called when production forExpressionBody is entered.
+func (s *BaseFqlParserListener) EnterForExpressionBody(ctx *ForExpressionBodyContext) {}
+
+// ExitForExpressionBody is called when production forExpressionBody is exited.
+func (s *BaseFqlParserListener) ExitForExpressionBody(ctx *ForExpressionBodyContext) {}
+
+// EnterForExpressionReturn is called when production forExpressionReturn is entered.
+func (s *BaseFqlParserListener) EnterForExpressionReturn(ctx *ForExpressionReturnContext) {}
+
+// ExitForExpressionReturn is called when production forExpressionReturn is exited.
+func (s *BaseFqlParserListener) ExitForExpressionReturn(ctx *ForExpressionReturnContext) {}
+
 // EnterFilterClause is called when production filterClause is entered.
 func (s *BaseFqlParserListener) EnterFilterClause(ctx *FilterClauseContext) {}
 
@@ -147,18 +165,6 @@ func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) 
 
 // ExitCollectCounter is called when production collectCounter is exited.
 func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
-
-// EnterForExpressionBody is called when production forExpressionBody is entered.
-func (s *BaseFqlParserListener) EnterForExpressionBody(ctx *ForExpressionBodyContext) {}
-
-// ExitForExpressionBody is called when production forExpressionBody is exited.
-func (s *BaseFqlParserListener) ExitForExpressionBody(ctx *ForExpressionBodyContext) {}
-
-// EnterForExpressionReturn is called when production forExpressionReturn is entered.
-func (s *BaseFqlParserListener) EnterForExpressionReturn(ctx *ForExpressionReturnContext) {}
-
-// ExitForExpressionReturn is called when production forExpressionReturn is exited.
-func (s *BaseFqlParserListener) ExitForExpressionReturn(ctx *ForExpressionReturnContext) {}
 
 // EnterVariableDeclaration is called when production variableDeclaration is entered.
 func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}

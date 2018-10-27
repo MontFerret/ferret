@@ -24,11 +24,11 @@ func NewForExpression(
 	distinct,
 	spread bool,
 ) (*ForExpression, error) {
-	if core.IsNil(dataSource) {
+	if dataSource == nil {
 		return nil, errors.Wrap(core.ErrMissedArgument, "missed source expression")
 	}
 
-	if core.IsNil(predicate) {
+	if predicate == nil {
 		return nil, errors.Wrap(core.ErrMissedArgument, "missed return expression")
 	}
 
@@ -85,6 +85,25 @@ func (e *ForExpression) AddCollect(src core.SourceMap, params *clauses.Collect) 
 	}
 
 	e.dataSource = collect
+
+	return nil
+}
+
+func (e *ForExpression) AddStatement(stmt core.Expression) error {
+	tap, ok := e.dataSource.(*BlockExpression)
+
+	if !ok {
+		t, err := NewBlockExpression(e.dataSource)
+
+		if err != nil {
+			return err
+		}
+
+		tap = t
+		e.dataSource = tap
+	}
+
+	tap.Add(stmt)
 
 	return nil
 }
