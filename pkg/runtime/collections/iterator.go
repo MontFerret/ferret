@@ -19,7 +19,8 @@ func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]DataS
 	res := make([]DataSet, 0, 10)
 
 	for {
-		ds, err := iterator.Next(ctx, scope)
+		innerScope := scope.Fork()
+		ds, err := iterator.Next(ctx, innerScope)
 
 		if err != nil {
 			return nil, err

@@ -17,7 +17,9 @@ func NewDataSet() DataSet {
 func (ds DataSet) Apply(scope *core.Scope) error {
 	for variable, value := range ds {
 		if variable != "" {
-			scope.SetVariable(variable, value)
+			if err := scope.SetVariable(variable, value); err != nil {
+				return err
+			}
 		}
 	}
 
