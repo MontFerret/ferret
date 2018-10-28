@@ -31,6 +31,4 @@ func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core
 
 		res = append(res, nextScope)
 	}
-
-	return res, nil
 }

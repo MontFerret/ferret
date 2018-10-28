@@ -210,8 +210,6 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 			exp, err := v.doVisitForExpressionStatement(
 				statementCtx.(*fql.ForExpressionStatementContext),
 				forInScope,
-				valVarName,
-				keyVarName,
 			)
 
 			if err != nil {
@@ -606,7 +604,7 @@ func (v *visitor) doVisitForExpressionSource(ctx *fql.ForExpressionSourceContext
 	return nil, core.Error(ErrInvalidDataSource, ctx.GetText())
 }
 
-func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext, scope *scope, valVarName, keyVarName string) (func(f *expressions.ForExpression) error, error) {
+func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext, scope *scope, valVarName, _ string) (func(f *expressions.ForExpression) error, error) {
 	limitCtx := ctx.LimitClause()
 
 	if limitCtx != nil {
@@ -668,7 +666,7 @@ func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext
 	return nil, v.unexpectedToken(ctx)
 }
 
-func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementContext, scope *scope, valVarName, keyVarName string) (func(f *expressions.ForExpression) error, error) {
+func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementContext, scope *scope) (func(f *expressions.ForExpression) error, error) {
 	variableCtx := ctx.VariableDeclaration()
 
 	if variableCtx != nil {

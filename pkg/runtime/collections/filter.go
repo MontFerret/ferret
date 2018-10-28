@@ -44,6 +44,4 @@ func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (*c
 			return nextScope, nil
 		}
 	}
-
-	return nil, nil
 }
