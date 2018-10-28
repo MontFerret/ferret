@@ -11,7 +11,7 @@ import (
 )
 
 func TestTypeString(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("The string representation of the type should match this type", t, func() {
 		So(core.Type(0).String(), ShouldEqual, "none")
 		So(core.Type(1).String(), ShouldEqual, "boolean")
 		So(core.Type(2).String(), ShouldEqual, "int")
@@ -27,7 +27,7 @@ func TestTypeString(t *testing.T) {
 }
 
 func TestIsTypeOf(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Check type by value", t, func() {
 
 		So(core.IsTypeOf(values.None, core.NoneType), ShouldBeTrue)
 		So(core.IsTypeOf(values.NewBoolean(true), core.BooleanType), ShouldBeTrue)
@@ -44,7 +44,7 @@ func TestIsTypeOf(t *testing.T) {
 }
 
 func TestValidateType(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Value should match type", t, func() {
 
 		So(core.ValidateType(values.None, core.NoneType), ShouldBeNil)
 		So(core.ValidateType(values.NewBoolean(true), core.BooleanType), ShouldBeNil)
@@ -59,7 +59,7 @@ func TestValidateType(t *testing.T) {
 		So(core.ValidateType(values.NewBinary([]byte{}), core.BinaryType), ShouldBeNil)
 	})
 
-	Convey("Should match", t, func() {
+	Convey("Value should not match type", t, func() {
 
 		So(core.ValidateType(values.None, core.BooleanType), ShouldBeError)
 		So(core.ValidateType(values.NewBoolean(true), core.IntType, core.NoneType), ShouldBeError)
