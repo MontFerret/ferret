@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewBlockExpression(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should create a block expression", t, func() {
 		s := expressions.NewBlockExpression(1)
 
 		So(s, ShouldHaveSameTypeAs, &expressions.BlockExpression{})
@@ -19,7 +19,7 @@ func TestNewBlockExpression(t *testing.T) {
 }
 
 func TestNewBlockExpressionWith(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should create a block expression from passed values", t, func() {
 		s := expressions.NewBlockExpressionWith(&expressions.BlockExpression{})
 
 		So(s, ShouldHaveSameTypeAs, &expressions.BlockExpression{})
@@ -27,7 +27,7 @@ func TestNewBlockExpressionWith(t *testing.T) {
 }
 
 func TestBlockExpressionAddVariableExpression(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should add a new expression of a default type", t, func() {
 		s := expressions.NewBlockExpression(0)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
@@ -40,7 +40,7 @@ func TestBlockExpressionAddVariableExpression(t *testing.T) {
 }
 
 func TestBlockExpressionAddReturnExpression(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should add a new Return expression", t, func() {
 		s := expressions.NewBlockExpression(0)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
@@ -56,7 +56,7 @@ func TestBlockExpressionAddReturnExpression(t *testing.T) {
 }
 
 func TestBlockExpressionAddReturnExpressionFailed(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should not add an already defined Return expression", t, func() {
 		s := expressions.NewBlockExpression(0)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
@@ -76,7 +76,7 @@ func TestBlockExpressionAddReturnExpressionFailed(t *testing.T) {
 }
 
 func TestBlockExpressionExec(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should exec a block expression", t, func() {
 		s := expressions.NewBlockExpression(1)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
@@ -102,7 +102,7 @@ func TestBlockExpressionExec(t *testing.T) {
 }
 
 func TestBlockExpressionExecNonFound(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should not found a missing statement", t, func() {
 		s := expressions.NewBlockExpression(1)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
@@ -128,7 +128,7 @@ func TestBlockExpressionExecNonFound(t *testing.T) {
 }
 
 func TestBlockExpressionExecNilExpression(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should not exec a nil block expression", t, func() {
 		s := expressions.NewBlockExpression(1)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
