@@ -108,7 +108,7 @@ func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (*cor
 }
 
 func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
-	res, err := ToSlice(ctx, scope, iterator.values)
+	scopes, err := ToSlice(ctx, scope, iterator.values)
 
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*c
 
 	var failure error
 
-	sort.SliceStable(res, func(i, j int) bool {
+	sort.SliceStable(scopes, func(i, j int) bool {
 		// ignore next execution
 		if failure != nil {
 			return false
@@ -125,8 +125,8 @@ func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*c
 		var out bool
 
 		for _, comp := range iterator.sorters {
-			left := res[i]
-			right := res[j]
+			left := scopes[i]
+			right := scopes[j]
 
 			eq, err := comp.fn(ctx, left, right)
 
@@ -157,5 +157,5 @@ func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*c
 		return nil, failure
 	}
 
-	return res, nil
+	return scopes, nil
 }

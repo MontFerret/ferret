@@ -27,17 +27,17 @@ func NewUniqueIterator(values Iterator, hashKey string) (*UniqueIterator, error)
 
 func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	for {
-		os, err := iterator.values.Next(ctx, scope.Fork())
+		nextScope, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if os == nil {
+		if nextScope == nil {
 			return nil, nil
 		}
 
-		v, err := os.GetVariable(iterator.hashKey)
+		v, err := nextScope.GetVariable(iterator.hashKey)
 
 		if err != nil {
 			return nil, err
@@ -53,6 +53,6 @@ func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (*c
 
 		iterator.hashes[h] = true
 
-		return os, nil
+		return nextScope, nil
 	}
 }

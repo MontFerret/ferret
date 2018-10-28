@@ -44,14 +44,13 @@ func (iterator *LimitIterator) verifyOffset(ctx context.Context, scope *core.Sco
 	}
 
 	for iterator.offset > iterator.currCount {
-		cs := scope.Fork()
-		ds, err := iterator.values.Next(ctx, cs)
+		nextScope, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return err
 		}
 
-		if ds == nil {
+		if nextScope == nil {
 			iterator.currCount = iterator.offset
 			return nil
 		}

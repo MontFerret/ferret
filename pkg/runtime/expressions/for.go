@@ -124,7 +124,7 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 
 	res := values.NewArray(10)
 	for {
-		nextScope, err := iterator.Next(ctx, scope.Fork())
+		nextScope, err := iterator.Next(ctx, scope)
 
 		if err != nil {
 			return values.None, core.SourceError(e.src, err)

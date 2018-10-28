@@ -47,19 +47,19 @@ func (iterator *IndexedIterator) Next(_ context.Context, scope *core.Scope) (*co
 
 		iterator.pos++
 
-		cs := scope.Fork()
+		nextScope := scope.Fork()
 
-		if err := cs.SetVariable(iterator.valVar, val); err != nil {
+		if err := nextScope.SetVariable(iterator.valVar, val); err != nil {
 			return nil, err
 		}
 
 		if iterator.keyVar != "" {
-			if err := cs.SetVariable(iterator.keyVar, idx); err != nil {
+			if err := nextScope.SetVariable(iterator.keyVar, idx); err != nil {
 				return nil, err
 			}
 		}
 
-		return cs, nil
+		return nextScope, nil
 	}
 
 	return nil, nil

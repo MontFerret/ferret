@@ -19,17 +19,17 @@ func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core
 	res := make([]*core.Scope, 0, 10)
 
 	for {
-		os, err := iterator.Next(ctx, scope.Fork())
+		nextScope, err := iterator.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if os == nil {
+		if nextScope == nil {
 			return res, nil
 		}
 
-		res = append(res, os)
+		res = append(res, nextScope)
 	}
 
 	return res, nil
