@@ -34,16 +34,16 @@ func TestSliceIterator(t *testing.T) {
 		pos := 0
 
 		for {
-			ds, err := iter.Next(ctx, scope)
+			nextScope, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
 
-			if ds == nil {
+			if nextScope == nil {
 				break
 			}
 
-			key := ds.Get(collections.DefaultKeyVar)
-			item := ds.Get(collections.DefaultValueVar)
+			key := nextScope.MustGetVariable(collections.DefaultKeyVar)
+			item := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(key.Unwrap(), ShouldEqual, pos)
 
@@ -74,8 +74,8 @@ func TestSliceIterator(t *testing.T) {
 
 		for idx := range arr {
 			expected := arr[idx]
-			ds := res[idx]
-			actual := ds.Get(collections.DefaultValueVar)
+			nextScope := res[idx]
+			actual := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(actual, ShouldEqual, expected)
 		}

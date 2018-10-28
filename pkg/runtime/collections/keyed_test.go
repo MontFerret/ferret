@@ -33,16 +33,16 @@ func TestObjectIterator(t *testing.T) {
 		scope, _ := core.NewRootScope()
 
 		for {
-			ds, err := iter.Next(ctx, scope)
+			nextScope, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
 
-			if ds == nil {
+			if nextScope == nil {
 				break
 			}
 
-			key := ds.Get(collections.DefaultKeyVar)
-			item := ds.Get(collections.DefaultValueVar)
+			key := nextScope.MustGetVariable(collections.DefaultKeyVar)
+			item := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			expected, exists := m.Get(values.NewString(key.String()))
 
@@ -74,9 +74,9 @@ func TestObjectIterator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(res, ShouldNotBeNil)
 
-		ds, err := iter.Next(ctx, scope)
+		nextScope, err := iter.Next(ctx, scope)
 
-		So(ds, ShouldBeNil)
+		So(nextScope, ShouldBeNil)
 		So(err, ShouldBeNil)
 	})
 
@@ -88,9 +88,9 @@ func TestObjectIterator(t *testing.T) {
 		ctx := context.Background()
 		scope, _ := core.NewRootScope()
 
-		ds, err := iter.Next(ctx, scope)
+		nextScope, err := iter.Next(ctx, scope)
 
-		So(ds, ShouldBeNil)
+		So(nextScope, ShouldBeNil)
 		So(err, ShouldBeNil)
 	})
 }

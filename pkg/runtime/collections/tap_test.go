@@ -25,7 +25,7 @@ func (exp *TestExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 
 type ErrorIterator struct{}
 
-func (iterator *ErrorIterator) Next(ctx context.Context, scope *core.Scope) (collections.DataSet, error) {
+func (iterator *ErrorIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	return nil, core.ErrInvalidOperation
 }
 

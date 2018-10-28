@@ -68,7 +68,7 @@ func (s *Scope) SetVariable(name string, val Value) error {
 
 	// it already has been declared in the current scope
 	if exists {
-		return Errorf(ErrNotUnique, "variable is already declared '%s'", name)
+		return Errorf(ErrNotUnique, "variable is already declared: '%s'", name)
 	}
 
 	disposable, ok := val.(io.Closer)
@@ -106,10 +106,32 @@ func (s *Scope) GetVariable(name string) (Value, error) {
 			return s.parent.GetVariable(name)
 		}
 
-		return nil, Errorf(ErrNotFound, "variable '%s'", name)
+		return nil, Errorf(ErrNotFound, "variable: '%s'", name)
 	}
 
 	return out, nil
+}
+
+func (s *Scope) MustGetVariable(name string) Value {
+	out, err := s.GetVariable(name)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
+func (s *Scope) UpdateVariable(name string, val Value) error {
+	_, exists := s.vars[name]
+
+	if !exists {
+		return Errorf(ErrNotFound, "variable: '%s'", name)
+	}
+
+	delete(s.vars, name)
+
+	return s.SetVariable(name, val)
 }
 
 func (s *Scope) Fork() *Scope {

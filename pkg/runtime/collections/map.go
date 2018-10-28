@@ -34,7 +34,7 @@ func NewDefaultMapIterator(values map[string]core.Value) (Iterator, error) {
 	return NewMapIterator(DefaultValueVar, DefaultKeyVar, values)
 }
 
-func (iterator *MapIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
+func (iterator *MapIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
 	// lazy initialization
 	if iterator.keys == nil {
 		keys := make([]string, len(iterator.values))
@@ -51,12 +51,22 @@ func (iterator *MapIterator) Next(_ context.Context, _ *core.Scope) (DataSet, er
 	if len(iterator.keys) > iterator.pos {
 		key := iterator.keys[iterator.pos]
 		val := iterator.values[key]
+
 		iterator.pos++
 
-		return DataSet{
-			iterator.valVar: val,
-			iterator.keyVar: values.NewString(key),
-		}, nil
+		cs := scope.Fork()
+
+		if err := cs.SetVariable(iterator.valVar, val); err != nil {
+			return nil, err
+		}
+
+		if iterator.keyVar != "" {
+			if err := cs.SetVariable(iterator.keyVar, values.NewString(key)); err != nil {
+				return nil, err
+			}
+		}
+
+		return cs, nil
 	}
 
 	return nil, nil

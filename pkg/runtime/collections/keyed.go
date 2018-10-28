@@ -34,7 +34,7 @@ func NewDefaultKeyedIterator(input KeyedCollection) (Iterator, error) {
 	return NewKeyedIterator(DefaultValueVar, DefaultKeyVar, input)
 }
 
-func (iterator *KeyedIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
+func (iterator *KeyedIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
 	if iterator.keys == nil {
 		iterator.keys = iterator.values.Keys()
 	}
@@ -42,12 +42,22 @@ func (iterator *KeyedIterator) Next(_ context.Context, _ *core.Scope) (DataSet, 
 	if len(iterator.keys) > iterator.pos {
 		key := values.NewString(iterator.keys[iterator.pos])
 		val, _ := iterator.values.Get(key)
+
 		iterator.pos++
 
-		return DataSet{
-			iterator.valVar: val,
-			iterator.keyVar: key,
-		}, nil
+		cs := scope.Fork()
+
+		if err := cs.SetVariable(iterator.valVar, val); err != nil {
+			return nil, err
+		}
+
+		if iterator.keyVar != "" {
+			if err := cs.SetVariable(iterator.keyVar, key); err != nil {
+				return nil, err
+			}
+		}
+
+		return cs, nil
 	}
 
 	return nil, nil

@@ -10,18 +10,18 @@ import (
 	"testing"
 )
 
-func toValues(sets []collections.DataSet) []core.Value {
-	res := make([]core.Value, 0, len(sets))
+func toValues(scopes []*core.Scope) []core.Value {
+	res := make([]core.Value, 0, len(scopes))
 
-	for _, ds := range sets {
-		res = append(res, ds.Get(collections.DefaultValueVar))
+	for _, scope := range scopes {
+		res = append(res, scope.MustGetVariable(collections.DefaultValueVar))
 	}
 
 	return res
 }
 
-func toArrayOfValues(sets []collections.DataSet) *values.Array {
-	return values.NewArrayWith(toValues(sets)...)
+func toArrayOfValues(scopes []*core.Scope) *values.Array {
+	return values.NewArrayWith(toValues(scopes)...)
 }
 
 func TestSort(t *testing.T) {
@@ -35,8 +35,8 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				return first.MustGetVariable(collections.DefaultValueVar).Compare(second.MustGetVariable(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionAsc,
 		)
@@ -58,7 +58,7 @@ func TestSort(t *testing.T) {
 		numbers := []int{1, 2, 3, 4, 5}
 
 		for idx, num := range numbers {
-			So(res[idx].Get(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
+			So(res[idx].MustGetVariable(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
 		}
 	})
 
@@ -72,8 +72,8 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				return first.MustGetVariable(collections.DefaultValueVar).Compare(second.MustGetVariable(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionDesc,
 		)
@@ -94,7 +94,7 @@ func TestSort(t *testing.T) {
 		numbers := []int{5, 4, 3, 2, 1}
 
 		for idx, num := range numbers {
-			So(res[idx].Get(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
+			So(res[idx].MustGetVariable(collections.DefaultValueVar).Unwrap(), ShouldEqual, num)
 		}
 	})
 
@@ -120,9 +120,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -130,9 +130,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -183,9 +183,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -193,9 +193,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -246,9 +246,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -256,9 +256,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},
@@ -309,9 +309,9 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("one")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("one")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
 				return o1.Compare(o2), nil
 			},
@@ -319,9 +319,9 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-				o1, _ := first.Get(collections.DefaultValueVar).(*values.Object).Get("two")
-				o2, _ := second.Get(collections.DefaultValueVar).(*values.Object).Get("two")
+			func(ctx context.Context, first, second *core.Scope) (int, error) {
+				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
+				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
 				return o1.Compare(o2), nil
 			},

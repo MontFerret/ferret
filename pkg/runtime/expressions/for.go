@@ -124,22 +124,18 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 
 	res := values.NewArray(10)
 	for {
-		innerScope := scope.Fork()
-
-		ds, err := iterator.Next(ctx, innerScope)
+		nextScope, err := iterator.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return values.None, core.SourceError(e.src, err)
 		}
 
 		// no data anymore
-		if ds == nil {
+		if nextScope == nil {
 			break
 		}
 
-		ds.Apply(innerScope)
-
-		out, err := e.predicate.Exec(ctx, innerScope)
+		out, err := e.predicate.Exec(ctx, nextScope)
 
 		if err != nil {
 			return values.None, err

@@ -7,7 +7,7 @@ import (
 
 type (
 	Iterator interface {
-		Next(ctx context.Context, scope *core.Scope) (DataSet, error)
+		Next(ctx context.Context, scope *core.Scope) (*core.Scope, error)
 	}
 
 	Iterable interface {
@@ -15,22 +15,21 @@ type (
 	}
 )
 
-func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]DataSet, error) {
-	res := make([]DataSet, 0, 10)
+func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core.Scope, error) {
+	res := make([]*core.Scope, 0, 10)
 
 	for {
-		innerScope := scope.Fork()
-		ds, err := iterator.Next(ctx, innerScope)
+		os, err := iterator.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if ds == nil {
+		if os == nil {
 			return res, nil
 		}
 
-		res = append(res, ds)
+		res = append(res, os)
 	}
 
 	return res, nil

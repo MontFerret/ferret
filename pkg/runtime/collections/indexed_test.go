@@ -35,15 +35,15 @@ func TestArrayIterator(t *testing.T) {
 		scope, _ := core.NewRootScope()
 
 		for {
-			ds, err := iter.Next(ctx, scope)
+			nextScope, err := iter.Next(ctx, scope.Fork())
 
 			So(err, ShouldBeNil)
 
-			if ds == nil {
+			if nextScope == nil {
 				break
 			}
 
-			res = append(res, ds.Get(collections.DefaultValueVar))
+			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
 
 			pos += 1
 		}
@@ -68,15 +68,15 @@ func TestArrayIterator(t *testing.T) {
 		scope, _ := core.NewRootScope()
 
 		for {
-			ds, err := iter.Next(ctx, scope)
+			nextScope, err := iter.Next(ctx, scope.Fork())
 
 			So(err, ShouldBeNil)
 
-			if ds == nil {
+			if nextScope == nil {
 				break
 			}
 
-			res = append(res, ds.Get(collections.DefaultValueVar))
+			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
 		}
 
 		arr.ForEach(func(expected core.Value, idx int) bool {
@@ -105,15 +105,15 @@ func TestArrayIterator(t *testing.T) {
 		scope, _ := core.NewRootScope()
 
 		for {
-			ds, err := iter.Next(ctx, scope)
+			nextScope, err := iter.Next(ctx, scope.Fork())
 
 			So(err, ShouldBeNil)
 
-			if ds == nil {
+			if nextScope == nil {
 				break
 			}
 
-			res = append(res, ds.Get(collections.DefaultValueVar))
+			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
 		}
 
 		item, err := iter.Next(ctx, scope)
@@ -130,9 +130,9 @@ func TestArrayIterator(t *testing.T) {
 		ctx := context.Background()
 		scope, _ := core.NewRootScope()
 
-		ds, err := iter.Next(ctx, scope)
+		nextScope, err := iter.Next(ctx, scope)
 
 		So(err, ShouldBeNil)
-		So(ds, ShouldBeNil)
+		So(nextScope, ShouldBeNil)
 	})
 }

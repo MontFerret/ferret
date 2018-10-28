@@ -71,20 +71,14 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 }
 
 func newSorter(srt *SorterExpression) (*collections.Sorter, error) {
-	return collections.NewSorter(func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-		scope1 := scope.Fork()
-		first.Apply(scope1)
-
-		f, err := srt.expression.Exec(ctx, scope1)
+	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int, error) {
+		f, err := srt.expression.Exec(ctx, first)
 
 		if err != nil {
 			return -1, err
 		}
 
-		scope2 := scope.Fork()
-		second.Apply(scope2)
-
-		s, err := srt.expression.Exec(ctx, scope2)
+		s, err := srt.expression.Exec(ctx, second)
 
 		if err != nil {
 			return -1, err

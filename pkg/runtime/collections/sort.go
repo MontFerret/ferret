@@ -11,7 +11,7 @@ import (
 type (
 	SortDirection int
 
-	Comparator func(ctx context.Context, scope *core.Scope, first DataSet, second DataSet) (int, error)
+	Comparator func(ctx context.Context, first, second *core.Scope) (int, error)
 
 	Sorter struct {
 		fn        Comparator
@@ -22,7 +22,7 @@ type (
 		values  Iterator
 		sorters []*Sorter
 		ready   bool
-		result  []DataSet
+		result  []*core.Scope
 		pos     int
 	}
 )
@@ -82,7 +82,7 @@ func NewSortIterator(
 	}, nil
 }
 
-func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (DataSet, error) {
+func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	// we need to initialize the iterator
 	if iterator.ready == false {
 		iterator.ready = true
@@ -98,6 +98,7 @@ func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (Data
 	if len(iterator.result) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.result[idx]
+
 		iterator.pos++
 
 		return val, nil
@@ -106,7 +107,7 @@ func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (Data
 	return nil, nil
 }
 
-func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]DataSet, error) {
+func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
 	res, err := ToSlice(ctx, scope, iterator.values)
 
 	if err != nil {
@@ -127,7 +128,7 @@ func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]Da
 			left := res[i]
 			right := res[j]
 
-			eq, err := comp.fn(ctx, scope, left, right)
+			eq, err := comp.fn(ctx, left, right)
 
 			if err != nil {
 				failure = err

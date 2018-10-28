@@ -25,19 +25,25 @@ func NewUniqueIterator(values Iterator, hashKey string) (*UniqueIterator, error)
 	}, nil
 }
 
-func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (DataSet, error) {
+func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	for {
-		ds, err := iterator.values.Next(ctx, scope)
+		os, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if ds == nil {
+		if os == nil {
 			return nil, nil
 		}
 
-		h := ds.Get(iterator.hashKey).Hash()
+		v, err := os.GetVariable(iterator.hashKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		h := v.Hash()
 
 		_, exists := iterator.hashes[h]
 
@@ -47,6 +53,6 @@ func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (Da
 
 		iterator.hashes[h] = true
 
-		return ds, nil
+		return os, nil
 	}
 }

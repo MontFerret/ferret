@@ -328,7 +328,7 @@ func TestForFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(string(out), ShouldEqual, `[3,4,3]`)
+		So(string(out), ShouldEqual, `[5,6,5]`)
 	})
 }
 

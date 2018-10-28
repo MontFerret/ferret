@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	FilterPredicate func(ctx context.Context, scope *core.Scope, set DataSet) (bool, error)
+	FilterPredicate func(ctx context.Context, scope *core.Scope) (bool, error)
 
 	FilterIterator struct {
 		values    Iterator
@@ -26,22 +26,22 @@ func NewFilterIterator(values Iterator, predicate FilterPredicate) (*FilterItera
 	return &FilterIterator{values: values, predicate: predicate}, nil
 }
 
-func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (DataSet, error) {
+func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	for {
-		ds, err := iterator.values.Next(ctx, scope)
+		nextScope, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if ds == nil {
+		if nextScope == nil {
 			return nil, nil
 		}
 
-		take, err := iterator.predicate(ctx, scope, ds)
+		take, err := iterator.predicate(ctx, nextScope)
 
 		if take == true {
-			return ds, nil
+			return nextScope, nil
 		}
 	}
 

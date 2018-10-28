@@ -29,16 +29,26 @@ func NewDefaultSliceIterator(input []core.Value) (Iterator, error) {
 	return NewSliceIterator(DefaultValueVar, DefaultKeyVar, input)
 }
 
-func (iterator *SliceIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
+func (iterator *SliceIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
 	if len(iterator.values) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values[idx]
+
 		iterator.pos++
 
-		return DataSet{
-			iterator.valVar: val,
-			iterator.keyVar: values.NewInt(idx),
-		}, nil
+		cs := scope.Fork()
+
+		if err := cs.SetVariable(iterator.valVar, val); err != nil {
+			return nil, err
+		}
+
+		if iterator.keyVar != "" {
+			if err := cs.SetVariable(iterator.keyVar, values.NewInt(idx)); err != nil {
+				return nil, err
+			}
+		}
+
+		return cs, nil
 	}
 
 	return nil, nil

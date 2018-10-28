@@ -20,7 +20,7 @@ func NewLimitIterator(values Iterator, count, offset int) (*LimitIterator, error
 	return &LimitIterator{values, count, offset, 0}, nil
 }
 
-func (iterator *LimitIterator) Next(ctx context.Context, scope *core.Scope) (DataSet, error) {
+func (iterator *LimitIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	if err := iterator.verifyOffset(ctx, scope); err != nil {
 		return nil, err
 	}
@@ -44,7 +44,8 @@ func (iterator *LimitIterator) verifyOffset(ctx context.Context, scope *core.Sco
 	}
 
 	for iterator.offset > iterator.currCount {
-		ds, err := iterator.values.Next(ctx, scope)
+		cs := scope.Fork()
+		ds, err := iterator.values.Next(ctx, cs)
 
 		if err != nil {
 			return err

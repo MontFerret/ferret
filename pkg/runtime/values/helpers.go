@@ -1,8 +1,11 @@
 package values
 
 import (
+	"encoding/binary"
 	"encoding/json"
+	"hash/fnv"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -357,4 +360,41 @@ func ToArray(input core.Value) core.Value {
 	default:
 		return NewArray(0)
 	}
+}
+
+func MapHash(input map[string]core.Value) uint64 {
+	h := fnv.New64a()
+
+	keys := make([]string, 0, len(input))
+
+	for key := range input {
+		keys = append(keys, key)
+	}
+
+	// order does not really matter
+	// but it will give us a consistent hash sum
+	sort.Strings(keys)
+	endIndex := len(keys) - 1
+
+	h.Write([]byte("{"))
+
+	for idx, key := range keys {
+		h.Write([]byte(key))
+		h.Write([]byte(":"))
+
+		el := input[key]
+
+		bytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bytes, el.Hash())
+
+		h.Write(bytes)
+
+		if idx != endIndex {
+			h.Write([]byte(","))
+		}
+	}
+
+	h.Write([]byte("}"))
+
+	return h.Sum64()
 }

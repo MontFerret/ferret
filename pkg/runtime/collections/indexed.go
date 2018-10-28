@@ -40,16 +40,26 @@ func NewDefaultIndexedIterator(
 	return NewIndexedIterator(DefaultValueVar, DefaultKeyVar, values)
 }
 
-func (iterator *IndexedIterator) Next(_ context.Context, _ *core.Scope) (DataSet, error) {
+func (iterator *IndexedIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
 	if int(iterator.values.Length()) > iterator.pos {
 		idx := values.NewInt(iterator.pos)
 		val := iterator.values.Get(idx)
+
 		iterator.pos++
 
-		return DataSet{
-			iterator.valVar: val,
-			iterator.keyVar: idx,
-		}, nil
+		cs := scope.Fork()
+
+		if err := cs.SetVariable(iterator.valVar, val); err != nil {
+			return nil, err
+		}
+
+		if iterator.keyVar != "" {
+			if err := cs.SetVariable(iterator.keyVar, idx); err != nil {
+				return nil, err
+			}
+		}
+
+		return cs, nil
 	}
 
 	return nil, nil

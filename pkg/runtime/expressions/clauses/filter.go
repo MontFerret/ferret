@@ -42,16 +42,8 @@ func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (col
 	return collections.NewFilterIterator(src, clause.filter)
 }
 
-func (clause *FilterClause) filter(ctx context.Context, scope *core.Scope, set collections.DataSet) (bool, error) {
-	innerScope := scope.Fork()
-
-	err := set.Apply(innerScope)
-
-	if err != nil {
-		return false, core.SourceError(clause.src, err)
-	}
-
-	ret, err := clause.predicate.Exec(ctx, innerScope)
+func (clause *FilterClause) filter(ctx context.Context, scope *core.Scope) (bool, error) {
+	ret, err := clause.predicate.Exec(ctx, scope)
 
 	if err != nil {
 		return false, err

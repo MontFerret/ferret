@@ -88,9 +88,9 @@ func TestLimit(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 2)
 
-		for idx, ds := range res {
+		for idx, nextScope := range res {
 			expected := arr[idx+offset]
-			current := ds.Get(collections.DefaultValueVar)
+			current := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(expected, ShouldEqual, current)
 		}
@@ -123,9 +123,9 @@ func TestLimit(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 2)
 
-		for idx, ds := range res {
+		for idx, nextScope := range res {
 			expected := arr[idx+offset]
-			current := ds.Get(collections.DefaultValueVar)
+			current := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(expected, ShouldEqual, current)
 		}

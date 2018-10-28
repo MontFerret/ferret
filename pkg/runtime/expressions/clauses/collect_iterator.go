@@ -9,7 +9,7 @@ import (
 
 type CollectIterator struct {
 	ready      bool
-	values     []collections.DataSet
+	values     []*core.Scope
 	pos        int
 	src        core.SourceMap
 	params     *Collect
@@ -59,20 +59,14 @@ func NewCollectIterator(
 }
 
 func newGroupSorter(selector *CollectSelector) (*collections.Sorter, error) {
-	return collections.NewSorter(func(ctx context.Context, scope *core.Scope, first collections.DataSet, second collections.DataSet) (int, error) {
-		scope1 := scope.Fork()
-		first.Apply(scope1)
-
-		f, err := selector.expression.Exec(ctx, scope1)
+	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int, error) {
+		f, err := selector.expression.Exec(ctx, first)
 
 		if err != nil {
 			return -1, err
 		}
 
-		scope2 := scope.Fork()
-		second.Apply(scope2)
-
-		s, err := selector.expression.Exec(ctx, scope2)
+		s, err := selector.expression.Exec(ctx, second)
 
 		if err != nil {
 			return -1, err
@@ -82,7 +76,7 @@ func newGroupSorter(selector *CollectSelector) (*collections.Sorter, error) {
 	}, collections.SortDirectionAsc)
 }
 
-func (iterator *CollectIterator) Next(ctx context.Context, scope *core.Scope) (collections.DataSet, error) {
+func (iterator *CollectIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	if !iterator.ready {
 		iterator.ready = true
 		groups, err := iterator.init(ctx, scope)
@@ -104,7 +98,7 @@ func (iterator *CollectIterator) Next(ctx context.Context, scope *core.Scope) (c
 	return nil, nil
 }
 
-func (iterator *CollectIterator) init(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
+func (iterator *CollectIterator) init(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
 	if iterator.params.group != nil {
 		return iterator.group(ctx, scope)
 	}
@@ -120,10 +114,10 @@ func (iterator *CollectIterator) init(ctx context.Context, scope *core.Scope) ([
 	return nil, core.ErrInvalidOperation
 }
 
-func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
+func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
 	// TODO: honestly, this code is ugly. it needs to be refactored in more chained way with much less if statements
 	// slice of groups
-	collected := make([]collections.DataSet, 0, 10)
+	collected := make([]*core.Scope, 0, 10)
 	// hash table of unique values
 	// key is a DataSet hash
 	// value is its index in result slice (collected)
@@ -136,60 +130,61 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 
 	// iterating over underlying data source
 	for {
-		set, err := iterator.dataSource.Next(ctx, scope)
+		// keep all defined variables in forked scopes
+		// all those variables should not be available for further executions
+		dataSourceScope, err := iterator.dataSource.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if set == nil {
+		if dataSourceScope == nil {
 			break
 		}
 
-		if len(set) == 0 {
-			continue
-		}
+		// this data dataSourceScope represents a data of a given iteration with values retrieved by selectors
+		collectScope := scope.Fork()
 
-		// creating a new scope for all further operations
-		childScope := scope.Fork()
+		// map for calculating a hash value
+		vals := make(map[string]core.Value)
 
-		// populate the new scope with results from an underlying source and its exposed variables
-		if err := set.Apply(childScope); err != nil {
-			return nil, err
-		}
-
-		// this data set represents a data of a given iteration with values retrieved by selectors
-		ds := collections.NewDataSet()
-
-		// iterate over each selector for a current data set
+		// iterate over each selector for a current data
 		for _, selector := range groupSelectors {
 			// execute a selector and get a value
 			// e.g. COLLECT age = u.age
-			value, err := selector.expression.Exec(ctx, childScope)
+			value, err := selector.expression.Exec(ctx, dataSourceScope)
 
 			if err != nil {
 				return nil, err
 			}
 
-			ds.Set(selector.variable, value)
+			if err := collectScope.SetVariable(selector.variable, value); err != nil {
+				return nil, err
+			}
+
+			vals[selector.variable] = value
 		}
 
 		// it important to get hash value before projection and counting
 		// otherwise hash value will be inaccurate
-		h := ds.Hash()
+		h := values.MapHash(vals)
 
 		_, exists := hashTable[h]
 
 		if !exists {
-			collected = append(collected, ds)
+			collected = append(collected, collectScope)
 			hashTable[h] = len(collected) - 1
 
 			if proj != nil {
 				// create a new variable for keeping projection
-				ds.Set(proj.selector.variable, values.NewArray(10))
+				if err := collectScope.SetVariable(proj.selector.variable, values.NewArray(10)); err != nil {
+					return nil, err
+				}
 			} else if count != nil {
 				// create a new variable for keeping counter
-				ds.Set(count.variable, values.ZeroInt)
+				if err := collectScope.SetVariable(count.variable, values.ZeroInt); err != nil {
+					return nil, err
+				}
 			} else if aggr != nil {
 				// create a new variable for keeping aggregated values
 				for _, selector := range aggr.selectors {
@@ -199,15 +194,21 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 						arr.Push(values.None)
 					}
 
-					ds.Set(selector.variable, arr)
+					if err := collectScope.SetVariable(selector.variable, arr); err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
 
 		if proj != nil {
 			idx := hashTable[h]
-			ds := collected[idx]
-			groupValue := ds.Get(proj.selector.variable)
+			collectedScope := collected[idx]
+			groupValue, err := collectedScope.GetVariable(proj.selector.variable)
+
+			if err != nil {
+				return nil, err
+			}
 
 			arr, ok := groupValue.(*values.Array)
 
@@ -215,7 +216,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 				return nil, core.TypeError(groupValue.Type(), core.IntType)
 			}
 
-			value, err := proj.selector.expression.Exec(ctx, childScope)
+			value, err := proj.selector.expression.Exec(ctx, dataSourceScope)
 
 			if err != nil {
 				return nil, err
@@ -225,7 +226,11 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 		} else if count != nil {
 			idx := hashTable[h]
 			ds := collected[idx]
-			groupValue := ds.Get(count.variable)
+			groupValue, err := ds.GetVariable(count.variable)
+
+			if err != nil {
+				return nil, err
+			}
 
 			counter, ok := groupValue.(values.Int)
 
@@ -234,21 +239,29 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 			}
 
 			groupValue = counter + 1
-			// set a new value
-			ds.Set(count.variable, groupValue)
+			// dataSourceScope a new value
+			if err := ds.UpdateVariable(count.variable, groupValue); err != nil {
+				return nil, err
+			}
 		} else if aggr != nil {
 			idx := hashTable[h]
 			ds := collected[idx]
 
-			// iterate over each selector for a current data set
+			// iterate over each selector for a current data dataSourceScope
 			for _, selector := range aggr.selectors {
-				vv := ds.Get(selector.variable).(*values.Array)
+				sv, err := ds.GetVariable(selector.variable)
+
+				if err != nil {
+					return nil, err
+				}
+
+				vv := sv.(*values.Array)
 
 				// execute a selector and get a value
 				// e.g. AGGREGATE age = CONCAT(u.age, u.dob)
 				// u.age and u.dob get executed
 				for idx, exp := range selector.aggregators {
-					arg, err := exp.Exec(ctx, childScope)
+					arg, err := exp.Exec(ctx, dataSourceScope)
 
 					if err != nil {
 						return nil, err
@@ -271,9 +284,15 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 	}
 
 	if aggr != nil {
-		for _, ds := range collected {
+		for _, iterScope := range collected {
 			for _, selector := range aggr.selectors {
-				arr := ds[selector.variable].(*values.Array)
+				sv, err := iterScope.GetVariable(selector.variable)
+
+				if err != nil {
+					return nil, err
+				}
+
+				arr := sv.(*values.Array)
 
 				matrix := make([]core.Value, arr.Length())
 
@@ -290,7 +309,9 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 				}
 
 				// replace value with calculated one
-				ds.Set(selector.variable, reduced)
+				if err := iterScope.UpdateVariable(selector.variable, reduced); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -298,33 +319,38 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 	return collected, nil
 }
 
-func (iterator *CollectIterator) count(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
+func (iterator *CollectIterator) count(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
 	var counter int
 
 	// iterating over underlying data source
 	for {
-		ds, err := iterator.dataSource.Next(ctx, scope)
+		// keep all defined variables in forked scopes
+		// all those variables should not be available for further executions
+		os, err := iterator.dataSource.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if ds == nil {
+		if os == nil {
 			break
 		}
 
 		counter++
 	}
 
-	return []collections.DataSet{
-		{
-			iterator.params.count.variable: values.NewInt(counter),
-		},
-	}, nil
+	cs := scope.Fork()
+
+	if err := cs.SetVariable(iterator.params.count.variable, values.NewInt(counter)); err != nil {
+		return nil, err
+	}
+
+	return []*core.Scope{cs}, nil
 }
 
-func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scope) ([]collections.DataSet, error) {
-	ds := collections.NewDataSet()
+func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
+	cs := scope.Fork()
+
 	// matrix of aggregated expressions
 	// string key of the map is a selector variable
 	// value of the map is a matrix of arguments
@@ -335,26 +361,16 @@ func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scop
 
 	// iterating over underlying data source
 	for {
-		set, err := iterator.dataSource.Next(ctx, scope)
+		// keep all defined variables in forked scopes
+		// all those variables should not be available for further executions
+		os, err := iterator.dataSource.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		if set == nil {
+		if os == nil {
 			break
-		}
-
-		if len(set) == 0 {
-			break
-		}
-
-		// creating a new scope for all further operations
-		childScope := scope.Fork()
-
-		// populate the new scope with results from an underlying source and its exposed variables
-		if err := set.Apply(childScope); err != nil {
-			return nil, err
 		}
 
 		// iterate over each selector for a current data set
@@ -370,7 +386,7 @@ func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scop
 			// e.g. AGGREGATE age = CONCAT(u.age, u.dob)
 			// u.age and u.dob get executed
 			for idx, exp := range selector.aggregators {
-				arg, err := exp.Exec(ctx, childScope)
+				arg, err := exp.Exec(ctx, os)
 
 				if err != nil {
 					return nil, err
@@ -399,8 +415,10 @@ func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scop
 			return nil, err
 		}
 
-		ds.Set(selector.variable, reduced)
+		if err := cs.SetVariable(selector.variable, reduced); err != nil {
+			return nil, err
+		}
 	}
 
-	return []collections.DataSet{ds}, nil
+	return []*core.Scope{cs}, nil
 }

@@ -21,8 +21,8 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ context.Context, _ *core.Scope, ds collections.DataSet) (bool, error) {
-			i := float64(ds.Get(collections.DefaultValueVar).Unwrap().(int))
+		predicate := func(_ context.Context, scope *core.Scope) (bool, error) {
+			i := float64(scope.MustGetVariable(collections.DefaultValueVar).Unwrap().(int))
 			calc := float64(i / 2)
 
 			return calc == math.Floor(calc), nil
@@ -51,8 +51,8 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ context.Context, _ *core.Scope, ds collections.DataSet) (bool, error) {
-			i := float64(ds.Get(collections.DefaultKeyVar).Unwrap().(int))
+		predicate := func(_ context.Context, scope *core.Scope) (bool, error) {
+			i := float64(scope.MustGetVariable(collections.DefaultKeyVar).Unwrap().(int))
 
 			if i == 0 {
 				return false, nil
@@ -87,7 +87,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ context.Context, _ *core.Scope, _ collections.DataSet) (bool, error) {
+		predicate := func(_ context.Context, _ *core.Scope) (bool, error) {
 			return false, nil
 		}
 
@@ -114,7 +114,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ context.Context, _ *core.Scope, _ collections.DataSet) (bool, error) {
+		predicate := func(_ context.Context, _ *core.Scope) (bool, error) {
 			return true, nil
 		}
 
@@ -141,7 +141,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ context.Context, _ *core.Scope, _ collections.DataSet) (bool, error) {
+		predicate := func(_ context.Context, _ *core.Scope) (bool, error) {
 			return true, nil
 		}
 
@@ -173,13 +173,13 @@ func TestFilter(t *testing.T) {
 		}
 
 		// i < 5
-		predicate1 := func(_ context.Context, _ *core.Scope, ds collections.DataSet) (bool, error) {
-			return ds.Get(collections.DefaultValueVar).Compare(values.NewInt(5)) == -1, nil
+		predicate1 := func(_ context.Context, scope *core.Scope) (bool, error) {
+			return scope.MustGetVariable(collections.DefaultValueVar).Compare(values.NewInt(5)) == -1, nil
 		}
 
 		// i > 2
-		predicate2 := func(_ context.Context, _ *core.Scope, ds collections.DataSet) (bool, error) {
-			return ds.Get(collections.DefaultValueVar).Compare(values.NewInt(2)) == 1, nil
+		predicate2 := func(_ context.Context, scope *core.Scope) (bool, error) {
+			return scope.MustGetVariable(collections.DefaultValueVar).Compare(values.NewInt(2)) == 1, nil
 		}
 
 		it, _ := collections.NewFilterIterator(
