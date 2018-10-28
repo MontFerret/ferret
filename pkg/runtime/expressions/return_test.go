@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewReturnExpression(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should create a return expression", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 10)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "testExp")
 		So(err, ShouldBeNil)
@@ -21,7 +21,7 @@ func TestNewReturnExpression(t *testing.T) {
 		So(exp, ShouldHaveSameTypeAs, &expressions.ReturnExpression{})
 	})
 
-	Convey("Should match", t, func() {
+	Convey("Should not create a return expression with an empty predicate", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		exp, err := expressions.NewReturnExpression(sourceMap, nil)
 
@@ -31,7 +31,7 @@ func TestNewReturnExpression(t *testing.T) {
 }
 
 func TestReturnExpressionExec(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should exec a return expression with an existing predicate", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "test")
 		So(err, ShouldBeNil)
@@ -50,7 +50,7 @@ func TestReturnExpressionExec(t *testing.T) {
 		So(value, ShouldEqual, "value")
 	})
 
-	Convey("Should match", t, func() {
+	Convey("Should not exec a return expression with a missing predicate", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "notExist")
 		So(err, ShouldBeNil)
