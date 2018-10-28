@@ -311,6 +311,25 @@ func TestForFilter(t *testing.T) {
 
 		So(string(out), ShouldEqual, `[]`)
 	})
+
+	Convey("Should define variables", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+				LET x = 2
+				FILTER i > x
+				RETURN i + x
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+
+		So(string(out), ShouldEqual, `[3,4,3]`)
+	})
 }
 
 func BenchmarkFilter(b *testing.B) {
