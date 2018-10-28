@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -49,7 +48,7 @@ func (s *scope) SetVariable(name string) error {
 	_, exists := s.vars[name]
 
 	if exists {
-		return errors.Wrap(ErrVariableNotUnique, name)
+		return core.Error(ErrVariableNotUnique, name)
 	}
 
 	// TODO: add type detection
@@ -62,7 +61,7 @@ func (s *scope) RemoveVariable(name string) error {
 	_, exists := s.vars[name]
 
 	if !exists {
-		return errors.Wrap(ErrVariableNotFound, name)
+		return core.Error(ErrVariableNotFound, name)
 	}
 
 	delete(s.vars, name)

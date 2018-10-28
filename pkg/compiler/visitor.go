@@ -91,7 +91,7 @@ func (v *visitor) doVisitBodyStatement(ctx *fql.BodyStatementContext, scope *sco
 		return v.doVisitFunctionCallExpression(funcCall.(*fql.FunctionCallExpressionContext), scope)
 	}
 
-	return nil, errors.Wrap(ErrInvalidToken, ctx.GetText())
+	return nil, core.Error(ErrInvalidToken, ctx.GetText())
 }
 
 func (v *visitor) doVisitBodyExpression(ctx *fql.BodyExpressionContext, scope *scope) (core.Expression, error) {
@@ -975,7 +975,7 @@ func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *sco
 	}
 
 	if len(exp) < 2 {
-		return nil, errors.Wrap(ErrInvalidToken, ctx.GetText())
+		return nil, core.Error(ErrInvalidToken, ctx.GetText())
 	}
 
 	left := exp[0]

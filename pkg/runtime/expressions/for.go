@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type ForExpression struct {
@@ -25,11 +24,11 @@ func NewForExpression(
 	spread bool,
 ) (*ForExpression, error) {
 	if dataSource == nil {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed source expression")
+		return nil, core.Error(core.ErrMissedArgument, "missed source expression")
 	}
 
 	if predicate == nil {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed return expression")
+		return nil, core.Error(core.ErrMissedArgument, "missed return expression")
 	}
 
 	return &ForExpression{

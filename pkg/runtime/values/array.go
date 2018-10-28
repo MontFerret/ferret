@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -159,7 +158,7 @@ func (t *Array) Set(idx Int, value core.Value) error {
 		return nil
 	}
 
-	return errors.Wrap(core.ErrInvalidOperation, "out of bounds")
+	return core.Error(core.ErrInvalidOperation, "out of bounds")
 }
 
 func (t *Array) Push(item core.Value) {

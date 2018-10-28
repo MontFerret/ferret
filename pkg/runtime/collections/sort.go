@@ -3,7 +3,6 @@ package collections
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"sort"
 	"strings"
 )
@@ -66,11 +65,11 @@ func NewSortIterator(
 	comparators ...*Sorter,
 ) (*SortIterator, error) {
 	if values == nil {
-		return nil, errors.Wrap(core.ErrMissedArgument, "values")
+		return nil, core.Error(core.ErrMissedArgument, "values")
 	}
 
 	if comparators == nil || len(comparators) == 0 {
-		return nil, errors.Wrap(core.ErrMissedArgument, "comparator")
+		return nil, core.Error(core.ErrMissedArgument, "comparator")
 	}
 
 	return &SortIterator{
