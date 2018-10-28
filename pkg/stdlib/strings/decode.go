@@ -9,11 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-/*
- * Returns the value of a base64 representation.
- * @param base64String (String) - The string to decode.
- * @returns value (String) - The decoded string.
- */
+// FromBase64 returns the value of a base64 representation.
+// @param base64String (String) - The string to decode.
+// @returns value (String) - The decoded string.
 func FromBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {
