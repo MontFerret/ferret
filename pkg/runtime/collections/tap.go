@@ -23,25 +23,21 @@ func NewTapIterator(values Iterator, predicate core.Expression) (Iterator, error
 }
 
 func (iterator *TapIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
-	for {
-		nextScope, err := iterator.values.Next(ctx, scope.Fork())
+	nextScope, err := iterator.values.Next(ctx, scope)
 
-		if err != nil {
-			return nil, err
-		}
-
-		if nextScope == nil {
-			break
-		}
-
-		_, err = iterator.predicate.Exec(ctx, nextScope)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return nextScope, nil
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	if nextScope == nil {
+		return nil, nil
+	}
+
+	_, err = iterator.predicate.Exec(ctx, nextScope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nextScope, nil
 }
