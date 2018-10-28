@@ -47,6 +47,18 @@ func (v *BaseFqlParserVisitor) VisitForExpressionClause(ctx *ForExpressionClause
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitForExpressionStatement(ctx *ForExpressionStatementContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitForExpressionBody(ctx *ForExpressionBodyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitForExpressionReturn(ctx *ForExpressionReturnContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitFilterClause(ctx *FilterClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -88,14 +100,6 @@ func (v *BaseFqlParserVisitor) VisitCollectGroupVariable(ctx *CollectGroupVariab
 }
 
 func (v *BaseFqlParserVisitor) VisitCollectCounter(ctx *CollectCounterContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitForExpressionBody(ctx *ForExpressionBodyContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitForExpressionReturn(ctx *ForExpressionReturnContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

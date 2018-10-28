@@ -346,7 +346,7 @@ func TestArray(t *testing.T) {
 			So(el.Compare(values.NewInt(2)), ShouldEqual, 0)
 		})
 
-		Convey("Should return None when no value", func() {
+		Convey("Should return None when no items", func() {
 			arr := values.NewArrayWith()
 
 			el := arr.Get(1)

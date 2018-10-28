@@ -37,6 +37,15 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#forExpressionClause.
 	VisitForExpressionClause(ctx *ForExpressionClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#forExpressionStatement.
+	VisitForExpressionStatement(ctx *ForExpressionStatementContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#forExpressionBody.
+	VisitForExpressionBody(ctx *ForExpressionBodyContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#forExpressionReturn.
+	VisitForExpressionReturn(ctx *ForExpressionReturnContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#filterClause.
 	VisitFilterClause(ctx *FilterClauseContext) interface{}
 
@@ -69,12 +78,6 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#collectCounter.
 	VisitCollectCounter(ctx *CollectCounterContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#forExpressionBody.
-	VisitForExpressionBody(ctx *ForExpressionBodyContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#forExpressionReturn.
-	VisitForExpressionReturn(ctx *ForExpressionReturnContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}

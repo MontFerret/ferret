@@ -10,25 +10,17 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNewBlockExpression(t *testing.T) {
+func TestNewBodyExpression(t *testing.T) {
 	Convey("Should create a block expression", t, func() {
-		s := expressions.NewBlockExpression(1)
+		s := expressions.NewBodyExpression(1)
 
-		So(s, ShouldHaveSameTypeAs, &expressions.BlockExpression{})
-	})
-}
-
-func TestNewBlockExpressionWith(t *testing.T) {
-	Convey("Should create a block expression from passed values", t, func() {
-		s := expressions.NewBlockExpressionWith(&expressions.BlockExpression{})
-
-		So(s, ShouldHaveSameTypeAs, &expressions.BlockExpression{})
+		So(s, ShouldHaveSameTypeAs, &expressions.BodyExpression{})
 	})
 }
 
 func TestBlockExpressionAddVariableExpression(t *testing.T) {
 	Convey("Should add a new expression of a default type", t, func() {
-		s := expressions.NewBlockExpression(0)
+		s := expressions.NewBodyExpression(0)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		exp, err := expressions.NewVariableExpression(sourceMap, "testExp")
@@ -41,7 +33,7 @@ func TestBlockExpressionAddVariableExpression(t *testing.T) {
 
 func TestBlockExpressionAddReturnExpression(t *testing.T) {
 	Convey("Should add a new Return expression", t, func() {
-		s := expressions.NewBlockExpression(0)
+		s := expressions.NewBodyExpression(0)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "testExp")
@@ -57,7 +49,7 @@ func TestBlockExpressionAddReturnExpression(t *testing.T) {
 
 func TestBlockExpressionAddReturnExpressionFailed(t *testing.T) {
 	Convey("Should not add an already defined Return expression", t, func() {
-		s := expressions.NewBlockExpression(0)
+		s := expressions.NewBodyExpression(0)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "testExp")
@@ -71,13 +63,13 @@ func TestBlockExpressionAddReturnExpressionFailed(t *testing.T) {
 
 		err = s.Add(exp)
 		So(err, ShouldBeError)
-		So(err.Error(), ShouldEqual, "return expression is already defined: invalid operation")
+		So(err.Error(), ShouldEqual, "invalid operation: return expression is already defined")
 	})
 }
 
 func TestBlockExpressionExec(t *testing.T) {
 	Convey("Should exec a block expression", t, func() {
-		s := expressions.NewBlockExpression(1)
+		s := expressions.NewBodyExpression(1)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "test")
@@ -90,7 +82,7 @@ func TestBlockExpressionExec(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		rootScope, fn := core.NewRootScope()
-		scope := core.NewScope(rootScope)
+		scope := rootScope.Fork()
 		scope.SetVariable("test", values.NewString("value"))
 		fn()
 
@@ -103,7 +95,7 @@ func TestBlockExpressionExec(t *testing.T) {
 
 func TestBlockExpressionExecNonFound(t *testing.T) {
 	Convey("Should not found a missing statement", t, func() {
-		s := expressions.NewBlockExpression(1)
+		s := expressions.NewBodyExpression(1)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "testExp")
@@ -116,7 +108,7 @@ func TestBlockExpressionExecNonFound(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		rootScope, fn := core.NewRootScope()
-		scope := core.NewScope(rootScope)
+		scope := rootScope.Fork()
 		scope.SetVariable("test", values.NewString("value"))
 		fn()
 
@@ -129,7 +121,7 @@ func TestBlockExpressionExecNonFound(t *testing.T) {
 
 func TestBlockExpressionExecNilExpression(t *testing.T) {
 	Convey("Should not exec a nil block expression", t, func() {
-		s := expressions.NewBlockExpression(1)
+		s := expressions.NewBodyExpression(1)
 
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		exp, err := expressions.NewVariableExpression(sourceMap, "test")
@@ -139,7 +131,7 @@ func TestBlockExpressionExecNilExpression(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		rootScope, fn := core.NewRootScope()
-		scope := core.NewScope(rootScope)
+		scope := rootScope.Fork()
 		scope.SetVariable("test", values.NewString("value"))
 		fn()
 

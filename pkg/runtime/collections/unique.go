@@ -1,69 +1,49 @@
 package collections
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
 	UniqueIterator struct {
-		src     Iterator
+		values  Iterator
 		hashes  map[uint64]bool
 		hashKey string
-		dataSet DataSet
-		err     error
 	}
 )
 
-func NewUniqueIterator(src Iterator, hashKey string) (*UniqueIterator, error) {
-	if src == nil {
+func NewUniqueIterator(values Iterator, hashKey string) (*UniqueIterator, error) {
+	if values == nil {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
 	return &UniqueIterator{
-		src:     src,
+		values:  values,
 		hashes:  make(map[uint64]bool),
 		hashKey: hashKey,
 	}, nil
 }
 
-func (iterator *UniqueIterator) HasNext() bool {
-	if !iterator.src.HasNext() {
-		return false
-	}
-
-	iterator.doNext()
-
-	if iterator.err != nil {
-		return false
-	}
-
-	if iterator.dataSet != nil {
-		return true
-	}
-
-	return false
-}
-
-func (iterator *UniqueIterator) Next() (DataSet, error) {
-	return iterator.dataSet, iterator.err
-}
-
-func (iterator *UniqueIterator) doNext() {
-	// reset state
-	iterator.err = nil
-	iterator.dataSet = nil
-
-	// iterate over source until we find a non-unique item
-	for iterator.src.HasNext() {
-		ds, err := iterator.src.Next()
+func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
+	for {
+		nextScope, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
-			iterator.err = err
-
-			return
+			return nil, err
 		}
 
-		h := ds.Get(iterator.hashKey).Hash()
+		if nextScope == nil {
+			return nil, nil
+		}
+
+		v, err := nextScope.GetVariable(iterator.hashKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		h := v.Hash()
 
 		_, exists := iterator.hashes[h]
 
@@ -72,8 +52,7 @@ func (iterator *UniqueIterator) doNext() {
 		}
 
 		iterator.hashes[h] = true
-		iterator.dataSet = ds
 
-		return
+		return nextScope, nil
 	}
 }

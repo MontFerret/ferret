@@ -3,7 +3,6 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -30,14 +29,5 @@ func Unique(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewArray(0), nil
 	}
 
-	iterator, err := collections.NewUniqueIterator(
-		collections.NewDefaultIndexedIterator(arr),
-		collections.DefaultValueVar,
-	)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return toArray(iterator)
+	return ToUniqueArray(arr), nil
 }

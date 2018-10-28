@@ -15,11 +15,11 @@ func NewRangeOperator(
 	left core.Expression,
 	right core.Expression,
 ) (*RangeOperator, error) {
-	if core.IsNil(left) {
+	if left == nil {
 		return nil, core.Error(core.ErrMissedArgument, "left expression")
 	}
 
-	if core.IsNil(right) {
+	if right == nil {
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 

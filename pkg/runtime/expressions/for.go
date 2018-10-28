@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type ForExpression struct {
@@ -24,12 +23,12 @@ func NewForExpression(
 	distinct,
 	spread bool,
 ) (*ForExpression, error) {
-	if core.IsNil(dataSource) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed source expression")
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "missed source expression")
 	}
 
-	if core.IsNil(predicate) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed return expression")
+	if predicate == nil {
+		return nil, core.Error(core.ErrMissedArgument, "missed return expression")
 	}
 
 	return &ForExpression{
@@ -89,6 +88,25 @@ func (e *ForExpression) AddCollect(src core.SourceMap, params *clauses.Collect) 
 	return nil
 }
 
+func (e *ForExpression) AddStatement(stmt core.Expression) error {
+	tap, ok := e.dataSource.(*BlockExpression)
+
+	if !ok {
+		t, err := NewBlockExpression(e.dataSource)
+
+		if err != nil {
+			return err
+		}
+
+		tap = t
+		e.dataSource = tap
+	}
+
+	tap.Add(stmt)
+
+	return nil
+}
+
 func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
 	iterator, err := e.dataSource.Iterate(ctx, scope)
 
@@ -104,22 +122,19 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 	}
 
 	res := values.NewArray(10)
-	variables := e.dataSource.Variables()
-
-	for iterator.HasNext() {
-		ds, err := iterator.Next()
+	for {
+		nextScope, err := iterator.Next(ctx, scope)
 
 		if err != nil {
 			return values.None, core.SourceError(e.src, err)
 		}
 
-		innerScope := scope.Fork()
-
-		if err := ds.Apply(innerScope, variables); err != nil {
-			return values.None, err
+		// no data anymore
+		if nextScope == nil {
+			break
 		}
 
-		out, err := e.predicate.Exec(ctx, innerScope)
+		out, err := e.predicate.Exec(ctx, nextScope)
 
 		if err != nil {
 			return values.None, err

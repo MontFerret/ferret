@@ -19,11 +19,11 @@ func NewConditionExpression(
 	consequent core.Expression,
 	alternate core.Expression,
 ) (*ConditionExpression, error) {
-	if core.IsNil(test) {
+	if test == nil {
 		return nil, core.Error(core.ErrMissedArgument, "test expression")
 	}
 
-	if core.IsNil(alternate) {
+	if alternate == nil {
 		return nil, core.Error(core.ErrMissedArgument, "alternate expression")
 	}
 

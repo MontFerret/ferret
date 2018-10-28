@@ -40,7 +40,7 @@ func TestReturnExpressionExec(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		rootScope, fn := core.NewRootScope()
-		scope := core.NewScope(rootScope)
+		scope := rootScope.Fork()
 		scope.SetVariable("test", values.NewString("value"))
 		fn()
 
@@ -59,7 +59,7 @@ func TestReturnExpressionExec(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		rootScope, fn := core.NewRootScope()
-		scope := core.NewScope(rootScope)
+		scope := rootScope.Fork()
 		scope.SetVariable("test", values.NewString("value"))
 		fn()
 
