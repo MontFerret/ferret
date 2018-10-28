@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewParameterExpression(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should create a parameter expression", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		s, err := expressions.NewParameterExpression(sourceMap, "test")
 
@@ -19,7 +19,7 @@ func TestNewParameterExpression(t *testing.T) {
 		So(s, ShouldHaveSameTypeAs, &expressions.ParameterExpression{})
 	})
 
-	Convey("Should match", t, func() {
+	Convey("Should not create a parameter expression with empty name", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		s, err := expressions.NewParameterExpression(sourceMap, "")
 
@@ -30,7 +30,7 @@ func TestNewParameterExpression(t *testing.T) {
 }
 
 func TestParameterExpressionExec(t *testing.T) {
-	Convey("Should match", t, func() {
+	Convey("Should exec an existing parameter expression", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 10)
 		existExp, err := expressions.NewParameterExpression(sourceMap, "param1")
 
@@ -45,7 +45,7 @@ func TestParameterExpressionExec(t *testing.T) {
 		So(value.String(), ShouldEqual, "1")
 	})
 
-	Convey("Should match", t, func() {
+	Convey("Should not exec a missing parameter expression", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 10)
 		notExistExp, err := expressions.NewParameterExpression(sourceMap, "param2")
 
