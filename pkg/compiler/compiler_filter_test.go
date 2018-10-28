@@ -3,6 +3,8 @@ package compiler_test
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -328,6 +330,41 @@ func TestForFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
+		So(string(out), ShouldEqual, `[5,6,5]`)
+	})
+
+	Convey("Should call funcions", t, func() {
+		c := compiler.New()
+		counterA := 0
+		counterB := 0
+		c.RegisterFunction("COUNT_A", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counterA++
+
+			return values.None, nil
+		})
+
+		c.RegisterFunction("COUNT_B", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counterB++
+
+			return values.None, nil
+		})
+
+		p, err := c.Compile(`
+			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+				LET x = 2
+				COUNT_A()
+				FILTER i > x
+				COUNT_B()
+				RETURN i + x
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(counterA, ShouldEqual, 6)
+		So(counterB, ShouldEqual, 3)
 		So(string(out), ShouldEqual, `[5,6,5]`)
 	})
 }
