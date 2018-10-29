@@ -2,13 +2,13 @@ package strings
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/pkg/errors"
 )
 
 // Fmt formats the template using these arguments.
@@ -26,7 +26,7 @@ func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	formatted, err := format(args[0].String(), args[1:]...)
+	formatted, err := format(args[0].String(), args[1:])
 	if err != nil {
 		return values.None, err
 	}
@@ -34,17 +34,17 @@ func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewString(formatted), nil
 }
 
-func format(template string, args ...core.Value) (string, error) {
+func format(template string, args []core.Value) (string, error) {
 	rgx, err := regexp.Compile("{[0-9]*}")
 	if err != nil {
-		return "", fmt.Errorf("failed to build regexp: %v", err)
+		return "", errors.Errorf("failed to build regexp: %v", err)
 	}
 
 	argsCount := len(args)
 	emptyBracketsCount := strings.Count(template, "{}")
 
 	if argsCount > emptyBracketsCount && emptyBracketsCount != 0 {
-		return "", fmt.Errorf("there are arguments that have never been used")
+		return "", errors.Errorf("there are arguments that have never been used")
 	}
 
 	var betweenBrackets string
@@ -62,7 +62,7 @@ func format(template string, args ...core.Value) (string, error) {
 
 		if betweenBrackets == "" {
 			if argsCount <= lastArgIdx {
-				err = fmt.Errorf("not enought arguments")
+				err = errors.Errorf("not enought arguments")
 				return ""
 			}
 
@@ -72,12 +72,12 @@ func format(template string, args ...core.Value) (string, error) {
 
 		n, err = strconv.Atoi(betweenBrackets)
 		if err != nil {
-			err = fmt.Errorf("failed to parse int: %v", err)
+			err = errors.Errorf("failed to parse int: %v", err)
 			return ""
 		}
 
 		if n >= argsCount {
-			err = fmt.Errorf("invalid reference to argument `%d`", n)
+			err = errors.Errorf("invalid reference to argument `%d`", n)
 			return ""
 		}
 
