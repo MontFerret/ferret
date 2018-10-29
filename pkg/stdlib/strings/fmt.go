@@ -11,6 +11,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+// Fmt formats the template using these arguments.
+// @params template (String) - template.
+// @params args (Any Values) - template arguments.
+// @returns (String) - string formed by template using arguments.
 func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 	if err != nil {
@@ -31,52 +35,54 @@ func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 func format(template string, args ...core.Value) (string, error) {
-	argsMap := map[int]string{}
-	maxArgs := len(args)
-
-	template = replaceEmptyBrackets(template, strings.Count(template, "{}"))
-
-	for idx, arg := range args {
-		argsMap[idx] = arg.String()
-	}
-
-	rgx, err := regexp.Compile("{[0-9]+}")
+	rgx, err := regexp.Compile("{[0-9]*}")
 	if err != nil {
 		return "", fmt.Errorf("failed to build regexp: %v", err)
 	}
 
-	n := 0
+	argsCount := len(args)
+	emptyBracketsCount := strings.Count(template, "{}")
+
+	if argsCount > emptyBracketsCount && emptyBracketsCount != 0 {
+		return "", fmt.Errorf("there are arguments that have never been used")
+	}
+
+	var betweenBrackets string
+	var n int
+	// index of the last value
+	// inserted into the template
+	var lastArgIdx int
 
 	template = rgx.ReplaceAllStringFunc(template, func(s string) string {
 		if err != nil {
 			return ""
 		}
 
-		n, err = strconv.Atoi(s[1 : len(s)-1])
+		betweenBrackets = s[1 : len(s)-1]
+
+		if betweenBrackets == "" {
+			if argsCount <= lastArgIdx {
+				err = fmt.Errorf("not enought arguments")
+				return ""
+			}
+
+			lastArgIdx++
+			return args[lastArgIdx-1].String()
+		}
+
+		n, err = strconv.Atoi(betweenBrackets)
 		if err != nil {
 			err = fmt.Errorf("failed to parse int: %v", err)
 			return ""
 		}
 
-		if n > maxArgs {
-			err = fmt.Errorf("there is no arg {%d}", n)
+		if n >= argsCount {
+			err = fmt.Errorf("invalid reference to argument `%d`", n)
 			return ""
 		}
 
-		argm, ok := argsMap[n]
-		if !ok {
-			err = fmt.Errorf("value {%d} doesn't exists", n)
-		}
-
-		return argm
+		return args[n].String()
 	})
 
 	return template, err
-}
-
-func replaceEmptyBrackets(s string, n int) string {
-	for i := 0; i < n; i++ {
-		s = strings.Replace(s, "{}", "{"+strconv.Itoa(i)+"}", 1)
-	}
-	return s
 }
