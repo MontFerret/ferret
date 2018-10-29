@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type MemberExpression struct {
@@ -15,11 +14,11 @@ type MemberExpression struct {
 
 func NewMemberExpression(src core.SourceMap, variableName string, path []core.Expression) (*MemberExpression, error) {
 	if variableName == "" {
-		return nil, errors.Wrap(core.ErrMissedArgument, "variable name")
+		return nil, core.Error(core.ErrMissedArgument, "variable name")
 	}
 
 	if path == nil || len(path) == 0 {
-		return nil, errors.Wrap(core.ErrMissedArgument, "path expressions")
+		return nil, core.Error(core.ErrMissedArgument, "path expressions")
 	}
 
 	return &MemberExpression{src, variableName, path}, nil

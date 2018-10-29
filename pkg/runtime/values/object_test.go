@@ -68,7 +68,7 @@ func TestObject(t *testing.T) {
 	})
 
 	Convey(".Unwrap", t, func() {
-		Convey("Should return an unwrapped value", func() {
+		Convey("Should return an unwrapped items", func() {
 			obj := values.NewObjectWith(
 				values.NewObjectProperty("foo", values.NewString("foo")),
 				values.NewObjectProperty("bar", values.NewString("bar")),
@@ -341,7 +341,7 @@ func TestObject(t *testing.T) {
 			So(el.Compare(values.NewInt(1)), ShouldEqual, 0)
 		})
 
-		Convey("Should return None when no value", func() {
+		Convey("Should return None when no items", func() {
 			obj := values.NewObject()
 
 			el, _ := obj.Get("foo")

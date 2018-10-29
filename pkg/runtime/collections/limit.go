@@ -1,60 +1,62 @@
 package collections
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type LimitIterator struct {
-	src       Iterator
+	values    Iterator
 	count     int
 	offset    int
 	currCount int
 }
 
-func NewLimitIterator(src Iterator, count, offset int) (*LimitIterator, error) {
-	if core.IsNil(src) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "source")
+func NewLimitIterator(values Iterator, count, offset int) (*LimitIterator, error) {
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "result")
 	}
 
-	return &LimitIterator{src, count, offset, 0}, nil
+	return &LimitIterator{values, count, offset, 0}, nil
 }
 
-func (i *LimitIterator) HasNext() bool {
-	i.verifyOffset()
-
-	if i.src.HasNext() == false {
-		return false
+func (iterator *LimitIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
+	if err := iterator.verifyOffset(ctx, scope); err != nil {
+		return nil, err
 	}
 
-	return i.counter() < i.count
+	iterator.currCount++
+
+	if iterator.counter() <= iterator.count {
+		return iterator.values.Next(ctx, scope)
+	}
+
+	return nil, nil
 }
 
-func (i *LimitIterator) Next() (DataSet, error) {
-	if i.counter() <= i.count {
-		i.currCount++
-
-		return i.src.Next()
-	}
-
-	return nil, ErrExhausted
+func (iterator *LimitIterator) counter() int {
+	return iterator.currCount - iterator.offset
 }
 
-func (i *LimitIterator) counter() int {
-	return i.currCount - i.offset
-}
-
-func (i *LimitIterator) verifyOffset() {
-	if i.offset == 0 {
-		return
+func (iterator *LimitIterator) verifyOffset(ctx context.Context, scope *core.Scope) error {
+	if iterator.offset == 0 {
+		return nil
 	}
 
-	if (i.offset < i.currCount) || i.src.HasNext() == false {
-		return
+	for iterator.offset > iterator.currCount {
+		nextScope, err := iterator.values.Next(ctx, scope.Fork())
+
+		if err != nil {
+			return err
+		}
+
+		if nextScope == nil {
+			iterator.currCount = iterator.offset
+			return nil
+		}
+
+		iterator.currCount++
 	}
 
-	for (i.offset > i.currCount) && i.src.HasNext() {
-		i.currCount++
-		i.src.Next()
-	}
+	return nil
 }

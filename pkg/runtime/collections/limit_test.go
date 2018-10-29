@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -18,7 +19,7 @@ func TestLimit(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		src, err := collections.NewLimitIterator(
+		iter, err := collections.NewLimitIterator(
 			sliceIterator(arr),
 			1,
 			0,
@@ -26,16 +27,12 @@ func TestLimit(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for src.HasNext() {
-			item, _, err := next(src)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 1)
 	})
 
@@ -48,7 +45,7 @@ func TestLimit(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		src, err := collections.NewLimitIterator(
+		iter, err := collections.NewLimitIterator(
 			sliceIterator(arr),
 			2,
 			0,
@@ -56,16 +53,12 @@ func TestLimit(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for src.HasNext() {
-			item, _, err := next(src)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 2)
 	})
 
@@ -79,7 +72,7 @@ func TestLimit(t *testing.T) {
 		}
 
 		offset := 2
-		src, err := collections.NewLimitIterator(
+		iter, err := collections.NewLimitIterator(
 			sliceIterator(arr),
 			2,
 			offset,
@@ -87,20 +80,17 @@ func TestLimit(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for src.HasNext() {
-			item, _, err := next(src)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 2)
 
-		for idx, current := range res {
+		for idx, nextScope := range res {
 			expected := arr[idx+offset]
+			current := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(expected, ShouldEqual, current)
 		}
@@ -117,7 +107,7 @@ func TestLimit(t *testing.T) {
 
 		offset := 3
 
-		src, err := collections.NewLimitIterator(
+		iter, err := collections.NewLimitIterator(
 			sliceIterator(arr),
 			2,
 			offset,
@@ -125,20 +115,17 @@ func TestLimit(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for src.HasNext() {
-			item, _, err := next(src)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 2)
 
-		for idx, current := range res {
+		for idx, nextScope := range res {
 			expected := arr[idx+offset]
+			current := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(expected, ShouldEqual, current)
 		}
@@ -155,7 +142,7 @@ func TestLimit(t *testing.T) {
 
 		offset := 4
 
-		src, err := collections.NewLimitIterator(
+		iter, err := collections.NewLimitIterator(
 			sliceIterator(arr),
 			2,
 			offset,
@@ -163,16 +150,12 @@ func TestLimit(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for src.HasNext() {
-			item, _, err := next(src)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(len(res), ShouldEqual, 1)
 	})
 }

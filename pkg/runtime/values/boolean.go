@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type Boolean bool
@@ -43,7 +42,7 @@ func ParseBoolean(input interface{}) (Boolean, error) {
 		}
 	}
 
-	return False, errors.Wrap(core.ErrInvalidType, "expected 'bool'")
+	return False, core.Error(core.ErrInvalidType, "expected 'bool'")
 }
 
 func ParseBooleanP(input interface{}) Boolean {

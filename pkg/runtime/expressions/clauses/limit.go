@@ -26,10 +26,6 @@ func NewLimitClause(
 	return &LimitClause{src, dataSource, count, offset}, nil
 }
 
-func (clause *LimitClause) Variables() collections.Variables {
-	return clause.dataSource.Variables()
-}
-
 func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
 	src, err := clause.dataSource.Iterate(ctx, scope)
 
