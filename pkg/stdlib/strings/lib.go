@@ -34,5 +34,6 @@ func NewLib() map[string]core.Function {
 		"FROM_BASE64":          FromBase64,
 		"TRIM":                 Trim,
 		"UPPER":                Upper,
+		"FMT":                  Fmt,
 	}
 }
