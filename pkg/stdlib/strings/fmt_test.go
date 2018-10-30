@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	. "github.com/smartystreets/goconvey/convey"
