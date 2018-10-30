@@ -3,6 +3,7 @@ package datetime_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -13,20 +14,34 @@ import (
 
 type testCase struct {
 	Name      string
-	Expected  values.DateTime
+	Expected  core.Value
+	TimeArg   time.Time
 	Args      []core.Value
 	ShouldErr bool
 }
 
 func TestNow(t *testing.T) {
+	tcs := []*testCase{
+		&testCase{
+			Name:     "When too many arguments",
+			Expected: values.None,
+			Args: []core.Value{
+				values.NewCurrentDateTime(),
+			},
+			ShouldErr: true,
+		},
+	}
 
+	for _, tc := range tcs {
+		tc.Do(t)
+	}
 }
 
 func (tc *testCase) Do(t *testing.T) {
 	Convey(tc.Name, t, func() {
 		var expected core.Value
 
-		expected = values.NewDateTime(tc.Expected.Time)
+		expected = values.NewDateTime(tc.TimeArg)
 
 		dt, err := datetime.Now(context.Background(), tc.Args...)
 
