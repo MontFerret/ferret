@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-const defaultTimeLayout = time.RFC3339
+const DefaultTimeLayout = time.RFC3339
 
 type DateTime struct {
 	time.Time
@@ -26,7 +26,7 @@ func NewDateTime(time time.Time) DateTime {
 }
 
 func ParseDateTime(input interface{}) (DateTime, error) {
-	return ParseDateTimeWith(input, defaultTimeLayout)
+	return ParseDateTimeWith(input, DefaultTimeLayout)
 }
 
 func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
