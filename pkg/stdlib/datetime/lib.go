@@ -7,5 +7,6 @@ func NewLib() map[string]core.Function {
 		"NOW":            Now,
 		"DATE":           Date,
 		"DATE_DAYOFWEEK": DateDayOfWeek,
+		"DATE_YEAR":      DateYear,
 	}
 }
