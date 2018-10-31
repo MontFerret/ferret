@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestFilter(t *testing.T) {
-	Convey("Should filter out non-even values", t, func() {
+	Convey("Should filter out non-even result", t, func() {
 		arr := []core.Value{
 			values.NewInt(1),
 			values.NewInt(2),
@@ -20,8 +21,8 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(ds collections.DataSet) (bool, error) {
-			i := float64(ds.Get(collections.DefaultValueVar).Unwrap().(int))
+		predicate := func(_ context.Context, scope *core.Scope) (bool, error) {
+			i := float64(scope.MustGetVariable(collections.DefaultValueVar).Unwrap().(int))
 			calc := float64(i / 2)
 
 			return calc == math.Floor(calc), nil
@@ -34,16 +35,10 @@ func TestFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		scope, _ := core.NewRootScope()
+		res, err := collections.ToSlice(context.Background(), scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(res, ShouldHaveLength, 2)
 	})
 
@@ -56,8 +51,8 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(ds collections.DataSet) (bool, error) {
-			i := float64(ds.Get(collections.DefaultKeyVar).Unwrap().(int))
+		predicate := func(_ context.Context, scope *core.Scope) (bool, error) {
+			i := float64(scope.MustGetVariable(collections.DefaultKeyVar).Unwrap().(int))
 
 			if i == 0 {
 				return false, nil
@@ -75,20 +70,15 @@ func TestFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		scope, _ := core.NewRootScope()
+		res, err := collections.ToSlice(context.Background(), scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
+		So(err, ShouldBeNil)
 
 		So(res, ShouldHaveLength, 2)
 	})
 
-	Convey("Should filter out values all values", t, func() {
+	Convey("Should filter out result all result", t, func() {
 		arr := []core.Value{
 			values.NewInt(1),
 			values.NewInt(2),
@@ -97,7 +87,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ collections.DataSet) (bool, error) {
+		predicate := func(_ context.Context, _ *core.Scope) (bool, error) {
 			return false, nil
 		}
 
@@ -108,20 +98,14 @@ func TestFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		scope, _ := core.NewRootScope()
+		res, err := collections.ToSlice(context.Background(), scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(res, ShouldHaveLength, 0)
 	})
 
-	Convey("Should pass through all values", t, func() {
+	Convey("Should pass through all result", t, func() {
 		arr := []core.Value{
 			values.NewInt(1),
 			values.NewInt(2),
@@ -130,7 +114,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ collections.DataSet) (bool, error) {
+		predicate := func(_ context.Context, _ *core.Scope) (bool, error) {
 			return true, nil
 		}
 
@@ -141,16 +125,10 @@ func TestFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		scope, _ := core.NewRootScope()
+		res, err := collections.ToSlice(context.Background(), scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
+		So(err, ShouldBeNil)
 		So(res, ShouldHaveLength, len(arr))
 	})
 
@@ -163,7 +141,7 @@ func TestFilter(t *testing.T) {
 			values.NewInt(5),
 		}
 
-		predicate := func(_ collections.DataSet) (bool, error) {
+		predicate := func(_ context.Context, _ *core.Scope) (bool, error) {
 			return true, nil
 		}
 
@@ -174,20 +152,15 @@ func TestFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		res := make([]core.Value, 0, len(arr))
+		scope, _ := core.NewRootScope()
+		_, err = collections.ToSlice(context.Background(), scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
+		So(err, ShouldBeNil)
 
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
-		item, _, err := next(iter)
+		item, err := iter.Next(context.Background(), scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeError)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Should iterate over nested filter", t, func() {
@@ -200,13 +173,13 @@ func TestFilter(t *testing.T) {
 		}
 
 		// i < 5
-		predicate1 := func(ds collections.DataSet) (bool, error) {
-			return ds.Get(collections.DefaultValueVar).Compare(values.NewInt(5)) == -1, nil
+		predicate1 := func(_ context.Context, scope *core.Scope) (bool, error) {
+			return scope.MustGetVariable(collections.DefaultValueVar).Compare(values.NewInt(5)) == -1, nil
 		}
 
 		// i > 2
-		predicate2 := func(ds collections.DataSet) (bool, error) {
-			return ds.Get(collections.DefaultValueVar).Compare(values.NewInt(2)) == 1, nil
+		predicate2 := func(_ context.Context, scope *core.Scope) (bool, error) {
+			return scope.MustGetVariable(collections.DefaultValueVar).Compare(values.NewInt(2)) == 1, nil
 		}
 
 		it, _ := collections.NewFilterIterator(
@@ -221,7 +194,8 @@ func TestFilter(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		sets, err := collections.ToSlice(iter)
+		scope, _ := core.NewRootScope()
+		sets, err := collections.ToSlice(context.Background(), scope, iter)
 
 		So(err, ShouldBeNil)
 

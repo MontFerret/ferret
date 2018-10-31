@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -19,7 +18,7 @@ func NewReturnExpression(
 	predicate core.Expression,
 ) (*ReturnExpression, error) {
 	if predicate == nil {
-		return nil, errors.Wrap(core.ErrMissedArgument, "expression")
+		return nil, core.Error(core.ErrMissedArgument, "expression")
 	}
 
 	return &ReturnExpression{

@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type Int int
@@ -48,7 +47,7 @@ func ParseInt(input interface{}) (Int, error) {
 		}
 	}
 
-	return ZeroInt, errors.Wrap(core.ErrInvalidType, "expected 'int'")
+	return ZeroInt, core.Error(core.ErrInvalidType, "expected 'int'")
 }
 
 func ParseIntP(input interface{}) Int {

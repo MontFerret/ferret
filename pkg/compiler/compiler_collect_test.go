@@ -56,6 +56,51 @@ func TestCollect(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
+	Convey("Should not have access to variables defined before COLLECT", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				LET x = "foo"
+				COLLECT gender = i.gender
+				RETURN {x, gender}
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
+
 	Convey("Should group result by a single key", t, func() {
 		c := compiler.New()
 

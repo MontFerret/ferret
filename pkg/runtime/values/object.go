@@ -206,7 +206,7 @@ func (t *Object) GetIn(path []core.Value) (core.Value, error) {
 }
 
 func (t *Object) Set(key String, value core.Value) {
-	if core.IsNil(value) == false {
+	if value != nil {
 		t.value[string(key)] = value
 	} else {
 		t.value[string(key)] = None

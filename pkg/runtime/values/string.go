@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type String string
@@ -52,7 +51,7 @@ func ParseString(input interface{}) (String, error) {
 		return String(stringer.String()), nil
 	}
 
-	return EmptyString, errors.Wrap(core.ErrInvalidType, "expected 'string'")
+	return EmptyString, core.Error(core.ErrInvalidType, "expected 'string'")
 }
 
 func ParseStringP(input interface{}) String {

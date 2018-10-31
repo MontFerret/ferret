@@ -17,7 +17,7 @@ func NewProgram(src string, body core.Expression) (*Program, error) {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
-	if core.IsNil(body) {
+	if body == nil {
 		return nil, core.Error(core.ErrMissedArgument, "body")
 	}
 

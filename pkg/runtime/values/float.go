@@ -4,12 +4,10 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"hash/fnv"
 	"math"
 	"strconv"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type Float float64
@@ -50,7 +48,7 @@ func ParseFloat(input interface{}) (Float, error) {
 		}
 	}
 
-	return ZeroFloat, errors.Wrap(core.ErrInvalidType, "expected 'float'")
+	return ZeroFloat, core.Error(core.ErrInvalidType, "expected 'float'")
 }
 
 func ParseFloatP(input interface{}) Float {

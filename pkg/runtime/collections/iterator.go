@@ -6,31 +6,29 @@ import (
 )
 
 type (
-	Variables []string
-
 	Iterator interface {
-		HasNext() bool
-		Next() (DataSet, error)
+		Next(ctx context.Context, scope *core.Scope) (*core.Scope, error)
 	}
 
 	Iterable interface {
-		Variables() Variables
 		Iterate(ctx context.Context, scope *core.Scope) (Iterator, error)
 	}
 )
 
-func ToSlice(iterator Iterator) ([]DataSet, error) {
-	res := make([]DataSet, 0, 10)
+func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core.Scope, error) {
+	res := make([]*core.Scope, 0, 10)
 
-	for iterator.HasNext() {
-		ds, err := iterator.Next()
+	for {
+		nextScope, err := iterator.Next(ctx, scope.Fork())
 
 		if err != nil {
 			return nil, err
 		}
 
-		res = append(res, ds)
-	}
+		if nextScope == nil {
+			return res, nil
+		}
 
-	return res, nil
+		res = append(res, nextScope)
+	}
 }

@@ -28,7 +28,6 @@ returnExpression
 
 forExpression
     : For forExpressionValueVariable (Comma forExpressionKeyVariable)? In forExpressionSource
-     (forExpressionClause)*
      (forExpressionBody)*
       forExpressionReturn
     ;
@@ -56,6 +55,21 @@ forExpressionClause
     | sortClause
     | filterClause
     | collectClause
+    ;
+
+forExpressionStatement
+    : variableDeclaration
+    | functionCallExpression
+    ;
+
+forExpressionBody
+    : forExpressionStatement
+    | forExpressionClause
+    ;
+
+forExpressionReturn
+    : returnExpression
+    | forExpression
     ;
 
 filterClause
@@ -106,16 +120,6 @@ collectGroupVariable
 
 collectCounter
     : With Count Into Identifier
-    ;
-
-forExpressionBody
-    : variableDeclaration
-    | functionCallExpression
-    ;
-
-forExpressionReturn
-    : returnExpression
-    | forExpression
     ;
 
 variableDeclaration

@@ -32,10 +32,6 @@ func NewFilterClause(
 	}, nil
 }
 
-func (clause *FilterClause) Variables() collections.Variables {
-	return clause.dataSource.Variables()
-}
-
 func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
 	src, err := clause.dataSource.Iterate(ctx, scope)
 
@@ -43,27 +39,19 @@ func (clause *FilterClause) Iterate(ctx context.Context, scope *core.Scope) (col
 		return nil, err
 	}
 
-	variables := clause.dataSource.Variables()
+	return collections.NewFilterIterator(src, clause.filter)
+}
 
-	return collections.NewFilterIterator(src, func(set collections.DataSet) (bool, error) {
-		innerScope := scope.Fork()
+func (clause *FilterClause) filter(ctx context.Context, scope *core.Scope) (bool, error) {
+	ret, err := clause.predicate.Exec(ctx, scope)
 
-		err := set.Apply(innerScope, variables)
+	if err != nil {
+		return false, err
+	}
 
-		if err != nil {
-			return false, core.SourceError(clause.src, err)
-		}
+	if ret == values.True {
+		return true, nil
+	}
 
-		ret, err := clause.predicate.Exec(ctx, innerScope)
-
-		if err != nil {
-			return false, err
-		}
-
-		if ret == values.True {
-			return true, nil
-		}
-
-		return false, nil
-	})
+	return false, nil
 }
