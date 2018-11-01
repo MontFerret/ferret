@@ -30,6 +30,11 @@ func TestDateMonth(t *testing.T) {
 			Expected: values.NewInt(2),
 			Args:     []core.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},
 		},
+		&testCase{
+			Name:     "When 12th month",
+			Expected: values.NewInt(12),
+			Args:     []core.Value{mustDefaultLayoutDt("1999-12-07T15:04:05Z")},
+		},
 	}
 
 	for _, tc := range tcs {
