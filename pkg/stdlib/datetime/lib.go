@@ -9,5 +9,6 @@ func NewLib() map[string]core.Function {
 		"DATE_DAYOFWEEK": DateDayOfWeek,
 		"DATE_YEAR":      DateYear,
 		"DATE_MONTH":     DateMonth,
+		"DATE_DAY":       DateDay,
 	}
 }
