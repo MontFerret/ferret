@@ -16,5 +16,6 @@ func NewLib() map[string]core.Function {
 		"DATE_MILLISECOND": DateMillisecond,
 		"DATE_DAYOFYEAR":   DateDayOfYear,
 		"DATE_LEAPYEAR":    DateLeapYear,
+		"DATE_QUARTER":     DateQuarter,
 	}
 }
