@@ -10,5 +10,8 @@ func NewLib() map[string]core.Function {
 		"DATE_YEAR":      DateYear,
 		"DATE_MONTH":     DateMonth,
 		"DATE_DAY":       DateDay,
+		"DATE_HOUR":      DateHour,
+		"DATE_MINUTE":    DateMinute,
+		"DATE_SECOND":    DateSecond,
 	}
 }
