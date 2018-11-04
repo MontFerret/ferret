@@ -26,12 +26,12 @@ func TestDateLeapYear(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When a leap year",
+			Name:     "When not a leap year",
 			Expected: values.NewBoolean(false),
 			Args:     []core.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},
 		},
 		&testCase{
-			Name:     "When not a leap year",
+			Name:     "When a leap year",
 			Expected: values.NewBoolean(true),
 			Args:     []core.Value{mustDefaultLayoutDt("1972-12-07T15:04:05Z")},
 		},
