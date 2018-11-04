@@ -2,6 +2,7 @@ package datetime_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -34,6 +35,13 @@ func TestDateDayOfYear(t *testing.T) {
 			Name:     "When 59th day of the year",
 			Expected: values.NewInt(59),
 			Args:     []core.Value{mustDefaultLayoutDt("1629-02-28T15:59:05Z")},
+		},
+		&testCase{
+			Name:     "When 366th day of the year",
+			Expected: values.NewInt(366),
+			Args: []core.Value{
+				values.NewDateTime(time.Date(1972, time.December, 31, 0, 0, 0, 0, time.Local)),
+			},
 		},
 	}
 
