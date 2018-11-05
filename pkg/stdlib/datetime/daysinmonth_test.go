@@ -2,14 +2,14 @@ package datetime_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 )
 
-func TestDate(t *testing.T) {
+func TestDateDateDaysInMonth(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 1 arguments",
@@ -33,23 +33,36 @@ func TestDate(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When incorrect timeStrings",
-			Expected: values.None,
+			Name:     "When Feb and a leap year",
+			Expected: values.NewInt(29),
 			Args: []core.Value{
-				values.NewString("bla-bla"),
+				values.NewDateTime(time.Date(1972, time.February, 1, 1, 1, 1, 1, time.Local)),
 			},
-			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When correct timeString in RFC3339 format",
-			Expected: mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+			Name:     "When Feb and not a leap year",
+			Expected: values.NewInt(28),
 			Args: []core.Value{
-				values.NewString("1999-02-07T15:04:05Z"),
+				values.NewDateTime(time.Date(1999, time.February, 1, 1, 1, 1, 1, time.Local)),
+			},
+		},
+		&testCase{
+			Name:     "When January",
+			Expected: values.NewInt(31),
+			Args: []core.Value{
+				values.NewDateTime(time.Date(1999, time.January, 1, 1, 1, 1, 1, time.Local)),
+			},
+		},
+		&testCase{
+			Name:     "When November",
+			Expected: values.NewInt(30),
+			Args: []core.Value{
+				values.NewDateTime(time.Date(1999, time.November, 1, 1, 1, 1, 1, time.Local)),
 			},
 		},
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.Date)
+		tc.Do(t, datetime.DateDaysInMonth)
 	}
 }

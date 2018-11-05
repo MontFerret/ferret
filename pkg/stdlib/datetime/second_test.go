@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 )
 
-func TestDateDay(t *testing.T) {
+func TestDateSecond(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 1 arguments",
@@ -32,18 +32,18 @@ func TestDateDay(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When 7th day",
-			Expected: values.NewInt(7),
+			Name:     "When 5th second",
+			Expected: values.NewInt(5),
 			Args:     []core.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},
 		},
 		&testCase{
-			Name:     "When 28th day",
-			Expected: values.NewInt(28),
-			Args:     []core.Value{mustDefaultLayoutDt("1629-02-28T15:04:05Z")},
+			Name:     "When 59th second",
+			Expected: values.NewInt(59),
+			Args:     []core.Value{mustDefaultLayoutDt("1629-02-28T15:59:59Z")},
 		},
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.DateDay)
+		tc.Do(t, datetime.DateSecond)
 	}
 }
