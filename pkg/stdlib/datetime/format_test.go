@@ -56,8 +56,11 @@ func TestDateFormat(t *testing.T) {
 			},
 		},
 		&testCase{
-			Name:     "When RFC3339Nano",
-			Expected: values.NewString("2018-11-05T00:54:15.000005125+03:00"),
+			Name: "When RFC3339Nano",
+			Expected: values.NewString(
+				time.Date(2018, time.November, 5, 0, 54, 15, 5125, time.Local).
+					Format(time.RFC3339Nano),
+			),
 			Args: []core.Value{
 				values.NewDateTime(
 					time.Date(2018, time.November, 5, 0, 54, 15, 5125, time.Local),
@@ -66,8 +69,11 @@ func TestDateFormat(t *testing.T) {
 			},
 		},
 		&testCase{
-			Name:     "When custom format",
-			Expected: values.NewString("2018-11-05"),
+			Name: "When custom format",
+			Expected: values.NewString(
+				time.Date(2018, time.November, 5, 0, 54, 15, 5125, time.Local).
+					Format("2006-01-02"),
+			),
 			Args: []core.Value{
 				values.NewDateTime(
 					time.Date(2018, time.November, 5, 0, 54, 15, 5125, time.Local),
