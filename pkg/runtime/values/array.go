@@ -236,7 +236,7 @@ func (t *Array) SortWith(sorter ArraySorter) *Array {
 	copy(c, t.items)
 
 	sort.SliceStable(c, func(i, j int) bool {
-		return c[i].Compare(c[j]) == -1
+		return sorter(c[i], c[j])
 	})
 
 	res := new(Array)
