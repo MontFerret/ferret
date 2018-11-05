@@ -26,6 +26,12 @@ func TestDateHour(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
+			Name:      "When argument isn't DateTime",
+			Expected:  values.None,
+			Args:      []core.Value{values.NewInt(0)},
+			ShouldErr: true,
+		},
+		&testCase{
 			Name:     "When 7th hour",
 			Expected: values.NewInt(7),
 			Args:     []core.Value{mustDefaultLayoutDt("1999-02-07T07:04:05Z")},
