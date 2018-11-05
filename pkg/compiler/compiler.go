@@ -59,9 +59,6 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 		return nil, ErrEmptyQuery
 	}
 
-	p := parser.New(query)
-	p.AddErrorListener(&errorListener{})
-
 	defer func() {
 		if r := recover(); r != nil {
 			// find out exactly what the error was and set err
@@ -77,6 +74,9 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 			program = nil
 		}
 	}()
+
+	p := parser.New(query)
+	p.AddErrorListener(&errorListener{})
 
 	l := newVisitor(query, c.funcs)
 
