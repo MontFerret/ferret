@@ -25,12 +25,8 @@ test:
 	go test -race ${DIR_PKG}/...
 
 cover:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/...
-ifneq ($(CODECOV_TOKEN), )
+	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
 	curl -s https://codecov.io/bash | bash
-else
-	$(error "CODECOV_TOKEN token is required")
-endif
 
 e2e:
 	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
