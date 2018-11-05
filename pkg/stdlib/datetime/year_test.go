@@ -26,6 +26,12 @@ func TestDateYear(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
+			Name:      "When argument isn't DateTime",
+			Expected:  values.None,
+			Args:      []core.Value{values.NewInt(0)},
+			ShouldErr: true,
+		},
+		&testCase{
 			Name:     "When 1999th year",
 			Expected: values.NewInt(1999),
 			Args:     []core.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},

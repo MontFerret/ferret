@@ -26,6 +26,12 @@ func TestDateQuarter(t *testing.T) {
 			Args:      []core.Value{},
 			ShouldErr: true,
 		},
+		&testCase{
+			Name:      "When argument isn't DateTime",
+			Expected:  values.None,
+			Args:      []core.Value{values.NewInt(0)},
+			ShouldErr: true,
+		},
 	}
 
 	for month := time.January; month <= time.December; month++ {

@@ -27,6 +27,12 @@ func TestDateMillisecond(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
+			Name:      "When argument isn't DateTime",
+			Expected:  values.None,
+			Args:      []core.Value{values.NewInt(0)},
+			ShouldErr: true,
+		},
+		&testCase{
 			Name:     "When 129 millisecond",
 			Expected: values.NewInt(129),
 			Args: []core.Value{
