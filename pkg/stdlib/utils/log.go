@@ -8,8 +8,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Log writes messages into the system log.
-func Log(ctx context.Context, args ...core.Value) (core.Value, error) {
+// Print writes messages into the system log.
+func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
 	if err != nil {
