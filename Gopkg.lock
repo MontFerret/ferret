@@ -55,7 +55,7 @@
   name = "github.com/gopherjs/gopherjs"
   packages = ["js"]
   pruneopts = "UT"
-  revision = "0210a2f0f73c96103378b0b935f39868e5731809"
+  revision = "d547d1d9531ed93dbdebcbff7f83e7c876a1e0ee"
 
 [[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
@@ -74,12 +74,12 @@
   version = "v4.2.1"
 
 [[projects]]
-  digest = "1:63801c64679bdeef1b63206f065d5a1f4c3a75ed66a3fbbd909bf98766542980"
+  digest = "1:7fce2468f62a9d9031efa370a995e1e4687e533da5a3e00cfb03307b74bbeca0"
   name = "github.com/labstack/echo"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1abaa3049251d17932e4313c2d6165073fd07fd8"
-  version = "v3.3.6"
+  revision = "ba1891b3dc1fc5548330e580c51157ea5eb6604f"
+  version = "v3.3.7"
 
 [[projects]]
   digest = "1:faee5b9f53eb1ae4eb04708c040c8c4dd685ce46509671e57a08520a15c54368"
@@ -180,7 +180,7 @@
   version = "v0.8.0"
 
 [[projects]]
-  digest = "1:5bc8f93f977b72a7a5264725c3bab275e69de0cc3e5c0dc1ee56feb564c33f03"
+  digest = "1:a79db0d8827ceac01726ebea395bf8e67af9b3cced22aedda5fce2a6952038fb"
   name = "github.com/rs/zerolog"
   packages = [
     ".",
@@ -188,8 +188,8 @@
     "internal/json",
   ]
   pruneopts = "UT"
-  revision = "338f9bc14084d22cb8eeacd6492861f8449d715c"
-  version = "v1.9.1"
+  revision = "e7627a4f73bfd66654c39d79386e5374cc36ffec"
+  version = "v1.10.0"
 
 [[projects]]
   digest = "1:4ca145a665316d3c020a39c0741780fa3636b9152b824206796c4dce541f4a24"
@@ -241,18 +241,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dedf20eb0d3e8d6aa8a4d3d2fae248222b688ed528201995e152cc497899123c"
+  digest = "1:674a2405f77863f4f362e3e45078fd9caa647dc1c0e8b022e3b9dc1ae89fbc8f"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
     "acme/autocert",
   ]
   pruneopts = "UT"
-  revision = "a92615f3c49003920a58dedcf32cf55022cefb8d"
+  revision = "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06"
 
 [[projects]]
   branch = "master"
-  digest = "1:24641a15105cc4281b8a4a701ac4019194618102c327b1495485b3f19ffdd53e"
+  digest = "1:17847c677cb69303e0b8606b690f400c53485620a98d288aee1a215235118fcb"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -260,7 +260,7 @@
     "html/atom",
   ]
   pruneopts = "UT"
-  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
+  revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
 
 [[projects]]
   branch = "master"
@@ -272,11 +272,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0a40b0bdd57a93e741d8557465be3a2edeec408e9b6399586ad65bbe8e355796"
+  digest = "1:35560529f5721d65f36dc23aa15fbf7306c5091cdc3f29f65881af5031b80cc8"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
+  revision = "9b800f95dbbc54abff0acf7ee32d88ba4e328c89"
 
 [solve-meta]
   analyzer-name = "dep"

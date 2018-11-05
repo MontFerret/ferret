@@ -48,3 +48,20 @@
 [[constraint]]
   name = "github.com/gofrs/uuid"
   version = "3.1.2"
+
+[[constraint]]
+  name = "github.com/sethgrid/pester"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/rs/zerolog"
+  version = "1.10.0"
+
+[[constraint]]
+  name = "github.com/natefinch/lumberjack"
+  version = "2.1"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.0"
+
