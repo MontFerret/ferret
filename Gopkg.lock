@@ -42,12 +42,12 @@
   revision = "2b8494104d86337cdd41d0a49cbed8e4583c0ab4"
 
 [[projects]]
-  digest = "1:ce579162ae1341f3e5ab30c0dce767f28b1eb6a81359aad01723f1ba6b4becdf"
+  digest = "1:c594a691090b434d55c67f6cc8e326ef5ba49452abc059821bd5d4fd4cdef08c"
   name = "github.com/gofrs/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "370558f003bfe29580cd0f698d8640daccdcc45c"
-  version = "v3.1.1"
+  revision = "7077aa61129615a0d7f45c49101cd011ab221c27"
+  version = "v3.1.2"
 
 [[projects]]
   branch = "master"
@@ -93,13 +93,12 @@
   version = "v0.2.7"
 
 [[projects]]
-  digest = "1:7ffdd69928c5153fc351132aa80bbcc18a8f8122de1ba592cf42dccb65732361"
+  digest = "1:612ebc66cfa7484088f90ab86c7f1eb3d7696cf38ec2451c63f8d6008ff7625f"
   name = "github.com/mafredri/cdp"
   packages = [
     ".",
     "devtool",
     "internal/errors",
-    "protocol",
     "protocol/accessibility",
     "protocol/animation",
     "protocol/applicationcache",
@@ -145,8 +144,8 @@
     "session",
   ]
   pruneopts = "UT"
-  revision = "75b0ecc5efcff27ac756a33ec71f0db75dc3d21c"
-  version = "v0.19.0"
+  revision = "0b30a3d15c28f2c8f028f99009cfba0b19baf126"
+  version = "v0.20.0"
 
 [[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
