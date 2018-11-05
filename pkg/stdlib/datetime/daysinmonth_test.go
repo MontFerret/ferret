@@ -27,6 +27,12 @@ func TestDateDateDaysInMonth(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
+			Name:      "When argument isn't DateTime",
+			Expected:  values.None,
+			Args:      []core.Value{values.NewInt(0)},
+			ShouldErr: true,
+		},
+		&testCase{
 			Name:     "When Feb and a leap year",
 			Expected: values.NewInt(29),
 			Args: []core.Value{

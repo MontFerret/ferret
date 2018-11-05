@@ -27,6 +27,12 @@ func TestDate(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
+			Name:      "When argument isn't DateTime",
+			Expected:  values.None,
+			Args:      []core.Value{values.NewInt(0)},
+			ShouldErr: true,
+		},
+		&testCase{
 			Name:     "When incorrect timeStrings",
 			Expected: values.None,
 			Args: []core.Value{
