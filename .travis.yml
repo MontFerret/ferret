@@ -40,6 +40,7 @@ stages:
 jobs:
   include:
   - stage: lint
+    go: stable
     script:
     - make vet
     - make lint
