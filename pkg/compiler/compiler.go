@@ -44,9 +44,8 @@ func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
 	return nil
 }
 
-// remove funciton 
-func (c *FqlCompiler) RemoveFunction(name string ) {
-	delete ( c.funcs, strings.ToUpper(name) )
+func (c *FqlCompiler) RemoveFunction(name string) {
+	delete(c.funcs, strings.ToUpper(name))
 }
 
 func (c *FqlCompiler) RegisterFunctions(funcs map[string]core.Function) error {
