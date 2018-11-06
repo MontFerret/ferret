@@ -19,5 +19,7 @@ func NewLib() map[string]core.Function {
 		"DATE_QUARTER":       DateQuarter,
 		"DATE_DAYS_IN_MONTH": DateDaysInMonth,
 		"DATE_FORMAT":        DateFormat,
+		"DATE_ADD":           DateAdd,
+		"DATE_SUBTRACT":      DateSubtract,
 	}
 }

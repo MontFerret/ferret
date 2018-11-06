@@ -2,6 +2,8 @@ package core
 
 import (
 	"encoding/json"
+
+	"github.com/pkg/errors"
 )
 
 //revive:disable-next-line redefines-builtin-id
@@ -39,6 +41,8 @@ func (t Type) String() string {
 	return typestr[t]
 }
 
+// Value represents an interface of
+// any type that needs to be used during runtime
 type Value interface {
 	json.Marshaler
 	Type() Type
@@ -49,10 +53,15 @@ type Value interface {
 	Copy() Value
 }
 
+// IsTypeOf return true when value's type
+// is equal to check type.
+// Returns false, otherwise.
 func IsTypeOf(value Value, check Type) bool {
 	return value.Type() == check
 }
 
+// ValidateType checks the match of
+// value's type and required types.
 func ValidateType(value Value, required ...Type) error {
 	var valid bool
 	ct := value.Type()
@@ -66,6 +75,29 @@ func ValidateType(value Value, required ...Type) error {
 
 	if !valid {
 		return TypeError(value.Type(), required...)
+	}
+
+	return nil
+}
+
+// PairValueType is a supporting
+// structure that used in validateValueTypePairs.
+type PairValueType struct {
+	Value Value
+	Types []Type
+}
+
+// ValidateValueTypePairs validate pairs of
+// Values and Types.
+// Returns error when type didn't match
+func ValidateValueTypePairs(pairs ...PairValueType) error {
+	var err error
+
+	for idx, pair := range pairs {
+		err = ValidateType(pair.Value, pair.Types...)
+		if err != nil {
+			return errors.Errorf("pair %d: %v", idx, err)
+		}
 	}
 
 	return nil
