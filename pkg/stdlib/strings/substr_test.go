@@ -2,10 +2,11 @@ package strings_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestSubstring(t *testing.T) {
@@ -72,10 +73,10 @@ func TestLeft(t *testing.T) {
 		})
 	})
 
-	Convey("Left('foobar', 3) should return 'foo'", t, func() {
+	Convey("Left('foobarfoobar', 3) should return 'foo'", t, func() {
 		out, _ := strings.Left(
 			context.Background(),
-			values.NewString("foobar"),
+			values.NewString("foobarfoobar"),
 			values.NewInt(3),
 		)
 
@@ -107,10 +108,10 @@ func TestRight(t *testing.T) {
 		})
 	})
 
-	Convey("Right('foobar', 3) should return 'bar'", t, func() {
+	Convey("Right('foobarfoobar', 3) should return 'bar'", t, func() {
 		out, _ := strings.Right(
 			context.Background(),
-			values.NewString("foobar"),
+			values.NewString("foobarfoobar"),
 			values.NewInt(3),
 		)
 
