@@ -105,5 +105,5 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewString(string(text)), nil
 	}
 
-	return values.NewStringFromRunes(runes[pos:size]), nil
+	return values.NewStringFromRunes(runes[size-pos : size]), nil
 }
