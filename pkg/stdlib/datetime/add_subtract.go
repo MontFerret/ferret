@@ -83,9 +83,9 @@ func getArgs(args []core.Value) (values.DateTime, values.Int, values.String, err
 	}
 
 	err = core.ValidateValueTypePairs(
-		core.PairValueType{args[0], sliceDateTime},
-		core.PairValueType{args[1], sliceIntType},
-		core.PairValueType{args[2], sliceStringType},
+		core.PairValueType{Value: args[0], Types: sliceDateTime},
+		core.PairValueType{Value: args[1], Types: sliceIntType},
+		core.PairValueType{Value: args[2], Types: sliceStringType},
 	)
 	if err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
