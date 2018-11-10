@@ -1,10 +1,8 @@
-// LET url = @server + '/bootstrap/overview.html'
-// LET doc = DOCUMENT(url, true)
-// LET selector = '.section-nav'
+LET url = @dynamic
+LET doc = DOCUMENT(url, true)
+LET selector = '#root > div > main > div'
 
-// LET expected = '<li class="toc-entry toc-h2"><a href="#containers">Containers</a></li><li class="toc-entry toc-h2"><a href="#responsive-breakpoints">Responsive breakpoints</a></li><li class="toc-entry toc-h2"><a href="#z-index">Z-index</a></li>'
-// LET actual = INNER_HTML(doc, selector)
+LET expected = '<div><h1>Welcome to Ferret E2E test page!</h1></div><div><p class="lead">It has several pages for testing different possibilities of the library</p></div>'
+LET actual = INNER_HTML(doc, selector)
 
-// RETURN EXPECT(REGEXP_REPLACE(expected, '\s', ''), REGEXP_REPLACE(TRIM(actual), '(\n|\s)', ''))
-
-RETURN ""
+RETURN EXPECT(REGEXP_REPLACE(expected, '\s', ''), REGEXP_REPLACE(TRIM(actual), '(\n|\s)', ''))

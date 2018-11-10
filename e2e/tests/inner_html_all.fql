@@ -1,4 +1,4 @@
-LET url = @server + '/bootstrap/overview.html'
+LET url = @static + '/overview.html'
 LET doc = DOCUMENT(url)
 
 LET expected = [

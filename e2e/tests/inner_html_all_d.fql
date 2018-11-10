@@ -1,0 +1,10 @@
+LET url = @dynamic
+LET doc = DOCUMENT(url, true)
+
+LET expected = [
+'<h1>Welcome to Ferret E2E test page!</h1>',
+'<p class="lead">It has several pages for testing different possibilities of the library</p>'
+]
+LET actual = INNER_HTML_ALL(doc, '#root > div > main > div > *')
+
+RETURN EXPECT(expected, actual)

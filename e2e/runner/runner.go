@@ -14,9 +14,10 @@ import (
 
 type (
 	Settings struct {
-		ServerAddress string
-		CDPAddress    string
-		Dir           string
+		StaticServerAddress  string
+		DynamicServerAddress string
+		CDPAddress           string
+		Dir                  string
 	}
 
 	Result struct {
@@ -129,7 +130,8 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	out, err := p.Run(
 		context.Background(),
 		runtime.WithBrowser(r.settings.CDPAddress),
-		runtime.WithParam("server", r.settings.ServerAddress),
+		runtime.WithParam("static", r.settings.StaticServerAddress),
+		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)
 
 	duration := time.Now().Sub(start)
