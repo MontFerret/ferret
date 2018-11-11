@@ -8,10 +8,4 @@ LET output = ELEMENT(doc, "#text_output")
 
 INPUT(input, "foo")
 
-LET res1 = EXPECT(output.innerText, "foo")
-
-INPUT(doc, "#text_input", "bar")
-
-LET res2 = EXPECT(output.innerText, "foo")
-
-RETURN res1 + res2
+RETURN EXPECT(output.innerText, "foo")
