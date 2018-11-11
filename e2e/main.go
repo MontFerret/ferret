@@ -1,14 +1,14 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/MontFerret/ferret/e2e/runner"
 	"github.com/MontFerret/ferret/e2e/server"
 	"github.com/rs/zerolog"
-	"os"
-	"path/filepath"
 )
 
 var (
@@ -48,9 +48,6 @@ func main() {
 		Dir:  filepath.Join(*pagesDir, "dynamic"),
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go func() {
 		if err := static.Start(); err != nil {
 			logger.Info().Timestamp().Msg("shutting down the static pages server")
@@ -86,15 +83,9 @@ func main() {
 
 	err := r.Run()
 
-	if err := static.Stop(ctx); err != nil {
-		logger.Fatal().Timestamp().Err(err).Msg("failed to stop the static pages server")
-	}
-
-	if err := dynamic.Stop(ctx); err != nil {
-		logger.Fatal().Timestamp().Err(err).Msg("failed to stop the dynamic pages server")
-	}
-
 	if err != nil {
 		os.Exit(1)
 	}
+
+	os.Exit(0)
 }
