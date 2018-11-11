@@ -1,10 +1,10 @@
 LET url = @dynamic
 LET doc = DOCUMENT(url, true)
-LET selector = '#root > div > main > div'
+LET selector = '#root > div > main > div h1'
 
 WAIT_ELEMENT(doc, "#layout")
 
-LET expected = 'Welcome to Ferret E2E test page! It has several pages for testing different possibilities of the library'
+LET expected = 'Welcome to Ferret E2E test page!'
 LET actual = INNER_TEXT(doc, selector)
 
 RETURN EXPECT(REGEXP_REPLACE(expected, '\s', ''), REGEXP_REPLACE(TRIM(actual), '(\n|\s)', ''))

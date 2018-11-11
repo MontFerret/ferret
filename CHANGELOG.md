@@ -1,5 +1,14 @@
 ## Changelog
 
+### 0.5.0
+#### Added
+- DateTime functions.
+
+#### Fixed
+- Unable to define variables and make function calls before FILTER, SORT and etc statements.
+- ``INNER_HTML`` returns outer HTML instead for dynamic elements.
+- ``INNER_TEXT`` returns HTML instead from dynamic elements.
+
 ### 0.4.0
 #### Added
 - ``COLLECT`` keyword [#141](https://github.com/MontFerret/ferret/pull/141)
