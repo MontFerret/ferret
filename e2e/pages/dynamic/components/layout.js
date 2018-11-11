@@ -2,7 +2,7 @@ const e = React.createElement;
 const NavLink = ReactRouterDOM.NavLink;
 
 export default function Layout({ children }) {
-    return e("div", null, [
+    return e("div", { id: "layout"}, [
         e("nav", { className: "navbar navbar-expand-md navbar-dark bg-dark mb-4" }, [
             e(NavLink, { className: "navbar-brand", to: "/"}, "Ferret"),
             e("button", { className: "navbar-toggler", type: "button"}, [

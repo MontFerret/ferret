@@ -356,7 +356,7 @@ func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.Stri
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.InnerHTMLBySelector(selector)
+	return doc.element.InnerTextBySelector(selector)
 }
 
 func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
