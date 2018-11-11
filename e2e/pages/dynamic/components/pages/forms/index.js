@@ -105,7 +105,7 @@ export default class FormsPage extends React.Component {
                 )
             ]),
             e("div", { className: "form-group" }, [
-                e("label", null, "Multi select"),
+                e("label", null, "Textarea"),
                 e("textarea", {
                         id: "textarea_input",
                         rows:"5",
