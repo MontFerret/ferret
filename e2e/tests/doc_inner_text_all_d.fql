@@ -8,6 +8,9 @@ LET expected = [
     'Welcome to Ferret E2E test page!',
     'It has several pages for testing different possibilities of the library'
 ]
-LET actual = INNER_TEXT_ALL(doc, selector)
+LET actual = (
+    FOR str IN INNER_TEXT_ALL(doc, selector)
+        RETURN REGEXP_REPLACE(TRIM(str), '\n', '')
+)
 
 RETURN EXPECT(expected, actual)
