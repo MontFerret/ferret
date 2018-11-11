@@ -55,7 +55,7 @@
 
 [[constraint]]
   name = "github.com/rs/zerolog"
-  version = "1.10.0"
+  version = "1.10.2"
 
 [[constraint]]
   name = "github.com/natefinch/lumberjack"
