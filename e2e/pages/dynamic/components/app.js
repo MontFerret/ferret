@@ -6,9 +6,10 @@ const e = React.createElement;
 const Router = ReactRouter.Router;
 const Switch = ReactRouter.Switch;
 const Route = ReactRouter.Route;
+const Redirect = ReactRouter.Redirect;
 const createBrowserHistory = History.createBrowserHistory;
 
-export default function AppComponent() {
+export default function AppComponent({ redirect = null}) {
     return e(Router, { history: createBrowserHistory() },
         e(Layout, null, [
             e(Switch, null, [
@@ -21,7 +22,8 @@ export default function AppComponent() {
                     path: '/forms',
                     component: FormsPage
                 })
-            ])
+            ]),
+            redirect ? e(Redirect, { to: redirect }) : null
         ])
     )
 }

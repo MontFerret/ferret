@@ -1,0 +1,17 @@
+LET url = @dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "form")
+
+LET input = ELEMENT(doc, "#text_input")
+LET output = ELEMENT(doc, "#text_output")
+
+INPUT(input, "foo")
+
+LET res1 = EXPECT(output.innerText, "foo")
+
+INPUT(doc, "#text_input", "bar")
+
+LET res2 = EXPECT(output.innerText, "foo")
+
+RETURN res1 + res2
