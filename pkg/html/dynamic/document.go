@@ -479,6 +479,58 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 	return values.True, nil
 }
 
+func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.Array) (*values.Array, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var element = document.querySelector(%s);
+
+			if (element == null) {
+				return [];
+			}
+
+			var values = %s;
+
+			if (element.nodeName.toLowerCase() !== 'select') {
+				throw new Error('Element is not a <select> element.');
+			}
+
+			var options = Array.from(element.options);
+      		element.value = undefined;
+
+			for (var option of options) {
+        		option.selected = values.includes(option.value);
+        	
+				if (option.selected && !element.multiple) {
+          			break;
+				}
+      		}
+
+      		element.dispatchEvent(new Event('input', { 'bubbles': true }));
+      		element.dispatchEvent(new Event('change', { 'bubbles': true }));
+      		
+			return options.filter(option => option.selected).map(option => option.value);
+		`,
+			eval.ParamString(selector.String()),
+			value.String(),
+		),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	arr, ok := res.(*values.Array)
+
+	if ok {
+		return arr, nil
+	}
+
+	return nil, core.TypeError(core.ArrayType, res.Type())
+}
+
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
@@ -702,6 +754,7 @@ func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, er
 	ctx := context.Background()
 
 	reply, err := doc.client.Page.PrintToPDF(ctx, params)
+
 	if err != nil {
 		return values.None, err
 	}

@@ -2,19 +2,17 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Input types a value to an underlying input element.
+// Select selects a value from an underlying select element.
 // @param source (Document | Element) - Event target.
-// @param valueOrSelector (String) - Selector or a value.
-// @param value (String) - Target value.
-// @param delay (Int, optional) - Waits delay milliseconds between keystrokes
-// @returns (Boolean) - Returns true if an element was found.
-func Input(_ context.Context, args ...core.Value) (core.Value, error) {
+// @param valueOrSelector (String | Array<String>) - Selector or a an array of strings as a value.
+// @param value (Array<String) - Target value. Optional.
+// @returns (Array<String>) - Returns an array of selected values.
+func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -44,20 +42,14 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		delay := values.Int(0)
+		arg3 := args[2]
+		err = core.ValidateType(arg3, core.ArrayType)
 
-		if len(args) == 4 {
-			arg4 := args[3]
-
-			err = core.ValidateType(arg4, core.IntType)
-			if err != nil {
-				return values.False, err
-			}
-
-			delay = arg4.(values.Int)
+		if err != nil {
+			return values.False, err
 		}
 
-		return doc.InputBySelector(arg2.(values.String), args[2], delay)
+		return doc.SelectBySelector(arg2.(values.String), arg3.(*values.Array))
 	case *dynamic.HTMLElement:
 		el, ok := arg1.(*dynamic.HTMLElement)
 
@@ -65,26 +57,15 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 		}
 
-		delay := values.Int(0)
+		arg2 := args[1]
 
-		if len(args) == 3 {
-			arg3 := args[2]
-
-			err = core.ValidateType(arg3, core.IntType)
-			if err != nil {
-				return values.False, err
-			}
-
-			delay = arg3.(values.Int)
-		}
-
-		err = el.Input(args[1], delay)
+		err = core.ValidateType(arg2, core.ArrayType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		return values.True, nil
+		return el.Select(arg2.(*values.Array))
 	default:
 		return values.False, core.Errors(core.ErrInvalidArgument)
 	}
