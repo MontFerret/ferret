@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gofrs/uuid"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ const DefaultTimeout = time.Second * 30
 var emptyNodeID = dom.NodeID(0)
 var emptyBackendID = dom.BackendNodeID(0)
 var emptyObjectID = ""
+var attrID = "data-ferret-id"
 
 type (
 	HTMLElementIdentity struct {
@@ -744,6 +746,78 @@ func (el *HTMLElement) Input(value core.Value, delay values.Int) error {
 	}
 
 	return nil
+}
+
+func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
+	if el.NodeName() != "SELECT" {
+		return nil, core.Error(core.ErrInvalidOperation, "Element is not a <select> element.")
+	}
+
+	id, err := uuid.NewV4()
+
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	err = el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id.nodeID, attrID, id.String()))
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := eval.Eval(
+		el.client,
+		fmt.Sprintf(`
+			var element = document.querySelector('[%s="%s"]');
+
+			if (element == null) {
+				return [];
+			}
+
+			var values = %s;
+
+			if (element.nodeName.toLowerCase() !== 'select') {
+				throw new Error('Element is not a <select> element.');
+			}
+
+			var options = Array.from(element.options);
+      		element.value = undefined;
+
+			for (var option of options) {
+        		option.selected = values.includes(option.value);
+        	
+				if (option.selected && !element.multiple) {
+          			break;
+				}
+      		}
+
+      		element.dispatchEvent(new Event('input', { 'bubbles': true }));
+      		element.dispatchEvent(new Event('change', { 'bubbles': true }));
+      		
+			return options.filter(option => option.selected).map(option => option.value);
+		`,
+			attrID,
+			id.String(),
+			value.String(),
+		),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	arr, ok := res.(*values.Array)
+
+	if ok {
+		return arr, nil
+	}
+
+	return nil, core.TypeError(core.ArrayType, res.Type())
 }
 
 func (el *HTMLElement) IsConnected() values.Boolean {

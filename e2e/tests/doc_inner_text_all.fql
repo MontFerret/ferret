@@ -1,4 +1,4 @@
-LET url = @server + '/bootstrap/grid.html'
+LET url = @static + '/grid.html'
 LET doc = DOCUMENT(url)
 
 LET expected = [

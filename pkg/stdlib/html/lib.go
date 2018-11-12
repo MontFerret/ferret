@@ -32,6 +32,7 @@ func NewLib() map[string]core.Function {
 		"INNER_HTML_ALL":   InnerHTMLAll,
 		"INNER_TEXT":       InnerText,
 		"INNER_TEXT_ALL":   InnerTextAll,
+		"SELECT":           Select,
 		"SCREENSHOT":       Screenshot,
 		"PDF":              PDF,
 		"DOWNLOAD":         Download,

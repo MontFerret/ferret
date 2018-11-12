@@ -1,14 +1,14 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/MontFerret/ferret/e2e/runner"
 	"github.com/MontFerret/ferret/e2e/server"
 	"github.com/rs/zerolog"
-	"os"
-	"path/filepath"
 )
 
 var (
@@ -24,12 +24,6 @@ var (
 		"root directory with test pages",
 	)
 
-	port = flag.Uint64(
-		"port",
-		8080,
-		"server port",
-	)
-
 	cdp = flag.String(
 		"cdp",
 		"http://0.0.0.0:9222",
@@ -42,17 +36,27 @@ func main() {
 
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	s := server.New(server.Settings{
-		Port: *port,
-		Dir:  *pagesDir,
+	staticPort := uint64(8080)
+	static := server.New(server.Settings{
+		Port: staticPort,
+		Dir:  filepath.Join(*pagesDir, "static"),
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	dynamicPort := uint64(8081)
+	dynamic := server.New(server.Settings{
+		Port: dynamicPort,
+		Dir:  filepath.Join(*pagesDir, "dynamic"),
+	})
 
 	go func() {
-		if err := s.Start(); err != nil {
-			logger.Info().Timestamp().Msg("shutting down the server")
+		if err := static.Start(); err != nil {
+			logger.Info().Timestamp().Msg("shutting down the static pages server")
+		}
+	}()
+
+	go func() {
+		if err := dynamic.Start(); err != nil {
+			logger.Info().Timestamp().Msg("shutting down the dynamic pages server")
 		}
 	}()
 
@@ -71,18 +75,17 @@ func main() {
 	}
 
 	r := runner.New(logger, runner.Settings{
-		ServerAddress: fmt.Sprintf("http://0.0.0.0:%d", *port),
-		CDPAddress:    *cdp,
-		Dir:           *testsDir,
+		StaticServerAddress:  fmt.Sprintf("http://0.0.0.0:%d", staticPort),
+		DynamicServerAddress: fmt.Sprintf("http://0.0.0.0:%d", dynamicPort),
+		CDPAddress:           *cdp,
+		Dir:                  *testsDir,
 	})
 
 	err := r.Run()
 
-	if err := s.Stop(ctx); err != nil {
-		logger.Fatal().Timestamp().Err(err).Msg("failed to stop server")
-	}
-
 	if err != nil {
 		os.Exit(1)
 	}
+
+	os.Exit(0)
 }

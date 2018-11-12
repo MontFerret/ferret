@@ -3,13 +3,16 @@ package dynamic
 import (
 	"bytes"
 	"context"
+	"errors"
 	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/protocol/runtime"
 	"golang.org/x/sync/errgroup"
 	"strings"
 )
@@ -65,23 +68,43 @@ func parseAttrs(attrs []string) *values.Object {
 }
 
 func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
-	var args *dom.GetOuterHTMLArgs
+	var objID runtime.RemoteObjectID
 
 	if id.objectID != "" {
-		args = dom.NewGetOuterHTMLArgs().SetObjectID(id.objectID)
+		objID = id.objectID
 	} else if id.backendID > 0 {
-		args = dom.NewGetOuterHTMLArgs().SetBackendNodeID(id.backendID)
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
+
+		if err != nil {
+			return "", err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return "", errors.New("unable to resolve node")
+		}
+
+		objID = *repl.Object.ObjectID
 	} else {
-		args = dom.NewGetOuterHTMLArgs().SetNodeID(id.nodeID)
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+		if err != nil {
+			return "", err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return "", errors.New("unable to resolve node")
+		}
+
+		objID = *repl.Object.ObjectID
 	}
 
-	res, err := client.DOM.GetOuterHTML(ctx, args)
+	res, err := eval.Property(ctx, client, objID, "innerHTML")
 
 	if err != nil {
 		return "", err
 	}
 
-	return values.NewString(res.OuterHTML), err
+	return values.NewString(res.String()), err
 }
 
 func parseInnerText(innerHTML string) (values.String, error) {
