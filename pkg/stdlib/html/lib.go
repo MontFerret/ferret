@@ -34,6 +34,7 @@ func NewLib() map[string]core.Function {
 		"INNER_TEXT_ALL":   InnerTextAll,
 		"SELECT":           Select,
 		"SCREENSHOT":       Screenshot,
+		"PAGINATION":       Pagination,
 		"PDF":              PDF,
 		"DOWNLOAD":         Download,
 	}
