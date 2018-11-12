@@ -52,6 +52,9 @@ type FqlParserListener interface {
 	// EnterLimitClause is called when entering the limitClause production.
 	EnterLimitClause(c *LimitClauseContext)
 
+	// EnterLimitClauseValue is called when entering the limitClauseValue production.
+	EnterLimitClauseValue(c *LimitClauseValueContext)
+
 	// EnterSortClause is called when entering the sortClause production.
 	EnterSortClause(c *SortClauseContext)
 
@@ -207,6 +210,9 @@ type FqlParserListener interface {
 
 	// ExitLimitClause is called when exiting the limitClause production.
 	ExitLimitClause(c *LimitClauseContext)
+
+	// ExitLimitClauseValue is called when exiting the limitClauseValue production.
+	ExitLimitClauseValue(c *LimitClauseValueContext)
 
 	// ExitSortClause is called when exiting the sortClause production.
 	ExitSortClause(c *SortClauseContext)

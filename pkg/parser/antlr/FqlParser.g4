@@ -77,7 +77,12 @@ filterClause
     ;
 
 limitClause
-    : Limit IntegerLiteral (Comma IntegerLiteral)?
+    : Limit limitClauseValue (Comma limitClauseValue)?
+    ;
+
+limitClauseValue
+    : IntegerLiteral
+    | param
     ;
 
 sortClause

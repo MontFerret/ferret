@@ -12,9 +12,10 @@ LET priceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > d
 LET altPriceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
 
 LET result = (
-    FOR pageNum IN 1..@pages
-        LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
-        LET wait = clicked ? WAIT_NAVIGATION(amazon) : false
+    FOR pageNum IN PAGINATION(amazon, nextBtnSelector)
+        LIMIT @limit
+
+        LET wait = pageNum > 0 ? WAIT_NAVIGATION(amazon) : false
         LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
 
         LET items = (
