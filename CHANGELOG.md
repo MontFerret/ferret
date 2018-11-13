@@ -4,6 +4,7 @@
 #### Added
 - DateTime functions.
 - ``PAGINATION`` function.
+- ``SCROLL_TOP`` and ``SCROLL_BOTTOM`` functions.
 
 #### Fixed
 - Unable to define variables and make function calls before FILTER, SORT and etc statements.
