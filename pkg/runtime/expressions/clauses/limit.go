@@ -9,15 +9,15 @@ import (
 type LimitClause struct {
 	src        core.SourceMap
 	dataSource collections.Iterable
-	count      int
-	offset     int
+	count      core.Expression
+	offset     core.Expression
 }
 
 func NewLimitClause(
 	src core.SourceMap,
 	dataSource collections.Iterable,
-	count int,
-	offset int,
+	count core.Expression,
+	offset core.Expression,
 ) (collections.Iterable, error) {
 	if dataSource == nil {
 		return nil, core.Error(core.ErrMissedArgument, "dataSource source")
@@ -33,10 +33,34 @@ func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (coll
 		return nil, core.SourceError(clause.src, err)
 	}
 
+	count, err := clause.count.Exec(ctx, scope)
+
+	if err != nil {
+		return nil, core.SourceError(clause.src, err)
+	}
+
+	offset, err := clause.offset.Exec(ctx, scope)
+
+	if err != nil {
+		return nil, core.SourceError(clause.src, err)
+	}
+
+	countInt, err := clause.parseValue(count)
+
+	if err != nil {
+		return nil, err
+	}
+
+	offsetInt, err := clause.parseValue(offset)
+
+	if err != nil {
+		return nil, err
+	}
+
 	iterator, err := collections.NewLimitIterator(
 		src,
-		clause.count,
-		clause.offset,
+		int(countInt),
+		int(offsetInt),
 	)
 
 	if err != nil {
@@ -44,4 +68,16 @@ func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (coll
 	}
 
 	return iterator, nil
+}
+
+func (clause *LimitClause) parseValue(val core.Value) (int, error) {
+	if val.Type() == core.IntType {
+		return val.Unwrap().(int), nil
+	}
+
+	if val.Type() == core.FloatType {
+		return int(val.Unwrap().(float64)), nil
+	}
+
+	return -1, core.TypeError(val.Type(), core.IntType, core.FloatType)
 }

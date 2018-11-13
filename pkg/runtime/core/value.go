@@ -21,6 +21,7 @@ const (
 	HTMLElementType  Type = 8
 	HTMLDocumentType Type = 9
 	BinaryType       Type = 10
+	CustomType       Type = 99
 )
 
 var typestr = map[Type]string{
@@ -35,6 +36,7 @@ var typestr = map[Type]string{
 	HTMLElementType:  "HTMLElement",
 	HTMLDocumentType: "HTMLDocument",
 	BinaryType:       "BinaryType",
+	CustomType:       "CustomType",
 }
 
 func (t Type) String() string {

@@ -67,6 +67,10 @@ func (v *BaseFqlParserVisitor) VisitLimitClause(ctx *LimitClauseContext) interfa
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitLimitClauseValue(ctx *LimitClauseValueContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitSortClause(ctx *SortClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }

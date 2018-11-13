@@ -276,41 +276,57 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 	return forExp, nil
 }
 
-func (v *visitor) createLimit(ctx *fql.LimitClauseContext) (int, int, error) {
+func (v *visitor) doVisitLimitClause(ctx *fql.LimitClauseContext, scope *scope) (core.Expression, core.Expression, error) {
 	var err error
-	var count int
-	var offset int
+	var count core.Expression
+	var offset core.Expression
 
-	intLiterals := ctx.AllIntegerLiteral()
+	clauseValues := ctx.AllLimitClauseValue()
 
-	if len(intLiterals) > 1 {
-		offset, err = v.parseInt(intLiterals[0])
+	if len(clauseValues) > 1 {
+		offset, err = v.doVisitLimitClauseValue(clauseValues[0].(*fql.LimitClauseValueContext), scope)
 
 		if err != nil {
-			return 0, 0, err
+			return nil, nil, err
 		}
 
-		count, err = v.parseInt(intLiterals[1])
+		count, err = v.doVisitLimitClauseValue(clauseValues[1].(*fql.LimitClauseValueContext), scope)
 
 		if err != nil {
-			return 0, 0, err
+			return nil, nil, err
 		}
 	} else {
-		count, err = strconv.Atoi(intLiterals[0].GetText())
+		count, err = v.doVisitLimitClauseValue(clauseValues[0].(*fql.LimitClauseValueContext), scope)
 
 		if err != nil {
-			return 0, 0, err
+			return nil, nil, err
 		}
+
+		offset = literals.NewIntLiteral(0)
 	}
 
 	return count, offset, nil
 }
 
-func (v *visitor) parseInt(node antlr.TerminalNode) (int, error) {
-	return strconv.Atoi(node.GetText())
+func (v *visitor) doVisitLimitClauseValue(ctx *fql.LimitClauseValueContext, scope *scope) (core.Expression, error) {
+	literalCtx := ctx.IntegerLiteral()
+
+	if literalCtx != nil {
+		i, err := strconv.Atoi(literalCtx.GetText())
+
+		if err != nil {
+			return nil, err
+		}
+
+		return literals.NewIntLiteral(i), nil
+	}
+
+	paramCtx := ctx.Param()
+
+	return v.doVisitParamContext(paramCtx.(*fql.ParamContext), scope)
 }
 
-func (v *visitor) createFilter(ctx *fql.FilterClauseContext, scope *scope) (core.Expression, error) {
+func (v *visitor) doVisitFilterClause(ctx *fql.FilterClauseContext, scope *scope) (core.Expression, error) {
 	exp := ctx.Expression().(*fql.ExpressionContext)
 
 	exps, err := v.doVisitAllExpressions(exp.AllExpression(), scope)
@@ -342,7 +358,7 @@ func (v *visitor) createFilter(ctx *fql.FilterClauseContext, scope *scope) (core
 	return nil, core.Error(ErrInvalidToken, ctx.GetText())
 }
 
-func (v *visitor) createSort(ctx *fql.SortClauseContext, scope *scope) ([]*clauses.SorterExpression, error) {
+func (v *visitor) doVisitSortClause(ctx *fql.SortClauseContext, scope *scope) ([]*clauses.SorterExpression, error) {
 	sortExpCtxs := ctx.AllSortClauseExpression()
 
 	res := make([]*clauses.SorterExpression, len(sortExpCtxs))
@@ -377,7 +393,7 @@ func (v *visitor) createSort(ctx *fql.SortClauseContext, scope *scope) ([]*claus
 	return res, nil
 }
 
-func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, valVarName string) (*clauses.Collect, error) {
+func (v *visitor) doVisitCollectClause(ctx *fql.CollectClauseContext, scope *scope, valVarName string) (*clauses.Collect, error) {
 	var err error
 	var selectors []*clauses.CollectSelector
 	var projection *clauses.CollectProjection
@@ -396,7 +412,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 			selectors = make([]*clauses.CollectSelector, 0, len(collectSelectors))
 
 			for _, cs := range collectSelectors {
-				selector, err := v.createCollectSelector(cs.(*fql.CollectSelectorContext), scope)
+				selector, err := v.doVisitCollectSelector(cs.(*fql.CollectSelectorContext), scope)
 
 				if err != nil {
 					return nil, err
@@ -416,7 +432,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 
 			// if projection expression is defined like WITH group = { foo: i.bar }
 			if projectionSelectorCtx != nil {
-				selector, err := v.createCollectSelector(projectionSelectorCtx.(*fql.CollectSelectorContext), scope)
+				selector, err := v.doVisitCollectSelector(projectionSelectorCtx.(*fql.CollectSelectorContext), scope)
 
 				if err != nil {
 					return nil, err
@@ -495,7 +511,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 		selectors := make([]*clauses.CollectAggregateSelector, 0, len(selectorCtxs))
 
 		for _, sc := range selectorCtxs {
-			selector, err := v.createCollectAggregateSelector(sc.(*fql.CollectAggregateSelectorContext), scope)
+			selector, err := v.doVisitCollectAggregateSelector(sc.(*fql.CollectAggregateSelectorContext), scope)
 
 			if err != nil {
 				return nil, err
@@ -524,7 +540,7 @@ func (v *visitor) createCollect(ctx *fql.CollectClauseContext, scope *scope, val
 	return clauses.NewCollect(selectors, projection, count, aggregate)
 }
 
-func (v *visitor) createCollectSelector(ctx *fql.CollectSelectorContext, scope *scope) (*clauses.CollectSelector, error) {
+func (v *visitor) doVisitCollectSelector(ctx *fql.CollectSelectorContext, scope *scope) (*clauses.CollectSelector, error) {
 	variable := ctx.Identifier().GetText()
 	exp, err := v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
 
@@ -535,7 +551,7 @@ func (v *visitor) createCollectSelector(ctx *fql.CollectSelectorContext, scope *
 	return clauses.NewCollectSelector(variable, exp)
 }
 
-func (v *visitor) createCollectAggregateSelector(ctx *fql.CollectAggregateSelectorContext, scope *scope) (*clauses.CollectAggregateSelector, error) {
+func (v *visitor) doVisitCollectAggregateSelector(ctx *fql.CollectAggregateSelectorContext, scope *scope) (*clauses.CollectAggregateSelector, error) {
 	variable := ctx.Identifier().GetText()
 	fnCtx := ctx.FunctionCallExpression()
 
@@ -608,7 +624,7 @@ func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext
 	limitCtx := ctx.LimitClause()
 
 	if limitCtx != nil {
-		limit, offset, err := v.createLimit(limitCtx.(*fql.LimitClauseContext))
+		limit, offset, err := v.doVisitLimitClause(limitCtx.(*fql.LimitClauseContext), scope)
 
 		if err != nil {
 			return nil, err
@@ -622,7 +638,7 @@ func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext
 	filterCtx := ctx.FilterClause()
 
 	if filterCtx != nil {
-		filterExp, err := v.createFilter(filterCtx.(*fql.FilterClauseContext), scope)
+		filterExp, err := v.doVisitFilterClause(filterCtx.(*fql.FilterClauseContext), scope)
 
 		if err != nil {
 			return nil, err
@@ -637,7 +653,7 @@ func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext
 
 	if sortCtx != nil {
 		sortCtx := sortCtx.(*fql.SortClauseContext)
-		sortExps, err := v.createSort(sortCtx, scope)
+		sortExps, err := v.doVisitSortClause(sortCtx, scope)
 
 		if err != nil {
 			return nil, err
@@ -652,7 +668,7 @@ func (v *visitor) doVisitForExpressionClause(ctx *fql.ForExpressionClauseContext
 
 	if collectCtx != nil {
 		collectCtx := collectCtx.(*fql.CollectClauseContext)
-		params, err := v.createCollect(collectCtx, scope, valVarName)
+		params, err := v.doVisitCollectClause(collectCtx, scope, valVarName)
 
 		if err != nil {
 			return nil, err
