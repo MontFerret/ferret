@@ -44,7 +44,7 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if date1.Equal(date2.Time) {
-		if bool(isFloat) {
+		if isFloat {
 			return values.NewFloat(0), nil
 		}
 		return values.NewInt(0), nil
