@@ -62,7 +62,7 @@ func (p *Paging) String() string {
 	return core.CustomType.String()
 }
 
-func (p *Paging) Compare(other core.Value) int {
+func (p *Paging) Compare(_ core.Value) int {
 	return 1
 }
 
@@ -78,11 +78,11 @@ func (p *Paging) Copy() core.Value {
 	return values.None
 }
 
-func (p *Paging) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+func (p *Paging) Iterate(_ context.Context) (collections.CollectionIterator, error) {
 	return &PagingIterator{p.document, p.selector, -1}, nil
 }
 
-func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, error) {
+func (i *PagingIterator) Next(_ context.Context) (core.Value, core.Value, error) {
 	i.pos++
 
 	if i.pos == 0 {
