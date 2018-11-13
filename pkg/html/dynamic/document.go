@@ -810,6 +810,30 @@ func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, 
 	return values.NewBinary(reply.Data), nil
 }
 
+func (doc *HTMLDocument) ScrollTop() error {
+	_, err := eval.Eval(doc.client, `
+		window.scrollTo({
+			left: 0,
+			top: 0,
+    		behavior: 'smooth'
+  		});
+	`, false, false)
+
+	return err
+}
+
+func (doc *HTMLDocument) ScrollBottom() error {
+	_, err := eval.Eval(doc.client, `
+		window.scrollTo({
+			left: 0,
+			top: window.document.body.scrollHeight,
+    		behavior: 'smooth'
+  		});
+	`, false, false)
+
+	return err
+}
+
 func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 	doc.Lock()
 	defer doc.Unlock()

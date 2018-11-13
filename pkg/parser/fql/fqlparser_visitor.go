@@ -52,6 +52,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#limitClause.
 	VisitLimitClause(ctx *LimitClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#limitClauseValue.
+	VisitLimitClauseValue(ctx *LimitClauseValueContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#sortClause.
 	VisitSortClause(ctx *SortClauseContext) interface{}
 

@@ -3,9 +3,12 @@
 ### 0.5.0
 #### Added
 - DateTime functions.
+- ``PAGINATION`` function.
+- ``SCROLL_TOP`` and ``SCROLL_BOTTOM`` functions.
 
 #### Fixed
 - Unable to define variables and make function calls before FILTER, SORT and etc statements.
+- Unable to use params in LIMIT clause
 - ``INNER_HTML`` returns outer HTML instead for dynamic elements.
 - ``INNER_TEXT`` returns HTML instead from dynamic elements.
 
