@@ -9,14 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	unitConverter = map[string]func(int64) float64{
-		"year": func(nsec int64) float64 {
-			return float64(nsec / 31536e12)
-		},
-	}
-)
-
 // DateDiff returns the difference between two dates in given time unit.
 // @params date1   (DateTime) - first DateTime.
 // @params date2   (DateTime) - second DateTime.
