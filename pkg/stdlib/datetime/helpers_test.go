@@ -14,7 +14,6 @@ import (
 type testCase struct {
 	Name      string
 	Expected  core.Value
-	TimeArg   time.Time
 	Args      []core.Value
 	ShouldErr bool
 }
@@ -32,6 +31,7 @@ func (tc *testCase) Do(t *testing.T, fn core.Function) {
 			So(err, ShouldBeNil)
 		}
 
+		So(actual.Type(), ShouldEqual, expected.Type())
 		So(actual.Compare(expected), ShouldEqual, 0)
 	})
 }

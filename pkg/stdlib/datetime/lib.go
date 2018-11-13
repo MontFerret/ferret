@@ -21,5 +21,6 @@ func NewLib() map[string]core.Function {
 		"DATE_FORMAT":        DateFormat,
 		"DATE_ADD":           DateAdd,
 		"DATE_SUBTRACT":      DateSubtract,
+		"DATE_DIFF":          DateDiff,
 	}
 }
