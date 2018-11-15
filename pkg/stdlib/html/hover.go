@@ -42,14 +42,14 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 		selector := args[1].(values.String)
 
 		return values.None, doc.HoverBySelector(selector)
-	} else {
-		// Element
-		el, ok := args[0].(*dynamic.HTMLElement)
-
-		if !ok {
-			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
-
-		return values.None, el.Hover()
 	}
+
+	// Element
+	el, ok := args[0].(*dynamic.HTMLElement)
+
+	if !ok {
+		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	}
+
+	return values.None, el.Hover()
 }

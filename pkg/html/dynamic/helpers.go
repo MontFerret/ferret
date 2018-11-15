@@ -69,7 +69,7 @@ func fromProtocolQuad(quad dom.Quad) []Quad {
 }
 
 func computeQuadArea(quads []Quad) float64 {
-	var area float64 = 0
+	var area float64
 
 	for i := range quads {
 		p1 := quads[i]
@@ -117,8 +117,8 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementI
 
 	// Return the middle point of the first quad.
 	quad := quads[0]
-	var x float64 = 0
-	var y float64 = 0
+	var x float64
+	var y float64
 
 	for _, q := range quad {
 		x += q.X
