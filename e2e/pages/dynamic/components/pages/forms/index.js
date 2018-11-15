@@ -45,7 +45,7 @@ export default class FormsPage extends React.Component {
     }
 
     render() {
-        return e("form", null, [
+        return e("form", { id: "page-form" }, [
             e("div", { className: "form-group" }, [
                 e("label", null, "Text input"),
                 e("input", {

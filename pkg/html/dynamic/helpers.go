@@ -14,10 +14,18 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"golang.org/x/sync/errgroup"
+	"math"
 	"strings"
 )
 
-type batchFunc = func() error
+type (
+	batchFunc = func() error
+
+	Quad struct {
+		X float64
+		Y float64
+	}
+)
 
 func runBatch(funcs ...batchFunc) error {
 	eg := errgroup.Group{}
@@ -37,6 +45,90 @@ func getRootElement(ctx context.Context, client *cdp.Client) (*dom.GetDocumentRe
 	}
 
 	return d, nil
+}
+
+func fromProtocolQuad(quad dom.Quad) []Quad {
+	return []Quad{
+		{
+			X: quad[0],
+			Y: quad[1],
+		},
+		{
+			X: quad[2],
+			Y: quad[3],
+		},
+		{
+			X: quad[4],
+			Y: quad[5],
+		},
+		{
+			X: quad[6],
+			Y: quad[7],
+		},
+	}
+}
+
+func computeQuadArea(quads []Quad) float64 {
+	var area float64
+
+	for i := range quads {
+		p1 := quads[i]
+		p2 := quads[(i+1)%len(quads)]
+		area += (p1.X*p2.Y - p2.X*p1.Y) / 2
+	}
+
+	return math.Abs(area)
+}
+
+func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (Quad, error) {
+	qargs := dom.NewGetContentQuadsArgs()
+
+	if id.objectID != "" {
+		qargs.SetObjectID(id.objectID)
+	} else if id.backendID != 0 {
+		qargs.SetBackendNodeID(id.backendID)
+	} else {
+		qargs.SetNodeID(id.nodeID)
+	}
+
+	res, err := client.DOM.GetContentQuads(ctx, qargs)
+
+	if err != nil {
+		return Quad{}, err
+	}
+
+	if res.Quads == nil || len(res.Quads) == 0 {
+		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
+	}
+
+	quads := make([][]Quad, 0, len(res.Quads))
+
+	for _, q := range res.Quads {
+		quad := fromProtocolQuad(q)
+
+		if computeQuadArea(quad) > 1 {
+			quads = append(quads, quad)
+		}
+	}
+
+	if len(quads) == 0 {
+		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
+	}
+
+	// Return the middle point of the first quad.
+	quad := quads[0]
+	var x float64
+	var y float64
+
+	for _, q := range quad {
+		x += q.X
+		y += q.Y
+	}
+
+	return Quad{
+		X: x / 4,
+		Y: y / 4,
+	}, nil
 }
 
 func parseAttrs(attrs []string) *values.Object {

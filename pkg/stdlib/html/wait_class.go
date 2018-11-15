@@ -50,7 +50,12 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		doc := args[0].(*dynamic.HTMLDocument)
+		doc, ok := args[0].(*dynamic.HTMLDocument)
+
+		if !ok {
+			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+		}
+
 		selector := args[1].(values.String)
 		class := args[2].(values.String)
 
@@ -66,7 +71,12 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		return values.None, doc.WaitForClass(selector, class, timeout)
 	case *dynamic.HTMLElement:
-		el := args[0].(*dynamic.HTMLElement)
+		el, ok := args[0].(*dynamic.HTMLElement)
+
+		if !ok {
+			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+		}
+
 		class := args[1].(values.String)
 
 		if len(args) == 3 {
