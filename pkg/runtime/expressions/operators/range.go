@@ -2,6 +2,7 @@ package operators
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -55,19 +56,18 @@ func (operator *RangeOperator) Eval(_ context.Context, left, right core.Value) (
 		return values.None, core.SourceError(operator.src, err)
 	}
 
-	var start int
-	var end int
+	var start, end int64
 
 	if left.Type() == core.FloatType {
-		start = int(left.(values.Float))
+		start = int64(left.(values.Float))
 	} else {
-		start = int(left.(values.Int))
+		start = int64(left.(values.Int))
 	}
 
 	if right.Type() == core.FloatType {
-		end = int(right.(values.Float))
+		end = int64(right.(values.Float))
 	} else {
-		end = int(right.(values.Int))
+		end = int64(right.(values.Int))
 	}
 
 	arr := values.NewArray(10)

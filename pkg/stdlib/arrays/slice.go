@@ -33,7 +33,7 @@ func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr := args[0].(*values.Array)
 	start := args[1].(values.Int)
-	length := values.NewInt(int(arr.Length()))
+	length := values.NewInt(int64(arr.Length()))
 
 	if len(args) > 2 {
 		if args[2].Type() == core.IntType {

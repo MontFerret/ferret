@@ -52,7 +52,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 		})
 	}
 
-	result := values.NewArray(int(capacity))
+	result := values.NewArray(int64(capacity))
 
 	for _, item := range intersections {
 		result.Push(item)

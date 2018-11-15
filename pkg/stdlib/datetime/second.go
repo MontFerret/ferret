@@ -23,5 +23,5 @@ func DateSecond(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	sec := args[0].(values.DateTime).Second()
 
-	return values.NewInt(sec), nil
+	return values.NewInt(int64(sec)), nil
 }

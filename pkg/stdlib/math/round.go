@@ -24,5 +24,5 @@ func Round(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.NewInt(int(math.Round(toFloat(args[0])))), nil
+	return values.NewInt(int64(math.Round(toFloat(args[0])))), nil
 }

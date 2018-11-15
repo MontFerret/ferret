@@ -39,7 +39,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 		uniq = args[2].Compare(values.True) == 0
 	}
 
-	result := values.NewArray(int(arr.Length() + 1))
+	result := values.NewArray(int64(arr.Length() + 1))
 	push := true
 
 	arr.ForEach(func(item core.Value, idx int) bool {

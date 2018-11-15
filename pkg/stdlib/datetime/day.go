@@ -23,5 +23,5 @@ func DateDay(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	day := args[0].(values.DateTime).Day()
 
-	return values.NewInt(day), nil
+	return values.NewInt(int64(day)), nil
 }

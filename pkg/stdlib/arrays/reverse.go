@@ -24,7 +24,7 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arr := args[0].(*values.Array)
-	size := int(arr.Length())
+	size := int64(arr.Length())
 	result := values.NewArray(size)
 
 	for i := size - 1; i >= 0; i-- {

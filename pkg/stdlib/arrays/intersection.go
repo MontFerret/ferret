@@ -24,7 +24,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 	}
 
 	intersections := make(map[uint64][]core.Value)
-	capacity := len(args)
+	capacity := int64(len(args))
 
 	for _, i := range args {
 		err := core.ValidateType(i, core.ArrayType)
@@ -46,7 +46,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 
 			bucket = append(bucket, value)
 			intersections[h] = bucket
-			bucketLen := len(bucket)
+			bucketLen := int64(len(bucket))
 
 			if bucketLen > capacity {
 				capacity = bucketLen

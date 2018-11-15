@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gofrs/uuid"
 	"hash/fnv"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gofrs/uuid"
 
 	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
@@ -155,7 +156,7 @@ func NewHTMLElement(
 	el.events = broker
 	el.connected = values.True
 	el.id = id
-	el.nodeType = values.NewInt(nodeType)
+	el.nodeType = values.NewInt(int64(nodeType))
 	el.nodeName = values.NewString(nodeName)
 	el.innerHTML = innerHTML
 	el.innerText = common.NewLazyValue(el.loadInnerText)
@@ -283,7 +284,7 @@ func (el *HTMLElement) Copy() core.Value {
 }
 
 func (el *HTMLElement) Length() values.Int {
-	return values.NewInt(len(el.children))
+	return values.NewInt(int64(len(el.children)))
 }
 
 func (el *HTMLElement) NodeType() values.Int {
@@ -403,7 +404,7 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 		return values.None
 	}
 
-	arr := values.NewArray(len(res.NodeIDs))
+	arr := values.NewArray(int64(len(res.NodeIDs)))
 
 	for _, id := range res.NodeIDs {
 		if id == emptyNodeID {
@@ -559,7 +560,7 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 		return values.NewArray(0)
 	}
 
-	arr := values.NewArray(len(res.NodeIDs))
+	arr := values.NewArray(int64(len(res.NodeIDs)))
 
 	for idx, id := range res.NodeIDs {
 		if id == emptyNodeID {
@@ -662,7 +663,7 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Ar
 		return values.NewArray(0)
 	}
 
-	arr := values.NewArray(len(res.NodeIDs))
+	arr := values.NewArray(int64(len(res.NodeIDs)))
 
 	for _, id := range res.NodeIDs {
 		text, err := loadInnerHTML(ctx, el.client, &HTMLElementIdentity{
@@ -704,7 +705,7 @@ func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
 		return values.ZeroInt
 	}
 
-	return values.NewInt(len(res.NodeIDs))
+	return values.NewInt(int64(len(res.NodeIDs)))
 }
 
 func (el *HTMLElement) Click() (values.Boolean, error) {
@@ -872,7 +873,7 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 	ctx, cancel := contextWithTimeout()
 	defer cancel()
 
-	loaded := values.NewArray(len(el.children))
+	loaded := values.NewArray(int64(len(el.children)))
 
 	for _, childID := range el.children {
 		child, err := LoadElement(
@@ -1051,7 +1052,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 			return
 		}
 
-		loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
+		loadedArr.Insert(values.NewInt(int64(targetIDx)), loadedEl)
 
 		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.id)
 
@@ -1116,7 +1117,7 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 		defer cancel()
 
 		loadedArr := v.(*values.Array)
-		loadedArr.RemoveAt(values.NewInt(targetIDx))
+		loadedArr.RemoveAt(values.NewInt(int64(targetIDx)))
 
 		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.id)
 

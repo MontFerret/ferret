@@ -46,7 +46,7 @@ func TestKeys(t *testing.T) {
 		So(err, ShouldEqual, nil)
 
 		for idx, key := range []string{"a", "b", "c"} {
-			So(keysArray.Get(values.NewInt(idx)), ShouldEqual, values.NewString(key))
+			So(keysArray.Get(values.NewInt(int64(idx))), ShouldEqual, values.NewString(key))
 		}
 	})
 

@@ -40,7 +40,7 @@ func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
 		limit = int(args[2].(values.Int))
 	}
 
-	result := values.NewArray(int(arr.Length()))
+	result := values.NewArray(int64(arr.Length()))
 
 	counter := 0
 	arr.ForEach(func(item core.Value, idx int) bool {

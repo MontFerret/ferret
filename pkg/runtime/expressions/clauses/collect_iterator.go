@@ -2,6 +2,7 @@ package clauses
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -188,7 +189,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 			} else if aggr != nil {
 				// create a new variable for keeping aggregated values
 				for _, selector := range aggr.selectors {
-					arr := values.NewArray(len(selector.aggregators))
+					arr := values.NewArray(int64(len(selector.aggregators)))
 
 					for range selector.aggregators {
 						arr.Push(values.None)
@@ -268,7 +269,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 					}
 
 					var args *values.Array
-					idx := values.NewInt(idx)
+					idx := values.NewInt(int64(idx))
 
 					if vv.Get(idx) == values.None {
 						args = values.NewArray(10)
@@ -320,7 +321,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 }
 
 func (iterator *CollectIterator) count(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
-	var counter int
+	var counter int64
 
 	// iterating over underlying data source
 	for {

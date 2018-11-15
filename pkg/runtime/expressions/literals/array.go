@@ -2,6 +2,7 @@ package literals
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -23,7 +24,7 @@ func (l *ArrayLiteral) Push(expression core.Expression) {
 }
 
 func (l *ArrayLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	arr := values.NewArray(len(l.elements))
+	arr := values.NewArray(int64(len(l.elements)))
 
 	for _, el := range l.elements {
 		val, err := el.Exec(ctx, scope)

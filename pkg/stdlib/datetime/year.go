@@ -23,5 +23,5 @@ func DateYear(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	year := args[0].(values.DateTime).Year()
 
-	return values.NewInt(year), nil
+	return values.NewInt(int64(year)), nil
 }

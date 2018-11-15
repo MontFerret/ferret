@@ -24,5 +24,5 @@ func DateDayOfWeek(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	wday := args[0].(values.DateTime).Weekday()
 
-	return values.NewInt(int(wday)), nil
+	return values.NewInt(int64(wday)), nil
 }

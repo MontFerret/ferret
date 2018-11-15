@@ -33,7 +33,7 @@ func RemoveValues(_ context.Context, args ...core.Value) (core.Value, error) {
 	arr := args[0].(*values.Array)
 	vals := args[1].(*values.Array)
 
-	result := values.NewArray(int(arr.Length()))
+	result := values.NewArray(int64(arr.Length()))
 	lookupTable := make(map[uint64]bool)
 
 	vals.ForEach(func(value core.Value, idx int) bool {

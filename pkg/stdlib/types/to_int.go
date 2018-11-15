@@ -56,7 +56,7 @@ func ToInt(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.ZeroInt, nil
 		}
 
-		return values.NewInt(num), nil
+		return values.NewInt(int64(num)), nil
 	case core.DateTimeType:
 		val := arg.(values.DateTime)
 
@@ -64,7 +64,7 @@ func ToInt(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.ZeroInt, nil
 		}
 
-		return values.NewInt(int(val.Unix())), nil
+		return values.NewInt(val.Unix()), nil
 	case core.NoneType:
 		return values.ZeroInt, nil
 	case core.ArrayType:

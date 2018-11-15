@@ -23,5 +23,5 @@ func DateHour(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	hour := args[0].(values.DateTime).Hour()
 
-	return values.NewInt(hour), nil
+	return values.NewInt(int64(hour)), nil
 }

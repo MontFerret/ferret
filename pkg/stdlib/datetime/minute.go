@@ -23,5 +23,5 @@ func DateMinute(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	min := args[0].(values.DateTime).Minute()
 
-	return values.NewInt(min), nil
+	return values.NewInt(int64(min)), nil
 }

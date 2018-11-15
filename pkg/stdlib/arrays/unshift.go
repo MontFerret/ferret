@@ -40,7 +40,7 @@ func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 		uniq = args[2].(values.Boolean)
 	}
 
-	result := values.NewArray(int(arr.Length() + 1))
+	result := values.NewArray(int64(arr.Length() + 1))
 
 	if !uniq {
 		result.Push(value)

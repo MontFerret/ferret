@@ -24,7 +24,7 @@ func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	firstArrLen := args[0].(*values.Array).Length()
-	result := values.NewArray(len(args) * int(firstArrLen))
+	result := values.NewArray(int64(len(args)) * int64(firstArrLen))
 
 	for _, arg := range args {
 		err := core.ValidateType(arg, core.ArrayType)

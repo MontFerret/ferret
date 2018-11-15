@@ -2,10 +2,11 @@ package compiler_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestParam(t *testing.T) {
@@ -25,8 +26,7 @@ func TestParam(t *testing.T) {
 			FOR i IN @values
 			SORT i
 			RETURN i
-		`).
-			MustRun(context.Background(), runtime.WithParam("values", []int{1, 2, 3, 4}))
+		`).MustRun(context.Background(), runtime.WithParam("values", []int64{1, 2, 3, 4}))
 
 		So(string(out), ShouldEqual, `[1,2,3,4]`)
 
@@ -35,13 +35,12 @@ func TestParam(t *testing.T) {
 			FOR i IN @values
 			SORT i
 			RETURN i
-		`).
-			MustRun(context.Background(), runtime.WithParam("values", map[string]int{
-				"foo": 1,
-				"bar": 2,
-				"faz": 3,
-				"qaz": 4,
-			}))
+		`).MustRun(context.Background(), runtime.WithParam("values", map[string]int64{
+			"foo": 1,
+			"bar": 2,
+			"faz": 3,
+			"qaz": 4,
+		}))
 
 		So(string(out2), ShouldEqual, `[1,2,3,4]`)
 	})
@@ -56,8 +55,8 @@ func TestParam(t *testing.T) {
 
 		out := prog.MustRun(
 			context.Background(),
-			runtime.WithParam("start", 1),
-			runtime.WithParam("end", 4),
+			runtime.WithParam("start", int64(1)),
+			runtime.WithParam("end", int64(4)),
 		)
 
 		So(string(out), ShouldEqual, `[1,2,3,4]`)

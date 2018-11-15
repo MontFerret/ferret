@@ -24,5 +24,5 @@ func Floor(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.NewInt(int(math.Floor(toFloat(args[0])))), nil
+	return values.NewInt(int64(math.Floor(toFloat(args[0])))), nil
 }

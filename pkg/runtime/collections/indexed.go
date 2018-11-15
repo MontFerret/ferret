@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -41,8 +42,8 @@ func NewDefaultIndexedIterator(
 }
 
 func (iterator *IndexedIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
-	if int(iterator.values.Length()) > iterator.pos {
-		idx := values.NewInt(iterator.pos)
+	if i := values.NewInt(int64(iterator.pos)); iterator.values.Length() > i {
+		idx := i
 		val := iterator.values.Get(idx)
 
 		iterator.pos++

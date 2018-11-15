@@ -38,7 +38,7 @@ func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 		strs = strings.SplitN(text, separator, limit)
 	}
 
-	arr := values.NewArray(len(strs))
+	arr := values.NewArray(int64(len(strs)))
 
 	for _, str := range strs {
 		arr.Push(values.NewString(str))

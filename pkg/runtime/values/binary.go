@@ -82,5 +82,5 @@ func (b *Binary) Copy() core.Value {
 }
 
 func (b *Binary) Length() Int {
-	return NewInt(len(b.values))
+	return NewInt(int64(len(b.values)))
 }

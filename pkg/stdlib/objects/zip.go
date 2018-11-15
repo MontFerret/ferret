@@ -67,7 +67,7 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 		keyExists[k] = true
 
-		val = vals.Get(values.NewInt(idx))
+		val = vals.Get(values.NewInt(int64(idx)))
 
 		if values.IsCloneable(val) {
 			val = val.(core.Cloneable).Clone()

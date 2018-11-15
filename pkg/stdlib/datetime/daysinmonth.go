@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-var daysCount = map[time.Month]int{
+var daysCount = map[time.Month]int64{
 	time.January:   31,
 	time.February:  28,
 	time.March:     31,

@@ -42,7 +42,7 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	currentLevel := 0
-	result := values.NewArray(int(arr.Length()) * 2)
+	result := values.NewArray(int64(arr.Length()) * 2)
 	var unwrap func(input *values.Array)
 
 	unwrap = func(input *values.Array) {

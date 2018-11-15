@@ -191,8 +191,8 @@ func Parse(input interface{}) core.Value {
 		return NewBoolean(input.(bool))
 	case string:
 		return NewString(input.(string))
-	case int:
-		return NewInt(input.(int))
+	case int64:
+		return NewInt(input.(int64))
 	case float64:
 		return NewFloat(input.(float64))
 	case float32:
@@ -201,7 +201,7 @@ func Parse(input interface{}) core.Value {
 		return NewDateTime(input.(time.Time))
 	case []interface{}:
 		input := input.([]interface{})
-		arr := NewArray(len(input))
+		arr := NewArray(int64(len(input)))
 
 		for _, el := range input {
 			arr.Push(Parse(el))
@@ -228,7 +228,7 @@ func Parse(input interface{}) core.Value {
 
 		if kind == reflect.Slice || kind == reflect.Array {
 			size := v.Len()
-			arr := NewArray(size)
+			arr := NewArray(int64(size))
 
 			for i := 0; i < size; i++ {
 				value := v.Index(i)
@@ -330,7 +330,7 @@ func ToArray(input core.Value) core.Value {
 			return NewArray(0)
 		}
 
-		arr := NewArray(int(obj.Length()))
+		arr := NewArray(int64(obj.Length()))
 
 		obj.ForEach(func(value core.Value, key string) bool {
 			arr.Push(value)
@@ -348,7 +348,7 @@ func ToArray(input core.Value) core.Value {
 			return NewArray(0)
 		}
 
-		arr := NewArray(int(obj.Length()))
+		arr := NewArray(int64(obj.Length()))
 
 		obj.ForEach(func(value core.Value, key string) bool {
 			arr.Push(value)

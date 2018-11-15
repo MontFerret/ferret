@@ -83,7 +83,7 @@ func (el *HTMLElement) NodeType() values.Int {
 		return 0
 	}
 
-	return values.NewInt(common.ToHTMLType(nodes[0].Type))
+	return values.NewInt(int64(common.ToHTMLType(nodes[0].Type)))
 }
 
 func (el *HTMLElement) NodeName() values.String {
@@ -179,7 +179,7 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 		return values.None
 	}
 
-	arr := values.NewArray(selection.Length())
+	arr := values.NewArray(int64(selection.Length()))
 
 	selection.Each(func(i int, selection *goquery.Selection) {
 		el, err := NewHTMLElement(selection)
@@ -207,7 +207,7 @@ func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String
 
 func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
 	selection := el.selection.Find(selector.String())
-	arr := values.NewArray(selection.Length())
+	arr := values.NewArray(int64(selection.Length()))
 
 	selection.Each(func(_ int, selection *goquery.Selection) {
 		str, err := selection.Html()
@@ -229,7 +229,7 @@ func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String
 
 func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
 	selection := el.selection.Find(selector.String())
-	arr := values.NewArray(selection.Length())
+	arr := values.NewArray(int64(selection.Length()))
 
 	selection.Each(func(_ int, selection *goquery.Selection) {
 		arr.Push(values.NewString(selection.Text()))
@@ -245,7 +245,7 @@ func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
 		return values.ZeroInt
 	}
 
-	return values.NewInt(selection.Size())
+	return values.NewInt(int64(selection.Size()))
 }
 
 func (el *HTMLElement) parseAttrs() *values.Object {

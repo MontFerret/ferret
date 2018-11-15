@@ -36,7 +36,7 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	keys := sort.StringSlice(obj.Keys())
-	keysArray := values.NewArray(len(keys))
+	keysArray := values.NewArray(int64(len(keys)))
 
 	if needSort {
 		keys.Sort()

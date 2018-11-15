@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -30,8 +31,8 @@ func NewHTMLNodeIterator(
 }
 
 func (iterator *HTMLNodeIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
-	if iterator.values.Length() > values.NewInt(iterator.pos) {
-		idx := values.NewInt(iterator.pos)
+	if i := values.NewInt(int64(iterator.pos)); iterator.values.Length() > i {
+		idx := i
 		val := iterator.values.GetChildNode(idx)
 
 		iterator.pos++

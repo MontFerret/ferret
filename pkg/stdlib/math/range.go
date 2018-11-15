@@ -45,7 +45,7 @@ func Range(_ context.Context, args ...core.Value) (core.Value, error) {
 	start := toFloat(args[0])
 	end := toFloat(args[1])
 
-	arr := values.NewArray(int(end))
+	arr := values.NewArray(int64(end))
 
 	for i := start; i <= end; i += step {
 		arr.Push(values.NewFloat(i))

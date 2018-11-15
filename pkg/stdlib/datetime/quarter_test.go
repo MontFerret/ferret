@@ -37,7 +37,7 @@ func TestDateQuarter(t *testing.T) {
 	for month := time.January; month <= time.December; month++ {
 		tcs = append(tcs, &testCase{
 			Name:     "When " + month.String(),
-			Expected: values.NewInt(((int(month) - 1) / 3) + 1),
+			Expected: values.NewInt(((int64(month) - 1) / 3) + 1),
 			Args: []core.Value{
 				values.NewDateTime(time.Date(1999, month, 1, 1, 1, 1, 1, time.Local)),
 			},

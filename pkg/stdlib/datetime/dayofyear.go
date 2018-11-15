@@ -25,5 +25,5 @@ func DateDayOfYear(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	dayOfYear := args[0].(values.DateTime).YearDay()
 
-	return values.NewInt(dayOfYear), nil
+	return values.NewInt(int64(dayOfYear)), nil
 }

@@ -3,11 +3,12 @@ package collections_test
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func toValues(scopes []*core.Scope) []core.Value {
@@ -99,7 +100,7 @@ func TestSort(t *testing.T) {
 	})
 
 	Convey("Should sort asc with multiple sorters", t, func() {
-		makeObj := func(one, two int) *values.Object {
+		makeObj := func(one, two int64) *values.Object {
 			obj := values.NewObject()
 
 			obj.Set("one", values.NewInt(one))
@@ -162,7 +163,7 @@ func TestSort(t *testing.T) {
 	})
 
 	Convey("Should sort desc with multiple sorters", t, func() {
-		makeObj := func(one, two int) *values.Object {
+		makeObj := func(one, two int64) *values.Object {
 			obj := values.NewObject()
 
 			obj.Set("one", values.NewInt(one))
@@ -225,7 +226,7 @@ func TestSort(t *testing.T) {
 	})
 
 	Convey("Should sort asc and desc with multiple sorters", t, func() {
-		makeObj := func(one, two int) *values.Object {
+		makeObj := func(one, two int64) *values.Object {
 			obj := values.NewObject()
 
 			obj.Set("one", values.NewInt(one))
@@ -288,7 +289,7 @@ func TestSort(t *testing.T) {
 	})
 
 	Convey("Should sort desc and asc with multiple sorters", t, func() {
-		makeObj := func(one, two int) *values.Object {
+		makeObj := func(one, two int64) *values.Object {
 			obj := values.NewObject()
 
 			obj.Set("one", values.NewInt(one))

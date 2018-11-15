@@ -19,7 +19,7 @@ type (
 	}
 )
 
-func NewArray(size int) *Array {
+func NewArray(size int64) *Array {
 	return &Array{items: make([]core.Value, 0, size)}
 }
 
@@ -64,7 +64,7 @@ func (t *Array) Compare(other core.Value) int {
 		var val core.Value
 
 		other.ForEach(func(otherVal core.Value, idx int) bool {
-			val = t.Get(NewInt(idx))
+			val = t.Get(NewInt(int64(idx)))
 			res = val.Compare(otherVal)
 
 			return res == 0
@@ -114,7 +114,7 @@ func (t *Array) Hash() uint64 {
 }
 
 func (t *Array) Copy() core.Value {
-	c := NewArray(len(t.items))
+	c := NewArray(int64(len(t.items)))
 
 	for _, el := range t.items {
 		c.Push(el)

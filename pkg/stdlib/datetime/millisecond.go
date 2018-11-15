@@ -23,5 +23,5 @@ func DateMillisecond(_ context.Context, args ...core.Value) (core.Value, error) 
 
 	msec := args[0].(values.DateTime).Nanosecond() / 1000000
 
-	return values.NewInt(msec), nil
+	return values.NewInt(int64(msec)), nil
 }

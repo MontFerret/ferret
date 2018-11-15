@@ -32,7 +32,7 @@ func RemoveNth(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr := args[0].(*values.Array)
 	index := int(args[1].(values.Int))
-	result := values.NewArray(int(arr.Length() - 1))
+	result := values.NewArray(int64(arr.Length() - 1))
 
 	arr.ForEach(func(value core.Value, idx int) bool {
 		if idx != index {

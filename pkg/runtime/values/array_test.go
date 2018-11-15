@@ -318,7 +318,7 @@ func TestArray(t *testing.T) {
 				values.NewInt(4),
 				values.NewInt(5),
 			)
-			threshold := 3
+			threshold := int64(3)
 			counter := 0
 
 			arr.ForEach(func(value core.Value, idx int) bool {

@@ -2,6 +2,7 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -20,7 +21,7 @@ func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	firstArrLen := args[0].(*values.Array).Length()
-	result := values.NewArray(len(args) * int(firstArrLen))
+	result := values.NewArray(int64(len(args)) * int64(firstArrLen))
 	hashes := make(map[uint64]bool)
 
 	for _, arg := range args {

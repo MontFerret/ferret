@@ -23,5 +23,5 @@ func DateMonth(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	month := args[0].(values.DateTime).Month()
 
-	return values.NewInt(int(month)), nil
+	return values.NewInt(int64(month)), nil
 }

@@ -13,7 +13,7 @@ type Int int
 
 var ZeroInt = Int(0)
 
-func NewInt(input int) Int {
+func NewInt(input int64) Int {
 	return Int(input)
 }
 

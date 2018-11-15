@@ -39,7 +39,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 		unique = args[2].(values.Boolean)
 	}
 
-	next := values.NewArray(int(arr.Length()) + 1)
+	next := values.NewArray(int64(arr.Length()) + 1)
 
 	if !unique {
 		arr.ForEach(func(item core.Value, idx int) bool {

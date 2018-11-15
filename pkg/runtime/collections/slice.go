@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -10,7 +11,7 @@ type SliceIterator struct {
 	valVar string
 	keyVar string
 	values []core.Value
-	pos    int
+	pos    int64
 }
 
 func NewSliceIterator(
@@ -30,7 +31,7 @@ func NewDefaultSliceIterator(input []core.Value) (Iterator, error) {
 }
 
 func (iterator *SliceIterator) Next(_ context.Context, scope *core.Scope) (*core.Scope, error) {
-	if len(iterator.values) > iterator.pos {
+	if int64(len(iterator.values)) > iterator.pos {
 		idx := iterator.pos
 		val := iterator.values[idx]
 

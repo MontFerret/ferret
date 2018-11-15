@@ -25,12 +25,12 @@ func Pop(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr := args[0].(*values.Array)
 
-	length := int(arr.Length())
+	length := int64(arr.Length())
 	result := values.NewArray(length)
 	lastIdx := length - 1
 
 	arr.ForEach(func(value core.Value, idx int) bool {
-		if idx == lastIdx {
+		if int64(idx) == lastIdx {
 			return false
 		}
 

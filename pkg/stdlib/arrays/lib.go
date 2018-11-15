@@ -35,7 +35,7 @@ func NewLib() map[string]core.Function {
 
 func ToUniqueArray(arr *values.Array) *values.Array {
 	hashTable := make(map[uint64]bool)
-	result := values.NewArray(int(arr.Length()))
+	result := values.NewArray(int64(arr.Length()))
 
 	arr.ForEach(func(item core.Value, _ int) bool {
 		h := item.Hash()
