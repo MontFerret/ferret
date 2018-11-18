@@ -109,13 +109,13 @@ func addUnit(dt values.DateTime, amount int, unit string) (values.DateTime, erro
 	case "d", "day", "days":
 		return values.NewDateTime(dt.AddDate(0, 0, amount*1)), nil
 	case "h", "hour", "hours":
-		return values.NewDateTime(dt.Add(time.Hour)), nil
+		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Hour)), nil
 	case "i", "minute", "minutes":
-		return values.NewDateTime(dt.Add(time.Minute)), nil
+		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Minute)), nil
 	case "s", "second", "seconds":
-		return values.NewDateTime(dt.Add(time.Second)), nil
+		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Second)), nil
 	case "f", "millisecond", "milliseconds":
-		return values.NewDateTime(dt.Add(time.Millisecond)), nil
+		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Millisecond)), nil
 	}
 	return values.DateTime{}, errors.Errorf("no such unit '%s'", unit)
 }

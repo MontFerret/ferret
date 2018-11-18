@@ -111,6 +111,42 @@ func TestDateAdd(t *testing.T) {
 				values.NewString("year"),
 			},
 		},
+		&testCase{
+			Name:     "+2 hours",
+			Expected: mustDefaultLayoutDt("1999-02-07T17:04:05Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(2),
+				values.NewString("h"),
+			},
+		},
+		&testCase{
+			Name:     "+20 minutes",
+			Expected: mustDefaultLayoutDt("1999-02-07T15:24:05Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(20),
+				values.NewString("i"),
+			},
+		},
+		&testCase{
+			Name:     "+30 seconds",
+			Expected: mustDefaultLayoutDt("1999-02-07T15:04:35Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(30),
+				values.NewString("s"),
+			},
+		},
+		&testCase{
+			Name:     "+1000 milliseconds",
+			Expected: mustDefaultLayoutDt("1999-02-07T15:04:06Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(1000),
+				values.NewString("f"),
+			},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -212,6 +248,42 @@ func TestDateSubtract(t *testing.T) {
 				mustLayoutDt("2006-01-02", "1999-02-07"),
 				values.NewInt(2000),
 				values.NewString("year"),
+			},
+		},
+		&testCase{
+			Name:     "-2 hours",
+			Expected: mustDefaultLayoutDt("1999-02-07T13:04:05Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(2),
+				values.NewString("h"),
+			},
+		},
+		&testCase{
+			Name:     "-20 minutes",
+			Expected: mustDefaultLayoutDt("1999-02-07T14:44:05Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(20),
+				values.NewString("i"),
+			},
+		},
+		&testCase{
+			Name:     "-30 seconds",
+			Expected: mustDefaultLayoutDt("1999-02-07T15:03:35Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(30),
+				values.NewString("s"),
+			},
+		},
+		&testCase{
+			Name:     "-1000 milliseconds",
+			Expected: mustDefaultLayoutDt("1999-02-07T15:04:04Z"),
+			Args: []core.Value{
+				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
+				values.NewInt(1000),
+				values.NewString("f"),
 			},
 		},
 	}
