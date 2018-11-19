@@ -71,7 +71,7 @@ func IsDatesEqual(tm1, tm2 time.Time, u Unit) bool {
 // AddUnit add amount given in u to tm
 func AddUnit(tm time.Time, amount int, u Unit) (res time.Time) {
 	if u < Day {
-		return tm.Add(time.Duration(int64(u.Nanosecond())))
+		return tm.Add(time.Duration(amount) * time.Duration(int64(u.Nanosecond())))
 	}
 
 	switch u {
