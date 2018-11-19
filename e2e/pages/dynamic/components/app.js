@@ -1,6 +1,7 @@
 import Layout from './layout.js';
 import IndexPage from './pages/index.js';
 import FormsPage from './pages/forms/index.js';
+import EventsPage from './pages/events/index.js';
 
 const e = React.createElement;
 const Router = ReactRouter.Router;
@@ -21,7 +22,11 @@ export default function AppComponent({ redirect = null}) {
                 e(Route, {
                     path: '/forms',
                     component: FormsPage
-                })
+                }),
+                e(Route, {
+                    path: '/events',
+                    component: EventsPage
+                }),
             ]),
             redirect ? e(Redirect, { to: redirect }) : null
         ])

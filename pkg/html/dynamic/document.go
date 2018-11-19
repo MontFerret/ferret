@@ -3,6 +3,7 @@ package dynamic
 import (
 	"context"
 	"fmt"
+	"github.com/mafredri/cdp/protocol/dom"
 	"hash/fnv"
 	"sync"
 	"time"
@@ -531,6 +532,45 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 	return nil, core.TypeError(core.ArrayType, res.Type())
 }
 
+func (doc *HTMLDocument) HoverBySelector(selector values.String) error {
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	err := doc.ScrollBySelector(selector)
+
+	if err != nil {
+		return err
+	}
+
+	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
+	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		doc.element.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve a node by selector")
+
+		return err
+	}
+
+	if found.NodeID <= 0 {
+		return errors.New("element not found")
+	}
+
+	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
+		nodeID: found.NodeID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
+	)
+}
+
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
@@ -815,7 +855,7 @@ func (doc *HTMLDocument) ScrollTop() error {
 		window.scrollTo({
 			left: 0,
 			top: 0,
-    		behavior: 'smooth'
+    		behavior: 'instant'
   		});
 	`, false, false)
 
@@ -827,9 +867,28 @@ func (doc *HTMLDocument) ScrollBottom() error {
 		window.scrollTo({
 			left: 0,
 			top: window.document.body.scrollHeight,
-    		behavior: 'smooth'
+    		behavior: 'instant'
   		});
 	`, false, false)
+
+	return err
+}
+
+func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
+	_, err := eval.Eval(doc.client, fmt.Sprintf(`
+		var el = document.querySelector(%s);
+
+		if (el == null) {
+			throw new Error("element not found");
+		}
+
+		el.scrollIntoView({
+    		behavior: 'instant'
+  		});
+
+		return true;
+	`, eval.ParamString(selector.String()),
+	), false, false)
 
 	return err
 }

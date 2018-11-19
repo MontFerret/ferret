@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  digest = "1:a62f6ed230a8cd138a9efbe718e7d0b0294f139266f5f55cd942769a9aac8de2"
+  digest = "1:573fa46f8d413d4bc3f7cc5e86b2c43cb21559f4fb0a19d9874d228e28fdc07c"
   name = "github.com/PuerkitoBio/goquery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2"
-  version = "v1.4.1"
+  revision = "2d2796f41742ece03e8086188fa4db16a3a0b458"
+  version = "v1.5.0"
 
 [[projects]]
   digest = "1:66b3310cf22cdc96c35ef84ede4f7b9b370971c4025f394c89a2638729653b11"
@@ -180,7 +180,7 @@
   version = "v0.8.0"
 
 [[projects]]
-  digest = "1:6c2fb8490d2f01654135efc3e8b715f63332f1e8272e81c93549c4c1227c2929"
+  digest = "1:3d9fe7fe51d4c4ca2afa26a34300b0de66bd954b1a1765faab467499c4720557"
   name = "github.com/rs/zerolog"
   packages = [
     ".",
@@ -188,8 +188,8 @@
     "internal/json",
   ]
   pruneopts = "UT"
-  revision = "8e30c7136954547e35720dbc2e5a50fd140f60af"
-  version = "v1.10.2"
+  revision = "848482bc3dbeed6a47eb8f8cec0d4484795b1314"
+  version = "v1.10.3"
 
 [[projects]]
   digest = "1:4ca145a665316d3c020a39c0741780fa3636b9152b824206796c4dce541f4a24"
