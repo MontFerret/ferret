@@ -3,6 +3,7 @@ package dynamic
 import (
 	"context"
 	"fmt"
+	"github.com/mafredri/cdp/protocol/dom"
 	"hash/fnv"
 	"sync"
 	"time"
@@ -356,7 +357,7 @@ func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.Stri
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.InnerHTMLBySelector(selector)
+	return doc.element.InnerTextBySelector(selector)
 }
 
 func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
@@ -477,6 +478,97 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 	}
 
 	return values.True, nil
+}
+
+func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.Array) (*values.Array, error) {
+	res, err := eval.Eval(
+		doc.client,
+		fmt.Sprintf(`
+			var element = document.querySelector(%s);
+
+			if (element == null) {
+				return [];
+			}
+
+			var values = %s;
+
+			if (element.nodeName.toLowerCase() !== 'select') {
+				throw new Error('Element is not a <select> element.');
+			}
+
+			var options = Array.from(element.options);
+      		element.value = undefined;
+
+			for (var option of options) {
+        		option.selected = values.includes(option.value);
+        	
+				if (option.selected && !element.multiple) {
+          			break;
+				}
+      		}
+
+      		element.dispatchEvent(new Event('input', { 'bubbles': true }));
+      		element.dispatchEvent(new Event('change', { 'bubbles': true }));
+      		
+			return options.filter(option => option.selected).map(option => option.value);
+		`,
+			eval.ParamString(selector.String()),
+			value.String(),
+		),
+		true,
+		false,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	arr, ok := res.(*values.Array)
+
+	if ok {
+		return arr, nil
+	}
+
+	return nil, core.TypeError(core.ArrayType, res.Type())
+}
+
+func (doc *HTMLDocument) HoverBySelector(selector values.String) error {
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	err := doc.ScrollBySelector(selector)
+
+	if err != nil {
+		return err
+	}
+
+	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
+	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		doc.element.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve a node by selector")
+
+		return err
+	}
+
+	if found.NodeID <= 0 {
+		return errors.New("element not found")
+	}
+
+	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
+		nodeID: found.NodeID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
+	)
 }
 
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
@@ -702,6 +794,7 @@ func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, er
 	ctx := context.Background()
 
 	reply, err := doc.client.Page.PrintToPDF(ctx, params)
+
 	if err != nil {
 		return values.None, err
 	}
@@ -755,6 +848,49 @@ func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, 
 	}
 
 	return values.NewBinary(reply.Data), nil
+}
+
+func (doc *HTMLDocument) ScrollTop() error {
+	_, err := eval.Eval(doc.client, `
+		window.scrollTo({
+			left: 0,
+			top: 0,
+    		behavior: 'instant'
+  		});
+	`, false, false)
+
+	return err
+}
+
+func (doc *HTMLDocument) ScrollBottom() error {
+	_, err := eval.Eval(doc.client, `
+		window.scrollTo({
+			left: 0,
+			top: window.document.body.scrollHeight,
+    		behavior: 'instant'
+  		});
+	`, false, false)
+
+	return err
+}
+
+func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
+	_, err := eval.Eval(doc.client, fmt.Sprintf(`
+		var el = document.querySelector(%s);
+
+		if (el == null) {
+			throw new Error("element not found");
+		}
+
+		el.scrollIntoView({
+    		behavior: 'instant'
+  		});
+
+		return true;
+	`, eval.ParamString(selector.String()),
+	), false, false)
+
+	return err
 }
 
 func (doc *HTMLDocument) handlePageLoad(_ interface{}) {

@@ -1,5 +1,18 @@
 ## Changelog
 
+### 0.5.0
+#### Added
+- DateTime functions.
+- ``PAGINATION`` function.
+- ``SCROLL_TOP``, ``SCROLL_BOTTOM`` and ``SCROLL_ELEMENT`` functions.
+- ``HOVER`` function.
+
+#### Fixed
+- Unable to define variables and make function calls before FILTER, SORT and etc statements.
+- Unable to use params in LIMIT clause
+- ``INNER_HTML`` returns outer HTML instead for dynamic elements.
+- ``INNER_TEXT`` returns HTML instead from dynamic elements.
+
 ### 0.4.0
 #### Added
 - ``COLLECT`` keyword [#141](https://github.com/MontFerret/ferret/pull/141)

@@ -40,7 +40,7 @@ func NewForExpression(
 	}, nil
 }
 
-func (e *ForExpression) AddLimit(src core.SourceMap, size, count int) error {
+func (e *ForExpression) AddLimit(src core.SourceMap, size, count core.Expression) error {
 	limit, err := clauses.NewLimitClause(src, e.dataSource, size, count)
 
 	if err != nil {

@@ -8,7 +8,7 @@ os:
 go:
 - "1.10.x"
 - "1.11.x"
-- master
+- stable
 
 addons:
   apt:
@@ -40,6 +40,7 @@ stages:
 jobs:
   include:
   - stage: lint
+    go: stable
     script:
     - make vet
     - make lint

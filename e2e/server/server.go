@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo"
+	"path/filepath"
 )
 
 type (
@@ -23,6 +24,7 @@ func New(settings Settings) *Server {
 	e.HideBanner = true
 
 	e.Static("/", settings.Dir)
+	e.File("/", filepath.Join(settings.Dir, "index.html"))
 
 	return &Server{e, settings}
 }

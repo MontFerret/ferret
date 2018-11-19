@@ -30,7 +30,6 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	switch args[0].(type) {
 	case *dynamic.HTMLDocument:
-
 		doc, ok := arg1.(*dynamic.HTMLDocument)
 
 		if !ok {
@@ -46,6 +45,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		delay := values.Int(0)
+
 		if len(args) == 4 {
 			arg4 := args[3]
 
@@ -58,7 +58,6 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.InputBySelector(arg2.(values.String), args[2], delay)
-
 	case *dynamic.HTMLElement:
 		el, ok := arg1.(*dynamic.HTMLElement)
 
@@ -67,6 +66,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		delay := values.Int(0)
+
 		if len(args) == 3 {
 			arg3 := args[2]
 

@@ -112,6 +112,12 @@ func (s *BaseFqlParserListener) EnterLimitClause(ctx *LimitClauseContext) {}
 // ExitLimitClause is called when production limitClause is exited.
 func (s *BaseFqlParserListener) ExitLimitClause(ctx *LimitClauseContext) {}
 
+// EnterLimitClauseValue is called when production limitClauseValue is entered.
+func (s *BaseFqlParserListener) EnterLimitClauseValue(ctx *LimitClauseValueContext) {}
+
+// ExitLimitClauseValue is called when production limitClauseValue is exited.
+func (s *BaseFqlParserListener) ExitLimitClauseValue(ctx *LimitClauseValueContext) {}
+
 // EnterSortClause is called when production sortClause is entered.
 func (s *BaseFqlParserListener) EnterSortClause(ctx *SortClauseContext) {}
 

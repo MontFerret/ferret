@@ -49,6 +49,15 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 	default:
 		// fallback to user defined types
 		switch data.(type) {
+		case collections.IterableCollection:
+			collection := data.(collections.IterableCollection)
+			iterator, err := collection.Iterate(ctx)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return collections.NewCollectionIterator(ds.valVariable, ds.keyVariable, iterator)
 		case collections.KeyedCollection:
 			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
 		case collections.IndexedCollection:
