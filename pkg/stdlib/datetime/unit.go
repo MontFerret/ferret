@@ -45,9 +45,9 @@ func (u Unit) Nanosecond() float64 {
 func IsDatesEqual(tm1, tm2 time.Time, u Unit) bool {
 	switch u {
 	case Millisecond:
-		date1Msec := tm1.Nanosecond() / 1e6
-		date2Msec := tm2.Nanosecond() / 1e6
-		return date1Msec == date2Msec
+		tm1Msec := tm1.Nanosecond() / 1e6
+		tm2Msec := tm2.Nanosecond() / 1e6
+		return tm1Msec == tm2Msec
 	case Second:
 		return tm1.Second() == tm2.Second()
 	case Minute:
@@ -57,9 +57,9 @@ func IsDatesEqual(tm1, tm2 time.Time, u Unit) bool {
 	case Day:
 		return tm1.Day() == tm2.Day()
 	case Week:
-		date1Wk := tm1.Day() / 7
-		date2Wk := tm2.Day() / 7
-		return date1Wk == date2Wk
+		tm1Wk := tm1.Day() / 7
+		tm2Wk := tm2.Day() / 7
+		return tm1Wk == tm2Wk
 	case Month:
 		return tm1.Month() == tm2.Month()
 	case Year:
