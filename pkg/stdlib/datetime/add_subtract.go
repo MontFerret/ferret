@@ -2,12 +2,9 @@ package datetime
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -40,12 +37,14 @@ func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	dt, err := addUnit(date, int(amount), unit.String())
+	u, err := UnitFromString(unit.String())
 	if err != nil {
 		return values.None, err
 	}
 
-	return dt, nil
+	tm := AddUnit(date.Time, int(amount), u)
+
+	return values.NewDateTime(tm), nil
 }
 
 // DateSubtract subtract amount given in unit to date.
@@ -68,12 +67,14 @@ func DateSubtract(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	dt, err := addUnit(date, -1*int(amount), unit.String())
+	u, err := UnitFromString(unit.String())
 	if err != nil {
 		return values.None, err
 	}
 
-	return dt, nil
+	tm := AddUnit(date.Time, -1*int(amount), u)
+
+	return values.NewDateTime(tm), nil
 }
 
 func getArgs(args []core.Value) (values.DateTime, values.Int, values.String, error) {
@@ -96,26 +97,4 @@ func getArgs(args []core.Value) (values.DateTime, values.Int, values.String, err
 	unit := args[2].(values.String)
 
 	return date, amount, unit, nil
-}
-
-func addUnit(dt values.DateTime, amount int, unit string) (values.DateTime, error) {
-	switch strings.ToLower(unit) {
-	case "y", "year", "years":
-		return values.NewDateTime(dt.AddDate(amount*1, 0, 0)), nil
-	case "m", "month", "months":
-		return values.NewDateTime(dt.AddDate(0, amount*1, 0)), nil
-	case "w", "week", "weeks":
-		return values.NewDateTime(dt.AddDate(0, 0, amount*7)), nil
-	case "d", "day", "days":
-		return values.NewDateTime(dt.AddDate(0, 0, amount*1)), nil
-	case "h", "hour", "hours":
-		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Hour)), nil
-	case "i", "minute", "minutes":
-		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Minute)), nil
-	case "s", "second", "seconds":
-		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Second)), nil
-	case "f", "millisecond", "milliseconds":
-		return values.NewDateTime(dt.Add(time.Duration(amount) * time.Millisecond)), nil
-	}
-	return values.DateTime{}, errors.Errorf("no such unit '%s'", unit)
 }

@@ -2,11 +2,9 @@ package datetime
 
 import (
 	"context"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 // DateDiff returns the difference between two dates in given time unit.
@@ -71,23 +69,9 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 func nsecToUnit(nsec float64, unit string) (float64, error) {
-	switch strings.ToLower(unit) {
-	case "y", "year", "years":
-		return nsec / 31536e12, nil
-	case "m", "month", "months":
-		return nsec / 26784e11, nil
-	case "w", "week", "weeks":
-		return nsec / 6048e11, nil
-	case "d", "day", "days":
-		return nsec / 864e11, nil
-	case "h", "hour", "hours":
-		return nsec / 36e11, nil
-	case "i", "minute", "minutes":
-		return nsec / 6e10, nil
-	case "s", "second", "seconds":
-		return nsec / 1e9, nil
-	case "f", "millisecond", "milliseconds":
-		return nsec / 1e6, nil
+	u, err := UnitFromString(unit)
+	if err != nil {
+		return -1, err
 	}
-	return -1, errors.Errorf("no such unit '%s'", unit)
+	return nsec / u.Nanosecond(), nil
 }
