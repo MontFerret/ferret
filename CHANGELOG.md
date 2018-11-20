@@ -10,8 +10,8 @@
 - Panic recovery mechanism [#158](https://github.com/MontFerret/ferret/pull/158).
 
 #### Fixed
-- Unable to define variables and make function calls before FILTER, SORT and etc statements [#173](https://github.com/MontFerret/ferret/pull/173).
-- Unable to use params in LIMIT clause [#148](https://github.com/MontFerret/ferret/pull/148).
+- Unable to define variables and make function calls before FILTER, SORT and etc statements [#148](https://github.com/MontFerret/ferret/pull/148).
+- Unable to use params in LIMIT clause [#173](https://github.com/MontFerret/ferret/pull/173).
 - ```RIGHT``` should return substr counting from right rather than left [#164](https://github.com/MontFerret/ferret/pull/164).
 - ``INNER_HTML`` returns outer HTML instead for dynamic elements [#170](https://github.com/MontFerret/ferret/pull/170).
 - ``INNER_TEXT`` returns HTML instead from dynamic elements [#170](https://github.com/MontFerret/ferret/pull/170).
