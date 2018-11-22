@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/html"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
+	"runtime"
 )
 
 type Program struct {
@@ -30,6 +32,12 @@ func (p *Program) Source() string {
 }
 
 func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
+	ctx = NewOptions().Apply(setters...).WithContext(ctx)
+	ctx = html.WithDynamicDriver(ctx)
+	ctx = html.WithStaticDriver(ctx)
+
+	logger := logging.FromContext(ctx)
+
 	defer func() {
 		if r := recover(); r != nil {
 			// find out exactly what the error was and set err
@@ -42,17 +50,21 @@ func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, er
 				err = errors.New("unknown panic")
 			}
 
+			b := make([]byte, 0, 20)
+			runtime.Stack(b, true)
+
+			logger.Error().
+				Timestamp().
+				Err(err).
+				Str("stack", string(b)).
+				Msg("Panic")
+
 			result = nil
 		}
 	}()
 
 	scope, closeFn := core.NewRootScope()
-
 	defer closeFn()
-
-	ctx = NewOptions().Apply(setters...).WithContext(ctx)
-	ctx = html.WithDynamicDriver(ctx)
-	ctx = html.WithStaticDriver(ctx)
 
 	out, err := p.body.Exec(ctx, scope)
 
