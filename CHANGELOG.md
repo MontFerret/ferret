@@ -1,5 +1,13 @@
 ## Changelog
 
+### 0.5.1
+
+#### Fixes
+- Unable to change a page load timeout [#186](https://github.com/MontFerret/ferret/pull/186).
+- ``RETURN doc`` returns an empty string [#187](https://github.com/MontFerret/ferret/pull/187).
+- Unable to pass an HTML Node without a selector to ``INNER_TEXT`` and ``INNER_HTML`` [#187](https://github.com/MontFerret/ferret/pull/187).
+- ``doc.innerText`` returns an error [#187](https://github.com/MontFerret/ferret/pull/187).
+
 ### 0.5.0
 #### Added
 - ``FMT`` function [#151](https://github.com/MontFerret/ferret/pull/151).
