@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -132,6 +133,7 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 
 	out, err := p.Run(
 		context.Background(),
+		runtime.WithLog(os.Stdout),
 		runtime.WithBrowser(r.settings.CDPAddress),
 		runtime.WithParam("static", r.settings.StaticServerAddress),
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),

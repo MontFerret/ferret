@@ -2,6 +2,8 @@ package compiler_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -19,6 +21,38 @@ BAR
 			MustRun(context.Background())
 
 		So(string(out), ShouldEqual, `"\nFOO\nBAR\n"`)
+	})
+
+	Convey("Should be possible to use multi line string with nested strings", t, func() {
+		out := compiler.New().
+			MustCompile(fmt.Sprintf(`
+RETURN %s<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>Title</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>%s
+`, "`", "`")).
+			MustRun(context.Background())
+
+		out, err := json.Marshal(`<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>Title</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>`)
+
+		So(err, ShouldBeNil)
+
+		So(string(out), ShouldEqual, string(out))
 	})
 }
 

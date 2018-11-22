@@ -915,7 +915,15 @@ func (v *visitor) doVisitIntegerLiteral(ctx *fql.IntegerLiteralContext) (core.Ex
 }
 
 func (v *visitor) doVisitStringLiteral(ctx *fql.StringLiteralContext) (core.Expression, error) {
-	text := ctx.StringLiteral().GetText()
+	var text string
+
+	strLiteral := ctx.StringLiteral()
+
+	if strLiteral != nil {
+		text = strLiteral.GetText()
+	} else {
+		text = ctx.TemplateStringLiteral().GetText()
+	}
 
 	// remove extra quotes
 	return literals.NewStringLiteral(text[1 : len(text)-1]), nil
