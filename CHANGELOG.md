@@ -7,7 +7,8 @@
 - ``RETURN doc`` returns an empty string [#187](https://github.com/MontFerret/ferret/pull/187).
 - Unable to pass an HTML Node without a selector to ``INNER_TEXT`` and ``INNER_HTML`` [#187](https://github.com/MontFerret/ferret/pull/187).
 - ``doc.innerText`` returns an error [#187](https://github.com/MontFerret/ferret/pull/187).
-- Panics when ``WAIT_CLASS`` does not receive all required arguments [192](https://github.com/MontFerret/ferret/pull/192).
+- Panics when ``WAIT_CLASS`` does not receive all required arguments [#192](https://github.com/MontFerret/ferret/pull/192).
+- Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
 
 ### 0.5.0
 #### Added
