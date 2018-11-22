@@ -22,31 +22,26 @@ export default class HoverableComponent extends React.PureComponent {
     }
 
     render() {
-        const children = [];
-        children.push(
-            e("p", null, [
-                e("a", {
+        let content;
+
+        if (this.state.hovered) {
+            content =  e("p", { id: "hoverable-content"}, [
+                "Lorem ipsum dolor sit amet."
+            ]);
+        }
+
+        return e("div", { className: "card"}, [
+            e("div", {className: "card-header"}, [
+                e("button", {
                     id: "hoverable-btn",
                     className: "btn btn-primary",
-                    href: "#",
                     onMouseEnter: this.handleMouseEnter.bind(this),
                     onMouseLeave: this.handleMouseLeave.bind(this)
                 }, [
-                    "Hoverable link"
-                ]),
-            ])
-        );
-
-        if (this.state.hovered) {
-            children.push(
-                e("div", null, [
-                    e("div", { id: "hoverable-content", className: "card card-body"}, [
-                        "Lorem ipsum dolor sit amet."
-                    ])
+                    "Show content"
                 ])
-            )
-        }
-
-        return e("div", null, children);
+            ]),
+            e("div", {className: "card-body"}, content)
+        ]);
     }
 }
