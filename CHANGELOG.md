@@ -2,7 +2,7 @@
 
 ### 0.5.1
 
-#### Fixes
+#### Fixed
 - Unable to change a page load timeout [#186](https://github.com/MontFerret/ferret/pull/186).
 - ``RETURN doc`` returns an empty string [#187](https://github.com/MontFerret/ferret/pull/187).
 - Unable to pass an HTML Node without a selector to ``INNER_TEXT`` and ``INNER_HTML`` [#187](https://github.com/MontFerret/ferret/pull/187).
