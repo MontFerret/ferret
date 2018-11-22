@@ -1,17 +1,33 @@
 ## Changelog
 
-### 0.5.0
-#### Added
-- DateTime functions.
-- ``PAGINATION`` function.
-- ``SCROLL_TOP``, ``SCROLL_BOTTOM`` and ``SCROLL_ELEMENT`` functions.
-- ``HOVER`` function.
+### 0.5.1
 
 #### Fixed
-- Unable to define variables and make function calls before FILTER, SORT and etc statements.
-- Unable to use params in LIMIT clause
-- ``INNER_HTML`` returns outer HTML instead for dynamic elements.
-- ``INNER_TEXT`` returns HTML instead from dynamic elements.
+- Unable to change a page load timeout [#186](https://github.com/MontFerret/ferret/pull/186).
+- ``RETURN doc`` returns an empty string [#187](https://github.com/MontFerret/ferret/pull/187).
+- Unable to pass an HTML Node without a selector to ``INNER_TEXT`` and ``INNER_HTML`` [#187](https://github.com/MontFerret/ferret/pull/187).
+- ``doc.innerText`` returns an error [#187](https://github.com/MontFerret/ferret/pull/187).
+- Panics when ``WAIT_CLASS`` does not receive all required arguments [#192](https://github.com/MontFerret/ferret/pull/192).
+- Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
+
+### 0.5.0
+#### Added
+- ``FMT`` function [#151](https://github.com/MontFerret/ferret/pull/151).
+- DateTime functions [#152](https://github.com/MontFerret/ferret/pull/152), [#153](https://github.com/MontFerret/ferret/pull/153), [#154](https://github.com/MontFerret/ferret/pull/154), [#156](https://github.com/MontFerret/ferret/pull/156), [#157](https://github.com/MontFerret/ferret/pull/157), [#165](https://github.com/MontFerret/ferret/pull/165), [#175](https://github.com/MontFerret/ferret/pull/175), [#182](https://github.com/MontFerret/ferret/pull/182).
+- ``PAGINATION`` function [#173](https://github.com/MontFerret/ferret/pull/173).
+- ``SCROLL_TOP``, ``SCROLL_BOTTOM`` and ``SCROLL_ELEMENT`` functions [#174](https://github.com/MontFerret/ferret/pull/174).
+- ``HOVER`` function [#178](https://github.com/MontFerret/ferret/pull/178).
+- Panic recovery mechanism [#158](https://github.com/MontFerret/ferret/pull/158).
+
+#### Fixed
+- Unable to define variables and make function calls before FILTER, SORT and etc statements [#148](https://github.com/MontFerret/ferret/pull/148).
+- Unable to use params in LIMIT clause [#173](https://github.com/MontFerret/ferret/pull/173).
+- ```RIGHT``` should return substr counting from right rather than left [#164](https://github.com/MontFerret/ferret/pull/164).
+- ``INNER_HTML`` returns outer HTML instead for dynamic elements [#170](https://github.com/MontFerret/ferret/pull/170).
+- ``INNER_TEXT`` returns HTML instead from dynamic elements [#170](https://github.com/MontFerret/ferret/pull/170).
+
+#### Breaking change:
+- Name collision between ```math``` and ```utils``` packages in standard library. Renamed ```LOG``` to ```PRINT``` [#162](https://github.com/MontFerret/ferret/pull/162).
 
 ### 0.4.0
 #### Added

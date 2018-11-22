@@ -24,5 +24,5 @@ func expect(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, nil
 	}
 
-	return values.NewString(fmt.Sprintf(`expected "%s"", but got "%s"`, args[0], args[1])), nil
+	return values.NewString(fmt.Sprintf(`expected "%s", but got "%s"`, args[0], args[1])), nil
 }

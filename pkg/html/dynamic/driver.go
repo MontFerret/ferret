@@ -53,9 +53,6 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, DefaultTimeout)
-	defer cancel()
-
 	url := targetURL.String()
 
 	if url == "" {
@@ -131,6 +128,10 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 			)
 		},
 	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return LoadHTMLDocument(ctx, conn, client, url)
 }

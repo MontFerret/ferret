@@ -22,7 +22,7 @@ before_install:
 - sudo curl -o /usr/local/lib/antlr-4.7.1-complete.jar https://www.antlr.org/download/antlr-4.7.1-complete.jar
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
 - mkdir $HOME/travis-bin
-- echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.7.1-complete.jar "$@"' > $HOME/travis-bin/antlr4
+- echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.7.1-complete.jar "$@"' > $HOME/travis-bin/antlr
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin

@@ -190,13 +190,75 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 		objID = *repl.Object.ObjectID
 	}
 
-	res, err := eval.Property(ctx, client, objID, "innerHTML")
+	// not a document
+	if id.nodeID != 1 {
+		res, err := eval.Property(ctx, client, objID, "innerHTML")
+
+		if err != nil {
+			return "", err
+		}
+
+		return values.NewString(res.String()), err
+	}
+
+	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID))
 
 	if err != nil {
 		return "", err
 	}
 
-	return values.NewString(res.String()), err
+	return values.NewString(repl.OuterHTML), nil
+}
+
+func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+	var objID runtime.RemoteObjectID
+
+	if id.objectID != "" {
+		objID = id.objectID
+	} else if id.backendID > 0 {
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
+
+		if err != nil {
+			return "", err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return "", errors.New("unable to resolve node")
+		}
+
+		objID = *repl.Object.ObjectID
+	} else {
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+		if err != nil {
+			return "", err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return "", errors.New("unable to resolve node")
+		}
+
+		objID = *repl.Object.ObjectID
+	}
+
+	// not a document
+	if id.nodeID != 1 {
+		res, err := eval.Property(ctx, client, objID, "innerText")
+
+		if err != nil {
+			return "", err
+		}
+
+		return values.NewString(res.String()), err
+	}
+
+	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID))
+
+	if err != nil {
+		return "", err
+	}
+
+	return parseInnerText(repl.OuterHTML)
 }
 
 func parseInnerText(innerHTML string) (values.String, error) {
