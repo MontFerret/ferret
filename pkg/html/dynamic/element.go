@@ -444,6 +444,10 @@ func (el *HTMLElement) InnerText() values.String {
 		return values.EmptyString
 	}
 
+	if val == values.None {
+		return values.EmptyString
+	}
+
 	return val.(values.String)
 }
 
@@ -896,15 +900,15 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		ctx, cancel := contextWithTimeout()
 		defer cancel()
 
-		text, err := eval.Property(ctx, el.client, el.id.objectID, "innerText")
+		text, err := loadInnerText(ctx, el.client, el.id)
 
 		if err == nil {
 			return text, nil
 		}
 
-		el.logError(err).Msg("failed to read 'innerText' property of remote object")
+		el.logError(err).Msg("failed to get get inner text from remote object")
 
-		// and just parse innerHTML
+		// and just parse cached innerHTML
 	}
 
 	h := el.InnerHTML()
