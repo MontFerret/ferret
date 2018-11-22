@@ -63,7 +63,7 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 	return &http.Client{Transport: tr}, nil
 }
 
-func (drv *Driver) GetDocument(_ context.Context, targetURL values.String) (values.HTMLNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
 	u := targetURL.String()
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 
@@ -75,6 +75,8 @@ func (drv *Driver) GetDocument(_ context.Context, targetURL values.String) (valu
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9,ru;q=0.8")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
+
+	req = req.WithContext(ctx)
 
 	ua := common.GetUserAgent(drv.options.userAgent)
 

@@ -43,6 +43,13 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	// lets figure out what is passed as 1st argument
 	switch args[0].(type) {
 	case *dynamic.HTMLDocument:
+		// revalidate args with more accurate amount
+		err := core.ValidateArgs(args, 3, 4)
+
+		if err != nil {
+			return values.None, err
+		}
+
 		// class
 		err = core.ValidateType(args[2], core.StringType)
 
@@ -86,7 +93,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 				return values.None, err
 			}
 
-			timeout = args[3].(values.Int)
+			timeout = args[2].(values.Int)
 		}
 
 		return values.None, el.WaitForClass(class, timeout)
