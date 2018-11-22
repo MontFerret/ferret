@@ -92,7 +92,10 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 	results := make([]Result, 0, len(files))
 
 	c := compiler.New()
-	c.RegisterFunctions(Assertions())
+
+	if err := c.RegisterFunctions(Assertions()); err != nil {
+		return nil, err
+	}
 
 	// read scripts
 	for _, f := range files {
@@ -146,7 +149,13 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 
 	var result string
 
-	json.Unmarshal(out, &result)
+	if err := json.Unmarshal(out, &result); err != nil {
+		return Result{
+			name:     name,
+			duration: duration,
+			err:      err,
+		}
+	}
 
 	if result == "" {
 		return Result{
