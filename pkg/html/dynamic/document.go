@@ -50,6 +50,14 @@ const (
 	ScreenshotFormatJPEG ScreenshotFormat = "jpeg"
 )
 
+func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
+	err := client.Page.Close(context.Background())
+
+	if err != nil {
+		logger.Warn().Timestamp().Err(err).Msg("unabled to close document on load error")
+	}
+}
+
 func IsScreenshotFormatValid(format string) bool {
 	value := ScreenshotFormat(format)
 
@@ -62,6 +70,8 @@ func LoadHTMLDocument(
 	client *cdp.Client,
 	url string,
 ) (*HTMLDocument, error) {
+	logger := logging.FromContext(ctx)
+
 	if conn == nil {
 		return nil, core.Error(core.ErrMissedArgument, "connection")
 	}
@@ -76,6 +86,8 @@ func LoadHTMLDocument(
 		err = waitForLoadEvent(ctx, client)
 
 		if err != nil {
+			handleLoadError(logger, client)
+
 			return nil, err
 		}
 	}
@@ -83,16 +95,16 @@ func LoadHTMLDocument(
 	node, err := getRootElement(ctx, client)
 
 	if err != nil {
+		handleLoadError(logger, client)
 		return nil, errors.Wrap(err, "failed to get root element")
 	}
 
 	broker, err := createEventBroker(client)
 
 	if err != nil {
+		handleLoadError(logger, client)
 		return nil, errors.Wrap(err, "failed to create event events")
 	}
-
-	logger := logging.FromContext(ctx)
 
 	rootElement, err := LoadElement(
 		ctx,
@@ -104,6 +116,10 @@ func LoadHTMLDocument(
 	)
 
 	if err != nil {
+		broker.Stop()
+		broker.Close()
+		handleLoadError(logger, client)
+
 		return nil, errors.Wrap(err, "failed to load root element")
 	}
 
