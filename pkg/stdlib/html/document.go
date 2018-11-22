@@ -9,8 +9,8 @@ import (
 )
 
 type LoadDocumentArgs struct {
-	Dynamic values.Boolean
-	Timeout values.Int
+	Dynamic bool
+	Timeout time.Duration
 }
 
 // Page loads a HTML document by a given url.
@@ -44,7 +44,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	var drv html.Driver
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(params.Timeout)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(ctx, params.Timeout)
 	defer cancel()
 
 	if params.Dynamic == false {
@@ -62,7 +62,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 func parseLoadDocumentArgs(args []core.Value) (LoadDocumentArgs, error) {
 	res := LoadDocumentArgs{
-		Timeout: values.Int(time.Second * 30),
+		Timeout: time.Second * 30,
 	}
 
 	if len(args) == 3 {
@@ -72,7 +72,7 @@ func parseLoadDocumentArgs(args []core.Value) (LoadDocumentArgs, error) {
 			return res, err
 		}
 
-		res.Dynamic = args[1].(values.Boolean)
+		res.Dynamic = bool(args[1].(values.Boolean))
 
 		err = core.ValidateType(args[2], core.IntType)
 
@@ -80,7 +80,7 @@ func parseLoadDocumentArgs(args []core.Value) (LoadDocumentArgs, error) {
 			return res, err
 		}
 
-		res.Timeout = args[2].(values.Int)
+		res.Timeout = time.Duration(args[2].(values.Int)) * time.Millisecond
 	} else if len(args) == 2 {
 		err := core.ValidateType(args[1], core.BooleanType, core.IntType)
 
@@ -89,9 +89,9 @@ func parseLoadDocumentArgs(args []core.Value) (LoadDocumentArgs, error) {
 		}
 
 		if args[1].Type() == core.BooleanType {
-			res.Dynamic = args[1].(values.Boolean)
+			res.Dynamic = bool(args[1].(values.Boolean))
 		} else {
-			res.Timeout = args[1].(values.Int)
+			res.Timeout = time.Duration(args[1].(values.Int)) * time.Millisecond
 		}
 	}
 
