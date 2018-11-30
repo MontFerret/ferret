@@ -197,4 +197,15 @@ func TestLet(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "[1,2,3]")
 	})
+
+	Convey("Should not compile FOR foo IN foo", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			FOR foo IN foo
+				RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 }
