@@ -160,23 +160,30 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 	var keyVarName string
 
 	parsedClauses := make([]forOption, 0, 10)
-	valVar := ctx.ForExpressionValueVariable()
-	valVarName = valVar.GetText()
 	forInScope := scope.Fork()
-	forInScope.SetVariable(valVarName)
-
-	keyVar := ctx.ForExpressionKeyVariable()
-
-	if keyVar != nil {
-		keyVarName = keyVar.GetText()
-		forInScope.SetVariable(keyVarName)
-	}
 
 	srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
 	srcExp, err := v.doVisitForExpressionSource(srcCtx, forInScope)
 
 	if err != nil {
 		return nil, err
+	}
+
+	valVar := ctx.ForExpressionValueVariable()
+	valVarName = valVar.GetText()
+
+	if err := forInScope.SetVariable(valVarName); err != nil {
+		return nil, err
+	}
+
+	keyVar := ctx.ForExpressionKeyVariable()
+
+	if keyVar != nil {
+		keyVarName = keyVar.GetText()
+
+		if err := forInScope.SetVariable(keyVarName); err != nil {
+			return nil, err
+		}
 	}
 
 	src, err := expressions.NewDataSource(
