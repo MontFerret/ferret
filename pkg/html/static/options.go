@@ -15,11 +15,15 @@ type (
 	}
 )
 
-func newOptions() *Options {
+func newOptions(setters []Option) *Options {
 	opts := new(Options)
 	opts.backoff = pester.ExponentialBackoff
 	opts.concurrency = 3
 	opts.maxRetries = 5
+
+	for _, setter := range setters {
+		setter(opts)
+	}
 
 	return opts
 }

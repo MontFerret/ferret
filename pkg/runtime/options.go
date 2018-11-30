@@ -19,14 +19,20 @@ type (
 	Option func(*Options)
 )
 
-func NewOptions() *Options {
-	return &Options{
+func NewOptions(setters []Option) *Options {
+	opts := &Options{
 		params: make(map[string]core.Value),
 		logging: &logging.Options{
 			Writer: os.Stdout,
 			Level:  logging.ErrorLevel,
 		},
 	}
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return opts
 }
 
 func WithParam(name string, value interface{}) Option {
@@ -53,14 +59,6 @@ func WithLogLevel(lvl logging.Level) Option {
 	return func(options *Options) {
 		options.logging.Level = lvl
 	}
-}
-
-func (opts *Options) Apply(setters ...Option) *Options {
-	for _, setter := range setters {
-		setter(opts)
-	}
-
-	return opts
 }
 
 func (opts *Options) WithContext(parent context.Context) context.Context {

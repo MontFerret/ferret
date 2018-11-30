@@ -10,9 +10,13 @@ type (
 	Option func(opts *Options)
 )
 
-func newOptions() *Options {
+func newOptions(setters []Option) *Options {
 	opts := new(Options)
 	opts.cdp = "http://127.0.0.1:9222"
+
+	for _, setter := range setters {
+		setter(opts)
+	}
 
 	return opts
 }

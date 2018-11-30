@@ -31,7 +31,7 @@ func (p *Program) Source() string {
 }
 
 func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
-	ctx = NewOptions().Apply(setters...).WithContext(ctx)
+	ctx = NewOptions(setters).WithContext(ctx)
 
 	logger := logging.FromContext(ctx)
 

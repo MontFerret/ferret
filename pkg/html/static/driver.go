@@ -46,11 +46,7 @@ func FromContext(ctx context.Context) (*Driver, error) {
 
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
-	drv.options = newOptions()
-
-	for _, opt := range opts {
-		opt(drv.options)
-	}
+	drv.options = newOptions(opts)
 
 	if drv.options.proxy == "" {
 		drv.client = pester.New()
