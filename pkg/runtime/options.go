@@ -24,7 +24,7 @@ type (
 
 func NewOptions() *Options {
 	return &Options{
-		cdp:    "http://0.0.0.0:9222",
+		cdp:    "http://127.0.0.1:9222",
 		params: make(map[string]core.Value),
 		logging: &logging.Options{
 			Writer: os.Stdout,
