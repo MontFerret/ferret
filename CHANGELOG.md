@@ -1,14 +1,19 @@
 ## Changelog
 
-### 0.5.1
+### 0.5.2
+#### Fixed
+- Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
+- ```HTMLElement.value``` does not return actual value [#195](https://github.com/MontFerret/ferret/pull/195)
+- Compiles a query with duplicate variable in FOR statement [#196](https://github.com/MontFerret/ferret/pull/196)
+- Default CDP address [#197](https://github.com/MontFerret/ferret/pull/197).  
 
+### 0.5.1
 #### Fixed
 - Unable to change a page load timeout [#186](https://github.com/MontFerret/ferret/pull/186).
 - ``RETURN doc`` returns an empty string [#187](https://github.com/MontFerret/ferret/pull/187).
 - Unable to pass an HTML Node without a selector to ``INNER_TEXT`` and ``INNER_HTML`` [#187](https://github.com/MontFerret/ferret/pull/187).
 - ``doc.innerText`` returns an error [#187](https://github.com/MontFerret/ferret/pull/187).
 - Panics when ``WAIT_CLASS`` does not receive all required arguments [#192](https://github.com/MontFerret/ferret/pull/192).
-- Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
 
 ### 0.5.0
 #### Added
