@@ -1,5 +1,5 @@
 LET url = @static + '/grid.html'
-LET doc = DOCUMENT(url)
+LET doc = PAGE(url)
 
 LET expected = [
     "Containers provide a means to center and horizontally pad your site’s contents. Use .container for a responsive pixel width or .container-fluid for width: 100% across all viewport and device sizes.",

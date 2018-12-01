@@ -1,5 +1,5 @@
 LET url = @static + '/overview.html'
-LET doc = DOCUMENT(url)
+LET doc = PAGE(url)
 
 LET expected = [
 '<a href="#containers">Containers</a>',

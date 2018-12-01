@@ -1,4 +1,4 @@
-LET doc = DOCUMENT("https://github.com/", true)
+LET doc = PAGE("https://github.com/", true)
 
 NAVIGATE(doc, "https://github.com/features")
 NAVIGATE(doc, "https://github.com/business")

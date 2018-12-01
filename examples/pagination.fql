@@ -1,4 +1,4 @@
-LET amazon = DOCUMENT('https://www.amazon.com/', true)
+LET amazon = PAGE('https://www.amazon.com/', true)
 
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '.nav-search-submit input[type="submit"]')

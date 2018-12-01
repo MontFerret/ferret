@@ -29,7 +29,7 @@ func main() {
 
 func getTopTenTrendingTopics() ([]*Topic, error) {
 	query := `
-		LET doc = DOCUMENT("https://github.com/topics")
+		LET doc = PAGE("https://github.com/topics")
 
 		FOR el IN ELEMENTS(doc, ".py-4.border-bottom")
 			LIMIT 10

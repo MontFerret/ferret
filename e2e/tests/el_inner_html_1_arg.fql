@@ -1,5 +1,5 @@
 LET url = @static + '/simple.html'
-LET doc = DOCUMENT(url)
+LET doc = PAGE(url)
 LET el = ELEMENT(doc, "body")
 
 LET expected = `<h1>Hello world</h1>`

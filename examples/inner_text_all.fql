@@ -1,4 +1,4 @@
-LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
+LET doc = PAGE('https://soundcloud.com/charts/top', true)
 
 WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 

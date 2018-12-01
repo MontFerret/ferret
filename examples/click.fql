@@ -1,4 +1,4 @@
-LET doc = DOCUMENT("https://github.com/", true)
+LET doc = PAGE("https://github.com/", true)
 LET btn = ELEMENT(doc, ".HeaderMenu a")
 
 CLICK(btn)

@@ -1,5 +1,5 @@
 LET url = @dynamic
-LET doc = DOCUMENT(url, true)
+LET doc = PAGE(url, true)
 
 WAIT_ELEMENT(doc, "#layout")
 

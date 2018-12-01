@@ -1,4 +1,4 @@
 LET url = @dynamic
-LET doc = DOCUMENT(url, true)
+LET doc = PAGE(url, true)
 
 RETURN EXPECT(doc.url, url)

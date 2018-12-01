@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type LoadDocumentArgs struct {
+type LoadPageArgs struct {
 	Dynamic bool
 	Timeout time.Duration
 }
@@ -21,7 +21,7 @@ type LoadDocumentArgs struct {
 // If integer values is passed it sets a custom timeout.
 // @param timeout (Int, optional) - Sets a custom timeout.
 // @returns (HTMLDocument) - Returns loaded HTML document.
-func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
+func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 
 	if err != nil {
@@ -36,7 +36,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	url := args[0].(values.String)
 
-	params, err := parseLoadDocumentArgs(args)
+	params, err := parseLoadPageArgs(args)
 
 	if err != nil {
 		return values.None, err
@@ -60,8 +60,8 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return drv.GetDocument(ctx, url)
 }
 
-func parseLoadDocumentArgs(args []core.Value) (LoadDocumentArgs, error) {
-	res := LoadDocumentArgs{
+func parseLoadPageArgs(args []core.Value) (LoadPageArgs, error) {
+	res := LoadPageArgs{
 		Timeout: time.Second * 30,
 	}
 

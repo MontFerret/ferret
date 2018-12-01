@@ -24,7 +24,7 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 	var doc *dynamic.HTMLDocument
 	var ok bool
 	if value.Type() == core.StringType {
-		buf, err := Document(ctx, value, values.NewBoolean(true))
+		buf, err := Page(ctx, value, values.NewBoolean(true))
 		if err != nil {
 			return values.None, err
 		}
