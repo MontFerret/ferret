@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -32,9 +31,7 @@ func (p *Program) Source() string {
 }
 
 func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
-	ctx = NewOptions().Apply(setters...).WithContext(ctx)
-	ctx = html.WithDynamicDriver(ctx)
-	ctx = html.WithStaticDriver(ctx)
+	ctx = NewOptions(setters).WithContext(ctx)
 
 	logger := logging.FromContext(ctx)
 

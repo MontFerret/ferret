@@ -3,6 +3,7 @@ package static
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"net/http"
 	"net/url"
 
@@ -14,22 +15,38 @@ import (
 	"github.com/sethgrid/pester"
 )
 
-type Driver struct {
-	client  *pester.Client
-	options *Options
+type (
+	ctxKey struct{}
+
+	Driver struct {
+		client  *pester.Client
+		options *Options
+	}
+)
+
+func WithContext(ctx context.Context, drv *Driver) context.Context {
+	return context.WithValue(
+		ctx,
+		ctxKey{},
+		drv,
+	)
+}
+
+func FromContext(ctx context.Context) (*Driver, error) {
+	val := ctx.Value(ctxKey{})
+
+	drv, ok := val.(*Driver)
+
+	if !ok {
+		return nil, core.Error(core.ErrNotFound, "static HTML Driver")
+	}
+
+	return drv, nil
 }
 
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
-	drv.options = &Options{
-		concurrency: 3,
-		maxRetries:  5,
-		backoff:     pester.ExponentialBackoff,
-	}
-
-	for _, opt := range opts {
-		opt(drv.options)
-	}
+	drv.options = newOptions(opts)
 
 	if drv.options.proxy == "" {
 		drv.client = pester.New()

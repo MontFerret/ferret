@@ -2,35 +2,37 @@ package runtime
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/env"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"io"
 	"os"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
 	Options struct {
-		proxy     string
-		cdp       string
-		params    map[string]core.Value
-		logging   *logging.Options
-		userAgent string
+		params  map[string]core.Value
+		logging *logging.Options
 	}
 
 	Option func(*Options)
 )
 
-func NewOptions() *Options {
-	return &Options{
-		cdp:    "http://127.0.0.1:9222",
+func NewOptions(setters []Option) *Options {
+	opts := &Options{
 		params: make(map[string]core.Value),
 		logging: &logging.Options{
 			Writer: os.Stdout,
 			Level:  logging.ErrorLevel,
 		},
 	}
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return opts
 }
 
 func WithParam(name string, value interface{}) Option {
@@ -47,30 +49,6 @@ func WithParams(params map[string]interface{}) Option {
 	}
 }
 
-func WithBrowser(address string) Option {
-	return func(options *Options) {
-		options.cdp = address
-	}
-}
-
-func WithProxy(address string) Option {
-	return func(options *Options) {
-		options.proxy = address
-	}
-}
-
-func WithUserAgent(value string) Option {
-	return func(options *Options) {
-		options.userAgent = value
-	}
-}
-
-func WithRandomUserAgent() Option {
-	return func(options *Options) {
-		options.userAgent = env.RandomUserAgent
-	}
-}
-
 func WithLog(writer io.Writer) Option {
 	return func(options *Options) {
 		options.logging.Writer = writer
@@ -83,22 +61,9 @@ func WithLogLevel(lvl logging.Level) Option {
 	}
 }
 
-func (opts *Options) Apply(setters ...Option) *Options {
-	for _, setter := range setters {
-		setter(opts)
-	}
-
-	return opts
-}
-
 func (opts *Options) WithContext(parent context.Context) context.Context {
 	ctx := core.ParamsWith(parent, opts.params)
 	ctx = logging.WithContext(ctx, opts.logging)
-	ctx = env.WithContext(ctx, env.Environment{
-		CDPAddress:   opts.cdp,
-		ProxyAddress: opts.proxy,
-		UserAgent:    opts.userAgent,
-	})
 
 	return ctx
 }

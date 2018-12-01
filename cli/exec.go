@@ -38,7 +38,7 @@ func Exec(query string, opts Options) {
 
 	l := NewLogger()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(opts.WithContext(context.Background()))
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP)
 
@@ -59,12 +59,9 @@ func Exec(query string, opts Options) {
 
 	out, err := prog.Run(
 		ctx,
-		runtime.WithBrowser(opts.Cdp),
 		runtime.WithLog(l),
 		runtime.WithLogLevel(logging.DebugLevel),
 		runtime.WithParams(opts.Params),
-		runtime.WithProxy(opts.Proxy),
-		runtime.WithUserAgent(opts.UserAgent),
 	)
 
 	if opts.ShowTime {
