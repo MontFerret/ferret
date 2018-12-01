@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/html"
+	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -131,10 +133,16 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 		}
 	}
 
+	ctx := context.Background()
+	ctx = html.WithDynamicDriver(
+		ctx,
+		dynamic.WithCDP(r.settings.CDPAddress),
+	)
+	ctx = html.WithStaticDriver(ctx)
+
 	out, err := p.Run(
-		context.Background(),
+		ctx,
 		runtime.WithLog(os.Stdout),
-		runtime.WithBrowser(r.settings.CDPAddress),
 		runtime.WithParam("static", r.settings.StaticServerAddress),
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)

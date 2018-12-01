@@ -2,6 +2,9 @@ package dynamic
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"sync"
+
 	"github.com/MontFerret/ferret/pkg/html/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -13,27 +16,46 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
-	"sync"
 )
 
-type Driver struct {
-	sync.Mutex
-	dev       *devtool.DevTools
-	conn      *rpcc.Conn
-	client    *cdp.Client
-	session   *session.Manager
-	contextID target.BrowserContextID
-	options   *Options
+type (
+	ctxKey struct{}
+
+	Driver struct {
+		sync.Mutex
+		dev       *devtool.DevTools
+		conn      *rpcc.Conn
+		client    *cdp.Client
+		session   *session.Manager
+		contextID target.BrowserContextID
+		options   *Options
+	}
+)
+
+func WithContext(ctx context.Context, drv *Driver) context.Context {
+	return context.WithValue(
+		ctx,
+		ctxKey{},
+		drv,
+	)
 }
 
-func NewDriver(address string, opts ...Option) *Driver {
-	drv := new(Driver)
-	drv.dev = devtool.New(address)
-	drv.options = new(Options)
+func FromContext(ctx context.Context) (*Driver, error) {
+	val := ctx.Value(ctxKey{})
 
-	for _, opt := range opts {
-		opt(drv.options)
+	drv, ok := val.(*Driver)
+
+	if !ok {
+		return nil, core.Error(core.ErrNotFound, "dynamic HTML Driver")
 	}
+
+	return drv, nil
+}
+
+func NewDriver(opts ...Option) *Driver {
+	drv := new(Driver)
+	drv.options = newOptions(opts)
+	drv.dev = devtool.New(drv.options.cdp)
 
 	return drv
 }
