@@ -1,0 +1,6 @@
+LET url = @dynamic
+LET doc = PAGE(url, {
+    dynamic: true
+})
+
+RETURN EXPECT(doc.url, url)

@@ -8,21 +8,24 @@ import (
 	"time"
 )
 
-type LoadPageArgs struct {
-	Dynamic bool
-	Timeout time.Duration
+type LoadPageParams struct {
+	Dynamic   values.Boolean
+	Timeout   time.Duration
+	UserAgent values.String
 }
 
 // Page loads a HTML document by a given url.
 // By default, loads a document by http call - resulted document does not support any interactions.
 // If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
 // @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
-// @param dynamicOrTimeout (Boolean|Int, optional) - If boolean value is passed, it indicates whether to use dynamic document.
-// If integer values is passed it sets a custom timeout.
-// @param timeout (Int, optional) - Sets a custom timeout.
+// @param isDynamicOrParams (Boolean|LoadPageParams) - Either a boolean value that indicates whether to use dynamic page
+// or an object with the following properties :
+// 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
+// 		userAgent (String) - Optional, custom user agent.
+// 		timeout (Int) - Optional, Page load timeout.
 // @returns (HTMLDocument) - Returns loaded HTML document.
 func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 3)
+	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
 		return values.None, err
@@ -36,10 +39,18 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	url := args[0].(values.String)
 
-	params, err := parseLoadPageArgs(args)
+	var params LoadPageParams
 
-	if err != nil {
-		return values.None, err
+	if len(args) == 1 {
+		params = newDefaultLoadPageParams()
+	} else {
+		p, err := newLoadPageParams(args[1])
+
+		if err != nil {
+			return values.None, err
+		}
+
+		params = p
 	}
 
 	var drv html.Driver
@@ -60,39 +71,57 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return drv.GetDocument(ctx, url)
 }
 
-func parseLoadPageArgs(args []core.Value) (LoadPageArgs, error) {
-	res := LoadPageArgs{
-		Timeout: time.Second * 30,
+func newDefaultLoadPageParams() LoadPageParams {
+	return LoadPageParams{
+		Dynamic:   false,
+		UserAgent: "",
+		Timeout:   time.Second * 30,
+	}
+}
+
+func newLoadPageParams(arg core.Value) (LoadPageParams, error) {
+	res := newDefaultLoadPageParams()
+
+	if err := core.ValidateType(arg, core.BooleanType, core.ObjectType); err != nil {
+		return res, err
 	}
 
-	if len(args) == 3 {
-		err := core.ValidateType(args[1], core.BooleanType)
+	if arg.Type() == core.BooleanType {
+		res.Dynamic = arg.(values.Boolean)
 
-		if err != nil {
+		return res, nil
+	}
+
+	obj := arg.(*values.Object)
+
+	isDynamic, exists := obj.Get(values.NewString("dynamic"))
+
+	if exists {
+		if err := core.ValidateType(isDynamic, core.BooleanType); err != nil {
 			return res, err
 		}
 
-		res.Dynamic = bool(args[1].(values.Boolean))
+		res.Dynamic = isDynamic.(values.Boolean)
+	}
 
-		err = core.ValidateType(args[2], core.IntType)
+	userAgent, exists := obj.Get(values.NewString("userAgent"))
 
-		if err != nil {
+	if exists {
+		if err := core.ValidateType(userAgent, core.StringType); err != nil {
 			return res, err
 		}
 
-		res.Timeout = time.Duration(args[2].(values.Int)) * time.Millisecond
-	} else if len(args) == 2 {
-		err := core.ValidateType(args[1], core.BooleanType, core.IntType)
+		res.UserAgent = userAgent.(values.String)
+	}
 
-		if err != nil {
+	timeout, exists := obj.Get(values.NewString("timeout"))
+
+	if exists {
+		if err := core.ValidateType(timeout, core.IntType); err != nil {
 			return res, err
 		}
 
-		if args[1].Type() == core.BooleanType {
-			res.Dynamic = bool(args[1].(values.Boolean))
-		} else {
-			res.Timeout = time.Duration(args[1].(values.Int)) * time.Millisecond
-		}
+		res.Timeout = time.Duration(timeout.(values.Int)) + time.Millisecond
 	}
 
 	return res, nil
