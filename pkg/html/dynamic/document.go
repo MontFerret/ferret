@@ -25,7 +25,8 @@ const BlankPageURL = "about:blank"
 
 type (
 	ScreenshotFormat string
-	ScreenshotArgs   struct {
+
+	ScreenshotParams struct {
 		X       float64
 		Y       float64
 		Width   float64
@@ -818,7 +819,7 @@ func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, er
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotArgs) (core.Value, error) {
+func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotParams) (core.Value, error) {
 	ctx := context.Background()
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
 

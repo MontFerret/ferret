@@ -70,7 +70,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	doc := val.(*dynamic.HTMLDocument)
 	defer doc.Close()
 
-	screenshotParams := &dynamic.ScreenshotArgs{
+	screenshotParams := &dynamic.ScreenshotParams{
 		X:       0,
 		Y:       0,
 		Width:   -1,
