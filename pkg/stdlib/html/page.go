@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type LoadPageParams struct {
+type PageLoadParams struct {
 	Dynamic   values.Boolean
 	Timeout   time.Duration
 	UserAgent values.String
@@ -18,7 +18,7 @@ type LoadPageParams struct {
 // By default, loads a document by http call - resulted document does not support any interactions.
 // If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
 // @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
-// @param isDynamicOrParams (Boolean|LoadPageParams) - Either a boolean value that indicates whether to use dynamic page
+// @param isDynamicOrParams (Boolean|PageLoadParams) - Either a boolean value that indicates whether to use dynamic page
 // or an object with the following properties :
 // 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
 // 		userAgent (String) - Optional, custom user agent.
@@ -39,7 +39,7 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	url := args[0].(values.String)
 
-	var params LoadPageParams
+	var params PageLoadParams
 
 	if len(args) == 1 {
 		params = newDefaultLoadPageParams()
@@ -71,15 +71,15 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return drv.GetDocument(ctx, url)
 }
 
-func newDefaultLoadPageParams() LoadPageParams {
-	return LoadPageParams{
+func newDefaultLoadPageParams() PageLoadParams {
+	return PageLoadParams{
 		Dynamic:   false,
 		UserAgent: "",
 		Timeout:   time.Second * 30,
 	}
 }
 
-func newLoadPageParams(arg core.Value) (LoadPageParams, error) {
+func newLoadPageParams(arg core.Value) (PageLoadParams, error) {
 	res := newDefaultLoadPageParams()
 
 	if err := core.ValidateType(arg, core.BooleanType, core.ObjectType); err != nil {
