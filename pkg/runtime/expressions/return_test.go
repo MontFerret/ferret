@@ -2,15 +2,16 @@ package expressions_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNewReturnExpression(t *testing.T) {
+func TestReturnExpression(t *testing.T) {
 	Convey("Should create a return expression", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 10)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "testExp")
@@ -28,9 +29,7 @@ func TestNewReturnExpression(t *testing.T) {
 		So(err, ShouldBeError)
 		So(exp, ShouldBeNil)
 	})
-}
 
-func TestReturnExpressionExec(t *testing.T) {
 	Convey("Should exec a return expression with an existing predicate", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 1)
 		predicate, err := expressions.NewVariableExpression(sourceMap, "test")
@@ -67,5 +66,22 @@ func TestReturnExpressionExec(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(err, ShouldHaveSameTypeAs, core.ErrNotFound)
 		So(value, ShouldHaveSameTypeAs, values.None)
+	})
+
+	Convey("Should stop an execution when context is cancelled", t, func() {
+		sourceMap := core.NewSourceMap("test", 1, 1)
+		predicate := literals.NewIntLiteral(1)
+
+		exp, err := expressions.NewReturnExpression(sourceMap, predicate)
+		So(err, ShouldBeNil)
+
+		rootScope, _ := core.NewRootScope()
+		scope := rootScope.Fork()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		_, err = exp.Exec(ctx, scope)
+		So(err, ShouldEqual, core.ErrTerminated)
 	})
 }
