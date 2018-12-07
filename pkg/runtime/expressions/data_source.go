@@ -33,43 +33,48 @@ func NewDataSource(
 }
 
 func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-	data, err := ds.exp.Exec(ctx, scope)
-
-	if err != nil {
-		return nil, core.SourceError(ds.src, err)
-	}
-
-	switch data.Type() {
-	case core.ArrayType:
-		return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
-	case core.ObjectType:
-		return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
-	case core.HTMLElementType, core.HTMLDocumentType:
-		return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
+	select {
+	case <-ctx.Done():
+		return nil, core.ErrTerminated
 	default:
-		// fallback to user defined types
-		switch data.(type) {
-		case collections.IterableCollection:
-			collection := data.(collections.IterableCollection)
-			iterator, err := collection.Iterate(ctx)
+		data, err := ds.exp.Exec(ctx, scope)
 
-			if err != nil {
-				return nil, err
-			}
+		if err != nil {
+			return nil, core.SourceError(ds.src, err)
+		}
 
-			return collections.NewCollectionIterator(ds.valVariable, ds.keyVariable, iterator)
-		case collections.KeyedCollection:
+		switch data.Type() {
+		case core.ArrayType:
 			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
-		case collections.IndexedCollection:
+		case core.ObjectType:
 			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
+		case core.HTMLElementType, core.HTMLDocumentType:
+			return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
 		default:
-			return nil, core.TypeError(
-				data.Type(),
-				core.ArrayType,
-				core.ObjectType,
-				core.HTMLDocumentType,
-				core.HTMLElementType,
-			)
+			// fallback to user defined types
+			switch data.(type) {
+			case collections.IterableCollection:
+				collection := data.(collections.IterableCollection)
+				iterator, err := collection.Iterate(ctx)
+
+				if err != nil {
+					return nil, err
+				}
+
+				return collections.NewCollectionIterator(ds.valVariable, ds.keyVariable, iterator)
+			case collections.KeyedCollection:
+				return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
+			case collections.IndexedCollection:
+				return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
+			default:
+				return nil, core.TypeError(
+					data.Type(),
+					core.ArrayType,
+					core.ObjectType,
+					core.HTMLDocumentType,
+					core.HTMLElementType,
+				)
+			}
 		}
 	}
 }

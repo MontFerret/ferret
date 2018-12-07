@@ -61,7 +61,14 @@ func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, er
 	}()
 
 	scope, closeFn := core.NewRootScope()
-	defer closeFn()
+	defer func() {
+		if err := closeFn(); err != nil {
+			logger.Error().
+				Timestamp().
+				Err(err).
+				Msg("Closing root scope")
+		}
+	}()
 
 	out, err := p.body.Exec(ctx, scope)
 

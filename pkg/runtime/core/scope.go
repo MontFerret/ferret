@@ -47,12 +47,24 @@ func (s *RootScope) Close() error {
 
 	s.closed = true
 
+	var errors []error
+
 	// close all values implemented io.Close
 	for _, c := range s.disposables {
-		c.Close()
+		if err := c.Close(); err != nil {
+			if errors == nil {
+				errors = make([]error, 0, len(s.disposables))
+			}
+
+			errors = append(errors, err)
+		}
 	}
 
-	return nil
+	if errors == nil {
+		return nil
+	}
+
+	return Errors(errors...)
 }
 
 func newScope(root *RootScope, parent *Scope) *Scope {
