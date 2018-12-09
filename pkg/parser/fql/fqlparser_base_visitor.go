@@ -175,7 +175,7 @@ func (v *BaseFqlParserVisitor) VisitPropertyName(ctx *PropertyNameContext) inter
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitExpressionSequence(ctx *ExpressionSequenceContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -207,11 +207,19 @@ func (v *BaseFqlParserVisitor) VisitEqualityOperator(ctx *EqualityOperatorContex
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitLogicalOperator(ctx *LogicalOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitLogicalAndOperator(ctx *LogicalAndOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMathOperator(ctx *MathOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitLogicalOrOperator(ctx *LogicalOrOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitAdditiveOperator(ctx *AdditiveOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

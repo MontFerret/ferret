@@ -8,8 +8,10 @@ import (
 
 type (
 	MathOperatorType string
-	MathOperator     struct {
+
+	MathOperator struct {
 		*baseOperator
+		opType   MathOperatorType
 		fn       OperatorFunc
 		leftOnly bool
 	}
@@ -55,9 +57,14 @@ func NewMathOperator(
 
 	return &MathOperator{
 		&baseOperator{src, left, right},
+		operator,
 		fn,
 		leftOnly,
 	}, nil
+}
+
+func (operator *MathOperator) Type() MathOperatorType {
+	return operator.opType
 }
 
 func (operator *MathOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
