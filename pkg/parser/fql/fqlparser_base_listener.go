@@ -274,11 +274,11 @@ func (s *BaseFqlParserListener) EnterPropertyName(ctx *PropertyNameContext) {}
 // ExitPropertyName is called when production propertyName is exited.
 func (s *BaseFqlParserListener) ExitPropertyName(ctx *PropertyNameContext) {}
 
-// EnterExpressionSequence is called when production expressionSequence is entered.
-func (s *BaseFqlParserListener) EnterExpressionSequence(ctx *ExpressionSequenceContext) {}
+// EnterExpressionGroup is called when production expressionGroup is entered.
+func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
 
-// ExitExpressionSequence is called when production expressionSequence is exited.
-func (s *BaseFqlParserListener) ExitExpressionSequence(ctx *ExpressionSequenceContext) {}
+// ExitExpressionGroup is called when production expressionGroup is exited.
+func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
 
 // EnterFunctionCallExpression is called when production functionCallExpression is entered.
 func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}

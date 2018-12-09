@@ -1241,7 +1241,23 @@ func (v *visitor) doVisitArrayOperator(ctx *fql.ExpressionContext, scope *scope)
 	)
 }
 
+func (v *visitor) doVisitExpressionGroup(ctx *fql.ExpressionGroupContext, scope *scope) (core.Expression, error) {
+	exp := ctx.Expression()
+
+	if exp == nil {
+		return nil, ErrInvalidToken
+	}
+
+	return v.doVisitExpression(exp.(*fql.ExpressionContext), scope)
+}
+
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
+	seq := ctx.ExpressionGroup()
+
+	if seq != nil {
+		return v.doVisitExpressionGroup(seq.(*fql.ExpressionGroupContext), scope)
+	}
+
 	member := ctx.MemberExpression()
 
 	if member != nil {

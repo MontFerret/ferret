@@ -133,8 +133,8 @@ type FqlParserListener interface {
 	// EnterPropertyName is called when entering the propertyName production.
 	EnterPropertyName(c *PropertyNameContext)
 
-	// EnterExpressionSequence is called when entering the expressionSequence production.
-	EnterExpressionSequence(c *ExpressionSequenceContext)
+	// EnterExpressionGroup is called when entering the expressionGroup production.
+	EnterExpressionGroup(c *ExpressionGroupContext)
 
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
@@ -298,8 +298,8 @@ type FqlParserListener interface {
 	// ExitPropertyName is called when exiting the propertyName production.
 	ExitPropertyName(c *PropertyNameContext)
 
-	// ExitExpressionSequence is called when exiting the expressionSequence production.
-	ExitExpressionSequence(c *ExpressionSequenceContext)
+	// ExitExpressionGroup is called when exiting the expressionGroup production.
+	ExitExpressionGroup(c *ExpressionGroupContext)
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)

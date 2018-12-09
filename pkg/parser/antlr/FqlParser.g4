@@ -203,8 +203,8 @@ propertyName
     | stringLiteral
     ;
 
-expressionSequence
-    : expression (Comma expression)*
+expressionGroup
+    : OpenParen expression CloseParen
     ;
 
 functionCallExpression
@@ -220,7 +220,7 @@ expression
     | expression multiplicativeOperator expression
     | expression additiveOperator expression
     | functionCallExpression
-    | OpenParen expressionSequence CloseParen
+    | expressionGroup
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
     | expression equalityOperator expression

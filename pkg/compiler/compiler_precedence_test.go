@@ -29,6 +29,16 @@ func TestPrecedence(t *testing.T) {
 
 			So(string(out), ShouldEqual, "6")
 		})
+
+		Convey("2 * (2 + 2)", func() {
+			c := compiler.New()
+
+			p := c.MustCompile(`RETURN 2 * (2 + 2)`)
+
+			out := p.MustRun(context.Background())
+
+			So(string(out), ShouldEqual, "8")
+		})
 	})
 
 	Convey("Logical", t, func() {

@@ -175,7 +175,7 @@ func (v *BaseFqlParserVisitor) VisitPropertyName(ctx *PropertyNameContext) inter
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitExpressionSequence(ctx *ExpressionSequenceContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
