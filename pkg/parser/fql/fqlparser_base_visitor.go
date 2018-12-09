@@ -207,7 +207,11 @@ func (v *BaseFqlParserVisitor) VisitEqualityOperator(ctx *EqualityOperatorContex
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitLogicalOperator(ctx *LogicalOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitLogicalAndOperator(ctx *LogicalAndOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitLogicalOrOperator(ctx *LogicalOrOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

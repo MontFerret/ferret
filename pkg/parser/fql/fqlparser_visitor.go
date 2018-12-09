@@ -157,8 +157,11 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#logicalOperator.
-	VisitLogicalOperator(ctx *LogicalOperatorContext) interface{}
+	// Visit a parse tree produced by FqlParser#logicalAndOperator.
+	VisitLogicalAndOperator(ctx *LogicalAndOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#logicalOrOperator.
+	VisitLogicalOrOperator(ctx *LogicalOrOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#multiplicativeOperator.
 	VisitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) interface{}

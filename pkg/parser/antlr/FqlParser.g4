@@ -217,14 +217,15 @@ arguments
 
 expression
     : unaryOperator expression
-    | expression equalityOperator expression
-    | expression logicalOperator expression
     | expression multiplicativeOperator expression
     | expression additiveOperator expression
     | functionCallExpression
     | OpenParen expressionSequence CloseParen
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
+    | expression equalityOperator expression
+    | expression logicalAndOperator expression
+    | expression logicalOrOperator expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
     | stringLiteral
@@ -265,9 +266,12 @@ equalityOperator
     | Neq
     ;
 
-logicalOperator
+logicalAndOperator
     : And
-    | Or
+    ;
+
+logicalOrOperator
+    : Or
     ;
 
 multiplicativeOperator

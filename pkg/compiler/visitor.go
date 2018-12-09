@@ -352,10 +352,16 @@ func (v *visitor) doVisitFilterClause(ctx *fql.FilterClauseContext, scope *scope
 			return operators.NewEqualityOperator(v.getSourceMap(ctx), left, right, equalityOp.GetText())
 		}
 
-		logicalOp := exp.LogicalOperator()
+		logicalAndOp := exp.LogicalAndOperator()
 
-		if logicalOp != nil {
-			return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalOp.GetText())
+		if logicalAndOp != nil {
+			return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalAndOp.GetText())
+		}
+
+		logicalOrOp := exp.LogicalOrOperator()
+
+		if logicalOrOp != nil {
+			return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalOrOp.GetText())
 		}
 	} else {
 		// should be unary operator
@@ -1129,7 +1135,22 @@ func (v *visitor) doVisitUnaryOperator(ctx *fql.ExpressionContext, scope *scope)
 }
 
 func (v *visitor) doVisitLogicalOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
-	logicalOp := ctx.LogicalOperator().(*fql.LogicalOperatorContext)
+	var operator string
+
+	logicalAndOp := ctx.LogicalAndOperator()
+
+	if logicalAndOp != nil {
+		operator = logicalAndOp.GetText()
+	} else {
+		logicalOrOp := ctx.LogicalOrOperator()
+
+		if logicalOrOp == nil {
+			return nil, ErrInvalidToken
+		}
+
+		operator = logicalOrOp.GetText()
+	}
+
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 	if err != nil {
@@ -1139,7 +1160,7 @@ func (v *visitor) doVisitLogicalOperator(ctx *fql.ExpressionContext, scope *scop
 	left := exps[0]
 	right := exps[1]
 
-	return operators.NewLogicalOperator(v.getSourceMap(logicalOp), left, right, logicalOp.GetText())
+	return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, operator)
 }
 
 func (v *visitor) doVisitEqualityOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
@@ -1263,9 +1284,15 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitInOperator(ctx, scope)
 	}
 
-	logicalOp := ctx.LogicalOperator()
+	logicalAndOp := ctx.LogicalAndOperator()
 
-	if logicalOp != nil {
+	if logicalAndOp != nil {
+		return v.doVisitLogicalOperator(ctx, scope)
+	}
+
+	logicalOrOp := ctx.LogicalOrOperator()
+
+	if logicalOrOp != nil {
 		return v.doVisitLogicalOperator(ctx, scope)
 	}
 

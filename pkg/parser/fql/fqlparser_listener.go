@@ -157,8 +157,11 @@ type FqlParserListener interface {
 	// EnterEqualityOperator is called when entering the equalityOperator production.
 	EnterEqualityOperator(c *EqualityOperatorContext)
 
-	// EnterLogicalOperator is called when entering the logicalOperator production.
-	EnterLogicalOperator(c *LogicalOperatorContext)
+	// EnterLogicalAndOperator is called when entering the logicalAndOperator production.
+	EnterLogicalAndOperator(c *LogicalAndOperatorContext)
+
+	// EnterLogicalOrOperator is called when entering the logicalOrOperator production.
+	EnterLogicalOrOperator(c *LogicalOrOperatorContext)
 
 	// EnterMultiplicativeOperator is called when entering the multiplicativeOperator production.
 	EnterMultiplicativeOperator(c *MultiplicativeOperatorContext)
@@ -319,8 +322,11 @@ type FqlParserListener interface {
 	// ExitEqualityOperator is called when exiting the equalityOperator production.
 	ExitEqualityOperator(c *EqualityOperatorContext)
 
-	// ExitLogicalOperator is called when exiting the logicalOperator production.
-	ExitLogicalOperator(c *LogicalOperatorContext)
+	// ExitLogicalAndOperator is called when exiting the logicalAndOperator production.
+	ExitLogicalAndOperator(c *LogicalAndOperatorContext)
+
+	// ExitLogicalOrOperator is called when exiting the logicalOrOperator production.
+	ExitLogicalOrOperator(c *LogicalOrOperatorContext)
 
 	// ExitMultiplicativeOperator is called when exiting the multiplicativeOperator production.
 	ExitMultiplicativeOperator(c *MultiplicativeOperatorContext)

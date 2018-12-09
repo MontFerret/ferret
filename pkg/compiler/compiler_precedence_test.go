@@ -30,4 +30,26 @@ func TestPrecedence(t *testing.T) {
 			So(string(out), ShouldEqual, "6")
 		})
 	})
+
+	Convey("Logical", t, func() {
+		Convey("TRUE OR TRUE AND FALSE", func() {
+			c := compiler.New()
+
+			p := c.MustCompile(`RETURN TRUE OR TRUE AND FALSE`)
+
+			out := p.MustRun(context.Background())
+
+			So(string(out), ShouldEqual, "true")
+		})
+
+		Convey("FALSE AND TRUE OR TRUE", func() {
+			c := compiler.New()
+
+			p := c.MustCompile(`RETURN FALSE AND TRUE OR TRUE`)
+
+			out := p.MustRun(context.Background())
+
+			So(string(out), ShouldEqual, "true")
+		})
+	})
 }

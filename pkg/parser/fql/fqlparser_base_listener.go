@@ -322,11 +322,17 @@ func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorConte
 // ExitEqualityOperator is called when production equalityOperator is exited.
 func (s *BaseFqlParserListener) ExitEqualityOperator(ctx *EqualityOperatorContext) {}
 
-// EnterLogicalOperator is called when production logicalOperator is entered.
-func (s *BaseFqlParserListener) EnterLogicalOperator(ctx *LogicalOperatorContext) {}
+// EnterLogicalAndOperator is called when production logicalAndOperator is entered.
+func (s *BaseFqlParserListener) EnterLogicalAndOperator(ctx *LogicalAndOperatorContext) {}
 
-// ExitLogicalOperator is called when production logicalOperator is exited.
-func (s *BaseFqlParserListener) ExitLogicalOperator(ctx *LogicalOperatorContext) {}
+// ExitLogicalAndOperator is called when production logicalAndOperator is exited.
+func (s *BaseFqlParserListener) ExitLogicalAndOperator(ctx *LogicalAndOperatorContext) {}
+
+// EnterLogicalOrOperator is called when production logicalOrOperator is entered.
+func (s *BaseFqlParserListener) EnterLogicalOrOperator(ctx *LogicalOrOperatorContext) {}
+
+// ExitLogicalOrOperator is called when production logicalOrOperator is exited.
+func (s *BaseFqlParserListener) ExitLogicalOrOperator(ctx *LogicalOrOperatorContext) {}
 
 // EnterMultiplicativeOperator is called when production multiplicativeOperator is entered.
 func (s *BaseFqlParserListener) EnterMultiplicativeOperator(ctx *MultiplicativeOperatorContext) {}
