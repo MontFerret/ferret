@@ -219,7 +219,8 @@ expression
     : unaryOperator expression
     | expression equalityOperator expression
     | expression logicalOperator expression
-    | expression mathOperator expression
+    | expression multiplicativeOperator expression
+    | expression additiveOperator expression
     | functionCallExpression
     | OpenParen expressionSequence CloseParen
     | expression arrayOperator (inOperator | equalityOperator) expression
@@ -269,12 +270,15 @@ logicalOperator
     | Or
     ;
 
-mathOperator
-    : Plus
-    | Minus
-    | Multi
+multiplicativeOperator
+    : Multi
     | Div
     | Mod
+    ;
+
+additiveOperator
+    : Plus
+    | Minus
     ;
 
 unaryOperator

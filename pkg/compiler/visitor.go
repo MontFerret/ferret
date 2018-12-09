@@ -1078,7 +1078,21 @@ func (v *visitor) doVisitAllExpressions(contexts []fql.IExpressionContext, scope
 }
 
 func (v *visitor) doVisitMathOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
-	mathOp := ctx.MathOperator().(*fql.MathOperatorContext)
+	var operator operators.MathOperatorType
+	multiCtx := ctx.MultiplicativeOperator()
+
+	if multiCtx != nil {
+		operator = operators.MathOperatorType(multiCtx.GetText())
+	} else {
+		additiveCtx := ctx.AdditiveOperator()
+
+		if additiveCtx == nil {
+			return nil, ErrInvalidToken
+		}
+
+		operator = operators.MathOperatorType(additiveCtx.GetText())
+	}
+
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 	if err != nil {
@@ -1089,10 +1103,10 @@ func (v *visitor) doVisitMathOperator(ctx *fql.ExpressionContext, scope *scope) 
 	right := exps[1]
 
 	return operators.NewMathOperator(
-		v.getSourceMap(mathOp),
+		v.getSourceMap(ctx),
 		left,
 		right,
-		operators.MathOperatorType(mathOp.GetText()),
+		operator,
 	)
 }
 
@@ -1207,10 +1221,52 @@ func (v *visitor) doVisitArrayOperator(ctx *fql.ExpressionContext, scope *scope)
 }
 
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
+	member := ctx.MemberExpression()
+
+	if member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), scope)
+	}
+
+	funCall := ctx.FunctionCallExpression()
+
+	if funCall != nil {
+		return v.doVisitFunctionCallExpression(funCall.(*fql.FunctionCallExpressionContext), scope)
+	}
+
 	notOp := ctx.UnaryOperator()
 
 	if notOp != nil {
 		return v.doVisitUnaryOperator(ctx, scope)
+	}
+
+	multiOp := ctx.MultiplicativeOperator()
+
+	if multiOp != nil {
+		return v.doVisitMathOperator(ctx, scope)
+	}
+
+	addOp := ctx.AdditiveOperator()
+
+	if addOp != nil {
+		return v.doVisitMathOperator(ctx, scope)
+	}
+
+	equalityOp := ctx.EqualityOperator()
+
+	if equalityOp != nil {
+		return v.doVisitEqualityOperator(ctx, scope)
+	}
+
+	inOp := ctx.InOperator()
+
+	if inOp != nil {
+		return v.doVisitInOperator(ctx, scope)
+	}
+
+	logicalOp := ctx.LogicalOperator()
+
+	if logicalOp != nil {
+		return v.doVisitLogicalOperator(ctx, scope)
 	}
 
 	variable := ctx.Variable()
@@ -1255,18 +1311,6 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitObjectLiteral(obj.(*fql.ObjectLiteralContext), scope)
 	}
 
-	funCall := ctx.FunctionCallExpression()
-
-	if funCall != nil {
-		return v.doVisitFunctionCallExpression(funCall.(*fql.FunctionCallExpressionContext), scope)
-	}
-
-	member := ctx.MemberExpression()
-
-	if member != nil {
-		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), scope)
-	}
-
 	none := ctx.NoneLiteral()
 
 	if none != nil {
@@ -1277,30 +1321,6 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 
 	if arrOp != nil {
 		return v.doVisitArrayOperator(ctx, scope)
-	}
-
-	inOp := ctx.InOperator()
-
-	if inOp != nil {
-		return v.doVisitInOperator(ctx, scope)
-	}
-
-	equalityOp := ctx.EqualityOperator()
-
-	if equalityOp != nil {
-		return v.doVisitEqualityOperator(ctx, scope)
-	}
-
-	logicalOp := ctx.LogicalOperator()
-
-	if logicalOp != nil {
-		return v.doVisitLogicalOperator(ctx, scope)
-	}
-
-	mathOp := ctx.MathOperator()
-
-	if mathOp != nil {
-		return v.doVisitMathOperator(ctx, scope)
 	}
 
 	questionCtx := ctx.QuestionMark()

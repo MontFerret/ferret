@@ -160,8 +160,11 @@ type FqlParserListener interface {
 	// EnterLogicalOperator is called when entering the logicalOperator production.
 	EnterLogicalOperator(c *LogicalOperatorContext)
 
-	// EnterMathOperator is called when entering the mathOperator production.
-	EnterMathOperator(c *MathOperatorContext)
+	// EnterMultiplicativeOperator is called when entering the multiplicativeOperator production.
+	EnterMultiplicativeOperator(c *MultiplicativeOperatorContext)
+
+	// EnterAdditiveOperator is called when entering the additiveOperator production.
+	EnterAdditiveOperator(c *AdditiveOperatorContext)
 
 	// EnterUnaryOperator is called when entering the unaryOperator production.
 	EnterUnaryOperator(c *UnaryOperatorContext)
@@ -319,8 +322,11 @@ type FqlParserListener interface {
 	// ExitLogicalOperator is called when exiting the logicalOperator production.
 	ExitLogicalOperator(c *LogicalOperatorContext)
 
-	// ExitMathOperator is called when exiting the mathOperator production.
-	ExitMathOperator(c *MathOperatorContext)
+	// ExitMultiplicativeOperator is called when exiting the multiplicativeOperator production.
+	ExitMultiplicativeOperator(c *MultiplicativeOperatorContext)
+
+	// ExitAdditiveOperator is called when exiting the additiveOperator production.
+	ExitAdditiveOperator(c *AdditiveOperatorContext)
 
 	// ExitUnaryOperator is called when exiting the unaryOperator production.
 	ExitUnaryOperator(c *UnaryOperatorContext)

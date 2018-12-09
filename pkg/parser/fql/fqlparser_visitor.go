@@ -160,8 +160,11 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#logicalOperator.
 	VisitLogicalOperator(ctx *LogicalOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#mathOperator.
-	VisitMathOperator(ctx *MathOperatorContext) interface{}
+	// Visit a parse tree produced by FqlParser#multiplicativeOperator.
+	VisitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#additiveOperator.
+	VisitAdditiveOperator(ctx *AdditiveOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#unaryOperator.
 	VisitUnaryOperator(ctx *UnaryOperatorContext) interface{}

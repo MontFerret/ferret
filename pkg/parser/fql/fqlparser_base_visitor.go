@@ -211,7 +211,11 @@ func (v *BaseFqlParserVisitor) VisitLogicalOperator(ctx *LogicalOperatorContext)
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMathOperator(ctx *MathOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitAdditiveOperator(ctx *AdditiveOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

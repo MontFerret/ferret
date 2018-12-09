@@ -328,11 +328,17 @@ func (s *BaseFqlParserListener) EnterLogicalOperator(ctx *LogicalOperatorContext
 // ExitLogicalOperator is called when production logicalOperator is exited.
 func (s *BaseFqlParserListener) ExitLogicalOperator(ctx *LogicalOperatorContext) {}
 
-// EnterMathOperator is called when production mathOperator is entered.
-func (s *BaseFqlParserListener) EnterMathOperator(ctx *MathOperatorContext) {}
+// EnterMultiplicativeOperator is called when production multiplicativeOperator is entered.
+func (s *BaseFqlParserListener) EnterMultiplicativeOperator(ctx *MultiplicativeOperatorContext) {}
 
-// ExitMathOperator is called when production mathOperator is exited.
-func (s *BaseFqlParserListener) ExitMathOperator(ctx *MathOperatorContext) {}
+// ExitMultiplicativeOperator is called when production multiplicativeOperator is exited.
+func (s *BaseFqlParserListener) ExitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) {}
+
+// EnterAdditiveOperator is called when production additiveOperator is entered.
+func (s *BaseFqlParserListener) EnterAdditiveOperator(ctx *AdditiveOperatorContext) {}
+
+// ExitAdditiveOperator is called when production additiveOperator is exited.
+func (s *BaseFqlParserListener) ExitAdditiveOperator(ctx *AdditiveOperatorContext) {}
 
 // EnterUnaryOperator is called when production unaryOperator is entered.
 func (s *BaseFqlParserListener) EnterUnaryOperator(ctx *UnaryOperatorContext) {}
