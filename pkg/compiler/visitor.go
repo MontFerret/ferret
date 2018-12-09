@@ -1272,6 +1272,12 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitMathOperator(ctx, scope)
 	}
 
+	arrOp := ctx.ArrayOperator()
+
+	if arrOp != nil {
+		return v.doVisitArrayOperator(ctx, scope)
+	}
+
 	equalityOp := ctx.EqualityOperator()
 
 	if equalityOp != nil {
@@ -1342,12 +1348,6 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 
 	if none != nil {
 		return v.doVisitNoneLiteral(none.(*fql.NoneLiteralContext))
-	}
-
-	arrOp := ctx.ArrayOperator()
-
-	if arrOp != nil {
-		return v.doVisitArrayOperator(ctx, scope)
 	}
 
 	questionCtx := ctx.QuestionMark()
