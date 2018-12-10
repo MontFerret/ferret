@@ -416,7 +416,9 @@ func main() {
 
 ## Proxy
 
-By default, Ferret does not use any proxies. But you can pass an address of a proxy server you want to use.
+By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a prticular proxy. It should be done during a browser launch.
+
+But you can pass an address of a proxy server you want to use for static pages.
 
 #### CLI
 
@@ -446,8 +448,7 @@ func run(q string) ([]byte, error) {
 
 	// create a root context
 	ctx := context.Background()
-	// we inform each driver what proxy to use
-	ctx = html.WithDynamicDriver(ctx, dynamic.WithProxy(proxy))
+	// we inform the driver what proxy to use
 	ctx = html.WithStaticDriver(ctx, statuc.WithProxy(proxy))
 
 	return program.Run(ctx)
