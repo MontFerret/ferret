@@ -40,7 +40,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HTMLElementType)
+	err = core.ValidateType(arg1, core.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err

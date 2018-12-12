@@ -1,4 +1,4 @@
-package dynamic
+package cdp
 
 import (
 	"context"

@@ -25,7 +25,7 @@ func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	drv, err := html.FromContextHTML(ctx)
+	drv, err := html.StaticFrom(ctx)
 
 	if err != nil {
 		return values.None, err

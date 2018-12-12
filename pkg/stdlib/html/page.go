@@ -57,7 +57,7 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 	defer cancel()
 
 	if params.Dynamic {
-		drv, err := html.FromContextDHTML(ctx)
+		drv, err := html.DynamicFrom(ctx)
 
 		if err != nil {
 			return values.None, err
@@ -66,7 +66,7 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return drv.GetDocument(ctx, url)
 	}
 
-	drv, err := html.FromContextHTML(ctx)
+	drv, err := html.StaticFrom(ctx)
 
 	if err != nil {
 		return values.None, err

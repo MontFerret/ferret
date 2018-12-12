@@ -1,4 +1,4 @@
-package dynamic
+package cdp
 
 type (
 	Options struct {
