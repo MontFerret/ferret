@@ -2,7 +2,6 @@ package dynamic
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/html/common"
@@ -18,38 +17,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type (
-	ctxKey struct{}
-
-	Driver struct {
-		sync.Mutex
-		dev       *devtool.DevTools
-		conn      *rpcc.Conn
-		client    *cdp.Client
-		session   *session.Manager
-		contextID target.BrowserContextID
-		options   *Options
-	}
-)
-
-func WithContext(ctx context.Context, drv *Driver) context.Context {
-	return context.WithValue(
-		ctx,
-		ctxKey{},
-		drv,
-	)
-}
-
-func FromContext(ctx context.Context) (*Driver, error) {
-	val := ctx.Value(ctxKey{})
-
-	drv, ok := val.(*Driver)
-
-	if !ok {
-		return nil, core.Error(core.ErrNotFound, "dynamic HTML Driver")
-	}
-
-	return drv, nil
+type Driver struct {
+	sync.Mutex
+	dev       *devtool.DevTools
+	conn      *rpcc.Conn
+	client    *cdp.Client
+	session   *session.Manager
+	contextID target.BrowserContextID
+	options   *Options
 }
 
 func NewDriver(opts ...Option) *Driver {
@@ -60,7 +35,7 @@ func NewDriver(opts ...Option) *Driver {
 	return drv
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.DHTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)

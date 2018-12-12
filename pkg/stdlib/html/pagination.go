@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -20,7 +19,7 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(*dynamic.HTMLDocument)
+	doc, ok := args[0].(values.DHTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -39,12 +38,12 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 
 type (
 	Paging struct {
-		document *dynamic.HTMLDocument
+		document values.DHTMLDocument
 		selector values.String
 	}
 
 	PagingIterator struct {
-		document *dynamic.HTMLDocument
+		document values.DHTMLDocument
 		selector values.String
 		pos      values.Int
 	}

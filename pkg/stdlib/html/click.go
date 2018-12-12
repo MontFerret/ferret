@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -28,7 +27,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		el, ok := arg1.(*dynamic.HTMLElement)
+		el, ok := arg1.(values.DHTMLNode)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -41,13 +40,13 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HTMLDocumentType)
+	err = core.ValidateType(arg1, core.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HTMLDocument)
+	doc, ok := arg1.(values.DHTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

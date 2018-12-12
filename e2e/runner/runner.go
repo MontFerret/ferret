@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/html"
 	"github.com/MontFerret/ferret/pkg/html/dynamic"
+	"github.com/MontFerret/ferret/pkg/html/static"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -134,11 +135,12 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	}
 
 	ctx := context.Background()
-	ctx = html.WithDynamicDriver(
+	ctx = html.WithContextDHTML(
 		ctx,
-		dynamic.WithCDP(r.settings.CDPAddress),
+		dynamic.NewDriver(dynamic.WithCDP(r.settings.CDPAddress)),
 	)
-	ctx = html.WithStaticDriver(ctx)
+
+	ctx = html.WithContextHTML(ctx, static.NewDriver())
 
 	out, err := p.Run(
 		ctx,

@@ -2,7 +2,7 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -27,8 +27,8 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	switch args[0].(type) {
-	case *dynamic.HTMLDocument:
-		doc, ok := arg1.(*dynamic.HTMLDocument)
+	case values.DHTMLDocument:
+		doc, ok := arg1.(values.DHTMLDocument)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -50,8 +50,8 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.SelectBySelector(arg2.(values.String), arg3.(*values.Array))
-	case *dynamic.HTMLElement:
-		el, ok := arg1.(*dynamic.HTMLElement)
+	case values.DHTMLNode:
+		el, ok := arg1.(values.DHTMLNode)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

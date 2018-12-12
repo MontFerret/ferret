@@ -15,19 +15,29 @@ type Options struct {
 	ShowTime  bool
 }
 
-func (opts Options) WithContext(ctx context.Context) context.Context {
-	ctx = html.WithDynamicDriver(
+func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
+	var err error
+
+	ctx = html.WithContextDHTML(
 		ctx,
-		dynamic.WithCDP(opts.Cdp),
-		dynamic.WithProxy(opts.Proxy),
-		dynamic.WithUserAgent(opts.UserAgent),
+		dynamic.NewDriver(
+			dynamic.WithCDP(opts.Cdp),
+			dynamic.WithProxy(opts.Proxy),
+			dynamic.WithUserAgent(opts.UserAgent),
+		),
 	)
 
-	ctx = html.WithStaticDriver(
+	if err != nil {
+		return ctx, err
+	}
+
+	ctx = html.WithContextHTML(
 		ctx,
-		static.WithProxy(opts.Proxy),
-		static.WithUserAgent(opts.UserAgent),
+		static.NewDriver(
+			static.WithProxy(opts.Proxy),
+			static.WithUserAgent(opts.UserAgent),
+		),
 	)
 
-	return ctx
+	return ctx, err
 }

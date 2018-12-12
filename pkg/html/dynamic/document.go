@@ -24,17 +24,6 @@ import (
 const BlankPageURL = "about:blank"
 
 type (
-	ScreenshotFormat string
-
-	ScreenshotParams struct {
-		X       float64
-		Y       float64
-		Width   float64
-		Height  float64
-		Format  ScreenshotFormat
-		Quality int
-	}
-
 	HTMLDocument struct {
 		sync.Mutex
 		logger  *zerolog.Logger
@@ -46,23 +35,12 @@ type (
 	}
 )
 
-const (
-	ScreenshotFormatPNG  ScreenshotFormat = "png"
-	ScreenshotFormatJPEG ScreenshotFormat = "jpeg"
-)
-
 func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
 	err := client.Page.Close(context.Background())
 
 	if err != nil {
 		logger.Warn().Timestamp().Err(err).Msg("unabled to close document on load error")
 	}
-}
-
-func IsScreenshotFormatValid(format string) bool {
-	value := ScreenshotFormat(format)
-
-	return value == ScreenshotFormatPNG || value == ScreenshotFormatJPEG
 }
 
 func LoadHTMLDocument(
@@ -807,23 +785,71 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 	return values.True, nil
 }
 
-func (doc *HTMLDocument) PrintToPDF(params *page.PrintToPDFArgs) (core.Value, error) {
+func (doc *HTMLDocument) PrintToPDF(params values.HTMLPDFParams) (values.Binary, error) {
 	ctx := context.Background()
 
-	reply, err := doc.client.Page.PrintToPDF(ctx, params)
+	args := page.NewPrintToPDFArgs()
+	args.
+		SetLandscape(bool(params.Landscape)).
+		SetDisplayHeaderFooter(bool(params.DisplayHeaderFooter)).
+		SetPrintBackground(bool(params.PrintBackground)).
+		SetIgnoreInvalidPageRanges(bool(params.IgnoreInvalidPageRanges)).
+		SetPreferCSSPageSize(bool(params.PreferCSSPageSize))
+
+	if params.Scale > 0 {
+		args.SetScale(float64(params.Scale))
+	}
+
+	if params.PaperWidth > 0 {
+		args.SetPaperWidth(float64(params.PaperWidth))
+	}
+
+	if params.PaperHeight > 0 {
+		args.SetPaperHeight(float64(params.PaperHeight))
+	}
+
+	if params.MarginTop > 0 {
+		args.SetMarginTop(float64(params.MarginTop))
+	}
+
+	if params.MarginBottom > 0 {
+		args.SetMarginBottom(float64(params.MarginBottom))
+	}
+
+	if params.MarginRight > 0 {
+		args.SetMarginRight(float64(params.MarginRight))
+	}
+
+	if params.MarginLeft > 0 {
+		args.SetMarginLeft(float64(params.MarginLeft))
+	}
+
+	if params.PageRanges != values.EmptyString {
+		args.SetPageRanges(string(params.PageRanges))
+	}
+
+	if params.HeaderTemplate != values.EmptyString {
+		args.SetHeaderTemplate(string(params.HeaderTemplate))
+	}
+
+	if params.FooterTemplate != values.EmptyString {
+		args.SetFooterTemplate(string(params.FooterTemplate))
+	}
+
+	reply, err := doc.client.Page.PrintToPDF(ctx, args)
 
 	if err != nil {
-		return values.None, err
+		return values.NewBinary([]byte{}), err
 	}
 
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotParams) (core.Value, error) {
+func (doc *HTMLDocument) CaptureScreenshot(params values.HTMLScreenshotParams) (values.Binary, error) {
 	ctx := context.Background()
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
 
-	if params.Format == ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
+	if params.Format == values.HTMLScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
 		params.Quality = 100
 	}
 
@@ -836,32 +862,33 @@ func (doc *HTMLDocument) CaptureScreenshot(params *ScreenshotParams) (core.Value
 	}
 
 	if params.Width <= 0 {
-		params.Width = float64(metrics.LayoutViewport.ClientWidth) - params.X
+		params.Width = values.Float(metrics.LayoutViewport.ClientWidth) - params.X
 	}
 
 	if params.Height <= 0 {
-		params.Height = float64(metrics.LayoutViewport.ClientHeight) - params.Y
+		params.Height = values.Float(metrics.LayoutViewport.ClientHeight) - params.Y
 	}
 
 	clip := page.Viewport{
-		X:      params.X,
-		Y:      params.Y,
-		Width:  params.Width,
-		Height: params.Height,
+		X:      float64(params.X),
+		Y:      float64(params.Y),
+		Width:  float64(params.Width),
+		Height: float64(params.Height),
 		Scale:  1.0,
 	}
 
 	format := string(params.Format)
-	screenshotArgs := page.CaptureScreenshotArgs{
+	quality := int(params.Quality)
+	args := page.CaptureScreenshotArgs{
 		Format:  &format,
-		Quality: &params.Quality,
+		Quality: &quality,
 		Clip:    &clip,
 	}
 
-	reply, err := doc.client.Page.CaptureScreenshot(ctx, &screenshotArgs)
+	reply, err := doc.client.Page.CaptureScreenshot(ctx, &args)
 
 	if err != nil {
-		return values.None, err
+		return values.NewBinary([]byte{}), err
 	}
 
 	return values.NewBinary(reply.Data), nil
