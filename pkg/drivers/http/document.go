@@ -1,4 +1,4 @@
-package static
+package http
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"

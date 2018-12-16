@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/html"
-	"github.com/MontFerret/ferret/pkg/html/cdp"
-	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -135,12 +135,12 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	}
 
 	ctx := context.Background()
-	ctx = html.WithDynamic(
+	ctx = drivers.WithDynamic(
 		ctx,
-		cdp.NewDriver(cdp.WithCDP(r.settings.CDPAddress)),
+		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
 	)
 
-	ctx = html.WithStatic(ctx, static.NewDriver())
+	ctx = drivers.WithStatic(ctx, http.NewDriver())
 
 	out, err := p.Run(
 		ctx,

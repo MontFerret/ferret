@@ -4,15 +4,17 @@ type (
 	Options struct {
 		proxy     string
 		userAgent string
-		cdp       string
+		address   string
 	}
 
 	Option func(opts *Options)
 )
 
+const DefaultAddress = "http://127.0.0.1:9222"
+
 func newOptions(setters []Option) *Options {
 	opts := new(Options)
-	opts.cdp = "http://127.0.0.1:9222"
+	opts.address = DefaultAddress
 
 	for _, setter := range setters {
 		setter(opts)
@@ -21,9 +23,9 @@ func newOptions(setters []Option) *Options {
 	return opts
 }
 
-func WithCDP(address string) Option {
+func WithAddress(address string) Option {
 	return func(opts *Options) {
-		opts.cdp = address
+		opts.address = address
 	}
 }
 

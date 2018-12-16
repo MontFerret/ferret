@@ -1,4 +1,4 @@
-package html
+package drivers
 
 import (
 	"context"
@@ -12,22 +12,22 @@ type (
 
 	dynamicCtxKey struct{}
 
-	DriverStatic interface {
+	Static interface {
 		io.Closer
 		GetDocument(ctx context.Context, url values.String) (values.HTMLDocument, error)
 		ParseDocument(ctx context.Context, str values.String) (values.HTMLDocument, error)
 	}
 
-	DriverDynamic interface {
+	Dynamic interface {
 		io.Closer
 		GetDocument(ctx context.Context, url values.String) (values.DHTMLDocument, error)
 	}
 )
 
-func StaticFrom(ctx context.Context) (DriverStatic, error) {
+func StaticFrom(ctx context.Context) (Static, error) {
 	val := ctx.Value(staticCtxKey{})
 
-	drv, ok := val.(DriverStatic)
+	drv, ok := val.(Static)
 
 	if !ok {
 		return nil, core.Error(core.ErrNotFound, "HTML Driver")
@@ -36,10 +36,10 @@ func StaticFrom(ctx context.Context) (DriverStatic, error) {
 	return drv, nil
 }
 
-func DynamicFrom(ctx context.Context) (DriverDynamic, error) {
+func DynamicFrom(ctx context.Context) (Dynamic, error) {
 	val := ctx.Value(dynamicCtxKey{})
 
-	drv, ok := val.(DriverDynamic)
+	drv, ok := val.(Dynamic)
 
 	if !ok {
 		return nil, core.Error(core.ErrNotFound, "DHTML Driver")
@@ -48,7 +48,7 @@ func DynamicFrom(ctx context.Context) (DriverDynamic, error) {
 	return drv, nil
 }
 
-func WithStatic(ctx context.Context, drv DriverStatic) context.Context {
+func WithStatic(ctx context.Context, drv Static) context.Context {
 	return context.WithValue(
 		ctx,
 		staticCtxKey{},
@@ -56,7 +56,7 @@ func WithStatic(ctx context.Context, drv DriverStatic) context.Context {
 	)
 }
 
-func WithDynamic(ctx context.Context, drv DriverDynamic) context.Context {
+func WithDynamic(ctx context.Context, drv Dynamic) context.Context {
 	return context.WithValue(
 		ctx,
 		dynamicCtxKey{},

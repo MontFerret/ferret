@@ -2,9 +2,9 @@ package cli
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html"
-	"github.com/MontFerret/ferret/pkg/html/cdp"
-	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 type Options struct {
@@ -18,10 +18,10 @@ type Options struct {
 func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
 	var err error
 
-	ctx = html.WithDynamic(
+	ctx = drivers.WithDynamic(
 		ctx,
 		cdp.NewDriver(
-			cdp.WithCDP(opts.Cdp),
+			cdp.WithAddress(opts.Cdp),
 			cdp.WithProxy(opts.Proxy),
 			cdp.WithUserAgent(opts.UserAgent),
 		),
@@ -31,11 +31,11 @@ func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	ctx = html.WithStatic(
+	ctx = drivers.WithStatic(
 		ctx,
-		static.NewDriver(
-			static.WithProxy(opts.Proxy),
-			static.WithUserAgent(opts.UserAgent),
+		http.NewDriver(
+			http.WithProxy(opts.Proxy),
+			http.WithUserAgent(opts.UserAgent),
 		),
 	)
 

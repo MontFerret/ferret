@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
@@ -30,7 +30,7 @@ type Driver struct {
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
 	drv.options = newOptions(opts)
-	drv.dev = devtool.New(drv.options.cdp)
+	drv.dev = devtool.New(drv.options.address)
 
 	return drv
 }

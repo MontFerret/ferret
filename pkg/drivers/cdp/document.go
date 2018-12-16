@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/html/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/html/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"

@@ -1,22 +1,34 @@
-package static_test
+package http_test
 
 import (
 	"bytes"
-	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
-func TestDocument(t *testing.T) {
+func TestElement(t *testing.T) {
 	doc := `
 <html lang="en"><head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
+    <link rel="icon" href="../../../../favicon.ico">
+
+    <title>Album example for Bootstrap</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../../dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="album.css" rel="stylesheet">
   </head>
+
   <body>
+
     <header>
       <div class="collapse bg-dark" id="navbarHeader">
         <div class="container">
@@ -206,7 +218,9 @@ func TestDocument(t *testing.T) {
           </div>
         </div>
       </div>
+
     </main>
+
     <footer class="text-muted">
       <div class="container">
         <p class="float-right">
@@ -216,23 +230,190 @@ func TestDocument(t *testing.T) {
         <p>New to Bootstrap? <a href="../../">Visit the homepage</a> or read our <a href="../../getting-started/">getting started guide</a>.</p>
       </div>
     </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery-slim.min.js"><\/script>')</script>
+    <script src="../../assets/js/vendor/popper.min.js"></script>
+    <script src="../../dist/js/bootstrap.min.js"></script>
+    <script src="../../assets/js/vendor/holder.min.js"></script>
 	<svg xmlns="http://www.w3.org/2000/svg" width="348" height="225" viewBox="0 0 348 225" preserveAspectRatio="none" style="display: none; visibility: hidden; position: absolute; top: -100%; left: -100%;"><defs><style type="text/css"></style></defs><text x="0" y="17" style="font-weight:bold;font-size:17pt;font-family:Arial, Helvetica, Open Sans, sans-serif">Thumbnail</text></svg></body></html>
-	`
+`
+
 	Convey(".NodeType", t, func() {
-		Convey("Should serialize a boolean value", func() {
-			buff := bytes.NewBuffer([]byte(doc))
+		buff := bytes.NewBuffer([]byte(doc))
 
-			buff.Write([]byte(doc))
+		buff.Write([]byte(doc))
 
-			doc, err := goquery.NewDocumentFromReader(buff)
+		doc, err := goquery.NewDocumentFromReader(buff)
 
-			So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
 
-			el, err := static.NewHTMLElement(doc.Selection)
+		el, err := http.NewHTMLElement(doc.Find("body"))
 
-			So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
 
-			So(el.NodeType(), ShouldEqual, 9)
-		})
+		So(el.NodeType(), ShouldEqual, 1)
+	})
+
+	Convey(".NodeName", t, func() {
+		buff := bytes.NewBuffer([]byte(doc))
+
+		buff.Write([]byte(doc))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Find("body"))
+
+		So(err, ShouldBeNil)
+
+		So(el.NodeName(), ShouldEqual, "body")
+	})
+
+	Convey(".Length", t, func() {
+		buff := bytes.NewBuffer([]byte(`
+			<html>
+				<head></head>
+				<body>
+					<span></span>
+					<span></span>
+					<span></span>
+					<span></span>
+				</body>
+			</html>
+		`))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Find("body"))
+
+		So(err, ShouldBeNil)
+
+		So(el.Length(), ShouldEqual, 4)
+	})
+
+	Convey(".Value", t, func() {
+		buff := bytes.NewBuffer([]byte(`
+			<html>
+				<head></head>
+				<body>
+					<input id="q" value="find" />
+					<span></span>
+					<span></span>
+					<span></span>
+					<span></span>
+				</body>
+			</html>
+		`))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Find("#q"))
+
+		So(err, ShouldBeNil)
+
+		v := el.Value()
+
+		So(v, ShouldEqual, "find")
+	})
+
+	Convey(".InnerText", t, func() {
+		buff := bytes.NewBuffer([]byte(`
+			<html>
+				<head></head>
+				<body>
+					<h2>Ferret</h2>
+					<span></span>
+					<span></span>
+					<span></span>
+					<span></span>
+				</body>
+			</html>
+		`))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Find("h2"))
+
+		So(err, ShouldBeNil)
+
+		v := el.InnerText()
+
+		So(v, ShouldEqual, "Ferret")
+	})
+
+	Convey(".InnerHtml", t, func() {
+		buff := bytes.NewBuffer([]byte(`
+			<html>
+				<head></head>
+				<body>
+					<div id="content"><h2>Ferret</h2></div>
+					<span></span>
+					<span></span>
+					<span></span>
+					<span></span>
+				</body>
+			</html>
+		`))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Find("#content"))
+
+		So(err, ShouldBeNil)
+
+		v := el.InnerHTML()
+
+		So(v, ShouldEqual, "<h2>Ferret</h2>")
+	})
+
+	Convey(".QuerySelector", t, func() {
+		buff := bytes.NewBuffer([]byte(doc))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Selection)
+
+		So(err, ShouldBeNil)
+
+		found := el.QuerySelector(values.NewString("body .card-img-top:nth-child(1)"))
+
+		So(found, ShouldNotEqual, values.None)
+
+		v := found.(values.HTMLNode).NodeName()
+
+		So(err, ShouldBeNil)
+
+		So(v, ShouldEqual, "img")
+	})
+
+	Convey(".CountBySelector", t, func() {
+		buff := bytes.NewBuffer([]byte(doc))
+
+		doc, err := goquery.NewDocumentFromReader(buff)
+
+		So(err, ShouldBeNil)
+
+		el, err := http.NewHTMLElement(doc.Selection)
+
+		So(err, ShouldBeNil)
+
+		v := el.CountBySelector(values.NewString("head meta"))
+
+		So(v, ShouldEqual, 4)
 	})
 }

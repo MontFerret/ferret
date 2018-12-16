@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
@@ -37,8 +37,8 @@ func TestIsTypeOf(t *testing.T) {
 		So(core.IsTypeOf(values.NewDateTime(time.Now()), core.DateTimeType), ShouldBeTrue)
 		So(core.IsTypeOf(values.NewArray(1), core.ArrayType), ShouldBeTrue)
 		So(core.IsTypeOf(values.NewObject(), core.ObjectType), ShouldBeTrue)
-		So(core.IsTypeOf(&static.HTMLElement{}, core.HTMLElementType), ShouldBeTrue)
-		So(core.IsTypeOf(&static.HTMLDocument{}, core.HTMLDocumentType), ShouldBeTrue)
+		So(core.IsTypeOf(&http.HTMLElement{}, core.HTMLElementType), ShouldBeTrue)
+		So(core.IsTypeOf(&http.HTMLDocument{}, core.HTMLDocumentType), ShouldBeTrue)
 		So(core.IsTypeOf(values.NewBinary([]byte{}), core.BinaryType), ShouldBeTrue)
 	})
 }
@@ -54,8 +54,8 @@ func TestValidateType(t *testing.T) {
 		So(core.ValidateType(values.NewDateTime(time.Now()), core.DateTimeType), ShouldBeNil)
 		So(core.ValidateType(values.NewArray(1), core.ArrayType), ShouldBeNil)
 		So(core.ValidateType(values.NewObject(), core.ObjectType), ShouldBeNil)
-		So(core.ValidateType(&static.HTMLElement{}, core.HTMLElementType), ShouldBeNil)
-		So(core.ValidateType(&static.HTMLDocument{}, core.HTMLDocumentType), ShouldBeNil)
+		So(core.ValidateType(&http.HTMLElement{}, core.HTMLElementType), ShouldBeNil)
+		So(core.ValidateType(&http.HTMLDocument{}, core.HTMLDocumentType), ShouldBeNil)
 		So(core.ValidateType(values.NewBinary([]byte{}), core.BinaryType), ShouldBeNil)
 	})
 
@@ -69,8 +69,8 @@ func TestValidateType(t *testing.T) {
 		So(core.ValidateType(values.NewDateTime(time.Now()), core.BooleanType), ShouldBeError)
 		So(core.ValidateType(values.NewArray(1), core.StringType), ShouldBeError)
 		So(core.ValidateType(values.NewObject(), core.BooleanType), ShouldBeError)
-		So(core.ValidateType(&static.HTMLElement{}, core.ArrayType), ShouldBeError)
-		So(core.ValidateType(&static.HTMLDocument{}, core.HTMLElementType), ShouldBeError)
+		So(core.ValidateType(&http.HTMLElement{}, core.ArrayType), ShouldBeError)
+		So(core.ValidateType(&http.HTMLDocument{}, core.HTMLElementType), ShouldBeError)
 		So(core.ValidateType(values.NewBinary([]byte{}), core.NoneType), ShouldBeError)
 	})
 }
