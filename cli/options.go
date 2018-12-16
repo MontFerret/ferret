@@ -2,9 +2,9 @@ package cli
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html"
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
-	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 type Options struct {
@@ -15,19 +15,29 @@ type Options struct {
 	ShowTime  bool
 }
 
-func (opts Options) WithContext(ctx context.Context) context.Context {
-	ctx = html.WithDynamicDriver(
+func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
+	var err error
+
+	ctx = drivers.WithDynamic(
 		ctx,
-		dynamic.WithCDP(opts.Cdp),
-		dynamic.WithProxy(opts.Proxy),
-		dynamic.WithUserAgent(opts.UserAgent),
+		cdp.NewDriver(
+			cdp.WithAddress(opts.Cdp),
+			cdp.WithProxy(opts.Proxy),
+			cdp.WithUserAgent(opts.UserAgent),
+		),
 	)
 
-	ctx = html.WithStaticDriver(
+	if err != nil {
+		return ctx, err
+	}
+
+	ctx = drivers.WithStatic(
 		ctx,
-		static.WithProxy(opts.Proxy),
-		static.WithUserAgent(opts.UserAgent),
+		http.NewDriver(
+			http.WithProxy(opts.Proxy),
+			http.WithUserAgent(opts.UserAgent),
+		),
 	)
 
-	return ctx
+	return ctx, err
 }

@@ -3,7 +3,7 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/html/static"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -25,7 +25,7 @@ func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	drv, err := static.FromContext(ctx)
+	drv, err := drivers.StaticFrom(ctx)
 
 	if err != nil {
 		return values.None, err

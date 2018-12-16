@@ -1,7 +1,7 @@
 package events_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	. "github.com/smartystreets/goconvey/convey"

@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -42,7 +41,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	// lets figure out what is passed as 1st argument
 	switch args[0].(type) {
-	case *dynamic.HTMLDocument:
+	case values.DHTMLDocument:
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 3, 4)
 
@@ -57,7 +56,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		doc, ok := args[0].(*dynamic.HTMLDocument)
+		doc, ok := args[0].(values.DHTMLDocument)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -77,8 +76,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.None, doc.WaitForClass(selector, class, timeout)
-	case *dynamic.HTMLElement:
-		el, ok := args[0].(*dynamic.HTMLElement)
+	case values.DHTMLNode:
+		el, ok := args[0].(values.DHTMLNode)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

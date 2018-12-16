@@ -1,4 +1,4 @@
-package dynamic
+package cdp
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/html/common"
-	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
-	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"

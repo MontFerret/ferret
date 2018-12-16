@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -40,7 +39,7 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg.(*dynamic.HTMLDocument)
+	doc, ok := arg.(values.DHTMLDocument)
 
 	if !ok {
 		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

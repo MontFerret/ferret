@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/html"
+	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
 type Topic struct {
@@ -60,8 +60,8 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 	// enable HTML drivers
 	// by default, Ferret Runtime knows nothing about HTML drivers
 	// all HTML manipulations are done via functions from standard library
-	ctx = html.WithDynamicDriver(ctx)
-	ctx = html.WithStaticDriver(ctx)
+	ctx = drivers.WithDynamicDriver(ctx)
+	ctx = drivers.WithStaticDriver(ctx)
 
 	out, err := program.Run(ctx)
 

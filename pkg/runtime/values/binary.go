@@ -9,37 +9,35 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-type Binary struct {
-	values []byte
+type Binary []byte
+
+func NewBinary(values []byte) Binary {
+	return Binary(values)
 }
 
-func NewBinary(values []byte) *Binary {
-	return &Binary{values}
-}
-
-func NewBinaryFrom(stream io.Reader) (*Binary, error) {
+func NewBinaryFrom(stream io.Reader) (Binary, error) {
 	values, err := ioutil.ReadAll(stream)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Binary{values}, nil
+	return Binary(values), nil
 }
 
-func (b *Binary) MarshalJSON() ([]byte, error) {
-	return json.Marshal(b.values)
+func (b Binary) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]byte(b))
 }
 
-func (b *Binary) Type() core.Type {
+func (b Binary) Type() core.Type {
 	return core.BinaryType
 }
 
-func (b *Binary) String() string {
-	return string(b.values)
+func (b Binary) String() string {
+	return string(b)
 }
 
-func (b *Binary) Compare(other core.Value) int {
+func (b Binary) Compare(other core.Value) int {
 	// TODO: Lame comparison, need to think more about it
 	switch other.Type() {
 	case core.BooleanType:
@@ -59,28 +57,28 @@ func (b *Binary) Compare(other core.Value) int {
 	}
 }
 
-func (b *Binary) Unwrap() interface{} {
-	return b.values
+func (b Binary) Unwrap() interface{} {
+	return []byte(b)
 }
 
-func (b *Binary) Hash() uint64 {
+func (b Binary) Hash() uint64 {
 	h := fnv.New64a()
 
 	h.Write([]byte(b.Type().String()))
 	h.Write([]byte(":"))
-	h.Write(b.values)
+	h.Write(b)
 
 	return h.Sum64()
 }
 
-func (b *Binary) Copy() core.Value {
-	c := make([]byte, len(b.values))
+func (b Binary) Copy() core.Value {
+	c := make([]byte, len(b))
 
-	copy(c, b.values)
+	copy(c, b)
 
 	return NewBinary(c)
 }
 
-func (b *Binary) Length() Int {
-	return NewInt(len(b.values))
+func (b Binary) Length() Int {
+	return NewInt(len(b))
 }

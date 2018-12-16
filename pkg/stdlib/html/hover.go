@@ -2,7 +2,7 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -33,7 +33,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// Document with a selector
-		doc, ok := args[0].(*dynamic.HTMLDocument)
+		doc, ok := args[0].(values.DHTMLDocument)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -45,7 +45,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// Element
-	el, ok := args[0].(*dynamic.HTMLElement)
+	el, ok := args[0].(values.DHTMLNode)
 
 	if !ok {
 		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

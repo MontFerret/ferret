@@ -2,7 +2,7 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"time"
@@ -53,16 +53,20 @@ func Page(ctx context.Context, args ...core.Value) (core.Value, error) {
 		params = p
 	}
 
-	var drv html.Driver
-
 	ctx, cancel := context.WithTimeout(ctx, params.Timeout)
 	defer cancel()
 
-	if params.Dynamic == false {
-		drv, err = html.FromContext(ctx, html.Static)
-	} else {
-		drv, err = html.FromContext(ctx, html.Dynamic)
+	if params.Dynamic {
+		drv, err := drivers.DynamicFrom(ctx)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		return drv.GetDocument(ctx, url)
 	}
+
+	drv, err := drivers.StaticFrom(ctx)
 
 	if err != nil {
 		return values.None, err
