@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/MontFerret/ferret/e2e/runner"
 	"github.com/MontFerret/ferret/e2e/server"
 	"github.com/rs/zerolog"
+	"os"
+	"path/filepath"
+	"regexp"
 )
 
 var (
@@ -29,6 +29,12 @@ var (
 		"http://0.0.0.0:9222",
 		"address of remote Chrome instance",
 	)
+
+	filter = flag.String(
+		"filter",
+		"",
+		"regexp expression to filter out tests",
+	)
 )
 
 func main() {
@@ -47,6 +53,19 @@ func main() {
 		Port: dynamicPort,
 		Dir:  filepath.Join(*pagesDir, "dynamic"),
 	})
+
+	var filterR *regexp.Regexp
+
+	if *filter != "" {
+		r, err := regexp.Compile(*filter)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
+		filterR = r
+	}
 
 	go func() {
 		if err := static.Start(); err != nil {
@@ -79,6 +98,7 @@ func main() {
 		DynamicServerAddress: fmt.Sprintf("http://0.0.0.0:%d", dynamicPort),
 		CDPAddress:           *cdp,
 		Dir:                  *testsDir,
+		Filter:               filterR,
 	})
 
 	err := r.Run()

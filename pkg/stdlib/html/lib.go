@@ -21,6 +21,7 @@ func NewLib() map[string]core.Function {
 		"PAGE":             Page,
 		"DOWNLOAD":         Download,
 		"ELEMENT":          Element,
+		"ELEMENT_EXISTS":   ElementExists,
 		"ELEMENTS":         Elements,
 		"ELEMENTS_COUNT":   ElementsCount,
 		"HOVER":            Hover,

@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type (
 		DynamicServerAddress string
 		CDPAddress           string
 		Dir                  string
+		Filter               *regexp.Regexp
 	}
 
 	Result struct {
@@ -103,7 +105,15 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 
 	// read scripts
 	for _, f := range files {
-		fName := filepath.Join(dir, f.Name())
+		n := f.Name()
+
+		if r.settings.Filter != nil {
+			if r.settings.Filter.Match([]byte(n)) != true {
+				continue
+			}
+		}
+
+		fName := filepath.Join(dir, n)
 		b, err := ioutil.ReadFile(fName)
 
 		if err != nil {

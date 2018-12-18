@@ -369,6 +369,13 @@ func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
 	return doc.element.CountBySelector(selector)
 }
 
+func (doc *HTMLDocument) ExistsBySelector(selector values.String) values.Boolean {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.ExistsBySelector(selector)
+}
+
 func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
 		doc.client,

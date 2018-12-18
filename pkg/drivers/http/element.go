@@ -248,6 +248,16 @@ func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
 	return values.NewInt(selection.Size())
 }
 
+func (el *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
+	selection := el.selection.Closest(selector.String())
+
+	if selection == nil {
+		return values.False
+	}
+
+	return values.True
+}
+
 func (el *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 
