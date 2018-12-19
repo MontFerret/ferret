@@ -95,6 +95,8 @@ type (
 		InnerTextBySelectorAll(selector String) *Array
 
 		CountBySelector(selector String) Int
+
+		ExistsBySelector(selector String) Boolean
 	}
 
 	DHTMLNode interface {
