@@ -1,5 +1,5 @@
 LET url = @static + '/overview.html'
-LET doc = PAGE(url)
+LET doc = DOCUMENT(url)
 
 LET expectedP = TRUE
 LET actualP = ELEMENT_EXISTS(doc, '.section-nav')

@@ -1,4 +1,4 @@
 LET url = @static + '/overview.html'
-LET doc = PAGE(url)
+LET doc = DOCUMENT(url)
 
 RETURN EXPECT(doc.url, url)

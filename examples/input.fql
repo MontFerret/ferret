@@ -1,4 +1,4 @@
-LET google = PAGE("https://www.google.com/", true)
+LET google = DOCUMENT("https://www.google.com/", true)
 
 INPUT(google, 'input[name="q"]', "ferret", 25)
 CLICK(google, 'input[name="btnK"]')

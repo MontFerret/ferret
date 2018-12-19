@@ -18,7 +18,7 @@ func NewLib() map[string]core.Function {
 	return map[string]core.Function{
 		"CLICK":            Click,
 		"CLICK_ALL":        ClickAll,
-		"PAGE":             Page,
+		"DOCUMENT":         Document,
 		"DOWNLOAD":         Download,
 		"ELEMENT":          Element,
 		"ELEMENT_EXISTS":   ElementExists,
@@ -58,7 +58,7 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 	var ok bool
 
 	if value.Type() == core.StringType {
-		buf, err := Page(ctx, value, values.NewBoolean(true))
+		buf, err := Document(ctx, value, values.NewBoolean(true))
 
 		if err != nil {
 			return values.None, err

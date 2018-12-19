@@ -35,7 +35,7 @@ Once the page gets loaded, we iterate over all elements in search results and as
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
 ```aql
-LET google = PAGE("https://www.google.com/", true)
+LET google = DOCUMENT("https://www.google.com/", true)
 
 INPUT(google, 'input[name="q"]', "ferret", 25)
 CLICK(google, 'input[name="btnK"]')
@@ -127,7 +127,7 @@ ferret
 Welcome to Ferret REPL
 Please use `Ctrl-D` to exit this program.
 >%
->LET doc = PAGE('https://news.ycombinator.com/')
+>LET doc = DOCUMENT('https://news.ycombinator.com/')
 >FOR post IN ELEMENTS(doc, '.storylink')
 >RETURN post.attributes.href
 >%
@@ -173,13 +173,13 @@ ferret --cdp-launch
 
 **NOTE:** Launch command is currently broken on MacOS.
 
-Once ```ferret``` knows how to communicate with Chrome, you can use a function ```PAGE(url, isDynamic)``` with ```true``` boolean value for dynamic pages:
+Once ```ferret``` knows how to communicate with Chrome, you can use a function ```DOCUMENT(url, isDynamic)``` with ```true``` boolean value for dynamic pages:
 
 ```shell
 Welcome to Ferret REPL
 Please use `exit` or `Ctrl-D` to exit this program.
 >%
->LET doc = PAGE('https://soundcloud.com/charts/top', true)
+>LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
 >WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 >LET tracks = ELEMENTS(doc, '.chartTrack__details')
 >FOR track IN tracks
@@ -196,7 +196,7 @@ Please use `exit` or `Ctrl-D` to exit this program.
 Welcome to Ferret REPL
 Please use `exit` or `Ctrl-D` to exit this program.
 >%
->LET doc = PAGE("https://github.com/", true)
+>LET doc = DOCUMENT("https://github.com/", true)
 >LET btn = ELEMENT(doc, ".HeaderMenu a")
 
 >CLICK(btn)
@@ -246,7 +246,7 @@ func main() {
 
 func getTopTenTrendingTopics() ([]*Topic, error) {
 	query := `
-		LET doc = PAGE("https://github.com/topics")
+		LET doc = DOCUMENT("https://github.com/topics")
 
 		FOR el IN ELEMENTS(doc, ".py-4.border-bottom")
 			LIMIT 10

@@ -1,5 +1,5 @@
 LET url = @dynamic
-LET doc = PAGE(url, true)
+LET doc = DOCUMENT(url, true)
 
 LET expected = `<!DOCTYPE html><html lang="en"><head>
                         <meta charset="utf-8">
