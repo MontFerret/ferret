@@ -394,6 +394,7 @@ func Download(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err != nil {
 		return values.None, err
 	}
+	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return values.None, err
