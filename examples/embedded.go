@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"os"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -31,7 +33,7 @@ func main() {
 
 func getTopTenTrendingTopics() ([]*Topic, error) {
 	query := `
-		LET doc = PAGE("https://github.com/topics")
+		LET doc = DOCUMENT("https://github.com/topics")
 
 		FOR el IN ELEMENTS(doc, ".py-4.border-bottom")
 			LIMIT 10
@@ -60,8 +62,8 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 	// enable HTML drivers
 	// by default, Ferret Runtime knows nothing about HTML drivers
 	// all HTML manipulations are done via functions from standard library
-	ctx = drivers.WithDynamicDriver(ctx)
-	ctx = drivers.WithStaticDriver(ctx)
+	ctx = drivers.WithDynamic(ctx, cdp.NewDriver())
+	ctx = drivers.WithStatic(ctx, http.NewDriver())
 
 	out, err := program.Run(ctx)
 

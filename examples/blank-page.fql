@@ -1,3 +1,3 @@
-LET doc = PAGE("about:blank", true)
+LET doc = DOCUMENT("about:blank", true)
 NAVIGATE(doc, "https://www.google.com/")
 RETURN doc.url

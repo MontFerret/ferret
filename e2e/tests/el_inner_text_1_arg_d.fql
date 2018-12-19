@@ -1,5 +1,5 @@
 LET url = @dynamic
-LET doc = PAGE(url, true)
+LET doc = DOCUMENT(url, true)
 LET el = ELEMENT(doc, ".jumbotron")
 
 LET expected = `

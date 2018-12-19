@@ -1,5 +1,5 @@
 LET origin = "https://github.com/"
-LET doc = PAGE(origin, true)
+LET doc = DOCUMENT(origin, true)
 
 NAVIGATE(doc, "https://github.com/features")
 NAVIGATE_BACK(doc)

@@ -1,5 +1,5 @@
 LET url = @dynamic + "?redirect=/forms"
-LET doc = PAGE(url, true)
+LET doc = DOCUMENT(url, true)
 
 WAIT_ELEMENT(doc, "form")
 
