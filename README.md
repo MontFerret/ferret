@@ -413,3 +413,45 @@ func main() {
     comp.RegisterFunctions(strings.NewLib())
 }
 ```
+
+## Proxy
+
+By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a prticular proxy. It should be done during a browser launch.
+
+But you can pass an address of a proxy server you want to use for static pages.
+
+#### CLI
+
+```sh
+ferret --proxy=http://localhost:8888 my-query.fql
+```
+
+#### Code
+
+```go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+	
+    "github.com/MontFerret/ferret/pkg/compiler"
+    "github.com/MontFerret/ferret/pkg/html"
+)
+
+func run(q string) ([]byte, error) {
+        proxy := "http://localhost:8888"
+    	comp := compiler.New()
+	program := comp.MustCompile(q)
+
+	// create a root context
+	ctx := context.Background()
+	// we inform the driver what proxy to use
+	ctx = html.WithStaticDriver(ctx, statuc.WithProxy(proxy))
+
+	return program.Run(ctx)
+}
+
+```

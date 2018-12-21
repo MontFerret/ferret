@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"net/http"
 	"net/url"
 
@@ -71,6 +72,12 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	req = req.WithContext(ctx)
 
 	ua := common.GetUserAgent(drv.options.userAgent)
+
+	logger := logging.FromContext(ctx)
+	logger.
+		Debug().
+		Str("user-agent", ua).
+		Msg("using User-Agent")
 
 	// use custom user agent
 	if ua != "" {

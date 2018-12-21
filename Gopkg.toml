@@ -31,7 +31,7 @@
 
 [[constraint]]
   name = "github.com/antlr/antlr4"
-  version = "4.7.1"
+  version = "4.7.2"
 
 [[constraint]]
   name = "github.com/mafredri/cdp"

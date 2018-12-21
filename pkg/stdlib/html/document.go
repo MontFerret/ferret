@@ -9,9 +9,8 @@ import (
 )
 
 type DocumentLoadParams struct {
-	Dynamic   values.Boolean
-	Timeout   time.Duration
-	UserAgent values.String
+	Dynamic values.Boolean
+	Timeout time.Duration
 }
 
 // Document loads a HTML document by a given url.
@@ -21,7 +20,6 @@ type DocumentLoadParams struct {
 // @param isDynamicOrParams (Boolean|DocumentLoadParams) - Either a boolean value that indicates whether to use dynamic page
 // or an object with the following properties :
 // 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
-// 		userAgent (String) - Optional, custom user agent.
 // 		timeout (Int) - Optional, Document load timeout.
 // @returns (HTMLDocument) - Returns loaded HTML document.
 func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
@@ -77,9 +75,8 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 func newDefaultDocLoadParams() DocumentLoadParams {
 	return DocumentLoadParams{
-		Dynamic:   false,
-		UserAgent: "",
-		Timeout:   time.Second * 30,
+		Dynamic: false,
+		Timeout: time.Second * 30,
 	}
 }
 
@@ -106,16 +103,6 @@ func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 		}
 
 		res.Dynamic = isDynamic.(values.Boolean)
-	}
-
-	userAgent, exists := obj.Get(values.NewString("userAgent"))
-
-	if exists {
-		if err := core.ValidateType(userAgent, core.StringType); err != nil {
-			return res, err
-		}
-
-		res.UserAgent = userAgent.(values.String)
 	}
 
 	timeout, exists := obj.Get(values.NewString("timeout"))
