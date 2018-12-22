@@ -2,7 +2,7 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -22,7 +22,7 @@ func ScrollTop(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(*dynamic.HTMLDocument)
+	doc, ok := args[0].(values.DHTMLDocument)
 
 	if !ok {
 		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

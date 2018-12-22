@@ -1,11 +1,12 @@
-package static
+package http
 
 import (
 	"github.com/sethgrid/pester"
 )
 
 type (
-	Option  func(opts *Options)
+	Option func(opts *Options)
+
 	Options struct {
 		backoff     pester.BackoffStrategy
 		maxRetries  int

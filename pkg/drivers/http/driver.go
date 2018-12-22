@@ -1,13 +1,13 @@
-package static
+package http
 
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"net/http"
 	"net/url"
 
-	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/corpix/uarand"
@@ -15,33 +15,9 @@ import (
 	"github.com/sethgrid/pester"
 )
 
-type (
-	ctxKey struct{}
-
-	Driver struct {
-		client  *pester.Client
-		options *Options
-	}
-)
-
-func WithContext(ctx context.Context, drv *Driver) context.Context {
-	return context.WithValue(
-		ctx,
-		ctxKey{},
-		drv,
-	)
-}
-
-func FromContext(ctx context.Context) (*Driver, error) {
-	val := ctx.Value(ctxKey{})
-
-	drv, ok := val.(*Driver)
-
-	if !ok {
-		return nil, core.Error(core.ErrNotFound, "static HTML Driver")
-	}
-
-	return drv, nil
+type Driver struct {
+	client  *pester.Client
+	options *Options
 }
 
 func NewDriver(opts ...Option) *Driver {
@@ -80,7 +56,7 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 	return &http.Client{Transport: tr}, nil
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLDocument, error) {
 	u := targetURL.String()
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 
@@ -96,6 +72,12 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	req = req.WithContext(ctx)
 
 	ua := common.GetUserAgent(drv.options.userAgent)
+
+	logger := logging.FromContext(ctx)
+	logger.
+		Debug().
+		Str("user-agent", ua).
+		Msg("using User-Agent")
 
 	// use custom user agent
 	if ua != "" {
@@ -119,7 +101,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	return NewHTMLDocument(u, doc)
 }
 
-func (drv *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLNode, error) {
+func (drv *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLDocument, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)

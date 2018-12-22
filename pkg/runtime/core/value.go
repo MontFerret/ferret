@@ -55,6 +55,20 @@ type Value interface {
 	Copy() Value
 }
 
+// Getter represents an interface of
+// complex types that needs to be used to read values by path.
+// The interface is created to let user-defined types be used in dot notation data access.
+type Getter interface {
+	GetIn(path []Value) (Value, error)
+}
+
+// Setter represents an interface of
+// complex types that needs to be used to write values by path.
+// The interface is created to let user-defined types be used in dot notation assignment.
+type Setter interface {
+	SetIn(path []Value, value Value) error
+}
+
 // IsTypeOf return true when value's type
 // is equal to check type.
 // Returns false, otherwise.

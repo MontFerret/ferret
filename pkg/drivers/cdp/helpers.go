@@ -1,12 +1,12 @@
-package dynamic
+package cdp
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/MontFerret/ferret/pkg/html/common"
-	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
-	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"

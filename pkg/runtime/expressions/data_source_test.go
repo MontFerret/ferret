@@ -122,5 +122,40 @@ func TestDataSource(t *testing.T) {
 
 			So(pos, ShouldEqual, int(arr.Length()))
 		})
+
+		Convey("Should stop an execution when context is cancelled", func() {
+			arr := values.NewArrayWith(
+				values.NewInt(1),
+				values.NewInt(2),
+				values.NewInt(3),
+				values.NewInt(4),
+				values.NewInt(5),
+				values.NewInt(6),
+				values.NewInt(7),
+				values.NewInt(8),
+				values.NewInt(9),
+				values.NewInt(10),
+			)
+
+			ds, err := expressions.NewDataSource(
+				core.SourceMap{},
+				collections.DefaultValueVar,
+				collections.DefaultKeyVar,
+				TestDataSourceExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					return &testIterableCollection{arr}, nil
+				}),
+			)
+
+			So(err, ShouldBeNil)
+
+			rootScope, _ := core.NewRootScope()
+			scope := rootScope.Fork()
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+
+			_, err = ds.Iterate(ctx, scope)
+
+			So(err, ShouldEqual, core.ErrTerminated)
+		})
 	})
 }

@@ -1,7 +1,10 @@
 package html
 
 import (
+	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
 )
 
@@ -16,12 +19,13 @@ func NewLib() map[string]core.Function {
 		"CLICK":            Click,
 		"CLICK_ALL":        ClickAll,
 		"DOCUMENT":         Document,
-		"DOCUMENT_PARSE":   DocumentParse,
 		"DOWNLOAD":         Download,
 		"ELEMENT":          Element,
+		"ELEMENT_EXISTS":   ElementExists,
 		"ELEMENTS":         Elements,
 		"ELEMENTS_COUNT":   ElementsCount,
 		"HOVER":            Hover,
+		"HTML_PARSE":       Parse,
 		"INNER_HTML":       InnerHTML,
 		"INNER_HTML_ALL":   InnerHTMLAll,
 		"INNER_TEXT":       InnerText,
@@ -42,4 +46,32 @@ func NewLib() map[string]core.Function {
 		"WAIT_CLASS_ALL":   WaitClassAll,
 		"WAIT_NAVIGATION":  WaitNavigation,
 	}
+}
+
+func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error) {
+	err := core.ValidateType(value, core.HTMLDocumentType, core.StringType)
+	if err != nil {
+		return values.None, err
+	}
+
+	var doc values.DHTMLDocument
+	var ok bool
+
+	if value.Type() == core.StringType {
+		buf, err := Document(ctx, value, values.NewBoolean(true))
+
+		if err != nil {
+			return values.None, err
+		}
+
+		doc, ok = buf.(values.DHTMLDocument)
+	} else {
+		doc, ok = value.(values.DHTMLDocument)
+	}
+
+	if !ok {
+		return nil, ErrNotDynamic
+	}
+
+	return doc, nil
 }

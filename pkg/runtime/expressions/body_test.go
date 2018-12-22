@@ -10,15 +10,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNewBodyExpression(t *testing.T) {
+func TestBody(t *testing.T) {
 	Convey("Should create a block expression", t, func() {
 		s := expressions.NewBodyExpression(1)
 
 		So(s, ShouldHaveSameTypeAs, &expressions.BodyExpression{})
 	})
-}
 
-func TestBlockExpressionAddVariableExpression(t *testing.T) {
 	Convey("Should add a new expression of a default type", t, func() {
 		s := expressions.NewBodyExpression(0)
 
@@ -29,9 +27,7 @@ func TestBlockExpressionAddVariableExpression(t *testing.T) {
 		err = s.Add(exp)
 		So(err, ShouldBeNil)
 	})
-}
 
-func TestBlockExpressionAddReturnExpression(t *testing.T) {
 	Convey("Should add a new Return expression", t, func() {
 		s := expressions.NewBodyExpression(0)
 
@@ -45,9 +41,7 @@ func TestBlockExpressionAddReturnExpression(t *testing.T) {
 		err = s.Add(exp)
 		So(err, ShouldBeNil)
 	})
-}
 
-func TestBlockExpressionAddReturnExpressionFailed(t *testing.T) {
 	Convey("Should not add an already defined Return expression", t, func() {
 		s := expressions.NewBodyExpression(0)
 
@@ -65,9 +59,7 @@ func TestBlockExpressionAddReturnExpressionFailed(t *testing.T) {
 		So(err, ShouldBeError)
 		So(err.Error(), ShouldEqual, "invalid operation: return expression is already defined")
 	})
-}
 
-func TestBlockExpressionExec(t *testing.T) {
 	Convey("Should exec a block expression", t, func() {
 		s := expressions.NewBodyExpression(1)
 
@@ -91,9 +83,7 @@ func TestBlockExpressionExec(t *testing.T) {
 		So(value, ShouldNotBeNil)
 		So(value, ShouldEqual, "value")
 	})
-}
 
-func TestBlockExpressionExecNonFound(t *testing.T) {
 	Convey("Should not found a missing statement", t, func() {
 		s := expressions.NewBodyExpression(1)
 
@@ -117,9 +107,7 @@ func TestBlockExpressionExecNonFound(t *testing.T) {
 		So(err, ShouldHaveSameTypeAs, core.ErrNotFound)
 		So(value, ShouldHaveSameTypeAs, values.None)
 	})
-}
 
-func TestBlockExpressionExecNilExpression(t *testing.T) {
 	Convey("Should not exec a nil block expression", t, func() {
 		s := expressions.NewBodyExpression(1)
 
@@ -138,5 +126,22 @@ func TestBlockExpressionExecNilExpression(t *testing.T) {
 		value, err := s.Exec(context.Background(), scope)
 		So(err, ShouldBeNil)
 		So(value, ShouldHaveSameTypeAs, values.None)
+	})
+
+	Convey("Should stop an execution when context is cancelled", t, func() {
+		s := expressions.NewBodyExpression(1)
+		sourceMap := core.NewSourceMap("test", 1, 1)
+		exp, _ := expressions.NewVariableExpression(sourceMap, "test")
+		s.Add(exp)
+
+		rootScope, _ := core.NewRootScope()
+		scope := rootScope.Fork()
+		scope.SetVariable("test", values.NewString("value"))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		_, err := s.Exec(ctx, scope)
+		So(err, ShouldEqual, core.ErrTerminated)
 	})
 }

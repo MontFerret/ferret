@@ -28,23 +28,33 @@ func (exp *BlockExpression) Add(stmt core.Expression) {
 }
 
 func (exp *BlockExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	for _, stmt := range exp.statements {
-		_, err := stmt.Exec(ctx, scope)
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
+	default:
+		for _, stmt := range exp.statements {
+			_, err := stmt.Exec(ctx, scope)
 
-		if err != nil {
-			return values.None, err
+			if err != nil {
+				return values.None, err
+			}
 		}
-	}
 
-	return values.None, nil
+		return values.None, nil
+	}
 }
 
 func (exp *BlockExpression) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-	iter, err := exp.values.Iterate(ctx, scope)
+	select {
+	case <-ctx.Done():
+		return nil, core.ErrTerminated
+	default:
+		iter, err := exp.values.Iterate(ctx, scope)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+
+		return collections.NewTapIterator(iter, exp)
 	}
-
-	return collections.NewTapIterator(iter, exp)
 }
