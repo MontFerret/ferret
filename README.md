@@ -220,9 +220,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	
-    "github.com/MontFerret/ferret/pkg/compiler"
-    "github.com/MontFerret/ferret/pkg/html"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 type Topic struct {
@@ -273,10 +275,11 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 	ctx := context.Background()
 
 	// enable HTML drivers
-	// by default, Ferret Runtime knows nothing about HTML drivers
+	// by default, Ferret Runtime does not know about any HTML drivers
 	// all HTML manipulations are done via functions from standard library
-	ctx = html.WithDynamicDriver(ctx)
-	ctx = html.WithStaticDriver(ctx)
+	// that assume that at least one driver is available
+	ctx = drivers.WithDynamic(ctx, cdp.NewDriver())
+	ctx = drivers.WithStatic(ctx, http.NewDriver())
 
 	out, err := program.Run(ctx)
 
@@ -438,18 +441,22 @@ import (
     "os"
 	
     "github.com/MontFerret/ferret/pkg/compiler"
-    "github.com/MontFerret/ferret/pkg/html"
+    "github.com/MontFerret/ferret/pkg/drivers"
+    "github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 func run(q string) ([]byte, error) {
-        proxy := "http://localhost:8888"
-    	comp := compiler.New()
+    proxy := "http://localhost:8888"
+    comp := compiler.New()
 	program := comp.MustCompile(q)
 
 	// create a root context
 	ctx := context.Background()
 	// we inform the driver what proxy to use
-	ctx = html.WithStaticDriver(ctx, statuc.WithProxy(proxy))
+	ctx = html.WithStatic(
+	    ctx,
+	    http.NewDriver(http.WithProxy(proxy)),
+	)
 
 	return program.Run(ctx)
 }
