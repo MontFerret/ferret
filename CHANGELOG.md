@@ -1,5 +1,30 @@
 ## Changelog
 
+### 0.6.0
+#### Added
+- Added support for ```context.Done()``` to interrupt an execution [#201](https://github.com/MontFerret/ferret/pull/201).
+- Added support for custom HTML drivers [#209](https://github.com/MontFerret/ferret/pull/209).
+- Added support for dot notation access and assignments for custom types [#214](https://github.com/MontFerret/ferret/pull/214/commits/0ea36e511540e569ef53b8748301512b6d8a046b)
+- Added ```ELEMENT_EXISTS(doc, selector) -> Boolean``` function [#210](https://github.com/MontFerret/ferret/pull/210).
+```
+LET exists = ELEMENT_EXISTS(doc, ".nav")
+```
+- Added ```PageLoadParams``` to ```DOCUMENT``` function [#214](https://github.com/MontFerret/ferret/pull/214/commits/3434323cd08ca3186e90cb5ab1faa26e28a28709).
+```
+LET doc = DOCUMENT("https://www.google.com/", {
+    dynamic: true,
+    timeout: 10000
+})
+```
+ 
+#### Fixed
+- Math operators precedence [#202](https://github.com/MontFerret/ferret/pull/202).
+- Memory leak in ```DOWNLOAD``` function [#213](https://github.com/MontFerret/ferret/pull/213).
+
+#### Breaking change
+- **(Embedded)** Removed builtin drivers initialization in Program [#198](https://github.com/MontFerret/ferret/pull/198).
+The initialization must be done via context manually.
+
 ### 0.5.2
 #### Fixed
 - Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
