@@ -160,7 +160,7 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 			setter, ok := parent.(core.Setter)
 
 			if ok {
-				return setter.SetIn(byPath[idx:0], value)
+				return setter.SetIn(byPath[idx:], value)
 			}
 
 			// redefine parent
