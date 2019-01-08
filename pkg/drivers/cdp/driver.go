@@ -1,8 +1,10 @@
-package dynamic
+package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html/common"
+	"sync"
+
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
@@ -13,7 +15,6 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
-	"sync"
 )
 
 type Driver struct {
@@ -26,19 +27,15 @@ type Driver struct {
 	options   *Options
 }
 
-func NewDriver(address string, opts ...Option) *Driver {
+func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
-	drv.dev = devtool.New(address)
-	drv.options = new(Options)
-
-	for _, opt := range opts {
-		opt(drv.options)
-	}
+	drv.options = newOptions(opts)
+	drv.dev = devtool.New(drv.options.address)
 
 	return drv
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLNode, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.DHTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)

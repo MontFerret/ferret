@@ -1,10 +1,10 @@
-package static
+package http
 
 import (
 	"encoding/json"
 	"hash/fnv"
 
-	"github.com/MontFerret/ferret/pkg/html/common"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
@@ -246,6 +246,16 @@ func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
 	}
 
 	return values.NewInt(selection.Size())
+}
+
+func (el *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
+	selection := el.selection.Closest(selector.String())
+
+	if selection == nil {
+		return values.False
+	}
+
+	return values.True
 }
 
 func (el *HTMLElement) parseAttrs() *values.Object {

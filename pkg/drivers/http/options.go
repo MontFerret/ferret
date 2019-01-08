@@ -1,11 +1,12 @@
-package static
+package http
 
 import (
 	"github.com/sethgrid/pester"
 )
 
 type (
-	Option  func(opts *Options)
+	Option func(opts *Options)
+
 	Options struct {
 		backoff     pester.BackoffStrategy
 		maxRetries  int
@@ -14,6 +15,19 @@ type (
 		userAgent   string
 	}
 )
+
+func newOptions(setters []Option) *Options {
+	opts := new(Options)
+	opts.backoff = pester.ExponentialBackoff
+	opts.concurrency = 3
+	opts.maxRetries = 5
+
+	for _, setter := range setters {
+		setter(opts)
+	}
+
+	return opts
+}
 
 func WithDefaultBackoff() Option {
 	return func(opts *Options) {

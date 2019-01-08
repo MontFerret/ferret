@@ -219,14 +219,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/compiler"
 	"os"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 type Topic struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Url         string `json:"url"`
+	URL         string `json:"url"`
 }
 
 func main() {
@@ -238,7 +242,7 @@ func main() {
 	}
 
 	for _, topic := range topics {
-		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.Url))
+		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.URL))
 	}
 }
 
@@ -267,7 +271,17 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 		return nil, err
 	}
 
-	out, err := program.Run(context.Background())
+	// create a root context
+	ctx := context.Background()
+
+	// enable HTML drivers
+	// by default, Ferret Runtime does not know about any HTML drivers
+	// all HTML manipulations are done via functions from standard library
+	// that assume that at least one driver is available
+	ctx = drivers.WithDynamic(ctx, cdp.NewDriver())
+	ctx = drivers.WithStatic(ctx, http.NewDriver())
+
+	out, err := program.Run(ctx)
 
 	if err != nil {
 		return nil, err
@@ -283,6 +297,7 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 
 	return res, nil
 }
+
 ```
 
 ## Extensibility
@@ -296,10 +311,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"os"
 )
 
 func main() {
@@ -319,7 +336,7 @@ func getStrings() ([]string, error) {
 	// function implements is a type of a function that ferret supports as a runtime function
 	transform := func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		// it's just a helper function which helps to validate a number of passed args
-		err := core.ValidateArgs(args, 1)
+		err := core.ValidateArgs(args, 1, 1)
 
 		if err != nil {
 			// it's recommended to return built-in None type, instead of nil
@@ -336,7 +353,7 @@ func getStrings() ([]string, error) {
 		// cast to built-in string type
 		str := args[0].(values.String)
 
-		return str.Concat(values.NewString("_ferret")).ToUpper(), nil
+		return values.NewString(strings.ToUpper(str.String() + "_ferret")), nil
 	}
 
 	query := `
@@ -346,7 +363,10 @@ func getStrings() ([]string, error) {
 	`
 
 	comp := compiler.New()
-	comp.RegisterFunction("transform", transform)
+
+	if err := comp.RegisterFunction("transform", transform); err != nil {
+		return nil, err
+	}
 
 	program, err := comp.Compile(query)
 
@@ -395,4 +415,50 @@ func main() {
 
     comp.RegisterFunctions(strings.NewLib())
 }
+```
+
+## Proxy
+
+By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a prticular proxy. It should be done during a browser launch.
+
+But you can pass an address of a proxy server you want to use for static pages.
+
+#### CLI
+
+```sh
+ferret --proxy=http://localhost:8888 my-query.fql
+```
+
+#### Code
+
+```go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+	
+    "github.com/MontFerret/ferret/pkg/compiler"
+    "github.com/MontFerret/ferret/pkg/drivers"
+    "github.com/MontFerret/ferret/pkg/drivers/http"
+)
+
+func run(q string) ([]byte, error) {
+    proxy := "http://localhost:8888"
+    comp := compiler.New()
+	program := comp.MustCompile(q)
+
+	// create a root context
+	ctx := context.Background()
+	// we inform the driver what proxy to use
+	ctx = html.WithStatic(
+	    ctx,
+	    http.NewDriver(http.WithProxy(proxy)),
+	)
+
+	return program.Run(ctx)
+}
+
 ```

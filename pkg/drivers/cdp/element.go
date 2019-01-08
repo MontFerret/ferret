@@ -1,4 +1,4 @@
-package dynamic
+package cdp
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/html/common"
-	"github.com/MontFerret/ferret/pkg/html/dynamic/eval"
-	"github.com/MontFerret/ferret/pkg/html/dynamic/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
@@ -677,6 +677,33 @@ func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
 	}
 
 	return values.NewInt(len(res.NodeIDs))
+}
+
+func (el *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
+	if !el.IsConnected() {
+		return values.False
+	}
+
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
+	selectorArgs := dom.NewQuerySelectorArgs(el.id.nodeID, selector.String())
+	res, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		el.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve nodes by selector")
+
+		return values.False
+	}
+
+	if res.NodeID == 0 {
+		return values.False
+	}
+
+	return values.True
 }
 
 func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) error {

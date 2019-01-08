@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -28,7 +27,7 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(*dynamic.HTMLDocument)
+	doc, ok := arg1.(values.DHTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

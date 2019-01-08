@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/html/dynamic"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -29,8 +28,8 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	switch args[0].(type) {
-	case *dynamic.HTMLDocument:
-		doc, ok := arg1.(*dynamic.HTMLDocument)
+	case values.DHTMLDocument:
+		doc, ok := arg1.(values.DHTMLDocument)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -50,6 +49,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 			arg4 := args[3]
 
 			err = core.ValidateType(arg4, core.IntType)
+
 			if err != nil {
 				return values.False, err
 			}
@@ -58,8 +58,8 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.InputBySelector(arg2.(values.String), args[2], delay)
-	case *dynamic.HTMLElement:
-		el, ok := arg1.(*dynamic.HTMLElement)
+	case values.DHTMLNode:
+		el, ok := arg1.(values.DHTMLNode)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -71,6 +71,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 			arg3 := args[2]
 
 			err = core.ValidateType(arg3, core.IntType)
+
 			if err != nil {
 				return values.False, err
 			}

@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.2. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -133,8 +133,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#propertyName.
 	VisitPropertyName(ctx *PropertyNameContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#expressionSequence.
-	VisitExpressionSequence(ctx *ExpressionSequenceContext) interface{}
+	// Visit a parse tree produced by FqlParser#expressionGroup.
+	VisitExpressionGroup(ctx *ExpressionGroupContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
@@ -157,11 +157,17 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#logicalOperator.
-	VisitLogicalOperator(ctx *LogicalOperatorContext) interface{}
+	// Visit a parse tree produced by FqlParser#logicalAndOperator.
+	VisitLogicalAndOperator(ctx *LogicalAndOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#mathOperator.
-	VisitMathOperator(ctx *MathOperatorContext) interface{}
+	// Visit a parse tree produced by FqlParser#logicalOrOperator.
+	VisitLogicalOrOperator(ctx *LogicalOrOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#multiplicativeOperator.
+	VisitMultiplicativeOperator(ctx *MultiplicativeOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#additiveOperator.
+	VisitAdditiveOperator(ctx *AdditiveOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#unaryOperator.
 	VisitUnaryOperator(ctx *UnaryOperatorContext) interface{}

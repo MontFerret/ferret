@@ -1,16 +1,17 @@
 package common
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/env"
 	"github.com/corpix/uarand"
 )
+
+const RandomUserAgent = "*"
 
 func GetUserAgent(val string) string {
 	if val == "" {
 		return val
 	}
 
-	if val != env.RandomUserAgent {
+	if val != RandomUserAgent {
 		return val
 	}
 

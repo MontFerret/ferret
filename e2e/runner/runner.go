@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -19,6 +23,7 @@ type (
 		DynamicServerAddress string
 		CDPAddress           string
 		Dir                  string
+		Filter               *regexp.Regexp
 	}
 
 	Result struct {
@@ -100,7 +105,15 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 
 	// read scripts
 	for _, f := range files {
-		fName := filepath.Join(dir, f.Name())
+		n := f.Name()
+
+		if r.settings.Filter != nil {
+			if r.settings.Filter.Match([]byte(n)) != true {
+				continue
+			}
+		}
+
+		fName := filepath.Join(dir, n)
 		b, err := ioutil.ReadFile(fName)
 
 		if err != nil {
@@ -131,10 +144,17 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 		}
 	}
 
+	ctx := context.Background()
+	ctx = drivers.WithDynamic(
+		ctx,
+		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
+	)
+
+	ctx = drivers.WithStatic(ctx, http.NewDriver())
+
 	out, err := p.Run(
-		context.Background(),
+		ctx,
 		runtime.WithLog(os.Stdout),
-		runtime.WithBrowser(r.settings.CDPAddress),
 		runtime.WithParam("static", r.settings.StaticServerAddress),
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)

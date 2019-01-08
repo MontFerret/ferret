@@ -33,6 +33,12 @@ func (b *BodyExpression) Add(exp core.Expression) error {
 }
 
 func (b *BodyExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
+	default:
+	}
+
 	for _, exp := range b.statements {
 		if _, err := exp.Exec(ctx, scope); err != nil {
 			return values.None, err

@@ -28,11 +28,16 @@ func NewReturnExpression(
 }
 
 func (e *ReturnExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	val, err := e.predicate.Exec(ctx, scope)
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
+	default:
+		val, err := e.predicate.Exec(ctx, scope)
 
-	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		if err != nil {
+			return values.None, core.SourceError(e.src, err)
+		}
+
+		return val, nil
 	}
-
-	return val, nil
 }

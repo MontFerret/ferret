@@ -108,73 +108,78 @@ func (e *ForExpression) AddStatement(stmt core.Expression) error {
 }
 
 func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	iterator, err := e.dataSource.Iterate(ctx, scope)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	// Hash map for a check for uniqueness
-	var hashTable map[uint64]bool
-
-	if e.distinct {
-		hashTable = make(map[uint64]bool)
-	}
-
-	res := values.NewArray(10)
-	for {
-		nextScope, err := iterator.Next(ctx, scope)
-
-		if err != nil {
-			return values.None, core.SourceError(e.src, err)
-		}
-
-		// no data anymore
-		if nextScope == nil {
-			break
-		}
-
-		out, err := e.predicate.Exec(ctx, nextScope)
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
+	default:
+		iterator, err := e.dataSource.Iterate(ctx, scope)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		var add bool
+		// Hash map for a check for uniqueness
+		var hashTable map[uint64]bool
 
-		// The result shouldn't be distinct
-		// Just add the output
-		if !e.distinct {
-			add = true
-		} else {
-			// We need to check whether the value already exists in the result set
-			hash := out.Hash()
-			_, exists := hashTable[hash]
+		if e.distinct {
+			hashTable = make(map[uint64]bool)
+		}
 
-			if !exists {
-				hashTable[hash] = true
+		res := values.NewArray(10)
+		for {
+			nextScope, err := iterator.Next(ctx, scope)
+
+			if err != nil {
+				return values.None, core.SourceError(e.src, err)
+			}
+
+			// no data anymore
+			if nextScope == nil {
+				break
+			}
+
+			out, err := e.predicate.Exec(ctx, nextScope)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			var add bool
+
+			// The result shouldn't be distinct
+			// Just add the output
+			if !e.distinct {
 				add = true
-			}
-		}
-
-		if add {
-			if !e.spread {
-				res.Push(out)
 			} else {
-				elements, ok := out.(*values.Array)
+				// We need to check whether the value already exists in the result set
+				hash := out.Hash()
+				_, exists := hashTable[hash]
 
-				if !ok {
-					return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
+				if !exists {
+					hashTable[hash] = true
+					add = true
 				}
+			}
 
-				elements.ForEach(func(i core.Value, _ int) bool {
-					res.Push(i)
+			if add {
+				if !e.spread {
+					res.Push(out)
+				} else {
+					elements, ok := out.(*values.Array)
 
-					return true
-				})
+					if !ok {
+						return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
+					}
+
+					elements.ForEach(func(i core.Value, _ int) bool {
+						res.Push(i)
+
+						return true
+					})
+				}
 			}
 		}
-	}
 
-	return res, nil
+		return res, nil
+	}
 }

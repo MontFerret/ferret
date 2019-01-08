@@ -1,14 +1,44 @@
 ## Changelog
 
-### 0.5.1
+### 0.6.0
+#### Added
+- Added support for ```context.Done()``` to interrupt an execution [#201](https://github.com/MontFerret/ferret/pull/201).
+- Added support for custom HTML drivers [#209](https://github.com/MontFerret/ferret/pull/209).
+- Added support for dot notation access and assignments for custom types [#214](https://github.com/MontFerret/ferret/pull/214/commits/0ea36e511540e569ef53b8748301512b6d8a046b)
+- Added ```ELEMENT_EXISTS(doc, selector) -> Boolean``` function [#210](https://github.com/MontFerret/ferret/pull/210).
+```
+LET exists = ELEMENT_EXISTS(doc, ".nav")
+```
+- Added ```PageLoadParams``` to ```DOCUMENT``` function [#214](https://github.com/MontFerret/ferret/pull/214/commits/3434323cd08ca3186e90cb5ab1faa26e28a28709).
+```
+LET doc = DOCUMENT("https://www.google.com/", {
+    dynamic: true,
+    timeout: 10000
+})
+```
+ 
+#### Fixed
+- Math operators precedence [#202](https://github.com/MontFerret/ferret/pull/202).
+- Memory leak in ```DOWNLOAD``` function [#213](https://github.com/MontFerret/ferret/pull/213).
 
+#### Breaking change
+- **(Embedded)** Removed builtin drivers initialization in Program [#198](https://github.com/MontFerret/ferret/pull/198).
+The initialization must be done via context manually.
+
+### 0.5.2
+#### Fixed
+- Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
+- ```HTMLElement.value``` does not return actual value [#195](https://github.com/MontFerret/ferret/pull/195)
+- Compiles a query with duplicate variable in FOR statement [#196](https://github.com/MontFerret/ferret/pull/196)
+- Default CDP address [#197](https://github.com/MontFerret/ferret/pull/197).  
+
+### 0.5.1
 #### Fixed
 - Unable to change a page load timeout [#186](https://github.com/MontFerret/ferret/pull/186).
 - ``RETURN doc`` returns an empty string [#187](https://github.com/MontFerret/ferret/pull/187).
 - Unable to pass an HTML Node without a selector to ``INNER_TEXT`` and ``INNER_HTML`` [#187](https://github.com/MontFerret/ferret/pull/187).
 - ``doc.innerText`` returns an error [#187](https://github.com/MontFerret/ferret/pull/187).
 - Panics when ``WAIT_CLASS`` does not receive all required arguments [#192](https://github.com/MontFerret/ferret/pull/192).
-- Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
 
 ### 0.5.0
 #### Added

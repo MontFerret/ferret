@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlLexer.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from antlr/FqlLexer.g4 by ANTLR 4.7.2. DO NOT EDIT.
 
 package fql
 
@@ -35,8 +35,8 @@ var serializedLexerAtn = []uint16{
 	7, 3, 7, 3, 8, 3, 8, 3, 9, 3, 9, 3, 10, 3, 10, 3, 11, 3, 11, 3, 12, 3,
 	12, 3, 13, 3, 13, 3, 14, 3, 14, 3, 15, 3, 15, 3, 16, 3, 16, 3, 17, 3, 17,
 	3, 18, 3, 18, 3, 18, 3, 19, 3, 19, 3, 19, 3, 20, 3, 20, 3, 20, 3, 21, 3,
-	21, 3, 21, 3, 22, 3, 22, 3, 23, 3, 23, 3, 24, 3, 24, 3, 24, 3, 25, 3, 25,
-	3, 25, 3, 26, 3, 26, 3, 27, 3, 27, 3, 28, 3, 28, 3, 29, 3, 29, 3, 29, 3,
+	21, 3, 21, 3, 22, 3, 22, 3, 23, 3, 23, 3, 24, 3, 24, 3, 25, 3, 25, 3, 26,
+	3, 26, 3, 27, 3, 27, 3, 27, 3, 28, 3, 28, 3, 28, 3, 29, 3, 29, 3, 29, 3,
 	29, 3, 29, 5, 29, 237, 10, 29, 3, 30, 3, 30, 3, 30, 3, 30, 5, 30, 243,
 	10, 30, 3, 31, 3, 31, 3, 31, 3, 32, 3, 32, 3, 33, 3, 33, 3, 34, 3, 34,
 	3, 34, 3, 35, 3, 35, 3, 35, 3, 36, 3, 36, 3, 36, 3, 36, 3, 37, 3, 37, 3,
@@ -102,8 +102,8 @@ var serializedLexerAtn = []uint16{
 	3, 2, 2, 2, 27, 195, 3, 2, 2, 2, 29, 197, 3, 2, 2, 2, 31, 199, 3, 2, 2,
 	2, 33, 201, 3, 2, 2, 2, 35, 203, 3, 2, 2, 2, 37, 206, 3, 2, 2, 2, 39, 209,
 	3, 2, 2, 2, 41, 212, 3, 2, 2, 2, 43, 215, 3, 2, 2, 2, 45, 217, 3, 2, 2,
-	2, 47, 219, 3, 2, 2, 2, 49, 222, 3, 2, 2, 2, 51, 225, 3, 2, 2, 2, 53, 227,
-	3, 2, 2, 2, 55, 229, 3, 2, 2, 2, 57, 236, 3, 2, 2, 2, 59, 242, 3, 2, 2,
+	2, 47, 219, 3, 2, 2, 2, 49, 221, 3, 2, 2, 2, 51, 223, 3, 2, 2, 2, 53, 225,
+	3, 2, 2, 2, 55, 228, 3, 2, 2, 2, 57, 236, 3, 2, 2, 2, 59, 242, 3, 2, 2,
 	2, 61, 244, 3, 2, 2, 2, 63, 247, 3, 2, 2, 2, 65, 249, 3, 2, 2, 2, 67, 251,
 	3, 2, 2, 2, 69, 254, 3, 2, 2, 2, 71, 257, 3, 2, 2, 2, 73, 261, 3, 2, 2,
 	2, 75, 268, 3, 2, 2, 2, 77, 277, 3, 2, 2, 2, 79, 284, 3, 2, 2, 2, 81, 289,
@@ -139,11 +139,11 @@ var serializedLexerAtn = []uint16{
 	36, 3, 2, 2, 2, 206, 207, 7, 64, 2, 2, 207, 208, 7, 63, 2, 2, 208, 38,
 	3, 2, 2, 2, 209, 210, 7, 62, 2, 2, 210, 211, 7, 63, 2, 2, 211, 40, 3, 2,
 	2, 2, 212, 213, 7, 35, 2, 2, 213, 214, 7, 63, 2, 2, 214, 42, 3, 2, 2, 2,
-	215, 216, 7, 45, 2, 2, 216, 44, 3, 2, 2, 2, 217, 218, 7, 47, 2, 2, 218,
-	46, 3, 2, 2, 2, 219, 220, 7, 47, 2, 2, 220, 221, 7, 47, 2, 2, 221, 48,
-	3, 2, 2, 2, 222, 223, 7, 45, 2, 2, 223, 224, 7, 45, 2, 2, 224, 50, 3, 2,
-	2, 2, 225, 226, 7, 44, 2, 2, 226, 52, 3, 2, 2, 2, 227, 228, 7, 49, 2, 2,
-	228, 54, 3, 2, 2, 2, 229, 230, 7, 39, 2, 2, 230, 56, 3, 2, 2, 2, 231, 232,
+	215, 216, 7, 44, 2, 2, 216, 44, 3, 2, 2, 2, 217, 218, 7, 49, 2, 2, 218,
+	46, 3, 2, 2, 2, 219, 220, 7, 39, 2, 2, 220, 48, 3, 2, 2, 2, 221, 222, 7,
+	45, 2, 2, 222, 50, 3, 2, 2, 2, 223, 224, 7, 47, 2, 2, 224, 52, 3, 2, 2,
+	2, 225, 226, 7, 47, 2, 2, 226, 227, 7, 47, 2, 2, 227, 54, 3, 2, 2, 2, 228,
+	229, 7, 45, 2, 2, 229, 230, 7, 45, 2, 2, 230, 56, 3, 2, 2, 2, 231, 232,
 	7, 67, 2, 2, 232, 233, 7, 80, 2, 2, 233, 237, 7, 70, 2, 2, 234, 235, 7,
 	40, 2, 2, 235, 237, 7, 40, 2, 2, 236, 231, 3, 2, 2, 2, 236, 234, 3, 2,
 	2, 2, 237, 58, 3, 2, 2, 2, 238, 239, 7, 81, 2, 2, 239, 243, 7, 84, 2, 2,
@@ -261,8 +261,8 @@ var lexerModeNames = []string{
 
 var lexerLiteralNames = []string{
 	"", "", "", "", "", "':'", "';'", "'.'", "','", "'['", "']'", "'('", "')'",
-	"'{'", "'}'", "'>'", "'<'", "'=='", "'>='", "'<='", "'!='", "'+'", "'-'",
-	"'--'", "'++'", "'*'", "'/'", "'%'", "", "", "", "'='", "'?'", "'!~'",
+	"'{'", "'}'", "'>'", "'<'", "'=='", "'>='", "'<='", "'!='", "'*'", "'/'",
+	"'%'", "'+'", "'-'", "'--'", "'++'", "", "", "", "'='", "'?'", "'!~'",
 	"'=~'", "'FOR'", "'RETURN'", "'DISTINCT'", "'FILTER'", "'SORT'", "'LIMIT'",
 	"'LET'", "'COLLECT'", "", "'NONE'", "'NULL'", "", "'INTO'", "'KEEP'", "'WITH'",
 	"'COUNT'", "'ALL'", "'ANY'", "'AGGREGATE'", "'LIKE'", "", "'IN'", "'@'",
@@ -272,7 +272,7 @@ var lexerSymbolicNames = []string{
 	"", "MultiLineComment", "SingleLineComment", "WhiteSpaces", "LineTerminator",
 	"Colon", "SemiColon", "Dot", "Comma", "OpenBracket", "CloseBracket", "OpenParen",
 	"CloseParen", "OpenBrace", "CloseBrace", "Gt", "Lt", "Eq", "Gte", "Lte",
-	"Neq", "Plus", "Minus", "MinusMinus", "PlusPlus", "Multi", "Div", "Mod",
+	"Neq", "Multi", "Div", "Mod", "Plus", "Minus", "MinusMinus", "PlusPlus",
 	"And", "Or", "Range", "Assign", "QuestionMark", "RegexNotMatch", "RegexMatch",
 	"For", "Return", "Distinct", "Filter", "Sort", "Limit", "Let", "Collect",
 	"SortDirection", "None", "Null", "BooleanLiteral", "Into", "Keep", "With",
@@ -284,7 +284,7 @@ var lexerRuleNames = []string{
 	"MultiLineComment", "SingleLineComment", "WhiteSpaces", "LineTerminator",
 	"Colon", "SemiColon", "Dot", "Comma", "OpenBracket", "CloseBracket", "OpenParen",
 	"CloseParen", "OpenBrace", "CloseBrace", "Gt", "Lt", "Eq", "Gte", "Lte",
-	"Neq", "Plus", "Minus", "MinusMinus", "PlusPlus", "Multi", "Div", "Mod",
+	"Neq", "Multi", "Div", "Mod", "Plus", "Minus", "MinusMinus", "PlusPlus",
 	"And", "Or", "Range", "Assign", "QuestionMark", "RegexNotMatch", "RegexMatch",
 	"For", "Return", "Distinct", "Filter", "Sort", "Limit", "Let", "Collect",
 	"SortDirection", "None", "Null", "BooleanLiteral", "Into", "Keep", "With",
@@ -349,13 +349,13 @@ const (
 	FqlLexerGte                   = 18
 	FqlLexerLte                   = 19
 	FqlLexerNeq                   = 20
-	FqlLexerPlus                  = 21
-	FqlLexerMinus                 = 22
-	FqlLexerMinusMinus            = 23
-	FqlLexerPlusPlus              = 24
-	FqlLexerMulti                 = 25
-	FqlLexerDiv                   = 26
-	FqlLexerMod                   = 27
+	FqlLexerMulti                 = 21
+	FqlLexerDiv                   = 22
+	FqlLexerMod                   = 23
+	FqlLexerPlus                  = 24
+	FqlLexerMinus                 = 25
+	FqlLexerMinusMinus            = 26
+	FqlLexerPlusPlus              = 27
 	FqlLexerAnd                   = 28
 	FqlLexerOr                    = 29
 	FqlLexerRange                 = 30

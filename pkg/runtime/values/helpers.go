@@ -19,7 +19,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 	var result = from
 	var err error
 
-	for _, segment := range byPath {
+	for i, segment := range byPath {
 		if result == None || result == nil {
 			break
 		}
@@ -64,7 +64,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 					result = el.InnerText()
 				case "innerHTML":
 					result = el.InnerHTML()
-				case "items":
+				case "value":
 					result = el.Value()
 				case "attributes":
 					result = el.GetAttributes()
@@ -92,6 +92,12 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 			}
 
 		default:
+			getter, ok := result.(core.Getter)
+
+			if ok {
+				return getter.GetIn(byPath[i:])
+			}
+
 			return None, core.TypeError(
 				from.Type(),
 				core.ArrayType,
@@ -144,11 +150,19 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 			if isTarget == false {
 				current = parent.Get(segment.(Int))
 			} else {
-				parent.Set(segment.(Int), value)
+				if err := parent.Set(segment.(Int), value); err != nil {
+					return err
+				}
 			}
 
 			break
 		default:
+			setter, ok := parent.(core.Setter)
+
+			if ok {
+				return setter.SetIn(byPath[idx:], value)
+			}
+
 			// redefine parent
 			isArray := segmentType == core.IntType
 
@@ -169,12 +183,16 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 				parent = arr
 
 				if isTarget {
-					arr.Set(segment.(Int), value)
+					if err := arr.Set(segment.(Int), value); err != nil {
+						return err
+					}
 				}
 			}
 
 			// set new parent
-			SetIn(to, byPath[0:idx-1], parent)
+			if err := SetIn(to, byPath[0:idx-1], parent); err != nil {
+				return err
+			}
 
 			if isTarget == false {
 				current = None
