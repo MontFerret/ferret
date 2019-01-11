@@ -93,7 +93,7 @@
   version = "v0.2.7"
 
 [[projects]]
-  digest = "1:612ebc66cfa7484088f90ab86c7f1eb3d7696cf38ec2451c63f8d6008ff7625f"
+  digest = "1:c07a7b5b5e62ed0828ba5df53ea579c8b04fe55acc2fa7b9fb7bd367d3cd7d6a"
   name = "github.com/mafredri/cdp"
   packages = [
     ".",
@@ -105,6 +105,7 @@
     "protocol/audits",
     "protocol/browser",
     "protocol/cachestorage",
+    "protocol/cast",
     "protocol/console",
     "protocol/css",
     "protocol/database",
@@ -115,6 +116,7 @@
     "protocol/domsnapshot",
     "protocol/domstorage",
     "protocol/emulation",
+    "protocol/fetch",
     "protocol/headlessexperimental",
     "protocol/heapprofiler",
     "protocol/indexeddb",
@@ -144,8 +146,8 @@
     "session",
   ]
   pruneopts = "UT"
-  revision = "0b30a3d15c28f2c8f028f99009cfba0b19baf126"
-  version = "v0.20.0"
+  revision = "d2ad1a32f89e2bf0d0168e5f20f24cf6bf59e8db"
+  version = "v0.21.0"
 
 [[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
