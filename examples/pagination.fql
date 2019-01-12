@@ -5,11 +5,12 @@ CLICK(amazon, '.nav-search-submit input[type="submit"]')
 WAIT_NAVIGATION(amazon)
 
 LET resultListSelector = '#s-results-list-atf'
-LET resultItemSelector = '.s-result-item'
+LET resultItemSelector = '.s-result-item.celwidget'
 LET nextBtnSelector = '#pagnNextLink'
-LET vendorSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div.a-row.a-spacing-small > div:nth-child(2) > span:nth-child(2)'
-LET priceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(4) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
-LET altPriceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
+LET vendorSelector1 = 'div > div:nth-child(3) > div:nth-child(2) > span:nth-child(2)'
+LET vendorSelector2 = 'div > div:nth-child(5) > div:nth-child(2) > span:nth-child(2)'
+LET priceWholeSelector = 'span.sx-price-whole'
+LET priceFracSelector = 'sup.sx-price-fractional'
 LET pages = TO_INT(INNER_TEXT(amazon, '#pagn > span.pagnDisabled'))
 
 LET result = (
@@ -20,13 +21,15 @@ LET result = (
 
         LET items = (
             FOR el IN ELEMENTS(amazon, resultItemSelector)
-                LET priceTxtMain = INNER_TEXT(el, priceSelector)
-                LET priceTxt = priceTxtMain != "" ? priceTxtMain : INNER_TEXT(el, altPriceSelector)
+                LET priceWholeTxt = INNER_TEXT(el, priceWholeSelector)
+                LET priceFracTxt = INNER_TEXT(el, priceFracSelector)
+		LET price = TO_FLOAT(priceWholeTxt + "." + priceFracTxt)
+                LET vendor = ELEMENT_EXISTS(el, vendorSelector1) ? INNER_TEXT(el, vendorSelector1) : INNER_TEXT(el, vendorSelector2)
 
                 RETURN {
                     title: INNER_TEXT(el, 'h2'),
-                    vendor: INNER_TEXT(el, vendorSelector),
-                    price: TO_FLOAT(SUBSTITUTE(priceTxt, "$", ""))
+                    vendor,
+                    price
                 }
         )
 
