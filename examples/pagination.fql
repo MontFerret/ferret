@@ -10,9 +10,10 @@ LET nextBtnSelector = '#pagnNextLink'
 LET vendorSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div.a-row.a-spacing-small > div:nth-child(2) > span:nth-child(2)'
 LET priceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(4) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
 LET altPriceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
-
+LET pages = TO_INT(INNER_TEXT(amazon, '#pagn > span.pagnDisabled'))
+PRINT(pages)
 LET result = (
-    FOR pageNum IN 1..@pages
+    FOR pageNum IN 1..pages
         LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
         LET wait = clicked ? WAIT_NAVIGATION(amazon) : false
         LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
