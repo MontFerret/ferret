@@ -35,7 +35,7 @@
 
 [[constraint]]
   name = "github.com/mafredri/cdp"
-  version = "0.20.0"
+  version = "0.21.0"
 
 [[constraint]]
   name = "github.com/chzyer/readline"
@@ -63,5 +63,5 @@
 
 [[constraint]]
   name = "github.com/pkg/errors"
-  version = "0.8.0"
+  version = "0.8.1"
 
