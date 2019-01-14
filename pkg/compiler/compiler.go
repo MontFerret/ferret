@@ -1,12 +1,13 @@
 package compiler
 
 import (
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 type FqlCompiler struct {
@@ -103,4 +104,11 @@ func (c *FqlCompiler) MustCompile(query string) *runtime.Program {
 	}
 
 	return program
+}
+
+func (c *FqlCompiler) RegisteredFunctions() (funcs []string) {
+	for k := range c.funcs {
+		funcs = append(funcs, k)
+	}
+	return
 }

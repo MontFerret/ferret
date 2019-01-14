@@ -24,7 +24,7 @@ func Repl(version string, opts Options) {
 		Prompt:          "> ",
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
-		AutoComplete:    NewAutoCompleter(),
+		AutoComplete:    NewAutoCompleter(ferret.RegisteredFunctions()),
 	})
 
 	if err != nil {
