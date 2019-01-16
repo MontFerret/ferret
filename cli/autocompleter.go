@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/derekparker/trie"
@@ -12,20 +11,8 @@ import (
 // Implements AutoCompleter interface from
 // github.com/chzyer/readline
 type AutoCompleter struct {
-	coreFuncs  *trie.Trie
-	initTokens *trie.Trie
+	coreFuncs *trie.Trie
 }
-
-// any fql script start with
-// one of the follow tokens:
-var initTokens = [][]rune{
-	[]rune("FOR"),
-	[]rune("RETURN"),
-	[]rune("LET"),
-}
-
-// check that entered token is first
-var initTokensRegexp = regexp.MustCompile(`^\s*[A-Z]+\s*$`)
 
 func NewAutoCompleter(functions []string) *AutoCompleter {
 	coreFuncs := trie.New()
@@ -34,17 +21,8 @@ func NewAutoCompleter(functions []string) *AutoCompleter {
 		coreFuncs.Add(function, function)
 	}
 
-	inits := trie.New()
-	initStr := ""
-
-	for _, init := range initTokens {
-		initStr = string(init)
-		inits.Add(initStr, initStr)
-	}
-
 	return &AutoCompleter{
-		coreFuncs:  coreFuncs,
-		initTokens: inits,
+		coreFuncs: coreFuncs,
 	}
 }
 
@@ -61,12 +39,7 @@ func (ac *AutoCompleter) Do(line []rune, pos int) (newLine [][]rune, length int)
 		return newLine, pos
 	}
 
-	searcher := ac.coreFuncs
-	if initTokensRegexp.MatchString(lineStr) {
-		searcher = ac.initTokens
-	}
-
-	for _, fn := range searcher.PrefixSearch(token) {
+	for _, fn := range ac.coreFuncs.PrefixSearch(token) {
 		// cuts a piece of word that is already written
 		// in the repl
 		withoutPre := []rune(fn)[len(token):]
