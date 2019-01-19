@@ -42,6 +42,14 @@
   version = "v0.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:e648389fd795e80783fb382616d5b2b8bab09e3703cc673231d8ff721f40a6ef"
+  name = "github.com/derekparker/trie"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e608c2733dc704cd4a73f825f4acab8f3c3d4d15"
+
+[[projects]]
   digest = "1:bed9d72d596f94e65fff37f4d6c01398074a6bb1c3f3ceff963516bd01db6ff5"
   name = "github.com/gofrs/uuid"
   packages = ["."]
@@ -287,6 +295,7 @@
     "github.com/antlr/antlr4/runtime/Go/antlr",
     "github.com/chzyer/readline",
     "github.com/corpix/uarand",
+    "github.com/derekparker/trie",
     "github.com/gofrs/uuid",
     "github.com/labstack/echo",
     "github.com/mafredri/cdp",
