@@ -3,14 +3,17 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/chzyer/readline"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/MontFerret/ferret/pkg/parser/fql"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/chzyer/readline"
 )
 
 func Repl(version string, opts Options) {
@@ -23,6 +26,11 @@ func Repl(version string, opts Options) {
 		Prompt:          "> ",
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
+		AutoComplete: NewAutoCompleter(
+			append(
+				fqlLiterals(),
+				ferret.RegisteredFunctions()...,
+			)),
 	})
 
 	if err != nil {
@@ -137,4 +145,14 @@ func Repl(version string, opts Options) {
 			fmt.Println(timer.Print())
 		}
 	}
+}
+
+func fqlLiterals() (literals []string) {
+	lns := fql.NewFqlLexer(nil).LiteralNames
+
+	for _, ln := range lns {
+		literals = append(literals, strings.Trim(ln, "'"))
+	}
+
+	return
 }
