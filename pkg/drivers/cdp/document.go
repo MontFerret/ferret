@@ -386,7 +386,7 @@ func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean
 				return false;
 			}
 
-			var evt = new window.MouseEvent('click', { bubbles: true });
+			var evt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 			el.dispatchEvent(evt);
 
 			return true;
@@ -417,7 +417,7 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 			}
 
 			elements.forEach((el) => {
-				var evt = new window.MouseEvent('click', { bubbles: true });
+				var evt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 				el.dispatchEvent(evt);	
 			});
 
