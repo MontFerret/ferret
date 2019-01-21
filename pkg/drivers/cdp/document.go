@@ -509,8 +509,8 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 				}
       		}
 
-      		element.dispatchEvent(new Event('input', { 'bubbles': true }));
-      		element.dispatchEvent(new Event('change', { 'bubbles': true }));
+      		element.dispatchEvent(new Event('input', { 'bubbles': true, cancelable: true }));
+      		element.dispatchEvent(new Event('change', { 'bubbles': true, cancelable: true }));
       		
 			return options.filter(option => option.selected).map(option => option.value);
 		`,

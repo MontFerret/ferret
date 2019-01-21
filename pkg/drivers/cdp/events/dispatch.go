@@ -16,7 +16,7 @@ func DispatchEvent(
 	eventName string,
 ) (values.Boolean, error) {
 	evt, err := client.Runtime.Evaluate(ctx, runtime.NewEvaluateArgs(eval.PrepareEval(fmt.Sprintf(`
-		return new window.MouseEvent('%s', { bubbles: true })
+		return new window.MouseEvent('%s', { bubbles: true, cancelable: true })
 	`, eventName))))
 
 	if err != nil {
