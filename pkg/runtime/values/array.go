@@ -53,9 +53,11 @@ func (t *Array) Compare(other core.Value) int {
 		if t.Length() == 0 && other.Length() == 0 {
 			return 0
 		}
+
 		if t.Length() < other.Length() {
 			return -1
 		}
+
 		if t.Length() > other.Length() {
 			return 1
 		}

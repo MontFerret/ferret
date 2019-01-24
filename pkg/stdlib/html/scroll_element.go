@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -18,7 +19,7 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -32,7 +33,7 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// Document with a selector
-		doc, ok := args[0].(values.DHTMLDocument)
+		doc, ok := args[0].(drivers.DHTMLDocument)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -44,7 +45,7 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// Element
-	el, ok := args[0].(values.DHTMLNode)
+	el, ok := args[0].(drivers.DHTMLNode)
 
 	if !ok {
 		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

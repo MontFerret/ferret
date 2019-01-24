@@ -26,7 +26,6 @@ type (
 	}
 
 	IterableCollection interface {
-		core.Value
 		Iterate(ctx context.Context) (CollectionIterator, error)
 	}
 

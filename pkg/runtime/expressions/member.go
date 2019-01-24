@@ -46,7 +46,7 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		strPath[idx] = segment
 	}
 
-	out, err := values.GetIn(val, strPath)
+	out, err := values.GetIn(ctx, val, strPath)
 
 	if err != nil {
 		return values.None, core.SourceError(e.src, err)

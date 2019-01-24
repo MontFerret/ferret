@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -49,12 +50,12 @@ func NewLib() map[string]core.Function {
 }
 
 func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error) {
-	err := core.ValidateType(value, core.HTMLDocumentType, core.StringType)
+	err := core.ValidateType(value, drivers.HTMLDocumentType, core.StringType)
 	if err != nil {
 		return values.None, err
 	}
 
-	var doc values.DHTMLDocument
+	var doc drivers.DHTMLDocument
 	var ok bool
 
 	if value.Type() == core.StringType {
@@ -64,9 +65,9 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 			return values.None, err
 		}
 
-		doc, ok = buf.(values.DHTMLDocument)
+		doc, ok = buf.(drivers.DHTMLDocument)
 	} else {
-		doc, ok = value.(values.DHTMLDocument)
+		doc, ok = value.(drivers.DHTMLDocument)
 	}
 
 	if !ok {

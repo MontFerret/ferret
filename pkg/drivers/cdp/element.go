@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/gofrs/uuid"
 	"hash/fnv"
 	"strconv"
@@ -195,7 +197,7 @@ func (el *HTMLElement) Close() error {
 }
 
 func (el *HTMLElement) Type() core.Type {
-	return core.HTMLElementType
+	return drivers.DHTMLElementType
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
@@ -214,23 +216,12 @@ func (el *HTMLElement) String() string {
 
 func (el *HTMLElement) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HTMLDocumentType:
-		other := other.(*HTMLElement)
+	case drivers.DHTMLElementType:
+		other := other.(drivers.DHTMLNode)
 
-		id := int(el.id.backendID)
-		otherID := int(other.id.backendID)
-
-		if id == otherID {
-			return 0
-		}
-
-		if id > otherID {
-			return 1
-		}
-
-		return -1
+		return el.InnerHTML().Compare(other.InnerHTML())
 	default:
-		if other.Type() > core.HTMLElementType {
+		if other.Type() > drivers.DHTMLElementType {
 			return -1
 		}
 
@@ -255,6 +246,22 @@ func (el *HTMLElement) Hash() uint64 {
 	return h.Sum64()
 }
 
+func (el *HTMLElement) Copy() core.Value {
+	return values.None
+}
+
+func (el *HTMLElement) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+	return common.NewIterator(el)
+}
+
+func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetIn(ctx, el, path)
+}
+
+func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetIn(ctx, el, path, value)
+}
+
 func (el *HTMLElement) Value() core.Value {
 	if !el.IsConnected() {
 		return el.value
@@ -276,20 +283,16 @@ func (el *HTMLElement) Value() core.Value {
 	return val
 }
 
-func (el *HTMLElement) Copy() core.Value {
-	return values.None
-}
-
-func (el *HTMLElement) Length() values.Int {
-	return values.NewInt(len(el.children))
-}
-
 func (el *HTMLElement) NodeType() values.Int {
 	return el.nodeType
 }
 
 func (el *HTMLElement) NodeName() values.String {
 	return el.nodeName
+}
+
+func (el *HTMLElement) Length() values.Int {
+	return values.NewInt(len(el.children))
 }
 
 func (el *HTMLElement) GetAttributes() core.Value {

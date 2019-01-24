@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -35,7 +36,7 @@ func NewDriver(opts ...Option) *Driver {
 	return drv
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.DHTMLDocument, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.DHTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)

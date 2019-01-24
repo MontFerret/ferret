@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -27,7 +28,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	arg1 := args[0]
 
-	err = core.ValidateType(arg1, core.HTMLDocumentType, core.StringType)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, core.StringType)
 
 	if err != nil {
 		return values.None, err
@@ -39,16 +40,16 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := val.(values.DHTMLDocument)
+	doc := val.(drivers.DHTMLDocument)
 
 	defer doc.Close()
 
-	screenshotParams := values.HTMLScreenshotParams{
+	screenshotParams := drivers.ScreenshotParams{
 		X:       0,
 		Y:       0,
 		Width:   -1,
 		Height:  -1,
-		Format:  values.HTMLScreenshotFormatJPEG,
+		Format:  drivers.ScreenshotFormatJPEG,
 		Quality: 100,
 	}
 
@@ -75,13 +76,13 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return values.None, err
 			}
 
-			if !values.IsHTMLScreenshotFormatValid(format.String()) {
+			if !drivers.IsScreenshotFormatValid(format.String()) {
 				return values.None, core.Error(
 					core.ErrInvalidArgument,
 					fmt.Sprintf("format is not valid, expected jpeg or png, but got %s", format.String()))
 			}
 
-			screenshotParams.Format = values.HTMLScreenshotFormat(format.String())
+			screenshotParams.Format = drivers.ScreenshotFormat(format.String())
 		}
 
 		x, found := params.Get("x")

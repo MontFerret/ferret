@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -21,13 +22,13 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) == 1 {
 		arg1 := args[0]
 
-		err := core.ValidateType(arg1, core.HTMLElementType)
+		err := core.ValidateType(arg1, drivers.HTMLElementType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		el, ok := arg1.(values.DHTMLNode)
+		el, ok := arg1.(drivers.DHTMLNode)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -40,13 +41,13 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, core.HTMLDocumentType)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(values.DHTMLDocument)
+	doc, ok := arg1.(drivers.DHTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

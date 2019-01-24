@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
@@ -33,17 +34,17 @@ func NewHTMLDocument(
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return core.HTMLDocumentType
+	return drivers.HTMLElementType
 }
 
 func (doc *HTMLDocument) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HTMLDocumentType:
-		otherDoc := other.(values.HTMLDocument)
+	case drivers.HTMLElementType:
+		otherDoc := other.(drivers.HTMLDocument)
 
 		return doc.url.Compare(otherDoc.URL())
 	default:
-		if other.Type() > core.HTMLDocumentType {
+		if other.Type() > drivers.HTMLElementType {
 			return -1
 		}
 

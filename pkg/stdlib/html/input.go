@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -21,15 +22,15 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
 	switch args[0].(type) {
-	case values.DHTMLDocument:
-		doc, ok := arg1.(values.DHTMLDocument)
+	case drivers.DHTMLDocument:
+		doc, ok := arg1.(drivers.DHTMLDocument)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -58,8 +59,8 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.InputBySelector(arg2.(values.String), args[2], delay)
-	case values.DHTMLNode:
-		el, ok := arg1.(values.DHTMLNode)
+	case drivers.DHTMLNode:
+		el, ok := arg1.(drivers.DHTMLNode)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

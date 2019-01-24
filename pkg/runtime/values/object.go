@@ -201,10 +201,6 @@ func (t *Object) Get(key String) (core.Value, Boolean) {
 	return None, NewBoolean(found)
 }
 
-func (t *Object) GetIn(path []core.Value) (core.Value, error) {
-	return GetIn(t, path)
-}
-
 func (t *Object) Set(key String, value core.Value) {
 	if value != nil {
 		t.value[string(key)] = value
@@ -215,10 +211,6 @@ func (t *Object) Set(key String, value core.Value) {
 
 func (t *Object) Remove(key String) {
 	delete(t.value, string(key))
-}
-
-func (t *Object) SetIn(path []core.Value, value core.Value) error {
-	return SetIn(t, path, value)
 }
 
 func (t *Object) Clone() core.Cloneable {

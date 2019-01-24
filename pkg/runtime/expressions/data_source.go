@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type DataSource struct {
@@ -48,8 +47,6 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
 		case core.ObjectType:
 			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
-		case core.HTMLElementType, core.HTMLDocumentType:
-			return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
 		default:
 			// fallback to user defined types
 			switch data.(type) {
@@ -71,8 +68,7 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 					data.Type(),
 					core.ArrayType,
 					core.ObjectType,
-					core.HTMLDocumentType,
-					core.HTMLElementType,
+					core.CustomType,
 				)
 			}
 		}

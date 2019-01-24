@@ -1,6 +1,7 @@
 package values_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"testing"
@@ -40,7 +41,7 @@ func (t *CustomType) Copy() core.Value {
 	return values.None
 }
 
-func (t *CustomType) GetIn(path []core.Value) (core.Value, error) {
+func (t *CustomType) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
 	if path == nil || len(path) == 0 {
 		return values.None, nil
 	}
@@ -56,10 +57,10 @@ func (t *CustomType) GetIn(path []core.Value) (core.Value, error) {
 		return propValue, nil
 	}
 
-	return values.GetIn(propValue, path[1:])
+	return values.GetIn(context.Background(), propValue, path[1:])
 }
 
-func (t *CustomType) SetIn(path []core.Value, value core.Value) error {
+func (t *CustomType) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
 	if path == nil || len(path) == 0 {
 		return nil
 	}
@@ -77,7 +78,7 @@ func (t *CustomType) SetIn(path []core.Value, value core.Value) error {
 		return nil
 	}
 
-	return values.SetIn(propValue, path[1:], value)
+	return values.SetIn(context.Background(), propValue, path[1:], value)
 }
 
 func TestHelpers(t *testing.T) {
@@ -95,14 +96,14 @@ func TestHelpers(t *testing.T) {
 					},
 				}
 
-				foo, err := values.GetIn(ct, []core.Value{
+				foo, err := values.GetIn(context.Background(), ct, []core.Value{
 					values.NewString("foo"),
 				})
 
 				So(err, ShouldBeNil)
 				So(foo, ShouldEqual, values.NewInt(1))
 
-				qaz, err := values.GetIn(ct, []core.Value{
+				qaz, err := values.GetIn(context.Background(), ct, []core.Value{
 					values.NewString("bar"),
 					values.NewString("qaz"),
 				})
@@ -125,21 +126,21 @@ func TestHelpers(t *testing.T) {
 					},
 				}
 
-				err := values.SetIn(ct, []core.Value{
+				err := values.SetIn(context.Background(), ct, []core.Value{
 					values.NewString("foo"),
 				}, values.NewInt(2))
 
 				So(err, ShouldBeNil)
 				So(ct.properties[values.NewString("foo")], ShouldEqual, values.NewInt(2))
 
-				err = values.SetIn(ct, []core.Value{
+				err = values.SetIn(context.Background(), ct, []core.Value{
 					values.NewString("bar"),
 					values.NewString("qaz"),
 				}, values.NewString("foobar"))
 
 				So(err, ShouldBeNil)
 
-				qaz, err := values.GetIn(ct, []core.Value{
+				qaz, err := values.GetIn(context.Background(), ct, []core.Value{
 					values.NewString("bar"),
 					values.NewString("qaz"),
 				})

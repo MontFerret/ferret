@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"net/http"
 	"net/url"
@@ -56,7 +57,7 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 	return &http.Client{Transport: tr}, nil
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLDocument, error) {
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {
 	u := targetURL.String()
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 
@@ -101,7 +102,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	return NewHTMLDocument(u, doc)
 }
 
-func (drv *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLDocument, error) {
+func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.HTMLDocument, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)

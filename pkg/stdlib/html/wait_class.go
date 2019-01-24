@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -24,7 +25,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -41,7 +42,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	// lets figure out what is passed as 1st argument
 	switch args[0].(type) {
-	case values.DHTMLDocument:
+	case drivers.DHTMLDocument:
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 3, 4)
 
@@ -56,7 +57,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		doc, ok := args[0].(values.DHTMLDocument)
+		doc, ok := args[0].(drivers.DHTMLDocument)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -76,8 +77,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.None, doc.WaitForClass(selector, class, timeout)
-	case values.DHTMLNode:
-		el, ok := args[0].(values.DHTMLNode)
+	case drivers.DHTMLNode:
+		el, ok := args[0].(drivers.DHTMLNode)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

@@ -1,7 +1,10 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -29,7 +32,7 @@ func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 }
 
 func (el *HTMLElement) Type() core.Type {
-	return core.HTMLElementType
+	return drivers.HTMLElementType
 }
 
 func (el *HTMLElement) String() string {
@@ -38,11 +41,12 @@ func (el *HTMLElement) String() string {
 
 func (el *HTMLElement) Compare(other core.Value) int {
 	switch other.Type() {
-	case core.HTMLElementType:
-		// TODO: complete the comparison
-		return -1
+	case drivers.HTMLElementType:
+		other := other.(drivers.HTMLNode)
+
+		return el.InnerHTML().Compare(other.InnerHTML())
 	default:
-		if other.Type() > core.HTMLElementType {
+		if other.Type() > drivers.HTMLElementType {
 			return -1
 		}
 
@@ -258,6 +262,18 @@ func (el *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
 	return values.True
 }
 
+func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetIn(ctx, el, path)
+}
+
+func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetIn(ctx, el, path, value)
+}
+
+func (el *HTMLElement) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+	return common.NewIterator(el)
+}
+
 func (el *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 
@@ -278,15 +294,6 @@ func (el *HTMLElement) parseChildren() *values.Array {
 	arr := values.NewArray(10)
 
 	children.Each(func(i int, selection *goquery.Selection) {
-		//name := goquery.NodeName(selection)
-		//if name != "#text" && name != "#comment" {
-		//	child, err := NewHTMLElement(selection)
-		//
-		//	if err == nil {
-		//		arr.Push(child)
-		//	}
-		//}
-
 		child, err := NewHTMLElement(selection)
 
 		if err == nil {

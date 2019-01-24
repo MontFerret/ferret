@@ -14,13 +14,13 @@ type (
 
 	Static interface {
 		io.Closer
-		GetDocument(ctx context.Context, url values.String) (values.HTMLDocument, error)
-		ParseDocument(ctx context.Context, str values.String) (values.HTMLDocument, error)
+		GetDocument(ctx context.Context, url values.String) (HTMLDocument, error)
+		ParseDocument(ctx context.Context, str values.String) (HTMLDocument, error)
 	}
 
 	Dynamic interface {
 		io.Closer
-		GetDocument(ctx context.Context, url values.String) (values.DHTMLDocument, error)
+		GetDocument(ctx context.Context, url values.String) (DHTMLDocument, error)
 	}
 )
 

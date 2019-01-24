@@ -3,6 +3,9 @@ package cdp
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
+	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/mafredri/cdp/protocol/dom"
 	"hash/fnv"
 	"sync"
@@ -142,7 +145,7 @@ func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return core.HTMLDocumentType
+	return drivers.HTMLDocumentType
 }
 
 func (doc *HTMLDocument) String() string {
@@ -181,17 +184,33 @@ func (doc *HTMLDocument) Compare(other core.Value) int {
 	defer doc.Unlock()
 
 	switch other.Type() {
-	case core.HTMLDocumentType:
-		other := other.(*HTMLDocument)
+	case drivers.DHTMLDocumentType:
+		other := other.(drivers.DHTMLDocument)
 
-		return doc.url.Compare(other.url)
+		return doc.url.Compare(other.URL())
+	case drivers.HTMLDocumentType:
+		other := other.(drivers.HTMLDocument)
+
+		return doc.url.Compare(other.URL())
 	default:
-		if other.Type() > core.HTMLDocumentType {
+		if other.Type() > drivers.DHTMLDocumentType {
 			return -1
 		}
 
 		return 1
 	}
+}
+
+func (doc *HTMLDocument) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+	return common.NewIterator(doc.element)
+}
+
+func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetIn(ctx, doc, path)
+}
+
+func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetIn(ctx, doc, path, value)
 }
 
 func (doc *HTMLDocument) Close() error {
@@ -792,7 +811,7 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 	return values.True, nil
 }
 
-func (doc *HTMLDocument) PrintToPDF(params values.HTMLPDFParams) (values.Binary, error) {
+func (doc *HTMLDocument) PrintToPDF(params drivers.PDFParams) (values.Binary, error) {
 	ctx := context.Background()
 
 	args := page.NewPrintToPDFArgs()
@@ -852,11 +871,11 @@ func (doc *HTMLDocument) PrintToPDF(params values.HTMLPDFParams) (values.Binary,
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(params values.HTMLScreenshotParams) (values.Binary, error) {
+func (doc *HTMLDocument) CaptureScreenshot(params drivers.ScreenshotParams) (values.Binary, error) {
 	ctx := context.Background()
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
 
-	if params.Format == values.HTMLScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
+	if params.Format == drivers.ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
 		params.Quality = 100
 	}
 
