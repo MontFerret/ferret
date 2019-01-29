@@ -8,9 +8,9 @@ import (
 )
 
 type (
-	SortDirection int
+	SortDirection int64
 
-	Comparator func(ctx context.Context, first, second *core.Scope) (int, error)
+	Comparator func(ctx context.Context, first, second *core.Scope) (int64, error)
 
 	Sorter struct {
 		fn        Comparator
@@ -136,7 +136,7 @@ func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*c
 				break
 			}
 
-			eq = eq * int(comp.direction)
+			eq = eq * int64(comp.direction)
 
 			if eq == -1 {
 				out = true

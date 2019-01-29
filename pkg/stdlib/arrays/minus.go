@@ -2,6 +2,7 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -22,7 +23,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 	capacity := values.NewInt(0)
 
 	for idx, i := range args {
-		err := core.ValidateType(i, core.ArrayType)
+		err := core.ValidateType(i, types.Array)
 
 		if err != nil {
 			return values.None, err

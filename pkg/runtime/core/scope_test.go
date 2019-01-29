@@ -160,39 +160,55 @@ func BenchmarkScope(b *testing.B) {
 	}
 }
 
-type TestCloser struct {
-	closed bool
+type (
+	TestCloserType struct{}
+
+	TestCloserValue struct {
+		closed bool
+	}
+)
+
+func (tct TestCloserType) ID() int64 {
+	return 99
 }
 
-func (tc *TestCloser) MarshalJSON() ([]byte, error) {
+func (tct TestCloserType) Name() string {
+	return "TestCloser"
+}
+
+func (tct TestCloserType) Equals(other core.Type) bool {
+	return other.ID() == tct.ID()
+}
+
+func (tc *TestCloserValue) MarshalJSON() ([]byte, error) {
 	return nil, core.ErrNotImplemented
 }
 
-func (tc *TestCloser) Type() core.Type {
-	return core.NoneType
+func (tc *TestCloserValue) Type() core.Type {
+	return TestCloserType{}
 }
 
-func (tc *TestCloser) String() string {
+func (tc *TestCloserValue) String() string {
 	return ""
 }
 
-func (tc *TestCloser) Compare(other core.Value) int {
+func (tc *TestCloserValue) Compare(other core.Value) int64 {
 	return 0
 }
 
-func (tc *TestCloser) Unwrap() interface{} {
+func (tc *TestCloserValue) Unwrap() interface{} {
 	return tc
 }
 
-func (tc *TestCloser) Hash() uint64 {
+func (tc *TestCloserValue) Hash() uint64 {
 	return 0
 }
 
-func (tc *TestCloser) Copy() core.Value {
-	return &TestCloser{}
+func (tc *TestCloserValue) Copy() core.Value {
+	return &TestCloserValue{}
 }
 
-func (tc *TestCloser) Close() error {
+func (tc *TestCloserValue) Close() error {
 	if tc.closed {
 		return core.Error(core.ErrInvalidOperation, "already closed")
 	}
@@ -206,7 +222,7 @@ func TestCloseFunc(t *testing.T) {
 	Convey("Should close root scope and close all io.Closer values", t, func() {
 		rs, cf := core.NewRootScope()
 
-		tc := &TestCloser{}
+		tc := &TestCloserValue{}
 
 		rs.SetVariable("disposable", tc)
 		So(tc.closed, ShouldBeFalse)
@@ -220,7 +236,7 @@ func TestCloseFunc(t *testing.T) {
 	Convey("Should return error if it's already closed", t, func() {
 		rs, cf := core.NewRootScope()
 
-		tc := &TestCloser{}
+		tc := &TestCloserValue{}
 
 		rs.SetVariable("disposable", tc)
 		So(tc.closed, ShouldBeFalse)

@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -32,7 +33,7 @@ func (t *Array) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Array) Type() core.Type {
-	return core.ArrayType
+	return types.Array
 }
 
 func (t *Array) String() string {
@@ -45,9 +46,8 @@ func (t *Array) String() string {
 	return string(marshaled)
 }
 
-func (t *Array) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.ArrayType:
+func (t *Array) Compare(other core.Value) int64 {
+	if other.Type().Equals(types.Array) {
 		other := other.(*Array)
 
 		if t.Length() == 0 && other.Length() == 0 {
@@ -62,7 +62,7 @@ func (t *Array) Compare(other core.Value) int {
 			return 1
 		}
 
-		var res = 0
+		var res int64 = 0
 		var val core.Value
 
 		other.ForEach(func(otherVal core.Value, idx int) bool {
@@ -73,11 +73,9 @@ func (t *Array) Compare(other core.Value) int {
 		})
 
 		return res
-	case core.ObjectType:
-		return -1
-	default:
-		return 1
 	}
+
+	return types.Compare(types.Array, other.Type())
 }
 
 func (t *Array) Unwrap() interface{} {
@@ -93,7 +91,7 @@ func (t *Array) Unwrap() interface{} {
 func (t *Array) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(t.Type().Name()))
 	h.Write([]byte(":"))
 	h.Write([]byte("["))
 
@@ -218,9 +216,13 @@ func (t *Array) Clone() core.Cloneable {
 	var value core.Value
 	for idx := NewInt(0); idx < t.Length(); idx++ {
 		value = t.Get(idx)
-		if IsCloneable(value) {
-			value = value.(core.Cloneable).Clone()
+
+		cloneable, ok := value.(core.Cloneable)
+
+		if ok {
+			value = cloneable.Clone()
 		}
+
 		cloned.Push(value)
 	}
 

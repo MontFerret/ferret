@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/gofrs/uuid"
 	"hash/fnv"
 	"strconv"
@@ -214,18 +215,14 @@ func (el *HTMLElement) String() string {
 	return el.InnerHTML().String()
 }
 
-func (el *HTMLElement) Compare(other core.Value) int {
+func (el *HTMLElement) Compare(other core.Value) int64 {
 	switch other.Type() {
 	case drivers.DHTMLElementType:
 		other := other.(drivers.DHTMLNode)
 
 		return el.InnerHTML().Compare(other.InnerHTML())
 	default:
-		if other.Type() > drivers.DHTMLElementType {
-			return -1
-		}
-
-		return 1
+		return drivers.Compare(el.Type(), other.Type())
 	}
 }
 
@@ -239,7 +236,7 @@ func (el *HTMLElement) Hash() uint64 {
 
 	h := fnv.New64a()
 
-	h.Write([]byte(el.Type().String()))
+	h.Write([]byte(el.Type().Name()))
 	h.Write([]byte(":"))
 	h.Write([]byte(el.innerHTML))
 
@@ -714,7 +711,7 @@ func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) err
 		func() (core.Value, error) {
 			current := el.GetAttribute("class")
 
-			if current.Type() != core.StringType {
+			if current.Type() != types.String {
 				return values.None, nil
 			}
 
@@ -853,7 +850,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 		return arr, nil
 	}
 
-	return nil, core.TypeError(core.ArrayType, res.Type())
+	return nil, core.TypeError(types.Array, res.Type())
 }
 
 func (el *HTMLElement) ScrollIntoView() error {

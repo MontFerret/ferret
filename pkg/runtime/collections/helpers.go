@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core.Scope, error) {
@@ -42,14 +43,14 @@ func ToSliceCollection(ctx context.Context, iterator CollectionIterator) ([]core
 
 func ToSliceValue(ctx context.Context, input core.Value) ([]core.Value, error) {
 	switch input.Type() {
-	case core.BooleanType,
-		core.IntType,
-		core.FloatType,
-		core.StringType,
-		core.DateTimeType:
+	case types.Binary,
+		types.Int,
+		types.Float,
+		types.String,
+		types.Date:
 
 		return []core.Value{input}, nil
-	case core.ArrayType:
+	case types.Array:
 		arr, ok := input.(*values.Array)
 
 		if !ok {
@@ -65,7 +66,7 @@ func ToSliceValue(ctx context.Context, input core.Value) ([]core.Value, error) {
 		})
 
 		return slice, nil
-	case core.ObjectType:
+	case types.Object:
 		obj, ok := input.(*values.Object)
 
 		if !ok {

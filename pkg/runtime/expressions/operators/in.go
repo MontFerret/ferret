@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type InOperator struct {
@@ -45,7 +46,7 @@ func (operator *InOperator) Exec(ctx context.Context, scope *core.Scope) (core.V
 }
 
 func (operator *InOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
-	err := core.ValidateType(right, core.ArrayType)
+	err := core.ValidateType(right, types.Array)
 
 	if err != nil {
 		// TODO: Return the error? AQL just returns false

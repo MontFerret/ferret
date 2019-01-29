@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -89,15 +90,15 @@ func Not(left, _ core.Value) core.Value {
 // Adds numbers
 // Concats strings
 func Add(left, right core.Value) core.Value {
-	if left.Type() == core.IntType {
-		if right.Type() == core.IntType {
+	if left.Type() == types.Int {
+		if right.Type() == types.Int {
 			l := left.(values.Int)
 			r := right.(values.Int)
 
 			return l + r
 		}
 
-		if right.Type() == core.FloatType {
+		if right.Type() == types.Float {
 			l := left.(values.Int)
 			r := right.(values.Float)
 
@@ -105,15 +106,15 @@ func Add(left, right core.Value) core.Value {
 		}
 	}
 
-	if left.Type() == core.FloatType {
-		if right.Type() == core.FloatType {
+	if left.Type() == types.Float {
+		if right.Type() == types.Float {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
 			return l + r
 		}
 
-		if right.Type() == core.IntType {
+		if right.Type() == types.Int {
 			l := left.(values.Float)
 			r := right.(values.Int)
 
@@ -125,15 +126,15 @@ func Add(left, right core.Value) core.Value {
 }
 
 func Subtract(left, right core.Value) core.Value {
-	if left.Type() == core.IntType {
-		if right.Type() == core.IntType {
+	if left.Type() == types.Int {
+		if right.Type() == types.Int {
 			l := left.(values.Int)
 			r := right.(values.Int)
 
 			return l - r
 		}
 
-		if right.Type() == core.FloatType {
+		if right.Type() == types.Float {
 			l := left.(values.Int)
 			r := right.(values.Float)
 
@@ -141,15 +142,15 @@ func Subtract(left, right core.Value) core.Value {
 		}
 	}
 
-	if left.Type() == core.FloatType {
-		if right.Type() == core.FloatType {
+	if left.Type() == types.Float {
+		if right.Type() == types.Float {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
 			return l - r
 		}
 
-		if right.Type() == core.IntType {
+		if right.Type() == types.Int {
 			l := left.(values.Float)
 			r := right.(values.Int)
 
@@ -161,15 +162,15 @@ func Subtract(left, right core.Value) core.Value {
 }
 
 func Multiply(left, right core.Value) core.Value {
-	if left.Type() == core.IntType {
-		if right.Type() == core.IntType {
+	if left.Type() == types.Int {
+		if right.Type() == types.Int {
 			l := left.(values.Int)
 			r := right.(values.Int)
 
 			return l * r
 		}
 
-		if right.Type() == core.FloatType {
+		if right.Type() == types.Float {
 			l := left.(values.Int)
 			r := right.(values.Float)
 
@@ -177,15 +178,15 @@ func Multiply(left, right core.Value) core.Value {
 		}
 	}
 
-	if left.Type() == core.FloatType {
-		if right.Type() == core.FloatType {
+	if left.Type() == types.Float {
+		if right.Type() == types.Float {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
 			return l * r
 		}
 
-		if right.Type() == core.IntType {
+		if right.Type() == types.Int {
 			l := left.(values.Float)
 			r := right.(values.Int)
 
@@ -197,15 +198,15 @@ func Multiply(left, right core.Value) core.Value {
 }
 
 func Divide(left, right core.Value) core.Value {
-	if left.Type() == core.IntType {
-		if right.Type() == core.IntType {
+	if left.Type() == types.Int {
+		if right.Type() == types.Int {
 			l := left.(values.Int)
 			r := right.(values.Int)
 
 			return l / r
 		}
 
-		if right.Type() == core.FloatType {
+		if right.Type() == types.Float {
 			l := left.(values.Int)
 			r := right.(values.Float)
 
@@ -213,15 +214,15 @@ func Divide(left, right core.Value) core.Value {
 		}
 	}
 
-	if left.Type() == core.FloatType {
-		if right.Type() == core.FloatType {
+	if left.Type() == types.Float {
+		if right.Type() == types.Float {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
 			return l / r
 		}
 
-		if right.Type() == core.IntType {
+		if right.Type() == types.Int {
 			l := left.(values.Float)
 			r := right.(values.Int)
 
@@ -233,15 +234,15 @@ func Divide(left, right core.Value) core.Value {
 }
 
 func Modulus(left, right core.Value) core.Value {
-	if left.Type() == core.IntType {
-		if right.Type() == core.IntType {
+	if left.Type() == types.Int {
+		if right.Type() == types.Int {
 			l := left.(values.Int)
 			r := right.(values.Int)
 
 			return l % r
 		}
 
-		if right.Type() == core.FloatType {
+		if right.Type() == types.Float {
 			l := left.(values.Int)
 			r := right.(values.Float)
 
@@ -249,15 +250,15 @@ func Modulus(left, right core.Value) core.Value {
 		}
 	}
 
-	if left.Type() == core.FloatType {
-		if right.Type() == core.FloatType {
+	if left.Type() == types.Float {
+		if right.Type() == types.Float {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
 			return values.Int(l) % values.Int(r)
 		}
 
-		if right.Type() == core.IntType {
+		if right.Type() == types.Int {
 			l := left.(values.Float)
 			r := right.(values.Int)
 
@@ -269,13 +270,13 @@ func Modulus(left, right core.Value) core.Value {
 }
 
 func Increment(left, _ core.Value) core.Value {
-	if left.Type() == core.IntType {
+	if left.Type() == types.Int {
 		l := left.(values.Int)
 
 		return l + 1
 	}
 
-	if left.Type() == core.FloatType {
+	if left.Type() == types.Float {
 		l := left.(values.Float)
 
 		return l + 1
@@ -285,13 +286,13 @@ func Increment(left, _ core.Value) core.Value {
 }
 
 func Decrement(left, _ core.Value) core.Value {
-	if left.Type() == core.IntType {
+	if left.Type() == types.Int {
 		l := left.(values.Int)
 
 		return l - 1
 	}
 
-	if left.Type() == core.FloatType {
+	if left.Type() == types.Float {
 		l := left.(values.Float)
 
 		return l - 1
@@ -301,13 +302,13 @@ func Decrement(left, _ core.Value) core.Value {
 }
 
 func Negative(value, _ core.Value) core.Value {
-	err := core.ValidateType(value, core.IntType, core.FloatType)
+	err := core.ValidateType(value, types.Int, types.Float)
 
 	if err != nil {
 		return values.ZeroInt
 	}
 
-	if value.Type() == core.IntType {
+	if value.Type() == types.Int {
 		return -value.(values.Int)
 	}
 
@@ -315,13 +316,13 @@ func Negative(value, _ core.Value) core.Value {
 }
 
 func Positive(value, _ core.Value) core.Value {
-	err := core.ValidateType(value, core.IntType, core.FloatType)
+	err := core.ValidateType(value, types.Int, types.Float)
 
 	if err != nil {
 		return values.ZeroInt
 	}
 
-	if value.Type() == core.IntType {
+	if value.Type() == types.Int {
 		return +value.(values.Int)
 	}
 

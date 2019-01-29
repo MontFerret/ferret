@@ -37,18 +37,14 @@ func (doc *HTMLDocument) Type() core.Type {
 	return drivers.HTMLElementType
 }
 
-func (doc *HTMLDocument) Compare(other core.Value) int {
+func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	switch other.Type() {
 	case drivers.HTMLElementType:
 		otherDoc := other.(drivers.HTMLDocument)
 
 		return doc.url.Compare(otherDoc.URL())
 	default:
-		if other.Type() > drivers.HTMLElementType {
-			return -1
-		}
-
-		return 1
+		return drivers.Compare(doc.Type(), other.Type())
 	}
 }
 

@@ -2,6 +2,7 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -27,7 +28,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 	capacity := len(args)
 
 	for _, i := range args {
-		err := core.ValidateType(i, core.ArrayType)
+		err := core.ValidateType(i, types.Array)
 
 		if err != nil {
 			return values.None, err

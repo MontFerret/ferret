@@ -28,7 +28,7 @@ func SourceError(src SourceMap, err error) error {
 
 func TypeError(actual Type, expected ...Type) error {
 	if len(expected) == 0 {
-		return Error(ErrInvalidType, actual.String())
+		return Error(ErrInvalidType, actual.Name())
 	}
 
 	if len(expected) == 1 {
@@ -38,12 +38,12 @@ func TypeError(actual Type, expected ...Type) error {
 	strs := make([]string, len(expected))
 
 	for idx, t := range expected {
-		strs[idx] = t.String()
+		strs[idx] = t.Name()
 	}
 
 	expectedStr := strings.Join(strs, " or ")
 
-	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, actual))
+	return Error(ErrInvalidType, fmt.Sprintf(typeErrorTemplate, expectedStr, actual.Name()))
 }
 
 func Error(err error, msg string) error {

@@ -9,39 +9,40 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type CustomType struct {
+type CustomValue struct {
+	type_      core.Type
 	properties map[core.Value]core.Value
 }
 
-func (t *CustomType) MarshalJSON() ([]byte, error) {
+func (t *CustomValue) MarshalJSON() ([]byte, error) {
 	return nil, core.ErrNotImplemented
 }
 
-func (t *CustomType) Type() core.Type {
-	return core.CustomType
+func (t *CustomValue) Type() core.Type {
+	return t.type_
 }
 
-func (t *CustomType) String() string {
+func (t *CustomValue) String() string {
 	return ""
 }
 
-func (t *CustomType) Compare(other core.Value) int {
+func (t *CustomValue) Compare(other core.Value) int64 {
 	return other.Compare(t) * -1
 }
 
-func (t *CustomType) Unwrap() interface{} {
+func (t *CustomValue) Unwrap() interface{} {
 	return t
 }
 
-func (t *CustomType) Hash() uint64 {
+func (t *CustomValue) Hash() uint64 {
 	return 0
 }
 
-func (t *CustomType) Copy() core.Value {
+func (t *CustomValue) Copy() core.Value {
 	return values.None
 }
 
-func (t *CustomType) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
 	if path == nil || len(path) == 0 {
 		return values.None, nil
 	}
@@ -60,7 +61,7 @@ func (t *CustomType) GetIn(ctx context.Context, path []core.Value) (core.Value, 
 	return values.GetIn(context.Background(), propValue, path[1:])
 }
 
-func (t *CustomType) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
 	if path == nil || len(path) == 0 {
 		return nil
 	}
@@ -82,13 +83,17 @@ func (t *CustomType) SetIn(ctx context.Context, path []core.Value, value core.Va
 }
 
 func TestHelpers(t *testing.T) {
+	customType := core.NewType("custom")
+
 	Convey("Helpers", t, func() {
 		Convey("Getter", func() {
 			Convey("It should get a value by a given path", func() {
-				ct := &CustomType{
+				ct := &CustomValue{
+					type_: customType,
 					properties: map[core.Value]core.Value{
 						values.NewString("foo"): values.NewInt(1),
-						values.NewString("bar"): &CustomType{
+						values.NewString("bar"): &CustomValue{
+							type_: customType,
 							properties: map[core.Value]core.Value{
 								values.NewString("qaz"): values.NewInt(2),
 							},
@@ -115,10 +120,12 @@ func TestHelpers(t *testing.T) {
 
 		Convey("Setter", func() {
 			Convey("It should get a value by a given path", func() {
-				ct := &CustomType{
+				ct := &CustomValue{
+					type_: customType,
 					properties: map[core.Value]core.Value{
 						values.NewString("foo"): values.NewInt(1),
-						values.NewString("bar"): &CustomType{
+						values.NewString("bar"): &CustomValue{
+							type_: customType,
 							properties: map[core.Value]core.Value{
 								values.NewString("qaz"): values.NewInt(2),
 							},

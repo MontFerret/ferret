@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/mafredri/cdp/protocol/dom"
 	"hash/fnv"
 	"sync"
@@ -168,7 +169,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 
 	h := fnv.New64a()
 
-	h.Write([]byte(doc.Type().String()))
+	h.Write([]byte(doc.Type().Name()))
 	h.Write([]byte(":"))
 	h.Write([]byte(doc.url))
 
@@ -179,7 +180,7 @@ func (doc *HTMLDocument) Copy() core.Value {
 	return values.None
 }
 
-func (doc *HTMLDocument) Compare(other core.Value) int {
+func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	doc.Lock()
 	defer doc.Unlock()
 
@@ -193,11 +194,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int {
 
 		return doc.url.Compare(other.URL())
 	default:
-		if other.Type() > drivers.DHTMLDocumentType {
-			return -1
-		}
-
-		return 1
+		return drivers.Compare(doc.Type(), other.Type())
 	}
 }
 
@@ -418,7 +415,7 @@ func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType {
+	if res.Type() == types.Boolean {
 		return res.(values.Boolean), nil
 	}
 
@@ -450,7 +447,7 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType {
+	if res.Type() == types.Boolean {
 		return res.(values.Boolean), nil
 	}
 
@@ -480,7 +477,7 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType && res.(values.Boolean) == values.False {
+	if res.Type() == types.Boolean && res.(values.Boolean) == values.False {
 		return values.False, nil
 	}
 
@@ -550,7 +547,7 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 		return arr, nil
 	}
 
-	return nil, core.TypeError(core.ArrayType, res.Type())
+	return nil, core.TypeError(types.Array, res.Type())
 }
 
 func (doc *HTMLDocument) HoverBySelector(selector values.String) error {

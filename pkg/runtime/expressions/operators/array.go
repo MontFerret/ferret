@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -88,7 +89,7 @@ func (operator *ArrayOperator) Exec(ctx context.Context, scope *core.Scope) (cor
 }
 
 func (operator *ArrayOperator) Eval(ctx context.Context, left, right core.Value) (core.Value, error) {
-	err := core.ValidateType(left, core.ArrayType)
+	err := core.ValidateType(left, types.Array)
 
 	if err != nil {
 		// TODO: Return the error? AQL just returns false

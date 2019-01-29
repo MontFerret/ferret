@@ -35,7 +35,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				return first.MustGetVariable(collections.DefaultValueVar).Compare(second.MustGetVariable(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionAsc,
@@ -72,7 +72,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				return first.MustGetVariable(collections.DefaultValueVar).Compare(second.MustGetVariable(collections.DefaultValueVar)), nil
 			},
 			collections.SortDirectionDesc,
@@ -120,7 +120,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -130,7 +130,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -183,7 +183,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -193,7 +193,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -246,7 +246,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -256,7 +256,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 
@@ -309,7 +309,7 @@ func TestSort(t *testing.T) {
 		}
 
 		s1, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("one")
 
@@ -319,7 +319,7 @@ func TestSort(t *testing.T) {
 		)
 
 		s2, _ := collections.NewSorter(
-			func(ctx context.Context, first, second *core.Scope) (int, error) {
+			func(ctx context.Context, first, second *core.Scope) (int64, error) {
 				o1, _ := first.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 				o2, _ := second.MustGetVariable(collections.DefaultValueVar).(*values.Object).Get("two")
 

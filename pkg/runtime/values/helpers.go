@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
@@ -25,29 +26,25 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 		}
 
 		segmentType := segment.Type()
+		resultType := result.Type()
 
-		switch result.Type() {
-		case core.ObjectType:
+		if types.Object.Equals(resultType) {
 			obj := result.(*Object)
 
-			if segmentType != core.StringType {
-				return nil, core.TypeError(segmentType, core.StringType)
+			if !segmentType.Equals(types.String) {
+				return nil, core.TypeError(segmentType, types.String)
 			}
 
 			result, _ = obj.Get(segment.(String))
-
-			break
-		case core.ArrayType:
+		} else if types.Array.Equals(resultType) {
 			arr := result.(*Array)
 
-			if segmentType != core.IntType {
-				return nil, core.TypeError(segmentType, core.IntType)
+			if !segmentType.Equals(types.Int) {
+				return nil, core.TypeError(segmentType, types.Int)
 			}
 
 			result = arr.Get(segment.(Int))
-
-			break
-		default:
+		} else {
 			getter, ok := result.(core.Getter)
 
 			if ok {
@@ -56,9 +53,8 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 
 			return None, core.TypeError(
 				from.Type(),
-				core.ArrayType,
-				core.ObjectType,
-				core.CustomType,
+				types.Array,
+				types.Object,
 			)
 		}
 	}
@@ -79,13 +75,13 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 		parent = current
 		isTarget := target == idx
 		segmentType := segment.Type()
+		parentType := parent.Type()
 
-		switch parent.Type() {
-		case core.ObjectType:
+		if types.Object.Equals(parentType) {
 			parent := parent.(*Object)
 
-			if segmentType != core.StringType {
-				return core.TypeError(segmentType, core.StringType)
+			if !segmentType.Equals(types.String) {
+				return core.TypeError(segmentType, types.String)
 			}
 
 			if isTarget == false {
@@ -93,11 +89,9 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			} else {
 				parent.Set(segment.(String), value)
 			}
-
-			break
-		case core.ArrayType:
-			if segmentType != core.IntType {
-				return core.TypeError(segmentType, core.IntType)
+		} else if types.Array.Equals(parentType) {
+			if !segmentType.Equals(types.Int) {
+				return core.TypeError(segmentType, types.Int)
 			}
 
 			parent := parent.(*Array)
@@ -109,9 +103,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 					return err
 				}
 			}
-
-			break
-		default:
+		} else {
 			setter, ok := parent.(core.Setter)
 
 			if ok {
@@ -119,15 +111,15 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			}
 
 			// redefine parent
-			isArray := segmentType == core.IntType
+			isArray := segmentType.Equals(types.Int)
 
 			// it's not an index
 			if isArray == false {
 				obj := NewObject()
 				parent = obj
 
-				if segmentType != core.StringType {
-					return core.TypeError(segmentType, core.StringType)
+				if !segmentType.Equals(types.String) {
+					return core.TypeError(segmentType, types.String)
 				}
 
 				if isTarget {
@@ -255,32 +247,30 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	return Parse(o), nil
 }
 
-func IsCloneable(value core.Value) Boolean {
-	switch value.Type() {
-	case core.ArrayType:
-		return NewBoolean(true)
-	case core.ObjectType:
-		return NewBoolean(true)
-	default:
-		return NewBoolean(false)
-	}
-}
-
 func ToBoolean(input core.Value) core.Value {
-	switch input.Type() {
-	case core.BooleanType:
+	it := input.Type()
+
+	if types.Boolean.Equals(it) {
 		return input
-	case core.NoneType:
-		return False
-	case core.StringType:
-		return NewBoolean(input.String() != "")
-	case core.IntType:
-		return NewBoolean(input.(Int) != 0)
-	case core.FloatType:
-		return NewBoolean(input.(Float) != 0)
-	default:
-		return True
 	}
+
+	if types.None.Equals(it) {
+		return False
+	}
+
+	if types.String.Equals(it) {
+		return NewBoolean(input.String() != "")
+	}
+
+	if types.Int.Equals(it) {
+		return NewBoolean(input.(Int) != 0)
+	}
+
+	if types.Float.Equals(it) {
+		return NewBoolean(input.(Float) != 0)
+	}
+
+	return True
 }
 
 func MapHash(input map[string]core.Value) uint64 {

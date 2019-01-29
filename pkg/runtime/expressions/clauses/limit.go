@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type LimitClause struct {
@@ -71,13 +72,13 @@ func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (coll
 }
 
 func (clause *LimitClause) parseValue(val core.Value) (int, error) {
-	if val.Type() == core.IntType {
+	if val.Type() == types.Int {
 		return val.Unwrap().(int), nil
 	}
 
-	if val.Type() == core.FloatType {
+	if val.Type() == types.Float {
 		return int(val.Unwrap().(float64)), nil
 	}
 
-	return -1, core.TypeError(val.Type(), core.IntType, core.FloatType)
+	return -1, core.TypeError(val.Type(), types.Int, types.Float)
 }

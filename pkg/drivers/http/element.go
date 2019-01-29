@@ -39,18 +39,14 @@ func (el *HTMLElement) String() string {
 	return el.InnerHTML().String()
 }
 
-func (el *HTMLElement) Compare(other core.Value) int {
+func (el *HTMLElement) Compare(other core.Value) int64 {
 	switch other.Type() {
 	case drivers.HTMLElementType:
 		other := other.(drivers.HTMLNode)
 
 		return el.InnerHTML().Compare(other.InnerHTML())
 	default:
-		if other.Type() > drivers.HTMLElementType {
-			return -1
-		}
-
-		return 1
+		return drivers.Compare(el.Type(), other.Type())
 	}
 }
 
@@ -67,7 +63,7 @@ func (el *HTMLElement) Hash() uint64 {
 
 	h := fnv.New64a()
 
-	h.Write([]byte(el.Type().String()))
+	h.Write([]byte(el.Type().Name()))
 	h.Write([]byte(":"))
 	h.Write([]byte(str))
 

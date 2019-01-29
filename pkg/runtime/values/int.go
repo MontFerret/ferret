@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Int int64
@@ -65,16 +66,17 @@ func (t Int) MarshalJSON() ([]byte, error) {
 }
 
 func (t Int) Type() core.Type {
-	return core.IntType
+	return types.Int
 }
 
 func (t Int) String() string {
 	return strconv.Itoa(int(t))
 }
 
-func (t Int) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.IntType:
+func (t Int) Compare(other core.Value) int64 {
+	otherType := other.Type()
+
+	if types.Int.Equals(otherType) {
 		i := other.(Int)
 
 		if t == i {
@@ -86,7 +88,9 @@ func (t Int) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.FloatType:
+	}
+
+	if types.Float.Equals(otherType) {
 		f := other.(Float)
 		f2 := Float(t)
 
@@ -99,11 +103,9 @@ func (t Int) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.BooleanType, core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	return types.Compare(types.Int, otherType)
 }
 
 func (t Int) Unwrap() interface{} {
@@ -113,7 +115,7 @@ func (t Int) Unwrap() interface{} {
 func (t Int) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(t.Type().Name()))
 	h.Write([]byte(":"))
 
 	bytes := make([]byte, 8)

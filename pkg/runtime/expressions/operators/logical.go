@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -70,7 +71,7 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 	leftBool := values.ToBoolean(left)
 
 	if operator.value == LogicalOperatorTypeAnd && leftBool == values.False {
-		if left.Type() == core.BooleanType {
+		if left.Type() == types.Boolean {
 			return values.False, nil
 		}
 
@@ -98,7 +99,7 @@ func (operator *LogicalOperator) Eval(_ context.Context, left, right core.Value)
 	leftBool := values.ToBoolean(left)
 
 	if operator.value == LogicalOperatorTypeAnd && leftBool == values.False {
-		if left.Type() == core.BooleanType {
+		if left.Type() == types.Boolean {
 			return values.False, nil
 		}
 

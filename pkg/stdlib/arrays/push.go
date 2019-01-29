@@ -2,6 +2,7 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -19,7 +20,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -30,7 +31,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	uniq := false
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.BooleanType)
+		err = core.ValidateType(args[2], types.Boolean)
 
 		if err != nil {
 			return values.None, err

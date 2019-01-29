@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type DataSource struct {
@@ -43,9 +44,9 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 		}
 
 		switch data.Type() {
-		case core.ArrayType:
+		case types.Array:
 			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
-		case core.ObjectType:
+		case types.Object:
 			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
 		default:
 			// fallback to user defined types
@@ -66,9 +67,9 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 			default:
 				return nil, core.TypeError(
 					data.Type(),
-					core.ArrayType,
-					core.ObjectType,
-					core.CustomType,
+					types.Array,
+					types.Object,
+					core.NewType("IterableCollection"),
 				)
 			}
 		}

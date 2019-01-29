@@ -4,10 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"hash/fnv"
 	"math"
 	"strconv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Float float64
@@ -74,18 +76,18 @@ func (t Float) MarshalJSON() ([]byte, error) {
 }
 
 func (t Float) Type() core.Type {
-	return core.FloatType
+	return types.Float
 }
 
 func (t Float) String() string {
 	return fmt.Sprintf("%f", t)
 }
 
-func (t Float) Compare(other core.Value) int {
+func (t Float) Compare(other core.Value) int64 {
+	otherType := other.Type()
 	raw := float64(t)
 
-	switch other.Type() {
-	case core.FloatType:
+	if types.Float.Equals(otherType) {
 		f := other.Unwrap().(float64)
 
 		if raw == f {
@@ -97,7 +99,9 @@ func (t Float) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.IntType:
+	}
+
+	if types.Int.Equals(otherType) {
 		i := other.Unwrap().(int)
 		f := float64(i)
 
@@ -110,11 +114,9 @@ func (t Float) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.BooleanType, core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	return types.Compare(types.Float, otherType)
 }
 
 func (t Float) Unwrap() interface{} {
@@ -124,7 +126,7 @@ func (t Float) Unwrap() interface{} {
 func (t Float) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(t.Type().Name()))
 	h.Write([]byte(":"))
 
 	bytes := make([]byte, 8)

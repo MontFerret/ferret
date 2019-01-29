@@ -13,6 +13,7 @@ import (
 
 type (
 	testIterableCollection struct {
+		t      core.Type
 		values collections.IndexedCollection
 	}
 
@@ -32,12 +33,12 @@ func (c *testIterableCollection) MarshalJSON() ([]byte, error) {
 	return nil, core.ErrInvalidOperation
 }
 func (c *testIterableCollection) Type() core.Type {
-	return core.Type(11)
+	return c.t
 }
 func (c *testIterableCollection) String() string {
 	return ""
 }
-func (c *testIterableCollection) Compare(other core.Value) int {
+func (c *testIterableCollection) Compare(other core.Value) int64 {
 	return 1
 }
 func (c *testIterableCollection) Unwrap() interface{} {
@@ -64,6 +65,8 @@ func (i *testCollectionIterator) Next(ctx context.Context) (core.Value, core.Val
 }
 
 func TestDataSource(t *testing.T) {
+	type_ := core.NewType("IterableCollection")
+
 	Convey(".Iterate", t, func() {
 		Convey("Should return custom iterable collection", func() {
 			arr := values.NewArrayWith(
@@ -84,7 +87,7 @@ func TestDataSource(t *testing.T) {
 				collections.DefaultValueVar,
 				collections.DefaultKeyVar,
 				TestDataSourceExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
-					return &testIterableCollection{arr}, nil
+					return &testIterableCollection{type_, arr}, nil
 				}),
 			)
 
@@ -142,7 +145,7 @@ func TestDataSource(t *testing.T) {
 				collections.DefaultValueVar,
 				collections.DefaultKeyVar,
 				TestDataSourceExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
-					return &testIterableCollection{arr}, nil
+					return &testIterableCollection{type_, arr}, nil
 				}),
 			)
 

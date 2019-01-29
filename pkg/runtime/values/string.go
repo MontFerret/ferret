@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type String string
@@ -69,24 +70,19 @@ func (t String) MarshalJSON() ([]byte, error) {
 }
 
 func (t String) Type() core.Type {
-	return core.StringType
+	return types.String
 }
 
 func (t String) String() string {
 	return string(t)
 }
 
-func (t String) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.StringType:
-		return strings.Compare(string(t), other.Unwrap().(string))
-	default:
-		if other.Type() > core.DateTimeType {
-			return -1
-		}
-
-		return 1
+func (t String) Compare(other core.Value) int64 {
+	if types.String.Equals(other.Type()) {
+		return int64(strings.Compare(string(t), other.Unwrap().(string)))
 	}
+
+	return types.Compare(types.String, other.Type())
 }
 
 func (t String) Unwrap() interface{} {
@@ -96,7 +92,7 @@ func (t String) Unwrap() interface{} {
 func (t String) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(t.Type().Name()))
 	h.Write([]byte(":"))
 	h.Write([]byte(t))
 

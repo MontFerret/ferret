@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Boolean bool
@@ -60,7 +61,7 @@ func (t Boolean) MarshalJSON() ([]byte, error) {
 }
 
 func (t Boolean) Type() core.Type {
-	return core.BooleanType
+	return types.Boolean
 }
 
 func (t Boolean) String() string {
@@ -71,11 +72,10 @@ func (t Boolean) String() string {
 	return "false"
 }
 
-func (t Boolean) Compare(other core.Value) int {
+func (t Boolean) Compare(other core.Value) int64 {
 	raw := bool(t)
 
-	switch other.Type() {
-	case core.BooleanType:
+	if types.Boolean.Equals(other.Type()) {
 		i := other.Unwrap().(bool)
 
 		if raw == i {
@@ -87,11 +87,9 @@ func (t Boolean) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	return types.Compare(types.Boolean, other.Type())
 }
 
 func (t Boolean) Unwrap() interface{} {
@@ -101,7 +99,7 @@ func (t Boolean) Unwrap() interface{} {
 func (t Boolean) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(t.Type().Name()))
 	h.Write([]byte(":"))
 	h.Write([]byte(t.String()))
 

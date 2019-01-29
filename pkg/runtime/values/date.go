@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const DefaultTimeLayout = time.RFC3339
@@ -59,16 +60,15 @@ func (t DateTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t DateTime) Type() core.Type {
-	return core.DateTimeType
+	return types.Date
 }
 
 func (t DateTime) String() string {
 	return t.Time.String()
 }
 
-func (t DateTime) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.DateTimeType:
+func (t DateTime) Compare(other core.Value) int64 {
+	if types.Date.Equals(other.Type()) {
 		other := other.(DateTime)
 
 		if t.After(other.Time) {
@@ -80,13 +80,9 @@ func (t DateTime) Compare(other core.Value) int {
 		}
 
 		return 0
-	default:
-		if other.Type() > core.DateTimeType {
-			return -1
-		}
-
-		return 1
 	}
+
+	return types.Compare(types.Date, other.Type())
 }
 
 func (t DateTime) Unwrap() interface{} {
@@ -96,7 +92,7 @@ func (t DateTime) Unwrap() interface{} {
 func (t DateTime) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(t.Type().Name()))
 	h.Write([]byte(":"))
 
 	bytes, err := t.Time.GobEncode()
