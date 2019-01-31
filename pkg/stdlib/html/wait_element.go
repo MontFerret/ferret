@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // WaitElement waits for element to appear in the DOM.
@@ -25,7 +26,7 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.IntType)
+		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
 			return values.None, err

@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Download a resource from the given URL.
@@ -20,7 +21,7 @@ func Download(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, core.StringType)
+	err = core.ValidateType(arg1, types.String)
 
 	if err != nil {
 		return values.None, err

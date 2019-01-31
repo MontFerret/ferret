@@ -2,6 +2,7 @@ package math
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -21,13 +22,13 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.IntType)
+	err = core.ValidateType(args[1], types.Int)
 
 	if err != nil {
 		return values.None, err

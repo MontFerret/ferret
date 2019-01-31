@@ -2,10 +2,12 @@ package html
 
 import (
 	"context"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"time"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type DocumentLoadParams struct {
@@ -29,7 +31,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.StringType)
+	err = core.ValidateType(args[0], types.String)
 
 	if err != nil {
 		return values.None, err
@@ -83,11 +85,11 @@ func newDefaultDocLoadParams() DocumentLoadParams {
 func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 	res := newDefaultDocLoadParams()
 
-	if err := core.ValidateType(arg, core.BooleanType, core.ObjectType); err != nil {
+	if err := core.ValidateType(arg, types.Boolean, types.Object); err != nil {
 		return res, err
 	}
 
-	if arg.Type() == core.BooleanType {
+	if arg.Type() == types.Boolean {
 		res.Dynamic = arg.(values.Boolean)
 
 		return res, nil
@@ -98,7 +100,7 @@ func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 	isDynamic, exists := obj.Get(values.NewString("dynamic"))
 
 	if exists {
-		if err := core.ValidateType(isDynamic, core.BooleanType); err != nil {
+		if err := core.ValidateType(isDynamic, types.Boolean); err != nil {
 			return res, err
 		}
 
@@ -108,7 +110,7 @@ func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 	timeout, exists := obj.Get(values.NewString("timeout"))
 
 	if exists {
-		if err := core.ValidateType(timeout, core.IntType); err != nil {
+		if err := core.ValidateType(timeout, types.Int); err != nil {
 			return res, err
 		}
 

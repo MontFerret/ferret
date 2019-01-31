@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DateDiff returns the difference between two dates in given time unit.
@@ -15,6 +16,7 @@ import (
 // @return (Int, Float) - difference between date1 and date2.
 func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
+
 	if err != nil {
 		return values.None, err
 	}
@@ -24,6 +26,7 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 		core.PairValueType{Value: args[1], Types: sliceDateTime},
 		core.PairValueType{Value: args[2], Types: sliceStringType},
 	)
+
 	if err != nil {
 		return values.None, err
 	}
@@ -34,10 +37,12 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	isFloat := values.NewBoolean(false)
 
 	if len(args) == 4 {
-		err = core.ValidateType(args[3], core.BooleanType)
+		err = core.ValidateType(args[3], types.Boolean)
+
 		if err != nil {
 			return values.None, err
 		}
+
 		isFloat = args[3].(values.Boolean)
 	}
 
@@ -45,6 +50,7 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 		if isFloat {
 			return values.NewFloat(0), nil
 		}
+
 		return values.NewInt(0), nil
 	}
 
@@ -57,6 +63,7 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	unitDiff, err := nsecToUnit(float64(nsecDiff), unit.String())
+
 	if err != nil {
 		return values.None, err
 	}
@@ -70,8 +77,10 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 
 func nsecToUnit(nsec float64, unit string) (float64, error) {
 	u, err := UnitFromString(unit)
+
 	if err != nil {
 		return -1, err
 	}
+
 	return nsec / u.Nanosecond(), nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Pagination creates an iterator that goes through pages using CSS selector.
@@ -27,7 +28,7 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
@@ -37,6 +38,8 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	return &Paging{doc, selector}, nil
 }
+
+var PagingType = core.NewType("paging")
 
 type (
 	Paging struct {
@@ -56,14 +59,14 @@ func (p *Paging) MarshalJSON() ([]byte, error) {
 }
 
 func (p *Paging) Type() core.Type {
-	return core.CustomType
+	return PagingType
 }
 
 func (p *Paging) String() string {
-	return core.CustomType.String()
+	return PagingType.Name()
 }
 
-func (p *Paging) Compare(_ core.Value) int {
+func (p *Paging) Compare(_ core.Value) int64 {
 	return 1
 }
 

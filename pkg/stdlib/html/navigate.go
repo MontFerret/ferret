@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Navigate navigates a document to a new resource.
@@ -27,7 +28,7 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
@@ -42,7 +43,7 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.IntType)
+		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
 			return values.None, err

@@ -2,6 +2,7 @@ package math
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -19,13 +20,13 @@ func Pow(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.IntType, core.FloatType)
+	err = core.ValidateType(args[0], types.Int, types.Float)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.IntType, core.FloatType)
+	err = core.ValidateType(args[1], types.Int, types.Float)
 
 	if err != nil {
 		return values.None, err

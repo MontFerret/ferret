@@ -2,9 +2,11 @@ package collections
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
@@ -17,10 +19,10 @@ func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	value := inputs[0]
 	err = core.ValidateType(
 		value,
-		core.StringType,
-		core.ArrayType,
-		core.ObjectType,
-		core.BinaryType,
+		types.String,
+		types.Array,
+		types.Object,
+		types.Binary,
 	)
 
 	if err != nil {

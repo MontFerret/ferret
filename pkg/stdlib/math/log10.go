@@ -18,7 +18,7 @@ func Log10(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.IntType, core.FloatType)
+	err = core.ValidateType(args[0], types.Int, types.Float)
 
 	if err != nil {
 		return values.None, err

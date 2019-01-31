@@ -13,6 +13,7 @@ import (
 // @returns (Array of Value) - the values of document returned in any order.
 func Values(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
+
 	if err != nil {
 		return values.None, err
 	}

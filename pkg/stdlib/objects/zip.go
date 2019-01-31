@@ -16,6 +16,7 @@ import (
 // @returns (Object) - an object with the keys and values assembled.
 func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
+
 	if err != nil {
 		return values.None, err
 	}
@@ -39,6 +40,7 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	err = validateArrayOf(types.String, keys)
+
 	if err != nil {
 		return values.None, err
 	}

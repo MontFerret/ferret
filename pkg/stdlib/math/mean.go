@@ -3,6 +3,7 @@ package math
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"math"
 )
 
@@ -15,7 +16,7 @@ func mean(input *values.Array) (values.Float, error) {
 	var sum float64
 
 	input.ForEach(func(value core.Value, idx int) bool {
-		err = core.ValidateType(value, core.FloatType, core.IntType)
+		err = core.ValidateType(value, types.Float, types.Int)
 
 		if err != nil {
 			return false

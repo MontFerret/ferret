@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Element finds an element by a given CSS selector.
@@ -36,7 +37,7 @@ func queryArgs(args []core.Value) (drivers.HTMLNode, values.String, error) {
 		return nil, values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return nil, values.EmptyString, err

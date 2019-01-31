@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Parse parses a given HTML string and returns a HTML document.
@@ -19,7 +20,7 @@ func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.StringType)
+	err = core.ValidateType(args[0], types.String)
 
 	if err != nil {
 		return values.None, err

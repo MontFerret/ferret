@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Ceil returns the least integer value greater than or equal to a given value.
@@ -18,7 +19,7 @@ func Ceil(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.IntType, core.FloatType)
+	err = core.ValidateType(args[0], types.Int, types.Float)
 
 	if err != nil {
 		return values.None, err
