@@ -2,9 +2,11 @@ package common
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Value, error) {
@@ -22,7 +24,7 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 
 		st := segment.Type()
 
-		if st == core.IntType {
+		if st == types.Int {
 			rt := result.Type()
 
 			if rt == drivers.HTMLElementType || rt == drivers.DHTMLElementType {
@@ -36,7 +38,7 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 					return values.None, err
 				}
 			}
-		} else if st == core.StringType {
+		} else if st == types.String {
 			segment := segment.(values.String)
 
 			switch segment {
@@ -74,7 +76,7 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 				}
 			}
 		} else {
-			return values.None, core.TypeError(st, core.IntType, core.StringType)
+			return values.None, core.TypeError(st, types.Int, types.String)
 		}
 	}
 

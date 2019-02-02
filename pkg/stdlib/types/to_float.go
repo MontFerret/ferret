@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // ToFloat takes an input value of any type and convert it into a float value.
@@ -29,7 +30,7 @@ func ToFloat(ctx context.Context, args ...core.Value) (core.Value, error) {
 	arg := args[0]
 
 	switch arg.Type() {
-	case core.BooleanType:
+	case types.Boolean:
 		val := arg.(values.Boolean)
 
 		if val {
@@ -37,13 +38,13 @@ func ToFloat(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.ZeroFloat, nil
-	case core.IntType:
+	case types.Int:
 		val := arg.(values.Int)
 
 		return values.Float(val), nil
-	case core.FloatType:
+	case types.Float:
 		return arg, nil
-	case core.StringType:
+	case types.String:
 		str := arg.String()
 
 		if str == "" {
@@ -57,7 +58,7 @@ func ToFloat(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.NewFloat(num), nil
-	case core.DateTimeType:
+	case types.Date:
 		val := arg.(values.DateTime)
 
 		if val.IsZero() {
@@ -65,9 +66,9 @@ func ToFloat(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.NewFloat(float64(val.Unix())), nil
-	case core.NoneType:
+	case types.None:
 		return values.ZeroFloat, nil
-	case core.ArrayType:
+	case types.Array:
 		val := arg.(*values.Array)
 
 		if val.Length() == 0 {

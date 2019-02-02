@@ -2,6 +2,7 @@ package strings
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -33,7 +34,7 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	if argsCount == 3 {
 		arg3 := args[2]
 
-		if arg3.Type() == core.IntType {
+		if arg3.Type() == types.Int {
 			start = arg3.(values.Int)
 		}
 	}
@@ -41,7 +42,7 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	if argsCount == 4 {
 		arg4 := args[3]
 
-		if arg4.Type() == core.IntType {
+		if arg4.Type() == types.Int {
 			end = arg4.(values.Int)
 		}
 	}
@@ -80,7 +81,7 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	if argsCount == 3 {
 		arg3 := args[2]
 
-		if arg3.Type() == core.IntType {
+		if arg3.Type() == types.Int {
 			start = arg3.(values.Int)
 		}
 	}
@@ -88,7 +89,7 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	if argsCount == 4 {
 		arg4 := args[3]
 
-		if arg4.Type() == core.IntType {
+		if arg4.Type() == types.Int {
 			end = arg4.(values.Int)
 		}
 	}

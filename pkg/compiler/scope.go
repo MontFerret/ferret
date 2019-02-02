@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -35,13 +36,13 @@ func (s *scope) GetVariable(name string) (core.Type, error) {
 		parents, err := s.parent.GetVariable(name)
 
 		if err != nil {
-			return core.NoneType, err
+			return types.None, err
 		}
 
 		return parents, nil
 	}
 
-	return core.NoneType, core.Error(ErrVariableNotFound, name)
+	return types.None, core.Error(ErrVariableNotFound, name)
 }
 
 func (s *scope) SetVariable(name string) error {
@@ -52,7 +53,7 @@ func (s *scope) SetVariable(name string) error {
 	}
 
 	// TODO: add type detection
-	s.vars[name] = core.NoneType
+	s.vars[name] = types.None
 
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Substitute replaces search values in the string value.
@@ -31,7 +32,7 @@ func Substitute(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) > 3 {
-		if args[3].Type() == core.IntType {
+		if args[3].Type() == types.Int {
 			limit = int(args[3].(values.Int))
 		}
 	}

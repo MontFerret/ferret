@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // IsObject checks whether value is an object value.
@@ -17,5 +18,5 @@ func IsObject(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return isTypeof(args[0], core.ObjectType), nil
+	return isTypeof(args[0], types.Object), nil
 }

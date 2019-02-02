@@ -2,9 +2,11 @@ package types
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // toArray takes an input value of any type and convert it into an array value.
@@ -24,16 +26,16 @@ func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 	input := args[0]
 
 	switch input.Type() {
-	case core.BooleanType,
-		core.IntType,
-		core.FloatType,
-		core.StringType,
-		core.DateTimeType:
+	case types.Boolean,
+		types.Int,
+		types.Float,
+		types.String,
+		types.Date:
 
 		return values.NewArrayWith(input), nil
-	case core.ArrayType:
+	case types.Array:
 		return input.Copy(), nil
-	case core.ObjectType:
+	case types.Object:
 		obj, ok := input.(*values.Object)
 
 		if !ok {

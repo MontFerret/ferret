@@ -2,9 +2,11 @@ package common
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func SetIn(_ context.Context, to drivers.HTMLNode, path []core.Value, _ core.Value) error {
@@ -15,9 +17,9 @@ func SetIn(_ context.Context, to drivers.HTMLNode, path []core.Value, _ core.Val
 	segment := path[0]
 	st := segment.Type()
 
-	if st == core.IntType {
+	if st == types.Int {
 
-	} else if st == core.StringType {
+	} else if st == types.String {
 		segment := segment.(values.String)
 
 		switch segment {

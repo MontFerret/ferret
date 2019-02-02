@@ -17,5 +17,5 @@ func TypeName(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.NewString(args[0].Type().String()), nil
+	return values.NewString(args[0].Type().Name()), nil
 }

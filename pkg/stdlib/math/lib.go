@@ -1,9 +1,11 @@
 package math
 
 import (
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const (
@@ -52,7 +54,7 @@ func NewLib() map[string]core.Function {
 }
 
 func toFloat(arg core.Value) float64 {
-	if arg.Type() == core.IntType {
+	if arg.Type() == types.Int {
 		return float64(arg.(values.Int))
 	}
 
