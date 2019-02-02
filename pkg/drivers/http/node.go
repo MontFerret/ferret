@@ -278,7 +278,7 @@ func (nd *HTMLNode) SetIn(ctx context.Context, path []core.Value, value core.Val
 	return common.SetIn(ctx, nd, path, value)
 }
 
-func (nd *HTMLNode) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+func (nd *HTMLNode) Iterate(_ context.Context) (collections.CollectionIterator, error) {
 	return common.NewIterator(nd)
 }
 

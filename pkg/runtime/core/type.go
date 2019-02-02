@@ -7,6 +7,7 @@ import (
 
 // Type represents runtime type with id for quick type check
 // and Name for error messages
+
 //revive:disable-next-line redefines-builtin-id
 type (
 	Type interface {

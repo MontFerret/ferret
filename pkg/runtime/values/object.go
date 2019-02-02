@@ -78,7 +78,7 @@ func (t *Object) Compare(other core.Value) int64 {
 			return 1
 		}
 
-		var res int64 = 0
+		var res int64
 
 		sortedT := sort.StringSlice(t.Keys())
 		sortedT.Sort()

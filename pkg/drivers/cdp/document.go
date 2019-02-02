@@ -199,7 +199,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 }
 
 func (doc *HTMLDocument) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
-	return common.NewIterator(doc.element)
+	return doc.element.Iterate(ctx)
 }
 
 func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {

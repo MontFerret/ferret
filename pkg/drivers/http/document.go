@@ -53,6 +53,6 @@ func (doc *HTMLDocument) GetURL() core.Value {
 	return doc.url
 }
 
-func (doc *HTMLDocument) SetURL(url values.String) error {
+func (doc *HTMLDocument) SetURL(_ values.String) error {
 	return core.Error(common.ErrReadOnly, "url")
 }

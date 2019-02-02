@@ -247,7 +247,7 @@ func (nd *HTMLNode) Copy() core.Value {
 	return values.None
 }
 
-func (nd *HTMLNode) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+func (nd *HTMLNode) Iterate(_ context.Context) (collections.CollectionIterator, error) {
 	return common.NewIterator(nd)
 }
 

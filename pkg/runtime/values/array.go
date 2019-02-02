@@ -62,7 +62,7 @@ func (t *Array) Compare(other core.Value) int64 {
 			return 1
 		}
 
-		var res int64 = 0
+		var res int64
 		var val core.Value
 
 		other.ForEach(func(otherVal core.Value, idx int) bool {
