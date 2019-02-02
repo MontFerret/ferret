@@ -35,6 +35,10 @@ func ToSliceCollection(ctx context.Context, iterator CollectionIterator) ([]core
 			return nil, err
 		}
 
+		if val == values.None {
+			break
+		}
+
 		res = append(res, val)
 	}
 

@@ -321,7 +321,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.Value()
+		v := el.GetValue()
 
 		So(v, ShouldEqual, "find")
 	})
