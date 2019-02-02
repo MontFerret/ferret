@@ -31,7 +31,7 @@ func (tc *testCase) Do(t *testing.T, fn core.Function) {
 			So(err, ShouldBeNil)
 		}
 
-		So(actual.Type(), ShouldEqual, expected.Type())
+		So(actual.Type().Equals(expected.Type()), ShouldBeTrue)
 		So(actual.Compare(expected), ShouldEqual, 0)
 	})
 }

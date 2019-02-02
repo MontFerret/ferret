@@ -32,7 +32,7 @@ func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 	uniq := values.False
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], types.Array)
+		err = core.ValidateType(args[2], types.Boolean)
 
 		if err != nil {
 			return values.None, err
