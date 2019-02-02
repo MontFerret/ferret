@@ -46,7 +46,7 @@ func TestType(t *testing.T) {
 		So(types.Int.Name(), ShouldEqual, "int")
 		So(types.Float.Name(), ShouldEqual, "float")
 		So(types.String.Name(), ShouldEqual, "string")
-		So(types.DateTime.Name(), ShouldEqual, "date")
+		So(types.DateTime.Name(), ShouldEqual, "date_time")
 		So(types.Array.Name(), ShouldEqual, "array")
 		So(types.Object.Name(), ShouldEqual, "object")
 		So(types.Binary.Name(), ShouldEqual, "binary")
