@@ -98,7 +98,7 @@ func (el *HTMLElement) Length() values.Int {
 	return el.children.Length()
 }
 
-func (el *HTMLElement) Value() core.Value {
+func (el *HTMLElement) GetValue() core.Value {
 	val, ok := el.selection.Attr("value")
 
 	if ok {
@@ -106,6 +106,12 @@ func (el *HTMLElement) Value() core.Value {
 	}
 
 	return values.EmptyString
+}
+
+func (el *HTMLElement) SetValue(value core.Value) error {
+	el.selection.SetAttr("value", value.String())
+
+	return nil
 }
 
 func (el *HTMLElement) InnerText() values.String {
@@ -138,6 +144,12 @@ func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 	}
 
 	return values.None
+}
+
+func (el *HTMLElement) SetAttribute(name, value values.String) error {
+	el.selection.SetAttr(string(name), string(value))
+
+	return nil
 }
 
 func (el *HTMLElement) GetChildNodes() core.Value {

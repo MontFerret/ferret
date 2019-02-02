@@ -259,7 +259,7 @@ func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.
 	return common.SetIn(ctx, el, path, value)
 }
 
-func (el *HTMLElement) Value() core.Value {
+func (el *HTMLElement) GetValue() core.Value {
 	if !el.IsConnected() {
 		return el.value
 	}
@@ -278,6 +278,18 @@ func (el *HTMLElement) Value() core.Value {
 	el.value = val
 
 	return val
+}
+
+func (el *HTMLElement) SetValue(value core.Value) error {
+	if !el.IsConnected() {
+		// TODO: Return an error
+		return nil
+	}
+
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.nodeID, value.String()))
 }
 
 func (el *HTMLElement) NodeType() values.Int {
@@ -317,6 +329,13 @@ func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 	}
 
 	return val
+}
+
+func (el *HTMLElement) SetAttribute(name, value values.String) error {
+	return el.client.DOM.SetAttributeValue(
+		context.Background(),
+		dom.NewSetAttributeValueArgs(el.id.nodeID, string(name), string(value)),
+	)
 }
 
 func (el *HTMLElement) GetChildNodes() core.Value {

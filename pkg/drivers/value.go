@@ -23,11 +23,15 @@ type (
 
 		InnerHTML() values.String
 
-		Value() core.Value
+		GetValue() core.Value
+
+		SetValue(value core.Value) error
 
 		GetAttributes() core.Value
 
 		GetAttribute(name values.String) core.Value
+
+		SetAttribute(name, value values.String) error
 
 		GetChildNodes() core.Value
 
@@ -71,7 +75,9 @@ type (
 	HTMLDocument interface {
 		HTMLNode
 
-		URL() core.Value
+		GetURL() core.Value
+
+		SetURL(url values.String) error
 	}
 
 	// DHTMLDocument is a Dynamic HTML Document

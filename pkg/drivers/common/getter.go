@@ -51,7 +51,7 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 			case "innerHTML":
 				result = el.InnerHTML()
 			case "value":
-				result = el.Value()
+				result = el.GetValue()
 			case "attributes":
 				result = el.GetAttributes()
 			case "children":
@@ -65,7 +65,7 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 					doc, ok := result.(drivers.HTMLDocument)
 
 					if ok {
-						result = doc.URL()
+						result = doc.GetURL()
 					}
 				}
 			default:

@@ -5,6 +5,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 )
 
 type HTMLDocument struct {
@@ -42,12 +43,16 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	case drivers.HTMLElementType:
 		otherDoc := other.(drivers.HTMLDocument)
 
-		return doc.url.Compare(otherDoc.URL())
+		return doc.url.Compare(otherDoc.GetURL())
 	default:
 		return drivers.Compare(doc.Type(), other.Type())
 	}
 }
 
-func (doc *HTMLDocument) URL() core.Value {
+func (doc *HTMLDocument) GetURL() core.Value {
 	return doc.url
+}
+
+func (doc *HTMLDocument) SetURL(url values.String) error {
+	return errors.New("Url is read-only")
 }

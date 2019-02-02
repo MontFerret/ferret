@@ -2,11 +2,12 @@ package events
 
 import (
 	"context"
+	"reflect"
+	"sync"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
-	"reflect"
-	"sync"
 )
 
 type (

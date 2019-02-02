@@ -188,11 +188,11 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	case drivers.DHTMLDocumentType:
 		other := other.(drivers.DHTMLDocument)
 
-		return doc.url.Compare(other.URL())
+		return doc.url.Compare(other.GetURL())
 	case drivers.HTMLDocumentType:
 		other := other.(drivers.HTMLDocument)
 
-		return doc.url.Compare(other.URL())
+		return doc.url.Compare(other.GetURL())
 	default:
 		return drivers.Compare(doc.Type(), other.Type())
 	}
@@ -294,11 +294,18 @@ func (doc *HTMLDocument) InnerHTML() values.String {
 	return doc.element.InnerHTML()
 }
 
-func (doc *HTMLDocument) Value() core.Value {
+func (doc *HTMLDocument) GetValue() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.Value()
+	return doc.element.GetValue()
+}
+
+func (doc *HTMLDocument) SetValue(value core.Value) error {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.SetValue(value)
 }
 
 func (doc *HTMLDocument) GetAttributes() core.Value {
@@ -313,6 +320,13 @@ func (doc *HTMLDocument) GetAttribute(name values.String) core.Value {
 	defer doc.Unlock()
 
 	return doc.element.GetAttribute(name)
+}
+
+func (doc *HTMLDocument) SetAttribute(name, value values.String) error {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element.SetAttribute(name, value)
 }
 
 func (doc *HTMLDocument) GetChildNodes() core.Value {
@@ -343,11 +357,15 @@ func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
 	return doc.element.QuerySelectorAll(selector)
 }
 
-func (doc *HTMLDocument) URL() core.Value {
+func (doc *HTMLDocument) GetURL() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.url
+}
+
+func (doc *HTMLDocument) SetURL(url values.String) error {
+	return doc.Navigate(url, values.Int(DefaultTimeout))
 }
 
 func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
