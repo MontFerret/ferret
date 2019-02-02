@@ -6,7 +6,7 @@ func NewLib() map[string]core.Function {
 	return map[string]core.Function{
 		"HAS":             Has,
 		"KEYS":            Keys,
-		"KEEP":            Keep,
+		"KEEP_KEYS":       KeepKeys,
 		"MERGE":           Merge,
 		"ZIP":             Zip,
 		"VALUES":          Values,
