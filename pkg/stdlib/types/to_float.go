@@ -58,7 +58,7 @@ func ToFloat(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.NewFloat(num), nil
-	case types.Date:
+	case types.DateTime:
 		val := arg.(values.DateTime)
 
 		if val.IsZero() {

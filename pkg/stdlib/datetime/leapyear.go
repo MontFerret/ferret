@@ -18,7 +18,7 @@ func DateLeapYear(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Date)
+	err = core.ValidateType(args[0], types.DateTime)
 
 	if err != nil {
 		return values.None, err

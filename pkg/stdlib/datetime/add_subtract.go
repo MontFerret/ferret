@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	sliceDateTime   = []core.Type{types.Date}
+	sliceDateTime   = []core.Type{types.DateTime}
 	sliceIntType    = []core.Type{types.Int}
 	sliceStringType = []core.Type{types.String}
 

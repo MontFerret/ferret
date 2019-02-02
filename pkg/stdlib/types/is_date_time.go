@@ -18,5 +18,5 @@ func IsDateTime(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return isTypeof(args[0], types.Date), nil
+	return isTypeof(args[0], types.DateTime), nil
 }

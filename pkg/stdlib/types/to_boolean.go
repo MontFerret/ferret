@@ -51,7 +51,7 @@ func ToBool(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return values.False, nil
-	case types.Date:
+	case types.DateTime:
 		val := arg.(values.DateTime)
 
 		if !val.IsZero() {

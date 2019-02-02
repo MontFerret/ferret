@@ -47,7 +47,7 @@ func ToSliceValue(ctx context.Context, input core.Value) ([]core.Value, error) {
 		types.Int,
 		types.Float,
 		types.String,
-		types.Date:
+		types.DateTime:
 
 		return []core.Value{input}, nil
 	case types.Array:

@@ -15,7 +15,7 @@ func TestHelpers(t *testing.T) {
 			types.Int,
 			types.Float,
 			types.String,
-			types.Date,
+			types.DateTime,
 			types.Array,
 			types.Object,
 			types.Binary,
@@ -93,23 +93,23 @@ func TestHelpers(t *testing.T) {
 			}
 		})
 
-		Convey("Date", func() {
+		Convey("DateTime", func() {
 			for _, t := range typesList {
 				switch t.ID() {
 				case types.None.ID():
-					So(types.Compare(types.Date, t), ShouldEqual, 1)
+					So(types.Compare(types.DateTime, t), ShouldEqual, 1)
 				case types.Boolean.ID():
-					So(types.Compare(types.Date, t), ShouldEqual, 1)
+					So(types.Compare(types.DateTime, t), ShouldEqual, 1)
 				case types.Int.ID():
-					So(types.Compare(types.Date, t), ShouldEqual, 1)
+					So(types.Compare(types.DateTime, t), ShouldEqual, 1)
 				case types.Float.ID():
-					So(types.Compare(types.Date, t), ShouldEqual, 1)
+					So(types.Compare(types.DateTime, t), ShouldEqual, 1)
 				case types.String.ID():
-					So(types.Compare(types.Date, t), ShouldEqual, 1)
-				case types.Date.ID():
-					So(types.Compare(types.Date, t), ShouldEqual, 0)
+					So(types.Compare(types.DateTime, t), ShouldEqual, 1)
+				case types.DateTime.ID():
+					So(types.Compare(types.DateTime, t), ShouldEqual, 0)
 				default:
-					So(types.Compare(types.Date, t), ShouldEqual, -1)
+					So(types.Compare(types.DateTime, t), ShouldEqual, -1)
 				}
 			}
 		})
@@ -127,7 +127,7 @@ func TestHelpers(t *testing.T) {
 					So(types.Compare(types.Array, t), ShouldEqual, 1)
 				case types.String.ID():
 					So(types.Compare(types.Array, t), ShouldEqual, 1)
-				case types.Date.ID():
+				case types.DateTime.ID():
 					So(types.Compare(types.Array, t), ShouldEqual, 1)
 				case types.Array.ID():
 					So(types.Compare(types.Array, t), ShouldEqual, 0)
@@ -150,7 +150,7 @@ func TestHelpers(t *testing.T) {
 					So(types.Compare(types.Object, t), ShouldEqual, 1)
 				case types.String.ID():
 					So(types.Compare(types.Object, t), ShouldEqual, 1)
-				case types.Date.ID():
+				case types.DateTime.ID():
 					So(types.Compare(types.Object, t), ShouldEqual, 1)
 				case types.Array.ID():
 					So(types.Compare(types.Object, t), ShouldEqual, 1)

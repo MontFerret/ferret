@@ -46,7 +46,7 @@ func TestType(t *testing.T) {
 		So(types.Int.Name(), ShouldEqual, "int")
 		So(types.Float.Name(), ShouldEqual, "float")
 		So(types.String.Name(), ShouldEqual, "string")
-		So(types.Date.Name(), ShouldEqual, "date")
+		So(types.DateTime.Name(), ShouldEqual, "date")
 		So(types.Array.Name(), ShouldEqual, "array")
 		So(types.Object.Name(), ShouldEqual, "object")
 		So(types.Binary.Name(), ShouldEqual, "binary")
@@ -59,7 +59,7 @@ func TestType(t *testing.T) {
 			types.Int,
 			types.Float,
 			types.String,
-			types.Date,
+			types.DateTime,
 			types.Array,
 			types.Object,
 			types.Binary,
@@ -71,7 +71,7 @@ func TestType(t *testing.T) {
 			TestValue{types.Int},
 			TestValue{types.Float},
 			TestValue{types.String},
-			TestValue{types.Date},
+			TestValue{types.DateTime},
 			TestValue{types.Array},
 			TestValue{types.Object},
 			TestValue{types.Binary},

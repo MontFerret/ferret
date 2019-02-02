@@ -30,7 +30,7 @@ func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 		types.Int,
 		types.Float,
 		types.String,
-		types.Date:
+		types.DateTime:
 
 		return values.NewArrayWith(input), nil
 	case types.Array:

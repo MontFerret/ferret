@@ -60,7 +60,7 @@ func (t DateTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t DateTime) Type() core.Type {
-	return types.Date
+	return types.DateTime
 }
 
 func (t DateTime) String() string {
@@ -68,7 +68,7 @@ func (t DateTime) String() string {
 }
 
 func (t DateTime) Compare(other core.Value) int64 {
-	if types.Date.Equals(other.Type()) {
+	if types.DateTime.Equals(other.Type()) {
 		other := other.(DateTime)
 
 		if t.After(other.Time) {
@@ -82,7 +82,7 @@ func (t DateTime) Compare(other core.Value) int64 {
 		return 0
 	}
 
-	return types.Compare(types.Date, other.Type())
+	return types.Compare(types.DateTime, other.Type())
 }
 
 func (t DateTime) Unwrap() interface{} {
