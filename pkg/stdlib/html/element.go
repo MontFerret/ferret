@@ -11,9 +11,9 @@ import (
 
 // Element finds an element by a given CSS selector.
 // Returns NONE if element not found.
-// @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
+// @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - CSS selector.
-// @returns (HTMLElement | None) - Returns an HTMLElement if found, otherwise NONE.
+// @returns (HTMLNode | None) - Returns an HTMLNode if found, otherwise NONE.
 func Element(_ context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 
@@ -31,7 +31,7 @@ func queryArgs(args []core.Value) (drivers.HTMLNode, values.String, error) {
 		return nil, values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
 
 	if err != nil {
 		return nil, values.EmptyString, err

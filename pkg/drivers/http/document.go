@@ -2,14 +2,14 @@ package http
 
 import (
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/pkg/errors"
 )
 
 type HTMLDocument struct {
-	*HTMLElement
+	*HTMLNode
 	url values.String
 }
 
@@ -25,7 +25,7 @@ func NewHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "document root selection")
 	}
 
-	el, err := NewHTMLElement(node.Selection)
+	el, err := NewHTMLNode(node.Selection)
 
 	if err != nil {
 		return nil, err
@@ -35,12 +35,12 @@ func NewHTMLDocument(
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return drivers.HTMLElementType
+	return drivers.HTMLNodeType
 }
 
 func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	switch other.Type() {
-	case drivers.HTMLElementType:
+	case drivers.HTMLNodeType:
 		otherDoc := other.(drivers.HTMLDocument)
 
 		return doc.url.Compare(otherDoc.GetURL())
@@ -54,5 +54,5 @@ func (doc *HTMLDocument) GetURL() core.Value {
 }
 
 func (doc *HTMLDocument) SetURL(url values.String) error {
-	return errors.New("Url is read-only")
+	return core.Error(common.ErrReadOnly, "url")
 }

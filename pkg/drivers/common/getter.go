@@ -27,7 +27,7 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 		if st == types.Int {
 			rt := result.Type()
 
-			if rt == drivers.HTMLElementType || rt == drivers.DHTMLElementType {
+			if rt == drivers.HTMLNodeType || rt == drivers.DHTMLNodeType {
 				re := result.(drivers.HTMLNode)
 
 				result = re.GetChildNode(segment.(values.Int))

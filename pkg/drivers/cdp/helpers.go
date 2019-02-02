@@ -80,7 +80,7 @@ func computeQuadArea(quads []Quad) float64 {
 	return math.Abs(area)
 }
 
-func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (Quad, error) {
+func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLNodeIdentity) (Quad, error) {
 	qargs := dom.NewGetContentQuadsArgs()
 
 	if id.objectID != "" {
@@ -98,7 +98,7 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementI
 	}
 
 	if res.Quads == nil || len(res.Quads) == 0 {
-		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
+		return Quad{}, errors.New("node is either not visible or not an HTMLNode")
 	}
 
 	quads := make([][]Quad, 0, len(res.Quads))
@@ -112,7 +112,7 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementI
 	}
 
 	if len(quads) == 0 {
-		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
+		return Quad{}, errors.New("node is either not visible or not an HTMLNode")
 	}
 
 	// Return the middle point of the first quad.
@@ -159,7 +159,7 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLNodeIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
 	if id.objectID != "" {
@@ -210,7 +210,7 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 	return values.NewString(repl.OuterHTML), nil
 }
 
-func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLNodeIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
 	if id.objectID != "" {
@@ -273,11 +273,11 @@ func parseInnerText(innerHTML string) (values.String, error) {
 	return values.NewString(parsed.Text()), nil
 }
 
-func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
-	children := make([]*HTMLElementIdentity, len(nodes))
+func createChildrenArray(nodes []dom.Node) []*HTMLNodeIdentity {
+	children := make([]*HTMLNodeIdentity, len(nodes))
 
 	for idx, child := range nodes {
-		children[idx] = &HTMLElementIdentity{
+		children[idx] = &HTMLNodeIdentity{
 			nodeID:    child.NodeID,
 			backendID: child.BackendNodeID,
 		}

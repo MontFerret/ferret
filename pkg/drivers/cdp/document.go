@@ -35,7 +35,7 @@ type (
 		client  *cdp.Client
 		events  *events.EventBroker
 		url     values.String
-		element *HTMLElement
+		element *HTMLNode
 	}
 )
 
@@ -89,7 +89,7 @@ func LoadHTMLDocument(
 		return nil, errors.Wrap(err, "failed to create event events")
 	}
 
-	rootElement, err := LoadElement(
+	rootElement, err := LoadNode(
 		ctx,
 		logger,
 		client,
@@ -122,7 +122,7 @@ func NewHTMLDocument(
 	client *cdp.Client,
 	broker *events.EventBroker,
 	url values.String,
-	rootElement *HTMLElement,
+	rootElement *HTMLNode,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
 	doc.logger = logger
@@ -593,7 +593,7 @@ func (doc *HTMLDocument) HoverBySelector(selector values.String) error {
 		return errors.New("element not found")
 	}
 
-	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
+	q, err := getClickablePoint(ctx, doc.client, &HTMLNodeIdentity{
 		nodeID: found.NodeID,
 	})
 
@@ -996,7 +996,7 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 		return
 	}
 
-	updated, err := LoadElement(
+	updated, err := LoadNode(
 		ctx,
 		doc.logger,
 		doc.client,

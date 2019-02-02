@@ -10,7 +10,7 @@ import (
 )
 
 // ScrollInto scrolls an element on.
-// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
+// @param docOrEl (HTMLDocument|HTMLNode) - Target document or element.
 // @param selector (String, options) - If document is passed, this param must represent an element selector.
 func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -20,7 +20,7 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
 
 	if err != nil {
 		return values.None, err

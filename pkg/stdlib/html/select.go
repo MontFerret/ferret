@@ -22,7 +22,7 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLNodeType)
 
 	if err != nil {
 		return values.False, err

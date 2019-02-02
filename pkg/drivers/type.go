@@ -3,17 +3,17 @@ package drivers
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 var (
-	HTMLElementType   = core.NewType("HTMLElement")
+	HTMLNodeType      = core.NewType("HTMLNode")
 	HTMLDocumentType  = core.NewType("HTMLDocument")
-	DHTMLElementType  = core.NewType("DHTMLElement")
+	DHTMLNodeType     = core.NewType("DHTMLNode")
 	DHTMLDocumentType = core.NewType("DHTMLDocument")
 )
 
 // Comparison table of builtin types
 var typeComparisonTable = map[core.Type]uint64{
-	HTMLElementType:   0,
+	HTMLNodeType:      0,
 	HTMLDocumentType:  1,
-	DHTMLElementType:  2,
+	DHTMLNodeType:     2,
 	DHTMLDocumentType: 3,
 }
 

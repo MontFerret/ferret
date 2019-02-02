@@ -22,7 +22,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) == 1 {
 		arg1 := args[0]
 
-		err := core.ValidateType(arg1, drivers.HTMLElementType)
+		err := core.ValidateType(arg1, drivers.HTMLNodeType)
 
 		if err != nil {
 			return values.False, err

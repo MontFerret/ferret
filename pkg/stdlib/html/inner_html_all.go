@@ -10,7 +10,7 @@ import (
 )
 
 // InnerHTMLAll returns an array of inner HTML strings of matched elements.
-// @param doc (HTMLDocument|HTMLElement) - Parent document or element.
+// @param doc (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - String of CSS selector.
 // @returns (String) - An array of inner HTML strings if any element found, otherwise empty array.
 func InnerHTMLAll(_ context.Context, args ...core.Value) (core.Value, error) {
@@ -20,7 +20,7 @@ func InnerHTMLAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
 
 	if err != nil {
 		return values.None, err

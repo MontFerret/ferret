@@ -11,7 +11,7 @@ import (
 
 // WaitClass waits for a class to appear on a given element.
 // Stops the execution until the navigation ends or operation times out.
-// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
+// @param docOrEl (HTMLDocument|HTMLNode) - Target document or element.
 // @param selectorOrClass (String) - If document is passed, this param must represent an element selector.
 // Otherwise target class.
 // @param classOrTimeout (String|Int, optional) - If document is passed, this param must represent target class name.
@@ -26,7 +26,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
 
 	if err != nil {
 		return values.None, err
