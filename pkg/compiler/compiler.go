@@ -28,9 +28,7 @@ func New(setters ...Option) *FqlCompiler {
 		c.funcs = make(map[string]core.Function)
 	}
 
-	return &FqlCompiler{
-		stdlib.NewLib(),
-	}
+	return c
 }
 
 func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
