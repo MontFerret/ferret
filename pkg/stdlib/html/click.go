@@ -22,13 +22,13 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) == 1 {
 		arg1 := args[0]
 
-		err := core.ValidateType(arg1, drivers.HTMLNodeType)
+		err := core.ValidateType(arg1, drivers.HTMLElementType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		el, ok := arg1.(drivers.DHTMLNode)
+		el, ok := arg1.(drivers.HTMLElement)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -47,7 +47,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(drivers.DHTMLDocument)
+	doc, ok := arg1.(drivers.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

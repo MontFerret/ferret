@@ -27,17 +27,15 @@ import (
 
 const BlankPageURL = "about:blank"
 
-type (
-	HTMLDocument struct {
-		sync.Mutex
-		logger  *zerolog.Logger
-		conn    *rpcc.Conn
-		client  *cdp.Client
-		events  *events.EventBroker
-		url     values.String
-		element *HTMLNode
-	}
-)
+type HTMLDocument struct {
+	sync.Mutex
+	logger  *zerolog.Logger
+	conn    *rpcc.Conn
+	client  *cdp.Client
+	events  *events.EventBroker
+	url     values.String
+	element *HTMLElement
+}
 
 func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
 	err := client.Page.Close(context.Background())
@@ -52,7 +50,7 @@ func LoadHTMLDocument(
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	url string,
-) (*HTMLDocument, error) {
+) (drivers.HTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	if conn == nil {
@@ -89,7 +87,7 @@ func LoadHTMLDocument(
 		return nil, errors.Wrap(err, "failed to create event events")
 	}
 
-	rootElement, err := LoadNode(
+	rootElement, err := LoadElement(
 		ctx,
 		logger,
 		client,
@@ -122,7 +120,7 @@ func NewHTMLDocument(
 	client *cdp.Client,
 	broker *events.EventBroker,
 	url values.String,
-	rootElement *HTMLNode,
+	rootElement *HTMLElement,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
 	doc.logger = logger
@@ -185,10 +183,6 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	defer doc.Unlock()
 
 	switch other.Type() {
-	case drivers.DHTMLDocumentType:
-		other := other.(drivers.DHTMLDocument)
-
-		return doc.url.Compare(other.GetURL())
 	case drivers.HTMLDocumentType:
 		other := other.(drivers.HTMLDocument)
 
@@ -203,11 +197,11 @@ func (doc *HTMLDocument) Iterate(ctx context.Context) (collections.CollectionIte
 }
 
 func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetIn(ctx, doc, path)
+	return common.GetInDocument(ctx, doc, path)
 }
 
 func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetIn(ctx, doc, path, value)
+	return common.SetInDocument(ctx, doc, path, value)
 }
 
 func (doc *HTMLDocument) Close() error {
@@ -355,6 +349,13 @@ func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
 	defer doc.Unlock()
 
 	return doc.element.QuerySelectorAll(selector)
+}
+
+func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element
 }
 
 func (doc *HTMLDocument) GetURL() core.Value {
@@ -593,7 +594,7 @@ func (doc *HTMLDocument) HoverBySelector(selector values.String) error {
 		return errors.New("element not found")
 	}
 
-	q, err := getClickablePoint(ctx, doc.client, &HTMLNodeIdentity{
+	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
 		nodeID: found.NodeID,
 	})
 
@@ -629,7 +630,7 @@ func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClass(selector, class values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelector(selector, class values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
@@ -661,7 +662,7 @@ func (doc *HTMLDocument) WaitForClass(selector, class values.String, timeout val
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(selector, class values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
@@ -996,7 +997,7 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 		return
 	}
 
-	updated, err := LoadNode(
+	updated, err := LoadElement(
 		ctx,
 		doc.logger,
 		doc.client,

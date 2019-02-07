@@ -41,7 +41,7 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg.(drivers.DHTMLDocument)
+	doc, ok := arg.(drivers.HTMLDocument)
 
 	if !ok {
 		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

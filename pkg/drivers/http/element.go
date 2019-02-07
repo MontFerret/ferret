@@ -13,36 +13,36 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type HTMLNode struct {
+type HTMLElement struct {
 	selection *goquery.Selection
 	attrs     *values.Object
 	children  *values.Array
 }
 
-func NewHTMLNode(node *goquery.Selection) (*HTMLNode, error) {
+func NewHTMLElement(node *goquery.Selection) (drivers.HTMLElement, error) {
 	if node == nil {
 		return nil, core.Error(core.ErrMissedArgument, "element selection")
 	}
 
-	return &HTMLNode{node, nil, nil}, nil
+	return &HTMLElement{node, nil, nil}, nil
 }
 
-func (nd *HTMLNode) MarshalJSON() ([]byte, error) {
+func (nd *HTMLElement) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nd.InnerText().String())
 }
 
-func (nd *HTMLNode) Type() core.Type {
-	return drivers.HTMLNodeType
+func (nd *HTMLElement) Type() core.Type {
+	return drivers.HTMLElementType
 }
 
-func (nd *HTMLNode) String() string {
+func (nd *HTMLElement) String() string {
 	return nd.InnerHTML().String()
 }
 
-func (nd *HTMLNode) Compare(other core.Value) int64 {
+func (nd *HTMLElement) Compare(other core.Value) int64 {
 	switch other.Type() {
-	case drivers.HTMLNodeType:
-		other := other.(drivers.HTMLNode)
+	case drivers.HTMLElementType:
+		other := other.(drivers.HTMLElement)
 
 		return nd.InnerHTML().Compare(other.InnerHTML())
 	default:
@@ -50,11 +50,11 @@ func (nd *HTMLNode) Compare(other core.Value) int64 {
 	}
 }
 
-func (nd *HTMLNode) Unwrap() interface{} {
+func (nd *HTMLElement) Unwrap() interface{} {
 	return nd.selection
 }
 
-func (nd *HTMLNode) Hash() uint64 {
+func (nd *HTMLElement) Hash() uint64 {
 	str, err := nd.selection.Html()
 
 	if err != nil {
@@ -70,13 +70,13 @@ func (nd *HTMLNode) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (nd *HTMLNode) Copy() core.Value {
-	c, _ := NewHTMLNode(nd.selection.Clone())
+func (nd *HTMLElement) Copy() core.Value {
+	c, _ := NewHTMLElement(nd.selection.Clone())
 
 	return c
 }
 
-func (nd *HTMLNode) NodeType() values.Int {
+func (nd *HTMLElement) NodeType() values.Int {
 	nodes := nd.selection.Nodes
 
 	if len(nodes) == 0 {
@@ -86,11 +86,15 @@ func (nd *HTMLNode) NodeType() values.Int {
 	return values.NewInt(common.ToHTMLType(nodes[0].Type))
 }
 
-func (nd *HTMLNode) NodeName() values.String {
+func (nd *HTMLElement) Close() error {
+	return nil
+}
+
+func (nd *HTMLElement) NodeName() values.String {
 	return values.NewString(goquery.NodeName(nd.selection))
 }
 
-func (nd *HTMLNode) Length() values.Int {
+func (nd *HTMLElement) Length() values.Int {
 	if nd.children == nil {
 		nd.children = nd.parseChildren()
 	}
@@ -98,7 +102,7 @@ func (nd *HTMLNode) Length() values.Int {
 	return nd.children.Length()
 }
 
-func (nd *HTMLNode) GetValue() core.Value {
+func (nd *HTMLElement) GetValue() core.Value {
 	val, ok := nd.selection.Attr("value")
 
 	if ok {
@@ -108,17 +112,17 @@ func (nd *HTMLNode) GetValue() core.Value {
 	return values.EmptyString
 }
 
-func (nd *HTMLNode) SetValue(value core.Value) error {
+func (nd *HTMLElement) SetValue(value core.Value) error {
 	nd.selection.SetAttr("value", value.String())
 
 	return nil
 }
 
-func (nd *HTMLNode) InnerText() values.String {
+func (nd *HTMLElement) InnerText() values.String {
 	return values.NewString(nd.selection.Text())
 }
 
-func (nd *HTMLNode) InnerHTML() values.String {
+func (nd *HTMLElement) InnerHTML() values.String {
 	h, err := nd.selection.Html()
 
 	if err != nil {
@@ -128,7 +132,7 @@ func (nd *HTMLNode) InnerHTML() values.String {
 	return values.NewString(h)
 }
 
-func (nd *HTMLNode) GetAttributes() core.Value {
+func (nd *HTMLElement) GetAttributes() core.Value {
 	if nd.attrs == nil {
 		nd.attrs = nd.parseAttrs()
 	}
@@ -136,7 +140,7 @@ func (nd *HTMLNode) GetAttributes() core.Value {
 	return nd.attrs
 }
 
-func (nd *HTMLNode) GetAttribute(name values.String) core.Value {
+func (nd *HTMLElement) GetAttribute(name values.String) core.Value {
 	v, ok := nd.selection.Attr(name.String())
 
 	if ok {
@@ -146,13 +150,13 @@ func (nd *HTMLNode) GetAttribute(name values.String) core.Value {
 	return values.None
 }
 
-func (nd *HTMLNode) SetAttribute(name, value values.String) error {
+func (nd *HTMLElement) SetAttribute(name, value values.String) error {
 	nd.selection.SetAttr(string(name), string(value))
 
 	return nil
 }
 
-func (nd *HTMLNode) GetChildNodes() core.Value {
+func (nd *HTMLElement) GetChildNodes() core.Value {
 	if nd.children == nil {
 		nd.children = nd.parseChildren()
 	}
@@ -160,7 +164,7 @@ func (nd *HTMLNode) GetChildNodes() core.Value {
 	return nd.children
 }
 
-func (nd *HTMLNode) GetChildNode(idx values.Int) core.Value {
+func (nd *HTMLElement) GetChildNode(idx values.Int) core.Value {
 	if nd.children == nil {
 		nd.children = nd.parseChildren()
 	}
@@ -168,14 +172,14 @@ func (nd *HTMLNode) GetChildNode(idx values.Int) core.Value {
 	return nd.children.Get(idx)
 }
 
-func (nd *HTMLNode) QuerySelector(selector values.String) core.Value {
+func (nd *HTMLElement) QuerySelector(selector values.String) core.Value {
 	selection := nd.selection.Find(selector.String())
 
 	if selection == nil {
 		return values.None
 	}
 
-	res, err := NewHTMLNode(selection)
+	res, err := NewHTMLElement(selection)
 
 	if err != nil {
 		return values.None
@@ -184,7 +188,7 @@ func (nd *HTMLNode) QuerySelector(selector values.String) core.Value {
 	return res
 }
 
-func (nd *HTMLNode) QuerySelectorAll(selector values.String) core.Value {
+func (nd *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	selection := nd.selection.Find(selector.String())
 
 	if selection == nil {
@@ -194,7 +198,7 @@ func (nd *HTMLNode) QuerySelectorAll(selector values.String) core.Value {
 	arr := values.NewArray(selection.Length())
 
 	selection.Each(func(i int, selection *goquery.Selection) {
-		el, err := NewHTMLNode(selection)
+		el, err := NewHTMLElement(selection)
 
 		if err == nil {
 			arr.Push(el)
@@ -204,7 +208,7 @@ func (nd *HTMLNode) QuerySelectorAll(selector values.String) core.Value {
 	return arr
 }
 
-func (nd *HTMLNode) InnerHTMLBySelector(selector values.String) values.String {
+func (nd *HTMLElement) InnerHTMLBySelector(selector values.String) values.String {
 	selection := nd.selection.Find(selector.String())
 
 	str, err := selection.Html()
@@ -217,7 +221,7 @@ func (nd *HTMLNode) InnerHTMLBySelector(selector values.String) values.String {
 	return values.NewString(str)
 }
 
-func (nd *HTMLNode) InnerHTMLBySelectorAll(selector values.String) *values.Array {
+func (nd *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
 	selection := nd.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
@@ -233,13 +237,13 @@ func (nd *HTMLNode) InnerHTMLBySelectorAll(selector values.String) *values.Array
 	return arr
 }
 
-func (nd *HTMLNode) InnerTextBySelector(selector values.String) values.String {
+func (nd *HTMLElement) InnerTextBySelector(selector values.String) values.String {
 	selection := nd.selection.Find(selector.String())
 
 	return values.NewString(selection.Text())
 }
 
-func (nd *HTMLNode) InnerTextBySelectorAll(selector values.String) *values.Array {
+func (nd *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
 	selection := nd.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
@@ -250,7 +254,7 @@ func (nd *HTMLNode) InnerTextBySelectorAll(selector values.String) *values.Array
 	return arr
 }
 
-func (nd *HTMLNode) CountBySelector(selector values.String) values.Int {
+func (nd *HTMLElement) CountBySelector(selector values.String) values.Int {
 	selection := nd.selection.Find(selector.String())
 
 	if selection == nil {
@@ -260,7 +264,7 @@ func (nd *HTMLNode) CountBySelector(selector values.String) values.Int {
 	return values.NewInt(selection.Size())
 }
 
-func (nd *HTMLNode) ExistsBySelector(selector values.String) values.Boolean {
+func (nd *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
 	selection := nd.selection.Closest(selector.String())
 
 	if selection == nil {
@@ -270,19 +274,43 @@ func (nd *HTMLNode) ExistsBySelector(selector values.String) values.Boolean {
 	return values.True
 }
 
-func (nd *HTMLNode) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetIn(ctx, nd, path)
+func (nd *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetInElement(ctx, nd, path)
 }
 
-func (nd *HTMLNode) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetIn(ctx, nd, path, value)
+func (nd *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetInElement(ctx, nd, path, value)
 }
 
-func (nd *HTMLNode) Iterate(_ context.Context) (collections.CollectionIterator, error) {
+func (nd *HTMLElement) Iterate(_ context.Context) (collections.CollectionIterator, error) {
 	return common.NewIterator(nd)
 }
 
-func (nd *HTMLNode) parseAttrs() *values.Object {
+func (nd *HTMLElement) Click() (values.Boolean, error) {
+	return false, core.Error(core.ErrNotSupported, "Click")
+}
+
+func (nd *HTMLElement) Input(value core.Value, delay values.Int) error {
+	return core.Error(core.ErrNotSupported, "Input")
+}
+
+func (nd *HTMLElement) Select(value *values.Array) (*values.Array, error) {
+	return nil, core.Error(core.ErrNotSupported, "Select")
+}
+
+func (nd *HTMLElement) ScrollIntoView() error {
+	return core.Error(core.ErrNotSupported, "ScrollIntoView")
+}
+
+func (nd *HTMLElement) Hover() error {
+	return core.Error(core.ErrNotSupported, "Hover")
+}
+
+func (nd *HTMLElement) WaitForClass(class values.String, timeout values.Int) error {
+	return core.Error(core.ErrNotSupported, "WaitForClass")
+}
+
+func (nd *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 
 	for _, name := range common.Attributes {
@@ -296,13 +324,13 @@ func (nd *HTMLNode) parseAttrs() *values.Object {
 	return obj
 }
 
-func (nd *HTMLNode) parseChildren() *values.Array {
+func (nd *HTMLElement) parseChildren() *values.Array {
 	children := nd.selection.Children()
 
 	arr := values.NewArray(10)
 
 	children.Each(func(i int, selection *goquery.Selection) {
-		child, err := NewHTMLNode(selection)
+		child, err := NewHTMLElement(selection)
 
 		if err == nil {
 			arr.Push(child)

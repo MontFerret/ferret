@@ -23,15 +23,15 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLNodeType)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
-	switch args[0].(type) {
-	case drivers.DHTMLDocument:
-		doc, ok := arg1.(drivers.DHTMLDocument)
+	switch arg1.Type() {
+	case drivers.HTMLDocumentType:
+		doc, ok := arg1.(drivers.HTMLDocument)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -60,8 +60,8 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.InputBySelector(arg2.(values.String), args[2], delay)
-	case drivers.DHTMLNode:
-		el, ok := arg1.(drivers.DHTMLNode)
+	case drivers.HTMLElementType:
+		el, ok := arg1.(drivers.HTMLElement)
 
 		if !ok {
 			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

@@ -54,7 +54,7 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := val.(drivers.DHTMLDocument)
+	doc := val.(drivers.HTMLDocument)
 	defer doc.Close()
 
 	pdfParams := drivers.PDFParams{}

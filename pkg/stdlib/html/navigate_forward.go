@@ -29,7 +29,7 @@ func NavigateForward(_ context.Context, args ...core.Value) (core.Value, error) 
 		return values.None, err
 	}
 
-	doc, ok := args[0].(drivers.DHTMLDocument)
+	doc, ok := args[0].(drivers.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

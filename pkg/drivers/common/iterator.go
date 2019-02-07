@@ -9,12 +9,12 @@ import (
 )
 
 type Iterator struct {
-	node drivers.HTMLNode
+	node drivers.HTMLElement
 	pos  values.Int
 }
 
 func NewIterator(
-	node drivers.HTMLNode,
+	node drivers.HTMLElement,
 ) (collections.CollectionIterator, error) {
 	if node == nil {
 		return nil, core.Error(core.ErrMissedArgument, "result")

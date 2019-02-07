@@ -28,7 +28,7 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(drivers.DHTMLDocument)
+	doc, ok := arg1.(drivers.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)

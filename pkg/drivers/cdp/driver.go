@@ -2,9 +2,9 @@ package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"sync"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -17,6 +17,8 @@ import (
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
 )
+
+const DriverName = "cdp"
 
 type Driver struct {
 	sync.Mutex
@@ -36,7 +38,11 @@ func NewDriver(opts ...Option) *Driver {
 	return drv
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.DHTMLDocument, error) {
+func (drv *Driver) Name() string {
+	return DriverName
+}
+
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)
@@ -45,7 +51,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 		logger.
 			Error().
 			Err(err).
-			Str("driver", "dynamic").
+			Str("driver", DriverName).
 			Msg("failed to initialize the driver")
 
 		return nil, err
@@ -66,7 +72,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 		logger.
 			Error().
 			Err(err).
-			Str("driver", "dynamic").
+			Str("driver", DriverName).
 			Msg("failed to create a browser target")
 
 		return nil, err
@@ -79,7 +85,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 		logger.
 			Error().
 			Err(err).
-			Str("driver", "dynamic").
+			Str("driver", DriverName).
 			Msg("failed to establish a connection")
 
 		return nil, err

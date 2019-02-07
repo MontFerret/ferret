@@ -2,6 +2,8 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -57,7 +59,8 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 	defer cancel()
 
 	if params.Dynamic {
-		drv, err := drivers.DynamicFrom(ctx)
+		// TODO: Use driver name
+		drv, err := drivers.FromContext(ctx, cdp.DriverName)
 
 		if err != nil {
 			return values.None, err
@@ -66,7 +69,8 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return drv.GetDocument(ctx, url)
 	}
 
-	drv, err := drivers.StaticFrom(ctx)
+	// TODO: Use driver name
+	drv, err := drivers.FromContext(ctx, http.DriverName)
 
 	if err != nil {
 		return values.None, err

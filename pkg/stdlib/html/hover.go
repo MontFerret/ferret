@@ -11,7 +11,7 @@ import (
 
 // Hover  fetches an element with selector, scrolls it into view if needed, and then uses page.mouse to hover over the center of the element.
 // If there's no element matching selector, the method returns an error.
-// @param docOrEl (HTMLDocument|HTMLNode) - Target document or element.
+// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selector (String, options) - If document is passed, this param must represent an element selector.
 func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -21,7 +21,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -35,7 +35,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// Document with a selector
-		doc, ok := args[0].(drivers.DHTMLDocument)
+		doc, ok := args[0].(drivers.HTMLDocument)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -47,7 +47,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// Element
-	el, ok := args[0].(drivers.DHTMLNode)
+	el, ok := args[0].(drivers.HTMLElement)
 
 	if !ok {
 		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)

@@ -1,23 +1,44 @@
 package drivers
 
 import (
+	"io"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"io"
 )
 
 type (
-	// HTMLNode is a HTML Node
+	// Node is an interface from which a number of DOM API object types inherit.
+	// It allows those types to be treated similarly;
+	// for example, inheriting the same set of methods, or being tested in the same way.
 	HTMLNode interface {
 		collections.Collection
 		collections.IterableCollection
 		core.Getter
 		core.Setter
+		io.Closer
 
 		NodeType() values.Int
 
 		NodeName() values.String
+
+		GetChildNodes() core.Value
+
+		GetChildNode(idx values.Int) core.Value
+
+		QuerySelector(selector values.String) core.Value
+
+		QuerySelectorAll(selector values.String) core.Value
+
+		CountBySelector(selector values.String) values.Int
+
+		ExistsBySelector(selector values.String) values.Boolean
+	}
+
+	// HTMLElement is the most general base interface which most objects in a Document implement.
+	HTMLElement interface {
+		HTMLNode
 
 		InnerText() values.String
 
@@ -33,14 +54,6 @@ type (
 
 		SetAttribute(name, value values.String) error
 
-		GetChildNodes() core.Value
-
-		GetChildNode(idx values.Int) core.Value
-
-		QuerySelector(selector values.String) core.Value
-
-		QuerySelectorAll(selector values.String) core.Value
-
 		InnerHTMLBySelector(selector values.String) values.String
 
 		InnerHTMLBySelectorAll(selector values.String) *values.Array
@@ -48,15 +61,6 @@ type (
 		InnerTextBySelector(selector values.String) values.String
 
 		InnerTextBySelectorAll(selector values.String) *values.Array
-
-		CountBySelector(selector values.String) values.Int
-
-		ExistsBySelector(selector values.String) values.Boolean
-	}
-
-	DHTMLNode interface {
-		HTMLNode
-		io.Closer
 
 		Click() (values.Boolean, error)
 
@@ -71,19 +75,16 @@ type (
 		WaitForClass(class values.String, timeout values.Int) error
 	}
 
-	// HTMLDocument is a HTML Document
+	// The Document interface represents any web page loaded in the browser
+	// and serves as an entry point into the web page's content, which is the DOM tree.
 	HTMLDocument interface {
 		HTMLNode
+
+		DocumentElement() HTMLElement
 
 		GetURL() core.Value
 
 		SetURL(url values.String) error
-	}
-
-	// DHTMLDocument is a Dynamic HTML Document
-	DHTMLDocument interface {
-		HTMLDocument
-		io.Closer
 
 		Navigate(url values.String, timeout values.Int) error
 
@@ -115,8 +116,8 @@ type (
 
 		WaitForSelector(selector values.String, timeout values.Int) error
 
-		WaitForClass(selector, class values.String, timeout values.Int) error
+		WaitForClassBySelector(selector, class values.String, timeout values.Int) error
 
-		WaitForClassAll(selector, class values.String, timeout values.Int) error
+		WaitForClassBySelectorAll(selector, class values.String, timeout values.Int) error
 	}
 )

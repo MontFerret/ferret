@@ -2,47 +2,49 @@ package common
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func SetIn(_ context.Context, to drivers.HTMLNode, path []core.Value, value core.Value) error {
+func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value, value core.Value) error {
 	if path == nil || len(path) == 0 {
 		return nil
 	}
 
 	segment := path[0]
-	st := segment.Type()
-	tt := to.Type()
 
-	if st == types.Int {
-		return core.Error(core.ErrInvalidOperation, "children is read-only")
-	} else if st == types.String {
+	if segment.Type() == types.String {
 		segment := segment.(values.String)
 
 		switch segment {
-		case "nodeType":
-			return core.Error(ErrReadOnly, "nodeType")
-		case "nodeName":
-			return core.Error(ErrReadOnly, "nodeName")
-		case "innerText":
-			return core.Error(ErrReadOnly, "innerText")
-		case "innerHTML":
-			return core.Error(ErrReadOnly, "innerHTML")
-		case "value":
-			if len(path) > 1 {
-				return core.Error(ErrInvalidPath, "too long")
-			}
+		case "URL":
+			return doc.SetURL(values.NewString(value.String()))
+		default:
+			return SetInNode(ctx, doc, path, value)
+		}
+	}
 
-			return to.SetValue(value)
+	return SetInNode(ctx, doc, path, value)
+}
+
+func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value, value core.Value) error {
+	if path == nil || len(path) == 0 {
+		return nil
+	}
+
+	segment := path[0]
+
+	if segment.Type() == types.String {
+		segment := segment.(values.String)
+
+		switch segment {
 		case "attributes":
 			if len(path) > 1 {
 				attrName := path[1]
 
-				return to.SetAttribute(values.NewString(attrName.String()), values.NewString(value.String()))
+				return el.SetAttribute(values.NewString(attrName.String()), values.NewString(value.String()))
 			}
 
 			err := core.ValidateType(value, types.Object)
@@ -53,30 +55,35 @@ func SetIn(_ context.Context, to drivers.HTMLNode, path []core.Value, value core
 
 			obj := value.(*values.Object)
 			obj.ForEach(func(value core.Value, key string) bool {
-				err = to.SetAttribute(values.NewString(key), values.NewString(value.String()))
+				err = el.SetAttribute(values.NewString(key), values.NewString(value.String()))
 
 				return err == nil
 			})
 
 			return err
-		case "children":
-			return core.Error(ErrReadOnly, "children")
-		case "length":
-			return core.Error(ErrReadOnly, "length")
-		case "url":
-			if tt == drivers.HTMLDocumentType || tt == drivers.DHTMLDocumentType {
-				doc, ok := to.(drivers.HTMLDocument)
-
-				if ok {
-					return doc.SetURL(values.NewString(value.String()))
-				}
+		case "value":
+			if len(path) > 1 {
+				return core.Error(ErrInvalidPath, PathToString(path[1:]))
 			}
 
-			return core.TypeError(to.Type(), drivers.HTMLDocumentType, drivers.DHTMLDocumentType)
-		default:
-			return ErrInvalidPath
+			return el.SetValue(value)
 		}
 	}
 
-	return nil
+	return SetInNode(ctx, el, path, value)
+}
+
+func SetInNode(_ context.Context, _ drivers.HTMLNode, path []core.Value, _ core.Value) error {
+	if path == nil || len(path) == 0 {
+		return nil
+	}
+
+	segment := path[0]
+	st := segment.Type()
+
+	if st == types.Int {
+		return core.Error(core.ErrInvalidOperation, "children are read-only")
+	}
+
+	return core.Error(ErrReadOnly, PathToString(path))
 }

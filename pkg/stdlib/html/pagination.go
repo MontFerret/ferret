@@ -22,7 +22,7 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(drivers.DHTMLDocument)
+	doc, ok := args[0].(drivers.HTMLDocument)
 
 	if !ok {
 		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -43,12 +43,12 @@ var PagingType = core.NewType("paging")
 
 type (
 	Paging struct {
-		document drivers.DHTMLDocument
+		document drivers.HTMLDocument
 		selector values.String
 	}
 
 	PagingIterator struct {
-		document drivers.DHTMLDocument
+		document drivers.HTMLDocument
 		selector values.String
 		pos      values.Int
 	}

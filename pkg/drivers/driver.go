@@ -2,64 +2,72 @@ package drivers
 
 import (
 	"context"
+	"io"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"io"
 )
 
 type (
-	staticCtxKey struct{}
+	ctxKey struct{}
 
-	dynamicCtxKey struct{}
-
-	Static interface {
+	Driver interface {
 		io.Closer
+		Name() string
 		GetDocument(ctx context.Context, url values.String) (HTMLDocument, error)
-		ParseDocument(ctx context.Context, str values.String) (HTMLDocument, error)
-	}
-
-	Dynamic interface {
-		io.Closer
-		GetDocument(ctx context.Context, url values.String) (DHTMLDocument, error)
 	}
 )
 
-func StaticFrom(ctx context.Context) (Static, error) {
-	val := ctx.Value(staticCtxKey{})
-
-	drv, ok := val.(Static)
+func WithContext(ctx context.Context, drv Driver) context.Context {
+	val := ctx.Value(ctxKey{})
+	col, ok := val.(map[string]Driver)
 
 	if !ok {
-		return nil, core.Error(core.ErrNotFound, "HTML Driver")
+		col = make(map[string]Driver)
+	}
+
+	col[drv.Name()] = drv
+
+	return context.WithValue(
+		ctx,
+		ctxKey{},
+		col,
+	)
+}
+
+func FromContext(ctx context.Context, name string) (Driver, error) {
+	val := ctx.Value(ctxKey{})
+	col, ok := val.(map[string]Driver)
+
+	if !ok {
+		return nil, core.Error(core.ErrNotFound, name)
+	}
+
+	drv, exists := col[name]
+
+	if !exists {
+		return nil, core.Error(core.ErrNotFound, name)
 	}
 
 	return drv, nil
 }
 
-func DynamicFrom(ctx context.Context) (Dynamic, error) {
-	val := ctx.Value(dynamicCtxKey{})
-
-	drv, ok := val.(Dynamic)
+func FromContextAny(ctx context.Context) (Driver, error) {
+	val := ctx.Value(ctxKey{})
+	col, ok := val.(map[string]Driver)
 
 	if !ok {
-		return nil, core.Error(core.ErrNotFound, "DHTML Driver")
+		return nil, core.Error(core.ErrNotFound, "html drivers")
 	}
 
+	var name string
+
+	for k := range col {
+		name = k
+		break
+	}
+
+	drv := col[name]
+
 	return drv, nil
-}
-
-func WithStatic(ctx context.Context, drv Static) context.Context {
-	return context.WithValue(
-		ctx,
-		staticCtxKey{},
-		drv,
-	)
-}
-
-func WithDynamic(ctx context.Context, drv Dynamic) context.Context {
-	return context.WithValue(
-		ctx,
-		dynamicCtxKey{},
-		drv,
-	)
 }

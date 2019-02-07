@@ -17,6 +17,7 @@ var (
 	ErrTerminated            = errors.New("operation is terminated")
 	ErrUnexpected            = errors.New("unexpected error")
 	ErrTimeout               = errors.New("operation timed out")
+	ErrNotSupported          = errors.New("not supported")
 	ErrNotImplemented        = errors.New("not implemented")
 )
 

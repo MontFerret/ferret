@@ -9,7 +9,41 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Value, error) {
+func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value) (core.Value, error) {
+	if path == nil || len(path) == 0 {
+		return values.None, nil
+	}
+
+	var result core.Value = doc
+	var err error
+
+	for i, segment := range path {
+		if result == values.None || result == nil {
+			break
+		}
+
+		if segment.Type() == types.String {
+			segment := segment.(values.String)
+
+			switch segment {
+			case "URL":
+				result = doc.GetURL()
+			case "body":
+				result = doc.QuerySelector("body")
+			case "head":
+				result = doc.QuerySelector("head")
+			default:
+				return GetInNode(ctx, doc.DocumentElement(), path[i:])
+			}
+		} else {
+			return GetInNode(ctx, doc.DocumentElement(), path[i:])
+		}
+	}
+
+	return result, err
+}
+
+func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value) (core.Value, error) {
 	if path == nil || len(path) == 0 {
 		return values.None, nil
 	}
@@ -22,13 +56,49 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 			break
 		}
 
+		if segment.Type() == types.String {
+			segment := segment.(values.String)
+
+			switch segment {
+			case "innerText":
+				result = el.InnerText()
+			case "innerHTML":
+				result = el.InnerHTML()
+			case "value":
+				result = el.GetValue()
+			case "attributes":
+				result = el.GetAttributes()
+			default:
+				return GetInNode(ctx, el, path[i:])
+			}
+		} else {
+			return GetInNode(ctx, el, path[i:])
+		}
+	}
+
+	return result, err
+}
+
+func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (core.Value, error) {
+	if path == nil || len(path) == 0 {
+		return values.None, nil
+	}
+
+	var result core.Value = node
+	var err error
+
+	for i, segment := range path {
+		if result == values.None || result == nil {
+			break
+		}
+
 		st := segment.Type()
 
 		if st == types.Int {
 			rt := result.Type()
 
-			if rt == drivers.HTMLNodeType || rt == drivers.DHTMLNodeType {
-				re := result.(drivers.HTMLNode)
+			if rt == drivers.HTMLElementType {
+				re := result.(drivers.HTMLElement)
 
 				result = re.GetChildNode(segment.(values.Int))
 			} else {
@@ -43,31 +113,13 @@ func GetIn(ctx context.Context, el drivers.HTMLNode, path []core.Value) (core.Va
 
 			switch segment {
 			case "nodeType":
-				result = el.NodeType()
+				result = node.NodeType()
 			case "nodeName":
-				result = el.NodeName()
-			case "innerText":
-				result = el.InnerText()
-			case "innerHTML":
-				result = el.InnerHTML()
-			case "value":
-				result = el.GetValue()
-			case "attributes":
-				result = el.GetAttributes()
+				result = node.NodeName()
 			case "children":
-				result = el.GetChildNodes()
+				result = node.GetChildNodes()
 			case "length":
-				result = el.Length()
-			case "url":
-				rt := result.Type()
-
-				if rt == drivers.HTMLDocumentType || rt == drivers.DHTMLDocumentType {
-					doc, ok := result.(drivers.HTMLDocument)
-
-					if ok {
-						result = doc.GetURL()
-					}
-				}
+				result = node.Length()
 			default:
 				result, err = values.GetIn(ctx, result, path[i:])
 

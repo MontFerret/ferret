@@ -252,7 +252,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Find("body"))
+		el, err := http.NewHTMLElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -268,7 +268,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Find("body"))
+		el, err := http.NewHTMLElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -292,7 +292,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Find("body"))
+		el, err := http.NewHTMLElement(doc.Find("body"))
 
 		So(err, ShouldBeNil)
 
@@ -317,7 +317,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Find("#q"))
+		el, err := http.NewHTMLElement(doc.Find("#q"))
 
 		So(err, ShouldBeNil)
 
@@ -344,7 +344,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Find("h2"))
+		el, err := http.NewHTMLElement(doc.Find("h2"))
 
 		So(err, ShouldBeNil)
 
@@ -371,7 +371,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Find("#content"))
+		el, err := http.NewHTMLElement(doc.Find("#content"))
 
 		So(err, ShouldBeNil)
 
@@ -387,7 +387,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Selection)
+		el, err := http.NewHTMLElement(doc.Selection)
 
 		So(err, ShouldBeNil)
 
@@ -395,7 +395,7 @@ func TestElement(t *testing.T) {
 
 		So(found, ShouldNotEqual, values.None)
 
-		v := found.(drivers.HTMLNode).NodeName()
+		v := found.(drivers.HTMLElement).NodeName()
 
 		So(err, ShouldBeNil)
 
@@ -409,7 +409,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		el, err := http.NewHTMLNode(doc.Selection)
+		el, err := http.NewHTMLElement(doc.Selection)
 
 		So(err, ShouldBeNil)
 

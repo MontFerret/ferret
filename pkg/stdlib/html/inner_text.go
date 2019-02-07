@@ -10,7 +10,7 @@ import (
 )
 
 // InnerText returns inner text string of a given or matched by CSS selector element
-// @param doc (HTMLDocument|HTMLNode) - Parent document or element.
+// @param doc (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner text if an element found, otherwise empty string.
 func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
@@ -20,13 +20,13 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	node := args[0].(drivers.HTMLNode)
+	node := args[0].(drivers.HTMLElement)
 
 	if len(args) == 1 {
 		return node.InnerText(), nil

@@ -16,6 +16,8 @@ import (
 	"github.com/sethgrid/pester"
 )
 
+const DriverName = "http"
+
 type Driver struct {
 	client  *pester.Client
 	options *Options
@@ -55,6 +57,10 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 	tr := &http.Transport{Proxy: proxy}
 
 	return &http.Client{Transport: tr}, nil
+}
+
+func (drv *Driver) Name() string {
+	return DriverName
 }
 
 func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {

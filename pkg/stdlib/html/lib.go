@@ -27,7 +27,6 @@ func NewLib() map[string]core.Function {
 		"ELEMENTS":         Elements,
 		"ELEMENTS_COUNT":   ElementsCount,
 		"HOVER":            Hover,
-		"HTML_PARSE":       Parse,
 		"INNER_HTML":       InnerHTML,
 		"INNER_HTML_ALL":   InnerHTMLAll,
 		"INNER_TEXT":       InnerText,
@@ -56,7 +55,7 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 		return values.None, err
 	}
 
-	var doc drivers.DHTMLDocument
+	var doc drivers.HTMLDocument
 	var ok bool
 
 	if value.Type() == types.String {
@@ -66,9 +65,9 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 			return values.None, err
 		}
 
-		doc, ok = buf.(drivers.DHTMLDocument)
+		doc, ok = buf.(drivers.HTMLDocument)
 	} else {
-		doc, ok = value.(drivers.DHTMLDocument)
+		doc, ok = value.(drivers.HTMLDocument)
 	}
 
 	if !ok {

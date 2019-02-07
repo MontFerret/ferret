@@ -11,7 +11,7 @@ import (
 
 // WaitClass waits for a class to appear on a given element.
 // Stops the execution until the navigation ends or operation times out.
-// @param docOrEl (HTMLDocument|HTMLNode) - Target document or element.
+// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selectorOrClass (String) - If document is passed, this param must represent an element selector.
 // Otherwise target class.
 // @param classOrTimeout (String|Int, optional) - If document is passed, this param must represent target class name.
@@ -26,7 +26,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLNodeType)
+	arg1 := args[0]
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -42,8 +43,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	timeout := values.NewInt(defaultTimeout)
 
 	// lets figure out what is passed as 1st argument
-	switch args[0].(type) {
-	case drivers.DHTMLDocument:
+	switch arg1.Type() {
+	case drivers.HTMLDocumentType:
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 3, 4)
 
@@ -58,7 +59,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		doc, ok := args[0].(drivers.DHTMLDocument)
+		doc, ok := arg1.(drivers.HTMLDocument)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
@@ -77,9 +78,9 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			timeout = args[3].(values.Int)
 		}
 
-		return values.None, doc.WaitForClass(selector, class, timeout)
-	case drivers.DHTMLNode:
-		el, ok := args[0].(drivers.DHTMLNode)
+		return values.None, doc.WaitForClassBySelector(selector, class, timeout)
+	case drivers.HTMLElementType:
+		el, ok := arg1.(drivers.HTMLElement)
 
 		if !ok {
 			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
