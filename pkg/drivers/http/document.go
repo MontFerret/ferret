@@ -106,7 +106,7 @@ func (doc *HTMLDocument) Length() values.Int {
 	return values.NewInt(doc.docNode.Length())
 }
 
-func (doc *HTMLDocument) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+func (doc *HTMLDocument) Iterate(_ context.Context) (collections.CollectionIterator, error) {
 	return common.NewIterator(doc.element)
 }
 
@@ -162,72 +162,72 @@ func (doc *HTMLDocument) SetURL(_ values.String) error {
 	return core.Error(common.ErrReadOnly, "url")
 }
 
-func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
-	return core.Error(core.ErrNotSupported, "Navigate")
+func (doc *HTMLDocument) Navigate(_ values.String, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (values.Boolean, error) {
-	return false, core.Error(core.ErrNotSupported, "NavigateBack")
+func (doc *HTMLDocument) NavigateBack(_ values.Int, _ values.Int) (values.Boolean, error) {
+	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (values.Boolean, error) {
-	return false, core.Error(core.ErrNotSupported, "NavigateForward")
+func (doc *HTMLDocument) NavigateForward(_ values.Int, _ values.Int) (values.Boolean, error) {
+	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
-	return false, core.Error(core.ErrNotSupported, "ClickBySelector")
+func (doc *HTMLDocument) ClickBySelector(_ values.String) (values.Boolean, error) {
+	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Boolean, error) {
-	return false, core.Error(core.ErrNotSupported, "ClickBySelectorAll")
+func (doc *HTMLDocument) ClickBySelectorAll(_ values.String) (values.Boolean, error) {
+	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
-	return false, core.Error(core.ErrNotSupported, "InputBySelector")
+func (doc *HTMLDocument) InputBySelector(_ values.String, _ core.Value, _ values.Int) (values.Boolean, error) {
+	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.Array) (*values.Array, error) {
-	return nil, core.Error(core.ErrNotSupported, "SelectBySelector")
+func (doc *HTMLDocument) SelectBySelector(_ values.String, _ *values.Array) (*values.Array, error) {
+	return nil, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) HoverBySelector(selector values.String) error {
-	return core.Error(core.ErrNotSupported, "HoverBySelector")
+func (doc *HTMLDocument) HoverBySelector(_ values.String) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) PrintToPDF(params drivers.PDFParams) (values.Binary, error) {
-	return nil, core.Error(core.ErrNotSupported, "PrintToPDF")
+func (doc *HTMLDocument) PrintToPDF(_ drivers.PDFParams) (values.Binary, error) {
+	return nil, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(params drivers.ScreenshotParams) (values.Binary, error) {
-	return nil, core.Error(core.ErrNotSupported, "CaptureScreenshot")
+func (doc *HTMLDocument) CaptureScreenshot(_ drivers.ScreenshotParams) (values.Binary, error) {
+	return nil, core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) ScrollTop() error {
-	return core.Error(core.ErrNotSupported, "ScrollTop")
+	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) ScrollBottom() error {
-	return core.Error(core.ErrNotSupported, "ScrollBottom")
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
-	return core.Error(core.ErrNotSupported, "ScrollBySelector")
+func (doc *HTMLDocument) ScrollBySelector(_ values.String) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
-	return core.Error(core.ErrNotSupported, "WaitForNavigation")
+func (doc *HTMLDocument) WaitForNavigation(_ values.Int) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
-	return core.Error(core.ErrNotSupported, "WaitForSelector")
+func (doc *HTMLDocument) WaitForSelector(_ values.String, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForClassBySelector(selector, class values.String, timeout values.Int) error {
-	return core.Error(core.ErrNotSupported, "WaitForClassBySelector")
+func (doc *HTMLDocument) WaitForClassBySelector(_, _ values.String, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(selector, class values.String, timeout values.Int) error {
-	return core.Error(core.ErrNotSupported, "WaitForClassBySelectorAll")
+func (doc *HTMLDocument) WaitForClassBySelectorAll(_, _ values.String, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) Close() error {

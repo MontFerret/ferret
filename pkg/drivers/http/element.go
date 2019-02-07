@@ -287,27 +287,27 @@ func (nd *HTMLElement) Iterate(_ context.Context) (collections.CollectionIterato
 }
 
 func (nd *HTMLElement) Click() (values.Boolean, error) {
-	return false, core.Error(core.ErrNotSupported, "Click")
+	return false, core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Input(value core.Value, delay values.Int) error {
-	return core.Error(core.ErrNotSupported, "Input")
+func (nd *HTMLElement) Input(_ core.Value, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Select(value *values.Array) (*values.Array, error) {
-	return nil, core.Error(core.ErrNotSupported, "Select")
+func (nd *HTMLElement) Select(_ *values.Array) (*values.Array, error) {
+	return nil, core.ErrNotSupported
 }
 
 func (nd *HTMLElement) ScrollIntoView() error {
-	return core.Error(core.ErrNotSupported, "ScrollIntoView")
+	return core.ErrNotSupported
 }
 
 func (nd *HTMLElement) Hover() error {
-	return core.Error(core.ErrNotSupported, "Hover")
+	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) WaitForClass(class values.String, timeout values.Int) error {
-	return core.Error(core.ErrNotSupported, "WaitForClass")
+func (nd *HTMLElement) WaitForClass(_ values.String, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
 func (nd *HTMLElement) parseAttrs() *values.Object {
