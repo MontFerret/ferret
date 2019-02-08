@@ -24,7 +24,7 @@ func Element(_ context.Context, args ...core.Value) (core.Value, error) {
 	return el.QuerySelector(selector), nil
 }
 
-func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {
+func queryArgs(args []core.Value) (drivers.HTMLNode, values.String, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -43,5 +43,5 @@ func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {
 		return nil, values.EmptyString, err
 	}
 
-	return args[0].(drivers.HTMLElement), args[1].(values.String), nil
+	return args[0].(drivers.HTMLNode), args[1].(values.String), nil
 }

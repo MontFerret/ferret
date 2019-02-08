@@ -145,12 +145,12 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	}
 
 	ctx := context.Background()
-	ctx = drivers.WithDynamic(
+	ctx = drivers.WithContext(
 		ctx,
 		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
 	)
 
-	ctx = drivers.WithStatic(ctx, http.NewDriver())
+	ctx = drivers.WithContext(ctx, http.NewDriver())
 
 	out, err := p.Run(
 		ctx,

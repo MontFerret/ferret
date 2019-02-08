@@ -44,7 +44,7 @@ func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return drivers.HTMLElementType
+	return drivers.HTMLDocumentType
 }
 
 func (doc *HTMLDocument) String() string {
