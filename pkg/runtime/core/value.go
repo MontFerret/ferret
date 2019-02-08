@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//revive:disable-next-line redefines-builtin-id
+//revive:disable-next-line:redefines-builtin-id
 type Type int64
 
 const (
