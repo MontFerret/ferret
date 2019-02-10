@@ -27,6 +27,8 @@
 Having its own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
 It's extremely portable, extensible and fast.
 
+[Read the introductory blog post about Ferret here!](https://medium.com/@ziflex/say-hello-to-ferret-a-modern-web-scraping-tool-5c9cc85ba183)
+
 ## Show me some code
 The following example demonstrates the use of dynamic pages.    
 First of all, we load the main Google Search page, type search criteria into an input box and then click a search button.   
