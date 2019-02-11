@@ -35,23 +35,14 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// Document with a selector
-		doc, ok := args[0].(drivers.HTMLDocument)
-
-		if !ok {
-			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
-
+		doc := args[0].(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 
 		return values.None, doc.HoverBySelector(selector)
 	}
 
 	// Element
-	el, ok := args[0].(drivers.HTMLElement)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-	}
+	el := args[0].(drivers.HTMLElement)
 
 	return values.None, el.Hover()
 }

@@ -28,10 +28,10 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(drivers.HTMLDocument)
+	doc, err := toDocument(args[0])
 
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	if err != nil {
+		return values.None, err
 	}
 
 	return doc.ClickBySelectorAll(values.NewString(selector))

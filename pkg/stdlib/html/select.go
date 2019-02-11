@@ -28,13 +28,8 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	switch arg1.Type() {
-	case drivers.HTMLDocumentType:
-		doc, ok := arg1.(drivers.HTMLDocument)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
+	if arg1.Type() == drivers.HTMLDocumentType {
+		doc := arg1.(drivers.HTMLDocument)
 
 		// selector
 		arg2 := args[1]
@@ -52,23 +47,16 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.SelectBySelector(arg2.(values.String), arg3.(*values.Array))
-	case drivers.HTMLElementType:
-		el, ok := arg1.(drivers.HTMLElement)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
-
-		arg2 := args[1]
-
-		err = core.ValidateType(arg2, types.Array)
-
-		if err != nil {
-			return values.False, err
-		}
-
-		return el.Select(arg2.(*values.Array))
-	default:
-		return values.False, core.Errors(core.ErrInvalidArgument)
 	}
+
+	el := arg1.(drivers.HTMLElement)
+	arg2 := args[1]
+
+	err = core.ValidateType(arg2, types.Array)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return el.Select(arg2.(*values.Array))
 }

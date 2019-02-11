@@ -23,10 +23,10 @@ func ScrollTop(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(drivers.HTMLDocument)
+	doc, err := toDocument(args[0])
 
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	if err != nil {
+		return values.None, err
 	}
 
 	return values.None, doc.ScrollTop()

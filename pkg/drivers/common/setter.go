@@ -19,7 +19,7 @@ func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		segment := segment.(values.String)
 
 		switch segment {
-		case "URL":
+		case "url", "URL":
 			return doc.SetURL(values.NewString(value.String()))
 		default:
 			return SetInNode(ctx, doc, path, value)

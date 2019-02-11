@@ -14,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -103,6 +105,12 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 		return nil, err
 	}
 
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout})
+
+	sort.Slice(files, func(i, j int) bool {
+		return strings.Compare(files[i].Name(), files[j].Name()) == 0
+	})
+
 	// read scripts
 	for _, f := range files {
 		n := f.Name()
@@ -125,13 +133,13 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 			continue
 		}
 
-		results = append(results, r.runQuery(c, fName, string(b)))
+		results = append(results, r.runQuery(c, logger, fName, string(b)))
 	}
 
 	return results, nil
 }
 
-func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
+func (r *Runner) runQuery(c *compiler.FqlCompiler, logger zerolog.Logger, name, script string) Result {
 	start := time.Now()
 
 	p, err := c.Compile(script)
@@ -151,10 +159,11 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	)
 
 	ctx = drivers.WithContext(ctx, http.NewDriver())
+	logger.Info().Str("test", name).Msg("Running")
 
 	out, err := p.Run(
 		ctx,
-		runtime.WithLog(os.Stdout),
+		runtime.WithLog(zerolog.ConsoleWriter{Out: os.Stdout}),
 		runtime.WithParam("static", r.settings.StaticServerAddress),
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)

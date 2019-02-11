@@ -14,33 +14,24 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		return values.None, nil
 	}
 
-	var result core.Value = doc
-	var err error
+	segment := path[0]
 
-	for i, segment := range path {
-		if result == values.None || result == nil {
-			break
-		}
+	if segment.Type() == types.String {
+		segment := segment.(values.String)
 
-		if segment.Type() == types.String {
-			segment := segment.(values.String)
-
-			switch segment {
-			case "URL":
-				result = doc.GetURL()
-			case "body":
-				result = doc.QuerySelector("body")
-			case "head":
-				result = doc.QuerySelector("head")
-			default:
-				return GetInNode(ctx, doc.DocumentElement(), path[i:])
-			}
-		} else {
-			return GetInNode(ctx, doc.DocumentElement(), path[i:])
+		switch segment {
+		case "url", "URL":
+			return doc.GetURL(), nil
+		case "body":
+			return doc.QuerySelector("body"), nil
+		case "head":
+			return doc.QuerySelector("head"), nil
+		default:
+			return GetInNode(ctx, doc.DocumentElement(), path)
 		}
 	}
 
-	return result, err
+	return GetInNode(ctx, doc.DocumentElement(), path)
 }
 
 func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value) (core.Value, error) {
@@ -48,35 +39,26 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 		return values.None, nil
 	}
 
-	var result core.Value = el
-	var err error
+	segment := path[0]
 
-	for i, segment := range path {
-		if result == values.None || result == nil {
-			break
-		}
+	if segment.Type() == types.String {
+		segment := segment.(values.String)
 
-		if segment.Type() == types.String {
-			segment := segment.(values.String)
-
-			switch segment {
-			case "innerText":
-				result = el.InnerText()
-			case "innerHTML":
-				result = el.InnerHTML()
-			case "value":
-				result = el.GetValue()
-			case "attributes":
-				result = el.GetAttributes()
-			default:
-				return GetInNode(ctx, el, path[i:])
-			}
-		} else {
-			return GetInNode(ctx, el, path[i:])
+		switch segment {
+		case "innerText":
+			return el.InnerText(), nil
+		case "innerHTML":
+			return el.InnerHTML(), nil
+		case "value":
+			return el.GetValue(), nil
+		case "attributes":
+			return el.GetAttributes(), nil
+		default:
+			return GetInNode(ctx, el, path)
 		}
 	}
 
-	return result, err
+	return GetInNode(ctx, el, path)
 }
 
 func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (core.Value, error) {
@@ -84,53 +66,36 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		return values.None, nil
 	}
 
-	var result core.Value = node
-	var err error
+	nt := node.Type()
+	segment := path[0]
+	st := segment.Type()
 
-	for i, segment := range path {
-		if result == values.None || result == nil {
-			break
+	if st == types.Int {
+		if nt == drivers.HTMLElementType || nt == drivers.HTMLDocumentType {
+			re := node.(drivers.HTMLNode)
+
+			return re.GetChildNode(segment.(values.Int)), nil
 		}
 
-		st := segment.Type()
+		return values.GetIn(ctx, node, path[0:])
+	}
 
-		if st == types.Int {
-			rt := result.Type()
+	if st == types.String {
+		segment := segment.(values.String)
 
-			if rt == drivers.HTMLElementType {
-				re := result.(drivers.HTMLElement)
-
-				result = re.GetChildNode(segment.(values.Int))
-			} else {
-				result, err = values.GetIn(ctx, result, path[i:])
-
-				if err != nil {
-					return values.None, err
-				}
-			}
-		} else if st == types.String {
-			segment := segment.(values.String)
-
-			switch segment {
-			case "nodeType":
-				result = node.NodeType()
-			case "nodeName":
-				result = node.NodeName()
-			case "children":
-				result = node.GetChildNodes()
-			case "length":
-				result = node.Length()
-			default:
-				result, err = values.GetIn(ctx, result, path[i:])
-
-				if err != nil {
-					return values.None, err
-				}
-			}
-		} else {
-			return values.None, core.TypeError(st, types.Int, types.String)
+		switch segment {
+		case "nodeType":
+			return node.NodeType(), nil
+		case "nodeName":
+			return node.NodeName(), nil
+		case "children":
+			return node.GetChildNodes(), nil
+		case "length":
+			return node.Length(), nil
+		default:
+			return values.None, nil
 		}
 	}
 
-	return result, err
+	return values.None, core.TypeError(st, types.Int, types.String)
 }

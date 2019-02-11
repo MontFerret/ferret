@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -21,7 +20,12 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	arg := args[0]
+	doc, err := toDocument(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	selector := args[1].String()
 	timeout := values.NewInt(defaultTimeout)
 
@@ -33,18 +37,6 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		timeout = args[2].(values.Int)
-	}
-
-	err = core.ValidateType(arg, drivers.HTMLDocumentType)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	doc, ok := arg.(drivers.HTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	return values.None, doc.WaitForSelector(values.NewString(selector), timeout)

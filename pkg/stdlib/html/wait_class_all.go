@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -22,9 +21,7 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	// document only
-	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -42,12 +39,6 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	if err != nil {
 		return values.None, err
-	}
-
-	doc, ok := arg1.(drivers.HTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	selector := args[1].(values.String)

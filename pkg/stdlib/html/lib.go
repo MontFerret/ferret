@@ -2,19 +2,14 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const defaultTimeout = 5000
-
-var (
-	ErrNotDynamic = errors.New("expected dynamic document or element")
-)
 
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
@@ -56,7 +51,6 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 	}
 
 	var doc drivers.HTMLDocument
-	var ok bool
 
 	if value.Type() == types.String {
 		buf, err := Document(ctx, value, values.NewBoolean(true))
@@ -65,14 +59,42 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 			return values.None, err
 		}
 
-		doc, ok = buf.(drivers.HTMLDocument)
+		doc = buf.(drivers.HTMLDocument)
 	} else {
-		doc, ok = value.(drivers.HTMLDocument)
-	}
-
-	if !ok {
-		return nil, ErrNotDynamic
+		doc = value.(drivers.HTMLDocument)
 	}
 
 	return doc, nil
+}
+
+func resolveElement(value core.Value) (drivers.HTMLElement, error) {
+	vt := value.Type()
+
+	if vt == drivers.HTMLDocumentType {
+		return value.(drivers.HTMLDocument).DocumentElement(), nil
+	} else if vt == drivers.HTMLElementType {
+		return value.(drivers.HTMLElement), nil
+	}
+
+	return nil, core.TypeError(value.Type(), drivers.HTMLDocumentType, drivers.HTMLElementType)
+}
+
+func toDocument(value core.Value) (drivers.HTMLDocument, error) {
+	err := core.ValidateType(value, drivers.HTMLDocumentType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return value.(drivers.HTMLDocument), nil
+}
+
+func toElement(value core.Value) (drivers.HTMLElement, error) {
+	err := core.ValidateType(value, drivers.HTMLElementType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return value.(drivers.HTMLElement), nil
 }

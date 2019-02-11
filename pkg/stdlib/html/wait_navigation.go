@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -20,16 +19,10 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
 		return values.None, err
-	}
-
-	doc, ok := args[0].(drivers.HTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	timeout := values.NewInt(defaultTimeout)

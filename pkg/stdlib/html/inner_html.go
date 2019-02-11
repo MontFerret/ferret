@@ -26,10 +26,14 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	node := args[0].(drivers.HTMLElement)
+	el, err := resolveElement(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	if len(args) == 1 {
-		return node.InnerHTML(), nil
+		return el.InnerHTML(), nil
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -40,5 +44,5 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return node.InnerHTMLBySelector(selector), nil
+	return el.InnerHTMLBySelector(selector), nil
 }

@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -20,38 +19,23 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	// CLICK(el)
 	if len(args) == 1 {
-		arg1 := args[0]
-
-		err := core.ValidateType(arg1, drivers.HTMLElementType)
+		el, err := toElement(args[0])
 
 		if err != nil {
 			return values.False, err
-		}
-
-		el, ok := arg1.(drivers.HTMLElement)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 		}
 
 		return el.Click()
 	}
 
 	// CLICK(doc, selector)
-	arg1 := args[0]
-	selector := args[1].String()
-
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
-		return values.None, err
+		return values.False, err
 	}
 
-	doc, ok := arg1.(drivers.HTMLDocument)
-
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-	}
+	selector := args[1].String()
 
 	return doc.ClickBySelector(values.NewString(selector))
 }
