@@ -800,7 +800,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 	var attrID = "data-ferret-select"
 
 	if el.NodeName() != "SELECT" {
-		return nil, core.Error(core.ErrInvalidOperation, "Element is not a <select> el.")
+		return nil, core.Error(core.ErrInvalidOperation, "element is not a <select> element.")
 	}
 
 	id, err := uuid.NewV4()
@@ -830,7 +830,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 			var values = %s;
 
 			if (el.nodeName.toLowerCase() !== 'select') {
-				throw new Error('Element is not a <select> el.');
+				throw new Error('element is not a <select> element.');
 			}
 
 			var options = Array.from(el.options);
@@ -894,7 +894,7 @@ func (el *HTMLElement) ScrollIntoView() error {
 		var el = document.querySelector('[%s="%s"]');
 
 		if (el == null) {
-			throw new Error('el not found');
+			throw new Error('element not found');
 		}
 
 		el.scrollIntoView({
@@ -952,7 +952,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 			return text, nil
 		}
 
-		el.logError(err).Msg("failed to get get inner text from remote object")
+		el.logError(err).Msg("failed to get inner text from remote object")
 
 		// and just parse cached innerHTML
 	}
@@ -999,7 +999,7 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 		)
 
 		if err != nil {
-			el.logError(err).Msg("failed to load child nodes")
+			el.logError(err).Msg("failed to load child elements")
 
 			continue
 		}
@@ -1029,7 +1029,7 @@ func (el *HTMLElement) handleAttrModified(message interface{}) {
 
 	el.attributes.Write(func(v core.Value, err error) {
 		if err != nil {
-			el.logError(err).Msg("failed to update node")
+			el.logError(err).Msg("failed to update element")
 
 			return
 		}
@@ -1065,7 +1065,7 @@ func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 
 	el.attributes.Write(func(v core.Value, err error) {
 		if err != nil {
-			el.logError(err).Msg("failed to update node")
+			el.logError(err).Msg("failed to update element")
 
 			return
 		}
@@ -1100,7 +1100,7 @@ func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
 	)
 
 	if err != nil {
-		el.logError(err).Msg("failed to update node")
+		el.logError(err).Msg("failed to update element")
 
 		return
 	}
@@ -1160,7 +1160,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		loadedEl, err := LoadElement(ctx, el.logger, el.client, el.events, nextID, emptyBackendID)
 
 		if err != nil {
-			el.logError(err).Msg("failed to load an inserted node")
+			el.logError(err).Msg("failed to load an inserted element")
 
 			return
 		}
@@ -1170,7 +1170,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.id)
 
 		if err != nil {
-			el.logError(err).Msg("failed to update node")
+			el.logError(err).Msg("failed to update element")
 
 			return
 		}
@@ -1221,7 +1221,7 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 				Timestamp().
 				Err(err).
 				Int("nodeID", int(el.id.nodeID)).
-				Msg("failed to update node")
+				Msg("failed to update element")
 
 			return
 		}
@@ -1239,7 +1239,7 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 				Timestamp().
 				Err(err).
 				Int("nodeID", int(el.id.nodeID)).
-				Msg("failed to update node")
+				Msg("failed to update element")
 
 			return
 		}

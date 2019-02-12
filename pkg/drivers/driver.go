@@ -11,6 +11,11 @@ import (
 type (
 	ctxKey struct{}
 
+	ctxValue struct {
+		opts    *Options
+		drivers map[string]Driver
+	}
+
 	Driver interface {
 		io.Closer
 		Name() string
@@ -19,31 +24,16 @@ type (
 )
 
 func WithContext(ctx context.Context, drv Driver) context.Context {
-	val := ctx.Value(ctxKey{})
-	col, ok := val.(map[string]Driver)
+	ctx, value := resolveValue(ctx)
 
-	if !ok {
-		col = make(map[string]Driver)
-	}
+	value.drivers[drv.Name()] = drv
 
-	col[drv.Name()] = drv
-
-	return context.WithValue(
-		ctx,
-		ctxKey{},
-		col,
-	)
+	return ctx
 }
 
 func FromContext(ctx context.Context, name string) (Driver, error) {
-	val := ctx.Value(ctxKey{})
-	col, ok := val.(map[string]Driver)
-
-	if !ok {
-		return nil, core.Error(core.ErrNotFound, name)
-	}
-
-	drv, exists := col[name]
+	_, value := resolveValue(ctx)
+	drv, exists := value.drivers[name]
 
 	if !exists {
 		return nil, core.Error(core.ErrNotFound, name)
@@ -52,22 +42,39 @@ func FromContext(ctx context.Context, name string) (Driver, error) {
 	return drv, nil
 }
 
-func FromContextAny(ctx context.Context) (Driver, error) {
-	val := ctx.Value(ctxKey{})
-	col, ok := val.(map[string]Driver)
+func WithContextDefault(ctx context.Context, name string) context.Context {
+	ctx, value := resolveValue(ctx)
 
-	if !ok {
-		return nil, core.Error(core.ErrNotFound, "html drivers")
+	value.opts.defaultDriver = name
+
+	return ctx
+}
+
+func FromContextDefault(ctx context.Context) (Driver, error) {
+	_, value := resolveValue(ctx)
+
+	drv, found := value.drivers[value.opts.defaultDriver]
+
+	if !found {
+		return nil, core.Error(core.ErrNotFound, value.opts.defaultDriver)
 	}
-
-	var name string
-
-	for k := range col {
-		name = k
-		break
-	}
-
-	drv := col[name]
 
 	return drv, nil
+}
+
+func resolveValue(ctx context.Context) (context.Context, *ctxValue) {
+	key := ctxKey{}
+	v := ctx.Value(key)
+	value, ok := v.(*ctxValue)
+
+	if !ok {
+		value = &ctxValue{
+			opts:    &Options{},
+			drivers: make(map[string]Driver),
+		}
+
+		return context.WithValue(ctx, key, value), value
+	}
+
+	return ctx, value
 }

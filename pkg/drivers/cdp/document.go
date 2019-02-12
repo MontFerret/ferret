@@ -274,55 +274,6 @@ func (doc *HTMLDocument) Length() values.Int {
 	return doc.element.Length()
 }
 
-func (doc *HTMLDocument) InnerText() values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerText()
-}
-
-func (doc *HTMLDocument) InnerHTML() values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerHTML()
-}
-
-func (doc *HTMLDocument) GetValue() core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.GetValue()
-}
-
-func (doc *HTMLDocument) SetValue(value core.Value) error {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.SetValue(value)
-}
-
-func (doc *HTMLDocument) GetAttributes() core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.GetAttributes()
-}
-
-func (doc *HTMLDocument) GetAttribute(name values.String) core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.GetAttribute(name)
-}
-
-func (doc *HTMLDocument) SetAttribute(name, value values.String) error {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.SetAttribute(name, value)
-}
-
 func (doc *HTMLDocument) GetChildNodes() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
@@ -367,34 +318,6 @@ func (doc *HTMLDocument) GetURL() core.Value {
 
 func (doc *HTMLDocument) SetURL(url values.String) error {
 	return doc.Navigate(url, values.Int(DefaultTimeout))
-}
-
-func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerHTMLBySelector(selector)
-}
-
-func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) *values.Array {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerHTMLBySelectorAll(selector)
-}
-
-func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerTextBySelector(selector)
-}
-
-func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerTextBySelectorAll(selector)
 }
 
 func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
