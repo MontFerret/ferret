@@ -54,7 +54,7 @@ func ParseString(input interface{}) (String, error) {
 	return EmptyString, core.Error(core.ErrInvalidType, "expected 'string'")
 }
 
-func ParseStringP(input interface{}) String {
+func MustParseString(input interface{}) String {
 	res, err := ParseString(input)
 
 	if err != nil {

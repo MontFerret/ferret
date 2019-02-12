@@ -45,7 +45,7 @@ func ParseBoolean(input interface{}) (Boolean, error) {
 	return False, core.Error(core.ErrInvalidType, "expected 'bool'")
 }
 
-func ParseBooleanP(input interface{}) Boolean {
+func MustParseBoolean(input interface{}) Boolean {
 	res, err := ParseBoolean(input)
 
 	if err != nil {

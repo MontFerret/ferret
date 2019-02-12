@@ -44,7 +44,7 @@ func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
 	}
 }
 
-func ParseDateTimeP(input interface{}) DateTime {
+func MustParseDateTime(input interface{}) DateTime {
 	dt, err := ParseDateTime(input)
 
 	if err != nil {
