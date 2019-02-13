@@ -51,7 +51,7 @@ func ParseInt(input interface{}) (Int, error) {
 	}
 }
 
-func ParseIntP(input interface{}) Int {
+func MustParseInt(input interface{}) Int {
 	res, err := ParseInt(input)
 
 	if err != nil {
