@@ -19,6 +19,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 	}
 
 	var result = from
+	var err error
 
 	for i, segment := range byPath {
 		if result == None || result == nil {
@@ -26,9 +27,9 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 		}
 
 		segmentType := segment.Type()
-		resultType := result.Type()
 
-		if resultType == types.Object {
+		switch result.Type() {
+		case types.Object:
 			obj := result.(*Object)
 
 			if segmentType != types.String {
@@ -36,7 +37,9 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			}
 
 			result, _ = obj.Get(segment.(String))
-		} else if resultType == types.Array {
+
+			break
+		case types.Array:
 			arr := result.(*Array)
 
 			if segmentType != types.Int {
@@ -44,7 +47,53 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			}
 
 			result = arr.Get(segment.(Int))
-		} else {
+
+			break
+		case types.HTMLElement, types.HTMLDocument:
+			el := result.(HTMLNode)
+
+			if segmentType == types.Int {
+				result = el.GetChildNode(segment.(Int))
+			} else if segmentType == types.String {
+				strSegment := segment.(String)
+
+				switch strSegment {
+				case "nodeType":
+					result = el.NodeType()
+				case "nodeName":
+					result = el.NodeName()
+				case "innerText":
+					result = el.InnerText()
+				case "innerHTML":
+					result = el.InnerHTML()
+				case "value":
+					result = el.Value()
+				case "attributes":
+					result = el.GetAttributes()
+				case "children":
+					result = el.GetChildNodes()
+				case "length":
+					result = el.Length()
+				case "url":
+					if result.Type() == types.HTMLDocument {
+						doc, ok := result.(HTMLDocument)
+
+						if ok {
+							result = doc.URL()
+						}
+					}
+				default:
+					result = None
+				}
+
+				if err != nil {
+					return None, err
+				}
+			} else {
+				return nil, core.TypeError(segmentType, types.Int, types.String)
+			}
+
+		default:
 			getter, ok := result.(core.Getter)
 
 			if ok {
@@ -55,6 +104,8 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 				from.Type(),
 				types.Array,
 				types.Object,
+				types.HTMLDocument,
+				types.HTMLElement,
 			)
 		}
 	}
@@ -75,9 +126,9 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 		parent = current
 		isTarget := target == idx
 		segmentType := segment.Type()
-		parentType := parent.Type()
 
-		if parentType == types.Object {
+		switch parent.Type() {
+		case types.Object:
 			parent := parent.(*Object)
 
 			if segmentType != types.String {
@@ -89,7 +140,9 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			} else {
 				parent.Set(segment.(String), value)
 			}
-		} else if parentType == types.Array {
+
+			break
+		case types.Array:
 			if segmentType != types.Int {
 				return core.TypeError(segmentType, types.Int)
 			}
@@ -103,7 +156,9 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 					return err
 				}
 			}
-		} else {
+
+			break
+		default:
 			setter, ok := parent.(core.Setter)
 
 			if ok {
@@ -247,6 +302,17 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	return Parse(o), nil
 }
 
+func IsCloneable(value core.Value) Boolean {
+	switch value.Type() {
+	case types.Array:
+		return NewBoolean(true)
+	case types.Object:
+		return NewBoolean(true)
+	default:
+		return NewBoolean(false)
+	}
+}
+
 func ToBoolean(input core.Value) core.Value {
 	switch input.Type() {
 	case types.Boolean:
@@ -275,7 +341,6 @@ func ToArray(input core.Value) core.Value {
 		return NewArrayWith(input)
 	case types.HTMLElement,
 		types.HTMLDocument:
-
 		val := input.(HTMLNode)
 		attrs := val.GetAttributes()
 
