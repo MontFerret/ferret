@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Binary []byte
@@ -30,17 +31,16 @@ func (b Binary) MarshalJSON() ([]byte, error) {
 }
 
 func (b Binary) Type() core.Type {
-	return core.BinaryType
+	return types.Binary
 }
 
 func (b Binary) String() string {
 	return string(b)
 }
 
-func (b Binary) Compare(other core.Value) int {
-	// TODO: Lame comparison, need to think more about it
-	switch other.Type() {
-	case core.BooleanType:
+func (b Binary) Compare(other core.Value) int64 {
+	if other.Type() == types.Binary {
+		// TODO: Lame comparison, need to think more about it
 		b2 := other.(*Binary)
 
 		if b2.Length() == b.Length() {
@@ -52,9 +52,9 @@ func (b Binary) Compare(other core.Value) int {
 		}
 
 		return -1
-	default:
-		return 1
 	}
+
+	return types.Compare(types.Binary, other.Type())
 }
 
 func (b Binary) Unwrap() interface{} {

@@ -7,12 +7,15 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type String string
 
-var EmptyString = String("")
-var SpaceString = String(" ")
+const (
+	EmptyString = String("")
+	SpaceString = String(" ")
+)
 
 func NewString(input string) String {
 	if input == "" {
@@ -69,24 +72,19 @@ func (t String) MarshalJSON() ([]byte, error) {
 }
 
 func (t String) Type() core.Type {
-	return core.StringType
+	return types.String
 }
 
 func (t String) String() string {
 	return string(t)
 }
 
-func (t String) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.StringType:
-		return strings.Compare(string(t), other.Unwrap().(string))
-	default:
-		if other.Type() > core.DateTimeType {
-			return -1
-		}
-
-		return 1
+func (t String) Compare(other core.Value) int64 {
+	if other.Type() == types.String {
+		return int64(strings.Compare(string(t), other.Unwrap().(string)))
 	}
+
+	return types.Compare(types.String, other.Type())
 }
 
 func (t String) Unwrap() interface{} {

@@ -11,6 +11,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var testIterableCollectionType = core.NewType("TestIterableCollection")
+
 type (
 	testIterableCollection struct {
 		values collections.IndexedCollection
@@ -32,12 +34,12 @@ func (c *testIterableCollection) MarshalJSON() ([]byte, error) {
 	return nil, core.ErrInvalidOperation
 }
 func (c *testIterableCollection) Type() core.Type {
-	return core.Type(11)
+	return testIterableCollectionType
 }
 func (c *testIterableCollection) String() string {
 	return ""
 }
-func (c *testIterableCollection) Compare(other core.Value) int {
+func (c *testIterableCollection) Compare(other core.Value) int64 {
 	return 1
 }
 func (c *testIterableCollection) Unwrap() interface{} {

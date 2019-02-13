@@ -7,14 +7,17 @@ import (
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
 	ObjectPredicate = func(value core.Value, key string) bool
-	ObjectProperty  struct {
+
+	ObjectProperty struct {
 		key   string
 		value core.Value
 	}
+
 	Object struct {
 		value map[string]core.Value
 	}
@@ -43,7 +46,7 @@ func (t *Object) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Object) Type() core.Type {
-	return core.ObjectType
+	return types.Object
 }
 
 func (t *Object) String() string {
@@ -59,22 +62,23 @@ func (t *Object) String() string {
 // Compare compares the source object with other core.Value
 // The behavior of the Compare is similar
 // to the comparison of objects in ArangoDB
-func (t *Object) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.ObjectType:
+func (t *Object) Compare(other core.Value) int64 {
+	if other.Type() == t.Type() {
 		other := other.(*Object)
 
 		if t.Length() == 0 && other.Length() == 0 {
 			return 0
 		}
+
 		if t.Length() < other.Length() {
 			return -1
 		}
+
 		if t.Length() > other.Length() {
 			return 1
 		}
 
-		var res = 0
+		var res int64
 
 		sortedT := sort.StringSlice(t.Keys())
 		sortedT.Sort()
@@ -92,6 +96,7 @@ func (t *Object) Compare(other core.Value) int {
 				tVal, _ = t.Get(NewString(tKey))
 				otherVal, _ = other.Get(NewString(tKey))
 				res = tVal.Compare(otherVal)
+
 				continue
 			}
 
@@ -105,9 +110,9 @@ func (t *Object) Compare(other core.Value) int {
 		}
 
 		return res
-	default:
-		return 1
 	}
+
+	return types.Compare(types.Object, other.Type())
 }
 
 func (t *Object) Unwrap() interface{} {
@@ -201,10 +206,6 @@ func (t *Object) Get(key String) (core.Value, Boolean) {
 	return None, NewBoolean(found)
 }
 
-func (t *Object) GetIn(path []core.Value) (core.Value, error) {
-	return GetIn(t, path)
-}
-
 func (t *Object) Set(key String, value core.Value) {
 	if value != nil {
 		t.value[string(key)] = value
@@ -217,20 +218,20 @@ func (t *Object) Remove(key String) {
 	delete(t.value, string(key))
 }
 
-func (t *Object) SetIn(path []core.Value, value core.Value) error {
-	return SetIn(t, path, value)
-}
-
 func (t *Object) Clone() core.Cloneable {
 	cloned := NewObject()
 
 	var value core.Value
 	var keyString String
+
 	for key := range t.value {
 		keyString = NewString(key)
 		value, _ = t.Get(keyString)
-		if IsCloneable(value) {
-			value = value.(core.Cloneable).Clone()
+
+		cloneable, ok := value.(core.Cloneable)
+
+		if ok {
+			value = cloneable.Clone()
 		}
 		cloned.Set(keyString, value)
 	}

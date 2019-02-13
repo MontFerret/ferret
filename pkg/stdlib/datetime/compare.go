@@ -1,12 +1,12 @@
 package datetime
 
 import (
-	"github.com/pkg/errors"
-
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/pkg/errors"
 )
 
 // DateCompare check if two partial dates match.
@@ -36,7 +36,7 @@ func DateCompare(_ context.Context, args ...core.Value) (core.Value, error) {
 	rangeEnd := values.NewString("millisecond")
 
 	if len(args) == 4 {
-		if err = core.ValidateType(args[3], core.StringType); err != nil {
+		if err = core.ValidateType(args[3], types.String); err != nil {
 			return values.None, err
 		}
 		rangeEnd = args[3].(values.String)

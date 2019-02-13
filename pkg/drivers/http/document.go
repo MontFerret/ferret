@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -33,22 +34,17 @@ func NewHTMLDocument(
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return core.HTMLDocumentType
+	return types.HTMLDocument
 }
 
-func (doc *HTMLDocument) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.HTMLDocumentType:
+func (doc *HTMLDocument) Compare(other core.Value) int64 {
+	if other.Type() == types.HTMLDocument {
 		otherDoc := other.(values.HTMLDocument)
 
 		return doc.url.Compare(otherDoc.URL())
-	default:
-		if other.Type() > core.HTMLDocumentType {
-			return -1
-		}
-
-		return 1
 	}
+
+	return types.Compare(other.Type(), types.HTMLDocument)
 }
 
 func (doc *HTMLDocument) URL() core.Value {

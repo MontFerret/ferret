@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Hover  fetches an element with selector, scrolls it into view if needed, and then uses page.mouse to hover over the center of the element.
@@ -19,14 +20,14 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
 
 	if err != nil {
 		return values.None, err
 	}
 
 	if len(args) == 2 {
-		err = core.ValidateType(args[1], core.StringType)
+		err = core.ValidateType(args[1], types.String)
 
 		if err != nil {
 			return values.None, err

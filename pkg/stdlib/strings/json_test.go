@@ -2,11 +2,12 @@ package strings_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestJSONParse(t *testing.T) {
@@ -32,7 +33,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.NoneType)
+		So(out.Type().Equals(types.None), ShouldBeTrue)
 	})
 
 	Convey("It should parse a string", t, func() {
@@ -48,7 +49,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.StringType)
+		So(out.Type().Equals(types.String), ShouldBeTrue)
 	})
 
 	Convey("It should parse an int", t, func() {
@@ -64,7 +65,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.FloatType)
+		So(out.Type().Equals(types.Float), ShouldBeTrue)
 	})
 
 	Convey("It should parse a float", t, func() {
@@ -80,7 +81,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.FloatType)
+		So(out.Type().Equals(types.Float), ShouldBeTrue)
 	})
 
 	Convey("It should parse a boolean", t, func() {
@@ -96,7 +97,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.BooleanType)
+		So(out.Type().Equals(types.Boolean), ShouldBeTrue)
 	})
 
 	Convey("It should parse an array", t, func() {
@@ -116,7 +117,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.ArrayType)
+		So(out.Type().Equals(types.Array), ShouldBeTrue)
 		So(out.String(), ShouldEqual, "[1,2,3]")
 	})
 
@@ -134,7 +135,7 @@ func TestJSONParse(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out.Type(), ShouldEqual, core.ObjectType)
+		So(out.Type().Equals(types.Object), ShouldBeTrue)
 		So(out.String(), ShouldEqual, `{"foo":"bar"}`)
 	})
 }

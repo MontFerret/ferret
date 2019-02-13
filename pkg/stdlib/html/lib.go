@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/pkg/errors"
 )
 
@@ -49,7 +50,8 @@ func NewLib() map[string]core.Function {
 }
 
 func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error) {
-	err := core.ValidateType(value, core.HTMLDocumentType, core.StringType)
+	err := core.ValidateType(value, types.HTMLDocument, types.String)
+
 	if err != nil {
 		return values.None, err
 	}
@@ -57,7 +59,7 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 	var doc values.DHTMLDocument
 	var ok bool
 
-	if value.Type() == core.StringType {
+	if value.Type() == types.String {
 		buf, err := Document(ctx, value, values.NewBoolean(true))
 
 		if err != nil {

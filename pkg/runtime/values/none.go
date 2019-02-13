@@ -2,6 +2,7 @@ package values
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type none struct{}
@@ -13,20 +14,19 @@ func (t *none) MarshalJSON() ([]byte, error) {
 }
 
 func (t *none) Type() core.Type {
-	return core.NoneType
+	return types.None
 }
 
 func (t *none) String() string {
 	return ""
 }
 
-func (t *none) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.NoneType:
+func (t *none) Compare(other core.Value) int64 {
+	if other.Type() == types.None {
 		return 0
-	default:
-		return -1
 	}
+
+	return -1
 }
 
 func (t *none) Unwrap() interface{} {

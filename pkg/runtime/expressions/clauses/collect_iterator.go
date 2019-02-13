@@ -2,9 +2,11 @@ package clauses
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type CollectIterator struct {
@@ -59,7 +61,7 @@ func NewCollectIterator(
 }
 
 func newGroupSorter(selector *CollectSelector) (*collections.Sorter, error) {
-	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int, error) {
+	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int64, error) {
 		f, err := selector.expression.Exec(ctx, first)
 
 		if err != nil {
@@ -213,7 +215,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 			arr, ok := groupValue.(*values.Array)
 
 			if !ok {
-				return nil, core.TypeError(groupValue.Type(), core.IntType)
+				return nil, core.TypeError(groupValue.Type(), types.Int)
 			}
 
 			value, err := proj.selector.expression.Exec(ctx, dataSourceScope)
@@ -235,7 +237,7 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 			counter, ok := groupValue.(values.Int)
 
 			if !ok {
-				return nil, core.TypeError(groupValue.Type(), core.IntType)
+				return nil, core.TypeError(groupValue.Type(), types.Int)
 			}
 
 			groupValue = counter + 1

@@ -3,6 +3,7 @@ package values_test
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -21,7 +22,7 @@ func TestBoolean(t *testing.T) {
 
 	Convey(".Type", t, func() {
 		Convey("Should return a type", func() {
-			So(values.True.Type(), ShouldEqual, core.BooleanType)
+			So(values.True.Type().Equals(types.Boolean), ShouldBeTrue)
 		})
 	})
 

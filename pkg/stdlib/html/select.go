@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Select selects a value from an underlying select element.
@@ -20,7 +21,7 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(arg1, types.HTMLDocument, types.HTMLElement)
 
 	if err != nil {
 		return values.False, err
@@ -36,14 +37,14 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		// selector
 		arg2 := args[1]
-		err = core.ValidateType(arg2, core.StringType)
+		err = core.ValidateType(arg2, types.String)
 
 		if err != nil {
 			return values.False, err
 		}
 
 		arg3 := args[2]
-		err = core.ValidateType(arg3, core.ArrayType)
+		err = core.ValidateType(arg3, types.Array)
 
 		if err != nil {
 			return values.False, err
@@ -59,7 +60,7 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		arg2 := args[1]
 
-		err = core.ValidateType(arg2, core.ArrayType)
+		err = core.ValidateType(arg2, types.Array)
 
 		if err != nil {
 			return values.False, err

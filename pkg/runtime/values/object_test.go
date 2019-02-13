@@ -1,6 +1,7 @@
 package values_test
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -63,7 +64,7 @@ func TestObject(t *testing.T) {
 		Convey("Should return type", func() {
 			obj := values.NewObject()
 
-			So(obj.Type(), ShouldEqual, core.ObjectType)
+			So(obj.Type().Equals(types.Object), ShouldBeTrue)
 		})
 	})
 

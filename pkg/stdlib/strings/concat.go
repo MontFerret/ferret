@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Concat concatenates one or more instances of Read, or an Array.
@@ -21,7 +22,7 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	res := values.EmptyString
 
-	if argsCount == 1 && args[0].Type() == core.ArrayType {
+	if argsCount == 1 && args[0].Type() == types.Array {
 		arr := args[0].(*values.Array)
 
 		arr.ForEach(func(value core.Value, _ int) bool {
@@ -53,15 +54,15 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 
 	separator := args[0]
 
-	if separator.Type() != core.StringType {
+	if separator.Type() != types.String {
 		separator = values.NewString(separator.String())
 	}
 
 	res := values.EmptyString
 
 	for idx, arg := range args[1:] {
-		if arg.Type() != core.ArrayType {
-			if arg.Type() != core.NoneType {
+		if arg.Type() != types.Array {
+			if arg.Type() != types.None {
 				if idx > 0 {
 					res = res.Concat(separator)
 				}
@@ -72,7 +73,7 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 			arr := arg.(*values.Array)
 
 			arr.ForEach(func(value core.Value, idx int) bool {
-				if value.Type() != core.NoneType {
+				if value.Type() != types.None {
 					if idx > 0 {
 						res = res.Concat(separator)
 					}

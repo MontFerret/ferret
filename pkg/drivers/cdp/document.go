@@ -3,7 +3,6 @@ package cdp
 import (
 	"context"
 	"fmt"
-	"github.com/mafredri/cdp/protocol/dom"
 	"hash/fnv"
 	"sync"
 	"time"
@@ -13,7 +12,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
@@ -142,7 +143,7 @@ func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return core.HTMLDocumentType
+	return types.HTMLDocument
 }
 
 func (doc *HTMLDocument) String() string {
@@ -176,22 +177,17 @@ func (doc *HTMLDocument) Copy() core.Value {
 	return values.None
 }
 
-func (doc *HTMLDocument) Compare(other core.Value) int {
+func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	doc.Lock()
 	defer doc.Unlock()
 
-	switch other.Type() {
-	case core.HTMLDocumentType:
+	if other.Type() == types.HTMLDocument {
 		other := other.(*HTMLDocument)
 
 		return doc.url.Compare(other.url)
-	default:
-		if other.Type() > core.HTMLDocumentType {
-			return -1
-		}
-
-		return 1
 	}
+
+	return types.Compare(other.Type(), types.HTMLDocument)
 }
 
 func (doc *HTMLDocument) Close() error {
@@ -399,7 +395,7 @@ func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType {
+	if res.Type() == types.Boolean {
 		return res.(values.Boolean), nil
 	}
 
@@ -431,7 +427,7 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType {
+	if res.Type() == types.Boolean {
 		return res.(values.Boolean), nil
 	}
 
@@ -461,7 +457,7 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 		return values.False, err
 	}
 
-	if res.Type() == core.BooleanType && res.(values.Boolean) == values.False {
+	if res.Type() == types.Boolean && res.(values.Boolean) == values.False {
 		return values.False, nil
 	}
 
@@ -531,7 +527,7 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 		return arr, nil
 	}
 
-	return nil, core.TypeError(core.ArrayType, res.Type())
+	return nil, core.TypeError(types.Array, res.Type())
 }
 
 func (doc *HTMLDocument) HoverBySelector(selector values.String) error {

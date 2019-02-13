@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DateFormat format date according to the given format string.
@@ -16,12 +17,12 @@ func DateFormat(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.DateTimeType)
+	err = core.ValidateType(args[0], types.DateTime)
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 	if err != nil {
 		return values.None, err
 	}

@@ -71,7 +71,7 @@ func (clause *SortClause) Iterate(ctx context.Context, scope *core.Scope) (colle
 }
 
 func newSorter(srt *SorterExpression) (*collections.Sorter, error) {
-	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int, error) {
+	return collections.NewSorter(func(ctx context.Context, first, second *core.Scope) (int64, error) {
 		f, err := srt.expression.Exec(ctx, first)
 
 		if err != nil {

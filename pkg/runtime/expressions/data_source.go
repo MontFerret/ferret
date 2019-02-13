@@ -2,9 +2,11 @@ package expressions
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type DataSource struct {
@@ -44,11 +46,11 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 		}
 
 		switch data.Type() {
-		case core.ArrayType:
+		case types.Array:
 			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
-		case core.ObjectType:
+		case types.Object:
 			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
-		case core.HTMLElementType, core.HTMLDocumentType:
+		case types.HTMLElement, types.HTMLDocument:
 			return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
 		default:
 			// fallback to user defined types
@@ -69,10 +71,10 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 			default:
 				return nil, core.TypeError(
 					data.Type(),
-					core.ArrayType,
-					core.ObjectType,
-					core.HTMLDocumentType,
-					core.HTMLElementType,
+					types.Array,
+					types.Object,
+					types.HTMLDocument,
+					types.HTMLElement,
 				)
 			}
 		}

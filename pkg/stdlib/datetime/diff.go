@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DateDiff returns the difference between two dates in given time unit.
@@ -34,7 +35,7 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	isFloat := values.NewBoolean(false)
 
 	if len(args) == 4 {
-		err = core.ValidateType(args[3], core.BooleanType)
+		err = core.ValidateType(args[3], types.Boolean)
 		if err != nil {
 			return values.None, err
 		}

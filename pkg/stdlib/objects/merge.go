@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Merge merge the given objects into a single object.
@@ -19,11 +20,11 @@ func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	objs := values.NewArrayWith(args...)
 
-	if len(args) == 1 && args[0].Type() == core.ArrayType {
+	if len(args) == 1 && args[0].Type().Equals(types.Array) {
 		objs = args[0].(*values.Array)
 	}
 
-	err = validateArrayOf(core.ObjectType, objs)
+	err = validateArrayOf(types.Object, objs)
 
 	if err != nil {
 		return values.None, err
@@ -38,10 +39,14 @@ func mergeArray(arr *values.Array) *values.Object {
 	arr.ForEach(func(arrValue core.Value, arrIdx int) bool {
 		obj = arrValue.(*values.Object)
 		obj.ForEach(func(objValue core.Value, objKey string) bool {
-			if values.IsCloneable(objValue) {
-				objValue = objValue.(core.Cloneable).Clone()
+			cloneable, ok := objValue.(core.Cloneable)
+
+			if ok {
+				objValue = cloneable.Clone()
 			}
+
 			merged.Set(values.NewString(objKey), objValue)
+
 			return true
 		})
 		return true

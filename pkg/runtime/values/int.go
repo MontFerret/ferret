@@ -7,11 +7,12 @@ import (
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Int int64
 
-var ZeroInt = Int(0)
+const ZeroInt = Int(0)
 
 func NewInt(input int) Int {
 	return Int(int64(input))
@@ -65,16 +66,17 @@ func (t Int) MarshalJSON() ([]byte, error) {
 }
 
 func (t Int) Type() core.Type {
-	return core.IntType
+	return types.Int
 }
 
 func (t Int) String() string {
 	return strconv.Itoa(int(t))
 }
 
-func (t Int) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.IntType:
+func (t Int) Compare(other core.Value) int64 {
+	otherType := other.Type()
+
+	if otherType == types.Int {
 		i := other.(Int)
 
 		if t == i {
@@ -86,7 +88,9 @@ func (t Int) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.FloatType:
+	}
+
+	if otherType == types.Float {
 		f := other.(Float)
 		f2 := Float(t)
 
@@ -99,11 +103,9 @@ func (t Int) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.BooleanType, core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	return types.Compare(types.Int, otherType)
 }
 
 func (t Int) Unwrap() interface{} {

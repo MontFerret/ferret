@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // WaitClassAll waits for a class to appear on all matched elements.
@@ -21,21 +22,21 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document only
-	err = core.ValidateType(args[0], core.HTMLDocumentType)
+	err = core.ValidateType(args[0], types.HTMLDocument)
 
 	if err != nil {
 		return values.None, err
 	}
 
 	// selector
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
 	}
 
 	// class
-	err = core.ValidateType(args[2], core.StringType)
+	err = core.ValidateType(args[2], types.String)
 
 	if err != nil {
 		return values.None, err
@@ -52,7 +53,7 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) == 4 {
-		err = core.ValidateType(args[3], core.IntType)
+		err = core.ValidateType(args[3], types.Int)
 
 		if err != nil {
 			return values.None, err

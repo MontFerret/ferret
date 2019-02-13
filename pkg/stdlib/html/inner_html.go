@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // InnerHTML Returns inner HTML string of a given or matched by CSS selector element
@@ -18,7 +19,7 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
 
 	if err != nil {
 		return values.None, err
@@ -30,7 +31,7 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 		return node.InnerHTML(), nil
 	}
 
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
