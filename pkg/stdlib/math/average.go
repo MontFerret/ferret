@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Average Returns the average (arithmetic mean) of the values in array.
@@ -18,7 +19,7 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -33,7 +34,7 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 	var sum float64
 
 	arr.ForEach(func(value core.Value, idx int) bool {
-		err = core.ValidateType(value, core.FloatType, core.IntType)
+		err = core.ValidateType(value, types.Float, types.Int)
 
 		if err != nil {
 			return false

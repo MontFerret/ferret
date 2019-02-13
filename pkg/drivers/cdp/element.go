@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gofrs/uuid"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -16,6 +15,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/gofrs/uuid"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/input"
@@ -195,7 +196,7 @@ func (el *HTMLElement) Close() error {
 }
 
 func (el *HTMLElement) Type() core.Type {
-	return core.HTMLElementType
+	return types.HTMLElement
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
@@ -212,9 +213,8 @@ func (el *HTMLElement) String() string {
 	return el.InnerHTML().String()
 }
 
-func (el *HTMLElement) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.HTMLDocumentType:
+func (el *HTMLElement) Compare(other core.Value) int64 {
+	if other.Type() == types.HTMLElement {
 		other := other.(*HTMLElement)
 
 		id := int(el.id.backendID)
@@ -229,13 +229,9 @@ func (el *HTMLElement) Compare(other core.Value) int {
 		}
 
 		return -1
-	default:
-		if other.Type() > core.HTMLElementType {
-			return -1
-		}
-
-		return 1
 	}
+
+	return types.Compare(other.Type(), types.HTMLElement)
 }
 
 func (el *HTMLElement) Unwrap() interface{} {
@@ -711,7 +707,7 @@ func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) err
 		func() (core.Value, error) {
 			current := el.GetAttribute("class")
 
-			if current.Type() != core.StringType {
+			if current.Type() != types.String {
 				return values.None, nil
 			}
 
@@ -850,7 +846,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 		return arr, nil
 	}
 
-	return nil, core.TypeError(core.ArrayType, res.Type())
+	return nil, core.TypeError(types.Array, res.Type())
 }
 
 func (el *HTMLElement) ScrollIntoView() error {

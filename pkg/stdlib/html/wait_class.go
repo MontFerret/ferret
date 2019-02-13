@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // WaitClass waits for a class to appear on a given element.
@@ -24,14 +25,14 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
 
 	if err != nil {
 		return values.None, err
 	}
 
 	// selector or class
-	err = core.ValidateType(args[1], core.StringType)
+	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
@@ -50,7 +51,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// class
-		err = core.ValidateType(args[2], core.StringType)
+		err = core.ValidateType(args[2], types.String)
 
 		if err != nil {
 			return values.None, err
@@ -66,7 +67,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		class := args[2].(values.String)
 
 		if len(args) == 4 {
-			err = core.ValidateType(args[3], core.IntType)
+			err = core.ValidateType(args[3], types.Int)
 
 			if err != nil {
 				return values.None, err
@@ -86,7 +87,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		class := args[1].(values.String)
 
 		if len(args) == 3 {
-			err = core.ValidateType(args[2], core.IntType)
+			err = core.ValidateType(args[2], types.Int)
 
 			if err != nil {
 				return values.None, err

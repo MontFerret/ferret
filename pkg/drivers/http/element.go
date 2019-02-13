@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -29,25 +30,20 @@ func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 }
 
 func (el *HTMLElement) Type() core.Type {
-	return core.HTMLElementType
+	return types.HTMLElement
 }
 
 func (el *HTMLElement) String() string {
 	return el.InnerHTML().String()
 }
 
-func (el *HTMLElement) Compare(other core.Value) int {
-	switch other.Type() {
-	case core.HTMLElementType:
+func (el *HTMLElement) Compare(other core.Value) int64 {
+	if other.Type() == types.HTMLElement {
 		// TODO: complete the comparison
 		return -1
-	default:
-		if other.Type() > core.HTMLElementType {
-			return -1
-		}
-
-		return 1
 	}
+
+	return types.Compare(other.Type(), types.HTMLElement)
 }
 
 func (el *HTMLElement) Unwrap() interface{} {

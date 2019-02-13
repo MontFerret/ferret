@@ -2,8 +2,10 @@ package operators
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type RangeOperator struct {
@@ -43,13 +45,13 @@ func (operator *RangeOperator) Exec(ctx context.Context, scope *core.Scope) (cor
 }
 
 func (operator *RangeOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
-	err := core.ValidateType(left, core.IntType, core.FloatType)
+	err := core.ValidateType(left, types.Int, types.Float)
 
 	if err != nil {
 		return values.None, core.SourceError(operator.src, err)
 	}
 
-	err = core.ValidateType(right, core.IntType, core.FloatType)
+	err = core.ValidateType(right, types.Int, types.Float)
 
 	if err != nil {
 		return values.None, core.SourceError(operator.src, err)
@@ -58,13 +60,13 @@ func (operator *RangeOperator) Eval(_ context.Context, left, right core.Value) (
 	var start int
 	var end int
 
-	if left.Type() == core.FloatType {
+	if left.Type() == types.Float {
 		start = int(left.(values.Float))
 	} else {
 		start = int(left.(values.Int))
 	}
 
-	if right.Type() == core.FloatType {
+	if right.Type() == types.Float {
 		end = int(right.(values.Float))
 	} else {
 		end = int(right.(values.Int))

@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Append appends a new item to an array and returns a new array with a given element.
@@ -19,7 +20,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -30,7 +31,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	unique := values.False
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.BooleanType)
+		err = core.ValidateType(args[2], types.Boolean)
 
 		if err != nil {
 			return values.None, err

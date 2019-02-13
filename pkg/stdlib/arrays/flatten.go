@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Flatten turn an array of arrays into a flat array.
@@ -22,7 +23,7 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -32,7 +33,7 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	level := 1
 
 	if len(args) > 1 {
-		err = core.ValidateType(args[1], core.IntType)
+		err = core.ValidateType(args[1], types.Int)
 
 		if err != nil {
 			return values.None, err
@@ -49,7 +50,7 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 		currentLevel++
 
 		input.ForEach(func(value core.Value, idx int) bool {
-			if value.Type() != core.ArrayType || currentLevel > level {
+			if value.Type() != types.Array || currentLevel > level {
 				result.Push(value)
 			} else {
 				unwrap(value.(*values.Array))

@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Wait pauses the execution for a given period.
@@ -19,7 +20,7 @@ func Wait(_ context.Context, inputs ...core.Value) (core.Value, error) {
 
 	arg := values.ZeroInt
 
-	err = core.ValidateType(inputs[0], core.IntType)
+	err = core.ValidateType(inputs[0], types.Int)
 
 	if err != nil {
 		return values.None, err

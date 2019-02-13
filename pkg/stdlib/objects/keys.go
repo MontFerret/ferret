@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Keys returns string array of object's keys
@@ -18,7 +19,7 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ObjectType)
+	err = core.ValidateType(args[0], types.Object)
 	if err != nil {
 		return values.None, err
 	}
@@ -27,7 +28,7 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	needSort := false
 
 	if len(args) == 2 {
-		err = core.ValidateType(args[1], core.BooleanType)
+		err = core.ValidateType(args[1], types.Boolean)
 		if err != nil {
 			return values.None, err
 		}

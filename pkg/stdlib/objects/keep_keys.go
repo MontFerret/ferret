@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // KeepKeys returns a new object with only given keys.
@@ -18,7 +19,7 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ObjectType)
+	err = core.ValidateType(args[0], types.Object)
 
 	if err != nil {
 		return values.None, err
@@ -26,11 +27,11 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	keys := values.NewArrayWith(args[1:]...)
 
-	if len(args) == 2 && args[1].Type() == core.ArrayType {
+	if len(args) == 2 && args[1].Type().Equals(types.Array) {
 		keys = args[1].(*values.Array)
 	}
 
-	err = validateArrayOf(core.StringType, keys)
+	err = validateArrayOf(types.String, keys)
 
 	if err != nil {
 		return values.None, err
@@ -47,9 +48,12 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 		key = keyVal.(values.String)
 
 		if val, exists = obj.Get(key); exists {
-			if values.IsCloneable(val) {
-				val = val.(core.Cloneable).Clone()
+			cloneable, ok := val.(core.Cloneable)
+
+			if ok {
+				val = cloneable.Clone()
 			}
+
 			resultObj.Set(key, val)
 		}
 

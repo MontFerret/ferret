@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // NavigateForward navigates a document forward within its navigation history.
@@ -21,7 +22,7 @@ func NavigateForward(_ context.Context, args ...core.Value) (core.Value, error) 
 		return values.False, err
 	}
 
-	err = core.ValidateType(args[0], core.HTMLDocumentType)
+	err = core.ValidateType(args[0], types.HTMLDocument)
 
 	if err != nil {
 		return values.None, err
@@ -37,7 +38,7 @@ func NavigateForward(_ context.Context, args ...core.Value) (core.Value, error) 
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 1 {
-		err = core.ValidateType(args[1], core.IntType)
+		err = core.ValidateType(args[1], types.Int)
 
 		if err != nil {
 			return values.None, err
@@ -47,7 +48,7 @@ func NavigateForward(_ context.Context, args ...core.Value) (core.Value, error) 
 	}
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.IntType)
+		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
 			return values.None, err

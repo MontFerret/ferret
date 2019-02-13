@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DateMillisecond returns the millisecond of date as a number.
@@ -16,7 +17,7 @@ func DateMillisecond(_ context.Context, args ...core.Value) (core.Value, error) 
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.DateTimeType)
+	err = core.ValidateType(args[0], types.DateTime)
 	if err != nil {
 		return values.None, err
 	}

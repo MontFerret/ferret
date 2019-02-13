@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // WaitNavigation waits for document to navigate to a new url.
@@ -18,7 +19,7 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.HTMLDocumentType)
+	err = core.ValidateType(args[0], types.HTMLDocument)
 
 	if err != nil {
 		return values.None, err
@@ -33,7 +34,7 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 1 {
-		err = core.ValidateType(args[1], core.IntType)
+		err = core.ValidateType(args[1], types.Int)
 
 		if err != nil {
 			return values.None, err

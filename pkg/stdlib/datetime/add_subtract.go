@@ -5,12 +5,13 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 var (
-	sliceDateTime   = []core.Type{core.DateTimeType}
-	sliceIntType    = []core.Type{core.IntType}
-	sliceStringType = []core.Type{core.StringType}
+	sliceDateTime   = []core.Type{types.DateTime}
+	sliceIntType    = []core.Type{types.Int}
+	sliceStringType = []core.Type{types.String}
 
 	emptyDateTime values.DateTime
 	emptyInt      values.Int

@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Union returns the union of all passed arrays.
@@ -17,7 +18,7 @@ func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -27,7 +28,7 @@ func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 	result := values.NewArray(len(args) * int(firstArrLen))
 
 	for _, arg := range args {
-		err := core.ValidateType(arg, core.ArrayType)
+		err := core.ValidateType(arg, types.Array)
 
 		if err != nil {
 			return values.None, err

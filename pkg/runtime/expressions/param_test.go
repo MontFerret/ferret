@@ -2,6 +2,7 @@ package expressions_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -41,7 +42,7 @@ func TestParameterExpressionExec(t *testing.T) {
 		value, err := existExp.Exec(ctx, &core.Scope{})
 
 		So(err, ShouldBeNil)
-		So(value.Type(), ShouldEqual, core.IntType)
+		So(value.Type().Equals(types.Int), ShouldBeTrue)
 		So(value.String(), ShouldEqual, "1")
 	})
 
@@ -57,6 +58,6 @@ func TestParameterExpressionExec(t *testing.T) {
 
 		So(err, ShouldNotBeNil)
 		So(err, ShouldHaveSameTypeAs, core.ErrNotFound)
-		So(value.Type(), ShouldEqual, core.NoneType)
+		So(value.Type().Equals(types.None), ShouldBeTrue)
 	})
 }

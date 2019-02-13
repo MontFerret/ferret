@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"hash/fnv"
@@ -9,9 +10,10 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
+func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
 	if byPath == nil || len(byPath) == 0 {
 		return None, nil
 	}
@@ -27,32 +29,32 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 		segmentType := segment.Type()
 
 		switch result.Type() {
-		case core.ObjectType:
+		case types.Object:
 			obj := result.(*Object)
 
-			if segmentType != core.StringType {
-				return nil, core.TypeError(segmentType, core.StringType)
+			if segmentType != types.String {
+				return nil, core.TypeError(segmentType, types.String)
 			}
 
 			result, _ = obj.Get(segment.(String))
 
 			break
-		case core.ArrayType:
+		case types.Array:
 			arr := result.(*Array)
 
-			if segmentType != core.IntType {
-				return nil, core.TypeError(segmentType, core.IntType)
+			if segmentType != types.Int {
+				return nil, core.TypeError(segmentType, types.Int)
 			}
 
 			result = arr.Get(segment.(Int))
 
 			break
-		case core.HTMLElementType, core.HTMLDocumentType:
+		case types.HTMLElement, types.HTMLDocument:
 			el := result.(HTMLNode)
 
-			if segmentType == core.IntType {
+			if segmentType == types.Int {
 				result = el.GetChildNode(segment.(Int))
-			} else if segmentType == core.StringType {
+			} else if segmentType == types.String {
 				strSegment := segment.(String)
 
 				switch strSegment {
@@ -73,7 +75,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 				case "length":
 					result = el.Length()
 				case "url":
-					if result.Type() == core.HTMLDocumentType {
+					if result.Type() == types.HTMLDocument {
 						doc, ok := result.(HTMLDocument)
 
 						if ok {
@@ -88,22 +90,22 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 					return None, err
 				}
 			} else {
-				return nil, core.TypeError(segmentType, core.IntType, core.StringType)
+				return nil, core.TypeError(segmentType, types.Int, types.String)
 			}
 
 		default:
 			getter, ok := result.(core.Getter)
 
 			if ok {
-				return getter.GetIn(byPath[i:])
+				return getter.GetIn(ctx, byPath[i:])
 			}
 
 			return None, core.TypeError(
 				from.Type(),
-				core.ArrayType,
-				core.ObjectType,
-				core.HTMLDocumentType,
-				core.HTMLElementType,
+				types.Array,
+				types.Object,
+				types.HTMLDocument,
+				types.HTMLElement,
 			)
 		}
 	}
@@ -111,7 +113,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 	return result, nil
 }
 
-func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
+func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
 	if byPath == nil || len(byPath) == 0 {
 		return nil
 	}
@@ -126,11 +128,11 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 		segmentType := segment.Type()
 
 		switch parent.Type() {
-		case core.ObjectType:
+		case types.Object:
 			parent := parent.(*Object)
 
-			if segmentType != core.StringType {
-				return core.TypeError(segmentType, core.StringType)
+			if segmentType != types.String {
+				return core.TypeError(segmentType, types.String)
 			}
 
 			if isTarget == false {
@@ -140,9 +142,9 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 			}
 
 			break
-		case core.ArrayType:
-			if segmentType != core.IntType {
-				return core.TypeError(segmentType, core.IntType)
+		case types.Array:
+			if segmentType != types.Int {
+				return core.TypeError(segmentType, types.Int)
 			}
 
 			parent := parent.(*Array)
@@ -160,19 +162,19 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 			setter, ok := parent.(core.Setter)
 
 			if ok {
-				return setter.SetIn(byPath[idx:], value)
+				return setter.SetIn(ctx, byPath[idx:], value)
 			}
 
 			// redefine parent
-			isArray := segmentType == core.IntType
+			isArray := segmentType == types.Int
 
 			// it's not an index
 			if isArray == false {
 				obj := NewObject()
 				parent = obj
 
-				if segmentType != core.StringType {
-					return core.TypeError(segmentType, core.StringType)
+				if segmentType != types.String {
+					return core.TypeError(segmentType, types.String)
 				}
 
 				if isTarget {
@@ -190,7 +192,7 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 			}
 
 			// set new parent
-			if err := SetIn(to, byPath[0:idx-1], parent); err != nil {
+			if err := SetIn(ctx, to, byPath[0:idx-1], parent); err != nil {
 				return err
 			}
 
@@ -302,9 +304,9 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 
 func IsCloneable(value core.Value) Boolean {
 	switch value.Type() {
-	case core.ArrayType:
+	case types.Array:
 		return NewBoolean(true)
-	case core.ObjectType:
+	case types.Object:
 		return NewBoolean(true)
 	default:
 		return NewBoolean(false)
@@ -313,15 +315,15 @@ func IsCloneable(value core.Value) Boolean {
 
 func ToBoolean(input core.Value) core.Value {
 	switch input.Type() {
-	case core.BooleanType:
+	case types.Boolean:
 		return input
-	case core.NoneType:
+	case types.None:
 		return False
-	case core.StringType:
+	case types.String:
 		return NewBoolean(input.String() != "")
-	case core.IntType:
+	case types.Int:
 		return NewBoolean(input.(Int) != 0)
-	case core.FloatType:
+	case types.Float:
 		return NewBoolean(input.(Float) != 0)
 	default:
 		return True
@@ -330,15 +332,15 @@ func ToBoolean(input core.Value) core.Value {
 
 func ToArray(input core.Value) core.Value {
 	switch input.Type() {
-	case core.BooleanType,
-		core.IntType,
-		core.FloatType,
-		core.StringType,
-		core.DateTimeType:
+	case types.Boolean,
+		types.Int,
+		types.Float,
+		types.String,
+		types.DateTime:
 
 		return NewArrayWith(input)
-	case core.HTMLElementType,
-		core.HTMLDocumentType:
+	case types.HTMLElement,
+		types.HTMLDocument:
 		val := input.(HTMLNode)
 		attrs := val.GetAttributes()
 
@@ -357,9 +359,9 @@ func ToArray(input core.Value) core.Value {
 		})
 
 		return obj
-	case core.ArrayType:
+	case types.Array:
 		return input.Copy()
-	case core.ObjectType:
+	case types.Object:
 		obj, ok := input.(*Object)
 
 		if !ok {

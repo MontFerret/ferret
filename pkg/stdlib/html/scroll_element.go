@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // ScrollInto scrolls an element on.
@@ -18,14 +19,14 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], core.HTMLDocumentType, core.HTMLElementType)
+	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
 
 	if err != nil {
 		return values.None, err
 	}
 
 	if len(args) == 2 {
-		err = core.ValidateType(args[1], core.StringType)
+		err = core.ValidateType(args[1], types.String)
 
 		if err != nil {
 			return values.None, err

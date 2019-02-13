@@ -2,8 +2,10 @@ package literals
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -49,8 +51,8 @@ func (l *ObjectLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value
 			return values.None, err
 		}
 
-		if name.Type() != core.StringType {
-			return values.None, core.TypeError(name.Type(), core.StringType)
+		if name.Type() != types.String {
+			return values.None, core.TypeError(name.Type(), types.String)
 		}
 
 		obj.Set(name.(values.String), val)

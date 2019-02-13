@@ -3,9 +3,9 @@ package datetime
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DateDayOfYear returns the day of year number of date.
@@ -18,7 +18,7 @@ func DateDayOfYear(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.DateTimeType)
+	err = core.ValidateType(args[0], types.DateTime)
 	if err != nil {
 		return values.None, err
 	}
