@@ -55,8 +55,8 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 		default:
 			// fallback to user defined types
 			switch data.(type) {
-			case collections.IterableCollection:
-				collection := data.(collections.IterableCollection)
+			case core.Iterable:
+				collection := data.(core.Iterable)
 				iterator, err := collection.Iterate(ctx)
 
 				if err != nil {

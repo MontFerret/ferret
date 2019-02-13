@@ -18,7 +18,7 @@ func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 
 	value := inputs[0]
 
-	c, ok := value.(collections.Collection)
+	c, ok := value.(collections.Measurable)
 
 	if !ok {
 		return values.None, core.TypeError(value.Type(),
@@ -28,7 +28,7 @@ func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 			types.HTMLElement,
 			types.HTMLDocument,
 			types.Binary,
-			core.NewType("Collection"),
+			core.NewType("Measurable"),
 		)
 	}
 

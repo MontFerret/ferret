@@ -7,44 +7,37 @@ import (
 )
 
 type (
-	Collection interface {
-		core.Value
+	// Measurable represents an interface of a value that can has length..
+	Measurable interface {
 		Length() values.Int
 	}
 
 	IndexedCollection interface {
-		Collection
+		core.Value
+		Measurable
 		Get(idx values.Int) core.Value
 		Set(idx values.Int, value core.Value) error
 	}
 
 	KeyedCollection interface {
-		Collection
+		core.Value
+		Measurable
 		Keys() []string
 		Get(key values.String) (core.Value, values.Boolean)
 		Set(key values.String, value core.Value)
 	}
 
-	IterableCollection interface {
-		core.Value
-		Iterate(ctx context.Context) (CollectionIterator, error)
-	}
-
-	CollectionIterator interface {
-		Next(ctx context.Context) (value core.Value, key core.Value, err error)
-	}
-
 	collectionIteratorWrapper struct {
 		valVar string
 		keyVar string
-		values CollectionIterator
+		values core.Iterator
 	}
 )
 
 func NewCollectionIterator(
 	valVar,
 	keyVar string,
-	values CollectionIterator,
+	values core.Iterator,
 ) (Iterator, error) {
 	return &collectionIteratorWrapper{valVar, keyVar, values}, nil
 }
