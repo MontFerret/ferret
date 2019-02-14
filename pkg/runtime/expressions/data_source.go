@@ -63,11 +63,11 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 					return nil, err
 				}
 
-				return collections.NewCollectionIterator(ds.valVariable, ds.keyVariable, iterator)
+				return collections.NewCoreIterator(ds.valVariable, ds.keyVariable, iterator)
 			case collections.KeyedCollection:
-				return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
-			case collections.IndexedCollection:
 				return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
+			case collections.IndexedCollection:
+				return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
 			default:
 				return nil, core.TypeError(
 					data.Type(),

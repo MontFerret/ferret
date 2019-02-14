@@ -27,22 +27,22 @@ type (
 		Set(key values.String, value core.Value)
 	}
 
-	collectionIteratorWrapper struct {
+	coreIterator struct {
 		valVar string
 		keyVar string
 		values core.Iterator
 	}
 )
 
-func NewCollectionIterator(
+func NewCoreIterator(
 	valVar,
 	keyVar string,
 	values core.Iterator,
 ) (Iterator, error) {
-	return &collectionIteratorWrapper{valVar, keyVar, values}, nil
+	return &coreIterator{valVar, keyVar, values}, nil
 }
 
-func (iterator *collectionIteratorWrapper) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
+func (iterator *coreIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	val, key, err := iterator.values.Next(ctx)
 
 	if err != nil {
