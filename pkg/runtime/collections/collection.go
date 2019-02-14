@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	// Measurable represents an interface of a value that can has length..
+	// Measurable represents an interface of a value that can has length.
 	Measurable interface {
 		Length() values.Int
 	}
