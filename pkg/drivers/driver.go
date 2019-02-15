@@ -9,58 +9,52 @@ import (
 )
 
 type (
-	staticCtxKey struct{}
+	ctxKey struct{}
 
-	dynamicCtxKey struct{}
-
-	Static interface {
-		io.Closer
-		GetDocument(ctx context.Context, url values.String) (values.HTMLDocument, error)
-		ParseDocument(ctx context.Context, str values.String) (values.HTMLDocument, error)
+	ctxValue struct {
+		opts    *options
+		drivers map[string]Driver
 	}
 
-	Dynamic interface {
+	Driver interface {
 		io.Closer
-		GetDocument(ctx context.Context, url values.String) (values.DHTMLDocument, error)
+		Name() string
+		GetDocument(ctx context.Context, url values.String) (HTMLDocument, error)
 	}
 )
 
-func StaticFrom(ctx context.Context) (Static, error) {
-	val := ctx.Value(staticCtxKey{})
+func WithContext(ctx context.Context, drv Driver) context.Context {
+	ctx, value := resolveValue(ctx)
 
-	drv, ok := val.(Static)
+	value.drivers[drv.Name()] = drv
 
-	if !ok {
-		return nil, core.Error(core.ErrNotFound, "HTML Driver")
+	return ctx
+}
+
+func FromContext(ctx context.Context, name string) (Driver, error) {
+	_, value := resolveValue(ctx)
+	drv, exists := value.drivers[name]
+
+	if !exists {
+		return nil, core.Error(core.ErrNotFound, name)
 	}
 
 	return drv, nil
 }
 
-func DynamicFrom(ctx context.Context) (Dynamic, error) {
-	val := ctx.Value(dynamicCtxKey{})
-
-	drv, ok := val.(Dynamic)
+func resolveValue(ctx context.Context) (context.Context, *ctxValue) {
+	key := ctxKey{}
+	v := ctx.Value(key)
+	value, ok := v.(*ctxValue)
 
 	if !ok {
-		return nil, core.Error(core.ErrNotFound, "DHTML Driver")
+		value = &ctxValue{
+			opts:    &options{},
+			drivers: make(map[string]Driver),
+		}
+
+		return context.WithValue(ctx, key, value), value
 	}
 
-	return drv, nil
-}
-
-func WithStatic(ctx context.Context, drv Static) context.Context {
-	return context.WithValue(
-		ctx,
-		staticCtxKey{},
-		drv,
-	)
-}
-
-func WithDynamic(ctx context.Context, drv Dynamic) context.Context {
-	return context.WithValue(
-		ctx,
-		dynamicCtxKey{},
-		drv,
-	)
+	return ctx, value
 }

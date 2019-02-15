@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"golang.org/x/sync/errgroup"
 	"math"
 	"strings"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
+	"golang.org/x/sync/errgroup"
 )
 
 type (

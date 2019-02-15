@@ -19,16 +19,14 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
+	el, err := resolveElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	node := args[0].(values.HTMLNode)
-
 	if len(args) == 1 {
-		return node.InnerText(), nil
+		return el.InnerText(), nil
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -39,5 +37,5 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return node.InnerTextBySelector(selector), nil
+	return el.InnerTextBySelector(selector), nil
 }

@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -23,14 +24,14 @@ func Element(_ context.Context, args ...core.Value) (core.Value, error) {
 	return el.QuerySelector(selector), nil
 }
 
-func queryArgs(args []core.Value) (values.HTMLNode, values.String, error) {
+func queryArgs(args []core.Value) (drivers.HTMLNode, values.String, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
 		return nil, values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return nil, values.EmptyString, err
@@ -42,5 +43,5 @@ func queryArgs(args []core.Value) (values.HTMLNode, values.String, error) {
 		return nil, values.EmptyString, err
 	}
 
-	return args[0].(values.HTMLNode), args[1].(values.String), nil
+	return args[0].(drivers.HTMLNode), args[1].(values.String), nil
 }

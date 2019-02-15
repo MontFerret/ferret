@@ -3,9 +3,9 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // ClickAll dispatches click event on all matched element
@@ -22,16 +22,16 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	selector := args[1].String()
 
-	err = core.ValidateType(arg1, types.HTMLDocument)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc, ok := arg1.(values.DHTMLDocument)
+	doc, err := toDocument(args[0])
 
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	if err != nil {
+		return values.None, err
 	}
 
 	return doc.ClickBySelectorAll(values.NewString(selector))

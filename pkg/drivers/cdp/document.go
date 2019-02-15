@@ -7,8 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -24,17 +26,15 @@ import (
 
 const BlankPageURL = "about:blank"
 
-type (
-	HTMLDocument struct {
-		sync.Mutex
-		logger  *zerolog.Logger
-		conn    *rpcc.Conn
-		client  *cdp.Client
-		events  *events.EventBroker
-		url     values.String
-		element *HTMLElement
-	}
-)
+type HTMLDocument struct {
+	sync.Mutex
+	logger  *zerolog.Logger
+	conn    *rpcc.Conn
+	client  *cdp.Client
+	events  *events.EventBroker
+	url     values.String
+	element *HTMLElement
+}
 
 func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
 	err := client.Page.Close(context.Background())
@@ -49,7 +49,7 @@ func LoadHTMLDocument(
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	url string,
-) (*HTMLDocument, error) {
+) (drivers.HTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	if conn == nil {
@@ -143,7 +143,7 @@ func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
 }
 
 func (doc *HTMLDocument) Type() core.Type {
-	return types.HTMLDocument
+	return drivers.HTMLDocumentType
 }
 
 func (doc *HTMLDocument) String() string {
@@ -181,13 +181,26 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	doc.Lock()
 	defer doc.Unlock()
 
-	if other.Type() == types.HTMLDocument {
-		other := other.(*HTMLDocument)
+	switch other.Type() {
+	case drivers.HTMLDocumentType:
+		other := other.(drivers.HTMLDocument)
 
-		return doc.url.Compare(other.url)
+		return doc.url.Compare(other.GetURL())
+	default:
+		return drivers.Compare(doc.Type(), other.Type())
 	}
+}
 
-	return types.Compare(other.Type(), types.HTMLDocument)
+func (doc *HTMLDocument) Iterate(ctx context.Context) (core.Iterator, error) {
+	return doc.element.Iterate(ctx)
+}
+
+func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetInDocument(ctx, doc, path)
+}
+
+func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetInDocument(ctx, doc, path, value)
 }
 
 func (doc *HTMLDocument) Close() error {
@@ -260,41 +273,6 @@ func (doc *HTMLDocument) Length() values.Int {
 	return doc.element.Length()
 }
 
-func (doc *HTMLDocument) InnerText() values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerText()
-}
-
-func (doc *HTMLDocument) InnerHTML() values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerHTML()
-}
-
-func (doc *HTMLDocument) Value() core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.Value()
-}
-
-func (doc *HTMLDocument) GetAttributes() core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.GetAttributes()
-}
-
-func (doc *HTMLDocument) GetAttribute(name values.String) core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.GetAttribute(name)
-}
-
 func (doc *HTMLDocument) GetChildNodes() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
@@ -323,39 +301,22 @@ func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
 	return doc.element.QuerySelectorAll(selector)
 }
 
-func (doc *HTMLDocument) URL() core.Value {
+func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
+	doc.Lock()
+	defer doc.Unlock()
+
+	return doc.element
+}
+
+func (doc *HTMLDocument) GetURL() core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
 	return doc.url
 }
 
-func (doc *HTMLDocument) InnerHTMLBySelector(selector values.String) values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerHTMLBySelector(selector)
-}
-
-func (doc *HTMLDocument) InnerHTMLBySelectorAll(selector values.String) *values.Array {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerHTMLBySelectorAll(selector)
-}
-
-func (doc *HTMLDocument) InnerTextBySelector(selector values.String) values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerTextBySelector(selector)
-}
-
-func (doc *HTMLDocument) InnerTextBySelectorAll(selector values.String) *values.Array {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.InnerTextBySelectorAll(selector)
+func (doc *HTMLDocument) SetURL(url values.String) error {
+	return doc.Navigate(url, values.Int(DefaultTimeout))
 }
 
 func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
@@ -377,14 +338,11 @@ func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean
 		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
-
 			if (el == null) {
 				return false;
 			}
-
 			var evt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 			el.dispatchEvent(evt);
-
 			return true;
 		`, eval.ParamString(selector.String())),
 		true,
@@ -407,16 +365,13 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 		doc.client,
 		fmt.Sprintf(`
 			var elements = document.querySelectorAll(%s);
-
 			if (elements == null) {
 				return false;
 			}
-
 			elements.forEach((el) => {
 				var evt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 				el.dispatchEvent(evt);	
 			});
-
 			return true;
 		`, eval.ParamString(selector.String())),
 		true,
@@ -483,20 +438,15 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 		doc.client,
 		fmt.Sprintf(`
 			var element = document.querySelector(%s);
-
 			if (element == null) {
 				return [];
 			}
-
 			var values = %s;
-
 			if (element.nodeName.toLowerCase() !== 'select') {
 				throw new Error('Element is not a <select> element.');
 			}
-
 			var options = Array.from(element.options);
       		element.value = undefined;
-
 			for (var option of options) {
         		option.selected = values.includes(option.value);
         	
@@ -504,7 +454,6 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
           			break;
 				}
       		}
-
       		element.dispatchEvent(new Event('input', { 'bubbles': true, cancelable: true }));
       		element.dispatchEvent(new Event('change', { 'bubbles': true, cancelable: true }));
       		
@@ -574,11 +523,9 @@ func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.
 		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
-
 			if (el != null) {
 				return true;
 			}
-
 			// null means we need to repeat
 			return null;
 		`, eval.ParamString(selector.String())),
@@ -591,19 +538,16 @@ func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClass(selector, class values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelector(selector, class values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
-
 			if (el == null) {
 				return false;
 			}
-
 			var className = %s;
 			var found = el.className.split(' ').find(i => i === className);
-
 			if (found != null) {
 				return true;
 			}
@@ -623,27 +567,22 @@ func (doc *HTMLDocument) WaitForClass(selector, class values.String, timeout val
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassAll(selector, class values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(selector, class values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
 			var elements = document.querySelectorAll(%s);
-
 			if (elements == null || elements.length === 0) {
 				return false;
 			}
-
 			var className = %s;
 			var foundCount = 0;
-
 			elements.forEach((el) => {
 				var found = el.className.split(' ').find(i => i === className);
-
 				if (found != null) {
 					foundCount++;
 				}
 			});
-
 			if (foundCount === elements.length) {
 				return true;
 			}
@@ -788,7 +727,7 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 	return values.True, nil
 }
 
-func (doc *HTMLDocument) PrintToPDF(params values.HTMLPDFParams) (values.Binary, error) {
+func (doc *HTMLDocument) PrintToPDF(params drivers.PDFParams) (values.Binary, error) {
 	ctx := context.Background()
 
 	args := page.NewPrintToPDFArgs()
@@ -848,11 +787,11 @@ func (doc *HTMLDocument) PrintToPDF(params values.HTMLPDFParams) (values.Binary,
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(params values.HTMLScreenshotParams) (values.Binary, error) {
+func (doc *HTMLDocument) CaptureScreenshot(params drivers.ScreenshotParams) (values.Binary, error) {
 	ctx := context.Background()
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
 
-	if params.Format == values.HTMLScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
+	if params.Format == drivers.ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
 		params.Quality = 100
 	}
 
@@ -924,15 +863,12 @@ func (doc *HTMLDocument) ScrollBottom() error {
 func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
 	_, err := eval.Eval(doc.client, fmt.Sprintf(`
 		var el = document.querySelector(%s);
-
 		if (el == null) {
 			throw new Error("element not found");
 		}
-
 		el.scrollIntoView({
     		behavior: 'instant'
   		});
-
 		return true;
 	`, eval.ParamString(selector.String()),
 	), false, false)

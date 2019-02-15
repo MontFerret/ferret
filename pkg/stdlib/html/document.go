@@ -5,13 +5,15 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type DocumentLoadParams struct {
-	Dynamic values.Boolean
+	Driver  string
 	Timeout time.Duration
 }
 
@@ -56,17 +58,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 	ctx, cancel := context.WithTimeout(ctx, params.Timeout)
 	defer cancel()
 
-	if params.Dynamic {
-		drv, err := drivers.DynamicFrom(ctx)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		return drv.GetDocument(ctx, url)
-	}
-
-	drv, err := drivers.StaticFrom(ctx)
+	drv, err := drivers.FromContext(ctx, params.Driver)
 
 	if err != nil {
 		return values.None, err
@@ -77,7 +69,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 func newDefaultDocLoadParams() DocumentLoadParams {
 	return DocumentLoadParams{
-		Dynamic: false,
+		Driver:  http.DriverName,
 		Timeout: time.Second * 30,
 	}
 }
@@ -85,36 +77,42 @@ func newDefaultDocLoadParams() DocumentLoadParams {
 func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 	res := newDefaultDocLoadParams()
 
-	if err := core.ValidateType(arg, types.Boolean, types.Object); err != nil {
+	if err := core.ValidateType(arg, types.Boolean, types.String, types.Object); err != nil {
 		return res, err
 	}
 
-	if arg.Type() == types.Boolean {
-		res.Dynamic = arg.(values.Boolean)
+	switch arg.Type() {
+	case types.Object:
+		obj := arg.(*values.Object)
 
-		return res, nil
-	}
+		driver, exists := obj.Get(values.NewString("driver"))
 
-	obj := arg.(*values.Object)
+		if exists {
+			if err := core.ValidateType(driver, types.String); err != nil {
+				return res, err
+			}
 
-	isDynamic, exists := obj.Get(values.NewString("dynamic"))
-
-	if exists {
-		if err := core.ValidateType(isDynamic, types.Boolean); err != nil {
-			return res, err
+			res.Driver = driver.(values.String).String()
 		}
 
-		res.Dynamic = isDynamic.(values.Boolean)
-	}
+		timeout, exists := obj.Get(values.NewString("timeout"))
 
-	timeout, exists := obj.Get(values.NewString("timeout"))
+		if exists {
+			if err := core.ValidateType(timeout, types.Int); err != nil {
+				return res, err
+			}
 
-	if exists {
-		if err := core.ValidateType(timeout, types.Int); err != nil {
-			return res, err
+			res.Timeout = time.Duration(timeout.(values.Int)) + time.Millisecond
 		}
 
-		res.Timeout = time.Duration(timeout.(values.Int)) + time.Millisecond
+		break
+	case types.String:
+		res.Driver = arg.(values.String).String()
+		break
+	case types.Boolean:
+		// fallback
+		res.Driver = cdp.DriverName
+		break
 	}
 
 	return res, nil

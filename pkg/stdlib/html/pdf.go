@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -53,10 +54,10 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := val.(values.DHTMLDocument)
+	doc := val.(drivers.HTMLDocument)
 	defer doc.Close()
 
-	pdfParams := values.HTMLPDFParams{}
+	pdfParams := drivers.PDFParams{}
 
 	if len(args) == 2 {
 		arg2 := args[1]

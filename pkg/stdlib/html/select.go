@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -21,19 +22,14 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, types.HTMLDocument, types.HTMLElement)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
-	switch args[0].(type) {
-	case values.DHTMLDocument:
-		doc, ok := arg1.(values.DHTMLDocument)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
+	if arg1.Type() == drivers.HTMLDocumentType {
+		doc := arg1.(drivers.HTMLDocument)
 
 		// selector
 		arg2 := args[1]
@@ -51,23 +47,16 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.SelectBySelector(arg2.(values.String), arg3.(*values.Array))
-	case values.DHTMLNode:
-		el, ok := arg1.(values.DHTMLNode)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
-
-		arg2 := args[1]
-
-		err = core.ValidateType(arg2, types.Array)
-
-		if err != nil {
-			return values.False, err
-		}
-
-		return el.Select(arg2.(*values.Array))
-	default:
-		return values.False, core.Errors(core.ErrInvalidArgument)
 	}
+
+	el := arg1.(drivers.HTMLElement)
+	arg2 := args[1]
+
+	err = core.ValidateType(arg2, types.Array)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return el.Select(arg2.(*values.Array))
 }

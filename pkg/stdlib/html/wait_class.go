@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -25,7 +26,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
+	arg1 := args[0]
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -40,9 +42,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	timeout := values.NewInt(defaultTimeout)
 
-	// lets figure out what is passed as 1st argument
-	switch obj := args[0].(type) {
-	case values.DHTMLDocument:
+	// if a document is passed
+	if arg1.Type() == drivers.HTMLDocumentType {
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 3, 4)
 
@@ -57,6 +58,7 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
+		doc := arg1.(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 		class := args[2].(values.String)
 
@@ -70,22 +72,21 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			timeout = args[3].(values.Int)
 		}
 
-		return values.None, obj.WaitForClass(selector, class, timeout)
-	case values.DHTMLNode:
-		class := args[1].(values.String)
+		return values.None, doc.WaitForClassBySelector(selector, class, timeout)
+	}
 
-		if len(args) == 3 {
-			err = core.ValidateType(args[2], types.Int)
+	el := arg1.(drivers.HTMLElement)
+	class := args[1].(values.String)
 
-			if err != nil {
-				return values.None, err
-			}
+	if len(args) == 3 {
+		err = core.ValidateType(args[2], types.Int)
 
-			timeout = args[2].(values.Int)
+		if err != nil {
+			return values.None, err
 		}
 
-		return values.None, obj.WaitForClass(class, timeout)
-	default:
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+		timeout = args[2].(values.Int)
 	}
+
+	return values.None, el.WaitForClass(class, timeout)
 }

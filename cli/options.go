@@ -18,7 +18,7 @@ type Options struct {
 func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
 	var err error
 
-	ctx = drivers.WithDynamic(
+	ctx = drivers.WithContext(
 		ctx,
 		cdp.NewDriver(
 			cdp.WithAddress(opts.Cdp),
@@ -31,7 +31,7 @@ func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	ctx = drivers.WithStatic(
+	ctx = drivers.WithContext(
 		ctx,
 		http.NewDriver(
 			http.WithProxy(opts.Proxy),

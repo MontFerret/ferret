@@ -3,6 +3,12 @@ package runner
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"regexp"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
@@ -10,11 +16,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"regexp"
-	"time"
 )
 
 type (
@@ -145,12 +146,12 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 	}
 
 	ctx := context.Background()
-	ctx = drivers.WithDynamic(
+	ctx = drivers.WithContext(
 		ctx,
 		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
 	)
 
-	ctx = drivers.WithStatic(ctx, http.NewDriver())
+	ctx = drivers.WithContext(ctx, http.NewDriver())
 
 	out, err := p.Run(
 		ctx,

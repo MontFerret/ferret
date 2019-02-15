@@ -21,8 +21,7 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	// document only
-	err = core.ValidateType(args[0], types.HTMLDocument)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -42,12 +41,6 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(values.DHTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-	}
-
 	selector := args[1].(values.String)
 	class := args[2].(values.String)
 	timeout := values.NewInt(defaultTimeout)
@@ -62,5 +55,5 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[3].(values.Int)
 	}
 
-	return values.None, doc.WaitForClassAll(selector, class, timeout)
+	return values.None, doc.WaitForClassBySelectorAll(selector, class, timeout)
 }
