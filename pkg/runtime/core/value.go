@@ -18,6 +18,17 @@ type (
 		Copy() Value
 	}
 
+	// Iterable represents an interface of a value that can be iterated by using an iterator.
+	Iterable interface {
+		Iterate(ctx context.Context) (Iterator, error)
+	}
+
+	// Iterator represents an interface of a value iterator.
+	// When iterator is exhausted it must return None as a value.
+	Iterator interface {
+		Next(ctx context.Context) (value Value, key Value, err error)
+	}
+
 	// Getter represents an interface of
 	// complex types that needs to be used to read values by path.
 	// The interface is created to let user-defined types be used in dot notation data access.

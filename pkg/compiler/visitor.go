@@ -1430,37 +1430,37 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 	var out core.Expression
 	var err error
 
-	switch node.(type) {
+	switch ctx := node.(type) {
 	case *fql.BodyContext:
-		out, err = v.doVisitBody(node.(*fql.BodyContext), scope)
+		out, err = v.doVisitBody(ctx, scope)
 	case *fql.ExpressionContext:
-		out, err = v.doVisitExpression(node.(*fql.ExpressionContext), scope)
+		out, err = v.doVisitExpression(ctx, scope)
 	case *fql.ForExpressionContext:
-		out, err = v.doVisitForExpression(node.(*fql.ForExpressionContext), scope)
+		out, err = v.doVisitForExpression(ctx, scope)
 	case *fql.ReturnExpressionContext:
-		out, err = v.doVisitReturnExpression(node.(*fql.ReturnExpressionContext), scope)
+		out, err = v.doVisitReturnExpression(ctx, scope)
 	case *fql.ArrayLiteralContext:
-		out, err = v.doVisitArrayLiteral(node.(*fql.ArrayLiteralContext), scope)
+		out, err = v.doVisitArrayLiteral(ctx, scope)
 	case *fql.ObjectLiteralContext:
-		out, err = v.doVisitObjectLiteral(node.(*fql.ObjectLiteralContext), scope)
+		out, err = v.doVisitObjectLiteral(ctx, scope)
 	case *fql.StringLiteralContext:
-		out, err = v.doVisitStringLiteral(node.(*fql.StringLiteralContext))
+		out, err = v.doVisitStringLiteral(ctx)
 	case *fql.IntegerLiteralContext:
-		out, err = v.doVisitIntegerLiteral(node.(*fql.IntegerLiteralContext))
+		out, err = v.doVisitIntegerLiteral(ctx)
 	case *fql.FloatLiteralContext:
-		out, err = v.doVisitFloatLiteral(node.(*fql.FloatLiteralContext))
+		out, err = v.doVisitFloatLiteral(ctx)
 	case *fql.BooleanLiteralContext:
-		out, err = v.doVisitBooleanLiteral(node.(*fql.BooleanLiteralContext))
+		out, err = v.doVisitBooleanLiteral(ctx)
 	case *fql.NoneLiteralContext:
-		out, err = v.doVisitNoneLiteral(node.(*fql.NoneLiteralContext))
+		out, err = v.doVisitNoneLiteral(ctx)
 	case *fql.VariableContext:
-		out, err = v.doVisitVariable(node.(*fql.VariableContext), scope)
+		out, err = v.doVisitVariable(ctx, scope)
 	case *fql.VariableDeclarationContext:
-		out, err = v.doVisitVariableDeclaration(node.(*fql.VariableDeclarationContext), scope)
+		out, err = v.doVisitVariableDeclaration(ctx, scope)
 	case *fql.FunctionCallExpressionContext:
-		out, err = v.doVisitFunctionCallExpression(node.(*fql.FunctionCallExpressionContext), scope)
+		out, err = v.doVisitFunctionCallExpression(ctx, scope)
 	case *fql.ParamContext:
-		out, err = v.doVisitParamContext(node.(*fql.ParamContext), scope)
+		out, err = v.doVisitParamContext(ctx, scope)
 	default:
 		err = v.unexpectedToken(node)
 	}

@@ -206,44 +206,42 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 }
 
 func Parse(input interface{}) core.Value {
-	switch input.(type) {
+	switch value := input.(type) {
 	case bool:
-		return NewBoolean(input.(bool))
+		return NewBoolean(value)
 	case string:
-		return NewString(input.(string))
+		return NewString(value)
 	case int:
-		return NewInt(input.(int))
+		return NewInt(value)
 	case float64:
-		return NewFloat(input.(float64))
+		return NewFloat(value)
 	case float32:
-		return NewFloat(float64(input.(float32)))
+		return NewFloat(float64(value))
 	case time.Time:
-		return NewDateTime(input.(time.Time))
+		return NewDateTime(value)
 	case []interface{}:
-		input := input.([]interface{})
-		arr := NewArray(len(input))
+		arr := NewArray(len(value))
 
-		for _, el := range input {
+		for _, el := range value {
 			arr.Push(Parse(el))
 		}
 
 		return arr
 	case map[string]interface{}:
-		input := input.(map[string]interface{})
 		obj := NewObject()
 
-		for key, el := range input {
+		for key, el := range value {
 			obj.Set(NewString(key), Parse(el))
 		}
 
 		return obj
 	case []byte:
-		return NewBinary(input.([]byte))
+		return NewBinary(value)
 	case nil:
 		return None
 	default:
-		v := reflect.ValueOf(input)
-		t := reflect.TypeOf(input)
+		v := reflect.ValueOf(value)
+		t := reflect.TypeOf(value)
 		kind := t.Kind()
 
 		if kind == reflect.Slice || kind == reflect.Array {
@@ -251,8 +249,8 @@ func Parse(input interface{}) core.Value {
 			arr := NewArray(size)
 
 			for i := 0; i < size; i++ {
-				value := v.Index(i)
-				arr.Push(Parse(value.Interface()))
+				curVal := v.Index(i)
+				arr.Push(Parse(curVal.Interface()))
 			}
 
 			return arr
@@ -264,9 +262,9 @@ func Parse(input interface{}) core.Value {
 
 			for _, k := range keys {
 				key := Parse(k.Interface())
-				value := v.MapIndex(k)
+				curVal := v.MapIndex(k)
 
-				obj.Set(NewString(key.String()), Parse(value.Interface()))
+				obj.Set(NewString(key.String()), Parse(curVal.Interface()))
 			}
 
 			return obj
@@ -278,9 +276,9 @@ func Parse(input interface{}) core.Value {
 
 			for i := 0; i < size; i++ {
 				field := t.Field(i)
-				value := v.Field(i)
+				fieldValue := v.Field(i)
 
-				obj.Set(NewString(field.Name), Parse(value.Interface()))
+				obj.Set(NewString(field.Name), Parse(fieldValue.Interface()))
 			}
 
 			return obj

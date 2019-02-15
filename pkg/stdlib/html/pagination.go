@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -81,7 +80,7 @@ func (p *Paging) Copy() core.Value {
 	return values.None
 }
 
-func (p *Paging) Iterate(_ context.Context) (collections.CollectionIterator, error) {
+func (p *Paging) Iterate(_ context.Context) (core.Iterator, error) {
 	return &PagingIterator{p.document, p.selector, -1}, nil
 }
 

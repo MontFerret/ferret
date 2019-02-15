@@ -54,20 +54,19 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 			return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
 		default:
 			// fallback to user defined types
-			switch data.(type) {
-			case collections.IterableCollection:
-				collection := data.(collections.IterableCollection)
+			switch collection := data.(type) {
+			case core.Iterable:
 				iterator, err := collection.Iterate(ctx)
 
 				if err != nil {
 					return nil, err
 				}
 
-				return collections.NewCollectionIterator(ds.valVariable, ds.keyVariable, iterator)
+				return collections.NewCoreIterator(ds.valVariable, ds.keyVariable, iterator)
 			case collections.KeyedCollection:
-				return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
+				return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, collection)
 			case collections.IndexedCollection:
-				return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
+				return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, collection)
 			default:
 				return nil, core.TypeError(
 					data.Type(),
@@ -75,6 +74,7 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 					types.Object,
 					types.HTMLDocument,
 					types.HTMLElement,
+					core.NewType("Iterable"),
 				)
 			}
 		}

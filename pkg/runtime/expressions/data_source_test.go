@@ -2,12 +2,12 @@ package expressions_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/expressions"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/expressions"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -51,7 +51,7 @@ func (c *testIterableCollection) Hash() uint64 {
 func (c *testIterableCollection) Copy() core.Value {
 	return c
 }
-func (c *testIterableCollection) Iterate(ctx context.Context) (collections.CollectionIterator, error) {
+func (c *testIterableCollection) Iterate(ctx context.Context) (core.Iterator, error) {
 	return &testCollectionIterator{c.values, -1}, nil
 }
 

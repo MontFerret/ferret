@@ -78,11 +78,11 @@ func (flags Flags) List() []string {
 			continue
 		}
 
-		switch val.(type) {
+		switch v := val.(type) {
 		case int:
-			arg = fmt.Sprintf("--%s=%d", arg, val.(int))
+			arg = fmt.Sprintf("--%s=%d", arg, v)
 		case string:
-			arg = fmt.Sprintf("--%s=%s", arg, val.(string))
+			arg = fmt.Sprintf("--%s=%s", arg, v)
 		default:
 			arg = fmt.Sprintf("--%s", arg)
 		}

@@ -31,9 +31,9 @@ func ParseDateTime(input interface{}) (DateTime, error) {
 }
 
 func ParseDateTimeWith(input interface{}, layout string) (DateTime, error) {
-	switch input.(type) {
+	switch value := input.(type) {
 	case string:
-		t, err := time.Parse(layout, input.(string))
+		t, err := time.Parse(layout, value)
 
 		if err != nil {
 			return DateTime{time.Now()}, err
