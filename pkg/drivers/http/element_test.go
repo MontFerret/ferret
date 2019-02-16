@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"bytes"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
@@ -320,7 +321,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.Value()
+		v := el.GetValue()
 
 		So(v, ShouldEqual, "find")
 	})
@@ -394,7 +395,7 @@ func TestElement(t *testing.T) {
 
 		So(found, ShouldNotEqual, values.None)
 
-		v := found.(values.HTMLNode).NodeName()
+		v := found.(drivers.HTMLNode).NodeName()
 
 		So(err, ShouldBeNil)
 
