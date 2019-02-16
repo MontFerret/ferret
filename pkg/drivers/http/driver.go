@@ -83,6 +83,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	logger := logging.FromContext(ctx)
 	logger.
 		Debug().
+		Timestamp().
 		Str("user-agent", ua).
 		Msg("using User-Agent")
 

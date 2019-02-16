@@ -50,6 +50,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	if err != nil {
 		logger.
 			Error().
+			Timestamp().
 			Err(err).
 			Str("driver", DriverName).
 			Msg("failed to initialize the driver")
@@ -71,6 +72,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	if err != nil {
 		logger.
 			Error().
+			Timestamp().
 			Err(err).
 			Str("driver", DriverName).
 			Msg("failed to create a browser target")
@@ -84,6 +86,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	if err != nil {
 		logger.
 			Error().
+			Timestamp().
 			Err(err).
 			Str("driver", DriverName).
 			Msg("failed to establish a connection")
@@ -118,6 +121,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 
 			logger.
 				Debug().
+				Timestamp().
 				Str("user-agent", ua).
 				Msg("using User-Agent")
 

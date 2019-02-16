@@ -153,9 +153,11 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 
 	ctx = drivers.WithContext(ctx, http.NewDriver())
 
+	r.logger.Info().Timestamp().Str("name", name).Msg("Running test")
+
 	out, err := p.Run(
 		ctx,
-		runtime.WithLog(os.Stdout),
+		runtime.WithLog(zerolog.ConsoleWriter{Out: os.Stdout}),
 		runtime.WithParam("static", r.settings.StaticServerAddress),
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)
