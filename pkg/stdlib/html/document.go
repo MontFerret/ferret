@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
-	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -69,7 +68,6 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 func newDefaultDocLoadParams() DocumentLoadParams {
 	return DocumentLoadParams{
-		Driver:  http.DriverName,
 		Timeout: time.Second * 30,
 	}
 }
@@ -108,10 +106,16 @@ func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 		break
 	case types.String:
 		res.Driver = arg.(values.String).String()
+
 		break
 	case types.Boolean:
+		b := arg.(values.Boolean)
+
 		// fallback
-		res.Driver = cdp.DriverName
+		if b {
+			res.Driver = cdp.DriverName
+		}
+
 		break
 	}
 

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
@@ -16,7 +17,14 @@ type Options struct {
 }
 
 func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
-	var err error
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(
+			http.WithProxy(opts.Proxy),
+			http.WithUserAgent(opts.UserAgent),
+		),
+		drivers.AsDefault(),
+	)
 
 	ctx = drivers.WithContext(
 		ctx,
@@ -27,17 +35,5 @@ func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
 		),
 	)
 
-	if err != nil {
-		return ctx, err
-	}
-
-	ctx = drivers.WithContext(
-		ctx,
-		http.NewDriver(
-			http.WithProxy(opts.Proxy),
-			http.WithUserAgent(opts.UserAgent),
-		),
-	)
-
-	return ctx, err
+	return ctx, nil
 }

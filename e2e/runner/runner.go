@@ -151,7 +151,11 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
 	)
 
-	ctx = drivers.WithContext(ctx, http.NewDriver())
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(),
+		drivers.AsDefault(),
+	)
 
 	r.logger.Info().Timestamp().Str("name", name).Msg("Running test")
 

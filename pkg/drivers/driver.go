@@ -23,16 +23,25 @@ type (
 	}
 )
 
-func WithContext(ctx context.Context, drv Driver) context.Context {
+func WithContext(ctx context.Context, drv Driver, opts ...Option) context.Context {
 	ctx, value := resolveValue(ctx)
 
 	value.drivers[drv.Name()] = drv
+
+	for _, opt := range opts {
+		opt(drv, value.opts)
+	}
 
 	return ctx
 }
 
 func FromContext(ctx context.Context, name string) (Driver, error) {
 	_, value := resolveValue(ctx)
+
+	if name == "" {
+		name = value.opts.defaultDriver
+	}
+
 	drv, exists := value.drivers[name]
 
 	if !exists {
