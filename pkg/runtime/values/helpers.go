@@ -25,32 +25,28 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			break
 		}
 
-		segmentType := segment.Type()
-		resultType := result.Type()
+		segType := segment.Type()
 
-		if resultType == types.Object {
-			obj := result.(*Object)
-
-			if segmentType != types.String {
-				return nil, core.TypeError(segmentType, types.String)
+		switch segVal := result.(type) {
+		case *Object:
+			if segType != types.String {
+				return nil, core.TypeError(segType, types.String)
 			}
 
-			result, _ = obj.Get(segment.(String))
-		} else if resultType == types.Array {
-			arr := result.(*Array)
+			result, _ = segVal.Get(segment.(String))
 
-			if segmentType != types.Int {
-				return nil, core.TypeError(segmentType, types.Int)
+			break
+		case *Array:
+			if segType != types.Int {
+				return nil, core.TypeError(segType, types.Int)
 			}
 
-			result = arr.Get(segment.(Int))
-		} else {
-			getter, ok := result.(core.Getter)
+			result = segVal.Get(segment.(Int))
 
-			if ok {
-				return getter.GetIn(ctx, byPath[i:])
-			}
-
+			break
+		case core.Getter:
+			return segVal.GetIn(ctx, byPath[i:])
+		default:
 			return None, core.TypeError(
 				from.Type(),
 				types.Array,
@@ -76,41 +72,37 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 		parent = current
 		isTarget := target == idx
 		segmentType := segment.Type()
-		parentType := parent.Type()
 
-		if parentType == types.Object {
-			parent := parent.(*Object)
-
+		switch parVal := parent.(type) {
+		case *Object:
 			if segmentType != types.String {
 				return core.TypeError(segmentType, types.String)
 			}
 
 			if isTarget == false {
-				current, _ = parent.Get(segment.(String))
+				current, _ = parVal.Get(segment.(String))
 			} else {
-				parent.Set(segment.(String), value)
+				parVal.Set(segment.(String), value)
 			}
-		} else if parentType == types.Array {
+
+			break
+		case *Array:
 			if segmentType != types.Int {
 				return core.TypeError(segmentType, types.Int)
 			}
 
-			parent := parent.(*Array)
-
 			if isTarget == false {
-				current = parent.Get(segment.(Int))
+				current = parVal.Get(segment.(Int))
 			} else {
-				if err := parent.Set(segment.(Int), value); err != nil {
+				if err := parVal.Set(segment.(Int), value); err != nil {
 					return err
 				}
 			}
-		} else {
-			setter, ok := parent.(core.Setter)
 
-			if ok {
-				return setter.SetIn(ctx, byPath[idx:], value)
-			}
-
+			break
+		case core.Setter:
+			return parVal.SetIn(ctx, byPath[idx:], value)
+		default:
 			// redefine parent
 			isArray := segmentType.Equals(types.Int)
 
@@ -145,6 +137,8 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			if isTarget == false {
 				current = None
 			}
+
+			break
 		}
 	}
 
@@ -264,40 +258,28 @@ func ToBoolean(input core.Value) core.Value {
 }
 
 func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
-	switch input.Type() {
-	case types.Boolean,
-		types.Int,
-		types.Float,
-		types.String,
-		types.DateTime:
+	switch value := input.(type) {
+	case Boolean,
+		Int,
+		Float,
+		String,
+		DateTime:
 
-		return NewArrayWith(input), nil
-	case types.Array:
-		return input.Copy(), nil
-	case types.Object:
-		obj, ok := input.(*Object)
+		return NewArrayWith(value), nil
+	case *Array:
+		return value.Copy(), nil
+	case *Object:
+		arr := NewArray(int(value.Length()))
 
-		if !ok {
-			return NewArray(0), nil
-		}
-
-		arr := NewArray(int(obj.Length()))
-
-		obj.ForEach(func(value core.Value, key string) bool {
+		value.ForEach(func(value core.Value, key string) bool {
 			arr.Push(value)
 
 			return true
 		})
 
-		return obj, nil
-	default:
-		iterable, ok := input.(core.Iterable)
-
-		if !ok {
-			return NewArray(0), nil
-		}
-
-		iterator, err := iterable.Iterate(ctx)
+		return value, nil
+	case core.Iterable:
+		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
 			return None, err
@@ -320,6 +302,8 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 		}
 
 		return arr, nil
+	default:
+		return NewArray(0), nil
 	}
 }
 
