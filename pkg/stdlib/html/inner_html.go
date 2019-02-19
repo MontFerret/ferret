@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -19,16 +20,20 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	node := args[0].(values.HTMLNode)
+	el, err := resolveElement(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	if len(args) == 1 {
-		return node.InnerHTML(), nil
+		return el.InnerHTML(), nil
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -39,5 +44,5 @@ func InnerHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return node.InnerHTMLBySelector(selector), nil
+	return el.InnerHTMLBySelector(selector), nil
 }

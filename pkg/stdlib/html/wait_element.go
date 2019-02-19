@@ -10,7 +10,7 @@ import (
 
 // WaitElement waits for element to appear in the DOM.
 // Stops the execution until it finds an element or operation times out.
-// @param doc (HTMLDocument) - Dynamic HTMLDocument.
+// @param doc (HTMLDocument) - Driver HTMLDocument.
 // @param selector (String) - Target element's selector.
 // @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
 func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
@@ -20,7 +20,12 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	arg := args[0]
+	doc, err := toDocument(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	selector := args[1].String()
 	timeout := values.NewInt(defaultTimeout)
 
@@ -32,18 +37,6 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		timeout = args[2].(values.Int)
-	}
-
-	err = core.ValidateType(arg, types.HTMLDocument)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	doc, ok := arg.(values.DHTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	return values.None, doc.WaitForSelector(values.NewString(selector), timeout)

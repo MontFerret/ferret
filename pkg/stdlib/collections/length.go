@@ -25,8 +25,6 @@ func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 			types.String,
 			types.Array,
 			types.Object,
-			types.HTMLElement,
-			types.HTMLDocument,
 			types.Binary,
 			core.NewType("Measurable"),
 		)

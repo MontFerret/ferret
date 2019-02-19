@@ -22,16 +22,10 @@ func NavigateBack(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	err = core.ValidateType(args[0], types.HTMLDocument)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
 		return values.None, err
-	}
-
-	doc, ok := args[0].(values.DHTMLDocument)
-
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	skip := values.NewInt(1)

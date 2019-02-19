@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Click dispatches click event on a given element
@@ -20,38 +19,23 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	// CLICK(el)
 	if len(args) == 1 {
-		arg1 := args[0]
-
-		err := core.ValidateType(arg1, types.HTMLElement)
+		el, err := toElement(args[0])
 
 		if err != nil {
 			return values.False, err
-		}
-
-		el, ok := arg1.(values.DHTMLNode)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 		}
 
 		return el.Click()
 	}
 
 	// CLICK(doc, selector)
-	arg1 := args[0]
-	selector := args[1].String()
-
-	err = core.ValidateType(arg1, types.HTMLDocument)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
-		return values.None, err
+		return values.False, err
 	}
 
-	doc, ok := arg1.(values.DHTMLDocument)
-
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-	}
+	selector := args[1].String()
 
 	return doc.ClickBySelector(values.NewString(selector))
 }

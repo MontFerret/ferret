@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -196,7 +197,7 @@ func (el *HTMLElement) Close() error {
 }
 
 func (el *HTMLElement) Type() core.Type {
-	return types.HTMLElement
+	return drivers.HTMLElementType
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
@@ -214,24 +215,14 @@ func (el *HTMLElement) String() string {
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
-	if other.Type() == types.HTMLElement {
-		other := other.(*HTMLElement)
+	switch other.Type() {
+	case drivers.HTMLElementType:
+		other := other.(drivers.HTMLElement)
 
-		id := int(el.id.backendID)
-		otherID := int(other.id.backendID)
-
-		if id == otherID {
-			return 0
-		}
-
-		if id > otherID {
-			return 1
-		}
-
-		return -1
+		return el.InnerHTML().Compare(other.InnerHTML())
+	default:
+		return drivers.Compare(el.Type(), other.Type())
 	}
-
-	return types.Compare(other.Type(), types.HTMLElement)
 }
 
 func (el *HTMLElement) Unwrap() interface{} {
@@ -251,7 +242,23 @@ func (el *HTMLElement) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (el *HTMLElement) Value() core.Value {
+func (el *HTMLElement) Copy() core.Value {
+	return values.None
+}
+
+func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
+	return common.NewIterator(el)
+}
+
+func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetInElement(ctx, el, path)
+}
+
+func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetInElement(ctx, el, path, value)
+}
+
+func (el *HTMLElement) GetValue() core.Value {
 	if !el.IsConnected() {
 		return el.value
 	}
@@ -272,12 +279,16 @@ func (el *HTMLElement) Value() core.Value {
 	return val
 }
 
-func (el *HTMLElement) Copy() core.Value {
-	return values.None
-}
+func (el *HTMLElement) SetValue(value core.Value) error {
+	if !el.IsConnected() {
+		// TODO: Return an error
+		return nil
+	}
 
-func (el *HTMLElement) Length() values.Int {
-	return values.NewInt(len(el.children))
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.nodeID, value.String()))
 }
 
 func (el *HTMLElement) NodeType() values.Int {
@@ -286,6 +297,10 @@ func (el *HTMLElement) NodeType() values.Int {
 
 func (el *HTMLElement) NodeName() values.String {
 	return el.nodeName
+}
+
+func (el *HTMLElement) Length() values.Int {
+	return values.NewInt(len(el.children))
 }
 
 func (el *HTMLElement) GetAttributes() core.Value {
@@ -313,6 +328,13 @@ func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 	}
 
 	return val
+}
+
+func (el *HTMLElement) SetAttribute(name, value values.String) error {
+	return el.client.DOM.SetAttributeValue(
+		context.Background(),
+		dom.NewSetAttributeValueArgs(el.id.nodeID, string(name), string(value)),
+	)
 }
 
 func (el *HTMLElement) GetChildNodes() core.Value {
@@ -482,7 +504,7 @@ func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String
 		el.logError(err).
 			Int("childNodeID", int(childNodeID)).
 			Str("selector", selector.String()).
-			Msg("failed to resolve remote object for child element")
+			Msg("failed to resolve remote object for child el")
 
 		return values.EmptyString
 	}
@@ -491,7 +513,7 @@ func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String
 		el.logError(err).
 			Int("childNodeID", int(childNodeID)).
 			Str("selector", selector.String()).
-			Msg("failed to resolve remote object for child element")
+			Msg("failed to resolve remote object for child el")
 
 		return values.EmptyString
 	}
@@ -504,7 +526,7 @@ func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String
 		el.logError(err).
 			Str("childObjectID", string(objID)).
 			Str("selector", selector.String()).
-			Msg("failed to load inner text for found child element")
+			Msg("failed to load inner text for found child el")
 
 		return values.EmptyString
 	}
@@ -545,7 +567,7 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 				Int("index", idx).
 				Int("childNodeID", int(id)).
 				Str("selector", selector.String()).
-				Msg("failed to resolve remote object for child element")
+				Msg("failed to resolve remote object for child el")
 
 			continue
 		}
@@ -562,7 +584,7 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 			el.logError(err).
 				Str("childObjectID", string(objID)).
 				Str("selector", selector.String()).
-				Msg("failed to load inner text for found child element")
+				Msg("failed to load inner text for found child el")
 
 			continue
 		}
@@ -606,7 +628,7 @@ func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String
 	if err != nil {
 		el.logError(err).
 			Str("selector", selector.String()).
-			Msg("failed to load inner HTML for found child element")
+			Msg("failed to load inner HTML for found child el")
 
 		return values.EmptyString
 	}
@@ -640,7 +662,7 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Ar
 		if err != nil {
 			el.logError(err).
 				Str("selector", selector.String()).
-				Msg("failed to load inner HTML for found child element")
+				Msg("failed to load inner HTML for found child el")
 
 			// return what we have
 			return arr
@@ -777,7 +799,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 	var attrID = "data-ferret-select"
 
 	if el.NodeName() != "SELECT" {
-		return nil, core.Error(core.ErrInvalidOperation, "Element is not a <select> element.")
+		return nil, core.Error(core.ErrInvalidOperation, "element is not a <select> element.")
 	}
 
 	id, err := uuid.NewV4()
@@ -798,31 +820,25 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 	res, err := eval.Eval(
 		el.client,
 		fmt.Sprintf(`
-			var element = document.querySelector('[%s="%s"]');
-
-			if (element == null) {
+			var el = document.querySelector('[%s="%s"]');
+			if (el == null) {
 				return [];
 			}
-
 			var values = %s;
-
-			if (element.nodeName.toLowerCase() !== 'select') {
-				throw new Error('Element is not a <select> element.');
+			if (el.nodeName.toLowerCase() !== 'select') {
+				throw new Error('element is not a <select> element.');
 			}
-
-			var options = Array.from(element.options);
-      		element.value = undefined;
-
+			var options = Array.from(el.options);
+      		el.value = undefined;
 			for (var option of options) {
         		option.selected = values.includes(option.value);
         	
-				if (option.selected && !element.multiple) {
+				if (option.selected && !el.multiple) {
           			break;
 				}
       		}
-
-      		element.dispatchEvent(new Event('input', { 'bubbles': true }));
-      		element.dispatchEvent(new Event('change', { 'bubbles': true }));
+      		el.dispatchEvent(new Event('input', { 'bubbles': true }));
+      		el.dispatchEvent(new Event('change', { 'bubbles': true }));
       		
 			return options.filter(option => option.selected).map(option => option.value);
 		`,
@@ -869,11 +885,9 @@ func (el *HTMLElement) ScrollIntoView() error {
 
 	_, err = eval.Eval(el.client, fmt.Sprintf(`
 		var el = document.querySelector('[%s="%s"]');
-
 		if (el == null) {
 			throw new Error('element not found');
 		}
-
 		el.scrollIntoView({
     		behavior: 'instant',
 			inline: 'center',
@@ -929,7 +943,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 			return text, nil
 		}
 
-		el.logError(err).Msg("failed to get get inner text from remote object")
+		el.logError(err).Msg("failed to get inner text from remote object")
 
 		// and just parse cached innerHTML
 	}
@@ -976,7 +990,7 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 		)
 
 		if err != nil {
-			el.logError(err).Msg("failed to load child nodes")
+			el.logError(err).Msg("failed to load child elements")
 
 			continue
 		}
@@ -999,14 +1013,14 @@ func (el *HTMLElement) handleAttrModified(message interface{}) {
 		return
 	}
 
-	// it's not for this element
+	// it's not for this el
 	if reply.NodeID != el.id.nodeID {
 		return
 	}
 
 	el.attributes.Write(func(v core.Value, err error) {
 		if err != nil {
-			el.logError(err).Msg("failed to update node")
+			el.logError(err).Msg("failed to update element")
 
 			return
 		}
@@ -1029,7 +1043,7 @@ func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 		return
 	}
 
-	// it's not for this element
+	// it's not for this el
 	if reply.NodeID != el.id.nodeID {
 		return
 	}
@@ -1042,7 +1056,7 @@ func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 
 	el.attributes.Write(func(v core.Value, err error) {
 		if err != nil {
-			el.logError(err).Msg("failed to update node")
+			el.logError(err).Msg("failed to update element")
 
 			return
 		}
@@ -1077,7 +1091,7 @@ func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
 	)
 
 	if err != nil {
-		el.logError(err).Msg("failed to update node")
+		el.logError(err).Msg("failed to update element")
 
 		return
 	}
@@ -1137,7 +1151,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		loadedEl, err := LoadElement(ctx, el.logger, el.client, el.events, nextID, emptyBackendID)
 
 		if err != nil {
-			el.logError(err).Msg("failed to load an inserted node")
+			el.logError(err).Msg("failed to load an inserted element")
 
 			return
 		}
@@ -1147,7 +1161,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.id)
 
 		if err != nil {
-			el.logError(err).Msg("failed to update node")
+			el.logError(err).Msg("failed to update element")
 
 			return
 		}
@@ -1198,7 +1212,7 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 				Timestamp().
 				Err(err).
 				Int("nodeID", int(el.id.nodeID)).
-				Msg("failed to update node")
+				Msg("failed to update element")
 
 			return
 		}
@@ -1216,7 +1230,7 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 				Timestamp().
 				Err(err).
 				Int("nodeID", int(el.id.nodeID)).
-				Msg("failed to update node")
+				Msg("failed to update element")
 
 			return
 		}

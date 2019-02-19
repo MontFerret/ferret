@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -14,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethgrid/pester"
 )
+
+const DriverName = "http"
 
 type Driver struct {
 	client  *pester.Client
@@ -56,7 +59,11 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 	return &http.Client{Transport: tr}, nil
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (values.HTMLDocument, error) {
+func (drv *Driver) Name() string {
+	return DriverName
+}
+
+func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {
 	u := targetURL.String()
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 
@@ -76,6 +83,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	logger := logging.FromContext(ctx)
 	logger.
 		Debug().
+		Timestamp().
 		Str("user-agent", ua).
 		Msg("using User-Agent")
 
@@ -101,7 +109,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (va
 	return NewHTMLDocument(u, doc)
 }
 
-func (drv *Driver) ParseDocument(_ context.Context, str values.String) (values.HTMLDocument, error) {
+func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.HTMLDocument, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)

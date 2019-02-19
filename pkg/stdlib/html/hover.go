@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -20,7 +21,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// document or element
-	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
+	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -34,23 +35,14 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// Document with a selector
-		doc, ok := args[0].(values.DHTMLDocument)
-
-		if !ok {
-			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
-
+		doc := args[0].(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 
 		return values.None, doc.HoverBySelector(selector)
 	}
 
 	// Element
-	el, ok := args[0].(values.DHTMLNode)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-	}
+	el := args[0].(drivers.HTMLElement)
 
 	return values.None, el.Hover()
 }

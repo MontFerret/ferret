@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -22,19 +23,14 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, types.HTMLDocument, types.HTMLElement)
+	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
-	switch args[0].(type) {
-	case values.DHTMLDocument:
-		doc, ok := arg1.(values.DHTMLDocument)
-
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
+	if arg1.Type() == drivers.HTMLDocumentType {
+		doc := arg1.(drivers.HTMLDocument)
 
 		// selector
 		arg2 := args[1]
@@ -59,35 +55,28 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return doc.InputBySelector(arg2.(values.String), args[2], delay)
-	case values.DHTMLNode:
-		el, ok := arg1.(values.DHTMLNode)
+	}
 
-		if !ok {
-			return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
+	el := arg1.(drivers.HTMLElement)
+	delay := values.Int(0)
 
-		delay := values.Int(0)
+	if len(args) == 3 {
+		arg3 := args[2]
 
-		if len(args) == 3 {
-			arg3 := args[2]
-
-			err = core.ValidateType(arg3, types.Int)
-
-			if err != nil {
-				return values.False, err
-			}
-
-			delay = arg3.(values.Int)
-		}
-
-		err = el.Input(args[1], delay)
+		err = core.ValidateType(arg3, types.Int)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		return values.True, nil
-	default:
-		return values.False, core.Errors(core.ErrInvalidArgument)
+		delay = arg3.(values.Int)
 	}
+
+	err = el.Input(args[1], delay)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
 }

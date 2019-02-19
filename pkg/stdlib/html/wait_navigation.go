@@ -10,7 +10,7 @@ import (
 
 // WaitNavigation waits for document to navigate to a new url.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Dynamic HTMLDocument.
+// @param doc (HTMLDocument) - Driver HTMLDocument.
 // @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
 func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -19,16 +19,10 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.HTMLDocument)
+	doc, err := toDocument(args[0])
 
 	if err != nil {
 		return values.None, err
-	}
-
-	doc, ok := args[0].(values.DHTMLDocument)
-
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
 	}
 
 	timeout := values.NewInt(defaultTimeout)

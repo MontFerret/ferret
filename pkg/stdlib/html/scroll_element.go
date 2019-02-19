@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -18,14 +19,13 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	// document or element
-	err = core.ValidateType(args[0], types.HTMLDocument, types.HTMLElement)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	if len(args) == 2 {
+		err = core.ValidateType(args[0], drivers.HTMLDocumentType)
+
+		if err != nil {
+			return values.None, err
+		}
+
 		err = core.ValidateType(args[1], types.String)
 
 		if err != nil {
@@ -33,23 +33,20 @@ func ScrollInto(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		// Document with a selector
-		doc, ok := args[0].(values.DHTMLDocument)
-
-		if !ok {
-			return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
-		}
-
+		doc := args[0].(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 
 		return values.None, doc.ScrollBySelector(selector)
 	}
 
-	// Element
-	el, ok := args[0].(values.DHTMLNode)
+	err = core.ValidateType(args[0], drivers.HTMLElementType)
 
-	if !ok {
-		return values.None, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	if err != nil {
+		return values.None, err
 	}
+
+	// Element
+	el := args[0].(drivers.HTMLElement)
 
 	return values.None, el.ScrollIntoView()
 }

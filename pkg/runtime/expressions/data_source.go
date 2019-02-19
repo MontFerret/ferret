@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -50,8 +49,6 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
 		case types.Object:
 			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
-		case types.HTMLElement, types.HTMLDocument:
-			return collections.NewHTMLNodeIterator(ds.valVariable, ds.keyVariable, data.(values.HTMLNode))
 		default:
 			// fallback to user defined types
 			switch collection := data.(type) {
@@ -72,8 +69,6 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 					data.Type(),
 					types.Array,
 					types.Object,
-					types.HTMLDocument,
-					types.HTMLElement,
 					core.NewType("Iterable"),
 				)
 			}

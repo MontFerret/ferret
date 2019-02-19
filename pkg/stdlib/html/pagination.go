@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -20,10 +21,10 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, ok := args[0].(values.DHTMLDocument)
+	doc, err := toDocument(args[0])
 
-	if !ok {
-		return values.False, core.Errors(core.ErrInvalidType, ErrNotDynamic)
+	if err != nil {
+		return values.None, err
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -37,16 +38,16 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 	return &Paging{doc, selector}, nil
 }
 
-var PagingType = core.NewType("Paging")
+var PagingType = core.NewType("paging")
 
 type (
 	Paging struct {
-		document values.DHTMLDocument
+		document drivers.HTMLDocument
 		selector values.String
 	}
 
 	PagingIterator struct {
-		document values.DHTMLDocument
+		document drivers.HTMLDocument
 		selector values.String
 		pos      values.Int
 	}

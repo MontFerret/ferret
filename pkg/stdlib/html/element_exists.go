@@ -8,7 +8,7 @@ import (
 )
 
 // ElementExists returns a boolean value indicating whether there is an element matched by selector.
-// @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
+// @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - CSS selector.
 // @returns (Boolean) - A boolean value indicating whether there is an element matched by selector.
 func ElementExists(_ context.Context, args ...core.Value) (core.Value, error) {
