@@ -13,7 +13,7 @@ import (
 // If there's no element matching selector, the method returns an error.
 // @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selector (String, options) - If document is passed, this param must represent an element selector.
-func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
+func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -38,11 +38,11 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 		doc := args[0].(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 
-		return values.None, doc.HoverBySelector(selector)
+		return values.None, doc.HoverBySelector(ctx, selector)
 	}
 
 	// Element
 	el := args[0].(drivers.HTMLElement)
 
-	return values.None, el.Hover()
+	return values.None, el.Hover(ctx)
 }

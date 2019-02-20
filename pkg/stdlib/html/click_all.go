@@ -12,7 +12,7 @@ import (
 // @param source (Document) - Document.
 // @param selector (String) - Selector.
 // @returns (Boolean) - Returns true if matched at least one element.
-func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
+func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -34,5 +34,5 @@ func ClickAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return doc.ClickBySelectorAll(values.NewString(selector))
+	return doc.ClickBySelectorAll(ctx, values.NewString(selector))
 }

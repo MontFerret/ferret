@@ -23,10 +23,10 @@ func NewIterator(
 	return &Iterator{node, 0}, nil
 }
 
-func (iterator *Iterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
+func (iterator *Iterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
 	if iterator.node.Length() > iterator.pos {
 		idx := iterator.pos
-		val := iterator.node.GetChildNode(idx)
+		val := iterator.node.GetChildNode(ctx, idx)
 
 		iterator.pos++
 

@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -12,7 +13,7 @@ import (
 // Stops the execution until the navigation ends or operation times out.
 // @param doc (HTMLDocument) - Driver HTMLDocument.
 // @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
-func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
+func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -37,5 +38,8 @@ func WaitNavigation(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[1].(values.Int)
 	}
 
-	return values.None, doc.WaitForNavigation(timeout)
+	ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+	defer fn()
+
+	return values.None, doc.WaitForNavigation(ctx)
 }

@@ -155,7 +155,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	scr, err := doc.CaptureScreenshot(screenshotParams)
+	scr, err := doc.CaptureScreenshot(ctx, screenshotParams)
 
 	if err != nil {
 		return values.None, err

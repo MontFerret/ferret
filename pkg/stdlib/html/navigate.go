@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -14,7 +15,7 @@ import (
 // @param doc (Document) - Target document.
 // @param url (String) - Target url to navigate.
 // @param timeout (Int, optional) - Optional timeout. Default is 5000.
-func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
+func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
@@ -39,5 +40,8 @@ func Navigate(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[2].(values.Int)
 	}
 
-	return values.None, doc.Navigate(args[1].(values.String), timeout)
+	ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+	defer fn()
+
+	return values.None, doc.Navigate(ctx, args[1].(values.String))
 }

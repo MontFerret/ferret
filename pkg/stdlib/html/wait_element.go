@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -13,7 +14,7 @@ import (
 // @param doc (HTMLDocument) - Driver HTMLDocument.
 // @param selector (String) - Target element's selector.
 // @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
-func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
+func WaitElement(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
@@ -39,5 +40,8 @@ func WaitElement(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[2].(values.Int)
 	}
 
-	return values.None, doc.WaitForSelector(values.NewString(selector), timeout)
+	ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+	defer fn()
+
+	return values.None, doc.WaitForSelector(ctx, values.NewString(selector))
 }

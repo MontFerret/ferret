@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -18,7 +19,7 @@ import (
 // Otherwise timeout.
 // @param timeout (Int, optional) - If document is passed, this param must represent timeout.
 // Otherwise not passed.
-func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
+func WaitClass(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -72,7 +73,10 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 			timeout = args[3].(values.Int)
 		}
 
-		return values.None, doc.WaitForClassBySelector(selector, class, timeout)
+		ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+		defer fn()
+
+		return values.None, doc.WaitForClassBySelector(ctx, selector, class)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -88,5 +92,8 @@ func WaitClass(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[2].(values.Int)
 	}
 
-	return values.None, el.WaitForClass(class, timeout)
+	ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+	defer fn()
+
+	return values.None, el.WaitForClass(ctx, class)
 }

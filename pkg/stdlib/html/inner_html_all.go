@@ -13,7 +13,7 @@ import (
 // @param doc (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String) - String of CSS selector.
 // @returns (String) - An array of inner HTML strings if any element found, otherwise empty array.
-func InnerHTMLAll(_ context.Context, args ...core.Value) (core.Value, error) {
+func InnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -40,5 +40,5 @@ func InnerHTMLAll(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return el.InnerHTMLBySelectorAll(selector), nil
+	return el.InnerHTMLBySelectorAll(ctx, selector), nil
 }

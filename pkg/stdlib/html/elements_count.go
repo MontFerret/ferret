@@ -12,12 +12,12 @@ import (
 // @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - CSS selector.
 // @returns (Int) - A number of found HTML elements by a given CSS selector.
-func ElementsCount(_ context.Context, args ...core.Value) (core.Value, error) {
+func ElementsCount(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	return el.CountBySelector(selector), nil
+	return el.CountBySelector(ctx, selector), nil
 }

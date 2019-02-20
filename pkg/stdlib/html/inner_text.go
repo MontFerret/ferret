@@ -12,7 +12,7 @@ import (
 // @param doc (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner text if an element found, otherwise empty string.
-func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
+func InnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -26,7 +26,7 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 1 {
-		return el.InnerText(), nil
+		return el.InnerText(ctx), nil
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -37,5 +37,5 @@ func InnerText(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return el.InnerTextBySelector(selector), nil
+	return el.InnerTextBySelector(ctx, selector), nil
 }

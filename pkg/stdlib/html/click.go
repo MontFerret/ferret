@@ -10,7 +10,7 @@ import (
 // Click dispatches click event on a given element
 // @param source (Document | Element) - Event source.
 // @param selector (String, optional) - Optional selector. Only used when a document instance is passed.
-func Click(_ context.Context, args ...core.Value) (core.Value, error) {
+func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -25,7 +25,7 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		return el.Click()
+		return el.Click(ctx)
 	}
 
 	// CLICK(doc, selector)
@@ -37,5 +37,5 @@ func Click(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].String()
 
-	return doc.ClickBySelector(values.NewString(selector))
+	return doc.ClickBySelector(ctx, values.NewString(selector))
 }
