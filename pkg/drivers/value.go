@@ -101,8 +101,6 @@ type (
 
 		SelectBySelector(selector values.String, value *values.Array) (*values.Array, error)
 
-		HoverBySelector(selector values.String) error
-
 		PrintToPDF(params PDFParams) (values.Binary, error)
 
 		CaptureScreenshot(params ScreenshotParams) (values.Binary, error)
@@ -112,6 +110,12 @@ type (
 		ScrollBottom() error
 
 		ScrollBySelector(selector values.String) error
+
+		ScrollByXY(x, y values.Float) error
+
+		MoveMouseByXY(x, y values.Float) error
+
+		MoveMouseBySelector(selector values.String) error
 
 		WaitForNavigation(timeout values.Int) error
 

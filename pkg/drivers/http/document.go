@@ -189,10 +189,6 @@ func (doc *HTMLDocument) SelectBySelector(_ values.String, _ *values.Array) (*va
 	return nil, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) HoverBySelector(_ values.String) error {
-	return core.ErrNotSupported
-}
-
 func (doc *HTMLDocument) PrintToPDF(_ drivers.PDFParams) (values.Binary, error) {
 	return nil, core.ErrNotSupported
 }
@@ -210,6 +206,18 @@ func (doc *HTMLDocument) ScrollBottom() error {
 }
 
 func (doc *HTMLDocument) ScrollBySelector(_ values.String) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) ScrollByXY(x, y values.Float) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) MoveMouseBySelector(_ values.String) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) MoveMouseByXY(x, y values.Float) error {
 	return core.ErrNotSupported
 }
 

@@ -479,45 +479,6 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 	return nil, core.TypeError(types.Array, res.Type())
 }
 
-func (doc *HTMLDocument) HoverBySelector(selector values.String) error {
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
-	err := doc.ScrollBySelector(selector)
-
-	if err != nil {
-		return err
-	}
-
-	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
-	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
-
-	if err != nil {
-		doc.element.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return err
-	}
-
-	if found.NodeID <= 0 {
-		return errors.New("element not found")
-	}
-
-	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
-		nodeID: found.NodeID,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return doc.client.Input.DispatchMouseEvent(
-		ctx,
-		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
-	)
-}
-
 func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
@@ -874,6 +835,69 @@ func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
 	), false, false)
 
 	return err
+}
+func (doc *HTMLDocument) ScrollByXY(x, y values.Float) error {
+	_, err := eval.Eval(doc.client, fmt.Sprintf(`
+		window.scrollBy({
+  			top: %s,
+  			left: %s,
+  			behavior: 'instant'
+		});
+	`,
+		eval.ParamFloat(float64(x)),
+		eval.ParamFloat(float64(y)),
+	), false, false)
+
+	return err
+}
+
+func (doc *HTMLDocument) MoveMouseBySelector(selector values.String) error {
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	err := doc.ScrollBySelector(selector)
+
+	if err != nil {
+		return err
+	}
+
+	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
+	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		doc.element.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve a node by selector")
+
+		return err
+	}
+
+	if found.NodeID <= 0 {
+		return errors.New("element not found")
+	}
+
+	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
+		nodeID: found.NodeID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
+	)
+}
+
+func (doc *HTMLDocument) MoveMouseByXY(x, y values.Float) error {
+	ctx, cancel := contextWithTimeout()
+	defer cancel()
+
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", float64(x), float64(y)),
+	)
 }
 
 func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
