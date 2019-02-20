@@ -2,8 +2,6 @@ package html
 
 import (
 	"context"
-	"time"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -38,7 +36,7 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 		timeout = args[1].(values.Int)
 	}
 
-	ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
 	return values.None, doc.WaitForNavigation(ctx)

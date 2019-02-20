@@ -92,7 +92,7 @@ func WaitClass(ctx context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[2].(values.Int)
 	}
 
-	ctx, fn := context.WithTimeout(ctx, time.Duration(timeout))
+	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
 	return values.None, el.WaitForClass(ctx, class)
