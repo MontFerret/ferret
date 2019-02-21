@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -14,7 +13,7 @@ import (
 // @param selector (String) - String of CSS selector.
 // @param class (String) - String of target CSS class.
 // @param timeout (Int, optional) - Optional timeout.
-func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
+func WaitClassAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 
 	if err != nil {
@@ -55,5 +54,8 @@ func WaitClassAll(_ context.Context, args ...core.Value) (core.Value, error) {
 		timeout = args[3].(values.Int)
 	}
 
-	return values.None, doc.WaitForClassBySelectorAll(selector, class, timeout)
+	ctx, fn := waitTimeout(ctx, timeout)
+	defer fn()
+
+	return values.None, doc.WaitForClassBySelectorAll(ctx, selector, class)
 }

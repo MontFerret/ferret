@@ -85,14 +85,14 @@ func (p *Paging) Iterate(_ context.Context) (core.Iterator, error) {
 	return &PagingIterator{p.document, p.selector, -1}, nil
 }
 
-func (i *PagingIterator) Next(_ context.Context) (core.Value, core.Value, error) {
+func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, error) {
 	i.pos++
 
 	if i.pos == 0 {
 		return values.ZeroInt, values.ZeroInt, nil
 	}
 
-	clicked, err := i.document.ClickBySelector(i.selector)
+	clicked, err := i.document.ClickBySelector(ctx, i.selector)
 
 	if err != nil {
 		return values.None, values.None, err

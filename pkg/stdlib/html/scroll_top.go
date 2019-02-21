@@ -10,7 +10,7 @@ import (
 
 // ScrollTop scrolls the document's window to its top.
 // @param doc (HTMLDocument) - Target document.
-func ScrollTop(_ context.Context, args ...core.Value) (core.Value, error) {
+func ScrollTop(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -29,5 +29,5 @@ func ScrollTop(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.None, doc.ScrollTop()
+	return values.None, doc.ScrollTop(ctx)
 }

@@ -53,7 +53,20 @@ func New(logger zerolog.Logger, settings Settings) *Runner {
 }
 
 func (r *Runner) Run() error {
-	results, err := r.runQueries(r.settings.Dir)
+	ctx := context.Background()
+
+	ctx = drivers.WithContext(
+		ctx,
+		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
+	)
+
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(),
+		drivers.AsDefault(),
+	)
+
+	results, err := r.runQueries(ctx, r.settings.Dir)
 
 	if err != nil {
 		return err
@@ -83,7 +96,7 @@ func (r *Runner) Run() error {
 	return nil
 }
 
-func (r *Runner) runQueries(dir string) ([]Result, error) {
+func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 	files, err := ioutil.ReadDir(dir)
 
 	if err != nil {
@@ -126,13 +139,30 @@ func (r *Runner) runQueries(dir string) ([]Result, error) {
 			continue
 		}
 
-		results = append(results, r.runQuery(c, fName, string(b)))
+		r.logger.Info().Timestamp().Str("name", fName).Msg("Running test")
+
+		result := r.runQuery(ctx, c, fName, string(b))
+
+		if result.err == nil {
+			r.logger.Info().
+				Timestamp().
+				Str("file", result.name).
+				Msg("Test passed")
+		} else {
+			r.logger.Error().
+				Timestamp().
+				Err(result.err).
+				Str("file", result.name).
+				Msg("Test failed")
+		}
+
+		results = append(results, result)
 	}
 
 	return results, nil
 }
 
-func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
+func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, script string) Result {
 	start := time.Now()
 
 	p, err := c.Compile(script)
@@ -144,20 +174,6 @@ func (r *Runner) runQuery(c *compiler.FqlCompiler, name, script string) Result {
 			err:      errors.Wrap(err, "failed to compile query"),
 		}
 	}
-
-	ctx := context.Background()
-	ctx = drivers.WithContext(
-		ctx,
-		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),
-	)
-
-	ctx = drivers.WithContext(
-		ctx,
-		http.NewDriver(),
-		drivers.AsDefault(),
-	)
-
-	r.logger.Info().Timestamp().Str("name", name).Msg("Running test")
 
 	out, err := p.Run(
 		ctx,
@@ -207,20 +223,9 @@ func (r *Runner) report(results []Result) Summary {
 
 	for _, res := range results {
 		if res.err != nil {
-			r.logger.Error().
-				Timestamp().
-				Err(res.err).
-				Str("file", res.name).
-				Dur("time", res.duration).
-				Msg("Test failed")
 
 			failed++
 		} else {
-			r.logger.Info().
-				Timestamp().
-				Str("file", res.name).
-				Dur("time", res.duration).
-				Msg("Test passed")
 
 			passed++
 		}

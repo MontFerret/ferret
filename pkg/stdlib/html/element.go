@@ -14,14 +14,14 @@ import (
 // @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String) - CSS selector.
 // @returns (HTMLElement | None) - Returns an HTMLElement if found, otherwise NONE.
-func Element(_ context.Context, args ...core.Value) (core.Value, error) {
+func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	return el.QuerySelector(selector), nil
+	return el.QuerySelector(ctx, selector), nil
 }
 
 func queryArgs(args []core.Value) (drivers.HTMLNode, values.String, error) {

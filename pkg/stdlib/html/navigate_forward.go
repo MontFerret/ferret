@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -15,7 +14,7 @@ import (
 // @param entry (Int, optional) - Optional value indicating how many pages to skip. Default 1.
 // @param timeout (Int, optional) - Optional timeout. Default is 5000.
 // @returns (Boolean) - Returns TRUE if history exists and the operation succeeded, otherwise FALSE.
-func NavigateForward(_ context.Context, args ...core.Value) (core.Value, error) {
+func NavigateForward(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 
 	if err != nil {
@@ -51,5 +50,8 @@ func NavigateForward(_ context.Context, args ...core.Value) (core.Value, error) 
 		timeout = args[2].(values.Int)
 	}
 
-	return doc.NavigateForward(skip, timeout)
+	ctx, fn := waitTimeout(ctx, timeout)
+	defer fn()
+
+	return doc.NavigateForward(ctx, skip)
 }

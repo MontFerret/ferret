@@ -23,9 +23,9 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		case "url", "URL":
 			return doc.GetURL(), nil
 		case "body":
-			return doc.QuerySelector("body"), nil
+			return doc.QuerySelector(ctx, "body"), nil
 		case "head":
-			return doc.QuerySelector("head"), nil
+			return doc.QuerySelector(ctx, "head"), nil
 		default:
 			return GetInNode(ctx, doc.DocumentElement(), path)
 		}
@@ -46,13 +46,13 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 
 		switch segment {
 		case "innerText":
-			return el.InnerText(), nil
+			return el.InnerText(ctx), nil
 		case "innerHTML":
-			return el.InnerHTML(), nil
+			return el.InnerHTML(ctx), nil
 		case "value":
-			return el.GetValue(), nil
+			return el.GetValue(ctx), nil
 		case "attributes":
-			return el.GetAttributes(), nil
+			return el.GetAttributes(ctx), nil
 		default:
 			return GetInNode(ctx, el, path)
 		}
@@ -74,7 +74,7 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		if nt == drivers.HTMLElementType || nt == drivers.HTMLDocumentType {
 			re := node.(drivers.HTMLNode)
 
-			return re.GetChildNode(segment.(values.Int)), nil
+			return re.GetChildNode(ctx, segment.(values.Int)), nil
 		}
 
 		return values.GetIn(ctx, node, path[0:])
@@ -89,7 +89,7 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		case "nodeName":
 			return node.NodeName(), nil
 		case "children":
-			return node.GetChildNodes(), nil
+			return node.GetChildNodes(ctx), nil
 		case "length":
 			return node.Length(), nil
 		default:

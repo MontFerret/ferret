@@ -273,32 +273,32 @@ func (doc *HTMLDocument) Length() values.Int {
 	return doc.element.Length()
 }
 
-func (doc *HTMLDocument) GetChildNodes() core.Value {
+func (doc *HTMLDocument) GetChildNodes(ctx context.Context) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.GetChildNodes()
+	return doc.element.GetChildNodes(ctx)
 }
 
-func (doc *HTMLDocument) GetChildNode(idx values.Int) core.Value {
+func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.GetChildNode(idx)
+	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.QuerySelector(selector)
+	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.QuerySelectorAll(selector)
+	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
 func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
@@ -315,26 +315,27 @@ func (doc *HTMLDocument) GetURL() core.Value {
 	return doc.url
 }
 
-func (doc *HTMLDocument) SetURL(url values.String) error {
-	return doc.Navigate(url, values.Int(DefaultTimeout))
+func (doc *HTMLDocument) SetURL(ctx context.Context, url values.String) error {
+	return doc.Navigate(ctx, url)
 }
 
-func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) values.Int {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.CountBySelector(selector)
+	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(selector values.String) values.Boolean {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
 	doc.Lock()
 	defer doc.Unlock()
 
-	return doc.element.ExistsBySelector(selector)
+	return doc.element.ExistsBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
+		ctx,
 		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
@@ -360,8 +361,9 @@ func (doc *HTMLDocument) ClickBySelector(selector values.String) (values.Boolean
 	return values.False, nil
 }
 
-func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error) {
 	res, err := eval.Eval(
+		ctx,
 		doc.client,
 		fmt.Sprintf(`
 			var elements = document.querySelectorAll(%s);
@@ -389,12 +391,11 @@ func (doc *HTMLDocument) ClickBySelectorAll(selector values.String) (values.Bool
 	return values.False, nil
 }
 
-func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
-	ctx := context.Background()
-
+func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
 	valStr := value.String()
 
 	res, err := eval.Eval(
+		ctx,
 		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
@@ -423,9 +424,11 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 	for _, ch := range valStr {
 		for _, ev := range []string{"keyDown", "keyUp"} {
 			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
+
 			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
 				return values.False, err
 			}
+
 			time.Sleep(delayMs * time.Millisecond)
 		}
 	}
@@ -433,8 +436,9 @@ func (doc *HTMLDocument) InputBySelector(selector values.String, value core.Valu
 	return values.True, nil
 }
 
-func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.Array) (*values.Array, error) {
+func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
 	res, err := eval.Eval(
+		ctx,
 		doc.client,
 		fmt.Sprintf(`
 			var element = document.querySelector(%s);
@@ -479,7 +483,50 @@ func (doc *HTMLDocument) SelectBySelector(selector values.String, value *values.
 	return nil, core.TypeError(types.Array, res.Type())
 }
 
-func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.Int) error {
+func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
+	err := doc.ScrollBySelector(ctx, selector)
+
+	if err != nil {
+		return err
+	}
+
+	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
+	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
+
+	if err != nil {
+		doc.element.logError(err).
+			Str("selector", selector.String()).
+			Msg("failed to retrieve a node by selector")
+
+		return err
+	}
+
+	if found.NodeID <= 0 {
+		return errors.New("element not found")
+	}
+
+	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
+		nodeID: found.NodeID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
+	)
+}
+
+func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", float64(x), float64(y)),
+	)
+}
+
+func (doc *HTMLDocument) WaitForSelector(ctx context.Context, selector values.String) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
@@ -490,16 +537,15 @@ func (doc *HTMLDocument) WaitForSelector(selector values.String, timeout values.
 			// null means we need to repeat
 			return null;
 		`, eval.ParamString(selector.String())),
-		time.Millisecond*time.Duration(timeout),
 		events.DefaultPolling,
 	)
 
-	_, err := task.Run()
+	_, err := task.Run(ctx)
 
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelector(selector, class values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
@@ -519,16 +565,15 @@ func (doc *HTMLDocument) WaitForClassBySelector(selector, class values.String, t
 			eval.ParamString(selector.String()),
 			eval.ParamString(class.String()),
 		),
-		time.Millisecond*time.Duration(timeout),
 		events.DefaultPolling,
 	)
 
-	_, err := task.Run()
+	_, err := task.Run(ctx)
 
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(selector, class values.String, timeout values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
@@ -554,23 +599,17 @@ func (doc *HTMLDocument) WaitForClassBySelectorAll(selector, class values.String
 			eval.ParamString(selector.String()),
 			eval.ParamString(class.String()),
 		),
-		time.Millisecond*time.Duration(timeout),
 		events.DefaultPolling,
 	)
 
-	_, err := task.Run()
+	_, err := task.Run(ctx)
 
 	return err
 }
 
-func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
-	// do not wait
-	if timeout == 0 {
-		return nil
-	}
-
+func (doc *HTMLDocument) WaitForNavigation(ctx context.Context) error {
 	onEvent := make(chan struct{})
-	listener := func(_ interface{}) {
+	listener := func(_ context.Context, _ interface{}) {
 		close(onEvent)
 	}
 
@@ -581,17 +620,16 @@ func (doc *HTMLDocument) WaitForNavigation(timeout values.Int) error {
 	select {
 	case <-onEvent:
 		return nil
-	case <-time.After(time.Millisecond * time.Duration(timeout)):
+	case <-ctx.Done():
 		return core.ErrTimeout
 	}
 }
 
-func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
+func (doc *HTMLDocument) Navigate(ctx context.Context, url values.String) error {
 	if url == "" {
 		url = BlankPageURL
 	}
 
-	ctx := context.Background()
 	repl, err := doc.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
 
 	if err != nil {
@@ -602,11 +640,10 @@ func (doc *HTMLDocument) Navigate(url values.String, timeout values.Int) error {
 		return errors.New(*repl.ErrorText)
 	}
 
-	return doc.WaitForNavigation(timeout)
+	return doc.WaitForNavigation(ctx)
 }
 
-func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (values.Boolean, error) {
-	ctx := context.Background()
+func (doc *HTMLDocument) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
 	history, err := doc.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -636,7 +673,7 @@ func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (valu
 		return values.False, err
 	}
 
-	err = doc.WaitForNavigation(timeout)
+	err = doc.WaitForNavigation(ctx)
 
 	if err != nil {
 		return values.False, err
@@ -645,8 +682,7 @@ func (doc *HTMLDocument) NavigateBack(skip values.Int, timeout values.Int) (valu
 	return values.True, nil
 }
 
-func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (values.Boolean, error) {
-	ctx := context.Background()
+func (doc *HTMLDocument) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
 	history, err := doc.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -679,7 +715,7 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 		return values.False, err
 	}
 
-	err = doc.WaitForNavigation(timeout)
+	err = doc.WaitForNavigation(ctx)
 
 	if err != nil {
 		return values.False, err
@@ -688,9 +724,7 @@ func (doc *HTMLDocument) NavigateForward(skip values.Int, timeout values.Int) (v
 	return values.True, nil
 }
 
-func (doc *HTMLDocument) PrintToPDF(params drivers.PDFParams) (values.Binary, error) {
-	ctx := context.Background()
-
+func (doc *HTMLDocument) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
 	args := page.NewPrintToPDFArgs()
 	args.
 		SetLandscape(bool(params.Landscape)).
@@ -748,8 +782,7 @@ func (doc *HTMLDocument) PrintToPDF(params drivers.PDFParams) (values.Binary, er
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(params drivers.ScreenshotParams) (values.Binary, error) {
-	ctx := context.Background()
+func (doc *HTMLDocument) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
 
 	if params.Format == drivers.ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
@@ -797,8 +830,8 @@ func (doc *HTMLDocument) CaptureScreenshot(params drivers.ScreenshotParams) (val
 	return values.NewBinary(reply.Data), nil
 }
 
-func (doc *HTMLDocument) ScrollTop() error {
-	_, err := eval.Eval(doc.client, `
+func (doc *HTMLDocument) ScrollTop(ctx context.Context) error {
+	_, err := eval.Eval(ctx, doc.client, `
 		window.scrollTo({
 			left: 0,
 			top: 0,
@@ -809,8 +842,8 @@ func (doc *HTMLDocument) ScrollTop() error {
 	return err
 }
 
-func (doc *HTMLDocument) ScrollBottom() error {
-	_, err := eval.Eval(doc.client, `
+func (doc *HTMLDocument) ScrollBottom(ctx context.Context) error {
+	_, err := eval.Eval(ctx, doc.client, `
 		window.scrollTo({
 			left: 0,
 			top: window.document.body.scrollHeight,
@@ -821,8 +854,8 @@ func (doc *HTMLDocument) ScrollBottom() error {
 	return err
 }
 
-func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
-	_, err := eval.Eval(doc.client, fmt.Sprintf(`
+func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String) error {
+	_, err := eval.Eval(ctx, doc.client, fmt.Sprintf(`
 		var el = document.querySelector(%s);
 		if (el == null) {
 			throw new Error("element not found");
@@ -836,8 +869,9 @@ func (doc *HTMLDocument) ScrollBySelector(selector values.String) error {
 
 	return err
 }
-func (doc *HTMLDocument) ScrollByXY(x, y values.Float) error {
-	_, err := eval.Eval(doc.client, fmt.Sprintf(`
+
+func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
+	_, err := eval.Eval(ctx, doc.client, fmt.Sprintf(`
 		window.scrollBy({
   			top: %s,
   			left: %s,
@@ -851,61 +885,9 @@ func (doc *HTMLDocument) ScrollByXY(x, y values.Float) error {
 	return err
 }
 
-func (doc *HTMLDocument) MoveMouseBySelector(selector values.String) error {
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
-	err := doc.ScrollBySelector(selector)
-
-	if err != nil {
-		return err
-	}
-
-	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
-	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
-
-	if err != nil {
-		doc.element.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return err
-	}
-
-	if found.NodeID <= 0 {
-		return errors.New("element not found")
-	}
-
-	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
-		nodeID: found.NodeID,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return doc.client.Input.DispatchMouseEvent(
-		ctx,
-		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
-	)
-}
-
-func (doc *HTMLDocument) MoveMouseByXY(x, y values.Float) error {
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
-	return doc.client.Input.DispatchMouseEvent(
-		ctx,
-		input.NewDispatchMouseEventArgs("mouseMoved", float64(x), float64(y)),
-	)
-}
-
-func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
+func (doc *HTMLDocument) handlePageLoad(ctx context.Context, _ interface{}) {
 	doc.Lock()
 	defer doc.Unlock()
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	node, err := getRootElement(ctx, doc.client)
 
@@ -948,7 +930,7 @@ func (doc *HTMLDocument) handlePageLoad(_ interface{}) {
 	}
 }
 
-func (doc *HTMLDocument) handleError(val interface{}) {
+func (doc *HTMLDocument) handleError(_ context.Context, val interface{}) {
 	err, ok := val.(error)
 
 	if !ok {

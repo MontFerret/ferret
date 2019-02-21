@@ -287,10 +287,6 @@ func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
 	return children
 }
 
-func contextWithTimeout() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), DefaultTimeout)
-}
-
 func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
 	loadEventFired, err := client.Page.LoadEventFired(ctx)
 

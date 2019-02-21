@@ -13,7 +13,7 @@ import (
 // If there's no element matching selector, the method returns an error.
 // @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selector (String, options) - If document is passed, this param must represent an element selector.
-func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
+func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -45,13 +45,13 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, core.Error(core.ErrMissedArgument, "selector")
 		}
 
-		return values.None, n.MoveMouseBySelector(selector)
+		return values.None, n.MoveMouseBySelector(ctx, selector)
 	case drivers.HTMLElement:
 		if selector == values.EmptyString {
-			return values.None, n.Hover()
+			return values.None, n.Hover(ctx)
 		}
 
-		found := n.QuerySelector(selector)
+		found := n.QuerySelector(ctx, selector)
 
 		if found == values.None {
 			return values.None, core.Errorf(core.ErrNotFound, "element by selector %s", selector)
@@ -63,7 +63,7 @@ func Hover(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, core.Errorf(core.ErrNotFound, "element by selector %s", selector)
 		}
 
-		return values.None, el.Hover()
+		return values.None, el.Hover(ctx)
 	default:
 		return values.None, core.TypeError(n.Type(), drivers.HTMLDocumentType, drivers.HTMLElementType)
 	}

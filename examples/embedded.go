@@ -63,8 +63,8 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 	// by default, Ferret Runtime does not know about any HTML drivers
 	// all HTML manipulations are done via functions from standard library
 	// that assume that at least one driver is available
-	ctx = drivers.WithDynamic(ctx, cdp.NewDriver())
-	ctx = drivers.WithStatic(ctx, http.NewDriver())
+	ctx = drivers.WithContext(ctx, cdp.NewDriver())
+	ctx = drivers.WithContext(ctx, http.NewDriver(), drivers.AsDefault())
 
 	out, err := program.Run(ctx)
 

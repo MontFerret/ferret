@@ -3,10 +3,13 @@ package drivers
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
+
+const DefaultTimeout = time.Second * 30
 
 type (
 	ctxKey struct{}
@@ -30,6 +33,11 @@ func WithContext(ctx context.Context, drv Driver, opts ...Option) context.Contex
 
 	for _, opt := range opts {
 		opt(drv, value.opts)
+	}
+
+	// set first registered driver as a default one
+	if value.opts.defaultDriver == "" {
+		value.opts.defaultDriver = drv.Name()
 	}
 
 	return ctx

@@ -15,7 +15,7 @@ import (
 // @param value (String) - Target value.
 // @param delay (Int, optional) - Waits delay milliseconds between keystrokes
 // @returns (Boolean) - Returns true if an element was found.
-func Input(_ context.Context, args ...core.Value) (core.Value, error) {
+func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -54,7 +54,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 			delay = arg4.(values.Int)
 		}
 
-		return doc.InputBySelector(arg2.(values.String), args[2], delay)
+		return doc.InputBySelector(ctx, arg2.(values.String), args[2], delay)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -72,7 +72,7 @@ func Input(_ context.Context, args ...core.Value) (core.Value, error) {
 		delay = arg3.(values.Int)
 	}
 
-	err = el.Input(args[1], delay)
+	err = el.Input(ctx, args[1], delay)
 
 	if err != nil {
 		return values.False, err

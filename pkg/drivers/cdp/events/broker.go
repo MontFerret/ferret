@@ -2,17 +2,19 @@ package events
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"reflect"
+	"sync"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
-	"reflect"
-	"sync"
 )
 
 type (
 	Event int
 
-	EventListener func(message interface{})
+	EventListener func(ctx context.Context, message interface{})
 
 	EventBroker struct {
 		mu                      sync.Mutex
@@ -275,7 +277,11 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 		case <-ctx.Done():
 			return
 		default:
-			listener(message)
+			ctx2, fn := drivers.WithDefaultTimeout(ctx)
+
+			listener(ctx2, message)
+
+			fn()
 		}
 	}
 }

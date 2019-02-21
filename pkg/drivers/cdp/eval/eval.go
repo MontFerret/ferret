@@ -24,13 +24,13 @@ func ParamFloat(param float64) string {
 	return strconv.FormatFloat(param, 'f', 6, 64)
 }
 
-func Eval(client *cdp.Client, exp string, ret bool, async bool) (core.Value, error) {
+func Eval(ctx context.Context, client *cdp.Client, exp string, ret bool, async bool) (core.Value, error) {
 	args := runtime.
 		NewEvaluateArgs(PrepareEval(exp)).
 		SetReturnByValue(ret).
 		SetAwaitPromise(async)
 
-	out, err := client.Runtime.Evaluate(context.Background(), args)
+	out, err := client.Runtime.Evaluate(ctx, args)
 
 	if err != nil {
 		return values.None, err

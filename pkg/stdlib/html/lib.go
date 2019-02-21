@@ -2,11 +2,11 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"time"
 )
 
 const defaultTimeout = 5000
@@ -65,6 +65,13 @@ func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error)
 	}
 
 	return doc, nil
+}
+
+func waitTimeout(ctx context.Context, value values.Int) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(
+		ctx,
+		time.Duration(value)*time.Millisecond,
+	)
 }
 
 func resolveElement(value core.Value) (drivers.HTMLElement, error) {
