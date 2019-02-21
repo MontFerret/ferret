@@ -35,6 +35,11 @@ func WithContext(ctx context.Context, drv Driver, opts ...Option) context.Contex
 		opt(drv, value.opts)
 	}
 
+	// set first registered driver as a default one
+	if value.opts.defaultDriver == "" {
+		value.opts.defaultDriver = drv.Name()
+	}
+
 	return ctx
 }
 
