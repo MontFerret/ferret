@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -9,10 +10,10 @@ import (
 )
 
 type (
-	Function func() (core.Value, error)
+	Function func(ctx context.Context) (core.Value, error)
+
 	WaitTask struct {
 		fun     Function
-		timeout time.Duration
 		polling time.Duration
 	}
 )
@@ -21,39 +22,31 @@ const DefaultPolling = time.Millisecond * time.Duration(200)
 
 func NewWaitTask(
 	fun Function,
-	timeout time.Duration,
 	polling time.Duration,
 ) *WaitTask {
 	return &WaitTask{
 		fun,
-		timeout,
 		polling,
 	}
 }
 
-func (task *WaitTask) Run() (core.Value, error) {
-	timer := time.NewTimer(task.timeout)
-
+func (task *WaitTask) Run(ctx context.Context) (core.Value, error) {
 	for {
 		select {
-		case <-timer.C:
+		case <-ctx.Done():
 			return values.None, core.ErrTimeout
 		default:
-			out, err := task.fun()
+			out, err := task.fun(ctx)
 
 			// expression failed
 			// terminating
 			if err != nil {
-				timer.Stop()
-
 				return values.None, err
 			}
 
 			// output is not empty
 			// terminating
 			if out != values.None {
-				timer.Stop()
-
 				return out, nil
 			}
 
@@ -66,19 +59,18 @@ func (task *WaitTask) Run() (core.Value, error) {
 func NewEvalWaitTask(
 	client *cdp.Client,
 	predicate string,
-	timeout time.Duration,
 	polling time.Duration,
 ) *WaitTask {
 	return NewWaitTask(
-		func() (core.Value, error) {
+		func(ctx context.Context) (core.Value, error) {
 			return eval.Eval(
+				ctx,
 				client,
 				predicate,
 				true,
 				false,
 			)
 		},
-		timeout,
 		polling,
 	)
 }

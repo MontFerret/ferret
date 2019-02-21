@@ -25,8 +25,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const DefaultTimeout = time.Second * 30
-
 var emptyNodeID = dom.NodeID(0)
 var emptyBackendID = dom.BackendNodeID(0)
 
@@ -201,7 +199,7 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	val, err := el.innerText.Read()
+	val, err := el.innerText.Read(context.Background())
 
 	if err != nil {
 		return nil, err
@@ -211,7 +209,7 @@ func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 }
 
 func (el *HTMLElement) String() string {
-	return el.InnerHTML().String()
+	return el.InnerHTML(context.Background()).String()
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
@@ -219,7 +217,9 @@ func (el *HTMLElement) Compare(other core.Value) int64 {
 	case drivers.HTMLElementType:
 		other := other.(drivers.HTMLElement)
 
-		return el.InnerHTML().Compare(other.InnerHTML())
+		ctx := context.Background()
+
+		return el.InnerHTML(ctx).Compare(other.InnerHTML(ctx))
 	default:
 		return drivers.Compare(el.Type(), other.Type())
 	}
@@ -258,13 +258,10 @@ func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.
 	return common.SetInElement(ctx, el, path, value)
 }
 
-func (el *HTMLElement) GetValue() core.Value {
+func (el *HTMLElement) GetValue(ctx context.Context) core.Value {
 	if !el.IsConnected() {
 		return el.value
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	val, err := eval.Property(ctx, el.client, el.id.objectID, "value")
 
@@ -279,14 +276,11 @@ func (el *HTMLElement) GetValue() core.Value {
 	return val
 }
 
-func (el *HTMLElement) SetValue(value core.Value) error {
+func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
 	if !el.IsConnected() {
 		// TODO: Return an error
 		return nil
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.nodeID, value.String()))
 }
@@ -303,8 +297,8 @@ func (el *HTMLElement) Length() values.Int {
 	return values.NewInt(len(el.children))
 }
 
-func (el *HTMLElement) GetAttributes() core.Value {
-	val, err := el.attributes.Read()
+func (el *HTMLElement) GetAttributes(ctx context.Context) core.Value {
+	val, err := el.attributes.Read(ctx)
 
 	if err != nil {
 		return values.None
@@ -314,8 +308,8 @@ func (el *HTMLElement) GetAttributes() core.Value {
 	return val.Copy()
 }
 
-func (el *HTMLElement) GetAttribute(name values.String) core.Value {
-	attrs, err := el.attributes.Read()
+func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) core.Value {
+	attrs, err := el.attributes.Read(ctx)
 
 	if err != nil {
 		return values.None
@@ -330,15 +324,15 @@ func (el *HTMLElement) GetAttribute(name values.String) core.Value {
 	return val
 }
 
-func (el *HTMLElement) SetAttribute(name, value values.String) error {
+func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.String) error {
 	return el.client.DOM.SetAttributeValue(
-		context.Background(),
+		ctx,
 		dom.NewSetAttributeValueArgs(el.id.nodeID, string(name), string(value)),
 	)
 }
 
-func (el *HTMLElement) GetChildNodes() core.Value {
-	val, err := el.loadedChildren.Read()
+func (el *HTMLElement) GetChildNodes(ctx context.Context) core.Value {
+	val, err := el.loadedChildren.Read(ctx)
 
 	if err != nil {
 		return values.NewArray(0)
@@ -347,9 +341,8 @@ func (el *HTMLElement) GetChildNodes() core.Value {
 	return val
 }
 
-func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
-	// TODO: Add lazy loading
-	val, err := el.loadedChildren.Read()
+func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) core.Value {
+	val, err := el.loadedChildren.Read(ctx)
 
 	if err != nil {
 		return values.None
@@ -358,13 +351,10 @@ func (el *HTMLElement) GetChildNode(idx values.Int) core.Value {
 	return val.(*values.Array).Get(idx)
 }
 
-func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
+func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) core.Value {
 	if !el.IsConnected() {
 		return values.None
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorArgs(el.id.nodeID, selector.String())
@@ -399,13 +389,10 @@ func (el *HTMLElement) QuerySelector(selector values.String) core.Value {
 	return res
 }
 
-func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
+func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
 	if !el.IsConnected() {
 		return values.NewArray(0)
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
@@ -455,8 +442,8 @@ func (el *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	return arr
 }
 
-func (el *HTMLElement) InnerText() values.String {
-	val, err := el.innerText.Read()
+func (el *HTMLElement) InnerText(ctx context.Context) values.String {
+	val, err := el.innerText.Read(ctx)
 
 	if err != nil {
 		return values.EmptyString
@@ -469,13 +456,10 @@ func (el *HTMLElement) InnerText() values.String {
 	return val.(values.String)
 }
 
-func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String {
+func (el *HTMLElement) InnerTextBySelector(ctx context.Context, selector values.String) values.String {
 	if !el.IsConnected() {
 		return values.EmptyString
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
@@ -534,10 +518,7 @@ func (el *HTMLElement) InnerTextBySelector(selector values.String) values.String
 	return values.NewString(text.String())
 }
 
-func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
+func (el *HTMLElement) InnerTextBySelectorAll(ctx context.Context, selector values.String) *values.Array {
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	res, err := el.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String()))
 
@@ -595,20 +576,17 @@ func (el *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 	return arr
 }
 
-func (el *HTMLElement) InnerHTML() values.String {
+func (el *HTMLElement) InnerHTML(_ context.Context) values.String {
 	el.mu.Lock()
 	defer el.mu.Unlock()
 
 	return el.innerHTML
 }
 
-func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String {
+func (el *HTMLElement) InnerHTMLBySelector(ctx context.Context, selector values.String) values.String {
 	if !el.IsConnected() {
 		return values.EmptyString
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
@@ -636,10 +614,7 @@ func (el *HTMLElement) InnerHTMLBySelector(selector values.String) values.String
 	return text
 }
 
-func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
+func (el *HTMLElement) InnerHTMLBySelectorAll(ctx context.Context, selector values.String) *values.Array {
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
@@ -674,13 +649,10 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Ar
 	return arr
 }
 
-func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
+func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) values.Int {
 	if !el.IsConnected() {
 		return values.ZeroInt
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
@@ -697,13 +669,10 @@ func (el *HTMLElement) CountBySelector(selector values.String) values.Int {
 	return values.NewInt(len(res.NodeIDs))
 }
 
-func (el *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
+func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
 	if !el.IsConnected() {
 		return values.False
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorArgs(el.id.nodeID, selector.String())
@@ -724,10 +693,10 @@ func (el *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
 	return values.True
 }
 
-func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) error {
+func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String) error {
 	task := events.NewWaitTask(
-		func() (core.Value, error) {
-			current := el.GetAttribute("class")
+		func(ctx2 context.Context) (core.Value, error) {
+			current := el.GetAttribute(ctx2, "class")
 
 			if current.Type() != types.String {
 				return values.None, nil
@@ -745,27 +714,19 @@ func (el *HTMLElement) WaitForClass(class values.String, timeout values.Int) err
 
 			return values.None, nil
 		},
-		time.Millisecond*time.Duration(timeout),
 		events.DefaultPolling,
 	)
 
-	_, err := task.Run()
+	_, err := task.Run(ctx)
 
 	return err
 }
 
-func (el *HTMLElement) Click() (values.Boolean, error) {
-	ctx, cancel := contextWithTimeout()
-
-	defer cancel()
-
+func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
 	return events.DispatchEvent(ctx, el.client, el.id.objectID, "click")
 }
 
-func (el *HTMLElement) Input(value core.Value, delay values.Int) error {
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
+func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
 	if err := el.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(el.id.objectID)); err != nil {
 		el.logError(err).Msg("failed to focus")
 
@@ -795,7 +756,7 @@ func (el *HTMLElement) Input(value core.Value, delay values.Int) error {
 	return nil
 }
 
-func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
+func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
 	var attrID = "data-ferret-select"
 
 	if el.NodeName() != "SELECT" {
@@ -808,9 +769,6 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 		return nil, err
 	}
 
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
 	err = el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id.nodeID, attrID, id.String()))
 
 	if err != nil {
@@ -818,6 +776,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 	}
 
 	res, err := eval.Eval(
+		ctx,
 		el.client,
 		fmt.Sprintf(`
 			var el = document.querySelector('[%s="%s"]');
@@ -865,7 +824,7 @@ func (el *HTMLElement) Select(value *values.Array) (*values.Array, error) {
 	return nil, core.TypeError(types.Array, res.Type())
 }
 
-func (el *HTMLElement) ScrollIntoView() error {
+func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
 	var attrID = "data-ferret-scroll"
 
 	id, err := uuid.NewV4()
@@ -874,44 +833,42 @@ func (el *HTMLElement) ScrollIntoView() error {
 		return err
 	}
 
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
-
 	err = el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id.nodeID, attrID, id.String()))
 
 	if err != nil {
 		return err
 	}
 
-	_, err = eval.Eval(el.client, fmt.Sprintf(`
-		var el = document.querySelector('[%s="%s"]');
-		if (el == null) {
-			throw new Error('element not found');
-		}
-		el.scrollIntoView({
-    		behavior: 'instant',
-			inline: 'center',
-			block: 'center'
-  		});
-	`,
-		attrID,
-		id.String(),
-	), false, false)
+	_, err = eval.Eval(
+		ctx,
+		el.client,
+		fmt.Sprintf(`
+			var el = document.querySelector('[%s="%s"]');
+			if (el == null) {
+				throw new Error('element not found');
+			}
+			
+			el.scrollIntoView({
+    			behavior: 'instant',
+				inline: 'center',
+				block: 'center'
+  			});
+		`,
+			attrID,
+			id.String(),
+		), false, false)
 
 	el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
 
 	return err
 }
 
-func (el *HTMLElement) Hover() error {
-	err := el.ScrollIntoView()
+func (el *HTMLElement) Hover(ctx context.Context) error {
+	err := el.ScrollIntoView(ctx)
 
 	if err != nil {
 		return err
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	q, err := getClickablePoint(ctx, el.client, el.id)
 
@@ -932,11 +889,8 @@ func (el *HTMLElement) IsConnected() values.Boolean {
 	return el.connected
 }
 
-func (el *HTMLElement) loadInnerText() (core.Value, error) {
+func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 	if el.IsConnected() {
-		ctx, cancel := contextWithTimeout()
-		defer cancel()
-
 		text, err := loadInnerText(ctx, el.client, el.id)
 
 		if err == nil {
@@ -948,7 +902,7 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 		// and just parse cached innerHTML
 	}
 
-	h := el.InnerHTML()
+	h := el.InnerHTML(ctx)
 
 	if h == values.EmptyString {
 		return h, nil
@@ -965,17 +919,14 @@ func (el *HTMLElement) loadInnerText() (core.Value, error) {
 	return parsed, nil
 }
 
-func (el *HTMLElement) loadAttrs() (core.Value, error) {
+func (el *HTMLElement) loadAttrs(_ context.Context) (core.Value, error) {
 	return parseAttrs(el.rawAttrs), nil
 }
 
-func (el *HTMLElement) loadChildren() (core.Value, error) {
+func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 	if !el.IsConnected() {
 		return values.NewArray(0), nil
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	loaded := values.NewArray(len(el.children))
 
@@ -1001,11 +952,11 @@ func (el *HTMLElement) loadChildren() (core.Value, error) {
 	return loaded, nil
 }
 
-func (el *HTMLElement) handlePageReload(_ interface{}) {
+func (el *HTMLElement) handlePageReload(_ context.Context, _ interface{}) {
 	el.Close()
 }
 
-func (el *HTMLElement) handleAttrModified(message interface{}) {
+func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface{}) {
 	reply, ok := message.(*dom.AttributeModifiedReply)
 
 	// well....
@@ -1018,7 +969,7 @@ func (el *HTMLElement) handleAttrModified(message interface{}) {
 		return
 	}
 
-	el.attributes.Write(func(v core.Value, err error) {
+	el.attributes.Write(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
 
@@ -1035,7 +986,7 @@ func (el *HTMLElement) handleAttrModified(message interface{}) {
 	})
 }
 
-func (el *HTMLElement) handleAttrRemoved(message interface{}) {
+func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{}) {
 	reply, ok := message.(*dom.AttributeRemovedReply)
 
 	// well....
@@ -1054,7 +1005,7 @@ func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 		return
 	}
 
-	el.attributes.Write(func(v core.Value, err error) {
+	el.attributes.Write(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
 
@@ -1071,7 +1022,7 @@ func (el *HTMLElement) handleAttrRemoved(message interface{}) {
 	})
 }
 
-func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
+func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message interface{}) {
 	reply, ok := message.(*dom.ChildNodeCountUpdatedReply)
 
 	if !ok {
@@ -1081,9 +1032,6 @@ func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
 	if reply.NodeID != el.id.nodeID {
 		return
 	}
-
-	ctx, cancel := contextWithTimeout()
-	defer cancel()
 
 	node, err := el.client.DOM.DescribeNode(
 		ctx,
@@ -1102,7 +1050,7 @@ func (el *HTMLElement) handleChildrenCountChanged(message interface{}) {
 	el.children = createChildrenArray(node.Node.Children)
 }
 
-func (el *HTMLElement) handleChildInserted(message interface{}) {
+func (el *HTMLElement) handleChildInserted(ctx context.Context, message interface{}) {
 	reply, ok := message.(*dom.ChildNodeInsertedReply)
 
 	if !ok {
@@ -1143,10 +1091,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 		return
 	}
 
-	el.loadedChildren.Write(func(v core.Value, err error) {
-		ctx, cancel := contextWithTimeout()
-		defer cancel()
-
+	el.loadedChildren.Write(ctx, func(v core.Value, err error) {
 		loadedArr := v.(*values.Array)
 		loadedEl, err := LoadElement(ctx, el.logger, el.client, el.events, nextID, emptyBackendID)
 
@@ -1171,7 +1116,7 @@ func (el *HTMLElement) handleChildInserted(message interface{}) {
 	})
 }
 
-func (el *HTMLElement) handleChildRemoved(message interface{}) {
+func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface{}) {
 	reply, ok := message.(*dom.ChildNodeRemovedReply)
 
 	if !ok {
@@ -1206,7 +1151,7 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 		return
 	}
 
-	el.loadedChildren.Write(func(v core.Value, err error) {
+	el.loadedChildren.Write(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logger.Error().
 				Timestamp().
@@ -1216,9 +1161,6 @@ func (el *HTMLElement) handleChildRemoved(message interface{}) {
 
 			return
 		}
-
-		ctx, cancel := contextWithTimeout()
-		defer cancel()
 
 		loadedArr := v.(*values.Array)
 		loadedArr.RemoveAt(values.NewInt(targetIDx))

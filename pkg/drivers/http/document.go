@@ -125,28 +125,28 @@ func (doc *HTMLDocument) NodeName() values.String {
 	return "#document"
 }
 
-func (doc *HTMLDocument) GetChildNodes() core.Value {
-	return doc.element.GetChildNodes()
+func (doc *HTMLDocument) GetChildNodes(ctx context.Context) core.Value {
+	return doc.element.GetChildNodes(ctx)
 }
 
-func (doc *HTMLDocument) GetChildNode(idx values.Int) core.Value {
-	return doc.element.GetChildNode(idx)
+func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) core.Value {
+	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(selector values.String) core.Value {
-	return doc.element.QuerySelector(selector)
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) core.Value {
+	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(selector values.String) core.Value {
-	return doc.element.QuerySelectorAll(selector)
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
+	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(selector values.String) values.Int {
-	return doc.element.CountBySelector(selector)
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) values.Int {
+	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(selector values.String) values.Boolean {
-	return doc.element.ExistsBySelector(selector)
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
+	return doc.element.ExistsBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
@@ -157,75 +157,75 @@ func (doc *HTMLDocument) GetURL() core.Value {
 	return doc.url
 }
 
-func (doc *HTMLDocument) SetURL(_ values.String) error {
+func (doc *HTMLDocument) SetURL(_ context.Context, _ values.String) error {
 	return core.ErrInvalidOperation
 }
 
-func (doc *HTMLDocument) Navigate(_ values.String, _ values.Int) error {
+func (doc *HTMLDocument) Navigate(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) NavigateBack(_ values.Int, _ values.Int) (values.Boolean, error) {
+func (doc *HTMLDocument) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) NavigateForward(_ values.Int, _ values.Int) (values.Boolean, error) {
+func (doc *HTMLDocument) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ClickBySelector(_ values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ClickBySelectorAll(_ values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ClickBySelectorAll(_ context.Context, _ values.String) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) InputBySelector(_ values.String, _ core.Value, _ values.Int) (values.Boolean, error) {
+func (doc *HTMLDocument) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) SelectBySelector(_ values.String, _ *values.Array) (*values.Array, error) {
+func (doc *HTMLDocument) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) HoverBySelector(_ values.String) error {
+func (doc *HTMLDocument) HoverBySelector(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) PrintToPDF(_ drivers.PDFParams) (values.Binary, error) {
+func (doc *HTMLDocument) PrintToPDF(_ context.Context, _ drivers.PDFParams) (values.Binary, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) CaptureScreenshot(_ drivers.ScreenshotParams) (values.Binary, error) {
+func (doc *HTMLDocument) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotParams) (values.Binary, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollTop() error {
+func (doc *HTMLDocument) ScrollTop(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBottom() error {
+func (doc *HTMLDocument) ScrollBottom(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBySelector(_ values.String) error {
+func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForNavigation(_ values.Int) error {
+func (doc *HTMLDocument) WaitForNavigation(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForSelector(_ values.String, _ values.Int) error {
+func (doc *HTMLDocument) WaitForSelector(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForClassBySelector(_, _ values.String, _ values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelector(_ context.Context, _, _ values.String) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(_, _ values.String, _ values.Int) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(_ context.Context, _, _ values.String) error {
 	return core.ErrNotSupported
 }
 

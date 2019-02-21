@@ -27,7 +27,7 @@ func NewHTMLElement(node *goquery.Selection) (drivers.HTMLElement, error) {
 }
 
 func (nd *HTMLElement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(nd.InnerText().String())
+	return json.Marshal(nd.InnerText(context.Background()).String())
 }
 
 func (nd *HTMLElement) Type() core.Type {
@@ -35,7 +35,7 @@ func (nd *HTMLElement) Type() core.Type {
 }
 
 func (nd *HTMLElement) String() string {
-	return nd.InnerHTML().String()
+	return nd.InnerHTML(context.Background()).String()
 }
 
 func (nd *HTMLElement) Compare(other core.Value) int64 {
@@ -43,7 +43,10 @@ func (nd *HTMLElement) Compare(other core.Value) int64 {
 	case drivers.HTMLElementType:
 		other := other.(drivers.HTMLElement)
 
-		return nd.InnerHTML().Compare(other.InnerHTML())
+		ctx, fn := drivers.WithDefaultTimeout(context.Background())
+		defer fn()
+
+		return nd.InnerHTML(ctx).Compare(other.InnerHTML(ctx))
 	default:
 		return drivers.Compare(nd.Type(), other.Type())
 	}
@@ -101,7 +104,7 @@ func (nd *HTMLElement) Length() values.Int {
 	return nd.children.Length()
 }
 
-func (nd *HTMLElement) GetValue() core.Value {
+func (nd *HTMLElement) GetValue(_ context.Context) core.Value {
 	val, ok := nd.selection.Attr("value")
 
 	if ok {
@@ -111,17 +114,17 @@ func (nd *HTMLElement) GetValue() core.Value {
 	return values.EmptyString
 }
 
-func (nd *HTMLElement) SetValue(value core.Value) error {
+func (nd *HTMLElement) SetValue(_ context.Context, value core.Value) error {
 	nd.selection.SetAttr("value", value.String())
 
 	return nil
 }
 
-func (nd *HTMLElement) InnerText() values.String {
+func (nd *HTMLElement) InnerText(_ context.Context) values.String {
 	return values.NewString(nd.selection.Text())
 }
 
-func (nd *HTMLElement) InnerHTML() values.String {
+func (nd *HTMLElement) InnerHTML(_ context.Context) values.String {
 	h, err := nd.selection.Html()
 
 	if err != nil {
@@ -131,7 +134,7 @@ func (nd *HTMLElement) InnerHTML() values.String {
 	return values.NewString(h)
 }
 
-func (nd *HTMLElement) GetAttributes() core.Value {
+func (nd *HTMLElement) GetAttributes(_ context.Context) core.Value {
 	if nd.attrs == nil {
 		nd.attrs = nd.parseAttrs()
 	}
@@ -139,7 +142,7 @@ func (nd *HTMLElement) GetAttributes() core.Value {
 	return nd.attrs
 }
 
-func (nd *HTMLElement) GetAttribute(name values.String) core.Value {
+func (nd *HTMLElement) GetAttribute(_ context.Context, name values.String) core.Value {
 	v, ok := nd.selection.Attr(name.String())
 
 	if ok {
@@ -149,13 +152,13 @@ func (nd *HTMLElement) GetAttribute(name values.String) core.Value {
 	return values.None
 }
 
-func (nd *HTMLElement) SetAttribute(name, value values.String) error {
+func (nd *HTMLElement) SetAttribute(_ context.Context, name, value values.String) error {
 	nd.selection.SetAttr(string(name), string(value))
 
 	return nil
 }
 
-func (nd *HTMLElement) GetChildNodes() core.Value {
+func (nd *HTMLElement) GetChildNodes(_ context.Context) core.Value {
 	if nd.children == nil {
 		nd.children = nd.parseChildren()
 	}
@@ -163,7 +166,7 @@ func (nd *HTMLElement) GetChildNodes() core.Value {
 	return nd.children
 }
 
-func (nd *HTMLElement) GetChildNode(idx values.Int) core.Value {
+func (nd *HTMLElement) GetChildNode(_ context.Context, idx values.Int) core.Value {
 	if nd.children == nil {
 		nd.children = nd.parseChildren()
 	}
@@ -171,7 +174,7 @@ func (nd *HTMLElement) GetChildNode(idx values.Int) core.Value {
 	return nd.children.Get(idx)
 }
 
-func (nd *HTMLElement) QuerySelector(selector values.String) core.Value {
+func (nd *HTMLElement) QuerySelector(_ context.Context, selector values.String) core.Value {
 	selection := nd.selection.Find(selector.String())
 
 	if selection == nil {
@@ -187,7 +190,7 @@ func (nd *HTMLElement) QuerySelector(selector values.String) core.Value {
 	return res
 }
 
-func (nd *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
+func (nd *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) core.Value {
 	selection := nd.selection.Find(selector.String())
 
 	if selection == nil {
@@ -207,7 +210,7 @@ func (nd *HTMLElement) QuerySelectorAll(selector values.String) core.Value {
 	return arr
 }
 
-func (nd *HTMLElement) InnerHTMLBySelector(selector values.String) values.String {
+func (nd *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.String) values.String {
 	selection := nd.selection.Find(selector.String())
 
 	str, err := selection.Html()
@@ -220,7 +223,7 @@ func (nd *HTMLElement) InnerHTMLBySelector(selector values.String) values.String
 	return values.NewString(str)
 }
 
-func (nd *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Array {
+func (nd *HTMLElement) InnerHTMLBySelectorAll(_ context.Context, selector values.String) *values.Array {
 	selection := nd.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
@@ -236,13 +239,13 @@ func (nd *HTMLElement) InnerHTMLBySelectorAll(selector values.String) *values.Ar
 	return arr
 }
 
-func (nd *HTMLElement) InnerTextBySelector(selector values.String) values.String {
+func (nd *HTMLElement) InnerTextBySelector(_ context.Context, selector values.String) values.String {
 	selection := nd.selection.Find(selector.String())
 
 	return values.NewString(selection.Text())
 }
 
-func (nd *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Array {
+func (nd *HTMLElement) InnerTextBySelectorAll(_ context.Context, selector values.String) *values.Array {
 	selection := nd.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
@@ -253,7 +256,7 @@ func (nd *HTMLElement) InnerTextBySelectorAll(selector values.String) *values.Ar
 	return arr
 }
 
-func (nd *HTMLElement) CountBySelector(selector values.String) values.Int {
+func (nd *HTMLElement) CountBySelector(_ context.Context, selector values.String) values.Int {
 	selection := nd.selection.Find(selector.String())
 
 	if selection == nil {
@@ -263,7 +266,7 @@ func (nd *HTMLElement) CountBySelector(selector values.String) values.Int {
 	return values.NewInt(selection.Size())
 }
 
-func (nd *HTMLElement) ExistsBySelector(selector values.String) values.Boolean {
+func (nd *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) values.Boolean {
 	selection := nd.selection.Closest(selector.String())
 
 	if selection == nil {
@@ -285,27 +288,27 @@ func (nd *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(nd)
 }
 
-func (nd *HTMLElement) Click() (values.Boolean, error) {
+func (nd *HTMLElement) Click(_ context.Context) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Input(_ core.Value, _ values.Int) error {
+func (nd *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Select(_ *values.Array) (*values.Array, error) {
+func (nd *HTMLElement) Select(_ context.Context, _ *values.Array) (*values.Array, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (nd *HTMLElement) ScrollIntoView() error {
+func (nd *HTMLElement) ScrollIntoView(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Hover() error {
+func (nd *HTMLElement) Hover(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) WaitForClass(_ values.String, _ values.Int) error {
+func (nd *HTMLElement) WaitForClass(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 

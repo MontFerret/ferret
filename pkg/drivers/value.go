@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"context"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -24,56 +25,56 @@ type (
 
 		NodeName() values.String
 
-		GetChildNodes() core.Value
+		GetChildNodes(ctx context.Context) core.Value
 
-		GetChildNode(idx values.Int) core.Value
+		GetChildNode(ctx context.Context, idx values.Int) core.Value
 
-		QuerySelector(selector values.String) core.Value
+		QuerySelector(ctx context.Context, selector values.String) core.Value
 
-		QuerySelectorAll(selector values.String) core.Value
+		QuerySelectorAll(ctx context.Context, selector values.String) core.Value
 
-		CountBySelector(selector values.String) values.Int
+		CountBySelector(ctx context.Context, selector values.String) values.Int
 
-		ExistsBySelector(selector values.String) values.Boolean
+		ExistsBySelector(ctx context.Context, selector values.String) values.Boolean
 	}
 
 	// HTMLElement is the most general base interface which most objects in a Document implement.
 	HTMLElement interface {
 		HTMLNode
 
-		InnerText() values.String
+		InnerText(ctx context.Context) values.String
 
-		InnerHTML() values.String
+		InnerHTML(ctx context.Context) values.String
 
-		GetValue() core.Value
+		GetValue(ctx context.Context) core.Value
 
-		SetValue(value core.Value) error
+		SetValue(ctx context.Context, value core.Value) error
 
-		GetAttributes() core.Value
+		GetAttributes(ctx context.Context) core.Value
 
-		GetAttribute(name values.String) core.Value
+		GetAttribute(ctx context.Context, name values.String) core.Value
 
-		SetAttribute(name, value values.String) error
+		SetAttribute(ctx context.Context, name, value values.String) error
 
-		InnerHTMLBySelector(selector values.String) values.String
+		InnerHTMLBySelector(ctx context.Context, selector values.String) values.String
 
-		InnerHTMLBySelectorAll(selector values.String) *values.Array
+		InnerHTMLBySelectorAll(ctx context.Context, selector values.String) *values.Array
 
-		InnerTextBySelector(selector values.String) values.String
+		InnerTextBySelector(ctx context.Context, selector values.String) values.String
 
-		InnerTextBySelectorAll(selector values.String) *values.Array
+		InnerTextBySelectorAll(ctx context.Context, selector values.String) *values.Array
 
-		Click() (values.Boolean, error)
+		Click(ctx context.Context) (values.Boolean, error)
 
-		Input(value core.Value, delay values.Int) error
+		Input(ctx context.Context, value core.Value, delay values.Int) error
 
-		Select(value *values.Array) (*values.Array, error)
+		Select(ctx context.Context, value *values.Array) (*values.Array, error)
 
-		ScrollIntoView() error
+		ScrollIntoView(ctx context.Context) error
 
-		Hover() error
+		Hover(ctx context.Context) error
 
-		WaitForClass(class values.String, timeout values.Int) error
+		WaitForClass(ctx context.Context, class values.String) error
 	}
 
 	// The Document interface represents any web page loaded in the browser
@@ -85,40 +86,40 @@ type (
 
 		GetURL() core.Value
 
-		SetURL(url values.String) error
+		SetURL(ctx context.Context, url values.String) error
 
-		Navigate(url values.String, timeout values.Int) error
+		Navigate(ctx context.Context, url values.String) error
 
-		NavigateBack(skip values.Int, timeout values.Int) (values.Boolean, error)
+		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
 
-		NavigateForward(skip values.Int, timeout values.Int) (values.Boolean, error)
+		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
 
-		ClickBySelector(selector values.String) (values.Boolean, error)
+		ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
-		ClickBySelectorAll(selector values.String) (values.Boolean, error)
+		ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error)
 
-		InputBySelector(selector values.String, value core.Value, delay values.Int) (values.Boolean, error)
+		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error)
 
-		SelectBySelector(selector values.String, value *values.Array) (*values.Array, error)
+		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
 
-		HoverBySelector(selector values.String) error
+		HoverBySelector(ctx context.Context, selector values.String) error
 
-		PrintToPDF(params PDFParams) (values.Binary, error)
+		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
-		CaptureScreenshot(params ScreenshotParams) (values.Binary, error)
+		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
-		ScrollTop() error
+		ScrollTop(ctx context.Context) error
 
-		ScrollBottom() error
+		ScrollBottom(ctx context.Context) error
 
-		ScrollBySelector(selector values.String) error
+		ScrollBySelector(ctx context.Context, selector values.String) error
 
-		WaitForNavigation(timeout values.Int) error
+		WaitForNavigation(ctx context.Context) error
 
-		WaitForSelector(selector values.String, timeout values.Int) error
+		WaitForSelector(ctx context.Context, selector values.String) error
 
-		WaitForClassBySelector(selector, class values.String, timeout values.Int) error
+		WaitForClassBySelector(ctx context.Context, selector, class values.String) error
 
-		WaitForClassBySelectorAll(selector, class values.String, timeout values.Int) error
+		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String) error
 	}
 )

@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"bytes"
+	"context"
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -321,7 +322,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.GetValue()
+		v := el.GetValue(context.Background())
 
 		So(v, ShouldEqual, "find")
 	})
@@ -348,7 +349,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.InnerText()
+		v := el.InnerText(context.Background())
 
 		So(v, ShouldEqual, "Ferret")
 	})
@@ -375,7 +376,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.InnerHTML()
+		v := el.InnerHTML(context.Background())
 
 		So(v, ShouldEqual, "<h2>Ferret</h2>")
 	})
@@ -391,7 +392,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		found := el.QuerySelector(values.NewString("body .card-img-top:nth-child(1)"))
+		found := el.QuerySelector(context.Background(), values.NewString("body .card-img-top:nth-child(1)"))
 
 		So(found, ShouldNotEqual, values.None)
 
@@ -413,7 +414,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.CountBySelector(values.NewString("head meta"))
+		v := el.CountBySelector(context.Background(), values.NewString("head meta"))
 
 		So(v, ShouldEqual, 4)
 	})

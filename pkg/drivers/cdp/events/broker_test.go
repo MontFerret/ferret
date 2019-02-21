@@ -1,6 +1,7 @@
 package events_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
@@ -198,7 +199,7 @@ func TestEventBroker(t *testing.T) {
 			b := NewTestEventBroker()
 
 			StressTest(func() error {
-				b.AddEventListener(events.EventLoad, func(message interface{}) {})
+				b.AddEventListener(events.EventLoad, func(ctx context.Context, message interface{}) {})
 
 				return nil
 			}, 500)
@@ -210,7 +211,7 @@ func TestEventBroker(t *testing.T) {
 			defer b.Stop()
 
 			StressTest(func() error {
-				b.AddEventListener(events.EventLoad, func(message interface{}) {})
+				b.AddEventListener(events.EventLoad, func(ctx context.Context, message interface{}) {})
 
 				return nil
 			}, 500)
@@ -222,7 +223,7 @@ func TestEventBroker(t *testing.T) {
 			b := NewTestEventBroker()
 
 			StressTest(func() error {
-				listener := func(message interface{}) {}
+				listener := func(ctx context.Context, message interface{}) {}
 
 				b.AddEventListener(events.EventLoad, listener)
 				b.RemoveEventListener(events.EventLoad, listener)
@@ -239,7 +240,7 @@ func TestEventBroker(t *testing.T) {
 			defer b.Stop()
 
 			StressTest(func() error {
-				listener := func(message interface{}) {}
+				listener := func(ctx context.Context, message interface{}) {}
 
 				b.AddEventListener(events.EventLoad, listener)
 
@@ -267,7 +268,7 @@ func TestEventBroker(t *testing.T) {
 
 			var listener events.EventListener
 
-			listener = func(message interface{}) {
+			listener = func(ctx context.Context, message interface{}) {
 				counter += 1
 
 				b.RemoveEventListener(events.EventLoad, listener)
@@ -296,7 +297,7 @@ func TestEventBroker(t *testing.T) {
 
 			var counter int64
 
-			b.AddEventListener(events.EventLoad, func(message interface{}) {
+			b.AddEventListener(events.EventLoad, func(ctx context.Context, message interface{}) {
 				atomic.AddInt64(&counter, 1)
 				b.Stop()
 			})

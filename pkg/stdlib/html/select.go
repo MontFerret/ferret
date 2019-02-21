@@ -14,7 +14,7 @@ import (
 // @param valueOrSelector (String | Array<String>) - Selector or a an array of strings as a value.
 // @param value (Array<String) - Target value. Optional.
 // @returns (Array<String>) - Returns an array of selected values.
-func Select(_ context.Context, args ...core.Value) (core.Value, error) {
+func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -46,7 +46,7 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		return doc.SelectBySelector(arg2.(values.String), arg3.(*values.Array))
+		return doc.SelectBySelector(ctx, arg2.(values.String), arg3.(*values.Array))
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -58,5 +58,5 @@ func Select(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	return el.Select(arg2.(*values.Array))
+	return el.Select(ctx, arg2.(*values.Array))
 }

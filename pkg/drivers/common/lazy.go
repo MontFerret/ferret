@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -8,7 +9,7 @@ import (
 )
 
 type (
-	LazyFactory func() (core.Value, error)
+	LazyFactory func(ctx context.Context) (core.Value, error)
 
 	LazyValue struct {
 		sync.Mutex
@@ -40,12 +41,12 @@ func (lv *LazyValue) Ready() bool {
 // Read returns an underlying value.
 // Not thread safe. Should not mutated.
 // @returns (Value) - Underlying value if successfully loaded, otherwise error
-func (lv *LazyValue) Read() (core.Value, error) {
+func (lv *LazyValue) Read(ctx context.Context) (core.Value, error) {
 	lv.Lock()
 	defer lv.Unlock()
 
 	if !lv.ready {
-		lv.load()
+		lv.load(ctx)
 	}
 
 	return lv.value, lv.err
@@ -54,12 +55,12 @@ func (lv *LazyValue) Read() (core.Value, error) {
 // Write safely mutates an underlying value.
 // Loads a value if it's not ready.
 // Thread safe.
-func (lv *LazyValue) Write(writer func(v core.Value, err error)) {
+func (lv *LazyValue) Write(ctx context.Context, writer func(v core.Value, err error)) {
 	lv.Lock()
 	defer lv.Unlock()
 
 	if !lv.ready {
-		lv.load()
+		lv.load(ctx)
 	}
 
 	writer(lv.value, lv.err)
@@ -76,8 +77,8 @@ func (lv *LazyValue) Reset() {
 	lv.err = nil
 }
 
-func (lv *LazyValue) load() {
-	val, err := lv.factory()
+func (lv *LazyValue) load(ctx context.Context) {
+	val, err := lv.factory(ctx)
 
 	if err == nil {
 		lv.value = val

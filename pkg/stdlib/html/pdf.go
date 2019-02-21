@@ -292,7 +292,7 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	pdf, err := doc.PrintToPDF(pdfParams)
+	pdf, err := doc.PrintToPDF(ctx, pdfParams)
 
 	if err != nil {
 		return values.None, err

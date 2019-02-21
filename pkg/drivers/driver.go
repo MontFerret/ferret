@@ -3,10 +3,13 @@ package drivers
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
+
+const DefaultTimeout = time.Second * 30
 
 type (
 	ctxKey struct{}

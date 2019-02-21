@@ -10,7 +10,7 @@ import (
 
 // ScrollTop scrolls the document's window to its bottom.
 // @param doc (HTMLDocument) - Target document.
-func ScrollBottom(_ context.Context, args ...core.Value) (core.Value, error) {
+func ScrollBottom(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -29,5 +29,5 @@ func ScrollBottom(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.None, doc.ScrollBottom()
+	return values.None, doc.ScrollBottom(ctx)
 }

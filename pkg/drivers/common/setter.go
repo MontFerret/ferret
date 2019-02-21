@@ -21,7 +21,7 @@ func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 
 		switch segment {
 		case "url", "URL":
-			return doc.SetURL(values.NewString(value.String()))
+			return doc.SetURL(ctx, values.NewString(value.String()))
 		default:
 			return SetInNode(ctx, doc, path, value)
 		}
@@ -45,7 +45,7 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 			if len(path) > 1 {
 				attrName := path[1]
 
-				return el.SetAttribute(values.NewString(attrName.String()), values.NewString(value.String()))
+				return el.SetAttribute(ctx, values.NewString(attrName.String()), values.NewString(value.String()))
 			}
 
 			err := core.ValidateType(value, types.Object)
@@ -56,7 +56,7 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 
 			obj := value.(*values.Object)
 			obj.ForEach(func(value core.Value, key string) bool {
-				err = el.SetAttribute(values.NewString(key), values.NewString(value.String()))
+				err = el.SetAttribute(ctx, values.NewString(key), values.NewString(value.String()))
 
 				return err == nil
 			})
@@ -67,7 +67,7 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 				return core.Error(ErrInvalidPath, PathToString(path[1:]))
 			}
 
-			return el.SetValue(value)
+			return el.SetValue(ctx, value)
 		}
 	}
 
