@@ -454,11 +454,9 @@ func run(q string) ([]byte, error) {
 
 	// create a root context
 	ctx := context.Background()
-	// we inform the driver what proxy to use
-	ctx = html.WithStatic(
-	    ctx,
-	    http.NewDriver(http.WithProxy(proxy)),
-	)
+
+        // we inform the driver what proxy to use
+	ctx = drivers.WithContext(ctx, http.NewDriver(http.WithProxy(proxy)), drivers.AsDefault())
 
 	return program.Run(ctx)
 }
