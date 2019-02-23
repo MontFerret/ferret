@@ -106,7 +106,7 @@ func (t String) Copy() core.Value {
 }
 
 func (t String) Length() Int {
-	return Int(len(t))
+	return Int(len([]rune(t)))
 }
 
 func (t String) Contains(other String) Boolean {
