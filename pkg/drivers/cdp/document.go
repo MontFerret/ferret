@@ -483,7 +483,7 @@ func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.S
 	return nil, core.TypeError(types.Array, res.Type())
 }
 
-func (doc *HTMLDocument) HoverBySelector(ctx context.Context, selector values.String) error {
+func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
 	err := doc.ScrollBySelector(ctx, selector)
 
 	if err != nil {
@@ -516,6 +516,13 @@ func (doc *HTMLDocument) HoverBySelector(ctx context.Context, selector values.St
 	return doc.client.Input.DispatchMouseEvent(
 		ctx,
 		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
+	)
+}
+
+func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
+	return doc.client.Input.DispatchMouseEvent(
+		ctx,
+		input.NewDispatchMouseEventArgs("mouseMoved", float64(x), float64(y)),
 	)
 }
 
@@ -858,6 +865,21 @@ func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.S
   		});
 		return true;
 	`, eval.ParamString(selector.String()),
+	), false, false)
+
+	return err
+}
+
+func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
+	_, err := eval.Eval(ctx, doc.client, fmt.Sprintf(`
+		window.scrollBy({
+  			top: %s,
+  			left: %s,
+  			behavior: 'instant'
+		});
+	`,
+		eval.ParamFloat(float64(x)),
+		eval.ParamFloat(float64(y)),
 	), false, false)
 
 	return err

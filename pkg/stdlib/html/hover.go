@@ -27,22 +27,46 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	if len(args) == 2 {
+	selector := values.EmptyString
+
+	if len(args) > 1 {
 		err = core.ValidateType(args[1], types.String)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		// Document with a selector
-		doc := args[0].(drivers.HTMLDocument)
-		selector := args[1].(values.String)
-
-		return values.None, doc.HoverBySelector(ctx, selector)
+		selector = args[1].(values.String)
 	}
 
-	// Element
-	el := args[0].(drivers.HTMLElement)
+	switch n := args[0].(type) {
+	case drivers.HTMLDocument:
+		if selector == values.EmptyString {
+			return values.None, core.Error(core.ErrMissedArgument, "selector")
+		}
 
-	return values.None, el.Hover(ctx)
+		return values.None, n.MoveMouseBySelector(ctx, selector)
+	case drivers.HTMLElement:
+		if selector == values.EmptyString {
+			return values.None, n.Hover(ctx)
+		}
+
+		found := n.QuerySelector(ctx, selector)
+
+		if found == values.None {
+			return values.None, core.Errorf(core.ErrNotFound, "element by selector %s", selector)
+		}
+
+		el, ok := found.(drivers.HTMLElement)
+
+		if !ok {
+			return values.None, core.Errorf(core.ErrNotFound, "element by selector %s", selector)
+		}
+
+		defer el.Close()
+
+		return values.None, el.Hover(ctx)
+	default:
+		return values.None, core.TypeError(n.Type(), drivers.HTMLDocumentType, drivers.HTMLElementType)
+	}
 }

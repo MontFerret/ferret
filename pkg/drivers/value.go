@@ -102,8 +102,6 @@ type (
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
 
-		HoverBySelector(ctx context.Context, selector values.String) error
-
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
 		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
@@ -113,6 +111,12 @@ type (
 		ScrollBottom(ctx context.Context) error
 
 		ScrollBySelector(ctx context.Context, selector values.String) error
+
+		ScrollByXY(ctx context.Context, x, y values.Float) error
+
+		MoveMouseByXY(ctx context.Context, x, y values.Float) error
+
+		MoveMouseBySelector(ctx context.Context, selector values.String) error
 
 		WaitForNavigation(ctx context.Context) error
 

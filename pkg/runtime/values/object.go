@@ -196,6 +196,12 @@ func (t *Object) ForEach(predicate ObjectPredicate) {
 	}
 }
 
+func (t *Object) MustGet(key String) core.Value {
+	val, _ := t.Get(key)
+
+	return val
+}
+
 func (t *Object) Get(key String) (core.Value, Boolean) {
 	val, found := t.value[string(key)]
 
