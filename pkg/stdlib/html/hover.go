@@ -63,6 +63,8 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, core.Errorf(core.ErrNotFound, "element by selector %s", selector)
 		}
 
+		defer el.Close()
+
 		return values.None, el.Hover(ctx)
 	default:
 		return values.None, core.TypeError(n.Type(), drivers.HTMLDocumentType, drivers.HTMLElementType)

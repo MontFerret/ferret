@@ -2,11 +2,12 @@ package html
 
 import (
 	"context"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"time"
 )
 
 const defaultTimeout = 5000
@@ -27,12 +28,14 @@ func NewLib() map[string]core.Function {
 		"INNER_TEXT":       InnerText,
 		"INNER_TEXT_ALL":   InnerTextAll,
 		"INPUT":            Input,
+		"MOUSE":            MouseMoveXY,
 		"NAVIGATE":         Navigate,
 		"NAVIGATE_BACK":    NavigateBack,
 		"NAVIGATE_FORWARD": NavigateForward,
 		"PAGINATION":       Pagination,
 		"PDF":              PDF,
 		"SCREENSHOT":       Screenshot,
+		"SCROLL":           ScrollXY,
 		"SCROLL_BOTTOM":    ScrollBottom,
 		"SCROLL_ELEMENT":   ScrollInto,
 		"SCROLL_TOP":       ScrollTop,

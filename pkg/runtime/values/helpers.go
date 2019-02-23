@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"reflect"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -257,6 +258,44 @@ func ToBoolean(input core.Value) core.Value {
 	}
 }
 
+func ToFloat(input core.Value) (Float, error) {
+	switch val := input.(type) {
+	case Float:
+		return val, nil
+	case Int:
+		return Float(val), nil
+	case String:
+		i, err := strconv.ParseFloat(string(val), 64)
+
+		if err != nil {
+			return ZeroFloat, err
+		}
+
+		return Float(i), nil
+	default:
+		return ZeroFloat, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+	}
+}
+
+func ToInt(input core.Value) (Int, error) {
+	switch val := input.(type) {
+	case Int:
+		return val, nil
+	case Float:
+		return Int(val), nil
+	case String:
+		i, err := strconv.ParseInt(string(val), 10, 64)
+
+		if err != nil {
+			return ZeroInt, err
+		}
+
+		return Int(i), nil
+	default:
+		return ZeroInt, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+	}
+}
+
 func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 	switch value := input.(type) {
 	case Boolean,
@@ -277,7 +316,7 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			return true
 		})
 
-		return value, nil
+		return arr, nil
 	case core.Iterable:
 		iterator, err := value.Iterate(ctx)
 
