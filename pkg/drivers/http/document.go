@@ -209,7 +209,7 @@ func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String) er
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollByXY(_ context.Context, x, y values.Float) error {
+func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float) error {
 	return core.ErrNotSupported
 }
 
@@ -217,7 +217,7 @@ func (doc *HTMLDocument) MoveMouseBySelector(_ context.Context, _ values.String)
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, x, y values.Float) error {
+func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ values.Float) error {
 	return core.ErrNotSupported
 }
 
