@@ -52,7 +52,13 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 		case "value":
 			return el.GetValue(ctx), nil
 		case "attributes":
-			return el.GetAttributes(ctx), nil
+			attrs := el.GetAttributes(ctx)
+
+			if len(path) == 1 {
+				return attrs, nil
+			}
+
+			return values.GetIn(ctx, attrs, path[1:])
 		default:
 			return GetInNode(ctx, el, path)
 		}
@@ -70,17 +76,16 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 	segment := path[0]
 	st := segment.Type()
 
-	if st == types.Int {
+	switch st {
+	case types.Int:
 		if nt == drivers.HTMLElementType || nt == drivers.HTMLDocumentType {
 			re := node.(drivers.HTMLNode)
 
 			return re.GetChildNode(ctx, segment.(values.Int)), nil
 		}
 
-		return values.GetIn(ctx, node, path[0:])
-	}
-
-	if st == types.String {
+		return values.GetIn(ctx, node, path[1:])
+	case types.String:
 		segment := segment.(values.String)
 
 		switch segment {
@@ -89,13 +94,19 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		case "nodeName":
 			return node.NodeName(), nil
 		case "children":
-			return node.GetChildNodes(ctx), nil
+			children := node.GetChildNodes(ctx)
+
+			if len(path) == 1 {
+				return children, nil
+			}
+
+			return values.GetIn(ctx, children, path[1:])
 		case "length":
 			return node.Length(), nil
 		default:
 			return values.None, nil
 		}
+	default:
+		return values.None, core.TypeError(st, types.Int, types.String)
 	}
-
-	return values.None, core.TypeError(st, types.Int, types.String)
 }

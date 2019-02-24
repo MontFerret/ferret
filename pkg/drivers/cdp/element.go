@@ -297,15 +297,17 @@ func (el *HTMLElement) Length() values.Int {
 	return values.NewInt(len(el.children))
 }
 
-func (el *HTMLElement) GetAttributes(ctx context.Context) core.Value {
+func (el *HTMLElement) GetAttributes(ctx context.Context) *values.Object {
 	val, err := el.attributes.Read(ctx)
 
 	if err != nil {
-		return values.None
+		return values.NewObject()
 	}
 
+	attrs := val.(*values.Object)
+
 	// returning shallow copy
-	return val.Copy()
+	return attrs.Copy().(*values.Object)
 }
 
 func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) core.Value {

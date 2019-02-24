@@ -26,6 +26,12 @@ func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
+	err = core.ValidateType(args[1], types.String)
+
+	if err != nil {
+		return values.None, err
+	}
+
 	timeout := values.NewInt(defaultTimeout)
 
 	if len(args) > 2 {

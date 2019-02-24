@@ -134,7 +134,7 @@ func (nd *HTMLElement) InnerHTML(_ context.Context) values.String {
 	return values.NewString(h)
 }
 
-func (nd *HTMLElement) GetAttributes(_ context.Context) core.Value {
+func (nd *HTMLElement) GetAttributes(_ context.Context) *values.Object {
 	if nd.attrs == nil {
 		nd.attrs = nd.parseAttrs()
 	}

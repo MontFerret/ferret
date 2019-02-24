@@ -3,7 +3,7 @@ const NavLink = ReactRouterDOM.NavLink;
 
 export default function Layout({ children }) {
     return e("div", { id: "layout"}, [
-        e("nav", { className: "navbar navbar-expand-md navbar-dark bg-dark mb-4" }, [
+        e("nav", { className: "navbar navbar-expand-md navbar-dark bg-dark mb-4", id: "navbar" }, [
             e(NavLink, { className: "navbar-brand", to: "/"}, "Ferret"),
             e("button", { className: "navbar-toggler", type: "button"}, [
                 e("span", { className: "navbar-toggler-icon" })
