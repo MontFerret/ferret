@@ -16,24 +16,28 @@ type Options struct {
 	ShowTime  bool
 }
 
-func (opts Options) WithContext(ctx context.Context) (context.Context, error) {
+func (opts Options) WithContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	httpDriver := http.NewDriver(
+		http.WithProxy(opts.Proxy),
+		http.WithUserAgent(opts.UserAgent),
+	)
+
 	ctx = drivers.WithContext(
 		ctx,
-		http.NewDriver(
-			http.WithProxy(opts.Proxy),
-			http.WithUserAgent(opts.UserAgent),
-		),
+		httpDriver,
 		drivers.AsDefault(),
 	)
 
-	ctx = drivers.WithContext(
-		ctx,
-		cdp.NewDriver(
-			cdp.WithAddress(opts.Cdp),
-			cdp.WithProxy(opts.Proxy),
-			cdp.WithUserAgent(opts.UserAgent),
-		),
+	cdpDriver := cdp.NewDriver(
+		cdp.WithAddress(opts.Cdp),
+		cdp.WithProxy(opts.Proxy),
+		cdp.WithUserAgent(opts.UserAgent),
 	)
 
-	return ctx, nil
+	ctx = drivers.WithContext(
+		ctx,
+		cdpDriver,
+	)
+
+	return context.WithCancel(ctx)
 }

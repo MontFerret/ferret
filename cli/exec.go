@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"syscall"
 )
 
 func ExecFile(pathToFile string, opts Options) {
@@ -38,18 +37,10 @@ func Exec(query string, opts Options) {
 
 	l := NewLogger()
 
-	ctx, err := opts.WithContext(context.Background())
+	ctx, cancel := opts.WithContext(context.Background())
 
-	if err != nil {
-		fmt.Println("Failed to register HTML drivers")
-		fmt.Println(err)
-		os.Exit(1)
-		return
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGHUP)
+	signal.Notify(c, os.Interrupt)
 
 	go func() {
 		for {
