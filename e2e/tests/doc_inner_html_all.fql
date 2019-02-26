@@ -8,6 +8,4 @@ LET expected = [
 ]
 LET actual = INNER_HTML_ALL(doc, '.section-nav li')
 
-PRINT(actual)
-
 RETURN EXPECT(expected, actual)

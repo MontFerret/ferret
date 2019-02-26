@@ -2,7 +2,7 @@ LET url = @dynamic
 LET doc = DOCUMENT(url, true)
 LET el = ELEMENT(doc, "#root")
 
-LET expected = `<div id="layout"><nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4" id="navbar"><a class="navbar-brand active" aria-current="page" href="/">Ferret</a><button class="navbar-toggler" type="button"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse"><ul class="navbar-nav mr-auto"><li class="nav-item"><a class="nav-link" href="/forms">Forms</a></li><li class="nav-item"><a class="nav-link" href="/navigation">Navigation</a></li><li class="nav-item"><a class="nav-link" href="/events">Events</a></li></ul></div></nav><main class="container"><div class="jumbotron"><div><h1>Welcome to Ferret E2E test page!</h1></div><div><p class="lead">It has several pages for testing different possibilities of the library</p></div></div></main></div>`
+LET expected = `<div id="layout"><nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4" id="navbar"><a class="navbar-brand active" aria-current="page" href="/">Ferret</a><button class="navbar-toggler" type="button"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse"><ul class="navbar-nav mr-auto"><li class="nav-item"><a class="nav-link" href="/forms">Forms</a></li><li class="nav-item"><a class="nav-link" href="/navigation">Navigation</a></li><li class="nav-item"><a class="nav-link" href="/events">Events</a></li></ul></div></nav><main class="container"><div class="jumbotron" data-type="page" id="index"><div><h1>Welcome to Ferret E2E test page!</h1></div><div><p class="lead">It has several pages for testing different possibilities of the library</p></div></div></main></div>`
 LET actual = INNER_HTML(el)
 
 LET r1 = '(\s|\")'
