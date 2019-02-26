@@ -2,11 +2,12 @@ package runtime
 
 import (
 	"context"
+	"runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/pkg/errors"
-	"runtime"
 )
 
 type Program struct {
@@ -61,12 +62,13 @@ func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, er
 	}()
 
 	scope, closeFn := core.NewRootScope()
+
 	defer func() {
 		if err := closeFn(); err != nil {
 			logger.Error().
 				Timestamp().
 				Err(err).
-				Msg("Closing root scope")
+				Msg("closing root scope")
 		}
 	}()
 
