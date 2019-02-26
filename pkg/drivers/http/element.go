@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"hash/fnv"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -134,7 +135,7 @@ func (nd *HTMLElement) InnerHTML(_ context.Context) values.String {
 	return values.NewString(h)
 }
 
-func (nd *HTMLElement) GetAttributes(_ context.Context) core.Value {
+func (nd *HTMLElement) GetAttributes(_ context.Context) *values.Object {
 	if nd.attrs == nil {
 		nd.attrs = nd.parseAttrs()
 	}
@@ -232,7 +233,7 @@ func (nd *HTMLElement) InnerHTMLBySelectorAll(_ context.Context, selector values
 
 		// TODO: log error
 		if err == nil {
-			arr.Push(values.NewString(str))
+			arr.Push(values.NewString(strings.TrimSpace(str)))
 		}
 	})
 

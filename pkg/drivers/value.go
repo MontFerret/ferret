@@ -50,7 +50,7 @@ type (
 
 		SetValue(ctx context.Context, value core.Value) error
 
-		GetAttributes(ctx context.Context) core.Value
+		GetAttributes(ctx context.Context) *values.Object
 
 		GetAttribute(ctx context.Context, name values.String) core.Value
 
