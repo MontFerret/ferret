@@ -462,3 +462,20 @@ func run(q string) ([]byte, error) {
 }
 
 ```
+
+## Cookies
+
+By default, ``CDP`` driver execute each query in an incognito mode in order to avoid any collisions related to some persisted cookies from previous queries.   
+However, sometimes it might not be a desirable behavior and a query needs to be executed within a Chrome tab with earlier persisted cookies.   
+In order to do that, we need to inform the driver to execute all queries in regular tabs. Here is how to do that:
+
+#### CLI
+
+```sh
+
+```
+
+#### Code
+
+```go
+```

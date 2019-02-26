@@ -39,7 +39,7 @@ func NewDriver(opts ...Option) *Driver {
 }
 
 func (drv *Driver) Name() string {
-	return DriverName
+	return drv.options.name
 }
 
 func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {
@@ -52,7 +52,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 			Error().
 			Timestamp().
 			Err(err).
-			Str("driver", DriverName).
+			Str("driver", drv.options.name).
 			Msg("failed to initialize the driver")
 
 		return nil, err
@@ -64,9 +64,14 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 		url = BlankPageURL
 	}
 
-	// Create a new target belonging to the browser context, similar
-	// to opening a new tab in an incognito window.
-	createTargetArgs := target.NewCreateTargetArgs(url).SetBrowserContextID(drv.contextID)
+	// Create a new target belonging to the browser context
+	createTargetArgs := target.NewCreateTargetArgs(url)
+
+	if drv.options.cookies == false {
+		// Set it to an incognito mode
+		createTargetArgs.SetBrowserContextID(drv.contextID)
+	}
+
 	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
 
 	if err != nil {
@@ -74,7 +79,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 			Error().
 			Timestamp().
 			Err(err).
-			Str("driver", DriverName).
+			Str("driver", drv.options.name).
 			Msg("failed to create a browser target")
 
 		return nil, err
@@ -88,7 +93,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 			Error().
 			Timestamp().
 			Err(err).
-			Str("driver", DriverName).
+			Str("driver", drv.options.name).
 			Msg("failed to establish a connection")
 
 		return nil, err
@@ -184,6 +189,14 @@ func (drv *Driver) init(ctx context.Context) error {
 			return errors.Wrap(err, "failed to initialize driver")
 		}
 
+		drv.conn = bconn
+		drv.client = bc
+		drv.session = sess
+
+		if drv.options.cookies {
+			return nil
+		}
+
 		createCtx, err := bc.Target.CreateBrowserContext(ctx)
 
 		if err != nil {
@@ -193,9 +206,6 @@ func (drv *Driver) init(ctx context.Context) error {
 			return err
 		}
 
-		drv.conn = bconn
-		drv.client = bc
-		drv.session = sess
 		drv.contextID = createCtx.BrowserContextID
 	}
 
