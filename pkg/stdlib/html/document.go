@@ -2,6 +2,8 @@ package html
 
 import (
 	"context"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -12,6 +14,7 @@ import (
 )
 
 type DocumentLoadParams struct {
+	drivers.LoadDocumentParams
 	Driver  string
 	Timeout time.Duration
 }
@@ -43,9 +46,9 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 	var params DocumentLoadParams
 
 	if len(args) == 1 {
-		params = newDefaultDocLoadParams()
+		params = newDefaultDocLoadParams(url)
 	} else {
-		p, err := newDocLoadParams(args[1])
+		p, err := newDocLoadParams(url, args[1])
 
 		if err != nil {
 			return values.None, err
@@ -63,17 +66,20 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return drv.GetDocument(ctx, url)
+	return drv.LoadDocument(ctx, params.LoadDocumentParams)
 }
 
-func newDefaultDocLoadParams() DocumentLoadParams {
+func newDefaultDocLoadParams(url values.String) DocumentLoadParams {
 	return DocumentLoadParams{
+		LoadDocumentParams: drivers.LoadDocumentParams{
+			Url: url.String(),
+		},
 		Timeout: time.Second * 30,
 	}
 }
 
-func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
-	res := newDefaultDocLoadParams()
+func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, error) {
+	res := newDefaultDocLoadParams(url)
 
 	if err := core.ValidateType(arg, types.Boolean, types.String, types.Object); err != nil {
 		return res, err
@@ -103,6 +109,58 @@ func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 			res.Timeout = time.Duration(timeout.(values.Int)) + time.Millisecond
 		}
 
+		userAgent, exists := obj.Get(values.NewString("userAgent"))
+
+		if exists {
+			if err := core.ValidateType(userAgent, types.String); err != nil {
+				return res, err
+			}
+
+			res.UserAgent = userAgent.String()
+		}
+
+		keepCookies, exists := obj.Get(values.NewString("keepCookies"))
+
+		if exists {
+			if err := core.ValidateType(userAgent, types.Boolean); err != nil {
+				return res, err
+			}
+
+			res.KeepCookies = bool(keepCookies.(values.Boolean))
+		}
+
+		cookies, exists := obj.Get(values.NewString("cookies"))
+
+		if exists {
+			if err := core.ValidateType(userAgent, types.Array); err != nil {
+				return res, err
+			}
+
+			cookies, err := parseCookies(cookies.(*values.Array))
+
+			if err != nil {
+				return res, err
+			}
+
+			res.Cookies = cookies
+		}
+
+		header, exists := obj.Get(values.NewString("header"))
+
+		if exists {
+			if err := core.ValidateType(userAgent, types.Object); err != nil {
+				return res, err
+			}
+
+			header, err := parseHeader(header.(*values.Object))
+
+			if err != nil {
+				return res, err
+			}
+
+			res.Header = header
+		}
+
 		break
 	case types.String:
 		res.Driver = arg.(values.String).String()
@@ -118,6 +176,114 @@ func newDocLoadParams(arg core.Value) (DocumentLoadParams, error) {
 
 		break
 	}
+
+	return res, nil
+}
+
+func parseCookies(cookies *values.Array) ([]drivers.Cookie, error) {
+	var err error
+	res := make([]drivers.Cookie, 0, cookies.Length())
+
+	cookies.ForEach(func(value core.Value, idx int) bool {
+		if err = core.ValidateType(value, types.Object); err != nil {
+			return false
+		}
+
+		co := value.(*values.Object)
+
+		cookie := drivers.Cookie{
+			Name:   co.MustGet("name").String(),
+			Value:  co.MustGet("value").String(),
+			Path:   co.MustGet("path").String(),
+			Domain: co.MustGet("domain").String(),
+		}
+
+		maxAge, exists := co.Get("maxAge")
+
+		if exists {
+			if err = core.ValidateType(maxAge, types.Int); err != nil {
+				return false
+			}
+
+			cookie.MaxAge = int(maxAge.(values.Int))
+		}
+
+		expires, exists := co.Get("expires")
+
+		if exists {
+			if err = core.ValidateType(maxAge, types.DateTime, types.String); err != nil {
+				return false
+			}
+
+			if expires.Type() == types.DateTime {
+				cookie.Expires = expires.(values.DateTime).Unwrap().(time.Time)
+			} else {
+				t, e := time.Parse(expires.String(), values.DefaultTimeLayout)
+
+				if e != nil {
+					err = e
+
+					return false
+				}
+
+				cookie.Expires = t
+			}
+		}
+
+		sameSite, exists := co.Get("sameSite")
+
+		if exists {
+			sameSite := strings.ToLower(sameSite.String())
+
+			switch sameSite {
+			case "lax":
+				cookie.SameSite = http.SameSiteLaxMode
+				break
+			case "strict":
+				cookie.SameSite = http.SameSiteStrictMode
+				break
+			default:
+				cookie.SameSite = http.SameSiteDefaultMode
+				break
+			}
+		}
+
+		httpOnly, exists := co.Get("httpOnly")
+
+		if exists {
+			if err = core.ValidateType(httpOnly, types.Boolean); err != nil {
+				return false
+			}
+
+			cookie.HttpOnly = bool(httpOnly.(values.Boolean))
+		}
+
+		secure, exists := co.Get("secure")
+
+		if exists {
+			if err = core.ValidateType(secure, types.Boolean); err != nil {
+				return false
+			}
+
+			cookie.Secure = bool(secure.(values.Boolean))
+		}
+
+		res[idx] = cookie
+
+		return true
+	})
+
+	return res, err
+}
+
+func parseHeader(header *values.Object) (drivers.Header, error) {
+	res := make(drivers.Header)
+
+	header.ForEach(func(value core.Value, key string) bool {
+		res.Set(key, value.String())
+
+		return true
+	})
 
 	return res, nil
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/input"
+	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
@@ -313,6 +314,46 @@ func (doc *HTMLDocument) GetURL() core.Value {
 	defer doc.Unlock()
 
 	return doc.url
+}
+
+func (doc *HTMLDocument) GetCookies(ctx context.Context) (*values.Array, error) {
+	doc.Lock()
+	defer doc.Unlock()
+
+	repl, err := doc.client.Network.GetAllCookies(ctx)
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
+	if repl.Cookies == nil {
+		return values.NewArray(0), nil
+	}
+
+	cookies := values.NewArray(len(repl.Cookies))
+
+	for _, c := range repl.Cookies {
+		cookies.Push(toDriverCookie(c))
+	}
+
+	return cookies, nil
+}
+
+func (doc *HTMLDocument) SetCookies(ctx context.Context, cookies ...drivers.Cookie) error {
+	doc.Lock()
+	defer doc.Unlock()
+
+	if len(cookies) == 0 {
+		return nil
+	}
+
+	params := make([]network.CookieParam, 0, len(cookies))
+
+	for i, c := range cookies {
+		params[i] = fromDriverCookie(c)
+	}
+
+	return doc.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
 }
 
 func (doc *HTMLDocument) SetURL(ctx context.Context, url values.String) error {

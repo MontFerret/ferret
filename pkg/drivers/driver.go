@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const DefaultTimeout = time.Second * 30
@@ -19,10 +18,18 @@ type (
 		drivers map[string]Driver
 	}
 
+	LoadDocumentParams struct {
+		Url         string
+		UserAgent   string
+		KeepCookies bool
+		Cookies     []Cookie
+		Header      Header
+	}
+
 	Driver interface {
 		io.Closer
 		Name() string
-		GetDocument(ctx context.Context, url values.String) (HTMLDocument, error)
+		LoadDocument(ctx context.Context, params LoadDocumentParams) (HTMLDocument, error)
 	}
 )
 

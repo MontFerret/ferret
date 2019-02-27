@@ -11,7 +11,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/sethgrid/pester"
 )
@@ -63,39 +62,67 @@ func (drv *Driver) Name() string {
 	return DriverName
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {
-	u := targetURL.String()
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocumentParams) (drivers.HTMLDocument, error) {
+	req, err := http.NewRequest(http.MethodGet, params.Url, nil)
 
 	if err != nil {
 		return nil, err
 	}
+
+	logger := logging.FromContext(ctx)
 
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9,ru;q=0.8")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
+	if params.Header != nil {
+		for k := range params.Header {
+			req.Header.Add(k, params.Header.Get(k))
+
+			logger.
+				Debug().
+				Timestamp().
+				Str("header", k).
+				Msg("set header")
+		}
+	}
+
+	if params.Cookies != nil {
+		for _, c := range params.Cookies {
+			req.AddCookie(&http.Cookie{
+				Name:  c.Name,
+				Value: c.Value,
+			})
+
+			logger.
+				Debug().
+				Timestamp().
+				Str("cookie", c.Name).
+				Msg("set cookie")
+		}
+	}
+
 	req = req.WithContext(ctx)
 
-	ua := common.GetUserAgent(drv.options.userAgent)
+	var ua string
 
-	logger := logging.FromContext(ctx)
+	if params.UserAgent != "" {
+		ua = common.GetUserAgent(params.UserAgent)
+	} else {
+		ua = common.GetUserAgent(drv.options.userAgent)
+	}
+
 	logger.
 		Debug().
 		Timestamp().
 		Str("user-agent", ua).
 		Msg("using User-Agent")
 
-	// use custom user agent
-	if ua != "" {
-		req.Header.Set("User-Agent", uarand.GetRandom())
-	}
-
 	resp, err := drv.client.Do(req)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve a document %s", u)
+		return nil, errors.Wrapf(err, "failed to retrieve a document %s", params.Url)
 	}
 
 	defer resp.Body.Close()
@@ -103,10 +130,10 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse a document %s", u)
+		return nil, errors.Wrapf(err, "failed to parse a document %s", params.Url)
 	}
 
-	return NewHTMLDocument(u, doc)
+	return NewHTMLDocument(doc, params.Url, params.Cookies)
 }
 
 func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.HTMLDocument, error) {
@@ -118,7 +145,7 @@ func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.
 		return nil, errors.Wrap(err, "failed to parse a document")
 	}
 
-	return NewHTMLDocument("#string", doc)
+	return NewHTMLDocument(doc, "#string", nil)
 }
 
 func (drv *Driver) Close() error {

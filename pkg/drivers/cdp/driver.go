@@ -2,15 +2,16 @@ package cdp
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/emulation"
+	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
@@ -33,16 +34,16 @@ type Driver struct {
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
 	drv.options = newOptions(opts)
-	drv.dev = devtool.New(drv.options.address)
+	drv.dev = devtool.New(drv.options.Address)
 
 	return drv
 }
 
 func (drv *Driver) Name() string {
-	return drv.options.name
+	return drv.options.Name
 }
 
-func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (drivers.HTMLDocument, error) {
+func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocumentParams) (drivers.HTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)
@@ -52,13 +53,13 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 			Error().
 			Timestamp().
 			Err(err).
-			Str("driver", drv.options.name).
+			Str("driver", drv.options.Name).
 			Msg("failed to initialize the driver")
 
 		return nil, err
 	}
 
-	url := targetURL.String()
+	url := params.Url
 
 	if url == "" {
 		url = BlankPageURL
@@ -67,7 +68,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	// Create a new target belonging to the browser context
 	createTargetArgs := target.NewCreateTargetArgs(url)
 
-	if drv.options.keepCookies == false {
+	if drv.options.KeepCookies == false && params.KeepCookies == false {
 		// Set it to an incognito mode
 		createTargetArgs.SetBrowserContextID(drv.contextID)
 	}
@@ -79,7 +80,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 			Error().
 			Timestamp().
 			Err(err).
-			Str("driver", drv.options.name).
+			Str("driver", drv.options.Name).
 			Msg("failed to create a browser target")
 
 		return nil, err
@@ -93,7 +94,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 			Error().
 			Timestamp().
 			Err(err).
-			Str("driver", drv.options.name).
+			Str("driver", drv.options.Name).
 			Msg("failed to establish a connection")
 
 		return nil, err
@@ -122,7 +123,13 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 		},
 
 		func() error {
-			ua := common.GetUserAgent(drv.options.userAgent)
+			var ua string
+
+			if params.UserAgent != "" {
+				ua = common.GetUserAgent(params.UserAgent)
+			} else {
+				ua = common.GetUserAgent(drv.options.UserAgent)
+			}
 
 			logger.
 				Debug().
@@ -139,6 +146,54 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 				ctx,
 				emulation.NewSetUserAgentOverrideArgs(ua),
 			)
+		},
+
+		func() error {
+			if params.Cookies != nil {
+				cookies := make([]network.CookieParam, 0, len(params.Cookies))
+
+				for i, c := range params.Cookies {
+					cookies[i] = fromDriverCookie(c)
+
+					logger.
+						Debug().
+						Timestamp().
+						Str("cookie", c.Name).
+						Msg("set cookie")
+				}
+
+				return client.Network.SetCookies(
+					ctx,
+					network.NewSetCookiesArgs(cookies),
+				)
+			}
+
+			return nil
+		},
+
+		func() error {
+			if params.Header != nil {
+				j, err := json.Marshal(params.Header)
+
+				if err != nil {
+					return err
+				}
+
+				for k := range params.Header {
+					logger.
+						Debug().
+						Timestamp().
+						Str("header", k).
+						Msg("set header")
+				}
+
+				return client.Network.SetExtraHTTPHeaders(
+					ctx,
+					network.NewSetExtraHTTPHeadersArgs(network.Headers(j)),
+				)
+			}
+
+			return nil
 		},
 	)
 
@@ -193,7 +248,7 @@ func (drv *Driver) init(ctx context.Context) error {
 		drv.client = bc
 		drv.session = sess
 
-		if drv.options.keepCookies {
+		if drv.options.KeepCookies {
 			return nil
 		}
 

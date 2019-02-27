@@ -22,6 +22,23 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		switch segment {
 		case "url", "URL":
 			return doc.GetURL(), nil
+		case "cookies":
+			if len(path) == 1 {
+				return doc.GetCookies(ctx)
+			}
+
+			switch idx := path[1].(type) {
+			case values.Int:
+				cookies, err := doc.GetCookies(ctx)
+
+				if err != nil {
+					return values.None, err
+				}
+
+				return cookies.Get(idx), nil
+			default:
+				return values.None, core.TypeError(idx.Type(), types.Int)
+			}
 		case "body":
 			return doc.QuerySelector(ctx, "body"), nil
 		case "head":

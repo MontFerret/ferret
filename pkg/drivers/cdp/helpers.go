@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/mafredri/cdp/protocol/network"
 	"math"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -401,4 +405,58 @@ func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	}
 
 	return broker, nil
+}
+
+func fromDriverCookie(cookie drivers.Cookie) network.CookieParam {
+	sameSite := network.CookieSameSiteNotSet
+
+	switch cookie.SameSite {
+	case http.SameSiteLaxMode:
+		sameSite = network.CookieSameSiteLax
+		break
+	case http.SameSiteStrictMode:
+		sameSite = network.CookieSameSiteStrict
+		break
+	default:
+		sameSite = network.CookieSameSiteNotSet
+		break
+	}
+
+	return network.CookieParam{
+		Name:     cookie.Name,
+		Value:    cookie.Value,
+		Secure:   &cookie.Secure,
+		Path:     &cookie.Path,
+		Domain:   &cookie.Domain,
+		HTTPOnly: &cookie.HttpOnly,
+		SameSite: sameSite,
+		Expires:  network.TimeSinceEpoch(cookie.Expires.Unix()),
+	}
+}
+
+func toDriverCookie(c network.Cookie) drivers.Cookie {
+	sameSite := http.SameSiteDefaultMode
+
+	switch c.SameSite {
+	case network.CookieSameSiteLax:
+		sameSite = http.SameSiteLaxMode
+		break
+	case network.CookieSameSiteStrict:
+		sameSite = http.SameSiteStrictMode
+		break
+	default:
+		sameSite = http.SameSiteDefaultMode
+		break
+	}
+
+	return drivers.Cookie{
+		Name:     c.Name,
+		Value:    c.Value,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Expires:  time.Unix(int64(c.Expires), 0),
+		SameSite: sameSite,
+		Secure:   c.Secure,
+		HttpOnly: c.HTTPOnly,
+	}
 }
