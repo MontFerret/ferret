@@ -67,7 +67,7 @@ func (drv *Driver) GetDocument(ctx context.Context, targetURL values.String) (dr
 	// Create a new target belonging to the browser context
 	createTargetArgs := target.NewCreateTargetArgs(url)
 
-	if drv.options.cookies == false {
+	if drv.options.keepCookies == false {
 		// Set it to an incognito mode
 		createTargetArgs.SetBrowserContextID(drv.contextID)
 	}
@@ -193,7 +193,7 @@ func (drv *Driver) init(ctx context.Context) error {
 		drv.client = bc
 		drv.session = sess
 
-		if drv.options.cookies {
+		if drv.options.keepCookies {
 			return nil
 		}
 

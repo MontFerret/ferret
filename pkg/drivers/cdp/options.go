@@ -2,11 +2,11 @@ package cdp
 
 type (
 	Options struct {
-		name      string
-		proxy     string
-		userAgent string
-		address   string
-		cookies   bool
+		name        string
+		proxy       string
+		userAgent   string
+		address     string
+		keepCookies bool
 	}
 
 	Option func(opts *Options)
@@ -44,9 +44,9 @@ func WithUserAgent(value string) Option {
 	}
 }
 
-func WithCookies() Option {
+func WithKeepCookies() Option {
 	return func(opts *Options) {
-		opts.cookies = true
+		opts.keepCookies = true
 	}
 }
 
