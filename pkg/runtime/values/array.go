@@ -135,6 +135,16 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 	}
 }
 
+func (t *Array) Find(predicate ArrayPredicate) (core.Value, Boolean) {
+	for idx, val := range t.items {
+		if predicate(val, idx) == true {
+			return val, True
+		}
+	}
+
+	return None, False
+}
+
 func (t *Array) Get(idx Int) core.Value {
 	l := len(t.items) - 1
 

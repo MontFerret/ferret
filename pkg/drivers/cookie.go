@@ -15,8 +15,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Cookie Cookie object
-type Cookie struct {
+// HTTPCookie HTTPCookie object
+type HTTPCookie struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 
@@ -30,20 +30,20 @@ type Cookie struct {
 	SameSite http.SameSite `json:"same_site"`
 }
 
-func (c Cookie) Type() core.Type {
+func (c HTTPCookie) Type() core.Type {
 	return HTTPCookieType
 }
 
-func (c Cookie) String() string {
+func (c HTTPCookie) String() string {
 	return fmt.Sprintf("%s=%s", c.Name, c.Value)
 }
 
-func (c Cookie) Compare(other core.Value) int64 {
+func (c HTTPCookie) Compare(other core.Value) int64 {
 	if other.Type() != HTTPCookieType {
 		return Compare(HTTPCookieType, other.Type())
 	}
 
-	oc := other.(Cookie)
+	oc := other.(HTTPCookie)
 
 	if c.Name != oc.Name {
 		return int64(strings.Compare(c.Name, oc.Name))
@@ -94,11 +94,11 @@ func (c Cookie) Compare(other core.Value) int64 {
 	return 0
 }
 
-func (c Cookie) Unwrap() interface{} {
+func (c HTTPCookie) Unwrap() interface{} {
 	return c.Value
 }
 
-func (c Cookie) Hash() uint64 {
+func (c HTTPCookie) Hash() uint64 {
 	h := fnv.New64a()
 
 	h.Write([]byte(c.Type().String()))
@@ -116,11 +116,11 @@ func (c Cookie) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (c Cookie) Copy() core.Value {
+func (c HTTPCookie) Copy() core.Value {
 	return *(&c)
 }
 
-func (c Cookie) MarshalJSON() ([]byte, error) {
+func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 	out, err := json.Marshal(c)
 
 	if err != nil {
@@ -130,7 +130,7 @@ func (c Cookie) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (c Cookie) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
 		return values.None, nil
 	}

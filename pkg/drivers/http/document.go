@@ -15,13 +15,13 @@ type HTMLDocument struct {
 	docNode *goquery.Document
 	element drivers.HTMLElement
 	url     values.String
-	cookies []drivers.Cookie
+	cookies []drivers.HTTPCookie
 }
 
 func NewHTMLDocument(
 	node *goquery.Document,
 	url string,
-	cookies []drivers.Cookie,
+	cookies []drivers.HTTPCookie,
 ) (drivers.HTMLDocument, error) {
 	if url == "" {
 		return nil, core.Error(core.ErrMissedArgument, "document url")
@@ -94,10 +94,10 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
-	var cookies []drivers.Cookie
+	var cookies []drivers.HTTPCookie
 
 	if doc.cookies != nil {
-		cookies = make([]drivers.Cookie, 0, len(doc.cookies))
+		cookies = make([]drivers.HTTPCookie, 0, len(doc.cookies))
 
 		for i, c := range doc.cookies {
 			cookies[i] = c
@@ -187,7 +187,7 @@ func (doc *HTMLDocument) GetCookies(_ context.Context) (*values.Array, error) {
 	return arr, nil
 }
 
-func (doc *HTMLDocument) SetCookies(_ context.Context, _ ...drivers.Cookie) error {
+func (doc *HTMLDocument) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
 	return core.ErrNotSupported
 }
 

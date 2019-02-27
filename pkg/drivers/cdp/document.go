@@ -339,7 +339,7 @@ func (doc *HTMLDocument) GetCookies(ctx context.Context) (*values.Array, error) 
 	return cookies, nil
 }
 
-func (doc *HTMLDocument) SetCookies(ctx context.Context, cookies ...drivers.Cookie) error {
+func (doc *HTMLDocument) SetCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
 	doc.Lock()
 	defer doc.Unlock()
 

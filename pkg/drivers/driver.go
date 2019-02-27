@@ -22,8 +22,8 @@ type (
 		Url         string
 		UserAgent   string
 		KeepCookies bool
-		Cookies     []Cookie
-		Header      Header
+		Cookies     []HTTPCookie
+		Header      HTTPHeader
 	}
 
 	Driver interface {

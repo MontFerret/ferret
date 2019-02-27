@@ -15,14 +15,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Cookie Cookie object
-type Header map[string][]string
+// HTTPCookie HTTPCookie object
+type HTTPHeader map[string][]string
 
-func (h Header) Type() core.Type {
+func (h HTTPHeader) Type() core.Type {
 	return HTTPHeaderType
 }
 
-func (h Header) String() string {
+func (h HTTPHeader) String() string {
 	var buf bytes.Buffer
 
 	for k := range h {
@@ -32,12 +32,12 @@ func (h Header) String() string {
 	return buf.String()
 }
 
-func (h Header) Compare(other core.Value) int64 {
+func (h HTTPHeader) Compare(other core.Value) int64 {
 	if other.Type() != HTTPHeaderType {
 		return Compare(HTTPHeaderType, other.Type())
 	}
 
-	oh := other.(Header)
+	oh := other.(HTTPHeader)
 
 	if len(h) > len(oh) {
 		return 1
@@ -56,11 +56,11 @@ func (h Header) Compare(other core.Value) int64 {
 	return 0
 }
 
-func (h Header) Unwrap() interface{} {
+func (h HTTPHeader) Unwrap() interface{} {
 	return h
 }
 
-func (h Header) Hash() uint64 {
+func (h HTTPHeader) Hash() uint64 {
 	hash := fnv.New64a()
 
 	hash.Write([]byte(h.Type().String()))
@@ -96,11 +96,11 @@ func (h Header) Hash() uint64 {
 	return hash.Sum64()
 }
 
-func (h Header) Copy() core.Value {
+func (h HTTPHeader) Copy() core.Value {
 	return *(&h)
 }
 
-func (h Header) MarshalJSON() ([]byte, error) {
+func (h HTTPHeader) MarshalJSON() ([]byte, error) {
 	out, err := json.Marshal(h)
 
 	if err != nil {
@@ -110,15 +110,15 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (h Header) Set(key, value string) {
+func (h HTTPHeader) Set(key, value string) {
 	textproto.MIMEHeader(h).Set(key, value)
 }
 
-func (h Header) Get(key string) string {
+func (h HTTPHeader) Get(key string) string {
 	return textproto.MIMEHeader(h).Get(key)
 }
 
-func (h Header) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (h HTTPHeader) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
 		return values.None, nil
 	}

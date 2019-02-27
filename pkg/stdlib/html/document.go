@@ -122,7 +122,7 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 		keepCookies, exists := obj.Get(values.NewString("keepCookies"))
 
 		if exists {
-			if err := core.ValidateType(userAgent, types.Boolean); err != nil {
+			if err := core.ValidateType(keepCookies, types.Boolean); err != nil {
 				return res, err
 			}
 
@@ -132,7 +132,7 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 		cookies, exists := obj.Get(values.NewString("cookies"))
 
 		if exists {
-			if err := core.ValidateType(userAgent, types.Array); err != nil {
+			if err := core.ValidateType(cookies, types.Array); err != nil {
 				return res, err
 			}
 
@@ -148,7 +148,7 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 		header, exists := obj.Get(values.NewString("header"))
 
 		if exists {
-			if err := core.ValidateType(userAgent, types.Object); err != nil {
+			if err := core.ValidateType(header, types.Object); err != nil {
 				return res, err
 			}
 
@@ -180,92 +180,17 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 	return res, nil
 }
 
-func parseCookies(cookies *values.Array) ([]drivers.Cookie, error) {
+func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
 	var err error
-	res := make([]drivers.Cookie, 0, cookies.Length())
+	res := make([]drivers.HTTPCookie, 0, arr.Length())
 
-	cookies.ForEach(func(value core.Value, idx int) bool {
-		if err = core.ValidateType(value, types.Object); err != nil {
+	arr.ForEach(func(value core.Value, idx int) bool {
+		cookie, e := parseCookie(value)
+
+		if e != nil {
+			err = e
+
 			return false
-		}
-
-		co := value.(*values.Object)
-
-		cookie := drivers.Cookie{
-			Name:   co.MustGet("name").String(),
-			Value:  co.MustGet("value").String(),
-			Path:   co.MustGet("path").String(),
-			Domain: co.MustGet("domain").String(),
-		}
-
-		maxAge, exists := co.Get("maxAge")
-
-		if exists {
-			if err = core.ValidateType(maxAge, types.Int); err != nil {
-				return false
-			}
-
-			cookie.MaxAge = int(maxAge.(values.Int))
-		}
-
-		expires, exists := co.Get("expires")
-
-		if exists {
-			if err = core.ValidateType(maxAge, types.DateTime, types.String); err != nil {
-				return false
-			}
-
-			if expires.Type() == types.DateTime {
-				cookie.Expires = expires.(values.DateTime).Unwrap().(time.Time)
-			} else {
-				t, e := time.Parse(expires.String(), values.DefaultTimeLayout)
-
-				if e != nil {
-					err = e
-
-					return false
-				}
-
-				cookie.Expires = t
-			}
-		}
-
-		sameSite, exists := co.Get("sameSite")
-
-		if exists {
-			sameSite := strings.ToLower(sameSite.String())
-
-			switch sameSite {
-			case "lax":
-				cookie.SameSite = http.SameSiteLaxMode
-				break
-			case "strict":
-				cookie.SameSite = http.SameSiteStrictMode
-				break
-			default:
-				cookie.SameSite = http.SameSiteDefaultMode
-				break
-			}
-		}
-
-		httpOnly, exists := co.Get("httpOnly")
-
-		if exists {
-			if err = core.ValidateType(httpOnly, types.Boolean); err != nil {
-				return false
-			}
-
-			cookie.HttpOnly = bool(httpOnly.(values.Boolean))
-		}
-
-		secure, exists := co.Get("secure")
-
-		if exists {
-			if err = core.ValidateType(secure, types.Boolean); err != nil {
-				return false
-			}
-
-			cookie.Secure = bool(secure.(values.Boolean))
 		}
 
 		res[idx] = cookie
@@ -276,8 +201,99 @@ func parseCookies(cookies *values.Array) ([]drivers.Cookie, error) {
 	return res, err
 }
 
-func parseHeader(header *values.Object) (drivers.Header, error) {
-	res := make(drivers.Header)
+func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
+	var err error
+
+	if err = core.ValidateType(value, types.Object, drivers.HTTPCookieType); err != nil {
+		return drivers.HTTPCookie{}, err
+	}
+
+	if value.Type() == drivers.HTTPCookieType {
+		return value.(drivers.HTTPCookie), nil
+	}
+
+	co := value.(*values.Object)
+
+	cookie := drivers.HTTPCookie{
+		Name:   co.MustGet("name").String(),
+		Value:  co.MustGet("value").String(),
+		Path:   co.MustGet("path").String(),
+		Domain: co.MustGet("domain").String(),
+	}
+
+	maxAge, exists := co.Get("maxAge")
+
+	if exists {
+		if err = core.ValidateType(maxAge, types.Int); err != nil {
+			return drivers.HTTPCookie{}, err
+		}
+
+		cookie.MaxAge = int(maxAge.(values.Int))
+	}
+
+	expires, exists := co.Get("expires")
+
+	if exists {
+		if err = core.ValidateType(maxAge, types.DateTime, types.String); err != nil {
+			return drivers.HTTPCookie{}, err
+		}
+
+		if expires.Type() == types.DateTime {
+			cookie.Expires = expires.(values.DateTime).Unwrap().(time.Time)
+		} else {
+			t, err := time.Parse(expires.String(), values.DefaultTimeLayout)
+
+			if err != nil {
+				return drivers.HTTPCookie{}, err
+			}
+
+			cookie.Expires = t
+		}
+	}
+
+	sameSite, exists := co.Get("sameSite")
+
+	if exists {
+		sameSite := strings.ToLower(sameSite.String())
+
+		switch sameSite {
+		case "lax":
+			cookie.SameSite = http.SameSiteLaxMode
+			break
+		case "strict":
+			cookie.SameSite = http.SameSiteStrictMode
+			break
+		default:
+			cookie.SameSite = http.SameSiteDefaultMode
+			break
+		}
+	}
+
+	httpOnly, exists := co.Get("httpOnly")
+
+	if exists {
+		if err = core.ValidateType(httpOnly, types.Boolean); err != nil {
+			return drivers.HTTPCookie{}, err
+		}
+
+		cookie.HttpOnly = bool(httpOnly.(values.Boolean))
+	}
+
+	secure, exists := co.Get("secure")
+
+	if exists {
+		if err = core.ValidateType(secure, types.Boolean); err != nil {
+			return drivers.HTTPCookie{}, err
+		}
+
+		cookie.Secure = bool(secure.(values.Boolean))
+	}
+
+	return cookie, err
+}
+
+func parseHeader(header *values.Object) (drivers.HTTPHeader, error) {
+	res := make(drivers.HTTPHeader)
 
 	header.ForEach(func(value core.Value, key string) bool {
 		res.Set(key, value.String())

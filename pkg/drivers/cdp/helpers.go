@@ -407,7 +407,7 @@ func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	return broker, nil
 }
 
-func fromDriverCookie(cookie drivers.Cookie) network.CookieParam {
+func fromDriverCookie(cookie drivers.HTTPCookie) network.CookieParam {
 	sameSite := network.CookieSameSiteNotSet
 
 	switch cookie.SameSite {
@@ -434,7 +434,7 @@ func fromDriverCookie(cookie drivers.Cookie) network.CookieParam {
 	}
 }
 
-func toDriverCookie(c network.Cookie) drivers.Cookie {
+func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
 	sameSite := http.SameSiteDefaultMode
 
 	switch c.SameSite {
@@ -449,7 +449,7 @@ func toDriverCookie(c network.Cookie) drivers.Cookie {
 		break
 	}
 
-	return drivers.Cookie{
+	return drivers.HTTPCookie{
 		Name:     c.Name,
 		Value:    c.Value,
 		Path:     c.Path,

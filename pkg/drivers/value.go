@@ -90,7 +90,7 @@ type (
 
 		GetCookies(ctx context.Context) (*values.Array, error)
 
-		SetCookies(ctx context.Context, cookies ...Cookie) error
+		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
 
 		Navigate(ctx context.Context, url values.String) error
 
