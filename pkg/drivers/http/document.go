@@ -191,6 +191,10 @@ func (doc *HTMLDocument) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) 
 	return core.ErrNotSupported
 }
 
+func (doc *HTMLDocument) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+	return core.ErrNotSupported
+}
+
 func (doc *HTMLDocument) Navigate(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }

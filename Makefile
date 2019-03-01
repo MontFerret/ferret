@@ -29,7 +29,7 @@ cover:
 	curl -s https://codecov.io/bash | bash
 
 e2e:
-	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
+	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages --filter doc_cookie*
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...

@@ -23,6 +23,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var emptyExpires = time.Time{}
+
 type (
 	batchFunc = func() error
 
@@ -407,7 +409,7 @@ func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	return broker, nil
 }
 
-func fromDriverCookie(cookie drivers.HTTPCookie) network.CookieParam {
+func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam {
 	sameSite := network.CookieSameSiteNotSet
 
 	switch cookie.SameSite {
@@ -422,7 +424,14 @@ func fromDriverCookie(cookie drivers.HTTPCookie) network.CookieParam {
 		break
 	}
 
+	if cookie.Expires == emptyExpires {
+		cookie.Expires = time.Now().Add(time.Duration(24) + time.Hour)
+	}
+
+	normalizedUrl := normalizeCookieUrl(url)
+
 	return network.CookieParam{
+		URL:      &normalizedUrl,
 		Name:     cookie.Name,
 		Value:    cookie.Value,
 		Secure:   &cookie.Secure,
@@ -431,6 +440,17 @@ func fromDriverCookie(cookie drivers.HTTPCookie) network.CookieParam {
 		HTTPOnly: &cookie.HttpOnly,
 		SameSite: sameSite,
 		Expires:  network.TimeSinceEpoch(cookie.Expires.Unix()),
+	}
+}
+
+func fromDriverCookieDelete(url string, cookie drivers.HTTPCookie) *network.DeleteCookiesArgs {
+	normalizedUrl := normalizeCookieUrl(url)
+
+	return &network.DeleteCookiesArgs{
+		URL:    &normalizedUrl,
+		Name:   cookie.Name,
+		Path:   &cookie.Path,
+		Domain: &cookie.Domain,
 	}
 }
 
@@ -459,4 +479,15 @@ func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
 		Secure:   c.Secure,
 		HttpOnly: c.HTTPOnly,
 	}
+}
+
+func normalizeCookieUrl(url string) string {
+	const httpPrefix = "http://"
+	const httpsPrefix = "https://"
+
+	if strings.HasPrefix(url, httpPrefix) || strings.HasPrefix(url, httpsPrefix) {
+		return url
+	}
+
+	return httpPrefix + url
 }

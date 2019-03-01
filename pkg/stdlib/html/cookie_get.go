@@ -10,6 +10,8 @@ import (
 )
 
 // CookieSet gets a cookie from a given document by name.
+// @param doc (HTMLDocument) - Target HTMLDocument.
+// @param name (String) - Cookie or cookie name to delete.
 func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

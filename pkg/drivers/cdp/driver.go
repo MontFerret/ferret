@@ -2,7 +2,6 @@ package cdp
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -59,7 +58,7 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		return nil, err
 	}
 
-	url := params.Url
+	url := params.URL
 
 	if url == "" {
 		url = BlankPageURL
@@ -149,51 +148,7 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		},
 
 		func() error {
-			if params.Cookies != nil {
-				cookies := make([]network.CookieParam, 0, len(params.Cookies))
-
-				for i, c := range params.Cookies {
-					cookies[i] = fromDriverCookie(c)
-
-					logger.
-						Debug().
-						Timestamp().
-						Str("cookie", c.Name).
-						Msg("set cookie")
-				}
-
-				return client.Network.SetCookies(
-					ctx,
-					network.NewSetCookiesArgs(cookies),
-				)
-			}
-
-			return nil
-		},
-
-		func() error {
-			if params.Header != nil {
-				j, err := json.Marshal(params.Header)
-
-				if err != nil {
-					return err
-				}
-
-				for k := range params.Header {
-					logger.
-						Debug().
-						Timestamp().
-						Str("header", k).
-						Msg("set header")
-				}
-
-				return client.Network.SetExtraHTTPHeaders(
-					ctx,
-					network.NewSetExtraHTTPHeadersArgs(network.Headers(j)),
-				)
-			}
-
-			return nil
+			return client.Network.Enable(ctx, network.NewEnableArgs())
 		},
 	)
 
@@ -201,7 +156,7 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		return nil, err
 	}
 
-	return LoadHTMLDocument(ctx, conn, client, url)
+	return LoadHTMLDocument(ctx, conn, client, params)
 }
 
 func (drv *Driver) Close() error {

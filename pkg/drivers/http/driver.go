@@ -63,7 +63,7 @@ func (drv *Driver) Name() string {
 }
 
 func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocumentParams) (drivers.HTMLDocument, error) {
-	req, err := http.NewRequest(http.MethodGet, params.Url, nil)
+	req, err := http.NewRequest(http.MethodGet, params.URL, nil)
 
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 	resp, err := drv.client.Do(req)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve a document %s", params.Url)
+		return nil, errors.Wrapf(err, "failed to retrieve a document %s", params.URL)
 	}
 
 	defer resp.Body.Close()
@@ -130,10 +130,10 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse a document %s", params.Url)
+		return nil, errors.Wrapf(err, "failed to parse a document %s", params.URL)
 	}
 
-	return NewHTMLDocument(doc, params.Url, params.Cookies)
+	return NewHTMLDocument(doc, params.URL, params.Cookies)
 }
 
 func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.HTMLDocument, error) {

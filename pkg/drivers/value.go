@@ -92,6 +92,8 @@ type (
 
 		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
 
+		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
+
 		Navigate(ctx context.Context, url values.String) error
 
 		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)

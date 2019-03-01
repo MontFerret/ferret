@@ -19,7 +19,7 @@ type (
 	}
 
 	LoadDocumentParams struct {
-		Url         string
+		URL         string
 		UserAgent   string
 		KeepCookies bool
 		Cookies     []HTTPCookie

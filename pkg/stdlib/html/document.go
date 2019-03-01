@@ -72,7 +72,7 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 func newDefaultDocLoadParams(url values.String) DocumentLoadParams {
 	return DocumentLoadParams{
 		LoadDocumentParams: drivers.LoadDocumentParams{
-			Url: url.String(),
+			URL: url.String(),
 		},
 		Timeout: time.Second * 30,
 	}
@@ -193,7 +193,7 @@ func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
 			return false
 		}
 
-		res[idx] = cookie
+		res = append(res, cookie)
 
 		return true
 	})
