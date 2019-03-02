@@ -1,12 +1,13 @@
 package browser
 
 import (
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/pkg/errors"
 )
 
 func Launch(setters ...Option) (*Browser, error) {
@@ -78,7 +79,10 @@ func Launch(setters ...Option) (*Browser, error) {
 		}
 	}
 
-	cmd := exec.Command(chromeExecutable, flags.List()...)
+	execArgs := []string{chromeExecutable, "--args"}
+	execArgs = append(execArgs, flags.List()...)
+
+	cmd := exec.Command("open", execArgs...)
 	cmd.Dir = workDir
 
 	err = cmd.Start()
