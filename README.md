@@ -450,15 +450,15 @@ import (
 func run(q string) ([]byte, error) {
     proxy := "http://localhost:8888"
     comp := compiler.New()
-	program := comp.MustCompile(q)
+    program := comp.MustCompile(q)
 
-	// create a root context
-	ctx := context.Background()
+    // create a root context
+    ctx := context.Background()
 
-        // we inform the driver what proxy to use
-	ctx = drivers.WithContext(ctx, http.NewDriver(http.WithProxy(proxy)), drivers.AsDefault())
+    // we inform the driver what proxy to use
+    ctx = drivers.WithContext(ctx, http.NewDriver(http.WithProxy(proxy)), drivers.AsDefault())
 
-	return program.Run(ctx)
+    return program.Run(ctx)
 }
 
 ```
