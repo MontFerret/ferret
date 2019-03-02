@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/cli"
-	"github.com/MontFerret/ferret/cli/browser"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/MontFerret/ferret/cli"
+	"github.com/MontFerret/ferret/cli/browser"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Params []string
@@ -55,7 +56,7 @@ var (
 
 	conn = flag.String(
 		"cdp",
-		"http://127.0.0.1:9222",
+		"",
 		"set CDP address",
 	)
 
