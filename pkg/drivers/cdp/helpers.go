@@ -415,39 +415,36 @@ func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam
 	switch cookie.SameSite {
 	case http.SameSiteLaxMode:
 		sameSite = network.CookieSameSiteLax
-		break
 	case http.SameSiteStrictMode:
 		sameSite = network.CookieSameSiteStrict
-		break
 	default:
 		sameSite = network.CookieSameSiteNotSet
-		break
 	}
 
 	if cookie.Expires == emptyExpires {
 		cookie.Expires = time.Now().Add(time.Duration(24) + time.Hour)
 	}
 
-	normalizedUrl := normalizeCookieUrl(url)
+	normalizedURL := normalizeCookieURL(url)
 
 	return network.CookieParam{
-		URL:      &normalizedUrl,
+		URL:      &normalizedURL,
 		Name:     cookie.Name,
 		Value:    cookie.Value,
 		Secure:   &cookie.Secure,
 		Path:     &cookie.Path,
 		Domain:   &cookie.Domain,
-		HTTPOnly: &cookie.HttpOnly,
+		HTTPOnly: &cookie.HTTPOnly,
 		SameSite: sameSite,
 		Expires:  network.TimeSinceEpoch(cookie.Expires.Unix()),
 	}
 }
 
 func fromDriverCookieDelete(url string, cookie drivers.HTTPCookie) *network.DeleteCookiesArgs {
-	normalizedUrl := normalizeCookieUrl(url)
+	normalizedURL := normalizeCookieURL(url)
 
 	return &network.DeleteCookiesArgs{
-		URL:    &normalizedUrl,
+		URL:    &normalizedURL,
 		Name:   cookie.Name,
 		Path:   &cookie.Path,
 		Domain: &cookie.Domain,
@@ -477,11 +474,11 @@ func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
 		Expires:  time.Unix(int64(c.Expires), 0),
 		SameSite: sameSite,
 		Secure:   c.Secure,
-		HttpOnly: c.HTTPOnly,
+		HTTPOnly: c.HTTPOnly,
 	}
 }
 
-func normalizeCookieUrl(url string) string {
+func normalizeCookieURL(url string) string {
 	const httpPrefix = "http://"
 	const httpsPrefix = "https://"
 

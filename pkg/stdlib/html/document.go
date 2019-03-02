@@ -276,7 +276,7 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 			return drivers.HTTPCookie{}, err
 		}
 
-		cookie.HttpOnly = bool(httpOnly.(values.Boolean))
+		cookie.HTTPOnly = bool(httpOnly.(values.Boolean))
 	}
 
 	secure, exists := co.Get("secure")

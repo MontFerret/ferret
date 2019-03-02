@@ -474,7 +474,7 @@ In order to do that, we need to inform the driver to execute all queries in regu
 #### CLI
 
 ```sh
-    ferret --cdp-keep-cookies my-query.fql
+ferret --cdp-keep-cookies my-query.fql
 ```
 
 #### Code
