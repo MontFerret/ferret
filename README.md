@@ -465,6 +465,8 @@ func run(q string) ([]byte, error) {
 
 ## Cookies
 
+### Non-incognito mode
+
 By default, ``CDP`` driver execute each query in an incognito mode in order to avoid any collisions related to some persisted cookies from previous queries.   
 However, sometimes it might not be a desirable behavior and a query needs to be executed within a Chrome tab with earlier persisted cookies.   
 In order to do that, we need to inform the driver to execute all queries in regular tabs. Here is how to do that:
@@ -507,4 +509,36 @@ func run(q string) ([]byte, error) {
 
 	return program.Run(ctx)
 }
+```
+
+#### Query
+```
+LET doc = DOCUMENT("https://www.google.com", {
+    driver: "cdp",
+    keepCookies: true
+})
+```
+
+### Cookies manipulation
+For more precise work, you can set/get/delete cookies manually during and after page load:
+
+```
+LET doc = DOCUMENT("https://www.google.com", {
+    driver: "cdp",
+    cookies: [
+         {
+             name: "foo",
+             value: "bar"
+         }
+    ]
+})
+
+COOKIES_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
+COOKIES_DEL(doc, "foo")
+
+LET c = COOKIES_GET(doc, "baz")
+
+FOR cookie IN doc.cookies
+    RETURN cookie.name
+
 ```
