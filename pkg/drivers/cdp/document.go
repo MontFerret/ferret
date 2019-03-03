@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"sync"
@@ -18,6 +19,7 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/input"
+	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
@@ -48,7 +50,7 @@ func LoadHTMLDocument(
 	ctx context.Context,
 	conn *rpcc.Conn,
 	client *cdp.Client,
-	url string,
+	params drivers.LoadDocumentParams,
 ) (drivers.HTMLDocument, error) {
 	logger := logging.FromContext(ctx)
 
@@ -56,13 +58,61 @@ func LoadHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "connection")
 	}
 
-	if url == "" {
+	if params.URL == "" {
 		return nil, core.Error(core.ErrMissedArgument, "url")
+	}
+
+	if params.Cookies != nil {
+		cookies := make([]network.CookieParam, 0, len(params.Cookies))
+
+		for _, c := range params.Cookies {
+			cookies = append(cookies, fromDriverCookie(params.URL, c))
+
+			logger.
+				Debug().
+				Timestamp().
+				Str("cookie", c.Name).
+				Msg("set cookie")
+		}
+
+		err := client.Network.SetCookies(
+			ctx,
+			network.NewSetCookiesArgs(cookies),
+		)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if params.Header != nil {
+		j, err := json.Marshal(params.Header)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for k := range params.Header {
+			logger.
+				Debug().
+				Timestamp().
+				Str("header", k).
+				Msg("set header")
+		}
+
+		err = client.Network.SetExtraHTTPHeaders(
+			ctx,
+			network.NewSetExtraHTTPHeadersArgs(network.Headers(j)),
+		)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var err error
 
-	if url != BlankPageURL {
+	if params.URL != BlankPageURL {
 		err = waitForLoadEvent(ctx, client)
 
 		if err != nil {
@@ -108,7 +158,7 @@ func LoadHTMLDocument(
 		conn,
 		client,
 		broker,
-		values.NewString(url),
+		values.NewString(params.URL),
 		rootElement,
 	), nil
 }
@@ -313,6 +363,67 @@ func (doc *HTMLDocument) GetURL() core.Value {
 	defer doc.Unlock()
 
 	return doc.url
+}
+
+func (doc *HTMLDocument) GetCookies(ctx context.Context) (*values.Array, error) {
+	doc.Lock()
+	defer doc.Unlock()
+
+	repl, err := doc.client.Network.GetAllCookies(ctx)
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
+	if repl.Cookies == nil {
+		return values.NewArray(0), nil
+	}
+
+	cookies := values.NewArray(len(repl.Cookies))
+
+	for _, c := range repl.Cookies {
+		cookies.Push(toDriverCookie(c))
+	}
+
+	return cookies, nil
+}
+
+func (doc *HTMLDocument) SetCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+	doc.Lock()
+	defer doc.Unlock()
+
+	if len(cookies) == 0 {
+		return nil
+	}
+
+	params := make([]network.CookieParam, 0, len(cookies))
+
+	for _, c := range cookies {
+		params = append(params, fromDriverCookie(doc.url.String(), c))
+	}
+
+	return doc.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
+}
+
+func (doc *HTMLDocument) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+	doc.Lock()
+	defer doc.Unlock()
+
+	if len(cookies) == 0 {
+		return nil
+	}
+
+	var err error
+
+	for _, c := range cookies {
+		err = doc.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(doc.url.String(), c))
+
+		if err != nil {
+			break
+		}
+	}
+
+	return err
 }
 
 func (doc *HTMLDocument) SetURL(ctx context.Context, url values.String) error {

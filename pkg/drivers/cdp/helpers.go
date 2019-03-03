@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/mafredri/cdp/protocol/network"
 	"math"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -18,6 +22,8 @@ import (
 	"github.com/mafredri/cdp/protocol/runtime"
 	"golang.org/x/sync/errgroup"
 )
+
+var emptyExpires = time.Time{}
 
 type (
 	batchFunc = func() error
@@ -401,4 +407,84 @@ func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	}
 
 	return broker, nil
+}
+
+func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam {
+	sameSite := network.CookieSameSiteNotSet
+
+	switch cookie.SameSite {
+	case http.SameSiteLaxMode:
+		sameSite = network.CookieSameSiteLax
+	case http.SameSiteStrictMode:
+		sameSite = network.CookieSameSiteStrict
+	default:
+		sameSite = network.CookieSameSiteNotSet
+	}
+
+	if cookie.Expires == emptyExpires {
+		cookie.Expires = time.Now().Add(time.Duration(24) + time.Hour)
+	}
+
+	normalizedURL := normalizeCookieURL(url)
+
+	return network.CookieParam{
+		URL:      &normalizedURL,
+		Name:     cookie.Name,
+		Value:    cookie.Value,
+		Secure:   &cookie.Secure,
+		Path:     &cookie.Path,
+		Domain:   &cookie.Domain,
+		HTTPOnly: &cookie.HTTPOnly,
+		SameSite: sameSite,
+		Expires:  network.TimeSinceEpoch(cookie.Expires.Unix()),
+	}
+}
+
+func fromDriverCookieDelete(url string, cookie drivers.HTTPCookie) *network.DeleteCookiesArgs {
+	normalizedURL := normalizeCookieURL(url)
+
+	return &network.DeleteCookiesArgs{
+		URL:    &normalizedURL,
+		Name:   cookie.Name,
+		Path:   &cookie.Path,
+		Domain: &cookie.Domain,
+	}
+}
+
+func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
+	sameSite := http.SameSiteDefaultMode
+
+	switch c.SameSite {
+	case network.CookieSameSiteLax:
+		sameSite = http.SameSiteLaxMode
+		break
+	case network.CookieSameSiteStrict:
+		sameSite = http.SameSiteStrictMode
+		break
+	default:
+		sameSite = http.SameSiteDefaultMode
+		break
+	}
+
+	return drivers.HTTPCookie{
+		Name:     c.Name,
+		Value:    c.Value,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Expires:  time.Unix(int64(c.Expires), 0),
+		SameSite: sameSite,
+		Secure:   c.Secure,
+		HTTPOnly: c.HTTPOnly,
+	}
+}
+
+func normalizeCookieURL(url string) string {
+	const httpPrefix = "http://"
+	const httpsPrefix = "https://"
+
+	if strings.HasPrefix(url, httpPrefix) || strings.HasPrefix(url, httpsPrefix) {
+		return url
+	}
+
+	return httpPrefix + url
 }

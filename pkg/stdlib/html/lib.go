@@ -14,6 +14,9 @@ const defaultTimeout = 5000
 
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
+		"COOKIE_DEL":       CookieDel,
+		"COOKIE_GET":       CookieGet,
+		"COOKIE_SET":       CookieSet,
 		"CLICK":            Click,
 		"CLICK_ALL":        ClickAll,
 		"DOCUMENT":         Document,
