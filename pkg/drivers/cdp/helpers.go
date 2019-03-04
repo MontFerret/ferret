@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/mafredri/cdp/protocol/network"
 	"math"
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -18,6 +16,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"golang.org/x/sync/errgroup"
@@ -413,9 +412,9 @@ func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam
 	sameSite := network.CookieSameSiteNotSet
 
 	switch cookie.SameSite {
-	case http.SameSiteLaxMode:
+	case drivers.SameSiteLaxMode:
 		sameSite = network.CookieSameSiteLax
-	case http.SameSiteStrictMode:
+	case drivers.SameSiteStrictMode:
 		sameSite = network.CookieSameSiteStrict
 	default:
 		sameSite = network.CookieSameSiteNotSet
@@ -452,17 +451,17 @@ func fromDriverCookieDelete(url string, cookie drivers.HTTPCookie) *network.Dele
 }
 
 func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
-	sameSite := http.SameSiteDefaultMode
+	sameSite := drivers.SameSiteDefaultMode
 
 	switch c.SameSite {
 	case network.CookieSameSiteLax:
-		sameSite = http.SameSiteLaxMode
+		sameSite = drivers.SameSiteLaxMode
 		break
 	case network.CookieSameSiteStrict:
-		sameSite = http.SameSiteStrictMode
+		sameSite = drivers.SameSiteStrictMode
 		break
 	default:
-		sameSite = http.SameSiteDefaultMode
+		sameSite = drivers.SameSiteDefaultMode
 		break
 	}
 

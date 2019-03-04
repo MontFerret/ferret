@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-	"net/http"
 	"strings"
 	"time"
 
@@ -258,13 +257,13 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 
 		switch sameSite {
 		case "lax":
-			cookie.SameSite = http.SameSiteLaxMode
+			cookie.SameSite = drivers.SameSiteLaxMode
 			break
 		case "strict":
-			cookie.SameSite = http.SameSiteStrictMode
+			cookie.SameSite = drivers.SameSiteStrictMode
 			break
 		default:
-			cookie.SameSite = http.SameSiteDefaultMode
+			cookie.SameSite = drivers.SameSiteDefaultMode
 			break
 		}
 	}

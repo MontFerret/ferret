@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -15,20 +14,31 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// HTTPCookie HTTPCookie object
-type HTTPCookie struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+type (
+	// Polyfill for Go 1.10
+	SameSite int
 
-	Path    string    `json:"path"`
-	Domain  string    `json:"domain"`
-	Expires time.Time `json:"expires"`
+	// HTTPCookie HTTPCookie object
+	HTTPCookie struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
 
-	MaxAge   int           `json:"max_age"`
-	Secure   bool          `json:"secure"`
-	HTTPOnly bool          `json:"http_only"`
-	SameSite http.SameSite `json:"same_site"`
-}
+		Path    string    `json:"path"`
+		Domain  string    `json:"domain"`
+		Expires time.Time `json:"expires"`
+
+		MaxAge   int      `json:"max_age"`
+		Secure   bool     `json:"secure"`
+		HTTPOnly bool     `json:"http_only"`
+		SameSite SameSite `json:"same_site"`
+	}
+)
+
+const (
+	SameSiteDefaultMode SameSite = iota + 1
+	SameSiteLaxMode
+	SameSiteStrictMode
+)
 
 func (c HTTPCookie) Type() core.Type {
 	return HTTPCookieType
@@ -162,12 +172,12 @@ func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, err
 		return values.NewBoolean(c.HTTPOnly), nil
 	case "sameSite":
 		switch c.SameSite {
-		case http.SameSiteLaxMode:
+		case SameSiteLaxMode:
 			return values.NewString("Lax"), nil
-		case http.SameSiteStrictMode:
+		case SameSiteStrictMode:
 			return values.NewString("Strict"), nil
 		default:
-			return values.NewString("Default"), nil
+			return values.EmptyString, nil
 		}
 	default:
 		return values.None, nil
