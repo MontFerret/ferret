@@ -42,7 +42,7 @@ doc:
 
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
-	go fmt ${DIR_CLI}/... ${DIR_PKG}/...
+	go fmt ${DIR_CLI}/.. ${DIR_PKG}/..
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
