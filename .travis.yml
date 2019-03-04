@@ -47,6 +47,7 @@ jobs:
     - make fmt
     - if [[ $(git diff --stat) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
   - stage: compile
+    go: stable
     script:
     - make generate
     - make compile
@@ -61,5 +62,6 @@ jobs:
     after_script:
     - killall google-chrome-stable
   - stage: bench
+    go: stable
     script:
     - make bench
