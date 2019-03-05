@@ -309,7 +309,7 @@ func (nd *HTMLElement) Hover(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) WaitForClass(_ context.Context, _ values.String) error {
+func (nd *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

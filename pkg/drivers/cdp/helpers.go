@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"math"
 	"strings"
 
@@ -401,4 +402,12 @@ func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	}
 
 	return broker, nil
+}
+
+func waitEventToEqOperator(when drivers.WaitEvent) string {
+	if when == drivers.WaitEventAbsence {
+		return "=="
+	}
+
+	return "!="
 }

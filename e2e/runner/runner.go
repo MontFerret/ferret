@@ -52,9 +52,7 @@ func New(logger zerolog.Logger, settings Settings) *Runner {
 	}
 }
 
-func (r *Runner) Run() error {
-	ctx := context.Background()
-
+func (r *Runner) Run(ctx context.Context) error {
 	ctx = drivers.WithContext(
 		ctx,
 		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress)),

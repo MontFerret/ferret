@@ -695,7 +695,7 @@ func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.Str
 	return values.True
 }
 
-func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String) error {
+func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, when drivers.WaitEvent) error {
 	task := events.NewWaitTask(
 		func(ctx2 context.Context) (core.Value, error) {
 			current := el.GetAttribute(ctx2, "class")
@@ -708,8 +708,23 @@ func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String) er
 			classStr := string(class)
 			classes := strings.Split(string(str), " ")
 
-			for _, c := range classes {
-				if c == classStr {
+			if when != drivers.WaitEventAbsence {
+				for _, c := range classes {
+					if c == classStr {
+						return values.True, nil
+					}
+				}
+			} else {
+				var found values.Boolean
+
+				for _, c := range classes {
+					if c == classStr {
+						found = values.True
+						break
+					}
+				}
+
+				if found == values.False {
 					return values.True, nil
 				}
 			}

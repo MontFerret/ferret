@@ -10,6 +10,8 @@ import (
 )
 
 type (
+	WaitEvent int
+
 	// Node is an interface from which a number of DOM API object types inherit.
 	// It allows those types to be treated similarly;
 	// for example, inheriting the same set of methods, or being tested in the same way.
@@ -74,7 +76,7 @@ type (
 
 		Hover(ctx context.Context) error
 
-		WaitForClass(ctx context.Context, class values.String) error
+		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
 	}
 
 	// The Document interface represents any web page loaded in the browser
@@ -120,10 +122,15 @@ type (
 
 		WaitForNavigation(ctx context.Context) error
 
-		WaitForSelector(ctx context.Context, selector values.String) error
+		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
 
-		WaitForClassBySelector(ctx context.Context, selector, class values.String) error
+		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
 
-		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String) error
+		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
 	}
+)
+
+const (
+	WaitEventPresence = 0
+	WaitEventAbsence  = 1
 )
