@@ -8,6 +8,6 @@ WAIT_ELEMENT(doc, pageSelector)
 
 CLICK(doc, btnSelector)
 
-WAIT_ELEMENT(doc, elemSelector)
+WAIT_ELEMENT(doc, elemSelector, 10000)
 
 RETURN ELEMENT_EXISTS(doc, elemSelector) ? "" : "element not found"
