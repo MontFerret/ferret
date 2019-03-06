@@ -1,3 +1,5 @@
+import random from "../../../utils/random.js";
+
 const e = React.createElement;
 
 function render(id) {
@@ -18,7 +20,7 @@ export default class AppearableComponent extends React.PureComponent {
             this.setState({
                 element: this.props.appear === true ? render(this.props.id) : null
             })
-        }, Math.ceil(Math.random() * 1000 * 10))
+        }, random())
     }
 
     render() {

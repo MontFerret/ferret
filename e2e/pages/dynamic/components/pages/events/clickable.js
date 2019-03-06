@@ -1,3 +1,5 @@
+import random from "../../../utils/random.js";
+
 const e = React.createElement;
 
 export default class ClickableComponent extends React.PureComponent {
@@ -13,7 +15,7 @@ export default class ClickableComponent extends React.PureComponent {
         let timeout = 500;
 
         if (this.props.randomTimeout) {
-            timeout = Math.ceil(Math.random() * 1000 * 10);
+            timeout = random();
         }
 
         setTimeout(() => {
