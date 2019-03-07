@@ -711,6 +711,8 @@ func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, wh
 			if when != drivers.WaitEventAbsence {
 				for _, c := range classes {
 					if c == classStr {
+						// The value does not really matter if it's not None
+						// None indicates that operation needs to be repeated
 						return values.True, nil
 					}
 				}
@@ -725,7 +727,9 @@ func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, wh
 				}
 
 				if found == values.False {
-					return values.True, nil
+					// The value does not really matter if it's not None
+					// None indicates that operation needs to be repeated
+					return values.False, nil
 				}
 			}
 

@@ -10,6 +10,7 @@ import (
 )
 
 type (
+	// WaitEvent is an enum that represents what event is needed to wait for
 	WaitEvent int
 
 	// Node is an interface from which a number of DOM API object types inherit.
@@ -131,6 +132,9 @@ type (
 )
 
 const (
+	// Event indicating to wait for value to appear
 	WaitEventPresence = 0
-	WaitEventAbsence  = 1
+
+	// Event indicating to wait for value to disappear
+	WaitEventAbsence = 1
 )
