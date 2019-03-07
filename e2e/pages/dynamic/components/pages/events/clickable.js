@@ -1,3 +1,5 @@
+import random from "../../../utils/random.js";
+
 const e = React.createElement;
 
 export default class ClickableComponent extends React.PureComponent {
@@ -5,7 +7,7 @@ export default class ClickableComponent extends React.PureComponent {
         super(props);
 
         this.state = {
-            clicked: false
+            show: props.show === true
         };
     }
 
@@ -13,12 +15,12 @@ export default class ClickableComponent extends React.PureComponent {
         let timeout = 500;
 
         if (this.props.randomTimeout) {
-            timeout = Math.ceil(Math.random() * 1000 * 10);
+            timeout = random();
         }
 
         setTimeout(() => {
             this.setState({
-                clicked: !this.state.clicked
+                show: !this.state.show
             })
         }, timeout)
     }
@@ -28,7 +30,7 @@ export default class ClickableComponent extends React.PureComponent {
         const contentId = `${this.props.id}-content`;
         const classNames = ["alert"];
 
-        if (this.state.clicked) {
+        if (this.state.show === true) {
             classNames.push("alert-success");
         }
 
@@ -39,7 +41,7 @@ export default class ClickableComponent extends React.PureComponent {
                     className: "btn btn-primary",
                     onClick: this.handleClick.bind(this)
                 }, [
-                    "Toggle class"
+                    this.props.title || "Toggle class"
                 ])
             ]),
             e("div", { className: "card-body"}, [

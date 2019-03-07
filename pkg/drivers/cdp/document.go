@@ -526,44 +526,23 @@ func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) e
 	)
 }
 
-func (doc *HTMLDocument) WaitForSelector(ctx context.Context, selector values.String) error {
+func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
+
 	task := events.NewEvalWaitTask(
 		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
-			if (el != null) {
-				return true;
-			}
-			// null means we need to repeat
-			return null;
-		`, eval.ParamString(selector.String())),
-		events.DefaultPolling,
-	)
-
-	_, err := task.Run(ctx)
-
-	return err
-}
-
-func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String) error {
-	task := events.NewEvalWaitTask(
-		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
-			if (el == null) {
-				return false;
-			}
-			var className = %s;
-			var found = el.className.split(' ').find(i => i === className);
-			if (found != null) {
-				return true;
-			}
-			
-			// null means we need to repeat
-			return null;
-		`,
+		fmt.Sprintf(
+			`
+				var el = document.querySelector(%s);
+				
+				if (el %s null) {
+					return true;
+				}
+				
+				// null means we need to repeat
+				return null;
+			`,
 			eval.ParamString(selector.String()),
-			eval.ParamString(class.String()),
+			waitEventToEqOperator(when),
 		),
 		events.DefaultPolling,
 	)
@@ -573,22 +552,58 @@ func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, c
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String) error {
+func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		fmt.Sprintf(`
+			var el = document.querySelector(%s);
+			
+			if (el == null) {
+				return false;
+			}
+			
+			var className = %s;
+			var found = el.className.split(' ').find(i => i === className);
+
+			if (found %s null) {
+				return true;
+			}
+			
+			// null means we need to repeat
+			return null;
+		`,
+			eval.ParamString(selector.String()),
+			eval.ParamString(class.String()),
+			waitEventToEqOperator(when),
+		),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
 		fmt.Sprintf(`
 			var elements = document.querySelectorAll(%s);
+			
 			if (elements == null || elements.length === 0) {
 				return false;
 			}
+	
 			var className = %s;
 			var foundCount = 0;
+			
 			elements.forEach((el) => {
 				var found = el.className.split(' ').find(i => i === className);
-				if (found != null) {
+				if (found %s null) {
 					foundCount++;
 				}
 			});
+	
 			if (foundCount === elements.length) {
 				return true;
 			}
@@ -598,6 +613,7 @@ func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector
 		`,
 			eval.ParamString(selector.String()),
 			eval.ParamString(class.String()),
+			waitEventToEqOperator(when),
 		),
 		events.DefaultPolling,
 	)
