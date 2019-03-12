@@ -16,6 +16,7 @@ import (
 type HTMLElement struct {
 	selection *goquery.Selection
 	attrs     *values.Object
+	styles    *values.Object
 	children  *values.Array
 }
 
@@ -24,22 +25,22 @@ func NewHTMLElement(node *goquery.Selection) (drivers.HTMLElement, error) {
 		return nil, core.Error(core.ErrMissedArgument, "element selection")
 	}
 
-	return &HTMLElement{node, nil, nil}, nil
+	return &HTMLElement{node, nil, nil, nil}, nil
 }
 
-func (nd *HTMLElement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(nd.InnerText(context.Background()).String())
+func (el *HTMLElement) MarshalJSON() ([]byte, error) {
+	return json.Marshal(el.InnerText(context.Background()).String())
 }
 
-func (nd *HTMLElement) Type() core.Type {
+func (el *HTMLElement) Type() core.Type {
 	return drivers.HTMLElementType
 }
 
-func (nd *HTMLElement) String() string {
-	return nd.InnerHTML(context.Background()).String()
+func (el *HTMLElement) String() string {
+	return el.InnerHTML(context.Background()).String()
 }
 
-func (nd *HTMLElement) Compare(other core.Value) int64 {
+func (el *HTMLElement) Compare(other core.Value) int64 {
 	switch other.Type() {
 	case drivers.HTMLElementType:
 		other := other.(drivers.HTMLElement)
@@ -47,18 +48,18 @@ func (nd *HTMLElement) Compare(other core.Value) int64 {
 		ctx, fn := drivers.WithDefaultTimeout(context.Background())
 		defer fn()
 
-		return nd.InnerHTML(ctx).Compare(other.InnerHTML(ctx))
+		return el.InnerHTML(ctx).Compare(other.InnerHTML(ctx))
 	default:
-		return drivers.Compare(nd.Type(), other.Type())
+		return drivers.Compare(el.Type(), other.Type())
 	}
 }
 
-func (nd *HTMLElement) Unwrap() interface{} {
-	return nd.selection
+func (el *HTMLElement) Unwrap() interface{} {
+	return el.selection
 }
 
-func (nd *HTMLElement) Hash() uint64 {
-	str, err := nd.selection.Html()
+func (el *HTMLElement) Hash() uint64 {
+	str, err := el.selection.Html()
 
 	if err != nil {
 		return 0
@@ -66,21 +67,21 @@ func (nd *HTMLElement) Hash() uint64 {
 
 	h := fnv.New64a()
 
-	h.Write([]byte(nd.Type().String()))
+	h.Write([]byte(el.Type().String()))
 	h.Write([]byte(":"))
 	h.Write([]byte(str))
 
 	return h.Sum64()
 }
 
-func (nd *HTMLElement) Copy() core.Value {
-	c, _ := NewHTMLElement(nd.selection.Clone())
+func (el *HTMLElement) Copy() core.Value {
+	c, _ := NewHTMLElement(el.selection.Clone())
 
 	return c
 }
 
-func (nd *HTMLElement) NodeType() values.Int {
-	nodes := nd.selection.Nodes
+func (el *HTMLElement) NodeType() values.Int {
+	nodes := el.selection.Nodes
 
 	if len(nodes) == 0 {
 		return 0
@@ -89,24 +90,24 @@ func (nd *HTMLElement) NodeType() values.Int {
 	return values.NewInt(common.ToHTMLType(nodes[0].Type))
 }
 
-func (nd *HTMLElement) Close() error {
+func (el *HTMLElement) Close() error {
 	return nil
 }
 
-func (nd *HTMLElement) NodeName() values.String {
-	return values.NewString(goquery.NodeName(nd.selection))
+func (el *HTMLElement) NodeName() values.String {
+	return values.NewString(goquery.NodeName(el.selection))
 }
 
-func (nd *HTMLElement) Length() values.Int {
-	if nd.children == nil {
-		nd.children = nd.parseChildren()
+func (el *HTMLElement) Length() values.Int {
+	if el.children == nil {
+		el.children = el.parseChildren()
 	}
 
-	return nd.children.Length()
+	return el.children.Length()
 }
 
-func (nd *HTMLElement) GetValue(_ context.Context) core.Value {
-	val, ok := nd.selection.Attr("value")
+func (el *HTMLElement) GetValue(_ context.Context) core.Value {
+	val, ok := el.selection.Attr("value")
 
 	if ok {
 		return values.NewString(val)
@@ -115,18 +116,18 @@ func (nd *HTMLElement) GetValue(_ context.Context) core.Value {
 	return values.EmptyString
 }
 
-func (nd *HTMLElement) SetValue(_ context.Context, value core.Value) error {
-	nd.selection.SetAttr("value", value.String())
+func (el *HTMLElement) SetValue(_ context.Context, value core.Value) error {
+	el.selection.SetAttr("value", value.String())
 
 	return nil
 }
 
-func (nd *HTMLElement) InnerText(_ context.Context) values.String {
-	return values.NewString(nd.selection.Text())
+func (el *HTMLElement) InnerText(_ context.Context) values.String {
+	return values.NewString(el.selection.Text())
 }
 
-func (nd *HTMLElement) InnerHTML(_ context.Context) values.String {
-	h, err := nd.selection.Html()
+func (el *HTMLElement) InnerHTML(_ context.Context) values.String {
+	h, err := el.selection.Html()
 
 	if err != nil {
 		return values.EmptyString
@@ -135,48 +136,140 @@ func (nd *HTMLElement) InnerHTML(_ context.Context) values.String {
 	return values.NewString(h)
 }
 
-func (nd *HTMLElement) GetAttributes(_ context.Context) *values.Object {
-	if nd.attrs == nil {
-		nd.attrs = nd.parseAttrs()
+func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
+	if err := el.ensureStyles(ctx); err != nil {
+		return values.NewObject(), err
 	}
 
-	return nd.attrs
+	return el.styles.Copy().(*values.Object), nil
 }
 
-func (nd *HTMLElement) GetAttribute(_ context.Context, name values.String) core.Value {
-	v, ok := nd.selection.Attr(name.String())
-
-	if ok {
-		return values.NewString(v)
+func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
+	if err := el.ensureStyles(ctx); err != nil {
+		return values.None, err
 	}
 
-	return values.None
+	return el.styles.MustGet(name), nil
 }
 
-func (nd *HTMLElement) SetAttribute(_ context.Context, name, value values.String) error {
-	nd.selection.SetAttr(string(name), string(value))
+func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
+	if err := el.ensureStyles(ctx); err != nil {
+		return err
+	}
+
+	el.styles.Set(name, value)
+
+	str := common.SerializeStyles(ctx, el.styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) SetStyles(ctx context.Context, newStyles *values.Object) error {
+	if newStyles == nil {
+		return nil
+	}
+
+	if err := el.ensureStyles(ctx); err != nil {
+		return err
+	}
+
+	newStyles.ForEach(func(i core.Value, key string) bool {
+		el.styles.Set(values.NewString(key), i)
+
+		return true
+	})
+
+	str := common.SerializeStyles(ctx, el.styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) RemoveStyle(ctx context.Context, name ...values.String) error {
+	if len(name) == 0 {
+		return nil
+	}
+
+	if err := el.ensureStyles(ctx); err != nil {
+		return err
+	}
+
+	for _, s := range name {
+		el.styles.Remove(s)
+	}
+
+	str := common.SerializeStyles(ctx, el.styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
+	if attrs == nil {
+		return nil
+	}
+
+	el.ensureAttrs()
+
+	var err error
+
+	attrs.ForEach(func(value core.Value, key string) bool {
+		err = el.SetAttribute(ctx, values.NewString(key), values.NewString(value.String()))
+
+		return err == nil
+	})
+
+	return err
+}
+
+func (el *HTMLElement) GetAttributes(_ context.Context) *values.Object {
+	el.ensureAttrs()
+
+	return el.attrs.Copy().(*values.Object)
+}
+
+func (el *HTMLElement) GetAttribute(_ context.Context, name values.String) core.Value {
+	el.ensureAttrs()
+
+	return el.attrs.MustGet(name)
+}
+
+func (el *HTMLElement) SetAttribute(_ context.Context, name, value values.String) error {
+	el.ensureAttrs()
+
+	el.attrs.Set(name, value)
+	el.selection.SetAttr(string(name), string(value))
 
 	return nil
 }
 
-func (nd *HTMLElement) GetChildNodes(_ context.Context) core.Value {
-	if nd.children == nil {
-		nd.children = nd.parseChildren()
+func (el *HTMLElement) RemoveAttribute(ctx context.Context, name ...values.String) error {
+	el.ensureAttrs()
+
+	for _, attr := range name {
+		el.attrs.Remove(attr)
+		el.selection.RemoveAttr(attr.String())
 	}
 
-	return nd.children
+	return nil
 }
 
-func (nd *HTMLElement) GetChildNode(_ context.Context, idx values.Int) core.Value {
-	if nd.children == nil {
-		nd.children = nd.parseChildren()
+func (el *HTMLElement) GetChildNodes(_ context.Context) core.Value {
+	if el.children == nil {
+		el.children = el.parseChildren()
 	}
 
-	return nd.children.Get(idx)
+	return el.children
 }
 
-func (nd *HTMLElement) QuerySelector(_ context.Context, selector values.String) core.Value {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) GetChildNode(_ context.Context, idx values.Int) core.Value {
+	if el.children == nil {
+		el.children = el.parseChildren()
+	}
+
+	return el.children.Get(idx)
+}
+
+func (el *HTMLElement) QuerySelector(_ context.Context, selector values.String) core.Value {
+	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
 		return values.None
@@ -191,8 +284,8 @@ func (nd *HTMLElement) QuerySelector(_ context.Context, selector values.String) 
 	return res
 }
 
-func (nd *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) core.Value {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) core.Value {
+	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
 		return values.None
@@ -211,8 +304,8 @@ func (nd *HTMLElement) QuerySelectorAll(_ context.Context, selector values.Strin
 	return arr
 }
 
-func (nd *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.String) values.String {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.String) values.String {
+	selection := el.selection.Find(selector.String())
 
 	str, err := selection.Html()
 
@@ -224,8 +317,8 @@ func (nd *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.St
 	return values.NewString(str)
 }
 
-func (nd *HTMLElement) InnerHTMLBySelectorAll(_ context.Context, selector values.String) *values.Array {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) InnerHTMLBySelectorAll(_ context.Context, selector values.String) *values.Array {
+	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
 	selection.Each(func(_ int, selection *goquery.Selection) {
@@ -240,14 +333,14 @@ func (nd *HTMLElement) InnerHTMLBySelectorAll(_ context.Context, selector values
 	return arr
 }
 
-func (nd *HTMLElement) InnerTextBySelector(_ context.Context, selector values.String) values.String {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) InnerTextBySelector(_ context.Context, selector values.String) values.String {
+	selection := el.selection.Find(selector.String())
 
 	return values.NewString(selection.Text())
 }
 
-func (nd *HTMLElement) InnerTextBySelectorAll(_ context.Context, selector values.String) *values.Array {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) InnerTextBySelectorAll(_ context.Context, selector values.String) *values.Array {
+	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
 	selection.Each(func(_ int, selection *goquery.Selection) {
@@ -257,8 +350,8 @@ func (nd *HTMLElement) InnerTextBySelectorAll(_ context.Context, selector values
 	return arr
 }
 
-func (nd *HTMLElement) CountBySelector(_ context.Context, selector values.String) values.Int {
-	selection := nd.selection.Find(selector.String())
+func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String) values.Int {
+	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
 		return values.ZeroInt
@@ -267,8 +360,8 @@ func (nd *HTMLElement) CountBySelector(_ context.Context, selector values.String
 	return values.NewInt(selection.Size())
 }
 
-func (nd *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) values.Boolean {
-	selection := nd.selection.Closest(selector.String())
+func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) values.Boolean {
+	selection := el.selection.Closest(selector.String())
 
 	if selection == nil {
 		return values.False
@@ -277,47 +370,83 @@ func (nd *HTMLElement) ExistsBySelector(_ context.Context, selector values.Strin
 	return values.True
 }
 
-func (nd *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInElement(ctx, nd, path)
+func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	return common.GetInElement(ctx, el, path)
 }
 
-func (nd *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInElement(ctx, nd, path, value)
+func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	return common.SetInElement(ctx, el, path, value)
 }
 
-func (nd *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
-	return common.NewIterator(nd)
+func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
+	return common.NewIterator(el)
 }
 
-func (nd *HTMLElement) Click(_ context.Context) (values.Boolean, error) {
+func (el *HTMLElement) Click(_ context.Context) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) error {
+func (el *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Select(_ context.Context, _ *values.Array) (*values.Array, error) {
+func (el *HTMLElement) Select(_ context.Context, _ *values.Array) (*values.Array, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (nd *HTMLElement) ScrollIntoView(_ context.Context) error {
+func (el *HTMLElement) ScrollIntoView(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) Hover(_ context.Context) error {
+func (el *HTMLElement) Hover(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (nd *HTMLElement) parseAttrs() *values.Object {
+func (el *HTMLElement) ensureStyles(ctx context.Context) error {
+	if el.styles == nil {
+		styles, err := el.parseStyles(ctx)
+
+		if err != nil {
+			return err
+		}
+
+		el.styles = styles
+	}
+
+	return nil
+}
+
+func (el *HTMLElement) parseStyles(ctx context.Context) (*values.Object, error) {
+	str := el.GetAttribute(ctx, "style")
+
+	if str == values.None {
+		return values.NewObject(), nil
+	}
+
+	styles, err := common.DeserializeStyles(values.NewString(str.String()))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return styles, nil
+}
+
+func (el *HTMLElement) ensureAttrs() {
+	if el.attrs == nil {
+		el.attrs = el.parseAttrs()
+	}
+}
+
+func (el *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 
 	for _, name := range common.Attributes {
-		val, ok := nd.selection.Attr(name)
+		val, ok := el.selection.Attr(name)
 
 		if ok {
 			obj.Set(values.NewString(name), values.NewString(val))
@@ -327,8 +456,8 @@ func (nd *HTMLElement) parseAttrs() *values.Object {
 	return obj
 }
 
-func (nd *HTMLElement) parseChildren() *values.Array {
-	children := nd.selection.Children()
+func (el *HTMLElement) parseChildren() *values.Array {
+	children := el.selection.Children()
 
 	arr := values.NewArray(10)
 

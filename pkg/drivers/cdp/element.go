@@ -49,6 +49,7 @@ type (
 		value          core.Value
 		rawAttrs       []string
 		attributes     *common.LazyValue
+		style          *common.LazyValue
 		children       []*HTMLElementIdentity
 		loadedChildren *common.LazyValue
 	}
@@ -159,6 +160,7 @@ func NewHTMLElement(
 	el.innerText = common.NewLazyValue(el.loadInnerText)
 	el.rawAttrs = attributes
 	el.attributes = common.NewLazyValue(el.loadAttrs)
+	el.style = common.NewLazyValue(el.parseStyle)
 	el.value = values.EmptyString
 	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 	el.value = values.NewString(value)
@@ -297,6 +299,99 @@ func (el *HTMLElement) Length() values.Int {
 	return values.NewInt(len(el.children))
 }
 
+func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return values.NewObject(), err
+	}
+
+	if val == values.None {
+		return values.NewObject(), nil
+	}
+
+	styles := val.(*values.Object)
+
+	return styles.Copy().(*values.Object), nil
+}
+
+func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
+	styles, err := el.style.Read(ctx)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	val, found := styles.(*values.Object).Get(name)
+
+	if !found {
+		return values.None, nil
+	}
+
+	return val, nil
+}
+
+func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
+	if styles == nil {
+		return nil
+	}
+
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	currentStyles := val.(*values.Object)
+
+	styles.ForEach(func(value core.Value, key string) bool {
+		currentStyles.Set(values.NewString(key), value)
+
+		return true
+	})
+
+	str := common.SerializeStyles(ctx, currentStyles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	styles := val.(*values.Object)
+	styles.Set(name, value)
+
+	str := common.SerializeStyles(ctx, styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
+	if len(names) == 0 {
+		return nil
+	}
+
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	styles := val.(*values.Object)
+
+	for _, name := range names {
+		styles.Remove(name)
+	}
+
+	str := common.SerializeStyles(ctx, styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
 func (el *HTMLElement) GetAttributes(ctx context.Context) *values.Object {
 	val, err := el.attributes.Read(ctx)
 
@@ -326,11 +421,38 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) cor
 	return val
 }
 
+func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
+	var err error
+
+	attrs.ForEach(func(value core.Value, key string) bool {
+		err = el.SetAttribute(ctx, values.NewString(key), values.NewString(value.String()))
+
+		return err == nil
+	})
+
+	return err
+}
+
 func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.String) error {
 	return el.client.DOM.SetAttributeValue(
 		ctx,
 		dom.NewSetAttributeValueArgs(el.id.nodeID, string(name), string(value)),
 	)
+}
+
+func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.String) error {
+	for _, name := range names {
+		err := el.client.DOM.RemoveAttribute(
+			ctx,
+			dom.NewRemoveAttributeArgs(el.id.nodeID, name.String()),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (el *HTMLElement) GetChildNodes(ctx context.Context) core.Value {
@@ -973,6 +1095,20 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 	return loaded, nil
 }
 
+func (el *HTMLElement) parseStyle(ctx context.Context) (core.Value, error) {
+	value := el.GetAttribute(ctx, "style")
+
+	if value == values.None {
+		return values.NewObject(), nil
+	}
+
+	if value.Type() != types.String {
+		return values.NewObject(), nil
+	}
+
+	return common.DeserializeStyles(value.(values.String))
+}
+
 func (el *HTMLElement) handlePageReload(_ context.Context, _ interface{}) {
 	el.Close()
 }
@@ -995,6 +1131,10 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 			el.logError(err).Msg("failed to update element")
 
 			return
+		}
+
+		if reply.Name == "style" {
+			el.style.Reset()
 		}
 
 		attrs, ok := v.(*values.Object)
@@ -1031,6 +1171,10 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 			el.logError(err).Msg("failed to update element")
 
 			return
+		}
+
+		if reply.Name == "style" {
+			el.style.Reset()
 		}
 
 		attrs, ok := v.(*values.Object)

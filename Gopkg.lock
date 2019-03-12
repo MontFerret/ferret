@@ -66,6 +66,14 @@
   revision = "d547d1d9531ed93dbdebcbff7f83e7c876a1e0ee"
 
 [[projects]]
+  digest = "1:fc51ecee8f31d03436c1a0167eb1e383ad0a241d02272541853f3995374a08f1"
+  name = "github.com/gorilla/css"
+  packages = ["scanner"]
+  pruneopts = "UT"
+  revision = "398b0b046082ecb3694c01bec6b336a06a4e530a"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
   name = "github.com/gorilla/websocket"
   packages = ["."]
@@ -293,6 +301,7 @@
   input-imports = [
     "github.com/PuerkitoBio/goquery",
     "github.com/antlr/antlr4/runtime/Go/antlr",
+    "github.com/aymerick/douceur/parser",
     "github.com/chzyer/readline",
     "github.com/corpix/uarand",
     "github.com/derekparker/trie",

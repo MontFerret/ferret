@@ -62,6 +62,8 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 			})
 
 			return err
+		case "style":
+
 		case "value":
 			if len(path) > 1 {
 				return core.Error(ErrInvalidPath, PathToString(path[1:]))

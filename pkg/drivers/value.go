@@ -53,11 +53,25 @@ type (
 
 		SetValue(ctx context.Context, value core.Value) error
 
+		GetStyles(ctx context.Context) (*values.Object, error)
+
+		GetStyle(ctx context.Context, name values.String) (core.Value, error)
+
+		SetStyles(ctx context.Context, values *values.Object) error
+
+		SetStyle(ctx context.Context, name values.String, value core.Value) error
+
+		RemoveStyle(ctx context.Context, name ...values.String) error
+
 		GetAttributes(ctx context.Context) *values.Object
 
 		GetAttribute(ctx context.Context, name values.String) core.Value
 
+		SetAttributes(ctx context.Context, values *values.Object) error
+
 		SetAttribute(ctx context.Context, name, value values.String) error
+
+		RemoveAttribute(ctx context.Context, name ...values.String) error
 
 		InnerHTMLBySelector(ctx context.Context, selector values.String) values.String
 

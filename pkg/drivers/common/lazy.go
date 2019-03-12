@@ -9,18 +9,18 @@ import (
 )
 
 type (
-	LazyFactory func(ctx context.Context) (core.Value, error)
+	LazyValueFactory func(ctx context.Context) (core.Value, error)
 
 	LazyValue struct {
 		sync.Mutex
-		factory LazyFactory
+		factory LazyValueFactory
 		ready   bool
 		value   core.Value
 		err     error
 	}
 )
 
-func NewLazyValue(factory LazyFactory) *LazyValue {
+func NewLazyValue(factory LazyValueFactory) *LazyValue {
 	lz := new(LazyValue)
 	lz.ready = false
 	lz.factory = factory
