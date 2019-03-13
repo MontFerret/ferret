@@ -241,7 +241,7 @@ func (el *HTMLElement) SetAttribute(_ context.Context, name, value values.String
 	return nil
 }
 
-func (el *HTMLElement) RemoveAttribute(ctx context.Context, name ...values.String) error {
+func (el *HTMLElement) RemoveAttribute(_ context.Context, name ...values.String) error {
 	el.ensureAttrs()
 
 	for _, attr := range name {

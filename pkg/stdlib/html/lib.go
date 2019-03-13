@@ -14,6 +14,9 @@ const defaultTimeout = 5000
 
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
+		"ATTR_GET":          AttributeGet,
+		"ATTR_REMOVE":       AttributeRemove,
+		"ATTR_SET":          AttributeSet,
 		"CLICK":             Click,
 		"CLICK_ALL":         ClickAll,
 		"DOCUMENT":          Document,

@@ -1,6 +1,7 @@
 package stdlib
 
 import (
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
@@ -17,6 +18,10 @@ func NewLib() map[string]core.Function {
 
 	add := func(l map[string]core.Function) {
 		for name, fn := range l {
+			if _, exists := lib[name]; exists {
+				panic(fmt.Sprintf("%s function already exists", name))
+			}
+
 			lib[name] = fn
 		}
 	}
