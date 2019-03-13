@@ -15,7 +15,11 @@ var (
 	stringType = []core.Type{types.String}
 )
 
-func SaveFile(ctx context.Context, args ...core.Value) (core.Value, error) {
+// SaveFile create file by filename and store data into it.
+// @param data (Binary) - data to store.
+// @param filename (String) - name of the file.
+// @returns (None) - None.
+func SaveFile(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 	if err != nil {
 		return values.None, err
