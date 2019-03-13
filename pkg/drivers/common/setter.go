@@ -54,9 +54,47 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 				return err
 			}
 
+			curr := el.GetAttributes(ctx)
+
+			// remove all previous attributes
+			err = el.RemoveAttribute(ctx, curr.Keys()...)
+
+			if err != nil {
+				return err
+			}
+
 			obj := value.(*values.Object)
 			obj.ForEach(func(value core.Value, key string) bool {
 				err = el.SetAttribute(ctx, values.NewString(key), values.NewString(value.String()))
+
+				return err == nil
+			})
+
+			return err
+		case "style":
+			if len(path) > 1 {
+				attrName := path[1]
+
+				return el.SetStyle(ctx, values.NewString(attrName.String()), value)
+			}
+
+			err := core.ValidateType(value, types.Object)
+
+			if err != nil {
+				return err
+			}
+
+			styles, err := el.GetStyles(ctx)
+
+			if err != nil {
+				return err
+			}
+
+			err = el.RemoveStyle(ctx, styles.Keys()...)
+
+			obj := value.(*values.Object)
+			obj.ForEach(func(value core.Value, key string) bool {
+				err = el.SetStyle(ctx, values.NewString(key), value)
 
 				return err == nil
 			})

@@ -14,6 +14,9 @@ const defaultTimeout = 5000
 
 func NewLib() map[string]core.Function {
 	return map[string]core.Function{
+		"ATTR_GET":          AttributeGet,
+		"ATTR_REMOVE":       AttributeRemove,
+		"ATTR_SET":          AttributeSet,
 		"CLICK":             Click,
 		"CLICK_ALL":         ClickAll,
 		"DOCUMENT":          Document,
@@ -40,6 +43,9 @@ func NewLib() map[string]core.Function {
 		"SCROLL_ELEMENT":    ScrollInto,
 		"SCROLL_TOP":        ScrollTop,
 		"SELECT":            Select,
+		"STYLE_GET":         StyleGet,
+		"STYLE_REMOVE":      StyleRemove,
+		"STYLE_SET":         StyleSet,
 		"WAIT_ELEMENT":      WaitElement,
 		"WAIT_NO_ELEMENT":   WaitNoElement,
 		"WAIT_CLASS":        WaitClass,

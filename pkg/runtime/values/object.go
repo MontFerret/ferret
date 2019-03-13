@@ -80,10 +80,23 @@ func (t *Object) Compare(other core.Value) int64 {
 
 		var res int64
 
-		sortedT := sort.StringSlice(t.Keys())
+		tKeys := make([]string, 0, len(t.value))
+
+		for k := range t.value {
+			tKeys = append(tKeys, k)
+		}
+
+		sortedT := sort.StringSlice(tKeys)
 		sortedT.Sort()
 
-		sortedOther := sort.StringSlice(other.Keys())
+		otherKeys := make([]string, 0, other.Length())
+
+		other.ForEach(func(value core.Value, k string) bool {
+			otherKeys = append(otherKeys, k)
+			return true
+		})
+
+		sortedOther := sort.StringSlice(otherKeys)
 		sortedOther.Sort()
 
 		var tVal, otherVal core.Value
@@ -178,11 +191,21 @@ func (t *Object) Length() Int {
 	return Int(len(t.value))
 }
 
-func (t *Object) Keys() []string {
-	keys := make([]string, 0, len(t.value))
+func (t *Object) Keys() []String {
+	keys := make([]String, 0, len(t.value))
 
 	for k := range t.value {
-		keys = append(keys, k)
+		keys = append(keys, NewString(k))
+	}
+
+	return keys
+}
+
+func (t *Object) Values() []core.Value {
+	keys := make([]core.Value, 0, len(t.value))
+
+	for _, v := range t.value {
+		keys = append(keys, v)
 	}
 
 	return keys

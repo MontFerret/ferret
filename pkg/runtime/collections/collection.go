@@ -22,7 +22,7 @@ type (
 	KeyedCollection interface {
 		core.Value
 		Measurable
-		Keys() []string
+		Keys() []values.String
 		Get(key values.String) (core.Value, values.Boolean)
 		Set(key values.String, value core.Value)
 	}

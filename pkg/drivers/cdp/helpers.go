@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"math"
 	"strings"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"

@@ -10,7 +10,7 @@ type KeyedIterator struct {
 	valVar string
 	keyVar string
 	values KeyedCollection
-	keys   []string
+	keys   []values.String
 	pos    int
 }
 
@@ -40,7 +40,7 @@ func (iterator *KeyedIterator) Next(_ context.Context, scope *core.Scope) (*core
 	}
 
 	if len(iterator.keys) > iterator.pos {
-		key := values.NewString(iterator.keys[iterator.pos])
+		key := iterator.keys[iterator.pos]
 		val, _ := iterator.values.Get(key)
 
 		iterator.pos++

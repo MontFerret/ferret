@@ -36,7 +36,15 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 		needSort = bool(args[1].(values.Boolean))
 	}
 
-	keys := sort.StringSlice(obj.Keys())
+	oKeys := make([]string, 0, obj.Length())
+
+	obj.ForEach(func(value core.Value, key string) bool {
+		oKeys = append(oKeys, key)
+
+		return true
+	})
+
+	keys := sort.StringSlice(oKeys)
 	keysArray := values.NewArray(len(keys))
 
 	if needSort {
