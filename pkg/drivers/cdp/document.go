@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -527,6 +528,13 @@ func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) e
 }
 
 func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
+	var operator string
+
+	if when == drivers.WaitEventPresence {
+		operator = "!="
+	} else {
+		operator = "=="
+	}
 
 	task := events.NewEvalWaitTask(
 		doc.client,
@@ -542,7 +550,7 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 				return null;
 			`,
 			eval.ParamString(selector.String()),
-			waitEventToEqOperator(when),
+			operator,
 		),
 		events.DefaultPolling,
 	)
@@ -555,26 +563,11 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
-			
-			if (el == null) {
-				return false;
-			}
-			
-			var className = %s;
-			var found = el.className.split(' ').find(i => i === className);
-
-			if (found %s null) {
-				return true;
-			}
-			
-			// null means we need to repeat
-			return null;
-		`,
-			eval.ParamString(selector.String()),
-			eval.ParamString(class.String()),
-			waitEventToEqOperator(when),
+		templates.WaitBySelector(
+			selector,
+			when,
+			class,
+			fmt.Sprintf("el.className.split(' ').find(i => i === %s)", eval.ParamString(class.String())),
 		),
 		events.DefaultPolling,
 	)
@@ -587,33 +580,11 @@ func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, c
 func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.client,
-		fmt.Sprintf(`
-			var elements = document.querySelectorAll(%s);
-			
-			if (elements == null || elements.length === 0) {
-				return false;
-			}
-	
-			var className = %s;
-			var foundCount = 0;
-			
-			elements.forEach((el) => {
-				var found = el.className.split(' ').find(i => i === className);
-				if (found %s null) {
-					foundCount++;
-				}
-			});
-	
-			if (foundCount === elements.length) {
-				return true;
-			}
-			
-			// null means we need to repeat
-			return null;
-		`,
-			eval.ParamString(selector.String()),
-			eval.ParamString(class.String()),
-			waitEventToEqOperator(when),
+		templates.WaitBySelectorAll(
+			selector,
+			when,
+			class,
+			fmt.Sprintf("el.className.split(' ').find(i => i === %s)", eval.ParamString(class.String())),
 		),
 		events.DefaultPolling,
 	)
@@ -639,6 +610,52 @@ func (doc *HTMLDocument) WaitForNavigation(ctx context.Context) error {
 	case <-ctx.Done():
 		return core.ErrTimeout
 	}
+}
+
+func (doc *HTMLDocument) WaitForAttributeBySelector(
+	ctx context.Context,
+	selector,
+	name values.String,
+	value core.Value,
+	when drivers.WaitEvent,
+) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		templates.WaitBySelector(
+			selector,
+			when,
+			value,
+			fmt.Sprintf(`el.attributes[%s]`, eval.ParamString(name.String())),
+		),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
+	ctx context.Context,
+	selector,
+	name values.String,
+	value core.Value,
+	when drivers.WaitEvent,
+) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		templates.WaitBySelectorAll(
+			selector,
+			when,
+			value,
+			fmt.Sprintf(`el.attributes[%s]`, eval.ParamString(name.String())),
+		),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
 }
 
 func (doc *HTMLDocument) Navigate(ctx context.Context, url values.String) error {

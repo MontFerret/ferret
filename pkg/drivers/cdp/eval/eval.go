@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -14,14 +13,6 @@ import (
 
 func PrepareEval(exp string) string {
 	return fmt.Sprintf("((function () {%s})())", exp)
-}
-
-func ParamString(param string) string {
-	return "`" + param + "`"
-}
-
-func ParamFloat(param float64) string {
-	return strconv.FormatFloat(param, 'f', 6, 64)
 }
 
 func Eval(ctx context.Context, client *cdp.Client, exp string, ret bool, async bool) (core.Value, error) {

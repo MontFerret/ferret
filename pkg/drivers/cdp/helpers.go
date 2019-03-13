@@ -7,7 +7,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -402,12 +401,4 @@ func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
 	}
 
 	return broker, nil
-}
-
-func waitEventToEqOperator(when drivers.WaitEvent) string {
-	if when == drivers.WaitEventAbsence {
-		return "=="
-	}
-
-	return "!="
 }
