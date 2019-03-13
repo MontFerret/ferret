@@ -6,9 +6,6 @@ LET elemSelector = "#wait-no-style-content"
 WAIT_ELEMENT(doc, pageSelector)
 
 LET el = ELEMENT(doc, elemSelector)
+LET val = STYLE_GET(el, "display")
 
-ATTR_SET(el, { style: "color: black;", "data-ferret-x": "test" })
-
-WAIT(1000)
-
-RETURN el.style.color == "black" && el.attributes["data-ferret-x"] == "test" ? "" : "styles should be updated"
+RETURN val.display == "block" ? "" : "could not get style values"

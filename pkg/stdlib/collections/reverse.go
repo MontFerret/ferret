@@ -26,7 +26,7 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	switch col := args[0].(type) {
 	case values.String:
-		runes := []rune(col)
+		runes := []rune(string(col))
 		size := len(runes)
 
 		// Reverse

@@ -4,11 +4,14 @@ LET pageSelector = "#page-events"
 LET elemSelector = "#wait-no-style-content"
 
 WAIT_ELEMENT(doc, pageSelector)
-
 LET el = ELEMENT(doc, elemSelector)
 
-ATTR_SET(el, { style: "color: black;", "data-ferret-x": "test" })
+LET prev = el.style
+
+STYLE_REMOVE(el, "display")
 
 WAIT(1000)
 
-RETURN el.style.color == "black" && el.attributes["data-ferret-x"] == "test" ? "" : "styles should be updated"
+LET curr = el.style
+
+RETURN prev.display == "block" && curr.display == NONE ? "" : "expected style to be removed"

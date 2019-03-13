@@ -14,4 +14,4 @@ WAIT(1000)
 
 LET curr = el.attributes.style
 
-RETURN prev == "display: block;" && curr == NONE ? "" : "expected attribute style be removed"
+RETURN prev == "display: block;" && curr == NONE ? "" : "expected attribute to be removed"

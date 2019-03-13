@@ -7,11 +7,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// AttributeGet gets single or more attribute(s) of a given element.
+// StyleGet gets single or more style attribute value(s) of a given element.
 // @param el (HTMLElement) - Target element.
-// @param names (...String) - Attribute name(s).
-// @returns Object - Key-value pairs of attribute values.
-func AttributeGet(ctx context.Context, args ...core.Value) (core.Value, error) {
+// @param names (...String) - Style name(s).
+// @returns Object - Key-value pairs of style values.
+func StyleGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
@@ -26,13 +26,16 @@ func AttributeGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	names := args[1:]
 	result := values.NewObject()
-	attrs := el.GetAttributes(ctx)
 
 	for _, n := range names {
 		name := values.NewString(n.String())
-		val, exists := attrs.Get(name)
+		val, err := el.GetStyle(ctx, name)
 
-		if exists {
+		if err != nil {
+			return values.None, err
+		}
+
+		if val != values.None {
 			result.Set(name, val)
 		}
 	}
