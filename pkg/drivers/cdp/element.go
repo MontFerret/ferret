@@ -47,7 +47,6 @@ type (
 		innerHTML      values.String
 		innerText      *common.LazyValue
 		value          core.Value
-		rawAttrs       []string
 		attributes     *common.LazyValue
 		style          *common.LazyValue
 		children       []*HTMLElementIdentity
@@ -129,7 +128,6 @@ func LoadElement(
 		id,
 		node.Node.NodeType,
 		node.Node.NodeName,
-		node.Node.Attributes,
 		val,
 		innerHTML,
 		createChildrenArray(node.Node.Children),
@@ -143,7 +141,6 @@ func NewHTMLElement(
 	id *HTMLElementIdentity,
 	nodeType int,
 	nodeName string,
-	attributes []string,
 	value string,
 	innerHTML values.String,
 	children []*HTMLElementIdentity,
@@ -158,7 +155,6 @@ func NewHTMLElement(
 	el.nodeName = values.NewString(nodeName)
 	el.innerHTML = innerHTML
 	el.innerText = common.NewLazyValue(el.loadInnerText)
-	el.rawAttrs = attributes
 	el.attributes = common.NewLazyValue(el.loadAttrs)
 	el.style = common.NewLazyValue(el.parseStyle)
 	el.value = values.EmptyString
@@ -1062,8 +1058,14 @@ func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 	return parsed, nil
 }
 
-func (el *HTMLElement) loadAttrs(_ context.Context) (core.Value, error) {
-	return parseAttrs(el.rawAttrs), nil
+func (el *HTMLElement) loadAttrs(ctx context.Context) (core.Value, error) {
+	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.nodeID))
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return parseAttrs(repl.Attributes), nil
 }
 
 func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
@@ -1123,6 +1125,12 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 
 	// it's not for this el
 	if reply.NodeID != el.id.nodeID {
+		return
+	}
+
+	// they are not event loaded
+	// just ignore the event
+	if !el.attributes.Ready() {
 		return
 	}
 

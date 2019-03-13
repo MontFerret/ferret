@@ -44,6 +44,21 @@ func TestDeserializeStyles(t *testing.T) {
 				name:  "font-family",
 				value: values.NewString(`Arial,"Helvetica Neue",Helvetica,sans-serif`),
 			},
+			{
+				raw:   "color: black",
+				name:  "color",
+				value: values.NewString("black"),
+			},
+			{
+				raw:   "display: inline-block",
+				name:  "display",
+				value: values.NewString("inline-block"),
+			},
+			{
+				raw:   "min-width: 50",
+				name:  "min-width",
+				value: values.NewFloat(50),
+			},
 		}
 
 		Convey("Should parse a single style", func() {

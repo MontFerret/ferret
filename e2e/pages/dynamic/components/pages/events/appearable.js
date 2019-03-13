@@ -2,23 +2,52 @@ import random from "../../../utils/random.js";
 
 const e = React.createElement;
 
-function render(id) {
-    return  e("span", { id: `${id}-content` }, ["Hello world"]);
+function render(id, props = {}) {
+    return  e("span", { id: `${id}-content`, ...props }, ["Hello world"]);
 }
 
 export default class AppearableComponent extends React.PureComponent {
     constructor(props) {
         super(props);
 
+        let element = null;
+
+        if (props.appear) {
+            if (props.useStyle) {
+                element = render(props.id, { style: {display: "none"}})
+            }
+        } else {
+            if (props.useStyle) {
+                element = render(props.id, { style: {display: "block" }})
+            } else {
+                element = render(props.id)
+            }
+        }
+
         this.state = {
-            element: props.appear === true ? null : render(props.id)
+            element
         };
     }
 
     handleClick() {
         setTimeout(() => {
+            const props = this.props;
+            let element = null;
+
+            if (props.appear) {
+                if (props.useStyle) {
+                    element = render(props.id, { style: {display: "block" }})
+                } else {
+                    element = render(props.id)
+                }
+            } else {
+                if (props.useStyle) {
+                    element = render(props.id, { style: {display: "none"}})
+                }
+            }
+
             this.setState({
-                element: this.props.appear === true ? render(this.props.id) : null
+                element,
             })
         }, random())
     }

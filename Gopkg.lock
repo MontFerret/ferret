@@ -301,11 +301,11 @@
   input-imports = [
     "github.com/PuerkitoBio/goquery",
     "github.com/antlr/antlr4/runtime/Go/antlr",
-    "github.com/aymerick/douceur/parser",
     "github.com/chzyer/readline",
     "github.com/corpix/uarand",
     "github.com/derekparker/trie",
     "github.com/gofrs/uuid",
+    "github.com/gorilla/css/scanner",
     "github.com/labstack/echo",
     "github.com/mafredri/cdp",
     "github.com/mafredri/cdp/devtool",

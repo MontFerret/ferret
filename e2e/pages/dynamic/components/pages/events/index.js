@@ -48,13 +48,31 @@ export default class EventsPage extends React.Component {
                         title: "Appearable"
                     })
                 ]),
+            ]),
+            e("div", { className: "row" }, [
                 e("div", { className: "col-lg-4"}, [
                     e(Appearable, {
                         id: "wait-no-element",
                         appear: false,
                         title: "Disappearable"
                     })
-                ])
+                ]),
+                e("div", { className: "col-lg-4"}, [
+                    e(Appearable, {
+                        id: "wait-style",
+                        appear: true,
+                        title: "Appearable with style",
+                        useStyle: true,
+                    })
+                ]),
+                e("div", { className: "col-lg-4"}, [
+                    e(Appearable, {
+                        id: "wait-no-style",
+                        appear: false,
+                        title: "Disappearable",
+                        useStyle: true,
+                    })
+                ]),
             ])
         ])
     }
