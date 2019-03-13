@@ -23,16 +23,16 @@
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
 ## What is it?
-```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like UI testing, machine learning and analytics.    
-Having its own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
-It's extremely portable, extensible and fast.
+```ferret``` is a web scraping system. It aims to simplify data extraction from the web for UI testing, machine learning, analytics and more.    
+```ferret``` allows users to focus on the data. It abstracts away the technical details and complexity of underlying technologies using its own declarative language. 
+It is extremely portable, extensible and fast.
 
 [Read the introductory blog post about Ferret here!](https://medium.com/@ziflex/say-hello-to-ferret-a-modern-web-scraping-tool-5c9cc85ba183)
 
 ## Show me some code
 The following example demonstrates the use of dynamic pages.    
-First of all, we load the main Google Search page, type search criteria into an input box and then click a search button.   
-The click action triggers a redirect, so we wait till its end.   
+We load the main Google Search page, type search criteria into an input box and then click a search button.   
+The click action triggers a redirect, so we wait until its end.   
 Once the page gets loaded, we iterate over all elements in search results and assign the output to a variable.   
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
