@@ -185,15 +185,15 @@ func isEqualObjects(obj1 *values.Object, obj2 *values.Object) bool {
 	var val2 core.Value
 
 	for _, key := range obj1.Keys() {
-		val1, _ = obj1.Get(values.NewString(key))
-		val2, _ = obj2.Get(values.NewString(key))
+		val1, _ = obj1.Get(key)
+		val2, _ = obj2.Get(key)
 		if val1.Compare(val2) != 0 {
 			return false
 		}
 	}
 	for _, key := range obj2.Keys() {
-		val1, _ = obj1.Get(values.NewString(key))
-		val2, _ = obj2.Get(values.NewString(key))
+		val1, _ = obj1.Get(key)
+		val2, _ = obj2.Get(key)
 		if val2.Compare(val1) != 0 {
 			return false
 		}
