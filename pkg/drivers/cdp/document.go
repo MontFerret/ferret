@@ -625,7 +625,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelector(
 			selector,
 			when,
 			value,
-			fmt.Sprintf(`el.attributes[%s]`, eval.ParamString(name.String())),
+			templates.AttributeRead(name),
 		),
 		events.DefaultPolling,
 	)
@@ -648,7 +648,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 			selector,
 			when,
 			value,
-			fmt.Sprintf(`el.attributes[%s]`, eval.ParamString(name.String())),
+			templates.AttributeRead(name),
 		),
 		events.DefaultPolling,
 	)
