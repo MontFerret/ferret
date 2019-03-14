@@ -406,6 +406,10 @@ func (el *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ driver
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) WaitForAttribute(_ context.Context, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) ensureStyles(ctx context.Context) error {
 	if el.styles == nil {
 		styles, err := el.parseStyles(ctx)

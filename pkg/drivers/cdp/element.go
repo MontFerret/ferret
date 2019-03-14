@@ -861,6 +861,42 @@ func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, wh
 	return err
 }
 
+func (el *HTMLElement) WaitForAttribute(
+	ctx context.Context,
+	name values.String,
+	value core.Value,
+	when drivers.WaitEvent,
+) error {
+	task := events.NewWaitTask(
+		func(ctx2 context.Context) (core.Value, error) {
+			current := el.GetAttribute(ctx2, name)
+
+			if when == drivers.WaitEventPresence {
+				// Values appeared, exit
+				if current.Compare(value) == 0 {
+					// The value does not really matter if it's not None
+					// None indicates that operation needs to be repeated
+					return values.True, nil
+				}
+			} else {
+				// Value disappeared, exit
+				if current.Compare(value) != 0 {
+					// The value does not really matter if it's not None
+					// None indicates that operation needs to be repeated
+					return values.True, nil
+				}
+			}
+
+			return values.None, nil
+		},
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
 func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
 	return events.DispatchEvent(ctx, el.client, el.id.objectID, "click")
 }
