@@ -20,17 +20,15 @@ type (
 
 	// HTTPCookie HTTPCookie object
 	HTTPCookie struct {
-		Name  string `json:"name"`
-		Value string `json:"value"`
-
-		Path    string    `json:"path"`
-		Domain  string    `json:"domain"`
-		Expires time.Time `json:"expires"`
-
-		MaxAge   int      `json:"max_age"`
-		Secure   bool     `json:"secure"`
-		HTTPOnly bool     `json:"http_only"`
-		SameSite SameSite `json:"same_site"`
+		Name     string
+		Value    string
+		Path     string
+		Domain   string
+		Expires  time.Time
+		MaxAge   int
+		Secure   bool
+		HTTPOnly bool
+		SameSite SameSite
 	}
 )
 
@@ -131,7 +129,19 @@ func (c HTTPCookie) Copy() core.Value {
 }
 
 func (c HTTPCookie) MarshalJSON() ([]byte, error) {
-	out, err := json.Marshal(c)
+	v := map[string]interface{}{
+		"name":      c.Name,
+		"value":     c.Value,
+		"path":      c.Path,
+		"domain":    c.Domain,
+		"expires":   c.Expires,
+		"max_age":   c.MaxAge,
+		"secure":    c.Secure,
+		"http_only": c.HTTPOnly,
+		"same_site": c.SameSite,
+	}
+
+	out, err := json.Marshal(v)
 
 	if err != nil {
 		return nil, err

@@ -7,7 +7,7 @@ LET doc = DOCUMENT(url, {
     }]
 })
 
-LET cookiesPath = LENGTH(doc.cookies) > 1 ? "ok" : "false"
+LET cookiesPath = LENGTH(doc.cookies) > 0 ? "ok" : "false"
 LET cookie = COOKIE_GET(doc, "x-e2e")
 LET expected = "ok test"
 

@@ -1,5 +1,5 @@
 LET url = @dynamic
-LET doc = DOCUMENT("0.0.0.0:8081", {
+LET doc = DOCUMENT(@dynamic, {
     driver: "cdp"
 })
 
