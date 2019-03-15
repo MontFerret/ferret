@@ -9,11 +9,12 @@ import (
 )
 
 type Options struct {
-	Cdp       string
-	Params    map[string]interface{}
-	Proxy     string
-	UserAgent string
-	ShowTime  bool
+	Cdp         string
+	Params      map[string]interface{}
+	Proxy       string
+	UserAgent   string
+	ShowTime    bool
+	KeepCookies bool
 }
 
 func (opts Options) WithContext(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -28,11 +29,17 @@ func (opts Options) WithContext(ctx context.Context) (context.Context, context.C
 		drivers.AsDefault(),
 	)
 
-	cdpDriver := cdp.NewDriver(
+	cdpOpts := []cdp.Option{
 		cdp.WithAddress(opts.Cdp),
 		cdp.WithProxy(opts.Proxy),
 		cdp.WithUserAgent(opts.UserAgent),
-	)
+	}
+
+	if opts.KeepCookies {
+		cdpOpts = append(cdpOpts, cdp.WithKeepCookies())
+	}
+
+	cdpDriver := cdp.NewDriver(cdpOpts...)
 
 	ctx = drivers.WithContext(
 		ctx,

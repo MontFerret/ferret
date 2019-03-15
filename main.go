@@ -66,6 +66,12 @@ var (
 		"launch Chrome",
 	)
 
+	cdpKeepCookies = flag.Bool(
+		"cdp-keep-cookies",
+		false,
+		"keep cookies between queries (i.e. do not open tabs in incognito mode)",
+	)
+
 	proxyAddress = flag.String(
 		"proxy",
 		"",
@@ -154,11 +160,12 @@ func main() {
 	}
 
 	opts := cli.Options{
-		Cdp:       cdpConn,
-		Params:    p,
-		Proxy:     *proxyAddress,
-		UserAgent: *userAgent,
-		ShowTime:  *showTime,
+		Cdp:         cdpConn,
+		Params:      p,
+		Proxy:       *proxyAddress,
+		UserAgent:   *userAgent,
+		ShowTime:    *showTime,
+		KeepCookies: *cdpKeepCookies,
 	}
 
 	stat, _ := os.Stdin.Stat()

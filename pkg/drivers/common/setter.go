@@ -22,6 +22,8 @@ func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		switch segment {
 		case "url", "URL":
 			return doc.SetURL(ctx, values.NewString(value.String()))
+		case "cookies":
+
 		default:
 			return SetInNode(ctx, doc, path, value)
 		}

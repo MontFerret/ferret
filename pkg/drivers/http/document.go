@@ -12,14 +12,16 @@ import (
 )
 
 type HTMLDocument struct {
-	url     values.String
 	docNode *goquery.Document
 	element drivers.HTMLElement
+	url     values.String
+	cookies []drivers.HTTPCookie
 }
 
 func NewHTMLDocument(
-	url string,
 	node *goquery.Document,
+	url string,
+	cookies []drivers.HTTPCookie,
 ) (drivers.HTMLDocument, error) {
 	if url == "" {
 		return nil, core.Error(core.ErrMissedArgument, "document url")
@@ -35,7 +37,7 @@ func NewHTMLDocument(
 		return nil, err
 	}
 
-	return &HTMLDocument{values.NewString(url), node, el}, nil
+	return &HTMLDocument{node, el, values.NewString(url), cookies}, nil
 }
 
 func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
@@ -82,7 +84,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 }
 
 func (doc *HTMLDocument) Copy() core.Value {
-	cp, err := NewHTMLDocument(string(doc.url), doc.docNode)
+	cp, err := NewHTMLDocument(doc.docNode, string(doc.url), doc.cookies)
 
 	if err != nil {
 		return values.None
@@ -92,7 +94,17 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
-	cp, err := NewHTMLDocument(string(doc.url), goquery.CloneDocument(doc.docNode))
+	var cookies []drivers.HTTPCookie
+
+	if doc.cookies != nil {
+		cookies = make([]drivers.HTTPCookie, 0, len(doc.cookies))
+
+		for i, c := range doc.cookies {
+			cookies[i] = c
+		}
+	}
+
+	cp, err := NewHTMLDocument(goquery.CloneDocument(doc.docNode), string(doc.url), cookies)
 
 	if err != nil {
 		return values.None
@@ -159,6 +171,28 @@ func (doc *HTMLDocument) GetURL() core.Value {
 
 func (doc *HTMLDocument) SetURL(_ context.Context, _ values.String) error {
 	return core.ErrInvalidOperation
+}
+
+func (doc *HTMLDocument) GetCookies(_ context.Context) (*values.Array, error) {
+	if doc.cookies == nil {
+		return values.NewArray(0), nil
+	}
+
+	arr := values.NewArray(len(doc.cookies))
+
+	for _, c := range doc.cookies {
+		arr.Push(c)
+	}
+
+	return arr, nil
+}
+
+func (doc *HTMLDocument) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) DeleteCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
+	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) Navigate(_ context.Context, _ values.String) error {
