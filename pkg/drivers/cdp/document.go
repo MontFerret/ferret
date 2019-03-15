@@ -658,6 +658,40 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	return err
 }
 
+func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		templates.WaitBySelector(
+			selector,
+			when,
+			value,
+			templates.StyleRead(name),
+		),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		doc.client,
+		templates.WaitBySelectorAll(
+			selector,
+			when,
+			value,
+			templates.StyleRead(name),
+		),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
 func (doc *HTMLDocument) Navigate(ctx context.Context, url values.String) error {
 	if url == "" {
 		url = BlankPageURL
