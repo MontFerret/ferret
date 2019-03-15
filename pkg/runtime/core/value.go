@@ -49,4 +49,11 @@ type (
 		Value Value
 		Types []Type
 	}
+
+	// IteratorFn represents an helper type to create closure based Iterator interface implementation.
+	IteratorFn = func(ctx context.Context) (value Value, key Value, err error)
 )
+
+func (fn IteratorFn) Next(ctx context.Context) (value Value, key Value, err error) {
+	return fn(ctx)
+}
