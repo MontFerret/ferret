@@ -24,7 +24,7 @@ func Param(input core.Value) string {
 }
 
 func ParamString(param string) string {
-	return `"` + param + `"`
+	return "`" + param + "`"
 }
 
 func ParamFloat(param float64) string {
