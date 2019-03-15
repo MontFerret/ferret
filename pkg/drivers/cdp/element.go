@@ -47,8 +47,8 @@ type (
 		innerHTML      values.String
 		innerText      *common.LazyValue
 		value          core.Value
-		rawAttrs       []string
 		attributes     *common.LazyValue
+		style          *common.LazyValue
 		children       []*HTMLElementIdentity
 		loadedChildren *common.LazyValue
 	}
@@ -128,7 +128,6 @@ func LoadElement(
 		id,
 		node.Node.NodeType,
 		node.Node.NodeName,
-		node.Node.Attributes,
 		val,
 		innerHTML,
 		createChildrenArray(node.Node.Children),
@@ -142,7 +141,6 @@ func NewHTMLElement(
 	id *HTMLElementIdentity,
 	nodeType int,
 	nodeName string,
-	attributes []string,
 	value string,
 	innerHTML values.String,
 	children []*HTMLElementIdentity,
@@ -157,8 +155,8 @@ func NewHTMLElement(
 	el.nodeName = values.NewString(nodeName)
 	el.innerHTML = innerHTML
 	el.innerText = common.NewLazyValue(el.loadInnerText)
-	el.rawAttrs = attributes
 	el.attributes = common.NewLazyValue(el.loadAttrs)
+	el.style = common.NewLazyValue(el.parseStyle)
 	el.value = values.EmptyString
 	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 	el.value = values.NewString(value)
@@ -297,6 +295,99 @@ func (el *HTMLElement) Length() values.Int {
 	return values.NewInt(len(el.children))
 }
 
+func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return values.NewObject(), err
+	}
+
+	if val == values.None {
+		return values.NewObject(), nil
+	}
+
+	styles := val.(*values.Object)
+
+	return styles.Copy().(*values.Object), nil
+}
+
+func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
+	styles, err := el.style.Read(ctx)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	val, found := styles.(*values.Object).Get(name)
+
+	if !found {
+		return values.None, nil
+	}
+
+	return val, nil
+}
+
+func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
+	if styles == nil {
+		return nil
+	}
+
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	currentStyles := val.(*values.Object)
+
+	styles.ForEach(func(value core.Value, key string) bool {
+		currentStyles.Set(values.NewString(key), value)
+
+		return true
+	})
+
+	str := common.SerializeStyles(ctx, currentStyles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	styles := val.(*values.Object)
+	styles.Set(name, value)
+
+	str := common.SerializeStyles(ctx, styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
+func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
+	if len(names) == 0 {
+		return nil
+	}
+
+	val, err := el.style.Read(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	styles := val.(*values.Object)
+
+	for _, name := range names {
+		styles.Remove(name)
+	}
+
+	str := common.SerializeStyles(ctx, styles)
+
+	return el.SetAttribute(ctx, "style", str)
+}
+
 func (el *HTMLElement) GetAttributes(ctx context.Context) *values.Object {
 	val, err := el.attributes.Read(ctx)
 
@@ -326,11 +417,38 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) cor
 	return val
 }
 
+func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
+	var err error
+
+	attrs.ForEach(func(value core.Value, key string) bool {
+		err = el.SetAttribute(ctx, values.NewString(key), values.NewString(value.String()))
+
+		return err == nil
+	})
+
+	return err
+}
+
 func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.String) error {
 	return el.client.DOM.SetAttributeValue(
 		ctx,
 		dom.NewSetAttributeValueArgs(el.id.nodeID, string(name), string(value)),
 	)
+}
+
+func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.String) error {
+	for _, name := range names {
+		err := el.client.DOM.RemoveAttribute(
+			ctx,
+			dom.NewRemoveAttributeArgs(el.id.nodeID, name.String()),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (el *HTMLElement) GetChildNodes(ctx context.Context) core.Value {
@@ -695,7 +813,7 @@ func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.Str
 	return values.True
 }
 
-func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String) error {
+func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, when drivers.WaitEvent) error {
 	task := events.NewWaitTask(
 		func(ctx2 context.Context) (core.Value, error) {
 			current := el.GetAttribute(ctx2, "class")
@@ -708,9 +826,28 @@ func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String) er
 			classStr := string(class)
 			classes := strings.Split(string(str), " ")
 
-			for _, c := range classes {
-				if c == classStr {
-					return values.True, nil
+			if when != drivers.WaitEventAbsence {
+				for _, c := range classes {
+					if c == classStr {
+						// The value does not really matter if it's not None
+						// None indicates that operation needs to be repeated
+						return values.True, nil
+					}
+				}
+			} else {
+				var found values.Boolean
+
+				for _, c := range classes {
+					if c == classStr {
+						found = values.True
+						break
+					}
+				}
+
+				if found == values.False {
+					// The value does not really matter if it's not None
+					// None indicates that operation needs to be repeated
+					return values.False, nil
 				}
 			}
 
@@ -718,6 +855,31 @@ func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String) er
 		},
 		events.DefaultPolling,
 	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForAttribute(
+	ctx context.Context,
+	name values.String,
+	value core.Value,
+	when drivers.WaitEvent,
+) error {
+	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
+		return el.GetAttribute(ctx, name), nil
+	}, events.DefaultPolling)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
+		return el.GetStyle(ctx, name)
+	}, events.DefaultPolling)
 
 	_, err := task.Run(ctx)
 
@@ -921,8 +1083,14 @@ func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 	return parsed, nil
 }
 
-func (el *HTMLElement) loadAttrs(_ context.Context) (core.Value, error) {
-	return parseAttrs(el.rawAttrs), nil
+func (el *HTMLElement) loadAttrs(ctx context.Context) (core.Value, error) {
+	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.nodeID))
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return parseAttrs(repl.Attributes), nil
 }
 
 func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
@@ -954,6 +1122,20 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 	return loaded, nil
 }
 
+func (el *HTMLElement) parseStyle(ctx context.Context) (core.Value, error) {
+	value := el.GetAttribute(ctx, "style")
+
+	if value == values.None {
+		return values.NewObject(), nil
+	}
+
+	if value.Type() != types.String {
+		return values.NewObject(), nil
+	}
+
+	return common.DeserializeStyles(value.(values.String))
+}
+
 func (el *HTMLElement) handlePageReload(_ context.Context, _ interface{}) {
 	el.Close()
 }
@@ -971,11 +1153,21 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 		return
 	}
 
+	// they are not event loaded
+	// just ignore the event
+	if !el.attributes.Ready() {
+		return
+	}
+
 	el.attributes.Write(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
 
 			return
+		}
+
+		if reply.Name == "style" {
+			el.style.Reset()
 		}
 
 		attrs, ok := v.(*values.Object)
@@ -1012,6 +1204,10 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 			el.logError(err).Msg("failed to update element")
 
 			return
+		}
+
+		if reply.Name == "style" {
+			el.style.Reset()
 		}
 
 		attrs, ok := v.(*values.Object)

@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -73,4 +74,40 @@ func NewEvalWaitTask(
 		},
 		polling,
 	)
+}
+
+func NewValueWaitTask(
+	when drivers.WaitEvent,
+	value core.Value,
+	getter Function,
+	polling time.Duration,
+) *WaitTask {
+	return &WaitTask{
+		func(ctx context.Context) (core.Value, error) {
+			current, err := getter(ctx)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			if when == drivers.WaitEventPresence {
+				// Values appeared, exit
+				if current.Compare(value) == 0 {
+					// The value does not really matter if it's not None
+					// None indicates that operation needs to be repeated
+					return values.True, nil
+				}
+			} else {
+				// Value disappeared, exit
+				if current.Compare(value) != 0 {
+					// The value does not really matter if it's not None
+					// None indicates that operation needs to be repeated
+					return values.True, nil
+				}
+			}
+
+			return values.None, nil
+		},
+		polling,
+	}
 }

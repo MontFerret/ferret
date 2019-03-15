@@ -28,7 +28,9 @@ func newOptions(setters []Option) *Options {
 
 func WithAddress(address string) Option {
 	return func(opts *Options) {
-		opts.Address = address
+		if address != "" {
+			opts.Address = address
+		}
 	}
 }
 

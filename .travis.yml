@@ -55,6 +55,7 @@ jobs:
     script:
     - make cover
   - stage: e2e
+    go: stable
     before_script:
     - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
     script:

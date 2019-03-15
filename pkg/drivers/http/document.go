@@ -259,15 +259,31 @@ func (doc *HTMLDocument) WaitForNavigation(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForSelector(_ context.Context, _ values.String) error {
+func (doc *HTMLDocument) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForClassBySelector(_ context.Context, _, _ values.String) error {
+func (doc *HTMLDocument) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(_ context.Context, _, _ values.String) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

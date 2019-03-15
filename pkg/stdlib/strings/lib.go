@@ -22,7 +22,6 @@ func NewLib() map[string]core.Function {
 		"REGEXP_SPLIT":         RegexSplit,
 		"REGEXP_TEST":          RegexTest,
 		"REGEXP_REPLACE":       RegexReplace,
-		"REVERSE":              Reverse,
 		"RIGHT":                Right,
 		"RTRIM":                RTrim,
 		"SHA1":                 Sha1,

@@ -1,10 +1,11 @@
 package browser
 
 import (
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/pkg/errors"
 )
 
 type Browser struct {
@@ -18,7 +19,7 @@ func (b *Browser) Flags() Flags {
 
 func (b *Browser) DebuggingAddress() string {
 	if !b.Flags().Has("remote-debugging-address") {
-		b.Flags().Set("remote-debugging-address", "0.0.0.0")
+		b.Flags().Set("remote-debugging-address", "http://0.0.0.0:9222")
 	}
 
 	value, _ := b.Flags().Get("remote-debugging-address")

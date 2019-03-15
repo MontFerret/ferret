@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/MontFerret/ferret/e2e/runner"
 	"github.com/MontFerret/ferret/e2e/server"
 	"github.com/rs/zerolog"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 )
@@ -101,7 +103,18 @@ func main() {
 		Filter:               filterR,
 	})
 
-	err := r.Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	go func() {
+		for {
+			<-c
+			cancel()
+		}
+	}()
+
+	err := r.Run(ctx)
 
 	if err != nil {
 		os.Exit(1)

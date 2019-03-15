@@ -76,6 +76,18 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 			}
 
 			return values.GetIn(ctx, attrs, path[1:])
+		case "style":
+			styles, err := el.GetStyles(ctx)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			if len(path) == 1 {
+				return styles, nil
+			}
+
+			return values.GetIn(ctx, styles, path[1:])
 		default:
 			return GetInNode(ctx, el, path)
 		}
