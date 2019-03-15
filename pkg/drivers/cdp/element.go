@@ -867,30 +867,19 @@ func (el *HTMLElement) WaitForAttribute(
 	value core.Value,
 	when drivers.WaitEvent,
 ) error {
-	task := events.NewWaitTask(
-		func(ctx2 context.Context) (core.Value, error) {
-			current := el.GetAttribute(ctx2, name)
+	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
+		return el.GetAttribute(ctx, name), nil
+	}, events.DefaultPolling)
 
-			if when == drivers.WaitEventPresence {
-				// Values appeared, exit
-				if current.Compare(value) == 0 {
-					// The value does not really matter if it's not None
-					// None indicates that operation needs to be repeated
-					return values.True, nil
-				}
-			} else {
-				// Value disappeared, exit
-				if current.Compare(value) != 0 {
-					// The value does not really matter if it's not None
-					// None indicates that operation needs to be repeated
-					return values.True, nil
-				}
-			}
+	_, err := task.Run(ctx)
 
-			return values.None, nil
-		},
-		events.DefaultPolling,
-	)
+	return err
+}
+
+func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
+		return el.GetStyle(ctx, name)
+	}, events.DefaultPolling)
 
 	_, err := task.Run(ctx)
 

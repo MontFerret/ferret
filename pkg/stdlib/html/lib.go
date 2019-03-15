@@ -56,6 +56,10 @@ func NewLib() map[string]core.Function {
 		"WAIT_NO_CLASS":     WaitNoClass,
 		"WAIT_CLASS_ALL":    WaitClassAll,
 		"WAIT_NO_CLASS_ALL": WaitNoClassAll,
+		"WAIT_STYLE":        WaitStyle,
+		"WAIT_NO_STYLE":     WaitNoStyle,
+		"WAIT_STYLE_ALL":    WaitStyleAll,
+		"WAIT_NO_STYLE_ALL": WaitNoStyleAll,
 		"WAIT_NAVIGATION":   WaitNavigation,
 	}
 }

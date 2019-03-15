@@ -91,9 +91,11 @@ type (
 
 		Hover(ctx context.Context) error
 
-		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
-
 		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForStyle(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
 	}
 
 	// The Document interface represents any web page loaded in the browser
@@ -141,13 +143,17 @@ type (
 
 		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
 
-		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
-
-		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
-
 		WaitForAttributeBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
 
 		WaitForAttributeBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
+
+		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
 	}
 )
 

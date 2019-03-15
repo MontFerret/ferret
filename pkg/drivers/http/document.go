@@ -245,6 +245,14 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(_ context.Context, _, _ v
 	return core.ErrNotSupported
 }
 
+func (doc *HTMLDocument) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (doc *HTMLDocument) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
 func (doc *HTMLDocument) Close() error {
 	return nil
 }
