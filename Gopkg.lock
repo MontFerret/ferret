@@ -109,7 +109,7 @@
   version = "v0.2.8"
 
 [[projects]]
-  digest = "1:c07a7b5b5e62ed0828ba5df53ea579c8b04fe55acc2fa7b9fb7bd367d3cd7d6a"
+  digest = "1:f26f5b4929a60527dfb6d4e4a42cc088a2b837aa1dc43b64388a0ff02e3f0e3c"
   name = "github.com/mafredri/cdp"
   packages = [
     ".",
@@ -119,6 +119,7 @@
     "protocol/animation",
     "protocol/applicationcache",
     "protocol/audits",
+    "protocol/backgroundservice",
     "protocol/browser",
     "protocol/cachestorage",
     "protocol/cast",
@@ -162,8 +163,8 @@
     "session",
   ]
   pruneopts = "UT"
-  revision = "d2ad1a32f89e2bf0d0168e5f20f24cf6bf59e8db"
-  version = "v0.21.0"
+  revision = "a32ee055312ea497858e6f187facb239cb56048a"
+  version = "v0.22.0"
 
 [[projects]]
   digest = "1:2fa7b0155cd54479a755c629de26f888a918e13f8857a2c442205d825368e084"
