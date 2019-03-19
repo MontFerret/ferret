@@ -43,7 +43,7 @@ func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		min = float64(arg2)
 	} else {
-		max, min = core.RandomBoundaries(max)
+		max, min = core.NumberBoundaries(max)
 	}
 
 	return values.NewFloat(core.Random(max, min)), nil

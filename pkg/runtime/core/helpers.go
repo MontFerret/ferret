@@ -29,7 +29,7 @@ func IsNil(input interface{}) bool {
 	}
 }
 
-func RandomBoundaries(input float64) (max float64, min float64) {
+func NumberBoundaries(input float64) (max float64, min float64) {
 	min = input / 2
 	max = input * 2
 
