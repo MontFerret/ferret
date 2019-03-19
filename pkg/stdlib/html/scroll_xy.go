@@ -2,8 +2,8 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -38,13 +38,13 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	x, err := values.ToFloat(args[0])
+	x, err := values.ToFloat(args[1])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	y, err := values.ToFloat(args[1])
+	y, err := values.ToFloat(args[2])
 
 	if err != nil {
 		return values.None, err
