@@ -1,6 +1,10 @@
 package core
 
-import "reflect"
+import (
+	"math"
+	"math/rand"
+	"reflect"
+)
 
 func IsNil(input interface{}) bool {
 	val := reflect.ValueOf(input)
@@ -23,4 +27,19 @@ func IsNil(input interface{}) bool {
 	default:
 		return false
 	}
+}
+
+func RandomBoundaries(input float64) (max float64, min float64) {
+	min = input / 2
+	max = input * 2
+
+	return
+}
+
+func Random(max float64, min float64) float64 {
+	r := rand.Float64()
+	i := r * (max - min + 1)
+	out := math.Floor(i) + min
+
+	return out
 }
