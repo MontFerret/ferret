@@ -1,5 +1,57 @@
 ## Changelog
 
+### 0.7.0
+#### Added
+- Autocomplete to CLI [#219](https://github.com/MontFerret/ferret/pull/219).
+- New mouse functions - ``MOUSE(x, y)`` and ``SCROLL(x, y)`` [#237](https://github.com/MontFerret/ferret/pull/237).
+- ``WAIT_NO_ELEMENT``, ``WAIT_NO_CLASS`` and ``WAIT_NO_CLASS_ALL`` functions [#249](https://github.com/MontFerret/ferret/pull/249).
+- Computed ``HTMLElement.style`` property [#255](https://github.com/MontFerret/ferret/pull/255).
+- ``ATTR_GET``, ``ATTR_SET``, ``ATTR_REMOVE``, ``STYLE_GET``, ``STYLE_SET`` and ``STYLE_REMOVE`` functions [#255](https://github.com/MontFerret/ferret/pull/255).
+- ``WAIT_STYLE``, ``WAIT_NO_STYLE``, ``WAIT_STYLE_ALL`` and ``WAIT_NO_STYLE_ALL`` functions [#256](https://github.com/MontFerret/ferret/pull/260).
+- Cookies support. Now a document can be loaded with preset cookies. Also, HTMLDocument has ``.cookies`` property.
+In order to manipulate with cookies, ``COOKIE_DEL``, ``COOKIE_SET`` AND ``COOKIE_GET`` functions were added [#242](https://github.com/MontFerret/ferret/pull/242).
+
+```
+LET doc = DOCUMENT(url, {
+    driver: "cdp",
+    cookies: [{
+        name: "x-e2e",
+        value: "test"
+    }, {
+        name: "x-e2e-2",
+        value: "test2"
+    }]
+})
+```
+
+#### Changed
+- Renamed ParseTYPEP to MustParseTYPE [#231](https://github.com/MontFerret/ferret/pull/231).
+- Added context to all HTML object [#235](https://github.com/MontFerret/ferret/pull/235).
+
+#### Fixed
+- Click events are not cancellable [#222](https://github.com/MontFerret/ferret/pull/222).
+- Name collision [#223](https://github.com/MontFerret/ferret/pull/223).
+- Invalid return in FQL Compiler constructor [#227](https://github.com/MontFerret/ferret/pull/227).
+- Incorrect string length computation [#238](https://github.com/MontFerret/ferret/pull/238).
+- Access to HTML object properties via dot notation [#239](https://github.com/MontFerret/ferret/pull/239).
+- Graceful process termination [#240](https://github.com/MontFerret/ferret/pull/240).
+- Browser launcher for macOS [#246](https://github.com/MontFerret/ferret/pull/246). 
+
+#### Breaking changes
+- New runtime type system [#232](https://github.com/MontFerret/ferret/pull/232).
+- Moved and renamed ``collections.IterableCollection`` and ```collections.CollectionIterator``` interfaces.
+Now they are in ``core`` package and called ``Iterable`` and ``Iterator`` [1af8b37](https://github.com/MontFerret/ferret/commit/f8e061cc8034fd4cfa4ce2a094276d50137a4b98).
+- Renamed ``collections.Collection`` interface to ``collections.Measurable`` [1af8b37](https://github.com/MontFerret/ferret/commit/f8e061cc8034fd4cfa4ce2a094276d50137a4b98).
+- Moved html interfaces from ``runtime/values`` package into ``drivers`` package [#234](https://github.com/MontFerret/ferret/pull/234).
+- Changed drivers initialization. Replaced old ``drivers.WithDynamic`` and ``drivers.WithStatic`` methods with a new ``drivers.WithContext`` method with optional parameter ``drivers.AsDefault()`` [#234](https://github.com/MontFerret/ferret/pull/234).
+- New document load params [#234](https://github.com/MontFerret/ferret/pull/234).
+```
+LET doc = DOCUMENT(url, {
+    driver: "cdp"
+})
+```
+
+
 ### 0.6.0
 #### Added
 - Added support for ```context.Done()``` to interrupt an execution [#201](https://github.com/MontFerret/ferret/pull/201).
