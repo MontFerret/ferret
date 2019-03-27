@@ -1,4 +1,4 @@
-.PHONY: build compile install test e2e doc fmt lint vet release
+.PHONY: build compile test e2e doc fmt lint vet release
 
 export GOPATH
 
@@ -11,15 +11,12 @@ DIR_E2E = ./e2e
 
 default: build
 
-build: install vet generate test compile
+build: vet generate test compile
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	-ldflags "-X main.version=${VERSION}" \
 	./main.go
-
-install:
-	go get
 
 test:
 	go test -race -v ${DIR_PKG}/...

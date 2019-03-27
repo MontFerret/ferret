@@ -16,8 +16,7 @@ addons:
     - oracle-java8-set-default
   chrome: stable
 
-before_install:
-- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+install:
 - go get -u github.com/mgechev/revive
 - sudo curl -o /usr/local/lib/antlr-4.7.1-complete.jar https://www.antlr.org/download/antlr-4.7.1-complete.jar
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
@@ -27,9 +26,6 @@ before_install:
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
 - export GO111MODULE=on
-
-install:
-- make install
 
 stages:
 - lint
