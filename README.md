@@ -85,7 +85,7 @@ You can download latest binaries from [here](https://github.com/MontFerret/ferre
 
 ### Source code
 #### Production
-* Go >=1.10
+* Go >=1.11
 * Chrome or Docker
 
 #### Development
