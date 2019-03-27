@@ -89,11 +89,12 @@ func computeQuadArea(quads []Quad) float64 {
 func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (Quad, error) {
 	qargs := dom.NewGetContentQuadsArgs()
 
-	if id.objectID != "" {
+	switch {
+	case id.objectID != "":
 		qargs.SetObjectID(id.objectID)
-	} else if id.backendID != 0 {
+	case id.backendID != 0:
 		qargs.SetBackendNodeID(id.backendID)
-	} else {
+	default:
 		qargs.SetNodeID(id.nodeID)
 	}
 
@@ -168,9 +169,10 @@ func parseAttrs(attrs []string) *values.Object {
 func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
-	if id.objectID != "" {
+	switch {
+	case id.objectID != "":
 		objID = id.objectID
-	} else if id.backendID > 0 {
+	case id.backendID > 0:
 		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
 
 		if err != nil {
@@ -182,7 +184,7 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 		}
 
 		objID = *repl.Object.ObjectID
-	} else {
+	default:
 		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
 
 		if err != nil {
@@ -219,9 +221,10 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
-	if id.objectID != "" {
+	switch {
+	case id.objectID != "":
 		objID = id.objectID
-	} else if id.backendID > 0 {
+	case id.backendID > 0:
 		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
 
 		if err != nil {
@@ -233,7 +236,7 @@ func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 		}
 
 		objID = *repl.Object.ObjectID
-	} else {
+	default:
 		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
 
 		if err != nil {
@@ -416,8 +419,6 @@ func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam
 		sameSite = network.CookieSameSiteLax
 	case drivers.SameSiteStrictMode:
 		sameSite = network.CookieSameSiteStrict
-	default:
-		sameSite = network.CookieSameSiteNotSet
 	}
 
 	if cookie.Expires == emptyExpires {
@@ -456,13 +457,8 @@ func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
 	switch c.SameSite {
 	case network.CookieSameSiteLax:
 		sameSite = drivers.SameSiteLaxMode
-		break
 	case network.CookieSameSiteStrict:
 		sameSite = drivers.SameSiteStrictMode
-		break
-	default:
-		sameSite = drivers.SameSiteDefaultMode
-		break
 	}
 
 	return drivers.HTTPCookie{

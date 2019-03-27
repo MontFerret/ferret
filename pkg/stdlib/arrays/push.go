@@ -45,7 +45,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr.ForEach(func(item core.Value, idx int) bool {
 		if uniq && push {
-			push = !(item.Compare(value) == 0)
+			push = item.Compare(value) != 0
 		}
 
 		result.Push(item)

@@ -25,9 +25,7 @@ func NewRootScope() (*Scope, CloseFunc) {
 		disposables: make([]io.Closer, 0, 10),
 	}
 
-	return newScope(root, nil), func() error {
-		return root.Close()
-	}
+	return newScope(root, nil), root.Close
 }
 
 func (s *RootScope) AddDisposable(disposable io.Closer) {

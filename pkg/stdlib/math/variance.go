@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func variance(input *values.Array, sample values.Int) (values.Float, error) {
+func variance(input *values.Array, sample values.Int) values.Float {
 	if input.Length() == 0 {
-		return values.NewFloat(math.NaN()), nil
+		return values.NewFloat(math.NaN())
 	}
 
 	m, _ := mean(input)
@@ -37,5 +37,5 @@ func variance(input *values.Array, sample values.Int) (values.Float, error) {
 	// or population and wether to subtract by one or not
 	l := values.Float(input.Length() - (1 * sample))
 
-	return variance / l, nil
+	return variance / l
 }

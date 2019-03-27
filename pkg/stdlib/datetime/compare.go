@@ -36,9 +36,12 @@ func DateCompare(_ context.Context, args ...core.Value) (core.Value, error) {
 	rangeEnd := values.NewString("millisecond")
 
 	if len(args) == 4 {
-		if err = core.ValidateType(args[3], types.String); err != nil {
+		err = core.ValidateType(args[3], types.String)
+
+		if err != nil {
 			return values.None, err
 		}
+
 		rangeEnd = args[3].(values.String)
 	}
 

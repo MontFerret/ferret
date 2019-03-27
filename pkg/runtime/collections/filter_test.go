@@ -3,12 +3,13 @@ package collections_test
 import (
 	"context"
 	"encoding/json"
+	"math"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
-	"math"
-	"testing"
 )
 
 func TestFilter(t *testing.T) {
@@ -23,7 +24,7 @@ func TestFilter(t *testing.T) {
 
 		predicate := func(_ context.Context, scope *core.Scope) (bool, error) {
 			i := float64(scope.MustGetVariable(collections.DefaultValueVar).Unwrap().(int))
-			calc := float64(i / 2)
+			calc := i / 2
 
 			return calc == math.Floor(calc), nil
 		}
@@ -58,7 +59,7 @@ func TestFilter(t *testing.T) {
 				return false, nil
 			}
 
-			calc := float64(i / 2)
+			calc := i / 2
 
 			return calc == math.Floor(calc), nil
 		}

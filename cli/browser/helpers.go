@@ -9,7 +9,7 @@ import (
 func resolveExecutablePath() (path string) {
 
 	switch runtime.GOOS {
-	case "darwin":
+	case goosDarwin:
 		for _, c := range []string{
 			"/Applications/Google Chrome Canary.app",
 			"/Applications/Google Chrome.app",
@@ -22,7 +22,7 @@ func resolveExecutablePath() (path string) {
 			}
 		}
 
-	case "linux":
+	case goosLinux:
 		for _, c := range []string{
 			"headless_shell",
 			"chromium",
@@ -35,7 +35,7 @@ func resolveExecutablePath() (path string) {
 			}
 		}
 
-	case "windows":
+	case goosWindows:
 	}
 
 	return

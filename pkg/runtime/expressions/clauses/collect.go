@@ -2,6 +2,7 @@ package clauses
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
@@ -56,24 +57,26 @@ func NewCollect(
 			return collect, nil
 		}
 
-		if projection != nil && count == nil && aggregate == nil {
+		switch {
+		case projection != nil && count == nil && aggregate == nil:
 			collect.group.projection = projection
-		} else if projection == nil && count != nil && aggregate == nil {
+		case projection == nil && count != nil && aggregate == nil:
 			collect.group.count = count
-		} else if projection == nil && count == nil && aggregate != nil {
+		case projection == nil && count == nil && aggregate != nil:
 			collect.group.aggregate = aggregate
-		} else {
+		default:
 			return nil, core.Error(core.ErrInvalidOperation, "projection, count and aggregate cannot be used together")
 		}
 
 		return collect, nil
 	}
 
-	if count == nil && aggregate != nil {
+	switch {
+	case count == nil && aggregate != nil:
 		collect.aggregate = aggregate
-	} else if count != nil && aggregate == nil {
+	case count != nil && aggregate == nil:
 		collect.count = count
-	} else {
+	default:
 		return nil, core.Error(core.ErrInvalidOperation, "count and aggregate cannot be used together")
 	}
 

@@ -2,9 +2,10 @@ package browser
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type Flags map[string]interface{}
@@ -61,8 +62,6 @@ func (flags Flags) Has(arg string) bool {
 }
 
 func (flags Flags) List() []string {
-	var list []string
-
 	orderedFlags := make([]string, 0, 10)
 
 	for arg := range flags {
@@ -71,7 +70,9 @@ func (flags Flags) List() []string {
 
 	sort.Strings(orderedFlags)
 
-	for _, arg := range orderedFlags {
+	list := make([]string, len(orderedFlags))
+
+	for i, arg := range orderedFlags {
 		val, err := flags.Get(arg)
 
 		if err != nil {
@@ -87,7 +88,7 @@ func (flags Flags) List() []string {
 			arg = fmt.Sprintf("--%s", arg)
 		}
 
-		list = append(list, arg)
+		list[i] = arg
 	}
 
 	return list

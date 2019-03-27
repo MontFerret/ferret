@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -34,11 +35,7 @@ type (
 	}
 )
 
-func NewCoreIterator(
-	valVar,
-	keyVar string,
-	values core.Iterator,
-) (Iterator, error) {
+func NewCoreIterator(valVar, keyVar string, values core.Iterator) (Iterator, error) {
 	return &coreIterator{valVar, keyVar, values}, nil
 }
 

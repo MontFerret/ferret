@@ -59,11 +59,7 @@ func (clause *LimitClause) Iterate(ctx context.Context, scope *core.Scope) (coll
 		return nil, err
 	}
 
-	iterator, err := collections.NewLimitIterator(
-		src,
-		int(countInt),
-		int(offsetInt),
-	)
+	iterator, err := collections.NewLimitIterator(src, countInt, offsetInt)
 
 	if err != nil {
 		return nil, core.SourceError(clause.src, err)

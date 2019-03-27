@@ -103,7 +103,7 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(text) < pos {
-		return values.NewString(string(text)), nil
+		return values.NewString(text), nil
 	}
 
 	return values.NewStringFromRunes(runes[size-pos : size]), nil
