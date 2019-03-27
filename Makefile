@@ -19,7 +19,7 @@ compile:
 	./main.go
 
 install:
-	dep ensure
+	go get
 
 test:
 	go test -race -v ${DIR_PKG}/...
