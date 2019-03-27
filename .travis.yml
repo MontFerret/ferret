@@ -26,6 +26,7 @@ before_install:
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
+- export GO111MODULE=on
 
 install:
 - make install
@@ -45,7 +46,8 @@ jobs:
     - make vet
     - make lint
     - make fmt
-    - if [[ $(git diff --stat) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
+    - git diff
+    - if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
   - stage: compile
     go: stable
     script:
