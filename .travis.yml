@@ -1,12 +1,5 @@
 language: go
 
-cache: 
-  directories:
-  - ./vendor
-before_cache:
-  - export GO111MODULE=on
-  - go mod vendor
-
 sudo: required
 
 os:
