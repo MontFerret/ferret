@@ -6,8 +6,8 @@ os:
 - linux
 
 go:
-- "1.10.x"
 - "1.11.x"
+- "1.12.x"
 - stable
 
 addons:
@@ -16,8 +16,7 @@ addons:
     - oracle-java8-set-default
   chrome: stable
 
-before_install:
-- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+install:
 - go get -u github.com/mgechev/revive
 - sudo curl -o /usr/local/lib/antlr-4.7.1-complete.jar https://www.antlr.org/download/antlr-4.7.1-complete.jar
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
@@ -26,9 +25,7 @@ before_install:
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
-
-install:
-- make install
+- export GO111MODULE=on
 
 stages:
 - lint
@@ -45,7 +42,8 @@ jobs:
     - make vet
     - make lint
     - make fmt
-    - if [[ $(git diff --stat) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
+    - git diff
+    - if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
   - stage: compile
     go: stable
     script:
