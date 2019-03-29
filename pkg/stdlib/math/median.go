@@ -43,7 +43,7 @@ func Median(_ context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, nil
 		}
 	default:
-		return values.None, nil
+		median = sorted.Get(l / 2)
 	}
 
 	return median, nil
