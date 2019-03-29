@@ -2,8 +2,9 @@ package expressions_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
@@ -49,6 +50,7 @@ func TestParameterExpressionExec(t *testing.T) {
 	Convey("Should not exec a missing parameter expression", t, func() {
 		sourceMap := core.NewSourceMap("test", 1, 10)
 		notExistExp, err := expressions.NewParameterExpression(sourceMap, "param2")
+		So(err, ShouldBeNil)
 
 		params := make(map[string]core.Value)
 		params["param1"] = values.NewInt(1)

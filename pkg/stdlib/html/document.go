@@ -151,12 +151,7 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 				return res, err
 			}
 
-			header, err := parseHeader(header.(*values.Object))
-
-			if err != nil {
-				return res, err
-			}
-
+			header := parseHeader(header.(*values.Object))
 			res.Header = header
 		}
 
@@ -203,7 +198,9 @@ func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
 func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	var err error
 
-	if err = core.ValidateType(value, types.Object, drivers.HTTPCookieType); err != nil {
+	err = core.ValidateType(value, types.Object, drivers.HTTPCookieType)
+
+	if err != nil {
 		return drivers.HTTPCookie{}, err
 	}
 
@@ -291,7 +288,7 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	return cookie, err
 }
 
-func parseHeader(header *values.Object) (drivers.HTTPHeader, error) {
+func parseHeader(header *values.Object) drivers.HTTPHeader {
 	res := make(drivers.HTTPHeader)
 
 	header.ForEach(func(value core.Value, key string) bool {
@@ -300,5 +297,5 @@ func parseHeader(header *values.Object) (drivers.HTTPHeader, error) {
 		return true
 	})
 
-	return res, nil
+	return res
 }

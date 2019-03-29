@@ -7,10 +7,6 @@ type result struct {
 	err  error
 }
 
-func newResult(data interface{}, err error) *result {
-	return &result{data, err}
-}
-
 func newResultFrom(fn visitorFn) *result {
 	out, err := fn()
 

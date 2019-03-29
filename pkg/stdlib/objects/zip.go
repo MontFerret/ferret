@@ -22,7 +22,9 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	for _, arg := range args {
-		if err = core.ValidateType(arg, types.Array); err != nil {
+		err = core.ValidateType(arg, types.Array)
+
+		if err != nil {
 			return values.None, err
 		}
 	}

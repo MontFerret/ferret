@@ -23,19 +23,19 @@ func ParseInt(input interface{}) (Int, error) {
 		return ZeroInt, nil
 	}
 
-	switch input.(type) {
+	switch val := input.(type) {
 	case int:
-		return Int(input.(int)), nil
+		return Int(val), nil
 	case int64:
-		return Int(input.(int64)), nil
+		return Int(val), nil
 	case int32:
-		return Int(input.(int32)), nil
+		return Int(val), nil
 	case int16:
-		return Int(input.(int16)), nil
+		return Int(val), nil
 	case int8:
-		return Int(input.(int8)), nil
+		return Int(val), nil
 	case string:
-		i, err := strconv.Atoi(input.(string))
+		i, err := strconv.Atoi(val)
 
 		if err == nil {
 			if i == 0 {

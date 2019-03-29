@@ -2,9 +2,10 @@ package events
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"reflect"
 	"sync"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/dom"
@@ -30,16 +31,16 @@ type (
 	}
 )
 
-var (
+const (
 	//revive:disable-next-line:var-declaration
-	EventError                 Event = 0
-	EventLoad                  Event = 1
-	EventReload                Event = 2
-	EventAttrModified          Event = 3
-	EventAttrRemoved           Event = 4
-	EventChildNodeCountUpdated Event = 5
-	EventChildNodeInserted     Event = 6
-	EventChildNodeRemoved      Event = 7
+	EventError = Event(iota)
+	EventLoad
+	EventReload
+	EventAttrModified
+	EventAttrRemoved
+	EventChildNodeCountUpdated
+	EventChildNodeInserted
+	EventChildNodeRemoved
 )
 
 func NewEventBroker(

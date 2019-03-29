@@ -32,5 +32,5 @@ func SampleVariance(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewFloat(math.NaN()), nil
 	}
 
-	return variance(arr, values.NewInt(1))
+	return variance(arr, values.NewInt(1)), nil
 }

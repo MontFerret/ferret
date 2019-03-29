@@ -41,7 +41,7 @@ func Launch(setters ...Option) (*Browser, error) {
 		flags.SetN("mute-audio")
 	}
 
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		flags.SetN("disable-gpu")
 	}
 

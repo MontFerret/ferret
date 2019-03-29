@@ -2,9 +2,10 @@ package collections
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"sort"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
@@ -32,7 +33,7 @@ const (
 )
 
 func SortDirectionFromString(str string) SortDirection {
-	if strings.ToUpper(str) == "DESC" {
+	if strings.EqualFold(str, "DESC") {
 		return SortDirectionDesc
 	}
 
@@ -136,7 +137,7 @@ func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*c
 				break
 			}
 
-			eq = eq * int64(comp.direction)
+			eq *= int64(comp.direction)
 
 			if eq == -1 {
 				out = true

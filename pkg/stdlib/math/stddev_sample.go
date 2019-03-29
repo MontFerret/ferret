@@ -32,11 +32,7 @@ func StandardDeviationSample(_ context.Context, args ...core.Value) (core.Value,
 		return values.NewFloat(math.NaN()), nil
 	}
 
-	vp, err := variance(arr, values.NewInt(1))
-
-	if err != nil {
-		return values.NewFloat(math.NaN()), err
-	}
+	vp := variance(arr, values.NewInt(1))
 
 	return values.NewFloat(math.Pow(float64(vp), 0.5)), nil
 }

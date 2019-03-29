@@ -33,20 +33,17 @@ func Median(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	var median core.Value
 
-	if l == 0 {
+	switch {
+	case l == 0:
 		return values.NewFloat(math.NaN()), nil
-	} else if l%2 == 0 {
+	case l%2 == 0:
 		median, err = mean(sorted.Slice(l/2-1, l/2+1))
 
 		if err != nil {
 			return values.None, nil
 		}
-	} else {
+	default:
 		median = sorted.Get(l / 2)
-	}
-
-	if err != nil {
-		return values.None, nil
 	}
 
 	return median, nil

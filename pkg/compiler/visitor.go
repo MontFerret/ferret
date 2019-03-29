@@ -2,6 +2,9 @@ package compiler
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -12,8 +15,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/pkg/errors"
-	"strconv"
-	"strings"
 )
 
 type (
@@ -192,6 +193,10 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		keyVarName,
 		srcExp,
 	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Clauses.
 	// We put clauses parsing before parsing the query body because COLLECT clause overrides scope variables
@@ -810,11 +815,12 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 		computedProp := assignment.ComputedPropertyName()
 		shortHand := assignment.ShorthandPropertyName()
 
-		if prop != nil {
+		switch {
+		case prop != nil:
 			name, err = v.doVisitPropertyNameContext(prop.(*fql.PropertyNameContext), scope)
-		} else if computedProp != nil {
+		case computedProp != nil:
 			name, err = v.doVisitComputedPropertyNameContext(computedProp.(*fql.ComputedPropertyNameContext), scope)
-		} else {
+		default:
 			name, err = v.doVisitShorthandPropertyNameContext(shortHand.(*fql.ShorthandPropertyNameContext), scope)
 		}
 
@@ -943,7 +949,7 @@ func (v *visitor) doVisitStringLiteral(ctx *fql.StringLiteralContext) (core.Expr
 }
 
 func (v *visitor) doVisitBooleanLiteral(ctx *fql.BooleanLiteralContext) (core.Expression, error) {
-	return literals.NewBooleanLiteral(strings.ToUpper(ctx.GetText()) == "TRUE"), nil
+	return literals.NewBooleanLiteral(strings.EqualFold(ctx.GetText(), "TRUE")), nil
 }
 
 func (v *visitor) doVisitNoneLiteral(_ *fql.NoneLiteralContext) (core.Expression, error) {
@@ -1205,12 +1211,17 @@ func (v *visitor) doVisitArrayOperator(ctx *fql.ExpressionContext, scope *scope)
 	var comparator core.OperatorExpression
 	var err error
 
-	if ctx.InOperator() != nil {
+	switch {
+	case ctx.InOperator() != nil:
 		comparator, err = v.doVisitInOperator(ctx, scope)
-	} else if ctx.EqualityOperator() != nil {
+	case ctx.EqualityOperator() != nil:
 		comparator, err = v.doVisitEqualityOperator(ctx, scope)
-	} else {
+	default:
 		return nil, v.unexpectedToken(ctx)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)

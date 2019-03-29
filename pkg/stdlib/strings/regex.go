@@ -55,7 +55,7 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param regex (String) - A regular expression to use for splitting the text.
 // @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
 // @param limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @return (Array) - An array of strings splited by teh expression.
+// @return (Array) - An array of strings splited by the expression.
 func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

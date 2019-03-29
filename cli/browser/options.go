@@ -18,6 +18,12 @@ type (
 	}
 )
 
+const (
+	goosWindows = "windows"
+	goosLinux   = "linux"
+	goosDarwin  = "darwin"
+)
+
 func WithoutDefaultArgs() Option {
 	return func(opts *Options) {
 		opts.ignoreDefaultArgs = true

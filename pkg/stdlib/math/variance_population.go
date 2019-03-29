@@ -32,5 +32,5 @@ func PopulationVariance(_ context.Context, args ...core.Value) (core.Value, erro
 		return values.NewFloat(math.NaN()), nil
 	}
 
-	return variance(arr, values.NewInt(0))
+	return variance(arr, values.NewInt(0)), nil
 }

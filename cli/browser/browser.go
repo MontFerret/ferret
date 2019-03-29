@@ -40,10 +40,14 @@ func (b *Browser) DebuggingPort() int {
 func (b *Browser) Close() error {
 	var err error
 
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != goosWindows {
 		err = b.cmd.Process.Signal(os.Interrupt)
 	} else {
 		err = b.cmd.Process.Kill()
+	}
+
+	if err != nil {
+		return err
 	}
 
 	_, err = b.cmd.Process.Wait()

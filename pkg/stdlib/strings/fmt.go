@@ -36,10 +36,7 @@ func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 func format(template string, args []core.Value) (string, error) {
-	rgx, err := regexp.Compile("{[0-9]*}")
-	if err != nil {
-		return "", errors.Errorf("failed to build regexp: %v", err)
-	}
+	rgx := regexp.MustCompile("{[0-9]*}")
 
 	argsCount := len(args)
 	emptyBracketsCount := strings.Count(template, "{}")
@@ -53,6 +50,7 @@ func format(template string, args []core.Value) (string, error) {
 	// index of the last value
 	// inserted into the template
 	var lastArgIdx int
+	var err error
 
 	template = rgx.ReplaceAllStringFunc(template, func(s string) string {
 		if err != nil {

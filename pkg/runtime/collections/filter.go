@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -38,7 +39,12 @@ func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (*c
 			return nil, nil
 		}
 
+		// TODO: test case when predicate return not nil
 		take, err := iterator.predicate(ctx, nextScope)
+
+		if err != nil {
+			return nil, err
+		}
 
 		if take == true {
 			return nextScope, nil

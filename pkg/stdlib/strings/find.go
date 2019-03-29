@@ -29,7 +29,7 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	runes := []rune(text)
 	search := args[1].String()
 	start := values.NewInt(0)
-	end := values.NewInt(int(len(text)))
+	end := values.NewInt(len(text))
 
 	if argsCount == 3 {
 		arg3 := args[2]
@@ -76,7 +76,7 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	runes := []rune(text)
 	search := args[1].String()
 	start := values.NewInt(0)
-	end := values.NewInt(int(len(text)))
+	end := values.NewInt(len(text))
 
 	if argsCount == 3 {
 		arg3 := args[2]

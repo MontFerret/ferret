@@ -973,7 +973,11 @@ func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values
 		false,
 	)
 
-	el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
+	if err != nil {
+		return nil, err
+	}
+
+	err = el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
 
 	if err != nil {
 		return nil, err
@@ -1022,7 +1026,11 @@ func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
 			id.String(),
 		), false, false)
 
-	el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
+	if err != nil {
+		return err
+	}
+
+	err = el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
 
 	return err
 }

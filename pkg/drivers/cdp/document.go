@@ -963,6 +963,10 @@ func (doc *HTMLDocument) PrintToPDF(ctx context.Context, params drivers.PDFParam
 func (doc *HTMLDocument) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
 	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
 
+	if err != nil {
+		return values.NewBinary(nil), err
+	}
+
 	if params.Format == drivers.ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
 		params.Quality = 100
 	}
