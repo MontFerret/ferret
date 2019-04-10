@@ -1,0 +1,21 @@
+ignore:
+# Ignore coverage for generated code.
+- "pkg/parser"
+
+coverage:
+  range: 70..100
+  round: nearest
+  precision: 1
+
+  status:
+    project:
+      default:
+        enabled: yes
+        threshold: 2%
+    patch: no
+    changes: no
+
+comment:
+  layout: "header, diff"
+  behavior: once
+  require_changes: yes

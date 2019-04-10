@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Contains returns a value indicating whether a specified substring occurs within a string.
@@ -27,13 +28,13 @@ func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
 	arg1 := args[0]
 	arg2 := args[1]
 
-	if arg1.Type() == core.StringType {
+	if arg1.Type() == types.String {
 		text = arg1.(values.String)
 	} else {
 		text = values.NewString(arg1.String())
 	}
 
-	if arg2.Type() == core.StringType {
+	if arg2.Type() == types.String {
 		search = arg2.(values.String)
 	} else {
 		search = values.NewString(arg2.String())
@@ -42,7 +43,7 @@ func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) > 2 {
 		arg3 := args[2]
 
-		if arg3.Type() == core.BooleanType {
+		if arg3.Type() == types.Boolean {
 			returnIndex = arg3.(values.Boolean)
 		}
 	}

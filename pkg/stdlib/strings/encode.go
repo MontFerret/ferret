@@ -88,5 +88,5 @@ func ToBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	value := args[0].String()
 	out := base64.StdEncoding.EncodeToString([]byte(value))
 
-	return values.NewString(string(out)), nil
+	return values.NewString(out), nil
 }

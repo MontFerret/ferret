@@ -1,7 +1,6 @@
 package arrays
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -22,7 +21,6 @@ func NewLib() map[string]core.Function {
 		"REMOVE_NTH":     RemoveNth,
 		"REMOVE_VALUE":   RemoveValue,
 		"REMOVE_VALUES":  RemoveValues,
-		"REVERSE":        Reverse,
 		"SHIFT":          Shift,
 		"SLICE":          Slice,
 		"SORTED":         Sorted,
@@ -34,18 +32,22 @@ func NewLib() map[string]core.Function {
 	}
 }
 
-func toArray(iterator collections.Iterator) (core.Value, error) {
-	arr := values.NewArray(10)
+func ToUniqueArray(arr *values.Array) *values.Array {
+	hashTable := make(map[uint64]bool)
+	result := values.NewArray(int(arr.Length()))
 
-	for iterator.HasNext() {
-		ds, err := iterator.Next()
+	arr.ForEach(func(item core.Value, _ int) bool {
+		h := item.Hash()
 
-		if err != nil {
-			return values.None, err
+		_, exists := hashTable[h]
+
+		if !exists {
+			hashTable[h] = true
+			result.Push(item)
 		}
 
-		arr.Push(ds.Get(collections.DefaultValueVar))
-	}
+		return true
+	})
 
-	return arr, nil
+	return result
 }

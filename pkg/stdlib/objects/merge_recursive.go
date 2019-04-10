@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // MergeRecursive recursively merge the given objects into a single object.
@@ -17,7 +18,7 @@ func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	for _, arg := range args {
-		if err = core.ValidateType(arg, core.ObjectType); err != nil {
+		if err = core.ValidateType(arg, types.Object); err != nil {
 			return values.None, err
 		}
 	}
@@ -36,7 +37,7 @@ func merge(src, dst core.Value) core.Value {
 		return dst
 	}
 
-	if src.Type() != core.ObjectType {
+	if src.Type() != types.Object {
 		return dst
 	}
 

@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -9,7 +10,9 @@ import (
 )
 
 func sliceIterator(value []core.Value) collections.Iterator {
-	return collections.NewDefaultSliceIterator(value)
+	iter, _ := collections.NewDefaultSliceIterator(value)
+
+	return iter
 }
 
 func TestSliceIterator(t *testing.T) {
@@ -25,13 +28,23 @@ func TestSliceIterator(t *testing.T) {
 		iter := sliceIterator(arr)
 
 		res := make([]core.Value, 0, len(arr))
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
 		pos := 0
 
-		for iter.HasNext() {
-			item, key, err := next(iter)
+		for {
+			nextScope, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
+
+			if nextScope == nil {
+				break
+			}
+
+			key := nextScope.MustGetVariable(collections.DefaultKeyVar)
+			item := nextScope.MustGetVariable(collections.DefaultValueVar)
+
 			So(key.Unwrap(), ShouldEqual, pos)
 
 			res = append(res, item)
@@ -52,20 +65,17 @@ func TestSliceIterator(t *testing.T) {
 		}
 
 		iter := sliceIterator(arr)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		res := make([]core.Value, 0, len(arr))
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
+		So(err, ShouldBeNil)
 
 		for idx := range arr {
 			expected := arr[idx]
-			actual := res[idx]
+			nextScope := res[idx]
+			actual := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			So(actual, ShouldEqual, expected)
 		}
@@ -81,34 +91,27 @@ func TestSliceIterator(t *testing.T) {
 		}
 
 		iter := sliceIterator(arr)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		res := make([]core.Value, 0, len(arr))
+		_, err := collections.ToSlice(ctx, scope, iter)
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
-
-			So(err, ShouldBeNil)
-
-			res = append(res, item)
-		}
-
-		item, _, err := next(iter)
+		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeError)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Should NOT iterate over an empty slice", t, func() {
 		arr := []core.Value{}
 
 		iter := sliceIterator(arr)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		var iterated bool
+		item, err := iter.Next(ctx, scope)
 
-		for iter.HasNext() {
-			iterated = true
-		}
-
-		So(iterated, ShouldBeFalse)
+		So(item, ShouldBeNil)
+		So(err, ShouldBeNil)
 	})
 }

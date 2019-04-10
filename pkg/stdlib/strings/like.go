@@ -43,15 +43,17 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	for i := 1; i < len(str)+1; i++ {
 		for j := 1; j < len(pattern)+1; j++ {
-			if pattern[j-1] == '%' {
+			switch {
+			case pattern[j-1] == '%':
 				lookup[i][j] = lookup[i][j-1] || lookup[i-1][j]
-			} else if pattern[j-1] == '_' || str[i-1] == pattern[j-1] {
+			case pattern[j-1] == '_' || str[i-1] == pattern[j-1]:
 				lookup[i][j] = lookup[i-1][j-1]
-			} else if len(args) > 2 {
-				if args[2] == values.True && unicode.ToLower(str[i-1]) == unicode.ToLower(pattern[j-1]) {
+			case len(args) > 2:
+				isEq := unicode.ToLower(str[i-1]) == unicode.ToLower(pattern[j-1])
+				if args[2] == values.True && isEq {
 					lookup[i][j] = lookup[i-1][j-1]
 				}
-			} else {
+			default:
 				lookup[i][j] = false
 			}
 		}

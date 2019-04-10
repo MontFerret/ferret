@@ -2,8 +2,9 @@ package core
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -18,6 +19,7 @@ var (
 	ErrUnexpected            = errors.New("unexpected error")
 	ErrTimeout               = errors.New("operation timed out")
 	ErrNotImplemented        = errors.New("not implemented")
+	ErrNotSupported          = errors.New("not supported")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"

@@ -1,80 +1,53 @@
 package collections
 
 import (
+	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 )
 
 type (
-	FilterPredicate func(set DataSet) (bool, error)
+	FilterPredicate func(ctx context.Context, scope *core.Scope) (bool, error)
 
 	FilterIterator struct {
-		src       Iterator
+		values    Iterator
 		predicate FilterPredicate
-		dataSet   DataSet
-		ready     bool
 	}
 )
 
-func NewFilterIterator(src Iterator, predicate FilterPredicate) (*FilterIterator, error) {
-	if core.IsNil(src) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "source")
+func NewFilterIterator(values Iterator, predicate FilterPredicate) (*FilterIterator, error) {
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "result")
 	}
 
-	if core.IsNil(predicate) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "predicate")
+	if predicate == nil {
+		return nil, core.Error(core.ErrMissedArgument, "predicate")
 	}
 
-	return &FilterIterator{src: src, predicate: predicate}, nil
+	return &FilterIterator{values: values, predicate: predicate}, nil
 }
 
-func (iterator *FilterIterator) HasNext() bool {
-	if !iterator.ready {
-		iterator.filter()
-		iterator.ready = true
-	}
-
-	return iterator.dataSet != nil
-}
-
-func (iterator *FilterIterator) Next() (DataSet, error) {
-	if iterator.HasNext() == true {
-		ds := iterator.dataSet
-
-		iterator.filter()
-
-		return ds, nil
-	}
-
-	return nil, ErrExhausted
-}
-
-func (iterator *FilterIterator) filter() {
-	var doNext bool
-
-	for iterator.src.HasNext() {
-		set, err := iterator.src.Next()
+func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
+	for {
+		nextScope, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
-			doNext = false
-			break
+			return nil, err
 		}
 
-		take, err := iterator.predicate(set)
+		if nextScope == nil {
+			return nil, nil
+		}
+
+		// TODO: test case when predicate return not nil
+		take, err := iterator.predicate(ctx, nextScope)
 
 		if err != nil {
-			doNext = false
-			break
+			return nil, err
 		}
 
 		if take == true {
-			doNext = true
-			iterator.dataSet = set
-			break
+			return nextScope, nil
 		}
-	}
-
-	if doNext == false {
-		iterator.dataSet = nil
 	}
 }

@@ -2,58 +2,59 @@ package expressions
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type BlockExpression struct {
+	values     collections.Iterable
 	statements []core.Expression
-	expression core.Expression
 }
 
-func NewBlockExpression(size int) *BlockExpression {
-	return &BlockExpression{make([]core.Expression, 0, size), nil}
-}
-
-func NewBlockExpressionWith(elements ...core.Expression) *BlockExpression {
-	block := NewBlockExpression(len(elements))
-
-	for _, el := range elements {
-		block.Add(el)
+func NewBlockExpression(values collections.Iterable) (*BlockExpression, error) {
+	if values == nil {
+		return nil, core.Error(core.ErrMissedArgument, "values")
 	}
 
-	return block
+	return &BlockExpression{
+		values:     values,
+		statements: make([]core.Expression, 0, 5),
+	}, nil
 }
 
-func (b *BlockExpression) Add(exp core.Expression) error {
-	switch exp.(type) {
-	case *ForExpression, *ReturnExpression:
-		// return an error?
-		if !core.IsNil(b.expression) {
-			return errors.Wrap(core.ErrInvalidOperation, "return expression is already defined")
-		}
+func (exp *BlockExpression) Add(stmt core.Expression) {
+	exp.statements = append(exp.statements, stmt)
+}
 
-		b.expression = exp
-
-		break
+func (exp *BlockExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
 	default:
-		b.statements = append(b.statements, exp)
-	}
+		for _, stmt := range exp.statements {
+			_, err := stmt.Exec(ctx, scope)
 
-	return nil
+			if err != nil {
+				return values.None, err
+			}
+		}
+
+		return values.None, nil
+	}
 }
 
-func (b *BlockExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	for _, exp := range b.statements {
-		if _, err := exp.Exec(ctx, scope); err != nil {
-			return values.None, err
+func (exp *BlockExpression) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
+	select {
+	case <-ctx.Done():
+		return nil, core.ErrTerminated
+	default:
+		iter, err := exp.values.Iterate(ctx, scope)
+
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	if !core.IsNil(b.expression) {
-		return b.expression.Exec(ctx, scope)
+		return collections.NewTapIterator(iter, exp)
 	}
-
-	return values.None, nil
 }

@@ -2,9 +2,12 @@ package runtime
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/html"
+	"runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/pkg/errors"
 )
 
 type Program struct {
@@ -17,7 +20,7 @@ func NewProgram(src string, body core.Expression) (*Program, error) {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
-	if core.IsNil(body) {
+	if body == nil {
 		return nil, core.Error(core.ErrMissedArgument, "body")
 	}
 
@@ -28,14 +31,46 @@ func (p *Program) Source() string {
 	return p.src
 }
 
-func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
+func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
+	ctx = NewOptions(setters).WithContext(ctx)
+
+	logger := logging.FromContext(ctx)
+
+	defer func() {
+		if r := recover(); r != nil {
+			// find out exactly what the error was and set err
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+
+			b := make([]byte, 0, 20)
+			runtime.Stack(b, true)
+
+			logger.Error().
+				Timestamp().
+				Err(err).
+				Str("stack", string(b)).
+				Msg("Panic")
+
+			result = nil
+		}
+	}()
+
 	scope, closeFn := core.NewRootScope()
 
-	defer closeFn()
-
-	ctx = NewOptions().Apply(setters...).WithContext(ctx)
-	ctx = html.WithDynamicDriver(ctx)
-	ctx = html.WithStaticDriver(ctx)
+	defer func() {
+		if err := closeFn(); err != nil {
+			logger.Error().
+				Timestamp().
+				Err(err).
+				Msg("closing root scope")
+		}
+	}()
 
 	out, err := p.body.Exec(ctx, scope)
 

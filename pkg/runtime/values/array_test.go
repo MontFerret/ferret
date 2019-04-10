@@ -2,6 +2,7 @@ package values_test
 
 import (
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -56,7 +57,7 @@ func TestArray(t *testing.T) {
 		Convey("Should return type", func() {
 			arr := values.NewArray(1)
 
-			So(arr.Type(), ShouldEqual, core.ArrayType)
+			So(arr.Type().Equals(types.Array), ShouldBeTrue)
 		})
 	})
 
@@ -346,7 +347,7 @@ func TestArray(t *testing.T) {
 			So(el.Compare(values.NewInt(2)), ShouldEqual, 0)
 		})
 
-		Convey("Should return None when no value", func() {
+		Convey("Should return None when no items", func() {
 			arr := values.NewArrayWith()
 
 			el := arr.Get(1)

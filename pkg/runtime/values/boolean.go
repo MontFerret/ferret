@@ -6,13 +6,15 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Boolean bool
 
-var False = Boolean(false)
-var True = Boolean(true)
+const (
+	False = Boolean(false)
+	True  = Boolean(true)
+)
 
 func NewBoolean(input bool) Boolean {
 	return Boolean(input)
@@ -43,10 +45,10 @@ func ParseBoolean(input interface{}) (Boolean, error) {
 		}
 	}
 
-	return False, errors.Wrap(core.ErrInvalidType, "expected 'bool'")
+	return False, core.Error(core.ErrInvalidType, "expected 'bool'")
 }
 
-func ParseBooleanP(input interface{}) Boolean {
+func MustParseBoolean(input interface{}) Boolean {
 	res, err := ParseBoolean(input)
 
 	if err != nil {
@@ -61,7 +63,7 @@ func (t Boolean) MarshalJSON() ([]byte, error) {
 }
 
 func (t Boolean) Type() core.Type {
-	return core.BooleanType
+	return types.Boolean
 }
 
 func (t Boolean) String() string {
@@ -72,11 +74,10 @@ func (t Boolean) String() string {
 	return "false"
 }
 
-func (t Boolean) Compare(other core.Value) int {
+func (t Boolean) Compare(other core.Value) int64 {
 	raw := bool(t)
 
-	switch other.Type() {
-	case core.BooleanType:
+	if types.Boolean.Equals(other.Type()) {
 		i := other.Unwrap().(bool)
 
 		if raw == i {
@@ -88,11 +89,9 @@ func (t Boolean) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	return types.Compare(types.Boolean, other.Type())
 }
 
 func (t Boolean) Unwrap() interface{} {

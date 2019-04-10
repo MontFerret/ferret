@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/pkg/errors"
 )
 
 type ForExpression struct {
@@ -24,12 +23,12 @@ func NewForExpression(
 	distinct,
 	spread bool,
 ) (*ForExpression, error) {
-	if core.IsNil(dataSource) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed source expression")
+	if dataSource == nil {
+		return nil, core.Error(core.ErrMissedArgument, "missed source expression")
 	}
 
-	if core.IsNil(predicate) {
-		return nil, errors.Wrap(core.ErrMissedArgument, "missed return expression")
+	if predicate == nil {
+		return nil, core.Error(core.ErrMissedArgument, "missed return expression")
 	}
 
 	return &ForExpression{
@@ -41,7 +40,7 @@ func NewForExpression(
 	}, nil
 }
 
-func (e *ForExpression) AddLimit(src core.SourceMap, size, count int) error {
+func (e *ForExpression) AddLimit(src core.SourceMap, size, count core.Expression) error {
 	limit, err := clauses.NewLimitClause(src, e.dataSource, size, count)
 
 	if err != nil {
@@ -89,77 +88,98 @@ func (e *ForExpression) AddCollect(src core.SourceMap, params *clauses.Collect) 
 	return nil
 }
 
+func (e *ForExpression) AddStatement(stmt core.Expression) error {
+	tap, ok := e.dataSource.(*BlockExpression)
+
+	if !ok {
+		t, err := NewBlockExpression(e.dataSource)
+
+		if err != nil {
+			return err
+		}
+
+		tap = t
+		e.dataSource = tap
+	}
+
+	tap.Add(stmt)
+
+	return nil
+}
+
 func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	iterator, err := e.dataSource.Iterate(ctx, scope)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	// Hash map for a check for uniqueness
-	var hashTable map[uint64]bool
-
-	if e.distinct {
-		hashTable = make(map[uint64]bool)
-	}
-
-	res := values.NewArray(10)
-	variables := e.dataSource.Variables()
-
-	for iterator.HasNext() {
-		ds, err := iterator.Next()
-
-		if err != nil {
-			return values.None, core.SourceError(e.src, err)
-		}
-
-		innerScope := scope.Fork()
-
-		if err := ds.Apply(innerScope, variables); err != nil {
-			return values.None, err
-		}
-
-		out, err := e.predicate.Exec(ctx, innerScope)
+	select {
+	case <-ctx.Done():
+		return values.None, core.ErrTerminated
+	default:
+		iterator, err := e.dataSource.Iterate(ctx, scope)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		var add bool
+		// Hash map for a check for uniqueness
+		var hashTable map[uint64]bool
 
-		// The result shouldn't be distinct
-		// Just add the output
-		if !e.distinct {
-			add = true
-		} else {
-			// We need to check whether the value already exists in the result set
-			hash := out.Hash()
-			_, exists := hashTable[hash]
+		if e.distinct {
+			hashTable = make(map[uint64]bool)
+		}
 
-			if !exists {
-				hashTable[hash] = true
+		res := values.NewArray(10)
+		for {
+			nextScope, err := iterator.Next(ctx, scope)
+
+			if err != nil {
+				return values.None, core.SourceError(e.src, err)
+			}
+
+			// no data anymore
+			if nextScope == nil {
+				break
+			}
+
+			out, err := e.predicate.Exec(ctx, nextScope)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			var add bool
+
+			// The result shouldn't be distinct
+			// Just add the output
+			if !e.distinct {
 				add = true
-			}
-		}
-
-		if add {
-			if !e.spread {
-				res.Push(out)
 			} else {
-				elements, ok := out.(*values.Array)
+				// We need to check whether the value already exists in the result set
+				hash := out.Hash()
+				_, exists := hashTable[hash]
 
-				if !ok {
-					return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
+				if !exists {
+					hashTable[hash] = true
+					add = true
 				}
+			}
 
-				elements.ForEach(func(i core.Value, _ int) bool {
-					res.Push(i)
+			if add {
+				if !e.spread {
+					res.Push(out)
+				} else {
+					elements, ok := out.(*values.Array)
 
-					return true
-				})
+					if !ok {
+						return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
+					}
+
+					elements.ForEach(func(i core.Value, _ int) bool {
+						res.Push(i)
+
+						return true
+					})
+				}
 			}
 		}
-	}
 
-	return res, nil
+		return res, nil
+	}
 }

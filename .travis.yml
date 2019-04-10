@@ -6,9 +6,9 @@ os:
 - linux
 
 go:
-- "1.10"
-- "1.11"
-- master
+- "1.11.x"
+- "1.12.x"
+- stable
 
 addons:
   apt:
@@ -16,19 +16,16 @@ addons:
     - oracle-java8-set-default
   chrome: stable
 
-before_install:
-- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+install:
 - go get -u github.com/mgechev/revive
 - sudo curl -o /usr/local/lib/antlr-4.7.1-complete.jar https://www.antlr.org/download/antlr-4.7.1-complete.jar
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.1-complete.jar:$CLASSPATH"
 - mkdir $HOME/travis-bin
-- echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.7.1-complete.jar "$@"' > $HOME/travis-bin/antlr4
+- echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.7.1-complete.jar "$@"' > $HOME/travis-bin/antlr
 - echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/travis-bin/grun
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
-
-install:
-- make install
+- export GO111MODULE=on
 
 stages:
 - lint
@@ -40,19 +37,23 @@ stages:
 jobs:
   include:
   - stage: lint
+    go: stable
     script:
     - make vet
     - make lint
+    - make fmt
+    - git diff
+    - if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
   - stage: compile
+    go: stable
     script:
     - make generate
     - make compile
   - stage: test
     script:
     - make cover
-    after_success:
-    - if [ $TRAVIS_BRANCH == "master" && $TRAVIS_PULL_REQUEST == "false" ]; then bash <(curl -s https://codecov.io/bash); fi
   - stage: e2e
+    go: stable
     before_script:
     - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
     script:
@@ -60,5 +61,6 @@ jobs:
     after_script:
     - killall google-chrome-stable
   - stage: bench
+    go: stable
     script:
     - make bench

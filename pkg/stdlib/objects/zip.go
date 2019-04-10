@@ -1,12 +1,12 @@
 package objects
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Zip returns an object assembled from the separate parameters keys and values.
@@ -16,12 +16,15 @@ import (
 // @returns (Object) - an object with the keys and values assembled.
 func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
+
 	if err != nil {
 		return values.None, err
 	}
 
 	for _, arg := range args {
-		if err = core.ValidateType(arg, core.ArrayType); err != nil {
+		err = core.ValidateType(arg, types.Array)
+
+		if err != nil {
 			return values.None, err
 		}
 	}
@@ -38,7 +41,8 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 		)
 	}
 
-	err = validateArrayOf(core.StringType, keys)
+	err = validateArrayOf(types.String, keys)
+
 	if err != nil {
 		return values.None, err
 	}
@@ -68,12 +72,14 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 		keyExists[k] = true
 
 		val = vals.Get(values.NewInt(idx))
+		cloneable, ok := val.(core.Cloneable)
 
-		if values.IsCloneable(val) {
-			val = val.(core.Cloneable).Clone()
+		if ok {
+			val = cloneable.Clone()
 		}
 
 		zipped.Set(k, val)
+
 		return true
 	})
 

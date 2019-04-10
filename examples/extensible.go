@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"os"
 )
 
 func main() {
@@ -27,7 +29,7 @@ func getStrings() ([]string, error) {
 	// function implements is a type of a function that ferret supports as a runtime function
 	transform := func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		// it's just a helper function which helps to validate a number of passed args
-		err := core.ValidateArgs(args, 1)
+		err := core.ValidateArgs(args, 1, 1)
 
 		if err != nil {
 			// it's recommended to return built-in None type, instead of nil
@@ -44,7 +46,7 @@ func getStrings() ([]string, error) {
 		// cast to built-in string type
 		str := args[0].(values.String)
 
-		return str.Concat(values.NewString("_ferret")).ToUpper(), nil
+		return values.NewString(strings.ToUpper(str.String() + "_ferret")), nil
 	}
 
 	query := `
@@ -54,7 +56,10 @@ func getStrings() ([]string, error) {
 	`
 
 	comp := compiler.New()
-	comp.RegisterFunction("transform", transform)
+
+	if err := comp.RegisterFunction("transform", transform); err != nil {
+		return nil, err
+	}
 
 	program, err := comp.Compile(query)
 

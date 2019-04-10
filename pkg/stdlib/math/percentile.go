@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/pkg/errors"
 )
 
@@ -21,13 +22,13 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.IntType)
+	err = core.ValidateType(args[1], types.Int)
 
 	if err != nil {
 		return values.None, err
@@ -69,21 +70,16 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	var percentile core.Value
 
 	// Check if the index is a whole number
-	if index == even {
-
-		// Convert float to int
+	switch {
+	case index == even:
 		i := values.Int(index)
-
-		// Find the value at the index
 		percentile = sorted.Get(i - 1)
-	} else if index > 1 {
-
+	case index > 1:
 		// Convert float to int via truncation
 		i := values.Int(index)
-
 		// Find the average of the index and following values
 		percentile, _ = mean(values.NewArrayWith(sorted.Get(i-1), sorted.Get(i)))
-	} else {
+	default:
 		return values.NewFloat(math.NaN()), errors.New("input is outside of range")
 	}
 

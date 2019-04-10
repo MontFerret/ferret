@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/cli"
-	"github.com/MontFerret/ferret/cli/browser"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/MontFerret/ferret/cli"
+	"github.com/MontFerret/ferret/cli/browser"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Params []string
@@ -55,7 +56,7 @@ var (
 
 	conn = flag.String(
 		"cdp",
-		"http://0.0.0.0:9222",
+		"",
 		"set CDP address",
 	)
 
@@ -63,6 +64,12 @@ var (
 		"cdp-launch",
 		false,
 		"launch Chrome",
+	)
+
+	cdpKeepCookies = flag.Bool(
+		"cdp-keep-cookies",
+		false,
+		"keep cookies between queries (i.e. do not open tabs in incognito mode)",
 	)
 
 	proxyAddress = flag.String(
@@ -153,11 +160,12 @@ func main() {
 	}
 
 	opts := cli.Options{
-		Cdp:       cdpConn,
-		Params:    p,
-		Proxy:     *proxyAddress,
-		UserAgent: *userAgent,
-		ShowTime:  *showTime,
+		Cdp:         cdpConn,
+		Params:      p,
+		Proxy:       *proxyAddress,
+		UserAgent:   *userAgent,
+		ShowTime:    *showTime,
+		KeepCookies: *cdpKeepCookies,
 	}
 
 	stat, _ := os.Stdin.Stat()

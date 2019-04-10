@@ -1,6 +1,7 @@
 package collections_test
 
 import (
+	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -9,7 +10,9 @@ import (
 )
 
 func objectIterator(obj *values.Object) collections.Iterator {
-	return collections.NewDefaultKeyedIterator(obj)
+	iter, _ := collections.NewDefaultKeyedIterator(obj)
+
+	return iter
 }
 
 func TestObjectIterator(t *testing.T) {
@@ -26,10 +29,20 @@ func TestObjectIterator(t *testing.T) {
 
 		res := make([]core.Value, 0, m.Length())
 
-		for iter.HasNext() {
-			item, key, err := next(iter)
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
+
+		for {
+			nextScope, err := iter.Next(ctx, scope)
 
 			So(err, ShouldBeNil)
+
+			if nextScope == nil {
+				break
+			}
+
+			key := nextScope.MustGetVariable(collections.DefaultKeyVar)
+			item := nextScope.MustGetVariable(collections.DefaultValueVar)
 
 			expected, exists := m.Get(values.NewString(key.String()))
 
@@ -53,20 +66,18 @@ func TestObjectIterator(t *testing.T) {
 
 		iter := objectIterator(m)
 
-		res := make([]core.Value, 0, m.Length())
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for iter.HasNext() {
-			item, _, err := next(iter)
+		res, err := collections.ToSlice(ctx, scope, iter)
 
-			So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
+		So(res, ShouldNotBeNil)
 
-			res = append(res, item)
-		}
+		nextScope, err := iter.Next(ctx, scope)
 
-		item, _, err := next(iter)
-
-		So(item, ShouldBeNil)
-		So(err, ShouldBeError)
+		So(nextScope, ShouldBeNil)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Should NOT iterate over a empty map", t, func() {
@@ -74,12 +85,12 @@ func TestObjectIterator(t *testing.T) {
 
 		iter := objectIterator(m)
 
-		var iterated bool
+		ctx := context.Background()
+		scope, _ := core.NewRootScope()
 
-		for iter.HasNext() {
-			iterated = true
-		}
+		nextScope, err := iter.Next(ctx, scope)
 
-		So(iterated, ShouldBeFalse)
+		So(nextScope, ShouldBeNil)
+		So(err, ShouldBeNil)
 	})
 }

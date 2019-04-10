@@ -3,13 +3,14 @@ package values_test
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestBoolean(t *testing.T) {
 	Convey(".MarshalJSON", t, func() {
-		Convey("Should serialize a boolean value", func() {
+		Convey("Should serialize a boolean items", func() {
 			b := values.True
 			marshaled, err := b.MarshalJSON()
 
@@ -21,12 +22,12 @@ func TestBoolean(t *testing.T) {
 
 	Convey(".Type", t, func() {
 		Convey("Should return a type", func() {
-			So(values.True.Type(), ShouldEqual, core.BooleanType)
+			So(values.True.Type().Equals(types.Boolean), ShouldBeTrue)
 		})
 	})
 
 	Convey(".Unwrap", t, func() {
-		Convey("Should return an unwrapped value", func() {
+		Convey("Should return an unwrapped items", func() {
 			So(values.True.Unwrap(), ShouldHaveSameTypeAs, true)
 		})
 	})

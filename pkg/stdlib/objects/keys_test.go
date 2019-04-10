@@ -2,9 +2,8 @@ package objects_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
@@ -24,7 +23,7 @@ func TestKeys(t *testing.T) {
 		keysArray := keys.(*values.Array)
 
 		So(err, ShouldEqual, nil)
-		So(keysArray.Type(), ShouldEqual, core.ArrayType)
+		So(keysArray.Type().Equals(types.Array), ShouldBeTrue)
 		So(keysArray.Length(), ShouldEqual, 3)
 
 		for _, k := range []string{"b", "a", "c"} {

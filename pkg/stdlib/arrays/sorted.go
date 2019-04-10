@@ -3,9 +3,9 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Sorted sorts all elements in anyArray.
@@ -19,7 +19,7 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -31,22 +31,5 @@ func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewArray(0), nil
 	}
 
-	sorter, err := collections.NewSorter(func(first collections.DataSet, second collections.DataSet) (int, error) {
-		return first.Get(collections.DefaultValueVar).Compare(second.Get(collections.DefaultValueVar)), nil
-	}, collections.SortDirectionAsc)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	iterator, err := collections.NewSortIterator(
-		collections.NewDefaultIndexedIterator(arr),
-		sorter,
-	)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return toArray(iterator)
+	return arr.Sort(), nil
 }

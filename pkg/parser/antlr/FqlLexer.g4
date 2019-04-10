@@ -27,13 +27,13 @@ Lte: '<=';
 Neq: '!=';
 
 // Arithmetic operators
+Multi: '*';
+Div: '/';
+Mod: '%';
 Plus: '+';
 Minus: '-';
 MinusMinus: '--';
 PlusPlus: '++';
-Multi: '*';
-Div: '/';
-Mod: '%';
 
 // Logical operators
 And: 'AND' | '&&';

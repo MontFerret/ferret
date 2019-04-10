@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo"
+	"net/http"
+	"path/filepath"
 )
 
 type (
@@ -22,7 +24,19 @@ func New(settings Settings) *Server {
 	e.Debug = false
 	e.HideBanner = true
 
+	e.Use(func(handlerFunc echo.HandlerFunc) echo.HandlerFunc {
+		return func(ctx echo.Context) error {
+			ctx.SetCookie(&http.Cookie{
+				Name:     "x-ferret",
+				Value:    "e2e",
+				HttpOnly: false,
+			})
+
+			return handlerFunc(ctx)
+		}
+	})
 	e.Static("/", settings.Dir)
+	e.File("/", filepath.Join(settings.Dir, "index.html"))
 
 	return &Server{e, settings}
 }

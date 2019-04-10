@@ -1,12 +1,13 @@
 package compiler
 
 import (
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 type FqlCompiler struct {
@@ -27,9 +28,7 @@ func New(setters ...Option) *FqlCompiler {
 		c.funcs = make(map[string]core.Function)
 	}
 
-	return &FqlCompiler{
-		stdlib.NewLib(),
-	}
+	return c
 }
 
 func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
@@ -42,6 +41,10 @@ func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
 	c.funcs[strings.ToUpper(name)] = fun
 
 	return nil
+}
+
+func (c *FqlCompiler) RemoveFunction(name string) {
+	delete(c.funcs, strings.ToUpper(name))
 }
 
 func (c *FqlCompiler) RegisterFunctions(funcs map[string]core.Function) error {
@@ -59,9 +62,6 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 		return nil, ErrEmptyQuery
 	}
 
-	p := parser.New(query)
-	p.AddErrorListener(&errorListener{})
-
 	defer func() {
 		if r := recover(); r != nil {
 			// find out exactly what the error was and set err
@@ -77,6 +77,9 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 			program = nil
 		}
 	}()
+
+	p := parser.New(query)
+	p.AddErrorListener(&errorListener{})
 
 	l := newVisitor(query, c.funcs)
 
@@ -99,4 +102,11 @@ func (c *FqlCompiler) MustCompile(query string) *runtime.Program {
 	}
 
 	return program
+}
+
+func (c *FqlCompiler) RegisteredFunctions() (funcs []string) {
+	for k := range c.funcs {
+		funcs = append(funcs, k)
+	}
+	return
 }

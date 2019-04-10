@@ -9,12 +9,12 @@ import (
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Float float64
 
-var ZeroFloat = Float(0.0)
+const ZeroFloat = Float(0.0)
 
 func NewFloat(input float64) Float {
 	return Float(input)
@@ -50,10 +50,10 @@ func ParseFloat(input interface{}) (Float, error) {
 		}
 	}
 
-	return ZeroFloat, errors.Wrap(core.ErrInvalidType, "expected 'float'")
+	return ZeroFloat, core.Error(core.ErrInvalidType, "expected 'float'")
 }
 
-func ParseFloatP(input interface{}) Float {
+func MustParseFloat(input interface{}) Float {
 	res, err := ParseFloat(input)
 
 	if err != nil {
@@ -76,18 +76,18 @@ func (t Float) MarshalJSON() ([]byte, error) {
 }
 
 func (t Float) Type() core.Type {
-	return core.FloatType
+	return types.Float
 }
 
 func (t Float) String() string {
 	return fmt.Sprintf("%f", t)
 }
 
-func (t Float) Compare(other core.Value) int {
+func (t Float) Compare(other core.Value) int64 {
+	otherType := other.Type()
 	raw := float64(t)
 
-	switch other.Type() {
-	case core.FloatType:
+	if otherType == types.Float {
 		f := other.Unwrap().(float64)
 
 		if raw == f {
@@ -99,7 +99,9 @@ func (t Float) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.IntType:
+	}
+
+	if otherType == types.Int {
 		i := other.Unwrap().(int)
 		f := float64(i)
 
@@ -112,11 +114,9 @@ func (t Float) Compare(other core.Value) int {
 		}
 
 		return +1
-	case core.BooleanType, core.NoneType:
-		return 1
-	default:
-		return -1
 	}
+
+	return types.Compare(types.Float, otherType)
 }
 
 func (t Float) Unwrap() interface{} {

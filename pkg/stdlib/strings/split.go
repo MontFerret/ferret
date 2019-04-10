@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Split splits the given string value into a list of strings, using the separator.
@@ -25,7 +26,7 @@ func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 	limit := -1
 
 	if len(args) > 2 {
-		if args[2].Type() == core.IntType {
+		if args[2].Type() == types.Int {
 			limit = int(args[2].(values.Int))
 		}
 	}

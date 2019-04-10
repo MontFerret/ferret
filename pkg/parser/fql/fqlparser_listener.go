@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.1. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.2. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -37,11 +37,23 @@ type FqlParserListener interface {
 	// EnterForExpressionClause is called when entering the forExpressionClause production.
 	EnterForExpressionClause(c *ForExpressionClauseContext)
 
+	// EnterForExpressionStatement is called when entering the forExpressionStatement production.
+	EnterForExpressionStatement(c *ForExpressionStatementContext)
+
+	// EnterForExpressionBody is called when entering the forExpressionBody production.
+	EnterForExpressionBody(c *ForExpressionBodyContext)
+
+	// EnterForExpressionReturn is called when entering the forExpressionReturn production.
+	EnterForExpressionReturn(c *ForExpressionReturnContext)
+
 	// EnterFilterClause is called when entering the filterClause production.
 	EnterFilterClause(c *FilterClauseContext)
 
 	// EnterLimitClause is called when entering the limitClause production.
 	EnterLimitClause(c *LimitClauseContext)
+
+	// EnterLimitClauseValue is called when entering the limitClauseValue production.
+	EnterLimitClauseValue(c *LimitClauseValueContext)
 
 	// EnterSortClause is called when entering the sortClause production.
 	EnterSortClause(c *SortClauseContext)
@@ -69,12 +81,6 @@ type FqlParserListener interface {
 
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
-
-	// EnterForExpressionBody is called when entering the forExpressionBody production.
-	EnterForExpressionBody(c *ForExpressionBodyContext)
-
-	// EnterForExpressionReturn is called when entering the forExpressionReturn production.
-	EnterForExpressionReturn(c *ForExpressionReturnContext)
 
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
@@ -127,8 +133,8 @@ type FqlParserListener interface {
 	// EnterPropertyName is called when entering the propertyName production.
 	EnterPropertyName(c *PropertyNameContext)
 
-	// EnterExpressionSequence is called when entering the expressionSequence production.
-	EnterExpressionSequence(c *ExpressionSequenceContext)
+	// EnterExpressionGroup is called when entering the expressionGroup production.
+	EnterExpressionGroup(c *ExpressionGroupContext)
 
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
@@ -151,11 +157,17 @@ type FqlParserListener interface {
 	// EnterEqualityOperator is called when entering the equalityOperator production.
 	EnterEqualityOperator(c *EqualityOperatorContext)
 
-	// EnterLogicalOperator is called when entering the logicalOperator production.
-	EnterLogicalOperator(c *LogicalOperatorContext)
+	// EnterLogicalAndOperator is called when entering the logicalAndOperator production.
+	EnterLogicalAndOperator(c *LogicalAndOperatorContext)
 
-	// EnterMathOperator is called when entering the mathOperator production.
-	EnterMathOperator(c *MathOperatorContext)
+	// EnterLogicalOrOperator is called when entering the logicalOrOperator production.
+	EnterLogicalOrOperator(c *LogicalOrOperatorContext)
+
+	// EnterMultiplicativeOperator is called when entering the multiplicativeOperator production.
+	EnterMultiplicativeOperator(c *MultiplicativeOperatorContext)
+
+	// EnterAdditiveOperator is called when entering the additiveOperator production.
+	EnterAdditiveOperator(c *AdditiveOperatorContext)
 
 	// EnterUnaryOperator is called when entering the unaryOperator production.
 	EnterUnaryOperator(c *UnaryOperatorContext)
@@ -190,11 +202,23 @@ type FqlParserListener interface {
 	// ExitForExpressionClause is called when exiting the forExpressionClause production.
 	ExitForExpressionClause(c *ForExpressionClauseContext)
 
+	// ExitForExpressionStatement is called when exiting the forExpressionStatement production.
+	ExitForExpressionStatement(c *ForExpressionStatementContext)
+
+	// ExitForExpressionBody is called when exiting the forExpressionBody production.
+	ExitForExpressionBody(c *ForExpressionBodyContext)
+
+	// ExitForExpressionReturn is called when exiting the forExpressionReturn production.
+	ExitForExpressionReturn(c *ForExpressionReturnContext)
+
 	// ExitFilterClause is called when exiting the filterClause production.
 	ExitFilterClause(c *FilterClauseContext)
 
 	// ExitLimitClause is called when exiting the limitClause production.
 	ExitLimitClause(c *LimitClauseContext)
+
+	// ExitLimitClauseValue is called when exiting the limitClauseValue production.
+	ExitLimitClauseValue(c *LimitClauseValueContext)
 
 	// ExitSortClause is called when exiting the sortClause production.
 	ExitSortClause(c *SortClauseContext)
@@ -222,12 +246,6 @@ type FqlParserListener interface {
 
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)
-
-	// ExitForExpressionBody is called when exiting the forExpressionBody production.
-	ExitForExpressionBody(c *ForExpressionBodyContext)
-
-	// ExitForExpressionReturn is called when exiting the forExpressionReturn production.
-	ExitForExpressionReturn(c *ForExpressionReturnContext)
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)
@@ -280,8 +298,8 @@ type FqlParserListener interface {
 	// ExitPropertyName is called when exiting the propertyName production.
 	ExitPropertyName(c *PropertyNameContext)
 
-	// ExitExpressionSequence is called when exiting the expressionSequence production.
-	ExitExpressionSequence(c *ExpressionSequenceContext)
+	// ExitExpressionGroup is called when exiting the expressionGroup production.
+	ExitExpressionGroup(c *ExpressionGroupContext)
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
@@ -304,11 +322,17 @@ type FqlParserListener interface {
 	// ExitEqualityOperator is called when exiting the equalityOperator production.
 	ExitEqualityOperator(c *EqualityOperatorContext)
 
-	// ExitLogicalOperator is called when exiting the logicalOperator production.
-	ExitLogicalOperator(c *LogicalOperatorContext)
+	// ExitLogicalAndOperator is called when exiting the logicalAndOperator production.
+	ExitLogicalAndOperator(c *LogicalAndOperatorContext)
 
-	// ExitMathOperator is called when exiting the mathOperator production.
-	ExitMathOperator(c *MathOperatorContext)
+	// ExitLogicalOrOperator is called when exiting the logicalOrOperator production.
+	ExitLogicalOrOperator(c *LogicalOrOperatorContext)
+
+	// ExitMultiplicativeOperator is called when exiting the multiplicativeOperator production.
+	ExitMultiplicativeOperator(c *MultiplicativeOperatorContext)
+
+	// ExitAdditiveOperator is called when exiting the additiveOperator production.
+	ExitAdditiveOperator(c *AdditiveOperatorContext)
 
 	// ExitUnaryOperator is called when exiting the unaryOperator production.
 	ExitUnaryOperator(c *UnaryOperatorContext)

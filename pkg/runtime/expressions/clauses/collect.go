@@ -2,6 +2,7 @@ package clauses
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
@@ -56,24 +57,26 @@ func NewCollect(
 			return collect, nil
 		}
 
-		if projection != nil && count == nil && aggregate == nil {
+		switch {
+		case projection != nil && count == nil && aggregate == nil:
 			collect.group.projection = projection
-		} else if projection == nil && count != nil && aggregate == nil {
+		case projection == nil && count != nil && aggregate == nil:
 			collect.group.count = count
-		} else if projection == nil && count == nil && aggregate != nil {
+		case projection == nil && count == nil && aggregate != nil:
 			collect.group.aggregate = aggregate
-		} else {
+		default:
 			return nil, core.Error(core.ErrInvalidOperation, "projection, count and aggregate cannot be used together")
 		}
 
 		return collect, nil
 	}
 
-	if count == nil && aggregate != nil {
+	switch {
+	case count == nil && aggregate != nil:
 		collect.aggregate = aggregate
-	} else if count != nil && aggregate == nil {
+	case count != nil && aggregate == nil:
 		collect.count = count
-	} else {
+	default:
 		return nil, core.Error(core.ErrInvalidOperation, "count and aggregate cannot be used together")
 	}
 
@@ -116,40 +119,6 @@ func NewCollectClause(
 	return &CollectClause{src, dataSource, params}, nil
 }
 
-func (clause *CollectClause) Variables() collections.Variables {
-	vars := make(collections.Variables, 0, 10)
-
-	if clause.params.group != nil {
-		grouping := clause.params.group
-
-		for _, selector := range grouping.selectors {
-			vars = append(vars, selector.variable)
-		}
-
-		if grouping.projection != nil {
-			vars = append(vars, clause.params.group.projection.selector.variable)
-		}
-
-		if grouping.count != nil {
-			vars = append(vars, clause.params.group.count.variable)
-		}
-
-		if grouping.aggregate != nil {
-			for _, selector := range grouping.aggregate.selectors {
-				vars = append(vars, selector.variable)
-			}
-		}
-	} else if clause.params.count != nil {
-		vars = append(vars, clause.params.count.variable)
-	} else if clause.params.aggregate != nil {
-		for _, selector := range clause.params.aggregate.selectors {
-			vars = append(vars, selector.variable)
-		}
-	}
-
-	return vars
-}
-
 func (clause *CollectClause) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
 	srcIterator, err := clause.dataSource.Iterate(ctx, scope)
 
@@ -157,14 +126,9 @@ func (clause *CollectClause) Iterate(ctx context.Context, scope *core.Scope) (co
 		return nil, core.SourceError(clause.src, err)
 	}
 
-	srcVariables := clause.dataSource.Variables()
-
 	return NewCollectIterator(
 		clause.src,
 		clause.params,
 		srcIterator,
-		srcVariables,
-		ctx,
-		scope,
 	)
 }

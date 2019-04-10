@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Push create a new array with appended value.
@@ -19,7 +20,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -30,7 +31,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	uniq := false
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], core.BooleanType)
+		err = core.ValidateType(args[2], types.Boolean)
 
 		if err != nil {
 			return values.None, err
@@ -44,7 +45,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	arr.ForEach(func(item core.Value, idx int) bool {
 		if uniq && push {
-			push = !(item.Compare(value) == 0)
+			push = item.Compare(value) != 0
 		}
 
 		result.Push(item)

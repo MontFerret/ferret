@@ -2,7 +2,6 @@ package objects_test
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -131,7 +130,6 @@ func TestMergeRecursive(t *testing.T) {
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
 
-			log.Println(actual)
 			So(err, ShouldBeNil)
 			So(actual.Compare(expected), ShouldEqual, 0)
 		})

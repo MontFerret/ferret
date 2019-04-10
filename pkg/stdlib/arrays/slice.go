@@ -5,6 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Slice returns a new sliced array.
@@ -19,13 +20,13 @@ func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], core.IntType)
+	err = core.ValidateType(args[1], types.Int)
 
 	if err != nil {
 		return values.None, err
@@ -36,7 +37,7 @@ func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 	length := values.NewInt(int(arr.Length()))
 
 	if len(args) > 2 {
-		if args[2].Type() == core.IntType {
+		if args[2].Type() == types.Int {
 			arg2 := args[2].(values.Int)
 
 			if arg2 > 0 {

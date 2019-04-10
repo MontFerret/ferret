@@ -1,8 +1,9 @@
-.PHONY: build compile install test e2e doc fmt lint vet release
+.PHONY: build compile test e2e doc fmt lint vet release
 
 export GOPATH
 
 VERSION ?= $(shell git describe --tags --always --dirty)
+RELEASE_VERSION ?= $(version)
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
 DIR_CLI = ./cli
@@ -10,24 +11,22 @@ DIR_E2E = ./e2e
 
 default: build
 
-build: install vet generate test compile
+build: vet generate test compile
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	-ldflags "-X main.version=${VERSION}" \
 	./main.go
 
-install:
-	dep ensure
-
 test:
-	go test -v -race ${DIR_PKG}/...
+	go test -race -v ${DIR_PKG}/...
 
 cover:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/...
+	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
+	curl -s https://codecov.io/bash | bash
 
 e2e:
-	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
+	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages --filter doc_cookie_set*
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
@@ -53,4 +52,13 @@ vet:
 	go vet ${DIR_CLI}/... ${DIR_PKG}/...
 
 release:
+ifeq ($(RELEASE_VERSION), )
+	$(error "Release version is required (version=x)")
+else ifeq ($(GITHUB_TOKEN), )
+	$(error "GitHub token is required (GITHUB_TOKEN)")
+else
+	rm -rf ./dist && \
+	git tag -a v$(RELEASE_VERSION) -m "New $(RELEASE_VERSION) version" && \
+	git push origin v$(RELEASE_VERSION) && \
 	goreleaser
+endif

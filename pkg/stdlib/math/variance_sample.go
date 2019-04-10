@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // SampleVariance returns the sample variance of the values in a given array.
@@ -19,7 +20,7 @@ func SampleVariance(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -31,5 +32,5 @@ func SampleVariance(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewFloat(math.NaN()), nil
 	}
 
-	return variance(arr, values.NewInt(1))
+	return variance(arr, values.NewInt(1)), nil
 }

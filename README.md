@@ -1,24 +1,38 @@
 # Ferret
 <p align="center">
-  <a href="https://travis-ci.com/MontFerret/ferret"><img alt="Build Status" src="https://travis-ci.com/MontFerret/ferret.svg?branch=master"></a>
-<a href="https://codecov.io/gh/MontFerret/ferret">
-  <img src="https://codecov.io/gh/MontFerret/ferret/branch/master/graph/badge.svg" />
-</a>
-  <a href="https://discord.gg/kzet32U"><img alt="Discord Chat" src="https://img.shields.io/discord/501533080880676864.svg"></a>
-	<a href="http://opensource.org/licenses/MIT"><img alt="MIT License" src="http://img.shields.io/badge/license-MIT-brightgreen.svg"></a>
+	<a href="https://goreportcard.com/report/github.com/MontFerret/ferret">
+		<img alt="Go Report Status" src="https://goreportcard.com/badge/github.com/MontFerret/ferret">
+	</a>
+	<a href="https://travis-ci.com/MontFerret/ferret">
+		<img alt="Build Status" src="https://travis-ci.com/MontFerret/ferret.svg?branch=master">
+	</a>
+	<a href="https://codecov.io/gh/MontFerret/ferret">
+		<img src="https://codecov.io/gh/MontFerret/ferret/branch/master/graph/badge.svg" />
+	</a>
+	<a href="https://discord.gg/kzet32U">
+		<img alt="Discord Chat" src="https://img.shields.io/discord/501533080880676864.svg">
+	</a>
+	<a href="https://github.com/MontFerret/ferret/releases">
+		<img alt="Ferret release" src="https://img.shields.io/github/release/MontFerret/ferret.svg">
+	</a>
+	<a href="http://opensource.org/licenses/MIT">
+		<img alt="MIT License" src="http://img.shields.io/badge/license-MIT-brightgreen.svg">
+	</a>
 </p>
 
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
 ## What is it?
-```ferret``` is a web scraping system aiming to simplify data extraction from the web for such things like UI testing, machine learning and analytics.    
-Having its own declarative language, ```ferret``` abstracts away technical details and complexity of the underlying technologies, helping to focus on the data itself.    
-It's extremely portable, extensible and fast.
+```ferret``` is a web scraping system. It aims to simplify data extraction from the web for UI testing, machine learning, analytics and more.    
+```ferret``` allows users to focus on the data. It abstracts away the technical details and complexity of underlying technologies using its own declarative language. 
+It is extremely portable, extensible and fast.
+
+[Read the introductory blog post about Ferret here!](https://medium.com/@ziflex/say-hello-to-ferret-a-modern-web-scraping-tool-5c9cc85ba183)
 
 ## Show me some code
 The following example demonstrates the use of dynamic pages.    
-First of all, we load the main Google Search page, type search criteria into an input box and then click a search button.   
-The click action triggers a redirect, so we wait till its end.   
+We load the main Google Search page, type search criteria into an input box and then click a search button.   
+The click action triggers a redirect, so we wait until its end.   
 Once the page gets loaded, we iterate over all elements in search results and assign the output to a variable.   
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
@@ -71,11 +85,10 @@ You can download latest binaries from [here](https://github.com/MontFerret/ferre
 
 ### Source code
 #### Production
-* Go >=1.10
+* Go >=1.11
 * Chrome or Docker
 
 #### Development
-* GoDep
 * GNU Make
 * ANTLR4 >=4.7.1
 
@@ -90,8 +103,8 @@ In order to use all Ferret features, you will need to have Chrome either install
 For ease of use we recommend to run Chrome inside a Docker container:
 
 ```sh
-docker pull alpeware/chrome-headless-trunk
-docker run -d -p=0.0.0.0:9222:9222 --name=chrome-headless -v /tmp/chromedata/:/data alpeware/chrome-headless-trunk
+docker pull alpeware/chrome-headless-stable
+docker run -d -p=0.0.0.0:9222:9222 --name=chrome-headless -v /tmp/chromedata/:/data alpeware/chrome-headless-stable
 ```
 
 But if you want to see what's happening during query execution, just start your Chrome with remote debugging port:
@@ -207,14 +220,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/compiler"
 	"os"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+	"github.com/MontFerret/ferret/pkg/drivers/http"
 )
 
 type Topic struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Url         string `json:"url"`
+	URL         string `json:"url"`
 }
 
 func main() {
@@ -226,7 +243,7 @@ func main() {
 	}
 
 	for _, topic := range topics {
-		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.Url))
+		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.URL))
 	}
 }
 
@@ -255,7 +272,17 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 		return nil, err
 	}
 
-	out, err := program.Run(context.Background())
+	// create a root context
+	ctx := context.Background()
+
+	// enable HTML drivers
+	// by default, Ferret Runtime does not know about any HTML drivers
+	// all HTML manipulations are done via functions from standard library
+	// that assume that at least one driver is available
+	ctx = drivers.WithContext(ctx, cdp.NewDriver())
+	ctx = drivers.WithContext(ctx, http.NewDriver(), drivers.AsDefault())
+
+	out, err := program.Run(ctx)
 
 	if err != nil {
 		return nil, err
@@ -271,6 +298,7 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 
 	return res, nil
 }
+
 ```
 
 ## Extensibility
@@ -284,10 +312,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"os"
 )
 
 func main() {
@@ -307,7 +337,7 @@ func getStrings() ([]string, error) {
 	// function implements is a type of a function that ferret supports as a runtime function
 	transform := func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		// it's just a helper function which helps to validate a number of passed args
-		err := core.ValidateArgs(args, 1)
+		err := core.ValidateArgs(args, 1, 1)
 
 		if err != nil {
 			// it's recommended to return built-in None type, instead of nil
@@ -324,7 +354,7 @@ func getStrings() ([]string, error) {
 		// cast to built-in string type
 		str := args[0].(values.String)
 
-		return str.Concat(values.NewString("_ferret")).ToUpper(), nil
+		return values.NewString(strings.ToUpper(str.String() + "_ferret")), nil
 	}
 
 	query := `
@@ -334,7 +364,10 @@ func getStrings() ([]string, error) {
 	`
 
 	comp := compiler.New()
-	comp.RegisterFunction("transform", transform)
+
+	if err := comp.RegisterFunction("transform", transform); err != nil {
+		return nil, err
+	}
 
 	program, err := comp.Compile(query)
 
@@ -383,4 +416,128 @@ func main() {
 
     comp.RegisterFunctions(strings.NewLib())
 }
+```
+
+## Proxy
+
+By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a prticular proxy. It should be done during a browser launch.
+
+But you can pass an address of a proxy server you want to use for static pages.
+
+#### CLI
+
+```sh
+ferret --proxy=http://localhost:8888 my-query.fql
+```
+
+#### Code
+
+```go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+	
+    "github.com/MontFerret/ferret/pkg/compiler"
+    "github.com/MontFerret/ferret/pkg/drivers"
+    "github.com/MontFerret/ferret/pkg/drivers/http"
+)
+
+func run(q string) ([]byte, error) {
+    proxy := "http://localhost:8888"
+    comp := compiler.New()
+    program := comp.MustCompile(q)
+
+    // create a root context
+    ctx := context.Background()
+
+    // we inform the driver what proxy to use
+    ctx = drivers.WithContext(ctx, http.NewDriver(http.WithProxy(proxy)), drivers.AsDefault())
+
+    return program.Run(ctx)
+}
+
+```
+
+## Cookies
+
+### Non-incognito mode
+
+By default, ``CDP`` driver execute each query in an incognito mode in order to avoid any collisions related to some persisted cookies from previous queries.   
+However, sometimes it might not be a desirable behavior and a query needs to be executed within a Chrome tab with earlier persisted cookies.   
+In order to do that, we need to inform the driver to execute all queries in regular tabs. Here is how to do that:
+
+#### CLI
+
+```sh
+ferret --cdp-keep-cookies my-query.fql
+```
+
+#### Code
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp"
+)
+
+func run(q string) ([]byte, error) {
+	comp := compiler.New()
+	program := comp.MustCompile(q)
+
+	// create a root context
+	ctx := context.Background()
+
+	// we inform the driver to keep cookies between queries
+	ctx = drivers.WithContext(
+		ctx,
+		cdp.NewDriver(cdp.WithKeepCookies()),
+		drivers.AsDefault(),
+	)
+
+	return program.Run(ctx)
+}
+```
+
+#### Query
+```
+LET doc = DOCUMENT("https://www.google.com", {
+    driver: "cdp",
+    keepCookies: true
+})
+```
+
+### Cookies manipulation
+For more precise work, you can set/get/delete cookies manually during and after page load:
+
+```
+LET doc = DOCUMENT("https://www.google.com", {
+    driver: "cdp",
+    cookies: [
+         {
+             name: "foo",
+             value: "bar"
+         }
+    ]
+})
+
+COOKIES_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
+COOKIES_DEL(doc, "foo")
+
+LET c = COOKIES_GET(doc, "baz")
+
+FOR cookie IN doc.cookies
+    RETURN cookie.name
+
 ```

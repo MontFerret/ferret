@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // RegexMatch returns the matches in the given string text, using the regex.
@@ -54,7 +55,7 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param regex (String) - A regular expression to use for splitting the text.
 // @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
 // @param limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @return (Array) - An array of strings splited by teh expression.
+// @return (Array) - An array of strings splited by the expression.
 func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
@@ -67,7 +68,7 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	limit := -1
 
 	if len(args) > 2 {
-		if args[2].Type() == core.IntType {
+		if args[2].Type() == types.Int {
 			limit = int(args[2].(values.Int))
 		}
 	}

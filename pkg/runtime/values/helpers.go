@@ -1,100 +1,58 @@
 package values
 
 import (
+	"context"
+	"encoding/binary"
 	"encoding/json"
+	"hash/fnv"
 	"reflect"
+	"sort"
+	"strconv"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
+func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
 	if byPath == nil || len(byPath) == 0 {
 		return None, nil
 	}
 
 	var result = from
-	var err error
 
-	for _, segment := range byPath {
+	for i, segment := range byPath {
 		if result == None || result == nil {
 			break
 		}
 
-		segmentType := segment.Type()
+		segType := segment.Type()
 
-		switch result.Type() {
-		case core.ObjectType:
-			obj := result.(*Object)
-
-			if segmentType != core.StringType {
-				return nil, core.TypeError(segmentType, core.StringType)
+		switch segVal := result.(type) {
+		case *Object:
+			if segType != types.String {
+				return nil, core.TypeError(segType, types.String)
 			}
 
-			result, _ = obj.Get(segment.(String))
+			result, _ = segVal.Get(segment.(String))
 
 			break
-		case core.ArrayType:
-			arr := result.(*Array)
-
-			if segmentType != core.IntType {
-				return nil, core.TypeError(segmentType, core.IntType)
+		case *Array:
+			if segType != types.Int {
+				return nil, core.TypeError(segType, types.Int)
 			}
 
-			result = arr.Get(segment.(Int))
+			result = segVal.Get(segment.(Int))
 
 			break
-		case core.HTMLElementType, core.HTMLDocumentType:
-			el := result.(HTMLNode)
-
-			if segmentType == core.IntType {
-				result = el.GetChildNode(segment.(Int))
-			} else if segmentType == core.StringType {
-				strSegment := segment.(String)
-
-				switch strSegment {
-				case "nodeType":
-					result = el.NodeType()
-				case "nodeName":
-					result = el.NodeName()
-				case "innerText":
-					result = el.InnerText()
-				case "innerHTML":
-					result = el.InnerHTML()
-				case "value":
-					result = el.Value()
-				case "attributes":
-					result = el.GetAttributes()
-				case "children":
-					result = el.GetChildNodes()
-				case "length":
-					result = el.Length()
-				case "url":
-					if result.Type() == core.HTMLDocumentType {
-						doc, ok := result.(HTMLDocument)
-
-						if ok {
-							result = doc.URL()
-						}
-					}
-				default:
-					result = None
-				}
-
-				if err != nil {
-					return None, err
-				}
-			} else {
-				return nil, core.TypeError(segmentType, core.IntType, core.StringType)
-			}
-
+		case core.Getter:
+			return segVal.GetIn(ctx, byPath[i:])
 		default:
 			return None, core.TypeError(
 				from.Type(),
-				core.ArrayType,
-				core.ObjectType,
-				core.HTMLDocumentType,
-				core.HTMLElementType,
+				types.Array,
+				types.Object,
+				core.NewType("Getter"),
 			)
 		}
 	}
@@ -102,7 +60,7 @@ func GetIn(from core.Value, byPath []core.Value) (core.Value, error) {
 	return result, nil
 }
 
-func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
+func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
 	if byPath == nil || len(byPath) == 0 {
 		return nil
 	}
@@ -116,46 +74,46 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 		isTarget := target == idx
 		segmentType := segment.Type()
 
-		switch parent.Type() {
-		case core.ObjectType:
-			parent := parent.(*Object)
-
-			if segmentType != core.StringType {
-				return core.TypeError(segmentType, core.StringType)
+		switch parVal := parent.(type) {
+		case *Object:
+			if segmentType != types.String {
+				return core.TypeError(segmentType, types.String)
 			}
 
 			if isTarget == false {
-				current, _ = parent.Get(segment.(String))
+				current, _ = parVal.Get(segment.(String))
 			} else {
-				parent.Set(segment.(String), value)
+				parVal.Set(segment.(String), value)
 			}
 
 			break
-		case core.ArrayType:
-			if segmentType != core.IntType {
-				return core.TypeError(segmentType, core.IntType)
+		case *Array:
+			if segmentType != types.Int {
+				return core.TypeError(segmentType, types.Int)
 			}
-
-			parent := parent.(*Array)
 
 			if isTarget == false {
-				current = parent.Get(segment.(Int))
+				current = parVal.Get(segment.(Int))
 			} else {
-				parent.Set(segment.(Int), value)
+				if err := parVal.Set(segment.(Int), value); err != nil {
+					return err
+				}
 			}
 
 			break
+		case core.Setter:
+			return parVal.SetIn(ctx, byPath[idx:], value)
 		default:
 			// redefine parent
-			isArray := segmentType == core.IntType
+			isArray := segmentType.Equals(types.Int)
 
 			// it's not an index
 			if isArray == false {
 				obj := NewObject()
 				parent = obj
 
-				if segmentType != core.StringType {
-					return core.TypeError(segmentType, core.StringType)
+				if segmentType != types.String {
+					return core.TypeError(segmentType, types.String)
 				}
 
 				if isTarget {
@@ -166,16 +124,22 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 				parent = arr
 
 				if isTarget {
-					arr.Set(segment.(Int), value)
+					if err := arr.Set(segment.(Int), value); err != nil {
+						return err
+					}
 				}
 			}
 
 			// set new parent
-			SetIn(to, byPath[0:idx-1], parent)
+			if err := SetIn(ctx, to, byPath[0:idx-1], parent); err != nil {
+				return err
+			}
 
 			if isTarget == false {
 				current = None
 			}
+
+			break
 		}
 	}
 
@@ -183,44 +147,42 @@ func SetIn(to core.Value, byPath []core.Value, value core.Value) error {
 }
 
 func Parse(input interface{}) core.Value {
-	switch input.(type) {
+	switch value := input.(type) {
 	case bool:
-		return NewBoolean(input.(bool))
+		return NewBoolean(value)
 	case string:
-		return NewString(input.(string))
+		return NewString(value)
 	case int:
-		return NewInt(input.(int))
+		return NewInt(value)
 	case float64:
-		return NewFloat(input.(float64))
+		return NewFloat(value)
 	case float32:
-		return NewFloat(float64(input.(float32)))
+		return NewFloat(float64(value))
 	case time.Time:
-		return NewDateTime(input.(time.Time))
+		return NewDateTime(value)
 	case []interface{}:
-		input := input.([]interface{})
-		arr := NewArray(len(input))
+		arr := NewArray(len(value))
 
-		for _, el := range input {
+		for _, el := range value {
 			arr.Push(Parse(el))
 		}
 
 		return arr
 	case map[string]interface{}:
-		input := input.(map[string]interface{})
 		obj := NewObject()
 
-		for key, el := range input {
+		for key, el := range value {
 			obj.Set(NewString(key), Parse(el))
 		}
 
 		return obj
 	case []byte:
-		return NewBinary(input.([]byte))
+		return NewBinary(value)
 	case nil:
 		return None
 	default:
-		v := reflect.ValueOf(input)
-		t := reflect.TypeOf(input)
+		v := reflect.ValueOf(value)
+		t := reflect.TypeOf(value)
 		kind := t.Kind()
 
 		if kind == reflect.Slice || kind == reflect.Array {
@@ -228,8 +190,8 @@ func Parse(input interface{}) core.Value {
 			arr := NewArray(size)
 
 			for i := 0; i < size; i++ {
-				value := v.Index(i)
-				arr.Push(Parse(value.Interface()))
+				curVal := v.Index(i)
+				arr.Push(Parse(curVal.Interface()))
 			}
 
 			return arr
@@ -241,9 +203,9 @@ func Parse(input interface{}) core.Value {
 
 			for _, k := range keys {
 				key := Parse(k.Interface())
-				value := v.MapIndex(k)
+				curVal := v.MapIndex(k)
 
-				obj.Set(NewString(key.String()), Parse(value.Interface()))
+				obj.Set(NewString(key.String()), Parse(curVal.Interface()))
 			}
 
 			return obj
@@ -255,9 +217,9 @@ func Parse(input interface{}) core.Value {
 
 			for i := 0; i < size; i++ {
 				field := t.Field(i)
-				value := v.Field(i)
+				fieldValue := v.Field(i)
 
-				obj.Set(NewString(field.Name), Parse(value.Interface()))
+				obj.Set(NewString(field.Name), Parse(fieldValue.Interface()))
 			}
 
 			return obj
@@ -279,82 +241,144 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	return Parse(o), nil
 }
 
-func IsCloneable(value core.Value) Boolean {
-	switch value.Type() {
-	case core.ArrayType:
-		return NewBoolean(true)
-	case core.ObjectType:
-		return NewBoolean(true)
-	default:
-		return NewBoolean(false)
-	}
-}
-
 func ToBoolean(input core.Value) core.Value {
 	switch input.Type() {
-	case core.BooleanType:
+	case types.Boolean:
 		return input
-	case core.NoneType:
+	case types.None:
 		return False
-	case core.StringType:
+	case types.String:
 		return NewBoolean(input.String() != "")
-	case core.IntType:
+	case types.Int:
 		return NewBoolean(input.(Int) != 0)
-	case core.FloatType:
+	case types.Float:
 		return NewBoolean(input.(Float) != 0)
 	default:
 		return True
 	}
 }
 
-func ToArray(input core.Value) core.Value {
-	switch input.Type() {
-	case core.BooleanType,
-		core.IntType,
-		core.FloatType,
-		core.StringType,
-		core.DateTimeType:
+func ToFloat(input core.Value) (Float, error) {
+	switch val := input.(type) {
+	case Float:
+		return val, nil
+	case Int:
+		return Float(val), nil
+	case String:
+		i, err := strconv.ParseFloat(string(val), 64)
 
-		return NewArrayWith(input)
-	case core.HTMLElementType,
-		core.HTMLDocumentType:
-		val := input.(HTMLNode)
-		attrs := val.GetAttributes()
-
-		obj, ok := attrs.(*Object)
-
-		if !ok {
-			return NewArray(0)
+		if err != nil {
+			return ZeroFloat, err
 		}
 
-		arr := NewArray(int(obj.Length()))
-
-		obj.ForEach(func(value core.Value, key string) bool {
-			arr.Push(value)
-
-			return true
-		})
-
-		return obj
-	case core.ArrayType:
-		return input.Copy()
-	case core.ObjectType:
-		obj, ok := input.(*Object)
-
-		if !ok {
-			return NewArray(0)
-		}
-
-		arr := NewArray(int(obj.Length()))
-
-		obj.ForEach(func(value core.Value, key string) bool {
-			arr.Push(value)
-
-			return true
-		})
-
-		return obj
+		return Float(i), nil
 	default:
-		return NewArray(0)
+		return ZeroFloat, core.TypeError(input.Type(), types.Int, types.Float, types.String)
 	}
+}
+
+func ToInt(input core.Value) (Int, error) {
+	switch val := input.(type) {
+	case Int:
+		return val, nil
+	case Float:
+		return Int(val), nil
+	case String:
+		i, err := strconv.ParseInt(string(val), 10, 64)
+
+		if err != nil {
+			return ZeroInt, err
+		}
+
+		return Int(i), nil
+	default:
+		return ZeroInt, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+	}
+}
+
+func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
+	switch value := input.(type) {
+	case Boolean,
+		Int,
+		Float,
+		String,
+		DateTime:
+
+		return NewArrayWith(value), nil
+	case *Array:
+		return value.Copy(), nil
+	case *Object:
+		arr := NewArray(int(value.Length()))
+
+		value.ForEach(func(value core.Value, key string) bool {
+			arr.Push(value)
+
+			return true
+		})
+
+		return arr, nil
+	case core.Iterable:
+		iterator, err := value.Iterate(ctx)
+
+		if err != nil {
+			return None, err
+		}
+
+		arr := NewArray(10)
+
+		for {
+			val, _, err := iterator.Next(ctx)
+
+			if err != nil {
+				return None, err
+			}
+
+			if val == None {
+				break
+			}
+
+			arr.Push(val)
+		}
+
+		return arr, nil
+	default:
+		return NewArray(0), nil
+	}
+}
+
+func MapHash(input map[string]core.Value) uint64 {
+	h := fnv.New64a()
+
+	keys := make([]string, 0, len(input))
+
+	for key := range input {
+		keys = append(keys, key)
+	}
+
+	// order does not really matter
+	// but it will give us a consistent hash sum
+	sort.Strings(keys)
+	endIndex := len(keys) - 1
+
+	h.Write([]byte("{"))
+
+	for idx, key := range keys {
+		h.Write([]byte(key))
+		h.Write([]byte(":"))
+
+		el := input[key]
+
+		bytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bytes, el.Hash())
+
+		h.Write(bytes)
+
+		if idx != endIndex {
+			h.Write([]byte(","))
+		}
+	}
+
+	h.Write([]byte("}"))
+
+	return h.Sum64()
 }

@@ -23,7 +23,7 @@ func TestAppend(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, arr)
-		So(out.(collections.Collection).Length(), ShouldBeGreaterThan, arr.Length())
+		So(out.(collections.Measurable).Length(), ShouldBeGreaterThan, arr.Length())
 	})
 
 	Convey("Should ignore non-unique items", t, func() {
@@ -39,12 +39,12 @@ func TestAppend(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, arr)
-		So(out.(collections.Collection).Length(), ShouldEqual, arr.Length())
+		So(out.(collections.Measurable).Length(), ShouldEqual, arr.Length())
 
 		out2, err := arrays.Append(context.Background(), arr, values.NewInt(6), values.True)
 
 		So(err, ShouldBeNil)
 		So(out2, ShouldNotEqual, arr)
-		So(out2.(collections.Collection).Length(), ShouldBeGreaterThan, arr.Length())
+		So(out2.(collections.Measurable).Length(), ShouldBeGreaterThan, arr.Length())
 	})
 }

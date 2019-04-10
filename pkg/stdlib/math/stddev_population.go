@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // StandardDeviationPopulation returns the population standard deviation of the values in a given array.
@@ -19,7 +20,7 @@ func StandardDeviationPopulation(_ context.Context, args ...core.Value) (core.Va
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], core.ArrayType)
+	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
 		return values.None, err
@@ -31,11 +32,7 @@ func StandardDeviationPopulation(_ context.Context, args ...core.Value) (core.Va
 		return values.NewFloat(math.NaN()), nil
 	}
 
-	vp, err := variance(arr, values.NewInt(0))
-
-	if err != nil {
-		return values.NewFloat(math.NaN()), err
-	}
+	vp := variance(arr, values.NewInt(0))
 
 	return values.NewFloat(math.Pow(float64(vp), 0.5)), nil
 }

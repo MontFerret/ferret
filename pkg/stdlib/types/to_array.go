@@ -13,14 +13,12 @@ import (
 // Boolean values, numbers and strings are converted to an array containing the original value as its single element
 // Arrays keep their original value
 // Objects / HTML nodes are converted to an array containing their attribute values as array elements.
-func ToArray(_ context.Context, args ...core.Value) (core.Value, error) {
+func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	arg := args[0]
-
-	return values.ToArray(arg), nil
+	return values.ToArray(ctx, args[0])
 }

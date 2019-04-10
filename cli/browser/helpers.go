@@ -1,29 +1,28 @@
 package browser
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
 )
 
-func resolveExecutablePath() string {
-	var res string
+func resolveExecutablePath() (path string) {
 
 	switch runtime.GOOS {
-	case "darwin":
+	case goosDarwin:
 		for _, c := range []string{
 			"/Applications/Google Chrome Canary.app",
 			"/Applications/Google Chrome.app",
 		} {
 			// MacOS apps are actually folders
-			if info, err := os.Stat(c); err == nil && info.IsDir() {
-				res = fmt.Sprintf("open %s -n", c)
+			info, err := os.Stat(c)
+			if err == nil && info.IsDir() {
+				path = c
 				break
 			}
 		}
 
-	case "linux":
+	case goosLinux:
 		for _, c := range []string{
 			"headless_shell",
 			"chromium",
@@ -31,13 +30,13 @@ func resolveExecutablePath() string {
 			"google-chrome-unstable",
 			"google-chrome-stable"} {
 			if _, err := exec.LookPath(c); err == nil {
-				res = c
+				path = c
 				break
 			}
 		}
 
-	case "windows":
+	case goosWindows:
 	}
 
-	return res
+	return
 }
