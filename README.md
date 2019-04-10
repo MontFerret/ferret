@@ -539,5 +539,5 @@ LET c = COOKIES_GET(doc, "baz")
 
 FOR cookie IN doc.cookies
     RETURN cookie.name
-
+	
 ```

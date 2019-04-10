@@ -29,7 +29,7 @@ func (p *Params) ToMap() (map[string]interface{}, error) {
 	res := make(map[string]interface{})
 
 	for _, entry := range *p {
-		pair := strings.Split(entry, ":")
+		pair := strings.SplitN(entry, ":", 2)
 
 		if len(pair) < 2 {
 			return nil, core.Error(core.ErrInvalidArgument, entry)
