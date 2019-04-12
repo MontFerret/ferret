@@ -538,7 +538,7 @@ func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.St
 
 			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
 				return values.False, err
-			}			
+			}
 		}
 
 		time.Sleep(randomDuration(delay) * time.Millisecond)
