@@ -1,6 +1,7 @@
-.PHONY: build compile test e2e doc fmt lint vet release
+.PHONY: build install compile test e2e doc fmt lint vet release
 
 export GOPATH
+export GO111MODULE=on
 
 VERSION ?= $(shell git describe --tags --always --dirty)
 RELEASE_VERSION ?= $(version)
@@ -12,6 +13,9 @@ DIR_E2E = ./e2e
 default: build
 
 build: vet generate test compile
+
+install:
+	go get
 
 compile:
 	go build -v -o ${DIR_BIN}/ferret \

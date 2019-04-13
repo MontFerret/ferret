@@ -529,9 +529,8 @@ func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.St
 		return values.False, nil
 	}
 
-	delayMs := time.Duration(delay)
-
-	time.Sleep(delayMs * time.Millisecond)
+	// Initial delay after focusing but before typing
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 
 	for _, ch := range valStr {
 		for _, ev := range []string{"keyDown", "keyUp"} {
@@ -540,9 +539,9 @@ func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.St
 			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
 				return values.False, err
 			}
-
-			time.Sleep(delayMs * time.Millisecond)
 		}
+
+		time.Sleep(randomDuration(delay) * time.Millisecond)
 	}
 
 	return values.True, nil
