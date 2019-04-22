@@ -51,7 +51,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/rogpeppe/go-internal v1.2.2 // indirect
-	github.com/rs/zerolog v1.13.0
+	github.com/rs/zerolog v1.14.0
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
 	github.com/shirou/gopsutil v2.18.12+incompatible // indirect
