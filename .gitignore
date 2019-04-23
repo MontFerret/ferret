@@ -73,6 +73,9 @@ fabric.properties
 # Linux trash folder which might appear on any partition or disk
 .Trash-*
 
+# macOS
+.DS_Store
+
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
 ### Windows template
