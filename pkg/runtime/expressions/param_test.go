@@ -36,6 +36,8 @@ func TestParameterExpressionExec(t *testing.T) {
 		sourceMap := core.NewSourceMap("test", 1, 10)
 		existExp, err := expressions.NewParameterExpression(sourceMap, "param1")
 
+		So(err, ShouldBeNil)
+
 		params := make(map[string]core.Value)
 		params["param1"] = values.NewInt(1)
 

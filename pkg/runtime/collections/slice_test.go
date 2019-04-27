@@ -96,6 +96,8 @@ func TestSliceIterator(t *testing.T) {
 
 		_, err := collections.ToSlice(ctx, scope, iter)
 
+		So(err, ShouldBeNil)
+
 		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
