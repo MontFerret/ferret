@@ -45,7 +45,7 @@ func TestArrayIterator(t *testing.T) {
 
 			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
 
-			pos += 1
+			pos++
 		}
 
 		So(res, ShouldHaveLength, arr.Length())

@@ -49,7 +49,7 @@ func TestSliceIterator(t *testing.T) {
 
 			res = append(res, item)
 
-			pos += 1
+			pos++
 		}
 
 		So(res, ShouldHaveLength, len(arr))
