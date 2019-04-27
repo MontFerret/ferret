@@ -34,10 +34,6 @@ func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	doc := args[0].(drivers.HTMLDocument)
 	name := args[1].(values.String)
 
-	if err != nil {
-		return values.None, err
-	}
-
 	cookies, err := doc.GetCookies(ctx)
 
 	if err != nil {

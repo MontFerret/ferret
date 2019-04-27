@@ -481,10 +481,6 @@ func (v *visitor) doVisitCollectClause(ctx *fql.CollectClauseContext, scope *sco
 
 					projectionSelectorExp := literals.NewObjectLiteralWith(propExp)
 
-					if err != nil {
-						return nil, err
-					}
-
 					selector, err := clauses.NewCollectSelector(projectionIdentifier.GetText(), projectionSelectorExp)
 
 					if err != nil {
