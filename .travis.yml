@@ -13,7 +13,7 @@ go:
 addons:
   apt:
     packages:
-    - oracle-java8-set-default
+    - oracle-java9-set-default
   chrome: stable
 
 install:

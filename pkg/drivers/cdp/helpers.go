@@ -12,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
@@ -482,4 +483,11 @@ func normalizeCookieURL(url string) string {
 	}
 
 	return httpPrefix + url
+}
+
+func randomDuration(delay values.Int) time.Duration {
+	max, min := core.NumberBoundaries(float64(int64(delay)))
+	value := core.Random(max, min)
+
+	return time.Duration(int64(value))
 }

@@ -40,7 +40,7 @@ require (
 	github.com/kr/pty v1.1.4 // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
-	github.com/mafredri/cdp v0.23.0
+	github.com/mafredri/cdp v0.23.1
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/rogpeppe/go-internal v1.2.2 // indirect
-	github.com/rs/zerolog v1.13.0
+	github.com/rs/zerolog v1.14.3
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
 	github.com/shirou/gopsutil v2.18.12+incompatible // indirect
