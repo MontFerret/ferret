@@ -47,7 +47,7 @@ func Launch(setters ...Option) (*Browser, error) {
 
 	temporaryUserDataDir := opts.userDataDir
 
-	if temporaryUserDataDir == "" && opts.noUserDataDir == false {
+	if temporaryUserDataDir == "" && !opts.noUserDataDir {
 		dirName, err := ioutil.TempDir(os.TempDir(), "ferret_dev_profile-")
 
 		if err != nil {

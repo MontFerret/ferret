@@ -58,8 +58,8 @@ func (operator *InOperator) Eval(_ context.Context, left, right core.Value) (cor
 	found := arr.IndexOf(left) > -1
 
 	if operator.not {
-		return values.NewBoolean(found == false), nil
+		return values.NewBoolean(!found), nil
 	}
 
-	return values.NewBoolean(found == true), nil
+	return values.NewBoolean(found), nil
 }

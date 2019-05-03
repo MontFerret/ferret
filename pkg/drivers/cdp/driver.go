@@ -67,7 +67,7 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 	// Create a new target belonging to the browser context
 	createTargetArgs := target.NewCreateTargetArgs(url)
 
-	if drv.options.KeepCookies == false && params.KeepCookies == false {
+	if !drv.options.KeepCookies && !params.KeepCookies {
 		// Set it to an incognito mode
 		createTargetArgs.SetBrowserContextID(drv.contextID)
 	}
