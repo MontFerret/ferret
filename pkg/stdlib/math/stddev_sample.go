@@ -13,8 +13,7 @@ import (
 // @params (Array) - Array of numbers.
 // @returns (Float) - The sample standard deviation.
 func StandardDeviationSample(_ context.Context, args ...core.Value) (core.Value, error) {
-	var err error
-	err = core.ValidateArgs(args, 1, 1)
+	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
 		return values.None, err
