@@ -97,11 +97,8 @@ func (doc *HTMLDocument) Clone() core.Value {
 	var cookies []drivers.HTTPCookie
 
 	if doc.cookies != nil {
-		cookies = make([]drivers.HTTPCookie, 0, len(doc.cookies))
-
-		for i, c := range doc.cookies {
-			cookies[i] = c
-		}
+		cookies = make([]drivers.HTTPCookie, len(doc.cookies))
+		copy(cookies, doc.cookies)
 	}
 
 	cp, err := NewHTMLDocument(goquery.CloneDocument(doc.docNode), string(doc.url), cookies)

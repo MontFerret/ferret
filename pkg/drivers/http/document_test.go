@@ -2,10 +2,12 @@ package http_test
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/drivers/http"
+
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestDocument(t *testing.T) {

@@ -129,7 +129,7 @@ func (t *Array) Length() Int {
 
 func (t *Array) ForEach(predicate ArrayPredicate) {
 	for idx, val := range t.items {
-		if predicate(val, idx) == false {
+		if !predicate(val, idx) {
 			break
 		}
 	}
@@ -137,7 +137,7 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 
 func (t *Array) Find(predicate ArrayPredicate) (core.Value, Boolean) {
 	for idx, val := range t.items {
-		if predicate(val, idx) == true {
+		if predicate(val, idx) {
 			return val, True
 		}
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value) (core.Value, error) {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return values.None, nil
 	}
 
@@ -52,7 +52,7 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 }
 
 func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value) (core.Value, error) {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return values.None, nil
 	}
 
@@ -97,7 +97,7 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 }
 
 func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (core.Value, error) {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return values.None, nil
 	}
 

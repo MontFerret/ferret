@@ -84,7 +84,7 @@ func (t Boolean) Compare(other core.Value) int64 {
 			return 0
 		}
 
-		if raw == false && i == true {
+		if !raw && i {
 			return -1
 		}
 

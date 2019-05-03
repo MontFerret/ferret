@@ -60,7 +60,7 @@ func NewArrayOperator(
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 
-	if IsValidArrayOperatorType(aotype) == false {
+	if !IsValidArrayOperatorType(aotype) {
 		return nil, core.Error(core.ErrInvalidArgument, "operator")
 	}
 

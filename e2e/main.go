@@ -81,18 +81,14 @@ func main() {
 		}
 	}()
 
-	dirname := *testsDir
-
-	if dirname == "" {
-		d, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if *testsDir == "" {
+		_, err := filepath.Abs(filepath.Dir(os.Args[0]))
 
 		if err != nil {
 			logger.Fatal().Timestamp().Err(err).Msg("failed to get testsDir")
 
 			return
 		}
-
-		dirname = d
 	}
 
 	r := runner.New(logger, runner.Settings{

@@ -290,7 +290,7 @@ func TestArray(t *testing.T) {
 			counter := 0
 
 			arr.ForEach(func(value core.Value, idx int) bool {
-				counter += 1
+				counter++
 
 				return true
 			})
@@ -303,7 +303,7 @@ func TestArray(t *testing.T) {
 			counter := 0
 
 			arr.ForEach(func(value core.Value, idx int) bool {
-				counter += 1
+				counter++
 
 				return true
 			})
@@ -323,7 +323,7 @@ func TestArray(t *testing.T) {
 			counter := 0
 
 			arr.ForEach(func(value core.Value, idx int) bool {
-				counter += 1
+				counter++
 
 				return value.Compare(values.NewInt(threshold)) == -1
 			})

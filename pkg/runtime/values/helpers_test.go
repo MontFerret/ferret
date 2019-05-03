@@ -44,7 +44,7 @@ func (t *CustomValue) Copy() core.Value {
 }
 
 func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return values.None, nil
 	}
 
@@ -63,7 +63,7 @@ func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value,
 }
 
 func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return nil
 	}
 

@@ -258,9 +258,7 @@ func (doc *HTMLDocument) Close() error {
 	doc.Lock()
 	defer doc.Unlock()
 
-	var err error
-
-	err = doc.events.Stop()
+	err := doc.events.Stop()
 
 	if err != nil {
 		doc.logger.Warn().

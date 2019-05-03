@@ -64,8 +64,7 @@ func Property(
 
 	// all props
 	if propName == "" {
-		var arr *values.Array
-		arr = values.NewArray(len(res.Result))
+		arr := values.NewArray(len(res.Result))
 
 		for _, prop := range res.Result {
 			val, err := Unmarshal(prop.Value)

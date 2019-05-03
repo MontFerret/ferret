@@ -12,8 +12,7 @@ import (
 // @param array (Array) - Array of numbers.
 // @returns (Float) - The average of the values in array.
 func Average(_ context.Context, args ...core.Value) (core.Value, error) {
-	var err error
-	err = core.ValidateArgs(args, 1, 1)
+	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
 		return values.None, err

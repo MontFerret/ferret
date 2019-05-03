@@ -120,7 +120,7 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 		n := f.Name()
 
 		if r.settings.Filter != nil {
-			if r.settings.Filter.Match([]byte(n)) != true {
+			if !r.settings.Filter.Match([]byte(n)) {
 				continue
 			}
 		}
@@ -180,7 +180,7 @@ func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, sc
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)
 
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 
 	if err != nil {
 		return Result{

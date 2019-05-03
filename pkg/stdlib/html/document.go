@@ -155,11 +155,9 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 			res.Header = header
 		}
 
-		break
 	case types.String:
 		res.Driver = arg.(values.String).String()
 
-		break
 	case types.Boolean:
 		b := arg.(values.Boolean)
 
@@ -168,7 +166,6 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 			res.Driver = cdp.DriverName
 		}
 
-		break
 	}
 
 	return res, nil
@@ -196,9 +193,7 @@ func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
 }
 
 func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
-	var err error
-
-	err = core.ValidateType(value, types.Object, drivers.HTTPCookieType)
+	err := core.ValidateType(value, types.Object, drivers.HTTPCookieType)
 
 	if err != nil {
 		return drivers.HTTPCookie{}, err
@@ -255,13 +250,10 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 		switch sameSite {
 		case "lax":
 			cookie.SameSite = drivers.SameSiteLaxMode
-			break
 		case "strict":
 			cookie.SameSite = drivers.SameSiteStrictMode
-			break
 		default:
 			cookie.SameSite = drivers.SameSiteDefaultMode
-			break
 		}
 	}
 

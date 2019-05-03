@@ -287,7 +287,7 @@ func TestObject(t *testing.T) {
 			counter := 0
 
 			obj.ForEach(func(value core.Value, key string) bool {
-				counter += 1
+				counter++
 
 				return true
 			})
@@ -300,7 +300,7 @@ func TestObject(t *testing.T) {
 			counter := 0
 
 			obj.ForEach(func(value core.Value, key string) bool {
-				counter += 1
+				counter++
 
 				return true
 			})
@@ -320,7 +320,7 @@ func TestObject(t *testing.T) {
 			counter := 0
 
 			obj.ForEach(func(value core.Value, key string) bool {
-				counter += 1
+				counter++
 
 				return counter < threshold
 			})
