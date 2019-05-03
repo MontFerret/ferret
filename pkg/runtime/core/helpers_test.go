@@ -8,15 +8,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type DummyInterface interface {
-	DummyFunc() string
-}
-
 type DummyStruct struct{}
-
-func (d DummyStruct) DummyFunc() string {
-	return "testing"
-}
 
 func TestIsNil(t *testing.T) {
 	Convey("Should match", t, func() {
