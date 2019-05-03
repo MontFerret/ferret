@@ -15,7 +15,7 @@ import (
 )
 
 func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
-	if byPath == nil || len(byPath) == 0 {
+	if len(byPath) == 0 {
 		return None, nil
 	}
 
@@ -35,16 +35,12 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			}
 
 			result, _ = segVal.Get(segment.(String))
-
-			break
 		case *Array:
 			if segType != types.Int {
 				return nil, core.TypeError(segType, types.Int)
 			}
 
 			result = segVal.Get(segment.(Int))
-
-			break
 		case core.Getter:
 			return segVal.GetIn(ctx, byPath[i:])
 		default:
@@ -61,7 +57,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 }
 
 func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
-	if byPath == nil || len(byPath) == 0 {
+	if len(byPath) == 0 {
 		return nil
 	}
 
@@ -80,27 +76,23 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				return core.TypeError(segmentType, types.String)
 			}
 
-			if isTarget == false {
+			if !isTarget {
 				current, _ = parVal.Get(segment.(String))
 			} else {
 				parVal.Set(segment.(String), value)
 			}
-
-			break
 		case *Array:
 			if segmentType != types.Int {
 				return core.TypeError(segmentType, types.Int)
 			}
 
-			if isTarget == false {
+			if !isTarget {
 				current = parVal.Get(segment.(Int))
 			} else {
 				if err := parVal.Set(segment.(Int), value); err != nil {
 					return err
 				}
 			}
-
-			break
 		case core.Setter:
 			return parVal.SetIn(ctx, byPath[idx:], value)
 		default:
@@ -108,7 +100,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			isArray := segmentType.Equals(types.Int)
 
 			// it's not an index
-			if isArray == false {
+			if !isArray {
 				obj := NewObject()
 				parent = obj
 
@@ -135,11 +127,9 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				return err
 			}
 
-			if isTarget == false {
+			if !isTarget {
 				current = None
 			}
-
-			break
 		}
 	}
 

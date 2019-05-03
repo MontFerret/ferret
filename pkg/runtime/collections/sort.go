@@ -54,7 +54,7 @@ func NewSorter(fn Comparator, direction SortDirection) (*Sorter, error) {
 		return nil, core.Error(core.ErrMissedArgument, "fn")
 	}
 
-	if IsValidSortDirection(direction) == false {
+	if !IsValidSortDirection(direction) {
 		return nil, core.Error(core.ErrInvalidArgument, "direction")
 	}
 
@@ -69,7 +69,7 @@ func NewSortIterator(
 		return nil, core.Error(core.ErrMissedArgument, "values")
 	}
 
-	if comparators == nil || len(comparators) == 0 {
+	if len(comparators) == 0 {
 		return nil, core.Error(core.ErrMissedArgument, "comparator")
 	}
 
@@ -84,7 +84,7 @@ func NewSortIterator(
 
 func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
 	// we need to initialize the iterator
-	if iterator.ready == false {
+	if !iterator.ready {
 		iterator.ready = true
 		sorted, err := iterator.sort(ctx, scope)
 

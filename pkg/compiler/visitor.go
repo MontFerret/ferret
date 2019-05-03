@@ -426,7 +426,7 @@ func (v *visitor) doVisitCollectClause(ctx *fql.CollectClauseContext, scope *sco
 		collectSelectors := groupingCtx.AllCollectSelector()
 
 		// group selectors
-		if collectSelectors != nil && len(collectSelectors) > 0 {
+		if len(collectSelectors) > 0 {
 			selectors = make([]*clauses.CollectSelector, 0, len(collectSelectors))
 
 			for _, cs := range collectSelectors {
@@ -1409,7 +1409,7 @@ func (v *visitor) doVisitChildren(node antlr.RuleNode, scope *scope) ([]core.Exp
 	children := node.GetChildren()
 
 	if children == nil {
-		return make([]core.Expression, 0, 0), nil
+		return make([]core.Expression, 0), nil
 	}
 
 	result := make([]core.Expression, 0, len(children))

@@ -10,7 +10,7 @@ import (
 )
 
 func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value, value core.Value) error {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return nil
 	}
 
@@ -33,7 +33,7 @@ func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 }
 
 func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value, value core.Value) error {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return nil
 	}
 
@@ -115,7 +115,7 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 }
 
 func SetInNode(_ context.Context, _ drivers.HTMLNode, path []core.Value, _ core.Value) error {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return nil
 	}
 
