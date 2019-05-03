@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
