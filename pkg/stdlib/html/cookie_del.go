@@ -52,11 +52,9 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 				cookies = append(cookies, found.(drivers.HTTPCookie))
 			}
 
-			break
 		case drivers.HTTPCookie:
 			cookies = append(cookies, cookie)
 
-			break
 		default:
 			return values.None, core.TypeError(c.Type(), types.String, drivers.HTTPCookieType)
 		}
