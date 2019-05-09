@@ -207,8 +207,12 @@ expressionGroup
     : OpenParen expression CloseParen
     ;
 
+namespace
+    : (NamespaceSegment)*
+    ;
+
 functionCallExpression
-    : Identifier arguments
+    : namespace Identifier arguments
     ;
 
 arguments

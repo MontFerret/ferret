@@ -136,6 +136,9 @@ type FqlParserListener interface {
 	// EnterExpressionGroup is called when entering the expressionGroup production.
 	EnterExpressionGroup(c *ExpressionGroupContext)
 
+	// EnterNamespace is called when entering the namespace production.
+	EnterNamespace(c *NamespaceContext)
+
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
 
@@ -300,6 +303,9 @@ type FqlParserListener interface {
 
 	// ExitExpressionGroup is called when exiting the expressionGroup production.
 	ExitExpressionGroup(c *ExpressionGroupContext)
+
+	// ExitNamespace is called when exiting the namespace production.
+	ExitNamespace(c *NamespaceContext)
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
