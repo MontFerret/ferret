@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9]*(::[a-zA-Z]+[a-zA-Z0-9]*)*$")
+var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
 
 type FqlCompiler struct {
 	funcs map[string]core.Function
@@ -42,7 +42,7 @@ func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
 	}
 
 	// validation the name
-	if !fnNameValidation.Match([]byte(name)) {
+	if !fnNameValidation.MatchString(name) {
 		return errors.Errorf("invalid function name: %s", name)
 	}
 
