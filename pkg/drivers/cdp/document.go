@@ -704,8 +704,11 @@ func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector
 
 func (doc *HTMLDocument) WaitForNavigation(ctx context.Context) error {
 	onEvent := make(chan struct{})
+	var once sync.Once
 	listener := func(_ context.Context, _ interface{}) {
-		close(onEvent)
+		once.Do(func() {
+			close(onEvent)
+		})
 	}
 
 	defer doc.events.RemoveEventListener(events.EventLoad, listener)
