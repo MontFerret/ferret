@@ -136,6 +136,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#expressionGroup.
 	VisitExpressionGroup(ctx *ExpressionGroupContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#namespace.
+	VisitNamespace(ctx *NamespaceContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
 
