@@ -20,5 +20,5 @@ func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.ToArray(ctx, args[0])
+	return values.ToArray(ctx, args[0]), nil
 }

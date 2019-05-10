@@ -26,22 +26,10 @@ func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
 	var max float64
 	var min float64
 
-	arg1, err := values.ToFloat(args[0])
-
-	if err != nil {
-		return values.None, err
-	}
-
-	max = float64(arg1)
+	max = float64(values.ToFloat(args[0]))
 
 	if len(args) > 1 {
-		arg2, err := values.ToFloat(args[1])
-
-		if err != nil {
-			return values.None, err
-		}
-
-		min = float64(arg2)
+		min = float64(values.ToFloat(args[1]))
 	} else {
 		max, min = core.NumberBoundaries(max)
 	}

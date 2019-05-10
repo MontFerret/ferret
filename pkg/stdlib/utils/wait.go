@@ -17,11 +17,7 @@ func Wait(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	arg, err := values.ToInt(args[0])
-
-	if err != nil {
-		return values.None, err
-	}
+	arg := values.ToInt(args[0])
 
 	time.Sleep(time.Millisecond * time.Duration(arg))
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // ToBool takes an input value of any type and converts it into the appropriate boolean value.
@@ -24,44 +23,5 @@ func ToBool(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	arg := args[0]
-
-	switch arg.Type() {
-	case types.Boolean:
-		return arg, nil
-	case types.Int:
-		val := arg.(values.Int)
-
-		if val != 0 {
-			return values.True, nil
-		}
-
-		return values.False, nil
-	case types.Float:
-		val := arg.(values.Float)
-
-		if val != 0 {
-			return values.True, nil
-		}
-
-		return values.False, nil
-	case types.String:
-		if arg.String() != "" {
-			return values.True, nil
-		}
-
-		return values.False, nil
-	case types.DateTime:
-		val := arg.(values.DateTime)
-
-		if !val.IsZero() {
-			return values.True, nil
-		}
-
-		return values.False, nil
-	case types.None:
-		return values.False, nil
-	default:
-		return values.True, nil
-	}
+	return values.ToBoolean(args[0]), nil
 }
