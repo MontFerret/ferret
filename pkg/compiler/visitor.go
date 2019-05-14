@@ -1045,12 +1045,20 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 		}
 	}
 
-	funcName := context.Identifier().GetText()
+	var name string
 
-	fun, exists := v.funcs[funcName]
+	funcNS := context.Namespace()
+
+	if funcNS != nil {
+		name += funcNS.GetText()
+	}
+
+	name += context.Identifier().GetText()
+
+	fun, exists := v.funcs[name]
 
 	if !exists {
-		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", funcName))
+		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name))
 	}
 
 	return expressions.NewFunctionCallExpression(

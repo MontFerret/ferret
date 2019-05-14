@@ -541,3 +541,13 @@ FOR cookie IN doc.cookies
     RETURN cookie.name
 	
 ```
+
+## Sponsors
+
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website.    
+
+<p align="center">
+    <a href="https://opencollective.com/ferret/donate" target="_blank">
+        <img src="https://opencollective.com/ferret/donate/button@2x.png?color=blue" width="300" />
+    </a>
+</p>

@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/parser"
@@ -9,6 +10,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/pkg/errors"
 )
+
+var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
 
 type FqlCompiler struct {
 	funcs map[string]core.Function
@@ -38,6 +41,11 @@ func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
 		return errors.Errorf("function already exists: %s", name)
 	}
 
+	// validation the name
+	if !fnNameValidation.MatchString(name) {
+		return errors.Errorf("invalid function name: %s", name)
+	}
+
 	c.funcs[strings.ToUpper(name)] = fun
 
 	return nil
@@ -55,6 +63,28 @@ func (c *FqlCompiler) RegisterFunctions(funcs map[string]core.Function) error {
 	}
 
 	return nil
+}
+
+func (c *FqlCompiler) RegisteredFunctions() []string {
+	res := make([]string, 0, len(c.funcs))
+
+	for k := range c.funcs {
+		res = append(res, k)
+	}
+
+	return res
+}
+
+func (c *FqlCompiler) RegisteredFunctionsNS(namespace string) []string {
+	res := make([]string, 0, len(c.funcs))
+
+	for k := range c.funcs {
+		if strings.HasPrefix(k, namespace) {
+			res = append(res, k)
+		}
+	}
+
+	return res
 }
 
 func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error) {
@@ -102,11 +132,4 @@ func (c *FqlCompiler) MustCompile(query string) *runtime.Program {
 	}
 
 	return program
-}
-
-func (c *FqlCompiler) RegisteredFunctions() (funcs []string) {
-	for k := range c.funcs {
-		funcs = append(funcs, k)
-	}
-	return
 }
