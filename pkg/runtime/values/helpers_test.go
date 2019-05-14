@@ -256,6 +256,12 @@ func TestHelpers(t *testing.T) {
 				So(values.ToFloat(values.NewArrayWith(values.NewFloat(1))), ShouldEqual, values.NewFloat(1))
 			})
 
+			Convey("Should convert Array with multiple items", func() {
+				arg := values.NewArrayWith(values.NewFloat(1), values.NewFloat(1))
+
+				So(values.ToFloat(arg), ShouldEqual, values.NewFloat(2))
+			})
+
 			Convey("Should convert DateTime", func() {
 				dt := values.NewCurrentDateTime()
 				ts := dt.Time.Unix()
@@ -265,7 +271,6 @@ func TestHelpers(t *testing.T) {
 
 			Convey("Should NOT convert other types", func() {
 				inputs := []core.Value{
-					values.NewArrayWith(values.NewFloat(1), values.NewFloat(2)),
 					values.NewObject(),
 					values.NewBinary([]byte("")),
 				}
@@ -308,6 +313,12 @@ func TestHelpers(t *testing.T) {
 
 			Convey("Should convert Array with single item", func() {
 				So(values.ToInt(values.NewArrayWith(values.NewFloat(1))), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("Should convert Array with multiple items", func() {
+				arg := values.NewArrayWith(values.NewFloat(1), values.NewFloat(1))
+
+				So(values.ToInt(arg), ShouldEqual, values.NewFloat(2))
 			})
 
 			Convey("Should convert DateTime", func() {

@@ -279,11 +279,19 @@ func ToFloat(input core.Value) Float {
 
 		return NewFloat(float64(dt.Unix()))
 	case *Array:
-		if val.Length() > 1 || val.Length() == 0 {
+		length := val.Length()
+
+		if length == 0 {
 			return ZeroFloat
 		}
 
-		return ToFloat(val.Get(0))
+		res := ZeroFloat
+
+		for i := Int(0); i < length; i++  {
+			res += ToFloat(val.Get(i))
+		}
+
+		return res
 	default:
 		return ZeroFloat
 	}
@@ -318,11 +326,19 @@ func ToInt(input core.Value) Int {
 
 		return NewInt(int(dt.Unix()))
 	case *Array:
-		if val.Length() > 1 || val.Length() == 0 {
+		length := val.Length()
+
+		if length == 0 {
 			return ZeroInt
 		}
 
-		return ToInt(val.Get(0))
+		res := ZeroInt
+
+		for i := Int(0); i < length; i++  {
+			res += ToInt(val.Get(i))
+		}
+
+		return res
 	default:
 		return ZeroInt
 	}
@@ -413,4 +429,10 @@ func MapHash(input map[string]core.Value) uint64 {
 	h.Write([]byte("}"))
 
 	return h.Sum64()
+}
+
+func IsNumber(input core.Value) Boolean {
+	t := input.Type()
+
+	return t == types.Int || t == types.Float
 }

@@ -88,9 +88,21 @@ func Not(left, _ core.Value) core.Value {
 	return values.True
 }
 
+func toNumberOrString(input core.Value) core.Value {
+	switch input.Type() {
+	case types.Int, types.Float, types.String:
+		return input
+	default:
+		return values.ToInt(input)
+	}
+}
+
 // Adds numbers
-// Concats strings
-func Add(left, right core.Value) core.Value {
+// Concatenates strings
+func Add(l, r core.Value) core.Value {
+	left := toNumberOrString(l)
+	right := toNumberOrString(r)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)

@@ -80,7 +80,7 @@ func (t Float) Type() core.Type {
 }
 
 func (t Float) String() string {
-	return fmt.Sprintf("%f", t)
+	return fmt.Sprintf("%v", float64(t))
 }
 
 func (t Float) Compare(other core.Value) int64 {
