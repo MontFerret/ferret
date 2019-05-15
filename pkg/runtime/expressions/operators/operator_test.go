@@ -255,7 +255,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestSubtract(t *testing.T) {
-	Convey("Add", t, func() {
+	Convey("Subtract", t, func() {
 		Convey("Integer", func() {
 			Convey("3 - 2 = 1", func() {
 				arg1 := values.NewInt(3)
