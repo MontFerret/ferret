@@ -79,7 +79,7 @@ func TestAdd(t *testing.T) {
 			})
 		})
 
-		Convey("Strings", func() {
+		Convey("String", func() {
 			Convey("'1' + '2' = '12'", func() {
 				arg1 := values.NewString("1")
 				arg2 := values.NewString("2")
@@ -256,70 +256,247 @@ func TestAdd(t *testing.T) {
 
 func TestSubtract(t *testing.T) {
 	Convey("Add", t, func() {
-		Convey("Integers", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.NewInt(2)
+		Convey("Integer", func() {
+			Convey("3 - 2 = 1", func() {
+				arg1 := values.NewInt(3)
+				arg2 := values.NewInt(2)
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
 		})
 
-		Convey("Floats", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.NewFloat(2)
+		Convey("Float", func() {
+			Convey("3.4 - 2.2 = 1.2", func() {
+				arg1 := values.NewFloat(3.40)
+				arg2 := values.NewFloat(2.20)
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, 1)
+				So(operators.Subtract(arg1, arg2), ShouldEqual, arg1 - arg2)
+			})
 		})
 
-		Convey("Strings", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.NewString("2")
+		Convey("Integer & Float", func() {
+			Convey("3.1 - 2 = 1.1", func() {
+				arg1 := values.NewFloat(3.1)
+				arg2 := values.NewInt(2)
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, 1.1)
+			})
 
-			arg3 := values.NewString("abc")
+			Convey("3 - 2.1 = 0.9", func() {
+				arg1 := values.NewInt(3)
+				arg2 := values.NewFloat(2.1)
 
-			So(operators.Subtract(arg1, arg3), ShouldEqual, values.NewInt(3))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.Float(arg1) - arg2)
+			})
+		})
+
+		Convey("String", func() {
+			Convey("'a' - 'b' = 0", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewString("b")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldBeZeroValue)
+			})
+
+			Convey("'1' - 'b' = 1", func() {
+				arg1 := values.NewString("1")
+				arg2 := values.NewString("b")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("'a' - '1' = NaN", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewString("1")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(-1))
+			})
+
+			Convey("'2' - '1' = 1", func() {
+				arg1 := values.NewString("2")
+				arg2 := values.NewString("1")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(1))
+			})
+		})
+
+		Convey("String & Int", func() {
+			Convey("1 - 'b' = 1", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.NewString("b")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("'2' - 1 = 1", func() {
+				arg1 := values.NewString("2")
+				arg2 := values.NewInt(1)
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("'a' - '1' = -1", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewString("1")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(-1))
+			})
+
+			Convey("'2' - '1' = 1", func() {
+				arg1 := values.NewString("2")
+				arg2 := values.NewString("1")
+
+				out := operators.Subtract(arg1, arg2)
+
+				So(out, ShouldEqual, values.NewInt(1))
+			})
 		})
 
 		Convey("Boolean", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.True
+			Convey("TRUE - TRUE = 0", func() {
+				arg1 := values.True
+				arg2 := values.True
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(2))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(0))
+			})
 
-			arg3 := values.False
+			Convey("TRUE - FALSE = 1", func() {
+				arg1 := values.True
+				arg2 := values.False
 
-			So(operators.Subtract(arg1, arg3), ShouldEqual, values.NewInt(3))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+			})
 		})
 
-		Convey("Array(0)", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.NewArray(0)
+		Convey("Boolean & Int", func() {
+			Convey("2 - TRUE = 1", func() {
+				arg1 := values.NewInt(2)
+				arg2 := values.True
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(3))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+			})
+
+			Convey("1 - FALSE = 1", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.False
+
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+			})
 		})
 
-		Convey("Array(1)", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.NewArrayWith(values.NewInt(2))
+		Convey("Boolean & String", func() {
+			Convey("'2' - TRUE = 1", func() {
+				arg1 := values.NewString("2")
+				arg2 := values.True
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+			})
+
+			Convey("a - FALSE = 1", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.False
+
+				So(operators.Subtract(arg1, arg2), ShouldBeZeroValue)
+			})
 		})
 
-		Convey("Array(2)", func() {
-			arg1 := values.NewInt(3)
-			arg2 := values.NewArrayWith(values.NewInt(2), values.NewFloat(2))
+		Convey("Array", func() {
+			Convey("[2] - [1]", func() {
+				arg1 := values.NewArrayWith(values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(1))
 
-			So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(3))
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("[2] - [1, 1]", func() {
+				arg1 := values.NewArrayWith(values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
+
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Array & Int", func() {
+			Convey("2 - [1]", func() {
+				arg1 := values.NewInt(2)
+				arg2 := values.NewArrayWith(values.NewInt(1))
+
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("[1, '1'] - 2", func() {
+				arg1 := values.NewArrayWith(values.NewInt(1), values.NewString("1"))
+				arg2 := values.NewInt(2)
+
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Array & Float", func() {
+			Convey("2 - [1, 1.1]", func() {
+				arg1 := values.NewInt(2)
+				arg2 := values.NewArrayWith(values.NewInt(1), values.NewFloat(1.1))
+
+				actual := operators.Subtract(arg1, arg2)
+				expected := values.Float(arg1) - (operators.ToNumberOnly(arg2).(values.Float))
+
+				So(actual, ShouldEqual, expected)
+			})
+
+			Convey("[1.1, '1.1'] - 2", func() {
+				arg1 := values.NewArrayWith(values.NewFloat(1.1), values.NewString("1.1"))
+				arg2 := values.NewInt(2)
+
+				actual := operators.Subtract(arg1, arg2)
+				expected := (operators.ToNumberOnly(arg1).(values.Float)) - values.Float(arg2)
+
+				So(actual, ShouldEqual, expected)
+			})
+		})
+
+		Convey("Array & String", func() {
+			Convey("'2' - ['1']", func() {
+				arg1 := values.NewInt(2)
+				arg2 := values.NewArrayWith(values.NewInt(1))
+
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("[1, '1'] - 2", func() {
+				arg1 := values.NewArrayWith(values.NewInt(1), values.NewString("1"))
+				arg2 := values.NewInt(2)
+
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Datetime", func() {
+			Convey("NOW() - NOW() = 0", func() {
+				arg1 := values.NewCurrentDateTime()
+
+				So(operators.Subtract(arg1, arg1), ShouldEqual, values.NewInt(0))
+			})
 		})
 
 		Convey("Any", func() {
 			arg1 := values.NewInt(3)
 			args := []core.Value{
-				values.NewArray(10),
 				values.NewObject(),
 				values.NewBinary([]byte("1")),
-				values.NewCurrentDateTime(),
 			}
 
 			for _, argN := range args {

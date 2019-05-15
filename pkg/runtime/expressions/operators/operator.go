@@ -2,6 +2,7 @@ package operators
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -88,7 +89,7 @@ func Not(left, _ core.Value) core.Value {
 	return values.True
 }
 
-func toNumberOrString(input core.Value) core.Value {
+func ToNumberOrString(input core.Value) core.Value {
 	switch input.Type() {
 	case types.Int, types.Float, types.String:
 		return input
@@ -97,11 +98,52 @@ func toNumberOrString(input core.Value) core.Value {
 	}
 }
 
+func ToNumberOnly(input core.Value) core.Value {
+	switch input.Type() {
+	case types.Int, types.Float:
+		return input
+	case types.String:
+		if strings.Contains(input.String(), ".") {
+			return values.ToFloat(input)
+		}
+
+		return values.ToInt(input)
+	case types.Array:
+		arr := input.(*values.Array)
+		length := arr.Length()
+
+		if length == 0 {
+			return values.ZeroInt
+		}
+
+		i := values.ZeroInt
+		f := values.ZeroFloat
+
+		for y := values.Int(0); y < length; y++  {
+			out := ToNumberOnly(arr.Get(y))
+
+			if out.Type() == types.Int {
+				i += out.(values.Int)
+			} else {
+				f += out.(values.Float)
+			}
+		}
+
+		if f == 0 {
+			return i
+		}
+
+		return values.Float(i) + f
+	default:
+		return values.ToInt(input)
+	}
+}
+
 // Adds numbers
 // Concatenates strings
-func Add(l, r core.Value) core.Value {
-	left := toNumberOrString(l)
-	right := toNumberOrString(r)
+func Add(inputL, inputR core.Value) core.Value {
+	left := ToNumberOrString(inputL)
+	right := ToNumberOrString(inputR)
 
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
@@ -138,7 +180,10 @@ func Add(l, r core.Value) core.Value {
 	return values.NewString(left.String() + right.String())
 }
 
-func Subtract(left, right core.Value) core.Value {
+func Subtract(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)
@@ -171,7 +216,7 @@ func Subtract(left, right core.Value) core.Value {
 		}
 	}
 
-	return values.ZeroInt
+	return values.NaN
 }
 
 func Multiply(left, right core.Value) core.Value {
