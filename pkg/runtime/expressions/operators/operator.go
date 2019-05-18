@@ -119,7 +119,7 @@ func ToNumberOnly(input core.Value) core.Value {
 		i := values.ZeroInt
 		f := values.ZeroFloat
 
-		for y := values.Int(0); y < length; y++  {
+		for y := values.Int(0); y < length; y++ {
 			out := ToNumberOnly(arr.Get(y))
 
 			if out.Type() == types.Int {
@@ -216,10 +216,13 @@ func Subtract(inputL, inputR core.Value) core.Value {
 		}
 	}
 
-	return values.NaN
+	return values.ZeroInt
 }
 
-func Multiply(left, right core.Value) core.Value {
+func Multiply(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)

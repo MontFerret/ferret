@@ -270,7 +270,7 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewFloat(3.40)
 				arg2 := values.NewFloat(2.20)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, arg1 - arg2)
+				So(operators.Subtract(arg1, arg2), ShouldEqual, arg1-arg2)
 			})
 		})
 
@@ -286,7 +286,7 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewInt(3)
 				arg2 := values.NewFloat(2.1)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.Float(arg1) - arg2)
+				So(operators.Subtract(arg1, arg2), ShouldEqual, values.Float(arg1)-arg2)
 			})
 		})
 
@@ -501,6 +501,251 @@ func TestSubtract(t *testing.T) {
 
 			for _, argN := range args {
 				So(operators.Subtract(arg1, argN), ShouldEqual, values.NewInt(3))
+			}
+		})
+	})
+}
+
+func TestMultiply(t *testing.T) {
+	Convey("Multiply", t, func() {
+		Convey("Int", func() {
+			Convey("2 * 2 = 4", func() {
+				arg1 := values.NewInt(2)
+				arg2 := values.NewInt(2)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(4))
+				So(operators.Multiply(arg2, arg1), ShouldEqual, values.NewInt(4))
+			})
+		})
+
+		Convey("Float", func() {
+			Convey("2 * 2.1 = 4.2", func() {
+				arg1 := values.NewFloat(2.0)
+				arg2 := values.NewFloat(2.1)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(4.2))
+				So(operators.Multiply(arg2, arg1), ShouldEqual, values.NewFloat(4.2))
+			})
+		})
+
+		Convey("Float & Int", func() {
+			Convey("2 * 2.2 = 4.4", func() {
+				arg1 := values.NewInt(2)
+				arg2 := values.NewFloat(2.2)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(4.4))
+			})
+
+			Convey("2.2 * 2 = 4.4", func() {
+				arg1 := values.NewFloat(2.2)
+				arg2 := values.NewInt(2)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(4.4))
+			})
+		})
+
+		Convey("Int & String", func() {
+			Convey("1 * 'a' = 0", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.NewString("a")
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+
+			Convey("'a' * 1 = 0", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewInt(1)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Float & String", func() {
+			Convey("1.1 * 'a' = 0", func() {
+				arg1 := values.NewFloat(1.1)
+				arg2 := values.NewString("a")
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+
+			Convey("'a' * 1.1 = 0", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewFloat(1.1)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("String", func() {
+			Convey("'2' * '2' = 4", func() {
+				arg1 := values.NewString("2")
+				arg2 := values.NewString("2")
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(4))
+			})
+
+			Convey("'a' * 'b' = 0", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewString("b")
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Boolean", func() {
+			Convey("TRUE * TRUE = 1", func() {
+				arg1 := values.True
+				arg2 := values.True
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("TRUE * FALSE = 0", func() {
+				arg1 := values.True
+				arg2 := values.False
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Boolean & Int", func() {
+			Convey("TRUE * 2 = 2", func() {
+				arg1 := values.True
+				arg2 := values.NewInt(2)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(2))
+			})
+
+			Convey("1 * FALSE = 0", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.False
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Boolean & Float", func() {
+			Convey("TRUE * 1.2 = 1.2", func() {
+				arg1 := values.True
+				arg2 := values.NewFloat(1.2)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(1.2))
+			})
+
+			Convey("1.2 + FALSE = 0", func() {
+				arg1 := values.NewFloat(1.2)
+				arg2 := values.False
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("None", func() {
+			Convey("NONE * NONE = 0", func() {
+				arg1 := values.None
+				arg2 := values.None
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("None & Int", func() {
+			Convey("NONE * 1 = 0", func() {
+				arg1 := values.None
+				arg2 := values.NewInt(1)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+
+			Convey("1 * NONE = 0", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.None
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("None & Float", func() {
+			Convey("NONE * 1.2 = 0", func() {
+				arg1 := values.None
+				arg2 := values.NewFloat(1.2)
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(0))
+			})
+
+			Convey("1.2 + NONE = 0", func() {
+				arg1 := values.NewFloat(1.2)
+				arg2 := values.None
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(0))
+			})
+		})
+
+		Convey("Array", func() {
+			Convey("[2] * [2] = 4", func() {
+				arg1 := values.NewArrayWith(values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(2))
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(4))
+			})
+
+			Convey("[2] * [2, 3] = 10", func() {
+				arg1 := values.NewArrayWith(values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(2), values.NewInt(3))
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(10))
+			})
+
+			Convey("[1, 2] * [1, 1] = 6", func() {
+				arg1 := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(6))
+			})
+		})
+
+		Convey("Datetime", func() {
+			Convey("NOW() * NOW() = now*now", func() {
+				arg1 := values.NewCurrentDateTime()
+				arg2 := values.NewCurrentDateTime()
+
+				expected := arg1.Time.Unix() * arg2.Time.Unix()
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+			})
+		})
+
+		Convey("Datetime & Int", func() {
+			Convey("NOW() * 1 = unix", func() {
+				arg1 := values.NewCurrentDateTime()
+				arg2 := values.NewArrayWith(values.NewInt(1))
+
+				expected := arg1.Time.Unix() * 1
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+			})
+
+			Convey("1 * NOW() = unix", func() {
+				arg1 := values.NewArrayWith(values.NewInt(1))
+				arg2 := values.NewCurrentDateTime()
+
+				expected := arg2.Time.Unix() * 1
+
+				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+			})
+		})
+
+		Convey("Other types", func() {
+			arg1 := values.NewInt(1)
+			args := []core.Value{
+				values.NewObject(),
+				values.NewBinary([]byte("1")),
+			}
+
+			for _, argN := range args {
+				Convey(argN.Type().String(), func() {
+					So(operators.Multiply(arg1, argN), ShouldEqual, values.NewInt(0))
+				})
 			}
 		})
 	})
