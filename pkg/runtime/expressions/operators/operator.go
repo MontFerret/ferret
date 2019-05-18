@@ -313,7 +313,10 @@ func Divide(inputL, inputR core.Value) core.Value {
 	return values.ZeroInt
 }
 
-func Modulus(left, right core.Value) core.Value {
+func Modulus(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)
@@ -349,7 +352,9 @@ func Modulus(left, right core.Value) core.Value {
 	return values.ZeroInt
 }
 
-func Increment(left, _ core.Value) core.Value {
+func Increment(inputL, _ core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+
 	if left.Type() == types.Int {
 		l := left.(values.Int)
 
@@ -365,7 +370,9 @@ func Increment(left, _ core.Value) core.Value {
 	return values.None
 }
 
-func Decrement(left, _ core.Value) core.Value {
+func Decrement(inputL, _ core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+
 	if left.Type() == types.Int {
 		l := left.(values.Int)
 
@@ -382,31 +389,27 @@ func Decrement(left, _ core.Value) core.Value {
 }
 
 func Negative(value, _ core.Value) core.Value {
-	err := core.ValidateType(value, types.Int, types.Float)
-
-	if err != nil {
-		return values.ZeroInt
-	}
-
 	if value.Type() == types.Int {
 		return -value.(values.Int)
 	}
 
-	return -value.(values.Float)
+	if value.Type() == types.Float {
+		return -value.(values.Float)
+	}
+
+	return value
 }
 
 func Positive(value, _ core.Value) core.Value {
-	err := core.ValidateType(value, types.Int, types.Float)
-
-	if err != nil {
-		return values.ZeroInt
-	}
-
 	if value.Type() == types.Int {
 		return +value.(values.Int)
 	}
 
-	return +value.(values.Float)
+	if value.Type() == types.Float {
+		return +value.(values.Float)
+	}
+
+	return value
 }
 
 func ToBoolean(value, _ core.Value) core.Value {
