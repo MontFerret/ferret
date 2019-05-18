@@ -258,20 +258,31 @@ func Multiply(inputL, inputR core.Value) core.Value {
 	return values.ZeroInt
 }
 
-func Divide(left, right core.Value) core.Value {
+func Divide(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
-			l := left.(values.Int)
-			r := right.(values.Int)
+			l := values.Float(left.(values.Int))
+			r := values.Float(right.(values.Int))
+
+			if r == 0.0 {
+				panic("divide by zero")
+			}
 
 			return l / r
 		}
 
 		if right.Type() == types.Float {
-			l := left.(values.Int)
+			l := values.Float(left.(values.Int))
 			r := right.(values.Float)
 
-			return values.Float(l) / r
+			if r == 0.0 {
+				panic("divide by zero")
+			}
+
+			return l / r
 		}
 	}
 
@@ -280,14 +291,22 @@ func Divide(left, right core.Value) core.Value {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
+			if r == 0.0 {
+				panic("divide by zero")
+			}
+
 			return l / r
 		}
 
 		if right.Type() == types.Int {
 			l := left.(values.Float)
-			r := right.(values.Int)
+			r := values.Float(right.(values.Int))
 
-			return l / values.Float(r)
+			if r == 0.0 {
+				panic("divide by zero")
+			}
+
+			return l / r
 		}
 	}
 

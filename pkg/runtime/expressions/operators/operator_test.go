@@ -750,3 +750,273 @@ func TestMultiply(t *testing.T) {
 		})
 	})
 }
+
+func TestDivide(t *testing.T) {
+	Convey("Divide", t, func() {
+		Convey("Int", func() {
+			Convey("4 / 2 = 2", func() {
+				arg1 := values.NewInt(4)
+				arg2 := values.NewInt(2)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(2))
+			})
+
+			Convey("5 / 2 = 2.5", func() {
+				arg1 := values.NewInt(5)
+				arg2 := values.NewInt(2)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2.5))
+			})
+		})
+
+		Convey("Float", func() {
+			Convey("4.4 / 2.2 = 2", func() {
+				arg1 := values.NewFloat(4.4)
+				arg2 := values.NewFloat(2.2)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2))
+			})
+		})
+
+		Convey("Float & Int", func() {
+			Convey("5 / 2.5 = 2", func() {
+				arg1 := values.NewInt(5)
+				arg2 := values.NewFloat(2.5)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2))
+			})
+
+			Convey("4.4 / 2 = 2.2", func() {
+				arg1 := values.NewFloat(4.4)
+				arg2 := values.NewInt(2)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2.2))
+			})
+		})
+
+		Convey("Int & String", func() {
+			Convey("1 / 'a' = PANIC", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.NewString("a")
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+
+			Convey("'a' / 1 = 0", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewInt(1)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("Float & String", func() {
+			Convey("1.1 / 'a' = PANIC", func() {
+				arg1 := values.NewFloat(1.1)
+				arg2 := values.NewString("a")
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+
+			Convey("'a' / 1.1 = 0", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewFloat(1.1)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+		})
+
+		Convey("String", func() {
+			Convey("'2' / '2' = 1", func() {
+				arg1 := values.NewString("2")
+				arg2 := values.NewString("2")
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("'a' / 'b' = PANIC", func() {
+				arg1 := values.NewString("a")
+				arg2 := values.NewString("b")
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("Boolean", func() {
+			Convey("TRUE / TRUE = 1", func() {
+				arg1 := values.True
+				arg2 := values.True
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("TRUE / FALSE = PANIC", func() {
+				arg1 := values.True
+				arg2 := values.False
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("Boolean & Int", func() {
+			Convey("TRUE / 2 = 0.5", func() {
+				arg1 := values.True
+				arg2 := values.NewInt(2)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(0.5))
+			})
+
+			Convey("1 / FALSE = PANIC", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.False
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("Boolean & Float", func() {
+			Convey("TRUE / 0.5 = 2", func() {
+				arg1 := values.True
+				arg2 := values.NewFloat(0.5)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2))
+			})
+
+			Convey("1.2 / FALSE = PANIC", func() {
+				arg1 := values.NewFloat(1.2)
+				arg2 := values.False
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("None", func() {
+			Convey("NONE / NONE = PANIC", func() {
+				arg1 := values.None
+				arg2 := values.None
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("None & Int", func() {
+			Convey("NONE / 1 = 0", func() {
+				arg1 := values.None
+				arg2 := values.NewInt(1)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(0))
+			})
+
+			Convey("1 / NONE = PANIC", func() {
+				arg1 := values.NewInt(1)
+				arg2 := values.None
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("None & Float", func() {
+			Convey("NONE / 1.2 = 0", func() {
+				arg1 := values.None
+				arg2 := values.NewFloat(1.2)
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(0))
+			})
+
+			Convey("1.2 / NONE = PANIC", func() {
+				arg1 := values.NewFloat(1.2)
+				arg2 := values.None
+
+				So(func() {
+					operators.Divide(arg1, arg2)
+				}, ShouldPanic)
+			})
+		})
+
+		Convey("Array", func() {
+			Convey("[2] / [2] = 1", func() {
+				arg1 := values.NewArrayWith(values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(2))
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("[4, 2] / [2] = 3", func() {
+				arg1 := values.NewArrayWith(values.NewInt(4), values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(2))
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(3))
+			})
+
+			Convey("[4, 2] / [1, 1] = 3", func() {
+				arg1 := values.NewArrayWith(values.NewInt(4), values.NewInt(2))
+				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(3))
+			})
+		})
+
+		Convey("Datetime", func() {
+			Convey("NOW() / NOW() = 1", func() {
+				arg1 := values.NewCurrentDateTime()
+				arg2 := values.NewCurrentDateTime()
+
+				expected := arg1.Time.Unix() / arg2.Time.Unix()
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+			})
+		})
+
+		Convey("Datetime & Int", func() {
+			Convey("NOW() / 1 = unix", func() {
+				arg1 := values.NewCurrentDateTime()
+				arg2 := values.NewArrayWith(values.NewInt(1))
+
+				expected := arg1.Time.Unix() / 1
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+			})
+
+			SkipConvey("1 / NOW() = unix", func() {
+				arg1 := values.NewArrayWith(values.NewInt(1))
+				arg2 := values.NewCurrentDateTime()
+
+				expected := arg2.Time.Unix() / 1
+
+				So(operators.Divide(arg1, arg2), ShouldEqual, expected)
+			})
+		})
+
+		Convey("Other types", func() {
+			arg1 := values.NewInt(1)
+			args := []core.Value{
+				values.NewObject(),
+				values.NewBinary([]byte("1")),
+			}
+
+			for _, argN := range args {
+				Convey(argN.Type().String(), func() {
+					So(func() {
+						operators.Divide(arg1, argN)
+					}, ShouldPanic)
+				})
+			}
+		})
+	})
+}

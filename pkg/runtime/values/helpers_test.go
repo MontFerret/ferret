@@ -330,7 +330,6 @@ func TestHelpers(t *testing.T) {
 
 			Convey("Should NOT convert other types", func() {
 				inputs := []core.Value{
-					values.NewArrayWith(values.NewFloat(1), values.NewFloat(2)),
 					values.NewObject(),
 					values.NewBinary([]byte("")),
 				}
