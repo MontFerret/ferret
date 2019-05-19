@@ -38,17 +38,8 @@ func MouseMoveXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	x, err := values.ToFloat(args[0])
-
-	if err != nil {
-		return values.None, err
-	}
-
-	y, err := values.ToFloat(args[1])
-
-	if err != nil {
-		return values.None, err
-	}
+	x := values.ToFloat(args[0])
+	y := values.ToFloat(args[1])
 
 	doc := args[0].(drivers.HTMLDocument)
 

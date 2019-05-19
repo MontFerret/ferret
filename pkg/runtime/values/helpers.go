@@ -235,58 +235,116 @@ func ToBoolean(input core.Value) core.Value {
 	switch input.Type() {
 	case types.Boolean:
 		return input
-	case types.None:
-		return False
 	case types.String:
-		return NewBoolean(input.String() != "")
+		return NewBoolean(input.(String) != "")
 	case types.Int:
 		return NewBoolean(input.(Int) != 0)
 	case types.Float:
 		return NewBoolean(input.(Float) != 0)
+	case types.DateTime:
+		return NewBoolean(!input.(DateTime).IsZero())
+	case types.None:
+		return False
 	default:
 		return True
 	}
 }
 
-func ToFloat(input core.Value) (Float, error) {
+func ToFloat(input core.Value) Float {
 	switch val := input.(type) {
 	case Float:
-		return val, nil
+		return val
 	case Int:
-		return Float(val), nil
+		return Float(val)
 	case String:
 		i, err := strconv.ParseFloat(string(val), 64)
 
 		if err != nil {
-			return ZeroFloat, err
+			return ZeroFloat
 		}
 
-		return Float(i), nil
+		return Float(i)
+	case Boolean:
+		if val {
+			return Float(1)
+		}
+
+		return Float(0)
+	case DateTime:
+		dt := input.(DateTime)
+
+		if dt.IsZero() {
+			return ZeroFloat
+		}
+
+		return NewFloat(float64(dt.Unix()))
+	case *Array:
+		length := val.Length()
+
+		if length == 0 {
+			return ZeroFloat
+		}
+
+		res := ZeroFloat
+
+		for i := Int(0); i < length; i++ {
+			res += ToFloat(val.Get(i))
+		}
+
+		return res
 	default:
-		return ZeroFloat, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+		return ZeroFloat
 	}
 }
 
-func ToInt(input core.Value) (Int, error) {
+func ToInt(input core.Value) Int {
 	switch val := input.(type) {
 	case Int:
-		return val, nil
+		return val
 	case Float:
-		return Int(val), nil
+		return Int(val)
 	case String:
 		i, err := strconv.ParseInt(string(val), 10, 64)
 
 		if err != nil {
-			return ZeroInt, err
+			return ZeroInt
 		}
 
-		return Int(i), nil
+		return Int(i)
+	case Boolean:
+		if val {
+			return Int(1)
+		}
+
+		return Int(0)
+	case DateTime:
+		dt := input.(DateTime)
+
+		if dt.IsZero() {
+			return ZeroInt
+		}
+
+		return NewInt(int(dt.Unix()))
+	case *Array:
+		length := val.Length()
+
+		if length == 0 {
+			return ZeroInt
+		}
+
+		res := ZeroInt
+
+		for i := Int(0); i < length; i++ {
+			res += ToInt(val.Get(i))
+		}
+
+		return res
 	default:
-		return ZeroInt, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+		return ZeroInt
 	}
 }
 
-func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
+func ToArray(ctx context.Context, input core.Value) core.Value {
 	switch value := input.(type) {
 	case Boolean,
 		Int,
@@ -294,9 +352,9 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 		String,
 		DateTime:
 
-		return NewArrayWith(value), nil
+		return NewArrayWith(value)
 	case *Array:
-		return value.Copy(), nil
+		return value.Copy()
 	case *Object:
 		arr := NewArray(int(value.Length()))
 
@@ -306,12 +364,12 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			return true
 		})
 
-		return arr, nil
+		return arr
 	case core.Iterable:
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return None, err
+			return None
 		}
 
 		arr := NewArray(10)
@@ -320,7 +378,7 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			val, _, err := iterator.Next(ctx)
 
 			if err != nil {
-				return None, err
+				return None
 			}
 
 			if val == None {
@@ -330,9 +388,9 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			arr.Push(val)
 		}
 
-		return arr, nil
+		return arr
 	default:
-		return NewArray(0), nil
+		return NewArray(0)
 	}
 }
 
@@ -371,4 +429,10 @@ func MapHash(input map[string]core.Value) uint64 {
 	h.Write([]byte("}"))
 
 	return h.Sum64()
+}
+
+func IsNumber(input core.Value) Boolean {
+	t := input.Type()
+
+	return t == types.Int || t == types.Float
 }

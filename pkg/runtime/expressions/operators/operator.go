@@ -2,6 +2,7 @@ package operators
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -88,9 +89,62 @@ func Not(left, _ core.Value) core.Value {
 	return values.True
 }
 
+func ToNumberOrString(input core.Value) core.Value {
+	switch input.Type() {
+	case types.Int, types.Float, types.String:
+		return input
+	default:
+		return values.ToInt(input)
+	}
+}
+
+func ToNumberOnly(input core.Value) core.Value {
+	switch input.Type() {
+	case types.Int, types.Float:
+		return input
+	case types.String:
+		if strings.Contains(input.String(), ".") {
+			return values.ToFloat(input)
+		}
+
+		return values.ToInt(input)
+	case types.Array:
+		arr := input.(*values.Array)
+		length := arr.Length()
+
+		if length == 0 {
+			return values.ZeroInt
+		}
+
+		i := values.ZeroInt
+		f := values.ZeroFloat
+
+		for y := values.Int(0); y < length; y++ {
+			out := ToNumberOnly(arr.Get(y))
+
+			if out.Type() == types.Int {
+				i += out.(values.Int)
+			} else {
+				f += out.(values.Float)
+			}
+		}
+
+		if f == 0 {
+			return i
+		}
+
+		return values.Float(i) + f
+	default:
+		return values.ToInt(input)
+	}
+}
+
 // Adds numbers
-// Concats strings
-func Add(left, right core.Value) core.Value {
+// Concatenates strings
+func Add(inputL, inputR core.Value) core.Value {
+	left := ToNumberOrString(inputL)
+	right := ToNumberOrString(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)
@@ -126,7 +180,10 @@ func Add(left, right core.Value) core.Value {
 	return values.NewString(left.String() + right.String())
 }
 
-func Subtract(left, right core.Value) core.Value {
+func Subtract(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)
@@ -162,7 +219,10 @@ func Subtract(left, right core.Value) core.Value {
 	return values.ZeroInt
 }
 
-func Multiply(left, right core.Value) core.Value {
+func Multiply(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)
@@ -198,20 +258,31 @@ func Multiply(left, right core.Value) core.Value {
 	return values.ZeroInt
 }
 
-func Divide(left, right core.Value) core.Value {
+func Divide(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
-			l := left.(values.Int)
-			r := right.(values.Int)
+			l := values.Float(left.(values.Int))
+			r := values.Float(right.(values.Int))
+
+			if r == 0.0 {
+				panic("divide by zero")
+			}
 
 			return l / r
 		}
 
 		if right.Type() == types.Float {
-			l := left.(values.Int)
+			l := values.Float(left.(values.Int))
 			r := right.(values.Float)
 
-			return values.Float(l) / r
+			if r == 0.0 {
+				panic("divide by zero")
+			}
+
+			return l / r
 		}
 	}
 
@@ -220,21 +291,32 @@ func Divide(left, right core.Value) core.Value {
 			l := left.(values.Float)
 			r := right.(values.Float)
 
+			if r == 0.0 {
+				panic("divide by zero")
+			}
+
 			return l / r
 		}
 
 		if right.Type() == types.Int {
 			l := left.(values.Float)
-			r := right.(values.Int)
+			r := values.Float(right.(values.Int))
 
-			return l / values.Float(r)
+			if r == 0.0 {
+				panic("divide by zero")
+			}
+
+			return l / r
 		}
 	}
 
 	return values.ZeroInt
 }
 
-func Modulus(left, right core.Value) core.Value {
+func Modulus(inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+	right := ToNumberOnly(inputR)
+
 	if left.Type() == types.Int {
 		if right.Type() == types.Int {
 			l := left.(values.Int)
@@ -270,7 +352,9 @@ func Modulus(left, right core.Value) core.Value {
 	return values.ZeroInt
 }
 
-func Increment(left, _ core.Value) core.Value {
+func Increment(inputL, _ core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+
 	if left.Type() == types.Int {
 		l := left.(values.Int)
 
@@ -286,7 +370,9 @@ func Increment(left, _ core.Value) core.Value {
 	return values.None
 }
 
-func Decrement(left, _ core.Value) core.Value {
+func Decrement(inputL, _ core.Value) core.Value {
+	left := ToNumberOnly(inputL)
+
 	if left.Type() == types.Int {
 		l := left.(values.Int)
 
@@ -303,31 +389,27 @@ func Decrement(left, _ core.Value) core.Value {
 }
 
 func Negative(value, _ core.Value) core.Value {
-	err := core.ValidateType(value, types.Int, types.Float)
-
-	if err != nil {
-		return values.ZeroInt
-	}
-
 	if value.Type() == types.Int {
 		return -value.(values.Int)
 	}
 
-	return -value.(values.Float)
+	if value.Type() == types.Float {
+		return -value.(values.Float)
+	}
+
+	return value
 }
 
 func Positive(value, _ core.Value) core.Value {
-	err := core.ValidateType(value, types.Int, types.Float)
-
-	if err != nil {
-		return values.ZeroInt
-	}
-
 	if value.Type() == types.Int {
 		return +value.(values.Int)
 	}
 
-	return +value.(values.Float)
+	if value.Type() == types.Float {
+		return +value.(values.Float)
+	}
+
+	return value
 }
 
 func ToBoolean(value, _ core.Value) core.Value {
