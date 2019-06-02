@@ -7,10 +7,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Navigate navigates a document to a new resource.
+// Navigate navigates a given page to a new resource.
 // The operation blocks the execution until the page gets loaded.
 // Which means there is no need in WAIT_NAVIGATION function.
-// @param doc (Document) - Target document.
+// @param page (HTMLPage) - Target page.
 // @param url (String) - Target url to navigate.
 // @param timeout (Int, optional) - Optional timeout. Default is 5000.
 func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
@@ -20,7 +20,7 @@ func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, err := toDocument(args[0])
+	page, err := toPage(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -47,5 +47,5 @@ func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.Navigate(ctx, args[1].(values.String))
+	return values.None, page.Navigate(ctx, args[1].(values.String))
 }

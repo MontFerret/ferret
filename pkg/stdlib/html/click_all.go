@@ -9,7 +9,7 @@ import (
 )
 
 // ClickAll dispatches click event on all matched element
-// @param source (Document) - Document.
+// @param source (Open) - Open.
 // @param selector (String) - Selector.
 // @returns (Boolean) - Returns true if matched at least one element.
 func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {

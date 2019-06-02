@@ -98,28 +98,18 @@ type (
 		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
 	}
 
-	// The Document interface represents any web page loaded in the browser
-	// and serves as an entry point into the web page's content, which is the DOM tree.
 	HTMLDocument interface {
 		HTMLNode
 
-		DocumentElement() HTMLElement
+		Element() HTMLElement
 
 		GetURL() core.Value
 
-		SetURL(ctx context.Context, url values.String) error
+		Name() values.String
 
-		GetCookies(ctx context.Context) (*values.Array, error)
+		GetParentDocument() HTMLDocument
 
-		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
-
-		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
-
-		Navigate(ctx context.Context, url values.String) error
-
-		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
-
-		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
+		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
 		ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
@@ -128,10 +118,6 @@ type (
 		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error)
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
-
-		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
-
-		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
 		ScrollTop(ctx context.Context) error
 
@@ -144,8 +130,6 @@ type (
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
 
 		MoveMouseBySelector(ctx context.Context, selector values.String) error
-
-		WaitForNavigation(ctx context.Context) error
 
 		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
 
@@ -160,6 +144,37 @@ type (
 		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
 
 		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
+	}
+
+	// HTMLPage interface represents any web page loaded in the browser
+	// and serves as an entry point into the web page's content
+	HTMLPage interface {
+		core.Value
+		core.Iterable
+		core.Getter
+		core.Setter
+		collections.Measurable
+		io.Closer
+
+		Document() HTMLDocument
+
+		GetCookies(ctx context.Context) (*values.Array, error)
+
+		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
+
+		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
+
+		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
+
+		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
+
+		WaitForNavigation(ctx context.Context) error
+
+		Navigate(ctx context.Context, url values.String) error
+
+		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
+
+		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
 	}
 )
 

@@ -12,7 +12,7 @@ import (
 // Pagination creates an iterator that goes through pages using CSS selector.
 // The iterator starts from the current page i.e. it does not change the page on 1st iteration.
 // That allows you to keep scraping logic inside FOR loop.
-// @param doc (Document) - Target document.
+// @param doc (Open) - Target document.
 // @param selector (String) - CSS selector for a pagination on the page.
 func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)

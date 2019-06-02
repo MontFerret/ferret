@@ -7,6 +7,7 @@ var (
 	HTTPCookieType   = core.NewType("HTTPCookie")
 	HTMLElementType  = core.NewType("HTMLElement")
 	HTMLDocumentType = core.NewType("HTMLDocument")
+	HTMLPageType     = core.NewType("HTMLPageType")
 )
 
 // Comparison table of builtin types
@@ -15,6 +16,7 @@ var typeComparisonTable = map[core.Type]uint64{
 	HTTPCookieType:   1,
 	HTMLElementType:  2,
 	HTMLDocumentType: 3,
+	HTMLPageType:     4,
 }
 
 func Compare(first, second core.Type) int64 {

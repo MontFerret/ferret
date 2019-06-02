@@ -2,11 +2,18 @@ package cdp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"sync"
 	"time"
+
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/input"
+	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -14,181 +21,140 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/input"
-	"github.com/mafredri/cdp/protocol/network"
-	"github.com/mafredri/cdp/protocol/page"
-	"github.com/mafredri/cdp/rpcc"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 )
 
 const BlankPageURL = "about:blank"
 
 type HTMLDocument struct {
-	sync.Mutex
-	logger  *zerolog.Logger
-	conn    *rpcc.Conn
-	client  *cdp.Client
-	events  *events.EventBroker
-	url     values.String
-	element *HTMLElement
+	mu        sync.Mutex
+	connected bool
+	logger    *zerolog.Logger
+	client    *cdp.Client
+	events    *events.EventBroker
+	exec      *eval.ExecutionContext
+	frames    page.FrameTree
+	element   *HTMLElement
+	parent    *HTMLDocument
+	children  *common.LazyValue
 }
 
-func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
-	err := client.Page.Close(context.Background())
-
-	if err != nil {
-		logger.Warn().Timestamp().Err(err).Msg("unabled to close document on load error")
-	}
-}
-
-func LoadHTMLDocument(
+func LoadRootHTMLDocument(
 	ctx context.Context,
-	conn *rpcc.Conn,
+	logger *zerolog.Logger,
 	client *cdp.Client,
-	params drivers.LoadDocumentParams,
-) (drivers.HTMLDocument, error) {
-	logger := logging.FromContext(ctx)
-
-	if conn == nil {
-		return nil, core.Error(core.ErrMissedArgument, "connection")
-	}
-
-	if params.URL == "" {
-		return nil, core.Error(core.ErrMissedArgument, "url")
-	}
-
-	if params.Cookies != nil {
-		cookies := make([]network.CookieParam, 0, len(params.Cookies))
-
-		for _, c := range params.Cookies {
-			cookies = append(cookies, fromDriverCookie(params.URL, c))
-
-			logger.
-				Debug().
-				Timestamp().
-				Str("cookie", c.Name).
-				Msg("set cookie")
-		}
-
-		err := client.Network.SetCookies(
-			ctx,
-			network.NewSetCookiesArgs(cookies),
-		)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if params.Header != nil {
-		j, err := json.Marshal(params.Header)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for k := range params.Header {
-			logger.
-				Debug().
-				Timestamp().
-				Str("header", k).
-				Msg("set header")
-		}
-
-		err = client.Network.SetExtraHTTPHeaders(
-			ctx,
-			network.NewSetExtraHTTPHeadersArgs(network.Headers(j)),
-		)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var err error
-
-	if params.URL != BlankPageURL {
-		err = waitForLoadEvent(ctx, client)
-
-		if err != nil {
-			handleLoadError(logger, client)
-
-			return nil, err
-		}
-	}
-
-	node, err := getRootElement(ctx, client)
+	broker *events.EventBroker,
+) (*HTMLDocument, error) {
+	gdRepl, err := client.DOM.GetDocument(ctx, dom.NewGetDocumentArgs().SetDepth(1))
 
 	if err != nil {
-		handleLoadError(logger, client)
-		return nil, errors.Wrap(err, "failed to get root element")
+		return nil, err
 	}
 
-	broker, err := createEventBroker(client)
+	ftRepl, err := client.Page.GetFrameTree(ctx)
 
 	if err != nil {
-		handleLoadError(logger, client)
-		return nil, errors.Wrap(err, "failed to create event events")
+		return nil, err
 	}
 
-	rootElement, err := LoadElement(
+	return LoadHTMLDocument(
 		ctx,
 		logger,
 		client,
 		broker,
-		node.Root.NodeID,
-		node.Root.BackendNodeID,
+		gdRepl.Root,
+		ftRepl.FrameTree,
+		eval.EmptyExecutionContextID,
+		nil,
+	)
+}
+
+func LoadHTMLDocument(
+	ctx context.Context,
+	logger *zerolog.Logger,
+	client *cdp.Client,
+	broker *events.EventBroker,
+	node dom.Node,
+	tree page.FrameTree,
+	execID runtime.ExecutionContextID,
+	parent *HTMLDocument,
+) (*HTMLDocument, error) {
+	exec := eval.NewExecutionContext(client, tree.Frame, execID)
+
+	rootElement, err := LoadHTMLElement(
+		ctx,
+		logger,
+		client,
+		broker,
+		exec,
+		node.NodeID,
+		node.BackendNodeID,
 	)
 
 	if err != nil {
-		broker.Stop()
-		broker.Close()
-		handleLoadError(logger, client)
-
 		return nil, errors.Wrap(err, "failed to load root element")
 	}
 
 	return NewHTMLDocument(
 		logger,
-		conn,
 		client,
 		broker,
-		values.NewString(params.URL),
+		exec,
 		rootElement,
+		tree,
+		parent,
 	), nil
 }
 
 func NewHTMLDocument(
 	logger *zerolog.Logger,
-	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
-	url values.String,
+	exec *eval.ExecutionContext,
 	rootElement *HTMLElement,
+	frames page.FrameTree,
+	parent *HTMLDocument,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
+	doc.connected = true
 	doc.logger = logger
-	doc.conn = conn
+	doc.frames = frames
 	doc.client = client
 	doc.events = broker
-	doc.url = url
+	doc.exec = exec
 	doc.element = rootElement
+	doc.parent = parent
+	doc.children = common.NewLazyValue(func(ctx context.Context) (value core.Value, e error) {
+		children := values.NewArray(len(doc.frames.ChildFrames))
 
-	broker.AddEventListener(events.EventLoad, doc.handlePageLoad)
-	broker.AddEventListener(events.EventError, doc.handleError)
+		if len(doc.frames.ChildFrames) > 0 {
+			for _, cf := range doc.frames.ChildFrames {
+				cfNode, cfExecID, err := resolveFrame(ctx, client, cf.Frame)
+
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to resolve frame node")
+				}
+
+				cfDocument, err := LoadHTMLDocument(ctx, logger, client, broker, cfNode, cf, cfExecID, doc)
+
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to load frame document")
+				}
+
+				children.Push(cfDocument)
+			}
+		}
+
+		return children, nil
+	})
 
 	return doc
 }
 
 func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.MarshalJSON()
 }
@@ -198,28 +164,29 @@ func (doc *HTMLDocument) Type() core.Type {
 }
 
 func (doc *HTMLDocument) String() string {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
-	return doc.url.String()
+	return doc.frames.Frame.URL
 }
 
 func (doc *HTMLDocument) Unwrap() interface{} {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element
 }
 
 func (doc *HTMLDocument) Hash() uint64 {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	h := fnv.New64a()
 
 	h.Write([]byte(doc.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(doc.url))
+	h.Write([]byte(doc.frames.Frame.ID))
+	h.Write([]byte(doc.frames.Frame.URL))
 
 	return h.Sum64()
 }
@@ -229,14 +196,14 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Compare(other core.Value) int64 {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	switch other.Type() {
 	case drivers.HTMLDocumentType:
 		other := other.(drivers.HTMLDocument)
 
-		return doc.url.Compare(other.GetURL())
+		return values.NewString(doc.frames.Frame.URL).Compare(other.GetURL())
 	default:
 		return drivers.Compare(doc.Type(), other.Type())
 	}
@@ -255,198 +222,153 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 }
 
 func (doc *HTMLDocument) Close() error {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
-	err := doc.events.Stop()
+	doc.connected = false
 
-	if err != nil {
-		doc.logger.Warn().
-			Timestamp().
-			Str("url", doc.url.String()).
-			Err(err).
-			Msg("failed to stop event events")
+	errs := make([]error, 0, 5)
+
+	if doc.children.Ready() {
+		val, err := doc.children.Read(context.Background())
+
+		if err == nil {
+			arr := val.(*values.Array)
+
+			arr.ForEach(func(value core.Value, _ int) bool {
+				doc := value.(drivers.HTMLDocument)
+
+				err := doc.Close()
+
+				if err != nil {
+					errs = append(errs, errors.Wrapf(err, "failed to close nested document: %s", doc.GetURL()))
+				}
+
+				return true
+			})
+		} else {
+			errs = append(errs, err)
+		}
 	}
 
-	err = doc.events.Close()
+	err := doc.element.Close()
 
 	if err != nil {
-		doc.logger.Warn().
-			Timestamp().
-			Str("url", doc.url.String()).
-			Err(err).
-			Msg("failed to close event events")
+		errs = append(errs, err)
 	}
 
-	err = doc.element.Close()
-
-	if err != nil {
-		doc.logger.Warn().
-			Timestamp().
-			Str("url", doc.url.String()).
-			Err(err).
-			Msg("failed to close root element")
+	if len(errs) == 0 {
+		return nil
 	}
 
-	err = doc.client.Page.Close(context.Background())
-
-	if err != nil {
-		doc.logger.Warn().
-			Timestamp().
-			Str("url", doc.url.String()).
-			Err(err).
-			Msg("failed to close browser page")
-	}
-
-	return doc.conn.Close()
+	return core.Errors(errs...)
 }
 
 func (doc *HTMLDocument) NodeType() values.Int {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.NodeType()
+	return 9
 }
 
 func (doc *HTMLDocument) NodeName() values.String {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.NodeName()
-}
-
-func (doc *HTMLDocument) Length() values.Int {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element.Length()
+	return "#document"
 }
 
 func (doc *HTMLDocument) GetChildNodes(ctx context.Context) core.Value {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.GetChildNodes(ctx)
 }
 
 func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) core.Value {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.GetChildNode(ctx, idx)
 }
 
 func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) core.Value {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.QuerySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.element
-}
-
-func (doc *HTMLDocument) GetURL() core.Value {
-	doc.Lock()
-	defer doc.Unlock()
-
-	return doc.url
-}
-
-func (doc *HTMLDocument) GetCookies(ctx context.Context) (*values.Array, error) {
-	doc.Lock()
-	defer doc.Unlock()
-
-	repl, err := doc.client.Network.GetAllCookies(ctx)
-
-	if err != nil {
-		return values.NewArray(0), err
-	}
-
-	if repl.Cookies == nil {
-		return values.NewArray(0), nil
-	}
-
-	cookies := values.NewArray(len(repl.Cookies))
-
-	for _, c := range repl.Cookies {
-		cookies.Push(toDriverCookie(c))
-	}
-
-	return cookies, nil
-}
-
-func (doc *HTMLDocument) SetCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
-	doc.Lock()
-	defer doc.Unlock()
-
-	if len(cookies) == 0 {
-		return nil
-	}
-
-	params := make([]network.CookieParam, 0, len(cookies))
-
-	for _, c := range cookies {
-		params = append(params, fromDriverCookie(doc.url.String(), c))
-	}
-
-	return doc.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
-}
-
-func (doc *HTMLDocument) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
-	doc.Lock()
-	defer doc.Unlock()
-
-	if len(cookies) == 0 {
-		return nil
-	}
-
-	var err error
-
-	for _, c := range cookies {
-		err = doc.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(doc.url.String(), c))
-
-		if err != nil {
-			break
-		}
-	}
-
-	return err
-}
-
-func (doc *HTMLDocument) SetURL(ctx context.Context, url values.String) error {
-	return doc.Navigate(ctx, url)
-}
-
 func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) values.Int {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.CountBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
-	doc.Lock()
-	defer doc.Unlock()
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
 
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
+func (doc *HTMLDocument) Name() values.String {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	if doc.frames.Frame.Name != nil {
+		return values.NewString(*doc.frames.Frame.Name)
+	}
+
+	return values.EmptyString
+}
+
+func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	return doc.parent
+}
+
+func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	children, err := doc.children.Read(ctx)
+
+	if err != nil {
+		return values.NewArray(0), errors.Wrap(err, "failed to load child documents")
+	}
+
+	return children.Copy().(*values.Array), nil
+}
+
+func (doc *HTMLDocument) Length() values.Int {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	return doc.element.Length()
+}
+
+func (doc *HTMLDocument) Element() drivers.HTMLElement {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	return doc.element
+}
+
+func (doc *HTMLDocument) GetURL() core.Value {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	return values.NewString(doc.frames.Frame.URL)
+}
+
 func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
-	res, err := eval.Eval(
+	res, err := doc.exec.EvalWithReturn(
 		ctx,
-		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
 			if (el == null) {
@@ -456,8 +378,6 @@ func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.St
 			el.dispatchEvent(evt);
 			return true;
 		`, eval.ParamString(selector.String())),
-		true,
-		false,
 	)
 
 	if err != nil {
@@ -472,9 +392,8 @@ func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.St
 }
 
 func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error) {
-	res, err := eval.Eval(
+	res, err := doc.exec.EvalWithReturn(
 		ctx,
-		doc.client,
 		fmt.Sprintf(`
 			var elements = document.querySelectorAll(%s);
 			if (elements == null) {
@@ -486,8 +405,6 @@ func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values
 			});
 			return true;
 		`, eval.ParamString(selector.String())),
-		true,
-		false,
 	)
 
 	if err != nil {
@@ -504,9 +421,8 @@ func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values
 func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
 	valStr := value.String()
 
-	res, err := eval.Eval(
+	res, err := doc.exec.EvalWithReturn(
 		ctx,
-		doc.client,
 		fmt.Sprintf(`
 			var el = document.querySelector(%s);
 			if (el == null) {
@@ -515,8 +431,6 @@ func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.St
 			el.focus();
 			return true;
 		`, eval.ParamString(selector.String())),
-		true,
-		false,
 	)
 
 	if err != nil {
@@ -546,9 +460,8 @@ func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.St
 }
 
 func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
-	res, err := eval.Eval(
+	res, err := doc.exec.EvalWithReturn(
 		ctx,
-		doc.client,
 		fmt.Sprintf(`
 			var element = document.querySelector(%s);
 			if (element == null) {
@@ -575,8 +488,6 @@ func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.S
 			eval.ParamString(selector.String()),
 			value.String(),
 		),
-		true,
-		false,
 	)
 
 	if err != nil {
@@ -645,7 +556,7 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 	}
 
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		fmt.Sprintf(
 			`
 				var el = document.querySelector(%s);
@@ -670,7 +581,7 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 
 func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		templates.WaitBySelector(
 			selector,
 			when,
@@ -687,7 +598,7 @@ func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, c
 
 func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		templates.WaitBySelectorAll(
 			selector,
 			when,
@@ -702,27 +613,6 @@ func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector
 	return err
 }
 
-func (doc *HTMLDocument) WaitForNavigation(ctx context.Context) error {
-	onEvent := make(chan struct{})
-	var once sync.Once
-	listener := func(_ context.Context, _ interface{}) {
-		once.Do(func() {
-			close(onEvent)
-		})
-	}
-
-	defer doc.events.RemoveEventListener(events.EventLoad, listener)
-
-	doc.events.AddEventListener(events.EventLoad, listener)
-
-	select {
-	case <-onEvent:
-		return nil
-	case <-ctx.Done():
-		return core.ErrTimeout
-	}
-}
-
 func (doc *HTMLDocument) WaitForAttributeBySelector(
 	ctx context.Context,
 	selector,
@@ -731,7 +621,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelector(
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		templates.WaitBySelector(
 			selector,
 			when,
@@ -754,7 +644,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		templates.WaitBySelectorAll(
 			selector,
 			when,
@@ -771,7 +661,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 
 func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		templates.WaitBySelector(
 			selector,
 			when,
@@ -788,7 +678,7 @@ func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, n
 
 func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.client,
+		doc.exec,
 		templates.WaitBySelectorAll(
 			selector,
 			when,
@@ -803,241 +693,28 @@ func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector
 	return err
 }
 
-func (doc *HTMLDocument) Navigate(ctx context.Context, url values.String) error {
-	if url == "" {
-		url = BlankPageURL
-	}
-
-	repl, err := doc.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
-
-	if err != nil {
-		return err
-	}
-
-	if repl.ErrorText != nil {
-		return errors.New(*repl.ErrorText)
-	}
-
-	return doc.WaitForNavigation(ctx)
-}
-
-func (doc *HTMLDocument) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
-	history, err := doc.client.Page.GetNavigationHistory(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	// we are in the beginning
-	if history.CurrentIndex == 0 {
-		return values.False, nil
-	}
-
-	if skip < 1 {
-		skip = 1
-	}
-
-	to := history.CurrentIndex - int(skip)
-
-	if to < 0 {
-		// TODO: Return error?
-		return values.False, nil
-	}
-
-	prev := history.Entries[to]
-	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(prev.ID))
-
-	if err != nil {
-		return values.False, err
-	}
-
-	err = doc.WaitForNavigation(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
-}
-
-func (doc *HTMLDocument) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
-	history, err := doc.client.Page.GetNavigationHistory(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	length := len(history.Entries)
-	lastIndex := length - 1
-
-	// nowhere to go forward
-	if history.CurrentIndex == lastIndex {
-		return values.False, nil
-	}
-
-	if skip < 1 {
-		skip = 1
-	}
-
-	to := int(skip) + history.CurrentIndex
-
-	if to > lastIndex {
-		// TODO: Return error?
-		return values.False, nil
-	}
-
-	next := history.Entries[to]
-	err = doc.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(next.ID))
-
-	if err != nil {
-		return values.False, err
-	}
-
-	err = doc.WaitForNavigation(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
-}
-
-func (doc *HTMLDocument) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
-	args := page.NewPrintToPDFArgs()
-	args.
-		SetLandscape(bool(params.Landscape)).
-		SetDisplayHeaderFooter(bool(params.DisplayHeaderFooter)).
-		SetPrintBackground(bool(params.PrintBackground)).
-		SetIgnoreInvalidPageRanges(bool(params.IgnoreInvalidPageRanges)).
-		SetPreferCSSPageSize(bool(params.PreferCSSPageSize))
-
-	if params.Scale > 0 {
-		args.SetScale(float64(params.Scale))
-	}
-
-	if params.PaperWidth > 0 {
-		args.SetPaperWidth(float64(params.PaperWidth))
-	}
-
-	if params.PaperHeight > 0 {
-		args.SetPaperHeight(float64(params.PaperHeight))
-	}
-
-	if params.MarginTop > 0 {
-		args.SetMarginTop(float64(params.MarginTop))
-	}
-
-	if params.MarginBottom > 0 {
-		args.SetMarginBottom(float64(params.MarginBottom))
-	}
-
-	if params.MarginRight > 0 {
-		args.SetMarginRight(float64(params.MarginRight))
-	}
-
-	if params.MarginLeft > 0 {
-		args.SetMarginLeft(float64(params.MarginLeft))
-	}
-
-	if params.PageRanges != values.EmptyString {
-		args.SetPageRanges(string(params.PageRanges))
-	}
-
-	if params.HeaderTemplate != values.EmptyString {
-		args.SetHeaderTemplate(string(params.HeaderTemplate))
-	}
-
-	if params.FooterTemplate != values.EmptyString {
-		args.SetFooterTemplate(string(params.FooterTemplate))
-	}
-
-	reply, err := doc.client.Page.PrintToPDF(ctx, args)
-
-	if err != nil {
-		return values.NewBinary([]byte{}), err
-	}
-
-	return values.NewBinary(reply.Data), nil
-}
-
-func (doc *HTMLDocument) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
-	metrics, err := doc.client.Page.GetLayoutMetrics(ctx)
-
-	if err != nil {
-		return values.NewBinary(nil), err
-	}
-
-	if params.Format == drivers.ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
-		params.Quality = 100
-	}
-
-	if params.X < 0 {
-		params.X = 0
-	}
-
-	if params.Y < 0 {
-		params.Y = 0
-	}
-
-	if params.Width <= 0 {
-		params.Width = values.Float(metrics.LayoutViewport.ClientWidth) - params.X
-	}
-
-	if params.Height <= 0 {
-		params.Height = values.Float(metrics.LayoutViewport.ClientHeight) - params.Y
-	}
-
-	clip := page.Viewport{
-		X:      float64(params.X),
-		Y:      float64(params.Y),
-		Width:  float64(params.Width),
-		Height: float64(params.Height),
-		Scale:  1.0,
-	}
-
-	format := string(params.Format)
-	quality := int(params.Quality)
-	args := page.CaptureScreenshotArgs{
-		Format:  &format,
-		Quality: &quality,
-		Clip:    &clip,
-	}
-
-	reply, err := doc.client.Page.CaptureScreenshot(ctx, &args)
-
-	if err != nil {
-		return values.NewBinary([]byte{}), err
-	}
-
-	return values.NewBinary(reply.Data), nil
-}
-
 func (doc *HTMLDocument) ScrollTop(ctx context.Context) error {
-	_, err := eval.Eval(ctx, doc.client, `
+	return doc.exec.Eval(ctx, `
 		window.scrollTo({
 			left: 0,
 			top: 0,
     		behavior: 'instant'
   		});
-	`, false, false)
-
-	return err
+	`)
 }
 
 func (doc *HTMLDocument) ScrollBottom(ctx context.Context) error {
-	_, err := eval.Eval(ctx, doc.client, `
+	return doc.exec.Eval(ctx, `
 		window.scrollTo({
 			left: 0,
 			top: window.document.body.scrollHeight,
     		behavior: 'instant'
   		});
-	`, false, false)
-
-	return err
+	`)
 }
 
 func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String) error {
-	_, err := eval.Eval(ctx, doc.client, fmt.Sprintf(`
+	return doc.exec.Eval(ctx, fmt.Sprintf(`
 		var el = document.querySelector(%s);
 		if (el == null) {
 			throw new Error("element not found");
@@ -1047,13 +724,11 @@ func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.S
   		});
 		return true;
 	`, eval.ParamString(selector.String()),
-	), false, false)
-
-	return err
+	))
 }
 
 func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
-	_, err := eval.Eval(ctx, doc.client, fmt.Sprintf(`
+	return doc.exec.Eval(ctx, fmt.Sprintf(`
 		window.scrollBy({
   			top: %s,
   			left: %s,
@@ -1062,65 +737,16 @@ func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) erro
 	`,
 		eval.ParamFloat(float64(x)),
 		eval.ParamFloat(float64(y)),
-	), false, false)
-
-	return err
+	))
 }
 
-func (doc *HTMLDocument) handlePageLoad(ctx context.Context, _ interface{}) {
-	doc.Lock()
-	defer doc.Unlock()
-
-	node, err := getRootElement(ctx, doc.client)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Msg("failed to get root node after page load")
-
-		return
-	}
-
-	updated, err := LoadElement(
-		ctx,
-		doc.logger,
-		doc.client,
-		doc.events,
-		node.Root.NodeID,
-		node.Root.BackendNodeID,
-	)
-
-	if err != nil {
-		doc.logger.Error().
-			Timestamp().
-			Err(err).
-			Msg("failed to load root node after page load")
-
-		return
-	}
-
-	// close the prev element
-	doc.element.Close()
-
-	// create a new root element wrapper
-	doc.element = updated
-	doc.url = ""
-
-	if node.Root.BaseURL != nil {
-		doc.url = values.NewString(*node.Root.BaseURL)
-	}
-}
-
-func (doc *HTMLDocument) handleError(_ context.Context, val interface{}) {
-	err, ok := val.(error)
-
-	if !ok {
-		return
-	}
-
-	doc.logger.Error().
+func (doc *HTMLDocument) logError(err error) *zerolog.Event {
+	return doc.logger.
+		Error().
 		Timestamp().
-		Err(err).
-		Msg("unexpected error")
+		Str("url", string(doc.frames.Frame.URL)).
+		Str("securityOrigin", string(doc.frames.Frame.SecurityOrigin)).
+		Str("mimeType", string(doc.frames.Frame.MimeType)).
+		Str("frameID", string(doc.frames.Frame.ID)).
+		Err(err)
 }

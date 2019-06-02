@@ -10,8 +10,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Screenshot takes a screenshot of the current page.
-// @param source (Document) - Document.
+// Screenshot takes a screenshot of a given page.
+// @param target (HTMLPage|String) - Target page or url.
 // @param params (Object) - Optional, An object containing the following properties :
 // 		x (Float|Int) - Optional, X position of the viewport.
 // 		x (Float|Int) - Optional,Y position of the viewport.
@@ -35,15 +35,17 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	val, err := ValidateDocument(ctx, arg1)
+	page, closeAfter, err := OpenOrCastPage(ctx, arg1)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc := val.(drivers.HTMLDocument)
-
-	defer doc.Close()
+	defer func() {
+		if closeAfter {
+			page.Close()
+		}
+	}()
 
 	screenshotParams := drivers.ScreenshotParams{
 		X:       0,
@@ -155,7 +157,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	scr, err := doc.CaptureScreenshot(ctx, screenshotParams)
+	scr, err := page.CaptureScreenshot(ctx, screenshotParams)
 
 	if err != nil {
 		return values.None, err

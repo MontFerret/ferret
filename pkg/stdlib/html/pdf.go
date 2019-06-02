@@ -22,7 +22,7 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 }
 
 // PDF print a PDF of the current page.
-// @param source (Document) - Document.
+// @param target (HTMLPage|String) - Target page or url.
 // @param params (Object) - Optional, An object containing the following properties :
 //   Landscape (Bool) - Paper orientation. Defaults to false.
 //   DisplayHeaderFooter (Bool) - Display header and footer. Defaults to false.
@@ -48,14 +48,17 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	val, err := ValidateDocument(ctx, arg1)
+	page, closeAfter, err := OpenOrCastPage(ctx, arg1)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	doc := val.(drivers.HTMLDocument)
-	defer doc.Close()
+	defer func() {
+		if closeAfter {
+			page.Close()
+		}
+	}()
 
 	pdfParams := drivers.PDFParams{}
 
@@ -292,7 +295,7 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	pdf, err := doc.PrintToPDF(ctx, pdfParams)
+	pdf, err := page.PrintToPDF(ctx, pdfParams)
 
 	if err != nil {
 		return values.None, err

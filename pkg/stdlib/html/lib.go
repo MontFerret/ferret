@@ -22,7 +22,7 @@ func NewLib() map[string]core.Function {
 		"COOKIE_SET":        CookieSet,
 		"CLICK":             Click,
 		"CLICK_ALL":         ClickAll,
-		"DOCUMENT":          Document,
+		"DOCUMENT":          Open,
 		"DOWNLOAD":          Download,
 		"ELEMENT":           Element,
 		"ELEMENT_EXISTS":    ElementExists,
@@ -67,27 +67,29 @@ func NewLib() map[string]core.Function {
 	}
 }
 
-func ValidateDocument(ctx context.Context, value core.Value) (core.Value, error) {
-	err := core.ValidateType(value, drivers.HTMLDocumentType, types.String)
+func OpenOrCastPage(ctx context.Context, value core.Value) (drivers.HTMLPage, bool, error) {
+	err := core.ValidateType(value, drivers.HTMLPageType, types.String)
 	if err != nil {
-		return values.None, err
+		return nil, false, err
 	}
 
-	var doc drivers.HTMLDocument
+	var page drivers.HTMLPage
+	var closeAfter bool
 
 	if value.Type() == types.String {
-		buf, err := Document(ctx, value, values.NewBoolean(true))
+		buf, err := Open(ctx, value, values.NewBoolean(true))
 
 		if err != nil {
-			return values.None, err
+			return nil, false, err
 		}
 
-		doc = buf.(drivers.HTMLDocument)
+		page = buf.(drivers.HTMLPage)
+		closeAfter = true
 	} else {
-		doc = value.(drivers.HTMLDocument)
+		page = value.(drivers.HTMLPage)
 	}
 
-	return doc, nil
+	return page, closeAfter, nil
 }
 
 func waitTimeout(ctx context.Context, value values.Int) (context.Context, context.CancelFunc) {
@@ -101,12 +103,22 @@ func resolveElement(value core.Value) (drivers.HTMLElement, error) {
 	vt := value.Type()
 
 	if vt == drivers.HTMLDocumentType {
-		return value.(drivers.HTMLDocument).DocumentElement(), nil
+		return value.(drivers.HTMLDocument).Element(), nil
 	} else if vt == drivers.HTMLElementType {
 		return value.(drivers.HTMLElement), nil
 	}
 
 	return nil, core.TypeError(value.Type(), drivers.HTMLDocumentType, drivers.HTMLElementType)
+}
+
+func toPage(value core.Value) (drivers.HTMLPage, error) {
+	err := core.ValidateType(value, drivers.HTMLPageType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return value.(drivers.HTMLPage), nil
 }
 
 func toDocument(value core.Value) (drivers.HTMLDocument, error) {

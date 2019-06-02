@@ -10,7 +10,7 @@ import (
 )
 
 // Select selects a value from an underlying select element.
-// @param source (Document | Element) - Event target.
+// @param source (Open | Element) - Event target.
 // @param valueOrSelector (String | Array<String>) - Selector or a an array of strings as a value.
 // @param value (Array<String) - Target value. Optional.
 // @returns (Array<String>) - Returns an array of selected values.

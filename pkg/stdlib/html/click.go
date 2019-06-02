@@ -8,7 +8,7 @@ import (
 )
 
 // Click dispatches click event on a given element
-// @param source (Document | Element) - Event source.
+// @param source (Open | Element) - Event source.
 // @param selector (String, optional) - Optional selector. Only used when a document instance is passed.
 func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)

@@ -12,17 +12,25 @@ import (
 )
 
 type HTMLDocument struct {
-	docNode *goquery.Document
-	element drivers.HTMLElement
-	url     values.String
-	cookies []drivers.HTTPCookie
+	docNode  *goquery.Document
+	element  drivers.HTMLElement
+	url      values.String
+	parent   drivers.HTMLDocument
+	children []drivers.HTMLDocument
+}
+
+func NewRootHTMLDocument(
+	node *goquery.Document,
+	url string,
+) (*HTMLDocument, error) {
+	return NewHTMLDocument(node, url, nil)
 }
 
 func NewHTMLDocument(
 	node *goquery.Document,
 	url string,
-	cookies []drivers.HTTPCookie,
-) (drivers.HTMLDocument, error) {
+	parent drivers.HTMLDocument,
+) (*HTMLDocument, error) {
 	if url == "" {
 		return nil, core.Error(core.ErrMissedArgument, "document url")
 	}
@@ -37,7 +45,21 @@ func NewHTMLDocument(
 		return nil, err
 	}
 
-	return &HTMLDocument{node, el, values.NewString(url), cookies}, nil
+	doc := new(HTMLDocument)
+	doc.docNode = node
+	doc.element = el
+	doc.parent = parent
+	doc.url = values.NewString(url)
+	doc.children = make([]drivers.HTMLDocument, 0, 5)
+
+	//frames := node.Find("iframe")
+	//frames.Each(func(i int, selection *goquery.Selection) {
+	//	child, _ := NewHTMLDocument(selection, selection.AttrOr("src", url), doc)
+	//
+	//	doc.children = append(doc.children, child)
+	//})
+
+	return doc, nil
 }
 
 func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
@@ -84,7 +106,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 }
 
 func (doc *HTMLDocument) Copy() core.Value {
-	cp, err := NewHTMLDocument(doc.docNode, string(doc.url), doc.cookies)
+	cp, err := NewHTMLDocument(doc.docNode, string(doc.url), doc.parent)
 
 	if err != nil {
 		return values.None
@@ -94,14 +116,7 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
-	var cookies []drivers.HTTPCookie
-
-	if doc.cookies != nil {
-		cookies = make([]drivers.HTTPCookie, len(doc.cookies))
-		copy(cookies, doc.cookies)
-	}
-
-	cp, err := NewHTMLDocument(goquery.CloneDocument(doc.docNode), string(doc.url), cookies)
+	cp, err := NewHTMLDocument(goquery.CloneDocument(doc.docNode), string(doc.url), doc.parent)
 
 	if err != nil {
 		return values.None
@@ -170,38 +185,20 @@ func (doc *HTMLDocument) SetURL(_ context.Context, _ values.String) error {
 	return core.ErrInvalidOperation
 }
 
-func (doc *HTMLDocument) GetCookies(_ context.Context) (*values.Array, error) {
-	if doc.cookies == nil {
-		return values.NewArray(0), nil
-	}
-
-	arr := values.NewArray(len(doc.cookies))
-
-	for _, c := range doc.cookies {
-		arr.Push(c)
-	}
-
-	return arr, nil
+func (doc *HTMLDocument) Element() drivers.HTMLElement {
+	panic("implement me")
 }
 
-func (doc *HTMLDocument) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
-	return core.ErrNotSupported
+func (doc *HTMLDocument) Name() values.String {
+	panic("implement me")
 }
 
-func (doc *HTMLDocument) DeleteCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
-	return core.ErrNotSupported
+func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
+	panic("implement me")
 }
 
-func (doc *HTMLDocument) Navigate(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
-	return false, core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
-	return false, core.ErrNotSupported
+func (doc *HTMLDocument) GetChildDocuments() *values.Array {
+	panic("implement me")
 }
 
 func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) (values.Boolean, error) {

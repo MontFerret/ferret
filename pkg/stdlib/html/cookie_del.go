@@ -8,8 +8,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// CookieSet gets a cookie from a given document by name.
-// @param source (HTMLDocument) - Target HTMLDocument.
+// CookieSet gets a cookie from a given page by name.
+// @param page (HTMLPage) - Target page.
 // @param cookie (...HTTPCookie|String) - Cookie or cookie name to delete.
 func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
@@ -24,7 +24,12 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := args[0].(drivers.HTMLDocument)
+	page, err := toPage(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	inputs := args[1:]
 	var currentCookies *values.Array
 	cookies := make([]drivers.HTTPCookie, 0, len(inputs))
@@ -33,7 +38,7 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 		switch cookie := c.(type) {
 		case values.String:
 			if currentCookies == nil {
-				current, err := doc.GetCookies(ctx)
+				current, err := page.GetCookies(ctx)
 
 				if err != nil {
 					return values.None, err
@@ -60,5 +65,5 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	return values.None, doc.DeleteCookies(ctx, cookies...)
+	return values.None, page.DeleteCookies(ctx, cookies...)
 }

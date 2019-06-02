@@ -13,21 +13,21 @@ import (
 )
 
 type DocumentLoadParams struct {
-	drivers.LoadDocumentParams
+	drivers.OpenPageParams
 	Driver  string
 	Timeout time.Duration
 }
 
-// Document loads a HTML document by a given url.
+// Open opens an HTML page by a given url.
 // By default, loads a document by http call - resulted document does not support any interactions.
 // If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
 // @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
 // @param isDynamicOrParams (Boolean|DocumentLoadParams) - Either a boolean value that indicates whether to use dynamic page
 // or an object with the following properties :
 // 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
-// 		timeout (Int) - Optional, Document load timeout.
+// 		timeout (Int) - Optional, Open load timeout.
 // @returns (HTMLDocument) - Returns loaded HTML document.
-func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
+func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -65,12 +65,12 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return drv.LoadDocument(ctx, params.LoadDocumentParams)
+	return drv.Open(ctx, params.OpenPageParams)
 }
 
 func newDefaultDocLoadParams(url values.String) DocumentLoadParams {
 	return DocumentLoadParams{
-		LoadDocumentParams: drivers.LoadDocumentParams{
+		OpenPageParams: drivers.OpenPageParams{
 			URL: url.String(),
 		},
 		Timeout: time.Second * 30,

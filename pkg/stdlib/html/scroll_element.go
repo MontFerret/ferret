@@ -32,7 +32,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		// Document with a selector
+		// Open with a selector
 		doc := args[0].(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 

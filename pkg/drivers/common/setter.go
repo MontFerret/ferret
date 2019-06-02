@@ -9,24 +9,17 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value, value core.Value) error {
+func SetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value, value core.Value) error {
 	if len(path) == 0 {
 		return nil
 	}
 
-	segment := path[0]
+	return SetInDocument(ctx, page.Document(), path, value)
+}
 
-	if segment.Type() == types.String {
-		segment := segment.(values.String)
-
-		switch segment {
-		case "url", "URL":
-			return doc.SetURL(ctx, values.NewString(value.String()))
-		case "cookies":
-
-		default:
-			return SetInNode(ctx, doc, path, value)
-		}
+func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value, value core.Value) error {
+	if len(path) == 0 {
+		return nil
 	}
 
 	return SetInNode(ctx, doc, path, value)

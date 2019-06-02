@@ -4,9 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/emulation"
@@ -16,6 +13,10 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 const DriverName = "cdp"
@@ -42,7 +43,7 @@ func (drv *Driver) Name() string {
 	return drv.options.Name
 }
 
-func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocumentParams) (drivers.HTMLDocument, error) {
+func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)
@@ -156,7 +157,7 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		return nil, err
 	}
 
-	return LoadHTMLDocument(ctx, conn, client, params)
+	return LoadHTMLPage(ctx, conn, client, params)
 }
 
 func (drv *Driver) Close() error {

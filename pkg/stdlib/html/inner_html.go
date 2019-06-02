@@ -10,7 +10,7 @@ import (
 )
 
 // InnerHTML Returns inner HTML string of a given or matched by CSS selector element
-// @param doc (Document|Element) - Parent document or element.
+// @param doc (Open|Element) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner HTML string if an element found, otherwise empty string.
 func InnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {

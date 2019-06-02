@@ -8,8 +8,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// CookieSet sets cookies to a given document
-// @param doc (HTMLDocument) - Target document.
+// CookieSet sets cookies to a given page
+// @param page (HTMLPage) - Target page.
 // @param cookie... (HTTPCookie) - Target cookies.
 func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
@@ -24,7 +24,11 @@ func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := args[0].(drivers.HTMLDocument)
+	page, err := toPage(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	cookies := make([]drivers.HTTPCookie, 0, len(args)-1)
 
@@ -38,5 +42,5 @@ func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		cookies = append(cookies, cookie)
 	}
 
-	return values.None, doc.SetCookies(ctx, cookies...)
+	return values.None, page.SetCookies(ctx, cookies...)
 }

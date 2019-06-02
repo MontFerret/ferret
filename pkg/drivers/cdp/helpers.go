@@ -10,7 +10,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -42,16 +41,6 @@ func runBatch(funcs ...batchFunc) error {
 	}
 
 	return eg.Wait()
-}
-
-func getRootElement(ctx context.Context, client *cdp.Client) (*dom.GetDocumentReply, error) {
-	d, err := client.DOM.GetDocument(ctx, dom.NewGetDocumentArgs().SetDepth(1))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return d, nil
 }
 
 func fromProtocolQuad(quad dom.Quad) []Quad {
@@ -167,7 +156,7 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id *HTMLElementIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
 	switch {
@@ -201,7 +190,7 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 
 	// not a document
 	if id.nodeID != 1 {
-		res, err := eval.Property(ctx, client, objID, "innerHTML")
+		res, err := exec.ReadProperty(ctx, objID, "innerHTML")
 
 		if err != nil {
 			return "", err
@@ -219,7 +208,7 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 	return values.NewString(repl.OuterHTML), nil
 }
 
-func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id *HTMLElementIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
 	switch {
@@ -253,7 +242,7 @@ func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 
 	// not a document
 	if id.nodeID != 1 {
-		res, err := eval.Property(ctx, client, objID, "innerText")
+		res, err := exec.ReadProperty(ctx, objID, "innerText")
 
 		if err != nil {
 			return "", err
@@ -294,122 +283,6 @@ func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
 	}
 
 	return children
-}
-
-func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
-	loadEventFired, err := client.Page.LoadEventFired(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = loadEventFired.Recv()
-
-	if err != nil {
-		return err
-	}
-
-	return loadEventFired.Close()
-}
-
-func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
-	var err error
-	var onLoad page.LoadEventFiredClient
-	var onReload dom.DocumentUpdatedClient
-	var onAttrModified dom.AttributeModifiedClient
-	var onAttrRemoved dom.AttributeRemovedClient
-	var onChildCountUpdated dom.ChildNodeCountUpdatedClient
-	var onChildNodeInserted dom.ChildNodeInsertedClient
-	var onChildNodeRemoved dom.ChildNodeRemovedClient
-	ctx := context.Background()
-
-	onLoad, err = client.Page.LoadEventFired(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	onReload, err = client.DOM.DocumentUpdated(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		return nil, err
-	}
-
-	onAttrModified, err = client.DOM.AttributeModified(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		return nil, err
-	}
-
-	onAttrRemoved, err = client.DOM.AttributeRemoved(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		return nil, err
-	}
-
-	onChildCountUpdated, err = client.DOM.ChildNodeCountUpdated(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		return nil, err
-	}
-
-	onChildNodeInserted, err = client.DOM.ChildNodeInserted(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		return nil, err
-	}
-
-	onChildNodeRemoved, err = client.DOM.ChildNodeRemoved(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		onChildNodeInserted.Close()
-		return nil, err
-	}
-
-	broker := events.NewEventBroker(
-		onLoad,
-		onReload,
-		onAttrModified,
-		onAttrRemoved,
-		onChildCountUpdated,
-		onChildNodeInserted,
-		onChildNodeRemoved,
-	)
-
-	err = broker.Start()
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		onChildNodeInserted.Close()
-		onChildNodeRemoved.Close()
-		return nil, err
-	}
-
-	return broker, nil
 }
 
 func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam {
@@ -490,4 +363,32 @@ func randomDuration(delay values.Int) time.Duration {
 	value := core.Random(max, min)
 
 	return time.Duration(int64(value))
+}
+
+func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (dom.Node, runtime.ExecutionContextID, error) {
+	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(frame.ID))
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	nodeObj, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetExecutionContextID(worldRepl.ExecutionContextID))
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	repl, err := client.DOM.DescribeNode(
+		ctx,
+		dom.
+			NewDescribeNodeArgs().
+			SetObjectID(*nodeObj.Object.ObjectID).
+			SetDepth(1),
+	)
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	return repl.Node, worldRepl.ExecutionContextID, nil
 }
