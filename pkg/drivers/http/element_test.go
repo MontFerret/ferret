@@ -244,7 +244,7 @@ func TestElement(t *testing.T) {
 	<svg xmlns="http://www.w3.org/2000/svg" width="348" height="225" viewBox="0 0 348 225" preserveAspectRatio="none" style="display: none; visibility: hidden; position: absolute; top: -100%; left: -100%;"><defs><style type="text/css"></style></defs><text x="0" y="17" style="font-weight:bold;font-size:17pt;font-family:Arial, Helvetica, Open Sans, sans-serif">Thumbnail</text></svg></body></html>
 `
 
-	Convey(".NodeType", t, func() {
+	Convey(".GetNodeType", t, func() {
 		buff := bytes.NewBuffer([]byte(doc))
 
 		buff.Write([]byte(doc))
@@ -257,10 +257,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.NodeType(), ShouldEqual, 1)
+		So(el.GetNodeType(), ShouldEqual, 1)
 	})
 
-	Convey(".NodeName", t, func() {
+	Convey(".GetNodeName", t, func() {
 		buff := bytes.NewBuffer([]byte(doc))
 
 		buff.Write([]byte(doc))
@@ -273,7 +273,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.NodeName(), ShouldEqual, "body")
+		So(el.GetNodeName(), ShouldEqual, "body")
 	})
 
 	Convey(".Length", t, func() {
@@ -327,7 +327,7 @@ func TestElement(t *testing.T) {
 		So(v, ShouldEqual, "find")
 	})
 
-	Convey(".InnerText", t, func() {
+	Convey(".GetInnerText", t, func() {
 		buff := bytes.NewBuffer([]byte(`
 			<html>
 				<head></head>
@@ -349,7 +349,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.InnerText(context.Background())
+		v := el.GetInnerText(context.Background())
 
 		So(v, ShouldEqual, "Ferret")
 	})
@@ -376,7 +376,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.InnerHTML(context.Background())
+		v := el.GetInnerHTML(context.Background())
 
 		So(v, ShouldEqual, "<h2>Ferret</h2>")
 	})
@@ -396,7 +396,7 @@ func TestElement(t *testing.T) {
 
 		So(found, ShouldNotEqual, values.None)
 
-		v := found.(drivers.HTMLNode).NodeName()
+		v := found.(drivers.HTMLNode).GetNodeName()
 
 		So(err, ShouldBeNil)
 

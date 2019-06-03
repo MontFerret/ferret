@@ -26,9 +26,9 @@ type (
 
 		IsDetached() values.Boolean
 
-		NodeType() values.Int
+		GetNodeType() values.Int
 
-		NodeName() values.String
+		GetNodeName() values.String
 
 		GetChildNodes(ctx context.Context) core.Value
 
@@ -43,13 +43,13 @@ type (
 		ExistsBySelector(ctx context.Context, selector values.String) values.Boolean
 	}
 
-	// HTMLElement is the most general base interface which most objects in a MainFrame implement.
+	// HTMLElement is the most general base interface which most objects in a GetMainFrame implement.
 	HTMLElement interface {
 		HTMLNode
 
-		InnerText(ctx context.Context) values.String
+		GetInnerText(ctx context.Context) values.String
 
-		InnerHTML(ctx context.Context) values.String
+		GetInnerHTML(ctx context.Context) values.String
 
 		GetValue(ctx context.Context) core.Value
 
@@ -103,13 +103,13 @@ type (
 	HTMLDocument interface {
 		HTMLNode
 
-		Title() values.String
+		GetTitle() values.String
 
-		Element() HTMLElement
+		GetElement() HTMLElement
 
-		GetURL() core.Value
+		GetURL() values.String
 
-		Name() values.String
+		GetName() values.String
 
 		GetParentDocument() HTMLDocument
 
@@ -162,9 +162,11 @@ type (
 
 		IsClosed() values.Boolean
 
-		MainFrame() HTMLDocument
+		GetURL() values.String
 
-		Frames(ctx context.Context) (*values.Array, error)
+		GetMainFrame() HTMLDocument
+
+		GetFrames(ctx context.Context) (*values.Array, error)
 
 		GetCookies(ctx context.Context) (*values.Array, error)
 

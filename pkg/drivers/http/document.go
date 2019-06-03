@@ -12,22 +12,22 @@ import (
 )
 
 type HTMLDocument struct {
-	docNode  *goquery.Document
+	doc      *goquery.Selection
 	element  drivers.HTMLElement
 	url      values.String
 	parent   drivers.HTMLDocument
-	children []drivers.HTMLDocument
+	children *values.Array
 }
 
 func NewRootHTMLDocument(
 	node *goquery.Document,
 	url string,
 ) (*HTMLDocument, error) {
-	return NewHTMLDocument(node, url, nil)
+	return NewHTMLDocument(node.Selection, url, nil)
 }
 
 func NewHTMLDocument(
-	node *goquery.Document,
+	node *goquery.Selection,
 	url string,
 	parent drivers.HTMLDocument,
 ) (*HTMLDocument, error) {
@@ -39,25 +39,25 @@ func NewHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "document root selection")
 	}
 
-	el, err := NewHTMLElement(node.Selection)
+	el, err := NewHTMLElement(node.Find("html"))
 
 	if err != nil {
 		return nil, err
 	}
 
 	doc := new(HTMLDocument)
-	doc.docNode = node
+	doc.doc = node
 	doc.element = el
 	doc.parent = parent
 	doc.url = values.NewString(url)
-	doc.children = make([]drivers.HTMLDocument, 0, 5)
+	doc.children = values.NewArray(10)
 
-	//frames := node.Find("iframe")
-	//frames.Each(func(i int, selection *goquery.Selection) {
-	//	child, _ := NewHTMLDocument(selection, selection.AttrOr("src", url), doc)
-	//
-	//	doc.children = append(doc.children, child)
-	//})
+	frames := node.Find("iframe")
+	frames.Each(func(i int, selection *goquery.Selection) {
+		child, _ := NewHTMLDocument(selection, selection.AttrOr("src", url), doc)
+
+		doc.children.Push(child)
+	})
 
 	return doc, nil
 }
@@ -71,7 +71,7 @@ func (doc *HTMLDocument) Type() core.Type {
 }
 
 func (doc *HTMLDocument) String() string {
-	str, err := doc.docNode.Html()
+	str, err := doc.doc.Html()
 
 	if err != nil {
 		return ""
@@ -92,7 +92,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 }
 
 func (doc *HTMLDocument) Unwrap() interface{} {
-	return doc.docNode
+	return doc.doc
 }
 
 func (doc *HTMLDocument) Hash() uint64 {
@@ -106,7 +106,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 }
 
 func (doc *HTMLDocument) Copy() core.Value {
-	cp, err := NewHTMLDocument(doc.docNode, string(doc.url), doc.parent)
+	cp, err := NewHTMLDocument(doc.doc, string(doc.url), doc.parent)
 
 	if err != nil {
 		return values.None
@@ -116,17 +116,11 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
-	cp, err := NewHTMLDocument(goquery.CloneDocument(doc.docNode), string(doc.url), doc.parent)
-
-	if err != nil {
-		return values.None
-	}
-
-	return cp
+	return values.None
 }
 
 func (doc *HTMLDocument) Length() values.Int {
-	return values.NewInt(doc.docNode.Length())
+	return values.NewInt(doc.doc.Length())
 }
 
 func (doc *HTMLDocument) Iterate(_ context.Context) (core.Iterator, error) {
@@ -141,11 +135,11 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 	return common.SetInDocument(ctx, doc, path, value)
 }
 
-func (doc *HTMLDocument) NodeType() values.Int {
+func (doc *HTMLDocument) GetNodeType() values.Int {
 	return 9
 }
 
-func (doc *HTMLDocument) NodeName() values.String {
+func (doc *HTMLDocument) GetNodeName() values.String {
 	return "#document"
 }
 
@@ -174,35 +168,33 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 }
 
 func (doc *HTMLDocument) IsDetached() values.Boolean {
-	panic("implement me")
+	return values.False
 }
 
-func (doc *HTMLDocument) Title() values.String {
-	panic("implement me")
+func (doc *HTMLDocument) GetTitle() values.String {
+	title := doc.doc.Find("head > title")
+
+	return values.NewString(title.Text())
 }
 
 func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
-	panic("implement me")
+	return doc.children.Clone().(*values.Array), nil
 }
 
-func (doc *HTMLDocument) GetURL() core.Value {
+func (doc *HTMLDocument) GetURL() values.String {
 	return doc.url
 }
 
-func (doc *HTMLDocument) SetURL(_ context.Context, _ values.String) error {
-	return core.ErrInvalidOperation
+func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
+	return doc.element
 }
 
-func (doc *HTMLDocument) Element() drivers.HTMLElement {
-	panic("implement me")
-}
-
-func (doc *HTMLDocument) Name() values.String {
-	panic("implement me")
+func (doc *HTMLDocument) GetName() values.String {
+	return ""
 }
 
 func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
-	panic("implement me")
+	return doc.parent
 }
 
 func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) (values.Boolean, error) {

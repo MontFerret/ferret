@@ -179,6 +179,16 @@ func (broker *EventBroker) Close() error {
 	return nil
 }
 
+func (broker *EventBroker) StopAndClose() error {
+	err := broker.Stop()
+
+	if err != nil {
+		return err
+	}
+
+	return broker.Close()
+}
+
 func (broker *EventBroker) runLoop(ctx context.Context) {
 	for {
 		select {

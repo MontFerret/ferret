@@ -266,11 +266,12 @@ func (doc *HTMLDocument) IsDetached() values.Boolean {
 
 	return doc.element.IsDetached()
 }
-func (doc *HTMLDocument) NodeType() values.Int {
+
+func (doc *HTMLDocument) GetNodeType() values.Int {
 	return 9
 }
 
-func (doc *HTMLDocument) NodeName() values.String {
+func (doc *HTMLDocument) GetNodeName() values.String {
 	return "#document"
 }
 
@@ -316,7 +317,7 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) Title() values.String {
+func (doc *HTMLDocument) GetTitle() values.String {
 	doc.mu.Lock()
 	defer doc.mu.Unlock()
 
@@ -331,7 +332,7 @@ func (doc *HTMLDocument) Title() values.String {
 	return values.NewString(value.String())
 }
 
-func (doc *HTMLDocument) Name() values.String {
+func (doc *HTMLDocument) GetName() values.String {
 	doc.mu.Lock()
 	defer doc.mu.Unlock()
 
@@ -369,14 +370,14 @@ func (doc *HTMLDocument) Length() values.Int {
 	return doc.element.Length()
 }
 
-func (doc *HTMLDocument) Element() drivers.HTMLElement {
+func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
 	doc.mu.Lock()
 	defer doc.mu.Unlock()
 
 	return doc.element
 }
 
-func (doc *HTMLDocument) GetURL() core.Value {
+func (doc *HTMLDocument) GetURL() values.String {
 	doc.mu.Lock()
 	defer doc.mu.Unlock()
 
@@ -486,7 +487,7 @@ func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.S
 			}
 			var values = %s;
 			if (element.nodeName.toLowerCase() !== 'select') {
-				throw new Error('Element is not a <select> element.');
+				throw new Error('GetElement is not a <select> element.');
 			}
 			var options = Array.from(element.options);
       		element.value = undefined;

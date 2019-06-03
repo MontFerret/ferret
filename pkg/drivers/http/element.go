@@ -29,7 +29,7 @@ func NewHTMLElement(node *goquery.Selection) (drivers.HTMLElement, error) {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(el.InnerText(context.Background()).String())
+	return json.Marshal(el.GetInnerText(context.Background()).String())
 }
 
 func (el *HTMLElement) Type() core.Type {
@@ -37,7 +37,7 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) String() string {
-	return el.InnerHTML(context.Background()).String()
+	return el.GetInnerHTML(context.Background()).String()
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
@@ -48,7 +48,7 @@ func (el *HTMLElement) Compare(other core.Value) int64 {
 		ctx, fn := drivers.WithDefaultTimeout(context.Background())
 		defer fn()
 
-		return el.InnerHTML(ctx).Compare(other.InnerHTML(ctx))
+		return el.GetInnerHTML(ctx).Compare(other.GetInnerHTML(ctx))
 	default:
 		return drivers.Compare(el.Type(), other.Type())
 	}
@@ -84,7 +84,7 @@ func (el *HTMLElement) IsDetached() values.Boolean {
 	return values.True
 }
 
-func (el *HTMLElement) NodeType() values.Int {
+func (el *HTMLElement) GetNodeType() values.Int {
 	nodes := el.selection.Nodes
 
 	if len(nodes) == 0 {
@@ -98,7 +98,7 @@ func (el *HTMLElement) Close() error {
 	return nil
 }
 
-func (el *HTMLElement) NodeName() values.String {
+func (el *HTMLElement) GetNodeName() values.String {
 	return values.NewString(goquery.NodeName(el.selection))
 }
 
@@ -126,11 +126,11 @@ func (el *HTMLElement) SetValue(_ context.Context, value core.Value) error {
 	return nil
 }
 
-func (el *HTMLElement) InnerText(_ context.Context) values.String {
+func (el *HTMLElement) GetInnerText(_ context.Context) values.String {
 	return values.NewString(el.selection.Text())
 }
 
-func (el *HTMLElement) InnerHTML(_ context.Context) values.String {
+func (el *HTMLElement) GetInnerHTML(_ context.Context) values.String {
 	h, err := el.selection.Html()
 
 	if err != nil {

@@ -103,7 +103,7 @@ func resolveElement(value core.Value) (drivers.HTMLElement, error) {
 	vt := value.Type()
 
 	if vt == drivers.HTMLDocumentType {
-		return value.(drivers.HTMLDocument).Element(), nil
+		return value.(drivers.HTMLDocument).GetElement(), nil
 	} else if vt == drivers.HTMLElementType {
 		return value.(drivers.HTMLElement), nil
 	}

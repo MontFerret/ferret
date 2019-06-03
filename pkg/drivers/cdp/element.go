@@ -212,7 +212,7 @@ func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 }
 
 func (el *HTMLElement) String() string {
-	return el.InnerHTML(context.Background()).String()
+	return el.GetInnerHTML(context.Background()).String()
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
@@ -222,7 +222,7 @@ func (el *HTMLElement) Compare(other core.Value) int64 {
 
 		ctx := context.Background()
 
-		return el.InnerHTML(ctx).Compare(other.InnerHTML(ctx))
+		return el.GetInnerHTML(ctx).Compare(other.GetInnerHTML(ctx))
 	default:
 		return drivers.Compare(el.Type(), other.Type())
 	}
@@ -288,11 +288,11 @@ func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
 	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.nodeID, value.String()))
 }
 
-func (el *HTMLElement) NodeType() values.Int {
+func (el *HTMLElement) GetNodeType() values.Int {
 	return el.nodeType
 }
 
-func (el *HTMLElement) NodeName() values.String {
+func (el *HTMLElement) GetNodeName() values.String {
 	return el.nodeName
 }
 
@@ -567,7 +567,7 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 	return arr
 }
 
-func (el *HTMLElement) InnerText(ctx context.Context) values.String {
+func (el *HTMLElement) GetInnerText(ctx context.Context) values.String {
 	val, err := el.innerText.Read(ctx)
 
 	if err != nil {
@@ -701,7 +701,7 @@ func (el *HTMLElement) InnerTextBySelectorAll(ctx context.Context, selector valu
 	return arr
 }
 
-func (el *HTMLElement) InnerHTML(_ context.Context) values.String {
+func (el *HTMLElement) GetInnerHTML(_ context.Context) values.String {
 	el.mu.Lock()
 	defer el.mu.Unlock()
 
@@ -928,7 +928,7 @@ func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
 	var attrID = "data-ferret-select"
 
-	if el.NodeName() != "SELECT" {
+	if el.GetNodeName() != "SELECT" {
 		return nil, core.Error(core.ErrInvalidOperation, "element is not a <select> element.")
 	}
 
@@ -1075,7 +1075,7 @@ func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 		// and just parse cached innerHTML
 	}
 
-	h := el.InnerHTML(ctx)
+	h := el.GetInnerHTML(ctx)
 
 	if h == values.EmptyString {
 		return h, nil

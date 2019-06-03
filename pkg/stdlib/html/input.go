@@ -10,7 +10,7 @@ import (
 )
 
 // Input types a value to an underlying input element.
-// @param source (Open | Element) - Event target.
+// @param source (Open | GetElement) - Event target.
 // @param valueOrSelector (String) - Selector or a value.
 // @param value (String) - Target value.
 // @param delay (Int, optional) - Waits delay milliseconds between keystrokes

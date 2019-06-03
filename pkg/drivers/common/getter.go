@@ -21,9 +21,9 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 
 		switch segment {
 		case "mainFrame", "document":
-			return GetInDocument(ctx, page.MainFrame(), path[1:])
+			return GetInDocument(ctx, page.GetMainFrame(), path[1:])
 		case "frames":
-			frames, err := page.Frames(ctx)
+			frames, err := page.GetFrames(ctx)
 
 			if err != nil {
 				return values.None, err
@@ -34,8 +34,8 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 			}
 
 			return values.GetIn(ctx, frames, path[1:])
-		case "url", "URL":
-			return page.MainFrame().GetURL(), nil
+		case "url", "GetURL":
+			return page.GetMainFrame().GetURL(), nil
 		case "cookies":
 			if len(path) == 1 {
 				return page.GetCookies(ctx)
@@ -56,13 +56,13 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 		case "isClosed":
 			return page.IsClosed(), nil
 		case "title":
-			return page.MainFrame().Title(), nil
+			return page.GetMainFrame().GetTitle(), nil
 		default:
-			return GetInDocument(ctx, page.MainFrame(), path)
+			return GetInDocument(ctx, page.GetMainFrame(), path)
 		}
 	}
 
-	return GetInDocument(ctx, page.MainFrame(), path)
+	return GetInDocument(ctx, page.GetMainFrame(), path)
 }
 
 func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value) (core.Value, error) {
@@ -76,10 +76,10 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		segment := segment.(values.String)
 
 		switch segment {
-		case "url", "URL":
+		case "url", "GetURL":
 			return doc.GetURL(), nil
 		case "title":
-			return doc.Title(), nil
+			return doc.GetTitle(), nil
 		case "parent":
 			parent := doc.GetParentDocument()
 
@@ -93,11 +93,11 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		case "head":
 			return doc.QuerySelector(ctx, "head"), nil
 		default:
-			return GetInNode(ctx, doc.Element(), path)
+			return GetInNode(ctx, doc.GetElement(), path)
 		}
 	}
 
-	return GetInNode(ctx, doc.Element(), path)
+	return GetInNode(ctx, doc.GetElement(), path)
 }
 
 func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value) (core.Value, error) {
@@ -112,9 +112,9 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 
 		switch segment {
 		case "innerText":
-			return el.InnerText(ctx), nil
+			return el.GetInnerText(ctx), nil
 		case "innerHTML":
-			return el.InnerHTML(ctx), nil
+			return el.GetInnerHTML(ctx), nil
 		case "value":
 			return el.GetValue(ctx), nil
 		case "attributes":
@@ -170,9 +170,9 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		case "isDetached":
 			return node.IsDetached(), nil
 		case "nodeType":
-			return node.NodeType(), nil
+			return node.GetNodeType(), nil
 		case "nodeName":
-			return node.NodeName(), nil
+			return node.GetNodeName(), nil
 		case "children":
 			children := node.GetChildNodes(ctx)
 

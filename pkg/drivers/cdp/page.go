@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/mafredri/cdp/protocol/page"
+	"hash/fnv"
 	"sync"
 
 	"github.com/mafredri/cdp"
@@ -125,8 +126,7 @@ func LoadHTMLPage(
 	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker)
 
 	if err != nil {
-		broker.Stop()
-		broker.Close()
+		broker.StopAndClose()
 		handleLoadError(logger, client)
 
 		return nil, errors.Wrap(err, "failed to load root element")
@@ -182,22 +182,47 @@ func (p *HTMLPage) String() string {
 }
 
 func (p *HTMLPage) Compare(other core.Value) int64 {
-	panic("implement me")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	tc := drivers.Compare(p.Type(), other.Type())
+
+	if tc != 0 {
+		return tc
+	}
+
+	cdpPage, ok := other.(*HTMLPage)
+
+	if !ok {
+		return 1
+	}
+
+	return p.document.GetURL().Compare(cdpPage.GetURL())
 }
 
 func (p *HTMLPage) Unwrap() interface{} {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.client
+	return p
 }
 
 func (p *HTMLPage) Hash() uint64 {
-	panic("implement me")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	h := fnv.New64a()
+
+	h.Write([]byte("CDP"))
+	h.Write([]byte(p.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(p.document.GetURL()))
+
+	return h.Sum64()
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	panic("implement me")
+	return values.None
 }
 
 func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
@@ -277,14 +302,21 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 	return p.closed
 }
 
-func (p *HTMLPage) MainFrame() drivers.HTMLDocument {
+func (p *HTMLPage) GetURL() values.String {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.document.GetURL()
+}
+
+func (p *HTMLPage) GetMainFrame() drivers.HTMLDocument {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.document
 }
 
-func (p *HTMLPage) Frames(ctx context.Context) (*values.Array, error) {
+func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -634,41 +666,11 @@ func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
 func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
 	res := values.NewArray(10)
 
-	err := p.collectFrames(ctx, res, p.MainFrame())
+	err := common.CollectFrames(ctx, res, p.document)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return res, nil
-}
-
-func (p *HTMLPage) collectFrames(ctx context.Context, receiver *values.Array, doc drivers.HTMLDocument) error {
-	receiver.Push(doc)
-
-	children, err := doc.GetChildDocuments(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	children.ForEach(func(value core.Value, idx int) bool {
-		childDoc, ok := value.(drivers.HTMLDocument)
-
-		if !ok {
-			err = core.TypeError(value.Type(), drivers.HTMLDocumentType)
-
-			return false
-		}
-
-		err = p.collectFrames(ctx, receiver, childDoc)
-
-		if err != nil {
-			return false
-		}
-
-		return true
-	})
-
-	return nil
 }

@@ -3,14 +3,17 @@ package http
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
+	"hash/fnv"
 )
 
 type HTMLPage struct {
 	document *HTMLDocument
 	cookies  []drivers.HTTPCookie
+	frames   *values.Array
 }
 
 func NewHTMLPage(
@@ -27,6 +30,7 @@ func NewHTMLPage(
 	p := new(HTMLPage)
 	p.document = doc
 	p.cookies = cookies
+	p.frames = nil
 
 	return p, nil
 }
@@ -44,7 +48,19 @@ func (p *HTMLPage) String() string {
 }
 
 func (p *HTMLPage) Compare(other core.Value) int64 {
-	panic("implement me")
+	tc := drivers.Compare(p.Type(), other.Type())
+
+	if tc != 0 {
+		return tc
+	}
+
+	httpPage, ok := other.(*HTMLPage)
+
+	if !ok {
+		return 1
+	}
+
+	return p.document.GetURL().Compare(httpPage.GetURL())
 }
 
 func (p *HTMLPage) Unwrap() interface{} {
@@ -52,43 +68,66 @@ func (p *HTMLPage) Unwrap() interface{} {
 }
 
 func (p *HTMLPage) Hash() uint64 {
-	panic("implement me")
+	h := fnv.New64a()
+
+	h.Write([]byte("HTTP"))
+	h.Write([]byte(p.Type().String()))
+	h.Write([]byte(":"))
+	h.Write([]byte(p.document.GetURL()))
+
+	return h.Sum64()
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	panic("implement me")
+	return values.None
 }
 
 func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
-	panic("implement me")
+	return p.document.Iterate(ctx)
 }
 
 func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	panic("implement me")
+	return common.GetInPage(ctx, p, path)
 }
 
 func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	panic("implement me")
+	return common.SetInPage(ctx, p, path, value)
 }
 
 func (p *HTMLPage) Length() values.Int {
-	panic("implement me")
+	return p.document.Length()
 }
 
 func (p *HTMLPage) Close() error {
-	panic("implement me")
+	return nil
 }
 
 func (p *HTMLPage) IsClosed() values.Boolean {
-	panic("implement me")
+	return values.False
 }
 
-func (p *HTMLPage) MainFrame() drivers.HTMLDocument {
+func (p *HTMLPage) GetURL() values.String {
+	return p.document.GetURL()
+}
+
+func (p *HTMLPage) GetMainFrame() drivers.HTMLDocument {
 	return p.document
 }
 
-func (p *HTMLPage) Frames(ctx context.Context) (*values.Array, error) {
-	panic("implement me")
+func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
+	if p.frames == nil {
+		arr := values.NewArray(10)
+
+		err := common.CollectFrames(ctx, arr, p.document)
+
+		if err != nil {
+			return nil, err
+		}
+
+		p.frames = arr
+	}
+
+	return p.frames, nil
 }
 
 func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
@@ -135,4 +174,16 @@ func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Bo
 
 func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
+}
+
+func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
+	res := values.NewArray(10)
+
+	err := common.CollectFrames(ctx, res, p.document)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

@@ -45,7 +45,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	// Element
+	// GetElement
 	el := args[0].(drivers.HTMLElement)
 
 	return values.None, el.ScrollIntoView(ctx)
