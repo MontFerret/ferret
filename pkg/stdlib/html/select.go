@@ -22,14 +22,18 @@ func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
-	if arg1.Type() == drivers.HTMLDocumentType {
-		doc := arg1.(drivers.HTMLDocument)
+	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
+		doc, err := toDocument(arg1)
+
+		if err != nil {
+			return values.None, err
+		}
 
 		// selector
 		arg2 := args[1]

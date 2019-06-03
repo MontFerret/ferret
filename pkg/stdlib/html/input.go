@@ -23,14 +23,18 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
-	if arg1.Type() == drivers.HTMLDocumentType {
-		doc := arg1.(drivers.HTMLDocument)
+	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
+		doc, err := toDocument(arg1)
+
+		if err != nil {
+			return values.False, err
+		}
 
 		// selector
 		arg2 := args[1]
@@ -57,7 +61,12 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return doc.InputBySelector(ctx, arg2.(values.String), args[2], delay)
 	}
 
-	el := arg1.(drivers.HTMLElement)
+	el, err := toElement(arg1)
+
+	if err != nil {
+		return values.None, err
+	}
+
 	delay := values.Int(0)
 
 	if len(args) == 3 {

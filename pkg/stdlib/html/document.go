@@ -12,7 +12,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-type DocumentLoadParams struct {
+type PageLoadParams struct {
 	drivers.OpenPageParams
 	Driver  string
 	Timeout time.Duration
@@ -22,7 +22,7 @@ type DocumentLoadParams struct {
 // By default, loads a document by http call - resulted document does not support any interactions.
 // If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
 // @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
-// @param isDynamicOrParams (Boolean|DocumentLoadParams) - Either a boolean value that indicates whether to use dynamic page
+// @param isDynamicOrParams (Boolean|PageLoadParams) - Either a boolean value that indicates whether to use dynamic page
 // or an object with the following properties :
 // 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
 // 		timeout (Int) - Optional, Open load timeout.
@@ -42,12 +42,12 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	url := args[0].(values.String)
 
-	var params DocumentLoadParams
+	var params PageLoadParams
 
 	if len(args) == 1 {
 		params = newDefaultDocLoadParams(url)
 	} else {
-		p, err := newDocLoadParams(url, args[1])
+		p, err := newPageLoadParams(url, args[1])
 
 		if err != nil {
 			return values.None, err
@@ -68,8 +68,8 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return drv.Open(ctx, params.OpenPageParams)
 }
 
-func newDefaultDocLoadParams(url values.String) DocumentLoadParams {
-	return DocumentLoadParams{
+func newDefaultDocLoadParams(url values.String) PageLoadParams {
+	return PageLoadParams{
 		OpenPageParams: drivers.OpenPageParams{
 			URL: url.String(),
 		},
@@ -77,7 +77,7 @@ func newDefaultDocLoadParams(url values.String) DocumentLoadParams {
 	}
 }
 
-func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, error) {
+func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error) {
 	res := newDefaultDocLoadParams(url)
 
 	if err := core.ValidateType(arg, types.Boolean, types.String, types.Object); err != nil {

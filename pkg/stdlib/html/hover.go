@@ -20,8 +20,8 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	// document or element
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
+	// page or document or element
+	err = core.ValidateType(args[0], drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -40,6 +40,12 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	switch n := args[0].(type) {
+	case drivers.HTMLPage:
+		if selector == values.EmptyString {
+			return values.None, core.Error(core.ErrMissedArgument, "selector")
+		}
+
+		return values.None, n.GetMainFrame().MoveMouseBySelector(ctx, selector)
 	case drivers.HTMLDocument:
 		if selector == values.EmptyString {
 			return values.None, core.Error(core.ErrMissedArgument, "selector")

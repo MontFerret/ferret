@@ -20,7 +20,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 2 {
-		err = core.ValidateType(args[0], drivers.HTMLDocumentType)
+		doc, err := toDocument(args[0])
 
 		if err != nil {
 			return values.None, err
@@ -32,8 +32,6 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		// Open with a selector
-		doc := args[0].(drivers.HTMLDocument)
 		selector := args[1].(values.String)
 
 		return values.None, doc.ScrollBySelector(ctx, selector)
@@ -46,7 +44,11 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// GetElement
-	el := args[0].(drivers.HTMLElement)
+	el, err := toElement(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	return values.None, el.ScrollIntoView(ctx)
 }
