@@ -11,7 +11,7 @@ import (
 
 func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
-		return values.None, nil
+		return page, nil
 	}
 
 	segment := path[0]
@@ -20,8 +20,22 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 		segment := segment.(values.String)
 
 		switch segment {
+		case "mainFrame", "document":
+			return GetInDocument(ctx, page.MainFrame(), path[1:])
+		case "frames":
+			frames, err := page.Frames(ctx)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			if len(path) == 1 {
+				return frames, nil
+			}
+
+			return values.GetIn(ctx, frames, path[1:])
 		case "url", "URL":
-			return page.Document().GetURL(), nil
+			return page.MainFrame().GetURL(), nil
 		case "cookies":
 			if len(path) == 1 {
 				return page.GetCookies(ctx)
@@ -39,36 +53,21 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 			default:
 				return values.None, core.TypeError(idx.Type(), types.Int)
 			}
-		case "document":
-			return page.Document(), nil
-		case "frames":
-			if len(path) == 1 {
-				return page.Document().GetChildDocuments(ctx)
-			}
-
-			switch idx := path[1].(type) {
-			case values.Int:
-				children, err := page.Document().GetChildDocuments(ctx)
-
-				if err != nil {
-					return values.None, err
-				}
-
-				return children.Get(idx), nil
-			default:
-				return values.None, core.TypeError(idx.Type(), types.Int)
-			}
+		case "isClosed":
+			return page.IsClosed(), nil
+		case "title":
+			return page.MainFrame().Title(), nil
 		default:
-			return GetInDocument(ctx, page.Document(), path)
+			return GetInDocument(ctx, page.MainFrame(), path)
 		}
 	}
 
-	return GetInDocument(ctx, page.Document(), path)
+	return GetInDocument(ctx, page.MainFrame(), path)
 }
 
 func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
-		return values.None, nil
+		return doc, nil
 	}
 
 	segment := path[0]
@@ -79,6 +78,8 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		switch segment {
 		case "url", "URL":
 			return doc.GetURL(), nil
+		case "title":
+			return doc.Title(), nil
 		case "parent":
 			parent := doc.GetParentDocument()
 
@@ -101,7 +102,7 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 
 func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
-		return values.None, nil
+		return el, nil
 	}
 
 	segment := path[0]
@@ -146,7 +147,7 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 
 func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
-		return values.None, nil
+		return node, nil
 	}
 
 	nt := node.Type()
@@ -166,6 +167,8 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		segment := segment.(values.String)
 
 		switch segment {
+		case "isDetached":
+			return node.IsDetached(), nil
 		case "nodeType":
 			return node.NodeType(), nil
 		case "nodeName":

@@ -173,8 +173,16 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
-	return doc.element
+func (doc *HTMLDocument) IsDetached() values.Boolean {
+	panic("implement me")
+}
+
+func (doc *HTMLDocument) Title() values.String {
+	panic("implement me")
+}
+
+func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
+	panic("implement me")
 }
 
 func (doc *HTMLDocument) GetURL() core.Value {
@@ -194,10 +202,6 @@ func (doc *HTMLDocument) Name() values.String {
 }
 
 func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
-	panic("implement me")
-}
-
-func (doc *HTMLDocument) GetChildDocuments() *values.Array {
 	panic("implement me")
 }
 

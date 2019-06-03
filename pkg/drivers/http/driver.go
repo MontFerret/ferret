@@ -136,7 +136,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (dri
 	return NewHTMLPage(doc, params.URL, params.Cookies)
 }
 
-func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.HTMLDocument, error) {
+func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)

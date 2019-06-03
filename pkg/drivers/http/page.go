@@ -31,8 +31,64 @@ func NewHTMLPage(
 	return p, nil
 }
 
-func (p *HTMLPage) Document() drivers.HTMLDocument {
+func (p *HTMLPage) MarshalJSON() ([]byte, error) {
+	return p.document.MarshalJSON()
+}
+
+func (p *HTMLPage) Type() core.Type {
+	return drivers.HTMLPageType
+}
+
+func (p *HTMLPage) String() string {
+	return p.document.GetURL().String()
+}
+
+func (p *HTMLPage) Compare(other core.Value) int64 {
+	panic("implement me")
+}
+
+func (p *HTMLPage) Unwrap() interface{} {
+	return p
+}
+
+func (p *HTMLPage) Hash() uint64 {
+	panic("implement me")
+}
+
+func (p *HTMLPage) Copy() core.Value {
+	panic("implement me")
+}
+
+func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
+	panic("implement me")
+}
+
+func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	panic("implement me")
+}
+
+func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	panic("implement me")
+}
+
+func (p *HTMLPage) Length() values.Int {
+	panic("implement me")
+}
+
+func (p *HTMLPage) Close() error {
+	panic("implement me")
+}
+
+func (p *HTMLPage) IsClosed() values.Boolean {
+	panic("implement me")
+}
+
+func (p *HTMLPage) MainFrame() drivers.HTMLDocument {
 	return p.document
+}
+
+func (p *HTMLPage) Frames(ctx context.Context) (*values.Array, error) {
+	panic("implement me")
 }
 
 func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {

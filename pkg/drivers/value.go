@@ -24,6 +24,8 @@ type (
 		collections.Measurable
 		io.Closer
 
+		IsDetached() values.Boolean
+
 		NodeType() values.Int
 
 		NodeName() values.String
@@ -41,7 +43,7 @@ type (
 		ExistsBySelector(ctx context.Context, selector values.String) values.Boolean
 	}
 
-	// HTMLElement is the most general base interface which most objects in a Document implement.
+	// HTMLElement is the most general base interface which most objects in a MainFrame implement.
 	HTMLElement interface {
 		HTMLNode
 
@@ -101,6 +103,8 @@ type (
 	HTMLDocument interface {
 		HTMLNode
 
+		Title() values.String
+
 		Element() HTMLElement
 
 		GetURL() core.Value
@@ -156,7 +160,11 @@ type (
 		collections.Measurable
 		io.Closer
 
-		Document() HTMLDocument
+		IsClosed() values.Boolean
+
+		MainFrame() HTMLDocument
+
+		Frames(ctx context.Context) (*values.Array, error)
 
 		GetCookies(ctx context.Context) (*values.Array, error)
 

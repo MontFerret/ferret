@@ -14,7 +14,7 @@ func SetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value, va
 		return nil
 	}
 
-	return SetInDocument(ctx, page.Document(), path, value)
+	return SetInDocument(ctx, page.MainFrame(), path, value)
 }
 
 func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value, value core.Value) error {

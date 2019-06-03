@@ -22,11 +22,13 @@ import (
 
 type HTMLPage struct {
 	mu       sync.Mutex
+	closed   values.Boolean
 	logger   *zerolog.Logger
 	conn     *rpcc.Conn
 	client   *cdp.Client
 	events   *events.EventBroker
 	document *HTMLDocument
+	frames   *common.LazyValue
 }
 
 func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
@@ -147,11 +149,13 @@ func NewHTMLPage(
 	document *HTMLDocument,
 ) *HTMLPage {
 	p := new(HTMLPage)
+	p.closed = values.False
 	p.logger = logger
 	p.conn = conn
 	p.client = client
 	p.events = broker
 	p.document = document
+	p.frames = common.NewLazyValue(p.unfoldFrames)
 
 	broker.AddEventListener(events.EventLoad, p.handlePageLoad)
 	broker.AddEventListener(events.EventError, p.handleError)
@@ -222,6 +226,7 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	p.closed = values.True
 	err := p.events.Stop()
 
 	if err != nil {
@@ -265,11 +270,31 @@ func (p *HTMLPage) Close() error {
 	return p.conn.Close()
 }
 
-func (p *HTMLPage) Document() drivers.HTMLDocument {
+func (p *HTMLPage) IsClosed() values.Boolean {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.closed
+}
+
+func (p *HTMLPage) MainFrame() drivers.HTMLDocument {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.document
+}
+
+func (p *HTMLPage) Frames(ctx context.Context) (*values.Array, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	res, err := p.frames.Read(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.(*values.Array), nil
 }
 
 func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
@@ -589,6 +614,8 @@ func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
 
 	// set the new root document
 	p.document = nextDoc
+	// reset all loaded frames
+	p.frames.Reset()
 }
 
 func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
@@ -602,4 +629,46 @@ func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
 		Timestamp().
 		Err(err).
 		Msg("unexpected error")
+}
+
+func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
+	res := values.NewArray(10)
+
+	err := p.collectFrames(ctx, res, p.MainFrame())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (p *HTMLPage) collectFrames(ctx context.Context, receiver *values.Array, doc drivers.HTMLDocument) error {
+	receiver.Push(doc)
+
+	children, err := doc.GetChildDocuments(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	children.ForEach(func(value core.Value, idx int) bool {
+		childDoc, ok := value.(drivers.HTMLDocument)
+
+		if !ok {
+			err = core.TypeError(value.Type(), drivers.HTMLDocumentType)
+
+			return false
+		}
+
+		err = p.collectFrames(ctx, receiver, childDoc)
+
+		if err != nil {
+			return false
+		}
+
+		return true
+	})
+
+	return nil
 }

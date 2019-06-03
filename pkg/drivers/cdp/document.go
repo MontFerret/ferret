@@ -28,16 +28,15 @@ import (
 const BlankPageURL = "about:blank"
 
 type HTMLDocument struct {
-	mu        sync.Mutex
-	connected bool
-	logger    *zerolog.Logger
-	client    *cdp.Client
-	events    *events.EventBroker
-	exec      *eval.ExecutionContext
-	frames    page.FrameTree
-	element   *HTMLElement
-	parent    *HTMLDocument
-	children  *common.LazyValue
+	mu       sync.Mutex
+	logger   *zerolog.Logger
+	client   *cdp.Client
+	events   *events.EventBroker
+	exec     *eval.ExecutionContext
+	frames   page.FrameTree
+	element  *HTMLElement
+	parent   *HTMLDocument
+	children *common.LazyValue
 }
 
 func LoadRootHTMLDocument(
@@ -117,7 +116,6 @@ func NewHTMLDocument(
 	parent *HTMLDocument,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
-	doc.connected = true
 	doc.logger = logger
 	doc.frames = frames
 	doc.client = client
@@ -225,8 +223,6 @@ func (doc *HTMLDocument) Close() error {
 	doc.mu.Lock()
 	defer doc.mu.Unlock()
 
-	doc.connected = false
-
 	errs := make([]error, 0, 5)
 
 	if doc.children.Ready() {
@@ -264,6 +260,12 @@ func (doc *HTMLDocument) Close() error {
 	return core.Errors(errs...)
 }
 
+func (doc *HTMLDocument) IsDetached() values.Boolean {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	return doc.element.IsDetached()
+}
 func (doc *HTMLDocument) NodeType() values.Int {
 	return 9
 }
@@ -312,6 +314,21 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 	defer doc.mu.Unlock()
 
 	return doc.element.ExistsBySelector(ctx, selector)
+}
+
+func (doc *HTMLDocument) Title() values.String {
+	doc.mu.Lock()
+	defer doc.mu.Unlock()
+
+	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.objectID, "title")
+
+	if err != nil {
+		doc.logError(errors.Wrap(err, "failed to read document title"))
+
+		return values.EmptyString
+	}
+
+	return values.NewString(value.String())
 }
 
 func (doc *HTMLDocument) Name() values.String {
