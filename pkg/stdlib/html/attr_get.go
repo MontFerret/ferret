@@ -18,7 +18,7 @@ func AttributeGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	el, err := resolveElement(args[0])
+	el, err := toElement(args[0])
 
 	if err != nil {
 		return values.None, err

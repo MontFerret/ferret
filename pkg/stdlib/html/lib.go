@@ -99,18 +99,6 @@ func waitTimeout(ctx context.Context, value values.Int) (context.Context, contex
 	)
 }
 
-func resolveElement(value core.Value) (drivers.HTMLElement, error) {
-	vt := value.Type()
-
-	if vt == drivers.HTMLDocumentType {
-		return value.(drivers.HTMLDocument).GetElement(), nil
-	} else if vt == drivers.HTMLElementType {
-		return value.(drivers.HTMLElement), nil
-	}
-
-	return nil, core.TypeError(value.Type(), drivers.HTMLDocumentType, drivers.HTMLElementType)
-}
-
 func toPage(value core.Value) (drivers.HTMLPage, error) {
 	err := core.ValidateType(value, drivers.HTMLPageType)
 
@@ -122,21 +110,34 @@ func toPage(value core.Value) (drivers.HTMLPage, error) {
 }
 
 func toDocument(value core.Value) (drivers.HTMLDocument, error) {
-	err := core.ValidateType(value, drivers.HTMLDocumentType)
-
-	if err != nil {
-		return nil, err
+	switch v := value.(type) {
+	case drivers.HTMLPage:
+		return v.GetMainFrame(), nil
+	case drivers.HTMLDocument:
+		return v, nil
+	default:
+		return nil, core.TypeError(
+			value.Type(),
+			drivers.HTMLPageType,
+			drivers.HTMLDocumentType,
+		)
 	}
-
-	return value.(drivers.HTMLDocument), nil
 }
 
 func toElement(value core.Value) (drivers.HTMLElement, error) {
-	err := core.ValidateType(value, drivers.HTMLElementType)
-
-	if err != nil {
-		return nil, err
+	switch v := value.(type) {
+	case drivers.HTMLPage:
+		return v.GetMainFrame().GetElement(), nil
+	case drivers.HTMLDocument:
+		return v.GetElement(), nil
+	case drivers.HTMLElement:
+		return v, nil
+	default:
+		return nil, core.TypeError(
+			value.Type(),
+			drivers.HTMLPageType,
+			drivers.HTMLDocumentType,
+			drivers.HTMLElementType,
+		)
 	}
-
-	return value.(drivers.HTMLElement), nil
 }
