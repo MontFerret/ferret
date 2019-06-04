@@ -130,7 +130,7 @@ func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 	return p.frames, nil
 }
 
-func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
+func (p *HTMLPage) GetCookies(_ context.Context) (*values.Array, error) {
 	if p.cookies == nil {
 		return values.NewArray(0), nil
 	}
@@ -144,35 +144,35 @@ func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
 	return arr, nil
 }
 
-func (p *HTMLPage) SetCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+func (p *HTMLPage) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+func (p *HTMLPage) DeleteCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
+func (p *HTMLPage) PrintToPDF(_ context.Context, _ drivers.PDFParams) (values.Binary, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
+func (p *HTMLPage) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotParams) (values.Binary, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (p *HTMLPage) WaitForNavigation(ctx context.Context) error {
+func (p *HTMLPage) WaitForNavigation(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
+func (p *HTMLPage) Navigate(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 

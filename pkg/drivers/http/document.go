@@ -177,7 +177,7 @@ func (doc *HTMLDocument) GetTitle() values.String {
 	return values.NewString(title.Text())
 }
 
-func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
+func (doc *HTMLDocument) GetChildDocuments(_ context.Context) (*values.Array, error) {
 	return doc.children.Clone().(*values.Array), nil
 }
 
