@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -15,12 +14,6 @@ import (
 // @returns (String) - An array of inner HTML strings if any element found, otherwise empty array.
 func InnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err

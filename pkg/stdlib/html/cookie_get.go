@@ -19,19 +19,13 @@ func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType)
+	page, err := toPage(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
 	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	page, err := toPage(args[0])
 
 	if err != nil {
 		return values.None, err

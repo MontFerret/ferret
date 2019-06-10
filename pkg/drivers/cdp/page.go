@@ -36,7 +36,7 @@ func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
 	err := client.Page.Close(context.Background())
 
 	if err != nil {
-		logger.Warn().Timestamp().Err(err).Msg("unabled to close document on load error")
+		logger.Warn().Timestamp().Err(err).Msg("failed to close document on load error")
 	}
 }
 

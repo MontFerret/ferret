@@ -139,22 +139,27 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 
 		r.logger.Info().Timestamp().Str("name", fName).Msg("Running test")
 
-		result := r.runQuery(ctx, c, fName, string(b))
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+		default:
+			result := r.runQuery(ctx, c, fName, string(b))
 
-		if result.err == nil {
-			r.logger.Info().
-				Timestamp().
-				Str("file", result.name).
-				Msg("Test passed")
-		} else {
-			r.logger.Error().
-				Timestamp().
-				Err(result.err).
-				Str("file", result.name).
-				Msg("Test failed")
+			if result.err == nil {
+				r.logger.Info().
+					Timestamp().
+					Str("file", result.name).
+					Msg("Test passed")
+			} else {
+				r.logger.Error().
+					Timestamp().
+					Err(result.err).
+					Str("file", result.name).
+					Msg("Test failed")
+			}
+
+			results = append(results, result)
 		}
-
-		results = append(results, result)
 	}
 
 	return results, nil
