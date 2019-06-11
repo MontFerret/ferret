@@ -12,7 +12,7 @@ import (
 )
 
 type HTMLDocument struct {
-	doc      *goquery.Selection
+	doc      *goquery.Document
 	element  drivers.HTMLElement
 	url      values.String
 	parent   drivers.HTMLDocument
@@ -23,11 +23,11 @@ func NewRootHTMLDocument(
 	node *goquery.Document,
 	url string,
 ) (*HTMLDocument, error) {
-	return NewHTMLDocument(node.Selection, url, nil)
+	return NewHTMLDocument(node, url, nil)
 }
 
 func NewHTMLDocument(
-	node *goquery.Selection,
+	node *goquery.Document,
 	url string,
 	parent drivers.HTMLDocument,
 ) (*HTMLDocument, error) {
@@ -39,7 +39,7 @@ func NewHTMLDocument(
 		return nil, core.Error(core.ErrMissedArgument, "document root selection")
 	}
 
-	el, err := NewHTMLElement(node.Find("html"))
+	el, err := NewHTMLElement(node.Selection)
 
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func NewHTMLDocument(
 
 	frames := node.Find("iframe")
 	frames.Each(func(i int, selection *goquery.Selection) {
-		child, _ := NewHTMLDocument(selection, selection.AttrOr("src", url), doc)
+		child, _ := NewHTMLDocument(goquery.NewDocumentFromNode(selection.Nodes[0]), selection.AttrOr("src", url), doc)
 
 		doc.children.Push(child)
 	})

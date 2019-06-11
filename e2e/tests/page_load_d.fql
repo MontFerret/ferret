@@ -1,4 +1,4 @@
 LET url = @dynamic
 LET doc = DOCUMENT(url, true)
 
-RETURN EXPECT(doc.url, url)
+RETURN EXPECT(doc.url, RIGHT(url, LENGTH(url) - 1))

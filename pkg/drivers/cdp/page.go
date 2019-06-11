@@ -326,7 +326,7 @@ func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 		return nil, err
 	}
 
-	return res.(*values.Array), nil
+	return res.(*values.Array).Clone().(*values.Array), nil
 }
 
 func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
