@@ -75,7 +75,7 @@ func LoadHTMLPage(
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to set cookies")
 		}
 	}
 
@@ -100,7 +100,7 @@ func LoadHTMLPage(
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to set headers")
 		}
 	}
 
@@ -112,7 +112,7 @@ func LoadHTMLPage(
 		if err != nil {
 			handleLoadError(logger, client)
 
-			return nil, err
+			return nil, errors.Wrap(err, "failed to load the page")
 		}
 	}
 
