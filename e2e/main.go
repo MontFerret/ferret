@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/e2e/runner"
 	"github.com/MontFerret/ferret/e2e/server"
 	"github.com/rs/zerolog"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -38,6 +39,20 @@ var (
 		"regexp expression to filter out tests",
 	)
 )
+
+func getOutboundIP() (net.IP, error) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP, nil
+}
 
 func main() {
 	flag.Parse()
@@ -91,9 +106,22 @@ func main() {
 		}
 	}
 
+	var ipAddr string
+
+	// we need it in those cases when a Chrome instance is running inside a container
+	// and it needs an external IP to get access to our static web server
+	outIP, err := getOutboundIP()
+
+	if err != nil {
+		ipAddr = "0.0.0.0"
+		logger.Warn().Err(err).Msg("Failed to get outbound IP address")
+	} else {
+		ipAddr = outIP.String()
+	}
+
 	r := runner.New(logger, runner.Settings{
-		StaticServerAddress:  fmt.Sprintf("http://0.0.0.0:%d", staticPort),
-		DynamicServerAddress: fmt.Sprintf("http://0.0.0.0:%d", dynamicPort),
+		StaticServerAddress:  fmt.Sprintf("http://%s:%d", ipAddr, staticPort),
+		DynamicServerAddress: fmt.Sprintf("http://%s:%d", ipAddr, dynamicPort),
 		CDPAddress:           *cdp,
 		Dir:                  *testsDir,
 		Filter:               filterR,
@@ -110,7 +138,7 @@ func main() {
 		}
 	}()
 
-	err := r.Run(ctx)
+	err = r.Run(ctx)
 
 	if err != nil {
 		os.Exit(1)
