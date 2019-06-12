@@ -10,7 +10,7 @@ import (
 )
 
 func WaitForLoadEvent(ctx context.Context, client *cdp.Client) error {
-	loadEventFired, err := client.Page.LoadEventFired(ctx)
+	loadEventFired, err := client.Page.DOMContentEventFired(ctx)
 
 	if err != nil {
 		return errors.Wrap(err, "failed to create load event hook")

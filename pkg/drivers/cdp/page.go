@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
+	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/page"
 	"hash/fnv"
 	"sync"
@@ -43,7 +44,6 @@ func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
 func LoadHTMLPage(
 	ctx context.Context,
 	conn *rpcc.Conn,
-	client *cdp.Client,
 	params drivers.OpenPageParams,
 ) (*HTMLPage, error) {
 	logger := logging.FromContext(ctx)
@@ -52,8 +52,55 @@ func LoadHTMLPage(
 		return nil, core.Error(core.ErrMissedArgument, "connection")
 	}
 
-	if params.URL == "" {
-		return nil, core.Error(core.ErrMissedArgument, "url")
+	client := cdp.NewClient(conn)
+
+	err := runBatch(
+		func() error {
+			return client.Page.Enable(ctx)
+		},
+
+		func() error {
+			return client.Page.SetLifecycleEventsEnabled(
+				ctx,
+				page.NewSetLifecycleEventsEnabledArgs(true),
+			)
+		},
+
+		func() error {
+			return client.DOM.Enable(ctx)
+		},
+
+		func() error {
+			return client.Runtime.Enable(ctx)
+		},
+
+		func() error {
+			ua := common.GetUserAgent(params.UserAgent)
+
+			logger.
+				Debug().
+				Timestamp().
+				Str("user-agent", ua).
+				Msg("using User-Agent")
+
+			// do not use custom user agent
+			if ua == "" {
+				return nil
+			}
+
+			return client.Emulation.SetUserAgentOverride(
+				ctx,
+				emulation.NewSetUserAgentOverrideArgs(ua),
+			)
+		},
+
+		func() error {
+			return client.Network.Enable(ctx, network.NewEnableArgs())
+		},
+	)
+
+	if err != nil {
+		return nil, err
 	}
 
 	if params.Cookies != nil {
@@ -69,7 +116,7 @@ func LoadHTMLPage(
 				Msg("set cookie")
 		}
 
-		err := client.Network.SetCookies(
+		err = client.Network.SetCookies(
 			ctx,
 			network.NewSetCookiesArgs(cookies),
 		)
@@ -104,9 +151,17 @@ func LoadHTMLPage(
 		}
 	}
 
-	var err error
+	if params.URL != BlankPageURL && params.URL != "" {
+		repl, err := client.Page.Navigate(ctx, page.NewNavigateArgs(params.URL))
 
-	if params.URL != BlankPageURL {
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load the page")
+		}
+
+		if repl.ErrorText != nil {
+			return nil, errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL)
+		}
+
 		err = events.WaitForLoadEvent(ctx, client)
 
 		if err != nil {

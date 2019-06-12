@@ -6,16 +6,12 @@ import (
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
-	"github.com/mafredri/cdp/protocol/emulation"
-	"github.com/mafredri/cdp/protocol/network"
-	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
@@ -59,20 +55,15 @@ func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (dri
 		return nil, err
 	}
 
-	url := params.URL
-
-	if url == "" {
-		url = BlankPageURL
-	}
-
-	// Create a new target belonging to the browser context
-	createTargetArgs := target.NewCreateTargetArgs(url)
+	// Args for a new target belonging to the browser context
+	createTargetArgs := target.NewCreateTargetArgs(BlankPageURL)
 
 	if !drv.options.KeepCookies && !params.KeepCookies {
 		// Set it to an incognito mode
 		createTargetArgs.SetBrowserContextID(drv.contextID)
 	}
 
+	// New target
 	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
 
 	if err != nil {
@@ -100,64 +91,11 @@ func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (dri
 		return nil, err
 	}
 
-	client := cdp.NewClient(conn)
-
-	err = runBatch(
-		func() error {
-			return client.Page.Enable(ctx)
-		},
-
-		func() error {
-			return client.Page.SetLifecycleEventsEnabled(
-				ctx,
-				page.NewSetLifecycleEventsEnabledArgs(true),
-			)
-		},
-
-		func() error {
-			return client.DOM.Enable(ctx)
-		},
-
-		func() error {
-			return client.Runtime.Enable(ctx)
-		},
-
-		func() error {
-			var ua string
-
-			if params.UserAgent != "" {
-				ua = common.GetUserAgent(params.UserAgent)
-			} else {
-				ua = common.GetUserAgent(drv.options.UserAgent)
-			}
-
-			logger.
-				Debug().
-				Timestamp().
-				Str("user-agent", ua).
-				Msg("using User-Agent")
-
-			// do not use custom user agent
-			if ua == "" {
-				return nil
-			}
-
-			return client.Emulation.SetUserAgentOverride(
-				ctx,
-				emulation.NewSetUserAgentOverrideArgs(ua),
-			)
-		},
-
-		func() error {
-			return client.Network.Enable(ctx, network.NewEnableArgs())
-		},
-	)
-
-	if err != nil {
-		return nil, err
+	if params.UserAgent == "" {
+		params.UserAgent = drv.options.UserAgent
 	}
 
-	return LoadHTMLPage(ctx, conn, client, params)
+	return LoadHTMLPage(ctx, conn, params)
 }
 
 func (drv *Driver) Close() error {

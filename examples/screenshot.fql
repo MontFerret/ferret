@@ -1,0 +1,3 @@
+LET data = SCREENSHOT("https://github.com/MontFerret/ferret/raw/master/assets/logo.png")
+
+RETURN { type: "png", data }
