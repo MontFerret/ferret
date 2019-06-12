@@ -22,7 +22,7 @@ import (
 const DriverName = "cdp"
 
 type Driver struct {
-	sync.Mutex
+	mu        sync.Mutex
 	dev       *devtool.DevTools
 	conn      *rpcc.Conn
 	client    *cdp.Client
@@ -161,8 +161,8 @@ func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (dri
 }
 
 func (drv *Driver) Close() error {
-	drv.Lock()
-	defer drv.Unlock()
+	drv.mu.Lock()
+	defer drv.mu.Unlock()
 
 	if drv.session != nil {
 		drv.session.Close()
@@ -174,8 +174,8 @@ func (drv *Driver) Close() error {
 }
 
 func (drv *Driver) init(ctx context.Context) error {
-	drv.Lock()
-	defer drv.Unlock()
+	drv.mu.Lock()
+	defer drv.mu.Unlock()
 
 	if drv.session == nil {
 		ver, err := drv.dev.Version(ctx)

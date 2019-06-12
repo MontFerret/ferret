@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
+	"github.com/pkg/errors"
 
 	"github.com/mafredri/cdp"
 )
@@ -12,7 +13,7 @@ func WaitForLoadEvent(ctx context.Context, client *cdp.Client) error {
 	loadEventFired, err := client.Page.LoadEventFired(ctx)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create load event hook")
 	}
 
 	_, err = loadEventFired.Recv()
