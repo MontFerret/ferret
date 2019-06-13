@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/html"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -42,15 +43,15 @@ type (
 		events         *events.EventBroker
 		exec           *eval.ExecutionContext
 		connected      values.Boolean
-		id             *HTMLElementIdentity
-		nodeType       values.Int
+		id             HTMLElementIdentity
+		nodeType       html.NodeType
 		nodeName       values.String
 		innerHTML      values.String
 		innerText      *common.LazyValue
 		value          core.Value
 		attributes     *common.LazyValue
 		style          *common.LazyValue
-		children       []*HTMLElementIdentity
+		children       []HTMLElementIdentity
 		loadedChildren *common.LazyValue
 	}
 )
@@ -101,7 +102,7 @@ func LoadHTMLElement(
 		return nil, core.Error(err, strconv.Itoa(int(nodeID)))
 	}
 
-	id := new(HTMLElementIdentity)
+	id := HTMLElementIdentity{}
 	id.nodeID = nodeID
 	id.objectID = objectID
 
@@ -111,7 +112,7 @@ func LoadHTMLElement(
 		id.backendID = node.Node.BackendNodeID
 	}
 
-	innerHTML, err := loadInnerHTML(ctx, client, exec, id)
+	innerHTML, err := loadInnerHTML(ctx, client, exec, id, common.ToHTMLType(node.Node.NodeType))
 
 	if err != nil {
 		return nil, core.Error(err, strconv.Itoa(int(nodeID)))
@@ -142,12 +143,12 @@ func NewHTMLElement(
 	client *cdp.Client,
 	broker *events.EventBroker,
 	exec *eval.ExecutionContext,
-	id *HTMLElementIdentity,
+	id HTMLElementIdentity,
 	nodeType int,
 	nodeName string,
 	value string,
 	innerHTML values.String,
-	children []*HTMLElementIdentity,
+	children []HTMLElementIdentity,
 ) *HTMLElement {
 	el := new(HTMLElement)
 	el.logger = logger
@@ -156,7 +157,7 @@ func NewHTMLElement(
 	el.exec = exec
 	el.connected = values.True
 	el.id = id
-	el.nodeType = values.NewInt(nodeType)
+	el.nodeType = common.ToHTMLType(nodeType)
 	el.nodeName = values.NewString(nodeName)
 	el.innerHTML = innerHTML
 	el.innerText = common.NewLazyValue(el.loadInnerText)
@@ -289,7 +290,7 @@ func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
 }
 
 func (el *HTMLElement) GetNodeType() values.Int {
-	return el.nodeType
+	return values.NewInt(common.FromHTMLType(el.nodeType))
 }
 
 func (el *HTMLElement) GetNodeName() values.String {
@@ -724,9 +725,7 @@ func (el *HTMLElement) InnerHTMLBySelector(ctx context.Context, selector values.
 		return values.EmptyString
 	}
 
-	text, err := loadInnerHTML(ctx, el.client, el.exec, &HTMLElementIdentity{
-		nodeID: found.NodeID,
-	})
+	text, err := loadInnerHTMLByNodeID(ctx, el.client, el.exec, found.NodeID)
 
 	if err != nil {
 		el.logError(err).
@@ -755,9 +754,7 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(ctx context.Context, selector valu
 	arr := values.NewArray(len(res.NodeIDs))
 
 	for _, id := range res.NodeIDs {
-		text, err := loadInnerHTML(ctx, el.client, el.exec, &HTMLElementIdentity{
-			nodeID: id,
-		})
+		text, err := loadInnerHTMLByNodeID(ctx, el.client, el.exec, id)
 
 		if err != nil {
 			el.logError(err).
@@ -1287,13 +1284,13 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 		return
 	}
 
-	nextIdentity := &HTMLElementIdentity{
+	nextIdentity := HTMLElementIdentity{
 		nodeID:    reply.Node.NodeID,
 		backendID: reply.Node.BackendNodeID,
 	}
 
 	arr := el.children
-	el.children = append(arr[:targetIDx], append([]*HTMLElementIdentity{nextIdentity}, arr[targetIDx:]...)...)
+	el.children = append(arr[:targetIDx], append([]HTMLElementIdentity{nextIdentity}, arr[targetIDx:]...)...)
 
 	if !el.loadedChildren.Ready() {
 		return
@@ -1311,7 +1308,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 
 		loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
 
-		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.exec, el.id)
+		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
 
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
@@ -1373,7 +1370,7 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface
 		loadedArr := v.(*values.Array)
 		loadedArr.RemoveAt(values.NewInt(targetIDx))
 
-		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.exec, el.id)
+		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
 
 		if err != nil {
 			el.logger.Error().

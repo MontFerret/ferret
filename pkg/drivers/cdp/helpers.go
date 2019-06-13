@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"golang.org/x/net/html"
 	"math"
 	"strings"
 	"time"
@@ -76,7 +77,7 @@ func computeQuadArea(quads []Quad) float64 {
 	return math.Abs(area)
 }
 
-func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (Quad, error) {
+func getClickablePoint(ctx context.Context, client *cdp.Client, id HTMLElementIdentity) (Quad, error) {
 	qargs := dom.NewGetContentQuadsArgs()
 
 	switch {
@@ -156,7 +157,7 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
 	switch {
@@ -189,17 +190,17 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 	}
 
 	// not a document
-	if id.nodeID != 1 {
+	if nodeType != html.DocumentNode {
 		res, err := exec.ReadProperty(ctx, objID, "innerHTML")
 
 		if err != nil {
 			return "", err
 		}
 
-		return values.NewString(res.String()), err
+		return values.NewString(res.String()), nil
 	}
 
-	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID))
+	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID).SetBackendNodeID(id.backendID).SetNodeID(id.nodeID))
 
 	if err != nil {
 		return "", err
@@ -208,7 +209,19 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 	return values.NewString(repl.OuterHTML), nil
 }
 
-func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id *HTMLElementIdentity) (values.String, error) {
+func loadInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
+	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs())
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return loadInnerHTML(ctx, client, exec, HTMLElementIdentity{
+		nodeID: nodeID,
+	}, common.ToHTMLType(node.Node.NodeType))
+}
+
+func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity) (values.String, error) {
 	var objID runtime.RemoteObjectID
 
 	switch {
@@ -272,11 +285,11 @@ func parseInnerText(innerHTML string) (values.String, error) {
 	return values.NewString(parsed.Text()), nil
 }
 
-func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
-	children := make([]*HTMLElementIdentity, len(nodes))
+func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
+	children := make([]HTMLElementIdentity, len(nodes))
 
 	for idx, child := range nodes {
-		children[idx] = &HTMLElementIdentity{
+		children[idx] = HTMLElementIdentity{
 			nodeID:    child.NodeID,
 			backendID: child.BackendNodeID,
 		}

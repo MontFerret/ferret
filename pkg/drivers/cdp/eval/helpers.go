@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -17,9 +18,18 @@ func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
 		return values.None, nil
 	}
 
-	if obj.Type != "undefined" {
+	switch obj.Type {
+	case "string":
+		str, err := strconv.Unquote(string(obj.Value))
+
+		if err != nil {
+			return values.None, err
+		}
+
+		return values.NewString(str), nil
+	case "undefined", "null":
+		return values.None, nil
+	default:
 		return values.Unmarshal(obj.Value)
 	}
-
-	return values.None, nil
 }

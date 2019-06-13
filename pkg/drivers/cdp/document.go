@@ -543,7 +543,7 @@ func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector value
 		return errors.New("element not found")
 	}
 
-	q, err := getClickablePoint(ctx, doc.client, &HTMLElementIdentity{
+	q, err := getClickablePoint(ctx, doc.client, HTMLElementIdentity{
 		nodeID: found.NodeID,
 	})
 

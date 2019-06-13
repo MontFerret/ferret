@@ -91,7 +91,7 @@ func (el *HTMLElement) GetNodeType() values.Int {
 		return 0
 	}
 
-	return values.NewInt(common.ToHTMLType(nodes[0].Type))
+	return values.NewInt(common.FromHTMLType(nodes[0].Type))
 }
 
 func (el *HTMLElement) Close() error {

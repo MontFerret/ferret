@@ -103,11 +103,29 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 				return values.None, nil
 			}
 
-			return parent, nil
-		case "body":
-			return doc.QuerySelector(ctx, "body"), nil
-		case "head":
-			return doc.QuerySelector(ctx, "head"), nil
+			if len(path) == 1 {
+				return parent, nil
+			}
+
+			return GetInDocument(ctx, parent, path[1:])
+		case "body", "head":
+			out := doc.QuerySelector(ctx, segment)
+
+			if out == values.None {
+				return out, nil
+			}
+
+			if len(path) == 1 {
+				return out, nil
+			}
+
+			el, err := drivers.ToElement(out)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			return GetInElement(ctx, el, path[1:])
 		default:
 			return GetInNode(ctx, doc.GetElement(), path)
 		}
