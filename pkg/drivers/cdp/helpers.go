@@ -372,7 +372,7 @@ func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (do
 		return dom.Node{}, -1, err
 	}
 
-	res, err := client.Runtime.Evaluate(
+	evalRes, err := client.Runtime.Evaluate(
 		ctx,
 		runtime.NewEvaluateArgs(eval.PrepareEval("return document")).
 			SetContextID(worldRepl.ExecutionContextID),
@@ -382,21 +382,31 @@ func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (do
 		return dom.Node{}, -1, err
 	}
 
-	if res.ExceptionDetails != nil {
-		exception := *res.ExceptionDetails
+	if evalRes.ExceptionDetails != nil {
+		exception := *evalRes.ExceptionDetails
 
 		return dom.Node{}, -1, errors.New(exception.Text)
 	}
 
-	if res.Result.ObjectID == nil {
+	if evalRes.Result.ObjectID == nil {
 		return dom.Node{}, -1, errors.New("failed to resolve frame document")
 	}
 
-	repl, err := client.DOM.DescribeNode(
+	req, err := client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*evalRes.Result.ObjectID))
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	if req.NodeID == 0 {
+		return dom.Node{}, -1, errors.New("framed document is resolved with empty node id")
+	}
+
+	desc, err := client.DOM.DescribeNode(
 		ctx,
 		dom.
 			NewDescribeNodeArgs().
-			SetObjectID(*res.Result.ObjectID).
+			SetNodeID(req.NodeID).
 			SetDepth(1),
 	)
 
@@ -404,9 +414,9 @@ func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (do
 		return dom.Node{}, -1, err
 	}
 
-	if repl.Node.NodeID == 0 {
-		return dom.Node{}, -1, errors.New("framed document is resolved with empty node id")
-	}
+	// Returned node, by some reason, does not contain the NodeID
+	// So, we have to set it manually
+	desc.Node.NodeID = req.NodeID
 
-	return repl.Node, worldRepl.ExecutionContextID, nil
+	return desc.Node, worldRepl.ExecutionContextID, nil
 }
