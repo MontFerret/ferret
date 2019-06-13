@@ -384,6 +384,19 @@ func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 	return res.(*values.Array).Clone().(*values.Array), nil
 }
 
+func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	res, err := p.frames.Read(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.(*values.Array).Get(idx), nil
+}
+
 func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()

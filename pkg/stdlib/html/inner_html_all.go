@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -25,7 +26,7 @@ func InnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	el, err := toElement(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err

@@ -18,7 +18,7 @@ func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	page, err := toPage(args[0])
+	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
 		return values.None, err

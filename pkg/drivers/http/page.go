@@ -121,13 +121,29 @@ func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 		err := common.CollectFrames(ctx, arr, p.document)
 
 		if err != nil {
-			return nil, err
+			return values.NewArray(0), err
 		}
 
 		p.frames = arr
 	}
 
 	return p.frames, nil
+}
+
+func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, error) {
+	if p.frames == nil {
+		arr := values.NewArray(10)
+
+		err := common.CollectFrames(ctx, arr, p.document)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		p.frames = arr
+	}
+
+	return p.frames.Get(idx), nil
 }
 
 func (p *HTMLPage) GetCookies(_ context.Context) (*values.Array, error) {
@@ -174,16 +190,4 @@ func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean
 
 func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
-}
-
-func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
-	res := values.NewArray(10)
-
-	err := common.CollectFrames(ctx, res, p.document)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }

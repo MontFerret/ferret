@@ -29,7 +29,7 @@ func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
-		doc, err := toDocument(arg1)
+		doc, err := drivers.ToDocument(arg1)
 
 		if err != nil {
 			return values.None, err

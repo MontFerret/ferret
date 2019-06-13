@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -19,7 +20,7 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	// CLICK(el)
 	if len(args) == 1 {
-		el, err := toElement(args[0])
+		el, err := drivers.ToElement(args[0])
 
 		if err != nil {
 			return values.False, err
@@ -29,7 +30,7 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// CLICK(doc, selector)
-	doc, err := toDocument(args[0])
+	doc, err := drivers.ToDocument(args[0])
 
 	if err != nil {
 		return values.False, err

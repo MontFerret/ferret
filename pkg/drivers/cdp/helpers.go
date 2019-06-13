@@ -372,22 +372,40 @@ func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (do
 		return dom.Node{}, -1, err
 	}
 
-	nodeObj, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetExecutionContextID(worldRepl.ExecutionContextID))
+	res, err := client.Runtime.Evaluate(
+		ctx,
+		runtime.NewEvaluateArgs(eval.PrepareEval("return document")).
+			SetContextID(worldRepl.ExecutionContextID),
+	)
 
 	if err != nil {
 		return dom.Node{}, -1, err
+	}
+
+	if res.ExceptionDetails != nil {
+		exception := *res.ExceptionDetails
+
+		return dom.Node{}, -1, errors.New(exception.Text)
+	}
+
+	if res.Result.ObjectID == nil {
+		return dom.Node{}, -1, errors.New("failed to resolve frame document")
 	}
 
 	repl, err := client.DOM.DescribeNode(
 		ctx,
 		dom.
 			NewDescribeNodeArgs().
-			SetObjectID(*nodeObj.Object.ObjectID).
+			SetObjectID(*res.Result.ObjectID).
 			SetDepth(1),
 	)
 
 	if err != nil {
 		return dom.Node{}, -1, err
+	}
+
+	if repl.Node.NodeID == 0 {
+		return dom.Node{}, -1, errors.New("framed document is resolved with empty node id")
 	}
 
 	return repl.Node, worldRepl.ExecutionContextID, nil

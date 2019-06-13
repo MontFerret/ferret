@@ -2,6 +2,8 @@ package html
 
 import (
 	"context"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -21,7 +23,7 @@ func NavigateBack(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	page, err := toPage(args[0])
+	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
 		return values.None, err

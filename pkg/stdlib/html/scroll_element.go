@@ -20,7 +20,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 2 {
-		doc, err := toDocument(args[0])
+		doc, err := drivers.ToDocument(args[0])
 
 		if err != nil {
 			return values.None, err
@@ -44,7 +44,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// GetElement
-	el, err := toElement(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err

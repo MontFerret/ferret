@@ -23,18 +23,34 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 		case "mainFrame", "document":
 			return GetInDocument(ctx, page.GetMainFrame(), path[1:])
 		case "frames":
-			frames, err := page.GetFrames(ctx)
+			if len(path) == 1 {
+				return page.GetFrames(ctx)
+			}
+
+			idx := path[1]
+
+			if !values.IsNumber(idx) {
+				return values.None, core.TypeError(idx.Type(), types.Int, types.Float)
+			}
+
+			value, err := page.GetFrame(ctx, values.ToInt(idx))
 
 			if err != nil {
 				return values.None, err
 			}
 
-			if len(path) == 1 {
-				return frames, nil
+			if len(path) == 2 {
+				return value, nil
 			}
 
-			return values.GetIn(ctx, frames, path[1:])
-		case "url", "GetURL":
+			frame, err := drivers.ToDocument(value)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			return GetInDocument(ctx, frame, path[2:])
+		case "url", "URL":
 			return page.GetMainFrame().GetURL(), nil
 		case "cookies":
 			if len(path) == 1 {
@@ -76,7 +92,7 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		segment := segment.(values.String)
 
 		switch segment {
-		case "url", "GetURL":
+		case "url", "URL":
 			return doc.GetURL(), nil
 		case "title":
 			return doc.GetTitle(), nil

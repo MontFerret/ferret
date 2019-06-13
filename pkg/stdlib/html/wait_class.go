@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -74,7 +75,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		doc, err := toDocument(arg1)
+		doc, err := drivers.ToDocument(arg1)
 
 		if err != nil {
 			return values.None, err

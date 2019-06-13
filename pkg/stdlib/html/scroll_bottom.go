@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -16,7 +17,7 @@ func ScrollBottom(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, err := toDocument(args[0])
+	doc, err := drivers.ToDocument(args[0])
 
 	if err != nil {
 		return values.None, err

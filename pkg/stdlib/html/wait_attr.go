@@ -58,7 +58,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 			return values.None, err
 		}
 
-		doc, err := toDocument(arg1)
+		doc, err := drivers.ToDocument(arg1)
 
 		if err != nil {
 			return values.None, err

@@ -1,6 +1,8 @@
 package common
 
-import "golang.org/x/net/html"
+import (
+	"golang.org/x/net/html"
+)
 
 func ToHTMLType(nt html.NodeType) int {
 	switch nt {

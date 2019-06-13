@@ -168,6 +168,8 @@ type (
 
 		GetFrames(ctx context.Context) (*values.Array, error)
 
+		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
+
 		GetCookies(ctx context.Context) (*values.Array, error)
 
 		SetCookies(ctx context.Context, cookies ...HTTPCookie) error

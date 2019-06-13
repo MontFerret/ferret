@@ -31,7 +31,7 @@ func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {
 		return nil, values.EmptyString, err
 	}
 
-	el, err := toElement(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return nil, values.EmptyString, err
