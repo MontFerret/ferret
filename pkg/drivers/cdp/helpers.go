@@ -210,7 +210,7 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 }
 
 func loadInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
-	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs())
+	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
 
 	if err != nil {
 		return values.EmptyString, err

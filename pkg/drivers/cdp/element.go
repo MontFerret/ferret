@@ -730,6 +730,7 @@ func (el *HTMLElement) InnerHTMLBySelector(ctx context.Context, selector values.
 	if err != nil {
 		el.logError(err).
 			Str("selector", selector.String()).
+			Int("childNodeID", int(found.NodeID)).
 			Msg("failed to load inner HTML for found child el")
 
 		return values.EmptyString
@@ -759,6 +760,7 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(ctx context.Context, selector valu
 		if err != nil {
 			el.logError(err).
 				Str("selector", selector.String()).
+				Int("childNodeID", int(id)).
 				Msg("failed to load inner HTML for found child el")
 
 			// return what we have
