@@ -698,8 +698,6 @@ func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	errs := make([]error, 0, 5)
-
 	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events)
 
 	if err != nil {
@@ -715,7 +713,10 @@ func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
 	err = p.document.Close()
 
 	if err != nil {
-		errs = append(errs, errors.Wrapf(err, "failed to close root document: %s", p.document.GetURL()))
+		p.logger.Error().
+			Timestamp().
+			Err(err).
+			Msgf("failed to close root document: %s", p.document.GetURL())
 	}
 
 	// set the new root document

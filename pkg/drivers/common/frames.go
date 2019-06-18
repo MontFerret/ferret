@@ -25,13 +25,7 @@ func CollectFrames(ctx context.Context, receiver *values.Array, doc drivers.HTML
 			return false
 		}
 
-		err = CollectFrames(ctx, receiver, childDoc)
-
-		if err != nil {
-			return false
-		}
-
-		return true
+		return CollectFrames(ctx, receiver, childDoc) == nil
 	})
 
 	return nil

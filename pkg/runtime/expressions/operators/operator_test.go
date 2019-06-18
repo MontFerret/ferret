@@ -246,6 +246,7 @@ func TestAdd(t *testing.T) {
 			}
 
 			for _, argN := range args {
+				argN := argN
 				Convey(argN.Type().String(), func() {
 					So(operators.Add(arg1, argN), ShouldEqual, values.NewInt(1))
 				})
@@ -743,6 +744,7 @@ func TestMultiply(t *testing.T) {
 			}
 
 			for _, argN := range args {
+				argN := argN
 				Convey(argN.Type().String(), func() {
 					So(operators.Multiply(arg1, argN), ShouldEqual, values.NewInt(0))
 				})
@@ -1011,6 +1013,7 @@ func TestDivide(t *testing.T) {
 			}
 
 			for _, argN := range args {
+				argN := argN
 				Convey(argN.Type().String(), func() {
 					So(func() {
 						operators.Divide(arg1, argN)

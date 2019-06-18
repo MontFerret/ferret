@@ -1058,7 +1058,7 @@ func (el *HTMLElement) IsDetached() values.Boolean {
 	el.mu.Lock()
 	defer el.mu.Unlock()
 
-	return el.connected == false
+	return !el.connected
 }
 
 func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
@@ -1298,7 +1298,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 		return
 	}
 
-	el.loadedChildren.Write(ctx, func(v core.Value, err error) {
+	el.loadedChildren.Write(ctx, func(v core.Value, _ error) {
 		loadedArr := v.(*values.Array)
 		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.exec, nextID, emptyBackendID)
 

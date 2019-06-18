@@ -34,15 +34,7 @@ func ParseBoolean(input interface{}) (Boolean, error) {
 	s, ok := input.(string)
 
 	if ok {
-		s := strings.ToLower(s)
-
-		if s == "true" {
-			return True, nil
-		}
-
-		if s == "false" {
-			return False, nil
-		}
+		return Boolean(strings.ToLower(s) == "true"), nil
 	}
 
 	return False, core.Error(core.ErrInvalidType, "expected 'bool'")
