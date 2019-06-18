@@ -103,6 +103,12 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
+	//err = client.Page.SetBypassCSP(ctx, page.NewSetBypassCSPArgs(true))
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+
 	if params.Cookies != nil {
 		cookies := make([]network.CookieParam, 0, len(params.Cookies))
 

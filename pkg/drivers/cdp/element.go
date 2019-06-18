@@ -263,7 +263,7 @@ func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.
 }
 
 func (el *HTMLElement) GetValue(ctx context.Context) core.Value {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return el.value
 	}
 
@@ -281,7 +281,7 @@ func (el *HTMLElement) GetValue(ctx context.Context) core.Value {
 }
 
 func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		// TODO: Return an error
 		return nil
 	}
@@ -478,7 +478,7 @@ func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) core.Va
 }
 
 func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) core.Value {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.None
 	}
 
@@ -516,7 +516,7 @@ func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String
 }
 
 func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.NewArray(0)
 	}
 
@@ -583,7 +583,7 @@ func (el *HTMLElement) GetInnerText(ctx context.Context) values.String {
 }
 
 func (el *HTMLElement) InnerTextBySelector(ctx context.Context, selector values.String) values.String {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.EmptyString
 	}
 
@@ -710,7 +710,7 @@ func (el *HTMLElement) GetInnerHTML(_ context.Context) values.String {
 }
 
 func (el *HTMLElement) InnerHTMLBySelector(ctx context.Context, selector values.String) values.String {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.EmptyString
 	}
 
@@ -774,7 +774,7 @@ func (el *HTMLElement) InnerHTMLBySelectorAll(ctx context.Context, selector valu
 }
 
 func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) values.Int {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.ZeroInt
 	}
 
@@ -794,7 +794,7 @@ func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.Stri
 }
 
 func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.False
 	}
 
@@ -1058,11 +1058,11 @@ func (el *HTMLElement) IsDetached() values.Boolean {
 	el.mu.Lock()
 	defer el.mu.Unlock()
 
-	return el.connected
+	return el.connected == false
 }
 
 func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
-	if el.IsDetached() {
+	if !el.IsDetached() {
 		text, err := loadInnerText(ctx, el.client, el.exec, el.id)
 
 		if err == nil {
@@ -1102,7 +1102,7 @@ func (el *HTMLElement) loadAttrs(ctx context.Context) (core.Value, error) {
 }
 
 func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
-	if !el.IsDetached() {
+	if el.IsDetached() {
 		return values.NewArray(0), nil
 	}
 
