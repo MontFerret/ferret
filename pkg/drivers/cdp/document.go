@@ -117,35 +117,13 @@ func NewHTMLDocument(
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
 	doc.logger = logger
-	doc.frames = frames
 	doc.client = client
 	doc.events = broker
 	doc.exec = exec
 	doc.element = rootElement
+	doc.frames = frames
 	doc.parent = parent
-	doc.children = common.NewLazyValue(func(ctx context.Context) (value core.Value, e error) {
-		children := values.NewArray(len(doc.frames.ChildFrames))
-
-		if len(doc.frames.ChildFrames) > 0 {
-			for _, cf := range doc.frames.ChildFrames {
-				cfNode, cfExecID, err := resolveFrame(ctx, client, cf.Frame)
-
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to resolve frame node")
-				}
-
-				cfDocument, err := LoadHTMLDocument(ctx, logger, client, broker, cfNode, cf, cfExecID, doc)
-
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to load frame document")
-				}
-
-				children.Push(cfDocument)
-			}
-		}
-
-		return children, nil
-	})
+	doc.children = common.NewLazyValue(doc.loadChildren)
 
 	return doc
 }
@@ -756,6 +734,30 @@ func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) erro
 		eval.ParamFloat(float64(x)),
 		eval.ParamFloat(float64(y)),
 	))
+}
+
+func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {
+	children := values.NewArray(len(doc.frames.ChildFrames))
+
+	if len(doc.frames.ChildFrames) > 0 {
+		for _, cf := range doc.frames.ChildFrames {
+			cfNode, cfExecID, err := resolveFrame(ctx, doc.client, cf.Frame)
+
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to resolve frame node")
+			}
+
+			cfDocument, err := LoadHTMLDocument(ctx, doc.logger, doc.client, doc.events, cfNode, cf, cfExecID, doc)
+
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to load frame document")
+			}
+
+			children.Push(cfDocument)
+		}
+	}
+
+	return children, nil
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {
