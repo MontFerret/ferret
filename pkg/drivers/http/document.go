@@ -116,7 +116,13 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
-	return values.None
+	cloned, err := NewHTMLDocument(doc.doc, doc.url.String(), doc.parent)
+
+	if err != nil {
+		return values.None
+	}
+
+	return cloned
 }
 
 func (doc *HTMLDocument) Length() values.Int {

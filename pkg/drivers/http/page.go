@@ -64,7 +64,7 @@ func (p *HTMLPage) Compare(other core.Value) int64 {
 }
 
 func (p *HTMLPage) Unwrap() interface{} {
-	return p
+	return p.document
 }
 
 func (p *HTMLPage) Hash() uint64 {
@@ -79,7 +79,13 @@ func (p *HTMLPage) Hash() uint64 {
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	return values.None
+	page, err := NewHTMLPage(p.document.doc, p.document.GetURL().String(), p.cookies[:])
+
+	if err != nil {
+		return values.None
+	}
+
+	return page
 }
 
 func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
@@ -103,7 +109,7 @@ func (p *HTMLPage) Close() error {
 }
 
 func (p *HTMLPage) IsClosed() values.Boolean {
-	return values.False
+	return values.True
 }
 
 func (p *HTMLPage) GetURL() values.String {
