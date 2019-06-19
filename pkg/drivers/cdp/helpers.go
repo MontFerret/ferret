@@ -295,17 +295,17 @@ func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.Execution
 	return values.NewString(repl.String()), nil
 }
 
-func loadInnerTextByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
-	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	return loadInnerText(ctx, client, exec, HTMLElementIdentity{
-		nodeID: nodeID,
-	}, common.ToHTMLType(node.Node.NodeType))
-}
+//func loadInnerTextByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
+//	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
+//
+//	if err != nil {
+//		return values.EmptyString, err
+//	}
+//
+//	return loadInnerText(ctx, client, exec, HTMLElementIdentity{
+//		nodeID: nodeID,
+//	}, common.ToHTMLType(node.Node.NodeType))
+//}
 
 func parseInnerText(innerHTML string) (values.String, error) {
 	buff := bytes.NewBuffer([]byte(innerHTML))
