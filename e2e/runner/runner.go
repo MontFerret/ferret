@@ -84,7 +84,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		Timestamp().
 		Int("passed", sum.passed).
 		Int("failed", sum.failed).
-		Dur("time", sum.duration).
+		Str("duration", sum.duration.String()).
 		Msg("Completed")
 
 	if sum.failed > 0 {
@@ -139,12 +139,14 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 				r.logger.Info().
 					Timestamp().
 					Str("file", result.name).
+					Str("duration", result.duration.String()).
 					Msg("Test passed")
 			} else {
 				r.logger.Error().
 					Timestamp().
 					Err(result.err).
 					Str("file", result.name).
+					Str("duration", result.duration.String()).
 					Msg("Test failed")
 			}
 

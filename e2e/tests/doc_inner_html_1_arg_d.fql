@@ -1,7 +1,7 @@
 LET url = @dynamic
 LET doc = DOCUMENT(url, true)
 
-LET expected = `<!DOCTYPE html><html lang="en"><head>
+LET expected = `<head>
                                                        <meta charset="utf-8">
                                                        <meta http-equiv="x-ua-compatible" content="ie=edge">
                                                        <title>Ferret E2E SPA</title>
@@ -12,15 +12,15 @@ LET expected = `<!DOCTYPE html><html lang="en"><head>
                                                    </head>
                                                    <body class="text-center">
                                                        <div id="root"><div id="layout"><nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4" id="navbar"><a class="navbar-brand active" aria-current="page" href="/">Ferret</a><button class="navbar-toggler" type="button"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse"><ul class="navbar-nav mr-auto"><li class="nav-item"><a class="nav-link" href="/forms">Forms</a></li><li class="nav-item"><a class="nav-link" href="/navigation">Navigation</a></li><li class="nav-item"><a class="nav-link" href="/events">Events</a></li><li class="nav-item"><a class="nav-link" href="/iframe">iFrame</a></li></ul></div></nav><main class="container"><div class="jumbotron" data-type="page" id="index"><div><h1>Welcome to Ferret E2E test page!</h1></div><div><p class="lead">It has several pages for testing different possibilities of the library</p></div></div></main></div></div>
-                                                       <script src="https://unpkg.com/react@16.6.1/umd/react.production.min.js"></script>
-                                                       <script src="https://unpkg.com/react-dom@16.6.1/umd/react-dom.production.min.js"></script>
-                                                       <script src="https://unpkg.com/history@4.7.2/umd/history.min.js"></script>
+                                                       <script src="https://unpkg.com/react@16.8.6/umd/react.production.min.js"></script>
+                                                       <script src="https://unpkg.com/react-dom@16.8.6/umd/react-dom.production.min.js"></script>
+                                                       <script src="https://unpkg.com/history@4.9.0/umd/history.min.js"></script>
                                                        <script src="https://unpkg.com/react-router@4.3.1/umd/react-router.js"></script>
                                                        <script src="https://unpkg.com/react-router-dom@4.3.1/umd/react-router-dom.js"></script>
                                                        <script src="index.js" type="module"></script>
 
 
-                                               </body></html>`
+                                               </body>`
 LET actual = INNER_HTML(doc)
 
 LET r1 = '(\s|\")'

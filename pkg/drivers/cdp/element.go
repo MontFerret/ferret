@@ -891,6 +891,10 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 }
 
 func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
+	if err := el.ScrollIntoView(ctx); err != nil {
+		return values.False, err
+	}
+
 	points, err := getClickablePoint(ctx, el.client, el.id)
 
 	if err != nil {
@@ -1102,7 +1106,7 @@ func (el *HTMLElement) IsDetached() values.Boolean {
 
 func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 	if !el.IsDetached() {
-		text, err := loadInnerText(ctx, el.client, el.exec, el.id)
+		text, err := loadInnerText(ctx, el.client, el.exec, el.id, el.nodeType)
 
 		if err == nil {
 			return text, nil

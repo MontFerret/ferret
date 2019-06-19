@@ -81,7 +81,7 @@ func (ec *ExecutionContext) eval(ctx context.Context, args *runtime.EvaluateArgs
 		)
 	}
 
-	if out.Result.Type != "undefined" {
+	if out.Result.Type != "undefined" && out.Result.Type != "null" {
 		return values.Unmarshal(out.Result.Value)
 	}
 
