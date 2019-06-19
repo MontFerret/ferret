@@ -12,17 +12,25 @@ import (
 )
 
 type HTMLDocument struct {
-	docNode *goquery.Document
-	element drivers.HTMLElement
-	url     values.String
-	cookies []drivers.HTTPCookie
+	doc      *goquery.Document
+	element  drivers.HTMLElement
+	url      values.String
+	parent   drivers.HTMLDocument
+	children *values.Array
+}
+
+func NewRootHTMLDocument(
+	node *goquery.Document,
+	url string,
+) (*HTMLDocument, error) {
+	return NewHTMLDocument(node, url, nil)
 }
 
 func NewHTMLDocument(
 	node *goquery.Document,
 	url string,
-	cookies []drivers.HTTPCookie,
-) (drivers.HTMLDocument, error) {
+	parent drivers.HTMLDocument,
+) (*HTMLDocument, error) {
 	if url == "" {
 		return nil, core.Error(core.ErrMissedArgument, "document url")
 	}
@@ -37,7 +45,21 @@ func NewHTMLDocument(
 		return nil, err
 	}
 
-	return &HTMLDocument{node, el, values.NewString(url), cookies}, nil
+	doc := new(HTMLDocument)
+	doc.doc = node
+	doc.element = el
+	doc.parent = parent
+	doc.url = values.NewString(url)
+	doc.children = values.NewArray(10)
+
+	frames := node.Find("iframe")
+	frames.Each(func(i int, selection *goquery.Selection) {
+		child, _ := NewHTMLDocument(goquery.NewDocumentFromNode(selection.Nodes[0]), selection.AttrOr("src", url), doc)
+
+		doc.children.Push(child)
+	})
+
+	return doc, nil
 }
 
 func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
@@ -49,7 +71,7 @@ func (doc *HTMLDocument) Type() core.Type {
 }
 
 func (doc *HTMLDocument) String() string {
-	str, err := doc.docNode.Html()
+	str, err := doc.doc.Html()
 
 	if err != nil {
 		return ""
@@ -70,7 +92,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 }
 
 func (doc *HTMLDocument) Unwrap() interface{} {
-	return doc.docNode
+	return doc.doc
 }
 
 func (doc *HTMLDocument) Hash() uint64 {
@@ -84,7 +106,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 }
 
 func (doc *HTMLDocument) Copy() core.Value {
-	cp, err := NewHTMLDocument(doc.docNode, string(doc.url), doc.cookies)
+	cp, err := NewHTMLDocument(doc.doc, string(doc.url), doc.parent)
 
 	if err != nil {
 		return values.None
@@ -94,24 +116,17 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Clone() core.Value {
-	var cookies []drivers.HTTPCookie
-
-	if doc.cookies != nil {
-		cookies = make([]drivers.HTTPCookie, len(doc.cookies))
-		copy(cookies, doc.cookies)
-	}
-
-	cp, err := NewHTMLDocument(goquery.CloneDocument(doc.docNode), string(doc.url), cookies)
+	cloned, err := NewHTMLDocument(doc.doc, doc.url.String(), doc.parent)
 
 	if err != nil {
 		return values.None
 	}
 
-	return cp
+	return cloned
 }
 
 func (doc *HTMLDocument) Length() values.Int {
-	return values.NewInt(doc.docNode.Length())
+	return values.NewInt(doc.doc.Length())
 }
 
 func (doc *HTMLDocument) Iterate(_ context.Context) (core.Iterator, error) {
@@ -126,11 +141,11 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 	return common.SetInDocument(ctx, doc, path, value)
 }
 
-func (doc *HTMLDocument) NodeType() values.Int {
+func (doc *HTMLDocument) GetNodeType() values.Int {
 	return 9
 }
 
-func (doc *HTMLDocument) NodeName() values.String {
+func (doc *HTMLDocument) GetNodeName() values.String {
 	return "#document"
 }
 
@@ -158,50 +173,34 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) DocumentElement() drivers.HTMLElement {
-	return doc.element
+func (doc *HTMLDocument) IsDetached() values.Boolean {
+	return values.False
 }
 
-func (doc *HTMLDocument) GetURL() core.Value {
+func (doc *HTMLDocument) GetTitle() values.String {
+	title := doc.doc.Find("head > title")
+
+	return values.NewString(title.Text())
+}
+
+func (doc *HTMLDocument) GetChildDocuments(_ context.Context) (*values.Array, error) {
+	return doc.children.Clone().(*values.Array), nil
+}
+
+func (doc *HTMLDocument) GetURL() values.String {
 	return doc.url
 }
 
-func (doc *HTMLDocument) SetURL(_ context.Context, _ values.String) error {
-	return core.ErrInvalidOperation
+func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
+	return doc.element
 }
 
-func (doc *HTMLDocument) GetCookies(_ context.Context) (*values.Array, error) {
-	if doc.cookies == nil {
-		return values.NewArray(0), nil
-	}
-
-	arr := values.NewArray(len(doc.cookies))
-
-	for _, c := range doc.cookies {
-		arr.Push(c)
-	}
-
-	return arr, nil
+func (doc *HTMLDocument) GetName() values.String {
+	return ""
 }
 
-func (doc *HTMLDocument) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) DeleteCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) Navigate(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
-	return false, core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
-	return false, core.ErrNotSupported
+func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
+	return doc.parent
 }
 
 func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) (values.Boolean, error) {

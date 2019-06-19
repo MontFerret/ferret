@@ -220,7 +220,7 @@ func TestDocument(t *testing.T) {
     </footer>
 	<svg xmlns="http://www.w3.org/2000/svg" width="348" height="225" viewBox="0 0 348 225" preserveAspectRatio="none" style="display: none; visibility: hidden; position: absolute; top: -100%; left: -100%;"><defs><style type="text/css"></style></defs><text x="0" y="17" style="font-weight:bold;font-size:17pt;font-family:Arial, Helvetica, Open Sans, sans-serif">Thumbnail</text></svg></body></html>
 	`
-	Convey(".NodeType", t, func() {
+	Convey(".GetNodeType", t, func() {
 		Convey("Should serialize a boolean value", func() {
 			buff := bytes.NewBuffer([]byte(doc))
 
@@ -234,7 +234,7 @@ func TestDocument(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			So(el.NodeType(), ShouldEqual, 9)
+			So(el.GetNodeType(), ShouldEqual, 9)
 		})
 	})
 }

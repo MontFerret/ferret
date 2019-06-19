@@ -18,6 +18,9 @@ export default function Layout({ children }) {
                     ]),
                     e("li", { className: "nav-item"}, [
                         e(NavLink, { className: "nav-link", to: "/events" }, "Events")
+                    ]),
+                    e("li", { className: "nav-item"}, [
+                        e(NavLink, { className: "nav-link", to: "/iframe" }, "iFrame")
                     ])
                 ])
             ])

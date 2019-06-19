@@ -20,7 +20,7 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType)
+	doc, err := drivers.ToDocument(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -40,8 +40,6 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	x := values.ToFloat(args[1])
 	y := values.ToFloat(args[2])
-
-	doc := args[0].(drivers.HTMLDocument)
 
 	return values.None, doc.ScrollByXY(ctx, x, y)
 }

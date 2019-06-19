@@ -20,19 +20,13 @@ func InnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	el, err := resolveElement(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err

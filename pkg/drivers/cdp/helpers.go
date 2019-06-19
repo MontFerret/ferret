@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"golang.org/x/net/html"
 	"math"
 	"strings"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -42,16 +42,6 @@ func runBatch(funcs ...batchFunc) error {
 	}
 
 	return eg.Wait()
-}
-
-func getRootElement(ctx context.Context, client *cdp.Client) (*dom.GetDocumentReply, error) {
-	d, err := client.DOM.GetDocument(ctx, dom.NewGetDocumentArgs().SetDepth(1))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return d, nil
 }
 
 func fromProtocolQuad(quad dom.Quad) []Quad {
@@ -87,7 +77,20 @@ func computeQuadArea(quads []Quad) float64 {
 	return math.Abs(area)
 }
 
-func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (Quad, error) {
+func intersectQuadWithViewport(quad []Quad, width, height float64) []Quad {
+	quads := make([]Quad, 0, len(quad))
+
+	for _, point := range quad {
+		quads = append(quads, Quad{
+			X: math.Min(math.Max(point.X, 0), width),
+			Y: math.Min(math.Max(point.Y, 0), height),
+		})
+	}
+
+	return quads
+}
+
+func getClickablePoint(ctx context.Context, client *cdp.Client, id HTMLElementIdentity) (Quad, error) {
 	qargs := dom.NewGetContentQuadsArgs()
 
 	switch {
@@ -99,20 +102,29 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, id *HTMLElementI
 		qargs.SetNodeID(id.nodeID)
 	}
 
-	res, err := client.DOM.GetContentQuads(ctx, qargs)
+	contentQuadsReply, err := client.DOM.GetContentQuads(ctx, qargs)
 
 	if err != nil {
 		return Quad{}, err
 	}
 
-	if res.Quads == nil || len(res.Quads) == 0 {
+	if contentQuadsReply.Quads == nil || len(contentQuadsReply.Quads) == 0 {
 		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
 	}
 
-	quads := make([][]Quad, 0, len(res.Quads))
+	layoutMetricsReply, err := client.Page.GetLayoutMetrics(ctx)
 
-	for _, q := range res.Quads {
-		quad := fromProtocolQuad(q)
+	if err != nil {
+		return Quad{}, err
+	}
+
+	clientWidth := layoutMetricsReply.LayoutViewport.ClientWidth
+	clientHeight := layoutMetricsReply.LayoutViewport.ClientHeight
+
+	quads := make([][]Quad, 0, len(contentQuadsReply.Quads))
+
+	for _, q := range contentQuadsReply.Quads {
+		quad := intersectQuadWithViewport(fromProtocolQuad(q), float64(clientWidth), float64(clientHeight))
 
 		if computeQuadArea(quad) > 1 {
 			quads = append(quads, quad)
@@ -167,41 +179,105 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
-	var objID runtime.RemoteObjectID
+func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
+	// not a document
+	if nodeType != html.DocumentNode {
+		var objID runtime.RemoteObjectID
 
-	switch {
-	case id.objectID != "":
-		objID = id.objectID
-	case id.backendID > 0:
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
+		switch {
+		case id.objectID != "":
+			objID = id.objectID
+		case id.backendID > 0:
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
+
+			if err != nil {
+				return "", err
+			}
+
+			if repl.Object.ObjectID == nil {
+				return "", errors.New("unable to resolve node")
+			}
+
+			objID = *repl.Object.ObjectID
+		default:
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+			if err != nil {
+				return "", err
+			}
+
+			if repl.Object.ObjectID == nil {
+				return "", errors.New("unable to resolve node")
+			}
+
+			objID = *repl.Object.ObjectID
+		}
+
+		res, err := exec.ReadProperty(ctx, objID, "innerHTML")
 
 		if err != nil {
 			return "", err
 		}
 
-		if repl.Object.ObjectID == nil {
-			return "", errors.New("unable to resolve node")
-		}
-
-		objID = *repl.Object.ObjectID
-	default:
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
-
-		if err != nil {
-			return "", err
-		}
-
-		if repl.Object.ObjectID == nil {
-			return "", errors.New("unable to resolve node")
-		}
-
-		objID = *repl.Object.ObjectID
+		return values.NewString(res.String()), nil
 	}
 
+	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerHTML")
+
+	if err != nil {
+		return "", err
+	}
+
+	return values.NewString(repl.String()), nil
+}
+
+func loadInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
+	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return loadInnerHTML(ctx, client, exec, HTMLElementIdentity{
+		nodeID: nodeID,
+	}, common.ToHTMLType(node.Node.NodeType))
+}
+
+func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
 	// not a document
-	if id.nodeID != 1 {
-		res, err := eval.Property(ctx, client, objID, "innerHTML")
+	if nodeType != html.DocumentNode {
+		var objID runtime.RemoteObjectID
+
+		switch {
+		case id.objectID != "":
+			objID = id.objectID
+		case id.backendID > 0:
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
+
+			if err != nil {
+				return "", err
+			}
+
+			if repl.Object.ObjectID == nil {
+				return "", errors.New("unable to resolve node")
+			}
+
+			objID = *repl.Object.ObjectID
+		default:
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+			if err != nil {
+				return "", err
+			}
+
+			if repl.Object.ObjectID == nil {
+				return "", errors.New("unable to resolve node")
+			}
+
+			objID = *repl.Object.ObjectID
+		}
+
+		res, err := exec.ReadProperty(ctx, objID, "innerText")
 
 		if err != nil {
 			return "", err
@@ -210,66 +286,26 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, id *HTMLElementIdent
 		return values.NewString(res.String()), err
 	}
 
-	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID))
+	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerText")
 
 	if err != nil {
 		return "", err
 	}
 
-	return values.NewString(repl.OuterHTML), nil
+	return values.NewString(repl.String()), nil
 }
 
-func loadInnerText(ctx context.Context, client *cdp.Client, id *HTMLElementIdentity) (values.String, error) {
-	var objID runtime.RemoteObjectID
-
-	switch {
-	case id.objectID != "":
-		objID = id.objectID
-	case id.backendID > 0:
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
-
-		if err != nil {
-			return "", err
-		}
-
-		if repl.Object.ObjectID == nil {
-			return "", errors.New("unable to resolve node")
-		}
-
-		objID = *repl.Object.ObjectID
-	default:
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
-
-		if err != nil {
-			return "", err
-		}
-
-		if repl.Object.ObjectID == nil {
-			return "", errors.New("unable to resolve node")
-		}
-
-		objID = *repl.Object.ObjectID
-	}
-
-	// not a document
-	if id.nodeID != 1 {
-		res, err := eval.Property(ctx, client, objID, "innerText")
-
-		if err != nil {
-			return "", err
-		}
-
-		return values.NewString(res.String()), err
-	}
-
-	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID))
-
-	if err != nil {
-		return "", err
-	}
-
-	return parseInnerText(repl.OuterHTML)
-}
+//func loadInnerTextByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
+//	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
+//
+//	if err != nil {
+//		return values.EmptyString, err
+//	}
+//
+//	return loadInnerText(ctx, client, exec, HTMLElementIdentity{
+//		nodeID: nodeID,
+//	}, common.ToHTMLType(node.Node.NodeType))
+//}
 
 func parseInnerText(innerHTML string) (values.String, error) {
 	buff := bytes.NewBuffer([]byte(innerHTML))
@@ -283,133 +319,18 @@ func parseInnerText(innerHTML string) (values.String, error) {
 	return values.NewString(parsed.Text()), nil
 }
 
-func createChildrenArray(nodes []dom.Node) []*HTMLElementIdentity {
-	children := make([]*HTMLElementIdentity, len(nodes))
+func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
+	children := make([]HTMLElementIdentity, len(nodes))
 
 	for idx, child := range nodes {
-		children[idx] = &HTMLElementIdentity{
+		child := child
+		children[idx] = HTMLElementIdentity{
 			nodeID:    child.NodeID,
 			backendID: child.BackendNodeID,
 		}
 	}
 
 	return children
-}
-
-func waitForLoadEvent(ctx context.Context, client *cdp.Client) error {
-	loadEventFired, err := client.Page.LoadEventFired(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = loadEventFired.Recv()
-
-	if err != nil {
-		return err
-	}
-
-	return loadEventFired.Close()
-}
-
-func createEventBroker(client *cdp.Client) (*events.EventBroker, error) {
-	var err error
-	var onLoad page.LoadEventFiredClient
-	var onReload dom.DocumentUpdatedClient
-	var onAttrModified dom.AttributeModifiedClient
-	var onAttrRemoved dom.AttributeRemovedClient
-	var onChildCountUpdated dom.ChildNodeCountUpdatedClient
-	var onChildNodeInserted dom.ChildNodeInsertedClient
-	var onChildNodeRemoved dom.ChildNodeRemovedClient
-	ctx := context.Background()
-
-	onLoad, err = client.Page.LoadEventFired(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	onReload, err = client.DOM.DocumentUpdated(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		return nil, err
-	}
-
-	onAttrModified, err = client.DOM.AttributeModified(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		return nil, err
-	}
-
-	onAttrRemoved, err = client.DOM.AttributeRemoved(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		return nil, err
-	}
-
-	onChildCountUpdated, err = client.DOM.ChildNodeCountUpdated(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		return nil, err
-	}
-
-	onChildNodeInserted, err = client.DOM.ChildNodeInserted(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		return nil, err
-	}
-
-	onChildNodeRemoved, err = client.DOM.ChildNodeRemoved(ctx)
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		onChildNodeInserted.Close()
-		return nil, err
-	}
-
-	broker := events.NewEventBroker(
-		onLoad,
-		onReload,
-		onAttrModified,
-		onAttrRemoved,
-		onChildCountUpdated,
-		onChildNodeInserted,
-		onChildNodeRemoved,
-	)
-
-	err = broker.Start()
-
-	if err != nil {
-		onLoad.Close()
-		onReload.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		onChildNodeInserted.Close()
-		onChildNodeRemoved.Close()
-		return nil, err
-	}
-
-	return broker, nil
 }
 
 func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam {
@@ -490,4 +411,60 @@ func randomDuration(delay values.Int) time.Duration {
 	value := core.Random(max, min)
 
 	return time.Duration(int64(value))
+}
+
+func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (dom.Node, runtime.ExecutionContextID, error) {
+	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(frame.ID))
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	evalRes, err := client.Runtime.Evaluate(
+		ctx,
+		runtime.NewEvaluateArgs(eval.PrepareEval("return document")).
+			SetContextID(worldRepl.ExecutionContextID),
+	)
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	if evalRes.ExceptionDetails != nil {
+		exception := *evalRes.ExceptionDetails
+
+		return dom.Node{}, -1, errors.New(exception.Text)
+	}
+
+	if evalRes.Result.ObjectID == nil {
+		return dom.Node{}, -1, errors.New("failed to resolve frame document")
+	}
+
+	req, err := client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*evalRes.Result.ObjectID))
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	if req.NodeID == 0 {
+		return dom.Node{}, -1, errors.New("framed document is resolved with empty node id")
+	}
+
+	desc, err := client.DOM.DescribeNode(
+		ctx,
+		dom.
+			NewDescribeNodeArgs().
+			SetNodeID(req.NodeID).
+			SetDepth(1),
+	)
+
+	if err != nil {
+		return dom.Node{}, -1, err
+	}
+
+	// Returned node, by some reason, does not contain the NodeID
+	// So, we have to set it manually
+	desc.Node.NodeID = req.NodeID
+
+	return desc.Node, worldRepl.ExecutionContextID, nil
 }

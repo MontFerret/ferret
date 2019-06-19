@@ -3,12 +3,13 @@ package html
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// InnerText returns inner text string of a given or matched by CSS selector element
+// GetInnerText returns inner text string of a given or matched by CSS selector element
 // @param doc (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner text if an element found, otherwise empty string.
@@ -19,14 +20,14 @@ func InnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	el, err := resolveElement(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
 	if len(args) == 1 {
-		return el.InnerText(ctx), nil
+		return el.GetInnerText(ctx), nil
 	}
 
 	err = core.ValidateType(args[1], types.String)

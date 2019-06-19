@@ -26,7 +26,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 
 	// document or element
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -43,7 +43,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 
 	// if a document is passed
 	// WAIT_ATTR(doc, selector, attrName, attrValue, timeout)
-	if arg1.Type() == drivers.HTMLDocumentType {
+	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 4, 5)
 
@@ -58,7 +58,12 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 			return values.None, err
 		}
 
-		doc := arg1.(drivers.HTMLDocument)
+		doc, err := drivers.ToDocument(arg1)
+
+		if err != nil {
+			return values.None, err
+		}
+
 		selector := args[1].(values.String)
 		name := args[2].(values.String)
 		value := args[3]

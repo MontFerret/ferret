@@ -2,12 +2,12 @@ package events
 
 import (
 	"context"
+	"time"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp"
-	"time"
 )
 
 type (
@@ -58,18 +58,15 @@ func (task *WaitTask) Run(ctx context.Context) (core.Value, error) {
 }
 
 func NewEvalWaitTask(
-	client *cdp.Client,
+	ec *eval.ExecutionContext,
 	predicate string,
 	polling time.Duration,
 ) *WaitTask {
 	return NewWaitTask(
 		func(ctx context.Context) (core.Value, error) {
-			return eval.Eval(
+			return ec.EvalWithReturn(
 				ctx,
-				client,
 				predicate,
-				true,
-				false,
 			)
 		},
 		polling,

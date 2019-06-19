@@ -1,11 +1,11 @@
 LET url = @dynamic
 LET doc = DOCUMENT(url, true)
 
-LET expected = `Ferret E2E SPA
-Ferret
+LET expected = `Ferret
 Forms
 Navigation
 Events
+iFrame
 Welcome to Ferret E2E test page!
 It has several pages for testing different possibilities of the library
 `

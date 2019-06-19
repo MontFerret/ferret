@@ -4,20 +4,23 @@ INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '.nav-search-submit input[type="submit"]')
 WAIT_NAVIGATION(amazon)
 
-LET resultListSelector = '#s-results-list-atf'
-LET resultItemSelector = '.s-result-item.celwidget'
-LET nextBtnSelector = '#pagnNextLink'
+LET resultListSelector = 'div.s-result-list'
+LET resultItemSelector = 'div.s-result-item'
+LET nextBtnSelector = 'ul.a-pagination .a-last a'
 LET vendorSelector1 = 'div > div:nth-child(3) > div:nth-child(2) > span:nth-child(2)'
 LET vendorSelector2 = 'div > div:nth-child(5) > div:nth-child(2) > span:nth-child(2)'
 LET priceWholeSelector = 'span.sx-price-whole'
 LET priceFracSelector = 'sup.sx-price-fractional'
-LET pages = TO_INT(INNER_TEXT(amazon, '#pagn > span.pagnDisabled'))
+LET pagers = ELEMENTS(amazon, 'ul.a-pagination li.a-disabled')
+LET pages = LENGTH(pagers) > 0 ? TO_INT(INNER_TEXT(LAST(pagers))) : 0
 
 LET result = (
     FOR pageNum IN 1..pages
         LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
         LET wait = clicked ? WAIT_NAVIGATION(amazon) : false
         LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
+
+        PRINT("page:", pageNum, "clicked", clicked)
 
         LET items = (
             FOR el IN ELEMENTS(amazon, resultItemSelector)

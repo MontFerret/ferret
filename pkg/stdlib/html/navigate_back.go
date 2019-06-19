@@ -2,15 +2,17 @@ package html
 
 import (
 	"context"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// NavigateBack navigates a document back within its navigation history.
+// NavigateBack navigates a given page back within its navigation history.
 // The operation blocks the execution until the page gets loaded.
 // If the history is empty, the function returns FALSE.
-// @param doc (Document) - Target document.
+// @param page (HTMLPage) - Target page.
 // @param entry (Int, optional) - Optional value indicating how many pages to skip. Default 1.
 // @param timeout (Int, optional) - Optional timeout. Default is 5000.
 // @returns (Boolean) - Returns TRUE if history exists and the operation succeeded, otherwise FALSE.
@@ -21,7 +23,7 @@ func NavigateBack(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	doc, err := toDocument(args[0])
+	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -53,5 +55,5 @@ func NavigateBack(ctx context.Context, args ...core.Value) (core.Value, error) {
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return doc.NavigateBack(ctx, skip)
+	return page.NavigateBack(ctx, skip)
 }

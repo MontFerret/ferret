@@ -2,6 +2,7 @@ import Layout from './layout.js';
 import IndexPage from './pages/index.js';
 import FormsPage from './pages/forms/index.js';
 import EventsPage from './pages/events/index.js';
+import IframePage from './pages/iframes/index.js';
 
 const e = React.createElement;
 const Router = ReactRouter.Router;
@@ -10,7 +11,26 @@ const Route = ReactRouter.Route;
 const Redirect = ReactRouter.Redirect;
 const createBrowserHistory = History.createBrowserHistory;
 
-export default function AppComponent({ redirect = null}) {
+export default React.memo(function AppComponent(params = {}) {
+    let redirectTo;
+
+    if (params.redirect) {
+        let search = '';
+
+        Object.keys(params).forEach((key) => {
+            if (key !== 'redirect') {
+                search += `${key}=${params[key]}`;
+            }
+        });
+
+        const to = {
+            pathname: params.redirect,
+            search: search ? `?${search}` : '',
+        };
+
+        redirectTo = e(Redirect, { to });
+    }
+
     return e(Router, { history: createBrowserHistory() },
         e(Layout, null, [
             e(Switch, null, [
@@ -27,8 +47,12 @@ export default function AppComponent({ redirect = null}) {
                     path: '/events',
                     component: EventsPage
                 }),
+                e(Route, {
+                    path: '/iframe',
+                    component: IframePage
+                }),
             ]),
-            redirect ? e(Redirect, { to: redirect }) : null
+            redirectTo
         ])
     )
-}
+})

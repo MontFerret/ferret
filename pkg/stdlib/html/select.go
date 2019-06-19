@@ -10,7 +10,7 @@ import (
 )
 
 // Select selects a value from an underlying select element.
-// @param source (Document | Element) - Event target.
+// @param source (Open | GetElement) - Event target.
 // @param valueOrSelector (String | Array<String>) - Selector or a an array of strings as a value.
 // @param value (Array<String) - Target value. Optional.
 // @returns (Array<String>) - Returns an array of selected values.
@@ -22,14 +22,18 @@ func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.False, err
 	}
 
-	if arg1.Type() == drivers.HTMLDocumentType {
-		doc := arg1.(drivers.HTMLDocument)
+	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
+		doc, err := drivers.ToDocument(arg1)
+
+		if err != nil {
+			return values.None, err
+		}
 
 		// selector
 		arg2 := args[1]

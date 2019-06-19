@@ -40,7 +40,7 @@ func (v TestValue) Copy() core.Value {
 }
 
 func TestType(t *testing.T) {
-	Convey(".Name", t, func() {
+	Convey(".GetName", t, func() {
 		So(types.None.String(), ShouldEqual, "none")
 		So(types.Boolean.String(), ShouldEqual, "boolean")
 		So(types.Int.String(), ShouldEqual, "int")

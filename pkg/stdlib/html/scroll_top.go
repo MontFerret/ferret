@@ -17,13 +17,7 @@ func ScrollTop(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	doc, err := toDocument(args[0])
+	doc, err := drivers.ToDocument(args[0])
 
 	if err != nil {
 		return values.None, err
