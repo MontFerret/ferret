@@ -1,0 +1,12 @@
+LET url = @dynamic + "?redirect=/iframe"
+LET page = DOCUMENT(url, { driver: 'cdp' })
+
+LET doc = page.frames[1]
+
+LET expectedP = TRUE
+LET actualP = ELEMENT_EXISTS(doc, '.text-center')
+
+LET expectedN = FALSE
+LET actualN = ELEMENT_EXISTS(doc, '.foo-bar')
+
+RETURN EXPECT(expectedP + expectedN, actualP + expectedN)

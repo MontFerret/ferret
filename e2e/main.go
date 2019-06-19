@@ -4,14 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/e2e/runner"
-	"github.com/MontFerret/ferret/e2e/server"
-	"github.com/rs/zerolog"
 	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
+
+	"github.com/MontFerret/ferret/e2e/runner"
+	"github.com/MontFerret/ferret/e2e/server"
+
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -71,19 +72,6 @@ func main() {
 		Dir:  filepath.Join(*pagesDir, "dynamic"),
 	})
 
-	var filterR *regexp.Regexp
-
-	if *filter != "" {
-		r, err := regexp.Compile(*filter)
-
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-
-		filterR = r
-	}
-
 	go func() {
 		if err := static.Start(); err != nil {
 			logger.Info().Timestamp().Msg("shutting down the static pages server")
@@ -124,7 +112,7 @@ func main() {
 		DynamicServerAddress: fmt.Sprintf("http://%s:%d", ipAddr, dynamicPort),
 		CDPAddress:           *cdp,
 		Dir:                  *testsDir,
-		Filter:               filterR,
+		Filter:               *filter,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())

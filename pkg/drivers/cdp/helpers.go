@@ -158,39 +158,39 @@ func parseAttrs(attrs []string) *values.Object {
 }
 
 func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
-	var objID runtime.RemoteObjectID
-
-	switch {
-	case id.objectID != "":
-		objID = id.objectID
-	case id.backendID > 0:
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
-
-		if err != nil {
-			return "", err
-		}
-
-		if repl.Object.ObjectID == nil {
-			return "", errors.New("unable to resolve node")
-		}
-
-		objID = *repl.Object.ObjectID
-	default:
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
-
-		if err != nil {
-			return "", err
-		}
-
-		if repl.Object.ObjectID == nil {
-			return "", errors.New("unable to resolve node")
-		}
-
-		objID = *repl.Object.ObjectID
-	}
-
 	// not a document
 	if nodeType != html.DocumentNode {
+		var objID runtime.RemoteObjectID
+
+		switch {
+		case id.objectID != "":
+			objID = id.objectID
+		case id.backendID > 0:
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
+
+			if err != nil {
+				return "", err
+			}
+
+			if repl.Object.ObjectID == nil {
+				return "", errors.New("unable to resolve node")
+			}
+
+			objID = *repl.Object.ObjectID
+		default:
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+			if err != nil {
+				return "", err
+			}
+
+			if repl.Object.ObjectID == nil {
+				return "", errors.New("unable to resolve node")
+			}
+
+			objID = *repl.Object.ObjectID
+		}
+
 		res, err := exec.ReadProperty(ctx, objID, "innerHTML")
 
 		if err != nil {
@@ -200,13 +200,13 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 		return values.NewString(res.String()), nil
 	}
 
-	repl, err := client.DOM.GetOuterHTML(ctx, dom.NewGetOuterHTMLArgs().SetObjectID(objID).SetBackendNodeID(id.backendID).SetNodeID(id.nodeID))
+	repl, err := exec.EvalWithReturn(ctx, eval.PrepareEval("return document.documentElement.innerHTML"))
 
 	if err != nil {
 		return "", err
 	}
 
-	return values.NewString(repl.OuterHTML), nil
+	return values.NewString(repl.String()), nil
 }
 
 func loadInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
@@ -289,6 +289,7 @@ func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
 	children := make([]HTMLElementIdentity, len(nodes))
 
 	for idx, child := range nodes {
+		child := child
 		children[idx] = HTMLElementIdentity{
 			nodeID:    child.NodeID,
 			backendID: child.BackendNodeID,

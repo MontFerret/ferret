@@ -275,6 +275,7 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 	listeners, ok := broker.listeners[event]
 
 	if !ok {
+		broker.mu.Unlock()
 		return
 	}
 
