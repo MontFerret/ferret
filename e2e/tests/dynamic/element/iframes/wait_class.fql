@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/iframe&src=events"
+LET url = @dynamic + "?redirect=/iframe&src=/events"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 LET doc = page.frames[1]
 
@@ -8,7 +8,9 @@ WAIT_ELEMENT(doc, "#page-events")
 LET b1 = ELEMENT(doc, "#wait-class-btn")
 LET c1 = ELEMENT(doc, "#wait-class-content")
 
+WAIT(2000)
 CLICK(b1)
+
 WAIT_CLASS(c1, "alert-success")
 
 // with random timeout

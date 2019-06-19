@@ -891,7 +891,46 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 }
 
 func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
-	return el.exec.DispatchEvent(ctx, el.id.objectID, "click")
+	points, err := getClickablePoint(ctx, el.client, el.id)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	moveArgs := input.NewDispatchMouseEventArgs("mouseMoved", points.X, points.Y)
+
+	if err := el.client.Input.DispatchMouseEvent(ctx, moveArgs); err != nil {
+		return values.False, err
+	}
+
+	beforePressDelay := time.Duration(core.Random(100, 50))
+
+	time.Sleep(beforePressDelay)
+
+	btn := "left"
+	clickCount := 1
+
+	downArgs := input.NewDispatchMouseEventArgs("mousePressed", points.X, points.Y)
+	downArgs.ClickCount = &clickCount
+	downArgs.Button = &btn
+
+	if err := el.client.Input.DispatchMouseEvent(ctx, downArgs); err != nil {
+		return values.False, err
+	}
+
+	beforeReleaseDelay := time.Duration(core.Random(50, 25))
+
+	time.Sleep(beforeReleaseDelay * time.Millisecond)
+
+	upArgs := input.NewDispatchMouseEventArgs("mouseReleased", points.X, points.Y)
+	upArgs.ClickCount = &clickCount
+	upArgs.Button = &btn
+
+	if err := el.client.Input.DispatchMouseEvent(ctx, upArgs); err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {

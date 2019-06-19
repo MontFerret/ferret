@@ -1,0 +1,11 @@
+LET url = @dynamic + "?redirect=/iframe&src=/forms"
+LET page = DOCUMENT(url, true)
+LET doc = page.frames[1]
+
+WAIT_ELEMENT(doc, "form")
+
+LET output = ELEMENT(doc, "#text_output")
+
+INPUT(doc, "#text_input", "foo")
+
+RETURN EXPECT(output.innerText, "foo")

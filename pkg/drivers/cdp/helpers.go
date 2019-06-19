@@ -77,6 +77,19 @@ func computeQuadArea(quads []Quad) float64 {
 	return math.Abs(area)
 }
 
+func intersectQuadWithViewport(quad []Quad, width, height float64) []Quad {
+	quads := make([]Quad, 0, len(quad))
+
+	for _, point := range quad {
+		quads = append(quads, Quad{
+			X: math.Min(math.Max(point.X, 0), width),
+			Y: math.Min(math.Max(point.Y, 0), height),
+		})
+	}
+
+	return quads
+}
+
 func getClickablePoint(ctx context.Context, client *cdp.Client, id HTMLElementIdentity) (Quad, error) {
 	qargs := dom.NewGetContentQuadsArgs()
 
@@ -89,20 +102,29 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, id HTMLElementId
 		qargs.SetNodeID(id.nodeID)
 	}
 
-	res, err := client.DOM.GetContentQuads(ctx, qargs)
+	contentQuadsReply, err := client.DOM.GetContentQuads(ctx, qargs)
 
 	if err != nil {
 		return Quad{}, err
 	}
 
-	if res.Quads == nil || len(res.Quads) == 0 {
+	if contentQuadsReply.Quads == nil || len(contentQuadsReply.Quads) == 0 {
 		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
 	}
 
-	quads := make([][]Quad, 0, len(res.Quads))
+	layoutMetricsReply, err := client.Page.GetLayoutMetrics(ctx)
 
-	for _, q := range res.Quads {
-		quad := fromProtocolQuad(q)
+	if err != nil {
+		return Quad{}, err
+	}
+
+	clientWidth := layoutMetricsReply.LayoutViewport.ClientWidth
+	clientHeight := layoutMetricsReply.LayoutViewport.ClientHeight
+
+	quads := make([][]Quad, 0, len(contentQuadsReply.Quads))
+
+	for _, q := range contentQuadsReply.Quads {
+		quad := intersectQuadWithViewport(fromProtocolQuad(q), float64(clientWidth), float64(clientHeight))
 
 		if computeQuadArea(quad) > 1 {
 			quads = append(quads, quad)
