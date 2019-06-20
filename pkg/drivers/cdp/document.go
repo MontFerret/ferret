@@ -3,15 +3,13 @@ package cdp
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
-	"sync"
-
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -26,7 +24,6 @@ import (
 const BlankPageURL = "about:blank"
 
 type HTMLDocument struct {
-	mu       sync.Mutex
 	logger   *zerolog.Logger
 	client   *cdp.Client
 	events   *events.EventBroker
@@ -139,9 +136,6 @@ func NewHTMLDocument(
 }
 
 func (doc *HTMLDocument) MarshalJSON() ([]byte, error) {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.MarshalJSON()
 }
 
@@ -150,23 +144,14 @@ func (doc *HTMLDocument) Type() core.Type {
 }
 
 func (doc *HTMLDocument) String() string {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.frames.Frame.URL
 }
 
 func (doc *HTMLDocument) Unwrap() interface{} {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element
 }
 
 func (doc *HTMLDocument) Hash() uint64 {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	h := fnv.New64a()
 
 	h.Write([]byte(doc.Type().String()))
@@ -182,9 +167,6 @@ func (doc *HTMLDocument) Copy() core.Value {
 }
 
 func (doc *HTMLDocument) Compare(other core.Value) int64 {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	switch other.Type() {
 	case drivers.HTMLDocumentType:
 		other := other.(drivers.HTMLDocument)
@@ -208,9 +190,6 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 }
 
 func (doc *HTMLDocument) Close() error {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	errs := make([]error, 0, 5)
 
 	if doc.children.Ready() {
@@ -249,9 +228,6 @@ func (doc *HTMLDocument) Close() error {
 }
 
 func (doc *HTMLDocument) IsDetached() values.Boolean {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.IsDetached()
 }
 
@@ -264,51 +240,30 @@ func (doc *HTMLDocument) GetNodeName() values.String {
 }
 
 func (doc *HTMLDocument) GetChildNodes(ctx context.Context) core.Value {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.GetChildNodes(ctx)
 }
 
 func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) core.Value {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.GetChildNode(ctx, idx)
 }
 
 func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) core.Value {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.QuerySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
 func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) values.Int {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.CountBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) GetTitle() values.String {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.objectID, "title")
 
 	if err != nil {
@@ -321,9 +276,6 @@ func (doc *HTMLDocument) GetTitle() values.String {
 }
 
 func (doc *HTMLDocument) GetName() values.String {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	if doc.frames.Frame.Name != nil {
 		return values.NewString(*doc.frames.Frame.Name)
 	}
@@ -332,16 +284,10 @@ func (doc *HTMLDocument) GetName() values.String {
 }
 
 func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.parent
 }
 
 func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	children, err := doc.children.Read(ctx)
 
 	if err != nil {
@@ -352,23 +298,14 @@ func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, 
 }
 
 func (doc *HTMLDocument) Length() values.Int {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element.Length()
 }
 
 func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return doc.element
 }
 
 func (doc *HTMLDocument) GetURL() values.String {
-	doc.mu.Lock()
-	defer doc.mu.Unlock()
-
 	return values.NewString(doc.frames.Frame.URL)
 }
 
