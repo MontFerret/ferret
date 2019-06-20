@@ -299,10 +299,16 @@ func (p *HTMLPage) Copy() core.Value {
 }
 
 func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	return common.GetInPage(ctx, p, path)
 }
 
 func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	return common.SetInPage(ctx, p, path, value)
 }
 
@@ -477,6 +483,9 @@ func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCoo
 }
 
 func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	args := page.NewPrintToPDFArgs()
 	args.
 		SetLandscape(bool(params.Landscape)).
@@ -535,6 +544,9 @@ func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (va
 }
 
 func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	metrics, err := p.client.Page.GetLayoutMetrics(ctx)
 
 	if err != nil {
@@ -587,6 +599,9 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 }
 
 func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -605,6 +620,9 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	history, err := p.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -644,6 +662,9 @@ func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Bo
 }
 
 func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	history, err := p.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
