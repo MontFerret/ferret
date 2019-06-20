@@ -3,20 +3,21 @@ package cdp
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/mafredri/cdp/protocol/emulation"
-	"github.com/mafredri/cdp/protocol/page"
 	"hash/fnv"
 	"sync"
 
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
+	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -29,6 +30,8 @@ type HTMLPage struct {
 	conn     *rpcc.Conn
 	client   *cdp.Client
 	events   *events.EventBroker
+	mouse    *input.Mouse
+	keyboard *input.Keyboard
 	document *HTMLDocument
 	frames   *common.LazyValue
 }
@@ -184,7 +187,10 @@ func LoadHTMLPage(
 		return nil, errors.Wrap(err, "failed to create event events")
 	}
 
-	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker)
+	mouse := input.NewMouse(client)
+	keyboard := input.NewKeyboard(client)
+
+	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker, mouse, keyboard)
 
 	if err != nil {
 		broker.StopAndClose()
@@ -198,6 +204,8 @@ func LoadHTMLPage(
 		conn,
 		client,
 		broker,
+		mouse,
+		keyboard,
 		doc,
 	), nil
 }
@@ -207,6 +215,8 @@ func NewHTMLPage(
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
+	mouse *input.Mouse,
+	keyboard *input.Keyboard,
 	document *HTMLDocument,
 ) *HTMLPage {
 	p := new(HTMLPage)
@@ -215,6 +225,8 @@ func NewHTMLPage(
 	p.conn = conn
 	p.client = client
 	p.events = broker
+	p.mouse = mouse
+	p.keyboard = keyboard
 	p.document = document
 	p.frames = common.NewLazyValue(p.unfoldFrames)
 
@@ -698,7 +710,7 @@ func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events)
+	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events, p.mouse, p.keyboard)
 
 	if err != nil {
 		p.logger.Error().

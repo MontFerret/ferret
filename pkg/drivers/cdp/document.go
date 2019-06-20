@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"hash/fnv"
 	"sync"
-	"time"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
@@ -18,11 +16,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const BlankPageURL = "about:blank"
@@ -32,6 +30,7 @@ type HTMLDocument struct {
 	logger   *zerolog.Logger
 	client   *cdp.Client
 	events   *events.EventBroker
+	input    *input.Manager
 	exec     *eval.ExecutionContext
 	frames   page.FrameTree
 	element  *HTMLElement
@@ -43,7 +42,9 @@ func LoadRootHTMLDocument(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	events *events.EventBroker,
+	mouse *input.Mouse,
+	keyboard *input.Keyboard,
 ) (*HTMLDocument, error) {
 	gdRepl, err := client.DOM.GetDocument(ctx, dom.NewGetDocumentArgs().SetDepth(1))
 
@@ -61,7 +62,9 @@ func LoadRootHTMLDocument(
 		ctx,
 		logger,
 		client,
-		broker,
+		events,
+		mouse,
+		keyboard,
 		gdRepl.Root,
 		ftRepl.FrameTree,
 		eval.EmptyExecutionContextID,
@@ -73,19 +76,23 @@ func LoadHTMLDocument(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	events *events.EventBroker,
+	mouse *input.Mouse,
+	keyboard *input.Keyboard,
 	node dom.Node,
 	tree page.FrameTree,
 	execID runtime.ExecutionContextID,
 	parent *HTMLDocument,
 ) (*HTMLDocument, error) {
 	exec := eval.NewExecutionContext(client, tree.Frame, execID)
+	inputManager := input.NewManager(client, exec, keyboard, mouse)
 
 	rootElement, err := LoadHTMLElement(
 		ctx,
 		logger,
 		client,
-		broker,
+		events,
+		inputManager,
 		exec,
 		node.NodeID,
 		node.BackendNodeID,
@@ -98,7 +105,8 @@ func LoadHTMLDocument(
 	return NewHTMLDocument(
 		logger,
 		client,
-		broker,
+		events,
+		inputManager,
 		exec,
 		rootElement,
 		tree,
@@ -109,7 +117,8 @@ func LoadHTMLDocument(
 func NewHTMLDocument(
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	events *events.EventBroker,
+	input *input.Manager,
 	exec *eval.ExecutionContext,
 	rootElement *HTMLElement,
 	frames page.FrameTree,
@@ -118,7 +127,8 @@ func NewHTMLDocument(
 	doc := new(HTMLDocument)
 	doc.logger = logger
 	doc.client = client
-	doc.events = broker
+	doc.events = events
+	doc.input = input
 	doc.exec = exec
 	doc.element = rootElement
 	doc.frames = frames
@@ -363,183 +373,47 @@ func (doc *HTMLDocument) GetURL() values.String {
 }
 
 func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
-	res, err := doc.exec.EvalWithReturn(
-		ctx,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
-			if (el == null) {
-				return false;
-			}
-			var evt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
-			el.dispatchEvent(evt);
-			return true;
-		`, eval.ParamString(selector.String())),
-	)
-
-	if err != nil {
+	if err := doc.input.ClickBySelector(ctx, doc.element.id.nodeID, selector); err != nil {
 		return values.False, err
 	}
 
-	if res.Type() == types.Boolean {
-		return res.(values.Boolean), nil
-	}
-
-	return values.False, nil
+	return values.True, nil
 }
 
 func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error) {
-	res, err := doc.exec.EvalWithReturn(
-		ctx,
-		fmt.Sprintf(`
-			var elements = document.querySelectorAll(%s);
-			if (elements == null) {
-				return false;
-			}
-			elements.forEach((el) => {
-				var evt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
-				el.dispatchEvent(evt);	
-			});
-			return true;
-		`, eval.ParamString(selector.String())),
-	)
+	found, err := doc.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(doc.element.id.nodeID, selector.String()))
 
 	if err != nil {
 		return values.False, err
 	}
 
-	if res.Type() == types.Boolean {
-		return res.(values.Boolean), nil
+	for _, nodeID := range found.NodeIDs {
+		if err := doc.input.ClickByNodeID(ctx, nodeID); err != nil {
+			return values.False, err
+		}
 	}
 
-	return values.False, nil
+	return values.True, nil
 }
 
 func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
-	valStr := value.String()
-
-	res, err := doc.exec.EvalWithReturn(
-		ctx,
-		fmt.Sprintf(`
-			var el = document.querySelector(%s);
-			if (el == null) {
-				return false;
-			}
-			el.focus();
-			return true;
-		`, eval.ParamString(selector.String())),
-	)
-
-	if err != nil {
+	if err := doc.input.TypeBySelector(ctx, doc.element.id.nodeID, selector, value, delay); err != nil {
 		return values.False, err
-	}
-
-	if res.Type() == types.Boolean && res.(values.Boolean) == values.False {
-		return values.False, nil
-	}
-
-	// Initial delay after focusing but before typing
-	time.Sleep(time.Duration(delay) * time.Millisecond)
-
-	for _, ch := range valStr {
-		for _, ev := range []string{"keyDown", "keyUp"} {
-			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
-
-			if err := doc.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
-				return values.False, err
-			}
-		}
-
-		time.Sleep(randomDuration(delay) * time.Millisecond)
 	}
 
 	return values.True, nil
 }
 
 func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
-	res, err := doc.exec.EvalWithReturn(
-		ctx,
-		fmt.Sprintf(`
-			var element = document.querySelector(%s);
-			if (element == null) {
-				return [];
-			}
-			var values = %s;
-			if (element.nodeName.toLowerCase() !== 'select') {
-				throw new Error('GetElement is not a <select> element.');
-			}
-			var options = Array.from(element.options);
-      		element.value = undefined;
-			for (var option of options) {
-        		option.selected = values.includes(option.value);
-        	
-				if (option.selected && !element.multiple) {
-          			break;
-				}
-      		}
-      		element.dispatchEvent(new Event('input', { 'bubbles': true, cancelable: true }));
-      		element.dispatchEvent(new Event('change', { 'bubbles': true, cancelable: true }));
-      		
-			return options.filter(option => option.selected).map(option => option.value);
-		`,
-			eval.ParamString(selector.String()),
-			value.String(),
-		),
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	arr, ok := res.(*values.Array)
-
-	if ok {
-		return arr, nil
-	}
-
-	return nil, core.TypeError(types.Array, res.Type())
+	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector, value)
 }
 
 func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
-	err := doc.ScrollBySelector(ctx, selector)
-
-	if err != nil {
-		return err
-	}
-
-	selectorArgs := dom.NewQuerySelectorArgs(doc.element.id.nodeID, selector.String())
-	found, err := doc.client.DOM.QuerySelector(ctx, selectorArgs)
-
-	if err != nil {
-		doc.element.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return err
-	}
-
-	if found.NodeID <= 0 {
-		return errors.New("element not found")
-	}
-
-	q, err := getClickablePoint(ctx, doc.client, HTMLElementIdentity{
-		nodeID: found.NodeID,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return doc.client.Input.DispatchMouseEvent(
-		ctx,
-		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
-	)
+	return doc.input.MoveMouseBySelector(ctx, doc.element.id.nodeID, selector)
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
-	return doc.client.Input.DispatchMouseEvent(
-		ctx,
-		input.NewDispatchMouseEventArgs("mouseMoved", float64(x), float64(y)),
-	)
+	return doc.input.MoveMouse(ctx, x, y)
 }
 
 func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
@@ -690,50 +564,19 @@ func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector
 }
 
 func (doc *HTMLDocument) ScrollTop(ctx context.Context) error {
-	return doc.exec.Eval(ctx, `
-		window.scrollTo({
-			left: 0,
-			top: 0,
-    		behavior: 'instant'
-  		});
-	`)
+	return doc.input.ScrollTop(ctx)
 }
 
 func (doc *HTMLDocument) ScrollBottom(ctx context.Context) error {
-	return doc.exec.Eval(ctx, `
-		window.scrollTo({
-			left: 0,
-			top: window.document.body.scrollHeight,
-    		behavior: 'instant'
-  		});
-	`)
+	return doc.input.ScrollBottom(ctx)
 }
 
 func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String) error {
-	return doc.exec.Eval(ctx, fmt.Sprintf(`
-		var el = document.querySelector(%s);
-		if (el == null) {
-			throw new Error("element not found");
-		}
-		el.scrollIntoView({
-    		behavior: 'instant'
-  		});
-		return true;
-	`, eval.ParamString(selector.String()),
-	))
+	return doc.input.ScrollIntoViewBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
-	return doc.exec.Eval(ctx, fmt.Sprintf(`
-		window.scrollBy({
-  			top: %s,
-  			left: %s,
-  			behavior: 'instant'
-		});
-	`,
-		eval.ParamFloat(float64(x)),
-		eval.ParamFloat(float64(y)),
-	))
+	return doc.input.Scroll(ctx, x, y)
 }
 
 func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {
@@ -747,7 +590,18 @@ func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e 
 				return nil, errors.Wrap(err, "failed to resolve frame node")
 			}
 
-			cfDocument, err := LoadHTMLDocument(ctx, doc.logger, doc.client, doc.events, cfNode, cf, cfExecID, doc)
+			cfDocument, err := LoadHTMLDocument(
+				ctx,
+				doc.logger,
+				doc.client,
+				doc.events,
+				doc.input.Mouse(),
+				doc.input.Keyboard(),
+				cfNode,
+				cf,
+				cfExecID,
+				doc,
+			)
 
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to load frame document")

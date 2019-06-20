@@ -9,19 +9,18 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/gofrs/uuid"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/input"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/rs/zerolog"
 )
@@ -41,6 +40,7 @@ type (
 		logger         *zerolog.Logger
 		client         *cdp.Client
 		events         *events.EventBroker
+		input          *input.Manager
 		exec           *eval.ExecutionContext
 		connected      values.Boolean
 		id             HTMLElementIdentity
@@ -61,6 +61,7 @@ func LoadHTMLElement(
 	logger *zerolog.Logger,
 	client *cdp.Client,
 	broker *events.EventBroker,
+	input *input.Manager,
 	exec *eval.ExecutionContext,
 	nodeID dom.NodeID,
 	backendID dom.BackendNodeID,
@@ -128,6 +129,7 @@ func LoadHTMLElement(
 		logger,
 		client,
 		broker,
+		input,
 		exec,
 		id,
 		node.Node.NodeType,
@@ -142,6 +144,7 @@ func NewHTMLElement(
 	logger *zerolog.Logger,
 	client *cdp.Client,
 	broker *events.EventBroker,
+	input *input.Manager,
 	exec *eval.ExecutionContext,
 	id HTMLElementIdentity,
 	nodeType int,
@@ -154,6 +157,7 @@ func NewHTMLElement(
 	el.logger = logger
 	el.client = client
 	el.events = broker
+	el.input = input
 	el.exec = exec
 	el.connected = values.True
 	el.id = id
@@ -502,7 +506,7 @@ func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String
 		return values.None
 	}
 
-	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.exec, found.NodeID, emptyBackendID)
+	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, found.NodeID, emptyBackendID)
 
 	if err != nil {
 		el.logError(err).
@@ -543,7 +547,7 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 			continue
 		}
 
-		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.exec, id, emptyBackendID)
+		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, id, emptyBackendID)
 
 		if err != nil {
 			el.logError(err).
@@ -891,46 +895,7 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 }
 
 func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
-	if err := el.ScrollIntoView(ctx); err != nil {
-		return values.False, err
-	}
-
-	points, err := getClickablePoint(ctx, el.client, el.id)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	moveArgs := input.NewDispatchMouseEventArgs("mouseMoved", points.X, points.Y)
-
-	if err := el.client.Input.DispatchMouseEvent(ctx, moveArgs); err != nil {
-		return values.False, err
-	}
-
-	beforePressDelay := time.Duration(core.Random(100, 50))
-
-	time.Sleep(beforePressDelay)
-
-	btn := "left"
-	clickCount := 1
-
-	downArgs := input.NewDispatchMouseEventArgs("mousePressed", points.X, points.Y)
-	downArgs.ClickCount = &clickCount
-	downArgs.Button = &btn
-
-	if err := el.client.Input.DispatchMouseEvent(ctx, downArgs); err != nil {
-		return values.False, err
-	}
-
-	beforeReleaseDelay := time.Duration(core.Random(50, 25))
-
-	time.Sleep(beforeReleaseDelay * time.Millisecond)
-
-	upArgs := input.NewDispatchMouseEventArgs("mouseReleased", points.X, points.Y)
-	upArgs.ClickCount = &clickCount
-	upArgs.Button = &btn
-
-	if err := el.client.Input.DispatchMouseEvent(ctx, upArgs); err != nil {
+	if err := el.input.ClickByNodeID(ctx, el.id.nodeID); err != nil {
 		return values.False, err
 	}
 
@@ -938,163 +903,23 @@ func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
-	if err := el.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(el.id.objectID)); err != nil {
-		el.logError(err).Msg("failed to focus")
-
-		return err
+	if el.GetNodeName() != "INPUT" {
+		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")
 	}
 
-	delayMs := time.Duration(delay)
-
-	time.Sleep(delayMs * time.Millisecond)
-
-	valStr := value.String()
-
-	for _, ch := range valStr {
-		for _, ev := range []string{"keyDown", "keyUp"} {
-			ke := input.NewDispatchKeyEventArgs(ev).SetText(string(ch))
-
-			if err := el.client.Input.DispatchKeyEvent(ctx, ke); err != nil {
-				el.logError(err).Str("value", value.String()).Msg("failed to input a value")
-
-				return err
-			}
-
-			time.Sleep(delayMs * time.Millisecond)
-		}
-	}
-
-	return nil
+	return el.input.TypeByNodeID(ctx, el.id.nodeID, value, delay)
 }
 
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
-	var attrID = "data-ferret-select"
-
-	if el.GetNodeName() != "SELECT" {
-		return nil, core.Error(core.ErrInvalidOperation, "element is not a <select> element.")
-	}
-
-	id, err := uuid.NewV4()
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id.nodeID, attrID, id.String()))
-
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := el.exec.EvalWithReturn(
-		ctx,
-		fmt.Sprintf(`
-			var el = document.querySelector('[%s="%s"]');
-			if (el == null) {
-				return [];
-			}
-			var values = %s;
-			if (el.nodeName.toLowerCase() !== 'select') {
-				throw new Error('element is not a <select> element.');
-			}
-			var options = Array.from(el.options);
-      		el.value = undefined;
-			for (var option of options) {
-        		option.selected = values.includes(option.value);
-        	
-				if (option.selected && !el.multiple) {
-          			break;
-				}
-      		}
-      		el.dispatchEvent(new Event('input', { 'bubbles': true }));
-      		el.dispatchEvent(new Event('change', { 'bubbles': true }));
-      		
-			return options.filter(option => option.selected).map(option => option.value);
-		`,
-			attrID,
-			id.String(),
-			value.String(),
-		),
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
-
-	if err != nil {
-		return nil, err
-	}
-
-	arr, ok := res.(*values.Array)
-
-	if ok {
-		return arr, nil
-	}
-
-	return nil, core.TypeError(types.Array, res.Type())
+	return el.input.SelectByNodeID(ctx, el.id.nodeID, value)
 }
 
 func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
-	var attrID = "data-ferret-scroll"
-
-	id, err := uuid.NewV4()
-
-	if err != nil {
-		return err
-	}
-
-	err = el.client.DOM.SetAttributeValue(ctx, dom.NewSetAttributeValueArgs(el.id.nodeID, attrID, id.String()))
-
-	if err != nil {
-		return err
-	}
-
-	err = el.exec.Eval(
-		ctx,
-		fmt.Sprintf(`
-			var el = document.querySelector('[%s="%s"]');
-			if (el == null) {
-				throw new Error('element not found');
-			}
-			
-			el.scrollIntoView({
-    			behavior: 'instant',
-				inline: 'center',
-				block: 'center'
-  			});
-		`,
-			attrID,
-			id.String(),
-		))
-
-	if err != nil {
-		return err
-	}
-
-	err = el.client.DOM.RemoveAttribute(ctx, dom.NewRemoveAttributeArgs(el.id.nodeID, attrID))
-
-	return err
+	return el.input.ScrollIntoViewByNodeID(ctx, el.id.nodeID)
 }
 
 func (el *HTMLElement) Hover(ctx context.Context) error {
-	err := el.ScrollIntoView(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	q, err := getClickablePoint(ctx, el.client, el.id)
-
-	if err != nil {
-		return err
-	}
-
-	return el.client.Input.DispatchMouseEvent(
-		ctx,
-		input.NewDispatchMouseEventArgs("mouseMoved", q.X, q.Y),
-	)
+	return el.input.MoveMouseByNodeID(ctx, el.id.nodeID)
 }
 
 func (el *HTMLElement) IsDetached() values.Boolean {
@@ -1157,6 +982,7 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 			el.logger,
 			el.client,
 			el.events,
+			el.input,
 			el.exec,
 			childID.nodeID,
 			childID.backendID,
@@ -1343,7 +1169,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 
 	el.loadedChildren.Write(ctx, func(v core.Value, _ error) {
 		loadedArr := v.(*values.Array)
-		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.exec, nextID, emptyBackendID)
+		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, nextID, emptyBackendID)
 
 		if err != nil {
 			el.logError(err).Msg("failed to load an inserted element")
