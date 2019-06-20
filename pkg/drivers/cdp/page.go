@@ -3,20 +3,21 @@ package cdp
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/mafredri/cdp/protocol/emulation"
-	"github.com/mafredri/cdp/protocol/page"
 	"hash/fnv"
 	"sync"
 
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
+	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -29,6 +30,8 @@ type HTMLPage struct {
 	conn     *rpcc.Conn
 	client   *cdp.Client
 	events   *events.EventBroker
+	mouse    *input.Mouse
+	keyboard *input.Keyboard
 	document *HTMLDocument
 	frames   *common.LazyValue
 }
@@ -184,7 +187,10 @@ func LoadHTMLPage(
 		return nil, errors.Wrap(err, "failed to create event events")
 	}
 
-	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker)
+	mouse := input.NewMouse(client)
+	keyboard := input.NewKeyboard(client)
+
+	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker, mouse, keyboard)
 
 	if err != nil {
 		broker.StopAndClose()
@@ -198,6 +204,8 @@ func LoadHTMLPage(
 		conn,
 		client,
 		broker,
+		mouse,
+		keyboard,
 		doc,
 	), nil
 }
@@ -207,6 +215,8 @@ func NewHTMLPage(
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	broker *events.EventBroker,
+	mouse *input.Mouse,
+	keyboard *input.Keyboard,
 	document *HTMLDocument,
 ) *HTMLPage {
 	p := new(HTMLPage)
@@ -215,6 +225,8 @@ func NewHTMLPage(
 	p.conn = conn
 	p.client = client
 	p.events = broker
+	p.mouse = mouse
+	p.keyboard = keyboard
 	p.document = document
 	p.frames = common.NewLazyValue(p.unfoldFrames)
 
@@ -465,6 +477,9 @@ func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCoo
 }
 
 func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	args := page.NewPrintToPDFArgs()
 	args.
 		SetLandscape(bool(params.Landscape)).
@@ -523,6 +538,9 @@ func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (va
 }
 
 func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	metrics, err := p.client.Page.GetLayoutMetrics(ctx)
 
 	if err != nil {
@@ -575,6 +593,9 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 }
 
 func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -593,6 +614,9 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	history, err := p.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -632,6 +656,9 @@ func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Bo
 }
 
 func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	history, err := p.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -698,7 +725,7 @@ func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events)
+	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events, p.mouse, p.keyboard)
 
 	if err != nil {
 		p.logger.Error().

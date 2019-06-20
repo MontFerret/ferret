@@ -5,15 +5,14 @@ import (
 	"context"
 	"errors"
 	"golang.org/x/net/html"
-	"math"
 	"strings"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
@@ -27,11 +26,6 @@ var emptyExpires = time.Time{}
 
 type (
 	batchFunc = func() error
-
-	Quad struct {
-		X float64
-		Y float64
-	}
 )
 
 func runBatch(funcs ...batchFunc) error {
@@ -42,113 +36,6 @@ func runBatch(funcs ...batchFunc) error {
 	}
 
 	return eg.Wait()
-}
-
-func fromProtocolQuad(quad dom.Quad) []Quad {
-	return []Quad{
-		{
-			X: quad[0],
-			Y: quad[1],
-		},
-		{
-			X: quad[2],
-			Y: quad[3],
-		},
-		{
-			X: quad[4],
-			Y: quad[5],
-		},
-		{
-			X: quad[6],
-			Y: quad[7],
-		},
-	}
-}
-
-func computeQuadArea(quads []Quad) float64 {
-	var area float64
-
-	for i := range quads {
-		p1 := quads[i]
-		p2 := quads[(i+1)%len(quads)]
-		area += (p1.X*p2.Y - p2.X*p1.Y) / 2
-	}
-
-	return math.Abs(area)
-}
-
-func intersectQuadWithViewport(quad []Quad, width, height float64) []Quad {
-	quads := make([]Quad, 0, len(quad))
-
-	for _, point := range quad {
-		quads = append(quads, Quad{
-			X: math.Min(math.Max(point.X, 0), width),
-			Y: math.Min(math.Max(point.Y, 0), height),
-		})
-	}
-
-	return quads
-}
-
-func getClickablePoint(ctx context.Context, client *cdp.Client, id HTMLElementIdentity) (Quad, error) {
-	qargs := dom.NewGetContentQuadsArgs()
-
-	switch {
-	case id.objectID != "":
-		qargs.SetObjectID(id.objectID)
-	case id.backendID != 0:
-		qargs.SetBackendNodeID(id.backendID)
-	default:
-		qargs.SetNodeID(id.nodeID)
-	}
-
-	contentQuadsReply, err := client.DOM.GetContentQuads(ctx, qargs)
-
-	if err != nil {
-		return Quad{}, err
-	}
-
-	if contentQuadsReply.Quads == nil || len(contentQuadsReply.Quads) == 0 {
-		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
-	}
-
-	layoutMetricsReply, err := client.Page.GetLayoutMetrics(ctx)
-
-	if err != nil {
-		return Quad{}, err
-	}
-
-	clientWidth := layoutMetricsReply.LayoutViewport.ClientWidth
-	clientHeight := layoutMetricsReply.LayoutViewport.ClientHeight
-
-	quads := make([][]Quad, 0, len(contentQuadsReply.Quads))
-
-	for _, q := range contentQuadsReply.Quads {
-		quad := intersectQuadWithViewport(fromProtocolQuad(q), float64(clientWidth), float64(clientHeight))
-
-		if computeQuadArea(quad) > 1 {
-			quads = append(quads, quad)
-		}
-	}
-
-	if len(quads) == 0 {
-		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
-	}
-
-	// Return the middle point of the first quad.
-	quad := quads[0]
-	var x float64
-	var y float64
-
-	for _, q := range quad {
-		x += q.X
-		y += q.Y
-	}
-
-	return Quad{
-		X: x / 4,
-		Y: y / 4,
-	}, nil
 }
 
 func parseAttrs(attrs []string) *values.Object {
@@ -404,13 +291,6 @@ func normalizeCookieURL(url string) string {
 	}
 
 	return httpPrefix + url
-}
-
-func randomDuration(delay values.Int) time.Duration {
-	max, min := core.NumberBoundaries(float64(int64(delay)))
-	value := core.Random(max, min)
-
-	return time.Duration(int64(value))
 }
 
 func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (dom.Node, runtime.ExecutionContextID, error) {
