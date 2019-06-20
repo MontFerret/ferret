@@ -299,16 +299,10 @@ func (p *HTMLPage) Copy() core.Value {
 }
 
 func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	return common.GetInPage(ctx, p, path)
 }
 
 func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	return common.SetInPage(ctx, p, path, value)
 }
 
