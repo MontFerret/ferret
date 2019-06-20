@@ -2,10 +2,10 @@ package input
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"time"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/input"
-	"time"
 )
 
 type Keyboard struct {
@@ -40,8 +40,7 @@ func (k *Keyboard) Type(ctx context.Context, text string, delay int) error {
 			return err
 		}
 
-		max, min := core.NumberBoundaries(float64(delay))
-		releaseDelay := time.Duration(core.Random(max, min))
+		releaseDelay := randomDuration(delay)
 		time.Sleep(releaseDelay)
 
 		if err := k.Up(ctx, ch); err != nil {

@@ -2,7 +2,6 @@ package input
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/input"
 	"time"
@@ -27,8 +26,7 @@ func (m *Mouse) Click(ctx context.Context, x, y float64, delay int) error {
 		return err
 	}
 
-	max, min := core.NumberBoundaries(float64(delay))
-	releaseDelay := time.Duration(core.Random(max, min))
+	releaseDelay := randomDuration(delay)
 
 	time.Sleep(releaseDelay * time.Millisecond)
 
