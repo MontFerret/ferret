@@ -105,7 +105,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 				return res, err
 			}
 
-			res.Timeout = time.Duration(timeout.(values.Int)) + time.Millisecond
+			res.Timeout = time.Duration(timeout.(values.Int)) * time.Millisecond
 		}
 
 		userAgent, exists := obj.Get(values.NewString("userAgent"))
