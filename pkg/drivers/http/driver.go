@@ -119,6 +119,10 @@ func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (dri
 		Str("user-agent", ua).
 		Msg("using User-Agent")
 
+	if ua != "" {
+		req.Header.Set("User-Agent", ua)
+	}
+
 	resp, err := drv.client.Do(req)
 
 	if err != nil {
@@ -126,6 +130,10 @@ func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (dri
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 

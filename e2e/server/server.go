@@ -2,10 +2,13 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/labstack/echo"
 	"net/http"
 	"path/filepath"
+	"time"
+
+	"github.com/labstack/echo"
 )
 
 type (
@@ -37,6 +40,43 @@ func New(settings Settings) *Server {
 	})
 	e.Static("/", settings.Dir)
 	e.File("/", filepath.Join(settings.Dir, "index.html"))
+	api := e.Group("/api")
+	api.GET("/ts", func(ctx echo.Context) error {
+		var headers string
+
+		if len(ctx.Request().Header) > 0 {
+			b, err := json.Marshal(ctx.Request().Header)
+
+			if err != nil {
+				return err
+			}
+
+			headers = string(b)
+		}
+
+		ts := time.Now().Format("2006-01-02 15:04:05")
+
+		return ctx.HTML(http.StatusOK, fmt.Sprintf(`
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta charset="utf-8" />
+			</head>
+			<body>
+				<span id="timestamp">%s</span>
+				<span id="headers">%s</span>
+			</body>
+		</html>
+	`, ts, headers))
+	})
+	api.GET("/ping", func(ctx echo.Context) error {
+		return ctx.JSON(http.StatusOK, echo.Map{
+			"header": ctx.Request().Header,
+			"url":    ctx.Request().URL,
+			"data":   "pong",
+			"ts":     time.Now(),
+		})
+	})
 
 	return &Server{e, settings}
 }
