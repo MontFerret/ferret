@@ -64,6 +64,7 @@ func NewLib() map[string]core.Function {
 		"WAIT_STYLE_ALL":    WaitStyleAll,
 		"WAIT_NO_STYLE_ALL": WaitNoStyleAll,
 		"WAIT_NAVIGATION":   WaitNavigation,
+		"XPATH":             XPath,
 	}
 }
 
