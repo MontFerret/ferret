@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -306,6 +307,10 @@ func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.Strin
 	})
 
 	return arr
+}
+
+func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+	return values.None, core.ErrNotSupported
 }
 
 func (el *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.String) values.String {

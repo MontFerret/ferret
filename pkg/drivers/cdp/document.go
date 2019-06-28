@@ -92,7 +92,6 @@ func LoadHTMLDocument(
 		inputManager,
 		exec,
 		node.NodeID,
-		node.BackendNodeID,
 	)
 
 	if err != nil {
@@ -295,6 +294,10 @@ func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, 
 	}
 
 	return children.Copy().(*values.Array), nil
+}
+
+func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+	return doc.element.XPath(ctx, expression)
 }
 
 func (doc *HTMLDocument) Length() values.Int {

@@ -3,12 +3,12 @@ package eval
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/pkg/errors"
 )
 
 const EmptyExecutionContextID = runtime.ExecutionContextID(-1)
@@ -33,7 +33,7 @@ func (ec *ExecutionContext) ID() runtime.ExecutionContextID {
 }
 
 func (ec *ExecutionContext) Eval(ctx context.Context, exp string) error {
-	_, err := ec.eval(
+	_, err := ec.evalWithValueInternal(
 		ctx,
 		runtime.
 			NewEvaluateArgs(PrepareEval(exp)),
@@ -42,8 +42,8 @@ func (ec *ExecutionContext) Eval(ctx context.Context, exp string) error {
 	return err
 }
 
-func (ec *ExecutionContext) EvalWithReturn(ctx context.Context, exp string) (core.Value, error) {
-	return ec.eval(
+func (ec *ExecutionContext) EvalWithValue(ctx context.Context, exp string) (core.Value, error) {
+	return ec.evalWithValueInternal(
 		ctx,
 		runtime.
 			NewEvaluateArgs(PrepareEval(exp)).
@@ -52,7 +52,7 @@ func (ec *ExecutionContext) EvalWithReturn(ctx context.Context, exp string) (cor
 }
 
 func (ec *ExecutionContext) EvalAsync(ctx context.Context, exp string) (core.Value, error) {
-	return ec.eval(
+	return ec.evalWithValueInternal(
 		ctx,
 		runtime.
 			NewEvaluateArgs(PrepareEval(exp)).
@@ -61,31 +61,18 @@ func (ec *ExecutionContext) EvalAsync(ctx context.Context, exp string) (core.Val
 	)
 }
 
-func (ec *ExecutionContext) eval(ctx context.Context, args *runtime.EvaluateArgs) (core.Value, error) {
-	if ec.contextID != EmptyExecutionContextID {
-		args.SetContextID(ec.contextID)
-	}
-
-	out, err := ec.client.Runtime.Evaluate(ctx, args)
+func (ec *ExecutionContext) ResolveRemoteObject(ctx context.Context, exp string) (runtime.RemoteObject, error) {
+	res, err := ec.evalInternal(ctx, runtime.NewEvaluateArgs(PrepareEval(exp)))
 
 	if err != nil {
-		return values.None, err
+		return runtime.RemoteObject{}, err
 	}
 
-	if out.ExceptionDetails != nil {
-		ex := out.ExceptionDetails
-
-		return values.None, core.Error(
-			core.ErrUnexpected,
-			fmt.Sprintf("%s: %s", ex.Text, *ex.Exception.Description),
-		)
+	if res.ObjectID == nil {
+		return runtime.RemoteObject{}, errors.Wrap(core.ErrUnexpected, "unable to resolve remote object")
 	}
 
-	if out.Result.Type != "undefined" && out.Result.Type != "null" {
-		return values.Unmarshal(out.Result.Value)
-	}
-
-	return Unmarshal(&out.Result)
+	return res, nil
 }
 
 func (ec *ExecutionContext) CallMethod(
@@ -214,4 +201,63 @@ func (ec *ExecutionContext) DispatchEvent(
 	}
 
 	return values.True, nil
+}
+
+func (ec *ExecutionContext) CallFunction(ctx context.Context, declaration string, args ...runtime.CallArgument) (runtime.RemoteObject, error) {
+	cfArgs := runtime.NewCallFunctionOnArgs(declaration).SetArguments(args)
+
+	if ec.contextID != EmptyExecutionContextID {
+		cfArgs.SetExecutionContextID(ec.contextID)
+	}
+
+	repl, err := ec.client.Runtime.CallFunctionOn(ctx, cfArgs)
+
+	if err != nil {
+		return runtime.RemoteObject{}, err
+	}
+
+	if repl.ExceptionDetails != nil {
+		exception := *repl.ExceptionDetails
+
+		return runtime.RemoteObject{}, errors.New(exception.Text)
+	}
+
+	return repl.Result, nil
+}
+
+func (ec *ExecutionContext) evalWithValueInternal(ctx context.Context, args *runtime.EvaluateArgs) (core.Value, error) {
+	obj, err := ec.evalInternal(ctx, args)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	if obj.Type != "undefined" && obj.Type != "null" {
+		return values.Unmarshal(obj.Value)
+	}
+
+	return Unmarshal(&obj)
+}
+
+func (ec *ExecutionContext) evalInternal(ctx context.Context, args *runtime.EvaluateArgs) (runtime.RemoteObject, error) {
+	if ec.contextID != EmptyExecutionContextID {
+		args.SetContextID(ec.contextID)
+	}
+
+	out, err := ec.client.Runtime.Evaluate(ctx, args)
+
+	if err != nil {
+		return runtime.RemoteObject{}, err
+	}
+
+	if out.ExceptionDetails != nil {
+		ex := out.ExceptionDetails
+
+		return runtime.RemoteObject{}, core.Error(
+			core.ErrUnexpected,
+			fmt.Sprintf("%s: %s", ex.Text, *ex.Exception.Description),
+		)
+	}
+
+	return out.Result, nil
 }

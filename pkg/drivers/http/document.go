@@ -173,6 +173,10 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
+func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+	return doc.element.XPath(ctx, expression)
+}
+
 func (doc *HTMLDocument) IsDetached() values.Boolean {
 	return values.False
 }

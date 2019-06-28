@@ -254,7 +254,7 @@ func (m *Manager) SelectByNodeID(ctx context.Context, nodeID dom.NodeID, value *
 		return nil, err
 	}
 
-	res, err := m.exec.EvalWithReturn(
+	res, err := m.exec.EvalWithValue(
 		ctx,
 		fmt.Sprintf(`
 			var el = document.querySelector('[%s="%s"]');
