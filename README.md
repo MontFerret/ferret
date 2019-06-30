@@ -532,10 +532,10 @@ LET doc = DOCUMENT("https://www.google.com", {
     ]
 })
 
-COOKIES_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
-COOKIES_DEL(doc, "foo")
+COOKIE_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
+COOKIE_DEL(doc, "foo")
 
-LET c = COOKIES_GET(doc, "baz")
+LET c = COOKIE_GET(doc, "baz")
 
 FOR cookie IN doc.cookies
     RETURN cookie.name
