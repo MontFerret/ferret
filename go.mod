@@ -12,6 +12,7 @@ require (
 	github.com/corpix/uarand v0.0.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/derekparker/trie v0.0.0-20190322172448-1ce4922c7ad9
+	github.com/gobwas/glob v0.2.3
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190328170749-bb2674552d8f // indirect

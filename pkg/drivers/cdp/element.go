@@ -71,7 +71,7 @@ func LoadHTMLElement(
 	}
 
 	// getting a remote object that represents the current DOM Node
-	args := dom.NewResolveNodeArgs().SetNodeID(nodeID)
+	args := dom.NewResolveNodeArgs().SetNodeID(nodeID).SetExecutionContextID(exec.ID())
 
 	obj, err := client.DOM.ResolveNode(ctx, args)
 
@@ -598,7 +598,34 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 		return values.None, err
 	}
 
-	switch out.Type {
+	typeName := out.Type
+
+	// checking whether it's actually an array
+	if typeName == "object" {
+		isArrayRes, err := el.exec.CallFunction(ctx, `
+			(target) => Array.isArray(target)
+		`,
+			runtime.CallArgument{
+				ObjectID: out.ObjectID,
+			},
+		)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		isArray, err := eval.Unmarshal(&isArrayRes)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		if isArray == values.True {
+			typeName = "array"
+		}
+	}
+
+	switch typeName {
 	case "string", "number", "boolean":
 		return eval.Unmarshal(&out)
 	case "array":
@@ -643,7 +670,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 				continue
 			}
 
-			repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*out.ObjectID))
+			repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*descr.Value.ObjectID))
 
 			if err != nil {
 				return values.None, err
@@ -658,7 +685,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 				el.exec,
 				HTMLElementIdentity{
 					nodeID:   repl.NodeID,
-					objectID: *out.ObjectID,
+					objectID: *descr.Value.ObjectID,
 				},
 			)
 

@@ -219,7 +219,7 @@ func (ec *ExecutionContext) CallFunction(ctx context.Context, declaration string
 	if repl.ExceptionDetails != nil {
 		exception := *repl.ExceptionDetails
 
-		return runtime.RemoteObject{}, errors.New(exception.Text)
+		return runtime.RemoteObject{}, errors.New(exception.Error())
 	}
 
 	return repl.Result, nil

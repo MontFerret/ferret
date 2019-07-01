@@ -1,0 +1,6 @@
+LET url = @dynamic
+LET page = DOCUMENT(url, true)
+
+LET actual = XPATH(page, "count(//body)")
+
+RETURN EXPECT(1, actual)

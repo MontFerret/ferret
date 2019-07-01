@@ -16,7 +16,7 @@ const xPathTemplate = `
 					result = [];
 					let item;
 		
-					while ((item = iterator.iterateNext())) {
+					while ((item = out.iterateNext())) {
 						result.push(item);
 					}
 		

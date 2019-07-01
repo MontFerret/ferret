@@ -55,6 +55,12 @@ func LoadRootHTMLDocument(
 		return nil, err
 	}
 
+	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(ftRepl.FrameTree.Frame.ID))
+
+	if err != nil {
+		return nil, err
+	}
+
 	return LoadHTMLDocument(
 		ctx,
 		logger,
@@ -64,7 +70,7 @@ func LoadRootHTMLDocument(
 		keyboard,
 		gdRepl.Root,
 		ftRepl.FrameTree,
-		eval.EmptyExecutionContextID,
+		worldRepl.ExecutionContextID,
 		nil,
 	)
 }
