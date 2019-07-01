@@ -28,7 +28,6 @@ import (
 )
 
 var emptyNodeID = dom.NodeID(0)
-var emptyBackendID = dom.BackendNodeID(0)
 
 type (
 	HTMLElementIdentity struct {

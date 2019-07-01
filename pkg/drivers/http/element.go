@@ -309,7 +309,7 @@ func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.Strin
 	return arr
 }
 
-func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+func (el *HTMLElement) XPath(_ context.Context, _ values.String) (core.Value, error) {
 	return values.None, core.ErrNotSupported
 }
 
