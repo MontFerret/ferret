@@ -1,9 +1,10 @@
 package eval
 
 import (
+	"strconv"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"strconv"
 )
 
 func Param(input core.Value) string {

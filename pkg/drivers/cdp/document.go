@@ -3,13 +3,14 @@ package cdp
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"

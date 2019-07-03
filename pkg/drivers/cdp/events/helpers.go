@@ -2,11 +2,11 @@ package events
 
 import (
 	"context"
+
+	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/pkg/errors"
-
-	"github.com/mafredri/cdp"
 )
 
 func WaitForLoadEvent(ctx context.Context, client *cdp.Client) error {

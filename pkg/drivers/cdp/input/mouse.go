@@ -2,9 +2,10 @@ package input
 
 import (
 	"context"
+	"time"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/input"
-	"time"
 )
 
 type Mouse struct {

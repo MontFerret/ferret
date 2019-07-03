@@ -2,11 +2,11 @@ package templates
 
 import (
 	"fmt"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-
-	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
 func WaitBySelectorAll(selector values.String, when drivers.WaitEvent, value core.Value, check string) string {

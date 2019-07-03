@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gofrs/uuid"
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
+
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
-	"github.com/gofrs/uuid"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 )
 
 type Manager struct {
