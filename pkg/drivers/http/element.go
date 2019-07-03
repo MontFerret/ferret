@@ -3,8 +3,6 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/antchfx/htmlquery"
 	"hash/fnv"
 	"strings"
 
@@ -14,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/antchfx/htmlquery"
 	"github.com/antchfx/xpath"
 )
 
@@ -330,8 +329,6 @@ func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.
 	if err != nil {
 		return values.None, err
 	}
-
-	fmt.Println(htmlquery.OutputHTML(rootNode, true))
 
 	out := exp.Evaluate(htmlquery.CreateXPathNavigator(rootNode))
 
