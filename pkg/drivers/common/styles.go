@@ -3,12 +3,13 @@ package common
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"strconv"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/gorilla/css/scanner"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func DeserializeStyles(input values.String) (*values.Object, error) {

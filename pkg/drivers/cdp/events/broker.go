@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (

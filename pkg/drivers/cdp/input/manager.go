@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gofrs/uuid"
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
+
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
-	"github.com/gofrs/uuid"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 )
 
 type Manager struct {
@@ -254,7 +254,7 @@ func (m *Manager) SelectByNodeID(ctx context.Context, nodeID dom.NodeID, value *
 		return nil, err
 	}
 
-	res, err := m.exec.EvalWithReturn(
+	res, err := m.exec.EvalWithValue(
 		ctx,
 		fmt.Sprintf(`
 			var el = document.querySelector('[%s="%s"]');

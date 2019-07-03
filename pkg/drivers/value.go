@@ -41,6 +41,8 @@ type (
 		CountBySelector(ctx context.Context, selector values.String) values.Int
 
 		ExistsBySelector(ctx context.Context, selector values.String) values.Boolean
+
+		XPath(ctx context.Context, expression values.String) (core.Value, error)
 	}
 
 	// HTMLElement is the most general base interface which most objects in a GetMainFrame implement.

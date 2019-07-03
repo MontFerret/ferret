@@ -14,6 +14,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime"
 
+	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -103,15 +104,23 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 		return nil, err
 	}
 
+	var filter glob.Glob
+	var useFilter bool
+
+	if r.settings.Filter != "" {
+		f, err := glob.Compile(r.settings.Filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		filter = f
+		useFilter = true
+	}
+
 	err := r.traverseDir(ctx, dir, func(name string) error {
-		if r.settings.Filter != "" {
-			matched, err := filepath.Match(r.settings.Filter, name)
-
-			if err != nil {
-				return err
-			}
-
-			if !matched {
+		if useFilter {
+			if !filter.Match(name) {
 				return nil
 			}
 		}

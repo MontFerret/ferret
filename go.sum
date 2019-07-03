@@ -4,6 +4,10 @@ github.com/PuerkitoBio/goquery v1.5.0 h1:uGvmFXOA73IKluu/F84Xd1tt/z07GYm8X49XKHP
 github.com/PuerkitoBio/goquery v1.5.0/go.mod h1:qD2PgZ9lccMbQlc7eEOjaeRlFQON7xY8kdmcsrnKqMg=
 github.com/andybalholm/cascadia v1.0.0 h1:hOCXnnZ5A+3eVDX8pvgl4kofXv2ELss0bKcqRySc45o=
 github.com/andybalholm/cascadia v1.0.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
+github.com/antchfx/htmlquery v1.0.0 h1:O5IXz8fZF3B3MW+B33MZWbTHBlYmcfw0BAxgErHuaMA=
+github.com/antchfx/htmlquery v1.0.0/go.mod h1:MS9yksVSQXls00iXkiMqXr0J+umL/AmxXKuP28SUJM8=
+github.com/antchfx/xpath v1.0.0 h1:Q5gFgh2O40VTSwMOVbFE7nFNRBu3tS21Tn0KAWeEjtk=
+github.com/antchfx/xpath v1.0.0/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
 github.com/antlr/antlr4 v0.0.0-20190325153624-837aa60e2c47 h1:Lp5nUoQzppfVmfZadpzAytNyb5IMtxyOJLzoQS5dExg=
 github.com/antlr/antlr4 v0.0.0-20190325153624-837aa60e2c47/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
 github.com/chzyer/logex v1.1.10 h1:Swpa1K6QvQznwJRcfTfQJmTE72DqScAa40E+fbHEXEE=
@@ -20,6 +24,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/derekparker/trie v0.0.0-20190322172448-1ce4922c7ad9 h1:aSaTVlEXc2QKl4fzXU1tMYCjlrSc2mA4DZtiVfckQHo=
 github.com/derekparker/trie v0.0.0-20190322172448-1ce4922c7ad9/go.mod h1:D6ICZm05D9VN1n/8iOtBxLpXtoGp6HDFUJ1RNVieOSE=
+github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
+github.com/gobwas/glob v0.2.3/go.mod h1:d3Ez4x06l9bZtSvzIay5+Yzi0fmZzPgnTbPcKjJAkT8=
 github.com/gofrs/uuid v3.2.0+incompatible h1:y12jRkkFxsd7GpqdSZ+/KCs/fJbqpEXSGd4+jfEaewE=
 github.com/gofrs/uuid v3.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/google/go-cmp v0.2.0 h1:+dTQ8DZQJz0Mb/HjFlkptS1FeQ4cWSnN941F8aEG4SQ=
@@ -42,12 +48,6 @@ github.com/labstack/echo v3.3.10+incompatible h1:pGRcYk231ExFAyoAjAfD85kQzRJCRI8
 github.com/labstack/echo v3.3.10+incompatible/go.mod h1:0INS7j/VjnFxD4E2wkz67b8cVwCLbBmJyDaka6Cmk1s=
 github.com/labstack/gommon v0.2.8 h1:JvRqmeZcfrHC5u6uVleB4NxxNbzx6gpbJiQknDbKQu0=
 github.com/labstack/gommon v0.2.8/go.mod h1:/tj9csK2iPSBvn+3NLM9e52usepMtrd5ilFYA+wQNJ4=
-github.com/mafredri/cdp v0.23.1 h1:aqW20I/3CzR8/8VEj+d4zV97l3GU7VdCgi8OTGeJKkA=
-github.com/mafredri/cdp v0.23.1/go.mod h1:hgdiA0yp1uqhSaDOHJWPgXpMbh+LAfUdD9vbN2AM8gE=
-github.com/mafredri/cdp v0.23.2 h1:i+t1sFhPh9V6MbZFczhlp800k6eRiskeRAw2KH5qmmQ=
-github.com/mafredri/cdp v0.23.2/go.mod h1:hgdiA0yp1uqhSaDOHJWPgXpMbh+LAfUdD9vbN2AM8gE=
-github.com/mafredri/cdp v0.23.3 h1:tqpZsezUug2C3XtL3+9KImpaXxSFuU22u5UNJPZSc3Y=
-github.com/mafredri/cdp v0.23.3/go.mod h1:hgdiA0yp1uqhSaDOHJWPgXpMbh+LAfUdD9vbN2AM8gE=
 github.com/mafredri/cdp v0.23.4 h1:ffp4qq6slfCL4rFWBDeRHapkLE776gER4tX5Z3LS8CY=
 github.com/mafredri/cdp v0.23.4/go.mod h1:hgdiA0yp1uqhSaDOHJWPgXpMbh+LAfUdD9vbN2AM8gE=
 github.com/mattn/go-colorable v0.1.1 h1:G1f5SKeVxmagw/IyvzvtZE4Gybcc4Tr1tf7I8z0XgOg=
@@ -93,6 +93,7 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190322080309-f49334f85ddc h1:4gbWbmmPFp4ySWICouJl6emP0MyS31yy9SrTlAGFT+g=
 golang.org/x/sys v0.0.0-20190322080309-f49334f85ddc/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/tools v0.0.0-20190425163242-31fd60d6bfdc/go.mod h1:RgjU9mgBXZiqYHBnxXauZ1Gv1EHHAz9KjViQ78xBX0Q=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

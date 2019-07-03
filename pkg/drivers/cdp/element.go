@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
+	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 	"hash/fnv"
 	"strconv"
@@ -26,13 +28,11 @@ import (
 )
 
 var emptyNodeID = dom.NodeID(0)
-var emptyBackendID = dom.BackendNodeID(0)
 
 type (
 	HTMLElementIdentity struct {
-		nodeID    dom.NodeID
-		backendID dom.BackendNodeID
-		objectID  runtime.RemoteObjectID
+		nodeID   dom.NodeID
+		objectID runtime.RemoteObjectID
 	}
 
 	HTMLElement struct {
@@ -64,20 +64,13 @@ func LoadHTMLElement(
 	input *input.Manager,
 	exec *eval.ExecutionContext,
 	nodeID dom.NodeID,
-	backendID dom.BackendNodeID,
 ) (*HTMLElement, error) {
 	if client == nil {
 		return nil, core.Error(core.ErrMissedArgument, "client")
 	}
 
 	// getting a remote object that represents the current DOM Node
-	var args *dom.ResolveNodeArgs
-
-	if backendID > 0 {
-		args = dom.NewResolveNodeArgs().SetBackendNodeID(backendID)
-	} else {
-		args = dom.NewResolveNodeArgs().SetNodeID(nodeID)
-	}
+	args := dom.NewResolveNodeArgs().SetNodeID(nodeID).SetExecutionContextID(exec.ID())
 
 	obj, err := client.DOM.ResolveNode(ctx, args)
 
@@ -89,34 +82,46 @@ func LoadHTMLElement(
 		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("element %d", nodeID))
 	}
 
-	objectID := *obj.Object.ObjectID
+	id := HTMLElementIdentity{}
+	id.nodeID = nodeID
+	id.objectID = *obj.Object.ObjectID
 
+	return LoadHTMLElementWithID(
+		ctx,
+		logger,
+		client,
+		broker,
+		input,
+		exec,
+		id,
+	)
+}
+
+func LoadHTMLElementWithID(
+	ctx context.Context,
+	logger *zerolog.Logger,
+	client *cdp.Client,
+	broker *events.EventBroker,
+	input *input.Manager,
+	exec *eval.ExecutionContext,
+	id HTMLElementIdentity,
+) (*HTMLElement, error) {
 	node, err := client.DOM.DescribeNode(
 		ctx,
 		dom.
 			NewDescribeNodeArgs().
-			SetObjectID(objectID).
+			SetObjectID(id.objectID).
 			SetDepth(1),
 	)
 
 	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(nodeID)))
-	}
-
-	id := HTMLElementIdentity{}
-	id.nodeID = nodeID
-	id.objectID = objectID
-
-	if backendID > 0 {
-		id.backendID = backendID
-	} else {
-		id.backendID = node.Node.BackendNodeID
+		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
 	}
 
 	innerHTML, err := loadInnerHTML(ctx, client, exec, id, common.ToHTMLType(node.Node.NodeType))
 
 	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(nodeID)))
+		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
 	}
 
 	var val string
@@ -506,7 +511,7 @@ func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String
 		return values.None
 	}
 
-	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, found.NodeID, emptyBackendID)
+	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, found.NodeID)
 
 	if err != nil {
 		el.logError(err).
@@ -547,7 +552,7 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 			continue
 		}
 
-		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, id, emptyBackendID)
+		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, id)
 
 		if err != nil {
 			el.logError(err).
@@ -570,6 +575,153 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 	}
 
 	return arr
+}
+
+func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (result core.Value, err error) {
+	exp, err := expression.MarshalJSON()
+
+	if err != nil {
+		return values.None, err
+	}
+
+	out, err := el.exec.CallFunction(ctx, templates.XPath(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: json.RawMessage(exp),
+		},
+	)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	typeName := out.Type
+
+	// checking whether it's actually an array
+	if typeName == "object" {
+		isArrayRes, err := el.exec.CallFunction(ctx, `
+			(target) => Array.isArray(target)
+		`,
+			runtime.CallArgument{
+				ObjectID: out.ObjectID,
+			},
+		)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		isArray, err := eval.Unmarshal(&isArrayRes)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		if isArray == values.True {
+			typeName = "array"
+		}
+	}
+
+	switch typeName {
+	case "string", "number", "boolean":
+		return eval.Unmarshal(&out)
+	case "array":
+		if out.ObjectID == nil {
+			return values.None, nil
+		}
+
+		props, err := el.client.Runtime.GetProperties(ctx, runtime.NewGetPropertiesArgs(*out.ObjectID).SetOwnProperties(true))
+
+		if err != nil {
+			return values.None, err
+		}
+
+		if props.ExceptionDetails != nil {
+			exception := *props.ExceptionDetails
+
+			return values.None, errors.New(exception.Text)
+		}
+
+		result := values.NewArray(len(props.Result))
+
+		defer func() {
+			if err != nil {
+				result.ForEach(func(value core.Value, idx int) bool {
+					el, ok := value.(*HTMLElement)
+
+					if ok {
+						el.Close()
+					}
+
+					return true
+				})
+			}
+		}()
+
+		for _, descr := range props.Result {
+			if !descr.Enumerable {
+				continue
+			}
+
+			if descr.Value == nil {
+				continue
+			}
+
+			repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*descr.Value.ObjectID))
+
+			if err != nil {
+				return values.None, err
+			}
+
+			el, err := LoadHTMLElementWithID(
+				ctx,
+				el.logger,
+				el.client,
+				el.events,
+				el.input,
+				el.exec,
+				HTMLElementIdentity{
+					nodeID:   repl.NodeID,
+					objectID: *descr.Value.ObjectID,
+				},
+			)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			result.Push(el)
+		}
+
+		return result, nil
+	case "object":
+		if out.ObjectID == nil {
+			return values.None, nil
+		}
+
+		repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*out.ObjectID))
+
+		if err != nil {
+			return values.None, err
+		}
+
+		return LoadHTMLElementWithID(
+			ctx,
+			el.logger,
+			el.client,
+			el.events,
+			el.input,
+			el.exec,
+			HTMLElementIdentity{
+				nodeID:   repl.NodeID,
+				objectID: *out.ObjectID,
+			},
+		)
+	default:
+		return values.None, nil
+	}
 }
 
 func (el *HTMLElement) GetInnerText(ctx context.Context) values.String {
@@ -985,7 +1137,6 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 			el.input,
 			el.exec,
 			childID.nodeID,
-			childID.backendID,
 		)
 
 		if err != nil {
@@ -1156,8 +1307,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 	}
 
 	nextIdentity := HTMLElementIdentity{
-		nodeID:    reply.Node.NodeID,
-		backendID: reply.Node.BackendNodeID,
+		nodeID: reply.Node.NodeID,
 	}
 
 	arr := el.children
@@ -1169,7 +1319,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 
 	el.loadedChildren.Write(ctx, func(v core.Value, _ error) {
 		loadedArr := v.(*values.Array)
-		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, nextID, emptyBackendID)
+		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, nextID)
 
 		if err != nil {
 			el.logError(err).Msg("failed to load an inserted element")
@@ -1263,7 +1413,6 @@ func (el *HTMLElement) logError(err error) *zerolog.Event {
 		Error().
 		Timestamp().
 		Int("nodeID", int(el.id.nodeID)).
-		Int("backendID", int(el.id.backendID)).
 		Str("objectID", string(el.id.objectID)).
 		Err(err)
 }

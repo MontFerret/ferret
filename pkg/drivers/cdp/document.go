@@ -3,13 +3,14 @@ package cdp
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -55,6 +56,12 @@ func LoadRootHTMLDocument(
 		return nil, err
 	}
 
+	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(ftRepl.FrameTree.Frame.ID))
+
+	if err != nil {
+		return nil, err
+	}
+
 	return LoadHTMLDocument(
 		ctx,
 		logger,
@@ -64,7 +71,7 @@ func LoadRootHTMLDocument(
 		keyboard,
 		gdRepl.Root,
 		ftRepl.FrameTree,
-		eval.EmptyExecutionContextID,
+		worldRepl.ExecutionContextID,
 		nil,
 	)
 }
@@ -92,7 +99,6 @@ func LoadHTMLDocument(
 		inputManager,
 		exec,
 		node.NodeID,
-		node.BackendNodeID,
 	)
 
 	if err != nil {
@@ -295,6 +301,10 @@ func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, 
 	}
 
 	return children.Copy().(*values.Array), nil
+}
+
+func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+	return doc.element.XPath(ctx, expression)
 }
 
 func (doc *HTMLDocument) Length() values.Int {

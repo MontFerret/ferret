@@ -297,6 +297,15 @@ func ToFloat(input core.Value) Float {
 	}
 }
 
+func ToString(input core.Value) String {
+	switch val := input.(type) {
+	case String:
+		return val
+	default:
+		return NewString(val.String())
+	}
+}
+
 func ToInt(input core.Value) Int {
 	switch val := input.(type) {
 	case Int:

@@ -71,22 +71,9 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 	if nodeType != html.DocumentNode {
 		var objID runtime.RemoteObjectID
 
-		switch {
-		case id.objectID != "":
+		if id.objectID != "" {
 			objID = id.objectID
-		case id.backendID > 0:
-			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
-
-			if err != nil {
-				return "", err
-			}
-
-			if repl.Object.ObjectID == nil {
-				return "", errors.New("unable to resolve node")
-			}
-
-			objID = *repl.Object.ObjectID
-		default:
+		} else {
 			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
 
 			if err != nil {
@@ -109,7 +96,7 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 		return values.NewString(res.String()), nil
 	}
 
-	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerHTML")
+	repl, err := exec.EvalWithValue(ctx, "return document.documentElement.innerHTML")
 
 	if err != nil {
 		return "", err
@@ -135,22 +122,9 @@ func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.Execution
 	if nodeType != html.DocumentNode {
 		var objID runtime.RemoteObjectID
 
-		switch {
-		case id.objectID != "":
+		if id.objectID != "" {
 			objID = id.objectID
-		case id.backendID > 0:
-			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetBackendNodeID(id.backendID))
-
-			if err != nil {
-				return "", err
-			}
-
-			if repl.Object.ObjectID == nil {
-				return "", errors.New("unable to resolve node")
-			}
-
-			objID = *repl.Object.ObjectID
-		default:
+		} else {
 			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
 
 			if err != nil {
@@ -173,7 +147,7 @@ func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.Execution
 		return values.NewString(res.String()), err
 	}
 
-	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerText")
+	repl, err := exec.EvalWithValue(ctx, "return document.documentElement.innerText")
 
 	if err != nil {
 		return "", err
@@ -212,8 +186,7 @@ func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
 	for idx, child := range nodes {
 		child := child
 		children[idx] = HTMLElementIdentity{
-			nodeID:    child.NodeID,
-			backendID: child.BackendNodeID,
+			nodeID: child.NodeID,
 		}
 	}
 

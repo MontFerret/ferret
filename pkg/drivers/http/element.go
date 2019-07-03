@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/antchfx/htmlquery"
 	"hash/fnv"
 	"strings"
 
@@ -10,7 +12,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+
 	"github.com/PuerkitoBio/goquery"
+	"github.com/antchfx/xpath"
 )
 
 type HTMLElement struct {
@@ -306,6 +310,53 @@ func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.Strin
 	})
 
 	return arr
+}
+
+func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.Value, error) {
+	h, err := outerHTML(el.selection)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	exp, err := xpath.Compile(expression.String())
+
+	if err != nil {
+		return values.None, err
+	}
+
+	rootNode, err := htmlquery.Parse(strings.NewReader(h))
+
+	if err != nil {
+		return values.None, err
+	}
+
+	fmt.Println(htmlquery.OutputHTML(rootNode, true))
+
+	out := exp.Evaluate(htmlquery.CreateXPathNavigator(rootNode))
+
+	switch res := out.(type) {
+	case *xpath.NodeIterator:
+		items := values.NewArray(10)
+
+		for {
+			if !res.MoveNext() {
+				break
+			}
+
+			item, err := parseXPathNode(res.Current().(*htmlquery.NodeNavigator))
+
+			if err != nil {
+				return values.None, err
+			}
+
+			items.Push(item)
+		}
+
+		return items, nil
+	default:
+		return values.Parse(res), nil
+	}
 }
 
 func (el *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.String) values.String {

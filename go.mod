@@ -5,6 +5,8 @@ go 1.12
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/PuerkitoBio/goquery v1.5.0
+	github.com/antchfx/htmlquery v1.0.0
+	github.com/antchfx/xpath v1.0.0
 	github.com/antlr/antlr4 v0.0.0-20190325153624-837aa60e2c47
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
@@ -12,6 +14,7 @@ require (
 	github.com/corpix/uarand v0.0.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/derekparker/trie v0.0.0-20190322172448-1ce4922c7ad9
+	github.com/gobwas/glob v0.2.3
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190328170749-bb2674552d8f // indirect

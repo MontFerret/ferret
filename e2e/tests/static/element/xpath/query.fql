@@ -1,0 +1,7 @@
+LET url = @static + '/value.html'
+LET page = DOCUMENT(url, true)
+
+LET element = ELEMENT(page, '.tablesorter')
+LET actual = XPATH(element, "//input[contains(@type, 'hidden')]")
+
+RETURN EXPECT(40, LENGTH(actual))
