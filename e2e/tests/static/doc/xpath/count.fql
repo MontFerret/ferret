@@ -1,0 +1,6 @@
+LET url = @static + '/overview.html'
+LET page = DOCUMENT(url)
+
+LET actual = XPATH(page, "count(//body)")
+
+RETURN EXPECT(1, actual)

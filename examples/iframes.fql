@@ -1,0 +1,5 @@
+LET page = DOCUMENT("https://www.w3schools.com/html/html_iframe.asp", { driver: "cdp" })
+
+LET c2 = page.frames[1].head.innerHTML
+
+RETURN c2

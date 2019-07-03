@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
@@ -179,6 +179,16 @@ func (broker *EventBroker) Close() error {
 	return nil
 }
 
+func (broker *EventBroker) StopAndClose() error {
+	err := broker.Stop()
+
+	if err != nil {
+		return err
+	}
+
+	return broker.Close()
+}
+
 func (broker *EventBroker) runLoop(ctx context.Context) {
 	for {
 		select {
@@ -265,6 +275,7 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 	listeners, ok := broker.listeners[event]
 
 	if !ok {
+		broker.mu.Unlock()
 		return
 	}
 

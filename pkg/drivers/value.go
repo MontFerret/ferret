@@ -24,9 +24,11 @@ type (
 		collections.Measurable
 		io.Closer
 
-		NodeType() values.Int
+		IsDetached() values.Boolean
 
-		NodeName() values.String
+		GetNodeType() values.Int
+
+		GetNodeName() values.String
 
 		GetChildNodes(ctx context.Context) core.Value
 
@@ -39,15 +41,17 @@ type (
 		CountBySelector(ctx context.Context, selector values.String) values.Int
 
 		ExistsBySelector(ctx context.Context, selector values.String) values.Boolean
+
+		XPath(ctx context.Context, expression values.String) (core.Value, error)
 	}
 
-	// HTMLElement is the most general base interface which most objects in a Document implement.
+	// HTMLElement is the most general base interface which most objects in a GetMainFrame implement.
 	HTMLElement interface {
 		HTMLNode
 
-		InnerText(ctx context.Context) values.String
+		GetInnerText(ctx context.Context) values.String
 
-		InnerHTML(ctx context.Context) values.String
+		GetInnerHTML(ctx context.Context) values.String
 
 		GetValue(ctx context.Context) core.Value
 
@@ -98,28 +102,20 @@ type (
 		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
 	}
 
-	// The Document interface represents any web page loaded in the browser
-	// and serves as an entry point into the web page's content, which is the DOM tree.
 	HTMLDocument interface {
 		HTMLNode
 
-		DocumentElement() HTMLElement
+		GetTitle() values.String
 
-		GetURL() core.Value
+		GetElement() HTMLElement
 
-		SetURL(ctx context.Context, url values.String) error
+		GetURL() values.String
 
-		GetCookies(ctx context.Context) (*values.Array, error)
+		GetName() values.String
 
-		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
+		GetParentDocument() HTMLDocument
 
-		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
-
-		Navigate(ctx context.Context, url values.String) error
-
-		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
-
-		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
+		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
 		ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
@@ -128,10 +124,6 @@ type (
 		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error)
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
-
-		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
-
-		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
 		ScrollTop(ctx context.Context) error
 
@@ -144,8 +136,6 @@ type (
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
 
 		MoveMouseBySelector(ctx context.Context, selector values.String) error
-
-		WaitForNavigation(ctx context.Context) error
 
 		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
 
@@ -160,6 +150,45 @@ type (
 		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
 
 		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
+	}
+
+	// HTMLPage interface represents any web page loaded in the browser
+	// and serves as an entry point into the web page's content
+	HTMLPage interface {
+		core.Value
+		core.Iterable
+		core.Getter
+		core.Setter
+		collections.Measurable
+		io.Closer
+
+		IsClosed() values.Boolean
+
+		GetURL() values.String
+
+		GetMainFrame() HTMLDocument
+
+		GetFrames(ctx context.Context) (*values.Array, error)
+
+		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
+
+		GetCookies(ctx context.Context) (*values.Array, error)
+
+		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
+
+		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
+
+		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
+
+		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
+
+		WaitForNavigation(ctx context.Context) error
+
+		Navigate(ctx context.Context, url values.String) error
+
+		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
+
+		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
 	}
 )
 

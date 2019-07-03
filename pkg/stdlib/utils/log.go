@@ -18,8 +18,12 @@ func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	messages := make([]interface{}, 0, len(args))
 
-	for _, input := range args {
-		messages = append(messages, input)
+	for idx, input := range args {
+		if idx == 0 {
+			messages = append(messages, input)
+		} else {
+			messages = append(messages, " "+input.String())
+		}
 	}
 
 	logger := logging.FromContext(ctx)

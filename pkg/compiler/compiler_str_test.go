@@ -24,13 +24,13 @@ BAR
 	})
 
 	Convey("Should be possible to use multi line string with nested strings", t, func() {
-		out := compiler.New().
+		compiler.New().
 			MustCompile(fmt.Sprintf(`
 RETURN %s<!DOCTYPE html>
 		<html lang="en">
 		<head>
 		<meta charset="UTF-8">
-		<title>Title</title>
+		<title>GetTitle</title>
 		</head>
 		<body>
 			Hello world
@@ -43,7 +43,7 @@ RETURN %s<!DOCTYPE html>
 		<html lang="en">
 		<head>
 		<meta charset="UTF-8">
-		<title>Title</title>
+		<title>GetTitle</title>
 		</head>
 		<body>
 			Hello world

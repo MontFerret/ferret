@@ -62,7 +62,7 @@ func (drv *Driver) Name() string {
 	return DriverName
 }
 
-func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocumentParams) (drivers.HTMLDocument, error) {
+func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (drivers.HTMLPage, error) {
 	req, err := http.NewRequest(http.MethodGet, params.URL, nil)
 
 	if err != nil {
@@ -119,6 +119,10 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		Str("user-agent", ua).
 		Msg("using User-Agent")
 
+	if ua != "" {
+		req.Header.Set("User-Agent", ua)
+	}
+
 	resp, err := drv.client.Do(req)
 
 	if err != nil {
@@ -127,16 +131,20 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse a document %s", params.URL)
 	}
 
-	return NewHTMLDocument(doc, params.URL, params.Cookies)
+	return NewHTMLPage(doc, params.URL, params.Cookies)
 }
 
-func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.HTMLDocument, error) {
+func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {
 	buf := bytes.NewBuffer([]byte(str))
 
 	doc, err := goquery.NewDocumentFromReader(buf)
@@ -145,7 +153,7 @@ func (drv *Driver) ParseDocument(_ context.Context, str values.String) (drivers.
 		return nil, errors.Wrap(err, "failed to parse a document")
 	}
 
-	return NewHTMLDocument(doc, "#string", nil)
+	return NewHTMLPage(doc, "#blank", nil)
 }
 
 func (drv *Driver) Close() error {

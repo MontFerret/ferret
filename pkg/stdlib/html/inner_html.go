@@ -9,8 +9,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// InnerHTML Returns inner HTML string of a given or matched by CSS selector element
-// @param doc (Document|Element) - Parent document or element.
+// GetInnerHTML Returns inner HTML string of a given or matched by CSS selector element
+// @param doc (Open|GetElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner HTML string if an element found, otherwise empty string.
 func InnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
@@ -20,20 +20,14 @@ func InnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType, drivers.HTMLElementType)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	el, err := resolveElement(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
 	if len(args) == 1 {
-		return el.InnerHTML(ctx), nil
+		return el.GetInnerHTML(ctx), nil
 	}
 
 	err = core.ValidateType(args[1], types.String)

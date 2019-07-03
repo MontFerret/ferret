@@ -44,7 +44,7 @@ func (t *CustomValue) Copy() core.Value {
 }
 
 func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return values.None, nil
 	}
 
@@ -63,7 +63,7 @@ func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value,
 }
 
 func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return nil
 	}
 
@@ -225,41 +225,58 @@ func TestHelpers(t *testing.T) {
 		Convey("ToFloat", func() {
 			Convey("Should convert Int", func() {
 				input := values.NewInt(100)
-				output, err := values.ToFloat(input)
+				output := values.ToFloat(input)
 
-				So(err, ShouldBeNil)
 				So(output, ShouldEqual, values.NewFloat(100))
 			})
 
 			Convey("Should convert Float", func() {
 				input := values.NewFloat(100)
-				output, err := values.ToFloat(input)
+				output := values.ToFloat(input)
 
-				So(err, ShouldBeNil)
 				So(output, ShouldEqual, values.NewFloat(100))
 			})
 
 			Convey("Should convert String", func() {
 				input := values.NewString("100.1")
-				output, err := values.ToFloat(input)
+				output := values.ToFloat(input)
 
-				So(err, ShouldBeNil)
 				So(output, ShouldEqual, values.NewFloat(100.1))
+
+				output2 := values.ToFloat(values.NewString("foobar"))
+				So(output2, ShouldEqual, values.ZeroFloat)
+			})
+
+			Convey("Should convert Boolean", func() {
+				So(values.ToFloat(values.True), ShouldEqual, values.NewFloat(1))
+				So(values.ToFloat(values.False), ShouldEqual, values.NewFloat(0))
+			})
+
+			Convey("Should convert Array with single item", func() {
+				So(values.ToFloat(values.NewArrayWith(values.NewFloat(1))), ShouldEqual, values.NewFloat(1))
+			})
+
+			Convey("Should convert Array with multiple items", func() {
+				arg := values.NewArrayWith(values.NewFloat(1), values.NewFloat(1))
+
+				So(values.ToFloat(arg), ShouldEqual, values.NewFloat(2))
+			})
+
+			Convey("Should convert DateTime", func() {
+				dt := values.NewCurrentDateTime()
+				ts := dt.Time.Unix()
+
+				So(values.ToFloat(dt), ShouldEqual, values.NewFloat(float64(ts)))
 			})
 
 			Convey("Should NOT convert other types", func() {
 				inputs := []core.Value{
-					values.NewBoolean(true),
-					values.NewCurrentDateTime(),
-					values.NewArray(1),
 					values.NewObject(),
 					values.NewBinary([]byte("")),
 				}
 
 				for _, input := range inputs {
-					_, err := values.ToFloat(input)
-
-					So(err, ShouldNotBeNil)
+					So(values.ToFloat(input), ShouldEqual, values.ZeroFloat)
 				}
 			})
 		})
@@ -267,41 +284,58 @@ func TestHelpers(t *testing.T) {
 		Convey("ToInt", func() {
 			Convey("Should convert Int", func() {
 				input := values.NewInt(100)
-				output, err := values.ToInt(input)
+				output := values.ToInt(input)
 
-				So(err, ShouldBeNil)
 				So(output, ShouldEqual, values.NewInt(100))
 			})
 
 			Convey("Should convert Float", func() {
 				input := values.NewFloat(100.1)
-				output, err := values.ToInt(input)
+				output := values.ToInt(input)
 
-				So(err, ShouldBeNil)
 				So(output, ShouldEqual, values.NewInt(100))
 			})
 
 			Convey("Should convert String", func() {
 				input := values.NewString("100")
-				output, err := values.ToInt(input)
+				output := values.ToInt(input)
 
-				So(err, ShouldBeNil)
 				So(output, ShouldEqual, values.NewInt(100))
+
+				output2 := values.ToInt(values.NewString("foobar"))
+				So(output2, ShouldEqual, values.ZeroInt)
+			})
+
+			Convey("Should convert Boolean", func() {
+				So(values.ToInt(values.True), ShouldEqual, values.NewInt(1))
+				So(values.ToInt(values.False), ShouldEqual, values.NewInt(0))
+			})
+
+			Convey("Should convert Array with single item", func() {
+				So(values.ToInt(values.NewArrayWith(values.NewFloat(1))), ShouldEqual, values.NewInt(1))
+			})
+
+			Convey("Should convert Array with multiple items", func() {
+				arg := values.NewArrayWith(values.NewFloat(1), values.NewFloat(1))
+
+				So(values.ToInt(arg), ShouldEqual, values.NewFloat(2))
+			})
+
+			Convey("Should convert DateTime", func() {
+				dt := values.NewCurrentDateTime()
+				ts := dt.Time.Unix()
+
+				So(values.ToInt(dt), ShouldEqual, values.NewInt(int(ts)))
 			})
 
 			Convey("Should NOT convert other types", func() {
 				inputs := []core.Value{
-					values.NewBoolean(true),
-					values.NewCurrentDateTime(),
-					values.NewArray(1),
 					values.NewObject(),
 					values.NewBinary([]byte("")),
 				}
 
 				for _, input := range inputs {
-					_, err := values.ToInt(input)
-
-					So(err, ShouldNotBeNil)
+					So(values.ToInt(input), ShouldEqual, values.ZeroInt)
 				}
 			})
 		})
@@ -338,10 +372,9 @@ func TestHelpers(t *testing.T) {
 				}
 
 				for _, pairs := range inputs {
-					actual, err := values.ToArray(context.Background(), pairs[0])
+					actual := values.ToArray(context.Background(), pairs[0])
 					expected := pairs[1]
 
-					So(err, ShouldBeNil)
 					So(actual.Compare(expected), ShouldEqual, 0)
 				}
 			})
@@ -357,9 +390,7 @@ func TestHelpers(t *testing.T) {
 				}
 
 				input := values.NewArrayWith(vals...)
-				output, err := values.ToArray(context.Background(), input)
-
-				So(err, ShouldBeNil)
+				output := values.ToArray(context.Background(), input)
 
 				arr := output.(*values.Array)
 
@@ -383,9 +414,7 @@ func TestHelpers(t *testing.T) {
 					values.NewObjectProperty("qaz", values.NewObject()),
 				)
 
-				output, err := values.ToArray(context.Background(), input)
-
-				So(err, ShouldBeNil)
+				output := values.ToArray(context.Background(), input)
 
 				arr := output.(*values.Array).Sort()
 

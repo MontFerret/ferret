@@ -23,8 +23,6 @@ func (b *BodyExpression) Add(exp core.Expression) error {
 		}
 
 		b.expression = exp
-
-		break
 	default:
 		b.statements = append(b.statements, exp)
 	}

@@ -18,7 +18,7 @@ func NewMemberExpression(src core.SourceMap, variableName string, path []core.Ex
 		return nil, core.Error(core.ErrMissedArgument, "variable name")
 	}
 
-	if path == nil || len(path) == 0 {
+	if len(path) == 0 {
 		return nil, core.Error(core.ErrMissedArgument, "path expressions")
 	}
 

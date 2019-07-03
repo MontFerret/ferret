@@ -130,9 +130,7 @@ func TestFmt(t *testing.T) {
 
 func (tc *testCase) Do(t *testing.T) {
 	Convey(tc.Name, t, func() {
-		var expected core.Value
-
-		expected = values.NewString(tc.Expected)
+		var expected core.Value = values.NewString(tc.Expected)
 
 		args := []core.Value{values.NewString(tc.Format)}
 		args = append(args, tc.Args...)

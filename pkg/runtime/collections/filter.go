@@ -46,7 +46,7 @@ func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (*c
 			return nil, err
 		}
 
-		if take == true {
+		if take {
 			return nextScope, nil
 		}
 	}

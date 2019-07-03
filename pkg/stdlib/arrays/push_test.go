@@ -50,6 +50,7 @@ func TestPush(t *testing.T) {
 			values.True,
 		)
 
+		So(err, ShouldBeNil)
 		So(out2.String(), ShouldEqual, "[1,2,3,4,5,6]")
 	})
 }

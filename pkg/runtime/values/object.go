@@ -213,7 +213,7 @@ func (t *Object) Values() []core.Value {
 
 func (t *Object) ForEach(predicate ObjectPredicate) {
 	for key, val := range t.value {
-		if predicate(val, key) == false {
+		if !predicate(val, key) {
 			break
 		}
 	}

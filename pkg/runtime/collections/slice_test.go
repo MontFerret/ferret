@@ -49,7 +49,7 @@ func TestSliceIterator(t *testing.T) {
 
 			res = append(res, item)
 
-			pos += 1
+			pos++
 		}
 
 		So(res, ShouldHaveLength, len(arr))
@@ -95,6 +95,8 @@ func TestSliceIterator(t *testing.T) {
 		scope, _ := core.NewRootScope()
 
 		_, err := collections.ToSlice(ctx, scope, iter)
+
+		So(err, ShouldBeNil)
 
 		item, err := iter.Next(ctx, scope)
 

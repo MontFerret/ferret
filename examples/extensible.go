@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func main() {
@@ -37,7 +38,7 @@ func getStrings() ([]string, error) {
 		}
 
 		// this is another helper functions allowing to do type validation
-		err = core.ValidateType(args[0], core.StringType)
+		err = core.ValidateType(args[0], types.String)
 
 		if err != nil {
 			return values.None, err

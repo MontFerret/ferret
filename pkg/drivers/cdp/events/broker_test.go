@@ -269,7 +269,7 @@ func TestEventBroker(t *testing.T) {
 			var listener events.EventListener
 
 			listener = func(ctx context.Context, message interface{}) {
-				counter += 1
+				counter++
 
 				b.RemoveEventListener(events.EventLoad, listener)
 			}

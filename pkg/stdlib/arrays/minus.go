@@ -23,6 +23,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 	capacity := values.NewInt(0)
 
 	for idx, i := range args {
+		idx := idx
 		err := core.ValidateType(i, types.Array)
 
 		if err != nil {

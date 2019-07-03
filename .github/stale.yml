@@ -16,6 +16,7 @@ exemptLabels:
   - proposal
   - refactoring
   - bug
+  - help wanted
 
 # Set to true to ignore issues in a project (defaults to false)
 exemptProjects: false
@@ -27,7 +28,7 @@ exemptMilestones: true
 exemptAssignees: false
 
 # Label to use when marking as stale
-staleLabel: wontfix
+staleLabel: stale
 
 # Comment to post when marking as stale. Set to `false` to disable
 markComment: >

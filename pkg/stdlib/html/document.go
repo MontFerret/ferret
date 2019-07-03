@@ -12,22 +12,22 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-type DocumentLoadParams struct {
-	drivers.LoadDocumentParams
+type PageLoadParams struct {
+	drivers.OpenPageParams
 	Driver  string
 	Timeout time.Duration
 }
 
-// Document loads a HTML document by a given url.
+// Open opens an HTML page by a given url.
 // By default, loads a document by http call - resulted document does not support any interactions.
 // If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
 // @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
-// @param isDynamicOrParams (Boolean|DocumentLoadParams) - Either a boolean value that indicates whether to use dynamic page
+// @param isDynamicOrParams (Boolean|PageLoadParams) - Either a boolean value that indicates whether to use dynamic page
 // or an object with the following properties :
 // 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
-// 		timeout (Int) - Optional, Document load timeout.
+// 		timeout (Int) - Optional, Open load timeout.
 // @returns (HTMLDocument) - Returns loaded HTML document.
-func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
+func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -42,12 +42,12 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	url := args[0].(values.String)
 
-	var params DocumentLoadParams
+	var params PageLoadParams
 
 	if len(args) == 1 {
 		params = newDefaultDocLoadParams(url)
 	} else {
-		p, err := newDocLoadParams(url, args[1])
+		p, err := newPageLoadParams(url, args[1])
 
 		if err != nil {
 			return values.None, err
@@ -65,19 +65,19 @@ func Document(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return drv.LoadDocument(ctx, params.LoadDocumentParams)
+	return drv.Open(ctx, params.OpenPageParams)
 }
 
-func newDefaultDocLoadParams(url values.String) DocumentLoadParams {
-	return DocumentLoadParams{
-		LoadDocumentParams: drivers.LoadDocumentParams{
+func newDefaultDocLoadParams(url values.String) PageLoadParams {
+	return PageLoadParams{
+		OpenPageParams: drivers.OpenPageParams{
 			URL: url.String(),
 		},
 		Timeout: time.Second * 30,
 	}
 }
 
-func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, error) {
+func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error) {
 	res := newDefaultDocLoadParams(url)
 
 	if err := core.ValidateType(arg, types.Boolean, types.String, types.Object); err != nil {
@@ -105,7 +105,7 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 				return res, err
 			}
 
-			res.Timeout = time.Duration(timeout.(values.Int)) + time.Millisecond
+			res.Timeout = time.Duration(timeout.(values.Int)) * time.Millisecond
 		}
 
 		userAgent, exists := obj.Get(values.NewString("userAgent"))
@@ -155,11 +155,9 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 			res.Header = header
 		}
 
-		break
 	case types.String:
 		res.Driver = arg.(values.String).String()
 
-		break
 	case types.Boolean:
 		b := arg.(values.Boolean)
 
@@ -168,7 +166,6 @@ func newDocLoadParams(url values.String, arg core.Value) (DocumentLoadParams, er
 			res.Driver = cdp.DriverName
 		}
 
-		break
 	}
 
 	return res, nil
@@ -196,9 +193,7 @@ func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
 }
 
 func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
-	var err error
-
-	err = core.ValidateType(value, types.Object, drivers.HTTPCookieType)
+	err := core.ValidateType(value, types.Object, drivers.HTTPCookieType)
 
 	if err != nil {
 		return drivers.HTTPCookie{}, err
@@ -255,13 +250,10 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 		switch sameSite {
 		case "lax":
 			cookie.SameSite = drivers.SameSiteLaxMode
-			break
 		case "strict":
 			cookie.SameSite = drivers.SameSiteStrictMode
-			break
 		default:
 			cookie.SameSite = drivers.SameSiteDefaultMode
-			break
 		}
 	}
 

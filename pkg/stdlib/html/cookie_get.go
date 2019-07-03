@@ -9,8 +9,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// CookieSet gets a cookie from a given document by name.
-// @param doc (HTMLDocument) - Target HTMLDocument.
+// CookieSet gets a cookie from a given page by name.
+// @param page (HTMLPage) - Target page.
 // @param name (String) - Cookie or cookie name to delete.
 func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
@@ -19,7 +19,7 @@ func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], drivers.HTMLDocumentType)
+	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -31,14 +31,9 @@ func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc := args[0].(drivers.HTMLDocument)
 	name := args[1].(values.String)
 
-	if err != nil {
-		return values.None, err
-	}
-
-	cookies, err := doc.GetCookies(ctx)
+	cookies, err := page.GetCookies(ctx)
 
 	if err != nil {
 		return values.None, err

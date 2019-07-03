@@ -532,12 +532,26 @@ LET doc = DOCUMENT("https://www.google.com", {
     ]
 })
 
-COOKIES_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
-COOKIES_DEL(doc, "foo")
+COOKIE_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
+COOKIE_DEL(doc, "foo")
 
-LET c = COOKIES_GET(doc, "baz")
+LET c = COOKIE_GET(doc, "baz")
 
 FOR cookie IN doc.cookies
     RETURN cookie.name
 	
 ```
+
+## Sponsors
+
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website.    
+
+<p>
+    <a href="https://opencollective.com/ferret/sponsor/0/website" target="_blank"><img src="https://opencollective.com/ferret/sponsor/0/avatar.svg"></a>
+</p>
+
+<p align="center">
+    <a href="https://opencollective.com/ferret/donate" target="_blank">
+        <img src="https://opencollective.com/ferret/donate/button@2x.png?color=blue" width="300" />
+    </a>
+</p>

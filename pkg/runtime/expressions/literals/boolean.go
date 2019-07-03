@@ -13,7 +13,7 @@ func NewBooleanLiteral(val bool) BooleanLiteral {
 }
 
 func (l BooleanLiteral) Exec(_ context.Context, _ *core.Scope) (core.Value, error) {
-	if l == true {
+	if l {
 		return values.True, nil
 	}
 

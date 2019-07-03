@@ -13,8 +13,7 @@ import (
 // @params (Array) - Array of numbers.
 // @returns (Float) - The population variance.
 func PopulationVariance(_ context.Context, args ...core.Value) (core.Value, error) {
-	var err error
-	err = core.ValidateArgs(args, 1, 1)
+	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
 		return values.None, err

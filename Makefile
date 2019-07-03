@@ -30,7 +30,7 @@ cover:
 	curl -s https://codecov.io/bash | bash
 
 e2e:
-	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages --filter doc_cookie_set*
+	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
@@ -48,7 +48,8 @@ fmt:
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	revive -config revive.toml -formatter friendly -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
+	revive -config revive.toml -formatter friendly -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./... && \
+	golangci-lint run ./pkg/...
 
 # http://godoc.org/code.google.com/p/go.tools/cmd/vet
 # go get code.google.com/p/go.tools/cmd/vet

@@ -426,7 +426,7 @@ func (v *visitor) doVisitCollectClause(ctx *fql.CollectClauseContext, scope *sco
 		collectSelectors := groupingCtx.AllCollectSelector()
 
 		// group selectors
-		if collectSelectors != nil && len(collectSelectors) > 0 {
+		if len(collectSelectors) > 0 {
 			selectors = make([]*clauses.CollectSelector, 0, len(collectSelectors))
 
 			for _, cs := range collectSelectors {
@@ -480,10 +480,6 @@ func (v *visitor) doVisitCollectClause(ctx *fql.CollectClauseContext, scope *sco
 					}
 
 					projectionSelectorExp := literals.NewObjectLiteralWith(propExp)
-
-					if err != nil {
-						return nil, err
-					}
 
 					selector, err := clauses.NewCollectSelector(projectionIdentifier.GetText(), projectionSelectorExp)
 
@@ -1049,12 +1045,20 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 		}
 	}
 
-	funcName := context.Identifier().GetText()
+	var name string
 
-	fun, exists := v.funcs[funcName]
+	funcNS := context.Namespace()
+
+	if funcNS != nil {
+		name += funcNS.GetText()
+	}
+
+	name += context.Identifier().GetText()
+
+	fun, exists := v.funcs[name]
 
 	if !exists {
-		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", funcName))
+		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name))
 	}
 
 	return expressions.NewFunctionCallExpression(
@@ -1413,7 +1417,7 @@ func (v *visitor) doVisitChildren(node antlr.RuleNode, scope *scope) ([]core.Exp
 	children := node.GetChildren()
 
 	if children == nil {
-		return make([]core.Expression, 0, 0), nil
+		return make([]core.Expression, 0), nil
 	}
 
 	result := make([]core.Expression, 0, len(children))

@@ -7,6 +7,8 @@ func NewLib() map[string]core.Function {
 		"CONCAT":               Concat,
 		"CONCAT_SEPARATOR":     ConcatWithSeparator,
 		"CONTAINS":             Contains,
+		"ESCAPE_HTML":          EscapeHTML,
+		"DECODE_URI_COMPONENT": DecodeURIComponent,
 		"ENCODE_URI_COMPONENT": EncodeURIComponent,
 		"FIND_FIRST":           FindFirst,
 		"FIND_LAST":            FindLast,
@@ -34,5 +36,6 @@ func NewLib() map[string]core.Function {
 		"TRIM":                 Trim,
 		"UPPER":                Upper,
 		"FMT":                  Fmt,
+		"UNESCAPE_HTML":        UnescapeHTML,
 	}
 }

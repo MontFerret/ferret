@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -43,7 +44,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 
 	// document or element
 	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
 		return values.None, err
@@ -59,7 +60,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	timeout := values.NewInt(defaultTimeout)
 
 	// if a document is passed
-	if arg1.Type() == drivers.HTMLDocumentType {
+	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 3, 4)
 
@@ -74,7 +75,12 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		doc := arg1.(drivers.HTMLDocument)
+		doc, err := drivers.ToDocument(arg1)
+
+		if err != nil {
+			return values.None, err
+		}
+
 		selector := args[1].(values.String)
 		class := args[2].(values.String)
 

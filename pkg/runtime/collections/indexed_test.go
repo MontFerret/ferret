@@ -45,7 +45,7 @@ func TestArrayIterator(t *testing.T) {
 
 			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
 
-			pos += 1
+			pos++
 		}
 
 		So(res, ShouldHaveLength, arr.Length())
@@ -120,6 +120,7 @@ func TestArrayIterator(t *testing.T) {
 
 		So(item, ShouldBeNil)
 		So(err, ShouldBeNil)
+		So(res, ShouldHaveLength, int(arr.Length()))
 	})
 
 	Convey("Should NOT iterate over an empty array", t, func() {

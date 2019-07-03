@@ -18,7 +18,7 @@ type (
 		drivers map[string]Driver
 	}
 
-	LoadDocumentParams struct {
+	OpenPageParams struct {
 		URL         string
 		UserAgent   string
 		KeepCookies bool
@@ -29,7 +29,7 @@ type (
 	Driver interface {
 		io.Closer
 		Name() string
-		LoadDocument(ctx context.Context, params LoadDocumentParams) (HTMLDocument, error)
+		Open(ctx context.Context, params OpenPageParams) (HTMLPage, error)
 	}
 )
 

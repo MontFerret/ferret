@@ -4,24 +4,21 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
-	"github.com/mafredri/cdp/protocol/emulation"
-	"github.com/mafredri/cdp/protocol/network"
-	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 const DriverName = "cdp"
 
 type Driver struct {
-	sync.Mutex
+	mu        sync.Mutex
 	dev       *devtool.DevTools
 	conn      *rpcc.Conn
 	client    *cdp.Client
@@ -42,7 +39,7 @@ func (drv *Driver) Name() string {
 	return drv.options.Name
 }
 
-func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocumentParams) (drivers.HTMLDocument, error) {
+func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)
@@ -58,20 +55,15 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		return nil, err
 	}
 
-	url := params.URL
+	// Args for a new target belonging to the browser context
+	createTargetArgs := target.NewCreateTargetArgs(BlankPageURL)
 
-	if url == "" {
-		url = BlankPageURL
-	}
-
-	// Create a new target belonging to the browser context
-	createTargetArgs := target.NewCreateTargetArgs(url)
-
-	if drv.options.KeepCookies == false && params.KeepCookies == false {
+	if !drv.options.KeepCookies && !params.KeepCookies {
 		// Set it to an incognito mode
 		createTargetArgs.SetBrowserContextID(drv.contextID)
 	}
 
+	// New target
 	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
 
 	if err != nil {
@@ -99,69 +91,16 @@ func (drv *Driver) LoadDocument(ctx context.Context, params drivers.LoadDocument
 		return nil, err
 	}
 
-	client := cdp.NewClient(conn)
-
-	err = runBatch(
-		func() error {
-			return client.Page.Enable(ctx)
-		},
-
-		func() error {
-			return client.Page.SetLifecycleEventsEnabled(
-				ctx,
-				page.NewSetLifecycleEventsEnabledArgs(true),
-			)
-		},
-
-		func() error {
-			return client.DOM.Enable(ctx)
-		},
-
-		func() error {
-			return client.Runtime.Enable(ctx)
-		},
-
-		func() error {
-			var ua string
-
-			if params.UserAgent != "" {
-				ua = common.GetUserAgent(params.UserAgent)
-			} else {
-				ua = common.GetUserAgent(drv.options.UserAgent)
-			}
-
-			logger.
-				Debug().
-				Timestamp().
-				Str("user-agent", ua).
-				Msg("using User-Agent")
-
-			// do not use custom user agent
-			if ua == "" {
-				return nil
-			}
-
-			return client.Emulation.SetUserAgentOverride(
-				ctx,
-				emulation.NewSetUserAgentOverrideArgs(ua),
-			)
-		},
-
-		func() error {
-			return client.Network.Enable(ctx, network.NewEnableArgs())
-		},
-	)
-
-	if err != nil {
-		return nil, err
+	if params.UserAgent == "" {
+		params.UserAgent = drv.options.UserAgent
 	}
 
-	return LoadHTMLDocument(ctx, conn, client, params)
+	return LoadHTMLPage(ctx, conn, params)
 }
 
 func (drv *Driver) Close() error {
-	drv.Lock()
-	defer drv.Unlock()
+	drv.mu.Lock()
+	defer drv.mu.Unlock()
 
 	if drv.session != nil {
 		drv.session.Close()
@@ -173,8 +112,8 @@ func (drv *Driver) Close() error {
 }
 
 func (drv *Driver) init(ctx context.Context) error {
-	drv.Lock()
-	defer drv.Unlock()
+	drv.mu.Lock()
+	defer drv.mu.Unlock()
 
 	if drv.session == nil {
 		ver, err := drv.dev.Version(ctx)

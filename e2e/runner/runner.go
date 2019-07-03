@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -14,6 +13,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime"
+
+	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -24,7 +25,7 @@ type (
 		DynamicServerAddress string
 		CDPAddress           string
 		Dir                  string
-		Filter               *regexp.Regexp
+		Filter               string
 	}
 
 	Result struct {
@@ -84,7 +85,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		Timestamp().
 		Int("passed", sum.passed).
 		Int("failed", sum.failed).
-		Dur("time", sum.duration).
+		Str("duration", sum.duration.String()).
 		Msg("Completed")
 
 	if sum.failed > 0 {
@@ -95,19 +96,7 @@ func (r *Runner) Run(ctx context.Context) error {
 }
 
 func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
-	files, err := ioutil.ReadDir(dir)
-
-	if err != nil {
-		r.logger.Error().
-			Timestamp().
-			Err(err).
-			Str("dir", dir).
-			Msg("failed to read scripts directory")
-
-		return nil, err
-	}
-
-	results := make([]Result, 0, len(files))
+	results := make([]Result, 0, 50)
 
 	c := compiler.New()
 
@@ -115,46 +104,69 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 		return nil, err
 	}
 
-	// read scripts
-	for _, f := range files {
-		n := f.Name()
+	var filter glob.Glob
+	var useFilter bool
 
-		if r.settings.Filter != nil {
-			if r.settings.Filter.Match([]byte(n)) != true {
-				continue
+	if r.settings.Filter != "" {
+		f, err := glob.Compile(r.settings.Filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		filter = f
+		useFilter = true
+	}
+
+	err := r.traverseDir(ctx, dir, func(name string) error {
+		if useFilter {
+			if !filter.Match(name) {
+				return nil
 			}
 		}
 
-		fName := filepath.Join(dir, n)
-		b, err := ioutil.ReadFile(fName)
+		b, err := ioutil.ReadFile(name)
 
 		if err != nil {
 			results = append(results, Result{
-				name: fName,
+				name: name,
 				err:  errors.Wrap(err, "failed to read script file"),
 			})
 
-			continue
+			return nil
 		}
 
-		r.logger.Info().Timestamp().Str("name", fName).Msg("Running test")
+		r.logger.Info().Timestamp().Str("name", name).Msg("Running test")
 
-		result := r.runQuery(ctx, c, fName, string(b))
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		default:
+			result := r.runQuery(ctx, c, name, string(b))
 
-		if result.err == nil {
-			r.logger.Info().
-				Timestamp().
-				Str("file", result.name).
-				Msg("Test passed")
-		} else {
-			r.logger.Error().
-				Timestamp().
-				Err(result.err).
-				Str("file", result.name).
-				Msg("Test failed")
+			if result.err == nil {
+				r.logger.Info().
+					Timestamp().
+					Str("file", result.name).
+					Str("duration", result.duration.String()).
+					Msg("Test passed")
+			} else {
+				r.logger.Error().
+					Timestamp().
+					Err(result.err).
+					Str("file", result.name).
+					Str("duration", result.duration.String()).
+					Msg("Test failed")
+			}
+
+			results = append(results, result)
 		}
 
-		results = append(results, result)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return results, nil
@@ -180,7 +192,7 @@ func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, sc
 		runtime.WithParam("dynamic", r.settings.DynamicServerAddress),
 	)
 
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 
 	if err != nil {
 		return Result{
@@ -236,4 +248,36 @@ func (r *Runner) report(results []Result) Summary {
 		failed:   failed,
 		duration: sumDuration,
 	}
+}
+
+func (r *Runner) traverseDir(ctx context.Context, dir string, iteratee func(name string) error) error {
+	files, err := ioutil.ReadDir(dir)
+
+	if err != nil {
+		r.logger.Error().
+			Timestamp().
+			Err(err).
+			Str("dir", dir).
+			Msg("failed to read scripts directory")
+
+		return err
+	}
+
+	for _, file := range files {
+		name := filepath.Join(dir, file.Name())
+
+		if file.IsDir() {
+			if err := r.traverseDir(ctx, name, iteratee); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		if err := iteratee(name); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -62,7 +62,7 @@ func (b *Browser) Close() error {
 		return nil
 	}
 
-	os.RemoveAll(tmpDir)
+	err = os.RemoveAll(tmpDir)
 
 	if err != nil {
 		return err

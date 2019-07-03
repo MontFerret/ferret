@@ -9,7 +9,7 @@ import (
 )
 
 // ClickAll dispatches click event on all matched element
-// @param source (Document) - Document.
+// @param source (Open) - Open.
 // @param selector (String) - Selector.
 // @returns (Boolean) - Returns true if matched at least one element.
 func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
@@ -19,20 +19,13 @@ func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	arg1 := args[0]
+	doc, err := drivers.ToDocument(args[0])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	selector := args[1].String()
-
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	doc, err := toDocument(args[0])
-
-	if err != nil {
-		return values.None, err
-	}
 
 	return doc.ClickBySelectorAll(ctx, values.NewString(selector))
 }

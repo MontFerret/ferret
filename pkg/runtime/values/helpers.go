@@ -15,7 +15,7 @@ import (
 )
 
 func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
-	if byPath == nil || len(byPath) == 0 {
+	if len(byPath) == 0 {
 		return None, nil
 	}
 
@@ -35,16 +35,12 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			}
 
 			result, _ = segVal.Get(segment.(String))
-
-			break
 		case *Array:
 			if segType != types.Int {
 				return nil, core.TypeError(segType, types.Int)
 			}
 
 			result = segVal.Get(segment.(Int))
-
-			break
 		case core.Getter:
 			return segVal.GetIn(ctx, byPath[i:])
 		default:
@@ -61,7 +57,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 }
 
 func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
-	if byPath == nil || len(byPath) == 0 {
+	if len(byPath) == 0 {
 		return nil
 	}
 
@@ -80,27 +76,23 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				return core.TypeError(segmentType, types.String)
 			}
 
-			if isTarget == false {
+			if !isTarget {
 				current, _ = parVal.Get(segment.(String))
 			} else {
 				parVal.Set(segment.(String), value)
 			}
-
-			break
 		case *Array:
 			if segmentType != types.Int {
 				return core.TypeError(segmentType, types.Int)
 			}
 
-			if isTarget == false {
+			if !isTarget {
 				current = parVal.Get(segment.(Int))
 			} else {
 				if err := parVal.Set(segment.(Int), value); err != nil {
 					return err
 				}
 			}
-
-			break
 		case core.Setter:
 			return parVal.SetIn(ctx, byPath[idx:], value)
 		default:
@@ -108,7 +100,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			isArray := segmentType.Equals(types.Int)
 
 			// it's not an index
-			if isArray == false {
+			if !isArray {
 				obj := NewObject()
 				parent = obj
 
@@ -135,11 +127,9 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				return err
 			}
 
-			if isTarget == false {
+			if !isTarget {
 				current = None
 			}
-
-			break
 		}
 	}
 
@@ -245,58 +235,125 @@ func ToBoolean(input core.Value) core.Value {
 	switch input.Type() {
 	case types.Boolean:
 		return input
-	case types.None:
-		return False
 	case types.String:
-		return NewBoolean(input.String() != "")
+		return NewBoolean(input.(String) != "")
 	case types.Int:
 		return NewBoolean(input.(Int) != 0)
 	case types.Float:
 		return NewBoolean(input.(Float) != 0)
+	case types.DateTime:
+		return NewBoolean(!input.(DateTime).IsZero())
+	case types.None:
+		return False
 	default:
 		return True
 	}
 }
 
-func ToFloat(input core.Value) (Float, error) {
+func ToFloat(input core.Value) Float {
 	switch val := input.(type) {
 	case Float:
-		return val, nil
+		return val
 	case Int:
-		return Float(val), nil
+		return Float(val)
 	case String:
 		i, err := strconv.ParseFloat(string(val), 64)
 
 		if err != nil {
-			return ZeroFloat, err
+			return ZeroFloat
 		}
 
-		return Float(i), nil
+		return Float(i)
+	case Boolean:
+		if val {
+			return Float(1)
+		}
+
+		return Float(0)
+	case DateTime:
+		dt := input.(DateTime)
+
+		if dt.IsZero() {
+			return ZeroFloat
+		}
+
+		return NewFloat(float64(dt.Unix()))
+	case *Array:
+		length := val.Length()
+
+		if length == 0 {
+			return ZeroFloat
+		}
+
+		res := ZeroFloat
+
+		for i := Int(0); i < length; i++ {
+			res += ToFloat(val.Get(i))
+		}
+
+		return res
 	default:
-		return ZeroFloat, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+		return ZeroFloat
 	}
 }
 
-func ToInt(input core.Value) (Int, error) {
+func ToString(input core.Value) String {
+	switch val := input.(type) {
+	case String:
+		return val
+	default:
+		return NewString(val.String())
+	}
+}
+
+func ToInt(input core.Value) Int {
 	switch val := input.(type) {
 	case Int:
-		return val, nil
+		return val
 	case Float:
-		return Int(val), nil
+		return Int(val)
 	case String:
 		i, err := strconv.ParseInt(string(val), 10, 64)
 
 		if err != nil {
-			return ZeroInt, err
+			return ZeroInt
 		}
 
-		return Int(i), nil
+		return Int(i)
+	case Boolean:
+		if val {
+			return Int(1)
+		}
+
+		return Int(0)
+	case DateTime:
+		dt := input.(DateTime)
+
+		if dt.IsZero() {
+			return ZeroInt
+		}
+
+		return NewInt(int(dt.Unix()))
+	case *Array:
+		length := val.Length()
+
+		if length == 0 {
+			return ZeroInt
+		}
+
+		res := ZeroInt
+
+		for i := Int(0); i < length; i++ {
+			res += ToInt(val.Get(i))
+		}
+
+		return res
 	default:
-		return ZeroInt, core.TypeError(input.Type(), types.Int, types.Float, types.String)
+		return ZeroInt
 	}
 }
 
-func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
+func ToArray(ctx context.Context, input core.Value) core.Value {
 	switch value := input.(type) {
 	case Boolean,
 		Int,
@@ -304,9 +361,9 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 		String,
 		DateTime:
 
-		return NewArrayWith(value), nil
+		return NewArrayWith(value)
 	case *Array:
-		return value.Copy(), nil
+		return value.Copy()
 	case *Object:
 		arr := NewArray(int(value.Length()))
 
@@ -316,12 +373,12 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			return true
 		})
 
-		return arr, nil
+		return arr
 	case core.Iterable:
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return None, err
+			return None
 		}
 
 		arr := NewArray(10)
@@ -330,7 +387,7 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			val, _, err := iterator.Next(ctx)
 
 			if err != nil {
-				return None, err
+				return None
 			}
 
 			if val == None {
@@ -340,9 +397,9 @@ func ToArray(ctx context.Context, input core.Value) (core.Value, error) {
 			arr.Push(val)
 		}
 
-		return arr, nil
+		return arr
 	default:
-		return NewArray(0), nil
+		return NewArray(0)
 	}
 }
 
@@ -381,4 +438,10 @@ func MapHash(input map[string]core.Value) uint64 {
 	h.Write([]byte("}"))
 
 	return h.Sum64()
+}
+
+func IsNumber(input core.Value) Boolean {
+	t := input.Type()
+
+	return t == types.Int || t == types.Float
 }
