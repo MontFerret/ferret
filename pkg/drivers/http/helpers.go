@@ -30,7 +30,7 @@ func parseXPathNode(nav *htmlquery.NodeNavigator) (core.Value, error) {
 	}
 }
 
-func outerHtml(s *goquery.Selection) (string, error) {
+func outerHTML(s *goquery.Selection) (string, error) {
 	var buf bytes.Buffer
 
 	if len(s.Nodes) > 0 {

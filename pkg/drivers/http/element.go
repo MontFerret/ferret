@@ -313,7 +313,7 @@ func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.Strin
 }
 
 func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.Value, error) {
-	h, err := outerHtml(el.selection)
+	h, err := outerHTML(el.selection)
 
 	if err != nil {
 		return values.None, err
