@@ -15,7 +15,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// HTTPCookie HTTPCookie object
+// HTTPHeader HTTP header object
 type HTTPHeader map[string][]string
 
 func (h HTTPHeader) Type() core.Type {
@@ -101,7 +101,7 @@ func (h HTTPHeader) Copy() core.Value {
 }
 
 func (h HTTPHeader) MarshalJSON() ([]byte, error) {
-	out, err := json.Marshal(h)
+	out, err := json.Marshal(map[string][]string(h))
 
 	if err != nil {
 		return nil, err

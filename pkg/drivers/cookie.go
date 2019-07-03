@@ -38,6 +38,17 @@ const (
 	SameSiteStrictMode
 )
 
+func (s SameSite) String() string {
+	switch s {
+	case SameSiteLaxMode:
+		return "Lax"
+	case SameSiteStrictMode:
+		return "Strict"
+	default:
+		return ""
+	}
+}
+
 func (c HTTPCookie) Type() core.Type {
 	return HTTPCookieType
 }
@@ -119,7 +130,7 @@ func (c HTTPCookie) Hash() uint64 {
 	h.Write([]byte(strconv.Itoa(c.MaxAge)))
 	h.Write([]byte(fmt.Sprintf("%t", c.Secure)))
 	h.Write([]byte(fmt.Sprintf("%t", c.HTTPOnly)))
-	h.Write([]byte(strconv.Itoa(int(c.SameSite))))
+	h.Write([]byte(c.SameSite.String()))
 
 	return h.Sum64()
 }
@@ -138,7 +149,7 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 		"max_age":   c.MaxAge,
 		"secure":    c.Secure,
 		"http_only": c.HTTPOnly,
-		"same_site": c.SameSite,
+		"same_site": c.SameSite.String(),
 	}
 
 	out, err := json.Marshal(v)
@@ -181,14 +192,7 @@ func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, err
 	case "httpOnly":
 		return values.NewBoolean(c.HTTPOnly), nil
 	case "sameSite":
-		switch c.SameSite {
-		case SameSiteLaxMode:
-			return values.NewString("Lax"), nil
-		case SameSiteStrictMode:
-			return values.NewString("Strict"), nil
-		default:
-			return values.EmptyString, nil
-		}
+		return values.NewString(c.SameSite.String()), nil
 	default:
 		return values.None, nil
 	}
