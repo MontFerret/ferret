@@ -160,6 +160,9 @@ type FqlParserListener interface {
 	// EnterEqualityOperator is called when entering the equalityOperator production.
 	EnterEqualityOperator(c *EqualityOperatorContext)
 
+	// EnterRegexpOperator is called when entering the regexpOperator production.
+	EnterRegexpOperator(c *RegexpOperatorContext)
+
 	// EnterLogicalAndOperator is called when entering the logicalAndOperator production.
 	EnterLogicalAndOperator(c *LogicalAndOperatorContext)
 
@@ -327,6 +330,9 @@ type FqlParserListener interface {
 
 	// ExitEqualityOperator is called when exiting the equalityOperator production.
 	ExitEqualityOperator(c *EqualityOperatorContext)
+
+	// ExitRegexpOperator is called when exiting the regexpOperator production.
+	ExitRegexpOperator(c *RegexpOperatorContext)
 
 	// ExitLogicalAndOperator is called when exiting the logicalAndOperator production.
 	ExitLogicalAndOperator(c *LogicalAndOperatorContext)

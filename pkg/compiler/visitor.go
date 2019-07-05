@@ -1,7 +1,9 @@
 package compiler
 
 import (
+	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -1187,6 +1189,48 @@ func (v *visitor) doVisitEqualityOperator(ctx *fql.ExpressionContext, scope *sco
 	return operators.NewEqualityOperator(v.getSourceMap(equalityOp), left, right, equalityOp.GetText())
 }
 
+func (v *visitor) doVisitRegexpOperator(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
+	regexpOp := ctx.RegexpOperator().(*fql.RegexpOperatorContext)
+	exps := ctx.AllExpression()
+
+	leftCtx := exps[0].(*fql.ExpressionContext)
+	rightCtx := exps[1].(*fql.ExpressionContext)
+
+	left, err := v.doVisitExpression(leftCtx, scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	strLiteralCtx := rightCtx.StringLiteral()
+
+	if strLiteralCtx != nil {
+		strLiteralExp, err := v.doVisitStringLiteral(strLiteralCtx.(*fql.StringLiteralContext))
+
+		if err != nil {
+			return nil, err
+		}
+
+		text, _ := strLiteralExp.Exec(context.Background(), nil)
+
+		_, err = regexp.Compile(text.String())
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid regular expression")
+		}
+
+		return operators.NewRegexpOperator(v.getSourceMap(regexpOp), left, strLiteralExp, regexpOp.GetText())
+	}
+
+	right, err := v.doVisitExpression(rightCtx, scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return operators.NewRegexpOperator(v.getSourceMap(regexpOp), left, right, regexpOp.GetText())
+}
+
 func (v *visitor) doVisitInOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
@@ -1331,6 +1375,12 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 
 	if logicalOrOp != nil {
 		return v.doVisitLogicalOperator(ctx, scope)
+	}
+
+	regexpOp := ctx.RegexpOperator()
+
+	if regexpOp != nil {
+		return v.doVisitRegexpOperator(ctx, scope)
 	}
 
 	variable := ctx.Variable()
