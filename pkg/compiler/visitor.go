@@ -1209,8 +1209,6 @@ func (v *visitor) doVisitRegexpOperator(ctx *fql.ExpressionContext, scope *scope
 
 			return nil, errors.Wrap(err, src.String())
 		}
-
-		break
 	case *literals.ArrayLiteral, *literals.ObjectLiteral, literals.BooleanLiteral, literals.FloatLiteral, literals.IntLiteral:
 		src := v.getSourceMap(rawExps[1])
 
