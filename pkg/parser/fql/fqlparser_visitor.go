@@ -160,6 +160,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#regexpOperator.
+	VisitRegexpOperator(ctx *RegexpOperatorContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#logicalAndOperator.
 	VisitLogicalAndOperator(ctx *LogicalAndOperatorContext) interface{}
 

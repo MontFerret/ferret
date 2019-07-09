@@ -328,6 +328,12 @@ func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorConte
 // ExitEqualityOperator is called when production equalityOperator is exited.
 func (s *BaseFqlParserListener) ExitEqualityOperator(ctx *EqualityOperatorContext) {}
 
+// EnterRegexpOperator is called when production regexpOperator is entered.
+func (s *BaseFqlParserListener) EnterRegexpOperator(ctx *RegexpOperatorContext) {}
+
+// ExitRegexpOperator is called when production regexpOperator is exited.
+func (s *BaseFqlParserListener) ExitRegexpOperator(ctx *RegexpOperatorContext) {}
+
 // EnterLogicalAndOperator is called when production logicalAndOperator is entered.
 func (s *BaseFqlParserListener) EnterLogicalAndOperator(ctx *LogicalAndOperatorContext) {}
 

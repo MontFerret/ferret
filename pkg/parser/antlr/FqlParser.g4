@@ -228,6 +228,7 @@ expression
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
     | expression equalityOperator expression
+    | expression regexpOperator expression
     | expression logicalAndOperator expression
     | expression logicalOrOperator expression
     | expression QuestionMark expression? Colon expression
@@ -268,6 +269,11 @@ equalityOperator
     | Gte
     | Lte
     | Neq
+    ;
+
+regexpOperator
+    : RegexMatch
+    | RegexNotMatch
     ;
 
 logicalAndOperator
