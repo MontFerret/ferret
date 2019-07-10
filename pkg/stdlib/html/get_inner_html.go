@@ -13,7 +13,7 @@ import (
 // @param doc (Open|GetElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner HTML string if an element found, otherwise empty string.
-func InnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
+func GetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -27,7 +27,7 @@ func InnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 1 {
-		return el.GetInnerHTML(ctx), nil
+		return el.GetInnerHTML(ctx)
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -38,5 +38,5 @@ func InnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return el.InnerHTMLBySelector(ctx, selector), nil
+	return el.GetInnerHTMLBySelector(ctx, selector)
 }

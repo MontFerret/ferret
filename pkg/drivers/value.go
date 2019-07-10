@@ -51,7 +51,9 @@ type (
 
 		GetInnerText(ctx context.Context) values.String
 
-		GetInnerHTML(ctx context.Context) values.String
+		GetInnerHTML(ctx context.Context) (values.String, error)
+
+		SetInnerHTML(ctx context.Context, innerHTML values.String) error
 
 		GetValue(ctx context.Context) core.Value
 
@@ -77,9 +79,11 @@ type (
 
 		RemoveAttribute(ctx context.Context, name ...values.String) error
 
-		InnerHTMLBySelector(ctx context.Context, selector values.String) values.String
+		GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error)
 
-		InnerHTMLBySelectorAll(ctx context.Context, selector values.String) *values.Array
+		SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error
+
+		GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
 		InnerTextBySelector(ctx context.Context, selector values.String) values.String
 

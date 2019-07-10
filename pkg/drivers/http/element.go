@@ -40,7 +40,13 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) String() string {
-	return el.GetInnerHTML(context.Background()).String()
+	ih, err := el.GetInnerHTML(context.Background())
+
+	if err != nil {
+		return ""
+	}
+
+	return ih.String()
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
@@ -48,10 +54,7 @@ func (el *HTMLElement) Compare(other core.Value) int64 {
 	case drivers.HTMLElementType:
 		other := other.(drivers.HTMLElement)
 
-		ctx, fn := drivers.WithDefaultTimeout(context.Background())
-		defer fn()
-
-		return el.GetInnerHTML(ctx).Compare(other.GetInnerHTML(ctx))
+		return int64(strings.Compare(el.String(), other.String()))
 	default:
 		return drivers.Compare(el.Type(), other.Type())
 	}
@@ -133,14 +136,20 @@ func (el *HTMLElement) GetInnerText(_ context.Context) values.String {
 	return values.NewString(el.selection.Text())
 }
 
-func (el *HTMLElement) GetInnerHTML(_ context.Context) values.String {
+func (el *HTMLElement) GetInnerHTML(_ context.Context) (values.String, error) {
 	h, err := el.selection.Html()
 
 	if err != nil {
-		return values.EmptyString
+		return values.EmptyString, err
 	}
 
-	return values.NewString(h)
+	return values.NewString(h), nil
+}
+
+func (el *HTMLElement) SetInnerHTML(_ context.Context, value values.String) error {
+	el.selection.SetHtml(value.String())
+
+	return nil
 }
 
 func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
@@ -356,37 +365,63 @@ func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.
 	}
 }
 
-func (el *HTMLElement) InnerHTMLBySelector(_ context.Context, selector values.String) values.String {
+func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error {
 	selection := el.selection.Find(selector.String())
+
+	if selection != nil {
+		selection.SetHtml(innerHTML.String())
+	}
+
+	return nil
+}
+
+func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error) {
+	selection := el.selection.Find(selector.String())
+
+	if selection == nil {
+		return values.EmptyString, nil
+	}
 
 	str, err := selection.Html()
 
-	// TODO: log error
 	if err != nil {
-		return values.EmptyString
+		return values.EmptyString, err
 	}
 
-	return values.NewString(str)
+	return values.NewString(str), nil
 }
 
-func (el *HTMLElement) InnerHTMLBySelectorAll(_ context.Context, selector values.String) *values.Array {
+func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+	var err error
 	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
-	selection.Each(func(_ int, selection *goquery.Selection) {
-		str, err := selection.Html()
+	selection.EachWithBreak(func(_ int, selection *goquery.Selection) bool {
+		str, e := selection.Html()
 
-		// TODO: log error
-		if err == nil {
-			arr.Push(values.NewString(strings.TrimSpace(str)))
+		if e != nil {
+			err = e
+			return false
 		}
+
+		arr.Push(values.NewString(strings.TrimSpace(str)))
+
+		return true
 	})
 
-	return arr
+	if err != nil {
+		return values.NewArray(0), nil
+	}
+
+	return arr, nil
 }
 
 func (el *HTMLElement) InnerTextBySelector(_ context.Context, selector values.String) values.String {
 	selection := el.selection.Find(selector.String())
+
+	if selection == nil {
+		return values.EmptyString
+	}
 
 	return values.NewString(selection.Text())
 }

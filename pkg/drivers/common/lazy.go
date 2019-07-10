@@ -29,6 +29,16 @@ func NewLazyValue(factory LazyValueFactory) *LazyValue {
 	return lz
 }
 
+func NewLazyValueWith(factory LazyValueFactory, value core.Value) *LazyValue {
+	lz := NewLazyValue(factory)
+
+	if value != values.None {
+		lz.ready = true
+	}
+
+	return lz
+}
+
 // Ready indicates whether the value is ready.
 // @returns (Boolean) - Boolean value indicating whether the value is ready.
 func (lv *LazyValue) Ready() bool {
