@@ -34,5 +34,5 @@ func InnerTextAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return el.InnerTextBySelectorAll(ctx, selector), nil
+	return el.GetInnerTextBySelectorAll(ctx, selector)
 }

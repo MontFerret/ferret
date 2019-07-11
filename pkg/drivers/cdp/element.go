@@ -212,18 +212,11 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	val, err := el.innerText.Read(context.Background())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(val.String())
+	return json.Marshal(el.String())
 }
 
 func (el *HTMLElement) String() string {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-
 	defer cancel()
 
 	res, err := el.GetInnerHTML(ctx)
@@ -731,138 +724,52 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 	}
 }
 
-func (el *HTMLElement) GetInnerText(ctx context.Context) values.String {
+func (el *HTMLElement) GetInnerText(ctx context.Context) (values.String, error) {
 	val, err := el.innerText.Read(ctx)
 
 	if err != nil {
-		return values.EmptyString
+		return values.EmptyString, err
 	}
 
 	if val == values.None {
-		return values.EmptyString
+		return values.EmptyString, nil
 	}
 
-	return val.(values.String)
+	return val.(values.String), nil
 }
 
-func (el *HTMLElement) InnerTextBySelector(ctx context.Context, selector values.String) values.String {
+func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error) {
 	if el.IsDetached() {
-		return values.EmptyString
+		return values.EmptyString, drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelector(selector.String()))
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return values.EmptyString
+		return values.EmptyString, err
 	}
 
-	if found.NodeID == emptyNodeID {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to find a node by selector. returned 0 NodeID")
-
-		return values.EmptyString
-	}
-
-	childNodeID := found.NodeID
-
-	obj, err := el.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(childNodeID))
-
-	if err != nil {
-		el.logError(err).
-			Int("childNodeID", int(childNodeID)).
-			Str("selector", selector.String()).
-			Msg("failed to resolve remote object for child el")
-
-		return values.EmptyString
-	}
-
-	if obj.Object.ObjectID == nil {
-		el.logError(err).
-			Int("childNodeID", int(childNodeID)).
-			Str("selector", selector.String()).
-			Msg("failed to resolve remote object for child el")
-
-		return values.EmptyString
-	}
-
-	objID := *obj.Object.ObjectID
-
-	text, err := el.exec.ReadProperty(ctx, objID, "innerText")
-
-	if err != nil {
-		el.logError(err).
-			Str("childObjectID", string(objID)).
-			Str("selector", selector.String()).
-			Msg("failed to load inner text for found child el")
-
-		return values.EmptyString
-	}
-
-	return values.NewString(text.String())
+	return values.NewString(out.String()), nil
 }
 
-func (el *HTMLElement) InnerTextBySelectorAll(ctx context.Context, selector values.String) *values.Array {
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	res, err := el.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String()))
+func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+	if el.IsDetached() {
+		return values.NewArray(0), drivers.ErrDetached
+	}
+
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelector(selector.String()))
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.NewArray(0)
+		return values.NewArray(0), err
 	}
 
-	arr := values.NewArray(len(res.NodeIDs))
+	arr, ok := out.(*values.Array)
 
-	for idx, id := range res.NodeIDs {
-		if id == emptyNodeID {
-			el.logError(err).
-				Str("selector", selector.String()).
-				Msg("failed to find a node by selector. returned 0 NodeID")
-
-			continue
-		}
-
-		obj, err := el.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id))
-
-		if err != nil {
-			el.logError(err).
-				Int("index", idx).
-				Int("childNodeID", int(id)).
-				Str("selector", selector.String()).
-				Msg("failed to resolve remote object for child el")
-
-			continue
-		}
-
-		if obj.Object.ObjectID == nil {
-			continue
-		}
-
-		objID := *obj.Object.ObjectID
-
-		text, err := el.exec.ReadProperty(ctx, objID, "innerText")
-
-		if err != nil {
-			el.logError(err).
-				Str("childObjectID", string(objID)).
-				Str("selector", selector.String()).
-				Msg("failed to load inner text for found child el")
-
-			continue
-		}
-
-		arr.Push(text)
+	if !ok {
+		return values.NewArray(0), errors.New("unexpected output")
 	}
 
-	return arr
+	return arr, nil
 }
 
 func (el *HTMLElement) GetInnerHTML(ctx context.Context) (values.String, error) {

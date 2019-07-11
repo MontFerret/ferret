@@ -32,7 +32,7 @@ func NewHTMLElement(node *goquery.Selection) (drivers.HTMLElement, error) {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(el.GetInnerText(context.Background()).String())
+	return json.Marshal(el.String())
 }
 
 func (el *HTMLElement) Type() core.Type {
@@ -132,8 +132,8 @@ func (el *HTMLElement) SetValue(_ context.Context, value core.Value) error {
 	return nil
 }
 
-func (el *HTMLElement) GetInnerText(_ context.Context) values.String {
-	return values.NewString(el.selection.Text())
+func (el *HTMLElement) GetInnerText(_ context.Context) (values.String, error) {
+	return values.NewString(el.selection.Text()), nil
 }
 
 func (el *HTMLElement) GetInnerHTML(_ context.Context) (values.String, error) {
@@ -416,17 +416,17 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector val
 	return arr, nil
 }
 
-func (el *HTMLElement) InnerTextBySelector(_ context.Context, selector values.String) values.String {
+func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector values.String) (values.String, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
-		return values.EmptyString
+		return values.EmptyString, nil
 	}
 
-	return values.NewString(selection.Text())
+	return values.NewString(selection.Text()), nil
 }
 
-func (el *HTMLElement) InnerTextBySelectorAll(_ context.Context, selector values.String) *values.Array {
+func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
 	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
@@ -434,7 +434,7 @@ func (el *HTMLElement) InnerTextBySelectorAll(_ context.Context, selector values
 		arr.Push(values.NewString(selection.Text()))
 	})
 
-	return arr
+	return arr, nil
 }
 
 func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String) values.Int {

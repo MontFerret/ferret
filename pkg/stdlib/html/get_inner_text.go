@@ -27,7 +27,7 @@ func InnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 1 {
-		return el.GetInnerText(ctx), nil
+		return el.GetInnerText(ctx)
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -38,5 +38,5 @@ func InnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return el.InnerTextBySelector(ctx, selector), nil
+	return el.GetInnerTextBySelector(ctx, selector)
 }

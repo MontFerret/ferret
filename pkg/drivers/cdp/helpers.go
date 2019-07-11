@@ -105,12 +105,6 @@ func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 	return err
 }
 
-func setInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID, innerHTML values.String) error {
-	return setInnerHTML(ctx, client, exec, HTMLElementIdentity{
-		nodeID: nodeID,
-	}, innerHTML)
-}
-
 func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
 	// not a document
 	if nodeType != html.DocumentNode {

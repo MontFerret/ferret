@@ -49,7 +49,7 @@ type (
 	HTMLElement interface {
 		HTMLNode
 
-		GetInnerText(ctx context.Context) values.String
+		GetInnerText(ctx context.Context) (values.String, error)
 
 		GetInnerHTML(ctx context.Context) (values.String, error)
 
@@ -85,9 +85,9 @@ type (
 
 		GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		InnerTextBySelector(ctx context.Context, selector values.String) values.String
+		GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error)
 
-		InnerTextBySelectorAll(ctx context.Context, selector values.String) *values.Array
+		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
 		Click(ctx context.Context) (values.Boolean, error)
 
