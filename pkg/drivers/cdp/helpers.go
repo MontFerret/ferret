@@ -144,16 +144,41 @@ func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 	return values.NewString(repl.String()), nil
 }
 
-func getInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
-	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
+func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, innerText values.String) error {
+	var objID *runtime.RemoteObjectID
 
-	if err != nil {
-		return values.EmptyString, err
+	if id.objectID != "" {
+		objID = &id.objectID
+	} else {
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+		if err != nil {
+			return err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return errors.New("unable to resolve node")
+		}
+
+		objID = repl.Object.ObjectID
 	}
 
-	return getInnerHTML(ctx, client, exec, HTMLElementIdentity{
-		nodeID: nodeID,
-	}, common.ToHTMLType(node.Node.NodeType))
+	b, err := json.Marshal(innerText.String())
+
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.CallFunction(ctx, templates.SetInnerText(),
+		runtime.CallArgument{
+			ObjectID: objID,
+		},
+		runtime.CallArgument{
+			Value: json.RawMessage(b),
+		},
+	)
+
+	return err
 }
 
 func getInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
@@ -194,18 +219,6 @@ func getInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 
 	return values.NewString(repl.String()), nil
 }
-
-//func getInnerTextByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
-//	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
-//
-//	if err != nil {
-//		return values.EmptyString, err
-//	}
-//
-//	return getInnerText(ctx, client, exec, HTMLElementIdentity{
-//		nodeID: nodeID,
-//	}, common.ToHTMLType(node.Node.NodeType))
-//}
 
 func parseInnerText(innerHTML string) (values.String, error) {
 	buff := bytes.NewBuffer([]byte(innerHTML))

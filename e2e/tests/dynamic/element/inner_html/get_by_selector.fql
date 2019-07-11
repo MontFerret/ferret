@@ -1,0 +1,11 @@
+LET url = @dynamic
+LET doc = DOCUMENT(url, true)
+LET el = ELEMENT(doc, ".jumbotron")
+
+LET expected = `Welcome to Ferret E2E test page!`
+LET actual = INNER_HTML(el, "h1")
+
+LET r1 = '(\n|\s)'
+LET r2 = '(\n|\s)'
+
+RETURN EXPECT(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))

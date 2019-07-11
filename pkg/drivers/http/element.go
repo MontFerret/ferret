@@ -136,6 +136,12 @@ func (el *HTMLElement) GetInnerText(_ context.Context) (values.String, error) {
 	return values.NewString(el.selection.Text()), nil
 }
 
+func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String) error {
+	el.selection.SetText(innerText.String())
+
+	return nil
+}
+
 func (el *HTMLElement) GetInnerHTML(_ context.Context) (values.String, error) {
 	h, err := el.selection.Html()
 

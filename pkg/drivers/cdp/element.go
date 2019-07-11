@@ -738,6 +738,16 @@ func (el *HTMLElement) GetInnerText(ctx context.Context) (values.String, error) 
 	return val.(values.String), nil
 }
 
+func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
+	el.innerText.Reset()
+
+	return setInnerText(ctx, el.client, el.exec, el.id, innerText)
+}
+
 func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error) {
 	if el.IsDetached() {
 		return values.EmptyString, drivers.ErrDetached

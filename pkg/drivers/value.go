@@ -51,6 +51,8 @@ type (
 
 		GetInnerText(ctx context.Context) (values.String, error)
 
+		SetInnerText(ctx context.Context, innerText values.String) error
+
 		GetInnerHTML(ctx context.Context) (values.String, error)
 
 		SetInnerHTML(ctx context.Context, innerHTML values.String) error

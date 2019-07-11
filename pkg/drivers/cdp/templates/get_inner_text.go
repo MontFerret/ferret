@@ -1,6 +1,9 @@
 package templates
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
+)
 
 func GetInnerTextBySelector(selector string) string {
 	return fmt.Sprintf(`
@@ -8,11 +11,11 @@ func GetInnerTextBySelector(selector string) string {
 		const found = document.querySelector(selector);
 
 		if (found == null) {
-			throw new Error('Element not found by selector: ' + selector);
+			throw new Error('%s');
 		}
 
 		return found.innerText;
-	`, selector)
+	`, selector, drivers.ErrNotFound)
 }
 
 func GetInnerTextBySelectorAll(selector string) string {
@@ -21,9 +24,9 @@ func GetInnerTextBySelectorAll(selector string) string {
 		const found = document.querySelectorAll(selector);
 
 		if (found == null) {
-			throw new Error('Elements not found by selector: ' + selector);
+			throw new Error('%s');
 		}
 
 		return Array.from(found).map(i => i.innerText);
-	`, selector)
+	`, selector, drivers.ErrNotFound)
 }

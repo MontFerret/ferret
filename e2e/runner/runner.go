@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -185,6 +186,8 @@ func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, sc
 		}
 	}
 
+	mustFail := r.mustFail(name)
+
 	out, err := p.Run(
 		ctx,
 		runtime.WithLog(zerolog.ConsoleWriter{Out: os.Stdout}),
@@ -195,10 +198,25 @@ func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, sc
 	duration := time.Since(start)
 
 	if err != nil {
+		if mustFail {
+			return Result{
+				name:     name,
+				duration: duration,
+			}
+		}
+
 		return Result{
 			name:     name,
 			duration: duration,
 			err:      errors.Wrap(err, "failed to execute query"),
+		}
+	}
+
+	if mustFail {
+		return Result{
+			name:     name,
+			duration: duration,
+			err:      errors.New("expected to fail"),
 		}
 	}
 
@@ -280,4 +298,8 @@ func (r *Runner) traverseDir(ctx context.Context, dir string, iteratee func(name
 	}
 
 	return nil
+}
+
+func (r *Runner) mustFail(name string) bool {
+	return strings.HasSuffix(name, ".fail.fql")
 }
