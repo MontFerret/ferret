@@ -33,10 +33,6 @@ func (iterator *UniqueIterator) Next(ctx context.Context, scope *core.Scope) (*c
 			return nil, err
 		}
 
-		if nextScope == nil {
-			return nil, nil
-		}
-
 		v, err := nextScope.GetVariable(iterator.hashKey)
 
 		if err != nil {

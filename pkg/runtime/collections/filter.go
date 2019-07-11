@@ -35,11 +35,6 @@ func (iterator *FilterIterator) Next(ctx context.Context, scope *core.Scope) (*c
 			return nil, err
 		}
 
-		if nextScope == nil {
-			return nil, nil
-		}
-
-		// TODO: test case when predicate return not nil
 		take, err := iterator.predicate(ctx, nextScope)
 
 		if err != nil {

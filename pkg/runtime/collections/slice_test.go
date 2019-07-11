@@ -36,10 +36,12 @@ func TestSliceIterator(t *testing.T) {
 		for {
 			nextScope, err := iter.Next(ctx, scope)
 
-			So(err, ShouldBeNil)
+			if err != nil {
+				if core.IsNoMoreData(err) {
+					break
+				}
 
-			if nextScope == nil {
-				break
+				So(err, ShouldBeNil)
 			}
 
 			key := nextScope.MustGetVariable(collections.DefaultKeyVar)
@@ -101,7 +103,7 @@ func TestSliceIterator(t *testing.T) {
 		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeNil)
+		So(err, ShouldEqual, core.ErrNoMoreData)
 	})
 
 	Convey("Should NOT iterate over an empty slice", t, func() {
@@ -114,6 +116,6 @@ func TestSliceIterator(t *testing.T) {
 		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeNil)
+		So(err, ShouldEqual, core.ErrNoMoreData)
 	})
 }

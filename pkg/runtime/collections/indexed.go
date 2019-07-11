@@ -62,5 +62,5 @@ func (iterator *IndexedIterator) Next(_ context.Context, scope *core.Scope) (*co
 		return nextScope, nil
 	}
 
-	return nil, nil
+	return nil, core.ErrNoMoreData
 }

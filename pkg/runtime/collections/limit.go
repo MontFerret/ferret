@@ -31,7 +31,7 @@ func (iterator *LimitIterator) Next(ctx context.Context, scope *core.Scope) (*co
 		return iterator.values.Next(ctx, scope)
 	}
 
-	return nil, nil
+	return nil, core.ErrNoMoreData
 }
 
 func (iterator *LimitIterator) counter() int {
@@ -44,15 +44,14 @@ func (iterator *LimitIterator) verifyOffset(ctx context.Context, scope *core.Sco
 	}
 
 	for iterator.offset > iterator.currCount {
-		nextScope, err := iterator.values.Next(ctx, scope.Fork())
+		_, err := iterator.values.Next(ctx, scope.Fork())
 
 		if err != nil {
-			return err
-		}
+			if core.IsNoMoreData(err) {
+				iterator.currCount = iterator.offset
+			}
 
-		if nextScope == nil {
-			iterator.currCount = iterator.offset
-			return nil
+			return err
 		}
 
 		iterator.currCount++
