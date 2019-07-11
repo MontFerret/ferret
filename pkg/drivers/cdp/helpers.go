@@ -3,7 +3,9 @@ package cdp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"golang.org/x/net/html"
 	"strings"
 	"time"
@@ -66,7 +68,44 @@ func parseAttrs(attrs []string) *values.Object {
 	return res
 }
 
-func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
+func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, innerHTML values.String) error {
+	var objID *runtime.RemoteObjectID
+
+	if id.objectID != "" {
+		objID = &id.objectID
+	} else {
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+		if err != nil {
+			return err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return errors.New("unable to resolve node")
+		}
+
+		objID = repl.Object.ObjectID
+	}
+
+	b, err := json.Marshal(innerHTML.String())
+
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.CallFunction(ctx, templates.SetInnerHTML(),
+		runtime.CallArgument{
+			ObjectID: objID,
+		},
+		runtime.CallArgument{
+			Value: json.RawMessage(b),
+		},
+	)
+
+	return err
+}
+
+func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
 	// not a document
 	if nodeType != html.DocumentNode {
 		var objID runtime.RemoteObjectID
@@ -105,19 +144,44 @@ func loadInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.Execution
 	return values.NewString(repl.String()), nil
 }
 
-func loadInnerHTMLByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
-	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
+func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, innerText values.String) error {
+	var objID *runtime.RemoteObjectID
 
-	if err != nil {
-		return values.EmptyString, err
+	if id.objectID != "" {
+		objID = &id.objectID
+	} else {
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+
+		if err != nil {
+			return err
+		}
+
+		if repl.Object.ObjectID == nil {
+			return errors.New("unable to resolve node")
+		}
+
+		objID = repl.Object.ObjectID
 	}
 
-	return loadInnerHTML(ctx, client, exec, HTMLElementIdentity{
-		nodeID: nodeID,
-	}, common.ToHTMLType(node.Node.NodeType))
+	b, err := json.Marshal(innerText.String())
+
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.CallFunction(ctx, templates.SetInnerText(),
+		runtime.CallArgument{
+			ObjectID: objID,
+		},
+		runtime.CallArgument{
+			Value: json.RawMessage(b),
+		},
+	)
+
+	return err
 }
 
-func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
+func getInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, nodeType html.NodeType) (values.String, error) {
 	// not a document
 	if nodeType != html.DocumentNode {
 		var objID runtime.RemoteObjectID
@@ -155,18 +219,6 @@ func loadInnerText(ctx context.Context, client *cdp.Client, exec *eval.Execution
 
 	return values.NewString(repl.String()), nil
 }
-
-//func loadInnerTextByNodeID(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, nodeID dom.NodeID) (values.String, error) {
-//	node, err := client.DOM.DescribeNode(ctx, dom.NewDescribeNodeArgs().SetNodeID(nodeID))
-//
-//	if err != nil {
-//		return values.EmptyString, err
-//	}
-//
-//	return loadInnerText(ctx, client, exec, HTMLElementIdentity{
-//		nodeID: nodeID,
-//	}, common.ToHTMLType(node.Node.NodeType))
-//}
 
 func parseInnerText(innerHTML string) (values.String, error) {
 	buff := bytes.NewBuffer([]byte(innerHTML))

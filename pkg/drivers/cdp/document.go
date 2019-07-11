@@ -22,8 +22,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-const BlankPageURL = "about:blank"
-
 type HTMLDocument struct {
 	logger   *zerolog.Logger
 	client   *cdp.Client

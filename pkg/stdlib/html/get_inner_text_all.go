@@ -9,11 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// InnerHTMLAll returns an array of inner HTML strings of matched elements.
+// GetInnerTextAll returns an array of inner text of matched elements.
 // @param doc (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String) - String of CSS selector.
-// @returns (String) - An array of inner HTML strings if any element found, otherwise empty array.
-func InnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
+// @returns (String) - An array of inner text if any element found, otherwise empty array.
+func GetInnerTextAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -34,5 +34,5 @@ func InnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return el.InnerHTMLBySelectorAll(ctx, selector), nil
+	return el.GetInnerTextBySelectorAll(ctx, selector)
 }
