@@ -136,7 +136,7 @@ func (el *HTMLElement) GetInnerText(_ context.Context) (values.String, error) {
 	return values.NewString(el.selection.Text()), nil
 }
 
-func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String) error {
+func (el *HTMLElement) SetInnerText(_ context.Context, innerText values.String) error {
 	el.selection.SetText(innerText.String())
 
 	return nil
@@ -374,9 +374,11 @@ func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.
 func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector, innerHTML values.String) error {
 	selection := el.selection.Find(selector.String())
 
-	if selection != nil {
-		selection.SetHtml(innerHTML.String())
+	if selection == nil {
+		return drivers.ErrNotFound
 	}
+
+	selection.SetHtml(innerHTML.String())
 
 	return nil
 }
@@ -385,7 +387,7 @@ func (el *HTMLElement) GetInnerHTMLBySelector(_ context.Context, selector values
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
-		return values.EmptyString, nil
+		return values.EmptyString, drivers.ErrNotFound
 	}
 
 	str, err := selection.Html()
@@ -416,7 +418,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector val
 	})
 
 	if err != nil {
-		return values.NewArray(0), nil
+		return values.NewArray(0), err
 	}
 
 	return arr, nil
@@ -426,10 +428,22 @@ func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector values
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
-		return values.EmptyString, nil
+		return values.EmptyString, drivers.ErrNotFound
 	}
 
 	return values.NewString(selection.Text()), nil
+}
+
+func (el *HTMLElement) SetInnerTextBySelector(_ context.Context, selector, innerText values.String) error {
+	selection := el.selection.Find(selector.String())
+
+	if selection == nil {
+		return drivers.ErrNotFound
+	}
+
+	selection.SetHtml(innerText.String())
+
+	return nil
 }
 
 func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {

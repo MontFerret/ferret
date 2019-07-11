@@ -89,6 +89,8 @@ type (
 
 		GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error)
 
+		SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error
+
 		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
 		Click(ctx context.Context) (values.Boolean, error)

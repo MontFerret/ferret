@@ -762,6 +762,14 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 	return values.NewString(out.String()), nil
 }
 
+func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
+	return el.exec.Eval(ctx, templates.SetInnerTextBySelector(selector.String(), innerText.String()))
+}
+
 func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
 	if el.IsDetached() {
 		return values.NewArray(0), drivers.ErrDetached

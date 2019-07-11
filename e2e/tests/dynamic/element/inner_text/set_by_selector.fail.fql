@@ -1,0 +1,5 @@
+LET url = @dynamic
+LET doc = DOCUMENT(url, true)
+LET el = ELEMENT(doc, ".jumbotron")
+
+RETURN INNER_TEXT_SET(el, "h4", "foobar")

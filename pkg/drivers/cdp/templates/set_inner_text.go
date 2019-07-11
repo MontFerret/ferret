@@ -1,6 +1,9 @@
 package templates
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
+)
 
 const setInnerTextTemplate = `
 	(element, value) => {
@@ -18,12 +21,13 @@ func SetInnerTextBySelector(selector, innerText string) string {
 		const found = document.querySelector(selector)
 
 		if (found == null) {
-			throw new Error('Element not found by selector: ' + selector);
+			throw new Error('%s');
 		}
 
 		found.innerText = "%s"
 	`,
 		selector,
+		drivers.ErrNotFound,
 		innerText,
 	)
 }
