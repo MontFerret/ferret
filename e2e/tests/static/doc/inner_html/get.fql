@@ -1,7 +1,19 @@
-LET url = @static + '/overview.html'
+LET url = @static + '/simple.html'
 LET doc = DOCUMENT(url)
 
-LET expected = '<li class="toc-entry toc-h2"><a href="#containers">Containers</a></li><li class="toc-entry toc-h2"><a href="#responsive-breakpoints">Responsive breakpoints</a></li><li class="toc-entry toc-h2"><a href="#z-index">Z-index</a></li>'
-LET actual = INNER_HTML(doc, '.section-nav')
+LET expected = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Title</title>
+</head>
+<body>
+    <h1>Hello world</h1>
+</body>
+</html>`
+LET actual = INNER_HTML(doc)
 
-RETURN EXPECT(REGEXP_REPLACE(expected, '\s', ''), REGEXP_REPLACE(TRIM(actual), '(\n|\s)', ''))
+LET r1 = '(\s|\")'
+LET r2 = '(\n|\s|\")'
+
+RETURN EXPECT(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))
