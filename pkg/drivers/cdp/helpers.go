@@ -87,12 +87,18 @@ func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		objID = repl.Object.ObjectID
 	}
 
-	_, err := exec.CallFunction(ctx, templates.SetInnerHTML(),
+	b, err := json.Marshal(innerHTML.String())
+
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.CallFunction(ctx, templates.SetInnerHTML(),
 		runtime.CallArgument{
 			ObjectID: objID,
 		},
 		runtime.CallArgument{
-			Value: json.RawMessage(innerHTML),
+			Value: json.RawMessage(b),
 		},
 	)
 

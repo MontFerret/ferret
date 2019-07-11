@@ -29,11 +29,12 @@ func NewLazyValue(factory LazyValueFactory) *LazyValue {
 	return lz
 }
 
-func NewLazyValueWith(factory LazyValueFactory, value core.Value) *LazyValue {
+func NewVolatileValue(value core.Value, factory LazyValueFactory) *LazyValue {
 	lz := NewLazyValue(factory)
 
 	if value != values.None {
 		lz.ready = true
+		lz.value = value
 	}
 
 	return lz

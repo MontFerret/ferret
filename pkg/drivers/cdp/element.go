@@ -168,7 +168,7 @@ func NewHTMLElement(
 	el.id = id
 	el.nodeType = common.ToHTMLType(nodeType)
 	el.nodeName = values.NewString(nodeName)
-	el.innerHTML = common.NewLazyValueWith(el.loadInnerHTML, innerHTML)
+	el.innerHTML = common.NewVolatileValue(innerHTML, el.loadInnerHTML)
 	el.innerText = common.NewLazyValue(el.loadInnerText)
 	el.attributes = common.NewLazyValue(el.loadAttrs)
 	el.style = common.NewLazyValue(el.parseStyle)
@@ -884,6 +884,8 @@ func (el *HTMLElement) SetInnerHTML(ctx context.Context, innerHTML values.String
 		return drivers.ErrDetached
 	}
 
+	el.innerHTML.Reset()
+
 	return setInnerHTML(ctx, el.client, el.exec, el.id, innerHTML)
 }
 
@@ -912,13 +914,7 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
-	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
-
-	if err != nil {
-		return err
-	}
-
-	return setInnerHTMLByNodeID(ctx, el.client, el.exec, found.NodeID, innerHTML)
+	return el.exec.Eval(ctx, templates.SetInnerHTMLBySelector(selector.String(), innerHTML.String()))
 }
 
 func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {

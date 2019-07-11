@@ -365,7 +365,7 @@ func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.
 	}
 }
 
-func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error {
+func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector, innerHTML values.String) error {
 	selection := el.selection.Find(selector.String())
 
 	if selection != nil {
@@ -375,7 +375,7 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 	return nil
 }
 
-func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error) {
+func (el *HTMLElement) GetInnerHTMLBySelector(_ context.Context, selector values.String) (values.String, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
@@ -391,7 +391,7 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 	return values.NewString(str), nil
 }
 
-func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
 	var err error
 	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
