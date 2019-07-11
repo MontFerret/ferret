@@ -24,6 +24,6 @@ func GetInnerHTMLBySelectorAll(selector string) string {
 			throw new Error('Elements not found by selector: ' + selector);
 		}
 
-		return found.map(found, i => i.innerHTML);
+		return Array.from(found).map(i => i.innerHTML);
 	`, selector)
 }

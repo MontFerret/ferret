@@ -24,6 +24,6 @@ func GetInnerTextBySelectorAll(selector string) string {
 			throw new Error('Elements not found by selector: ' + selector);
 		}
 
-		return found.map(found, i => i.innerText);
+		return Array.from(found).map(i => i.innerText);
 	`, selector)
 }

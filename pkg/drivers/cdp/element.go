@@ -757,7 +757,7 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelector(selector.String()))
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
 
 	if err != nil {
 		return values.NewArray(0), err
@@ -801,19 +801,13 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerHTMLBySelector(selector.String()))
 
 	if err != nil {
 		return values.EmptyString, err
 	}
 
-	text, err := getInnerHTMLByNodeID(ctx, el.client, el.exec, found.NodeID)
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	return text, nil
+	return values.NewString(out.String()), nil
 }
 
 func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error {
@@ -825,24 +819,20 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 }
 
 func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
-	// TODO: Can we use RemoteObjectID instead of NodeId?
-	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
-	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+	if el.IsDetached() {
+		return values.NewArray(0), drivers.ErrDetached
+	}
+
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
 
 	if err != nil {
 		return values.NewArray(0), err
 	}
 
-	arr := values.NewArray(len(res.NodeIDs))
+	arr, ok := out.(*values.Array)
 
-	for _, id := range res.NodeIDs {
-		text, err := getInnerHTMLByNodeID(ctx, el.client, el.exec, id)
-
-		if err != nil {
-			return values.NewArray(0), err
-		}
-
-		arr.Push(text)
+	if !ok {
+		return values.NewArray(0), errors.New("unexpected output")
 	}
 
 	return arr, nil
