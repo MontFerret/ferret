@@ -118,7 +118,3 @@ func GetClickablePointByNodeID(ctx context.Context, client *cdp.Client, nodeID d
 func GetClickablePointByObjectID(ctx context.Context, client *cdp.Client, objectID runtime.RemoteObjectID) (Quad, error) {
 	return getClickablePoint(ctx, client, dom.NewGetContentQuadsArgs().SetObjectID(objectID))
 }
-
-func GetClickablePointByBackendID(ctx context.Context, client *cdp.Client, backendID dom.BackendNodeID) (Quad, error) {
-	return getClickablePoint(ctx, client, dom.NewGetContentQuadsArgs().SetBackendNodeID(backendID))
-}

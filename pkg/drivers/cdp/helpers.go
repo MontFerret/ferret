@@ -93,7 +93,7 @@ func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return err
 	}
 
-	_, err = exec.CallFunction(ctx, templates.SetInnerHTML(),
+	_, err = exec.EvalWithArgumentsAndReturn(ctx, templates.SetInnerHTML(),
 		runtime.CallArgument{
 			ObjectID: objID,
 		},
@@ -135,7 +135,7 @@ func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return values.NewString(res.String()), nil
 	}
 
-	repl, err := exec.EvalWithValue(ctx, "return document.documentElement.innerHTML")
+	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerHTML")
 
 	if err != nil {
 		return "", err
@@ -169,7 +169,7 @@ func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return err
 	}
 
-	_, err = exec.CallFunction(ctx, templates.SetInnerText(),
+	_, err = exec.EvalWithArgumentsAndReturn(ctx, templates.SetInnerText(),
 		runtime.CallArgument{
 			ObjectID: objID,
 		},
@@ -211,7 +211,7 @@ func getInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return values.NewString(res.String()), err
 	}
 
-	repl, err := exec.EvalWithValue(ctx, "return document.documentElement.innerText")
+	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerText")
 
 	if err != nil {
 		return "", err
