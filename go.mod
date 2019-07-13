@@ -23,7 +23,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
-	github.com/mafredri/cdp v0.23.4
+	github.com/mafredri/cdp v0.24.2
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible

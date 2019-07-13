@@ -49,9 +49,13 @@ type (
 	HTMLElement interface {
 		HTMLNode
 
-		GetInnerText(ctx context.Context) values.String
+		GetInnerText(ctx context.Context) (values.String, error)
 
-		GetInnerHTML(ctx context.Context) values.String
+		SetInnerText(ctx context.Context, innerText values.String) error
+
+		GetInnerHTML(ctx context.Context) (values.String, error)
+
+		SetInnerHTML(ctx context.Context, innerHTML values.String) error
 
 		GetValue(ctx context.Context) core.Value
 
@@ -77,13 +81,17 @@ type (
 
 		RemoveAttribute(ctx context.Context, name ...values.String) error
 
-		InnerHTMLBySelector(ctx context.Context, selector values.String) values.String
+		GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error)
 
-		InnerHTMLBySelectorAll(ctx context.Context, selector values.String) *values.Array
+		SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error
 
-		InnerTextBySelector(ctx context.Context, selector values.String) values.String
+		GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		InnerTextBySelectorAll(ctx context.Context, selector values.String) *values.Array
+		GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error)
+
+		SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error
+
+		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
 		Click(ctx context.Context) (values.Boolean, error)
 

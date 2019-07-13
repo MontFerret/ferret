@@ -127,9 +127,9 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 
 			return GetInElement(ctx, el, path[1:])
 		case "innerHTML":
-			return doc.GetElement().GetInnerHTML(ctx), nil
+			return doc.GetElement().GetInnerHTML(ctx)
 		case "innerText":
-			return doc.GetElement().GetInnerText(ctx), nil
+			return doc.GetElement().GetInnerText(ctx)
 		default:
 			return GetInNode(ctx, doc.GetElement(), path)
 		}
@@ -150,9 +150,9 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 
 		switch segment {
 		case "innerText":
-			return el.GetInnerText(ctx), nil
+			return el.GetInnerText(ctx)
 		case "innerHTML":
-			return el.GetInnerHTML(ctx), nil
+			return el.GetInnerHTML(ctx)
 		case "value":
 			return el.GetValue(ctx), nil
 		case "attributes":

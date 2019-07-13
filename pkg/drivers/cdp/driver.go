@@ -3,6 +3,7 @@ package cdp
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
@@ -16,6 +17,8 @@ import (
 )
 
 const DriverName = "cdp"
+const BlankPageURL = "about:blank"
+const DefaultTimeout = 5000 * time.Millisecond
 
 type Driver struct {
 	mu        sync.Mutex

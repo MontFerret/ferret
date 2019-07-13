@@ -3,6 +3,9 @@ package eval
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/mafredri/cdp/protocol/dom"
+	"strings"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
@@ -109,6 +112,24 @@ func (ec *ExecutionContext) CallMethod(
 	}
 
 	return &found.Result, nil
+}
+
+func (ec *ExecutionContext) ReadPropertyByNodeID(
+	ctx context.Context,
+	nodeID dom.NodeID,
+	propName string,
+) (core.Value, error) {
+	obj, err := ec.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(nodeID))
+
+	if err != nil {
+		return values.None, err
+	}
+
+	if obj.Object.ObjectID == nil {
+		return values.None, nil
+	}
+
+	return ec.ReadProperty(ctx, *obj.Object.ObjectID, propName)
 }
 
 func (ec *ExecutionContext) ReadProperty(
@@ -254,11 +275,20 @@ func (ec *ExecutionContext) evalInternal(ctx context.Context, args *runtime.Eval
 
 	if out.ExceptionDetails != nil {
 		ex := out.ExceptionDetails
+		desc := *ex.Exception.Description
 
-		return runtime.RemoteObject{}, core.Error(
-			core.ErrUnexpected,
-			fmt.Sprintf("%s: %s", ex.Text, *ex.Exception.Description),
-		)
+		var err error
+
+		if strings.Contains(desc, drivers.ErrNotFound.Error()) {
+			err = drivers.ErrNotFound
+		} else {
+			err = core.Error(
+				core.ErrUnexpected,
+				fmt.Sprintf("%s: %s", ex.Text, desc),
+			)
+		}
+
+		return runtime.RemoteObject{}, err
 	}
 
 	return out.Result, nil

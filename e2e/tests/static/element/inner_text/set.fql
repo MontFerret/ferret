@@ -1,0 +1,14 @@
+LET url = @static + '/simple.html'
+LET doc = DOCUMENT(url)
+LET el = ELEMENT(doc, "body")
+
+LET expected = `Injected by Ferret`
+
+INNER_TEXT_SET(el, expected)
+
+LET actual = INNER_TEXT(el)
+
+LET r1 = '(\s|\")'
+LET r2 = '(\n|\s|\")'
+
+RETURN EXPECT(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))

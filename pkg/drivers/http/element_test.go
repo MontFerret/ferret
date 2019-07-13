@@ -349,7 +349,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.GetInnerText(context.Background())
+		v, _ := el.GetInnerText(context.Background())
 
 		So(v, ShouldEqual, "Ferret")
 	})
@@ -376,8 +376,9 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.GetInnerHTML(context.Background())
+		v, err := el.GetInnerHTML(context.Background())
 
+		So(err, ShouldBeNil)
 		So(v, ShouldEqual, "<h2>Ferret</h2>")
 	})
 

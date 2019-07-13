@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
-	"github.com/pkg/errors"
-	"golang.org/x/net/html"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -16,6 +13,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -24,7 +22,9 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"golang.org/x/net/html"
 )
 
 var emptyNodeID = dom.NodeID(0)
@@ -46,7 +46,7 @@ type (
 		id             HTMLElementIdentity
 		nodeType       html.NodeType
 		nodeName       values.String
-		innerHTML      values.String
+		innerHTML      *common.LazyValue
 		innerText      *common.LazyValue
 		value          core.Value
 		attributes     *common.LazyValue
@@ -118,12 +118,6 @@ func LoadHTMLElementWithID(
 		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
 	}
 
-	innerHTML, err := loadInnerHTML(ctx, client, exec, id, common.ToHTMLType(node.Node.NodeType))
-
-	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
-	}
-
 	var val string
 
 	if node.Node.Value != nil {
@@ -140,7 +134,6 @@ func LoadHTMLElementWithID(
 		node.Node.NodeType,
 		node.Node.NodeName,
 		val,
-		innerHTML,
 		createChildrenArray(node.Node.Children),
 	), nil
 }
@@ -155,7 +148,6 @@ func NewHTMLElement(
 	nodeType int,
 	nodeName string,
 	value string,
-	innerHTML values.String,
 	children []HTMLElementIdentity,
 ) *HTMLElement {
 	el := new(HTMLElement)
@@ -168,7 +160,7 @@ func NewHTMLElement(
 	el.id = id
 	el.nodeType = common.ToHTMLType(nodeType)
 	el.nodeName = values.NewString(nodeName)
-	el.innerHTML = innerHTML
+	el.innerHTML = common.NewLazyValue(el.loadInnerHTML)
 	el.innerText = common.NewLazyValue(el.loadInnerText)
 	el.attributes = common.NewLazyValue(el.loadAttrs)
 	el.style = common.NewLazyValue(el.parseStyle)
@@ -212,17 +204,22 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	val, err := el.innerText.Read(context.Background())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(val.String())
+	return json.Marshal(el.String())
 }
 
 func (el *HTMLElement) String() string {
-	return el.GetInnerHTML(context.Background()).String()
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+
+	res, err := el.GetInnerHTML(ctx)
+
+	if err != nil {
+		el.logError(errors.Wrap(err, "HTMLElement.String"))
+
+		return ""
+	}
+
+	return res.String()
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
@@ -230,9 +227,7 @@ func (el *HTMLElement) Compare(other core.Value) int64 {
 	case drivers.HTMLElementType:
 		other := other.(drivers.HTMLElement)
 
-		ctx := context.Background()
-
-		return el.GetInnerHTML(ctx).Compare(other.GetInnerHTML(ctx))
+		return int64(strings.Compare(el.String(), other.String()))
 	default:
 		return drivers.Compare(el.Type(), other.Type())
 	}
@@ -243,14 +238,11 @@ func (el *HTMLElement) Unwrap() interface{} {
 }
 
 func (el *HTMLElement) Hash() uint64 {
-	el.mu.Lock()
-	defer el.mu.Unlock()
-
 	h := fnv.New64a()
 
 	h.Write([]byte(el.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(el.innerHTML))
+	h.Write([]byte(strconv.Itoa(int(el.id.nodeID))))
 
 	return h.Sum64()
 }
@@ -724,209 +716,136 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 	}
 }
 
-func (el *HTMLElement) GetInnerText(ctx context.Context) values.String {
+func (el *HTMLElement) GetInnerText(ctx context.Context) (values.String, error) {
 	val, err := el.innerText.Read(ctx)
 
 	if err != nil {
-		return values.EmptyString
+		return values.EmptyString, err
 	}
 
 	if val == values.None {
-		return values.EmptyString
+		return values.EmptyString, nil
 	}
 
-	return val.(values.String)
+	return val.(values.String), nil
 }
 
-func (el *HTMLElement) InnerTextBySelector(ctx context.Context, selector values.String) values.String {
+func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String) error {
 	if el.IsDetached() {
-		return values.EmptyString
+		return drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
+	el.innerText.Reset()
 
-	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return values.EmptyString
-	}
-
-	if found.NodeID == emptyNodeID {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to find a node by selector. returned 0 NodeID")
-
-		return values.EmptyString
-	}
-
-	childNodeID := found.NodeID
-
-	obj, err := el.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(childNodeID))
-
-	if err != nil {
-		el.logError(err).
-			Int("childNodeID", int(childNodeID)).
-			Str("selector", selector.String()).
-			Msg("failed to resolve remote object for child el")
-
-		return values.EmptyString
-	}
-
-	if obj.Object.ObjectID == nil {
-		el.logError(err).
-			Int("childNodeID", int(childNodeID)).
-			Str("selector", selector.String()).
-			Msg("failed to resolve remote object for child el")
-
-		return values.EmptyString
-	}
-
-	objID := *obj.Object.ObjectID
-
-	text, err := el.exec.ReadProperty(ctx, objID, "innerText")
-
-	if err != nil {
-		el.logError(err).
-			Str("childObjectID", string(objID)).
-			Str("selector", selector.String()).
-			Msg("failed to load inner text for found child el")
-
-		return values.EmptyString
-	}
-
-	return values.NewString(text.String())
+	return setInnerText(ctx, el.client, el.exec, el.id, innerText)
 }
 
-func (el *HTMLElement) InnerTextBySelectorAll(ctx context.Context, selector values.String) *values.Array {
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	res, err := el.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String()))
-
-	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.NewArray(0)
-	}
-
-	arr := values.NewArray(len(res.NodeIDs))
-
-	for idx, id := range res.NodeIDs {
-		if id == emptyNodeID {
-			el.logError(err).
-				Str("selector", selector.String()).
-				Msg("failed to find a node by selector. returned 0 NodeID")
-
-			continue
-		}
-
-		obj, err := el.client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id))
-
-		if err != nil {
-			el.logError(err).
-				Int("index", idx).
-				Int("childNodeID", int(id)).
-				Str("selector", selector.String()).
-				Msg("failed to resolve remote object for child el")
-
-			continue
-		}
-
-		if obj.Object.ObjectID == nil {
-			continue
-		}
-
-		objID := *obj.Object.ObjectID
-
-		text, err := el.exec.ReadProperty(ctx, objID, "innerText")
-
-		if err != nil {
-			el.logError(err).
-				Str("childObjectID", string(objID)).
-				Str("selector", selector.String()).
-				Msg("failed to load inner text for found child el")
-
-			continue
-		}
-
-		arr.Push(text)
-	}
-
-	return arr
-}
-
-func (el *HTMLElement) GetInnerHTML(_ context.Context) values.String {
-	el.mu.Lock()
-	defer el.mu.Unlock()
-
-	return el.innerHTML
-}
-
-func (el *HTMLElement) InnerHTMLBySelector(ctx context.Context, selector values.String) values.String {
+func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error) {
 	if el.IsDetached() {
-		return values.EmptyString
+		return values.EmptyString, drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	found, err := el.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(el.id.nodeID, selector.String()))
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelector(selector.String()))
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.EmptyString
+		return values.EmptyString, err
 	}
 
-	text, err := loadInnerHTMLByNodeID(ctx, el.client, el.exec, found.NodeID)
-
-	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Int("childNodeID", int(found.NodeID)).
-			Msg("failed to load inner HTML for found child el")
-
-		return values.EmptyString
-	}
-
-	return text
+	return values.NewString(out.String()), nil
 }
 
-func (el *HTMLElement) InnerHTMLBySelectorAll(ctx context.Context, selector values.String) *values.Array {
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
-	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
+	return el.exec.Eval(ctx, templates.SetInnerTextBySelector(selector.String(), innerText.String()))
+}
+
+func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+	if el.IsDetached() {
+		return values.NewArray(0), drivers.ErrDetached
+	}
+
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.NewArray(0)
+		return values.NewArray(0), err
 	}
 
-	arr := values.NewArray(len(res.NodeIDs))
+	arr, ok := out.(*values.Array)
 
-	for _, id := range res.NodeIDs {
-		text, err := loadInnerHTMLByNodeID(ctx, el.client, el.exec, id)
-
-		if err != nil {
-			el.logError(err).
-				Str("selector", selector.String()).
-				Int("childNodeID", int(id)).
-				Msg("failed to load inner HTML for found child el")
-
-			// return what we have
-			return arr
-		}
-
-		arr.Push(text)
+	if !ok {
+		return values.NewArray(0), errors.New("unexpected output")
 	}
 
-	return arr
+	return arr, nil
+}
+
+func (el *HTMLElement) GetInnerHTML(ctx context.Context) (values.String, error) {
+	val, err := el.innerHTML.Read(ctx)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	if val == values.None {
+		return values.EmptyString, nil
+	}
+
+	return val.(values.String), nil
+}
+
+func (el *HTMLElement) SetInnerHTML(ctx context.Context, innerHTML values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
+	el.innerHTML.Reset()
+
+	return setInnerHTML(ctx, el.client, el.exec, el.id, innerHTML)
+}
+
+func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error) {
+	if el.IsDetached() {
+		return values.EmptyString, drivers.ErrDetached
+	}
+
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerHTMLBySelector(selector.String()))
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.NewString(out.String()), nil
+}
+
+func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
+	return el.exec.Eval(ctx, templates.SetInnerHTMLBySelector(selector.String(), innerHTML.String()))
+}
+
+func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+	if el.IsDetached() {
+		return values.NewArray(0), drivers.ErrDetached
+	}
+
+	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
+	arr, ok := out.(*values.Array)
+
+	if !ok {
+		return values.NewArray(0), errors.New("unexpected output")
+	}
+
+	return arr, nil
 }
 
 func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) values.Int {
@@ -1081,9 +1000,17 @@ func (el *HTMLElement) IsDetached() values.Boolean {
 	return !el.connected
 }
 
+func (el *HTMLElement) loadInnerHTML(ctx context.Context) (core.Value, error) {
+	if el.IsDetached() {
+		return values.None, drivers.ErrDetached
+	}
+
+	return getInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
+}
+
 func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 	if !el.IsDetached() {
-		text, err := loadInnerText(ctx, el.client, el.exec, el.id, el.nodeType)
+		text, err := getInnerText(ctx, el.client, el.exec, el.id, el.nodeType)
 
 		if err == nil {
 			return text, nil
@@ -1094,7 +1021,13 @@ func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 		// and just parse cached innerHTML
 	}
 
-	h := el.GetInnerHTML(ctx)
+	h, err := el.GetInnerHTML(ctx)
+
+	if err != nil {
+		el.logError(err).Msg("failed to get inner html from remote object")
+
+		return values.None, err
+	}
 
 	if h == values.EmptyString {
 		return h, nil
@@ -1329,15 +1262,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 
 		loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
 
-		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
-
-		if err != nil {
-			el.logError(err).Msg("failed to update element")
-
-			return
-		}
-
-		el.innerHTML = newInnerHTML
+		el.innerHTML.Reset()
 		el.innerText.Reset()
 	})
 }
@@ -1391,19 +1316,7 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface
 		loadedArr := v.(*values.Array)
 		loadedArr.RemoveAt(values.NewInt(targetIDx))
 
-		newInnerHTML, err := loadInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
-
-		if err != nil {
-			el.logger.Error().
-				Timestamp().
-				Err(err).
-				Int("nodeID", int(el.id.nodeID)).
-				Msg("failed to update element")
-
-			return
-		}
-
-		el.innerHTML = newInnerHTML
+		el.innerHTML.Reset()
 		el.innerText.Reset()
 	})
 }
