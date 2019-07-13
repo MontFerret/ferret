@@ -99,16 +99,24 @@ func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 }
 
 func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID) error {
+	if err := m.ScrollIntoView(ctx, objectID); err != nil {
+		return err
+	}
+
 	q, err := GetClickablePointByObjectID(ctx, m.client, objectID)
 
 	if err != nil {
 		return err
 	}
 
-	return m.MoveMouseByXY(ctx, values.Float(q.X), values.Float(q.Y))
+	return m.mouse.Move(ctx, q.X, q.Y)
 }
 
 func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
+		return err
+	}
+
 	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
 
 	if err != nil {
@@ -121,7 +129,7 @@ func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.Node
 		return err
 	}
 
-	return m.MoveMouseByXY(ctx, values.Float(q.X), values.Float(q.Y))
+	return m.mouse.Move(ctx, q.X, q.Y)
 }
 
 func (m *Manager) MoveMouseByXY(ctx context.Context, x, y values.Float) error {

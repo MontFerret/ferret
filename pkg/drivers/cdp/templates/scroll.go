@@ -35,11 +35,7 @@ const (
 
 func Scroll(x, y string) string {
 	return fmt.Sprintf(`
-			window.scrollBy({
-				top: %s,
-				left: %s,
-				behavior: 'instant'
-			});
+			window.scrollBy(%s, %s);
 `, x, y)
 }
 
