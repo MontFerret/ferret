@@ -23,7 +23,7 @@ const (
 `
 
 	scrollIntoViewTemplate = `
-		(element) => {
+		(el) => {
 			el.scrollIntoView({
 				behavior: 'instant'
 			});
@@ -57,7 +57,7 @@ func ScrollIntoView() string {
 
 func ScrollIntoViewBySelector(selector string) string {
 	return fmt.Sprintf(`
-		var el = document.querySelector('%s');
+		const el = document.querySelector('%s');
 
 		if (el == null) {
 			throw new Error('%s');

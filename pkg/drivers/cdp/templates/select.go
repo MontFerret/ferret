@@ -7,13 +7,13 @@ import (
 
 func selectBase(values string) string {
 	return fmt.Sprintf(`
-		var values = %s;
+		const values = %s;
 
 		if (el.nodeName.toLowerCase() !== 'select') {
 			throw new Error('element is not a <select> element.');
 		}
 
-		var options = Array.from(el.options);
+		const options = Array.from(el.options);
 
 		el.value = undefined;
 
@@ -44,7 +44,7 @@ func Select(values string) string {
 
 func SelectBySelector(selector, values string) string {
 	return fmt.Sprintf(`
-		var el = document.querySelector('%s');
+		const el = document.querySelector('%s');
 		
 		if (el == null) {
 			throw new Error("%s")
