@@ -48,13 +48,13 @@ func (ec *ExecutionContext) Eval(ctx context.Context, exp string) error {
 }
 
 func (ec *ExecutionContext) EvalWithArguments(ctx context.Context, exp string, args ...runtime.CallArgument) error {
-	_, err := ec.evalWithArgumentsInternal(ctx, exp, args)
+	_, err := ec.evalWithArgumentsInternal(ctx, exp, args, false)
 
 	return err
 }
 
 func (ec *ExecutionContext) EvalWithArgumentsAndReturn(ctx context.Context, exp string, args ...runtime.CallArgument) (runtime.RemoteObject, error) {
-	return ec.evalWithArgumentsInternal(ctx, exp, args)
+	return ec.evalWithArgumentsInternal(ctx, exp, args, true)
 }
 
 func (ec *ExecutionContext) EvalWithReturn(ctx context.Context, exp string) (core.Value, error) {
@@ -260,8 +260,8 @@ func (ec *ExecutionContext) ResolveNode(ctx context.Context, nodeID dom.NodeID) 
 	return repl.Object, nil
 }
 
-func (ec *ExecutionContext) evalWithArgumentsInternal(ctx context.Context, exp string, args []runtime.CallArgument) (runtime.RemoteObject, error) {
-	cfArgs := runtime.NewCallFunctionOnArgs(exp).SetArguments(args)
+func (ec *ExecutionContext) evalWithArgumentsInternal(ctx context.Context, exp string, args []runtime.CallArgument, ret bool) (runtime.RemoteObject, error) {
+	cfArgs := runtime.NewCallFunctionOnArgs(exp).SetArguments(args).SetReturnByValue(ret)
 
 	if ec.contextID != EmptyExecutionContextID {
 		cfArgs.SetExecutionContextID(ec.contextID)

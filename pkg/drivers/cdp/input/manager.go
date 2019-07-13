@@ -2,7 +2,6 @@ package input
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/mafredri/cdp"
@@ -267,12 +266,7 @@ func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, v
 		return nil, err
 	}
 
-	fmt.Println(string(res.Value))
-	fmt.Println(res.Type)
-
 	val, err := eval.Unmarshal(&res)
-
-	fmt.Println(err)
 
 	if err != nil {
 		return values.NewArray(0), err

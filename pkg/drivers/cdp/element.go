@@ -601,25 +601,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 
 	// checking whether it's actually an array
 	if typeName == "object" {
-		isArrayRes, err := el.exec.EvalWithArgumentsAndReturn(ctx, `
-			(target) => Array.isArray(target)
-		`,
-			runtime.CallArgument{
-				ObjectID: out.ObjectID,
-			},
-		)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		isArray, err := eval.Unmarshal(&isArrayRes)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		if isArray == values.True {
+		if out.ClassName != nil && *out.ClassName == "Array" {
 			typeName = "array"
 		}
 	}
