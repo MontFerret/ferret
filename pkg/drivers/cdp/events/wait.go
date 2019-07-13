@@ -64,7 +64,7 @@ func NewEvalWaitTask(
 ) *WaitTask {
 	return NewWaitTask(
 		func(ctx context.Context) (core.Value, error) {
-			return ec.EvalWithReturn(
+			return ec.EvalWithReturnValue(
 				ctx,
 				predicate,
 			)

@@ -584,7 +584,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 		return values.None, err
 	}
 
-	out, err := el.exec.EvalWithArgumentsAndReturnRef(ctx, templates.XPath(),
+	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.XPath(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
 		},
@@ -735,7 +735,7 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturn(ctx, templates.GetInnerTextBySelector(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerTextBySelector(selector.String()))
 
 	if err != nil {
 		return values.EmptyString, err
@@ -757,7 +757,7 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturn(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
 
 	if err != nil {
 		return values.NewArray(0), err
@@ -801,7 +801,7 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturn(ctx, templates.GetInnerHTMLBySelector(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerHTMLBySelector(selector.String()))
 
 	if err != nil {
 		return values.EmptyString, err
@@ -823,7 +823,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturn(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
 
 	if err != nil {
 		return values.NewArray(0), err

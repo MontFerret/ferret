@@ -266,7 +266,7 @@ func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, v
 		return values.NewArray(0), err
 	}
 
-	val, err := m.exec.EvalWithArgumentsAndReturn(ctx, templates.Select(value.String()), runtime.CallArgument{
+	val, err := m.exec.EvalWithArgumentsAndReturnValue(ctx, templates.Select(value.String()), runtime.CallArgument{
 		ObjectID: &objectID,
 	})
 
@@ -288,7 +288,7 @@ func (m *Manager) SelectBySelector(ctx context.Context, parentNodeID dom.NodeID,
 		return values.NewArray(0), err
 	}
 
-	res, err := m.exec.EvalWithReturn(ctx, templates.SelectBySelector(selector.String(), value.String()))
+	res, err := m.exec.EvalWithReturnValue(ctx, templates.SelectBySelector(selector.String(), value.String()))
 
 	if err != nil {
 		return values.NewArray(0), err

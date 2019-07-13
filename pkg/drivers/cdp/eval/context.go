@@ -53,7 +53,7 @@ func (ec *ExecutionContext) EvalWithArguments(ctx context.Context, exp string, a
 	return err
 }
 
-func (ec *ExecutionContext) EvalWithArgumentsAndReturn(ctx context.Context, exp string, args ...runtime.CallArgument) (core.Value, error) {
+func (ec *ExecutionContext) EvalWithArgumentsAndReturnValue(ctx context.Context, exp string, args ...runtime.CallArgument) (core.Value, error) {
 	out, err := ec.evalWithArgumentsInternal(ctx, exp, args, true)
 
 	if err != nil {
@@ -63,16 +63,25 @@ func (ec *ExecutionContext) EvalWithArgumentsAndReturn(ctx context.Context, exp 
 	return Unmarshal(&out)
 }
 
-func (ec *ExecutionContext) EvalWithArgumentsAndReturnRef(ctx context.Context, exp string, args ...runtime.CallArgument) (runtime.RemoteObject, error) {
+func (ec *ExecutionContext) EvalWithArgumentsAndReturnReference(ctx context.Context, exp string, args ...runtime.CallArgument) (runtime.RemoteObject, error) {
 	return ec.evalWithArgumentsInternal(ctx, exp, args, false)
 }
 
-func (ec *ExecutionContext) EvalWithReturn(ctx context.Context, exp string) (core.Value, error) {
+func (ec *ExecutionContext) EvalWithReturnValue(ctx context.Context, exp string) (core.Value, error) {
 	return ec.evalWithValueInternal(
 		ctx,
 		runtime.
 			NewEvaluateArgs(PrepareEval(exp)).
 			SetReturnByValue(true),
+	)
+}
+
+func (ec *ExecutionContext) EvalWithReturnReference(ctx context.Context, exp string) (runtime.RemoteObject, error) {
+	return ec.evalInternal(
+		ctx,
+		runtime.
+			NewEvaluateArgs(PrepareEval(exp)).
+			SetReturnByValue(false),
 	)
 }
 

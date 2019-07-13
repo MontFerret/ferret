@@ -135,7 +135,7 @@ func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return values.NewString(res.String()), nil
 	}
 
-	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerHTML")
+	repl, err := exec.EvalWithReturnValue(ctx, "return document.documentElement.innerHTML")
 
 	if err != nil {
 		return "", err
@@ -211,7 +211,7 @@ func getInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return values.NewString(res.String()), err
 	}
 
-	repl, err := exec.EvalWithReturn(ctx, "return document.documentElement.innerText")
+	repl, err := exec.EvalWithReturnValue(ctx, "return document.documentElement.innerText")
 
 	if err != nil {
 		return "", err
