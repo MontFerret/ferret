@@ -126,16 +126,16 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 		}
 
 		res := values.NewArray(10)
+
 		for {
 			nextScope, err := iterator.Next(ctx, scope)
 
 			if err != nil {
-				return values.None, core.SourceError(e.src, err)
-			}
+				if core.IsNoMoreData(err) {
+					break
+				}
 
-			// no data anymore
-			if nextScope == nil {
-				break
+				return values.None, core.SourceError(e.src, err)
 			}
 
 			out, err := e.predicate.Exec(ctx, nextScope)

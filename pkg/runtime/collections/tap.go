@@ -29,10 +29,6 @@ func (iterator *TapIterator) Next(ctx context.Context, scope *core.Scope) (*core
 		return nil, err
 	}
 
-	if nextScope == nil {
-		return nil, nil
-	}
-
 	_, err = iterator.predicate.Exec(ctx, nextScope)
 
 	if err != nil {

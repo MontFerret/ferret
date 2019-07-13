@@ -161,7 +161,7 @@ func TestFilter(t *testing.T) {
 		item, err := iter.Next(context.Background(), scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeNil)
+		So(err, ShouldEqual, core.ErrNoMoreData)
 	})
 
 	Convey("Should iterate over nested filter", t, func() {

@@ -46,11 +46,6 @@ func (iterator *coreIterator) Next(ctx context.Context, scope *core.Scope) (*cor
 		return nil, err
 	}
 
-	// end of iteration
-	if val == values.None {
-		return nil, nil
-	}
-
 	nextScope := scope.Fork()
 
 	if err := nextScope.SetVariable(iterator.valVar, val); err != nil {

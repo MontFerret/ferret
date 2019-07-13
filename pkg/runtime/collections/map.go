@@ -69,5 +69,5 @@ func (iterator *MapIterator) Next(_ context.Context, scope *core.Scope) (*core.S
 		return nextScope, nil
 	}
 
-	return nil, nil
+	return nil, core.ErrNoMoreData
 }
