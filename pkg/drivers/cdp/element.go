@@ -118,12 +118,6 @@ func LoadHTMLElementWithID(
 		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
 	}
 
-	innerHTML, err := getInnerHTML(ctx, client, exec, id, common.ToHTMLType(node.Node.NodeType))
-
-	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
-	}
-
 	var val string
 
 	if node.Node.Value != nil {
@@ -140,7 +134,6 @@ func LoadHTMLElementWithID(
 		node.Node.NodeType,
 		node.Node.NodeName,
 		val,
-		innerHTML,
 		createChildrenArray(node.Node.Children),
 	), nil
 }
@@ -155,7 +148,6 @@ func NewHTMLElement(
 	nodeType int,
 	nodeName string,
 	value string,
-	innerHTML values.String,
 	children []HTMLElementIdentity,
 ) *HTMLElement {
 	el := new(HTMLElement)
@@ -168,7 +160,7 @@ func NewHTMLElement(
 	el.id = id
 	el.nodeType = common.ToHTMLType(nodeType)
 	el.nodeName = values.NewString(nodeName)
-	el.innerHTML = common.NewVolatileValue(innerHTML, el.loadInnerHTML)
+	el.innerHTML = common.NewLazyValue(el.loadInnerHTML)
 	el.innerText = common.NewLazyValue(el.loadInnerText)
 	el.attributes = common.NewLazyValue(el.loadAttrs)
 	el.style = common.NewLazyValue(el.parseStyle)
