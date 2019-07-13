@@ -266,18 +266,12 @@ func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, v
 		return values.NewArray(0), err
 	}
 
-	res, err := m.exec.EvalWithArgumentsAndReturn(ctx, templates.Select(value.String()), runtime.CallArgument{
+	val, err := m.exec.EvalWithArgumentsAndReturn(ctx, templates.Select(value.String()), runtime.CallArgument{
 		ObjectID: &objectID,
 	})
 
 	if err != nil {
 		return nil, err
-	}
-
-	val, err := eval.Unmarshal(&res)
-
-	if err != nil {
-		return values.NewArray(0), err
 	}
 
 	arr, ok := val.(*values.Array)

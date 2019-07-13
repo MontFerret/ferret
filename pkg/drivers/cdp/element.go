@@ -584,7 +584,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 		return values.None, err
 	}
 
-	out, err := el.exec.EvalWithArgumentsAndReturn(ctx, templates.XPath(),
+	out, err := el.exec.EvalWithArgumentsAndReturnRef(ctx, templates.XPath(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
 		},

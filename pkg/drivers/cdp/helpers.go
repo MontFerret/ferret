@@ -93,7 +93,7 @@ func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return err
 	}
 
-	_, err = exec.EvalWithArgumentsAndReturn(ctx, templates.SetInnerHTML(),
+	err = exec.EvalWithArguments(ctx, templates.SetInnerHTML(),
 		runtime.CallArgument{
 			ObjectID: objID,
 		},
@@ -169,7 +169,7 @@ func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		return err
 	}
 
-	_, err = exec.EvalWithArgumentsAndReturn(ctx, templates.SetInnerText(),
+	err = exec.EvalWithArguments(ctx, templates.SetInnerText(),
 		runtime.CallArgument{
 			ObjectID: objID,
 		},
