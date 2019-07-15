@@ -67,7 +67,7 @@ func (lv *LazyValue) Mutate(ctx context.Context, mutator func(v core.Value, err 
 }
 
 // Mutate safely mutates an underlying value only if it's ready.
-func (lv *LazyValue) MutateIfReady(ctx context.Context, mutator func(v core.Value, err error)) {
+func (lv *LazyValue) MutateIfReady(mutator func(v core.Value, err error)) {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()
 
