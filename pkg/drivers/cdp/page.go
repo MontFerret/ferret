@@ -3,10 +3,6 @@ package cdp
 import (
 	"context"
 	"encoding/json"
-	"hash/fnv"
-	"sync"
-	"sync/atomic"
-
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
@@ -14,6 +10,8 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"hash/fnv"
+	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -33,7 +31,7 @@ type HTMLPage struct {
 	events   *events.EventBroker
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
-	document *atomic.Value
+	document *common.AtomicValue
 	frames   *common.LazyValue
 }
 
@@ -228,9 +226,8 @@ func NewHTMLPage(
 	p.events = broker
 	p.mouse = mouse
 	p.keyboard = keyboard
+	p.document = common.NewAtomicValue(document)
 	p.frames = common.NewLazyValue(p.unfoldFrames)
-	p.document = &atomic.Value{}
-	p.document.Store(document)
 
 	broker.AddEventListener(events.EventLoad, p.handlePageLoad)
 	broker.AddEventListener(events.EventError, p.handleError)
@@ -699,33 +696,36 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context) error {
 }
 
 func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
-	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events, p.mouse, p.keyboard)
+	err := p.document.Write(func(current core.Value) (core.Value, error) {
+		nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events, p.mouse, p.keyboard)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		// close the prev document
+		currentDoc := current.(*HTMLDocument)
+		err = currentDoc.Close()
+
+		if err != nil {
+			p.logger.Warn().
+				Timestamp().
+				Err(err).
+				Msgf("failed to close root document: %s", currentDoc.GetURL())
+		}
+
+		// reset all loaded frames
+		p.frames.Reset()
+
+		return nextDoc, nil
+	})
 
 	if err != nil {
-		p.logger.Error().
+		p.logger.Warn().
 			Timestamp().
 			Err(err).
 			Msg("failed to load new root document after page load")
-
-		return
 	}
-
-	currentDoc := p.getCurrentDocument()
-
-	// close the prev document
-	err = currentDoc.Close()
-
-	if err != nil {
-		p.logger.Error().
-			Timestamp().
-			Err(err).
-			Msgf("failed to close root document: %s", currentDoc.GetURL())
-	}
-
-	// set the new root document
-	p.document.Store(nextDoc)
-	// reset all loaded frames
-	p.frames.Reset()
 }
 
 func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
@@ -742,7 +742,7 @@ func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
 }
 
 func (p *HTMLPage) getCurrentDocument() *HTMLDocument {
-	return p.document.Load().(*HTMLDocument)
+	return p.document.Read().(*HTMLDocument)
 }
 
 func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
