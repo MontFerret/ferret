@@ -29,17 +29,6 @@ func NewLazyValue(factory LazyValueFactory) *LazyValue {
 	return lz
 }
 
-func NewVolatileValue(value core.Value, factory LazyValueFactory) *LazyValue {
-	lz := NewLazyValue(factory)
-
-	if value != values.None {
-		lz.ready = true
-		lz.value = value
-	}
-
-	return lz
-}
-
 // Ready indicates whether the value is ready.
 // @returns (Boolean) - Boolean value indicating whether the value is ready.
 func (lv *LazyValue) Ready() bool {
@@ -63,10 +52,10 @@ func (lv *LazyValue) Read(ctx context.Context) (core.Value, error) {
 	return lv.value, lv.err
 }
 
-// Write safely mutates an underlying value.
+// Mutate safely mutates an underlying value.
 // Loads a value if it's not ready.
 // Thread safe.
-func (lv *LazyValue) Write(ctx context.Context, writer func(v core.Value, err error)) {
+func (lv *LazyValue) Mutate(ctx context.Context, mutator func(v core.Value, err error)) {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()
 
@@ -74,7 +63,27 @@ func (lv *LazyValue) Write(ctx context.Context, writer func(v core.Value, err er
 		lv.load(ctx)
 	}
 
-	writer(lv.value, lv.err)
+	mutator(lv.value, lv.err)
+}
+
+// Mutate safely mutates an underlying value only if it's ready.
+func (lv *LazyValue) MutateIfReady(ctx context.Context, mutator func(v core.Value, err error)) {
+	lv.mu.Lock()
+	defer lv.mu.Unlock()
+
+	if lv.ready {
+		mutator(lv.value, lv.err)
+	}
+}
+
+// Reset resets the storage.
+// Next call of Read will trigger the factory function again.
+func (lv *LazyValue) Reload(ctx context.Context) {
+	lv.mu.Lock()
+	defer lv.mu.Unlock()
+
+	lv.resetInternal()
+	lv.load(ctx)
 }
 
 // Reset resets the storage.
@@ -83,6 +92,10 @@ func (lv *LazyValue) Reset() {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()
 
+	lv.resetInternal()
+}
+
+func (lv *LazyValue) resetInternal() {
 	lv.ready = false
 	lv.value = values.None
 	lv.err = nil
