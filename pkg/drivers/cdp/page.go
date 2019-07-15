@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
@@ -32,7 +33,7 @@ type HTMLPage struct {
 	events   *events.EventBroker
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
-	document *HTMLDocument
+	document *atomic.Value
 	frames   *common.LazyValue
 }
 
@@ -227,8 +228,9 @@ func NewHTMLPage(
 	p.events = broker
 	p.mouse = mouse
 	p.keyboard = keyboard
-	p.document = document
 	p.frames = common.NewLazyValue(p.unfoldFrames)
+	p.document = &atomic.Value{}
+	p.document.Store(document)
 
 	broker.AddEventListener(events.EventLoad, p.handlePageLoad)
 	broker.AddEventListener(events.EventError, p.handleError)
@@ -237,10 +239,7 @@ func NewHTMLPage(
 }
 
 func (p *HTMLPage) MarshalJSON() ([]byte, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.document.MarshalJSON()
+	return p.getCurrentDocument().MarshalJSON()
 }
 
 func (p *HTMLPage) Type() core.Type {
@@ -248,16 +247,10 @@ func (p *HTMLPage) Type() core.Type {
 }
 
 func (p *HTMLPage) String() string {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.document.GetURL().String()
+	return p.getCurrentDocument().GetURL().String()
 }
 
 func (p *HTMLPage) Compare(other core.Value) int64 {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	tc := drivers.Compare(p.Type(), other.Type())
 
 	if tc != 0 {
@@ -270,7 +263,7 @@ func (p *HTMLPage) Compare(other core.Value) int64 {
 		return 1
 	}
 
-	return p.document.GetURL().Compare(cdpPage.GetURL())
+	return p.getCurrentDocument().GetURL().Compare(cdpPage.GetURL())
 }
 
 func (p *HTMLPage) Unwrap() interface{} {
@@ -281,15 +274,12 @@ func (p *HTMLPage) Unwrap() interface{} {
 }
 
 func (p *HTMLPage) Hash() uint64 {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	h := fnv.New64a()
 
 	h.Write([]byte("CDP"))
 	h.Write([]byte(p.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(p.document.GetURL()))
+	h.Write([]byte(p.getCurrentDocument().GetURL()))
 
 	return h.Sum64()
 }
@@ -307,17 +297,11 @@ func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Valu
 }
 
 func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.document.Iterate(ctx)
+	return p.getCurrentDocument().Iterate(ctx)
 }
 
 func (p *HTMLPage) Length() values.Int {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.document.Length()
+	return p.getCurrentDocument().Length()
 }
 
 func (p *HTMLPage) Close() error {
@@ -327,10 +311,12 @@ func (p *HTMLPage) Close() error {
 	p.closed = values.True
 	err := p.events.Stop()
 
+	doc := p.getCurrentDocument()
+
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", p.document.GetURL().String()).
+			Str("url", doc.GetURL().String()).
 			Err(err).
 			Msg("failed to stop event events")
 	}
@@ -340,17 +326,17 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", p.document.GetURL().String()).
+			Str("url", doc.GetURL().String()).
 			Err(err).
 			Msg("failed to close event events")
 	}
 
-	err = p.document.Close()
+	err = doc.Close()
 
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", p.document.GetURL().String()).
+			Str("url", doc.GetURL().String()).
 			Err(err).
 			Msg("failed to close root document")
 	}
@@ -360,7 +346,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", p.document.GetURL().String()).
+			Str("url", doc.GetURL().String()).
 			Err(err).
 			Msg("failed to close browser page")
 	}
@@ -376,23 +362,14 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 }
 
 func (p *HTMLPage) GetURL() values.String {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.document.GetURL()
+	return p.getCurrentDocument().GetURL()
 }
 
 func (p *HTMLPage) GetMainFrame() drivers.HTMLDocument {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.document
+	return p.getCurrentDocument()
 }
 
 func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	res, err := p.frames.Read(ctx)
 
 	if err != nil {
@@ -449,7 +426,7 @@ func (p *HTMLPage) SetCookies(ctx context.Context, cookies ...drivers.HTTPCookie
 	params := make([]network.CookieParam, 0, len(cookies))
 
 	for _, c := range cookies {
-		params = append(params, fromDriverCookie(p.document.GetURL().String(), c))
+		params = append(params, fromDriverCookie(p.getCurrentDocument().GetURL().String(), c))
 	}
 
 	return p.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
@@ -466,7 +443,7 @@ func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCoo
 	var err error
 
 	for _, c := range cookies {
-		err = p.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(p.document.GetURL().String(), c))
+		err = p.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(p.getCurrentDocument().GetURL().String(), c))
 
 		if err != nil {
 			break
@@ -722,9 +699,6 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context) error {
 }
 
 func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events, p.mouse, p.keyboard)
 
 	if err != nil {
@@ -736,18 +710,20 @@ func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
 		return
 	}
 
+	currentDoc := p.getCurrentDocument()
+
 	// close the prev document
-	err = p.document.Close()
+	err = currentDoc.Close()
 
 	if err != nil {
 		p.logger.Error().
 			Timestamp().
 			Err(err).
-			Msgf("failed to close root document: %s", p.document.GetURL())
+			Msgf("failed to close root document: %s", currentDoc.GetURL())
 	}
 
 	// set the new root document
-	p.document = nextDoc
+	p.document.Store(nextDoc)
 	// reset all loaded frames
 	p.frames.Reset()
 }
@@ -765,10 +741,14 @@ func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
 		Msg("unexpected error")
 }
 
+func (p *HTMLPage) getCurrentDocument() *HTMLDocument {
+	return p.document.Load().(*HTMLDocument)
+}
+
 func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
 	res := values.NewArray(10)
 
-	err := common.CollectFrames(ctx, res, p.document)
+	err := common.CollectFrames(ctx, res, p.getCurrentDocument())
 
 	if err != nil {
 		return nil, err
