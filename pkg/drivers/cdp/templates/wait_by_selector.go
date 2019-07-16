@@ -12,13 +12,13 @@ import (
 func WaitBySelector(selector values.String, when drivers.WaitEvent, value core.Value, check string) string {
 	return fmt.Sprintf(
 		`
-			var el = document.querySelector(%s); // selector
+			const el = document.querySelector(%s); // selector
 			
 			if (el == null) {
 				return false;
 			}
 
-			var result = %s; // check
+			const result = %s; // check
 
 			// when value
 			if (result %s %s) {

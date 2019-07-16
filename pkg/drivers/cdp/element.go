@@ -576,7 +576,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 		return values.None, err
 	}
 
-	out, err := el.exec.CallFunction(ctx, templates.XPath(),
+	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.XPath(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
 		},
@@ -593,25 +593,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 
 	// checking whether it's actually an array
 	if typeName == "object" {
-		isArrayRes, err := el.exec.CallFunction(ctx, `
-			(target) => Array.isArray(target)
-		`,
-			runtime.CallArgument{
-				ObjectID: out.ObjectID,
-			},
-		)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		isArray, err := eval.Unmarshal(&isArrayRes)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		if isArray == values.True {
+		if out.ClassName != nil && *out.ClassName == "Array" {
 			typeName = "array"
 		}
 	}
@@ -745,7 +727,7 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelector(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerTextBySelector(selector.String()))
 
 	if err != nil {
 		return values.EmptyString, err
@@ -767,7 +749,7 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
 
 	if err != nil {
 		return values.NewArray(0), err
@@ -811,7 +793,7 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerHTMLBySelector(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerHTMLBySelector(selector.String()))
 
 	if err != nil {
 		return values.EmptyString, err
@@ -833,7 +815,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithValue(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
+	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
 
 	if err != nil {
 		return values.NewArray(0), err
@@ -966,7 +948,7 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 }
 
 func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
-	if err := el.input.ClickByNodeID(ctx, el.id.nodeID); err != nil {
+	if err := el.input.Click(ctx, el.id.objectID); err != nil {
 		return values.False, err
 	}
 
@@ -978,19 +960,19 @@ func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values
 		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")
 	}
 
-	return el.input.TypeByNodeID(ctx, el.id.nodeID, value, delay)
+	return el.input.Type(ctx, el.id.objectID, value, delay)
 }
 
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
-	return el.input.SelectByNodeID(ctx, el.id.nodeID, value)
+	return el.input.Select(ctx, el.id.objectID, value)
 }
 
 func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
-	return el.input.ScrollIntoViewByNodeID(ctx, el.id.nodeID)
+	return el.input.ScrollIntoView(ctx, el.id.objectID)
 }
 
 func (el *HTMLElement) Hover(ctx context.Context) error {
-	return el.input.MoveMouseByNodeID(ctx, el.id.nodeID)
+	return el.input.MoveMouse(ctx, el.id.objectID)
 }
 
 func (el *HTMLElement) IsDetached() values.Boolean {

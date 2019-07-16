@@ -47,12 +47,41 @@ func (ec *ExecutionContext) Eval(ctx context.Context, exp string) error {
 	return err
 }
 
-func (ec *ExecutionContext) EvalWithValue(ctx context.Context, exp string) (core.Value, error) {
+func (ec *ExecutionContext) EvalWithArguments(ctx context.Context, exp string, args ...runtime.CallArgument) error {
+	_, err := ec.evalWithArgumentsInternal(ctx, exp, args, false)
+
+	return err
+}
+
+func (ec *ExecutionContext) EvalWithArgumentsAndReturnValue(ctx context.Context, exp string, args ...runtime.CallArgument) (core.Value, error) {
+	out, err := ec.evalWithArgumentsInternal(ctx, exp, args, true)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return Unmarshal(&out)
+}
+
+func (ec *ExecutionContext) EvalWithArgumentsAndReturnReference(ctx context.Context, exp string, args ...runtime.CallArgument) (runtime.RemoteObject, error) {
+	return ec.evalWithArgumentsInternal(ctx, exp, args, false)
+}
+
+func (ec *ExecutionContext) EvalWithReturnValue(ctx context.Context, exp string) (core.Value, error) {
 	return ec.evalWithValueInternal(
 		ctx,
 		runtime.
 			NewEvaluateArgs(PrepareEval(exp)).
 			SetReturnByValue(true),
+	)
+}
+
+func (ec *ExecutionContext) EvalWithReturnReference(ctx context.Context, exp string) (runtime.RemoteObject, error) {
+	return ec.evalInternal(
+		ctx,
+		runtime.
+			NewEvaluateArgs(PrepareEval(exp)).
+			SetReturnByValue(false),
 	)
 }
 
@@ -64,20 +93,6 @@ func (ec *ExecutionContext) EvalAsync(ctx context.Context, exp string) (core.Val
 			SetReturnByValue(true).
 			SetAwaitPromise(true),
 	)
-}
-
-func (ec *ExecutionContext) ResolveRemoteObject(ctx context.Context, exp string) (runtime.RemoteObject, error) {
-	res, err := ec.evalInternal(ctx, runtime.NewEvaluateArgs(PrepareEval(exp)))
-
-	if err != nil {
-		return runtime.RemoteObject{}, err
-	}
-
-	if res.ObjectID == nil {
-		return runtime.RemoteObject{}, errors.Wrap(core.ErrUnexpected, "unable to resolve remote object")
-	}
-
-	return res, nil
 }
 
 func (ec *ExecutionContext) CallMethod(
@@ -103,8 +118,10 @@ func (ec *ExecutionContext) CallMethod(
 		return nil, err
 	}
 
-	if found.ExceptionDetails != nil {
-		return nil, found.ExceptionDetails
+	err = ec.handleException(found.ExceptionDetails)
+
+	if err != nil {
+		return nil, err
 	}
 
 	if found.Result.ObjectID == nil {
@@ -195,8 +212,10 @@ func (ec *ExecutionContext) DispatchEvent(
 		return values.False, nil
 	}
 
-	if evt.ExceptionDetails != nil {
-		return values.False, evt.ExceptionDetails
+	err = ec.handleException(evt.ExceptionDetails)
+
+	if err != nil {
+		return values.False, nil
 	}
 
 	if evt.Result.ObjectID == nil {
@@ -226,8 +245,45 @@ func (ec *ExecutionContext) DispatchEvent(
 	return values.True, nil
 }
 
-func (ec *ExecutionContext) CallFunction(ctx context.Context, declaration string, args ...runtime.CallArgument) (runtime.RemoteObject, error) {
-	cfArgs := runtime.NewCallFunctionOnArgs(declaration).SetArguments(args)
+func (ec *ExecutionContext) ResolveRemoteObject(ctx context.Context, exp string) (runtime.RemoteObject, error) {
+	res, err := ec.evalInternal(ctx, runtime.NewEvaluateArgs(PrepareEval(exp)))
+
+	if err != nil {
+		return runtime.RemoteObject{}, err
+	}
+
+	if res.ObjectID == nil {
+		return runtime.RemoteObject{}, errors.Wrap(core.ErrUnexpected, "unable to resolve remote object")
+	}
+
+	return res, nil
+}
+
+func (ec *ExecutionContext) ResolveNode(ctx context.Context, nodeID dom.NodeID) (runtime.RemoteObject, error) {
+	args := dom.NewResolveNodeArgs().SetNodeID(nodeID)
+
+	if ec.contextID != EmptyExecutionContextID {
+		args.SetExecutionContextID(ec.contextID)
+	}
+
+	repl, err := ec.client.DOM.ResolveNode(ctx, args)
+
+	if err != nil {
+		return runtime.RemoteObject{}, err
+	}
+
+	if repl.Object.ObjectID == nil {
+		return runtime.RemoteObject{}, errors.Wrap(core.ErrUnexpected, "unable to resolve remote object")
+	}
+
+	return repl.Object, nil
+}
+
+func (ec *ExecutionContext) evalWithArgumentsInternal(ctx context.Context, exp string, args []runtime.CallArgument, ret bool) (runtime.RemoteObject, error) {
+	cfArgs := runtime.
+		NewCallFunctionOnArgs(exp).
+		SetArguments(args).
+		SetReturnByValue(ret)
 
 	if ec.contextID != EmptyExecutionContextID {
 		cfArgs.SetExecutionContextID(ec.contextID)
@@ -239,10 +295,10 @@ func (ec *ExecutionContext) CallFunction(ctx context.Context, declaration string
 		return runtime.RemoteObject{}, err
 	}
 
-	if repl.ExceptionDetails != nil {
-		exception := *repl.ExceptionDetails
+	err = ec.handleException(repl.ExceptionDetails)
 
-		return runtime.RemoteObject{}, errors.New(exception.Error())
+	if err != nil {
+		return runtime.RemoteObject{}, err
 	}
 
 	return repl.Result, nil
@@ -273,23 +329,28 @@ func (ec *ExecutionContext) evalInternal(ctx context.Context, args *runtime.Eval
 		return runtime.RemoteObject{}, err
 	}
 
-	if out.ExceptionDetails != nil {
-		ex := out.ExceptionDetails
-		desc := *ex.Exception.Description
+	err = ec.handleException(out.ExceptionDetails)
 
-		var err error
-
-		if strings.Contains(desc, drivers.ErrNotFound.Error()) {
-			err = drivers.ErrNotFound
-		} else {
-			err = core.Error(
-				core.ErrUnexpected,
-				fmt.Sprintf("%s: %s", ex.Text, desc),
-			)
-		}
-
+	if err != nil {
 		return runtime.RemoteObject{}, err
 	}
 
 	return out.Result, nil
+}
+
+func (ec *ExecutionContext) handleException(details *runtime.ExceptionDetails) error {
+	if details == nil {
+		return nil
+	}
+
+	desc := *details.Exception.Description
+
+	if strings.Contains(desc, drivers.ErrNotFound.Error()) {
+		return drivers.ErrNotFound
+	}
+
+	return core.Error(
+		core.ErrUnexpected,
+		fmt.Sprintf("%s: %s", details.Text, desc),
+	)
 }
