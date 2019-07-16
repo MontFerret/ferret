@@ -1121,7 +1121,7 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 		return
 	}
 
-	el.attributes.Write(ctx, func(v core.Value, err error) {
+	el.attributes.Mutate(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
 
@@ -1161,7 +1161,7 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 		return
 	}
 
-	el.attributes.Write(ctx, func(v core.Value, err error) {
+	el.attributes.Mutate(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
 
@@ -1250,7 +1250,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 		return
 	}
 
-	el.loadedChildren.Write(ctx, func(v core.Value, _ error) {
+	el.loadedChildren.Mutate(ctx, func(v core.Value, _ error) {
 		loadedArr := v.(*values.Array)
 		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, nextID)
 
@@ -1302,7 +1302,7 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface
 		return
 	}
 
-	el.loadedChildren.Write(ctx, func(v core.Value, err error) {
+	el.loadedChildren.Mutate(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logger.Error().
 				Timestamp().
