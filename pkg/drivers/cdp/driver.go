@@ -20,6 +20,11 @@ const DriverName = "cdp"
 const BlankPageURL = "about:blank"
 const DefaultTimeout = 5000 * time.Millisecond
 
+var defaultScreenSize = &drivers.ScreenSize{
+	Width:  1600,
+	Height: 900,
+}
+
 type Driver struct {
 	mu        sync.Mutex
 	dev       *devtool.DevTools
@@ -42,7 +47,7 @@ func (drv *Driver) Name() string {
 	return drv.options.Name
 }
 
-func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (drivers.HTMLPage, error) {
+func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
 
 	err := drv.init(ctx)

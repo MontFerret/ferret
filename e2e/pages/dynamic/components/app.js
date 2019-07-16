@@ -3,6 +3,7 @@ import IndexPage from './pages/index.js';
 import FormsPage from './pages/forms/index.js';
 import EventsPage from './pages/events/index.js';
 import IframePage from './pages/iframes/index.js';
+import MediaPage from './pages/media/index.js';
 
 const e = React.createElement;
 const Router = ReactRouter.Router;
@@ -50,6 +51,10 @@ export default React.memo(function AppComponent(params = {}) {
                 e(Route, {
                     path: '/iframe',
                     component: IframePage
+                }),
+                e(Route, {
+                    path: '/media',
+                    component: MediaPage
                 }),
             ]),
             redirectTo
