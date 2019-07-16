@@ -103,6 +103,10 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		params.UserAgent = drv.options.UserAgent
 	}
 
+	if params.Screen == nil {
+		params.Screen = defaultScreenSize
+	}
+
 	return LoadHTMLPage(ctx, conn, params)
 }
 
