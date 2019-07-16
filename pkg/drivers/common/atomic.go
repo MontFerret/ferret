@@ -6,8 +6,10 @@ import (
 )
 
 type (
+	// AtomicValueWriter represents an atomic value writer
 	AtomicValueWriter func(current core.Value) (core.Value, error)
 
+	// AtomicValue represents an atomic value
 	AtomicValue struct {
 		mu    sync.Mutex
 		value core.Value

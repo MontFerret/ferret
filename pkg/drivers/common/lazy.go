@@ -9,8 +9,10 @@ import (
 )
 
 type (
+	// LazyValueFactory represents a value initializer
 	LazyValueFactory func(ctx context.Context) (core.Value, error)
 
+	// LazyValue represents a value with late initialization
 	LazyValue struct {
 		mu      sync.Mutex
 		factory LazyValueFactory
@@ -66,7 +68,7 @@ func (lv *LazyValue) Mutate(ctx context.Context, mutator func(v core.Value, err 
 	mutator(lv.value, lv.err)
 }
 
-// Mutate safely mutates an underlying value only if it's ready.
+// MutateIfReady safely mutates an underlying value only if it's ready.
 func (lv *LazyValue) MutateIfReady(mutator func(v core.Value, err error)) {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()
@@ -76,8 +78,7 @@ func (lv *LazyValue) MutateIfReady(mutator func(v core.Value, err error)) {
 	}
 }
 
-// Reset resets the storage.
-// Next call of Read will trigger the factory function again.
+// Reload resets the storage and loads data.
 func (lv *LazyValue) Reload(ctx context.Context) {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()
