@@ -60,5 +60,5 @@ func (iterator *KeyedIterator) Next(_ context.Context, scope *core.Scope) (*core
 		return nextScope, nil
 	}
 
-	return nil, nil
+	return nil, core.ErrNoMoreData
 }

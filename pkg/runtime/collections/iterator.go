@@ -22,11 +22,11 @@ func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core
 		nextScope, err := iterator.Next(ctx, scope.Fork())
 
 		if err != nil {
-			return nil, err
-		}
+			if core.IsNoMoreData(err) {
+				return res, nil
+			}
 
-		if nextScope == nil {
-			return res, nil
+			return nil, err
 		}
 
 		res = append(res, nextScope)

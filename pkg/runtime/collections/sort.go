@@ -104,7 +104,7 @@ func (iterator *SortIterator) Next(ctx context.Context, scope *core.Scope) (*cor
 		return val, nil
 	}
 
-	return nil, nil
+	return nil, core.ErrNoMoreData
 }
 
 func (iterator *SortIterator) sort(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {

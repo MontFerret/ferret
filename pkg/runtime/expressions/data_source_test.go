@@ -59,7 +59,7 @@ func (i *testCollectionIterator) Next(ctx context.Context) (core.Value, core.Val
 	i.position++
 
 	if i.position > i.values.Length() {
-		return values.None, values.None, nil
+		return values.None, values.None, core.ErrNoMoreData
 	}
 
 	return i.values.Get(i.position), i.position, nil
@@ -104,14 +104,17 @@ func TestDataSource(t *testing.T) {
 			nextScope := scope
 
 			for {
-				pos++
 				nextScope, err = out.Next(ctx, nextScope.Fork())
 
-				So(err, ShouldBeNil)
+				if err != nil {
+					if core.IsNoMoreData(err) {
+						break
+					}
 
-				if nextScope == nil {
-					break
+					So(err, ShouldBeNil)
 				}
+
+				pos++
 
 				actualV, _ := nextScope.GetVariable(collections.DefaultValueVar)
 				actualK, _ := nextScope.GetVariable(collections.DefaultKeyVar)

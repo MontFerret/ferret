@@ -20,6 +20,7 @@ var (
 	ErrTimeout               = errors.New("operation timed out")
 	ErrNotImplemented        = errors.New("not implemented")
 	ErrNotSupported          = errors.New("not supported")
+	ErrNoMoreData            = errors.New("no more data")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"
@@ -64,4 +65,8 @@ func Errors(err ...error) error {
 	}
 
 	return errors.New(message)
+}
+
+func IsNoMoreData(err error) bool {
+	return err == ErrNoMoreData
 }

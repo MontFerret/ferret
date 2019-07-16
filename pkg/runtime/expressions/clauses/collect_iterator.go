@@ -97,7 +97,7 @@ func (iterator *CollectIterator) Next(ctx context.Context, scope *core.Scope) (*
 		return val, nil
 	}
 
-	return nil, nil
+	return nil, core.ErrNoMoreData
 }
 
 func (iterator *CollectIterator) init(ctx context.Context, scope *core.Scope) ([]*core.Scope, error) {
@@ -137,11 +137,11 @@ func (iterator *CollectIterator) group(ctx context.Context, scope *core.Scope) (
 		dataSourceScope, err := iterator.dataSource.Next(ctx, scope.Fork())
 
 		if err != nil {
-			return nil, err
-		}
+			if core.IsNoMoreData(err) {
+				break
+			}
 
-		if dataSourceScope == nil {
-			break
+			return nil, err
 		}
 
 		// this data dataSourceScope represents a data of a given iteration with values retrieved by selectors
@@ -328,14 +328,14 @@ func (iterator *CollectIterator) count(ctx context.Context, scope *core.Scope) (
 	for {
 		// keep all defined variables in forked scopes
 		// all those variables should not be available for further executions
-		os, err := iterator.dataSource.Next(ctx, scope.Fork())
+		_, err := iterator.dataSource.Next(ctx, scope.Fork())
 
 		if err != nil {
-			return nil, err
-		}
+			if core.IsNoMoreData(err) {
+				break
+			}
 
-		if os == nil {
-			break
+			return nil, err
 		}
 
 		counter++
@@ -368,11 +368,11 @@ func (iterator *CollectIterator) aggregate(ctx context.Context, scope *core.Scop
 		os, err := iterator.dataSource.Next(ctx, scope.Fork())
 
 		if err != nil {
-			return nil, err
-		}
+			if core.IsNoMoreData(err) {
+				break
+			}
 
-		if os == nil {
-			break
+			return nil, err
 		}
 
 		// iterate over each selector for a current data set

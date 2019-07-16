@@ -37,10 +37,12 @@ func TestArrayIterator(t *testing.T) {
 		for {
 			nextScope, err := iter.Next(ctx, scope.Fork())
 
-			So(err, ShouldBeNil)
+			if err != nil {
+				if core.IsNoMoreData(err) {
+					break
+				}
 
-			if nextScope == nil {
-				break
+				So(err, ShouldBeNil)
 			}
 
 			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
@@ -70,10 +72,12 @@ func TestArrayIterator(t *testing.T) {
 		for {
 			nextScope, err := iter.Next(ctx, scope.Fork())
 
-			So(err, ShouldBeNil)
+			if err != nil {
+				if core.IsNoMoreData(err) {
+					break
+				}
 
-			if nextScope == nil {
-				break
+				So(err, ShouldBeNil)
 			}
 
 			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
@@ -107,10 +111,12 @@ func TestArrayIterator(t *testing.T) {
 		for {
 			nextScope, err := iter.Next(ctx, scope.Fork())
 
-			So(err, ShouldBeNil)
+			if err != nil {
+				if core.IsNoMoreData(err) {
+					break
+				}
 
-			if nextScope == nil {
-				break
+				So(err, ShouldBeNil)
 			}
 
 			res = append(res, nextScope.MustGetVariable(collections.DefaultValueVar))
@@ -119,7 +125,7 @@ func TestArrayIterator(t *testing.T) {
 		item, err := iter.Next(ctx, scope)
 
 		So(item, ShouldBeNil)
-		So(err, ShouldBeNil)
+		So(err, ShouldEqual, core.ErrNoMoreData)
 		So(res, ShouldHaveLength, int(arr.Length()))
 	})
 
@@ -133,7 +139,7 @@ func TestArrayIterator(t *testing.T) {
 
 		nextScope, err := iter.Next(ctx, scope)
 
-		So(err, ShouldBeNil)
+		So(err, ShouldEqual, core.ErrNoMoreData)
 		So(nextScope, ShouldBeNil)
 	})
 }
