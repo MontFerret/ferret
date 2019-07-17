@@ -46,7 +46,7 @@ func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
 func LoadHTMLPage(
 	ctx context.Context,
 	conn *rpcc.Conn,
-	params drivers.OpenPageParams,
+	params drivers.Params,
 ) (*HTMLPage, error) {
 	logger := logging.FromContext(ctx)
 
@@ -56,11 +56,11 @@ func LoadHTMLPage(
 
 	client := cdp.NewClient(conn)
 
-	err := runBatch(
-		func() error {
-			return client.Page.Enable(ctx)
-		},
+	if err := client.Page.Enable(ctx); err != nil {
+		return nil, err
+	}
 
+	err := runBatch(
 		func() error {
 			return client.Page.SetLifecycleEventsEnabled(
 				ctx,
@@ -99,13 +99,45 @@ func LoadHTMLPage(
 		func() error {
 			return client.Network.Enable(ctx, network.NewEnableArgs())
 		},
+
+		func() error {
+			return client.Page.SetBypassCSP(ctx, page.NewSetBypassCSPArgs(true))
+		},
+
+		func() error {
+			if params.Viewport == nil {
+				return nil
+			}
+
+			orientation := emulation.ScreenOrientation{}
+
+			if !params.Viewport.Landscape {
+				orientation.Type = "portraitPrimary"
+				orientation.Angle = 0
+			} else {
+				orientation.Type = "landscapePrimary"
+				orientation.Angle = 90
+			}
+
+			scaleFactor := params.Viewport.ScaleFactor
+
+			if scaleFactor <= 0 {
+				scaleFactor = 1
+			}
+
+			deviceArgs := emulation.NewSetDeviceMetricsOverrideArgs(
+				params.Viewport.Width,
+				params.Viewport.Height,
+				scaleFactor,
+				params.Viewport.Mobile,
+			).SetScreenOrientation(orientation)
+
+			return client.Emulation.SetDeviceMetricsOverride(
+				ctx,
+				deviceArgs,
+			)
+		},
 	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = client.Page.SetBypassCSP(ctx, page.NewSetBypassCSPArgs(true))
 
 	if err != nil {
 		return nil, err

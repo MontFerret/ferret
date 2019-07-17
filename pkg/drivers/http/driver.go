@@ -62,7 +62,7 @@ func (drv *Driver) Name() string {
 	return DriverName
 }
 
-func (drv *Driver) Open(ctx context.Context, params drivers.OpenPageParams) (drivers.HTMLPage, error) {
+func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	req, err := http.NewRequest(http.MethodGet, params.URL, nil)
 
 	if err != nil {

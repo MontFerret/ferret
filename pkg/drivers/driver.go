@@ -18,18 +18,10 @@ type (
 		drivers map[string]Driver
 	}
 
-	OpenPageParams struct {
-		URL         string
-		UserAgent   string
-		KeepCookies bool
-		Cookies     []HTTPCookie
-		Header      HTTPHeader
-	}
-
 	Driver interface {
 		io.Closer
 		Name() string
-		Open(ctx context.Context, params OpenPageParams) (HTMLPage, error)
+		Open(ctx context.Context, params Params) (HTMLPage, error)
 	}
 )
 

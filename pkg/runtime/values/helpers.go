@@ -231,10 +231,10 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	return Parse(o), nil
 }
 
-func ToBoolean(input core.Value) core.Value {
+func ToBoolean(input core.Value) Boolean {
 	switch input.Type() {
 	case types.Boolean:
-		return input
+		return input.(Boolean)
 	case types.String:
 		return NewBoolean(input.(String) != "")
 	case types.Int:

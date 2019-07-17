@@ -13,20 +13,23 @@ import (
 )
 
 type PageLoadParams struct {
-	drivers.OpenPageParams
+	drivers.Params
 	Driver  string
 	Timeout time.Duration
 }
 
 // Open opens an HTML page by a given url.
-// By default, loads a document by http call - resulted document does not support any interactions.
-// If passed "true" as a second argument, headless browser is used for loading the document which support interactions.
-// @param url (String) - Target url string. If passed "about:blank" for dynamic document - it will open an empty page.
-// @param isDynamicOrParams (Boolean|PageLoadParams) - Either a boolean value that indicates whether to use dynamic page
-// or an object with the following properties :
-// 		dynamic (Boolean) - Optional, indicates whether to use dynamic page.
-// 		timeout (Int) - Optional, Open load timeout.
-// @returns (HTMLDocument) - Returns loaded HTML document.
+// By default, loads a page by http call - resulted page does not support any interactions.
+// @param params (Object) - Optional, An object containing the following properties :
+// 		driver (String) - Optional, driver name.
+//      timeout (Int) - Optional, timeout.
+//      userAgent (String) - Optional, user agent.
+//      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
+//      	i.e. not to open a page in the Incognito mode.
+//      cookies (HTTPCookie) - Optional, set of HTTP cookies.
+//      header (HTTPHeader) - Optional, HTTP headers.
+//      viewport (Viewport) - Optional, viewport params.
+// @returns (HTMLPage) - Returns loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -65,12 +68,12 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return drv.Open(ctx, params.OpenPageParams)
+	return drv.Open(ctx, params.Params)
 }
 
 func newDefaultDocLoadParams(url values.String) PageLoadParams {
 	return PageLoadParams{
-		OpenPageParams: drivers.OpenPageParams{
+		Params: drivers.Params{
 			URL: url.String(),
 		},
 		Timeout: time.Second * 30,
@@ -155,9 +158,19 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.Header = header
 		}
 
+		viewport, exists := obj.Get(values.NewString("viewport"))
+
+		if exists {
+			viewport, err := parseViewport(viewport)
+
+			if err != nil {
+				return res, err
+			}
+
+			res.Viewport = viewport
+		}
 	case types.String:
 		res.Driver = arg.(values.String).String()
-
 	case types.Boolean:
 		b := arg.(values.Boolean)
 
@@ -165,7 +178,6 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 		if b {
 			res.Driver = cdp.DriverName
 		}
-
 	}
 
 	return res, nil
@@ -290,4 +302,54 @@ func parseHeader(header *values.Object) drivers.HTTPHeader {
 	})
 
 	return res
+}
+
+func parseViewport(value core.Value) (*drivers.Viewport, error) {
+	if err := core.ValidateType(value, types.Object); err != nil {
+		return nil, err
+	}
+
+	res := &drivers.Viewport{}
+
+	viewport := value.(*values.Object)
+
+	width, exists := viewport.Get(values.NewString("width"))
+
+	if exists {
+		if err := core.ValidateType(width, types.Int); err != nil {
+			return nil, err
+		}
+
+		res.Width = int(values.ToInt(width))
+	}
+
+	height, exists := viewport.Get(values.NewString("height"))
+
+	if exists {
+		if err := core.ValidateType(height, types.Int); err != nil {
+			return nil, err
+		}
+
+		res.Height = int(values.ToInt(height))
+	}
+
+	mobile, exists := viewport.Get(values.NewString("mobile"))
+
+	if exists {
+		res.Mobile = bool(values.ToBoolean(mobile))
+	}
+
+	landscape, exists := viewport.Get(values.NewString("landscape"))
+
+	if exists {
+		res.Landscape = bool(values.ToBoolean(landscape))
+	}
+
+	scaleFactor, exists := viewport.Get(values.NewString("scaleFactor"))
+
+	if exists {
+		res.ScaleFactor = float64(values.ToFloat(scaleFactor))
+	}
+
+	return res, nil
 }

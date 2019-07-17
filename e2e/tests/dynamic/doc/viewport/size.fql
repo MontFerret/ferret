@@ -1,0 +1,16 @@
+LET url = @dynamic + "?redirect=/media"
+LET expectedW = 1920
+LET expectedH = 1080
+
+LET doc = DOCUMENT(url, {
+    driver: 'cdp',
+    viewport: {
+        width: expectedW,
+        height: expectedH
+    }
+})
+
+LET actualW = TO_INT(INNER_TEXT(doc, '#screen-width'))
+LET actualH = TO_INT(INNER_TEXT(doc, '#screen-height'))
+
+RETURN EXPECT(expectedW, actualW) + EXPECT(expectedH, actualH)
