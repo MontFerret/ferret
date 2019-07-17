@@ -105,37 +105,37 @@ func LoadHTMLPage(
 		},
 
 		func() error {
-			if params.Screen != nil {
-				orientation := emulation.ScreenOrientation{}
-
-				if !params.Screen.Landscape {
-					orientation.Type = "portraitPrimary"
-					orientation.Angle = 0
-				} else {
-					orientation.Type = "landscapePrimary"
-					orientation.Angle = 90
-				}
-
-				scaleFactor := params.Screen.ScaleFactor
-
-				if scaleFactor <= 0 {
-					scaleFactor = 1
-				}
-
-				deviceArgs := emulation.NewSetDeviceMetricsOverrideArgs(
-					params.Screen.Width,
-					params.Screen.Height,
-					scaleFactor,
-					params.Screen.Mobile,
-				).SetScreenOrientation(orientation)
-
-				return client.Emulation.SetDeviceMetricsOverride(
-					ctx,
-					deviceArgs,
-				)
+			if params.Viewport == nil {
+				return nil
 			}
 
-			return nil
+			orientation := emulation.ScreenOrientation{}
+
+			if !params.Viewport.Landscape {
+				orientation.Type = "portraitPrimary"
+				orientation.Angle = 0
+			} else {
+				orientation.Type = "landscapePrimary"
+				orientation.Angle = 90
+			}
+
+			scaleFactor := params.Viewport.ScaleFactor
+
+			if scaleFactor <= 0 {
+				scaleFactor = 1
+			}
+
+			deviceArgs := emulation.NewSetDeviceMetricsOverrideArgs(
+				params.Viewport.Width,
+				params.Viewport.Height,
+				scaleFactor,
+				params.Viewport.Mobile,
+			).SetScreenOrientation(orientation)
+
+			return client.Emulation.SetDeviceMetricsOverride(
+				ctx,
+				deviceArgs,
+			)
 		},
 	)
 

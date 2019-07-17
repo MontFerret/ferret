@@ -1,7 +1,7 @@
 package drivers
 
 type (
-	ScreenSize struct {
+	Viewport struct {
 		Height      int
 		Width       int
 		ScaleFactor float64
@@ -15,6 +15,6 @@ type (
 		KeepCookies bool
 		Cookies     []HTTPCookie
 		Header      HTTPHeader
-		Screen      *ScreenSize
+		Viewport    *Viewport
 	}
 )

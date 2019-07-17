@@ -28,7 +28,7 @@ type PageLoadParams struct {
 //      	i.e. not to open a page in the Incognito mode.
 //      cookies (HTTPCookie) - Optional, set of HTTP cookies.
 //      header (HTTPHeader) - Optional, HTTP headers.
-//      screen (ScreenSize) - Optional, viewport size.
+//      viewport (Viewport) - Optional, viewport params.
 // @returns (HTMLPage) - Returns loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -158,16 +158,16 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.Header = header
 		}
 
-		screen, exists := obj.Get(values.NewString("screen"))
+		viewport, exists := obj.Get(values.NewString("viewport"))
 
 		if exists {
-			screen, err := parseScreenSize(screen)
+			viewport, err := parseViewport(viewport)
 
 			if err != nil {
 				return res, err
 			}
 
-			res.Screen = screen
+			res.Viewport = viewport
 		}
 	case types.String:
 		res.Driver = arg.(values.String).String()
@@ -304,16 +304,16 @@ func parseHeader(header *values.Object) drivers.HTTPHeader {
 	return res
 }
 
-func parseScreenSize(value core.Value) (*drivers.ScreenSize, error) {
+func parseViewport(value core.Value) (*drivers.Viewport, error) {
 	if err := core.ValidateType(value, types.Object); err != nil {
 		return nil, err
 	}
 
-	res := &drivers.ScreenSize{}
+	res := &drivers.Viewport{}
 
-	screen := value.(*values.Object)
+	viewport := value.(*values.Object)
 
-	width, exists := screen.Get(values.NewString("width"))
+	width, exists := viewport.Get(values.NewString("width"))
 
 	if exists {
 		if err := core.ValidateType(width, types.Int); err != nil {
@@ -323,7 +323,7 @@ func parseScreenSize(value core.Value) (*drivers.ScreenSize, error) {
 		res.Width = int(values.ToInt(width))
 	}
 
-	height, exists := screen.Get(values.NewString("height"))
+	height, exists := viewport.Get(values.NewString("height"))
 
 	if exists {
 		if err := core.ValidateType(height, types.Int); err != nil {
@@ -333,19 +333,19 @@ func parseScreenSize(value core.Value) (*drivers.ScreenSize, error) {
 		res.Height = int(values.ToInt(height))
 	}
 
-	mobile, exists := screen.Get(values.NewString("mobile"))
+	mobile, exists := viewport.Get(values.NewString("mobile"))
 
 	if exists {
 		res.Mobile = bool(values.ToBoolean(mobile))
 	}
 
-	landscape, exists := screen.Get(values.NewString("landscape"))
+	landscape, exists := viewport.Get(values.NewString("landscape"))
 
 	if exists {
 		res.Landscape = bool(values.ToBoolean(landscape))
 	}
 
-	scaleFactor, exists := screen.Get(values.NewString("scaleFactor"))
+	scaleFactor, exists := viewport.Get(values.NewString("scaleFactor"))
 
 	if exists {
 		res.ScaleFactor = float64(values.ToFloat(scaleFactor))

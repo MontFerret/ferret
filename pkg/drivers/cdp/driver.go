@@ -20,7 +20,7 @@ const DriverName = "cdp"
 const BlankPageURL = "about:blank"
 const DefaultTimeout = 5000 * time.Millisecond
 
-var defaultScreenSize = &drivers.ScreenSize{
+var defaultViewport = &drivers.Viewport{
 	Width:  1600,
 	Height: 900,
 }
@@ -103,8 +103,8 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		params.UserAgent = drv.options.UserAgent
 	}
 
-	if params.Screen == nil {
-		params.Screen = defaultScreenSize
+	if params.Viewport == nil {
+		params.Viewport = defaultViewport
 	}
 
 	return LoadHTMLPage(ctx, conn, params)
