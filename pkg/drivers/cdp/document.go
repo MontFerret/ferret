@@ -326,16 +326,8 @@ func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.St
 }
 
 func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error) {
-	found, err := doc.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(doc.element.id.nodeID, selector.String()))
-
-	if err != nil {
+	if err := doc.input.ClickBySelectorAll(ctx, doc.element.id.nodeID, selector); err != nil {
 		return values.False, err
-	}
-
-	for _, nodeID := range found.NodeIDs {
-		if err := doc.input.ClickByNodeID(ctx, nodeID); err != nil {
-			return values.False, err
-		}
 	}
 
 	return values.True, nil
@@ -358,7 +350,7 @@ func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector value
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.MoveMouse(ctx, x, y)
+	return doc.input.MoveMouseByXY(ctx, x, y)
 }
 
 func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
@@ -521,7 +513,7 @@ func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.S
 }
 
 func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.Scroll(ctx, x, y)
+	return doc.input.ScrollByXY(ctx, x, y)
 }
 
 func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {
