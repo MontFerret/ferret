@@ -1,0 +1,10 @@
+LET url = @dynamic + "?redirect=/iframe"
+LET page = DOCUMENT(url, { driver: 'cdp' })
+
+LET frames = (
+    FOR frame IN page.frames
+        FILTER frame.name == "nested"
+        RETURN frame
+)
+
+RETURN EXPECT(1, LENGTH(frames))

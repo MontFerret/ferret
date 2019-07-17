@@ -94,6 +94,8 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		switch segment {
 		case "url", "URL":
 			return doc.GetURL(), nil
+		case "name":
+			return doc.GetName(), nil
 		case "title":
 			return doc.GetTitle(), nil
 		case "parent":
