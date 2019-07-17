@@ -4,7 +4,7 @@ LET expectedH = 1080
 
 LET doc = DOCUMENT(url, {
     driver: 'cdp',
-    screen: {
+    viewport: {
         width: expectedW,
         height: expectedH
     }
