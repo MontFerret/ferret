@@ -1,5 +1,31 @@
 ## Changelog
 
+### 0.8.0
+#### Added
+- Delay randomization for inputs. [#283](https://github.com/MontFerret/ferret/pull/283)
+- Namespace support. [#269](https://github.com/MontFerret/ferret/pull/296)
+- iframe support. [#315](https://github.com/MontFerret/ferret/pull/315)
+- Better emulation of user interaction. [#316](https://github.com/MontFerret/ferret/pull/316), [#331](https://github.com/MontFerret/ferret/pull/331)
+- ``ESCAPE_HTML``, ``UNESCAPE_HTML`` and ``DECODE_URI_COMPONENT`` functions. [#318](https://github.com/MontFerret/ferret/pull/318)
+- XPath support. [#322](https://github.com/MontFerret/ferret/pull/322)
+- Regular expression operator. [#326](https://github.com/MontFerret/ferret/pull/326)
+- ``INNER_HTML_SET`` and ``INNER_TEXT_SET`` functions. [#329](https://github.com/MontFerret/ferret/pull/329)
+
+#### Changed
+- ``RAND`` accepts optional upper and lower limits. [#271](https://github.com/MontFerret/ferret/pull/271)
+- Updated CDP definitions. [#328](https://github.com/MontFerret/ferret/pull/328) 
+- Logic of iterator termination. [#330](https://github.com/MontFerret/ferret/pull/330)
+
+#### Fixed
+- Order of arguments in ``SCROLL`` function. [#269](https://github.com/MontFerret/ferret/pull/269)
+- The command line parameter "--param" does not support colon. [#282](https://github.com/MontFerret/ferret/pull/282)
+- Race condition during ``WAIT_NAVIGATION`` call. [#281](https://github.com/MontFerret/ferret/pull/281)
+- Arithmetic operators. [#298](https://github.com/MontFerret/ferret/pull/298)
+- Missed UA setting for HTTP driver. [#318](https://github.com/MontFerret/ferret/pull/318)
+- Improper math operator used in calculating page load timeout. [#319](https://github.com/MontFerret/ferret/pull/319)
+- Wrong function names in README. [#321](https://github.com/MontFerret/ferret/pull/321)
+- JSON serialization for HTTPHeader type. [#323](https://github.com/MontFerret/ferret/pull/323)
+
 ### 0.7.0
 #### Added
 - Autocomplete to CLI [#219](https://github.com/MontFerret/ferret/pull/219).
