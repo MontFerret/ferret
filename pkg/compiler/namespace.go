@@ -25,7 +25,7 @@ func newRootNamespace() *NamespaceBuilder {
 }
 
 func newNamespace(funcs core.Functions, name string) *NamespaceBuilder {
-	return &NamespaceBuilder{funcs, name}
+	return &NamespaceBuilder{funcs, strings.ToUpper(name)}
 }
 
 func (rs *NamespaceBuilder) Namespace(name string) core.Namespace {

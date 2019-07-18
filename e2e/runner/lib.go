@@ -10,12 +10,16 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func Assertions() map[string]core.Function {
-	return map[string]core.Function{
-		"EXPECT":       expect,
-		"T::EXPECT":    expect,
-		"T::HTTP::GET": httpGet,
-	}
+func HTTPHelpers(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
+		"GET": httpGet,
+	})
+}
+
+func Assertions(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
+		"EXPECT": expect,
+	})
 }
 
 func expect(_ context.Context, args ...core.Value) (core.Value, error) {
