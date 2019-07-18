@@ -78,5 +78,19 @@ func TestNamespaceBuilder(t *testing.T) {
 
 			So(funcs2, ShouldHaveLength, 1)
 		})
+
+		Convey("Namespace should return an error if namespace name is incorrect", func() {
+			c := compiler.New()
+			noop := func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+				return values.None, nil
+			}
+			err := c.Namespace("T::").RegisterFunction("SPY", noop)
+
+			So(err, ShouldNotBeNil)
+
+			err = c.Namespace("@F").RegisterFunction("SPY", noop)
+
+			So(err, ShouldNotBeNil)
+		})
 	})
 }

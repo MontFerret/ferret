@@ -3,8 +3,11 @@ package compiler
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
+	"regexp"
 	"strings"
 )
+
+var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
 
 const emptyNS = ""
 const separator = "::"
@@ -40,6 +43,10 @@ func (rs *NamespaceBuilder) RegisterFunction(name string, fun core.Function) err
 	// validation the name
 	if strings.Contains(name, separator) {
 		return errors.Errorf("invalid function name: %s", name)
+	}
+
+	if !fnNameValidation.MatchString(nsName) {
+		return errors.Errorf("invalid function or namespace name: %s", nsName)
 	}
 
 	rs.funcs[strings.ToUpper(nsName)] = fun
