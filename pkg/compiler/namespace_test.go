@@ -62,6 +62,8 @@ func TestNamespaceBuilder(t *testing.T) {
 				return values.None, nil
 			})
 
+			So(err, ShouldBeNil)
+
 			err = c.Namespace("T").Namespace("UTILS").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			})

@@ -41,9 +41,5 @@ func NewLib(ns core.Namespace) error {
 		return err
 	}
 
-	if err := utils.NewLib(ns); err != nil {
-		return err
-	}
-
-	return nil
+	return utils.NewLib(ns)
 }
