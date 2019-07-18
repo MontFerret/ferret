@@ -2,8 +2,8 @@ package strings
 
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
-func NewLib() map[string]core.Function {
-	return map[string]core.Function{
+func NewLib(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
 		"CONCAT":               Concat,
 		"CONCAT_SEPARATOR":     ConcatWithSeparator,
 		"CONTAINS":             Contains,
@@ -37,5 +37,5 @@ func NewLib() map[string]core.Function {
 		"UPPER":                Upper,
 		"FMT":                  Fmt,
 		"UNESCAPE_HTML":        UnescapeHTML,
-	}
+	})
 }

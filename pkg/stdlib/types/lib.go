@@ -5,8 +5,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func NewLib() map[string]core.Function {
-	return map[string]core.Function{
+func NewLib(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
 		"TO_BOOL":          ToBool,
 		"TO_INT":           ToInt,
 		"TO_FLOAT":         ToFloat,
@@ -26,7 +26,7 @@ func NewLib() map[string]core.Function {
 		"IS_BINARY":        IsBinary,
 		"IS_NAN":           IsNaN,
 		"TYPENAME":         TypeName,
-	}
+	})
 }
 
 func isTypeof(value core.Value, ctype core.Type) core.Value {

@@ -12,8 +12,8 @@ import (
 
 const defaultTimeout = 5000
 
-func NewLib() map[string]core.Function {
-	return map[string]core.Function{
+func NewLib(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
 		"ATTR_GET":          AttributeGet,
 		"ATTR_REMOVE":       AttributeRemove,
 		"ATTR_SET":          AttributeSet,
@@ -67,7 +67,7 @@ func NewLib() map[string]core.Function {
 		"WAIT_NO_STYLE_ALL": WaitNoStyleAll,
 		"WAIT_NAVIGATION":   WaitNavigation,
 		"XPATH":             XPath,
-	}
+	})
 }
 
 func OpenOrCastPage(ctx context.Context, value core.Value) (drivers.HTMLPage, bool, error) {

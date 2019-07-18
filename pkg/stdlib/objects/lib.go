@@ -2,8 +2,8 @@ package objects
 
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
-func NewLib() map[string]core.Function {
-	return map[string]core.Function{
+func NewLib(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
 		"HAS":             Has,
 		"KEYS":            Keys,
 		"KEEP_KEYS":       KeepKeys,
@@ -11,5 +11,5 @@ func NewLib() map[string]core.Function {
 		"ZIP":             Zip,
 		"VALUES":          Values,
 		"MERGE_RECURSIVE": MergeRecursive,
-	}
+	})
 }

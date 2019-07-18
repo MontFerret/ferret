@@ -1,7 +1,6 @@
 package stdlib
 
 import (
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
@@ -13,27 +12,38 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 )
 
-func NewLib() map[string]core.Function {
-	lib := make(map[string]core.Function)
-
-	add := func(l map[string]core.Function) {
-		for name, fn := range l {
-			if _, exists := lib[name]; exists {
-				panic(fmt.Sprintf("%s function already exists", name))
-			}
-
-			lib[name] = fn
-		}
+func NewLib(ns core.Namespace) error {
+	if err := types.NewLib(ns); err != nil {
+		return err
 	}
 
-	add(types.NewLib())
-	add(strings.NewLib())
-	add(math.NewLib())
-	add(collections.NewLib())
-	add(arrays.NewLib())
-	add(objects.NewLib())
-	add(html.NewLib())
-	add(utils.NewLib())
+	if err := strings.NewLib(ns); err != nil {
+		return err
+	}
 
-	return lib
+	if err := math.NewLib(ns); err != nil {
+		return err
+	}
+
+	if err := collections.NewLib(ns); err != nil {
+		return err
+	}
+
+	if err := arrays.NewLib(ns); err != nil {
+		return err
+	}
+
+	if err := objects.NewLib(ns); err != nil {
+		return err
+	}
+
+	if err := html.NewLib(ns); err != nil {
+		return err
+	}
+
+	if err := utils.NewLib(ns); err != nil {
+		return err
+	}
+
+	return nil
 }

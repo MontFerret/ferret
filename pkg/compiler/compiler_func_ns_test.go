@@ -14,7 +14,7 @@ func TestFunctionNSCall(t *testing.T) {
 		c := compiler.New()
 
 		var counter int
-		err := c.RegisterFunction("T::SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
+		err := c.Namespace("T").RegisterFunction("SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
 			counter++
 
 			return values.None, nil
@@ -39,7 +39,7 @@ func TestFunctionNSCall(t *testing.T) {
 		c := compiler.New()
 
 		var counter int
-		err := c.RegisterFunction("T::UTILS::SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
+		err := c.Namespace("T").Namespace("UTILS").RegisterFunction("SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
 			counter++
 
 			return values.None, nil
@@ -64,7 +64,7 @@ func TestFunctionNSCall(t *testing.T) {
 		c := compiler.New()
 
 		var counter int
-		err := c.RegisterFunction("T::UTILS::SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
+		err := c.Namespace("T").Namespace("UTILS").RegisterFunction("SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
 			counter++
 
 			return values.None, nil
@@ -75,19 +75,6 @@ func TestFunctionNSCall(t *testing.T) {
 		_, err = c.Compile(`
 			RETURN T:UTILS::SPY()
 		`)
-
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("Should NOT register RETURN T:UTILS::SPY", t, func() {
-		c := compiler.New()
-
-		var counter int
-		err := c.RegisterFunction("T::UTILS:SPY", func(_ context.Context, _ ...core.Value) (core.Value, error) {
-			counter++
-
-			return values.None, nil
-		})
 
 		So(err, ShouldNotBeNil)
 	})

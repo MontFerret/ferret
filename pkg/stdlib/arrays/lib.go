@@ -5,8 +5,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func NewLib() map[string]core.Function {
-	return map[string]core.Function{
+func NewLib(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
 		"APPEND":         Append,
 		"FIRST":          First,
 		"FLATTEN":        Flatten,
@@ -29,7 +29,7 @@ func NewLib() map[string]core.Function {
 		"UNION_DISTINCT": UnionDistinct,
 		"UNIQUE":         Unique,
 		"UNSHIFT":        Unshift,
-	}
+	})
 }
 
 func ToUniqueArray(arr *values.Array) *values.Array {

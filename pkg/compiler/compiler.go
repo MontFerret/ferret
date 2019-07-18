@@ -1,9 +1,6 @@
 package compiler
 
 import (
-	"regexp"
-	"strings"
-
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -11,14 +8,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
-
 type FqlCompiler struct {
-	funcs map[string]core.Function
+	*NamespaceBuilder
 }
 
 func New(setters ...Option) *FqlCompiler {
 	c := &FqlCompiler{}
+	c.NamespaceBuilder = newRootNamespace()
+	c.funcs = make(map[string]core.Function)
+
 	opts := &Options{}
 
 	for _, setter := range setters {
@@ -26,65 +24,12 @@ func New(setters ...Option) *FqlCompiler {
 	}
 
 	if !opts.noStdlib {
-		c.funcs = stdlib.NewLib()
-	} else {
-		c.funcs = make(map[string]core.Function)
+		if err := stdlib.NewLib(c.NamespaceBuilder); err != nil {
+			panic(err)
+		}
 	}
 
 	return c
-}
-
-func (c *FqlCompiler) RegisterFunction(name string, fun core.Function) error {
-	_, exists := c.funcs[name]
-
-	if exists {
-		return errors.Errorf("function already exists: %s", name)
-	}
-
-	// validation the name
-	if !fnNameValidation.MatchString(name) {
-		return errors.Errorf("invalid function name: %s", name)
-	}
-
-	c.funcs[strings.ToUpper(name)] = fun
-
-	return nil
-}
-
-func (c *FqlCompiler) RemoveFunction(name string) {
-	delete(c.funcs, strings.ToUpper(name))
-}
-
-func (c *FqlCompiler) RegisterFunctions(funcs map[string]core.Function) error {
-	for name, fun := range funcs {
-		if err := c.RegisterFunction(name, fun); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *FqlCompiler) RegisteredFunctions() []string {
-	res := make([]string, 0, len(c.funcs))
-
-	for k := range c.funcs {
-		res = append(res, k)
-	}
-
-	return res
-}
-
-func (c *FqlCompiler) RegisteredFunctionsNS(namespace string) []string {
-	res := make([]string, 0, len(c.funcs))
-
-	for k := range c.funcs {
-		if strings.HasPrefix(k, namespace) {
-			res = append(res, k)
-		}
-	}
-
-	return res
 }
 
 func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error) {
