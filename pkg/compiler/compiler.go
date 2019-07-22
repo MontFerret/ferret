@@ -24,7 +24,7 @@ func New(setters ...Option) *FqlCompiler {
 	}
 
 	if !opts.noStdlib {
-		if err := stdlib.NewLib(c.NamespaceContainer); err != nil {
+		if err := stdlib.RegisterLib(c.NamespaceContainer); err != nil {
 			panic(err)
 		}
 	}

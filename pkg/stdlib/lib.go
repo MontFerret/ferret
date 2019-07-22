@@ -12,34 +12,34 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 )
 
-func NewLib(ns core.Namespace) error {
-	if err := types.NewLib(ns); err != nil {
+func RegisterLib(ns core.Namespace) error {
+	if err := types.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	if err := strings.NewLib(ns); err != nil {
+	if err := strings.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	if err := math.NewLib(ns); err != nil {
+	if err := math.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	if err := collections.NewLib(ns); err != nil {
+	if err := collections.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	if err := arrays.NewLib(ns); err != nil {
+	if err := arrays.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	if err := objects.NewLib(ns); err != nil {
+	if err := objects.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	if err := html.NewLib(ns); err != nil {
+	if err := html.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	return utils.NewLib(ns)
+	return utils.RegisterLib(ns)
 }

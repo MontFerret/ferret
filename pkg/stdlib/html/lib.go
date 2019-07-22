@@ -12,7 +12,7 @@ import (
 
 const defaultTimeout = 5000
 
-func NewLib(ns core.Namespace) error {
+func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(core.Functions{
 		"ATTR_GET":          AttributeGet,
 		"ATTR_REMOVE":       AttributeRemove,

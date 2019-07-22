@@ -5,7 +5,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func NewLib(ns core.Namespace) error {
+func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(core.Functions{
 		"APPEND":         Append,
 		"FIRST":          First,

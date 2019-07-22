@@ -15,7 +15,7 @@ const (
 	GradToDeg = math.Pi / 200
 )
 
-func NewLib(ns core.Namespace) error {
+func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(core.Functions{
 		"ABS":                 Abs,
 		"ACOS":                Acos,
