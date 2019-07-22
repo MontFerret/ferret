@@ -9,12 +9,12 @@ import (
 )
 
 type FqlCompiler struct {
-	*NamespaceBuilder
+	*NamespaceContainer
 }
 
 func New(setters ...Option) *FqlCompiler {
 	c := &FqlCompiler{}
-	c.NamespaceBuilder = newRootNamespace()
+	c.NamespaceContainer = newRootNamespace()
 	c.funcs = make(map[string]core.Function)
 
 	opts := &Options{}
@@ -24,7 +24,7 @@ func New(setters ...Option) *FqlCompiler {
 	}
 
 	if !opts.noStdlib {
-		if err := stdlib.NewLib(c.NamespaceBuilder); err != nil {
+		if err := stdlib.NewLib(c.NamespaceContainer); err != nil {
 			panic(err)
 		}
 	}
