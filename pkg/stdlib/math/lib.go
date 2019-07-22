@@ -15,8 +15,8 @@ const (
 	GradToDeg = math.Pi / 200
 )
 
-func NewLib() map[string]core.Function {
-	return map[string]core.Function{
+func RegisterLib(ns core.Namespace) error {
+	return ns.RegisterFunctions(core.Functions{
 		"ABS":                 Abs,
 		"ACOS":                Acos,
 		"ASIN":                Asin,
@@ -50,7 +50,7 @@ func NewLib() map[string]core.Function {
 		"TAN":                 Tan,
 		"VARIANCE_POPULATION": PopulationVariance,
 		"VARIANCE_SAMPLE":     SampleVariance,
-	}
+	})
 }
 
 func toFloat(arg core.Value) float64 {

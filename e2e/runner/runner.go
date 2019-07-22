@@ -101,7 +101,18 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 
 	c := compiler.New()
 
-	if err := c.RegisterFunctions(Assertions()); err != nil {
+	// backward compatible
+	if err := Assertions(c); err != nil {
+		return nil, err
+	}
+
+	ns := c.Namespace("T")
+
+	if err := Assertions(ns); err != nil {
+		return nil, err
+	}
+
+	if err := HTTPHelpers(ns.Namespace("HTTP")); err != nil {
 		return nil, err
 	}
 

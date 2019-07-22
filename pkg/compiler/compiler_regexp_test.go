@@ -34,7 +34,7 @@ func TestRegexpOperator(t *testing.T) {
 
 	Convey("Should be possible to use negative regular expression operator", t, func() {
 		c := compiler.New()
-		c.RegisterFunction("T::REGEXP", func(_ context.Context, _ ...core.Value) (value core.Value, e error) {
+		c.Namespace("T").RegisterFunction("REGEXP", func(_ context.Context, _ ...core.Value) (value core.Value, e error) {
 			return values.NewString("[a-z]+bar$"), nil
 		})
 
