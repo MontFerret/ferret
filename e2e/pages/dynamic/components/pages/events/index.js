@@ -1,6 +1,7 @@
 import Hoverable from "./hoverable.js";
 import Clickable from "./clickable.js";
 import Appearable from "./appearable.js";
+import Focusable from "./focusable.js";
 
 const e = React.createElement;
 
@@ -71,6 +72,15 @@ export default class EventsPage extends React.Component {
                         appear: false,
                         title: "Disappearable",
                         useStyle: true,
+                    })
+                ]),
+            ]),
+            e("div", { className: "row" }, [
+                e("div", { className: "col-lg-4"}, [
+                    e(Focusable, {
+                        id: "focus",
+                        appear: false,
+                        title: "Focusable"
                     })
                 ]),
             ])

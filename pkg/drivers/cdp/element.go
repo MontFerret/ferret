@@ -971,6 +971,10 @@ func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
 	return el.input.ScrollIntoView(ctx, el.id.objectID)
 }
 
+func (el *HTMLElement) Focus(ctx context.Context) error {
+	return el.input.Focus(ctx, el.id.objectID)
+}
+
 func (el *HTMLElement) Hover(ctx context.Context) error {
 	return el.input.MoveMouse(ctx, el.id.objectID)
 }

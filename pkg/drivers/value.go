@@ -101,6 +101,8 @@ type (
 
 		ScrollIntoView(ctx context.Context) error
 
+		Focus(ctx context.Context) error
+
 		Hover(ctx context.Context) error
 
 		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
@@ -140,6 +142,8 @@ type (
 		ScrollBySelector(ctx context.Context, selector values.String) error
 
 		ScrollByXY(ctx context.Context, x, y values.Float) error
+
+		FocusBySelector(ctx context.Context, selector values.String) error
 
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
 
