@@ -345,6 +345,10 @@ func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.S
 	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector, value)
 }
 
+func (doc *HTMLDocument) FocusBySelector(ctx context.Context, selector values.String) error {
+	return doc.input.FocusBySelector(ctx, doc.element.id.nodeID, selector)
+}
+
 func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
 	return doc.input.MoveMouseBySelector(ctx, doc.element.id.nodeID, selector)
 }

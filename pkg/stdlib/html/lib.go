@@ -28,6 +28,7 @@ func RegisterLib(ns core.Namespace) error {
 		"ELEMENT_EXISTS":    ElementExists,
 		"ELEMENTS":          Elements,
 		"ELEMENTS_COUNT":    ElementsCount,
+		"FOCUS":             Focus,
 		"HOVER":             Hover,
 		"INNER_HTML":        GetInnerHTML,
 		"INNER_HTML_SET":    SetInnerHTML,
