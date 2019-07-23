@@ -11,7 +11,7 @@
 - Regular expression operator. [#326](https://github.com/MontFerret/ferret/pull/326)
 - ``INNER_HTML_SET`` and ``INNER_TEXT_SET`` functions. [#329](https://github.com/MontFerret/ferret/pull/329)
 - Possibility to set viewport size. [#334](https://github.com/MontFerret/ferret/pull/334)
-- ``FOCUS`` function.
+- ``FOCUS`` function. [#340](https://github.com/MontFerret/ferret/pull/340)
 
 #### Changed
 - ``RAND`` accepts optional upper and lower limits. [#271](https://github.com/MontFerret/ferret/pull/271)
