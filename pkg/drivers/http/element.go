@@ -505,7 +505,7 @@ func (el *HTMLElement) ScrollIntoView(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) Focus(ctx context.Context) error {
+func (el *HTMLElement) Focus(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
