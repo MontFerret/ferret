@@ -1,0 +1,9 @@
+LET url = @dynamic + "/#/pagination"
+LET page = DOCUMENT(url, true)
+
+LET items = (
+    FOR i IN PAGINATION(page, 'li[class="page-item-next page-item"]')
+        RETURN i
+)
+
+RETURN EXPECT(5, LENGTH(items))
