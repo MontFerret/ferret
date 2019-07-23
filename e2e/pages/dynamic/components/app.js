@@ -4,13 +4,14 @@ import FormsPage from './pages/forms/index.js';
 import EventsPage from './pages/events/index.js';
 import IframePage from './pages/iframes/index.js';
 import MediaPage from './pages/media/index.js';
+import PaginationPage from './pages/pagination/index.js';
 
 const e = React.createElement;
 const Router = ReactRouter.Router;
 const Switch = ReactRouter.Switch;
 const Route = ReactRouter.Route;
 const Redirect = ReactRouter.Redirect;
-const createBrowserHistory = History.createBrowserHistory;
+const createHistory = History.createHashHistory;
 
 export default React.memo(function AppComponent(params = {}) {
     let redirectTo;
@@ -32,7 +33,7 @@ export default React.memo(function AppComponent(params = {}) {
         redirectTo = e(Redirect, { to });
     }
 
-    return e(Router, { history: createBrowserHistory() },
+    return e(Router, { history: createHistory() },
         e(Layout, null, [
             e(Switch, null, [
                 e(Route, {
@@ -55,6 +56,10 @@ export default React.memo(function AppComponent(params = {}) {
                 e(Route, {
                     path: '/media',
                     component: MediaPage
+                }),
+                e(Route, {
+                    path: '/pagination',
+                    component: PaginationPage
                 }),
             ]),
             redirectTo
