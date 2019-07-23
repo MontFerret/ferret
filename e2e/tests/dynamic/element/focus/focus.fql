@@ -1,0 +1,10 @@
+LET url = @dynamic + "/#/events"
+LET page = DOCUMENT(url, true)
+
+LET input = ELEMENT(page, "#focus-input")
+
+FOCUS(input)
+
+WAIT_CLASS(page, "#focus-content", "alert-success")
+
+RETURN ""

@@ -34,7 +34,7 @@ export default class FocusableComponent extends React.PureComponent {
     }
 
     render() {
-        const btnId = `${this.props.id}-btn`;
+        const btnId = `${this.props.id}-input`;
         const contentId = `${this.props.id}-content`;
         const classNames = ["alert"];
 
