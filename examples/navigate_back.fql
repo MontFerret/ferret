@@ -1,5 +1,5 @@
 LET origin = "https://github.com/"
-LET doc = DOCUMENT(origin, true)
+LET doc = DOCUMENT(origin, { driver: "cdp" })
 
 NAVIGATE(doc, "https://github.com/features")
 NAVIGATE_BACK(doc)

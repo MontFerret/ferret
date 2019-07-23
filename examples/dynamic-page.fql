@@ -1,4 +1,4 @@
-LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
+LET doc = DOCUMENT('https://soundcloud.com/charts/top', { driver: "cdp" })
 
 WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 

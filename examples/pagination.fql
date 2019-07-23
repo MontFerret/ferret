@@ -1,4 +1,4 @@
-LET amazon = DOCUMENT('https://www.amazon.com/', true)
+LET amazon = DOCUMENT('https://www.amazon.com/', { driver: "cdp" })
 
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '.nav-search-submit input[type="submit"]')
@@ -17,7 +17,7 @@ LET pages = LENGTH(pagers) > 0 ? TO_INT(INNER_TEXT(LAST(pagers))) : 0
 LET result = (
     FOR pageNum IN 1..pages
         LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
-        LET wait = clicked ? WAIT_NAVIGATION(amazon) : false
+        LET wait = ELEMENT_EXISTS(amazon, nextBtnSelector) ? WAIT_NAVIGATION(amazon) : false
         LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
 
         PRINT("page:", pageNum, "clicked", clicked)

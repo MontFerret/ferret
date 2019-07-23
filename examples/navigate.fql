@@ -1,4 +1,4 @@
-LET doc = DOCUMENT("https://github.com/", true)
+LET doc = DOCUMENT("https://github.com/", { driver: "cdp" })
 LET main = ELEMENT(doc, '.application-main')
 LET mainTxt = main.innerText
 

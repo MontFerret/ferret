@@ -37,7 +37,9 @@ Once the page gets loaded, we iterate over all elements in search results and as
 The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
 
 ```aql
-LET google = DOCUMENT("https://www.google.com/", true)
+LET google = DOCUMENT("https://www.google.com/", {
+    driver: "cdp"
+})
 
 INPUT(google, 'input[name="q"]', "ferret", 25)
 CLICK(google, 'input[name="btnK"]')
@@ -180,7 +182,7 @@ Once ```ferret``` knows how to communicate with Chrome, you can use a function `
 Welcome to Ferret REPL
 Please use `exit` or `Ctrl-D` to exit this program.
 >%
->LET doc = DOCUMENT('https://soundcloud.com/charts/top', true)
+>LET doc = DOCUMENT('https://soundcloud.com/charts/top', { driver: "cdp" })
 >WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 >LET tracks = ELEMENTS(doc, '.chartTrack__details')
 >FOR track IN tracks
@@ -197,7 +199,7 @@ Please use `exit` or `Ctrl-D` to exit this program.
 Welcome to Ferret REPL
 Please use `exit` or `Ctrl-D` to exit this program.
 >%
->LET doc = DOCUMENT("https://github.com/", true)
+>LET doc = DOCUMENT("https://github.com/", { driver: "cdp" })
 >LET btn = ELEMENT(doc, ".HeaderMenu a")
 
 >CLICK(btn)
