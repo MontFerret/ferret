@@ -18,5 +18,5 @@ func ElementExists(ctx context.Context, args ...core.Value) (core.Value, error) 
 		return values.None, err
 	}
 
-	return el.ExistsBySelector(ctx, selector), nil
+	return el.ExistsBySelector(ctx, selector)
 }
