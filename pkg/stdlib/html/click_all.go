@@ -25,7 +25,17 @@ func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	selector := args[1].String()
+	selector := values.ToString(args[1])
 
-	return doc.ClickBySelectorAll(ctx, values.NewString(selector))
+	exists, err := doc.ExistsBySelector(ctx, selector)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	if !exists {
+		return values.False, nil
+	}
+
+	return values.True, doc.ClickBySelectorAll(ctx, selector)
 }

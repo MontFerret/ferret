@@ -169,7 +169,7 @@ func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.St
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
@@ -207,16 +207,16 @@ func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
 	return doc.parent
 }
 
-func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) (values.Boolean, error) {
-	return false, core.ErrNotSupported
+func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ClickBySelectorAll(_ context.Context, _ values.String) (values.Boolean, error) {
-	return false, core.ErrNotSupported
+func (doc *HTMLDocument) ClickBySelectorAll(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) (values.Boolean, error) {
-	return false, core.ErrNotSupported
+func (doc *HTMLDocument) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) error {
+	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
