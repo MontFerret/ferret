@@ -263,7 +263,7 @@ func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.St
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
@@ -317,28 +317,16 @@ func (doc *HTMLDocument) GetURL() values.String {
 	return values.NewString(doc.frames.Frame.URL)
 }
 
-func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
-	if err := doc.input.ClickBySelector(ctx, doc.element.id.nodeID, selector); err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
+func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) error {
+	return doc.input.ClickBySelector(ctx, doc.element.id.nodeID, selector)
 }
 
-func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error) {
-	if err := doc.input.ClickBySelectorAll(ctx, doc.element.id.nodeID, selector); err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
+func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) error {
+	return doc.input.ClickBySelectorAll(ctx, doc.element.id.nodeID, selector)
 }
 
-func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error) {
-	if err := doc.input.TypeBySelector(ctx, doc.element.id.nodeID, selector, value, delay); err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
+func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
+	return doc.input.TypeBySelector(ctx, doc.element.id.nodeID, selector, value, delay)
 }
 
 func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {

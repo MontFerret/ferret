@@ -92,11 +92,17 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 		return values.ZeroInt, values.ZeroInt, nil
 	}
 
-	if !i.document.ExistsBySelector(ctx, i.selector) {
-		return values.ZeroInt, values.ZeroInt, core.ErrNoMoreData
+	exists, err := i.document.ExistsBySelector(ctx, i.selector)
+
+	if err != nil {
+		return values.None, values.None, err
 	}
 
-	_, err := i.document.ClickBySelector(ctx, i.selector)
+	if !exists {
+		return values.None, values.None, core.ErrNoMoreData
+	}
+
+	err = i.document.ClickBySelector(ctx, i.selector)
 
 	if err != nil {
 		return values.None, values.None, err

@@ -26,7 +26,7 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		return el.Click(ctx)
+		return values.True, el.Click(ctx)
 	}
 
 	// CLICK(doc, selector)
@@ -36,7 +36,16 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	selector := args[1].String()
+	selector := values.ToString(args[1])
+	exists, err := doc.ExistsBySelector(ctx, selector)
 
-	return doc.ClickBySelector(ctx, values.NewString(selector))
+	if err != nil {
+		return values.False, err
+	}
+
+	if !exists {
+		return exists, nil
+	}
+
+	return exists, doc.ClickBySelector(ctx, selector)
 }

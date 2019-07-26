@@ -467,14 +467,14 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String
 	return values.NewInt(selection.Size())
 }
 
-func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) values.Boolean {
+func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) (values.Boolean, error) {
 	selection := el.selection.Closest(selector.String())
 
 	if selection == nil {
-		return values.False
+		return values.False, nil
 	}
 
-	return values.True
+	return values.True, nil
 }
 
 func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
@@ -489,8 +489,8 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) Click(_ context.Context) (values.Boolean, error) {
-	return false, core.ErrNotSupported
+func (el *HTMLElement) Click(_ context.Context) error {
+	return core.ErrNotSupported
 }
 
 func (el *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) error {

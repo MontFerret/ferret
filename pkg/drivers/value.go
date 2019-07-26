@@ -40,7 +40,7 @@ type (
 
 		CountBySelector(ctx context.Context, selector values.String) values.Int
 
-		ExistsBySelector(ctx context.Context, selector values.String) values.Boolean
+		ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
 		XPath(ctx context.Context, expression values.String) (core.Value, error)
 	}
@@ -93,7 +93,7 @@ type (
 
 		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		Click(ctx context.Context) (values.Boolean, error)
+		Click(ctx context.Context) error
 
 		Input(ctx context.Context, value core.Value, delay values.Int) error
 
@@ -127,11 +127,11 @@ type (
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
-		ClickBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
+		ClickBySelector(ctx context.Context, selector values.String) error
 
-		ClickBySelectorAll(ctx context.Context, selector values.String) (values.Boolean, error)
+		ClickBySelectorAll(ctx context.Context, selector values.String) error
 
-		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) (values.Boolean, error)
+		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
 

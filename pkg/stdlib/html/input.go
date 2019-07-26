@@ -44,6 +44,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
+		selector := values.ToString(arg2)
 		delay := values.Int(0)
 
 		if len(args) == 4 {
@@ -55,10 +56,20 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return values.False, err
 			}
 
-			delay = arg4.(values.Int)
+			delay = values.ToInt(arg4)
 		}
 
-		return doc.InputBySelector(ctx, arg2.(values.String), args[2], delay)
+		exists, err := doc.ExistsBySelector(ctx, selector)
+
+		if err != nil {
+			return values.False, err
+		}
+
+		if !exists {
+			return values.False, nil
+		}
+
+		return values.True, doc.InputBySelector(ctx, selector, args[2], delay)
 	}
 
 	el, err := drivers.ToElement(arg1)

@@ -850,9 +850,9 @@ func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.Stri
 	return values.NewInt(len(res.NodeIDs))
 }
 
-func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) values.Boolean {
+func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
 	if el.IsDetached() {
-		return values.False
+		return values.False, drivers.ErrDetached
 	}
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
@@ -860,18 +860,14 @@ func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.Str
 	res, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.False
+		return values.False, err
 	}
 
 	if res.NodeID == 0 {
-		return values.False
+		return values.False, nil
 	}
 
-	return values.True
+	return values.True, nil
 }
 
 func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, when drivers.WaitEvent) error {
@@ -947,12 +943,8 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 	return err
 }
 
-func (el *HTMLElement) Click(ctx context.Context) (values.Boolean, error) {
-	if err := el.input.Click(ctx, el.id.objectID); err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
+func (el *HTMLElement) Click(ctx context.Context) error {
+	return el.input.Click(ctx, el.id.objectID)
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
