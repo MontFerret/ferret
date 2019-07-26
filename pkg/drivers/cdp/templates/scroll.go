@@ -6,6 +6,19 @@ import (
 )
 
 const (
+	isElementInViewportTemplate = `
+		function isInViewport(elem) {
+			var bounding = elem.getBoundingClientRect();
+			
+			return (
+				bounding.top >= 0 &&
+				bounding.left >= 0 &&
+				bounding.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+				bounding.right <= (window.innerWidth || document.documentElement.clientWidth)
+			);
+		};
+	`
+
 	scrollTopTemplate = `
 		window.scrollTo({
 			left: 0,
@@ -24,9 +37,14 @@ const (
 
 	scrollIntoViewTemplate = `
 		(el) => {
-			el.scrollIntoView({
-				behavior: 'instant'
-			});
+			` + isElementInViewportTemplate + `
+			
+
+			if (!isInViewport(el)) {
+				el.scrollIntoView({
+					behavior: 'instant'
+				});
+			}
 	
 			return true;
 		}
@@ -59,10 +77,14 @@ func ScrollIntoViewBySelector(selector string) string {
 			throw new Error('%s');
 		}
 
-		el.scrollIntoView({
-    		behavior: 'instant'
-  		});
+		%s
+
+		if (!isInViewport(el)) {
+			el.scrollIntoView({
+    			behavior: 'instant'
+  			});
+		}
 
 		return true;
-`, selector, drivers.ErrNotFound)
+`, selector, drivers.ErrNotFound, isElementInViewportTemplate)
 }
