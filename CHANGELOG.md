@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.8.1
+#### Fixed
+- Added existence check to ``CLICK`` and ``CLICK_ALL`` functions. [#341](https://github.com/MontFerret/ferret/pull/341)
+- Added a check whether an element is in the viewport before scrolling. [#342](https://github.com/MontFerret/ferret/pull/342)
+
 ### 0.8.0
 #### Added
 - Delay randomization for inputs. [#283](https://github.com/MontFerret/ferret/pull/283)
