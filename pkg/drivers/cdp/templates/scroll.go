@@ -42,6 +42,8 @@ const (
 
 			if (!isInViewport(el)) {
 				el.scrollIntoView({
+					block: 'center', 
+					inline: 'center',
 					behavior: 'instant'
 				});
 			}
@@ -81,6 +83,8 @@ func ScrollIntoViewBySelector(selector string) string {
 
 		if (!isInViewport(el)) {
 			el.scrollIntoView({
+				block: 'center', 
+				inline: 'center',
     			behavior: 'instant'
   			});
 		}
