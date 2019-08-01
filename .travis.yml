@@ -13,7 +13,7 @@ go:
 addons:
   apt:
     packages:
-    - oracle-java9-set-default
+    - openjdk-9-jre-headless
   chrome: stable
 
 install:
