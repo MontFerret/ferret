@@ -3,6 +3,7 @@
 ### 0.8.2
 #### Fixed
 - Scrolling position is not centered.
+- Unable to set custom logger fields.
 
 ### 0.8.1
 #### Fixed
