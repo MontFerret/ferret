@@ -5,10 +5,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
-func GetInnerHTMLBySelector(selector string) string {
-	return fmt.Sprintf(`
-		(el) => {
-			const selector = '%s';
+var getInnerHTMLBySelectorTemplate = fmt.Sprintf(`
+		(el, selector) => {
 			const found = el.querySelector(selector);
 	
 			if (found == null) {
@@ -17,13 +15,15 @@ func GetInnerHTMLBySelector(selector string) string {
 	
 			return found.innerHTML;
 		}
-	`, selector, drivers.ErrNotFound)
+	`, drivers.ErrNotFound,
+)
+
+func GetInnerHTMLBySelector() string {
+	return getInnerHTMLBySelectorTemplate
 }
 
-func GetInnerHTMLBySelectorAll(selector string) string {
-	return fmt.Sprintf(`
-		(el) => {
-			const selector = '%s';
+var getInnerHTMLBySelectorAllTemplate = fmt.Sprintf(`
+		(el, selector) => {
 			const found = el.querySelectorAll(selector);
 	
 			if (found == null) {
@@ -32,5 +32,9 @@ func GetInnerHTMLBySelectorAll(selector string) string {
 	
 			return Array.from(found).map(i => i.innerHTML);
 		}
-	`, selector, drivers.ErrNotFound)
+	`, drivers.ErrNotFound,
+)
+
+func GetInnerHTMLBySelectorAll() string {
+	return getInnerHTMLBySelectorAllTemplate
 }

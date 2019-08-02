@@ -15,21 +15,20 @@ func SetInnerText() string {
 	return setInnerTextTemplate
 }
 
-func SetInnerTextBySelector(selector, innerText string) string {
-	return fmt.Sprintf(`
-		(el) => {
-			const selector = '%s';
+var setInnerTextBySelectorTemplate = fmt.Sprintf(`
+		(el, selector, value) => {
 			const found = el.querySelector(selector);
 	
 			if (found == null) {
 				throw new Error('%s');
 			}
 	
-			found.innerText = '%s'
+			found.innerText = value;
 		}
 	`,
-		selector,
-		drivers.ErrNotFound,
-		innerText,
-	)
+	drivers.ErrNotFound,
+)
+
+func SetInnerTextBySelector() string {
+	return setInnerTextBySelectorTemplate
 }

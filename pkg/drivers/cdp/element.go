@@ -727,11 +727,20 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
 	out, err := el.exec.EvalWithArgumentsAndReturnValue(
 		ctx,
-		templates.GetInnerTextBySelector(selector.String()),
+		templates.GetInnerTextBySelector(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
 		},
 	)
 
@@ -747,11 +756,29 @@ func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
+	val, err := innerText.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
 	return el.exec.EvalWithArguments(
 		ctx,
-		templates.SetInnerTextBySelector(selector.String(), innerText.String()),
+		templates.SetInnerTextBySelector(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+		runtime.CallArgument{
+			Value: val,
 		},
 	)
 }
@@ -761,11 +788,20 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return nil, err
+	}
+
 	out, err := el.exec.EvalWithArgumentsAndReturnValue(
 		ctx,
-		templates.GetInnerTextBySelectorAll(selector.String()),
+		templates.GetInnerTextBySelectorAll(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
 		},
 	)
 
@@ -811,11 +847,20 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
 	out, err := el.exec.EvalWithArgumentsAndReturnValue(
 		ctx,
-		templates.GetInnerHTMLBySelector(selector.String()),
+		templates.GetInnerHTMLBySelector(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
 		},
 	)
 
@@ -831,11 +876,29 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
+	val, err := innerHTML.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
 	return el.exec.EvalWithArguments(
 		ctx,
-		templates.SetInnerHTMLBySelector(selector.String(), innerHTML.String()),
+		templates.SetInnerHTMLBySelector(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+		runtime.CallArgument{
+			Value: val,
 		},
 	)
 }
@@ -845,11 +908,20 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
 	out, err := el.exec.EvalWithArgumentsAndReturnValue(
 		ctx,
-		templates.GetInnerHTMLBySelectorAll(selector.String()),
+		templates.GetInnerHTMLBySelectorAll(),
 		runtime.CallArgument{
 			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
 		},
 	)
 
