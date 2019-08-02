@@ -17,14 +17,16 @@ func SetInnerHTML() string {
 
 func SetInnerHTMLBySelector(selector, innerHTML string) string {
 	return fmt.Sprintf(`
-		const selector = "%s";
-		const found = document.querySelector(selector)
-
-		if (found == null) {
-			throw new Error('%s');
+		(el) => {
+			const selector = '%s';
+			const found = el.querySelector(selector);
+	
+			if (found == null) {
+				throw new Error('%s');
+			}
+	
+			found.innerHTML = '%s';
 		}
-
-		found.innerHTML = "%s"
 	`,
 		selector,
 		drivers.ErrNotFound,

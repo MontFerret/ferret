@@ -747,7 +747,13 @@ func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
-	return el.exec.Eval(ctx, templates.SetInnerTextBySelector(selector.String(), innerText.String()))
+	return el.exec.EvalWithArguments(
+		ctx,
+		templates.SetInnerTextBySelector(selector.String(), innerText.String()),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+	)
 }
 
 func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
@@ -825,7 +831,13 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
-	return el.exec.Eval(ctx, templates.SetInnerHTMLBySelector(selector.String(), innerHTML.String()))
+	return el.exec.EvalWithArguments(
+		ctx,
+		templates.SetInnerHTMLBySelector(selector.String(), innerHTML.String()),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+	)
 }
 
 func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {

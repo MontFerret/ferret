@@ -17,14 +17,16 @@ func SetInnerText() string {
 
 func SetInnerTextBySelector(selector, innerText string) string {
 	return fmt.Sprintf(`
-		const selector = "%s";
-		const found = document.querySelector(selector)
-
-		if (found == null) {
-			throw new Error('%s');
+		(el) => {
+			const selector = '%s';
+			const found = el.querySelector(selector);
+	
+			if (found == null) {
+				throw new Error('%s');
+			}
+	
+			found.innerText = '%s'
 		}
-
-		found.innerText = "%s"
 	`,
 		selector,
 		drivers.ErrNotFound,

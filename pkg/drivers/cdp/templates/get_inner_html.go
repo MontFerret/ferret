@@ -8,7 +8,7 @@ import (
 func GetInnerHTMLBySelector(selector string) string {
 	return fmt.Sprintf(`
 		(el) => {
-			const selector = "%s";
+			const selector = '%s';
 			const found = el.querySelector(selector);
 	
 			if (found == null) {
@@ -23,7 +23,7 @@ func GetInnerHTMLBySelector(selector string) string {
 func GetInnerHTMLBySelectorAll(selector string) string {
 	return fmt.Sprintf(`
 		(el) => {
-			const selector = "%s";
+			const selector = '%s';
 			const found = el.querySelectorAll(selector);
 	
 			if (found == null) {
