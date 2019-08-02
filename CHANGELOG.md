@@ -3,6 +3,7 @@
 ### 0.8.2
 #### Fixed
 - Scrolling position is not centered.
+- Fixed ``INNER_HTML``, ``INNER_TEXT``, ``INNER_HTML_SET``, ``INNER_TEXT_SET`` functions.
 
 ### 0.8.1
 #### Fixed
