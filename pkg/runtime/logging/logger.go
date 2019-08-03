@@ -31,10 +31,8 @@ const (
 func WithContext(ctx context.Context, opts Options) context.Context {
 	c := zerolog.New(opts.Writer).With().Timestamp()
 
-	if len(opts.Fields) > 0 {
-		for k, v := range opts.Fields {
-			c = c.Interface(k, v)
-		}
+	for k, v := range opts.Fields {
+		c = c.Interface(k, v)
 	}
 
 	logger := c.Logger()
