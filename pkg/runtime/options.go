@@ -13,7 +13,7 @@ import (
 type (
 	Options struct {
 		params  map[string]core.Value
-		logging *logging.Options
+		logging logging.Options
 	}
 
 	Option func(*Options)
@@ -22,7 +22,7 @@ type (
 func NewOptions(setters []Option) *Options {
 	opts := &Options{
 		params: make(map[string]core.Value),
-		logging: &logging.Options{
+		logging: logging.Options{
 			Writer: os.Stdout,
 			Level:  logging.ErrorLevel,
 		},
@@ -58,6 +58,12 @@ func WithLog(writer io.Writer) Option {
 func WithLogLevel(lvl logging.Level) Option {
 	return func(options *Options) {
 		options.logging.Level = lvl
+	}
+}
+
+func WithLogFields(fields map[string]interface{}) Option {
+	return func(options *Options) {
+		options.logging.Fields = fields
 	}
 }
 
