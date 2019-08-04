@@ -166,14 +166,14 @@ func LoadHTMLPage(
 		}
 	}
 
-	if params.Header != nil {
-		j, err := json.Marshal(params.Header)
+	if params.Headers != nil {
+		j, err := json.Marshal(params.Headers)
 
 		if err != nil {
 			return nil, err
 		}
 
-		for k := range params.Header {
+		for k := range params.Headers {
 			logger.
 				Debug().
 				Timestamp().

@@ -76,9 +76,9 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
-	if params.Header != nil {
-		for k := range params.Header {
-			req.Header.Add(k, params.Header.Get(k))
+	if params.Headers != nil {
+		for k := range params.Headers {
+			req.Header.Add(k, params.Headers.Get(k))
 
 			logger.
 				Debug().

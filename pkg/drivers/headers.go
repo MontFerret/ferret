@@ -15,14 +15,18 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// HTTPHeader HTTP header object
-type HTTPHeader map[string][]string
+// HTTPHeaders HTTP header object
+type HTTPHeaders map[string][]string
 
-func (h HTTPHeader) Type() core.Type {
+func NewHTTPHeaders(values map[string][]string) HTTPHeaders {
+	return HTTPHeaders(values)
+}
+
+func (h HTTPHeaders) Type() core.Type {
 	return HTTPHeaderType
 }
 
-func (h HTTPHeader) String() string {
+func (h HTTPHeaders) String() string {
 	var buf bytes.Buffer
 
 	for k := range h {
@@ -32,12 +36,12 @@ func (h HTTPHeader) String() string {
 	return buf.String()
 }
 
-func (h HTTPHeader) Compare(other core.Value) int64 {
+func (h HTTPHeaders) Compare(other core.Value) int64 {
 	if other.Type() != HTTPHeaderType {
 		return Compare(HTTPHeaderType, other.Type())
 	}
 
-	oh := other.(HTTPHeader)
+	oh := other.(HTTPHeaders)
 
 	if len(h) > len(oh) {
 		return 1
@@ -56,11 +60,11 @@ func (h HTTPHeader) Compare(other core.Value) int64 {
 	return 0
 }
 
-func (h HTTPHeader) Unwrap() interface{} {
+func (h HTTPHeaders) Unwrap() interface{} {
 	return h
 }
 
-func (h HTTPHeader) Hash() uint64 {
+func (h HTTPHeaders) Hash() uint64 {
 	hash := fnv.New64a()
 
 	hash.Write([]byte(h.Type().String()))
@@ -96,12 +100,18 @@ func (h HTTPHeader) Hash() uint64 {
 	return hash.Sum64()
 }
 
-func (h HTTPHeader) Copy() core.Value {
+func (h HTTPHeaders) Copy() core.Value {
 	return *(&h)
 }
 
-func (h HTTPHeader) MarshalJSON() ([]byte, error) {
-	out, err := json.Marshal(map[string][]string(h))
+func (h HTTPHeaders) MarshalJSON() ([]byte, error) {
+	headers := map[string]string{}
+
+	for key, val := range h {
+		headers[key] = strings.Join(val, ", ")
+	}
+
+	out, err := json.Marshal(headers)
 
 	if err != nil {
 		return nil, err
@@ -110,15 +120,15 @@ func (h HTTPHeader) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (h HTTPHeader) Set(key, value string) {
+func (h HTTPHeaders) Set(key, value string) {
 	textproto.MIMEHeader(h).Set(key, value)
 }
 
-func (h HTTPHeader) Get(key string) string {
+func (h HTTPHeaders) Get(key string) string {
 	return textproto.MIMEHeader(h).Get(key)
 }
 
-func (h HTTPHeader) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (h HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
 		return values.None, nil
 	}

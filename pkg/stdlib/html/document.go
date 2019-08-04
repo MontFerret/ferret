@@ -27,7 +27,7 @@ type PageLoadParams struct {
 //      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
 //      	i.e. not to open a page in the Incognito mode.
 //      cookies (HTTPCookie) - Optional, set of HTTP cookies.
-//      header (HTTPHeader) - Optional, HTTP headers.
+//      headers (HTTPHeaders) - Optional, HTTP headers.
 //      viewport (Viewport) - Optional, viewport params.
 // @returns (HTMLPage) - Returns loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
@@ -147,15 +147,15 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.Cookies = cookies
 		}
 
-		header, exists := obj.Get(values.NewString("header"))
+		headers, exists := obj.Get(values.NewString("headers"))
 
 		if exists {
-			if err := core.ValidateType(header, types.Object); err != nil {
+			if err := core.ValidateType(headers, types.Object); err != nil {
 				return res, err
 			}
 
-			header := parseHeader(header.(*values.Object))
-			res.Header = header
+			header := parseHeader(headers.(*values.Object))
+			res.Headers = header
 		}
 
 		viewport, exists := obj.Get(values.NewString("viewport"))
@@ -292,10 +292,10 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	return cookie, err
 }
 
-func parseHeader(header *values.Object) drivers.HTTPHeader {
-	res := make(drivers.HTTPHeader)
+func parseHeader(headers *values.Object) drivers.HTTPHeaders {
+	res := make(drivers.HTTPHeaders)
 
-	header.ForEach(func(value core.Value, key string) bool {
+	headers.ForEach(func(value core.Value, key string) bool {
 		res.Set(key, value.String())
 
 		return true
