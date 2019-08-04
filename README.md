@@ -38,10 +38,11 @@ The final for loop filters out empty elements that might be because of inaccurat
 
 ```aql
 LET google = DOCUMENT("https://www.google.com/", {
-    driver: "cdp"
+    driver: "cdp",
+    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.87 Safari/537.36"
 })
 
-INPUT(google, 'input[name="q"]', "ferret", 25)
+INPUT(google, 'input[name="q"]', "ferret")
 CLICK(google, 'input[name="btnK"]')
 
 WAIT_NAVIGATION(google)
