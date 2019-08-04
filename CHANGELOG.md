@@ -2,7 +2,7 @@
 
 ### 0.8.2
 #### Fixed
-- Scrolling position is not centered.
+- Scrolling position is not centered. [#343](https://github.com/MontFerret/ferret/pull/343)
 - Unable to set custom headers. [#348](https://github.com/MontFerret/ferret/pull/348)
 - Unable to set custom logger fields.
 
