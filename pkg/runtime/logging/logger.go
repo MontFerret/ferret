@@ -2,9 +2,9 @@ package logging
 
 import (
 	"context"
-	"github.com/gofrs/uuid"
-	"github.com/rs/zerolog"
 	"io"
+
+	"github.com/rs/zerolog"
 )
 
 type (
@@ -13,6 +13,7 @@ type (
 	Options struct {
 		Writer io.Writer
 		Level  Level
+		Fields map[string]interface{}
 	}
 )
 
@@ -27,19 +28,15 @@ const (
 	Disabled
 )
 
-func WithContext(ctx context.Context, opts *Options) context.Context {
-	id, err := uuid.NewV4()
+func WithContext(ctx context.Context, opts Options) context.Context {
+	c := zerolog.New(opts.Writer).With().Timestamp()
 
-	if err != nil {
-		panic(err)
+	for k, v := range opts.Fields {
+		c = c.Interface(k, v)
 	}
 
-	logger := zerolog.New(opts.Writer).
-		With().
-		Str("id", id.String()).
-		Logger()
-
-	logger.WithLevel(zerolog.Level(opts.Level))
+	logger := c.Logger()
+	logger.Level(zerolog.Level(opts.Level))
 
 	return logger.WithContext(ctx)
 }

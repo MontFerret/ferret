@@ -3,7 +3,7 @@ package drivers
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 var (
-	HTTPHeaderType   = core.NewType("HTTPHeader")
+	HTTPHeaderType   = core.NewType("HTTPHeaders")
 	HTTPCookieType   = core.NewType("HTTPCookie")
 	HTMLElementType  = core.NewType("HTMLElement")
 	HTMLDocumentType = core.NewType("HTMLDocument")

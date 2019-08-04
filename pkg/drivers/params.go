@@ -14,7 +14,7 @@ type (
 		UserAgent   string
 		KeepCookies bool
 		Cookies     []HTTPCookie
-		Header      HTTPHeader
+		Headers     HTTPHeaders
 		Viewport    *Viewport
 	}
 )

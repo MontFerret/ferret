@@ -2,8 +2,10 @@
 
 ### 0.8.2
 #### Fixed
-- Scrolling position is not centered.
-- Fixed ``INNER_HTML``, ``INNER_TEXT``, ``INNER_HTML_SET``, ``INNER_TEXT_SET`` functions.
+- Scrolling position is not centered. [#343](https://github.com/MontFerret/ferret/pull/343)
+- Unable to set custom logger fields. [#346](https://github.com/MontFerret/ferret/pull/346)
+- Fixed ``INNER_HTML``, ``INNER_TEXT``, ``INNER_HTML_SET``, ``INNER_TEXT_SET`` functions. [#347](https://github.com/MontFerret/ferret/pull/347)
+- Unable to set custom headers. [#348](https://github.com/MontFerret/ferret/pull/348)
 
 ### 0.8.1
 #### Fixed
