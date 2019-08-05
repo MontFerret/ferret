@@ -727,7 +727,22 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerTextBySelector(selector.String()))
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+		ctx,
+		templates.GetInnerTextBySelector(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+	)
 
 	if err != nil {
 		return values.EmptyString, err
@@ -741,7 +756,31 @@ func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
-	return el.exec.Eval(ctx, templates.SetInnerTextBySelector(selector.String(), innerText.String()))
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
+	val, err := innerText.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
+	return el.exec.EvalWithArguments(
+		ctx,
+		templates.SetInnerTextBySelector(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+		runtime.CallArgument{
+			Value: val,
+		},
+	)
 }
 
 func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
@@ -749,7 +788,22 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerTextBySelectorAll(selector.String()))
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+		ctx,
+		templates.GetInnerTextBySelectorAll(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+	)
 
 	if err != nil {
 		return values.NewArray(0), err
@@ -793,7 +847,22 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 		return values.EmptyString, drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerHTMLBySelector(selector.String()))
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+		ctx,
+		templates.GetInnerHTMLBySelector(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+	)
 
 	if err != nil {
 		return values.EmptyString, err
@@ -807,7 +876,31 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 		return drivers.ErrDetached
 	}
 
-	return el.exec.Eval(ctx, templates.SetInnerHTMLBySelector(selector.String(), innerHTML.String()))
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
+	val, err := innerHTML.MarshalJSON()
+
+	if err != nil {
+		return err
+	}
+
+	return el.exec.EvalWithArguments(
+		ctx,
+		templates.SetInnerHTMLBySelector(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+		runtime.CallArgument{
+			Value: val,
+		},
+	)
 }
 
 func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
@@ -815,7 +908,22 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	out, err := el.exec.EvalWithReturnValue(ctx, templates.GetInnerHTMLBySelectorAll(selector.String()))
+	sel, err := selector.MarshalJSON()
+
+	if err != nil {
+		return values.NewArray(0), err
+	}
+
+	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+		ctx,
+		templates.GetInnerHTMLBySelectorAll(),
+		runtime.CallArgument{
+			ObjectID: &el.id.objectID,
+		},
+		runtime.CallArgument{
+			Value: sel,
+		},
+	)
 
 	if err != nil {
 		return values.NewArray(0), err

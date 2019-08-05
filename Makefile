@@ -31,7 +31,7 @@ cover:
 
 e2e:
 	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
-	# --filter=e2e/tests/**/xpath/*.fql
+	# --filter=e2e/tests/dynamic/element/inner_text/get_by_selector.fql
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
