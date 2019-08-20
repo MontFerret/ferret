@@ -14,11 +14,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
+// GetIn checks that from implements core.Getter interface. If it implements
+// GetInt calls from.GetIn method, otherwise return error.
 func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
-	if len(byPath) == 0 {
-		return None, nil
-	}
-
 	getter, ok := from.(core.Getter)
 	if !ok {
 		return None, core.TypeError(
