@@ -19,41 +19,15 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 		return None, nil
 	}
 
-	var result = from
-
-	for i, segment := range byPath {
-		if result == None || result == nil {
-			break
-		}
-
-		segType := segment.Type()
-
-		switch segVal := result.(type) {
-		case *Object:
-			if segType != types.String {
-				return nil, core.TypeError(segType, types.String)
-			}
-
-			result, _ = segVal.Get(segment.(String))
-		case *Array:
-			if segType != types.Int {
-				return nil, core.TypeError(segType, types.Int)
-			}
-
-			result = segVal.Get(segment.(Int))
-		case core.Getter:
-			return segVal.GetIn(ctx, byPath[i:])
-		default:
-			return None, core.TypeError(
-				from.Type(),
-				types.Array,
-				types.Object,
-				core.NewType("Getter"),
-			)
-		}
+	getter, ok := from.(core.Getter)
+	if !ok {
+		return None, core.TypeError(
+			from.Type(),
+			core.NewType("Getter"),
+		)
 	}
 
-	return result, nil
+	return getter.GetIn(ctx, byPath)
 }
 
 func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
