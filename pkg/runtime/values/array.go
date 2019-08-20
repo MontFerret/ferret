@@ -266,7 +266,7 @@ func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, error
 	}
 
 	if typ := path[0].Type(); typ != types.Int {
-		return nil, core.TypeError(typ, types.Int)
+		return None, core.TypeError(typ, types.Int)
 	}
 
 	first := t.Get(path[0].(Int))

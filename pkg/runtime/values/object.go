@@ -275,7 +275,7 @@ func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, erro
 	}
 
 	if typ := path[0].Type(); typ != types.String {
-		return nil, core.TypeError(typ, types.String)
+		return None, core.TypeError(typ, types.String)
 	}
 
 	first, _ := t.Get(path[0].(String))
