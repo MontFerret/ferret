@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"hash/fnv"
@@ -266,4 +267,30 @@ func (t *Object) Clone() core.Cloneable {
 	}
 
 	return cloned
+}
+
+func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	if len(path) == 0 {
+		return None, nil
+	}
+
+	if typ := path[0].Type(); typ != types.String {
+		return nil, core.TypeError(typ, types.String)
+	}
+
+	first, _ := t.Get(path[0].(String))
+
+	if len(path) == 1 {
+		return first, nil
+	}
+
+	getter, ok := first.(core.Getter)
+	if !ok {
+		return None, core.TypeError(
+			first.Type(),
+			core.NewType("Getter"),
+		)
+	}
+
+	return getter.GetIn(ctx, path[1:])
 }
