@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"hash/fnv"
@@ -257,4 +258,30 @@ func (t *Array) SortWith(sorter ArraySorter) *Array {
 	res.items = c
 
 	return res
+}
+
+func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+	if len(path) == 0 {
+		return None, nil
+	}
+
+	if typ := path[0].Type(); typ != types.Int {
+		return None, core.TypeError(typ, types.Int)
+	}
+
+	first := t.Get(path[0].(Int))
+
+	if len(path) == 1 {
+		return first, nil
+	}
+
+	getter, ok := first.(core.Getter)
+	if !ok {
+		return None, core.TypeError(
+			first.Type(),
+			core.NewType("Getter"),
+		)
+	}
+
+	return getter.GetIn(ctx, path[1:])
 }
