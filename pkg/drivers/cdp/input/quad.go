@@ -65,7 +65,7 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, qargs *dom.GetCo
 	contentQuadsReply, err := client.DOM.GetContentQuads(ctx, qargs)
 
 	if err != nil {
-		return Quad{}, err
+		return Quad{}, errors.Wrap(err, "node is either not visible or not an HTMLElement")
 	}
 
 	if contentQuadsReply.Quads == nil || len(contentQuadsReply.Quads) == 0 {
@@ -75,7 +75,7 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, qargs *dom.GetCo
 	layoutMetricsReply, err := client.Page.GetLayoutMetrics(ctx)
 
 	if err != nil {
-		return Quad{}, err
+		return Quad{}, errors.Wrap(err, "node is either not visible or not an HTMLElement")
 	}
 
 	clientWidth := layoutMetricsReply.LayoutViewport.ClientWidth

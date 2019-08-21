@@ -1,0 +1,15 @@
+LET url = @dynamic + "#/forms"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "form")
+
+CLICK(doc, "#radio_a")
+LET values = [
+    INNER_TEXT(doc, '#radio_output')
+]
+
+CLICK(doc, "#radio_b")
+
+LET values2 = PUSH(values, INNER_TEXT(doc, '#radio_output'))
+
+RETURN EXPECT(CONCAT_SEPARATOR(",", values2), "option_a,option_b")

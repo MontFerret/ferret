@@ -8,7 +8,8 @@ export default class FormsPage extends React.Component {
             textInput: "",
             select: "",
             multiSelect: "",
-            textarea: ""
+            textarea: "",
+            radio: ""
         };
 
         this.handleTextInput = (evt) => {
@@ -41,7 +42,15 @@ export default class FormsPage extends React.Component {
             this.setState({
                 textarea: evt.target.value
             });
-        }
+        };
+
+        this.handleRadio = (evt) => {
+            evt.preventDefault();
+
+            this.setState({
+                radio: evt.target.value
+            });
+        };
     }
 
     render() {
@@ -117,6 +126,45 @@ export default class FormsPage extends React.Component {
                         id: "textarea_output",
                         className: "form-text text-muted"
                     }, this.state.textarea
+                )
+            ]),
+            e("div", { className: "form-group" }, [
+                e("h5", null, "Radio"),
+
+                e("div", undefined, [
+                    e("input", {
+                            id: "radio_a",
+                            name: "radio_value",
+                            type: "radio",
+                            value: "option_a",
+                            checked: this.state.radio === 'option_a',
+                            onChange: this.handleRadio
+                        }
+                    ),
+                    e("label", {
+                        htmlFor: "radio_a"
+                    }, 'A'),
+                ]),
+
+                e("div", undefined, [
+                    e("input", {
+                            id: "radio_b",
+                            name: "radio_value",
+                            type: "radio",
+                            value: "option_b",
+                            checked: this.state.radio === 'option_b',
+                            onChange: this.handleRadio
+                        }
+                    ),
+                    e("label", {
+                        htmlFor: "radio_b"
+                    }, 'B'),
+                ]),
+
+                e("small", {
+                        id: "radio_output",
+                        className: "form-text text-muted"
+                    }, this.state.radio
                 )
             ]),
         ])
