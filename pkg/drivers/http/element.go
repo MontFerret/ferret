@@ -493,6 +493,14 @@ func (el *HTMLElement) Click(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) ClickBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) error {
 	return core.ErrNotSupported
 }

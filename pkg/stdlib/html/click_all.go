@@ -19,7 +19,7 @@ func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -27,7 +27,7 @@ func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := values.ToString(args[1])
 
-	exists, err := doc.ExistsBySelector(ctx, selector)
+	exists, err := el.ExistsBySelector(ctx, selector)
 
 	if err != nil {
 		return values.False, err
@@ -37,5 +37,5 @@ func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, nil
 	}
 
-	return values.True, doc.ClickBySelectorAll(ctx, selector)
+	return values.True, el.ClickBySelectorAll(ctx, selector)
 }

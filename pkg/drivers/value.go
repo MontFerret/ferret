@@ -43,6 +43,10 @@ type (
 		ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
 		XPath(ctx context.Context, expression values.String) (core.Value, error)
+
+		ClickBySelector(ctx context.Context, selector values.String) error
+
+		ClickBySelectorAll(ctx context.Context, selector values.String) error
 	}
 
 	// HTMLElement is the most general base interface which most objects in a GetMainFrame implement.
@@ -126,10 +130,6 @@ type (
 		GetParentDocument() HTMLDocument
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
-
-		ClickBySelector(ctx context.Context, selector values.String) error
-
-		ClickBySelectorAll(ctx context.Context, selector values.String) error
 
 		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
 
