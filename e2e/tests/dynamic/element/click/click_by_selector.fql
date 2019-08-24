@@ -3,7 +3,7 @@ LET page = DOCUMENT(url, true)
 
 LET div = ELEMENT(page, "#wait-class-random")
 
-CLICK(div, "#wait-class-random-btn")
+CLICK(div, "button")
 
 WAIT_CLASS(page, "#wait-class-random-content", "alert-success")
 
