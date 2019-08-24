@@ -1,4 +1,4 @@
-export default function random(min = 1000, max = 5000) {
+export default function random(min = 1000, max = 4000) {
     const val = Math.random() * 1000 * 10;
 
     if (val < min) {
