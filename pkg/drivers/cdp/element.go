@@ -1055,6 +1055,14 @@ func (el *HTMLElement) Click(ctx context.Context) error {
 	return el.input.Click(ctx, el.id.objectID)
 }
 
+func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String) error {
+	return el.input.ClickBySelector(ctx, el.id.nodeID, selector)
+}
+
+func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String) error {
+	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector)
+}
+
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
 	if el.GetNodeName() != "INPUT" {
 		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")

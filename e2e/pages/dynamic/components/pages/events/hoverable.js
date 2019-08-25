@@ -30,7 +30,7 @@ export default class HoverableComponent extends React.PureComponent {
             ]);
         }
 
-        return e("div", { className: "card"}, [
+        return e("div", { id: this.props.id, className: "card"}, [
             e("div", {className: "card-header"}, [
                 e("button", {
                     id: "hoverable-btn",

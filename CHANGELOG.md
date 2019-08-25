@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.8.3
+#### Fixed
+- Unable to click by selector using an element.
+
 ### 0.8.2
 #### Fixed
 - Scrolling position is not centered. [#343](https://github.com/MontFerret/ferret/pull/343)

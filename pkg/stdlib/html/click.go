@@ -10,7 +10,7 @@ import (
 
 // Click dispatches click event on a given element
 // @param source (Open | GetElement) - Event source.
-// @param selector (String, optional) - Optional selector. Only used when a document instance is passed.
+// @param selector (String, optional) - Optional selector.
 func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -18,26 +18,20 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	// CLICK(el)
-	if len(args) == 1 {
-		el, err := drivers.ToElement(args[0])
-
-		if err != nil {
-			return values.False, err
-		}
-
-		return values.True, el.Click(ctx)
-	}
-
-	// CLICK(doc, selector)
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.False, err
 	}
 
+	// CLICK(elOrDoc)
+	if len(args) == 1 {
+		return values.True, el.Click(ctx)
+	}
+
+	// CLICK(doc, selector)
 	selector := values.ToString(args[1])
-	exists, err := doc.ExistsBySelector(ctx, selector)
+	exists, err := el.ExistsBySelector(ctx, selector)
 
 	if err != nil {
 		return values.False, err
@@ -47,5 +41,5 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return exists, nil
 	}
 
-	return exists, doc.ClickBySelector(ctx, selector)
+	return exists, el.ClickBySelector(ctx, selector)
 }
