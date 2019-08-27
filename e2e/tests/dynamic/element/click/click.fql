@@ -1,0 +1,10 @@
+LET url = @dynamic + "/#/events"
+LET page = DOCUMENT(url, true)
+
+LET btn = ELEMENT(page, "#wait-class-random-btn")
+
+CLICK(btn)
+
+WAIT_CLASS(page, "#wait-class-random-content", "alert-success")
+
+RETURN ""

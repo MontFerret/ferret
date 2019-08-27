@@ -195,10 +195,14 @@ func LoadHTMLPage(
 		repl, err := client.Page.Navigate(ctx, page.NewNavigateArgs(params.URL))
 
 		if err != nil {
+			handleLoadError(logger, client)
+
 			return nil, errors.Wrap(err, "failed to load the page")
 		}
 
 		if repl.ErrorText != nil {
+			handleLoadError(logger, client)
+
 			return nil, errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL)
 		}
 

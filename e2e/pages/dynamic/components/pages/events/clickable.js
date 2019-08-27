@@ -34,7 +34,7 @@ export default class ClickableComponent extends React.PureComponent {
             classNames.push("alert-success");
         }
 
-        return e("div", {className: "card clickable"}, [
+        return e("div", { id: this.props.id, className: "card clickable"}, [
             e("div", { className: "card-header"}, [
                 e("button", {
                     id: btnId,

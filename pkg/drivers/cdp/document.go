@@ -318,11 +318,11 @@ func (doc *HTMLDocument) GetURL() values.String {
 }
 
 func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.ClickBySelector(ctx, doc.element.id.nodeID, selector)
+	return doc.element.ClickBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return doc.input.ClickBySelectorAll(ctx, doc.element.id.nodeID, selector)
+	return doc.element.ClickBySelectorAll(ctx, selector)
 }
 
 func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {

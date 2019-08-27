@@ -1,7 +1,8 @@
 LET doc = DOCUMENT("https://github.com/", { driver: "cdp" })
-LET btn = ELEMENT(doc, ".HeaderMenu a")
 
-CLICK(btn)
+HOVER(doc, ".HeaderMenu-details")
+CLICK(doc, ".HeaderMenu a")
+
 WAIT_NAVIGATION(doc)
 WAIT_ELEMENT(doc, '.IconNav')
 

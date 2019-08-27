@@ -55,7 +55,7 @@ export default class AppearableComponent extends React.PureComponent {
     render() {
         const btnId = `${this.props.id}-btn`;
 
-        return e("div", {className: "card"}, [
+        return e("div", { id: this.props.id, className: "card"}, [
             e("div", { className: "card-header"}, [
                 e("button", {
                     id: btnId,
