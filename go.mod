@@ -11,7 +11,7 @@ require (
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
-	github.com/corpix/uarand v0.0.0
+	github.com/corpix/uarand v0.1.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/derekparker/trie v0.0.0-20190322172448-1ce4922c7ad9
 	github.com/gobwas/glob v0.2.3
