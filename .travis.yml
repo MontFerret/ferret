@@ -10,11 +10,13 @@ go:
 - "1.12.x"
 - stable
 
+services:
+  - docker
+
 addons:
   apt:
     packages:
     - openjdk-9-jre-headless
-  chrome: stable
 
 install:
 - go get -u github.com/mgechev/revive
@@ -56,11 +58,13 @@ jobs:
   - stage: e2e
     go: stable
     before_script:
-    - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 --disable-setuid-sandbox --no-sandbox about:blank &
+    - docker pull microbox/chromium-headless:75.0.3765.1
+    - docker run -d -p 9222:9222 microbox/chromium-headless:75.0.3765.1
+    - docker ps
     script:
     - make e2e
     after_script:
-    - killall google-chrome-stable
+    - docker stop $(docker ps -q)
   - stage: bench
     go: stable
     script:
