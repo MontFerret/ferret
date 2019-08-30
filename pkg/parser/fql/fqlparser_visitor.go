@@ -121,9 +121,6 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#propertyAssignment.
 	VisitPropertyAssignment(ctx *PropertyAssignmentContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#memberExpression.
-	VisitMemberExpression(ctx *MemberExpressionContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#shorthandPropertyName.
 	VisitShorthandPropertyName(ctx *ShorthandPropertyNameContext) interface{}
 
@@ -141,6 +138,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#memberExpression.
+	VisitMemberExpression(ctx *MemberExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#arguments.
 	VisitArguments(ctx *ArgumentsContext) interface{}
