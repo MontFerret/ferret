@@ -1,5 +1,7 @@
 package cdp
 
+import "github.com/MontFerret/ferret/pkg/drivers"
+
 type (
 	Options struct {
 		Name        string
@@ -7,6 +9,8 @@ type (
 		UserAgent   string
 		Address     string
 		KeepCookies bool
+		Cookies     drivers.HTTPCookies
+		Headers     drivers.HTTPHeaders
 	}
 
 	Option func(opts *Options)
@@ -55,5 +59,49 @@ func WithKeepCookies() Option {
 func WithCustomName(name string) Option {
 	return func(opts *Options) {
 		opts.Name = name
+	}
+}
+
+func WithHeader(name string, value []string) Option {
+	return func(opts *Options) {
+		if opts.Headers == nil {
+			opts.Headers = make(drivers.HTTPHeaders)
+		}
+
+		opts.Headers[name] = value
+	}
+}
+
+func WithHeaders(headers drivers.HTTPHeaders) Option {
+	return func(opts *Options) {
+		if opts.Headers == nil {
+			opts.Headers = make(drivers.HTTPHeaders)
+		}
+
+		for k, v := range headers {
+			opts.Headers[k] = v
+		}
+	}
+}
+
+func WithCookie(cookie drivers.HTTPCookie) Option {
+	return func(opts *Options) {
+		if opts.Cookies == nil {
+			opts.Cookies = make(drivers.HTTPCookies)
+		}
+
+		opts.Cookies[cookie.Name] = cookie
+	}
+}
+
+func WithCookies(cookies []drivers.HTTPCookie) Option {
+	return func(opts *Options) {
+		if opts.Cookies == nil {
+			opts.Cookies = make(drivers.HTTPCookies)
+		}
+
+		for _, c := range cookies {
+			opts.Cookies[c.Name] = c
+		}
 	}
 }

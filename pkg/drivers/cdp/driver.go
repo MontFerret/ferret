@@ -107,6 +107,34 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		params.Viewport = defaultViewport
 	}
 
+	if drv.options.Headers != nil && params.Headers == nil {
+		params.Headers = make(drivers.HTTPHeaders)
+	}
+
+	// set default headers
+	for k, v := range drv.options.Headers {
+		_, exists := params.Headers[k]
+
+		// do not override user's set values
+		if !exists {
+			params.Headers[k] = v
+		}
+	}
+
+	if drv.options.Cookies != nil && params.Cookies == nil {
+		params.Cookies = make(drivers.HTTPCookies)
+	}
+
+	// set default cookies
+	for k, v := range drv.options.Cookies {
+		_, exists := params.Cookies[k]
+
+		// do not override user's set values
+		if !exists {
+			params.Cookies[k] = v
+		}
+	}
+
 	return LoadHTMLPage(ctx, conn, params)
 }
 

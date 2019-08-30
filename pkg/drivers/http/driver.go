@@ -76,31 +76,27 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
-	if params.Headers != nil {
-		for k := range params.Headers {
-			req.Header.Add(k, params.Headers.Get(k))
+	for k := range params.Headers {
+		req.Header.Add(k, params.Headers.Get(k))
 
-			logger.
-				Debug().
-				Timestamp().
-				Str("header", k).
-				Msg("set header")
-		}
+		logger.
+			Debug().
+			Timestamp().
+			Str("header", k).
+			Msg("set header")
 	}
 
-	if params.Cookies != nil {
-		for _, c := range params.Cookies {
-			req.AddCookie(&http.Cookie{
-				Name:  c.Name,
-				Value: c.Value,
-			})
+	for _, c := range params.Cookies {
+		req.AddCookie(&http.Cookie{
+			Name:  c.Name,
+			Value: c.Value,
+		})
 
-			logger.
-				Debug().
-				Timestamp().
-				Str("cookie", c.Name).
-				Msg("set cookie")
-		}
+		logger.
+			Debug().
+			Timestamp().
+			Str("cookie", c.Name).
+			Msg("set cookie")
 	}
 
 	req = req.WithContext(ctx)

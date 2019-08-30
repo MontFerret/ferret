@@ -12,14 +12,14 @@ import (
 
 type HTMLPage struct {
 	document *HTMLDocument
-	cookies  []drivers.HTTPCookie
+	cookies  drivers.HTTPCookies
 	frames   *values.Array
 }
 
 func NewHTMLPage(
 	qdoc *goquery.Document,
 	url string,
-	cookies []drivers.HTTPCookie,
+	cookies drivers.HTTPCookies,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
 
@@ -79,7 +79,13 @@ func (p *HTMLPage) Hash() uint64 {
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	page, err := NewHTMLPage(p.document.doc, p.document.GetURL().String(), p.cookies[:])
+	cookies := make(drivers.HTTPCookies)
+
+	for k, v := range p.cookies {
+		cookies[k] = v
+	}
+
+	page, err := NewHTMLPage(p.document.doc, p.document.GetURL().String(), cookies)
 
 	if err != nil {
 		return values.None
