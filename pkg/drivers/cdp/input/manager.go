@@ -14,12 +14,20 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type Manager struct {
-	client   *cdp.Client
-	exec     *eval.ExecutionContext
-	keyboard *Keyboard
-	mouse    *Mouse
-}
+type (
+	TypeParams struct {
+		Text core.Value
+		Clear values.Boolean
+		Delay values.Int
+	}
+
+	Manager struct {
+		client   *cdp.Client
+		exec     *eval.ExecutionContext
+		keyboard *Keyboard
+		mouse    *Mouse
+	}
+)
 
 func NewManager(
 	client *cdp.Client,
@@ -213,7 +221,7 @@ func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeI
 	return nil
 }
 
-func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, text core.Value, delay values.Int) error {
+func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, params TypeParams) error {
 	err := m.ScrollIntoView(ctx, objectID)
 
 	if err != nil {
@@ -226,15 +234,27 @@ func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, tex
 		return err
 	}
 
-	_, min := core.NumberBoundaries(float64(delay))
+	if params.Clear {
+		points, err := GetClickablePointByObjectID(ctx, m.client, objectID)
+
+		if err != nil {
+			return err
+		}
+
+		if err := m.ClearByXY(ctx, points); err != nil {
+			return err
+		}
+	}
+
+	_, min := core.NumberBoundaries(float64(params.Delay))
 	beforeTypeDelay := time.Duration(min)
 
 	time.Sleep(beforeTypeDelay * time.Millisecond)
 
-	return m.keyboard.Type(ctx, text.String(), int(delay))
+	return m.keyboard.Type(ctx, params.Text.String(), int(params.Delay))
 }
 
-func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String, text core.Value, delay values.Int) error {
+func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String, params TypeParams) error {
 	err := m.ScrollIntoViewBySelector(ctx, selector)
 
 	if err != nil {
@@ -253,12 +273,84 @@ func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, s
 		return err
 	}
 
-	_, min := core.NumberBoundaries(float64(delay))
+	if params.Clear {
+		points, err := GetClickablePointByNodeID(ctx, m.client, found.NodeID)
+
+		if err != nil {
+			return err
+		}
+
+		if err := m.ClearByXY(ctx, points); err != nil {
+			return err
+		}
+	}
+
+	_, min := core.NumberBoundaries(float64(params.Delay))
 	beforeTypeDelay := time.Duration(min)
 
 	time.Sleep(beforeTypeDelay * time.Millisecond)
 
-	return m.keyboard.Type(ctx, text.String(), int(delay))
+	return m.keyboard.Type(ctx, params.Text.String(), int(params.Delay))
+}
+
+func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) error {
+	err := m.ScrollIntoView(ctx, objectID)
+
+	if err != nil {
+		return err
+	}
+
+	points, err := GetClickablePointByObjectID(ctx, m.client, objectID)
+
+	if err != nil {
+		return err
+	}
+
+	err = m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(objectID))
+
+	if err != nil {
+		return err
+	}
+
+	return m.ClearByXY(ctx, points)
+}
+
+func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+	err := m.ScrollIntoViewBySelector(ctx, selector)
+
+	if err != nil {
+		return err
+	}
+
+	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
+
+	if err != nil {
+		return err
+	}
+
+	points, err := GetClickablePointByNodeID(ctx, m.client, found.NodeID)
+
+	if err != nil {
+		return err
+	}
+
+	err = m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(found.NodeID))
+
+	if err != nil {
+		return err
+	}
+
+	return m.ClearByXY(ctx, points)
+}
+
+func (m *Manager) ClearByXY(ctx context.Context, points Quad) error {
+	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, 3, 5)
+
+	if err != nil {
+		return err
+	}
+
+	return m.keyboard.Press(ctx, "Backspace")
 }
 
 func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, value *values.Array) (*values.Array, error) {
