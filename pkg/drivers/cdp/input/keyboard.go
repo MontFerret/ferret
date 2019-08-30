@@ -63,7 +63,7 @@ func (k *Keyboard) Up(ctx context.Context, char string) error {
 }
 
 func (k *Keyboard) Type(ctx context.Context, text string, delay int) error {
-	for _, ch := range []rune(text) {
+	for _, ch := range text {
 		ch := string(ch)
 
 		if err := k.Down(ctx, ch); err != nil {
