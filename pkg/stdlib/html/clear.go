@@ -26,7 +26,7 @@ func InputClear(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	// CLEAR(el)
 	if len(args) == 1 {
-		return values.None,  el.Clear(ctx)
+		return values.None, el.Clear(ctx)
 	}
 
 	return values.None, el.ClearBySelector(ctx, values.ToString(args[1]))

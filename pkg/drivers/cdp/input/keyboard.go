@@ -17,9 +17,9 @@ type (
 	KeyboardLocation int
 
 	KeyboardKey struct {
-		KeyCode int
-		Key     string
-		Code    string
+		KeyCode  int
+		Key      string
+		Code     string
 		Modifier KeyboardModifier
 		Location KeyboardLocation
 	}
@@ -37,8 +37,8 @@ const (
 	KeyboardModifierShift KeyboardModifier = 8
 
 	// 1=Left, 2=Right
-	KeyboardLocationNone KeyboardLocation = 0
-	KeyboardLocationLeft KeyboardLocation = 1
+	KeyboardLocationNone  KeyboardLocation = 0
+	KeyboardLocationLeft  KeyboardLocation = 1
 	KeyboardLocationRight KeyboardLocation = 2
 )
 

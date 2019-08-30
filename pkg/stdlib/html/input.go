@@ -30,7 +30,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	delay := values.NewInt(25)
 
 	// INPUT(el, value)
-	if len(args) == 2  {
+	if len(args) == 2 {
 		return values.True, el.Input(ctx, args[1], delay)
 	}
 

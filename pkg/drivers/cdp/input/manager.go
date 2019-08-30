@@ -16,7 +16,7 @@ import (
 
 type (
 	TypeParams struct {
-		Text core.Value
+		Text  core.Value
 		Clear values.Boolean
 		Delay values.Int
 	}
