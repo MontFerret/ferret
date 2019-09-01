@@ -215,10 +215,6 @@ func (doc *HTMLDocument) ClickBySelectorAll(_ context.Context, _ values.String) 
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) error {
-	return core.ErrNotSupported
-}
-
 func (doc *HTMLDocument) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
 	return nil, core.ErrNotSupported
 }
