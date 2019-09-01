@@ -1,0 +1,19 @@
+LET url = @static + "/api/ts"
+LET page = DOCUMENT(url, {
+    driver: "cdp_cookies"
+})
+
+LET el = ELEMENT(page, "#cookies")
+LET actual = JSON_PARSE(el.innerText)
+
+PRINT(actual)
+
+LET expected = {
+    "Single_cookie": "single_cookie_value",
+    "Multi_set_cookie": "multi_set_cookie_value",
+}
+
+RETURN EXPECT(expected, {
+    "Single_cookie": actual[1].Value,
+    "Multi_set_cookie": actual[2].Value,
+})
