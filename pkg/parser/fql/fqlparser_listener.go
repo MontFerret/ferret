@@ -121,9 +121,6 @@ type FqlParserListener interface {
 	// EnterPropertyAssignment is called when entering the propertyAssignment production.
 	EnterPropertyAssignment(c *PropertyAssignmentContext)
 
-	// EnterMemberExpression is called when entering the memberExpression production.
-	EnterMemberExpression(c *MemberExpressionContext)
-
 	// EnterShorthandPropertyName is called when entering the shorthandPropertyName production.
 	EnterShorthandPropertyName(c *ShorthandPropertyNameContext)
 
@@ -141,6 +138,9 @@ type FqlParserListener interface {
 
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// EnterMemberExpression is called when entering the memberExpression production.
+	EnterMemberExpression(c *MemberExpressionContext)
 
 	// EnterArguments is called when entering the arguments production.
 	EnterArguments(c *ArgumentsContext)
@@ -292,9 +292,6 @@ type FqlParserListener interface {
 	// ExitPropertyAssignment is called when exiting the propertyAssignment production.
 	ExitPropertyAssignment(c *PropertyAssignmentContext)
 
-	// ExitMemberExpression is called when exiting the memberExpression production.
-	ExitMemberExpression(c *MemberExpressionContext)
-
 	// ExitShorthandPropertyName is called when exiting the shorthandPropertyName production.
 	ExitShorthandPropertyName(c *ShorthandPropertyNameContext)
 
@@ -312,6 +309,9 @@ type FqlParserListener interface {
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// ExitMemberExpression is called when exiting the memberExpression production.
+	ExitMemberExpression(c *MemberExpressionContext)
 
 	// ExitArguments is called when exiting the arguments production.
 	ExitArguments(c *ArgumentsContext)

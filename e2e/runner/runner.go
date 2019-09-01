@@ -184,7 +184,7 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 	return results, nil
 }
 
-func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, script string) Result {
+func (r *Runner) runQuery(ctx context.Context, c *compiler.Compiler, name, script string) Result {
 	start := time.Now()
 
 	p, err := c.Compile(script)
