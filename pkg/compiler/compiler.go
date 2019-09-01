@@ -1,19 +1,20 @@
 package compiler
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib"
-	"github.com/pkg/errors"
 )
 
-type FqlCompiler struct {
+type Compiler struct {
 	*NamespaceContainer
 }
 
-func New(setters ...Option) *FqlCompiler {
-	c := &FqlCompiler{}
+func New(setters ...Option) *Compiler {
+	c := &Compiler{}
 	c.NamespaceContainer = newRootNamespace()
 	c.funcs = make(map[string]core.Function)
 
@@ -32,7 +33,7 @@ func New(setters ...Option) *FqlCompiler {
 	return c
 }
 
-func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error) {
+func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	if query == "" {
 		return nil, ErrEmptyQuery
 	}
@@ -69,7 +70,7 @@ func (c *FqlCompiler) Compile(query string) (program *runtime.Program, err error
 	return program, err
 }
 
-func (c *FqlCompiler) MustCompile(query string) *runtime.Program {
+func (c *Compiler) MustCompile(query string) *runtime.Program {
 	program, err := c.Compile(query)
 
 	if err != nil {

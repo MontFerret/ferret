@@ -736,15 +736,39 @@ func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementC
 }
 
 func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scope *scope) (core.Expression, error) {
-	varName := ctx.Identifier().GetText()
+	var source core.Expression
+	var children []antlr.Tree
 
-	_, err := scope.GetVariable(varName)
+	identifier := ctx.Identifier()
 
-	if err != nil {
-		return nil, err
+	if identifier != nil {
+		varName := ctx.Identifier().GetText()
+
+		_, err := scope.GetVariable(varName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		varExp, err := expressions.NewVariableExpression(v.getSourceMap(ctx), varName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		source = varExp
+		children = ctx.GetChildren()
+	} else {
+		fcall, err := v.doVisitFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		source = fcall
+		children = ctx.GetChildren()[1:]
 	}
 
-	children := ctx.GetChildren()
 	path := make([]core.Expression, 0, len(children))
 
 	for _, child := range children {
@@ -786,7 +810,7 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 
 	member, err := expressions.NewMemberExpression(
 		v.getSourceMap(ctx),
-		varName,
+		source,
 		path,
 	)
 

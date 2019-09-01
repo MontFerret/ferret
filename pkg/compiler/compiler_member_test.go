@@ -119,6 +119,42 @@ func TestMember(t *testing.T) {
 
 			So(string(out), ShouldEqual, `"wsx"`)
 		})
+
+		Convey("Prop after a func call", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				LET arr = [{ name: "Bob" }]
+
+				RETURN FIRST(arr).name
+			`)
+
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `"Bob"`)
+		})
+
+		Convey("Computed prop after a func call", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				LET arr = [{ name: { first: "Bob" } }]
+
+				RETURN FIRST(arr)['name'].first
+			`)
+
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `"Bob"`)
+		})
 	})
 }
 
