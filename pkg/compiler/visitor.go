@@ -961,8 +961,6 @@ func (v *visitor) doVisitStringLiteral(ctx *fql.StringLiteralContext) (core.Expr
 
 	if strLiteral != nil {
 		text = strLiteral.GetText()
-	} else {
-		text = ctx.TemplateStringLiteral().GetText()
 	}
 
 	// remove extra quotes
