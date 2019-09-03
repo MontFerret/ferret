@@ -1,14 +1,8 @@
 package drivers
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
-
-func WithDefaultTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(ctx, DefaultTimeout)
-}
 
 func ToPage(value core.Value) (HTMLPage, error) {
 	err := core.ValidateType(value, HTMLPageType)

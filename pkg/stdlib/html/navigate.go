@@ -34,7 +34,7 @@ func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 2 {
 		err = core.ValidateType(args[2], types.Int)

@@ -10,8 +10,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-const defaultTimeout = 5000
-
 func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(core.Functions{
 		"ATTR_GET":          AttributeGet,
@@ -73,6 +71,7 @@ func RegisterLib(ns core.Namespace) error {
 
 func OpenOrCastPage(ctx context.Context, value core.Value) (drivers.HTMLPage, bool, error) {
 	err := core.ValidateType(value, drivers.HTMLPageType, types.String)
+
 	if err != nil {
 		return nil, false, err
 	}

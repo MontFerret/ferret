@@ -58,7 +58,7 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 
 	selector := args[1].(values.String)
 	class := args[2].(values.String)
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 4 {
 		err = core.ValidateType(args[3], types.Int)

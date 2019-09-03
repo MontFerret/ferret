@@ -39,7 +39,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	// WAIT_ATTR(doc, selector, attrName, attrValue, timeout)

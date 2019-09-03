@@ -2,15 +2,13 @@ package cdp
 
 import (
 	"context"
-	"sync"
-	"time"
-
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
+	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -18,7 +16,6 @@ import (
 
 const DriverName = "cdp"
 const BlankPageURL = "about:blank"
-const DefaultTimeout = 5000 * time.Millisecond
 
 var defaultViewport = &drivers.Viewport{
 	Width:  1600,

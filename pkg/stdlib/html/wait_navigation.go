@@ -26,7 +26,7 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 1 {
 		err = core.ValidateType(args[1], types.Int)

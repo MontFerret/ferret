@@ -47,7 +47,7 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	selector := args[1].(values.String)
 	name := args[2].(values.String)
 	value := args[3]
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 5 {
 		err = core.ValidateType(args[4], types.Int)

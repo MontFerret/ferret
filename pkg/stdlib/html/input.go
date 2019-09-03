@@ -45,7 +45,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		selector := values.ToString(arg2)
-		delay := values.Int(0)
+		delay := values.NewInt(drivers.DefaultInputDelay)
 
 		if len(args) == 4 {
 			arg4 := args[3]
