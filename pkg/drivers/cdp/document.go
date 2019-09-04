@@ -325,24 +325,20 @@ func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values
 	return doc.element.ClickBySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
-	return doc.input.TypeBySelector(ctx, doc.element.id.nodeID, selector, value, delay)
-}
-
 func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
-	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector, value)
+	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector.String(), value)
 }
 
 func (doc *HTMLDocument) FocusBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.FocusBySelector(ctx, doc.element.id.nodeID, selector)
+	return doc.input.FocusBySelector(ctx, doc.element.id.nodeID, selector.String())
 }
 
 func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.MoveMouseBySelector(ctx, doc.element.id.nodeID, selector)
+	return doc.input.MoveMouseBySelector(ctx, doc.element.id.nodeID, selector.String())
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.MoveMouseByXY(ctx, x, y)
+	return doc.input.MoveMouseByXY(ctx, float64(x), float64(y))
 }
 
 func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
@@ -501,11 +497,11 @@ func (doc *HTMLDocument) ScrollBottom(ctx context.Context) error {
 }
 
 func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.ScrollIntoViewBySelector(ctx, selector)
+	return doc.input.ScrollIntoViewBySelector(ctx, selector.String())
 }
 
 func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.ScrollByXY(ctx, x, y)
+	return doc.input.ScrollByXY(ctx, float64(x), float64(y))
 }
 
 func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {

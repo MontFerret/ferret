@@ -501,7 +501,19 @@ func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String) er
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) Clear(_ context.Context) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) ClearBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) error {
 	return core.ErrNotSupported
 }
 

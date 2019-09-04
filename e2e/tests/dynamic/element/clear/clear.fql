@@ -1,0 +1,12 @@
+LET url = @dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "form")
+
+LET input = ELEMENT(doc, "#text_input")
+
+INPUT(input, "Foo", 100)
+
+INPUT_CLEAR(input)
+
+RETURN EXPECT("", INNER_TEXT(doc, "#text_output"))

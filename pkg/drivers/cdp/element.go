@@ -1057,11 +1057,11 @@ func (el *HTMLElement) Click(ctx context.Context) error {
 }
 
 func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelector(ctx, el.id.nodeID, selector)
+	return el.input.ClickBySelector(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector)
+	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
@@ -1069,7 +1069,27 @@ func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values
 		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")
 	}
 
-	return el.input.Type(ctx, el.id.objectID, value, delay)
+	return el.input.Type(ctx, el.id.objectID, input.TypeParams{
+		Text:  value.String(),
+		Clear: false,
+		Delay: time.Duration(delay) * time.Millisecond,
+	})
+}
+
+func (el *HTMLElement) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
+	return el.input.TypeBySelector(ctx, el.id.nodeID, selector.String(), input.TypeParams{
+		Text:  value.String(),
+		Clear: false,
+		Delay: time.Duration(delay) * time.Millisecond,
+	})
+}
+
+func (el *HTMLElement) Clear(ctx context.Context) error {
+	return el.input.Clear(ctx, el.id.objectID)
+}
+
+func (el *HTMLElement) ClearBySelector(ctx context.Context, selector values.String) error {
+	return el.input.ClearBySelector(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
@@ -1216,6 +1236,10 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 		return
 	}
 
+	if el.IsDetached() {
+		return
+	}
+
 	el.attributes.Mutate(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
@@ -1256,6 +1280,10 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 		return
 	}
 
+	if el.IsDetached() {
+		return
+	}
+
 	el.attributes.Mutate(ctx, func(v core.Value, err error) {
 		if err != nil {
 			el.logError(err).Msg("failed to update element")
@@ -1288,6 +1316,13 @@ func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message i
 		return
 	}
 
+	if el.IsDetached() {
+		return
+	}
+
+	el.mu.Lock()
+	defer el.mu.Unlock()
+
 	node, err := el.client.DOM.DescribeNode(
 		ctx,
 		dom.NewDescribeNodeArgs().SetObjectID(el.id.objectID),
@@ -1298,9 +1333,6 @@ func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message i
 
 		return
 	}
-
-	el.mu.Lock()
-	defer el.mu.Unlock()
 
 	el.children = createChildrenArray(node.Node.Children)
 }
@@ -1319,6 +1351,10 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 	targetIDx := -1
 	prevID := reply.PreviousNodeID
 	nextID := reply.Node.NodeID
+
+	if el.IsDetached() {
+		return
+	}
 
 	el.mu.Lock()
 	defer el.mu.Unlock()
@@ -1375,6 +1411,10 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface
 
 	targetIDx := -1
 	targetID := reply.NodeID
+
+	if el.IsDetached() {
+		return
+	}
 
 	el.mu.Lock()
 	defer el.mu.Unlock()

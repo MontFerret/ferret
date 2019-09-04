@@ -35,6 +35,7 @@ func RegisterLib(ns core.Namespace) error {
 		"INNER_TEXT_SET":    SetInnerText,
 		"INNER_TEXT_ALL":    GetInnerTextAll,
 		"INPUT":             Input,
+		"INPUT_CLEAR":       InputClear,
 		"MOUSE":             MouseMoveXY,
 		"NAVIGATE":          Navigate,
 		"NAVIGATE_BACK":     NavigateBack,
