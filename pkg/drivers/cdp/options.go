@@ -9,8 +9,8 @@ type (
 		UserAgent   string
 		Address     string
 		KeepCookies bool
-		Cookies     drivers.HTTPCookies
 		Headers     drivers.HTTPHeaders
+		Cookies     drivers.HTTPCookies
 	}
 
 	Option func(opts *Options)

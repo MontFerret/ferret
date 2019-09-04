@@ -114,6 +114,54 @@ func (r *Runner) Run(ctx context.Context) error {
 		drivers.AsDefault(),
 	)
 
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(
+			http.WithCustomName("http_headers"),
+			http.WithHeader("Single_header", []string{"single_header_value"}),
+			http.WithHeaders(drivers.HTTPHeaders{
+				"Multi_set_header":  []string{"multi_set_header_value"},
+				"Multi_set_header2": []string{"multi_set_header2_value"},
+			}),
+		),
+	)
+
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(
+			http.WithCustomName("http_cookies"),
+			http.WithCookie(drivers.HTTPCookie{
+				Name:     "single_cookie",
+				Value:    "single_cookie_value",
+				Path:     "/",
+				MaxAge:   0,
+				Secure:   false,
+				HTTPOnly: false,
+				SameSite: 0,
+			}),
+			http.WithCookies([]drivers.HTTPCookie{
+				{
+					Name:     "multi_set_cookie",
+					Value:    "multi_set_cookie_value",
+					Path:     "/",
+					MaxAge:   0,
+					Secure:   false,
+					HTTPOnly: false,
+					SameSite: 0,
+				},
+				{
+					Name:     "multi_set_cookie2",
+					Value:    "multi_set_cookie2_value",
+					Path:     "/",
+					MaxAge:   0,
+					Secure:   false,
+					HTTPOnly: false,
+					SameSite: 0,
+				},
+			}),
+		),
+	)
+
 	results, err := r.runQueries(ctx, r.settings.Dir)
 
 	if err != nil {
