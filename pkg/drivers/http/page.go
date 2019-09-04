@@ -15,7 +15,6 @@ import (
 type HTMLPage struct {
 	document *HTMLDocument
 	cookies  drivers.HTTPCookies
-	headers  drivers.HTTPHeaders
 	frames   *values.Array
 }
 
