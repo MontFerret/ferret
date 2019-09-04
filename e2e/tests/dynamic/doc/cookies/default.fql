@@ -4,9 +4,11 @@ LET page = DOCUMENT(url, {
 })
 
 LET el = ELEMENT(page, "#cookies")
-LET actual = JSON_PARSE(el.innerText)
-
-PRINT(actual)
+LET actual = (
+    FOR c IN JSON_PARSE(el.innerText)
+        SORT c.Name
+        RETURN c
+)
 
 LET expected = {
     "Single_cookie": "single_cookie_value",
@@ -14,6 +16,6 @@ LET expected = {
 }
 
 RETURN EXPECT(expected, {
-    "Single_cookie": actual[1].Value,
-    "Multi_set_cookie": actual[2].Value,
+    "Single_cookie": actual[2].Value,
+    "Multi_set_cookie": actual[0].Value,
 })
