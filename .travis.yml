@@ -20,7 +20,7 @@ addons:
 
 install:
 - go get -u github.com/mgechev/revive
-- go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+- go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@v1.17.1
 - sudo curl -o /usr/local/lib/antlr-4.7.2-complete.jar https://www.antlr.org/download/antlr-4.7.2-complete.jar
 - export CLASSPATH=".:/usr/local/lib/antlr-4.7.2-complete.jar:$CLASSPATH"
 - mkdir $HOME/travis-bin
