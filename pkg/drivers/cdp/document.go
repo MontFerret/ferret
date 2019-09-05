@@ -325,10 +325,6 @@ func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values
 	return doc.element.ClickBySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
-	return doc.input.TypeBySelector(ctx, doc.element.id.nodeID, selector, value, delay)
-}
-
 func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
 	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector, value)
 }

@@ -78,8 +78,7 @@ In: 'IN';
 // Literals
 Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
-StringLiteral: SQString | DQSring;
-TemplateStringLiteral: '`' ('\\`' | ~'`')* '`';
+StringLiteral: SQString | DQSring | BacktickString | TickString;
 IntegerLiteral: [0-9]+;
 FloatLiteral
     : DecimalIntegerLiteral Dot [0-9]+ ExponentPart?
@@ -108,4 +107,6 @@ fragment Digit
     ;
 fragment DQSring: '"' ( '\\'. | '""' | ~('"'| '\\') )* '"';
 fragment SQString: '\'' ('\\'. | '\'\'' | ~('\'' | '\\'))* '\'';
+fragment BacktickString: '`' ('\\`' | ~'`')* '`';
+fragment TickString: '´' ('\\´' | ~'´')* '´';
 fragment NamespaceSeparator: '::';

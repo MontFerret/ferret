@@ -99,7 +99,13 @@ type (
 
 		Click(ctx context.Context) error
 
+		Clear(ctx context.Context) error
+
+		ClearBySelector(ctx context.Context, selector values.String) error
+
 		Input(ctx context.Context, value core.Value, delay values.Int) error
+
+		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
 
 		Select(ctx context.Context, value *values.Array) (*values.Array, error)
 
@@ -130,8 +136,6 @@ type (
 		GetParentDocument() HTMLDocument
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
-
-		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
 

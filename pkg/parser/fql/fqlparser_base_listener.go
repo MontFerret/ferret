@@ -250,12 +250,6 @@ func (s *BaseFqlParserListener) EnterPropertyAssignment(ctx *PropertyAssignmentC
 // ExitPropertyAssignment is called when production propertyAssignment is exited.
 func (s *BaseFqlParserListener) ExitPropertyAssignment(ctx *PropertyAssignmentContext) {}
 
-// EnterMemberExpression is called when production memberExpression is entered.
-func (s *BaseFqlParserListener) EnterMemberExpression(ctx *MemberExpressionContext) {}
-
-// ExitMemberExpression is called when production memberExpression is exited.
-func (s *BaseFqlParserListener) ExitMemberExpression(ctx *MemberExpressionContext) {}
-
 // EnterShorthandPropertyName is called when production shorthandPropertyName is entered.
 func (s *BaseFqlParserListener) EnterShorthandPropertyName(ctx *ShorthandPropertyNameContext) {}
 
@@ -291,6 +285,12 @@ func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExp
 
 // ExitFunctionCallExpression is called when production functionCallExpression is exited.
 func (s *BaseFqlParserListener) ExitFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
+
+// EnterMemberExpression is called when production memberExpression is entered.
+func (s *BaseFqlParserListener) EnterMemberExpression(ctx *MemberExpressionContext) {}
+
+// ExitMemberExpression is called when production memberExpression is exited.
+func (s *BaseFqlParserListener) ExitMemberExpression(ctx *MemberExpressionContext) {}
 
 // EnterArguments is called when production arguments is entered.
 func (s *BaseFqlParserListener) EnterArguments(ctx *ArgumentsContext) {}

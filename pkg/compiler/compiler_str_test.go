@@ -23,7 +23,7 @@ BAR
 		So(string(out), ShouldEqual, `"\nFOO\nBAR\n"`)
 	})
 
-	Convey("Should be possible to use multi line string with nested strings", t, func() {
+	Convey("Should be possible to use multi line string with nested strings using backtick", t, func() {
 		compiler.New().
 			MustCompile(fmt.Sprintf(`
 RETURN %s<!DOCTYPE html>
@@ -37,6 +37,38 @@ RETURN %s<!DOCTYPE html>
 		</body>
 		</html>%s
 `, "`", "`")).
+			MustRun(context.Background())
+
+		out, err := json.Marshal(`<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>GetTitle</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>`)
+
+		So(err, ShouldBeNil)
+
+		So(string(out), ShouldEqual, string(out))
+	})
+
+	Convey("Should be possible to use multi line string with nested strings using tick", t, func() {
+		compiler.New().
+			MustCompile(fmt.Sprintf(`
+RETURN %s<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>GetTitle</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>%s
+`, "´", "´")).
 			MustRun(context.Background())
 
 		out, err := json.Marshal(`<!DOCTYPE html>
