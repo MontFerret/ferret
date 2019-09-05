@@ -28,7 +28,8 @@ install:
 - chmod +x $HOME/travis-bin/*
 - export PATH=$PATH:$HOME/travis-bin
 - export GO111MODULE=on
-- git reset --hard
+- make install && git status
+- git reset --hard && git status
 
 stages:
 - lint
