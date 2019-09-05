@@ -13,7 +13,7 @@ type (
 		URL         string
 		UserAgent   string
 		KeepCookies bool
-		Cookies     []HTTPCookie
+		Cookies     HTTPCookies
 		Headers     HTTPHeaders
 		Viewport    *Viewport
 	}
