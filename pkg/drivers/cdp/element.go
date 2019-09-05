@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -208,7 +209,7 @@ func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 }
 
 func (el *HTMLElement) String() string {
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(drivers.DefaultWaitTimeout)*time.Millisecond)
 	defer cancel()
 
 	res, err := el.GetInnerHTML(ctx)
@@ -1056,11 +1057,11 @@ func (el *HTMLElement) Click(ctx context.Context) error {
 }
 
 func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelector(ctx, el.id.nodeID, selector)
+	return el.input.ClickBySelector(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector)
+	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
@@ -1069,17 +1070,17 @@ func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values
 	}
 
 	return el.input.Type(ctx, el.id.objectID, input.TypeParams{
-		Text:  value,
+		Text:  value.String(),
 		Clear: false,
-		Delay: delay,
+		Delay: time.Duration(delay) * time.Millisecond,
 	})
 }
 
 func (el *HTMLElement) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
-	return el.input.TypeBySelector(ctx, el.id.nodeID, selector, input.TypeParams{
-		Text:  value,
+	return el.input.TypeBySelector(ctx, el.id.nodeID, selector.String(), input.TypeParams{
+		Text:  value.String(),
 		Clear: false,
-		Delay: delay,
+		Delay: time.Duration(delay) * time.Millisecond,
 	})
 }
 
@@ -1088,7 +1089,7 @@ func (el *HTMLElement) Clear(ctx context.Context) error {
 }
 
 func (el *HTMLElement) ClearBySelector(ctx context.Context, selector values.String) error {
-	return el.input.ClearBySelector(ctx, el.id.nodeID, selector)
+	return el.input.ClearBySelector(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {

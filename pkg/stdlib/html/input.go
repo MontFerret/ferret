@@ -27,7 +27,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	delay := values.NewInt(25)
+	delay := values.NewInt(drivers.DefaultInputDelay)
 
 	// INPUT(el, value)
 	if len(args) == 2 {
@@ -48,9 +48,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.True, el.Input(ctx, value, delay)
 		default:
 			// INPUT(el, selector, value)
-			err := core.ValidateType(args[1], types.String)
-
-			if err != nil {
+			if err := core.ValidateType(args[1], types.String); err != nil {
 				return values.False, err
 			}
 
@@ -59,12 +57,16 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	} else {
 		// INPUT(el, selector, value, delay)
-		err := core.ValidateType(args[3], types.Int)
-
-		if err != nil {
+		if err := core.ValidateType(args[1], types.String); err != nil {
 			return values.False, err
 		}
 
+		if err := core.ValidateType(args[3], types.Int); err != nil {
+			return values.False, err
+		}
+
+		selector = values.ToString(args[1])
+		value = args[2]
 		delay = values.ToInt(args[3])
 	}
 

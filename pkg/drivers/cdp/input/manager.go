@@ -8,6 +8,7 @@ import (
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -16,9 +17,9 @@ import (
 
 type (
 	TypeParams struct {
-		Text  core.Value
-		Clear values.Boolean
-		Delay values.Int
+		Text  string
+		Clear bool
+		Delay time.Duration
 	}
 
 	Manager struct {
@@ -69,14 +70,14 @@ func (m *Manager) ScrollIntoView(ctx context.Context, objectID runtime.RemoteObj
 	)
 }
 
-func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, selector values.String) error {
-	return m.exec.Eval(ctx, templates.ScrollIntoViewBySelector(selector.String()))
+func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, selector string) error {
+	return m.exec.Eval(ctx, templates.ScrollIntoViewBySelector(selector))
 }
 
-func (m *Manager) ScrollByXY(ctx context.Context, x, y values.Float) error {
+func (m *Manager) ScrollByXY(ctx context.Context, x, y float64) error {
 	return m.exec.Eval(
 		ctx,
-		templates.Scroll(eval.ParamFloat(float64(x)), eval.ParamFloat(float64(y))),
+		templates.Scroll(eval.ParamFloat(x), eval.ParamFloat(y)),
 	)
 }
 
@@ -90,14 +91,14 @@ func (m *Manager) Focus(ctx context.Context, objectID runtime.RemoteObjectID) er
 	return m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(objectID))
 }
 
-func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
 	err := m.ScrollIntoViewBySelector(ctx, selector)
 
 	if err != nil {
 		return err
 	}
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
+	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
 
 	if err != nil {
 		return nil
@@ -120,12 +121,12 @@ func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID
 	return m.mouse.Move(ctx, q.X, q.Y)
 }
 
-func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
 	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
 		return err
 	}
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
+	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
 
 	if err != nil {
 		return err
@@ -140,12 +141,12 @@ func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.Node
 	return m.mouse.Move(ctx, q.X, q.Y)
 }
 
-func (m *Manager) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
+func (m *Manager) MoveMouseByXY(ctx context.Context, x, y float64) error {
 	if err := m.ScrollByXY(ctx, x, y); err != nil {
 		return err
 	}
 
-	return m.mouse.Move(ctx, float64(x), float64(y))
+	return m.mouse.Move(ctx, x, y)
 }
 
 func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID) error {
@@ -159,19 +160,19 @@ func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID) er
 		return err
 	}
 
-	if err := m.mouse.Click(ctx, points.X, points.Y, 50); err != nil {
+	if err := m.mouse.Click(ctx, points.X, points.Y, drivers.DefaultInputDelay); err != nil {
 		return nil
 	}
 
 	return nil
 }
 
-func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
 	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
 		return err
 	}
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
+	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
 
 	if err != nil {
 		return err
@@ -183,29 +184,29 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 		return err
 	}
 
-	if err := m.mouse.Click(ctx, points.X, points.Y, 50); err != nil {
+	if err := m.mouse.Click(ctx, points.X, points.Y, drivers.DefaultInputDelay); err != nil {
 		return nil
 	}
 
 	return nil
 }
 
-func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
 	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
 		return err
 	}
 
-	found, err := m.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(parentNodeID, selector.String()))
+	found, err := m.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(parentNodeID, selector))
 
 	if err != nil {
 		return err
 	}
 
 	for _, nodeID := range found.NodeIDs {
-		_, min := core.NumberBoundaries(100)
-		beforeTypeDelay := time.Duration(min)
+		_, min := core.NumberBoundaries(drivers.DefaultInputDelay * 2)
+		beforeTypeDelay := time.Duration(min) * time.Millisecond
 
-		time.Sleep(beforeTypeDelay * time.Millisecond)
+		time.Sleep(beforeTypeDelay)
 
 		points, err := GetClickablePointByNodeID(ctx, m.client, nodeID)
 
@@ -213,7 +214,7 @@ func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeI
 			return err
 		}
 
-		if err := m.mouse.Click(ctx, points.X, points.Y, 50); err != nil {
+		if err := m.mouse.Click(ctx, points.X, points.Y, drivers.DefaultInputDelay); err != nil {
 			return nil
 		}
 	}
@@ -246,22 +247,22 @@ func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, par
 		}
 	}
 
-	_, min := core.NumberBoundaries(float64(params.Delay))
-	beforeTypeDelay := time.Duration(min)
+	d := core.NumberLowerBoundary(float64(params.Delay))
+	beforeTypeDelay := time.Duration(d)
 
-	time.Sleep(beforeTypeDelay * time.Millisecond)
+	time.Sleep(beforeTypeDelay)
 
-	return m.keyboard.Type(ctx, params.Text.String(), int(params.Delay))
+	return m.keyboard.Type(ctx, params.Text, params.Delay)
 }
 
-func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String, params TypeParams) error {
+func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, params TypeParams) error {
 	err := m.ScrollIntoViewBySelector(ctx, selector)
 
 	if err != nil {
 		return err
 	}
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
+	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
 
 	if err != nil {
 		return err
@@ -285,12 +286,12 @@ func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, s
 		}
 	}
 
-	_, min := core.NumberBoundaries(float64(params.Delay))
-	beforeTypeDelay := time.Duration(min)
+	d := core.NumberLowerBoundary(float64(params.Delay))
+	beforeTypeDelay := time.Duration(d)
 
-	time.Sleep(beforeTypeDelay * time.Millisecond)
+	time.Sleep(beforeTypeDelay)
 
-	return m.keyboard.Type(ctx, params.Text.String(), int(params.Delay))
+	return m.keyboard.Type(ctx, params.Text, params.Delay)
 }
 
 func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) error {
@@ -315,14 +316,14 @@ func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) er
 	return m.ClearByXY(ctx, points)
 }
 
-func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String) error {
+func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
 	err := m.ScrollIntoViewBySelector(ctx, selector)
 
 	if err != nil {
 		return err
 	}
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector.String()))
+	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
 
 	if err != nil {
 		return err
@@ -375,12 +376,12 @@ func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, v
 	return arr, nil
 }
 
-func (m *Manager) SelectBySelector(ctx context.Context, parentNodeID dom.NodeID, selector values.String, value *values.Array) (*values.Array, error) {
+func (m *Manager) SelectBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, value *values.Array) (*values.Array, error) {
 	if err := m.FocusBySelector(ctx, parentNodeID, selector); err != nil {
 		return values.NewArray(0), err
 	}
 
-	res, err := m.exec.EvalWithReturnValue(ctx, templates.SelectBySelector(selector.String(), value.String()))
+	res, err := m.exec.EvalWithReturnValue(ctx, templates.SelectBySelector(selector, value.String()))
 
 	if err != nil {
 		return values.NewArray(0), err

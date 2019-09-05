@@ -62,7 +62,7 @@ func (k *Keyboard) Up(ctx context.Context, char string) error {
 	)
 }
 
-func (k *Keyboard) Type(ctx context.Context, text string, delay int) error {
+func (k *Keyboard) Type(ctx context.Context, text string, delay time.Duration) error {
 	for _, ch := range text {
 		ch := string(ch)
 
@@ -70,7 +70,7 @@ func (k *Keyboard) Type(ctx context.Context, text string, delay int) error {
 			return err
 		}
 
-		releaseDelay := randomDuration(delay) * time.Millisecond
+		releaseDelay := randomDuration(int(delay))
 		time.Sleep(releaseDelay)
 
 		if err := k.Up(ctx, ch); err != nil {

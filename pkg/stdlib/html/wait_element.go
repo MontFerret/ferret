@@ -41,7 +41,7 @@ func waitElementWhen(ctx context.Context, args []core.Value, when drivers.WaitEv
 	}
 
 	selector := args[1].String()
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 2 {
 		err = core.ValidateType(args[2], types.Int)

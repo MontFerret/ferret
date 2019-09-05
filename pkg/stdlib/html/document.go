@@ -76,7 +76,7 @@ func newDefaultDocLoadParams(url values.String) PageLoadParams {
 		Params: drivers.Params{
 			URL: url.String(),
 		},
-		Timeout: time.Second * 30,
+		Timeout: drivers.DefaultPageLoadTimeout * time.Millisecond,
 	}
 }
 

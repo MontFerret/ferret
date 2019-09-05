@@ -57,7 +57,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
