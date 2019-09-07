@@ -36,7 +36,7 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 	}
 
 	out := val
-	path := make([]core.Value, 1, 1)
+	path := make([]core.Value, 1)
 
 	for _, exp := range e.path {
 		segment, err := exp.Exec(ctx, scope)
