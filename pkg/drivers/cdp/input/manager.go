@@ -149,7 +149,7 @@ func (m *Manager) MoveMouseByXY(ctx context.Context, x, y float64) error {
 	return m.mouse.Move(ctx, x, y)
 }
 
-func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID) error {
+func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID, count int) error {
 	if err := m.ScrollIntoView(ctx, objectID); err != nil {
 		return err
 	}
@@ -160,14 +160,16 @@ func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID) er
 		return err
 	}
 
-	if err := m.mouse.Click(ctx, points.X, points.Y, drivers.DefaultInputDelay); err != nil {
+	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
+
+	if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
 		return nil
 	}
 
 	return nil
 }
 
-func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
+func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, count int) error {
 	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
 		return err
 	}
@@ -184,14 +186,16 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 		return err
 	}
 
-	if err := m.mouse.Click(ctx, points.X, points.Y, drivers.DefaultInputDelay); err != nil {
+	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
+
+	if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
 		return nil
 	}
 
 	return nil
 }
 
-func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
+func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeID, selector string, count int) error {
 	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
 		return err
 	}
@@ -203,8 +207,7 @@ func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeI
 	}
 
 	for _, nodeID := range found.NodeIDs {
-		_, min := core.NumberBoundaries(drivers.DefaultInputDelay * 2)
-		beforeTypeDelay := time.Duration(min) * time.Millisecond
+		beforeTypeDelay := time.Duration(core.NumberLowerBoundary(drivers.DefaultMouseDelay*10)) * time.Millisecond
 
 		time.Sleep(beforeTypeDelay)
 
@@ -214,7 +217,9 @@ func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeI
 			return err
 		}
 
-		if err := m.mouse.Click(ctx, points.X, points.Y, drivers.DefaultInputDelay); err != nil {
+		delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
+
+		if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
 			return nil
 		}
 	}
@@ -345,7 +350,8 @@ func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 }
 
 func (m *Manager) ClearByXY(ctx context.Context, points Quad) error {
-	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, 3, 5)
+	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
+	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, 2)
 
 	if err != nil {
 		return err

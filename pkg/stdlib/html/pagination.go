@@ -102,7 +102,7 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 		return values.None, values.None, core.ErrNoMoreData
 	}
 
-	err = i.document.ClickBySelector(ctx, i.selector)
+	err = i.document.GetElement().ClickBySelector(ctx, i.selector, 1)
 
 	if err != nil {
 		return values.None, values.None, err

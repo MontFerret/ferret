@@ -18,11 +18,11 @@ func NewMouse(client *cdp.Client) *Mouse {
 	return &Mouse{client, 0, 0}
 }
 
-func (m *Mouse) Click(ctx context.Context, x, y float64, delay int) error {
-	return m.ClickWithCount(ctx, x, y, 1, delay)
+func (m *Mouse) Click(ctx context.Context, x, y float64, delay time.Duration) error {
+	return m.ClickWithCount(ctx, x, y, delay, 1)
 }
 
-func (m *Mouse) ClickWithCount(ctx context.Context, x, y float64, count, delay int) error {
+func (m *Mouse) ClickWithCount(ctx context.Context, x, y float64, delay time.Duration, count int) error {
 	if err := m.Move(ctx, x, y); err != nil {
 		return err
 	}
@@ -31,11 +31,13 @@ func (m *Mouse) ClickWithCount(ctx context.Context, x, y float64, count, delay i
 		return err
 	}
 
-	releaseDelay := randomDuration(delay)
+	time.Sleep(randomDuration(int(delay)))
 
-	time.Sleep(releaseDelay * time.Millisecond)
+	if err := m.UpWithCount(ctx, "left", count); err != nil {
+		return err
+	}
 
-	return m.UpWithCount(ctx, "left", count)
+	return nil
 }
 
 func (m *Mouse) Down(ctx context.Context, button string) error {
@@ -46,8 +48,8 @@ func (m *Mouse) DownWithCount(ctx context.Context, button string, count int) err
 	return m.client.Input.DispatchMouseEvent(
 		ctx,
 		input.NewDispatchMouseEventArgs("mousePressed", m.x, m.y).
-			SetClickCount(count).
-			SetButton(button),
+			SetButton(button).
+			SetClickCount(count),
 	)
 }
 
@@ -59,8 +61,8 @@ func (m *Mouse) UpWithCount(ctx context.Context, button string, count int) error
 	return m.client.Input.DispatchMouseEvent(
 		ctx,
 		input.NewDispatchMouseEventArgs("mouseReleased", m.x, m.y).
-			SetClickCount(count).
-			SetButton(button),
+			SetButton(button).
+			SetClickCount(count),
 	)
 }
 

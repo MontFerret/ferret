@@ -43,10 +43,6 @@ type (
 		ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
 		XPath(ctx context.Context, expression values.String) (core.Value, error)
-
-		ClickBySelector(ctx context.Context, selector values.String) error
-
-		ClickBySelectorAll(ctx context.Context, selector values.String) error
 	}
 
 	// HTMLElement is the most general base interface which most objects in a GetMainFrame implement.
@@ -97,7 +93,11 @@ type (
 
 		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		Click(ctx context.Context) error
+		Click(ctx context.Context, count values.Int) error
+
+		ClickBySelector(ctx context.Context, selector values.String, count values.Int) error
+
+		ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error
 
 		Clear(ctx context.Context) error
 
