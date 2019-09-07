@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Pagination creates an iterator that goes through pages using CSS selector.
+// PAGINATION creates an iterator that goes through pages using CSS selector.
 // The iterator starts from the current page i.e. it does not change the page on 1st iteration.
 // That allows you to keep scraping logic inside FOR loop.
 // @param doc (Open) - Target document.

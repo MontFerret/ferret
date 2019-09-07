@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// XPath evaluates the XPath expression.
+// XPATH evaluates the XPath expression.
 // @param source (HTMLPage | HTMLDocument | HTMLElement) - Target HTML object.
 // @param expression (String) - XPath expression.
 // @returns (Value) - Returns result of a given XPath expression.

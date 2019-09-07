@@ -21,7 +21,7 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 	return match, nil
 }
 
-// PDF print a PDF of the current page.
+// PDF prints a PDF of the current page.
 // @param target (HTMLPage|String) - Target page or url.
 // @param params (Object) - Optional, An object containing the following properties :
 //   Landscape (Bool) - Paper orientation. Defaults to false.

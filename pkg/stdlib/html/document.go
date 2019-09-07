@@ -18,7 +18,7 @@ type PageLoadParams struct {
 	Timeout time.Duration
 }
 
-// Open opens an HTML page by a given url.
+// DOCUMENT opens an HTML page by a given url.
 // By default, loads a page by http call - resulted page does not support any interactions.
 // @param params (Object) - Optional, An object containing the following properties :
 // 		driver (String) - Optional, driver name.

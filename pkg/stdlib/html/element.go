@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// GetElement finds an element by a given CSS selector.
+// ELEMENT finds an element by a given CSS selector.
 // Returns NONE if element not found.
 // @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String) - CSS selector.

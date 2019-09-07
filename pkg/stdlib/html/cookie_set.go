@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// CookieSet sets cookies to a given page
+// COOKIE_SET sets cookies to a given page
 // @param page (HTMLPage) - Target page.
 // @param cookie... (HTTPCookie) - Target cookies.
 func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {

@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Download a resource from the given GetURL.
+// DOWNLOAD downloads a resource from the given GetURL.
 // @param GetURL (String) - GetURL to download.
 // @returns data (Binary) - Returns a base64 encoded string in binary format.
 func Download(_ context.Context, args ...core.Value) (core.Value, error) {

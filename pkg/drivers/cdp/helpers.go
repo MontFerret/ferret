@@ -71,10 +71,10 @@ func parseAttrs(attrs []string) *values.Object {
 func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, innerHTML values.String) error {
 	var objID *runtime.RemoteObjectID
 
-	if id.objectID != "" {
-		objID = &id.objectID
+	if id.ObjectID != "" {
+		objID = &id.ObjectID
 	} else {
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.NodeID))
 
 		if err != nil {
 			return err
@@ -110,10 +110,10 @@ func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 	if nodeType != html.DocumentNode {
 		var objID runtime.RemoteObjectID
 
-		if id.objectID != "" {
-			objID = id.objectID
+		if id.ObjectID != "" {
+			objID = id.ObjectID
 		} else {
-			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.NodeID))
 
 			if err != nil {
 				return "", err
@@ -147,10 +147,10 @@ func getInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, innerText values.String) error {
 	var objID *runtime.RemoteObjectID
 
-	if id.objectID != "" {
-		objID = &id.objectID
+	if id.ObjectID != "" {
+		objID = &id.ObjectID
 	} else {
-		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+		repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.NodeID))
 
 		if err != nil {
 			return err
@@ -186,10 +186,10 @@ func getInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 	if nodeType != html.DocumentNode {
 		var objID runtime.RemoteObjectID
 
-		if id.objectID != "" {
-			objID = id.objectID
+		if id.ObjectID != "" {
+			objID = id.ObjectID
 		} else {
-			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.nodeID))
+			repl, err := client.DOM.ResolveNode(ctx, dom.NewResolveNodeArgs().SetNodeID(id.NodeID))
 
 			if err != nil {
 				return "", err
@@ -238,7 +238,7 @@ func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
 	for idx, child := range nodes {
 		child := child
 		children[idx] = HTMLElementIdentity{
-			nodeID: child.NodeID,
+			NodeID: child.NodeID,
 		}
 	}
 

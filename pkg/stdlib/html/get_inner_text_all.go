@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// GetInnerTextAll returns an array of inner text of matched elements.
+// INNER_TEXT_ALL returns an array of inner text of matched elements.
 // @param doc (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String) - String of CSS selector.
 // @returns (String) - An array of inner text if any element found, otherwise empty array.
