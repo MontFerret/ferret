@@ -4,10 +4,6 @@ confidence = 0.8
 errorCode = 1
 warningCode = 0
 
-[rule.package-comments]
-	severity = "warning"
-[rule.exported]
-	severity = "warning"
 [rule.blank-imports]
 [rule.context-as-argument]
 [rule.context-keys-type]

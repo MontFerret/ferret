@@ -33,11 +33,7 @@ func (m *Mouse) ClickWithCount(ctx context.Context, x, y float64, delay time.Dur
 
 	time.Sleep(randomDuration(int(delay)))
 
-	if err := m.UpWithCount(ctx, "left", count); err != nil {
-		return err
-	}
-
-	return nil
+	return m.UpWithCount(ctx, "left", count)
 }
 
 func (m *Mouse) Down(ctx context.Context, button string) error {
