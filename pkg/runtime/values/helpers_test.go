@@ -390,9 +390,7 @@ func TestHelpers(t *testing.T) {
 				}
 
 				input := values.NewArrayWith(vals...)
-				output := values.ToArray(context.Background(), input)
-
-				arr := output.(*values.Array)
+				arr := values.ToArray(context.Background(), input)
 
 				So(input == arr, ShouldBeFalse)
 				So(arr.Length() == input.Length(), ShouldBeTrue)
@@ -414,9 +412,7 @@ func TestHelpers(t *testing.T) {
 					values.NewObjectProperty("qaz", values.NewObject()),
 				)
 
-				output := values.ToArray(context.Background(), input)
-
-				arr := output.(*values.Array).Sort()
+				arr := values.ToArray(context.Background(), input).Sort()
 
 				So(arr.String(), ShouldEqual, "[1,\"bar\",{}]")
 				So(arr.Get(values.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)

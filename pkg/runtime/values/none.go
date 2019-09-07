@@ -40,3 +40,7 @@ func (t *none) Hash() uint64 {
 func (t *none) Copy() core.Value {
 	return None
 }
+
+func (t *none) Clone() core.Cloneable {
+	return None
+}

@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Select selects a value from an underlying select element.
@@ -21,46 +20,20 @@ func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	arg1 := args[0]
-	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.False, err
+		return values.None, err
 	}
 
-	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
-		doc, err := drivers.ToDocument(arg1)
+	if len(args) == 2 {
+		arr := values.ToArray(ctx, args[1])
 
-		if err != nil {
-			return values.None, err
-		}
-
-		// selector
-		arg2 := args[1]
-		err = core.ValidateType(arg2, types.String)
-
-		if err != nil {
-			return values.False, err
-		}
-
-		arg3 := args[2]
-		err = core.ValidateType(arg3, types.Array)
-
-		if err != nil {
-			return values.False, err
-		}
-
-		return doc.SelectBySelector(ctx, arg2.(values.String), arg3.(*values.Array))
+		return el.Select(ctx, arr)
 	}
 
-	el := arg1.(drivers.HTMLElement)
-	arg2 := args[1]
+	selector := values.ToString(args[1])
+	arr := values.ToArray(ctx, args[2])
 
-	err = core.ValidateType(arg2, types.Array)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return el.Select(ctx, arg2.(*values.Array))
+	return el.SelectBySelector(ctx, selector, arr)
 }

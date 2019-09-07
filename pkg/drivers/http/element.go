@@ -521,6 +521,10 @@ func (el *HTMLElement) Select(_ context.Context, _ *values.Array) (*values.Array
 	return nil, core.ErrNotSupported
 }
 
+func (el *HTMLElement) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
+	return nil, core.ErrNotSupported
+}
+
 func (el *HTMLElement) ScrollIntoView(_ context.Context) error {
 	return core.ErrNotSupported
 }
@@ -529,7 +533,15 @@ func (el *HTMLElement) Focus(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) FocusBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) Hover(_ context.Context) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) HoverBySelector(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 

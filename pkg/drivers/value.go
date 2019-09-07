@@ -109,11 +109,17 @@ type (
 
 		Select(ctx context.Context, value *values.Array) (*values.Array, error)
 
+		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
+
 		ScrollIntoView(ctx context.Context) error
 
 		Focus(ctx context.Context) error
 
+		FocusBySelector(ctx context.Context, selector values.String) error
+
 		Hover(ctx context.Context) error
+
+		HoverBySelector(ctx context.Context, selector values.String) error
 
 		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
@@ -137,8 +143,6 @@ type (
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
-		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
-
 		ScrollTop(ctx context.Context) error
 
 		ScrollBottom(ctx context.Context) error
@@ -147,11 +151,7 @@ type (
 
 		ScrollByXY(ctx context.Context, x, y values.Float) error
 
-		FocusBySelector(ctx context.Context, selector values.String) error
-
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
-
-		MoveMouseBySelector(ctx context.Context, selector values.String) error
 
 		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
 
