@@ -15,6 +15,7 @@ func RegisterLib(ns core.Namespace) error {
 		"ATTR_GET":          AttributeGet,
 		"ATTR_REMOVE":       AttributeRemove,
 		"ATTR_SET":          AttributeSet,
+		"BLUR":              Blur,
 		"COOKIE_DEL":        CookieDel,
 		"COOKIE_GET":        CookieGet,
 		"COOKIE_SET":        CookieSet,

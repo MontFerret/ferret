@@ -107,6 +107,18 @@ func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 	return m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(found.NodeID))
 }
 
+func (m *Manager) Blur(ctx context.Context, objectID runtime.RemoteObjectID) error {
+	return m.exec.EvalWithArguments(ctx, templates.Blur(), runtime.CallArgument{
+		ObjectID: &objectID,
+	})
+}
+
+func (m *Manager) BlurBySelector(ctx context.Context, parentObjectID runtime.RemoteObjectID, selector string) error {
+	return m.exec.EvalWithArguments(ctx, templates.BlurBySelector(selector), runtime.CallArgument{
+		ObjectID: &parentObjectID,
+	})
+}
+
 func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID) error {
 	if err := m.ScrollIntoView(ctx, objectID); err != nil {
 		return err
