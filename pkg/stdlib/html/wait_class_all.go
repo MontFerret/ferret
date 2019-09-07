@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// WaitClassAll waits for a class to appear on all matched elements.
+// WAIT_CLASS_ALL waits for a class to appear on all matched elements.
 // Stops the execution until the navigation ends or operation times out.
 // @param doc (HTMLDocument) - Parent document.
 // @param selector (String) - String of CSS selector.
@@ -19,7 +19,7 @@ func WaitClassAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
-// WaitClassAll waits for a class to disappear on all matched elements.
+// WAIT_NO_CLASS_ALL waits for a class to disappear on all matched elements.
 // Stops the execution until the navigation ends or operation times out.
 // @param doc (HTMLDocument) - Parent document.
 // @param selector (String) - String of CSS selector.

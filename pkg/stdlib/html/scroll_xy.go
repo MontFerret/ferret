@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// ScrollXY scrolls by given coordinates.
+// SCROLL scrolls by given coordinates.
 // @param doc (HTMLDocument) - HTML document.
 // @param x (Int|Float) - X coordinate.
 // @param y (Int|Float) - Y coordinate.

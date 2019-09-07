@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Elements finds HTML elements by a given CSS selector.
+// ELEMENTS finds HTML elements by a given CSS selector.
 // Returns an empty array if element not found.
 // @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - CSS selector.

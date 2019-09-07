@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// ClickAll dispatches click event on all matched element
+// CLICK_ALL dispatches click event on all matched element
 // @param source (Open) - Open.
 // @param selector (String) - Selector.
 // @param count (Int, optional) - Optional count of clicks.

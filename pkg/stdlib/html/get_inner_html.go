@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// GetInnerHTML Returns inner HTML string of a given or matched by CSS selector element
+// INNER_HTML returns inner HTML string of a given or matched by CSS selector element
 // @param doc (Open|GetElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @returns (String) - Inner HTML string if an element found, otherwise empty string.

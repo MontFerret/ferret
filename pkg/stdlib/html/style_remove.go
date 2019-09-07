@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// StyleRemove removes single or more style attribute value(s) of a given element.
+// STYLE_REMOVE removes single or more style attribute value(s) of a given element.
 // @param el (HTMLElement) - Target element.
 // @param names (...String) - Style name(s).
 func StyleRemove(ctx context.Context, args ...core.Value) (core.Value, error) {

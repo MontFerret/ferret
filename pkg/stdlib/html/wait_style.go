@@ -9,10 +9,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
+// WAIT_STYLE
 func WaitStyle(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleWhen(ctx, args, drivers.WaitEventPresence)
 }
 
+// WAIT_NO_STYLE
 func WaitNoStyle(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleWhen(ctx, args, drivers.WaitEventAbsence)
 }

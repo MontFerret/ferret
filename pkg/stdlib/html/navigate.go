@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Navigate navigates a given page to a new resource.
+// NAVIGATE navigates a given page to a new resource.
 // The operation blocks the execution until the page gets loaded.
 // Which means there is no need in WAIT_NAVIGATION function.
 // @param page (HTMLPage) - Target page.

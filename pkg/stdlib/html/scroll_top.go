@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// ScrollTop scrolls the document's window to its top.
+// SCROLL_TOP scrolls the document's window to its top.
 // @param doc (HTMLDocument) - Target document.
 func ScrollTop(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

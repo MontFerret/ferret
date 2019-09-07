@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// AttributeSet sets or updates a single or more attribute(s) of a given element.
+// ATTR_SET sets or updates a single or more attribute(s) of a given element.
 // @param el (HTMLElement) - Target element.
 // @param nameOrObj (String | Object) - Attribute name or an object representing a key-value pair of attributes.
 // @param value (String) - If a second parameter is a string value, this parameter represent an attribute value.

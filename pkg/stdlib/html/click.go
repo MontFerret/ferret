@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Click dispatches click event on a given element
+// CLICK dispatches click event on a given element
 // @param source (Open | GetElement) - Event source.
 // @param selectorOrCount (String | Int, optional) - Optional selector or count of clicks.
 // @param count (Int, optional) - Optional count of clicks.

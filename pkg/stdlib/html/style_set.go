@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// StyleSet sets or updates a single or more style attribute value of a given element.
+// STYLE_SET sets or updates a single or more style attribute value of a given element.
 // @param el (HTMLElement) - Target element.
 // @param nameOrObj (String | Object) - Style name or an object representing a key-value pair of attributes.
 // @param value (String) - If a second parameter is a string value, this parameter represent a style value.

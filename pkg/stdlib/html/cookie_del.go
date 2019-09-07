@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// CookieSet gets a cookie from a given page by name.
+// COOKIE_DEL gets a cookie from a given page by name.
 // @param page (HTMLPage) - Target page.
 // @param cookie (...HTTPCookie|String) - Cookie or cookie name to delete.
 func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {

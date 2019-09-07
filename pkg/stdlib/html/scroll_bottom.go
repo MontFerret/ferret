@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// ScrollTop scrolls the document's window to its bottom.
+// SCROLL_BOTTOM scrolls the document's window to its bottom.
 // @param doc (HTMLDocument) - Target document.
 func ScrollBottom(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

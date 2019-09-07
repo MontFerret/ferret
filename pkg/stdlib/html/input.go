@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Input types a value to an underlying input element.
+// INPUT types a value to an underlying input element.
 // @param source (HTMLPage | HTMLDocument | HTMLElement) - Event target.
 // @param valueOrSelector (String) - Selector or a value.
 // @param value (String) - Target value.

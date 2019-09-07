@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Hover  fetches an element with selector, scrolls it into view if needed, and then uses page.mouse to hover over the center of the element.
+// HOVER fetches an element with selector, scrolls it into view if needed, and then uses page.mouse to hover over the center of the element.
 // If there's no element matching selector, the method returns an error.
 // @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selector (String, options) - If document is passed, this param must represent an element selector.

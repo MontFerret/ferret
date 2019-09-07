@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// NavigateForward navigates a given page forward within its navigation history.
+// NAVIGATE_FORWARD navigates a given page forward within its navigation history.
 // The operation blocks the execution until the page gets loaded.
 // If the history is empty, the function returns FALSE.
 // @param page (HTMLPage) - Target page.

@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// SetInnerHTML sets inner HTML string to a given or matched by CSS selector element
+// INNER_HTML_SET sets inner HTML string to a given or matched by CSS selector element
 // @param doc (Open|GetElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @param innerHTML (String) - String of inner HTML.
