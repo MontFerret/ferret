@@ -537,6 +537,14 @@ func (el *HTMLElement) FocusBySelector(_ context.Context, _ values.String) error
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) Blur(_ context.Context) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) BlurBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) Hover(_ context.Context) error {
 	return core.ErrNotSupported
 }

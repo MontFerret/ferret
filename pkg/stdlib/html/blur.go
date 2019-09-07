@@ -2,16 +2,16 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-// FOCUS Sets focus on the element.
+// BLUR Calls blur on the element.
 // @param target (HTMLPage | HTMLDocument | HTMLElement) - Target node.
 // @param selector (String, optional) - Optional CSS selector.
-func Focus(ctx context.Context, args ...core.Value) (core.Value, error) {
+func Blur(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -25,8 +25,8 @@ func Focus(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 1 {
-		return values.None, el.Focus(ctx)
+		return values.None, el.Blur(ctx)
 	}
 
-	return values.None, el.FocusBySelector(ctx, values.ToString(args[1]))
+	return values.None, el.BlurBySelector(ctx, values.ToString(args[1]))
 }

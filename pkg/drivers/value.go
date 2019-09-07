@@ -117,6 +117,10 @@ type (
 
 		FocusBySelector(ctx context.Context, selector values.String) error
 
+		Blur(ctx context.Context) error
+
+		BlurBySelector(ctx context.Context, selector values.String) error
+
 		Hover(ctx context.Context) error
 
 		HoverBySelector(ctx context.Context, selector values.String) error
