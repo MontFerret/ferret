@@ -1070,6 +1070,10 @@ func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values
 	return el.input.Select(ctx, el.id.objectID, value)
 }
 
+func (el *HTMLElement) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
+	return el.input.SelectBySelector(ctx, el.id.nodeID, selector.String(), value)
+}
+
 func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
 	return el.input.ScrollIntoView(ctx, el.id.objectID)
 }
@@ -1078,8 +1082,16 @@ func (el *HTMLElement) Focus(ctx context.Context) error {
 	return el.input.Focus(ctx, el.id.objectID)
 }
 
+func (el *HTMLElement) FocusBySelector(ctx context.Context, selector values.String) error {
+	return el.input.FocusBySelector(ctx, el.id.nodeID, selector.String())
+}
+
 func (el *HTMLElement) Hover(ctx context.Context) error {
 	return el.input.MoveMouse(ctx, el.id.objectID)
+}
+
+func (el *HTMLElement) HoverBySelector(ctx context.Context, selector values.String) error {
+	return el.input.MoveMouseBySelector(ctx, el.id.nodeID, selector.String())
 }
 
 func (el *HTMLElement) IsDetached() values.Boolean {

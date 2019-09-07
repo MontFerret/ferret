@@ -115,7 +115,7 @@ func (doc *HTMLDocument) Copy() core.Value {
 	return cp
 }
 
-func (doc *HTMLDocument) Clone() core.Value {
+func (doc *HTMLDocument) Clone() core.Cloneable {
 	cloned, err := NewHTMLDocument(doc.doc, doc.url.String(), doc.parent)
 
 	if err != nil {
@@ -215,18 +215,6 @@ func (doc *HTMLDocument) ClickBySelectorAll(_ context.Context, _ values.String) 
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
-	return nil, core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) PrintToPDF(_ context.Context, _ drivers.PDFParams) (values.Binary, error) {
-	return nil, core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotParams) (values.Binary, error) {
-	return nil, core.ErrNotSupported
-}
-
 func (doc *HTMLDocument) ScrollTop(_ context.Context) error {
 	return core.ErrNotSupported
 }
@@ -243,19 +231,7 @@ func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float) error 
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) FocusBySelector(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) MoveMouseBySelector(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
-}
-
 func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ values.Float) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForNavigation(_ context.Context) error {
 	return core.ErrNotSupported
 }
 

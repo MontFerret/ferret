@@ -325,18 +325,6 @@ func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values
 	return doc.element.ClickBySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
-	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector.String(), value)
-}
-
-func (doc *HTMLDocument) FocusBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.FocusBySelector(ctx, doc.element.id.nodeID, selector.String())
-}
-
-func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.MoveMouseBySelector(ctx, doc.element.id.nodeID, selector.String())
-}
-
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
 	return doc.input.MoveMouseByXY(ctx, float64(x), float64(y))
 }
