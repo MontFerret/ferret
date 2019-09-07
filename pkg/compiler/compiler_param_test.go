@@ -95,4 +95,22 @@ func TestParam(t *testing.T) {
 
 		So(string(out), ShouldEqual, `"bar"`)
 	})
+
+	Convey("Should be possible to use in member expression as segments", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			LET doc = { foo: { bar: "baz" } }
+
+			RETURN doc.@attr.@subattr
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("attr", "foo"),
+			runtime.WithParam("subattr", "bar"),
+		)
+
+		So(string(out), ShouldEqual, `"baz"`)
+
+	})
 }

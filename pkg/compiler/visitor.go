@@ -889,7 +889,7 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 	return literals.NewObjectLiteralWith(props...), nil
 }
 
-func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *scope) (core.Expression, error) {
+func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, scope *scope) (core.Expression, error) {
 	var name string
 
 	identifier := ctx.Identifier()
@@ -902,6 +902,14 @@ func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *sc
 		if stringLiteral != nil {
 			runes := []rune(stringLiteral.GetText())
 			name = string(runes[1 : len(runes)-1])
+		} else {
+			param, err := v.doVisitParamContext(ctx.Param().(*fql.ParamContext), scope)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return param, nil
 		}
 	}
 

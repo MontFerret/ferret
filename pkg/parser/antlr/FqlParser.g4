@@ -195,6 +195,7 @@ computedPropertyName
 propertyName
     : Identifier
     | stringLiteral
+    | param
     ;
 
 expressionGroup
