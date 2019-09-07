@@ -1067,11 +1067,11 @@ func (el *HTMLElement) FocusBySelector(ctx context.Context, selector values.Stri
 }
 
 func (el *HTMLElement) Blur(ctx context.Context) error {
-	return el.input.Blur(ctx, el.id.objectID)
+	return el.input.Blur(ctx, el.id.ObjectID)
 }
 
 func (el *HTMLElement) BlurBySelector(ctx context.Context, selector values.String) error {
-	return el.input.BlurBySelector(ctx, el.id.objectID, selector.String())
+	return el.input.BlurBySelector(ctx, el.id.ObjectID, selector.String())
 }
 
 func (el *HTMLElement) Hover(ctx context.Context) error {
