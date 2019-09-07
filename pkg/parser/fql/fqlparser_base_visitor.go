@@ -183,6 +183,14 @@ func (v *BaseFqlParserVisitor) VisitFunctionCallExpression(ctx *FunctionCallExpr
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitMember(ctx *MemberContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMemberPath(ctx *MemberPathContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitMemberExpression(ctx *MemberExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }

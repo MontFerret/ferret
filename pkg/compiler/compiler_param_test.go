@@ -63,4 +63,21 @@ func TestParam(t *testing.T) {
 		So(string(out), ShouldEqual, `[1,2,3,4]`)
 
 	})
+
+	Convey("Should be possible to use in member expression", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			RETURN @param.value
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("param", map[string]interface{}{
+				"value": "foobar",
+			}),
+		)
+
+		So(string(out), ShouldEqual, `"foobar"`)
+
+	})
 }
