@@ -35,22 +35,24 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		)
 	}
 
-	strPath := make([]core.Value, len(e.path))
+	out := val
+	path := make([]core.Value, 1)
 
-	for idx, exp := range e.path {
+	for _, exp := range e.path {
 		segment, err := exp.Exec(ctx, scope)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		strPath[idx] = segment
-	}
+		path[0] = segment
+		c, err := values.GetIn(ctx, out, path)
 
-	out, err := values.GetIn(ctx, val, strPath)
+		if err != nil {
+			return values.None, core.SourceError(e.src, err)
+		}
 
-	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		out = c
 	}
 
 	return out, nil

@@ -736,39 +736,13 @@ func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementC
 }
 
 func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scope *scope) (core.Expression, error) {
-	var source core.Expression
-	var children []antlr.Tree
+	member, err := v.doVisitMember(ctx.Member().(*fql.MemberContext), scope)
 
-	identifier := ctx.Identifier()
-
-	if identifier != nil {
-		varName := ctx.Identifier().GetText()
-
-		_, err := scope.GetVariable(varName)
-
-		if err != nil {
-			return nil, err
-		}
-
-		varExp, err := expressions.NewVariableExpression(v.getSourceMap(ctx), varName)
-
-		if err != nil {
-			return nil, err
-		}
-
-		source = varExp
-		children = ctx.GetChildren()
-	} else {
-		fcall, err := v.doVisitFunctionCallExpression(ctx.FunctionCallExpression().(*fql.FunctionCallExpressionContext), scope)
-
-		if err != nil {
-			return nil, err
-		}
-
-		source = fcall
-		children = ctx.GetChildren()[1:]
+	if err != nil {
+		return nil, err
 	}
 
+	children := ctx.MemberPath().GetChildren()
 	path := make([]core.Expression, 0, len(children))
 
 	for _, child := range children {
@@ -808,9 +782,9 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 		path = append(path, exp)
 	}
 
-	member, err := expressions.NewMemberExpression(
+	exp, err := expressions.NewMemberExpression(
 		v.getSourceMap(ctx),
-		source,
+		member,
 		path,
 	)
 
@@ -818,7 +792,51 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 		return nil, err
 	}
 
-	return member, nil
+	return exp, nil
+}
+
+func (v *visitor) doVisitMember(ctx *fql.MemberContext, scope *scope) (core.Expression, error) {
+	identifier := ctx.Identifier()
+
+	if identifier != nil {
+		varName := ctx.Identifier().GetText()
+
+		_, err := scope.GetVariable(varName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		exp, err := expressions.NewVariableExpression(v.getSourceMap(ctx), varName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return exp, nil
+	}
+
+	fnCall := ctx.FunctionCallExpression()
+
+	if fnCall != nil {
+		exp, err := v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return exp, nil
+	}
+
+	param := ctx.Param()
+
+	exp, err := v.doVisitParamContext(param.(*fql.ParamContext), scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return exp, nil
 }
 
 func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *scope) (core.Expression, error) {
@@ -871,7 +889,7 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 	return literals.NewObjectLiteralWith(props...), nil
 }
 
-func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *scope) (core.Expression, error) {
+func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, scope *scope) (core.Expression, error) {
 	var name string
 
 	identifier := ctx.Identifier()
@@ -884,6 +902,14 @@ func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, _ *sc
 		if stringLiteral != nil {
 			runes := []rune(stringLiteral.GetText())
 			name = string(runes[1 : len(runes)-1])
+		} else {
+			param, err := v.doVisitParamContext(ctx.Param().(*fql.ParamContext), scope)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return param, nil
 		}
 	}
 

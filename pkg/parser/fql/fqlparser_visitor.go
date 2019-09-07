@@ -139,6 +139,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#member.
+	VisitMember(ctx *MemberContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#memberPath.
+	VisitMemberPath(ctx *MemberPathContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#memberExpression.
 	VisitMemberExpression(ctx *MemberExpressionContext) interface{}
 

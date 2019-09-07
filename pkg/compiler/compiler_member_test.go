@@ -120,6 +120,66 @@ func TestMember(t *testing.T) {
 			So(string(out), ShouldEqual, `"wsx"`)
 		})
 
+		Convey("Deep path", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				LET obj = {
+					first: {
+						second: {
+							third: {
+								fourth: {
+									fifth: {
+										bottom: true
+									}
+								}
+							}
+						}
+					}
+				}
+
+				RETURN obj.first.second.third.fourth.fifth.bottom
+			`)
+
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `true`)
+		})
+
+		Convey("Deep computed path", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				LET obj = {
+					first: {
+						second: {
+							third: {
+								fourth: {
+									fifth: {
+										bottom: true
+									}
+								}
+							}
+						}
+					}
+				}
+
+				RETURN obj["first"]["second"]["third"]["fourth"]["fifth"].bottom
+			`)
+
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `true`)
+		})
+
 		Convey("Prop after a func call", func() {
 			c := compiler.New()
 
@@ -160,9 +220,9 @@ func TestMember(t *testing.T) {
 
 func BenchmarkMemberArray(b *testing.B) {
 	p := compiler.New().MustCompile(`
-				LET arr = [1]
+				LET arr = [[[[1]]]]
 
-				RETURN arr[0]
+				RETURN arr[0][0][0][0]
 			`)
 
 	for n := 0; n < b.N; n++ {
@@ -172,9 +232,21 @@ func BenchmarkMemberArray(b *testing.B) {
 
 func BenchmarkMemberObject(b *testing.B) {
 	p := compiler.New().MustCompile(`
-				LET obj = { "foo": "bar"}
+				LET obj = {
+					first: {
+						second: {
+							third: {
+								fourth: {
+									fifth: {
+										bottom: true
+									}
+								}
+							}
+						}
+					}
+				}
 
-				RETURN obj.foo
+				RETURN obj.first.second.third.fourth.fifth.bottom
 			`)
 
 	for n := 0; n < b.N; n++ {

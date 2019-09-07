@@ -139,6 +139,12 @@ type FqlParserListener interface {
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
 
+	// EnterMember is called when entering the member production.
+	EnterMember(c *MemberContext)
+
+	// EnterMemberPath is called when entering the memberPath production.
+	EnterMemberPath(c *MemberPathContext)
+
 	// EnterMemberExpression is called when entering the memberExpression production.
 	EnterMemberExpression(c *MemberExpressionContext)
 
@@ -309,6 +315,12 @@ type FqlParserListener interface {
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// ExitMember is called when exiting the member production.
+	ExitMember(c *MemberContext)
+
+	// ExitMemberPath is called when exiting the memberPath production.
+	ExitMemberPath(c *MemberPathContext)
 
 	// ExitMemberExpression is called when exiting the memberExpression production.
 	ExitMemberExpression(c *MemberExpressionContext)

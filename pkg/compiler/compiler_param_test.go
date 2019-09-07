@@ -63,4 +63,54 @@ func TestParam(t *testing.T) {
 		So(string(out), ShouldEqual, `[1,2,3,4]`)
 
 	})
+
+	Convey("Should be possible to use in member expression", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			RETURN @param.value
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("param", map[string]interface{}{
+				"value": "foobar",
+			}),
+		)
+
+		So(string(out), ShouldEqual, `"foobar"`)
+
+	})
+
+	Convey("Should be possible to use in member expression as a computed property", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			LET obj = { foo: "bar" }
+			RETURN obj[@param]
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("param", "foo"),
+		)
+
+		So(string(out), ShouldEqual, `"bar"`)
+	})
+
+	Convey("Should be possible to use in member expression as segments", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			LET doc = { foo: { bar: "baz" } }
+
+			RETURN doc.@attr.@subattr
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("attr", "foo"),
+			runtime.WithParam("subattr", "bar"),
+		)
+
+		So(string(out), ShouldEqual, `"baz"`)
+
+	})
 }

@@ -195,6 +195,7 @@ computedPropertyName
 propertyName
     : Identifier
     | stringLiteral
+    | param
     ;
 
 expressionGroup
@@ -209,11 +210,19 @@ functionCallExpression
     : namespace Identifier arguments
     ;
 
+member
+    : Identifier
+    | functionCallExpression
+    | param
+    ;
+
+memberPath
+    : (Dot propertyName (computedPropertyName)*)+
+    | computedPropertyName (Dot propertyName (computedPropertyName)*)* (computedPropertyName (Dot propertyName)*)*
+    ;
+
 memberExpression
-    : Identifier (Dot propertyName (computedPropertyName)*)+
-    | Identifier computedPropertyName (Dot propertyName (computedPropertyName)*)* (computedPropertyName (Dot propertyName)*)*
-    | functionCallExpression (Dot propertyName (computedPropertyName)*)+
-    | functionCallExpression computedPropertyName (Dot propertyName (computedPropertyName)*)* (computedPropertyName (Dot propertyName)*)*
+    : member memberPath
     ;
 
 arguments
