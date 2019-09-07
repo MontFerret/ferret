@@ -80,4 +80,19 @@ func TestParam(t *testing.T) {
 		So(string(out), ShouldEqual, `"foobar"`)
 
 	})
+
+	Convey("Should be possible to use in member expression as a computed property", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			LET obj = { foo: "bar" }
+			RETURN obj[@param]
+		`)
+
+		out := prog.MustRun(
+			context.Background(),
+			runtime.WithParam("param", "foo"),
+		)
+
+		So(string(out), ShouldEqual, `"bar"`)
+	})
 }
