@@ -19,5 +19,5 @@ func ElementsCount(ctx context.Context, args ...core.Value) (core.Value, error) 
 		return values.None, err
 	}
 
-	return el.CountBySelector(ctx, selector), nil
+	return el.CountBySelector(ctx, selector)
 }

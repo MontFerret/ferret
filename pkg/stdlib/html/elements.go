@@ -19,5 +19,5 @@ func Elements(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return el.QuerySelectorAll(ctx, selector), nil
+	return el.QuerySelectorAll(ctx, selector)
 }

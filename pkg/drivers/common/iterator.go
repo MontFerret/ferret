@@ -26,7 +26,11 @@ func NewIterator(
 func (iterator *Iterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
 	if iterator.node.Length() > iterator.pos {
 		idx := iterator.pos
-		val := iterator.node.GetChildNode(ctx, idx)
+		val, err := iterator.node.GetChildNode(ctx, idx)
+
+		if err != nil {
+			return values.None, values.None, err
+		}
 
 		iterator.pos++
 

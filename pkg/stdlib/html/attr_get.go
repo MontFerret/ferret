@@ -27,7 +27,11 @@ func AttributeGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	names := args[1:]
 	result := values.NewObject()
-	attrs := el.GetAttributes(ctx)
+	attrs, err := el.GetAttributes(ctx)
+
+	if err != nil {
+		return values.None, err
+	}
 
 	for _, n := range names {
 		name := values.NewString(n.String())

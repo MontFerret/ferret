@@ -57,7 +57,11 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, n.Hover(ctx)
 		}
 
-		found := n.QuerySelector(ctx, selector)
+		found, err := n.QuerySelector(ctx, selector)
+
+		if err != nil {
+			return values.None, err
+		}
 
 		if found == values.None {
 			return values.None, core.Errorf(core.ErrNotFound, "element by selector %s", selector)
