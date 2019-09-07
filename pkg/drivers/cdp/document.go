@@ -268,7 +268,7 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 }
 
 func (doc *HTMLDocument) GetTitle() values.String {
-	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.objectID, "title")
+	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.ObjectID, "title")
 
 	if err != nil {
 		doc.logError(errors.Wrap(err, "failed to read document title"))
