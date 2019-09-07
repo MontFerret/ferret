@@ -489,15 +489,15 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) Click(_ context.Context) error {
+func (el *HTMLElement) Click(_ context.Context, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClickBySelector(_ context.Context, _ values.String) error {
+func (el *HTMLElement) ClickBySelector(_ context.Context, _ values.String, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String) error {
+func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String, _ values.Int) error {
 	return core.ErrNotSupported
 }
 

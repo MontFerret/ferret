@@ -207,14 +207,6 @@ func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
 	return doc.parent
 }
 
-func (doc *HTMLDocument) ClickBySelector(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) ClickBySelectorAll(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
-}
-
 func (doc *HTMLDocument) ScrollTop(_ context.Context) error {
 	return core.ErrNotSupported
 }

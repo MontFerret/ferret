@@ -317,14 +317,6 @@ func (doc *HTMLDocument) GetURL() values.String {
 	return values.NewString(doc.frames.Frame.URL)
 }
 
-func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) error {
-	return doc.element.ClickBySelector(ctx, selector)
-}
-
-func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return doc.element.ClickBySelectorAll(ctx, selector)
-}
-
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
 	return doc.input.MoveMouseByXY(ctx, float64(x), float64(y))
 }

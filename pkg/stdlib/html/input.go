@@ -27,7 +27,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	delay := values.NewInt(drivers.DefaultInputDelay)
+	delay := values.NewInt(drivers.DefaultKeyboardDelay)
 
 	// INPUT(el, value)
 	if len(args) == 2 {

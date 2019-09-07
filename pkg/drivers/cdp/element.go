@@ -1026,16 +1026,16 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 	return err
 }
 
-func (el *HTMLElement) Click(ctx context.Context) error {
-	return el.input.Click(ctx, el.id.objectID)
+func (el *HTMLElement) Click(ctx context.Context, count values.Int) error {
+	return el.input.Click(ctx, el.id.objectID, int(count))
 }
 
-func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelector(ctx, el.id.nodeID, selector.String())
+func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String, count values.Int) error {
+	return el.input.ClickBySelector(ctx, el.id.nodeID, selector.String(), int(count))
 }
 
-func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector.String())
+func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error {
+	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector.String(), int(count))
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
