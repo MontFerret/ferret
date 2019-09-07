@@ -49,7 +49,11 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 				return err
 			}
 
-			curr := el.GetAttributes(ctx)
+			curr, err := el.GetAttributes(ctx)
+
+			if err != nil {
+				return err
+			}
 
 			// remove all previous attributes
 			err = el.RemoveAttribute(ctx, curr.Keys()...)

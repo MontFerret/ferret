@@ -21,7 +21,7 @@ func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return el.QuerySelector(ctx, selector), nil
+	return el.QuerySelector(ctx, selector)
 }
 
 func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {

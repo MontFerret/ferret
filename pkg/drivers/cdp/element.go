@@ -264,28 +264,25 @@ func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.
 	return common.SetInElement(ctx, el, path, value)
 }
 
-func (el *HTMLElement) GetValue(ctx context.Context) core.Value {
+func (el *HTMLElement) GetValue(ctx context.Context) (core.Value, error) {
 	if el.IsDetached() {
-		return el.value
+		return values.None, drivers.ErrDetached
 	}
 
 	val, err := el.exec.ReadProperty(ctx, el.id.objectID, "value")
 
 	if err != nil {
-		el.logError(err).Msg("failed to get node value")
-
-		return el.value
+		return values.None, err
 	}
 
 	el.value = val
 
-	return val
+	return val, nil
 }
 
 func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
 	if el.IsDetached() {
-		// TODO: Return an error
-		return nil
+		return drivers.ErrDetached
 	}
 
 	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.nodeID, value.String()))
@@ -396,33 +393,33 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 	return el.SetAttribute(ctx, "style", str)
 }
 
-func (el *HTMLElement) GetAttributes(ctx context.Context) *values.Object {
+func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
 	val, err := el.attributes.Read(ctx)
 
 	if err != nil {
-		return values.NewObject()
+		return values.NewObject(), err
 	}
 
 	attrs := val.(*values.Object)
 
 	// returning shallow copy
-	return attrs.Copy().(*values.Object)
+	return attrs.Copy().(*values.Object), nil
 }
 
-func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) core.Value {
+func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (core.Value, error) {
 	attrs, err := el.attributes.Read(ctx)
 
 	if err != nil {
-		return values.None
+		return values.None, err
 	}
 
 	val, found := attrs.(*values.Object).Get(name)
 
 	if !found {
-		return values.None
+		return values.None, nil
 	}
 
-	return val
+	return val, nil
 }
 
 func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
@@ -459,79 +456,61 @@ func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.Stri
 	return nil
 }
 
-func (el *HTMLElement) GetChildNodes(ctx context.Context) core.Value {
+func (el *HTMLElement) GetChildNodes(ctx context.Context) (*values.Array, error) {
 	val, err := el.loadedChildren.Read(ctx)
 
 	if err != nil {
-		return values.NewArray(0)
+		return values.NewArray(0), err
 	}
 
-	return val
+	return val.Copy().(*values.Array), nil
 }
 
-func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) core.Value {
+func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
 	val, err := el.loadedChildren.Read(ctx)
 
 	if err != nil {
-		return values.None
+		return values.None, err
 	}
 
-	return val.(*values.Array).Get(idx)
+	return val.(*values.Array).Get(idx), nil
 }
 
-func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) core.Value {
+func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
 	if el.IsDetached() {
-		return values.None
+		return values.None, drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorArgs(el.id.nodeID, selector.String())
 	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return values.None
+		return values.None, err
 	}
 
 	if found.NodeID == emptyNodeID {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to find a node by selector. returned 0 NodeID")
-
-		return values.None
+		return values.None, nil
 	}
 
 	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, found.NodeID)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to load a child node by selector")
-
-		return values.None
+		return values.None, nil
 	}
 
-	return res
+	return res, nil
 }
 
-func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
+func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
 	if el.IsDetached() {
-		return values.NewArray(0)
+		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.None
+		return values.NewArray(0), err
 	}
 
 	arr := values.NewArray(len(res.NodeIDs))
@@ -548,10 +527,6 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, id)
 
 		if err != nil {
-			el.logError(err).
-				Str("selector", selector.String()).
-				Msg("failed to load nodes by selector")
-
 			// close elements that are already loaded, but won't be used because of the error
 			if arr.Length() > 0 {
 				arr.ForEach(func(e core.Value, _ int) bool {
@@ -561,13 +536,13 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 				})
 			}
 
-			return values.None
+			return values.NewArray(0), err
 		}
 
 		arr.Push(childEl)
 	}
 
-	return arr
+	return arr, nil
 }
 
 func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (result core.Value, err error) {
@@ -939,24 +914,19 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 	return arr, nil
 }
 
-func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) values.Int {
+func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
 	if el.IsDetached() {
-		return values.ZeroInt
+		return values.ZeroInt, drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
 	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.ZeroInt
+		return values.ZeroInt, err
 	}
 
-	return values.NewInt(len(res.NodeIDs))
+	return values.NewInt(len(res.NodeIDs)), nil
 }
 
 func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
@@ -982,7 +952,11 @@ func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.Str
 func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, when drivers.WaitEvent) error {
 	task := events.NewWaitTask(
 		func(ctx2 context.Context) (core.Value, error) {
-			current := el.GetAttribute(ctx2, "class")
+			current, err := el.GetAttribute(ctx2, "class")
+
+			if err != nil {
+				return values.None, nil
+			}
 
 			if current.Type() != types.String {
 				return values.None, nil
@@ -1034,7 +1008,7 @@ func (el *HTMLElement) WaitForAttribute(
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
-		return el.GetAttribute(ctx, name), nil
+		return el.GetAttribute(ctx, name)
 	}, events.DefaultPolling)
 
 	_, err := task.Run(ctx)
@@ -1200,7 +1174,11 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 }
 
 func (el *HTMLElement) parseStyle(ctx context.Context) (core.Value, error) {
-	value := el.GetAttribute(ctx, "style")
+	value, err := el.GetAttribute(ctx, "style")
+
+	if err != nil {
+		return values.None, err
+	}
 
 	if value == values.None {
 		return values.NewObject(), nil

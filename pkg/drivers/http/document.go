@@ -149,23 +149,23 @@ func (doc *HTMLDocument) GetNodeName() values.String {
 	return "#document"
 }
 
-func (doc *HTMLDocument) GetChildNodes(ctx context.Context) core.Value {
+func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {
 	return doc.element.GetChildNodes(ctx)
 }
 
-func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) core.Value {
+func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
 	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) values.Int {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 

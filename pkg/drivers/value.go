@@ -30,15 +30,15 @@ type (
 
 		GetNodeName() values.String
 
-		GetChildNodes(ctx context.Context) core.Value
+		GetChildNodes(ctx context.Context) (*values.Array, error)
 
-		GetChildNode(ctx context.Context, idx values.Int) core.Value
+		GetChildNode(ctx context.Context, idx values.Int) (core.Value, error)
 
-		QuerySelector(ctx context.Context, selector values.String) core.Value
+		QuerySelector(ctx context.Context, selector values.String) (core.Value, error)
 
-		QuerySelectorAll(ctx context.Context, selector values.String) core.Value
+		QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		CountBySelector(ctx context.Context, selector values.String) values.Int
+		CountBySelector(ctx context.Context, selector values.String) (values.Int, error)
 
 		ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
@@ -61,7 +61,7 @@ type (
 
 		SetInnerHTML(ctx context.Context, innerHTML values.String) error
 
-		GetValue(ctx context.Context) core.Value
+		GetValue(ctx context.Context) (core.Value, error)
 
 		SetValue(ctx context.Context, value core.Value) error
 
@@ -75,9 +75,9 @@ type (
 
 		RemoveStyle(ctx context.Context, name ...values.String) error
 
-		GetAttributes(ctx context.Context) *values.Object
+		GetAttributes(ctx context.Context) (*values.Object, error)
 
-		GetAttribute(ctx context.Context, name values.String) core.Value
+		GetAttribute(ctx context.Context, name values.String) (core.Value, error)
 
 		SetAttributes(ctx context.Context, values *values.Object) error
 
