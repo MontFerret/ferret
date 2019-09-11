@@ -16,20 +16,19 @@ builds:
   - arm64
 
 archive:
-  name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  replacements:
-    darwin: darwin
-    linux: linux
-    windows: windows
-    386: i386
-    amd64: x86_64
-
-  # Can be used to change the archive formats for specific GOOSs.
-  # Most common use case is to archive as zip on Windows.
-  # Default is empty.
-  format_overrides:
-  - goos: windows
-    format: zip
+  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    replacements:
+      darwin: darwin
+      linux: linux
+      windows: windows
+      386: i386
+      amd64: x86_64
+    # Can be used to change the archive formats for specific GOOSs.
+    # Most common use case is to archive as zip on Windows.
+    # Default is empty.
+    format_overrides:
+    - goos: windows
+      format: zip
 
 checksum:
   name_template: '{{ .ProjectName }}_checksums.txt'
