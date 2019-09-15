@@ -56,6 +56,11 @@ func LoadHTMLPage(
 	}
 
 	client := cdp.NewClient(conn)
+	donwloadArgs := page.NewSetDownloadBehaviorArgs("allow").SetDownloadPath("/tmp/")
+	errc := client.Page.SetDownloadBehavior(ctx, donwloadArgs)
+	if errc != nil {
+		return nil, errors.Wrap(errc, "failed to load the page")
+	}
 
 	if err := client.Page.Enable(ctx); err != nil {
 		return nil, err
@@ -193,11 +198,6 @@ func LoadHTMLPage(
 	}
 
 	if params.URL != BlankPageURL && params.URL != "" {
-		donwloadArgs := page.NewSetDownloadBehaviorArgs("allow").SetDownloadPath("/tmp/")
-		err := client.Page.SetDownloadBehavior(ctx, donwloadArgs)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to load the page")
-		}
 		repl, err := client.Page.Navigate(ctx, page.NewNavigateArgs(params.URL))
 
 		if err != nil {
@@ -614,12 +614,6 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 
 	if url == "" {
 		url = BlankPageURL
-	}
-
-	donwloadArgs := page.NewSetDownloadBehaviorArgs("allow").SetDownloadPath("/tmp/")
-	err := p.client.Page.SetDownloadBehavior(ctx, donwloadArgs)
-	if err != nil {
-		return err
 	}
 	repl, err := p.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
 
