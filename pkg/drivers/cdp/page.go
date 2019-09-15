@@ -3,6 +3,9 @@ package cdp
 import (
 	"context"
 	"encoding/json"
+	"hash/fnv"
+	"sync"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
@@ -10,8 +13,6 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -192,6 +193,11 @@ func LoadHTMLPage(
 	}
 
 	if params.URL != BlankPageURL && params.URL != "" {
+		donwloadArgs := page.NewSetDownloadBehaviorArgs("allow").SetDownloadPath("/tmp/")
+		err := client.Page.SetDownloadBehavior(ctx, donwloadArgs)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load the page")
+		}
 		repl, err := client.Page.Navigate(ctx, page.NewNavigateArgs(params.URL))
 
 		if err != nil {
@@ -610,6 +616,11 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 		url = BlankPageURL
 	}
 
+	donwloadArgs := page.NewSetDownloadBehaviorArgs("allow").SetDownloadPath("/tmp/")
+	err := p.client.Page.SetDownloadBehavior(ctx, donwloadArgs)
+	if err != nil {
+		return err
+	}
 	repl, err := p.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
 
 	if err != nil {
