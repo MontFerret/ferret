@@ -468,9 +468,9 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String
 }
 
 func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) (values.Boolean, error) {
-	selection := el.selection.Closest(selector.String())
+	selection := el.selection.Find(selector.String())
 
-	if selection == nil || selection.Length() == 0 {
+	if selection.Length() == 0 {
 		return values.False, nil
 	}
 
