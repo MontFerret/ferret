@@ -293,7 +293,7 @@ func (el *HTMLElement) GetChildNode(_ context.Context, idx values.Int) (core.Val
 func (el *HTMLElement) QuerySelector(_ context.Context, selector values.String) (core.Value, error) {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return values.None, nil
 	}
 
@@ -309,7 +309,7 @@ func (el *HTMLElement) QuerySelector(_ context.Context, selector values.String) 
 func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return values.NewArray(0), nil
 	}
 
@@ -374,7 +374,7 @@ func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.
 func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector, innerHTML values.String) error {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return drivers.ErrNotFound
 	}
 
@@ -386,7 +386,7 @@ func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector, inner
 func (el *HTMLElement) GetInnerHTMLBySelector(_ context.Context, selector values.String) (values.String, error) {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return values.EmptyString, drivers.ErrNotFound
 	}
 
@@ -427,7 +427,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector val
 func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector values.String) (values.String, error) {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return values.EmptyString, drivers.ErrNotFound
 	}
 
@@ -437,7 +437,7 @@ func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector values
 func (el *HTMLElement) SetInnerTextBySelector(_ context.Context, selector, innerText values.String) error {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return drivers.ErrNotFound
 	}
 
@@ -460,7 +460,7 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector val
 func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String) (values.Int, error) {
 	selection := el.selection.Find(selector.String())
 
-	if selection == nil {
+	if selection.Length() == 0 {
 		return values.ZeroInt, nil
 	}
 
@@ -470,7 +470,7 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String
 func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) (values.Boolean, error) {
 	selection := el.selection.Closest(selector.String())
 
-	if selection == nil {
+	if selection == nil || selection.Length() == 0 {
 		return values.False, nil
 	}
 
