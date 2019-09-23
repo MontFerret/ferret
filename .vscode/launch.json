@@ -6,7 +6,7 @@
            "type": "go",
            "request": "launch",
            "mode": "remote",
-           "remotePath": "/Users/rajdeepkaur/code/ferret",
+           "remotePath": "/Users/..User_Name/code/ferret",
            "port": 9222,
            "host": "0.0.0.0",
            "program": "${workspaceRoot}",

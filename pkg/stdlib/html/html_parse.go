@@ -11,12 +11,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func HtmlParse(ctx context.Context, args ...core.Value) (core.Value, error) {
+func HTMLParse(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateType(args[0], types.String)
 
-	if err != nil {
-		return values.False, err
-	}
 	str := values.ToString(args[1])
 	buf := bytes.NewBuffer([]byte(str))
 
