@@ -2,24 +2,27 @@ package http
 
 import (
 	"context"
+	"hash/fnv"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
-	"hash/fnv"
 )
 
 type HTMLPage struct {
 	document *HTMLDocument
 	cookies  []drivers.HTTPCookie
 	frames   *values.Array
+	response *drivers.HTTPResponse
 }
 
 func NewHTMLPage(
 	qdoc *goquery.Document,
 	url string,
 	cookies []drivers.HTTPCookie,
+	response *drivers.HTTPResponse,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
 
@@ -31,6 +34,7 @@ func NewHTMLPage(
 	p.document = doc
 	p.cookies = cookies
 	p.frames = nil
+	p.response = response
 
 	return p, nil
 }
@@ -79,7 +83,12 @@ func (p *HTMLPage) Hash() uint64 {
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	page, err := NewHTMLPage(p.document.doc, p.document.GetURL().String(), p.cookies[:])
+	page, err := NewHTMLPage(
+		p.document.doc,
+		p.document.GetURL().String(),
+		p.cookies,
+		p.response,
+	)
 
 	if err != nil {
 		return values.None
@@ -164,6 +173,10 @@ func (p *HTMLPage) GetCookies(_ context.Context) (*values.Array, error) {
 	}
 
 	return arr, nil
+}
+
+func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
+	return p.response, nil
 }
 
 func (p *HTMLPage) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
