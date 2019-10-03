@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// ElementExists returns a boolean value indicating whether there is an element matched by selector.
+// ELEMENT_EXISTS returns a boolean value indicating whether there is an element matched by selector.
 // @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - CSS selector.
 // @returns (Boolean) - A boolean value indicating whether there is an element matched by selector.

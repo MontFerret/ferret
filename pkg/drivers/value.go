@@ -30,23 +30,19 @@ type (
 
 		GetNodeName() values.String
 
-		GetChildNodes(ctx context.Context) core.Value
+		GetChildNodes(ctx context.Context) (*values.Array, error)
 
-		GetChildNode(ctx context.Context, idx values.Int) core.Value
+		GetChildNode(ctx context.Context, idx values.Int) (core.Value, error)
 
-		QuerySelector(ctx context.Context, selector values.String) core.Value
+		QuerySelector(ctx context.Context, selector values.String) (core.Value, error)
 
-		QuerySelectorAll(ctx context.Context, selector values.String) core.Value
+		QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		CountBySelector(ctx context.Context, selector values.String) values.Int
+		CountBySelector(ctx context.Context, selector values.String) (values.Int, error)
 
 		ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error)
 
 		XPath(ctx context.Context, expression values.String) (core.Value, error)
-
-		ClickBySelector(ctx context.Context, selector values.String) error
-
-		ClickBySelectorAll(ctx context.Context, selector values.String) error
 	}
 
 	// HTMLElement is the most general base interface which most objects in a GetMainFrame implement.
@@ -61,7 +57,7 @@ type (
 
 		SetInnerHTML(ctx context.Context, innerHTML values.String) error
 
-		GetValue(ctx context.Context) core.Value
+		GetValue(ctx context.Context) (core.Value, error)
 
 		SetValue(ctx context.Context, value core.Value) error
 
@@ -75,9 +71,9 @@ type (
 
 		RemoveStyle(ctx context.Context, name ...values.String) error
 
-		GetAttributes(ctx context.Context) *values.Object
+		GetAttributes(ctx context.Context) (*values.Object, error)
 
-		GetAttribute(ctx context.Context, name values.String) core.Value
+		GetAttribute(ctx context.Context, name values.String) (core.Value, error)
 
 		SetAttributes(ctx context.Context, values *values.Object) error
 
@@ -97,17 +93,37 @@ type (
 
 		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
-		Click(ctx context.Context) error
+		Click(ctx context.Context, count values.Int) error
+
+		ClickBySelector(ctx context.Context, selector values.String, count values.Int) error
+
+		ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error
+
+		Clear(ctx context.Context) error
+
+		ClearBySelector(ctx context.Context, selector values.String) error
 
 		Input(ctx context.Context, value core.Value, delay values.Int) error
 
+		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
+
 		Select(ctx context.Context, value *values.Array) (*values.Array, error)
+
+		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
 
 		ScrollIntoView(ctx context.Context) error
 
 		Focus(ctx context.Context) error
 
+		FocusBySelector(ctx context.Context, selector values.String) error
+
+		Blur(ctx context.Context) error
+
+		BlurBySelector(ctx context.Context, selector values.String) error
+
 		Hover(ctx context.Context) error
+
+		HoverBySelector(ctx context.Context, selector values.String) error
 
 		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
@@ -131,10 +147,6 @@ type (
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
-		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
-
-		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
-
 		ScrollTop(ctx context.Context) error
 
 		ScrollBottom(ctx context.Context) error
@@ -143,11 +155,7 @@ type (
 
 		ScrollByXY(ctx context.Context, x, y values.Float) error
 
-		FocusBySelector(ctx context.Context, selector values.String) error
-
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
-
-		MoveMouseBySelector(ctx context.Context, selector values.String) error
 
 		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
 

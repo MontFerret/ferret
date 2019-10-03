@@ -329,7 +329,7 @@ func ToInt(input core.Value) Int {
 	}
 }
 
-func ToArray(ctx context.Context, input core.Value) core.Value {
+func ToArray(ctx context.Context, input core.Value) *Array {
 	switch value := input.(type) {
 	case Boolean,
 		Int,
@@ -339,7 +339,7 @@ func ToArray(ctx context.Context, input core.Value) core.Value {
 
 		return NewArrayWith(value)
 	case *Array:
-		return value.Copy()
+		return value.Copy().(*Array)
 	case *Object:
 		arr := NewArray(int(value.Length()))
 
@@ -354,7 +354,7 @@ func ToArray(ctx context.Context, input core.Value) core.Value {
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return None
+			return NewArray(0)
 		}
 
 		arr := NewArray(10)
@@ -363,7 +363,7 @@ func ToArray(ctx context.Context, input core.Value) core.Value {
 			val, _, err := iterator.Next(ctx)
 
 			if err != nil {
-				return None
+				return NewArray(0)
 			}
 
 			if val == None {

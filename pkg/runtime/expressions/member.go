@@ -8,25 +8,25 @@ import (
 )
 
 type MemberExpression struct {
-	src          core.SourceMap
-	variableName string
-	path         []core.Expression
+	src    core.SourceMap
+	source core.Expression
+	path   []core.Expression
 }
 
-func NewMemberExpression(src core.SourceMap, variableName string, path []core.Expression) (*MemberExpression, error) {
-	if variableName == "" {
-		return nil, core.Error(core.ErrMissedArgument, "variable name")
+func NewMemberExpression(src core.SourceMap, source core.Expression, path []core.Expression) (*MemberExpression, error) {
+	if source == nil {
+		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
 
 	if len(path) == 0 {
 		return nil, core.Error(core.ErrMissedArgument, "path expressions")
 	}
 
-	return &MemberExpression{src, variableName, path}, nil
+	return &MemberExpression{src, source, path}, nil
 }
 
 func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	val, err := scope.GetVariable(e.variableName)
+	val, err := e.source.Exec(ctx, scope)
 
 	if err != nil {
 		return values.None, core.SourceError(
@@ -35,22 +35,24 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		)
 	}
 
-	strPath := make([]core.Value, len(e.path))
+	out := val
+	path := make([]core.Value, 1)
 
-	for idx, exp := range e.path {
+	for _, exp := range e.path {
 		segment, err := exp.Exec(ctx, scope)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		strPath[idx] = segment
-	}
+		path[0] = segment
+		c, err := values.GetIn(ctx, out, path)
 
-	out, err := values.GetIn(ctx, val, strPath)
+		if err != nil {
+			return values.None, core.SourceError(e.src, err)
+		}
 
-	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		out = c
 	}
 
 	return out, nil

@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// WaitClassAll waits for a class to appear on all matched elements.
+// WAIT_ATTR_ALL waits for an attribute to appear on all matched elements with a given value.
 // Stops the execution until the navigation ends or operation times out.
 // @param doc (HTMLDocument) - Parent document.
 // @param selector (String) - String of CSS selector.
@@ -19,7 +19,7 @@ func WaitAttributeAll(ctx context.Context, args ...core.Value) (core.Value, erro
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
-// WaitClassAll waits for a class to disappear on all matched elements.
+// WAIT_NO_ATTR_ALL waits for an attribute to disappear on all matched elements by a given value.
 // Stops the execution until the navigation ends or operation times out.
 // @param doc (HTMLDocument) - Parent document.
 // @param selector (String) - String of CSS selector.
@@ -59,7 +59,7 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 	selector := args[1].(values.String)
 	name := args[2].(values.String)
 	value := args[3]
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 5 {
 		err = core.ValidateType(args[4], types.Int)

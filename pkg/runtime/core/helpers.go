@@ -36,6 +36,14 @@ func NumberBoundaries(input float64) (max float64, min float64) {
 	return
 }
 
+func NumberUpperBoundary(input float64) float64 {
+	return input * 2
+}
+
+func NumberLowerBoundary(input float64) float64 {
+	return input / 2
+}
+
 func Random(max float64, min float64) float64 {
 	r := rand.Float64()
 	i := r * (max - min + 1)

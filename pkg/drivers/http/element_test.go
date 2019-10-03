@@ -322,8 +322,9 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.GetValue(context.Background())
+		v, err := el.GetValue(context.Background())
 
+		So(err, ShouldBeNil)
 		So(v, ShouldEqual, "find")
 	})
 
@@ -393,8 +394,9 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		found := el.QuerySelector(context.Background(), values.NewString("body .card-img-top:nth-child(1)"))
+		found, err := el.QuerySelector(context.Background(), values.NewString("body .card-img-top:nth-child(1)"))
 
+		So(err, ShouldBeNil)
 		So(found, ShouldNotEqual, values.None)
 
 		v := found.(drivers.HTMLNode).GetNodeName()
@@ -415,8 +417,9 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v := el.CountBySelector(context.Background(), values.NewString("head meta"))
+		v, err := el.CountBySelector(context.Background(), values.NewString("head meta"))
 
+		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 4)
 	})
 }

@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// WaitClass waits for a class to appear on a given element.
+// WAIT_CLASS waits for a class to appear on a given element.
 // Stops the execution until the navigation ends or operation times out.
-// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
+// @param node (HTMLPage | HTMLDocument | HTMLElement) - Target node.
 // @param selectorOrClass (String) - If document is passed, this param must represent an element selector.
 // Otherwise target class.
 // @param classOrTimeout (String|Int, optional) - If document is passed, this param must represent target class name.
@@ -22,9 +22,9 @@ func WaitClass(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassWhen(ctx, args, drivers.WaitEventPresence)
 }
 
-// WaitClass waits for a class to disappear on a given element.
+// WAIT_NO_CLASS waits for a class to disappear on a given element.
 // Stops the execution until the navigation ends or operation times out.
-// @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
+// @param node (HTMLPage | HTMLDocument | HTMLElement) - Target node.
 // @param selectorOrClass (String) - If document is passed, this param must represent an element selector.
 // Otherwise target class.
 // @param classOrTimeout (String|Int, optional) - If document is passed, this param must represent target class name.
@@ -57,7 +57,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {

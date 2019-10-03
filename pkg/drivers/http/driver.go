@@ -26,7 +26,7 @@ func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
 	drv.options = newOptions(opts)
 
-	if drv.options.proxy == "" {
+	if drv.options.Proxy == "" {
 		drv.client = pester.New()
 	} else {
 		client, err := newClientWithProxy(drv.options)
@@ -38,15 +38,15 @@ func NewDriver(opts ...Option) *Driver {
 		}
 	}
 
-	drv.client.Concurrency = drv.options.concurrency
-	drv.client.MaxRetries = drv.options.maxRetries
-	drv.client.Backoff = drv.options.backoff
+	drv.client.Concurrency = drv.options.Concurrency
+	drv.client.MaxRetries = drv.options.MaxRetries
+	drv.client.Backoff = drv.options.Backoff
 
 	return drv
 }
 
 func newClientWithProxy(options *Options) (*http.Client, error) {
-	proxyURL, err := url.Parse(options.proxy)
+	proxyURL, err := url.Parse(options.Proxy)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func newClientWithProxy(options *Options) (*http.Client, error) {
 }
 
 func (drv *Driver) Name() string {
-	return DriverName
+	return drv.options.Name
 }
 
 func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
@@ -76,31 +76,52 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
-	if params.Headers != nil {
-		for k := range params.Headers {
-			req.Header.Add(k, params.Headers.Get(k))
+	if drv.options.Headers != nil && params.Headers == nil {
+		params.Headers = make(drivers.HTTPHeaders)
+	}
 
-			logger.
-				Debug().
-				Timestamp().
-				Str("header", k).
-				Msg("set header")
+	// Set default headers
+	for k, v := range drv.options.Headers {
+		_, exists := params.Headers[k]
+
+		// do not override user's set values
+		if !exists {
+			params.Headers[k] = v
 		}
 	}
 
-	if params.Cookies != nil {
-		for _, c := range params.Cookies {
-			req.AddCookie(&http.Cookie{
-				Name:  c.Name,
-				Value: c.Value,
-			})
+	for k := range params.Headers {
+		req.Header.Add(k, params.Headers.Get(k))
 
-			logger.
-				Debug().
-				Timestamp().
-				Str("cookie", c.Name).
-				Msg("set cookie")
+		logger.
+			Debug().
+			Timestamp().
+			Str("header", k).
+			Msg("set header")
+	}
+
+	if drv.options.Cookies != nil && params.Cookies == nil {
+		params.Cookies = make(drivers.HTTPCookies)
+	}
+
+	// set default cookies
+	for k, v := range drv.options.Cookies {
+		_, exists := params.Cookies[k]
+
+		// do not override user's set values
+		if !exists {
+			params.Cookies[k] = v
 		}
+	}
+
+	for _, c := range params.Cookies {
+		req.AddCookie(fromDriverCookie(c))
+
+		logger.
+			Debug().
+			Timestamp().
+			Str("cookie", c.Name).
+			Msg("set cookie")
 	}
 
 	req = req.WithContext(ctx)
@@ -110,7 +131,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	if params.UserAgent != "" {
 		ua = common.GetUserAgent(params.UserAgent)
 	} else {
-		ua = common.GetUserAgent(drv.options.userAgent)
+		ua = common.GetUserAgent(drv.options.UserAgent)
 	}
 
 	logger.
@@ -141,6 +162,12 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		return nil, errors.Wrapf(err, "failed to parse a document %s", params.URL)
 	}
 
+	cookies, err := toDriverCookies(resp.Cookies())
+
+	if err != nil {
+		return nil, err
+	}
+
 	// HTTPResponse is temporarily unavailable when the status code != OK
 	r := drivers.HTTPResponse{
 		StatusCode: resp.StatusCode,
@@ -148,7 +175,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		Headers:    drivers.HTTPHeaders(resp.Header),
 	}
 
-	return NewHTMLPage(doc, params.URL, params.Cookies, &r)
+	return NewHTMLPage(doc, params.URL, &r, cookies)
 }
 
 func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {

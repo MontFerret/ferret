@@ -144,7 +144,7 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	if params.Cookies != nil {
+	if len(params.Cookies) > 0 {
 		cookies := make([]network.CookieParam, 0, len(params.Cookies))
 
 		for _, c := range params.Cookies {
@@ -167,7 +167,7 @@ func LoadHTMLPage(
 		}
 	}
 
-	if params.Headers != nil {
+	if len(params.Headers) > 0 {
 		j, err := json.Marshal(params.Headers)
 
 		if err != nil {

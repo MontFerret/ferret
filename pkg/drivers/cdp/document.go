@@ -243,23 +243,23 @@ func (doc *HTMLDocument) GetNodeName() values.String {
 	return "#document"
 }
 
-func (doc *HTMLDocument) GetChildNodes(ctx context.Context) core.Value {
+func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {
 	return doc.element.GetChildNodes(ctx)
 }
 
-func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) core.Value {
+func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
 	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) values.Int {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 
@@ -268,7 +268,7 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 }
 
 func (doc *HTMLDocument) GetTitle() values.String {
-	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.objectID, "title")
+	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.ObjectID, "title")
 
 	if err != nil {
 		doc.logError(errors.Wrap(err, "failed to read document title"))
@@ -317,32 +317,8 @@ func (doc *HTMLDocument) GetURL() values.String {
 	return values.NewString(doc.frames.Frame.URL)
 }
 
-func (doc *HTMLDocument) ClickBySelector(ctx context.Context, selector values.String) error {
-	return doc.element.ClickBySelector(ctx, selector)
-}
-
-func (doc *HTMLDocument) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return doc.element.ClickBySelectorAll(ctx, selector)
-}
-
-func (doc *HTMLDocument) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
-	return doc.input.TypeBySelector(ctx, doc.element.id.nodeID, selector, value, delay)
-}
-
-func (doc *HTMLDocument) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
-	return doc.input.SelectBySelector(ctx, doc.element.id.nodeID, selector, value)
-}
-
-func (doc *HTMLDocument) FocusBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.FocusBySelector(ctx, doc.element.id.nodeID, selector)
-}
-
-func (doc *HTMLDocument) MoveMouseBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.MoveMouseBySelector(ctx, doc.element.id.nodeID, selector)
-}
-
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.MoveMouseByXY(ctx, x, y)
+	return doc.input.MoveMouseByXY(ctx, float64(x), float64(y))
 }
 
 func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
@@ -501,11 +477,11 @@ func (doc *HTMLDocument) ScrollBottom(ctx context.Context) error {
 }
 
 func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.ScrollIntoViewBySelector(ctx, selector)
+	return doc.input.ScrollIntoViewBySelector(ctx, selector.String())
 }
 
 func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.ScrollByXY(ctx, x, y)
+	return doc.input.ScrollByXY(ctx, float64(x), float64(y))
 }
 
 func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {

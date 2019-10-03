@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// GetElement finds an element by a given CSS selector.
+// ELEMENT finds an element by a given CSS selector.
 // Returns NONE if element not found.
 // @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
 // @param selector (String) - CSS selector.
@@ -21,7 +21,7 @@ func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return el.QuerySelector(ctx, selector), nil
+	return el.QuerySelector(ctx, selector)
 }
 
 func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {

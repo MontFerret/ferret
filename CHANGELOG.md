@@ -1,5 +1,25 @@
 ## Changelog
 
+### 0.9.0
+#### Added
+- ``INPUT_CLEAR`` function to clear input's value. [#366](https://github.com/MontFerret/ferret/pull/366)
+- Support of tick for string literals. [#367](https://github.com/MontFerret/ferret/pull/367)
+- Support of default headers and cookies. [#372](https://github.com/MontFerret/ferret/pull/372)
+- Support of use of params in dot notation. [#378](https://github.com/MontFerret/ferret/pull/378)
+- Optional count param to ``CLICK`` function. [#377](https://github.com/MontFerret/ferret/pull/377)
+- ``BLUR`` function. [#379](https://github.com/MontFerret/ferret/pull/379)
+
+#### Fixed
+- Tabs don't get closed on page load error. [#359](https://github.com/MontFerret/ferret/pull/359)
+- ``CLICK`` function does not allow to use element with a selector. [#355](https://github.com/MontFerret/ferret/pull/355)
+- Unable to use member expression right after a function call. [#368](https://github.com/MontFerret/ferret/pull/368)
+
+#### Changed
+- Updated zerolog. [#352](https://github.com/MontFerret/ferret/pull/352)
+- Runtime ``Object`` and ``Array`` values implement ``core.Getter`` interface. [#353](https://github.com/MontFerret/ferret/pull/353)
+- Externalized default timeout values. [#371](https://github.com/MontFerret/ferret/pull/371) 
+- Refactored ``drivers.HTMLDocument`` and ``drivers.HTMLElement`` interfaces. [#376](https://github.com/MontFerret/ferret/pull/376), [#375](https://github.com/MontFerret/ferret/pull/375)
+
 ### 0.8.3
 #### Fixed
 - Unable to click by selector using an element.

@@ -10,13 +10,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-const defaultTimeout = 5000
-
 func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(core.Functions{
 		"ATTR_GET":          AttributeGet,
 		"ATTR_REMOVE":       AttributeRemove,
 		"ATTR_SET":          AttributeSet,
+		"BLUR":              Blur,
 		"COOKIE_DEL":        CookieDel,
 		"COOKIE_GET":        CookieGet,
 		"COOKIE_SET":        CookieSet,
@@ -37,6 +36,7 @@ func RegisterLib(ns core.Namespace) error {
 		"INNER_TEXT_SET":    SetInnerText,
 		"INNER_TEXT_ALL":    GetInnerTextAll,
 		"INPUT":             Input,
+		"INPUT_CLEAR":       InputClear,
 		"MOUSE":             MouseMoveXY,
 		"NAVIGATE":          Navigate,
 		"NAVIGATE_BACK":     NavigateBack,
@@ -73,6 +73,7 @@ func RegisterLib(ns core.Namespace) error {
 
 func OpenOrCastPage(ctx context.Context, value core.Value) (drivers.HTMLPage, bool, error) {
 	err := core.ValidateType(value, drivers.HTMLPageType, types.String)
+
 	if err != nil {
 		return nil, false, err
 	}

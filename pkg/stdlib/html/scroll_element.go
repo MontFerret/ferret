@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// ScrollInto scrolls an element on.
+// SCROLL_ELEMENT scrolls an element on.
 // @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selector (String, options) - If document is passed, this param must represent an element selector.
 func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {

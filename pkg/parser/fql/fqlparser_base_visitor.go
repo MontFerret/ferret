@@ -159,10 +159,6 @@ func (v *BaseFqlParserVisitor) VisitPropertyAssignment(ctx *PropertyAssignmentCo
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMemberExpression(ctx *MemberExpressionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
 func (v *BaseFqlParserVisitor) VisitShorthandPropertyName(ctx *ShorthandPropertyNameContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -184,6 +180,18 @@ func (v *BaseFqlParserVisitor) VisitNamespace(ctx *NamespaceContext) interface{}
 }
 
 func (v *BaseFqlParserVisitor) VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMember(ctx *MemberContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMemberPath(ctx *MemberPathContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMemberExpression(ctx *MemberExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

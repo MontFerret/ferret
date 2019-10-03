@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// AttributeGet gets single or more attribute(s) of a given element.
+// ATTR_GET gets single or more attribute(s) of a given element.
 // @param el (HTMLElement) - Target element.
 // @param names (...String) - Attribute name(s).
 // @returns Object - Key-value pairs of attribute values.
@@ -27,7 +27,11 @@ func AttributeGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	names := args[1:]
 	result := values.NewObject()
-	attrs := el.GetAttributes(ctx)
+	attrs, err := el.GetAttributes(ctx)
+
+	if err != nil {
+		return values.None, err
+	}
 
 	for _, n := range names {
 		name := values.NewString(n.String())

@@ -116,14 +116,14 @@ func (el *HTMLElement) Length() values.Int {
 	return el.children.Length()
 }
 
-func (el *HTMLElement) GetValue(_ context.Context) core.Value {
+func (el *HTMLElement) GetValue(_ context.Context) (core.Value, error) {
 	val, ok := el.selection.Attr("value")
 
 	if ok {
-		return values.NewString(val)
+		return values.NewString(val), nil
 	}
 
-	return values.EmptyString
+	return values.EmptyString, nil
 }
 
 func (el *HTMLElement) SetValue(_ context.Context, value core.Value) error {
@@ -242,16 +242,16 @@ func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) 
 	return err
 }
 
-func (el *HTMLElement) GetAttributes(_ context.Context) *values.Object {
+func (el *HTMLElement) GetAttributes(_ context.Context) (*values.Object, error) {
 	el.ensureAttrs()
 
-	return el.attrs.Copy().(*values.Object)
+	return el.attrs.Copy().(*values.Object), nil
 }
 
-func (el *HTMLElement) GetAttribute(_ context.Context, name values.String) core.Value {
+func (el *HTMLElement) GetAttribute(_ context.Context, name values.String) (core.Value, error) {
 	el.ensureAttrs()
 
-	return el.attrs.MustGet(name)
+	return el.attrs.MustGet(name), nil
 }
 
 func (el *HTMLElement) SetAttribute(_ context.Context, name, value values.String) error {
@@ -274,43 +274,43 @@ func (el *HTMLElement) RemoveAttribute(_ context.Context, name ...values.String)
 	return nil
 }
 
-func (el *HTMLElement) GetChildNodes(_ context.Context) core.Value {
+func (el *HTMLElement) GetChildNodes(_ context.Context) (*values.Array, error) {
 	if el.children == nil {
 		el.children = el.parseChildren()
 	}
 
-	return el.children
+	return el.children.Copy().(*values.Array), nil
 }
 
-func (el *HTMLElement) GetChildNode(_ context.Context, idx values.Int) core.Value {
+func (el *HTMLElement) GetChildNode(_ context.Context, idx values.Int) (core.Value, error) {
 	if el.children == nil {
 		el.children = el.parseChildren()
 	}
 
-	return el.children.Get(idx)
+	return el.children.Get(idx), nil
 }
 
-func (el *HTMLElement) QuerySelector(_ context.Context, selector values.String) core.Value {
+func (el *HTMLElement) QuerySelector(_ context.Context, selector values.String) (core.Value, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
-		return values.None
+		return values.None, nil
 	}
 
 	res, err := NewHTMLElement(selection)
 
 	if err != nil {
-		return values.None
+		return values.None, err
 	}
 
-	return res
+	return res, nil
 }
 
-func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) core.Value {
+func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
-		return values.None
+		return values.NewArray(0), nil
 	}
 
 	arr := values.NewArray(selection.Length())
@@ -323,7 +323,7 @@ func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.Strin
 		}
 	})
 
-	return arr
+	return arr, nil
 }
 
 func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.Value, error) {
@@ -457,14 +457,14 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector val
 	return arr, nil
 }
 
-func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String) values.Int {
+func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String) (values.Int, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection == nil {
-		return values.ZeroInt
+		return values.ZeroInt, nil
 	}
 
-	return values.NewInt(selection.Size())
+	return values.NewInt(selection.Size()), nil
 }
 
 func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) (values.Boolean, error) {
@@ -489,15 +489,23 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) Click(_ context.Context) error {
+func (el *HTMLElement) Click(_ context.Context, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClickBySelector(_ context.Context, _ values.String) error {
+func (el *HTMLElement) ClickBySelector(_ context.Context, _ values.String, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String) error {
+func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String, _ values.Int) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) Clear(_ context.Context) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) ClearBySelector(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
@@ -505,7 +513,15 @@ func (el *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) erro
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) Select(_ context.Context, _ *values.Array) (*values.Array, error) {
+	return nil, core.ErrNotSupported
+}
+
+func (el *HTMLElement) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
 	return nil, core.ErrNotSupported
 }
 
@@ -517,7 +533,23 @@ func (el *HTMLElement) Focus(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) FocusBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) Blur(_ context.Context) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) BlurBySelector(_ context.Context, _ values.String) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) Hover(_ context.Context) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) HoverBySelector(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
@@ -548,7 +580,11 @@ func (el *HTMLElement) ensureStyles(ctx context.Context) error {
 }
 
 func (el *HTMLElement) parseStyles(ctx context.Context) (*values.Object, error) {
-	str := el.GetAttribute(ctx, "style")
+	str, err := el.GetAttribute(ctx, "style")
+
+	if err != nil {
+		return values.NewObject(), err
+	}
 
 	if str == values.None {
 		return values.NewObject(), nil

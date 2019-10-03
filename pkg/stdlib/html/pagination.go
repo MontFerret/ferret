@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Pagination creates an iterator that goes through pages using CSS selector.
+// PAGINATION creates an iterator that goes through pages using CSS selector.
 // The iterator starts from the current page i.e. it does not change the page on 1st iteration.
 // That allows you to keep scraping logic inside FOR loop.
 // @param doc (Open) - Target document.
@@ -102,7 +102,7 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 		return values.None, values.None, core.ErrNoMoreData
 	}
 
-	err = i.document.ClickBySelector(ctx, i.selector)
+	err = i.document.GetElement().ClickBySelector(ctx, i.selector, 1)
 
 	if err != nil {
 		return values.None, values.None, err

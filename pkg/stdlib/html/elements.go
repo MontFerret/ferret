@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Elements finds HTML elements by a given CSS selector.
+// ELEMENTS finds HTML elements by a given CSS selector.
 // Returns an empty array if element not found.
 // @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
 // @param selector (String) - CSS selector.
@@ -19,5 +19,5 @@ func Elements(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return el.QuerySelectorAll(ctx, selector), nil
+	return el.QuerySelectorAll(ctx, selector)
 }

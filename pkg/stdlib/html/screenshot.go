@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Screenshot takes a screenshot of a given page.
+// SCREENSHOT takes a screenshot of a given page.
 // @param target (HTMLPage|String) - Target page or url.
 // @param params (Object) - Optional, An object containing the following properties :
 // 		x (Float|Int) - Optional, X position of the viewport.

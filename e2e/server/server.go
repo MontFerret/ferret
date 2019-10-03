@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 type (
@@ -54,6 +54,18 @@ func New(settings Settings) *Server {
 			headers = string(b)
 		}
 
+		var cookies string
+
+		if len(ctx.Request().Cookies()) > 0 {
+			b, err := json.Marshal(ctx.Request().Cookies())
+
+			if err != nil {
+				return err
+			}
+
+			cookies = string(b)
+		}
+
 		ts := time.Now().Format("2006-01-02 15:04:05")
 
 		return ctx.HTML(http.StatusOK, fmt.Sprintf(`
@@ -65,9 +77,10 @@ func New(settings Settings) *Server {
 			<body>
 				<span id="timestamp">%s</span>
 				<span id="headers">%s</span>
+				<span id="cookies">%s</span>
 			</body>
 		</html>
-	`, ts, headers))
+	`, ts, headers, cookies))
 	})
 	api.GET("/ping", func(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, echo.Map{

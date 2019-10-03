@@ -9,10 +9,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
+// WAIT_STYLE_ALL
 func WaitStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
+// WAIT_NO_STYLE_ALL
 func WaitNoStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleAllWhen(ctx, args, drivers.WaitEventAbsence)
 }
@@ -47,7 +49,7 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	selector := args[1].(values.String)
 	name := args[2].(values.String)
 	value := args[3]
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 5 {
 		err = core.ValidateType(args[4], types.Int)

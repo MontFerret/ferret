@@ -9,10 +9,22 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
+// WAIT_ATTR waits until a target attribute's value appears
+// @param node (HTMLPage | HTMLDocument | HTMLElement) - Parent document.
+// @param attrNameOrSelector (String) - String of an attr name or CSS selector.
+// @param attrValueOrAttrName (String | Any) - Attr value or name.
+// @param attrValueOrTimeout (Any | Int, optional) - Attr value or an optional timeout.
+// @param timeout (Int, optional) - Optional timeout.
 func WaitAttribute(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeWhen(ctx, args, drivers.WaitEventPresence)
 }
 
+// WAIT_NO_ATTR waits until a target attribute's value disappears
+// @param node (HTMLPage | HTMLDocument | HTMLElement) - Parent document.
+// @param attrNameOrSelector (String) - String of an attr name or CSS selector.
+// @param attrValueOrAttrName (String | Any) - Attr value or name.
+// @param attrValueOrTimeout (Any | Int, optional) - Attr value or an optional timeout.
+// @param timeout (Int, optional) - Optional timeout.
 func WaitNoAttribute(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeWhen(ctx, args, drivers.WaitEventAbsence)
 }
@@ -39,7 +51,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	// WAIT_ATTR(doc, selector, attrName, attrValue, timeout)

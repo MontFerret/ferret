@@ -62,8 +62,104 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	ctx = drivers.WithContext(
 		ctx,
+		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress),
+			cdp.WithCustomName("cdp_headers"),
+			cdp.WithHeader("Single_header", []string{"single_header_value"}),
+			cdp.WithHeaders(drivers.HTTPHeaders{
+				"Multi_set_header":  []string{"multi_set_header_value"},
+				"Multi_set_header2": []string{"multi_set_header2_value"},
+			}),
+		),
+	)
+
+	ctx = drivers.WithContext(
+		ctx,
+		cdp.NewDriver(cdp.WithAddress(r.settings.CDPAddress),
+			cdp.WithCustomName("cdp_cookies"),
+			cdp.WithCookie(drivers.HTTPCookie{
+				Name:     "single_cookie",
+				Value:    "single_cookie_value",
+				Path:     "/",
+				MaxAge:   0,
+				Secure:   false,
+				HTTPOnly: false,
+				SameSite: 0,
+			}),
+			cdp.WithCookies([]drivers.HTTPCookie{
+				{
+					Name:     "multi_set_cookie",
+					Value:    "multi_set_cookie_value",
+					Path:     "/",
+					MaxAge:   0,
+					Secure:   false,
+					HTTPOnly: false,
+					SameSite: 0,
+				},
+				{
+					Name:     "multi_set_cookie2",
+					Value:    "multi_set_cookie2_value",
+					Path:     "/",
+					MaxAge:   0,
+					Secure:   false,
+					HTTPOnly: false,
+					SameSite: 0,
+				},
+			}),
+		),
+	)
+
+	ctx = drivers.WithContext(
+		ctx,
 		http.NewDriver(),
 		drivers.AsDefault(),
+	)
+
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(
+			http.WithCustomName("http_headers"),
+			http.WithHeader("Single_header", []string{"single_header_value"}),
+			http.WithHeaders(drivers.HTTPHeaders{
+				"Multi_set_header":  []string{"multi_set_header_value"},
+				"Multi_set_header2": []string{"multi_set_header2_value"},
+			}),
+		),
+	)
+
+	ctx = drivers.WithContext(
+		ctx,
+		http.NewDriver(
+			http.WithCustomName("http_cookies"),
+			http.WithCookie(drivers.HTTPCookie{
+				Name:     "single_cookie",
+				Value:    "single_cookie_value",
+				Path:     "/",
+				MaxAge:   0,
+				Secure:   false,
+				HTTPOnly: false,
+				SameSite: 0,
+			}),
+			http.WithCookies([]drivers.HTTPCookie{
+				{
+					Name:     "multi_set_cookie",
+					Value:    "multi_set_cookie_value",
+					Path:     "/",
+					MaxAge:   0,
+					Secure:   false,
+					HTTPOnly: false,
+					SameSite: 0,
+				},
+				{
+					Name:     "multi_set_cookie2",
+					Value:    "multi_set_cookie2_value",
+					Path:     "/",
+					MaxAge:   0,
+					Secure:   false,
+					HTTPOnly: false,
+					SameSite: 0,
+				},
+			}),
+		),
 	)
 
 	results, err := r.runQueries(ctx, r.settings.Dir)
@@ -184,7 +280,7 @@ func (r *Runner) runQueries(ctx context.Context, dir string) ([]Result, error) {
 	return results, nil
 }
 
-func (r *Runner) runQuery(ctx context.Context, c *compiler.FqlCompiler, name, script string) Result {
+func (r *Runner) runQuery(ctx context.Context, c *compiler.Compiler, name, script string) Result {
 	start := time.Now()
 
 	p, err := c.Compile(script)

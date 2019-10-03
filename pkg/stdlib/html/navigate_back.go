@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// NavigateBack navigates a given page back within its navigation history.
+// NAVIGATE_BACK navigates a given page back within its navigation history.
 // The operation blocks the execution until the page gets loaded.
 // If the history is empty, the function returns FALSE.
 // @param page (HTMLPage) - Target page.
@@ -30,7 +30,7 @@ func NavigateBack(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	skip := values.NewInt(1)
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 1 {
 		err = core.ValidateType(args[1], types.Int)

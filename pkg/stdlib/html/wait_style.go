@@ -9,10 +9,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
+// WAIT_STYLE
 func WaitStyle(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleWhen(ctx, args, drivers.WaitEventPresence)
 }
 
+// WAIT_NO_STYLE
 func WaitNoStyle(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleWhen(ctx, args, drivers.WaitEventAbsence)
 }
@@ -39,7 +41,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		return values.None, err
 	}
 
-	timeout := values.NewInt(defaultTimeout)
+	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	// WAIT_ATTR(doc, selector, attrName, attrValue, timeout)

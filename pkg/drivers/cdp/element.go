@@ -8,6 +8,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"golang.org/x/net/html"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -18,21 +26,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/runtime"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
-	"golang.org/x/net/html"
 )
 
 var emptyNodeID = dom.NodeID(0)
 
 type (
 	HTMLElementIdentity struct {
-		nodeID   dom.NodeID
-		objectID runtime.RemoteObjectID
+		NodeID   dom.NodeID
+		ObjectID runtime.RemoteObjectID
 	}
 
 	HTMLElement struct {
@@ -48,7 +49,6 @@ type (
 		nodeName       values.String
 		innerHTML      *common.LazyValue
 		innerText      *common.LazyValue
-		value          core.Value
 		attributes     *common.LazyValue
 		style          *common.LazyValue
 		children       []HTMLElementIdentity
@@ -82,10 +82,6 @@ func LoadHTMLElement(
 		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("element %d", nodeID))
 	}
 
-	id := HTMLElementIdentity{}
-	id.nodeID = nodeID
-	id.objectID = *obj.Object.ObjectID
-
 	return LoadHTMLElementWithID(
 		ctx,
 		logger,
@@ -93,7 +89,10 @@ func LoadHTMLElement(
 		broker,
 		input,
 		exec,
-		id,
+		HTMLElementIdentity{
+			NodeID:   nodeID,
+			ObjectID: *obj.Object.ObjectID,
+		},
 	)
 }
 
@@ -110,18 +109,12 @@ func LoadHTMLElementWithID(
 		ctx,
 		dom.
 			NewDescribeNodeArgs().
-			SetObjectID(id.objectID).
+			SetObjectID(id.ObjectID).
 			SetDepth(1),
 	)
 
 	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(id.nodeID)))
-	}
-
-	var val string
-
-	if node.Node.Value != nil {
-		val = *node.Node.Value
+		return nil, core.Error(err, strconv.Itoa(int(id.NodeID)))
 	}
 
 	return NewHTMLElement(
@@ -133,7 +126,6 @@ func LoadHTMLElementWithID(
 		id,
 		node.Node.NodeType,
 		node.Node.NodeName,
-		val,
 		createChildrenArray(node.Node.Children),
 	), nil
 }
@@ -147,7 +139,6 @@ func NewHTMLElement(
 	id HTMLElementIdentity,
 	nodeType int,
 	nodeName string,
-	value string,
 	children []HTMLElementIdentity,
 ) *HTMLElement {
 	el := new(HTMLElement)
@@ -164,9 +155,7 @@ func NewHTMLElement(
 	el.innerText = common.NewLazyValue(el.loadInnerText)
 	el.attributes = common.NewLazyValue(el.loadAttrs)
 	el.style = common.NewLazyValue(el.parseStyle)
-	el.value = values.EmptyString
 	el.loadedChildren = common.NewLazyValue(el.loadChildren)
-	el.value = values.NewString(value)
 	el.children = children
 
 	broker.AddEventListener(events.EventReload, el.handlePageReload)
@@ -208,7 +197,7 @@ func (el *HTMLElement) MarshalJSON() ([]byte, error) {
 }
 
 func (el *HTMLElement) String() string {
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(drivers.DefaultWaitTimeout)*time.Millisecond)
 	defer cancel()
 
 	res, err := el.GetInnerHTML(ctx)
@@ -242,7 +231,7 @@ func (el *HTMLElement) Hash() uint64 {
 
 	h.Write([]byte(el.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(strconv.Itoa(int(el.id.nodeID))))
+	h.Write([]byte(strconv.Itoa(int(el.id.NodeID))))
 
 	return h.Sum64()
 }
@@ -263,31 +252,20 @@ func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.
 	return common.SetInElement(ctx, el, path, value)
 }
 
-func (el *HTMLElement) GetValue(ctx context.Context) core.Value {
+func (el *HTMLElement) GetValue(ctx context.Context) (core.Value, error) {
 	if el.IsDetached() {
-		return el.value
+		return values.None, drivers.ErrDetached
 	}
 
-	val, err := el.exec.ReadProperty(ctx, el.id.objectID, "value")
-
-	if err != nil {
-		el.logError(err).Msg("failed to get node value")
-
-		return el.value
-	}
-
-	el.value = val
-
-	return val
+	return el.exec.ReadProperty(ctx, el.id.ObjectID, "value")
 }
 
 func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
 	if el.IsDetached() {
-		// TODO: Return an error
-		return nil
+		return drivers.ErrDetached
 	}
 
-	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.nodeID, value.String()))
+	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.NodeID, value.String()))
 }
 
 func (el *HTMLElement) GetNodeType() values.Int {
@@ -395,33 +373,33 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 	return el.SetAttribute(ctx, "style", str)
 }
 
-func (el *HTMLElement) GetAttributes(ctx context.Context) *values.Object {
+func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
 	val, err := el.attributes.Read(ctx)
 
 	if err != nil {
-		return values.NewObject()
+		return values.NewObject(), err
 	}
 
 	attrs := val.(*values.Object)
 
 	// returning shallow copy
-	return attrs.Copy().(*values.Object)
+	return attrs.Copy().(*values.Object), nil
 }
 
-func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) core.Value {
+func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (core.Value, error) {
 	attrs, err := el.attributes.Read(ctx)
 
 	if err != nil {
-		return values.None
+		return values.None, err
 	}
 
 	val, found := attrs.(*values.Object).Get(name)
 
 	if !found {
-		return values.None
+		return values.None, nil
 	}
 
-	return val
+	return val, nil
 }
 
 func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
@@ -439,7 +417,7 @@ func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) 
 func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.String) error {
 	return el.client.DOM.SetAttributeValue(
 		ctx,
-		dom.NewSetAttributeValueArgs(el.id.nodeID, string(name), string(value)),
+		dom.NewSetAttributeValueArgs(el.id.NodeID, string(name), string(value)),
 	)
 }
 
@@ -447,7 +425,7 @@ func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.Stri
 	for _, name := range names {
 		err := el.client.DOM.RemoveAttribute(
 			ctx,
-			dom.NewRemoveAttributeArgs(el.id.nodeID, name.String()),
+			dom.NewRemoveAttributeArgs(el.id.NodeID, name.String()),
 		)
 
 		if err != nil {
@@ -458,79 +436,61 @@ func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.Stri
 	return nil
 }
 
-func (el *HTMLElement) GetChildNodes(ctx context.Context) core.Value {
+func (el *HTMLElement) GetChildNodes(ctx context.Context) (*values.Array, error) {
 	val, err := el.loadedChildren.Read(ctx)
 
 	if err != nil {
-		return values.NewArray(0)
+		return values.NewArray(0), err
 	}
 
-	return val
+	return val.Copy().(*values.Array), nil
 }
 
-func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) core.Value {
+func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
 	val, err := el.loadedChildren.Read(ctx)
 
 	if err != nil {
-		return values.None
+		return values.None, err
 	}
 
-	return val.(*values.Array).Get(idx)
+	return val.(*values.Array).Get(idx), nil
 }
 
-func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) core.Value {
+func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
 	if el.IsDetached() {
-		return values.None
+		return values.None, drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	selectorArgs := dom.NewQuerySelectorArgs(el.id.nodeID, selector.String())
+	selectorArgs := dom.NewQuerySelectorArgs(el.id.NodeID, selector.String())
 	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve a node by selector")
-
-		return values.None
+		return values.None, err
 	}
 
 	if found.NodeID == emptyNodeID {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to find a node by selector. returned 0 NodeID")
-
-		return values.None
+		return values.None, nil
 	}
 
 	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, found.NodeID)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to load a child node by selector")
-
-		return values.None
+		return values.None, nil
 	}
 
-	return res
+	return res, nil
 }
 
-func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) core.Value {
+func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
 	if el.IsDetached() {
-		return values.NewArray(0)
+		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.NodeID, selector.String())
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.None
+		return values.NewArray(0), err
 	}
 
 	arr := values.NewArray(len(res.NodeIDs))
@@ -547,10 +507,6 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, id)
 
 		if err != nil {
-			el.logError(err).
-				Str("selector", selector.String()).
-				Msg("failed to load nodes by selector")
-
 			// close elements that are already loaded, but won't be used because of the error
 			if arr.Length() > 0 {
 				arr.ForEach(func(e core.Value, _ int) bool {
@@ -560,13 +516,13 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 				})
 			}
 
-			return values.None
+			return values.NewArray(0), err
 		}
 
 		arr.Push(childEl)
 	}
 
-	return arr
+	return arr, nil
 }
 
 func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (result core.Value, err error) {
@@ -578,7 +534,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 
 	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.XPath(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: json.RawMessage(exp),
@@ -657,8 +613,8 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 				el.input,
 				el.exec,
 				HTMLElementIdentity{
-					nodeID:   repl.NodeID,
-					objectID: *descr.Value.ObjectID,
+					NodeID:   repl.NodeID,
+					ObjectID: *descr.Value.ObjectID,
 				},
 			)
 
@@ -689,8 +645,8 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 			el.input,
 			el.exec,
 			HTMLElementIdentity{
-				nodeID:   repl.NodeID,
-				objectID: *out.ObjectID,
+				NodeID:   repl.NodeID,
+				ObjectID: *out.ObjectID,
 			},
 		)
 	default:
@@ -737,7 +693,7 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 		ctx,
 		templates.GetInnerTextBySelector(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: sel,
@@ -772,7 +728,7 @@ func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, inn
 		ctx,
 		templates.SetInnerTextBySelector(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: sel,
@@ -798,7 +754,7 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 		ctx,
 		templates.GetInnerTextBySelectorAll(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: sel,
@@ -857,7 +813,7 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 		ctx,
 		templates.GetInnerHTMLBySelector(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: sel,
@@ -892,7 +848,7 @@ func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, inn
 		ctx,
 		templates.SetInnerHTMLBySelector(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: sel,
@@ -918,7 +874,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 		ctx,
 		templates.GetInnerHTMLBySelectorAll(),
 		runtime.CallArgument{
-			ObjectID: &el.id.objectID,
+			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
 			Value: sel,
@@ -938,24 +894,19 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 	return arr, nil
 }
 
-func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) values.Int {
+func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
 	if el.IsDetached() {
-		return values.ZeroInt
+		return values.ZeroInt, drivers.ErrDetached
 	}
 
-	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.nodeID, selector.String())
+	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.NodeID, selector.String())
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
-		el.logError(err).
-			Str("selector", selector.String()).
-			Msg("failed to retrieve nodes by selector")
-
-		return values.ZeroInt
+		return values.ZeroInt, err
 	}
 
-	return values.NewInt(len(res.NodeIDs))
+	return values.NewInt(len(res.NodeIDs)), nil
 }
 
 func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
@@ -964,7 +915,7 @@ func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.Str
 	}
 
 	// TODO: Can we use RemoteObjectID or BackendID instead of NodeId?
-	selectorArgs := dom.NewQuerySelectorArgs(el.id.nodeID, selector.String())
+	selectorArgs := dom.NewQuerySelectorArgs(el.id.NodeID, selector.String())
 	res, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
 
 	if err != nil {
@@ -981,7 +932,11 @@ func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.Str
 func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, when drivers.WaitEvent) error {
 	task := events.NewWaitTask(
 		func(ctx2 context.Context) (core.Value, error) {
-			current := el.GetAttribute(ctx2, "class")
+			current, err := el.GetAttribute(ctx2, "class")
+
+			if err != nil {
+				return values.None, nil
+			}
 
 			if current.Type() != types.String {
 				return values.None, nil
@@ -1033,7 +988,7 @@ func (el *HTMLElement) WaitForAttribute(
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
-		return el.GetAttribute(ctx, name), nil
+		return el.GetAttribute(ctx, name)
 	}, events.DefaultPolling)
 
 	_, err := task.Run(ctx)
@@ -1051,16 +1006,16 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 	return err
 }
 
-func (el *HTMLElement) Click(ctx context.Context) error {
-	return el.input.Click(ctx, el.id.objectID)
+func (el *HTMLElement) Click(ctx context.Context, count values.Int) error {
+	return el.input.Click(ctx, el.id.ObjectID, int(count))
 }
 
-func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelector(ctx, el.id.nodeID, selector)
+func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String, count values.Int) error {
+	return el.input.ClickBySelector(ctx, el.id.NodeID, selector.String(), int(count))
 }
 
-func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String) error {
-	return el.input.ClickBySelectorAll(ctx, el.id.nodeID, selector)
+func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error {
+	return el.input.ClickBySelectorAll(ctx, el.id.NodeID, selector.String(), int(count))
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
@@ -1068,23 +1023,63 @@ func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values
 		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")
 	}
 
-	return el.input.Type(ctx, el.id.objectID, value, delay)
+	return el.input.Type(ctx, el.id.ObjectID, input.TypeParams{
+		Text:  value.String(),
+		Clear: false,
+		Delay: time.Duration(delay) * time.Millisecond,
+	})
+}
+
+func (el *HTMLElement) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
+	return el.input.TypeBySelector(ctx, el.id.NodeID, selector.String(), input.TypeParams{
+		Text:  value.String(),
+		Clear: false,
+		Delay: time.Duration(delay) * time.Millisecond,
+	})
+}
+
+func (el *HTMLElement) Clear(ctx context.Context) error {
+	return el.input.Clear(ctx, el.id.ObjectID)
+}
+
+func (el *HTMLElement) ClearBySelector(ctx context.Context, selector values.String) error {
+	return el.input.ClearBySelector(ctx, el.id.NodeID, selector.String())
 }
 
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
-	return el.input.Select(ctx, el.id.objectID, value)
+	return el.input.Select(ctx, el.id.ObjectID, value)
+}
+
+func (el *HTMLElement) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
+	return el.input.SelectBySelector(ctx, el.id.NodeID, selector.String(), value)
 }
 
 func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
-	return el.input.ScrollIntoView(ctx, el.id.objectID)
+	return el.input.ScrollIntoView(ctx, el.id.ObjectID)
 }
 
 func (el *HTMLElement) Focus(ctx context.Context) error {
-	return el.input.Focus(ctx, el.id.objectID)
+	return el.input.Focus(ctx, el.id.ObjectID)
+}
+
+func (el *HTMLElement) FocusBySelector(ctx context.Context, selector values.String) error {
+	return el.input.FocusBySelector(ctx, el.id.NodeID, selector.String())
+}
+
+func (el *HTMLElement) Blur(ctx context.Context) error {
+	return el.input.Blur(ctx, el.id.ObjectID)
+}
+
+func (el *HTMLElement) BlurBySelector(ctx context.Context, selector values.String) error {
+	return el.input.BlurBySelector(ctx, el.id.ObjectID, selector.String())
 }
 
 func (el *HTMLElement) Hover(ctx context.Context) error {
-	return el.input.MoveMouse(ctx, el.id.objectID)
+	return el.input.MoveMouse(ctx, el.id.ObjectID)
+}
+
+func (el *HTMLElement) HoverBySelector(ctx context.Context, selector values.String) error {
+	return el.input.MoveMouseBySelector(ctx, el.id.NodeID, selector.String())
 }
 
 func (el *HTMLElement) IsDetached() values.Boolean {
@@ -1139,7 +1134,7 @@ func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
 }
 
 func (el *HTMLElement) loadAttrs(ctx context.Context) (core.Value, error) {
-	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.nodeID))
+	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.NodeID))
 
 	if err != nil {
 		return values.None, err
@@ -1163,7 +1158,7 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 			el.events,
 			el.input,
 			el.exec,
-			childID.nodeID,
+			childID.NodeID,
 		)
 
 		if err != nil {
@@ -1179,7 +1174,11 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 }
 
 func (el *HTMLElement) parseStyle(ctx context.Context) (core.Value, error) {
-	value := el.GetAttribute(ctx, "style")
+	value, err := el.GetAttribute(ctx, "style")
+
+	if err != nil {
+		return values.None, err
+	}
 
 	if value == values.None {
 		return values.NewObject(), nil
@@ -1205,13 +1204,17 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 	}
 
 	// it's not for this el
-	if reply.NodeID != el.id.nodeID {
+	if reply.NodeID != el.id.NodeID {
 		return
 	}
 
 	// they are not event loaded
 	// just ignore the event
 	if !el.attributes.Ready() {
+		return
+	}
+
+	if el.IsDetached() {
 		return
 	}
 
@@ -1245,13 +1248,17 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 	}
 
 	// it's not for this el
-	if reply.NodeID != el.id.nodeID {
+	if reply.NodeID != el.id.NodeID {
 		return
 	}
 
 	// they are not event loaded
 	// just ignore the event
 	if !el.attributes.Ready() {
+		return
+	}
+
+	if el.IsDetached() {
 		return
 	}
 
@@ -1283,13 +1290,20 @@ func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message i
 		return
 	}
 
-	if reply.NodeID != el.id.nodeID {
+	if reply.NodeID != el.id.NodeID {
 		return
 	}
 
+	if el.IsDetached() {
+		return
+	}
+
+	el.mu.Lock()
+	defer el.mu.Unlock()
+
 	node, err := el.client.DOM.DescribeNode(
 		ctx,
-		dom.NewDescribeNodeArgs().SetObjectID(el.id.objectID),
+		dom.NewDescribeNodeArgs().SetObjectID(el.id.ObjectID),
 	)
 
 	if err != nil {
@@ -1297,9 +1311,6 @@ func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message i
 
 		return
 	}
-
-	el.mu.Lock()
-	defer el.mu.Unlock()
 
 	el.children = createChildrenArray(node.Node.Children)
 }
@@ -1311,7 +1322,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 		return
 	}
 
-	if reply.ParentNodeID != el.id.nodeID {
+	if reply.ParentNodeID != el.id.NodeID {
 		return
 	}
 
@@ -1319,11 +1330,15 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 	prevID := reply.PreviousNodeID
 	nextID := reply.Node.NodeID
 
+	if el.IsDetached() {
+		return
+	}
+
 	el.mu.Lock()
 	defer el.mu.Unlock()
 
 	for idx, id := range el.children {
-		if id.nodeID == prevID {
+		if id.NodeID == prevID {
 			targetIDx = idx
 			break
 		}
@@ -1334,7 +1349,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 	}
 
 	nextIdentity := HTMLElementIdentity{
-		nodeID: reply.Node.NodeID,
+		NodeID: reply.Node.NodeID,
 	}
 
 	arr := el.children
@@ -1368,18 +1383,22 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface
 		return
 	}
 
-	if reply.ParentNodeID != el.id.nodeID {
+	if reply.ParentNodeID != el.id.NodeID {
 		return
 	}
 
 	targetIDx := -1
 	targetID := reply.NodeID
 
+	if el.IsDetached() {
+		return
+	}
+
 	el.mu.Lock()
 	defer el.mu.Unlock()
 
 	for idx, id := range el.children {
-		if id.nodeID == targetID {
+		if id.NodeID == targetID {
 			targetIDx = idx
 			break
 		}
@@ -1401,7 +1420,7 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface
 			el.logger.Error().
 				Timestamp().
 				Err(err).
-				Int("nodeID", int(el.id.nodeID)).
+				Int("nodeID", int(el.id.NodeID)).
 				Msg("failed to update element")
 
 			return
@@ -1419,7 +1438,7 @@ func (el *HTMLElement) logError(err error) *zerolog.Event {
 	return el.logger.
 		Error().
 		Timestamp().
-		Int("nodeID", int(el.id.nodeID)).
-		Str("objectID", string(el.id.objectID)).
+		Int("nodeID", int(el.id.NodeID)).
+		Str("objectID", string(el.id.ObjectID)).
 		Err(err)
 }

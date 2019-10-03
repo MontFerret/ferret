@@ -159,7 +159,6 @@ booleanLiteral
 
 stringLiteral
     : StringLiteral
-    | TemplateStringLiteral
     ;
 
 integerLiteral
@@ -185,11 +184,6 @@ propertyAssignment
     | shorthandPropertyName
     ;
 
-memberExpression
-    : Identifier (Dot propertyName (computedPropertyName)*)+
-    | Identifier computedPropertyName (Dot propertyName (computedPropertyName)*)* (computedPropertyName (Dot propertyName)*)*
-    ;
-
 shorthandPropertyName
     : variable
     ;
@@ -201,6 +195,7 @@ computedPropertyName
 propertyName
     : Identifier
     | stringLiteral
+    | param
     ;
 
 expressionGroup
@@ -213,6 +208,21 @@ namespace
 
 functionCallExpression
     : namespace Identifier arguments
+    ;
+
+member
+    : Identifier
+    | functionCallExpression
+    | param
+    ;
+
+memberPath
+    : (Dot propertyName (computedPropertyName)*)+
+    | computedPropertyName (Dot propertyName (computedPropertyName)*)* (computedPropertyName (Dot propertyName)*)*
+    ;
+
+memberExpression
+    : member memberPath
     ;
 
 arguments

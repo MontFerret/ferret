@@ -18,7 +18,7 @@ type PageLoadParams struct {
 	Timeout time.Duration
 }
 
-// Open opens an HTML page by a given url.
+// DOCUMENT opens an HTML page by a given url.
 // By default, loads a page by http call - resulted page does not support any interactions.
 // @param params (Object) - Optional, An object containing the following properties :
 // 		driver (String) - Optional, driver name.
@@ -26,7 +26,7 @@ type PageLoadParams struct {
 //      userAgent (String) - Optional, user agent.
 //      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
 //      	i.e. not to open a page in the Incognito mode.
-//      cookies (HTTPCookie) - Optional, set of HTTP cookies.
+//      cookies (HTTPCookies) - Optional, set of HTTP cookies.
 //      headers (HTTPHeaders) - Optional, HTTP headers.
 //      viewport (Viewport) - Optional, viewport params.
 // @returns (HTMLPage) - Returns loaded HTML page.
@@ -76,7 +76,7 @@ func newDefaultDocLoadParams(url values.String) PageLoadParams {
 		Params: drivers.Params{
 			URL: url.String(),
 		},
-		Timeout: time.Second * 30,
+		Timeout: drivers.DefaultPageLoadTimeout * time.Millisecond,
 	}
 }
 
@@ -134,17 +134,30 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 		cookies, exists := obj.Get(values.NewString("cookies"))
 
 		if exists {
-			if err := core.ValidateType(cookies, types.Array); err != nil {
+			if err := core.ValidateType(cookies, types.Array, types.Object); err != nil {
 				return res, err
 			}
 
-			cookies, err := parseCookies(cookies.(*values.Array))
+			switch c := cookies.(type) {
+			case *values.Array:
+				cookies, err := parseCookieArray(c)
 
-			if err != nil {
-				return res, err
+				if err != nil {
+					return res, err
+				}
+
+				res.Cookies = cookies
+			case *values.Object:
+				cookies, err := parseCookieObject(c)
+
+				if err != nil {
+					return res, err
+				}
+
+				res.Cookies = cookies
+			default:
+				res.Cookies = make(drivers.HTTPCookies)
 			}
-
-			res.Cookies = cookies
 		}
 
 		headers, exists := obj.Get(values.NewString("headers"))
@@ -183,11 +196,11 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 	return res, nil
 }
 
-func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
+func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
 	var err error
-	res := make([]drivers.HTTPCookie, 0, arr.Length())
+	res := make(drivers.HTTPCookies)
 
-	arr.ForEach(func(value core.Value, idx int) bool {
+	obj.ForEach(func(value core.Value, _ string) bool {
 		cookie, e := parseCookie(value)
 
 		if e != nil {
@@ -196,7 +209,28 @@ func parseCookies(arr *values.Array) ([]drivers.HTTPCookie, error) {
 			return false
 		}
 
-		res = append(res, cookie)
+		res[cookie.Name] = cookie
+
+		return true
+	})
+
+	return res, err
+}
+
+func parseCookieArray(arr *values.Array) (drivers.HTTPCookies, error) {
+	var err error
+	res := make(drivers.HTTPCookies)
+
+	arr.ForEach(func(value core.Value, _ int) bool {
+		cookie, e := parseCookie(value)
+
+		if e != nil {
+			err = e
+
+			return false
+		}
+
+		res[cookie.Name] = cookie
 
 		return true
 	})
