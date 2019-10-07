@@ -30,20 +30,17 @@ func (resp *HTTPResponse) Compare(other core.Value) int64 {
 		return Compare(HTTPResponseType, other.Type())
 	}
 
-	otherObj := values.Parse(other)
-	respObj := values.Parse(resp)
+	otherResp := other.(*HTTPResponse)
 
-	// HTTPHeaders has it's own Compare
-	respObj.(*values.Object).Set(
-		values.NewString("Headers"),
-		resp.Headers,
-	)
-	otherObj.(*values.Object).Set(
-		values.NewString("Headers"),
-		other.(*HTTPResponse).Headers,
-	)
+	comp := resp.Headers.Compare(otherResp.Headers)
+	if comp != 0 {
+		return comp
+	}
 
-	return respObj.Compare(otherObj)
+	// it makes no sense to compare Status strings
+	// because they are always equal if StatusCode's are equal
+	return values.NewInt(resp.StatusCode).
+		Compare(values.NewInt(resp.StatusCode))
 }
 
 func (resp *HTTPResponse) Unwrap() interface{} {
