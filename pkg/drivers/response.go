@@ -3,7 +3,6 @@ package drivers
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -83,7 +82,6 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 	}
 
 	field := path[0].(values.String).String()
-	field = strings.ToLower(field)
 
 	switch field {
 	case "status":
