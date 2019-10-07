@@ -89,7 +89,6 @@ var Attributes = []string{
 	"nomodule",
 	"nonce",
 	"novalidate",
-	"onclick",
 	"open",
 	"optimum",
 	"pattern",
