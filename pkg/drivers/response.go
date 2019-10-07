@@ -89,7 +89,7 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 	switch field {
 	case "status":
 		return values.NewString(resp.Status), nil
-	case "status_code", "statusCode":
+	case "statusCode":
 		return values.NewInt(resp.StatusCode), nil
 	case "headers":
 		if len(path) == 1 {
