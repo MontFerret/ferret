@@ -209,6 +209,8 @@ type (
 		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
 
 		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
+
+		GetResponse(ctx context.Context) (*HTTPResponse, error)
 	}
 )
 

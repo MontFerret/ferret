@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -20,6 +22,14 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 		segment := segment.(values.String)
 
 		switch segment {
+		case "response":
+			resp, err := page.GetResponse(ctx)
+			if err != nil {
+				return nil, errors.Wrap(err, "get response")
+			}
+
+			return resp.GetIn(ctx, path[1:])
+
 		case "mainFrame", "document":
 			return GetInDocument(ctx, page.GetMainFrame(), path[1:])
 		case "frames":

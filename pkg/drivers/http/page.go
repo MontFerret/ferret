@@ -16,11 +16,13 @@ type HTMLPage struct {
 	document *HTMLDocument
 	cookies  drivers.HTTPCookies
 	frames   *values.Array
+	response *drivers.HTTPResponse
 }
 
 func NewHTMLPage(
 	qdoc *goquery.Document,
 	url string,
+	response *drivers.HTTPResponse,
 	cookies drivers.HTTPCookies,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
@@ -33,6 +35,7 @@ func NewHTMLPage(
 	p.document = doc
 	p.cookies = cookies
 	p.frames = nil
+	p.response = response
 
 	return p, nil
 }
@@ -87,7 +90,12 @@ func (p *HTMLPage) Copy() core.Value {
 		cookies[k] = v
 	}
 
-	page, err := NewHTMLPage(p.document.doc, p.document.GetURL().String(), cookies)
+	page, err := NewHTMLPage(
+		p.document.doc,
+		p.document.GetURL().String(),
+		p.response,
+		cookies,
+	)
 
 	if err != nil {
 		return values.None
@@ -172,6 +180,10 @@ func (p *HTMLPage) GetCookies(_ context.Context) (*values.Array, error) {
 	}
 
 	return arr, nil
+}
+
+func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
+	return p.response, nil
 }
 
 func (p *HTMLPage) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {

@@ -168,7 +168,14 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		return nil, err
 	}
 
-	return NewHTMLPage(doc, params.URL, cookies)
+	// HTTPResponse is temporarily unavailable when the status code != OK
+	r := drivers.HTTPResponse{
+		StatusCode: resp.StatusCode,
+		Status:     resp.Status,
+		Headers:    drivers.HTTPHeaders(resp.Header),
+	}
+
+	return NewHTMLPage(doc, params.URL, &r, cookies)
 }
 
 func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {
@@ -180,7 +187,7 @@ func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage
 		return nil, errors.Wrap(err, "failed to parse a document")
 	}
 
-	return NewHTMLPage(doc, "#blank", nil)
+	return NewHTMLPage(doc, "#blank", nil, nil)
 }
 
 func (drv *Driver) Close() error {

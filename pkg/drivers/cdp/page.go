@@ -3,6 +3,9 @@ package cdp
 import (
 	"context"
 	"encoding/json"
+	"hash/fnv"
+	"sync"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
@@ -10,8 +13,6 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"hash/fnv"
-	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -791,4 +792,8 @@ func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
 	}
 
 	return res, nil
+}
+
+func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
+	return nil, core.ErrNotSupported
 }
