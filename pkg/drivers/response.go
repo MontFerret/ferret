@@ -29,8 +29,8 @@ func (resp *HTTPResponse) Compare(other core.Value) int64 {
 		return Compare(HTTPResponseType, other.Type())
 	}
 
-	// it's a safe cast because HTTPResponse doesn't implement
-	// core.Value.
+	// this is a safe cast. Only *HTTPResponse implements core.Value.
+	// HTTPResponse does not.
 	otherResp := other.(*HTTPResponse)
 
 	comp := resp.Headers.Compare(otherResp.Headers)
