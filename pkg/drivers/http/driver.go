@@ -9,7 +9,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
 	"github.com/sethgrid/pester"
@@ -178,8 +177,8 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	return NewHTMLPage(doc, params.URL, &r, cookies)
 }
 
-func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {
-	buf := bytes.NewBuffer([]byte(str))
+func (drv *Driver) Parse(_ context.Context, content []byte) (drivers.HTMLPage, error) {
+	buf := bytes.NewBuffer(content)
 
 	doc, err := goquery.NewDocumentFromReader(buf)
 

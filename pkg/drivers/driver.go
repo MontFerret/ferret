@@ -2,8 +2,9 @@ package drivers
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
@@ -18,6 +19,7 @@ type (
 		io.Closer
 		Name() string
 		Open(ctx context.Context, params Params) (HTMLPage, error)
+		Parse(ctx context.Context, content []byte) (HTMLPage, error)
 	}
 )
 

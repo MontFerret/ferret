@@ -2,15 +2,20 @@ package cdp
 
 import (
 	"context"
+	"sync"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/network"
+	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
 	"github.com/pkg/errors"
-	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
@@ -133,6 +138,131 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	}
 
 	return LoadHTMLPage(ctx, conn, params)
+}
+
+func (drv *Driver) Parse(ctx context.Context, content []byte) (drivers.HTMLPage, error) {
+	logger := logging.FromContext(ctx)
+
+	err := drv.init(ctx)
+
+	if err != nil {
+		logger.
+			Error().
+			Timestamp().
+			Err(err).
+			Str("driver", drv.options.Name).
+			Msg("failed to initialize the driver")
+
+		return nil, err
+	}
+
+	// Args for a new target belonging to the browser context
+	createTargetArgs := target.NewCreateTargetArgs(BlankPageURL)
+
+	// Set it to incognito mode
+	createTargetArgs.SetBrowserContextID(drv.contextID)
+
+	// New target
+	createTarget, err := drv.client.Target.CreateTarget(ctx, createTargetArgs)
+
+	if err != nil {
+		logger.
+			Error().
+			Timestamp().
+			Err(err).
+			Str("driver", drv.options.Name).
+			Msg("failed to create a browser target")
+
+		return nil, err
+	}
+
+	// Connect to target using the existing websocket connection.
+	conn, err := drv.session.Dial(ctx, createTarget.TargetID)
+
+	if err != nil {
+		logger.
+			Error().
+			Timestamp().
+			Err(err).
+			Str("driver", drv.options.Name).
+			Msg("failed to establish a connection")
+
+		return nil, err
+	}
+
+	// New client
+	client := cdp.NewClient(conn)
+
+	// Configure client
+	err = runBatch(
+		func() error {
+			return client.Page.SetLifecycleEventsEnabled(
+				ctx,
+				page.NewSetLifecycleEventsEnabledArgs(true),
+			)
+		},
+
+		func() error {
+			return client.DOM.Enable(ctx)
+		},
+
+		func() error {
+			return client.Runtime.Enable(ctx)
+		},
+
+		func() error {
+			return client.Network.Enable(ctx, network.NewEnableArgs())
+		},
+
+		func() error {
+			return client.Page.SetBypassCSP(ctx, page.NewSetBypassCSPArgs(true))
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Get frame tree
+	ft, err := client.Page.GetFrameTree(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Set content to loaded file
+	err = client.Page.SetDocumentContent(
+		ctx,
+		page.NewSetDocumentContentArgs(ft.FrameTree.Frame.ID, string(content)),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Create event broker
+	broker, err := events.CreateEventBroker(client)
+
+	if err != nil {
+		handleLoadError(logger, client)
+		return nil, errors.Wrap(err, "failed to create event events")
+	}
+
+	// Create inputs
+	mouse := input.NewMouse(client)
+	keyboard := input.NewKeyboard(client)
+
+	// Load document
+	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker, mouse, keyboard)
+
+	if err != nil {
+		broker.StopAndClose()
+		handleLoadError(logger, client)
+
+		return nil, errors.Wrap(err, "failed to load root element")
+	}
+
+	return NewHTMLPage(logger, conn, client, broker, mouse, keyboard, doc), nil
 }
 
 func (drv *Driver) Close() error {
