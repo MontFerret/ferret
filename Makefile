@@ -23,7 +23,7 @@ compile:
 	./main.go
 
 test:
-	go test -race ${DIR_PKG}/...
+	go test -v -race ${DIR_PKG}/...
 
 cover:
 	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \

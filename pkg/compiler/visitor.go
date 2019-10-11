@@ -38,14 +38,15 @@ func newVisitor(src string, funcs map[string]core.Function) *visitor {
 
 func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 	return newResultFrom(func() (interface{}, error) {
-		rootScope := newRootScope()
-		block, err := v.doVisitBody(ctx.Body().(*fql.BodyContext), rootScope)
+		gs := newGlobalScope()
+		rs := newRootScope(gs)
+		block, err := v.doVisitBody(ctx.Body().(*fql.BodyContext), rs)
 
 		if err != nil {
 			return nil, err
 		}
 
-		return runtime.NewProgram(v.src, block)
+		return runtime.NewProgram(v.src, block, gs.params)
 	})
 }
 
@@ -801,10 +802,8 @@ func (v *visitor) doVisitMember(ctx *fql.MemberContext, scope *scope) (core.Expr
 	if identifier != nil {
 		varName := ctx.Identifier().GetText()
 
-		_, err := scope.GetVariable(varName)
-
-		if err != nil {
-			return nil, err
+		if !scope.HasVariable(varName) {
+			return nil, core.Error(ErrVariableNotFound, varName)
 		}
 
 		exp, err := expressions.NewVariableExpression(v.getSourceMap(ctx), varName)
@@ -927,10 +926,8 @@ func (v *visitor) doVisitComputedPropertyNameContext(ctx *fql.ComputedPropertyNa
 func (v *visitor) doVisitShorthandPropertyNameContext(ctx *fql.ShorthandPropertyNameContext, scope *scope) (core.Expression, error) {
 	name := ctx.Variable().GetText()
 
-	_, err := scope.GetVariable(name)
-
-	if err != nil {
-		return nil, err
+	if !scope.HasVariable(name) {
+		return nil, core.Error(ErrVariableNotFound, name)
 	}
 
 	return literals.NewStringLiteral(ctx.Variable().GetText()), nil
@@ -1005,10 +1002,8 @@ func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (core.
 	name := ctx.Identifier().GetText()
 
 	// check whether the variable is defined
-	_, err := scope.GetVariable(name)
-
-	if err != nil {
-		return nil, err
+	if !scope.HasVariable(name) {
+		return nil, core.Error(ErrVariableNotFound, name)
 	}
 
 	return expressions.NewVariableExpression(v.getSourceMap(ctx), name)
@@ -1117,8 +1112,10 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 	)
 }
 
-func (v *visitor) doVisitParamContext(context *fql.ParamContext, _ *scope) (core.Expression, error) {
+func (v *visitor) doVisitParamContext(context *fql.ParamContext, s *scope) (core.Expression, error) {
 	name := context.Identifier().GetText()
+
+	s.AddParam(name)
 
 	return expressions.NewParameterExpression(
 		v.getSourceMap(context),
