@@ -126,8 +126,9 @@ func TestParam(t *testing.T) {
 		)
 
 		So(err, ShouldNotBeNil)
-		So(err.Error(), ShouldEqual, runtime.ErrMissedParams.Error())
+		So(err.Error(), ShouldContainSubstring, runtime.ErrMissedParam.Error())
 	})
+
 	Convey("Should be possible to use in member expression as segments", t, func() {
 		prog := compiler.New().
 			MustCompile(`

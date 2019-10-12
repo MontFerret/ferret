@@ -5,6 +5,5 @@ import (
 )
 
 var (
-	ErrMissedParams = errors.New("missed parameter values")
-	ErrMissedParam  = errors.New("missed value for parameter")
+	ErrMissedParam = errors.New("missed value for parameter(s)")
 )

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"runtime"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -45,17 +46,10 @@ func (p *Program) Params() []string {
 func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
 	opts := NewOptions(setters)
 
-	// Check params
-	if len(p.params) > 0 && len(opts.params) == 0 {
-		return nil, ErrMissedParams
-	}
+	err = p.validateParams(opts)
 
-	for n := range p.params {
-		_, exists := opts.params[n]
-
-		if !exists {
-			return nil, errors.Wrap(ErrMissedParam, n)
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	ctx = opts.WithContext(ctx)
@@ -116,4 +110,30 @@ func (p *Program) MustRun(ctx context.Context, setters ...Option) []byte {
 	}
 
 	return out
+}
+
+func (p *Program) validateParams(opts *Options) error {
+	if len(p.params) == 0 {
+		return nil
+	}
+
+	var missedParams []string
+
+	for n := range p.params {
+		_, exists := opts.params[n]
+
+		if !exists {
+			if missedParams == nil {
+				missedParams = make([]string, 0, len(p.params))
+			}
+
+			missedParams = append(missedParams, "@"+n)
+		}
+	}
+
+	if len(missedParams) > 0 {
+		return core.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	}
+
+	return nil
 }
