@@ -13,7 +13,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
 	github.com/gorilla/websocket v1.4.1 // indirect
-	github.com/labstack/echo/v4 v4.1.10
+	github.com/labstack/echo/v4 v4.1.11
 	github.com/mafredri/cdp v0.24.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.8.1
