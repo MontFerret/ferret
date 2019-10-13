@@ -11,15 +11,15 @@ type (
 	Option func(opts *Options)
 
 	Options struct {
-		Name        	  string
-		Backoff     	  pester.BackoffStrategy
-		MaxRetries  	  int
-		Concurrency 	  int
-		Proxy       	  string
-		UserAgent   	  string
-		Headers     	  drivers.HTTPHeaders
-		Cookies     	  drivers.HTTPCookies
-		AllowedHTTPCodes  []int
+		Name             string
+		Backoff          pester.BackoffStrategy
+		MaxRetries       int
+		Concurrency      int
+		Proxy            string
+		UserAgent        string
+		Headers          drivers.HTTPHeaders
+		Cookies          drivers.HTTPCookies
+		AllowedHTTPCodes []int
 	}
 )
 

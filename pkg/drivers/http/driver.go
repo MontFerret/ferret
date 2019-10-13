@@ -152,7 +152,6 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 
 	defer resp.Body.Close()
 
-
 	responseAllowed := false
 	for _, code := range drv.options.AllowedHTTPCodes {
 		if resp.StatusCode == code {
