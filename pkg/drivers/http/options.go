@@ -1,6 +1,8 @@
 package http
 
 import (
+	stdhttp "net/http"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/sethgrid/pester"
 )
@@ -9,14 +11,15 @@ type (
 	Option func(opts *Options)
 
 	Options struct {
-		Name        string
-		Backoff     pester.BackoffStrategy
-		MaxRetries  int
-		Concurrency int
-		Proxy       string
-		UserAgent   string
-		Headers     drivers.HTTPHeaders
-		Cookies     drivers.HTTPCookies
+		Name        	  string
+		Backoff     	  pester.BackoffStrategy
+		MaxRetries  	  int
+		Concurrency 	  int
+		Proxy       	  string
+		UserAgent   	  string
+		Headers     	  drivers.HTTPHeaders
+		Cookies     	  drivers.HTTPCookies
+		AllowedHTTPCodes  []int
 	}
 )
 
@@ -26,6 +29,7 @@ func newOptions(setters []Option) *Options {
 	opts.Backoff = pester.ExponentialBackoff
 	opts.Concurrency = 3
 	opts.MaxRetries = 5
+	opts.AllowedHTTPCodes = []int{stdhttp.StatusOK}
 
 	for _, setter := range setters {
 		setter(opts)
@@ -123,5 +127,23 @@ func WithCookies(cookies []drivers.HTTPCookie) Option {
 		for _, c := range cookies {
 			opts.Cookies[c.Name] = c
 		}
+	}
+}
+
+func WithAllowedHTTPCode(httpCode int) Option {
+	return func(opts *Options) {
+		if opts.AllowedHTTPCodes == nil {
+			opts.AllowedHTTPCodes = make([]int, 0, 1)
+		}
+		opts.AllowedHTTPCodes = append(opts.AllowedHTTPCodes, httpCode)
+	}
+}
+
+func WithAllowedHTTPCodes(httpCodes []int) Option {
+	return func(opts *Options) {
+		if opts.AllowedHTTPCodes == nil {
+			opts.AllowedHTTPCodes = httpCodes
+		}
+		opts.AllowedHTTPCodes = append(opts.AllowedHTTPCodes, httpCodes...)
 	}
 }
