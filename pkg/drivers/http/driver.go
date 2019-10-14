@@ -168,7 +168,6 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		return nil, err
 	}
 
-	// HTTPResponse is temporarily unavailable when the status code != OK
 	r := drivers.HTTPResponse{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
