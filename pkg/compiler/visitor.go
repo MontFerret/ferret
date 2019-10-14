@@ -24,11 +24,11 @@ type (
 	visitor struct {
 		*fql.BaseFqlParserVisitor
 		src   string
-		funcs map[string]core.Function
+		funcs core.Functions
 	}
 )
 
-func newVisitor(src string, funcs map[string]core.Function) *visitor {
+func newVisitor(src string, funcs core.Functions) *visitor {
 	return &visitor{
 		&fql.BaseFqlParserVisitor{},
 		src,
@@ -1104,7 +1104,7 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 
 	name += context.Identifier().GetText()
 
-	fun, exists := v.funcs[name]
+	fun, exists := v.funcs.Get(name)
 
 	if !exists {
 		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name))

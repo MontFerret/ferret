@@ -1,10 +1,11 @@
 package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/pkg/errors"
 )
 
 var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
@@ -34,7 +35,8 @@ func (nc *NamespaceContainer) Namespace(name string) core.Namespace {
 
 func (nc *NamespaceContainer) RegisterFunction(name string, fun core.Function) error {
 	nsName := nc.makeFullName(name)
-	_, exists := nc.funcs[nsName]
+
+	_, exists := nc.funcs.Get(nsName)
 
 	if exists {
 		return errors.Errorf("function already exists: %s", name)
@@ -49,13 +51,13 @@ func (nc *NamespaceContainer) RegisterFunction(name string, fun core.Function) e
 		return errors.Errorf("invalid function or namespace name: %s", nsName)
 	}
 
-	nc.funcs[strings.ToUpper(nsName)] = fun
+	nc.funcs.Set(nsName, fun)
 
 	return nil
 }
 
 func (nc *NamespaceContainer) RemoveFunction(name string) {
-	delete(nc.funcs, strings.ToUpper(nc.makeFullName(name)))
+	nc.funcs.Unset(nc.makeFullName(name))
 }
 
 func (nc *NamespaceContainer) RegisterFunctions(funcs core.Functions) error {
