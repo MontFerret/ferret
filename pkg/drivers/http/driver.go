@@ -178,7 +178,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	return NewHTMLPage(doc, params.URL, &r, cookies)
 }
 
-func (drv *Driver) responseCodeAllowed(resp *stdhttp.Response) bool {
+func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
 	for _, code := range drv.options.AllowedHTTPCodes {
 		if resp.StatusCode == code {
 			return true
