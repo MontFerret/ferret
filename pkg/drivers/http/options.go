@@ -132,18 +132,12 @@ func WithCookies(cookies []drivers.HTTPCookie) Option {
 
 func WithAllowedHTTPCode(httpCode int) Option {
 	return func(opts *Options) {
-		if opts.AllowedHTTPCodes == nil {
-			opts.AllowedHTTPCodes = make([]int, 0, 1)
-		}
 		opts.AllowedHTTPCodes = append(opts.AllowedHTTPCodes, httpCode)
 	}
 }
 
 func WithAllowedHTTPCodes(httpCodes []int) Option {
 	return func(opts *Options) {
-		if opts.AllowedHTTPCodes == nil {
-			opts.AllowedHTTPCodes = httpCodes
-		}
 		opts.AllowedHTTPCodes = append(opts.AllowedHTTPCodes, httpCodes...)
 	}
 }
