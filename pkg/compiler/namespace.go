@@ -60,8 +60,10 @@ func (nc *NamespaceContainer) RemoveFunction(name string) {
 	nc.funcs.Unset(nc.makeFullName(name))
 }
 
-func (nc *NamespaceContainer) RegisterFunctions(funcs core.FunctionsMap) error {
-	for name, fun := range funcs {
+func (nc *NamespaceContainer) RegisterFunctions(funcs *core.Functions) error {
+	for _, name := range funcs.Names() {
+		fun, _ := funcs.Get(name)
+
 		if err := nc.RegisterFunction(name, fun); err != nil {
 			return err
 		}

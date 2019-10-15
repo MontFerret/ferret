@@ -11,15 +11,19 @@ import (
 )
 
 func HTTPHelpers(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.FunctionsMap{
-		"GET": httpGet,
-	})
+	return ns.RegisterFunctions(
+		core.NewFunctionsFromMap(map[string]core.Function{
+			"GET": httpGet,
+		}),
+	)
 }
 
 func Assertions(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.FunctionsMap{
-		"EXPECT": expect,
-	})
+	return ns.RegisterFunctions(
+		core.NewFunctionsFromMap(map[string]core.Function{
+			"EXPECT": expect,
+		}),
+	)
 }
 
 func expect(_ context.Context, args ...core.Value) (core.Value, error) {

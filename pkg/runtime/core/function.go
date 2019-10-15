@@ -12,7 +12,7 @@ type (
 	Namespace interface {
 		Namespace(name string) Namespace
 		RegisterFunction(name string, fun Function) error
-		RegisterFunctions(funs FunctionsMap) error
+		RegisterFunctions(funs *Functions) error
 		RegisteredFunctions() []string
 		RemoveFunction(name string)
 	}
@@ -37,11 +37,8 @@ func ValidateArgs(args []Value, minimum, maximum int) error {
 type (
 	// Functions is a container for functions.
 	Functions struct {
-		functions FunctionsMap
+		functions map[string]Function
 	}
-
-	// FunctionsMap is a map of functions and their names.
-	FunctionsMap map[string]Function
 
 	// Function is a common interface for all functions of FQL.
 	Function = func(ctx context.Context, args ...Value) (Value, error)
@@ -50,8 +47,20 @@ type (
 // NewFunctions returns new empty Functions.
 func NewFunctions() *Functions {
 	return &Functions{
-		functions: make(FunctionsMap),
+		functions: make(map[string]Function),
 	}
+}
+
+// NewFunctionsFromMap creates new Functions from map, where
+// key is the name of the function and value is the function.
+func NewFunctionsFromMap(funcs map[string]Function) *Functions {
+	fns := NewFunctions()
+
+	for name, fn := range funcs {
+		fns.Set(name, fn)
+	}
+
+	return fns
 }
 
 // Get returns the function with the given name. If the function
@@ -67,7 +76,7 @@ func (fns *Functions) Set(name string, fn Function) {
 	// the preferred way to create Functions is NewFunctions.
 	// But just in case, if someone creates differently
 	if fns.functions == nil {
-		fns.functions = make(FunctionsMap, 1)
+		fns.functions = make(map[string]Function, 1)
 	}
 
 	fns.functions[strings.ToUpper(name)] = fn
