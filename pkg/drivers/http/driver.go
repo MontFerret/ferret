@@ -152,7 +152,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 
 	defer resp.Body.Close()
 
-	if !drv.responseCodeAllowed(resp) {
+	if _, exists := drv.options.AllowedHTTPCodes[resp.StatusCode]; !exists {
 		return nil, errors.New(resp.Status)
 	}
 
@@ -175,15 +175,6 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	}
 
 	return NewHTMLPage(doc, params.URL, &r, cookies)
-}
-
-func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
-	for _, code := range drv.options.AllowedHTTPCodes {
-		if resp.StatusCode == code {
-			return true
-		}
-	}
-	return false
 }
 
 func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {

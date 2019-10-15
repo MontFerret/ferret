@@ -19,7 +19,7 @@ type (
 		UserAgent        string
 		Headers          drivers.HTTPHeaders
 		Cookies          drivers.HTTPCookies
-		AllowedHTTPCodes []int
+		AllowedHTTPCodes map[int]struct{}
 	}
 )
 
@@ -29,7 +29,7 @@ func newOptions(setters []Option) *Options {
 	opts.Backoff = pester.ExponentialBackoff
 	opts.Concurrency = 3
 	opts.MaxRetries = 5
-	opts.AllowedHTTPCodes = []int{stdhttp.StatusOK}
+	opts.AllowedHTTPCodes = map[int]struct{}{stdhttp.StatusOK: struct{}{}}
 
 	for _, setter := range setters {
 		setter(opts)
@@ -132,12 +132,14 @@ func WithCookies(cookies []drivers.HTTPCookie) Option {
 
 func WithAllowedHTTPCode(httpCode int) Option {
 	return func(opts *Options) {
-		opts.AllowedHTTPCodes = append(opts.AllowedHTTPCodes, httpCode)
+		opts.AllowedHTTPCodes[httpCode] = struct{}{}
 	}
 }
 
 func WithAllowedHTTPCodes(httpCodes []int) Option {
 	return func(opts *Options) {
-		opts.AllowedHTTPCodes = append(opts.AllowedHTTPCodes, httpCodes...)
+		for _, code := range httpCodes {
+			opts.AllowedHTTPCodes[code] = struct{}{}
+		}
 	}
 }
