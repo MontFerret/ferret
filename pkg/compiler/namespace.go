@@ -14,7 +14,7 @@ const emptyNS = ""
 const separator = "::"
 
 type NamespaceContainer struct {
-	funcs core.Functions
+	funcs *core.Functions
 	name  string
 }
 
@@ -25,7 +25,7 @@ func newRootNamespace() *NamespaceContainer {
 	return ns
 }
 
-func newNamespace(funcs core.Functions, name string) *NamespaceContainer {
+func newNamespace(funcs *core.Functions, name string) *NamespaceContainer {
 	return &NamespaceContainer{funcs, strings.ToUpper(name)}
 }
 

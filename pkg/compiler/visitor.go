@@ -24,11 +24,11 @@ type (
 	visitor struct {
 		*fql.BaseFqlParserVisitor
 		src   string
-		funcs core.Functions
+		funcs *core.Functions
 	}
 )
 
-func newVisitor(src string, funcs core.Functions) *visitor {
+func newVisitor(src string, funcs *core.Functions) *visitor {
 	return &visitor{
 		&fql.BaseFqlParserVisitor{},
 		src,
