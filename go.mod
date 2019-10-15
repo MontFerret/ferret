@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/antchfx/htmlquery v1.0.0
-	github.com/antchfx/xpath v1.0.0
+	github.com/antchfx/xpath v1.1.0
 	github.com/antlr/antlr4 v0.0.0-20190819145818-b43a4c3a8015
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/corpix/uarand v0.1.1
