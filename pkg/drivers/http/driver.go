@@ -178,8 +178,8 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 }
 
 func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
-    _, exists := drv.options.AllowedHTTPCodes[resp.StatusCode]
-    return exists
+	_, exists := drv.options.AllowedHTTPCodes[resp.StatusCode]
+	return exists
 }
 
 func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {
