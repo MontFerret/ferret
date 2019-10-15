@@ -7,8 +7,8 @@ github.com/andybalholm/cascadia v1.0.0 h1:hOCXnnZ5A+3eVDX8pvgl4kofXv2ELss0bKcqRy
 github.com/andybalholm/cascadia v1.0.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
 github.com/antchfx/htmlquery v1.0.0 h1:O5IXz8fZF3B3MW+B33MZWbTHBlYmcfw0BAxgErHuaMA=
 github.com/antchfx/htmlquery v1.0.0/go.mod h1:MS9yksVSQXls00iXkiMqXr0J+umL/AmxXKuP28SUJM8=
-github.com/antchfx/xpath v1.0.0 h1:Q5gFgh2O40VTSwMOVbFE7nFNRBu3tS21Tn0KAWeEjtk=
-github.com/antchfx/xpath v1.0.0/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
+github.com/antchfx/xpath v1.1.0 h1:mJTvYpiHvxNQRD4Lbfin/FodHVCHh2a5KrOFr4ZxMOI=
+github.com/antchfx/xpath v1.1.0/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
 github.com/antlr/antlr4 v0.0.0-20190819145818-b43a4c3a8015 h1:StuiJFxQUsxSCzcby6NFZRdEhPkXD5vxN7TZ4MD6T84=
 github.com/antlr/antlr4 v0.0.0-20190819145818-b43a4c3a8015/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e h1:fY5BOSpyZCqRo5OhCuC+XN+r/bBCmeuuJtjz+bCNIf8=
