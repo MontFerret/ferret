@@ -6,7 +6,7 @@ import (
 )
 
 func RegisterLib(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.Functions{
+	return ns.RegisterFunctions(core.FunctionsMap{
 		"APPEND":         Append,
 		"FIRST":          First,
 		"FLATTEN":        Flatten,

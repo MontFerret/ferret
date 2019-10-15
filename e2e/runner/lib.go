@@ -11,13 +11,13 @@ import (
 )
 
 func HTTPHelpers(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.Functions{
+	return ns.RegisterFunctions(core.FunctionsMap{
 		"GET": httpGet,
 	})
 }
 
 func Assertions(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.Functions{
+	return ns.RegisterFunctions(core.FunctionsMap{
 		"EXPECT": expect,
 	})
 }

@@ -16,7 +16,7 @@ const (
 )
 
 func RegisterLib(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.Functions{
+	return ns.RegisterFunctions(core.FunctionsMap{
 		"ABS":                 Abs,
 		"ACOS":                Acos,
 		"ASIN":                Asin,

@@ -6,7 +6,7 @@ import (
 )
 
 func RegisterLib(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.Functions{
+	return ns.RegisterFunctions(core.FunctionsMap{
 		"TO_BOOL":          ToBool,
 		"TO_INT":           ToInt,
 		"TO_FLOAT":         ToFloat,

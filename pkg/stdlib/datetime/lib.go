@@ -2,8 +2,8 @@ package datetime
 
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
-func NewLib() core.Functions {
-	return core.Functions{
+func NewLib() core.FunctionsMap {
+	return core.FunctionsMap{
 		"NOW":                Now,
 		"DATE":               Date,
 		"DATE_DAYOFWEEK":     DateDayOfWeek,

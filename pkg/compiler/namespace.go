@@ -20,7 +20,7 @@ type NamespaceContainer struct {
 
 func newRootNamespace() *NamespaceContainer {
 	ns := new(NamespaceContainer)
-	ns.funcs = make(core.Functions)
+	ns.funcs = core.NewFunctions()
 
 	return ns
 }
@@ -60,7 +60,7 @@ func (nc *NamespaceContainer) RemoveFunction(name string) {
 	nc.funcs.Unset(nc.makeFullName(name))
 }
 
-func (nc *NamespaceContainer) RegisterFunctions(funcs core.Functions) error {
+func (nc *NamespaceContainer) RegisterFunctions(funcs core.FunctionsMap) error {
 	for name, fun := range funcs {
 		if err := nc.RegisterFunction(name, fun); err != nil {
 			return err
@@ -71,16 +71,17 @@ func (nc *NamespaceContainer) RegisterFunctions(funcs core.Functions) error {
 }
 
 func (nc *NamespaceContainer) RegisteredFunctions() []string {
-	res := make([]string, 0, len(nc.funcs))
+	fnames := nc.funcs.Names()
+	res := make([]string, 0, len(fnames))
 
 	// root namespace, return all functions
 	if nc.name == emptyNS {
-		for k := range nc.funcs {
+		for _, k := range fnames {
 			res = append(res, k)
 		}
 	} else {
 		nsPrefix := nc.name + separator
-		for k := range nc.funcs {
+		for _, k := range fnames {
 			if strings.HasPrefix(k, nsPrefix) {
 				res = append(res, k)
 			}

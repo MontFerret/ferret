@@ -11,7 +11,7 @@ import (
 )
 
 func RegisterLib(ns core.Namespace) error {
-	return ns.RegisterFunctions(core.Functions{
+	return ns.RegisterFunctions(core.FunctionsMap{
 		"ATTR_GET":          AttributeGet,
 		"ATTR_REMOVE":       AttributeRemove,
 		"ATTR_SET":          AttributeSet,
