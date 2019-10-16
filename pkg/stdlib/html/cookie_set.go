@@ -24,7 +24,7 @@ func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	cookies := make([]drivers.HTTPCookie, 0, len(args)-1)
+	cookies := make(drivers.HTTPCookies)
 
 	for _, c := range args[1:] {
 		cookie, err := parseCookie(c)
@@ -33,8 +33,8 @@ func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 
-		cookies = append(cookies, cookie)
+		cookies[cookie.Name] = cookie
 	}
 
-	return values.None, page.SetCookies(ctx, cookies...)
+	return values.None, page.SetCookies(ctx, cookies)
 }

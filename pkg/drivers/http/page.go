@@ -168,29 +168,25 @@ func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, er
 	return p.frames.Get(idx), nil
 }
 
-func (p *HTMLPage) GetCookies(_ context.Context) (*values.Array, error) {
-	if p.cookies == nil {
-		return values.NewArray(0), nil
+func (p *HTMLPage) GetCookies(_ context.Context) (drivers.HTTPCookies, error) {
+	res := make(drivers.HTTPCookies)
+
+	for n, v := range p.cookies {
+		res[n] = v
 	}
 
-	arr := values.NewArray(len(p.cookies))
-
-	for _, c := range p.cookies {
-		arr.Push(c)
-	}
-
-	return arr, nil
+	return res, nil
 }
 
 func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
 	return p.response, nil
 }
 
-func (p *HTMLPage) SetCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
+func (p *HTMLPage) SetCookies(_ context.Context, _ drivers.HTTPCookies) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) DeleteCookies(_ context.Context, _ ...drivers.HTTPCookie) error {
+func (p *HTMLPage) DeleteCookies(_ context.Context, _ drivers.HTTPCookies) error {
 	return core.ErrNotSupported
 }
 

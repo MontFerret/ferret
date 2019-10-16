@@ -2,7 +2,6 @@ package cdp
 
 import (
 	"context"
-	"encoding/json"
 	"hash/fnv"
 	"sync"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	net2 "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -29,6 +29,7 @@ type HTMLPage struct {
 	logger   *zerolog.Logger
 	conn     *rpcc.Conn
 	client   *cdp.Client
+	network  *net2.Manager
 	events   *events.EventBroker
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
@@ -144,52 +145,22 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	if len(params.Cookies) > 0 {
-		cookies := make([]network.CookieParam, 0, len(params.Cookies))
+	net, err := net2.New(logger, client)
 
-		for _, c := range params.Cookies {
-			cookies = append(cookies, fromDriverCookie(params.URL, c))
-
-			logger.
-				Debug().
-				Timestamp().
-				Str("cookie", c.Name).
-				Msg("set cookie")
-		}
-
-		err = client.Network.SetCookies(
-			ctx,
-			network.NewSetCookiesArgs(cookies),
-		)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to set cookies")
-		}
+	if err != nil {
+		return nil, err
 	}
 
-	if len(params.Headers) > 0 {
-		j, err := json.Marshal(params.Headers)
+	err = net.SetCookies(ctx, params.URL, params.Cookies)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		for k := range params.Headers {
-			logger.
-				Debug().
-				Timestamp().
-				Str("header", k).
-				Msg("set header")
-		}
+	err = net.SetHeaders(ctx, params.Headers)
 
-		err = client.Network.SetExtraHTTPHeaders(
-			ctx,
-			network.NewSetExtraHTTPHeadersArgs(network.Headers(j)),
-		)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to set headers")
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	if params.URL != BlankPageURL && params.URL != "" {
@@ -426,65 +397,25 @@ func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, er
 	return res.(*values.Array).Get(idx), nil
 }
 
-func (p *HTMLPage) GetCookies(ctx context.Context) (*values.Array, error) {
+func (p *HTMLPage) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	repl, err := p.client.Network.GetAllCookies(ctx)
-
-	if err != nil {
-		return values.NewArray(0), err
-	}
-
-	if repl.Cookies == nil {
-		return values.NewArray(0), nil
-	}
-
-	cookies := values.NewArray(len(repl.Cookies))
-
-	for _, c := range repl.Cookies {
-		cookies.Push(toDriverCookie(c))
-	}
-
-	return cookies, nil
+	return p.network.GetCookies(ctx)
 }
 
-func (p *HTMLPage) SetCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+func (p *HTMLPage) SetCookies(ctx context.Context, cookies drivers.HTTPCookies) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if len(cookies) == 0 {
-		return nil
-	}
-
-	params := make([]network.CookieParam, 0, len(cookies))
-
-	for _, c := range cookies {
-		params = append(params, fromDriverCookie(p.getCurrentDocument().GetURL().String(), c))
-	}
-
-	return p.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
+	return p.network.SetCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
 }
 
-func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies ...drivers.HTTPCookie) error {
+func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies drivers.HTTPCookies) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if len(cookies) == 0 {
-		return nil
-	}
-
-	var err error
-
-	for _, c := range cookies {
-		err = p.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(p.getCurrentDocument().GetURL().String(), c))
-
-		if err != nil {
-			break
-		}
-	}
-
-	return err
+	return p.network.DeleteCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
 }
 
 func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {

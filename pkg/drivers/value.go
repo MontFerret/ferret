@@ -192,11 +192,11 @@ type (
 
 		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
 
-		GetCookies(ctx context.Context) (*values.Array, error)
+		GetCookies(ctx context.Context) (HTTPCookies, error)
 
-		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
+		SetCookies(ctx context.Context, cookies HTTPCookies) error
 
-		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
+		DeleteCookies(ctx context.Context, cookies HTTPCookies) error
 
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
