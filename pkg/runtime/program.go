@@ -117,6 +117,8 @@ func (p *Program) validateParams(opts *Options) error {
 		return nil
 	}
 
+	// There might be no errors.
+	// Thus, we allocate this slice lazily, on a first error.
 	var missedParams []string
 
 	for n := range p.params {
