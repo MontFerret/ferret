@@ -11,6 +11,7 @@ run:
   skip-dirs:
     - pkg/parser/fql
     - pkg/parser/antlr
+    - examples
 
 linters:
   disable:
