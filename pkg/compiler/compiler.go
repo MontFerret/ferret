@@ -16,7 +16,7 @@ type Compiler struct {
 func New(setters ...Option) *Compiler {
 	c := &Compiler{}
 	c.NamespaceContainer = newRootNamespace()
-	c.funcs = make(map[string]core.Function)
+	c.funcs = core.NewFunctions()
 
 	opts := &Options{}
 
