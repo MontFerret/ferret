@@ -2,47 +2,56 @@ package compiler
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
+	globalScope struct {
+		params map[string]struct{}
+	}
+
 	scope struct {
+		global *globalScope
 		parent *scope
-		vars   map[string]core.Type
+		vars   map[string]struct{}
 	}
 )
 
-func newRootScope() *scope {
+func newGlobalScope() *globalScope {
+	return &globalScope{
+		params: map[string]struct{}{},
+	}
+}
+
+func newRootScope(global *globalScope) *scope {
 	return &scope{
-		vars: make(map[string]core.Type),
+		global: global,
+		vars:   make(map[string]struct{}),
 	}
 }
 
 func newScope(parent *scope) *scope {
-	s := newRootScope()
+	s := newRootScope(parent.global)
 	s.parent = parent
 
 	return s
 }
 
-func (s *scope) GetVariable(name string) (core.Type, error) {
-	local, exists := s.vars[name]
+func (s *scope) AddParam(name string) {
+	s.global.params[name] = struct{}{}
+}
+
+func (s *scope) HasVariable(name string) bool {
+	_, exists := s.vars[name]
 
 	if exists {
-		return local, nil
+		return true
 	}
 
 	if s.parent != nil {
-		parents, err := s.parent.GetVariable(name)
-
-		if err != nil {
-			return types.None, err
-		}
-
-		return parents, nil
+		return s.parent.HasVariable(name)
 	}
 
-	return types.None, core.Error(ErrVariableNotFound, name)
+	return false
 }
 
 func (s *scope) SetVariable(name string) error {
@@ -53,7 +62,7 @@ func (s *scope) SetVariable(name string) error {
 	}
 
 	// TODO: add type detection
-	s.vars[name] = types.None
+	s.vars[name] = struct{}{}
 
 	return nil
 }
@@ -71,7 +80,7 @@ func (s *scope) RemoveVariable(name string) error {
 }
 
 func (s *scope) ClearVariables() {
-	s.vars = make(map[string]core.Type)
+	s.vars = make(map[string]struct{})
 }
 
 func (s *scope) Fork() *scope {
