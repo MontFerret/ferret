@@ -1,6 +1,8 @@
 package http
 
 import (
+	stdhttp "net/http"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/sethgrid/pester"
 )
@@ -9,14 +11,15 @@ type (
 	Option func(opts *Options)
 
 	Options struct {
-		Name        string
-		Backoff     pester.BackoffStrategy
-		MaxRetries  int
-		Concurrency int
-		Proxy       string
-		UserAgent   string
-		Headers     drivers.HTTPHeaders
-		Cookies     drivers.HTTPCookies
+		Name             string
+		Backoff          pester.BackoffStrategy
+		MaxRetries       int
+		Concurrency      int
+		Proxy            string
+		UserAgent        string
+		Headers          drivers.HTTPHeaders
+		Cookies          drivers.HTTPCookies
+		AllowedHTTPCodes map[int]struct{}
 	}
 )
 
@@ -26,6 +29,7 @@ func newOptions(setters []Option) *Options {
 	opts.Backoff = pester.ExponentialBackoff
 	opts.Concurrency = 3
 	opts.MaxRetries = 5
+	opts.AllowedHTTPCodes = map[int]struct{}{stdhttp.StatusOK: struct{}{}}
 
 	for _, setter := range setters {
 		setter(opts)
@@ -122,6 +126,20 @@ func WithCookies(cookies []drivers.HTTPCookie) Option {
 
 		for _, c := range cookies {
 			opts.Cookies[c.Name] = c
+		}
+	}
+}
+
+func WithAllowedHTTPCode(httpCode int) Option {
+	return func(opts *Options) {
+		opts.AllowedHTTPCodes[httpCode] = struct{}{}
+	}
+}
+
+func WithAllowedHTTPCodes(httpCodes []int) Option {
+	return func(opts *Options) {
+		for _, code := range httpCodes {
+			opts.AllowedHTTPCodes[code] = struct{}{}
 		}
 	}
 }

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"runtime"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -11,11 +12,12 @@ import (
 )
 
 type Program struct {
-	src  string
-	body core.Expression
+	src    string
+	body   core.Expression
+	params map[string]struct{}
 }
 
-func NewProgram(src string, body core.Expression) (*Program, error) {
+func NewProgram(src string, body core.Expression, params map[string]struct{}) (*Program, error) {
 	if src == "" {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
@@ -24,16 +26,33 @@ func NewProgram(src string, body core.Expression) (*Program, error) {
 		return nil, core.Error(core.ErrMissedArgument, "body")
 	}
 
-	return &Program{src, body}, nil
+	return &Program{src, body, params}, nil
 }
 
 func (p *Program) Source() string {
 	return p.src
 }
 
-func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
-	ctx = NewOptions(setters).WithContext(ctx)
+func (p *Program) Params() []string {
+	res := make([]string, 0, len(p.params))
 
+	for name := range p.params {
+		res = append(res, name)
+	}
+
+	return res
+}
+
+func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, err error) {
+	opts := NewOptions(setters)
+
+	err = p.validateParams(opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = opts.WithContext(ctx)
 	logger := logging.FromContext(ctx)
 
 	defer func() {
@@ -91,4 +110,32 @@ func (p *Program) MustRun(ctx context.Context, setters ...Option) []byte {
 	}
 
 	return out
+}
+
+func (p *Program) validateParams(opts *Options) error {
+	if len(p.params) == 0 {
+		return nil
+	}
+
+	// There might be no errors.
+	// Thus, we allocate this slice lazily, on a first error.
+	var missedParams []string
+
+	for n := range p.params {
+		_, exists := opts.params[n]
+
+		if !exists {
+			if missedParams == nil {
+				missedParams = make([]string, 0, len(p.params))
+			}
+
+			missedParams = append(missedParams, "@"+n)
+		}
+	}
+
+	if len(missedParams) > 0 {
+		return core.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	}
+
+	return nil
 }

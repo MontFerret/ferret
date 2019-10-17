@@ -111,6 +111,38 @@ func TestParam(t *testing.T) {
 		)
 
 		So(string(out), ShouldEqual, `"baz"`)
+	})
 
+	Convey("Should return an error if param values are not passed", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			LET doc = { foo: { bar: "baz" } }
+
+			RETURN doc.@attr.@subattr
+		`)
+
+		_, err := prog.Run(
+			context.Background(),
+		)
+
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldContainSubstring, runtime.ErrMissedParam.Error())
+	})
+
+	Convey("Should be possible to use in member expression as segments", t, func() {
+		prog := compiler.New().
+			MustCompile(`
+			LET doc = { foo: { bar: "baz" } }
+
+			RETURN doc.@attr.@subattr
+		`)
+
+		_, err := prog.Run(
+			context.Background(),
+			runtime.WithParam("attr", "foo"),
+		)
+
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldContainSubstring, "subattr")
 	})
 }
