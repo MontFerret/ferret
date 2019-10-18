@@ -198,59 +198,59 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 		case <-broker.onLoad.Ready():
 			reply, err := broker.onLoad.Recv()
 
+			broker.emit(ctx, EventLoad, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventLoad, reply, err)
 		case <-broker.onReload.Ready():
 			reply, err := broker.onReload.Recv()
 
+			broker.emit(ctx, EventReload, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventReload, reply, err)
 		case <-broker.onAttrModified.Ready():
 			reply, err := broker.onAttrModified.Recv()
 
+			broker.emit(ctx, EventAttrModified, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventAttrModified, reply, err)
 		case <-broker.onAttrRemoved.Ready():
 			reply, err := broker.onAttrRemoved.Recv()
 
+			broker.emit(ctx, EventAttrRemoved, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventAttrRemoved, reply, err)
 		case <-broker.onChildNodeCountUpdated.Ready():
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
+			broker.emit(ctx, EventChildNodeCountUpdated, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventChildNodeCountUpdated, reply, err)
 		case <-broker.onChildNodeInserted.Ready():
 			reply, err := broker.onChildNodeInserted.Recv()
 
+			broker.emit(ctx, EventChildNodeInserted, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventChildNodeInserted, reply, err)
 		case <-broker.onChildNodeRemoved.Ready():
 			reply, err := broker.onChildNodeRemoved.Recv()
 
+			broker.emit(ctx, EventChildNodeRemoved, reply, err)
+
 			if ctxDone(err) {
 				return
 			}
-
-			broker.emit(ctx, EventChildNodeRemoved, reply, err)
 		}
 	}
 }
