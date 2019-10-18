@@ -1,195 +1,195 @@
 package events
 
 import (
-    "context"
-    "reflect"
-    "sync"
-    "time"
+	"context"
+	"reflect"
+	"sync"
+	"time"
 
-    "github.com/mafredri/cdp/protocol/dom"
-    "github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/protocol/page"
 
-    "github.com/MontFerret/ferret/pkg/drivers"
-    "github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
-    "github.com/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 type (
-    Event int
+	Event int
 
-    EventListener func(ctx context.Context, message interface{})
+	EventListener func(ctx context.Context, message interface{})
 
-    EventBroker struct {
-        mu                      sync.Mutex
-        listeners               map[Event][]EventListener
-        cancel                  context.CancelFunc
-        onLoad                  page.LoadEventFiredClient
-        onReload                dom.DocumentUpdatedClient
-        onAttrModified          dom.AttributeModifiedClient
-        onAttrRemoved           dom.AttributeRemovedClient
-        onChildNodeCountUpdated dom.ChildNodeCountUpdatedClient
-        onChildNodeInserted     dom.ChildNodeInsertedClient
-        onChildNodeRemoved      dom.ChildNodeRemovedClient
-    }
+	EventBroker struct {
+		mu                      sync.Mutex
+		listeners               map[Event][]EventListener
+		cancel                  context.CancelFunc
+		onLoad                  page.LoadEventFiredClient
+		onReload                dom.DocumentUpdatedClient
+		onAttrModified          dom.AttributeModifiedClient
+		onAttrRemoved           dom.AttributeRemovedClient
+		onChildNodeCountUpdated dom.ChildNodeCountUpdatedClient
+		onChildNodeInserted     dom.ChildNodeInsertedClient
+		onChildNodeRemoved      dom.ChildNodeRemovedClient
+	}
 )
 
 const (
-    //revive:disable-next-line:var-declaration
-    EventError = Event(iota)
-    EventLoad
-    EventReload
-    EventAttrModified
-    EventAttrRemoved
-    EventChildNodeCountUpdated
-    EventChildNodeInserted
-    EventChildNodeRemoved
+	//revive:disable-next-line:var-declaration
+	EventError = Event(iota)
+	EventLoad
+	EventReload
+	EventAttrModified
+	EventAttrRemoved
+	EventChildNodeCountUpdated
+	EventChildNodeInserted
+	EventChildNodeRemoved
 )
 
 func NewEventBroker(
-    onLoad page.LoadEventFiredClient,
-    onReload dom.DocumentUpdatedClient,
-    onAttrModified dom.AttributeModifiedClient,
-    onAttrRemoved dom.AttributeRemovedClient,
-    onChildNodeCountUpdated dom.ChildNodeCountUpdatedClient,
-    onChildNodeInserted dom.ChildNodeInsertedClient,
-    onChildNodeRemoved dom.ChildNodeRemovedClient,
+	onLoad page.LoadEventFiredClient,
+	onReload dom.DocumentUpdatedClient,
+	onAttrModified dom.AttributeModifiedClient,
+	onAttrRemoved dom.AttributeRemovedClient,
+	onChildNodeCountUpdated dom.ChildNodeCountUpdatedClient,
+	onChildNodeInserted dom.ChildNodeInsertedClient,
+	onChildNodeRemoved dom.ChildNodeRemovedClient,
 ) *EventBroker {
-    broker := new(EventBroker)
-    broker.listeners = make(map[Event][]EventListener)
-    broker.onLoad = onLoad
-    broker.onReload = onReload
-    broker.onAttrModified = onAttrModified
-    broker.onAttrRemoved = onAttrRemoved
-    broker.onChildNodeCountUpdated = onChildNodeCountUpdated
-    broker.onChildNodeInserted = onChildNodeInserted
-    broker.onChildNodeRemoved = onChildNodeRemoved
+	broker := new(EventBroker)
+	broker.listeners = make(map[Event][]EventListener)
+	broker.onLoad = onLoad
+	broker.onReload = onReload
+	broker.onAttrModified = onAttrModified
+	broker.onAttrRemoved = onAttrRemoved
+	broker.onChildNodeCountUpdated = onChildNodeCountUpdated
+	broker.onChildNodeInserted = onChildNodeInserted
+	broker.onChildNodeRemoved = onChildNodeRemoved
 
-    return broker
+	return broker
 }
 
 func (broker *EventBroker) AddEventListener(event Event, listener EventListener) {
-    broker.mu.Lock()
-    defer broker.mu.Unlock()
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
 
-    listeners, ok := broker.listeners[event]
+	listeners, ok := broker.listeners[event]
 
-    if !ok {
-        listeners = make([]EventListener, 0, 5)
-    }
+	if !ok {
+		listeners = make([]EventListener, 0, 5)
+	}
 
-    broker.listeners[event] = append(listeners, listener)
+	broker.listeners[event] = append(listeners, listener)
 }
 
 func (broker *EventBroker) RemoveEventListener(event Event, listener EventListener) {
-    broker.mu.Lock()
-    defer broker.mu.Unlock()
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
 
-    idx := -1
+	idx := -1
 
-    listeners, ok := broker.listeners[event]
+	listeners, ok := broker.listeners[event]
 
-    if !ok {
-        return
-    }
+	if !ok {
+		return
+	}
 
-    listenerPointer := reflect.ValueOf(listener).Pointer()
+	listenerPointer := reflect.ValueOf(listener).Pointer()
 
-    for i, l := range listeners {
-        itemPointer := reflect.ValueOf(l).Pointer()
-        if itemPointer == listenerPointer {
-            idx = i
-            break
-        }
-    }
+	for i, l := range listeners {
+		itemPointer := reflect.ValueOf(l).Pointer()
+		if itemPointer == listenerPointer {
+			idx = i
+			break
+		}
+	}
 
-    if idx < 0 {
-        return
-    }
+	if idx < 0 {
+		return
+	}
 
-    var modifiedListeners []EventListener
+	var modifiedListeners []EventListener
 
-    if len(listeners) > 1 {
-        modifiedListeners = append(listeners[:idx], listeners[idx+1:]...)
-    } else {
-        modifiedListeners = make([]EventListener, 0, 5)
-    }
+	if len(listeners) > 1 {
+		modifiedListeners = append(listeners[:idx], listeners[idx+1:]...)
+	} else {
+		modifiedListeners = make([]EventListener, 0, 5)
+	}
 
-    broker.listeners[event] = modifiedListeners
+	broker.listeners[event] = modifiedListeners
 }
 
 func (broker *EventBroker) ListenerCount(event Event) int {
-    broker.mu.Lock()
-    defer broker.mu.Unlock()
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
 
-    listeners, ok := broker.listeners[event]
+	listeners, ok := broker.listeners[event]
 
-    if !ok {
-        return 0
-    }
+	if !ok {
+		return 0
+	}
 
-    return len(listeners)
+	return len(listeners)
 }
 
 func (broker *EventBroker) Start() error {
-    broker.mu.Lock()
-    defer broker.mu.Unlock()
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
 
-    if broker.cancel != nil {
-        return core.Error(core.ErrInvalidOperation, "broker is already started")
-    }
+	if broker.cancel != nil {
+		return core.Error(core.ErrInvalidOperation, "broker is already started")
+	}
 
-    ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
-    broker.cancel = cancel
+	broker.cancel = cancel
 
-    go broker.runLoop(ctx)
+	go broker.runLoop(ctx)
 
-    return nil
+	return nil
 }
 
 func (broker *EventBroker) Stop() error {
-    broker.mu.Lock()
-    defer broker.mu.Unlock()
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
 
-    if broker.cancel == nil {
-        return core.Error(core.ErrInvalidOperation, "broker is already stopped")
-    }
+	if broker.cancel == nil {
+		return core.Error(core.ErrInvalidOperation, "broker is already stopped")
+	}
 
-    broker.cancel()
-    broker.cancel = nil
+	broker.cancel()
+	broker.cancel = nil
 
-    return nil
+	return nil
 }
 
 func (broker *EventBroker) Close() error {
-    broker.mu.Lock()
-    defer broker.mu.Unlock()
+	broker.mu.Lock()
+	defer broker.mu.Unlock()
 
-    if broker.cancel != nil {
-        broker.cancel()
-        broker.cancel = nil
-    }
+	if broker.cancel != nil {
+		broker.cancel()
+		broker.cancel = nil
+	}
 
-    broker.onLoad.Close()
-    broker.onReload.Close()
-    broker.onAttrModified.Close()
-    broker.onAttrRemoved.Close()
-    broker.onChildNodeCountUpdated.Close()
-    broker.onChildNodeInserted.Close()
-    broker.onChildNodeRemoved.Close()
+	broker.onLoad.Close()
+	broker.onReload.Close()
+	broker.onAttrModified.Close()
+	broker.onAttrRemoved.Close()
+	broker.onChildNodeCountUpdated.Close()
+	broker.onChildNodeInserted.Close()
+	broker.onChildNodeRemoved.Close()
 
-    return nil
+	return nil
 }
 
 func (broker *EventBroker) StopAndClose() error {
-    err := broker.Stop()
+	err := broker.Stop()
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    return broker.Close()
+	return broker.Close()
 }
 
 func (broker *EventBroker) runLoop(ctx context.Context) {
@@ -257,41 +257,41 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 func ctxDone(cdpError error) bool {
 	if cdpError != nil {
-	 	return errors.Cause(cdpError) == context.Canceled
+		return errors.Cause(cdpError) == context.Canceled
 	}
 	return false
 }
 
 func (broker *EventBroker) emit(ctx context.Context, event Event, message interface{}, err error) {
-    if err != nil {
-        event = EventError
-        message = err
-    }
+	if err != nil {
+		event = EventError
+		message = err
+	}
 
-    broker.mu.Lock()
+	broker.mu.Lock()
 
-    listeners, ok := broker.listeners[event]
+	listeners, ok := broker.listeners[event]
 
-    if !ok {
-        broker.mu.Unlock()
-        return
-    }
+	if !ok {
+		broker.mu.Unlock()
+		return
+	}
 
-    snapshot := make([]EventListener, len(listeners))
-    copy(snapshot, listeners)
+	snapshot := make([]EventListener, len(listeners))
+	copy(snapshot, listeners)
 
-    broker.mu.Unlock()
+	broker.mu.Unlock()
 
-    for _, listener := range snapshot {
-        select {
-        case <-ctx.Done():
-            return
-        default:
-            ctx2, fn := context.WithTimeout(ctx, time.Duration(drivers.DefaultTimeout)*time.Millisecond)
+	for _, listener := range snapshot {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			ctx2, fn := context.WithTimeout(ctx, time.Duration(drivers.DefaultTimeout)*time.Millisecond)
 
-            listener(ctx2, message)
+			listener(ctx2, message)
 
-            fn()
-        }
-    }
+			fn()
+		}
+	}
 }
