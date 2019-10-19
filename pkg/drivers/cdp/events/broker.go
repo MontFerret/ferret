@@ -11,8 +11,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-
-	"github.com/pkg/errors"
 )
 
 type (
@@ -196,70 +194,67 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 	for {
 		select {
 		case <-broker.onLoad.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onLoad.Recv()
 
 			broker.emit(ctx, EventLoad, reply, err)
-
-			if ctxDone(err) {
+		case <-broker.onReload.Ready():
+			if ctxDone(ctx) {
 				return
 			}
-		case <-broker.onReload.Ready():
+
 			reply, err := broker.onReload.Recv()
 
 			broker.emit(ctx, EventReload, reply, err)
-
-			if ctxDone(err) {
+		case <-broker.onAttrModified.Ready():
+			if ctxDone(ctx) {
 				return
 			}
-		case <-broker.onAttrModified.Ready():
+
 			reply, err := broker.onAttrModified.Recv()
 
 			broker.emit(ctx, EventAttrModified, reply, err)
-
-			if ctxDone(err) {
+		case <-broker.onAttrRemoved.Ready():
+			if ctxDone(ctx) {
 				return
 			}
-		case <-broker.onAttrRemoved.Ready():
+
 			reply, err := broker.onAttrRemoved.Recv()
 
 			broker.emit(ctx, EventAttrRemoved, reply, err)
-
-			if ctxDone(err) {
+		case <-broker.onChildNodeCountUpdated.Ready():
+			if ctxDone(ctx) {
 				return
 			}
-		case <-broker.onChildNodeCountUpdated.Ready():
+
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
 			broker.emit(ctx, EventChildNodeCountUpdated, reply, err)
-
-			if ctxDone(err) {
+		case <-broker.onChildNodeInserted.Ready():
+			if ctxDone(ctx) {
 				return
 			}
-		case <-broker.onChildNodeInserted.Ready():
+
 			reply, err := broker.onChildNodeInserted.Recv()
 
 			broker.emit(ctx, EventChildNodeInserted, reply, err)
-
-			if ctxDone(err) {
+		case <-broker.onChildNodeRemoved.Ready():
+			if ctxDone(ctx) {
 				return
 			}
-		case <-broker.onChildNodeRemoved.Ready():
+
 			reply, err := broker.onChildNodeRemoved.Recv()
 
 			broker.emit(ctx, EventChildNodeRemoved, reply, err)
-
-			if ctxDone(err) {
-				return
-			}
 		}
 	}
 }
 
-func ctxDone(cdpError error) bool {
-	if cdpError != nil {
-		return errors.Cause(cdpError) == context.Canceled
-	}
-	return false
+func ctxDone(ctx context.Context) bool {
+	return ctx.Err() == context.Canceled
 }
 
 func (broker *EventBroker) emit(ctx context.Context, event Event, message interface{}, err error) {
