@@ -193,76 +193,68 @@ func (broker *EventBroker) StopAndClose() error {
 func (broker *EventBroker) runLoop(ctx context.Context) {
 	for {
 		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onLoad.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onLoad.Recv()
 
 			broker.emit(ctx, EventLoad, reply, err)
-		default:
-		}
-
-		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onReload.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onReload.Recv()
 
 			broker.emit(ctx, EventReload, reply, err)
-		default:
-		}
-
-		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onAttrModified.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onAttrModified.Recv()
 
 			broker.emit(ctx, EventAttrModified, reply, err)
-		default:
-		}
-
-		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onAttrRemoved.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onAttrRemoved.Recv()
 
 			broker.emit(ctx, EventAttrRemoved, reply, err)
-		default:
-		}
-
-		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onChildNodeCountUpdated.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
 			broker.emit(ctx, EventChildNodeCountUpdated, reply, err)
-		default:
-
-		}
-
-		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onChildNodeInserted.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onChildNodeInserted.Recv()
 
 			broker.emit(ctx, EventChildNodeInserted, reply, err)
-		default:
-		}
-
-		select {
-		case <-ctx.Done():
-			return
 		case <-broker.onChildNodeRemoved.Ready():
+			if ctxDone(ctx) {
+				return
+			}
+
 			reply, err := broker.onChildNodeRemoved.Recv()
 
 			broker.emit(ctx, EventChildNodeRemoved, reply, err)
-		default:
 		}
 	}
+}
+
+func ctxDone(ctx context.Context) bool {
+	return ctx.Err() == context.Canceled
 }
 
 func (broker *EventBroker) emit(ctx context.Context, event Event, message interface{}, err error) {

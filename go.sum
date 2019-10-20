@@ -11,8 +11,8 @@ github.com/antchfx/htmlquery v1.1.0 h1:KMS88sLl5KP9GUVU2MQIDcQXNQ0M5MGlkC9WlYgAQ
 github.com/antchfx/htmlquery v1.1.0/go.mod h1:MS9yksVSQXls00iXkiMqXr0J+umL/AmxXKuP28SUJM8=
 github.com/antchfx/xpath v1.1.0 h1:mJTvYpiHvxNQRD4Lbfin/FodHVCHh2a5KrOFr4ZxMOI=
 github.com/antchfx/xpath v1.1.0/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
-github.com/antlr/antlr4 v0.0.0-20190819145818-b43a4c3a8015 h1:StuiJFxQUsxSCzcby6NFZRdEhPkXD5vxN7TZ4MD6T84=
-github.com/antlr/antlr4 v0.0.0-20190819145818-b43a4c3a8015/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
+github.com/antlr/antlr4 v0.0.0-20191005235324-c81b4e69b6c3 h1:bmbhqj60LNfApeR0sPmGCUXDm20s/gJ8EyYK9+hMe3k=
+github.com/antlr/antlr4 v0.0.0-20191005235324-c81b4e69b6c3/go.mod h1:T7PbCXFs94rrTttyxjbyT5+/1V8T2TYDejxUfHJjw1Y=
 github.com/chzyer/logex v1.1.10 h1:Swpa1K6QvQznwJRcfTfQJmTE72DqScAa40E+fbHEXEE=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e h1:fY5BOSpyZCqRo5OhCuC+XN+r/bBCmeuuJtjz+bCNIf8=
