@@ -10,6 +10,7 @@ func RegisterLib(ns core.Namespace) error {
 		Namespace("FS").
 		RegisterFunctions(
 			core.NewFunctionsFromMap(map[string]core.Function{
-				"READ": Read,
+				"READ":  Read,
+				"WRITE": Write,
 			}))
 }
