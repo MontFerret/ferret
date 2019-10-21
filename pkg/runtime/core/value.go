@@ -42,11 +42,4 @@ type (
 	Setter interface {
 		SetIn(ctx context.Context, path []Value, value Value) error
 	}
-
-	// PairValueType is a supporting
-	// structure that used in validateValueTypePairs.
-	PairValueType struct {
-		Value Value
-		Types []Type
-	}
 )
