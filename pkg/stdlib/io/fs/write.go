@@ -11,7 +11,7 @@ import (
 )
 
 // Write writes the given data into the file.
-// @params path (String) - path to file to read from.
+// @params path (String) - path to file to write into.
 // @params data (Binary) - data to write.
 // @params params (Object) optional - additional parameters:
 //   * mode (String):
