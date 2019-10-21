@@ -40,13 +40,8 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	flag, err := parseWriteMode(params.Mode)
-	if err != nil {
-		return values.None, core.Error(err, "parse write mode")
-	}
-
 	// 0222 - write only permissions
-	file, err := os.OpenFile(fpath, flag, 0222)
+	file, err := os.OpenFile(fpath, params.ModeFlag, 0222)
 	if err != nil {
 		return values.None, core.Error(err, "open file")
 	}
@@ -79,19 +74,20 @@ func validateRequiredWriteArgs(args []core.Value) error {
 	return nil
 }
 
-// params is the same as `params` argument, but as Go struct.
-type params struct {
-	Mode string
+// parsedParams contains parsed additional parameters.
+type parsedParams struct {
+	ModeFlag int
 }
 
-var defaultParams = params{
-	Mode: "w",
+var defaultParams = parsedParams{
+	// the same as `w`
+	ModeFlag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
 }
 
-func parseParams(value core.Value) (params, error) {
+func parseParams(value core.Value) (parsedParams, error) {
 	obj, ok := value.(*values.Object)
 	if !ok {
-		return params{}, core.Error(
+		return parsedParams{}, core.Error(
 			core.ErrInvalidArgument,
 			"value should be an object",
 		)
@@ -101,7 +97,16 @@ func parseParams(value core.Value) (params, error) {
 
 	modestr, exists := obj.Get(values.NewString("mode"))
 	if exists {
-		params.Mode = modestr.String()
+
+		flag, err := parseWriteMode(modestr.String())
+		if err != nil {
+			return parsedParams{}, core.Error(
+				core.ErrInvalidArgument,
+				"parse write mode",
+			)
+		}
+
+		params.ModeFlag = flag
 	}
 
 	return params, nil
