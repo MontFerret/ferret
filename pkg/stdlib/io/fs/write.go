@@ -144,7 +144,7 @@ func parseWriteMode(s string) (int, error) {
 		flag |= os.O_TRUNC
 
 	default:
-		return 0, core.Errorf(
+		return -1, core.Errorf(
 			core.ErrInvalidArgument,
 			"invalid mode `%s`", s,
 		)
