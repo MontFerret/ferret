@@ -2,8 +2,6 @@ package fs_test
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -48,13 +46,8 @@ func TestRead(t *testing.T) {
 	Convey("Read from file", t, func() {
 
 		Convey("File exists", func() {
-			file, err := ioutil.TempFile("", "readtest")
-			So(err, ShouldBeNil)
-
-			defer func() {
-				file.Close()
-				os.Remove(file.Name())
-			}()
+			file, delFile := tempFile()
+			defer delFile()
 
 			text := "s string"
 			file.WriteString(text)
