@@ -62,8 +62,8 @@ func validateRequiredWriteArgs(args []core.Value) error {
 	}
 
 	pairs := []core.PairValueType{
-		core.PairValueType{args[0], []core.Type{types.String}},
-		core.PairValueType{args[1], []core.Type{types.Binary}},
+		core.PairValueType{Value: args[0], Types: []core.Type{types.String}},
+		core.PairValueType{Value: args[1], Types: []core.Type{types.Binary}},
 	}
 
 	err = core.ValidateValueTypePairs(pairs...)
