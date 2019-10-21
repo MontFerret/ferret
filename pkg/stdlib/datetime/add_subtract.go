@@ -9,10 +9,6 @@ import (
 )
 
 var (
-	sliceDateTime   = []core.Type{types.DateTime}
-	sliceIntType    = []core.Type{types.Int}
-	sliceStringType = []core.Type{types.String}
-
 	emptyDateTime values.DateTime
 	emptyInt      values.Int
 	emptyString   values.String
@@ -85,9 +81,9 @@ func getArgs(args []core.Value) (values.DateTime, values.Int, values.String, err
 	}
 
 	err = core.ValidateValueTypePairs(
-		core.PairValueType{Value: args[0], Types: sliceDateTime},
-		core.PairValueType{Value: args[1], Types: sliceIntType},
-		core.PairValueType{Value: args[2], Types: sliceStringType},
+		core.NewPairValueType(args[0], types.DateTime),
+		core.NewPairValueType(args[1], types.Int),
+		core.NewPairValueType(args[2], types.String),
 	)
 	if err != nil {
 		return emptyDateTime, emptyInt, emptyString, err

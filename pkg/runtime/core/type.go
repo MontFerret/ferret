@@ -1,8 +1,9 @@
 package core
 
 import (
-	"github.com/pkg/errors"
 	"math/rand"
+
+	"github.com/pkg/errors"
 )
 
 // Type represents runtime type with id for quick type check
@@ -80,4 +81,37 @@ func ValidateValueTypePairs(pairs ...PairValueType) error {
 	}
 
 	return nil
+}
+
+// PairValueType is a supporting
+// structure that used in validateValueTypePairs.
+type PairValueType struct {
+	Value Value
+	Types []Type
+}
+
+// NewPairValueType it's a shortcut for creating a new PairValueType.
+//
+// The common pattern of using PairValueType is:
+// ```
+// pairs := []core.PairValueType{
+//     core.PairValueType{args[0], []core.Type{types.String}},               // go vet warning
+//     core.PairValueType{Value: args[1], Types: []core.Type{types.Binary}}, // too long
+// }
+// ```
+// With NewPairValueType there is no need to type `[]core.Type{...}` and code becomes
+// more readable and maintainable.
+//
+// That is how the code above looks like with NewPairValueType:
+// ```
+// pairs := []core.PairValueType{
+//     core.NewPairValueType(args[0], types.String),
+//     core.NewPairValueType(args[1], types.Binary),
+// }
+// ```
+func NewPairValueType(value Value, types ...Type) PairValueType {
+	return PairValueType{
+		Value: value,
+		Types: types,
+	}
 }
