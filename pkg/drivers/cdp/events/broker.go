@@ -4,12 +4,10 @@ import (
 	"context"
 	"reflect"
 	"sync"
-	"time"
 
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -282,11 +280,7 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 		case <-ctx.Done():
 			return
 		default:
-			ctx2, fn := context.WithTimeout(ctx, time.Duration(drivers.DefaultTimeout)*time.Millisecond)
-
-			listener(ctx2, message)
-
-			fn()
+			listener(ctx, message)
 		}
 	}
 }
