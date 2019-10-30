@@ -21,9 +21,9 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	err = core.ValidateValueTypePairs(
-		core.PairValueType{Value: args[0], Types: sliceDateTime},
-		core.PairValueType{Value: args[1], Types: sliceDateTime},
-		core.PairValueType{Value: args[2], Types: sliceStringType},
+		core.NewPairValueType(args[0], types.DateTime),
+		core.NewPairValueType(args[1], types.DateTime),
+		core.NewPairValueType(args[2], types.String),
 	)
 	if err != nil {
 		return values.None, err

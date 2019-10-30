@@ -3,6 +3,7 @@ package parser
 
 import (
 	"github.com/MontFerret/ferret/pkg/parser/fql"
+	resources "github.com/antlr/antlr4/doc/resources"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
@@ -12,7 +13,11 @@ type Parser struct {
 
 func New(query string) *Parser {
 	input := antlr.NewInputStream(query)
-	lexer := fql.NewFqlLexer(input)
+	// converts tokens to upper case, so now it doesn’t matter
+	// in which case the tokens were entered
+	upper := resources.NewCaseChangingStream(input, true)
+
+	lexer := fql.NewFqlLexer(upper)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	p := fql.NewFqlParser(stream)
