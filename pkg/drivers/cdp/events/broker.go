@@ -191,6 +191,9 @@ func (broker *EventBroker) StopAndClose() error {
 func (broker *EventBroker) runLoop(ctx context.Context) {
 	for {
 		select {
+		case <-ctx.Done():
+			return
+
 		case <-broker.onLoad.Ready():
 			if ctxDone(ctx) {
 				return
