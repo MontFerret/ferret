@@ -10,19 +10,31 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Manager struct {
-	client *cdp.Client
-	logger *zerolog.Logger
+	client  *cdp.Client
+	logger  *zerolog.Logger
+	headers drivers.HTTPHeaders
 }
 
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
 ) (*Manager, error) {
-	return &Manager{client, logger}, nil
+	evt, err := client.Network.RequestWillBeSent()
+
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := evt.Recv()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Manager{client, logger, make(drivers.HTTPHeaders)}, nil
 }
 
 func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
@@ -77,14 +89,22 @@ func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies drivers
 	return err
 }
 
-func (m *Manager) GetHeaders(_ context.Context) error {
-	return core.ErrNotSupported
+func (m *Manager) GetHeaders(_ context.Context) (drivers.HTTPHeaders, error) {
+	copied := make(drivers.HTTPHeaders)
+
+	for k, v := range m.headers {
+		copied[k] = v
+	}
+
+	return copied, nil
 }
 
 func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) error {
 	if len(headers) == 0 {
 		return nil
 	}
+
+	m.headers = headers
 
 	j, err := json.Marshal(headers)
 
@@ -104,6 +124,4 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	return nil
 }
 
-func (m *Manager) DeleteHeaders(_ context.Context, _ drivers.HTTPHeaders) error {
-	return core.ErrNotSupported
-}
+func (m *Manager) WaitForPageLoad(ctx context.Context, timeout int) error {}

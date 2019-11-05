@@ -145,11 +145,7 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	net, err := net2.New(logger, client)
-
-	if err != nil {
-		return nil, err
-	}
+	net := net2.New(logger, client)
 
 	err = net.SetCookies(ctx, params.URL, params.Cookies)
 
