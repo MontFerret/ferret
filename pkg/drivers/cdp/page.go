@@ -16,7 +16,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
-	net2 "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
+	nt "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -29,7 +29,7 @@ type HTMLPage struct {
 	logger   *zerolog.Logger
 	conn     *rpcc.Conn
 	client   *cdp.Client
-	network  *net2.Manager
+	network  *nt.Manager
 	events   *events.EventBroker
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
@@ -145,7 +145,11 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	net := net2.New(logger, client)
+	net, err := nt.New(logger, client)
+
+	if err != nil {
+		return nil, err
+	}
 
 	err = net.SetCookies(ctx, params.URL, params.Cookies)
 
@@ -174,7 +178,7 @@ func LoadHTMLPage(
 			return nil, errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL)
 		}
 
-		err = events.WaitForLoadEvent(ctx, client)
+		err = net.WaitForPageLoad(ctx)
 
 		if err != nil {
 			handleLoadError(logger, client)

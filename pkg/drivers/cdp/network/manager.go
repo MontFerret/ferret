@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"github.com/mafredri/cdp/rpcc"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
@@ -30,14 +29,6 @@ func New(
 	m.client = client
 	m.headers = make(drivers.HTTPHeaders)
 	m.eventLoop = events.NewLoop()
-
-	loadEvent, err := client.Page.LoadEventFired(context.Background())
-
-	if err != nil {
-		return nil, err
-	}
-
-	m.eventLoop.AddSource(events.NewLoadEvent(loadEvent))
 
 	return m, nil
 }
@@ -129,4 +120,20 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	return nil
 }
 
-func (m *Manager) WaitForPageLoad(ctx context.Context, timeout int) error {}
+func (m *Manager) WaitForPageLoad(ctx context.Context) error {
+	loadEvent, err := m.client.Page.LoadEventFired(ctx)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to create load event hook")
+	}
+
+	m.eventLoop.AddSource(events.NewSource(EventLoad))
+
+	_, err = loadEvent.Recv()
+
+	if err != nil {
+		return err
+	}
+
+	return loadEvent.Close()
+}
