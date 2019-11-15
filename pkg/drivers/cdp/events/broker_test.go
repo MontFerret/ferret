@@ -199,7 +199,7 @@ func TestEventBroker(t *testing.T) {
 			b := NewTestEventBroker()
 
 			StressTest(func() error {
-				b.AddEventListener(events.EventLoad, func(ctx context.Context, message interface{}) {})
+				b.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
 
 				return nil
 			}, 500)
@@ -211,7 +211,7 @@ func TestEventBroker(t *testing.T) {
 			defer b.Stop()
 
 			StressTest(func() error {
-				b.AddEventListener(events.EventLoad, func(ctx context.Context, message interface{}) {})
+				b.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
 
 				return nil
 			}, 500)
@@ -225,10 +225,10 @@ func TestEventBroker(t *testing.T) {
 			StressTest(func() error {
 				listener := func(ctx context.Context, message interface{}) {}
 
-				b.AddEventListener(events.EventLoad, listener)
-				b.RemoveEventListener(events.EventLoad, listener)
+				b.AddEventListener(events.EventTypeLoad, listener)
+				b.RemoveEventListener(events.EventTypeLoad, listener)
 
-				So(b.ListenerCount(events.EventLoad), ShouldEqual, 0)
+				So(b.ListenerCount(events.EventTypeLoad), ShouldEqual, 0)
 
 				return nil
 			}, 500)
@@ -242,7 +242,7 @@ func TestEventBroker(t *testing.T) {
 			StressTest(func() error {
 				listener := func(ctx context.Context, message interface{}) {}
 
-				b.AddEventListener(events.EventLoad, listener)
+				b.AddEventListener(events.EventTypeLoad, listener)
 
 				StressTestAsync(func() error {
 					b.OnLoad.EmitDefault()
@@ -250,9 +250,9 @@ func TestEventBroker(t *testing.T) {
 					return nil
 				}, 250)
 
-				b.RemoveEventListener(events.EventLoad, listener)
+				b.RemoveEventListener(events.EventTypeLoad, listener)
 
-				So(b.ListenerCount(events.EventLoad), ShouldEqual, 0)
+				So(b.ListenerCount(events.EventTypeLoad), ShouldEqual, 0)
 
 				return nil
 			}, 250)
@@ -266,15 +266,15 @@ func TestEventBroker(t *testing.T) {
 
 			counter := 0
 
-			var listener events.EventListener
+			var listener events.EventHandler
 
 			listener = func(ctx context.Context, message interface{}) {
 				counter++
 
-				b.RemoveEventListener(events.EventLoad, listener)
+				b.RemoveEventListener(events.EventTypeLoad, listener)
 			}
 
-			b.AddEventListener(events.EventLoad, listener)
+			b.AddEventListener(events.EventTypeLoad, listener)
 			b.OnLoad.Emit(&page.LoadEventFiredReply{})
 
 			time.Sleep(time.Duration(10) * time.Millisecond)
@@ -285,19 +285,19 @@ func TestEventBroker(t *testing.T) {
 				return nil
 			}, 250)
 
-			So(b.ListenerCount(events.EventLoad), ShouldEqual, 0)
+			So(b.ListenerCount(events.EventTypeLoad), ShouldEqual, 0)
 			So(counter, ShouldEqual, 1)
 		})
 	})
 
 	Convey(".Stop", t, func() {
-		Convey("Should stop emitting events", func() {
+		Convey("Should stop emitting sources", func() {
 			b := NewTestEventBroker()
 			b.Start()
 
 			var counter int64
 
-			b.AddEventListener(events.EventLoad, func(ctx context.Context, message interface{}) {
+			b.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
 				atomic.AddInt64(&counter, 1)
 				b.Stop()
 			})
@@ -319,4 +319,50 @@ func TestEventBroker(t *testing.T) {
 			So(atomic.LoadInt64(&counter), ShouldEqual, 1)
 		})
 	})
+}
+
+func BenchmarkEventBroker_AddEventListenerSync(b *testing.B) {
+	broker := NewTestEventBroker()
+
+	for n := 0; n < b.N; n++ {
+		broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+	}
+}
+
+func BenchmarkEventBroker_AddListenerAsync(b *testing.B) {
+	broker := NewTestEventBroker()
+	broker.Start()
+	defer broker.Stop()
+
+	for n := 0; n < b.N; n++ {
+		broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+	}
+}
+
+func BenchmarkEventBroker_Start(b *testing.B) {
+	broker := NewTestEventBroker()
+	broker.Start()
+	defer broker.Stop()
+
+	broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	})
+
+	broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	})
+
+	broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	})
+
+	broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	})
+
+	broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	})
+
+	broker.AddEventListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	})
+
+	for n := 0; n < b.N; n++ {
+		broker.OnLoad.Emit(&page.LoadEventFiredReply{})
+	}
 }

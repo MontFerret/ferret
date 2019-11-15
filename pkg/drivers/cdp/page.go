@@ -233,8 +233,8 @@ func NewHTMLPage(
 	p.document = common.NewAtomicValue(document)
 	p.frames = common.NewLazyValue(p.unfoldFrames)
 
-	broker.AddEventListener(events.EventLoad, p.handlePageLoad)
-	broker.AddEventListener(events.EventError, p.handleError)
+	broker.AddEventListener(events.EventTypeLoad, p.handlePageLoad)
+	broker.AddEventListener(events.EventTypeError, p.handleError)
 
 	return p
 }
@@ -647,9 +647,9 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context) error {
 		})
 	}
 
-	defer p.events.RemoveEventListener(events.EventLoad, listener)
+	defer p.events.RemoveEventListener(events.EventTypeLoad, listener)
 
-	p.events.AddEventListener(events.EventLoad, listener)
+	p.events.AddEventListener(events.EventTypeLoad, listener)
 
 	select {
 	case <-onEvent:

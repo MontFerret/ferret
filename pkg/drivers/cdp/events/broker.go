@@ -12,13 +12,11 @@ import (
 )
 
 type (
-	Event int
-
-	EventListener func(ctx context.Context, message interface{})
+	EventHandler func(ctx context.Context, message interface{})
 
 	EventBroker struct {
 		mu                      sync.Mutex
-		listeners               map[Event][]EventListener
+		listeners               map[Type][]EventHandler
 		cancel                  context.CancelFunc
 		onLoad                  page.LoadEventFiredClient
 		onReload                dom.DocumentUpdatedClient
@@ -28,18 +26,6 @@ type (
 		onChildNodeInserted     dom.ChildNodeInsertedClient
 		onChildNodeRemoved      dom.ChildNodeRemovedClient
 	}
-)
-
-const (
-	//revive:disable-next-line:var-declaration
-	EventError = Event(iota)
-	EventLoad
-	EventReload
-	EventAttrModified
-	EventAttrRemoved
-	EventChildNodeCountUpdated
-	EventChildNodeInserted
-	EventChildNodeRemoved
 )
 
 func NewEventBroker(
@@ -52,7 +38,7 @@ func NewEventBroker(
 	onChildNodeRemoved dom.ChildNodeRemovedClient,
 ) *EventBroker {
 	broker := new(EventBroker)
-	broker.listeners = make(map[Event][]EventListener)
+	broker.listeners = make(map[Type][]EventHandler)
 	broker.onLoad = onLoad
 	broker.onReload = onReload
 	broker.onAttrModified = onAttrModified
@@ -64,20 +50,20 @@ func NewEventBroker(
 	return broker
 }
 
-func (broker *EventBroker) AddEventListener(event Event, listener EventListener) {
+func (broker *EventBroker) AddEventListener(event Type, listener EventHandler) {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
 	listeners, ok := broker.listeners[event]
 
 	if !ok {
-		listeners = make([]EventListener, 0, 5)
+		listeners = make([]EventHandler, 0, 5)
 	}
 
 	broker.listeners[event] = append(listeners, listener)
 }
 
-func (broker *EventBroker) RemoveEventListener(event Event, listener EventListener) {
+func (broker *EventBroker) RemoveEventListener(event Type, listener EventHandler) {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
@@ -103,18 +89,18 @@ func (broker *EventBroker) RemoveEventListener(event Event, listener EventListen
 		return
 	}
 
-	var modifiedListeners []EventListener
+	var modifiedListeners []EventHandler
 
 	if len(listeners) > 1 {
 		modifiedListeners = append(listeners[:idx], listeners[idx+1:]...)
 	} else {
-		modifiedListeners = make([]EventListener, 0, 5)
+		modifiedListeners = make([]EventHandler, 0, 5)
 	}
 
 	broker.listeners[event] = modifiedListeners
 }
 
-func (broker *EventBroker) ListenerCount(event Event) int {
+func (broker *EventBroker) ListenerCount(event Type) int {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
@@ -201,7 +187,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onLoad.Recv()
 
-			broker.emit(ctx, EventLoad, reply, err)
+			broker.emit(ctx, EventTypeLoad, reply, err)
 		case <-broker.onReload.Ready():
 			if ctxDone(ctx) {
 				return
@@ -209,7 +195,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onReload.Recv()
 
-			broker.emit(ctx, EventReload, reply, err)
+			broker.emit(ctx, EventTypeReload, reply, err)
 		case <-broker.onAttrModified.Ready():
 			if ctxDone(ctx) {
 				return
@@ -217,7 +203,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onAttrModified.Recv()
 
-			broker.emit(ctx, EventAttrModified, reply, err)
+			broker.emit(ctx, EventTypeAttrModified, reply, err)
 		case <-broker.onAttrRemoved.Ready():
 			if ctxDone(ctx) {
 				return
@@ -225,7 +211,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onAttrRemoved.Recv()
 
-			broker.emit(ctx, EventAttrRemoved, reply, err)
+			broker.emit(ctx, EventTypeAttrRemoved, reply, err)
 		case <-broker.onChildNodeCountUpdated.Ready():
 			if ctxDone(ctx) {
 				return
@@ -233,7 +219,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
-			broker.emit(ctx, EventChildNodeCountUpdated, reply, err)
+			broker.emit(ctx, EventTypeChildNodeCountUpdated, reply, err)
 		case <-broker.onChildNodeInserted.Ready():
 			if ctxDone(ctx) {
 				return
@@ -241,7 +227,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onChildNodeInserted.Recv()
 
-			broker.emit(ctx, EventChildNodeInserted, reply, err)
+			broker.emit(ctx, EventTypeChildNodeInserted, reply, err)
 		case <-broker.onChildNodeRemoved.Ready():
 			if ctxDone(ctx) {
 				return
@@ -249,7 +235,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onChildNodeRemoved.Recv()
 
-			broker.emit(ctx, EventChildNodeRemoved, reply, err)
+			broker.emit(ctx, EventTypeChildNodeRemoved, reply, err)
 		}
 	}
 }
@@ -258,9 +244,9 @@ func ctxDone(ctx context.Context) bool {
 	return ctx.Err() == context.Canceled
 }
 
-func (broker *EventBroker) emit(ctx context.Context, event Event, message interface{}, err error) {
+func (broker *EventBroker) emit(ctx context.Context, event Type, message interface{}, err error) {
 	if err != nil {
-		event = EventError
+		event = EventTypeError
 		message = err
 	}
 
@@ -273,7 +259,7 @@ func (broker *EventBroker) emit(ctx context.Context, event Event, message interf
 		return
 	}
 
-	snapshot := make([]EventListener, len(listeners))
+	snapshot := make([]EventHandler, len(listeners))
 	copy(snapshot, listeners)
 
 	broker.mu.Unlock()

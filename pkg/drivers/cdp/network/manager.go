@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"github.com/mafredri/cdp/rpcc"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
@@ -10,31 +11,35 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 )
 
 type Manager struct {
-	client  *cdp.Client
-	logger  *zerolog.Logger
-	headers drivers.HTTPHeaders
+	logger    *zerolog.Logger
+	client    *cdp.Client
+	headers   drivers.HTTPHeaders
+	eventLoop *events.Loop
 }
 
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
 ) (*Manager, error) {
-	evt, err := client.Network.RequestWillBeSent()
+	m := new(Manager)
+	m.logger = logger
+	m.client = client
+	m.headers = make(drivers.HTTPHeaders)
+	m.eventLoop = events.NewLoop()
+
+	loadEvent, err := client.Page.LoadEventFired(context.Background())
 
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := evt.Recv()
+	m.eventLoop.AddSource(events.NewLoadEvent(loadEvent))
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &Manager{client, logger, make(drivers.HTTPHeaders)}, nil
+	return m, nil
 }
 
 func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
