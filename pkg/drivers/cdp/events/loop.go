@@ -11,7 +11,7 @@ import (
 type Loop struct {
 	mu             sync.Mutex
 	cancel         context.CancelFunc
-	listeners      map[Type][]EventHandler
+	listeners      map[Type][]Handler
 	sources        []Source
 	addSource      chan Source
 	removeSource   chan Source
@@ -21,7 +21,7 @@ type Loop struct {
 
 func NewLoop() *Loop {
 	loop := new(Loop)
-	loop.listeners = make(map[Type][]EventHandler)
+	loop.listeners = make(map[Type][]Handler)
 	loop.sources = make([]Source, 0, 10)
 	loop.addListener = make(chan Listener, 10)
 	loop.removeListener = make(chan Listener, 10)
@@ -146,7 +146,7 @@ func (loop *Loop) RemoveSource(event Source) *Loop {
 	return loop
 }
 
-func (loop *Loop) AddListener(eventType Type, handler EventHandler) *Loop {
+func (loop *Loop) AddListener(eventType Type, handler Handler) *Loop {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
@@ -166,7 +166,7 @@ func (loop *Loop) AddListener(eventType Type, handler EventHandler) *Loop {
 	return loop
 }
 
-func (loop *Loop) RemoveListener(eventType Type, handler EventHandler) *Loop {
+func (loop *Loop) RemoveListener(eventType Type, handler Handler) *Loop {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
@@ -268,7 +268,7 @@ func (loop *Loop) addListenerInternal(listener Listener) {
 	bucket, exists := loop.listeners[listener.Event]
 
 	if !exists {
-		bucket = make([]EventHandler, 0, 10)
+		bucket = make([]Handler, 0, 10)
 	}
 
 	loop.listeners[listener.Event] = append(bucket, listener.Handler)
@@ -298,12 +298,12 @@ func (loop *Loop) removeListenerInternal(listener Listener) {
 		return
 	}
 
-	var modifiedBucket []EventHandler
+	var modifiedBucket []Handler
 
 	if len(bucket) > 1 {
 		modifiedBucket = append(bucket[:idx], bucket[idx+1:]...)
 	} else {
-		modifiedBucket = make([]EventHandler, 0, 5)
+		modifiedBucket = make([]Handler, 0, 5)
 	}
 
 	loop.listeners[listener.Event] = modifiedBucket

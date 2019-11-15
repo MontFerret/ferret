@@ -12,11 +12,9 @@ import (
 )
 
 type (
-	EventHandler func(ctx context.Context, message interface{})
-
 	EventBroker struct {
 		mu                      sync.Mutex
-		listeners               map[Type][]EventHandler
+		listeners               map[Type][]Handler
 		cancel                  context.CancelFunc
 		onLoad                  page.LoadEventFiredClient
 		onReload                dom.DocumentUpdatedClient
@@ -38,7 +36,7 @@ func NewEventBroker(
 	onChildNodeRemoved dom.ChildNodeRemovedClient,
 ) *EventBroker {
 	broker := new(EventBroker)
-	broker.listeners = make(map[Type][]EventHandler)
+	broker.listeners = make(map[Type][]Handler)
 	broker.onLoad = onLoad
 	broker.onReload = onReload
 	broker.onAttrModified = onAttrModified
@@ -50,20 +48,20 @@ func NewEventBroker(
 	return broker
 }
 
-func (broker *EventBroker) AddEventListener(event Type, listener EventHandler) {
+func (broker *EventBroker) AddEventListener(event Type, listener Handler) {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
 	listeners, ok := broker.listeners[event]
 
 	if !ok {
-		listeners = make([]EventHandler, 0, 5)
+		listeners = make([]Handler, 0, 5)
 	}
 
 	broker.listeners[event] = append(listeners, listener)
 }
 
-func (broker *EventBroker) RemoveEventListener(event Type, listener EventHandler) {
+func (broker *EventBroker) RemoveEventListener(event Type, listener Handler) {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
@@ -89,12 +87,12 @@ func (broker *EventBroker) RemoveEventListener(event Type, listener EventHandler
 		return
 	}
 
-	var modifiedListeners []EventHandler
+	var modifiedListeners []Handler
 
 	if len(listeners) > 1 {
 		modifiedListeners = append(listeners[:idx], listeners[idx+1:]...)
 	} else {
-		modifiedListeners = make([]EventHandler, 0, 5)
+		modifiedListeners = make([]Handler, 0, 5)
 	}
 
 	broker.listeners[event] = modifiedListeners
@@ -259,7 +257,7 @@ func (broker *EventBroker) emit(ctx context.Context, event Type, message interfa
 		return
 	}
 
-	snapshot := make([]EventHandler, len(listeners))
+	snapshot := make([]Handler, len(listeners))
 	copy(snapshot, listeners)
 
 	broker.mu.Unlock()

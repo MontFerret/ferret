@@ -67,7 +67,7 @@ func TestLoop(t *testing.T) {
 
 		counter := 0
 
-		var listener events.EventHandler
+		var listener events.Handler
 
 		listener = func(ctx context.Context, message interface{}) {
 			counter++

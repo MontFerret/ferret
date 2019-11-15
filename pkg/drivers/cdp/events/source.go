@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"github.com/mafredri/cdp/rpcc"
 )
 
@@ -12,9 +13,11 @@ type (
 		Data interface{}
 	}
 
+	Handler func(ctx context.Context, message interface{})
+
 	Listener struct {
 		Event   Type
-		Handler EventHandler
+		Handler Handler
 	}
 
 	Source interface {
