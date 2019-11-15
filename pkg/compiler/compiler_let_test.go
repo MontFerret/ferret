@@ -208,4 +208,27 @@ func TestLet(t *testing.T) {
 
 		So(err, ShouldNotBeNil)
 	})
+
+	Convey("Should not compile if a variable not defined", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("Should not compile if a variable is not unique", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET foo = "bar"
+			LET foo = "baz"
+
+			RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 }
