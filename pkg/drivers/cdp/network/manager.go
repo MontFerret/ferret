@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/page"
 	"regexp"
@@ -138,9 +137,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 	onEvent := make(chan struct{})
 
 	listener := func(ctx context.Context, message interface{}) {
-		fmt.Println("frame loaded")
 		repl := message.(*page.FrameNavigatedReply)
-		//fmt.Println(repl.Frame.URL)
 
 		var matched bool
 
@@ -172,7 +169,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			_, err = onDOMReady.Recv()
 
 			onEvent <- struct{}{}
-			fmt.Println("fired event")
 		}
 	}
 
@@ -195,7 +191,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	select {
 	case <-onEvent:
-		fmt.Println("received event")
 		return nil
 	case <-ctx.Done():
 		return core.ErrTimeout
