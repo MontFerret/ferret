@@ -14,21 +14,21 @@ func TestLoop(t *testing.T) {
 		Convey("Should add a new listener when not started", func() {
 			loop := events.NewLoop()
 
-			loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
 
-			So(loop.ListenerCount(events.EventTypeAny), ShouldEqual, 1)
+			So(loop.ListenerCount(events.IDAny), ShouldEqual, 1)
 		})
 
 		Convey("Should add a new listener when started", func() {
 			loop := events.NewLoop()
-			loop.Start()
+			loop.Start(context.Background())
 			defer loop.Stop()
 
-			loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
 
 			time.Sleep(time.Duration(100) * time.Millisecond)
 
-			So(loop.ListenerCount(events.EventTypeAny), ShouldEqual, 1)
+			So(loop.ListenerCount(events.IDAny), ShouldEqual, 1)
 		})
 	})
 
@@ -38,10 +38,10 @@ func TestLoop(t *testing.T) {
 
 			listener := func(ctx context.Context, message interface{}) {}
 
-			loop.AddListener(events.EventTypeLoad, listener)
-			loop.RemoveListener(events.EventTypeLoad, listener)
+			loop.AddListener(events.IDLoad, listener)
+			loop.RemoveListener(events.IDLoad, listener)
 
-			So(loop.ListenerCount(events.EventTypeAny), ShouldEqual, 0)
+			So(loop.ListenerCount(events.IDAny), ShouldEqual, 0)
 		})
 
 		Convey("Should add a new listener when started", func() {
@@ -49,16 +49,86 @@ func TestLoop(t *testing.T) {
 
 			listener := func(ctx context.Context, message interface{}) {}
 
-			loop.AddListener(events.EventTypeLoad, listener)
+			loop.AddListener(events.IDLoad, listener)
 
-			loop.Start()
+			loop.Start(context.Background())
 			defer loop.Stop()
 
-			loop.RemoveListener(events.EventTypeLoad, listener)
+			loop.RemoveListener(events.IDLoad, listener)
 
 			time.Sleep(time.Duration(100) * time.Millisecond)
 
-			So(loop.ListenerCount(events.EventTypeAny), ShouldEqual, 0)
+			So(loop.ListenerCount(events.IDAny), ShouldEqual, 0)
+		})
+	})
+
+	Convey(".AddSource", t, func() {
+		Convey("Should add a new event source when not started", func() {
+			loop := events.NewLoop()
+
+			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+
+			loop.AddSource(events.NewSource(events.IDLoad, onLoad, func() (i interface{}, e error) {
+				return onLoad.Recv()
+			}))
+
+			So(loop.SourceCount(), ShouldEqual, 1)
+		})
+
+		Convey("Should add a new listener when started", func() {
+			loop := events.NewLoop()
+			loop.Start(context.Background())
+			defer loop.Stop()
+
+			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+
+			loop.AddSource(events.NewSource(events.IDLoad, onLoad, func() (i interface{}, e error) {
+				return onLoad.Recv()
+			}))
+
+			time.Sleep(time.Duration(100) * time.Millisecond)
+
+			So(loop.SourceCount(), ShouldEqual, 1)
+		})
+	})
+
+	Convey(".RemoveListener", t, func() {
+		Convey("Should remove a listener when not started", func() {
+			loop := events.NewLoop()
+
+			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+			src := events.NewSource(events.IDLoad, onLoad, func() (i interface{}, e error) {
+				return onLoad.Recv()
+			})
+
+			loop.AddSource(src)
+
+			So(loop.SourceCount(), ShouldEqual, 1)
+
+			loop.RemoveSource(src)
+
+			So(loop.SourceCount(), ShouldEqual, 0)
+		})
+
+		Convey("Should add a new listener when started", func() {
+			loop := events.NewLoop()
+
+			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+			src := events.NewSource(events.IDLoad, onLoad, func() (i interface{}, e error) {
+				return onLoad.Recv()
+			})
+
+			loop.AddSource(src)
+			So(loop.SourceCount(), ShouldEqual, 1)
+
+			loop.Start(context.Background())
+			defer loop.Stop()
+
+			loop.RemoveSource(src)
+
+			time.Sleep(time.Duration(100) * time.Millisecond)
+
+			So(loop.SourceCount(), ShouldEqual, 0)
 		})
 	})
 
@@ -72,18 +142,18 @@ func TestLoop(t *testing.T) {
 		listener = func(ctx context.Context, message interface{}) {
 			counter++
 
-			loop.RemoveListener(events.EventTypeLoad, listener)
+			loop.RemoveListener(events.IDLoad, listener)
 		}
 
-		loop.AddListener(events.EventTypeLoad, listener)
+		loop.AddListener(events.IDLoad, listener)
 
 		onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-		loop.AddSource(events.NewSource(events.EventTypeLoad, onLoad, func() (i interface{}, e error) {
+		loop.AddSource(events.NewSource(events.IDLoad, onLoad, func() (i interface{}, e error) {
 			return onLoad.Recv()
 		}))
 
-		loop.Start()
+		loop.Start(context.Background())
 		defer loop.Stop()
 
 		time.Sleep(time.Duration(100) * time.Millisecond)
@@ -92,7 +162,7 @@ func TestLoop(t *testing.T) {
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
-		So(loop.ListenerCount(events.EventTypeLoad), ShouldEqual, 0)
+		So(loop.ListenerCount(events.IDLoad), ShouldEqual, 0)
 		So(counter, ShouldEqual, 1)
 	})
 
@@ -104,7 +174,7 @@ func TestLoop(t *testing.T) {
 	//
 	//		var counter int64
 	//
-	//		b.AddEventListener(sources.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	//		b.AddEventListener(sources.IDLoad, func(ctx context.Context, message interface{}) {
 	//			atomic.AddInt64(&counter, 1)
 	//			b.Stop()
 	//		})
@@ -132,28 +202,28 @@ func BenchmarkLoop_AddListenerSync(b *testing.B) {
 	loop := events.NewLoop()
 
 	for n := 0; n < b.N; n++ {
-		loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+		loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
 	}
 }
 
 func BenchmarkLoop_AddListenerAsync(b *testing.B) {
 	loop := events.NewLoop()
-	loop.Start()
+	loop.Start(context.Background())
 	defer loop.Stop()
 
 	for n := 0; n < b.N; n++ {
-		loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+		loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
 	}
 }
 
 func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 	loop := events.NewLoop()
-	loop.Start()
+	loop.Start(context.Background())
 	defer loop.Stop()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
 		}
 	})
 }
@@ -161,36 +231,36 @@ func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 func BenchmarkLoop_Start(b *testing.B) {
 	loop := events.NewLoop()
 
-	loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
 
 	})
-	loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
-
-	})
-
-	loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
 
 	})
 
-	loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
 
 	})
 
-	loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
 
 	})
 
-	loop.AddListener(events.EventTypeLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
+
+	})
+
+	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
 
 	})
 
 	onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-	loop.AddSource(events.NewSource(events.EventTypeLoad, onLoad, func() (i interface{}, e error) {
+	loop.AddSource(events.NewSource(events.IDLoad, onLoad, func() (i interface{}, e error) {
 		return onLoad.Recv()
 	}))
 
-	loop.Start()
+	loop.Start(context.Background())
 	defer loop.Stop()
 
 	for n := 0; n < b.N; n++ {

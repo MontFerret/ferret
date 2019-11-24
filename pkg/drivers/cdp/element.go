@@ -158,12 +158,12 @@ func NewHTMLElement(
 	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 	el.children = children
 
-	broker.AddEventListener(events.EventTypeReload, el.handlePageReload)
-	broker.AddEventListener(events.EventTypeAttrModified, el.handleAttrModified)
-	broker.AddEventListener(events.EventTypeAttrRemoved, el.handleAttrRemoved)
-	broker.AddEventListener(events.EventTypeChildNodeCountUpdated, el.handleChildrenCountChanged)
-	broker.AddEventListener(events.EventTypeChildNodeInserted, el.handleChildInserted)
-	broker.AddEventListener(events.EventTypeChildNodeRemoved, el.handleChildRemoved)
+	broker.AddEventListener(events.IDReload, el.handlePageReload)
+	broker.AddEventListener(events.IDAttrModified, el.handleAttrModified)
+	broker.AddEventListener(events.IDAttrRemoved, el.handleAttrRemoved)
+	broker.AddEventListener(events.IDChildNodeCountUpdated, el.handleChildrenCountChanged)
+	broker.AddEventListener(events.IDChildNodeInserted, el.handleChildInserted)
+	broker.AddEventListener(events.IDChildNodeRemoved, el.handleChildRemoved)
 
 	return el
 }
@@ -178,12 +178,12 @@ func (el *HTMLElement) Close() error {
 	}
 
 	el.connected = values.False
-	el.events.RemoveEventListener(events.EventTypeReload, el.handlePageReload)
-	el.events.RemoveEventListener(events.EventTypeAttrModified, el.handleAttrModified)
-	el.events.RemoveEventListener(events.EventTypeAttrRemoved, el.handleAttrRemoved)
-	el.events.RemoveEventListener(events.EventTypeChildNodeCountUpdated, el.handleChildrenCountChanged)
-	el.events.RemoveEventListener(events.EventTypeChildNodeInserted, el.handleChildInserted)
-	el.events.RemoveEventListener(events.EventTypeChildNodeRemoved, el.handleChildRemoved)
+	el.events.RemoveEventListener(events.IDReload, el.handlePageReload)
+	el.events.RemoveEventListener(events.IDAttrModified, el.handleAttrModified)
+	el.events.RemoveEventListener(events.IDAttrRemoved, el.handleAttrRemoved)
+	el.events.RemoveEventListener(events.IDChildNodeCountUpdated, el.handleChildrenCountChanged)
+	el.events.RemoveEventListener(events.IDChildNodeInserted, el.handleChildInserted)
+	el.events.RemoveEventListener(events.IDChildNodeRemoved, el.handleChildRemoved)
 
 	return nil
 }

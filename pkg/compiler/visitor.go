@@ -1013,6 +1013,13 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 	var init core.Expression
 	var err error
 
+	name := ctx.Identifier().GetText()
+	err = scope.SetVariable(name)
+
+	if err != nil {
+		return nil, err
+	}
+
 	exp := ctx.Expression()
 
 	if exp != nil {
@@ -1038,10 +1045,6 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 	if err != nil {
 		return nil, err
 	}
-
-	name := ctx.Identifier().GetText()
-
-	scope.SetVariable(name)
 
 	return expressions.NewVariableDeclarationExpression(
 		v.getSourceMap(ctx),

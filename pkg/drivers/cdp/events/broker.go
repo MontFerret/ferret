@@ -14,7 +14,7 @@ import (
 type (
 	EventBroker struct {
 		mu                      sync.Mutex
-		listeners               map[Type][]Handler
+		listeners               map[ID][]Handler
 		cancel                  context.CancelFunc
 		onLoad                  page.LoadEventFiredClient
 		onReload                dom.DocumentUpdatedClient
@@ -36,7 +36,7 @@ func NewEventBroker(
 	onChildNodeRemoved dom.ChildNodeRemovedClient,
 ) *EventBroker {
 	broker := new(EventBroker)
-	broker.listeners = make(map[Type][]Handler)
+	broker.listeners = make(map[ID][]Handler)
 	broker.onLoad = onLoad
 	broker.onReload = onReload
 	broker.onAttrModified = onAttrModified
@@ -48,7 +48,7 @@ func NewEventBroker(
 	return broker
 }
 
-func (broker *EventBroker) AddEventListener(event Type, listener Handler) {
+func (broker *EventBroker) AddEventListener(event ID, listener Handler) {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
@@ -61,7 +61,7 @@ func (broker *EventBroker) AddEventListener(event Type, listener Handler) {
 	broker.listeners[event] = append(listeners, listener)
 }
 
-func (broker *EventBroker) RemoveEventListener(event Type, listener Handler) {
+func (broker *EventBroker) RemoveEventListener(event ID, listener Handler) {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
@@ -98,7 +98,7 @@ func (broker *EventBroker) RemoveEventListener(event Type, listener Handler) {
 	broker.listeners[event] = modifiedListeners
 }
 
-func (broker *EventBroker) ListenerCount(event Type) int {
+func (broker *EventBroker) ListenerCount(event ID) int {
 	broker.mu.Lock()
 	defer broker.mu.Unlock()
 
@@ -185,7 +185,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onLoad.Recv()
 
-			broker.emit(ctx, EventTypeLoad, reply, err)
+			broker.emit(ctx, IDLoad, reply, err)
 		case <-broker.onReload.Ready():
 			if ctxDone(ctx) {
 				return
@@ -193,7 +193,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onReload.Recv()
 
-			broker.emit(ctx, EventTypeReload, reply, err)
+			broker.emit(ctx, IDReload, reply, err)
 		case <-broker.onAttrModified.Ready():
 			if ctxDone(ctx) {
 				return
@@ -201,7 +201,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onAttrModified.Recv()
 
-			broker.emit(ctx, EventTypeAttrModified, reply, err)
+			broker.emit(ctx, IDAttrModified, reply, err)
 		case <-broker.onAttrRemoved.Ready():
 			if ctxDone(ctx) {
 				return
@@ -209,7 +209,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onAttrRemoved.Recv()
 
-			broker.emit(ctx, EventTypeAttrRemoved, reply, err)
+			broker.emit(ctx, IDAttrRemoved, reply, err)
 		case <-broker.onChildNodeCountUpdated.Ready():
 			if ctxDone(ctx) {
 				return
@@ -217,7 +217,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onChildNodeCountUpdated.Recv()
 
-			broker.emit(ctx, EventTypeChildNodeCountUpdated, reply, err)
+			broker.emit(ctx, IDChildNodeCountUpdated, reply, err)
 		case <-broker.onChildNodeInserted.Ready():
 			if ctxDone(ctx) {
 				return
@@ -225,7 +225,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onChildNodeInserted.Recv()
 
-			broker.emit(ctx, EventTypeChildNodeInserted, reply, err)
+			broker.emit(ctx, IDChildNodeInserted, reply, err)
 		case <-broker.onChildNodeRemoved.Ready():
 			if ctxDone(ctx) {
 				return
@@ -233,7 +233,7 @@ func (broker *EventBroker) runLoop(ctx context.Context) {
 
 			reply, err := broker.onChildNodeRemoved.Recv()
 
-			broker.emit(ctx, EventTypeChildNodeRemoved, reply, err)
+			broker.emit(ctx, IDChildNodeRemoved, reply, err)
 		}
 	}
 }
@@ -242,9 +242,9 @@ func ctxDone(ctx context.Context) bool {
 	return ctx.Err() == context.Canceled
 }
 
-func (broker *EventBroker) emit(ctx context.Context, event Type, message interface{}, err error) {
+func (broker *EventBroker) emit(ctx context.Context, event ID, message interface{}, err error) {
 	if err != nil {
-		event = EventTypeError
+		event = IDError
 		message = err
 	}
 

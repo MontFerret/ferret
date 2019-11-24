@@ -3,6 +3,7 @@ package cdp
 import (
 	"context"
 	"hash/fnv"
+	"regexp"
 	"sync"
 
 	"github.com/mafredri/cdp"
@@ -16,7 +17,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
-	nt "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
+	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -29,7 +30,7 @@ type HTMLPage struct {
 	logger   *zerolog.Logger
 	conn     *rpcc.Conn
 	client   *cdp.Client
-	network  *nt.Manager
+	network  *net.Manager
 	events   *events.EventBroker
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
@@ -145,19 +146,19 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	net, err := nt.New(logger, client)
+	netManager, err := net.New(logger, client)
 
 	if err != nil {
 		return nil, err
 	}
 
-	err = net.SetCookies(ctx, params.URL, params.Cookies)
+	err = netManager.SetCookies(ctx, params.URL, params.Cookies)
 
 	if err != nil {
 		return nil, err
 	}
 
-	err = net.SetHeaders(ctx, params.Headers)
+	err = netManager.SetHeaders(ctx, params.Headers)
 
 	if err != nil {
 		return nil, err
@@ -178,7 +179,13 @@ func LoadHTMLPage(
 			return nil, errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL)
 		}
 
-		err = net.WaitForPageLoad(ctx)
+		r, err := regexp.Compile(params.URL)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create regexp using the url")
+		}
+
+		err = netManager.WaitForNavigation(ctx, r)
 
 		if err != nil {
 			handleLoadError(logger, client)
@@ -237,8 +244,8 @@ func NewHTMLPage(
 	p.document = common.NewAtomicValue(document)
 	p.frames = common.NewLazyValue(p.unfoldFrames)
 
-	broker.AddEventListener(events.EventTypeLoad, p.handlePageLoad)
-	broker.AddEventListener(events.EventTypeError, p.handleError)
+	broker.AddEventListener(events.IDLoad, p.handlePageLoad)
+	broker.AddEventListener(events.IDError, p.handleError)
 
 	return p
 }
@@ -643,24 +650,11 @@ func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values
 }
 
 func (p *HTMLPage) WaitForNavigation(ctx context.Context) error {
-	onEvent := make(chan struct{})
-	var once sync.Once
-	listener := func(_ context.Context, _ interface{}) {
-		once.Do(func() {
-			close(onEvent)
-		})
-	}
+	return p.network.WaitForNavigation(ctx, nil)
+}
 
-	defer p.events.RemoveEventListener(events.EventTypeLoad, listener)
-
-	p.events.AddEventListener(events.EventTypeLoad, listener)
-
-	select {
-	case <-onEvent:
-		return nil
-	case <-ctx.Done():
-		return core.ErrTimeout
-	}
+func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
+	return nil, core.ErrNotSupported
 }
 
 func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
@@ -723,8 +717,4 @@ func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
 	}
 
 	return res, nil
-}
-
-func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
-	return nil, core.ErrNotSupported
 }

@@ -6,17 +6,17 @@ import (
 )
 
 type (
-	Type int
+	ID int
 
 	Event struct {
-		Type Type
+		ID   ID
 		Data interface{}
 	}
 
 	Handler func(ctx context.Context, message interface{})
 
 	Listener struct {
-		Event   Type
+		EventID ID
 		Handler Handler
 	}
 
@@ -26,7 +26,7 @@ type (
 	}
 
 	GenericSource struct {
-		evtType Type
+		eventID ID
 		stream  rpcc.Stream
 		recv    func() (interface{}, error)
 	}
@@ -34,38 +34,42 @@ type (
 
 const (
 	//revive:disable-next-line:var-declaration
-	EventTypeAny = Type(iota)
-	EventTypeError
-	EventTypeLoad
-	EventTypeReload
-	EventTypeAttrModified
-	EventTypeAttrRemoved
-	EventTypeChildNodeCountUpdated
-	EventTypeChildNodeInserted
-	EventTypeChildNodeRemoved
+	IDAny = ID(iota)
+	IDError
+	IDLoad
+	IDReload
+	IDAttrModified
+	IDAttrRemoved
+	IDChildNodeCountUpdated
+	IDChildNodeInserted
+	IDChildNodeRemoved
 )
 
 func NewSource(
-	evtType Type,
+	eventID ID,
 	stream rpcc.Stream,
 	recv func() (interface{}, error),
-) GenericSource {
-	return GenericSource{evtType, stream, recv}
+) Source {
+	return &GenericSource{eventID, stream, recv}
 }
 
-func (src GenericSource) Ready() <-chan struct{} {
+func (src *GenericSource) EventID() ID {
+	return src.eventID
+}
+
+func (src *GenericSource) Ready() <-chan struct{} {
 	return src.stream.Ready()
 }
 
-func (src GenericSource) RecvMsg(m interface{}) error {
+func (src *GenericSource) RecvMsg(m interface{}) error {
 	return src.stream.RecvMsg(m)
 }
 
-func (src GenericSource) Close() error {
+func (src *GenericSource) Close() error {
 	return src.stream.Close()
 }
 
-func (src GenericSource) Recv() (Event, error) {
+func (src *GenericSource) Recv() (Event, error) {
 	data, err := src.recv()
 
 	if err != nil {
@@ -73,7 +77,7 @@ func (src GenericSource) Recv() (Event, error) {
 	}
 
 	return Event{
-		Type: src.evtType,
+		ID:   src.eventID,
 		Data: data,
 	}, nil
 }

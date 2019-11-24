@@ -11,7 +11,7 @@ import (
 type Loop struct {
 	mu             sync.Mutex
 	cancel         context.CancelFunc
-	listeners      map[Type][]Handler
+	listeners      map[ID][]Handler
 	sources        []Source
 	addSource      chan Source
 	removeSource   chan Source
@@ -21,7 +21,7 @@ type Loop struct {
 
 func NewLoop() *Loop {
 	loop := new(Loop)
-	loop.listeners = make(map[Type][]Handler)
+	loop.listeners = make(map[ID][]Handler)
 	loop.sources = make([]Source, 0, 10)
 	loop.addListener = make(chan Listener, 10)
 	loop.removeListener = make(chan Listener, 10)
@@ -39,11 +39,11 @@ func (loop *Loop) Start() error {
 		return core.Error(core.ErrInvalidOperation, "event loop is already started")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	loopCtx, cancel := context.WithCancel(context.Background())
 
 	loop.cancel = cancel
 
-	go loop.run(ctx)
+	go loop.run(loopCtx)
 
 	return nil
 }
@@ -86,18 +86,18 @@ func (loop *Loop) Close() error {
 	return nil
 }
 
-func (loop *Loop) ListenerCount(eventType Type) int {
+func (loop *Loop) ListenerCount(eventID ID) int {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	result := 0
 
-	if eventType == EventTypeAny {
+	if eventID == IDAny {
 		for _, listeners := range loop.listeners {
 			result += len(listeners)
 		}
 	} else {
-		listeners, exists := loop.listeners[eventType]
+		listeners, exists := loop.listeners[eventID]
 
 		if !exists {
 			return result
@@ -109,7 +109,7 @@ func (loop *Loop) ListenerCount(eventType Type) int {
 	return result
 }
 
-func (loop *Loop) EventCount() int {
+func (loop *Loop) SourceCount() int {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
@@ -121,7 +121,7 @@ func (loop *Loop) AddSource(source Source) *Loop {
 	defer loop.mu.Unlock()
 
 	if loop.cancel == nil {
-		loop.addEventInternal(source)
+		loop.addSourceInternal(source)
 
 		return loop
 	}
@@ -136,7 +136,7 @@ func (loop *Loop) RemoveSource(event Source) *Loop {
 	defer loop.mu.Unlock()
 
 	if loop.cancel == nil {
-		loop.removeEventInternal(event)
+		loop.removeSourceInternal(event)
 
 		return loop
 	}
@@ -146,12 +146,12 @@ func (loop *Loop) RemoveSource(event Source) *Loop {
 	return loop
 }
 
-func (loop *Loop) AddListener(eventType Type, handler Handler) *Loop {
+func (loop *Loop) AddListener(eventID ID, handler Handler) *Loop {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	listener := Listener{
-		Event:   eventType,
+		EventID: eventID,
 		Handler: handler,
 	}
 
@@ -166,12 +166,12 @@ func (loop *Loop) AddListener(eventType Type, handler Handler) *Loop {
 	return loop
 }
 
-func (loop *Loop) RemoveListener(eventType Type, handler Handler) *Loop {
+func (loop *Loop) RemoveListener(eventID ID, handler Handler) *Loop {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	listener := Listener{
-		Event:   eventType,
+		EventID: eventID,
 		Handler: handler,
 	}
 
@@ -222,11 +222,11 @@ func (loop *Loop) run(ctx context.Context) {
 		case listener := <-loop.removeListener:
 			loop.removeListenerInternal(listener)
 		case event := <-loop.addSource:
-			loop.addEventInternal(event)
+			loop.addSourceInternal(event)
 			// update size
 			size += 1
 		case event := <-loop.removeSource:
-			if loop.removeEventInternal(event) {
+			if loop.removeSourceInternal(event) {
 				size -= 1
 			}
 		case <-source.Ready():
@@ -236,18 +236,18 @@ func (loop *Loop) run(ctx context.Context) {
 
 			event, err := source.Recv()
 
-			loop.emit(ctx, event.Type, event.Data, err)
+			loop.emit(ctx, event.ID, event.Data, err)
 		default:
 			continue
 		}
 	}
 }
 
-func (loop *Loop) addEventInternal(src Source) {
+func (loop *Loop) addSourceInternal(src Source) {
 	loop.sources = append(loop.sources, src)
 }
 
-func (loop *Loop) removeEventInternal(event Source) bool {
+func (loop *Loop) removeSourceInternal(event Source) bool {
 	idx := -1
 
 	for i, c := range loop.sources {
@@ -265,17 +265,17 @@ func (loop *Loop) removeEventInternal(event Source) bool {
 }
 
 func (loop *Loop) addListenerInternal(listener Listener) {
-	bucket, exists := loop.listeners[listener.Event]
+	bucket, exists := loop.listeners[listener.EventID]
 
 	if !exists {
 		bucket = make([]Handler, 0, 10)
 	}
 
-	loop.listeners[listener.Event] = append(bucket, listener.Handler)
+	loop.listeners[listener.EventID] = append(bucket, listener.Handler)
 }
 
 func (loop *Loop) removeListenerInternal(listener Listener) {
-	bucket, exists := loop.listeners[listener.Event]
+	bucket, exists := loop.listeners[listener.EventID]
 
 	if !exists {
 		return
@@ -306,16 +306,16 @@ func (loop *Loop) removeListenerInternal(listener Listener) {
 		modifiedBucket = make([]Handler, 0, 5)
 	}
 
-	loop.listeners[listener.Event] = modifiedBucket
+	loop.listeners[listener.EventID] = modifiedBucket
 }
 
-func (loop *Loop) emit(ctx context.Context, eventType Type, message interface{}, err error) {
+func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err error) {
 	if err != nil {
-		eventType = EventTypeError
+		eventID = IDError
 		message = err
 	}
 
-	handlers, ok := loop.listeners[eventType]
+	handlers, ok := loop.listeners[eventID]
 
 	if !ok {
 		return

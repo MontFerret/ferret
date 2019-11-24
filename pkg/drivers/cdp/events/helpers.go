@@ -9,12 +9,12 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 )
 
-func ToType(name string) Type {
+func ToType(name string) ID {
 	h := fnv.New32a()
 
 	h.Write([]byte(name))
 
-	return Type(h.Sum32())
+	return ID(h.Sum32())
 }
 
 func CreateEventBroker(client *cdp.Client) (*EventBroker, error) {

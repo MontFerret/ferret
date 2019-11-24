@@ -3,6 +3,10 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/mafredri/cdp/protocol/page"
+	"regexp"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
@@ -30,7 +34,7 @@ func New(
 	m.headers = make(drivers.HTTPHeaders)
 	m.eventLoop = events.NewLoop()
 
-	return m, nil
+	return m, m.eventLoop.Start()
 }
 
 func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
@@ -120,20 +124,80 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	return nil
 }
 
-func (m *Manager) WaitForPageLoad(ctx context.Context) error {
-	loadEvent, err := m.client.Page.LoadEventFired(ctx)
+func (m *Manager) WaitForNavigation(ctx context.Context, targetURL *regexp.Regexp) error {
+	return m.WaitForFrameNavigation(ctx, "", targetURL)
+}
+
+func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, targetURL *regexp.Regexp) error {
+	stream, err := m.client.Page.FrameNavigated(ctx)
 
 	if err != nil {
 		return errors.Wrap(err, "failed to create load event hook")
 	}
 
-	m.eventLoop.AddSource(events.NewSource(EventLoad))
+	onEvent := make(chan struct{})
 
-	_, err = loadEvent.Recv()
+	listener := func(ctx context.Context, message interface{}) {
+		fmt.Println("frame loaded")
+		repl := message.(*page.FrameNavigatedReply)
+		//fmt.Println(repl.Frame.URL)
 
-	if err != nil {
-		return err
+		var matched bool
+
+		// if frameID is empty string or equals to the current one
+		if len(frameID) == 0 || repl.Frame.ID == frameID {
+			// if a target URL is provided
+			if targetURL != nil {
+				matched = targetURL.Match([]byte(repl.Frame.URL))
+			} else {
+				// otherwise just notify
+				matched = true
+			}
+		}
+
+		if matched {
+			// we need to wait till the DOM becomes ready
+			onDOMReady, err := m.client.Page.DOMContentEventFired(ctx)
+
+			if err != nil {
+				// oops, well, there is really nothing we can do here
+				// just log the error try luck
+				m.logger.Error().Err(err).Msg("failed to create load event hook")
+
+				onEvent <- struct{}{}
+
+				return
+			}
+
+			_, err = onDOMReady.Recv()
+
+			onEvent <- struct{}{}
+			fmt.Println("fired event")
+		}
 	}
 
-	return loadEvent.Close()
+	src := events.NewSource(EventLoad, stream, func() (i interface{}, e error) {
+		return stream.Recv()
+	})
+
+	m.eventLoop.AddSource(src)
+	m.eventLoop.AddListener(EventLoad, listener)
+
+	defer func() {
+		m.eventLoop.RemoveListener(EventLoad, listener)
+		m.eventLoop.RemoveSource(src)
+		close(onEvent)
+
+		if err := stream.Close(); err != nil {
+			m.logger.Error().Err(err).Msg("failed to close frame navigated event stream")
+		}
+	}()
+
+	select {
+	case <-onEvent:
+		fmt.Println("received event")
+		return nil
+	case <-ctx.Done():
+		return core.ErrTimeout
+	}
 }
