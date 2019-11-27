@@ -3,37 +3,58 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/mafredri/cdp/protocol/page"
 	"regexp"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
+	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type Manager struct {
-	logger    *zerolog.Logger
-	client    *cdp.Client
-	headers   drivers.HTTPHeaders
-	eventLoop *events.Loop
-}
+const BlankPageURL = "about:blank"
+
+type (
+	FrameLoadedListener = func(ctx context.Context, frame page.Frame)
+
+	Manager struct {
+		logger    *zerolog.Logger
+		client    *cdp.Client
+		headers   drivers.HTTPHeaders
+		eventLoop *events.Loop
+		listeners []FrameLoadedListener
+	}
+)
 
 func New(
+	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
+	eventLoop *events.Loop,
 ) (*Manager, error) {
 	m := new(Manager)
 	m.logger = logger
 	m.client = client
 	m.headers = make(drivers.HTTPHeaders)
-	m.eventLoop = events.NewLoop()
+	m.eventLoop = eventLoop
 
-	return m, m.eventLoop.Start()
+	frameNavigatedStream, err := m.client.Page.FrameNavigated(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m.eventLoop.AddSource(events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(page.FrameNavigatedClient).Recv()
+	}))
+
+	return m, nil
 }
 
 func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
@@ -123,11 +144,124 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	return nil
 }
 
-func (m *Manager) WaitForNavigation(ctx context.Context, targetURL *regexp.Regexp) error {
-	return m.WaitForFrameNavigation(ctx, "", targetURL)
+func (m *Manager) Navigate(ctx context.Context, url values.String) error {
+	if url == "" {
+		url = BlankPageURL
+	}
+
+	urlStr := url.String()
+
+	repl, err := m.client.Page.Navigate(ctx, page.NewNavigateArgs(urlStr))
+
+	if err != nil {
+		return err
+	}
+
+	if repl.ErrorText != nil {
+		return errors.New(*repl.ErrorText)
+	}
+
+	return m.WaitForNavigation(ctx, url)
 }
 
-func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, targetURL *regexp.Regexp) error {
+func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	history, err := m.client.Page.GetNavigationHistory(ctx)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	length := len(history.Entries)
+	lastIndex := length - 1
+
+	// nowhere to go forward
+	if history.CurrentIndex == lastIndex {
+		return values.False, nil
+	}
+
+	if skip < 1 {
+		skip = 1
+	}
+
+	to := int(skip) + history.CurrentIndex
+
+	if to > lastIndex {
+		// TODO: Return error?
+		return values.False, nil
+	}
+
+	entry := history.Entries[to]
+	err = m.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(entry.ID))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	err = m.WaitForNavigation(ctx, values.NewString(entry.URL))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
+}
+
+func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	history, err := m.client.Page.GetNavigationHistory(ctx)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	// we are in the beginning
+	if history.CurrentIndex == 0 {
+		return values.False, nil
+	}
+
+	if skip < 1 {
+		skip = 1
+	}
+
+	to := history.CurrentIndex - int(skip)
+
+	if to < 0 {
+		// TODO: Return error?
+		return values.False, nil
+	}
+
+	entry := history.Entries[to]
+	err = m.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(entry.ID))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	err = m.WaitForNavigation(ctx, values.NewString(entry.URL))
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.True, nil
+}
+
+func (m *Manager) WaitForNavigation(ctx context.Context, urlOrPattern values.String) error {
+	return m.WaitForFrameNavigation(ctx, "", urlOrPattern)
+}
+
+func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlOrPattern values.String) error {
+	var urlMatcher *regexp.Regexp
+
+	if len(urlOrPattern) > 0 {
+		r, err := regexp.Compile(urlOrPattern.String())
+
+		if err != nil {
+			return errors.Wrap(err, "invalid target URL pattern")
+		}
+
+		urlMatcher = r
+	}
+
 	stream, err := m.client.Page.FrameNavigated(ctx)
 
 	if err != nil {
@@ -136,7 +270,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	onEvent := make(chan struct{})
 
-	listener := func(ctx context.Context, message interface{}) {
+	id := m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) {
 		repl := message.(*page.FrameNavigatedReply)
 
 		var matched bool
@@ -144,8 +278,8 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		// if frameID is empty string or equals to the current one
 		if len(frameID) == 0 || repl.Frame.ID == frameID {
 			// if a target URL is provided
-			if targetURL != nil {
-				matched = targetURL.Match([]byte(repl.Frame.URL))
+			if urlMatcher != nil {
+				matched = urlMatcher.Match([]byte(repl.Frame.URL))
 			} else {
 				// otherwise just notify
 				matched = true
@@ -170,18 +304,10 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 			onEvent <- struct{}{}
 		}
-	}
-
-	src := events.NewSource(EventLoad, stream, func() (i interface{}, e error) {
-		return stream.Recv()
 	})
 
-	m.eventLoop.AddSource(src)
-	m.eventLoop.AddListener(EventLoad, listener)
-
 	defer func() {
-		m.eventLoop.RemoveListener(EventLoad, listener)
-		m.eventLoop.RemoveSource(src)
+		m.eventLoop.RemoveListener(eventFrameLoad, id)
 		close(onEvent)
 
 		if err := stream.Close(); err != nil {
@@ -195,4 +321,15 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 	case <-ctx.Done():
 		return core.ErrTimeout
 	}
+}
+
+func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.ListenerID {
+	return m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) {
+		repl := message.(*page.FrameNavigatedReply)
+		listener(ctx, repl.Frame)
+	})
+}
+
+func (m *Manager) RemoveFrameLoadedListener(id events.ListenerID) {
+	m.eventLoop.RemoveListener(eventFrameLoad, id)
 }

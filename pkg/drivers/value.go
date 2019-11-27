@@ -198,19 +198,19 @@ type (
 
 		DeleteCookies(ctx context.Context, cookies HTTPCookies) error
 
+		GetResponse(ctx context.Context) (*HTTPResponse, error)
+
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
 		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
-		WaitForNavigation(ctx context.Context) error
+		WaitForNavigation(ctx context.Context, params NavigationParams) error
 
 		Navigate(ctx context.Context, url values.String) error
 
 		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
 
 		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
-
-		GetResponse(ctx context.Context) (*HTTPResponse, error)
 	}
 )
 

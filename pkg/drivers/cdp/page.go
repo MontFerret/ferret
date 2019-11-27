@@ -2,8 +2,8 @@ package cdp
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"hash/fnv"
-	"regexp"
 	"sync"
 
 	"github.com/mafredri/cdp"
@@ -30,8 +30,9 @@ type HTMLPage struct {
 	logger   *zerolog.Logger
 	conn     *rpcc.Conn
 	client   *cdp.Client
+	events   *events.Loop
 	network  *net.Manager
-	events   *events.EventBroker
+	dom      *dom.Manager
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
 	document *common.AtomicValue
@@ -146,7 +147,8 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	netManager, err := net.New(logger, client)
+	eventLoop := events.NewLoop()
+	netManager, err := net.New(ctx, logger, client, eventLoop)
 
 	if err != nil {
 		return nil, err
@@ -164,6 +166,8 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
+	eventLoop.Start()
+
 	if params.URL != BlankPageURL && params.URL != "" {
 		repl, err := client.Page.Navigate(ctx, page.NewNavigateArgs(params.URL))
 
@@ -179,13 +183,7 @@ func LoadHTMLPage(
 			return nil, errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL)
 		}
 
-		r, err := regexp.Compile(params.URL)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create regexp using the url")
-		}
-
-		err = netManager.WaitForNavigation(ctx, r)
+		err = netManager.WaitForNavigation(ctx, values.NewString(params.URL))
 
 		if err != nil {
 			handleLoadError(logger, client)
@@ -193,8 +191,6 @@ func LoadHTMLPage(
 			return nil, errors.Wrap(err, "failed to load the page")
 		}
 	}
-
-	broker, err := events.CreateEventBroker(client)
 
 	if err != nil {
 		handleLoadError(logger, client)
@@ -204,10 +200,26 @@ func LoadHTMLPage(
 	mouse := input.NewMouse(client)
 	keyboard := input.NewKeyboard(client)
 
-	doc, err := LoadRootHTMLDocument(ctx, logger, client, broker, mouse, keyboard)
+	domManager, err := dom.NewManager(ctx, client, eventLoop)
 
 	if err != nil {
-		broker.StopAndClose()
+		eventLoop.Stop().Close()
+
+		return nil, errors.Wrap(err, "failed to initialize dom manager")
+	}
+
+	doc, err := dom.LoadRootHTMLDocument(
+		ctx,
+		logger,
+		client,
+		netManager,
+		domManager,
+		mouse,
+		keyboard,
+	)
+
+	if err != nil {
+		eventLoop.Stop().Close()
 		handleLoadError(logger, client)
 
 		return nil, errors.Wrap(err, "failed to load root element")
@@ -217,7 +229,9 @@ func LoadHTMLPage(
 		logger,
 		conn,
 		client,
-		broker,
+		eventLoop,
+		netManager,
+		domManager,
 		mouse,
 		keyboard,
 		doc,
@@ -228,24 +242,28 @@ func NewHTMLPage(
 	logger *zerolog.Logger,
 	conn *rpcc.Conn,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	eventLoop *events.Loop,
+	netManager *net.Manager,
+	domManager *dom.Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
-	document *HTMLDocument,
+	document *dom.HTMLDocument,
 ) *HTMLPage {
 	p := new(HTMLPage)
 	p.closed = values.False
 	p.logger = logger
 	p.conn = conn
 	p.client = client
-	p.events = broker
+	p.events = eventLoop
+	p.network = netManager
+	p.dom = domManager
 	p.mouse = mouse
 	p.keyboard = keyboard
 	p.document = common.NewAtomicValue(document)
 	p.frames = common.NewLazyValue(p.unfoldFrames)
 
-	broker.AddEventListener(events.IDLoad, p.handlePageLoad)
-	broker.AddEventListener(events.IDError, p.handleError)
+	netManager.AddFrameLoadedListener(p.handlePageLoad)
+	eventLoop.AddListener(events.Error, p.handleError)
 
 	return p
 }
@@ -321,8 +339,8 @@ func (p *HTMLPage) Close() error {
 	defer p.mu.Unlock()
 
 	p.closed = values.True
-	err := p.events.Stop()
 
+	err := p.events.Stop().Close()
 	doc := p.getCurrentDocument()
 
 	if err != nil {
@@ -330,17 +348,15 @@ func (p *HTMLPage) Close() error {
 			Timestamp().
 			Str("url", doc.GetURL().String()).
 			Err(err).
-			Msg("failed to stop event events")
+			Msg("failed to stop event loop")
 	}
-
-	err = p.events.Close()
 
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
 			Str("url", doc.GetURL().String()).
 			Err(err).
-			Msg("failed to close event events")
+			Msg("failed to close event loop")
 	}
 
 	err = doc.Close()
@@ -423,6 +439,10 @@ func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies drivers.HTTPCookie
 	defer p.mu.Unlock()
 
 	return p.network.DeleteCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
+}
+
+func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
+	return nil, core.ErrNotSupported
 }
 
 func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
@@ -545,128 +565,45 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if url == "" {
-		url = BlankPageURL
-	}
-
-	repl, err := p.client.Page.Navigate(ctx, page.NewNavigateArgs(url.String()))
-
-	if err != nil {
-		return err
-	}
-
-	if repl.ErrorText != nil {
-		return errors.New(*repl.ErrorText)
-	}
-
-	return p.WaitForNavigation(ctx)
+	return p.network.Navigate(ctx, url)
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	history, err := p.client.Page.GetNavigationHistory(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	// we are in the beginning
-	if history.CurrentIndex == 0 {
-		return values.False, nil
-	}
-
-	if skip < 1 {
-		skip = 1
-	}
-
-	to := history.CurrentIndex - int(skip)
-
-	if to < 0 {
-		// TODO: Return error?
-		return values.False, nil
-	}
-
-	prev := history.Entries[to]
-	err = p.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(prev.ID))
-
-	if err != nil {
-		return values.False, err
-	}
-
-	err = p.WaitForNavigation(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
+	return p.network.NavigateBack(ctx, skip)
 }
 
 func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	history, err := p.client.Page.GetNavigationHistory(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	length := len(history.Entries)
-	lastIndex := length - 1
-
-	// nowhere to go forward
-	if history.CurrentIndex == lastIndex {
-		return values.False, nil
-	}
-
-	if skip < 1 {
-		skip = 1
-	}
-
-	to := int(skip) + history.CurrentIndex
-
-	if to > lastIndex {
-		// TODO: Return error?
-		return values.False, nil
-	}
-
-	next := history.Entries[to]
-	err = p.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(next.ID))
-
-	if err != nil {
-		return values.False, err
-	}
-
-	err = p.WaitForNavigation(ctx)
-
-	if err != nil {
-		return values.False, err
-	}
-
-	return values.True, nil
+	return p.network.NavigateForward(ctx, skip)
 }
 
-func (p *HTMLPage) WaitForNavigation(ctx context.Context) error {
-	return p.network.WaitForNavigation(ctx, nil)
+func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.NavigationParams) error {
+	return p.network.WaitForNavigation(ctx, params.TargetURL)
 }
 
-func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
-	return nil, core.ErrNotSupported
-}
-
-func (p *HTMLPage) handlePageLoad(ctx context.Context, _ interface{}) {
+func (p *HTMLPage) handlePageLoad(ctx context.Context, _ page.Frame) {
 	err := p.document.Write(func(current core.Value) (core.Value, error) {
-		nextDoc, err := LoadRootHTMLDocument(ctx, p.logger, p.client, p.events, p.mouse, p.keyboard)
+		nextDoc, err := dom.LoadRootHTMLDocument(
+			ctx,
+			p.logger,
+			p.client,
+			p.network,
+			p.dom,
+			p.mouse,
+			p.keyboard,
+		)
 
 		if err != nil {
 			return values.None, err
 		}
 
 		// close the prev document
-		currentDoc := current.(*HTMLDocument)
+		currentDoc := current.(*dom.HTMLDocument)
 		err = currentDoc.Close()
 
 		if err != nil {
@@ -703,8 +640,8 @@ func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
 		Msg("unexpected error")
 }
 
-func (p *HTMLPage) getCurrentDocument() *HTMLDocument {
-	return p.document.Read().(*HTMLDocument)
+func (p *HTMLPage) getCurrentDocument() *dom.HTMLDocument {
+	return p.document.Read().(*dom.HTMLDocument)
 }
 
 func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {

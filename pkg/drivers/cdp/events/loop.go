@@ -2,41 +2,51 @@ package events
 
 import (
 	"context"
-	"reflect"
+	"math/rand"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-type Loop struct {
-	mu             sync.Mutex
-	cancel         context.CancelFunc
-	listeners      map[ID][]Handler
-	sources        []Source
-	addSource      chan Source
-	removeSource   chan Source
-	addListener    chan Listener
-	removeListener chan Listener
-}
+type (
+	operation int
+
+	command struct {
+		op      operation
+		payload interface{}
+	}
+
+	Loop struct {
+		mu        sync.Mutex
+		cancel    context.CancelFunc
+		listeners map[ID]map[ListenerID]Listener
+		sources   []Source
+		commands  chan command
+	}
+)
+
+const (
+	opAddListener operation = iota
+	opRemoveListener
+	opAddSource
+	opRemoveSource
+)
 
 func NewLoop() *Loop {
 	loop := new(Loop)
-	loop.listeners = make(map[ID][]Handler)
+	loop.listeners = make(map[ID]map[ListenerID]Listener)
 	loop.sources = make([]Source, 0, 10)
-	loop.addListener = make(chan Listener, 10)
-	loop.removeListener = make(chan Listener, 10)
-	loop.addSource = make(chan Source, 10)
-	loop.removeSource = make(chan Source, 10)
+	loop.commands = make(chan command, 10)
 
 	return loop
 }
 
-func (loop *Loop) Start() error {
+func (loop *Loop) Start() *Loop {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	if loop.cancel != nil {
-		return core.Error(core.ErrInvalidOperation, "event loop is already started")
+		return loop
 	}
 
 	loopCtx, cancel := context.WithCancel(context.Background())
@@ -45,21 +55,21 @@ func (loop *Loop) Start() error {
 
 	go loop.run(loopCtx)
 
-	return nil
+	return loop
 }
 
-func (loop *Loop) Stop() error {
+func (loop *Loop) Stop() *Loop {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	if loop.cancel == nil {
-		return core.Error(core.ErrInvalidOperation, "event loops is already stopped")
+		return loop
 	}
 
 	loop.cancel()
 	loop.cancel = nil
 
-	return nil
+	return loop
 }
 
 func (loop *Loop) Close() error {
@@ -92,7 +102,7 @@ func (loop *Loop) ListenerCount(eventID ID) int {
 
 	result := 0
 
-	if eventID == IDAny {
+	if eventID == Any {
 		for _, listeners := range loop.listeners {
 			result += len(listeners)
 		}
@@ -116,41 +126,46 @@ func (loop *Loop) SourceCount() int {
 	return len(loop.sources)
 }
 
-func (loop *Loop) AddSource(source Source) *Loop {
+func (loop *Loop) AddSource(source Source) {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	if loop.cancel == nil {
 		loop.addSourceInternal(source)
 
-		return loop
+		return
 	}
 
-	loop.addSource <- source
-
-	return loop
+	loop.commands <- command{
+		op:      opAddSource,
+		payload: source,
+	}
 }
 
-func (loop *Loop) RemoveSource(event Source) *Loop {
+func (loop *Loop) RemoveSource(source Source) {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
 	if loop.cancel == nil {
-		loop.removeSourceInternal(event)
+		loop.removeSourceInternal(source)
 
-		return loop
+		return
 	}
 
-	loop.removeSource <- event
-
-	return loop
+	loop.commands <- command{
+		op:      opRemoveSource,
+		payload: source,
+	}
 }
 
-func (loop *Loop) AddListener(eventID ID, handler Handler) *Loop {
+func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
+	id := ListenerID(rand.Int())
+
 	listener := Listener{
+		ID:      id,
 		EventID: eventID,
 		Handler: handler,
 	}
@@ -158,32 +173,37 @@ func (loop *Loop) AddListener(eventID ID, handler Handler) *Loop {
 	if loop.cancel == nil {
 		loop.addListenerInternal(listener)
 
-		return loop
+		return id
 	}
 
-	loop.addListener <- listener
+	loop.commands <- command{
+		op:      opAddListener,
+		payload: listener,
+	}
 
-	return loop
+	return id
 }
 
-func (loop *Loop) RemoveListener(eventID ID, handler Handler) *Loop {
+func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
-	listener := Listener{
-		EventID: eventID,
-		Handler: handler,
-	}
-
 	if loop.cancel == nil {
-		loop.removeListenerInternal(listener)
+		loop.removeListenerInternal(eventID, listenerID)
 
-		return loop
+		return
 	}
 
-	loop.removeListener <- listener
+	listener := Listener{
+		ID:      listenerID,
+		EventID: eventID,
+		Handler: nil,
+	}
 
-	return loop
+	loop.commands <- command{
+		op:      opRemoveListener,
+		payload: listener,
+	}
 }
 
 // run starts running an event loop.
@@ -217,20 +237,28 @@ func (loop *Loop) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case listener := <-loop.addListener:
-			loop.addListenerInternal(listener)
-		case listener := <-loop.removeListener:
-			loop.removeListenerInternal(listener)
-		case event := <-loop.addSource:
-			loop.addSourceInternal(event)
-			// update size
-			size += 1
-		case event := <-loop.removeSource:
-			if loop.removeSourceInternal(event) {
-				size -= 1
+		case cmd := <-loop.commands:
+			if isCtxDone(ctx) {
+				return
+			}
+
+			switch cmd.op {
+			case opAddSource:
+				loop.addSourceInternal(cmd.payload.(Source))
+				// update size
+				size += 1
+			case opRemoveSource:
+				if loop.removeSourceInternal(cmd.payload.(Source)) {
+					size -= 1
+				}
+			case opAddListener:
+				loop.addListenerInternal(cmd.payload.(Listener))
+			case opRemoveListener:
+				listener := cmd.payload.(Listener)
+				loop.removeListenerInternal(listener.EventID, listener.ID)
 			}
 		case <-source.Ready():
-			if ctxDone(ctx) {
+			if isCtxDone(ctx) {
 				return
 			}
 
@@ -268,65 +296,40 @@ func (loop *Loop) addListenerInternal(listener Listener) {
 	bucket, exists := loop.listeners[listener.EventID]
 
 	if !exists {
-		bucket = make([]Handler, 0, 10)
+		bucket = make(map[ListenerID]Listener)
 	}
 
-	loop.listeners[listener.EventID] = append(bucket, listener.Handler)
+	bucket[listener.ID] = listener
 }
 
-func (loop *Loop) removeListenerInternal(listener Listener) {
-	bucket, exists := loop.listeners[listener.EventID]
+func (loop *Loop) removeListenerInternal(eventID ID, listenerID ListenerID) {
+	bucket, exists := loop.listeners[eventID]
 
 	if !exists {
 		return
 	}
 
-	idx := -1
-
-	listenerPointer := reflect.ValueOf(listener.Handler).Pointer()
-
-	for i, l := range bucket {
-		itemPointer := reflect.ValueOf(l).Pointer()
-
-		if itemPointer == listenerPointer {
-			idx = i
-			break
-		}
-	}
-
-	if idx < 0 {
-		return
-	}
-
-	var modifiedBucket []Handler
-
-	if len(bucket) > 1 {
-		modifiedBucket = append(bucket[:idx], bucket[idx+1:]...)
-	} else {
-		modifiedBucket = make([]Handler, 0, 5)
-	}
-
-	loop.listeners[listener.EventID] = modifiedBucket
+	delete(bucket, listenerID)
 }
 
 func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err error) {
 	if err != nil {
-		eventID = IDError
+		eventID = Error
 		message = err
 	}
 
-	handlers, ok := loop.listeners[eventID]
+	listeners, ok := loop.listeners[eventID]
 
 	if !ok {
 		return
 	}
 
-	for _, handler := range handlers {
+	for _, listener := range listeners {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			handler(ctx, message)
+			listener.Handler(ctx, message)
 		}
 	}
 }

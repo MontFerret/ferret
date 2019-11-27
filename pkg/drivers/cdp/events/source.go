@@ -15,7 +15,10 @@ type (
 
 	Handler func(ctx context.Context, message interface{})
 
+	ListenerID int
+
 	Listener struct {
+		ID      ListenerID
 		EventID ID
 		Handler Handler
 	}
@@ -28,27 +31,20 @@ type (
 	GenericSource struct {
 		eventID ID
 		stream  rpcc.Stream
-		recv    func() (interface{}, error)
+		recv    func(stream rpcc.Stream) (interface{}, error)
 	}
 )
 
-const (
+var (
 	//revive:disable-next-line:var-declaration
-	IDAny = ID(iota)
-	IDError
-	IDLoad
-	IDReload
-	IDAttrModified
-	IDAttrRemoved
-	IDChildNodeCountUpdated
-	IDChildNodeInserted
-	IDChildNodeRemoved
+	Any   = ToType("any")
+	Error = ToType("error")
 )
 
 func NewSource(
 	eventID ID,
 	stream rpcc.Stream,
-	recv func() (interface{}, error),
+	recv func(stream rpcc.Stream) (interface{}, error),
 ) Source {
 	return &GenericSource{eventID, stream, recv}
 }
@@ -70,7 +66,7 @@ func (src *GenericSource) Close() error {
 }
 
 func (src *GenericSource) Recv() (Event, error) {
-	data, err := src.recv()
+	data, err := src.recv(src.stream)
 
 	if err != nil {
 		return Event{}, err

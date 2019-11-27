@@ -1,4 +1,4 @@
-package cdp
+package dom
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -23,22 +24,24 @@ import (
 )
 
 type HTMLDocument struct {
-	logger   *zerolog.Logger
-	client   *cdp.Client
-	events   *events.EventBroker
-	input    *input.Manager
-	exec     *eval.ExecutionContext
-	frames   page.FrameTree
-	element  *HTMLElement
-	parent   *HTMLDocument
-	children *common.LazyValue
+	logger    *zerolog.Logger
+	client    *cdp.Client
+	network   *network.Manager
+	dom       *Manager
+	input     *input.Manager
+	exec      *eval.ExecutionContext
+	frameTree page.FrameTree
+	element   *HTMLElement
+	parent    *HTMLDocument
+	children  *common.LazyValue
 }
 
 func LoadRootHTMLDocument(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	events *events.EventBroker,
+	netManager *network.Manager,
+	domManager *Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (*HTMLDocument, error) {
@@ -64,7 +67,8 @@ func LoadRootHTMLDocument(
 		ctx,
 		logger,
 		client,
-		events,
+		netManager,
+		domManager,
 		mouse,
 		keyboard,
 		gdRepl.Root,
@@ -78,22 +82,23 @@ func LoadHTMLDocument(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	events *events.EventBroker,
+	netManager *network.Manager,
+	domManager *Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 	node dom.Node,
-	tree page.FrameTree,
+	frameTree page.FrameTree,
 	execID runtime.ExecutionContextID,
 	parent *HTMLDocument,
 ) (*HTMLDocument, error) {
-	exec := eval.NewExecutionContext(client, tree.Frame, execID)
+	exec := eval.NewExecutionContext(client, frameTree.Frame, execID)
 	inputManager := input.NewManager(client, exec, keyboard, mouse)
 
 	rootElement, err := LoadHTMLElement(
 		ctx,
 		logger,
 		client,
-		events,
+		domManager,
 		inputManager,
 		exec,
 		node.NodeID,
@@ -106,11 +111,12 @@ func LoadHTMLDocument(
 	return NewHTMLDocument(
 		logger,
 		client,
-		events,
+		netManager,
+		domManager,
 		inputManager,
 		exec,
 		rootElement,
-		tree,
+		frameTree,
 		parent,
 	), nil
 }
@@ -118,7 +124,8 @@ func LoadHTMLDocument(
 func NewHTMLDocument(
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	events *events.EventBroker,
+	netManager *network.Manager,
+	domManager *Manager,
 	input *input.Manager,
 	exec *eval.ExecutionContext,
 	rootElement *HTMLElement,
@@ -128,13 +135,16 @@ func NewHTMLDocument(
 	doc := new(HTMLDocument)
 	doc.logger = logger
 	doc.client = client
-	doc.events = events
+	doc.network = netManager
+	doc.dom = domManager
 	doc.input = input
 	doc.exec = exec
 	doc.element = rootElement
-	doc.frames = frames
+	doc.frameTree = frames
 	doc.parent = parent
 	doc.children = common.NewLazyValue(doc.loadChildren)
+
+	doc.network.AddFrameLoadedListener(doc.handleFrameLoaded)
 
 	return doc
 }
@@ -148,7 +158,7 @@ func (doc *HTMLDocument) Type() core.Type {
 }
 
 func (doc *HTMLDocument) String() string {
-	return doc.frames.Frame.URL
+	return doc.frameTree.Frame.URL
 }
 
 func (doc *HTMLDocument) Unwrap() interface{} {
@@ -160,8 +170,8 @@ func (doc *HTMLDocument) Hash() uint64 {
 
 	h.Write([]byte(doc.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(doc.frames.Frame.ID))
-	h.Write([]byte(doc.frames.Frame.URL))
+	h.Write([]byte(doc.frameTree.Frame.ID))
+	h.Write([]byte(doc.frameTree.Frame.URL))
 
 	return h.Sum64()
 }
@@ -175,7 +185,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	case drivers.HTMLDocumentType:
 		other := other.(drivers.HTMLDocument)
 
-		return values.NewString(doc.frames.Frame.URL).Compare(other.GetURL())
+		return values.NewString(doc.frameTree.Frame.URL).Compare(other.GetURL())
 	default:
 		return drivers.Compare(doc.Type(), other.Type())
 	}
@@ -280,8 +290,8 @@ func (doc *HTMLDocument) GetTitle() values.String {
 }
 
 func (doc *HTMLDocument) GetName() values.String {
-	if doc.frames.Frame.Name != nil {
-		return values.NewString(*doc.frames.Frame.Name)
+	if doc.frameTree.Frame.Name != nil {
+		return values.NewString(*doc.frameTree.Frame.Name)
 	}
 
 	return values.EmptyString
@@ -314,7 +324,7 @@ func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
 }
 
 func (doc *HTMLDocument) GetURL() values.String {
-	return values.NewString(doc.frames.Frame.URL)
+	return values.NewString(doc.frameTree.Frame.URL)
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
@@ -484,11 +494,15 @@ func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) erro
 	return doc.input.ScrollByXY(ctx, float64(x), float64(y))
 }
 
-func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {
-	children := values.NewArray(len(doc.frames.ChildFrames))
+func (doc *HTMLDocument) handleFrameLoaded(ctx context.Context, frame page.Frame) {
+	//repl := message.(*page.FrameNavigatedReply)
+}
 
-	if len(doc.frames.ChildFrames) > 0 {
-		for _, cf := range doc.frames.ChildFrames {
+func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {
+	children := values.NewArray(len(doc.frameTree.ChildFrames))
+
+	if len(doc.frameTree.ChildFrames) > 0 {
+		for _, cf := range doc.frameTree.ChildFrames {
 			cfNode, cfExecID, err := resolveFrame(ctx, doc.client, cf.Frame)
 
 			if err != nil {
@@ -499,7 +513,8 @@ func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e 
 				ctx,
 				doc.logger,
 				doc.client,
-				doc.events,
+				doc.network,
+				doc.dom,
 				doc.input.Mouse(),
 				doc.input.Keyboard(),
 				cfNode,
@@ -523,9 +538,9 @@ func (doc *HTMLDocument) logError(err error) *zerolog.Event {
 	return doc.logger.
 		Error().
 		Timestamp().
-		Str("url", string(doc.frames.Frame.URL)).
-		Str("securityOrigin", string(doc.frames.Frame.SecurityOrigin)).
-		Str("mimeType", string(doc.frames.Frame.MimeType)).
-		Str("frameID", string(doc.frames.Frame.ID)).
+		Str("url", doc.frameTree.Frame.URL).
+		Str("securityOrigin", doc.frameTree.Frame.SecurityOrigin).
+		Str("mimeType", doc.frameTree.Frame.MimeType).
+		Str("frameID", string(doc.frameTree.Frame.ID)).
 		Err(err)
 }

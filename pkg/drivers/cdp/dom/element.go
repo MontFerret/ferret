@@ -1,4 +1,4 @@
-package cdp
+package dom
 
 import (
 	"context"
@@ -36,11 +36,20 @@ type (
 		ObjectID runtime.RemoteObjectID
 	}
 
+	listeners struct {
+		pageReload            events.ListenerID
+		attrModified          events.ListenerID
+		attrRemoved           events.ListenerID
+		childNodeCountUpdated events.ListenerID
+		childNodeInserted     events.ListenerID
+		childNodeRemoved      events.ListenerID
+	}
+
 	HTMLElement struct {
 		mu             sync.Mutex
 		logger         *zerolog.Logger
 		client         *cdp.Client
-		events         *events.EventBroker
+		dom            *Manager
 		input          *input.Manager
 		exec           *eval.ExecutionContext
 		connected      values.Boolean
@@ -53,6 +62,7 @@ type (
 		style          *common.LazyValue
 		children       []HTMLElementIdentity
 		loadedChildren *common.LazyValue
+		listeners      *listeners
 	}
 )
 
@@ -60,7 +70,7 @@ func LoadHTMLElement(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	domManager *Manager,
 	input *input.Manager,
 	exec *eval.ExecutionContext,
 	nodeID dom.NodeID,
@@ -86,7 +96,7 @@ func LoadHTMLElement(
 		ctx,
 		logger,
 		client,
-		broker,
+		domManager,
 		input,
 		exec,
 		HTMLElementIdentity{
@@ -100,7 +110,7 @@ func LoadHTMLElementWithID(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	domManager *Manager,
 	input *input.Manager,
 	exec *eval.ExecutionContext,
 	id HTMLElementIdentity,
@@ -120,7 +130,7 @@ func LoadHTMLElementWithID(
 	return NewHTMLElement(
 		logger,
 		client,
-		broker,
+		domManager,
 		input,
 		exec,
 		id,
@@ -133,7 +143,7 @@ func LoadHTMLElementWithID(
 func NewHTMLElement(
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	broker *events.EventBroker,
+	domManager *Manager,
 	input *input.Manager,
 	exec *eval.ExecutionContext,
 	id HTMLElementIdentity,
@@ -144,7 +154,7 @@ func NewHTMLElement(
 	el := new(HTMLElement)
 	el.logger = logger
 	el.client = client
-	el.events = broker
+	el.dom = domManager
 	el.input = input
 	el.exec = exec
 	el.connected = values.True
@@ -157,13 +167,14 @@ func NewHTMLElement(
 	el.style = common.NewLazyValue(el.parseStyle)
 	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 	el.children = children
-
-	broker.AddEventListener(events.IDReload, el.handlePageReload)
-	broker.AddEventListener(events.IDAttrModified, el.handleAttrModified)
-	broker.AddEventListener(events.IDAttrRemoved, el.handleAttrRemoved)
-	broker.AddEventListener(events.IDChildNodeCountUpdated, el.handleChildrenCountChanged)
-	broker.AddEventListener(events.IDChildNodeInserted, el.handleChildInserted)
-	broker.AddEventListener(events.IDChildNodeRemoved, el.handleChildRemoved)
+	el.listeners = &listeners{
+		pageReload:            domManager.AddReloadListener(el.handlePageReload),
+		attrModified:          domManager.AddAttrModifiedListener(el.handleAttrModified),
+		attrRemoved:           domManager.AddAttrRemovedListener(el.handleAttrRemoved),
+		childNodeCountUpdated: domManager.AddChildNodeCountUpdatedListener(el.handleChildrenCountChanged),
+		childNodeInserted:     domManager.AddChildNodeInsertedListener(el.handleChildInserted),
+		childNodeRemoved:      domManager.AddChildNodeRemovedListener(el.handleChildRemoved),
+	}
 
 	return el
 }
@@ -178,12 +189,13 @@ func (el *HTMLElement) Close() error {
 	}
 
 	el.connected = values.False
-	el.events.RemoveEventListener(events.IDReload, el.handlePageReload)
-	el.events.RemoveEventListener(events.IDAttrModified, el.handleAttrModified)
-	el.events.RemoveEventListener(events.IDAttrRemoved, el.handleAttrRemoved)
-	el.events.RemoveEventListener(events.IDChildNodeCountUpdated, el.handleChildrenCountChanged)
-	el.events.RemoveEventListener(events.IDChildNodeInserted, el.handleChildInserted)
-	el.events.RemoveEventListener(events.IDChildNodeRemoved, el.handleChildRemoved)
+
+	el.dom.RemoveReloadListener(el.listeners.pageReload)
+	el.dom.RemoveAttrModifiedListener(el.listeners.attrModified)
+	el.dom.RemoveAttrRemovedListener(el.listeners.attrRemoved)
+	el.dom.RemoveChildNodeCountUpdatedListener(el.listeners.childNodeCountUpdated)
+	el.dom.RemoveChildNodeInsertedListener(el.listeners.childNodeInserted)
+	el.dom.RemoveChildNodeRemovedListener(el.listeners.childNodeRemoved)
 
 	return nil
 }
@@ -472,7 +484,15 @@ func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String
 		return values.None, nil
 	}
 
-	res, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, found.NodeID)
+	res, err := LoadHTMLElement(
+		ctx,
+		el.logger,
+		el.client,
+		el.dom,
+		el.input,
+		el.exec,
+		found.NodeID,
+	)
 
 	if err != nil {
 		return values.None, nil
@@ -504,7 +524,15 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 			continue
 		}
 
-		childEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, id)
+		childEl, err := LoadHTMLElement(
+			ctx,
+			el.logger,
+			el.client,
+			el.dom,
+			el.input,
+			el.exec,
+			id,
+		)
 
 		if err != nil {
 			// close elements that are already loaded, but won't be used because of the error
@@ -609,7 +637,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 				ctx,
 				el.logger,
 				el.client,
-				el.events,
+				el.dom,
 				el.input,
 				el.exec,
 				HTMLElementIdentity{
@@ -641,7 +669,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 			ctx,
 			el.logger,
 			el.client,
-			el.events,
+			el.dom,
 			el.input,
 			el.exec,
 			HTMLElementIdentity{
@@ -1155,7 +1183,7 @@ func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
 			ctx,
 			el.logger,
 			el.client,
-			el.events,
+			el.dom,
 			el.input,
 			el.exec,
 			childID.NodeID,
@@ -1191,20 +1219,13 @@ func (el *HTMLElement) parseStyle(ctx context.Context) (core.Value, error) {
 	return common.DeserializeStyles(value.(values.String))
 }
 
-func (el *HTMLElement) handlePageReload(_ context.Context, _ interface{}) {
+func (el *HTMLElement) handlePageReload(_ context.Context) {
 	el.Close()
 }
 
-func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface{}) {
-	reply, ok := message.(*dom.AttributeModifiedReply)
-
-	// well....
-	if !ok {
-		return
-	}
-
+func (el *HTMLElement) handleAttrModified(ctx context.Context, nodeID dom.NodeID, name, value string) {
 	// it's not for this el
-	if reply.NodeID != el.id.NodeID {
+	if nodeID != el.id.NodeID {
 		return
 	}
 
@@ -1225,7 +1246,7 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 			return
 		}
 
-		if reply.Name == "style" {
+		if name == "style" {
 			el.style.Reset()
 		}
 
@@ -1235,20 +1256,13 @@ func (el *HTMLElement) handleAttrModified(ctx context.Context, message interface
 			return
 		}
 
-		attrs.Set(values.NewString(reply.Name), values.NewString(reply.Value))
+		attrs.Set(values.NewString(name), values.NewString(value))
 	})
 }
 
-func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{}) {
-	reply, ok := message.(*dom.AttributeRemovedReply)
-
-	// well....
-	if !ok {
-		return
-	}
-
+func (el *HTMLElement) handleAttrRemoved(ctx context.Context, nodeID dom.NodeID, name string) {
 	// it's not for this el
-	if reply.NodeID != el.id.NodeID {
+	if nodeID != el.id.NodeID {
 		return
 	}
 
@@ -1269,7 +1283,7 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 			return
 		}
 
-		if reply.Name == "style" {
+		if name == "style" {
 			el.style.Reset()
 		}
 
@@ -1279,18 +1293,12 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, message interface{
 			return
 		}
 
-		attrs.Remove(values.NewString(reply.Name))
+		attrs.Remove(values.NewString(name))
 	})
 }
 
-func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message interface{}) {
-	reply, ok := message.(*dom.ChildNodeCountUpdatedReply)
-
-	if !ok {
-		return
-	}
-
-	if reply.NodeID != el.id.NodeID {
+func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, nodeID dom.NodeID, count int) {
+	if nodeID != el.id.NodeID {
 		return
 	}
 
@@ -1315,20 +1323,14 @@ func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, message i
 	el.children = createChildrenArray(node.Node.Children)
 }
 
-func (el *HTMLElement) handleChildInserted(ctx context.Context, message interface{}) {
-	reply, ok := message.(*dom.ChildNodeInsertedReply)
-
-	if !ok {
-		return
-	}
-
-	if reply.ParentNodeID != el.id.NodeID {
+func (el *HTMLElement) handleChildInserted(ctx context.Context, parentNodeID, prevNodeID dom.NodeID, node dom.Node) {
+	if parentNodeID != el.id.NodeID {
 		return
 	}
 
 	targetIDx := -1
-	prevID := reply.PreviousNodeID
-	nextID := reply.Node.NodeID
+	prevID := prevNodeID
+	nextID := node.NodeID
 
 	if el.IsDetached() {
 		return
@@ -1349,7 +1351,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 	}
 
 	nextIdentity := HTMLElementIdentity{
-		NodeID: reply.Node.NodeID,
+		NodeID: nextID,
 	}
 
 	arr := el.children
@@ -1361,7 +1363,15 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 
 	el.loadedChildren.Mutate(ctx, func(v core.Value, _ error) {
 		loadedArr := v.(*values.Array)
-		loadedEl, err := LoadHTMLElement(ctx, el.logger, el.client, el.events, el.input, el.exec, nextID)
+		loadedEl, err := LoadHTMLElement(
+			ctx,
+			el.logger,
+			el.client,
+			el.dom,
+			el.input,
+			el.exec,
+			nextID,
+		)
 
 		if err != nil {
 			el.logError(err).Msg("failed to load an inserted element")
@@ -1376,19 +1386,13 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, message interfac
 	})
 }
 
-func (el *HTMLElement) handleChildRemoved(ctx context.Context, message interface{}) {
-	reply, ok := message.(*dom.ChildNodeRemovedReply)
-
-	if !ok {
-		return
-	}
-
-	if reply.ParentNodeID != el.id.NodeID {
+func (el *HTMLElement) handleChildRemoved(ctx context.Context, nodeID, prevNodeID dom.NodeID) {
+	if nodeID != el.id.NodeID {
 		return
 	}
 
 	targetIDx := -1
-	targetID := reply.NodeID
+	targetID := prevNodeID
 
 	if el.IsDetached() {
 		return

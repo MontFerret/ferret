@@ -198,7 +198,7 @@ func (p *HTMLPage) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotPara
 	return nil, core.ErrNotSupported
 }
 
-func (p *HTMLPage) WaitForNavigation(_ context.Context) error {
+func (p *HTMLPage) WaitForNavigation(_ context.Context, _ drivers.NavigationParams) error {
 	return core.ErrNotSupported
 }
 
