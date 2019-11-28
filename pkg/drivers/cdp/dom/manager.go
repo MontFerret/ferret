@@ -18,12 +18,12 @@ import (
 )
 
 var (
-	eventDocumentUpdated       = events.ToType("doc_updated")
-	eventAttrModified          = events.ToType("attr_modified")
-	eventAttrRemoved           = events.ToType("attr_removed")
-	eventChildNodeCountUpdated = events.ToType("child_count_updated")
-	eventChildNodeInserted     = events.ToType("child_inserted")
-	eventChildNodeRemoved      = events.ToType("child_removed")
+	eventDocumentUpdated       = events.New("doc_updated")
+	eventAttrModified          = events.New("attr_modified")
+	eventAttrRemoved           = events.New("attr_removed")
+	eventChildNodeCountUpdated = events.New("child_count_updated")
+	eventChildNodeInserted     = events.New("child_inserted")
+	eventChildNodeRemoved      = events.New("child_removed")
 )
 
 type (

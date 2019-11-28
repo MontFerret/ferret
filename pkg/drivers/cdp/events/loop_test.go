@@ -44,18 +44,9 @@ type (
 	TestChildNodeRemovedClient struct {
 		*TestEventStream
 	}
-
-	TestBroker struct {
-		*events.EventBroker
-		OnLoad           *TestLoadEventFiredClient
-		OnReload         *TestDocumentUpdatedClient
-		OnAttrMod        *TestAttributeModifiedClient
-		OnAttrRem        *TestAttributeRemovedClient
-		OnChildNodeCount *TestChildNodeCountUpdatedClient
-		OnChildNodeIns   *TestChildNodeInsertedClient
-		OnChildNodeRem   *TestChildNodeRemovedClient
-	}
 )
+
+var TestEvent = events.New("test_event")
 
 func NewTestEventStream() *TestEventStream {
 	es := new(TestEventStream)
@@ -142,7 +133,7 @@ func TestLoop(t *testing.T) {
 		Convey("Should add a new listener when not started", func() {
 			loop := events.NewLoop()
 
-			loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
 
 			So(loop.ListenerCount(events.Any), ShouldEqual, 1)
 		})
@@ -152,7 +143,7 @@ func TestLoop(t *testing.T) {
 			loop.Start()
 			defer loop.Stop()
 
-			loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
 
 			time.Sleep(time.Duration(100) * time.Millisecond)
 
@@ -164,10 +155,8 @@ func TestLoop(t *testing.T) {
 		Convey("Should remove a listener when not started", func() {
 			loop := events.NewLoop()
 
-			listener := func(ctx context.Context, message interface{}) {}
-
-			loop.AddListener(events.IDLoad, listener)
-			loop.RemoveListener(events.IDLoad, listener)
+			id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+			loop.RemoveListener(TestEvent, id)
 
 			So(loop.ListenerCount(events.Any), ShouldEqual, 0)
 		})
@@ -175,14 +164,12 @@ func TestLoop(t *testing.T) {
 		Convey("Should add a new listener when started", func() {
 			loop := events.NewLoop()
 
-			listener := func(ctx context.Context, message interface{}) {}
-
-			loop.AddListener(events.IDLoad, listener)
+			id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
 
 			loop.Start()
 			defer loop.Stop()
 
-			loop.RemoveListener(events.IDLoad, listener)
+			loop.RemoveListener(TestEvent, id)
 
 			time.Sleep(time.Duration(100) * time.Millisecond)
 
@@ -196,7 +183,7 @@ func TestLoop(t *testing.T) {
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-			loop.AddSource(events.NewSource(events.IDLoad, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+			loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 				return onLoad.Recv()
 			}))
 
@@ -210,7 +197,7 @@ func TestLoop(t *testing.T) {
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-			loop.AddSource(events.NewSource(events.IDLoad, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+			loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 				return onLoad.Recv()
 			}))
 
@@ -225,7 +212,7 @@ func TestLoop(t *testing.T) {
 			loop := events.NewLoop()
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-			src := events.NewSource(events.IDLoad, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 				return onLoad.Recv()
 			})
 
@@ -242,7 +229,7 @@ func TestLoop(t *testing.T) {
 			loop := events.NewLoop()
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-			src := events.NewSource(events.IDLoad, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 				return onLoad.Recv()
 			})
 
@@ -262,22 +249,25 @@ func TestLoop(t *testing.T) {
 
 	Convey("Should not call listener once it was removed", t, func() {
 		loop := events.NewLoop()
+		onEvent := make(chan struct{})
 
 		counter := 0
 
-		var listener events.Handler
-
-		listener = func(ctx context.Context, message interface{}) {
+		id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
 			counter++
 
-			loop.RemoveListener(events.IDLoad, listener)
-		}
+			onEvent <- struct{}{}
+		})
 
-		loop.AddListener(events.IDLoad, listener)
+		go func() {
+			<-onEvent
+
+			loop.RemoveListener(TestEvent, id)
+		}()
 
 		onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-		loop.AddSource(events.NewSource(events.IDLoad, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+		loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 			return onLoad.Recv()
 		}))
 
@@ -290,7 +280,7 @@ func TestLoop(t *testing.T) {
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
-		So(loop.ListenerCount(events.IDLoad), ShouldEqual, 0)
+		So(loop.ListenerCount(TestEvent), ShouldEqual, 0)
 		So(counter, ShouldEqual, 1)
 	})
 
@@ -330,7 +320,7 @@ func BenchmarkLoop_AddListenerSync(b *testing.B) {
 	loop := events.NewLoop()
 
 	for n := 0; n < b.N; n++ {
-		loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
+		loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
 	}
 }
 
@@ -340,7 +330,7 @@ func BenchmarkLoop_AddListenerAsync(b *testing.B) {
 	defer loop.Stop()
 
 	for n := 0; n < b.N; n++ {
-		loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
+		loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
 	}
 }
 
@@ -351,7 +341,7 @@ func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
 		}
 	})
 }
@@ -359,32 +349,32 @@ func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 func BenchmarkLoop_Start(b *testing.B) {
 	loop := events.NewLoop()
 
-	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
 
 	})
-	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
-
-	})
-
-	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
 
 	})
 
-	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
 
 	})
 
-	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
 
 	})
 
-	loop.AddListener(events.IDLoad, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+
+	})
+
+	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
 
 	})
 
 	onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-	loop.AddSource(events.NewSource(events.IDLoad, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+	loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 		return onLoad.Recv()
 	}))
 

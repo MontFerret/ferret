@@ -37,8 +37,8 @@ type (
 
 var (
 	//revive:disable-next-line:var-declaration
-	Any   = ToType("any")
-	Error = ToType("error")
+	Any   = New("any")
+	Error = New("error")
 )
 
 func NewSource(

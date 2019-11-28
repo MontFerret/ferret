@@ -297,6 +297,7 @@ func (loop *Loop) addListenerInternal(listener Listener) {
 
 	if !exists {
 		bucket = make(map[ListenerID]Listener)
+		loop.listeners[listener.EventID] = bucket
 	}
 
 	bucket[listener.ID] = listener
