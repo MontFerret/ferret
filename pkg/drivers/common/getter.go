@@ -104,7 +104,11 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		case "title":
 			return doc.GetTitle(), nil
 		case "parent":
-			parent := doc.GetParentDocument()
+			parent, err := doc.GetParentDocument(ctx)
+
+			if err != nil {
+				return values.None, err
+			}
 
 			if parent == nil {
 				return values.None, nil

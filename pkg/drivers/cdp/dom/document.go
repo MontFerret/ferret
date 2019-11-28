@@ -16,7 +16,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -26,21 +25,17 @@ import (
 type HTMLDocument struct {
 	logger    *zerolog.Logger
 	client    *cdp.Client
-	network   *network.Manager
 	dom       *Manager
 	input     *input.Manager
 	exec      *eval.ExecutionContext
 	frameTree page.FrameTree
 	element   *HTMLElement
-	parent    *HTMLDocument
-	children  *common.LazyValue
 }
 
 func LoadRootHTMLDocument(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	netManager *network.Manager,
 	domManager *Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
@@ -67,14 +62,12 @@ func LoadRootHTMLDocument(
 		ctx,
 		logger,
 		client,
-		netManager,
 		domManager,
 		mouse,
 		keyboard,
 		gdRepl.Root,
 		ftRepl.FrameTree,
 		worldRepl.ExecutionContextID,
-		nil,
 	)
 }
 
@@ -82,14 +75,12 @@ func LoadHTMLDocument(
 	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	netManager *network.Manager,
 	domManager *Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 	node dom.Node,
 	frameTree page.FrameTree,
 	execID runtime.ExecutionContextID,
-	parent *HTMLDocument,
 ) (*HTMLDocument, error) {
 	exec := eval.NewExecutionContext(client, frameTree.Frame, execID)
 	inputManager := input.NewManager(client, exec, keyboard, mouse)
@@ -111,40 +102,31 @@ func LoadHTMLDocument(
 	return NewHTMLDocument(
 		logger,
 		client,
-		netManager,
 		domManager,
 		inputManager,
 		exec,
 		rootElement,
 		frameTree,
-		parent,
 	), nil
 }
 
 func NewHTMLDocument(
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	netManager *network.Manager,
 	domManager *Manager,
 	input *input.Manager,
 	exec *eval.ExecutionContext,
 	rootElement *HTMLElement,
 	frames page.FrameTree,
-	parent *HTMLDocument,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
 	doc.logger = logger
 	doc.client = client
-	doc.network = netManager
 	doc.dom = domManager
 	doc.input = input
 	doc.exec = exec
 	doc.element = rootElement
 	doc.frameTree = frames
-	doc.parent = parent
-	doc.children = common.NewLazyValue(doc.loadChildren)
-
-	doc.network.AddFrameLoadedListener(doc.handleFrameLoaded)
 
 	return doc
 }
@@ -204,41 +186,7 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 }
 
 func (doc *HTMLDocument) Close() error {
-	errs := make([]error, 0, 5)
-
-	if doc.children.Ready() {
-		val, err := doc.children.Read(context.Background())
-
-		if err == nil {
-			arr := val.(*values.Array)
-
-			arr.ForEach(func(value core.Value, _ int) bool {
-				doc := value.(drivers.HTMLDocument)
-
-				err := doc.Close()
-
-				if err != nil {
-					errs = append(errs, errors.Wrapf(err, "failed to close nested document: %s", doc.GetURL()))
-				}
-
-				return true
-			})
-		} else {
-			errs = append(errs, err)
-		}
-	}
-
-	err := doc.element.Close()
-
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(errs) == 0 {
-		return nil
-	}
-
-	return core.Errors(errs...)
+	return doc.element.Close()
 }
 
 func (doc *HTMLDocument) IsDetached() values.Boolean {
@@ -297,18 +245,30 @@ func (doc *HTMLDocument) GetName() values.String {
 	return values.EmptyString
 }
 
-func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
-	return doc.parent
+func (doc *HTMLDocument) GetParentDocument(ctx context.Context) (drivers.HTMLDocument, error) {
+	if doc.frameTree.Frame.ParentID == nil {
+		return nil, nil
+	}
+
+	return doc.dom.GetFrame(ctx, *doc.frameTree.Frame.ParentID)
 }
 
 func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
-	children, err := doc.children.Read(ctx)
+	arr := values.NewArray(len(doc.frameTree.ChildFrames))
 
-	if err != nil {
-		return values.NewArray(0), errors.Wrap(err, "failed to load child documents")
+	for _, childFrame := range doc.frameTree.ChildFrames {
+		frame, err := doc.dom.GetFrame(ctx, childFrame.Frame.ID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if frame != nil {
+			arr.Push(frame)
+		}
 	}
 
-	return children.Copy().(*values.Array), nil
+	return arr, nil
 }
 
 func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
@@ -492,46 +452,6 @@ func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.S
 
 func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
 	return doc.input.ScrollByXY(ctx, float64(x), float64(y))
-}
-
-func (doc *HTMLDocument) handleFrameLoaded(ctx context.Context, frame page.Frame) {
-	//repl := message.(*page.FrameNavigatedReply)
-}
-
-func (doc *HTMLDocument) loadChildren(ctx context.Context) (value core.Value, e error) {
-	children := values.NewArray(len(doc.frameTree.ChildFrames))
-
-	if len(doc.frameTree.ChildFrames) > 0 {
-		for _, cf := range doc.frameTree.ChildFrames {
-			cfNode, cfExecID, err := resolveFrame(ctx, doc.client, cf.Frame)
-
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to resolve frame node")
-			}
-
-			cfDocument, err := LoadHTMLDocument(
-				ctx,
-				doc.logger,
-				doc.client,
-				doc.network,
-				doc.dom,
-				doc.input.Mouse(),
-				doc.input.Keyboard(),
-				cfNode,
-				cf,
-				cfExecID,
-				doc,
-			)
-
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to load frame document")
-			}
-
-			children.Push(cfDocument)
-		}
-	}
-
-	return children, nil
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {

@@ -143,7 +143,7 @@ type (
 
 		GetName() values.String
 
-		GetParentDocument() HTMLDocument
+		GetParentDocument(ctx context.Context) (HTMLDocument, error)
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 

@@ -4,11 +4,10 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"hash/fnv"
+	"io"
 	"sync"
 
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/emulation"
-	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
@@ -35,16 +34,6 @@ type HTMLPage struct {
 	dom      *dom.Manager
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
-	document *common.AtomicValue
-	frames   *common.LazyValue
-}
-
-func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
-	err := client.Page.Close(context.Background())
-
-	if err != nil {
-		logger.Warn().Timestamp().Err(err).Msg("failed to close document on load error")
-	}
 }
 
 func LoadHTMLPage(
@@ -52,6 +41,7 @@ func LoadHTMLPage(
 	conn *rpcc.Conn,
 	params drivers.Params,
 ) (*HTMLPage, error) {
+	disposables := make([]io.Closer, 5)
 	logger := logging.FromContext(ctx)
 
 	if conn == nil {
@@ -60,110 +50,29 @@ func LoadHTMLPage(
 
 	client := cdp.NewClient(conn)
 
-	if err := client.Page.Enable(ctx); err != nil {
-		return nil, err
-	}
-
-	err := runBatch(
-		func() error {
-			return client.Page.SetLifecycleEventsEnabled(
-				ctx,
-				page.NewSetLifecycleEventsEnabledArgs(true),
-			)
-		},
-
-		func() error {
-			return client.DOM.Enable(ctx)
-		},
-
-		func() error {
-			return client.Runtime.Enable(ctx)
-		},
-
-		func() error {
-			ua := common.GetUserAgent(params.UserAgent)
-
-			logger.
-				Debug().
-				Timestamp().
-				Str("user-agent", ua).
-				Msg("using User-Agent")
-
-			// do not use custom user agent
-			if ua == "" {
-				return nil
-			}
-
-			return client.Emulation.SetUserAgentOverride(
-				ctx,
-				emulation.NewSetUserAgentOverrideArgs(ua),
-			)
-		},
-
-		func() error {
-			return client.Network.Enable(ctx, network.NewEnableArgs())
-		},
-
-		func() error {
-			return client.Page.SetBypassCSP(ctx, page.NewSetBypassCSPArgs(true))
-		},
-
-		func() error {
-			if params.Viewport == nil {
-				return nil
-			}
-
-			orientation := emulation.ScreenOrientation{}
-
-			if !params.Viewport.Landscape {
-				orientation.Type = "portraitPrimary"
-				orientation.Angle = 0
-			} else {
-				orientation.Type = "landscapePrimary"
-				orientation.Angle = 90
-			}
-
-			scaleFactor := params.Viewport.ScaleFactor
-
-			if scaleFactor <= 0 {
-				scaleFactor = 1
-			}
-
-			deviceArgs := emulation.NewSetDeviceMetricsOverrideArgs(
-				params.Viewport.Width,
-				params.Viewport.Height,
-				scaleFactor,
-				params.Viewport.Mobile,
-			).SetScreenOrientation(orientation)
-
-			return client.Emulation.SetDeviceMetricsOverride(
-				ctx,
-				deviceArgs,
-			)
-		},
-	)
-
-	if err != nil {
+	if err := enableFeatures(ctx, client, params); err != nil {
 		return nil, err
 	}
 
 	eventLoop := events.NewLoop()
+	disposables = append(disposables, eventLoop)
+
 	netManager, err := net.New(ctx, logger, client, eventLoop)
 
 	if err != nil {
-		return nil, err
+		return nil, core.Errors(err, closeOnError(disposables))
 	}
 
 	err = netManager.SetCookies(ctx, params.URL, params.Cookies)
 
 	if err != nil {
-		return nil, err
+		return nil, core.Errors(err, closeOnError(disposables))
 	}
 
 	err = netManager.SetHeaders(ctx, params.Headers)
 
 	if err != nil {
-		return nil, err
+		return nil, core.Errors(err, closeOnError(disposables))
 	}
 
 	eventLoop.Start()
@@ -174,13 +83,13 @@ func LoadHTMLPage(
 		if err != nil {
 			handleLoadError(logger, client)
 
-			return nil, errors.Wrap(err, "failed to load the page")
+			return nil, core.Errors(errors.Wrap(err, "failed to load the page"), closeOnError(disposables))
 		}
 
 		if repl.ErrorText != nil {
 			handleLoadError(logger, client)
 
-			return nil, errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL)
+			return nil, core.Errors(errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL), closeOnError(disposables))
 		}
 
 		err = netManager.WaitForNavigation(ctx, values.NewString(params.URL))
@@ -188,42 +97,44 @@ func LoadHTMLPage(
 		if err != nil {
 			handleLoadError(logger, client)
 
-			return nil, errors.Wrap(err, "failed to load the page")
+			return nil, core.Errors(errors.Wrap(err, "failed to load the page"), closeOnError(disposables))
 		}
-	}
-
-	if err != nil {
-		handleLoadError(logger, client)
-		return nil, errors.Wrap(err, "failed to create event events")
 	}
 
 	mouse := input.NewMouse(client)
 	keyboard := input.NewKeyboard(client)
 
-	domManager, err := dom.NewManager(ctx, client, eventLoop)
+	domManager, err := dom.New(
+		ctx,
+		logger,
+		client,
+		eventLoop,
+		mouse,
+		keyboard,
+	)
 
 	if err != nil {
-		eventLoop.Stop().Close()
-
-		return nil, errors.Wrap(err, "failed to initialize dom manager")
+		return nil, core.Errors(err, closeOnError(disposables))
 	}
+
+	disposables = append(disposables, domManager)
 
 	doc, err := dom.LoadRootHTMLDocument(
 		ctx,
 		logger,
 		client,
-		netManager,
 		domManager,
 		mouse,
 		keyboard,
 	)
 
 	if err != nil {
-		eventLoop.Stop().Close()
 		handleLoadError(logger, client)
 
-		return nil, errors.Wrap(err, "failed to load root element")
+		return nil, core.Errors(errors.Wrap(err, "failed to load root element"), closeOnError(disposables))
 	}
+
+	domManager.SetMainFrame(doc)
 
 	return NewHTMLPage(
 		logger,
@@ -234,7 +145,6 @@ func LoadHTMLPage(
 		domManager,
 		mouse,
 		keyboard,
-		doc,
 	), nil
 }
 
@@ -247,7 +157,6 @@ func NewHTMLPage(
 	domManager *dom.Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
-	document *dom.HTMLDocument,
 ) *HTMLPage {
 	p := new(HTMLPage)
 	p.closed = values.False
@@ -259,10 +168,8 @@ func NewHTMLPage(
 	p.dom = domManager
 	p.mouse = mouse
 	p.keyboard = keyboard
-	p.document = common.NewAtomicValue(document)
-	p.frames = common.NewLazyValue(p.unfoldFrames)
 
-	netManager.AddFrameLoadedListener(p.handlePageLoad)
+	netManager.AddFrameLoadedListener(p.handleFrameLoaded)
 	eventLoop.AddListener(events.Error, p.handleError)
 
 	return p
@@ -359,14 +266,14 @@ func (p *HTMLPage) Close() error {
 			Msg("failed to close event loop")
 	}
 
-	err = doc.Close()
+	err = p.dom.Close()
 
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
 			Str("url", doc.GetURL().String()).
 			Err(err).
-			Msg("failed to close root document")
+			Msg("failed to close document(s)")
 	}
 
 	err = p.client.Page.Close(context.Background())
@@ -398,26 +305,23 @@ func (p *HTMLPage) GetMainFrame() drivers.HTMLDocument {
 }
 
 func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
-	res, err := p.frames.Read(ctx)
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	if err != nil {
-		return nil, err
-	}
-
-	return res.(*values.Array).Clone().(*values.Array), nil
+	return p.dom.GetFrames(ctx)
 }
 
 func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	res, err := p.frames.Read(ctx)
+	frames, err := p.dom.GetFrames(ctx)
 
 	if err != nil {
-		return nil, err
+		return values.None, err
 	}
 
-	return res.(*values.Array).Get(idx), nil
+	return frames.Get(idx), nil
 }
 
 func (p *HTMLPage) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
@@ -586,44 +490,41 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.Navigat
 	return p.network.WaitForNavigation(ctx, params.TargetURL)
 }
 
-func (p *HTMLPage) handlePageLoad(ctx context.Context, _ page.Frame) {
-	err := p.document.Write(func(current core.Value) (core.Value, error) {
-		nextDoc, err := dom.LoadRootHTMLDocument(
+func (p *HTMLPage) handleFrameLoaded(ctx context.Context, frame page.Frame) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	currentMain := p.dom.GetMainFrame()
+	isMainFrame := frame.ParentID == nil
+
+	if err := p.dom.RemoveFramesByParentID(frame.ID); err != nil {
+		p.logger.Error().Err(err).Msg("failed to remove child frames")
+	}
+
+	if err := p.dom.RemoveFrame(frame.ID); err != nil {
+		p.logger.Error().Err(err).Msg("failed to remove navigated frame")
+	}
+
+	// if it was a main frame
+	// we need to rebuild frame tree
+	if isMainFrame {
+		doc, err := dom.LoadRootHTMLDocument(
 			ctx,
 			p.logger,
 			p.client,
-			p.network,
 			p.dom,
 			p.mouse,
 			p.keyboard,
 		)
 
 		if err != nil {
-			return values.None, err
+			p.logger.Error().Err(err).Msg("failed to load new root frame")
+			p.dom.SetMainFrame(currentMain)
+
+			return
 		}
 
-		// close the prev document
-		currentDoc := current.(*dom.HTMLDocument)
-		err = currentDoc.Close()
-
-		if err != nil {
-			p.logger.Warn().
-				Timestamp().
-				Err(err).
-				Msgf("failed to close root document: %s", currentDoc.GetURL())
-		}
-
-		// reset all loaded frames
-		p.frames.Reset()
-
-		return nextDoc, nil
-	})
-
-	if err != nil {
-		p.logger.Warn().
-			Timestamp().
-			Err(err).
-			Msg("failed to load new root document after page load")
+		p.dom.SetMainFrame(doc)
 	}
 }
 
@@ -641,17 +542,5 @@ func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
 }
 
 func (p *HTMLPage) getCurrentDocument() *dom.HTMLDocument {
-	return p.document.Read().(*dom.HTMLDocument)
-}
-
-func (p *HTMLPage) unfoldFrames(ctx context.Context) (core.Value, error) {
-	res := values.NewArray(10)
-
-	err := common.CollectFrames(ctx, res, p.getCurrentDocument())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return p.dom.GetMainFrame()
 }

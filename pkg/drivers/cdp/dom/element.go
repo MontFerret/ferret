@@ -36,7 +36,7 @@ type (
 		ObjectID runtime.RemoteObjectID
 	}
 
-	listeners struct {
+	elementListeners struct {
 		pageReload            events.ListenerID
 		attrModified          events.ListenerID
 		attrRemoved           events.ListenerID
@@ -62,7 +62,7 @@ type (
 		style          *common.LazyValue
 		children       []HTMLElementIdentity
 		loadedChildren *common.LazyValue
-		listeners      *listeners
+		listeners      *elementListeners
 	}
 )
 
@@ -167,8 +167,8 @@ func NewHTMLElement(
 	el.style = common.NewLazyValue(el.parseStyle)
 	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 	el.children = children
-	el.listeners = &listeners{
-		pageReload:            domManager.AddReloadListener(el.handlePageReload),
+	el.listeners = &elementListeners{
+		pageReload:            domManager.AddDocumentUpdatedListener(el.handlePageReload),
 		attrModified:          domManager.AddAttrModifiedListener(el.handleAttrModified),
 		attrRemoved:           domManager.AddAttrRemovedListener(el.handleAttrRemoved),
 		childNodeCountUpdated: domManager.AddChildNodeCountUpdatedListener(el.handleChildrenCountChanged),
@@ -1297,7 +1297,7 @@ func (el *HTMLElement) handleAttrRemoved(ctx context.Context, nodeID dom.NodeID,
 	})
 }
 
-func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, nodeID dom.NodeID, count int) {
+func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, nodeID dom.NodeID, _ int) {
 	if nodeID != el.id.NodeID {
 		return
 	}

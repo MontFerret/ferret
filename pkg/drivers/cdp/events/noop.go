@@ -18,7 +18,7 @@ func (n noopEvent) Ready() <-chan struct{} {
 	return n.c
 }
 
-func (n noopEvent) RecvMsg(m interface{}) error {
+func (n noopEvent) RecvMsg(_ interface{}) error {
 	return core.ErrNotSupported
 }
 

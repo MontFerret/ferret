@@ -246,10 +246,10 @@ func (loop *Loop) run(ctx context.Context) {
 			case opAddSource:
 				loop.addSourceInternal(cmd.payload.(Source))
 				// update size
-				size += 1
+				size++
 			case opRemoveSource:
 				if loop.removeSourceInternal(cmd.payload.(Source)) {
-					size -= 1
+					size--
 				}
 			case opAddListener:
 				loop.addListenerInternal(cmd.payload.(Listener))

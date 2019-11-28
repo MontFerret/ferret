@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -18,7 +17,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
@@ -230,81 +228,8 @@ func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
 	return children
 }
 
-func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam {
-	sameSite := network.CookieSameSiteNotSet
-
-	switch cookie.SameSite {
-	case drivers.SameSiteLaxMode:
-		sameSite = network.CookieSameSiteLax
-	case drivers.SameSiteStrictMode:
-		sameSite = network.CookieSameSiteStrict
-	}
-
-	if cookie.Expires == emptyExpires {
-		cookie.Expires = time.Now().Add(time.Duration(24) + time.Hour)
-	}
-
-	normalizedURL := normalizeCookieURL(url)
-
-	return network.CookieParam{
-		URL:      &normalizedURL,
-		Name:     cookie.Name,
-		Value:    cookie.Value,
-		Secure:   &cookie.Secure,
-		Path:     &cookie.Path,
-		Domain:   &cookie.Domain,
-		HTTPOnly: &cookie.HTTPOnly,
-		SameSite: sameSite,
-		Expires:  network.TimeSinceEpoch(cookie.Expires.Unix()),
-	}
-}
-
-func fromDriverCookieDelete(url string, cookie drivers.HTTPCookie) *network.DeleteCookiesArgs {
-	normalizedURL := normalizeCookieURL(url)
-
-	return &network.DeleteCookiesArgs{
-		URL:    &normalizedURL,
-		Name:   cookie.Name,
-		Path:   &cookie.Path,
-		Domain: &cookie.Domain,
-	}
-}
-
-func toDriverCookie(c network.Cookie) drivers.HTTPCookie {
-	sameSite := drivers.SameSiteDefaultMode
-
-	switch c.SameSite {
-	case network.CookieSameSiteLax:
-		sameSite = drivers.SameSiteLaxMode
-	case network.CookieSameSiteStrict:
-		sameSite = drivers.SameSiteStrictMode
-	}
-
-	return drivers.HTTPCookie{
-		Name:     c.Name,
-		Value:    c.Value,
-		Path:     c.Path,
-		Domain:   c.Domain,
-		Expires:  time.Unix(int64(c.Expires), 0),
-		SameSite: sameSite,
-		Secure:   c.Secure,
-		HTTPOnly: c.HTTPOnly,
-	}
-}
-
-func normalizeCookieURL(url string) string {
-	const httpPrefix = "http://"
-	const httpsPrefix = "https://"
-
-	if strings.HasPrefix(url, httpPrefix) || strings.HasPrefix(url, httpsPrefix) {
-		return url
-	}
-
-	return httpPrefix + url
-}
-
-func resolveFrame(ctx context.Context, client *cdp.Client, frame page.Frame) (dom.Node, runtime.ExecutionContextID, error) {
-	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(frame.ID))
+func resolveFrame(ctx context.Context, client *cdp.Client, frameID page.FrameID) (dom.Node, runtime.ExecutionContextID, error) {
+	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(frameID))
 
 	if err != nil {
 		return dom.Node{}, -1, err
