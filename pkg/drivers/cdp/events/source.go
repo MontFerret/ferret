@@ -36,8 +36,6 @@ type (
 )
 
 var (
-	//revive:disable-next-line:var-declaration
-	Any   = New("any")
 	Error = New("error")
 )
 

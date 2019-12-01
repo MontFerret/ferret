@@ -96,36 +96,6 @@ func (loop *Loop) Close() error {
 	return nil
 }
 
-func (loop *Loop) ListenerCount(eventID ID) int {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	result := 0
-
-	if eventID == Any {
-		for _, listeners := range loop.listeners {
-			result += len(listeners)
-		}
-	} else {
-		listeners, exists := loop.listeners[eventID]
-
-		if !exists {
-			return result
-		}
-
-		result = len(listeners)
-	}
-
-	return result
-}
-
-func (loop *Loop) SourceCount() int {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	return len(loop.sources)
-}
-
 func (loop *Loop) AddSource(source Source) {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()

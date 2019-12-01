@@ -128,122 +128,158 @@ func (es *TestChildNodeRemovedClient) Recv() (*dom.ChildNodeRemovedReply, error)
 	return reply, nil
 }
 
+func wait() {
+	time.Sleep(time.Duration(50) * time.Millisecond)
+}
+
 func TestLoop(t *testing.T) {
 	Convey(".AddListener", t, func() {
-		Convey("Should add a new listener when not started", func() {
+		Convey("Should add a new listener", func() {
 			loop := events.NewLoop()
+			counter := 0
 
-			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+				return onLoad.Recv()
+			})
 
-			So(loop.ListenerCount(events.Any), ShouldEqual, 1)
-		})
+			loop.AddSource(src)
 
-		Convey("Should add a new listener when started", func() {
-			loop := events.NewLoop()
 			loop.Start()
 			defer loop.Stop()
 
-			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+			onLoad.EmitDefault()
 
-			time.Sleep(time.Duration(100) * time.Millisecond)
+			wait()
 
-			So(loop.ListenerCount(events.Any), ShouldEqual, 1)
+			So(counter, ShouldEqual, 0)
+
+			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+				counter++
+			})
+
+			wait()
+
+			onLoad.EmitDefault()
+
+			wait()
+
+			So(counter, ShouldEqual, 1)
 		})
 	})
 
 	Convey(".RemoveListener", t, func() {
-		Convey("Should remove a listener when not started", func() {
-			loop := events.NewLoop()
+		Convey("Should remove a listener", func() {
+			Convey("Should add a new listener", func() {
+				loop := events.NewLoop()
+				counter := 0
 
-			id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
-			loop.RemoveListener(TestEvent, id)
+				onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+				src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+					return onLoad.Recv()
+				})
 
-			So(loop.ListenerCount(events.Any), ShouldEqual, 0)
-		})
+				loop.AddSource(src)
+				id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+					counter++
+				})
 
-		Convey("Should add a new listener when started", func() {
-			loop := events.NewLoop()
+				loop.Start()
+				defer loop.Stop()
 
-			id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+				onLoad.EmitDefault()
 
-			loop.Start()
-			defer loop.Stop()
+				wait()
 
-			loop.RemoveListener(TestEvent, id)
+				So(counter, ShouldEqual, 1)
 
-			time.Sleep(time.Duration(100) * time.Millisecond)
+				wait()
 
-			So(loop.ListenerCount(events.Any), ShouldEqual, 0)
+				loop.RemoveListener(TestEvent, id)
+
+				wait()
+
+				onLoad.EmitDefault()
+
+				wait()
+
+				So(counter, ShouldEqual, 1)
+			})
 		})
 	})
 
 	Convey(".AddSource", t, func() {
 		Convey("Should add a new event source when not started", func() {
 			loop := events.NewLoop()
+			counter := 0
 
-			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+				counter++
+			})
 
-			loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-				return onLoad.Recv()
-			}))
-
-			So(loop.SourceCount(), ShouldEqual, 1)
-		})
-
-		Convey("Should add a new listener when started", func() {
-			loop := events.NewLoop()
 			loop.Start()
 			defer loop.Stop()
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
-			loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+			go func() {
+				onLoad.EmitDefault()
+			}()
+
+			wait()
+
+			So(counter, ShouldEqual, 0)
+
+			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 				return onLoad.Recv()
-			}))
+			})
 
-			time.Sleep(time.Duration(100) * time.Millisecond)
+			loop.AddSource(src)
 
-			So(loop.SourceCount(), ShouldEqual, 1)
+			wait()
+
+			So(counter, ShouldEqual, 1)
 		})
 	})
 
-	Convey(".RemoveListener", t, func() {
-		Convey("Should remove a listener when not started", func() {
+	Convey(".RemoveSource", t, func() {
+		Convey("Should remove a source", func() {
 			loop := events.NewLoop()
-
-			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-				return onLoad.Recv()
-			})
-
-			loop.AddSource(src)
-
-			So(loop.SourceCount(), ShouldEqual, 1)
-
-			loop.RemoveSource(src)
-
-			So(loop.SourceCount(), ShouldEqual, 0)
-		})
-
-		Convey("Should add a new listener when started", func() {
-			loop := events.NewLoop()
-
-			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-				return onLoad.Recv()
-			})
-
-			loop.AddSource(src)
-			So(loop.SourceCount(), ShouldEqual, 1)
+			counter := 0
 
 			loop.Start()
 			defer loop.Stop()
 
+			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+				counter++
+			})
+
+			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+				return onLoad.Recv()
+			})
+
+			loop.AddSource(src)
+
+			wait()
+
+			onLoad.EmitDefault()
+
+			wait()
+
+			So(counter, ShouldEqual, 1)
+
 			loop.RemoveSource(src)
 
-			time.Sleep(time.Duration(100) * time.Millisecond)
+			wait()
 
-			So(loop.SourceCount(), ShouldEqual, 0)
+			go func() {
+				onLoad.EmitDefault()
+			}()
+
+			wait()
+
+			So(counter, ShouldEqual, 1)
 		})
 	})
 
@@ -280,40 +316,8 @@ func TestLoop(t *testing.T) {
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
-		So(loop.ListenerCount(TestEvent), ShouldEqual, 0)
 		So(counter, ShouldEqual, 1)
 	})
-
-	//
-	//Convey(".Stop", t, func() {
-	//	Convey("Should stop emitting sources", func() {
-	//		b := NewTestEventBroker()
-	//		b.Start()
-	//
-	//		var counter int64
-	//
-	//		b.AddEventListener(sources.IDLoad, func(ctx context.Context, message interface{}) {
-	//			atomic.AddInt64(&counter, 1)
-	//			b.Stop()
-	//		})
-	//
-	//		b.OnLoad.EmitDefault()
-	//
-	//		time.Sleep(time.Duration(5) * time.Millisecond)
-	//
-	//		go func() {
-	//			b.OnLoad.EmitDefault()
-	//		}()
-	//
-	//		go func() {
-	//			b.OnLoad.EmitDefault()
-	//		}()
-	//
-	//		time.Sleep(time.Duration(5) * time.Millisecond)
-	//
-	//		So(atomic.LoadInt64(&counter), ShouldEqual, 1)
-	//	})
-	//})
 }
 
 func BenchmarkLoop_AddListenerSync(b *testing.B) {
