@@ -7,6 +7,7 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	. "github.com/smartystreets/goconvey/convey"
+	"sync"
 	"testing"
 	"time"
 )
@@ -132,11 +133,45 @@ func wait() {
 	time.Sleep(time.Duration(50) * time.Millisecond)
 }
 
+type Counter struct {
+	mu    sync.Mutex
+	value int64
+}
+
+func NewCounter() *Counter {
+	return new(Counter)
+}
+
+func (c *Counter) Increase() *Counter {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.value++
+
+	return c
+}
+
+func (c *Counter) Decrease() *Counter {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.value--
+
+	return c
+}
+
+func (c *Counter) Value() int64 {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.value
+}
+
 func TestLoop(t *testing.T) {
 	Convey(".AddListener", t, func() {
 		Convey("Should add a new listener", func() {
 			loop := events.NewLoop()
-			counter := 0
+			counter := NewCounter()
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
@@ -152,10 +187,10 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			So(counter, ShouldEqual, 0)
+			So(counter.Value(), ShouldEqual, 0)
 
 			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
-				counter++
+				counter.Increase()
 			})
 
 			wait()
@@ -164,7 +199,7 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			So(counter, ShouldEqual, 1)
+			So(counter.Value(), ShouldEqual, 1)
 		})
 	})
 
@@ -172,7 +207,7 @@ func TestLoop(t *testing.T) {
 		Convey("Should remove a listener", func() {
 			Convey("Should add a new listener", func() {
 				loop := events.NewLoop()
-				counter := 0
+				counter := NewCounter()
 
 				onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 				src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
@@ -181,7 +216,7 @@ func TestLoop(t *testing.T) {
 
 				loop.AddSource(src)
 				id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
-					counter++
+					counter.Increase()
 				})
 
 				loop.Start()
@@ -191,7 +226,7 @@ func TestLoop(t *testing.T) {
 
 				wait()
 
-				So(counter, ShouldEqual, 1)
+				So(counter.Value(), ShouldEqual, 1)
 
 				wait()
 
@@ -203,7 +238,7 @@ func TestLoop(t *testing.T) {
 
 				wait()
 
-				So(counter, ShouldEqual, 1)
+				So(counter.Value(), ShouldEqual, 1)
 			})
 		})
 	})
@@ -211,10 +246,10 @@ func TestLoop(t *testing.T) {
 	Convey(".AddSource", t, func() {
 		Convey("Should add a new event source when not started", func() {
 			loop := events.NewLoop()
-			counter := 0
+			counter := NewCounter()
 
 			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
-				counter++
+				counter.Increase()
 			})
 
 			loop.Start()
@@ -228,7 +263,7 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			So(counter, ShouldEqual, 0)
+			So(counter.Value(), ShouldEqual, 0)
 
 			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
 				return onLoad.Recv()
@@ -238,20 +273,20 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			So(counter, ShouldEqual, 1)
+			So(counter.Value(), ShouldEqual, 1)
 		})
 	})
 
 	Convey(".RemoveSource", t, func() {
 		Convey("Should remove a source", func() {
 			loop := events.NewLoop()
-			counter := 0
+			counter := NewCounter()
 
 			loop.Start()
 			defer loop.Stop()
 
 			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
-				counter++
+				counter.Increase()
 			})
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
@@ -267,7 +302,7 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			So(counter, ShouldEqual, 1)
+			So(counter.Value(), ShouldEqual, 1)
 
 			loop.RemoveSource(src)
 
@@ -279,7 +314,7 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			So(counter, ShouldEqual, 1)
+			So(counter.Value(), ShouldEqual, 1)
 		})
 	})
 
@@ -287,10 +322,10 @@ func TestLoop(t *testing.T) {
 		loop := events.NewLoop()
 		onEvent := make(chan struct{})
 
-		counter := 0
+		counter := NewCounter()
 
 		id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
-			counter++
+			counter.Increase()
 
 			onEvent <- struct{}{}
 		})
@@ -316,7 +351,7 @@ func TestLoop(t *testing.T) {
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
-		So(counter, ShouldEqual, 1)
+		So(counter.Value(), ShouldEqual, 1)
 	})
 }
 
