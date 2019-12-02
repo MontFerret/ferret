@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"hash/fnv"
 	"io"
@@ -57,7 +58,7 @@ func LoadHTMLPage(
 	eventLoop := events.NewLoop()
 	disposables = append(disposables, eventLoop)
 
-	netManager, err := net.New(ctx, logger, client, eventLoop)
+	netManager, err := net.New(logger, client, eventLoop)
 
 	if err != nil {
 		return nil, core.Errors(err, closeOnError(disposables))
@@ -105,7 +106,6 @@ func LoadHTMLPage(
 	keyboard := input.NewKeyboard(client)
 
 	domManager, err := dom.New(
-		ctx,
 		logger,
 		client,
 		eventLoop,
@@ -170,7 +170,7 @@ func NewHTMLPage(
 	p.keyboard = keyboard
 
 	netManager.AddFrameLoadedListener(p.handleFrameLoaded)
-	eventLoop.AddListener(events.Error, p.handleError)
+	eventLoop.AddListener(events.Error, events.Always(p.handleError))
 
 	return p
 }
@@ -247,8 +247,8 @@ func (p *HTMLPage) Close() error {
 
 	p.closed = values.True
 
-	err := p.events.Stop().Close()
 	doc := p.getCurrentDocument()
+	err := p.events.Stop().Close()
 
 	if err != nil {
 		p.logger.Warn().
@@ -258,14 +258,6 @@ func (p *HTMLPage) Close() error {
 			Msg("failed to stop event loop")
 	}
 
-	if err != nil {
-		p.logger.Warn().
-			Timestamp().
-			Str("url", doc.GetURL().String()).
-			Err(err).
-			Msg("failed to close event loop")
-	}
-
 	err = p.dom.Close()
 
 	if err != nil {
@@ -273,7 +265,17 @@ func (p *HTMLPage) Close() error {
 			Timestamp().
 			Str("url", doc.GetURL().String()).
 			Err(err).
-			Msg("failed to close document(s)")
+			Msg("failed to close dom manager")
+	}
+
+	err = p.network.Close()
+
+	if err != nil {
+		p.logger.Warn().
+			Timestamp().
+			Str("url", doc.GetURL().String()).
+			Err(err).
+			Msg("failed to close network manager")
 	}
 
 	err = p.client.Page.Close(context.Background())
@@ -491,41 +493,52 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.Navigat
 }
 
 func (p *HTMLPage) handleFrameLoaded(ctx context.Context, frame page.Frame) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	fmt.Println("handleFrameLoaded")
+	go func() {
+		currentMain := p.dom.GetMainFrame()
+		isMainFrame := frame.ParentID == nil
 
-	currentMain := p.dom.GetMainFrame()
-	isMainFrame := frame.ParentID == nil
+		if isMainFrame {
+			if err := p.dom.WaitForDOMReady(ctx); err != nil {
+				p.logger.Error().Err(err).Msg("failed to wait when the DOM gets ready")
 
-	if err := p.dom.RemoveFramesByParentID(frame.ID); err != nil {
-		p.logger.Error().Err(err).Msg("failed to remove child frames")
-	}
-
-	if err := p.dom.RemoveFrame(frame.ID); err != nil {
-		p.logger.Error().Err(err).Msg("failed to remove navigated frame")
-	}
-
-	// if it was a main frame
-	// we need to rebuild frame tree
-	if isMainFrame {
-		doc, err := dom.LoadRootHTMLDocument(
-			ctx,
-			p.logger,
-			p.client,
-			p.dom,
-			p.mouse,
-			p.keyboard,
-		)
-
-		if err != nil {
-			p.logger.Error().Err(err).Msg("failed to load new root frame")
-			p.dom.SetMainFrame(currentMain)
-
-			return
+				return
+			}
 		}
 
-		p.dom.SetMainFrame(doc)
-	}
+		if err := p.dom.RemoveFramesByParentID(frame.ID); err != nil {
+			p.logger.Error().Err(err).Msg("failed to remove child frames")
+		}
+
+		if err := p.dom.RemoveFrame(frame.ID); err != nil {
+			p.logger.Error().Err(err).Msg("failed to remove navigated frame")
+		}
+
+		// if it was a main frame
+		// we need to rebuild frame tree
+		if isMainFrame {
+			doc, err := dom.LoadRootHTMLDocument(
+				ctx,
+				p.logger,
+				p.client,
+				p.dom,
+				p.mouse,
+				p.keyboard,
+			)
+
+			fmt.Println("LoadRootHTMLDocument")
+
+			if err != nil {
+				p.logger.Error().Err(err).Msg("failed to load new root frame")
+				p.dom.SetMainFrame(currentMain)
+
+				return
+			}
+
+			p.dom.SetMainFrame(doc)
+			fmt.Println("SetMainFrame")
+		}
+	}()
 }
 
 func (p *HTMLPage) handleError(_ context.Context, val interface{}) {

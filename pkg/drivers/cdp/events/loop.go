@@ -132,26 +132,22 @@ func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
 	loop.mu.Lock()
 	defer loop.mu.Unlock()
 
-	id := ListenerID(rand.Int())
-
 	listener := Listener{
-		ID:      id,
+		ID:      ListenerID(rand.Int()),
 		EventID: eventID,
 		Handler: handler,
 	}
 
-	if loop.cancel == nil {
+	if loop.cancel != nil {
+		loop.commands <- command{
+			op:      opAddListener,
+			payload: listener,
+		}
+	} else {
 		loop.addListenerInternal(listener)
-
-		return id
 	}
 
-	loop.commands <- command{
-		op:      opAddListener,
-		payload: listener,
-	}
-
-	return id
+	return listener.ID
 }
 
 func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
@@ -177,8 +173,8 @@ func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
 }
 
 // run starts running an event loop.
-// It constantly iterates over each event stream.
-// Additionally to that, on each iteration it checks add/remove listener/event channels.
+// It constantly iterates over each event source.
+// Additionally to that, on each iteration it checks the command channel in order to perform add/remove listener/source operations.
 func (loop *Loop) run(ctx context.Context) {
 	size := len(loop.sources)
 	counter := -1
@@ -219,6 +215,7 @@ func (loop *Loop) run(ctx context.Context) {
 				size++
 			case opRemoveSource:
 				if loop.removeSourceInternal(cmd.payload.(Source)) {
+					// update size
 					size--
 				}
 			case opAddListener:
@@ -245,11 +242,11 @@ func (loop *Loop) addSourceInternal(src Source) {
 	loop.sources = append(loop.sources, src)
 }
 
-func (loop *Loop) removeSourceInternal(event Source) bool {
+func (loop *Loop) removeSourceInternal(src Source) bool {
 	idx := -1
 
-	for i, c := range loop.sources {
-		if c == event {
+	for i, current := range loop.sources {
+		if current == src {
 			idx = i
 			break
 		}
@@ -295,12 +292,15 @@ func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err
 		return
 	}
 
-	for _, listener := range listeners {
+	for id, listener := range listeners {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			listener.Handler(ctx, message)
+			// if returned false, it means the loops should call the handler anymore
+			if !listener.Handler(ctx, message) {
+				delete(listeners, id)
+			}
 		}
 	}
 }

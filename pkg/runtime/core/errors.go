@@ -61,7 +61,9 @@ func Errors(err ...error) error {
 	message := ""
 
 	for _, e := range err {
-		message += ": " + e.Error()
+		if e != nil {
+			message += ": " + e.Error()
+		}
 	}
 
 	return errors.New(message)

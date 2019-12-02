@@ -53,17 +53,19 @@ type (
 		keyboard  *input.Keyboard
 		mainFrame page.FrameID
 		frames    map[page.FrameID]Frame
+		cancel    context.CancelFunc
 	}
 )
 
 func New(
-	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
 	eventLoop *events.Loop,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (*Manager, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	onDocUpdated, err := client.DOM.DocumentUpdated(ctx)
 
 	if err != nil {
@@ -146,6 +148,7 @@ func New(
 	m.mouse = mouse
 	m.keyboard = keyboard
 	m.frames = make(map[page.FrameID]Frame)
+	m.cancel = cancel
 
 	return m, nil
 }
@@ -154,7 +157,12 @@ func (m *Manager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	errs := make([]error, len(m.frames))
+	if m.cancel != nil {
+		m.cancel()
+		m.cancel = nil
+	}
+
+	errs := make([]error, 0, len(m.frames))
 
 	for _, f := range m.frames {
 		// if initialized
@@ -263,8 +271,10 @@ func (m *Manager) GetFrames(ctx context.Context) (*values.Array, error) {
 }
 
 func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) events.ListenerID {
-	return m.events.AddListener(eventDocumentUpdated, func(ctx context.Context, _ interface{}) {
+	return m.events.AddListener(eventDocumentUpdated, func(ctx context.Context, _ interface{}) bool {
 		listener(ctx)
+
+		return true
 	})
 }
 
@@ -273,10 +283,12 @@ func (m *Manager) RemoveReloadListener(listenerID events.ListenerID) {
 }
 
 func (m *Manager) AddAttrModifiedListener(listener AttrModifiedListener) events.ListenerID {
-	return m.events.AddListener(eventAttrModified, func(ctx context.Context, message interface{}) {
+	return m.events.AddListener(eventAttrModified, func(ctx context.Context, message interface{}) bool {
 		reply := message.(dom.AttributeModifiedReply)
 
 		listener(ctx, reply.NodeID, reply.Name, reply.Value)
+
+		return true
 	})
 }
 
@@ -285,10 +297,12 @@ func (m *Manager) RemoveAttrModifiedListener(listenerID events.ListenerID) {
 }
 
 func (m *Manager) AddAttrRemovedListener(listener AttrRemovedListener) events.ListenerID {
-	return m.events.AddListener(eventAttrRemoved, func(ctx context.Context, message interface{}) {
+	return m.events.AddListener(eventAttrRemoved, func(ctx context.Context, message interface{}) bool {
 		reply := message.(dom.AttributeRemovedReply)
 
 		listener(ctx, reply.NodeID, reply.Name)
+
+		return true
 	})
 }
 
@@ -297,10 +311,12 @@ func (m *Manager) RemoveAttrRemovedListener(listenerID events.ListenerID) {
 }
 
 func (m *Manager) AddChildNodeCountUpdatedListener(listener ChildNodeCountUpdatedListener) events.ListenerID {
-	return m.events.AddListener(eventChildNodeCountUpdated, func(ctx context.Context, message interface{}) {
+	return m.events.AddListener(eventChildNodeCountUpdated, func(ctx context.Context, message interface{}) bool {
 		reply := message.(dom.ChildNodeCountUpdatedReply)
 
 		listener(ctx, reply.NodeID, reply.ChildNodeCount)
+
+		return true
 	})
 }
 
@@ -309,10 +325,12 @@ func (m *Manager) RemoveChildNodeCountUpdatedListener(listenerID events.Listener
 }
 
 func (m *Manager) AddChildNodeInsertedListener(listener ChildNodeInsertedListener) events.ListenerID {
-	return m.events.AddListener(eventChildNodeInserted, func(ctx context.Context, message interface{}) {
+	return m.events.AddListener(eventChildNodeInserted, func(ctx context.Context, message interface{}) bool {
 		reply := message.(dom.ChildNodeInsertedReply)
 
 		listener(ctx, reply.ParentNodeID, reply.PreviousNodeID, reply.Node)
+
+		return true
 	})
 }
 
@@ -321,15 +339,33 @@ func (m *Manager) RemoveChildNodeInsertedListener(listenerID events.ListenerID) 
 }
 
 func (m *Manager) AddChildNodeRemovedListener(listener ChildNodeRemovedListener) events.ListenerID {
-	return m.events.AddListener(eventChildNodeRemoved, func(ctx context.Context, message interface{}) {
+	return m.events.AddListener(eventChildNodeRemoved, func(ctx context.Context, message interface{}) bool {
 		reply := message.(dom.ChildNodeRemovedReply)
 
 		listener(ctx, reply.ParentNodeID, reply.NodeID)
+
+		return true
 	})
 }
 
 func (m *Manager) RemoveChildNodeRemovedListener(listenerID events.ListenerID) {
 	m.events.RemoveListener(eventChildNodeRemoved, listenerID)
+}
+
+func (m *Manager) WaitForDOMReady(ctx context.Context) error {
+	onDOMReady, err := m.client.Page.DOMContentEventFired(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = onDOMReady.Recv()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *Manager) addFrameInternal(frame page.FrameTree) {

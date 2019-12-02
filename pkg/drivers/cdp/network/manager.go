@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"sync"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
@@ -24,25 +25,29 @@ type (
 	FrameLoadedListener = func(ctx context.Context, frame page.Frame)
 
 	Manager struct {
+		mu        sync.Mutex
 		logger    *zerolog.Logger
 		client    *cdp.Client
 		headers   drivers.HTTPHeaders
 		eventLoop *events.Loop
+		cancel    context.CancelFunc
 		listeners []FrameLoadedListener
 	}
 )
 
 func New(
-	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
 	eventLoop *events.Loop,
 ) (*Manager, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	m := new(Manager)
 	m.logger = logger
 	m.client = client
 	m.headers = make(drivers.HTTPHeaders)
 	m.eventLoop = eventLoop
+	m.cancel = cancel
 
 	frameNavigatedStream, err := m.client.Page.FrameNavigated(ctx)
 
@@ -55,6 +60,18 @@ func New(
 	}))
 
 	return m, nil
+}
+
+func (m *Manager) Close() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.cancel != nil {
+		m.cancel()
+		m.cancel = nil
+	}
+
+	return nil
 }
 
 func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
@@ -78,6 +95,9 @@ func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
 }
 
 func (m *Manager) SetCookies(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if len(cookies) == 0 {
 		return nil
 	}
@@ -92,6 +112,9 @@ func (m *Manager) SetCookies(ctx context.Context, url string, cookies drivers.HT
 }
 
 func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if len(cookies) == 0 {
 		return nil
 	}
@@ -120,6 +143,9 @@ func (m *Manager) GetHeaders(_ context.Context) (drivers.HTTPHeaders, error) {
 }
 
 func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if len(headers) == 0 {
 		return nil
 	}
@@ -145,6 +171,9 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 }
 
 func (m *Manager) Navigate(ctx context.Context, url values.String) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -165,6 +194,9 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 }
 
 func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	history, err := m.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -207,6 +239,9 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 }
 
 func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	history, err := m.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
@@ -270,7 +305,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	onEvent := make(chan struct{})
 
-	id := m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) {
+	m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
 		var matched bool
@@ -297,17 +332,19 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 				onEvent <- struct{}{}
 
-				return
+				return matched
 			}
 
 			_, err = onDOMReady.Recv()
 
 			onEvent <- struct{}{}
 		}
+
+		// if not matched - continue listening
+		return !matched
 	})
 
 	defer func() {
-		m.eventLoop.RemoveListener(eventFrameLoad, id)
 		close(onEvent)
 
 		if err := stream.Close(); err != nil {
@@ -324,9 +361,11 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 }
 
 func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.ListenerID {
-	return m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) {
+	return m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 		listener(ctx, repl.Frame)
+
+		return true
 	})
 }
 

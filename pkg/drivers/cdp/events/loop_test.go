@@ -189,9 +189,9 @@ func TestLoop(t *testing.T) {
 
 			So(counter.Value(), ShouldEqual, 0)
 
-			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 				counter.Increase()
-			})
+			}))
 
 			wait()
 
@@ -215,9 +215,9 @@ func TestLoop(t *testing.T) {
 				})
 
 				loop.AddSource(src)
-				id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+				id := loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 					counter.Increase()
-				})
+				}))
 
 				loop.Start()
 				defer loop.Stop()
@@ -248,9 +248,9 @@ func TestLoop(t *testing.T) {
 			loop := events.NewLoop()
 			counter := NewCounter()
 
-			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 				counter.Increase()
-			})
+			}))
 
 			loop.Start()
 			defer loop.Stop()
@@ -285,9 +285,9 @@ func TestLoop(t *testing.T) {
 			loop.Start()
 			defer loop.Stop()
 
-			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 				counter.Increase()
-			})
+			}))
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
@@ -324,11 +324,11 @@ func TestLoop(t *testing.T) {
 
 		counter := NewCounter()
 
-		id := loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+		id := loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 			counter.Increase()
 
 			onEvent <- struct{}{}
-		})
+		}))
 
 		go func() {
 			<-onEvent
@@ -359,7 +359,7 @@ func BenchmarkLoop_AddListenerSync(b *testing.B) {
 	loop := events.NewLoop()
 
 	for n := 0; n < b.N; n++ {
-		loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+		loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {}))
 	}
 }
 
@@ -369,7 +369,7 @@ func BenchmarkLoop_AddListenerAsync(b *testing.B) {
 	defer loop.Stop()
 
 	for n := 0; n < b.N; n++ {
-		loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+		loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {}))
 	}
 }
 
@@ -380,7 +380,7 @@ func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {})
+			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {}))
 		}
 	})
 }
@@ -388,28 +388,28 @@ func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 func BenchmarkLoop_Start(b *testing.B) {
 	loop := events.NewLoop()
 
-	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	})
-	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+	}))
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	})
+	}))
 
-	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	})
+	}))
 
-	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	})
+	}))
 
-	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	})
+	}))
 
-	loop.AddListener(TestEvent, func(ctx context.Context, message interface{}) {
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	})
+	}))
 
 	onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
