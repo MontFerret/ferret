@@ -297,15 +297,13 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		urlMatcher = r
 	}
 
-	stream, err := m.client.Page.FrameNavigated(ctx)
-
-	if err != nil {
-		return errors.Wrap(err, "failed to create load event hook")
-	}
-
 	onEvent := make(chan struct{})
 
-	m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) bool {
+	defer func() {
+		close(onEvent)
+	}()
+
+	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
 		var matched bool
@@ -325,32 +323,28 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			// we need to wait till the DOM becomes ready
 			onDOMReady, err := m.client.Page.DOMContentEventFired(ctx)
 
-			if err != nil {
+			if err == nil {
+				if _, err = onDOMReady.Recv(); err != nil {
+					m.logger.Error().Err(err).Msg("failed to wait for DOM ready event")
+				}
+
+				if err := onDOMReady.Close(); err != nil {
+					m.logger.Error().Err(err).Msg("failed to close DOM ready event stream")
+				}
+			} else {
 				// oops, well, there is really nothing we can do here
 				// just log the error try luck
 				m.logger.Error().Err(err).Msg("failed to create load event hook")
-
-				onEvent <- struct{}{}
-
-				return matched
 			}
 
-			_, err = onDOMReady.Recv()
-
-			onEvent <- struct{}{}
+			if ctx.Err() == nil {
+				onEvent <- struct{}{}
+			}
 		}
 
 		// if not matched - continue listening
 		return !matched
 	})
-
-	defer func() {
-		close(onEvent)
-
-		if err := stream.Close(); err != nil {
-			m.logger.Error().Err(err).Msg("failed to close frame navigated event stream")
-		}
-	}()
 
 	select {
 	case <-onEvent:

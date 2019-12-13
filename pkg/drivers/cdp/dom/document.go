@@ -189,6 +189,10 @@ func (doc *HTMLDocument) Close() error {
 	return doc.element.Close()
 }
 
+func (doc *HTMLDocument) Frame() page.FrameTree {
+	return doc.frameTree
+}
+
 func (doc *HTMLDocument) IsDetached() values.Boolean {
 	return doc.element.IsDetached()
 }

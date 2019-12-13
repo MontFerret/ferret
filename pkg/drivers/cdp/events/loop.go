@@ -36,7 +36,7 @@ func NewLoop() *Loop {
 	loop := new(Loop)
 	loop.listeners = make(map[ID]map[ListenerID]Listener)
 	loop.sources = make([]Source, 0, 10)
-	loop.commands = make(chan command, 10)
+	loop.commands = make(chan command, 50)
 
 	return loop
 }
@@ -200,10 +200,8 @@ func (loop *Loop) run(ctx context.Context) {
 			source = noop
 		}
 
-		select {
-		case <-ctx.Done():
-			return
-		case cmd := <-loop.commands:
+		// commands have higher priority
+		for cmd := range loop.commands {
 			if isCtxDone(ctx) {
 				return
 			}
@@ -224,6 +222,11 @@ func (loop *Loop) run(ctx context.Context) {
 				listener := cmd.payload.(Listener)
 				loop.removeListenerInternal(listener.EventID, listener.ID)
 			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return
 		case <-source.Ready():
 			if isCtxDone(ctx) {
 				return

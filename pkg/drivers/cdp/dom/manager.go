@@ -2,6 +2,7 @@ package dom
 
 import (
 	"context"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -200,7 +201,7 @@ func (m *Manager) SetMainFrame(doc *HTMLDocument) {
 	defer m.mu.Unlock()
 
 	if m.mainFrame != "" {
-		if err := m.removeFrameRecursively(m.mainFrame); err != nil {
+		if err := m.removeFrameRecursivelyInternal(m.mainFrame); err != nil {
 			m.logger.Error().Err(err).Msg("failed to close previous main frame")
 		}
 	}
@@ -224,6 +225,16 @@ func (m *Manager) RemoveFrame(frameID page.FrameID) error {
 	return m.removeFrameInternal(frameID)
 }
 
+func (m *Manager) RemoveFrameRecursively(frameID page.FrameID) error {
+	fmt.Println("locking")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	fmt.Println("locked")
+
+	return m.removeFrameRecursivelyInternal(frameID)
+}
+
 func (m *Manager) RemoveFramesByParentID(parentFrameID page.FrameID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -235,7 +246,7 @@ func (m *Manager) RemoveFramesByParentID(parentFrameID page.FrameID) error {
 	}
 
 	for _, child := range frame.tree.ChildFrames {
-		if err := m.removeFrameRecursively(child.Frame.ID); err != nil {
+		if err := m.removeFrameRecursivelyInternal(child.Frame.ID); err != nil {
 			return err
 		}
 	}
@@ -264,7 +275,6 @@ func (m *Manager) GetFrames(ctx context.Context) (*values.Array, error) {
 		}
 
 		arr.Push(doc)
-
 	}
 
 	return arr, nil
@@ -284,7 +294,7 @@ func (m *Manager) RemoveReloadListener(listenerID events.ListenerID) {
 
 func (m *Manager) AddAttrModifiedListener(listener AttrModifiedListener) events.ListenerID {
 	return m.events.AddListener(eventAttrModified, func(ctx context.Context, message interface{}) bool {
-		reply := message.(dom.AttributeModifiedReply)
+		reply := message.(*dom.AttributeModifiedReply)
 
 		listener(ctx, reply.NodeID, reply.Name, reply.Value)
 
@@ -298,7 +308,7 @@ func (m *Manager) RemoveAttrModifiedListener(listenerID events.ListenerID) {
 
 func (m *Manager) AddAttrRemovedListener(listener AttrRemovedListener) events.ListenerID {
 	return m.events.AddListener(eventAttrRemoved, func(ctx context.Context, message interface{}) bool {
-		reply := message.(dom.AttributeRemovedReply)
+		reply := message.(*dom.AttributeRemovedReply)
 
 		listener(ctx, reply.NodeID, reply.Name)
 
@@ -312,7 +322,7 @@ func (m *Manager) RemoveAttrRemovedListener(listenerID events.ListenerID) {
 
 func (m *Manager) AddChildNodeCountUpdatedListener(listener ChildNodeCountUpdatedListener) events.ListenerID {
 	return m.events.AddListener(eventChildNodeCountUpdated, func(ctx context.Context, message interface{}) bool {
-		reply := message.(dom.ChildNodeCountUpdatedReply)
+		reply := message.(*dom.ChildNodeCountUpdatedReply)
 
 		listener(ctx, reply.NodeID, reply.ChildNodeCount)
 
@@ -326,7 +336,7 @@ func (m *Manager) RemoveChildNodeCountUpdatedListener(listenerID events.Listener
 
 func (m *Manager) AddChildNodeInsertedListener(listener ChildNodeInsertedListener) events.ListenerID {
 	return m.events.AddListener(eventChildNodeInserted, func(ctx context.Context, message interface{}) bool {
-		reply := message.(dom.ChildNodeInsertedReply)
+		reply := message.(*dom.ChildNodeInsertedReply)
 
 		listener(ctx, reply.ParentNodeID, reply.PreviousNodeID, reply.Node)
 
@@ -340,7 +350,7 @@ func (m *Manager) RemoveChildNodeInsertedListener(listenerID events.ListenerID) 
 
 func (m *Manager) AddChildNodeRemovedListener(listener ChildNodeRemovedListener) events.ListenerID {
 	return m.events.AddListener(eventChildNodeRemoved, func(ctx context.Context, message interface{}) bool {
-		reply := message.(dom.ChildNodeRemovedReply)
+		reply := message.(*dom.ChildNodeRemovedReply)
 
 		listener(ctx, reply.ParentNodeID, reply.NodeID)
 
@@ -439,6 +449,10 @@ func (m *Manager) removeFrameInternal(frameID page.FrameID) error {
 
 	delete(m.frames, frameID)
 
+	if frameID == m.mainFrame {
+		m.mainFrame = ""
+	}
+
 	if current.node == nil {
 		return nil
 	}
@@ -446,7 +460,7 @@ func (m *Manager) removeFrameInternal(frameID page.FrameID) error {
 	return current.node.Close()
 }
 
-func (m *Manager) removeFrameRecursively(frameID page.FrameID) error {
+func (m *Manager) removeFrameRecursivelyInternal(frameID page.FrameID) error {
 	parent, exists := m.frames[frameID]
 
 	if !exists {
@@ -454,7 +468,7 @@ func (m *Manager) removeFrameRecursively(frameID page.FrameID) error {
 	}
 
 	for _, child := range parent.tree.ChildFrames {
-		if err := m.removeFrameRecursively(child.Frame.ID); err != nil {
+		if err := m.removeFrameRecursivelyInternal(child.Frame.ID); err != nil {
 			return err
 		}
 	}

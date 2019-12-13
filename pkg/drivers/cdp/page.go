@@ -471,7 +471,11 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.network.Navigate(ctx, url)
+	if err := p.network.Navigate(ctx, url); err != nil {
+		return nil
+	}
+
+	return p.reloadMainFrame(ctx)
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
@@ -492,53 +496,76 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.Navigat
 	return p.network.WaitForNavigation(ctx, params.TargetURL)
 }
 
+func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
+	prev := p.dom.GetMainFrame()
+	next, err := dom.LoadRootHTMLDocument(
+		ctx,
+		p.logger,
+		p.client,
+		p.dom,
+		p.mouse,
+		p.keyboard,
+	)
+
+	fmt.Println("reloadMainFrame")
+	fmt.Println("root doc is", next)
+	fmt.Println("error is", err)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("prev frame ID", prev.Frame().Frame.ID)
+	fmt.Println("next frame ID", next.Frame().Frame.ID)
+
+	if prev != nil {
+		fmt.Println("removing prev frame")
+		if err := p.dom.RemoveFrameRecursively(prev.Frame().Frame.ID); err != nil {
+			p.logger.Error().Err(err).Msg("failed to remove main frame")
+		}
+
+		fmt.Println("remove prev frame")
+	}
+
+	p.dom.SetMainFrame(next)
+
+	fmt.Println("set a new main frame")
+
+	return nil
+}
+
 func (p *HTMLPage) handleFrameLoaded(ctx context.Context, frame page.Frame) {
 	fmt.Println("handleFrameLoaded")
-	go func() {
-		currentMain := p.dom.GetMainFrame()
-		isMainFrame := frame.ParentID == nil
+	//fmt.Println("url", frame.URL)
 
-		if isMainFrame {
-			if err := p.dom.WaitForDOMReady(ctx); err != nil {
-				p.logger.Error().Err(err).Msg("failed to wait when the DOM gets ready")
+	isMainFrame := frame.ParentID == nil
 
-				return
-			}
+	// if it was a main frame
+	// we need to rebuild frame tree
+	if isMainFrame {
+		current := p.dom.GetMainFrame()
+
+		// it's already loaded
+		if frame.URL == current.GetURL().String() {
+			return
 		}
 
-		if err := p.dom.RemoveFramesByParentID(frame.ID); err != nil {
-			p.logger.Error().Err(err).Msg("failed to remove child frames")
+		if err := p.dom.WaitForDOMReady(ctx); err != nil {
+			p.logger.Error().Err(err).Msg("failed to wait when the DOM gets ready")
+
+			return
 		}
 
-		if err := p.dom.RemoveFrame(frame.ID); err != nil {
-			p.logger.Error().Err(err).Msg("failed to remove navigated frame")
+		if err := p.reloadMainFrame(ctx); err != nil {
+			p.logger.Error().Err(err).Msg("failed to load new root frame")
 		}
 
-		// if it was a main frame
-		// we need to rebuild frame tree
-		if isMainFrame {
-			doc, err := dom.LoadRootHTMLDocument(
-				ctx,
-				p.logger,
-				p.client,
-				p.dom,
-				p.mouse,
-				p.keyboard,
-			)
+		return
+	}
 
-			fmt.Println("LoadRootHTMLDocument")
-
-			if err != nil {
-				p.logger.Error().Err(err).Msg("failed to load new root frame")
-				p.dom.SetMainFrame(currentMain)
-
-				return
-			}
-
-			p.dom.SetMainFrame(doc)
-			fmt.Println("SetMainFrame")
-		}
-	}()
+	if err := p.dom.RemoveFrameRecursively(frame.ID); err != nil {
+		p.logger.Error().Err(err).Msg("failed to remove frame(s)")
+	}
 }
 
 func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
