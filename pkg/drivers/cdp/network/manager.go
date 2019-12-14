@@ -60,16 +60,6 @@ func New(
 		return stream.(page.FrameNavigatedClient).Recv()
 	}))
 
-	domReadyStream, err := m.client.Page.DOMContentEventFired(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	m.eventLoop.AddSource(events.NewSource(contentReady, domReadyStream, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(page.DOMContentEventFiredClient).Recv()
-	}))
-
 	return m, nil
 }
 
@@ -296,7 +286,7 @@ func (m *Manager) WaitForNavigation(ctx context.Context, urlOrPattern values.Str
 }
 
 func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlOrPattern values.String) error {
-	fmt.Println("WaitForFrameNavigation")
+	fmt.Println("WaitForFrameNavigation: begin")
 	var urlMatcher *regexp.Regexp
 
 	if len(urlOrPattern) > 0 {
@@ -333,14 +323,9 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		}
 
 		if matched {
-			m.eventLoop.AddListener(contentReady, func(_ context.Context, message interface{}) bool {
-				if ctx.Err() == nil {
-					onEvent <- struct{}{}
-				}
-
-				// unsubscribe
-				return false
-			})
+			if ctx.Err() == nil {
+				onEvent <- struct{}{}
+			}
 		}
 
 		// if not matched - continue listening

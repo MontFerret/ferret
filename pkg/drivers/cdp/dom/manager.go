@@ -2,13 +2,14 @@ package dom
 
 import (
 	"context"
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"io"
 	"sync"
 
 	"github.com/mafredri/cdp"
@@ -19,6 +20,7 @@ import (
 )
 
 var (
+	eventContentReady          = events.New("content_ready")
 	eventDocumentUpdated       = events.New("doc_updated")
 	eventAttrModified          = events.New("attr_modified")
 	eventAttrRemoved           = events.New("attr_removed")
@@ -28,6 +30,8 @@ var (
 )
 
 type (
+	ContentReadyListener func(ctx context.Context)
+
 	DocumentUpdatedListener func(ctx context.Context)
 
 	AttrModifiedListener func(ctx context.Context, nodeID dom.NodeID, name, value string)
@@ -41,8 +45,9 @@ type (
 	ChildNodeRemovedListener func(ctx context.Context, nodeID, previousNodeID dom.NodeID)
 
 	Frame struct {
-		tree page.FrameTree
-		node *HTMLDocument
+		tree  page.FrameTree
+		node  *HTMLDocument
+		ready bool
 	}
 
 	Manager struct {
@@ -64,8 +69,24 @@ func New(
 	eventLoop *events.Loop,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
-) (*Manager, error) {
+) (manager *Manager, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	closers := make([]io.Closer, 0, 10)
+
+	defer func() {
+		if err != nil {
+			common.CloseAll(logger, closers, "failed to close a DOM event stream")
+		}
+	}()
+
+	onContentReady, err := client.Page.DOMContentEventFired(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	closers = append(closers, onContentReady)
 
 	onDocUpdated, err := client.DOM.DocumentUpdated(ctx)
 
@@ -73,50 +94,51 @@ func New(
 		return nil, err
 	}
 
+	closers = append(closers, onDocUpdated)
+
 	onAttrModified, err := client.DOM.AttributeModified(ctx)
 
 	if err != nil {
-		onDocUpdated.Close()
 		return nil, err
 	}
+
+	closers = append(closers, onAttrModified)
 
 	onAttrRemoved, err := client.DOM.AttributeRemoved(ctx)
 
 	if err != nil {
-		onDocUpdated.Close()
-		onAttrModified.Close()
 		return nil, err
 	}
+
+	closers = append(closers, onAttrRemoved)
 
 	onChildCountUpdated, err := client.DOM.ChildNodeCountUpdated(ctx)
 
 	if err != nil {
-		onDocUpdated.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
 		return nil, err
 	}
+
+	closers = append(closers, onChildCountUpdated)
 
 	onChildNodeInserted, err := client.DOM.ChildNodeInserted(ctx)
 
 	if err != nil {
-		onDocUpdated.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
 		return nil, err
 	}
+
+	closers = append(closers, onChildNodeInserted)
 
 	onChildNodeRemoved, err := client.DOM.ChildNodeRemoved(ctx)
 
 	if err != nil {
-		onDocUpdated.Close()
-		onAttrModified.Close()
-		onAttrRemoved.Close()
-		onChildCountUpdated.Close()
-		onChildNodeInserted.Close()
 		return nil, err
 	}
+
+	closers = append(closers, onChildNodeRemoved)
+
+	eventLoop.AddSource(events.NewSource(eventContentReady, onContentReady, func(stream rpcc.Stream) (i interface{}, e error) {
+		return stream.(page.DOMContentEventFiredClient).Recv()
+	}))
 
 	eventLoop.AddSource(events.NewSource(eventDocumentUpdated, onDocUpdated, func(stream rpcc.Stream) (i interface{}, e error) {
 		return stream.(dom.DocumentUpdatedClient).Recv()
@@ -142,16 +164,16 @@ func New(
 		return stream.(dom.ChildNodeRemovedClient).Recv()
 	}))
 
-	m := new(Manager)
-	m.logger = logger
-	m.client = client
-	m.events = eventLoop
-	m.mouse = mouse
-	m.keyboard = keyboard
-	m.frames = make(map[page.FrameID]Frame)
-	m.cancel = cancel
+	manager = new(Manager)
+	manager.logger = logger
+	manager.client = client
+	manager.events = eventLoop
+	manager.mouse = mouse
+	manager.keyboard = keyboard
+	manager.frames = make(map[page.FrameID]Frame)
+	manager.cancel = cancel
 
-	return m, nil
+	return manager, nil
 }
 
 func (m *Manager) Close() error {
@@ -226,11 +248,8 @@ func (m *Manager) RemoveFrame(frameID page.FrameID) error {
 }
 
 func (m *Manager) RemoveFrameRecursively(frameID page.FrameID) error {
-	fmt.Println("locking")
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	fmt.Println("locked")
 
 	return m.removeFrameRecursivelyInternal(frameID)
 }
@@ -254,14 +273,27 @@ func (m *Manager) RemoveFramesByParentID(parentFrameID page.FrameID) error {
 	return nil
 }
 
-func (m *Manager) GetFrame(ctx context.Context, frameID page.FrameID) (*HTMLDocument, error) {
+func (m *Manager) GetFrameNode(ctx context.Context, frameID page.FrameID) (*HTMLDocument, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return m.getFrameInternal(ctx, frameID)
 }
 
-func (m *Manager) GetFrames(ctx context.Context) (*values.Array, error) {
+func (m *Manager) GetFrameTree(_ context.Context, frameID page.FrameID) (page.FrameTree, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	frame, found := m.frames[frameID]
+
+	if !found {
+		return page.FrameTree{}, core.ErrNotFound
+	}
+
+	return frame.tree, nil
+}
+
+func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -278,6 +310,18 @@ func (m *Manager) GetFrames(ctx context.Context) (*values.Array, error) {
 	}
 
 	return arr, nil
+}
+
+func (m *Manager) AddContentReadyListener(listener ContentReadyListener) events.ListenerID {
+	return m.events.AddListener(eventContentReady, func(ctx context.Context, _ interface{}) bool {
+		listener(ctx)
+
+		return true
+	})
+}
+
+func (m *Manager) RemoveContentReadyListener(listenerID events.ListenerID) {
+	m.events.RemoveListener(eventContentReady, listenerID)
 }
 
 func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) events.ListenerID {
@@ -363,19 +407,43 @@ func (m *Manager) RemoveChildNodeRemovedListener(listenerID events.ListenerID) {
 }
 
 func (m *Manager) WaitForDOMReady(ctx context.Context) error {
-	onDOMReady, err := m.client.Page.DOMContentEventFired(ctx)
+	onContentReady, err := m.client.Page.DOMContentEventFired(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = onDOMReady.Recv()
+	defer onContentReady.Close()
 
-	if err != nil {
-		return err
-	}
+	_, err = onContentReady.Recv()
 
-	return nil
+	return err
+
+	//fmt.Println("WaitForDOMReady")
+	//
+	//onEvent := make(chan struct{})
+	//
+	//defer func() {
+	//	close(onEvent)
+	//}()
+	//
+	//m.events.AddListener(eventContentReady, func(_ context.Context, message interface{}) bool {
+	//	fmt.Println("WaitForDOMReady: eventContentReady")
+	//
+	//	if ctx.Err() == nil {
+	//		onEvent <- struct{}{}
+	//	}
+	//
+	//	// unsubscribe
+	//	return false
+	//})
+	//
+	//select {
+	//case <-onEvent:
+	//	return nil
+	//case <-ctx.Done():
+	//	return core.ErrTimeout
+	//}
 }
 
 func (m *Manager) addFrameInternal(frame page.FrameTree) {
@@ -404,7 +472,7 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 	frame, found := m.frames[frameID]
 
 	if !found {
-		return nil, errors.New("frame not found")
+		return nil, core.ErrNotFound
 	}
 
 	// frame is initialized

@@ -4,14 +4,11 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
-	"io"
 )
 
 type (
@@ -111,24 +108,4 @@ func enableFeatures(ctx context.Context, client *cdp.Client, params drivers.Para
 			)
 		},
 	)
-}
-
-func handleLoadError(logger *zerolog.Logger, client *cdp.Client) {
-	err := client.Page.Close(context.Background())
-
-	if err != nil {
-		logger.Warn().Timestamp().Err(err).Msg("failed to close document on load error")
-	}
-}
-
-func closeOnError(disposables []io.Closer) error {
-	errs := make([]error, len(disposables))
-
-	for _, disposable := range disposables {
-		if err := disposable.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return core.Errors(errs...)
 }

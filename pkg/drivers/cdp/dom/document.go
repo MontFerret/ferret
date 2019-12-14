@@ -254,14 +254,14 @@ func (doc *HTMLDocument) GetParentDocument(ctx context.Context) (drivers.HTMLDoc
 		return nil, nil
 	}
 
-	return doc.dom.GetFrame(ctx, *doc.frameTree.Frame.ParentID)
+	return doc.dom.GetFrameNode(ctx, *doc.frameTree.Frame.ParentID)
 }
 
 func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
 	arr := values.NewArray(len(doc.frameTree.ChildFrames))
 
 	for _, childFrame := range doc.frameTree.ChildFrames {
-		frame, err := doc.dom.GetFrame(ctx, childFrame.Frame.ID)
+		frame, err := doc.dom.GetFrameNode(ctx, childFrame.Frame.ID)
 
 		if err != nil {
 			return nil, err

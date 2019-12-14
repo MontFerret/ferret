@@ -11,7 +11,6 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -41,8 +40,7 @@ func LoadHTMLPage(
 	ctx context.Context,
 	conn *rpcc.Conn,
 	params drivers.Params,
-) (*HTMLPage, error) {
-	disposables := make([]io.Closer, 5)
+) (p *HTMLPage, err error) {
 	logger := logging.FromContext(ctx)
 
 	if conn == nil {
@@ -55,52 +53,36 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
+	closers := make([]io.Closer, 0, 2)
+
+	defer func() {
+		if err != nil {
+			common.CloseAll(logger, closers, "failed to close a Page resource")
+		}
+	}()
+
 	eventLoop := events.NewLoop()
-	disposables = append(disposables, eventLoop)
+	closers = append(closers, eventLoop)
 
 	netManager, err := net.New(logger, client, eventLoop)
 
 	if err != nil {
-		return nil, core.Errors(err, closeOnError(disposables))
+		return nil, err
 	}
 
 	err = netManager.SetCookies(ctx, params.URL, params.Cookies)
 
 	if err != nil {
-		return nil, core.Errors(err, closeOnError(disposables))
+		return nil, err
 	}
 
 	err = netManager.SetHeaders(ctx, params.Headers)
 
 	if err != nil {
-		return nil, core.Errors(err, closeOnError(disposables))
+		return nil, err
 	}
 
 	eventLoop.Start()
-
-	if params.URL != BlankPageURL && params.URL != "" {
-		repl, err := client.Page.Navigate(ctx, page.NewNavigateArgs(params.URL))
-
-		if err != nil {
-			handleLoadError(logger, client)
-
-			return nil, core.Errors(errors.Wrap(err, "failed to load the page"), closeOnError(disposables))
-		}
-
-		if repl.ErrorText != nil {
-			handleLoadError(logger, client)
-
-			return nil, core.Errors(errors.Wrapf(errors.New(*repl.ErrorText), "failed to load the page: %s", params.URL), closeOnError(disposables))
-		}
-
-		err = netManager.WaitForNavigation(ctx, values.NewString(params.URL))
-
-		if err != nil {
-			handleLoadError(logger, client)
-
-			return nil, core.Errors(errors.Wrap(err, "failed to load the page"), closeOnError(disposables))
-		}
-	}
 
 	mouse := input.NewMouse(client)
 	keyboard := input.NewKeyboard(client)
@@ -114,29 +96,12 @@ func LoadHTMLPage(
 	)
 
 	if err != nil {
-		return nil, core.Errors(err, closeOnError(disposables))
+		return nil, err
 	}
 
-	disposables = append(disposables, domManager)
+	closers = append(closers, domManager)
 
-	doc, err := dom.LoadRootHTMLDocument(
-		ctx,
-		logger,
-		client,
-		domManager,
-		mouse,
-		keyboard,
-	)
-
-	if err != nil {
-		handleLoadError(logger, client)
-
-		return nil, core.Errors(errors.Wrap(err, "failed to load root element"), closeOnError(disposables))
-	}
-
-	domManager.SetMainFrame(doc)
-
-	return NewHTMLPage(
+	p = NewHTMLPage(
 		logger,
 		conn,
 		client,
@@ -145,7 +110,21 @@ func LoadHTMLPage(
 		domManager,
 		mouse,
 		keyboard,
-	), nil
+	)
+
+	fmt.Println("target url is: ", params.URL)
+
+	if params.URL != BlankPageURL && params.URL != "" {
+		err = p.Navigate(ctx, values.NewString(params.URL))
+	} else {
+		err = p.loadMainFrame(ctx)
+	}
+
+	if err != nil {
+		return p, err
+	}
+
+	return p, nil
 }
 
 func NewHTMLPage(
@@ -310,14 +289,14 @@ func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.dom.GetFrames(ctx)
+	return p.dom.GetFrameNodes(ctx)
 }
 
 func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	frames, err := p.dom.GetFrames(ctx)
+	frames, err := p.dom.GetFrameNodes(ctx)
 
 	if err != nil {
 		return values.None, err
@@ -468,22 +447,69 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 }
 
 func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
-	return p.network.Navigate(ctx, url)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	fmt.Println("Navigate: begin")
+
+	if err := p.network.Navigate(ctx, url); err != nil {
+		return err
+	}
+
+	fmt.Println("Navigate: navigated")
+
+	if err := p.reloadMainFrame(ctx); err != nil {
+		return err
+	}
+
+	fmt.Println("Navigate: reloaded main frame")
+
+	return nil
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
-	return p.network.NavigateBack(ctx, skip)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	ret, err := p.network.NavigateBack(ctx, skip)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return ret, p.reloadMainFrame(ctx)
 }
 
 func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
-	return p.network.NavigateForward(ctx, skip)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	ret, err := p.network.NavigateForward(ctx, skip)
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return ret, p.reloadMainFrame(ctx)
 }
 
 func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.NavigationParams) error {
-	return p.network.WaitForNavigation(ctx, params.TargetURL)
+	if err := p.network.WaitForNavigation(ctx, params.TargetURL); err != nil {
+		return err
+	}
+
+	return p.reloadMainFrame(ctx)
 }
 
 func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
+	fmt.Println("reloadMainFrame: begin")
+
+	if err := p.dom.WaitForDOMReady(ctx); err != nil {
+		return err
+	}
+
+	fmt.Println("reloadMainFrame: dom is ready")
+
 	prev := p.dom.GetMainFrame()
 	next, err := dom.LoadRootHTMLDocument(
 		ctx,
@@ -494,67 +520,91 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 		p.keyboard,
 	)
 
-	fmt.Println("reloadMainFrame")
-	fmt.Println("root doc is", next)
-	fmt.Println("error is", err)
+	fmt.Println("reloadMainFrame: root doc is", next)
+	fmt.Println("reloadMainFrame: error is", err)
 
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("prev frame ID", prev.Frame().Frame.ID)
-	fmt.Println("next frame ID", next.Frame().Frame.ID)
-
 	if prev != nil {
-		fmt.Println("removing prev frame")
+		fmt.Println("reloadMainFrame: removing prev frame")
+		fmt.Println("reloadMainFrame: prev frame LoadedID", prev.Frame().Frame.LoaderID)
+
 		if err := p.dom.RemoveFrameRecursively(prev.Frame().Frame.ID); err != nil {
 			p.logger.Error().Err(err).Msg("failed to remove main frame")
 		}
 
-		fmt.Println("remove prev frame")
+		fmt.Println("reloadMainFrame: remove prev frame")
 	}
+
+	fmt.Println("reloadMainFrame: next frame LoadedID", next.Frame().Frame.LoaderID)
 
 	p.dom.SetMainFrame(next)
 
-	fmt.Println("set a new main frame")
+	fmt.Println("reloadMainFrame: have set a new main frame")
+
+	return nil
+}
+
+func (p *HTMLPage) loadMainFrame(ctx context.Context) error {
+	next, err := dom.LoadRootHTMLDocument(
+		ctx,
+		p.logger,
+		p.client,
+		p.dom,
+		p.mouse,
+		p.keyboard,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	p.dom.SetMainFrame(next)
 
 	return nil
 }
 
 func (p *HTMLPage) handleFrameLoaded(ctx context.Context, frame page.Frame) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	//p.mu.Lock()
+	//defer p.mu.Unlock()
+	//
+	//fmt.Println("handleFrameLoaded")
+	//
+	//current, _ := p.dom.GetFrameTree(ctx, frame.ID)
+	//
+	//fmt.Println(current.Frame.LoaderID, frame.LoaderID)
 
-	fmt.Println("handleFrameLoaded")
-
-	isMainFrame := frame.ParentID == nil
-
-	// if it was a main frame
-	// we need to rebuild frame tree
-	if isMainFrame {
-		current := p.dom.GetMainFrame()
-
-		// it's already loaded
-		if frame.URL == current.GetURL().String() {
-			return
-		}
-
-		if err := p.dom.WaitForDOMReady(ctx); err != nil {
-			p.logger.Error().Err(err).Msg("failed to wait when the DOM gets ready")
-
-			return
-		}
-
-		if err := p.reloadMainFrame(ctx); err != nil {
-			p.logger.Error().Err(err).Msg("failed to load new root frame")
-		}
-
-		return
-	}
-
-	if err := p.dom.RemoveFrameRecursively(frame.ID); err != nil {
-		p.logger.Error().Err(err).Msg("failed to remove frame(s)")
-	}
+	//if current.Frame.LoaderID == frame.LoaderID {
+	//	// nothing to do, it's already navigated
+	//	fmt.Println("handleFrameLoaded: nothing to do, it's already navigated")
+	//	return
+	//}
+	//
+	//isMainFrame := frame.ParentID == nil
+	//
+	//// if it was a main frame
+	//// we need to rebuild frame tree
+	//if isMainFrame {
+	//	current := p.dom.GetMainFrame()
+	//
+	//	// it's already loaded
+	//	if frame.URL == current.GetURL().String() {
+	//		return
+	//	}
+	//
+	//
+	//	if err := p.reloadMainFrame(ctx); err != nil {
+	//		p.logger.Error().Err(err).Msg("failed to load new root frame")
+	//	}
+	//
+	//	return
+	//}
+	//
+	//if err := p.dom.RemoveFrameRecursively(frame.ID); err != nil {
+	//	p.logger.Error().Err(err).Msg("failed to remove frame(s)")
+	//}
 }
 
 func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
