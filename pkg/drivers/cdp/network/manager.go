@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"sync"
 
@@ -286,7 +285,6 @@ func (m *Manager) WaitForNavigation(ctx context.Context, urlOrPattern values.Str
 }
 
 func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlOrPattern values.String) error {
-	fmt.Println("WaitForFrameNavigation: begin")
 	var urlMatcher *regexp.Regexp
 
 	if len(urlOrPattern) > 0 {
@@ -306,7 +304,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 	}()
 
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
-		fmt.Println("WaitForFrameNavigation: eventFrameLoad")
 		repl := message.(*page.FrameNavigatedReply)
 
 		var matched bool
