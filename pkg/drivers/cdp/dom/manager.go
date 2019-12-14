@@ -20,7 +20,6 @@ import (
 )
 
 var (
-	eventContentReady          = events.New("content_ready")
 	eventDocumentUpdated       = events.New("doc_updated")
 	eventAttrModified          = events.New("attr_modified")
 	eventAttrRemoved           = events.New("attr_removed")
@@ -30,8 +29,6 @@ var (
 )
 
 type (
-	ContentReadyListener func(ctx context.Context)
-
 	DocumentUpdatedListener func(ctx context.Context)
 
 	AttrModifiedListener func(ctx context.Context, nodeID dom.NodeID, name, value string)
@@ -141,10 +138,6 @@ func New(
 
 	closers = append(closers, onChildNodeRemoved)
 
-	eventLoop.AddSource(events.NewSource(eventContentReady, onContentReady, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(page.DOMContentEventFiredClient).Recv()
-	}))
-
 	eventLoop.AddSource(events.NewSource(eventDocumentUpdated, onDocUpdated, func(stream rpcc.Stream) (i interface{}, e error) {
 		return stream.(dom.DocumentUpdatedClient).Recv()
 	}))
@@ -201,9 +194,11 @@ func (m *Manager) Close() error {
 		}
 	}
 
-	m.frames = make(map[page.FrameID]Frame)
+	if len(errs) > 0 {
+		return core.Errors(errs...)
+	}
 
-	return core.Errors(errs...)
+	return nil
 }
 
 func (m *Manager) GetMainFrame() *HTMLDocument {
@@ -317,18 +312,6 @@ func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
 	return arr, nil
 }
 
-func (m *Manager) AddContentReadyListener(listener ContentReadyListener) events.ListenerID {
-	return m.events.AddListener(eventContentReady, func(ctx context.Context, _ interface{}) bool {
-		listener(ctx)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveContentReadyListener(listenerID events.ListenerID) {
-	m.events.RemoveListener(eventContentReady, listenerID)
-}
-
 func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) events.ListenerID {
 	return m.events.AddListener(eventDocumentUpdated, func(ctx context.Context, _ interface{}) bool {
 		listener(ctx)
@@ -418,37 +401,15 @@ func (m *Manager) WaitForDOMReady(ctx context.Context) error {
 		return err
 	}
 
-	defer onContentReady.Close()
+	defer func() {
+		if err := onContentReady.Close(); err != nil {
+			m.logger.Error().Err(err).Msg("failed to close DOM content ready stream event")
+		}
+	}()
 
 	_, err = onContentReady.Recv()
 
 	return err
-
-	//fmt.Println("WaitForDOMReady")
-	//
-	//onEvent := make(chan struct{})
-	//
-	//defer func() {
-	//	close(onEvent)
-	//}()
-	//
-	//m.events.AddListener(eventContentReady, func(_ context.Context, message interface{}) bool {
-	//	fmt.Println("WaitForDOMReady: eventContentReady")
-	//
-	//	if ctx.Err() == nil {
-	//		onEvent <- struct{}{}
-	//	}
-	//
-	//	// unsubscribe
-	//	return false
-	//})
-	//
-	//select {
-	//case <-onEvent:
-	//	return nil
-	//case <-ctx.Done():
-	//	return core.ErrTimeout
-	//}
 }
 
 func (m *Manager) addFrameInternal(frame page.FrameTree) {
