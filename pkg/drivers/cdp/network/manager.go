@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sync"
 
@@ -57,6 +58,16 @@ func New(
 
 	m.eventLoop.AddSource(events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
 		return stream.(page.FrameNavigatedClient).Recv()
+	}))
+
+	domReadyStream, err := m.client.Page.DOMContentEventFired(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m.eventLoop.AddSource(events.NewSource(contentReady, domReadyStream, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(page.DOMContentEventFiredClient).Recv()
 	}))
 
 	return m, nil
@@ -285,6 +296,7 @@ func (m *Manager) WaitForNavigation(ctx context.Context, urlOrPattern values.Str
 }
 
 func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlOrPattern values.String) error {
+	fmt.Println("WaitForFrameNavigation")
 	var urlMatcher *regexp.Regexp
 
 	if len(urlOrPattern) > 0 {
@@ -304,6 +316,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 	}()
 
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
+		fmt.Println("WaitForFrameNavigation: eventFrameLoad")
 		repl := message.(*page.FrameNavigatedReply)
 
 		var matched bool
@@ -320,26 +333,14 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		}
 
 		if matched {
-			// we need to wait till the DOM becomes ready
-			onDOMReady, err := m.client.Page.DOMContentEventFired(ctx)
-
-			if err == nil {
-				if _, err = onDOMReady.Recv(); err != nil {
-					m.logger.Error().Err(err).Msg("failed to wait for DOM ready event")
+			m.eventLoop.AddListener(contentReady, func(_ context.Context, message interface{}) bool {
+				if ctx.Err() == nil {
+					onEvent <- struct{}{}
 				}
 
-				if err := onDOMReady.Close(); err != nil {
-					m.logger.Error().Err(err).Msg("failed to close DOM ready event stream")
-				}
-			} else {
-				// oops, well, there is really nothing we can do here
-				// just log the error try luck
-				m.logger.Error().Err(err).Msg("failed to create load event hook")
-			}
-
-			if ctx.Err() == nil {
-				onEvent <- struct{}{}
-			}
+				// unsubscribe
+				return false
+			})
 		}
 
 		// if not matched - continue listening
@@ -357,6 +358,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.ListenerID {
 	return m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
+
 		listener(ctx, repl.Frame)
 
 		return true

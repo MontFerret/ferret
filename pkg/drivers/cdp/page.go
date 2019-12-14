@@ -468,27 +468,14 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 }
 
 func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if err := p.network.Navigate(ctx, url); err != nil {
-		return nil
-	}
-
-	return p.reloadMainFrame(ctx)
+	return p.network.Navigate(ctx, url)
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	return p.network.NavigateBack(ctx, skip)
 }
 
 func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	return p.network.NavigateForward(ctx, skip)
 }
 
@@ -535,8 +522,10 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 }
 
 func (p *HTMLPage) handleFrameLoaded(ctx context.Context, frame page.Frame) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	fmt.Println("handleFrameLoaded")
-	//fmt.Println("url", frame.URL)
 
 	isMainFrame := frame.ParentID == nil
 

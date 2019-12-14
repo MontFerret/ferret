@@ -4,39 +4,19 @@ import (
 	"context"
 	"math/rand"
 	"sync"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-type (
-	operation int
-
-	command struct {
-		op      operation
-		payload interface{}
-	}
-
-	Loop struct {
-		mu        sync.Mutex
-		cancel    context.CancelFunc
-		listeners map[ID]map[ListenerID]Listener
-		sources   []Source
-		commands  chan command
-	}
-)
-
-const (
-	opAddListener operation = iota
-	opRemoveListener
-	opAddSource
-	opRemoveSource
-)
+type Loop struct {
+	mu        sync.Mutex
+	cancel    context.CancelFunc
+	sources   *SourceCollection
+	listeners *ListenerCollection
+}
 
 func NewLoop() *Loop {
 	loop := new(Loop)
-	loop.listeners = make(map[ID]map[ListenerID]Listener)
-	loop.sources = make([]Source, 0, 10)
-	loop.commands = make(chan command, 50)
+	loop.sources = NewSourceCollection()
+	loop.listeners = NewListenerCollection()
 
 	return loop
 }
@@ -81,102 +61,38 @@ func (loop *Loop) Close() error {
 		loop.cancel = nil
 	}
 
-	errs := make([]error, 0, len(loop.sources))
-
-	for _, e := range loop.sources {
-		if err := e.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	if len(errs) > 0 {
-		return core.Errors(errs...)
-	}
-
-	return nil
+	return loop.sources.Close()
 }
 
 func (loop *Loop) AddSource(source Source) {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel == nil {
-		loop.addSourceInternal(source)
-
-		return
-	}
-
-	loop.commands <- command{
-		op:      opAddSource,
-		payload: source,
-	}
+	loop.sources.Add(source)
 }
 
 func (loop *Loop) RemoveSource(source Source) {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel == nil {
-		loop.removeSourceInternal(source)
-
-		return
-	}
-
-	loop.commands <- command{
-		op:      opRemoveSource,
-		payload: source,
-	}
+	loop.sources.Remove(source)
 }
 
 func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
 	listener := Listener{
 		ID:      ListenerID(rand.Int()),
 		EventID: eventID,
 		Handler: handler,
 	}
 
-	if loop.cancel != nil {
-		loop.commands <- command{
-			op:      opAddListener,
-			payload: listener,
-		}
-	} else {
-		loop.addListenerInternal(listener)
-	}
+	loop.listeners.Add(listener)
 
 	return listener.ID
 }
 
 func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel == nil {
-		loop.removeListenerInternal(eventID, listenerID)
-
-		return
-	}
-
-	listener := Listener{
-		ID:      listenerID,
-		EventID: eventID,
-		Handler: nil,
-	}
-
-	loop.commands <- command{
-		op:      opRemoveListener,
-		payload: listener,
-	}
+	loop.listeners.Remove(eventID, listenerID)
 }
 
 // run starts running an event loop.
 // It constantly iterates over each event source.
 // Additionally to that, on each iteration it checks the command channel in order to perform add/remove listener/source operations.
 func (loop *Loop) run(ctx context.Context) {
-	size := len(loop.sources)
+	size := loop.sources.Size()
 	counter := -1
 
 	// in case event array is empty
@@ -188,42 +104,28 @@ func (loop *Loop) run(ctx context.Context) {
 
 		if counter >= size {
 			// reset the counter
-			size = len(loop.sources)
+			size = loop.sources.Size()
 			counter = 0
 		}
 
 		var source Source
 
 		if size > 0 {
-			source = loop.sources[counter]
+			found, err := loop.sources.Get(counter)
+
+			if err == nil {
+				source = found
+			} else {
+				// might be removed
+				source = noop
+				// force to reset counter
+				counter = size
+			}
 		} else {
 			source = noop
 		}
 
 		// commands have higher priority
-		for cmd := range loop.commands {
-			if isCtxDone(ctx) {
-				return
-			}
-
-			switch cmd.op {
-			case opAddSource:
-				loop.addSourceInternal(cmd.payload.(Source))
-				// update size
-				size++
-			case opRemoveSource:
-				if loop.removeSourceInternal(cmd.payload.(Source)) {
-					// update size
-					size--
-				}
-			case opAddListener:
-				loop.addListenerInternal(cmd.payload.(Listener))
-			case opRemoveListener:
-				listener := cmd.payload.(Listener)
-				loop.removeListenerInternal(listener.EventID, listener.ID)
-			}
-		}
-
 		select {
 		case <-ctx.Done():
 			return
@@ -241,68 +143,22 @@ func (loop *Loop) run(ctx context.Context) {
 	}
 }
 
-func (loop *Loop) addSourceInternal(src Source) {
-	loop.sources = append(loop.sources, src)
-}
-
-func (loop *Loop) removeSourceInternal(src Source) bool {
-	idx := -1
-
-	for i, current := range loop.sources {
-		if current == src {
-			idx = i
-			break
-		}
-	}
-
-	if idx > -1 {
-		loop.sources = append(loop.sources[:idx], loop.sources[idx+1:]...)
-	}
-
-	return idx > -1
-}
-
-func (loop *Loop) addListenerInternal(listener Listener) {
-	bucket, exists := loop.listeners[listener.EventID]
-
-	if !exists {
-		bucket = make(map[ListenerID]Listener)
-		loop.listeners[listener.EventID] = bucket
-	}
-
-	bucket[listener.ID] = listener
-}
-
-func (loop *Loop) removeListenerInternal(eventID ID, listenerID ListenerID) {
-	bucket, exists := loop.listeners[eventID]
-
-	if !exists {
-		return
-	}
-
-	delete(bucket, listenerID)
-}
-
 func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err error) {
 	if err != nil {
 		eventID = Error
 		message = err
 	}
 
-	listeners, ok := loop.listeners[eventID]
+	snapshot := loop.listeners.Values(eventID)
 
-	if !ok {
-		return
-	}
-
-	for id, listener := range listeners {
+	for _, listener := range snapshot {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			// if returned false, it means the loops should call the handler anymore
 			if !listener.Handler(ctx, message) {
-				delete(listeners, id)
+				loop.listeners.Remove(eventID, listener.ID)
 			}
 		}
 	}
