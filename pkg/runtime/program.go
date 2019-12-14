@@ -2,7 +2,10 @@ package runtime
 
 import (
 	"context"
+	"runtime"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -53,30 +56,30 @@ func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, er
 	ctx = opts.WithContext(ctx)
 	logger := logging.FromContext(ctx)
 
-	//defer func() {
-	//	if r := recover(); r != nil {
-	//		// find out exactly what the error was and set err
-	//		switch x := r.(type) {
-	//		case string:
-	//			err = errors.New(x)
-	//		case error:
-	//			err = x
-	//		default:
-	//			err = errors.New("unknown panic")
-	//		}
-	//
-	//		b := make([]byte, 0, 20)
-	//		runtime.Stack(b, true)
-	//
-	//		logger.Error().
-	//			Timestamp().
-	//			Err(err).
-	//			Str("stack", string(b)).
-	//			Msg("Panic")
-	//
-	//		result = nil
-	//	}
-	//}()
+	defer func() {
+		if r := recover(); r != nil {
+			// find out exactly what the error was and set err
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+
+			b := make([]byte, 0, 20)
+			runtime.Stack(b, true)
+
+			logger.Error().
+				Timestamp().
+				Err(err).
+				Str("stack", string(b)).
+				Msg("Panic")
+
+			result = nil
+		}
+	}()
 
 	scope, closeFn := core.NewRootScope()
 

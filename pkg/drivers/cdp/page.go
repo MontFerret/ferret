@@ -450,11 +450,7 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 		return err
 	}
 
-	if err := p.reloadMainFrame(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return p.reloadMainFrame(ctx)
 }
 
 func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {

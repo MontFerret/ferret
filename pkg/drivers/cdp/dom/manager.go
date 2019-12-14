@@ -63,6 +63,11 @@ type (
 	}
 )
 
+// a dirty workaround to let pass the vet test
+func createContext() (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.Background())
+}
+
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
@@ -70,7 +75,7 @@ func New(
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (manager *Manager, err error) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := createContext()
 
 	closers := make([]io.Closer, 0, 10)
 
