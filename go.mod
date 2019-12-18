@@ -18,6 +18,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/rs/zerolog v1.17.2
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
+	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )
