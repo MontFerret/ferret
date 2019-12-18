@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sync"
 
@@ -174,6 +175,8 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	fmt.Println("NAVIGATE")
+
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -190,7 +193,7 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 		return errors.New(*repl.ErrorText)
 	}
 
-	return m.WaitForNavigation(ctx, url)
+	return m.WaitForNavigation(ctx, nil)
 }
 
 func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
@@ -229,7 +232,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 		return values.False, err
 	}
 
-	err = m.WaitForNavigation(ctx, values.NewString(entry.URL))
+	err = m.WaitForNavigation(ctx, nil)
 
 	if err != nil {
 		return values.False, err
@@ -271,7 +274,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 		return values.False, err
 	}
 
-	err = m.WaitForNavigation(ctx, values.NewString(entry.URL))
+	err = m.WaitForNavigation(ctx, nil)
 
 	if err != nil {
 		return values.False, err
@@ -280,23 +283,11 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	return values.True, nil
 }
 
-func (m *Manager) WaitForNavigation(ctx context.Context, urlOrPattern values.String) error {
-	return m.WaitForFrameNavigation(ctx, "", urlOrPattern)
+func (m *Manager) WaitForNavigation(ctx context.Context, pattern *regexp.Regexp) error {
+	return m.WaitForFrameNavigation(ctx, "", pattern)
 }
 
-func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlOrPattern values.String) error {
-	var urlMatcher *regexp.Regexp
-
-	if len(urlOrPattern) > 0 {
-		r, err := regexp.Compile(urlOrPattern.String())
-
-		if err != nil {
-			return errors.Wrap(err, "invalid target URL pattern")
-		}
-
-		urlMatcher = r
-	}
-
+func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlPattern *regexp.Regexp) error {
 	onEvent := make(chan struct{})
 
 	defer func() {
@@ -305,19 +296,23 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
+		fmt.Println("WaitForFrameNavigation: eventFrameLoad", repl.Frame.URL)
 
 		var matched bool
 
 		// if frameID is empty string or equals to the current one
 		if len(frameID) == 0 || repl.Frame.ID == frameID {
-			// if a target URL is provided
-			if urlMatcher != nil {
-				matched = urlMatcher.Match([]byte(repl.Frame.URL))
+			// if a URL pattern is provided
+			if urlPattern != nil {
+				matched = urlPattern.Match([]byte(repl.Frame.URL))
 			} else {
 				// otherwise just notify
 				matched = true
 			}
 		}
+
+		fmt.Println(repl.Frame.ID, repl.Frame.URL)
+		fmt.Println("WaitForFrameNavigation: matched =", matched)
 
 		if matched {
 			if ctx.Err() == nil {
@@ -331,6 +326,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	select {
 	case <-onEvent:
+		fmt.Println("WaitForFrameNavigation: finished")
 		return nil
 	case <-ctx.Done():
 		return core.ErrTimeout
