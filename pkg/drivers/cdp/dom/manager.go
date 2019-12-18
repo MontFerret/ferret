@@ -395,23 +395,21 @@ func (m *Manager) RemoveChildNodeRemovedListener(listenerID events.ListenerID) {
 }
 
 func (m *Manager) WaitForDOMReady(ctx context.Context) error {
-	//onContentReady, err := m.client.Page.DOMContentEventFired(ctx)
-	//
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//defer func() {
-	//	if err := onContentReady.Close(); err != nil {
-	//		m.logger.Error().Err(err).Msg("failed to close DOM content ready stream event")
-	//	}
-	//}()
-	//
-	//_, err = onContentReady.Recv()
-	//
-	//return err
+	onContentReady, err := m.client.Page.DOMContentEventFired(ctx)
 
-	return nil
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := onContentReady.Close(); err != nil {
+			m.logger.Error().Err(err).Msg("failed to close DOM content ready stream event")
+		}
+	}()
+
+	_, err = onContentReady.Recv()
+
+	return err
 }
 
 func (m *Manager) addFrameInternal(frame page.FrameTree) {

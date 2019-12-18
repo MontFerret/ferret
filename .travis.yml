@@ -58,8 +58,8 @@ jobs:
   - stage: e2e
     go: stable
     before_script:
-    - docker pull microbox/chromium-headless:75.0.3765.1
-    - docker run -d -p 9222:9222 microbox/chromium-headless:75.0.3765.1
+    - docker pull microbox/chromium-headless:77.0.3844.0
+    - docker run -d -p 9222:9222 microbox/chromium-headless:77.0.3844.0
     - docker ps
     script:
     - make e2e
