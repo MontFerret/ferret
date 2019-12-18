@@ -10,9 +10,11 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/corpix/uarand v0.1.1
 	github.com/derekparker/trie v0.0.0-20190812220523-e66023ee76eb
+	github.com/gobwas/glob v0.2.3
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/gorilla/css v1.0.0
 	github.com/gorilla/websocket v1.4.1 // indirect
+	github.com/labstack/echo/v4 v4.1.11
 	github.com/mafredri/cdp v0.25.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.8.1
