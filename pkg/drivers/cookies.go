@@ -18,16 +18,6 @@ func NewHTTPCookies() HTTPCookies {
 	return make(HTTPCookies)
 }
 
-func (c HTTPCookies) Set(cookie HTTPCookie) {
-	c[cookie.Name] = cookie
-}
-
-func (c HTTPCookies) Get(name string) (HTTPCookie, bool) {
-	found, exists := c[name]
-
-	return found, exists
-}
-
 func (c HTTPCookies) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]HTTPCookie(c))
 }
@@ -60,13 +50,13 @@ func (c HTTPCookies) Compare(other core.Value) int64 {
 	}
 
 	for name := range c {
-		cEl, cExists := c.Get(name)
+		cEl, cExists := c.Get(values.NewString(name))
 
 		if !cExists {
 			return -1
 		}
 
-		ocEl, ocExists := oc.Get(name)
+		ocEl, ocExists := oc.Get(values.NewString(name))
 
 		if !ocExists {
 			return 1
@@ -137,6 +127,32 @@ func (c HTTPCookies) Copy() core.Value {
 
 func (c HTTPCookies) Length() values.Int {
 	return values.NewInt(len(c))
+}
+
+func (c HTTPCookies) Keys() []values.String {
+	keys := make([]values.String, 0, len(c))
+
+	for k := range c {
+		keys = append(keys, values.NewString(k))
+	}
+
+	return keys
+}
+
+func (c HTTPCookies) Get(key values.String) (core.Value, values.Boolean) {
+	value, found := c[key.String()]
+
+	if found {
+		return value, values.True
+	}
+
+	return values.None, values.False
+}
+
+func (c HTTPCookies) Set(key values.String, value core.Value) {
+	if cookie, ok := value.(HTTPCookie); ok {
+		c[key.String()] = cookie
+	}
 }
 
 func (c HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
