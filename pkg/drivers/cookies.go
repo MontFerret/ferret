@@ -135,6 +135,10 @@ func (c HTTPCookies) Copy() core.Value {
 	return copied
 }
 
+func (c HTTPCookies) Length() values.Int {
+	return values.NewInt(len(c))
+}
+
 func (c HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
 		return values.None, nil
