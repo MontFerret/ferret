@@ -481,11 +481,11 @@ func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values
 	return ret, p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.NavigationParams) error {
+func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.String) error {
 	var pattern *regexp.Regexp
 
-	if params.TargetURL != "" {
-		r, err := regexp.Compile(params.TargetURL.String())
+	if targetURL != "" {
+		r, err := regexp.Compile(targetURL.String())
 
 		if err != nil {
 			return errors.Wrap(err, "invalid URL pattern")

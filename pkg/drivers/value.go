@@ -204,7 +204,7 @@ type (
 
 		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
-		WaitForNavigation(ctx context.Context, params NavigationParams) error
+		WaitForNavigation(ctx context.Context, targetURL values.String) error
 
 		Navigate(ctx context.Context, url values.String) error
 

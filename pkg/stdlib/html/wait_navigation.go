@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-type NavigationParams struct {
+type WaitNavigationParams struct {
 	TargetURL values.String
 	Timeout   values.Int
 }
@@ -32,10 +32,10 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 		return values.None, err
 	}
 
-	var params NavigationParams
+	var params WaitNavigationParams
 
 	if len(args) > 1 {
-		p, err := parseNavigationParams(args[1])
+		p, err := parseWaitNavigationParams(args[1])
 
 		if err != nil {
 			return values.None, err
@@ -43,19 +43,17 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 
 		params = p
 	} else {
-		params = defaultNavigationParams()
+		params = defaultWaitNavigationParams()
 	}
 
 	ctx, fn := waitTimeout(ctx, params.Timeout)
 	defer fn()
 
-	return values.None, doc.WaitForNavigation(ctx, drivers.NavigationParams{
-		TargetURL: params.TargetURL,
-	})
+	return values.None, doc.WaitForNavigation(ctx, params.TargetURL)
 }
 
-func parseNavigationParams(arg core.Value) (NavigationParams, error) {
-	params := defaultNavigationParams()
+func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
+	params := defaultWaitNavigationParams()
 	err := core.ValidateType(arg, types.Int, types.Object)
 
 	if err != nil {
@@ -92,8 +90,8 @@ func parseNavigationParams(arg core.Value) (NavigationParams, error) {
 	return params, nil
 }
 
-func defaultNavigationParams() NavigationParams {
-	return NavigationParams{
+func defaultWaitNavigationParams() WaitNavigationParams {
+	return WaitNavigationParams{
 		TargetURL: "",
 		Timeout:   values.NewInt(drivers.DefaultWaitTimeout),
 	}
