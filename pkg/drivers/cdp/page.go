@@ -2,7 +2,6 @@ package cdp
 
 import (
 	"context"
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"github.com/pkg/errors"
 	"hash/fnv"
@@ -453,8 +452,6 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 		return err
 	}
 
-	fmt.Println("Navigate: reloadMainFrame")
-
 	return p.reloadMainFrame(ctx)
 }
 
@@ -505,15 +502,12 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, params drivers.Navigat
 }
 
 func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
-	fmt.Println("reloadMainFrame: WaitForDOMReady")
 	if err := p.dom.WaitForDOMReady(ctx); err != nil {
 		return err
 	}
 
-	fmt.Println("reloadMainFrame: GetMainFrame")
 	prev := p.dom.GetMainFrame()
 
-	fmt.Println("reloadMainFrame: LoadRootHTMLDocument")
 	next, err := dom.LoadRootHTMLDocument(
 		ctx,
 		p.logger,
@@ -528,16 +522,12 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 	}
 
 	if prev != nil {
-		fmt.Println("reloadMainFrame: RemoveFrameRecursively")
 		if err := p.dom.RemoveFrameRecursively(prev.Frame().Frame.ID); err != nil {
 			p.logger.Error().Err(err).Msg("failed to remove main frame")
 		}
 	}
 
-	fmt.Println("reloadMainFrame: SetMainFrame")
 	p.dom.SetMainFrame(next)
-
-	fmt.Println("reloadMainFrame: finish")
 
 	return nil
 }

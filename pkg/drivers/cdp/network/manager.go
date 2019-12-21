@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"sync"
 
@@ -175,8 +174,6 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	fmt.Println("NAVIGATE")
-
 	if url == "" {
 		url = BlankPageURL
 	}
@@ -296,7 +293,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
-		fmt.Println("WaitForFrameNavigation: eventFrameLoad", repl.Frame.URL)
 
 		var matched bool
 
@@ -311,9 +307,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			}
 		}
 
-		fmt.Println(repl.Frame.ID, repl.Frame.URL)
-		fmt.Println("WaitForFrameNavigation: matched =", matched)
-
 		if matched {
 			if ctx.Err() == nil {
 				onEvent <- struct{}{}
@@ -326,7 +319,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	select {
 	case <-onEvent:
-		fmt.Println("WaitForFrameNavigation: finished")
 		return nil
 	case <-ctx.Done():
 		return core.ErrTimeout
