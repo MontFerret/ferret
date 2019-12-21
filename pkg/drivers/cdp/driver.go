@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/browser"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/mafredri/cdp/session"
@@ -28,7 +29,7 @@ type Driver struct {
 	conn      *rpcc.Conn
 	client    *cdp.Client
 	session   *session.Manager
-	contextID target.BrowserContextID
+	contextID browser.ContextID
 	options   *Options
 }
 
