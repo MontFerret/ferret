@@ -43,9 +43,10 @@ func (c HTTPCookies) Compare(other core.Value) int64 {
 
 	oc := other.(HTTPCookies)
 
-	if len(c) > len(oc) {
+	switch {
+	case len(c) > len(oc):
 		return 1
-	} else if len(c) < len(oc) {
+	case len(c) < len(oc):
 		return -1
 	}
 

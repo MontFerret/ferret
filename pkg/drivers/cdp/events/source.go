@@ -5,18 +5,22 @@ import (
 )
 
 type (
+	// ID represents a unique event ID
 	ID int
 
+	// Event represents a system event that is returned from an event source
 	Event struct {
 		ID   ID
 		Data interface{}
 	}
 
+	// Source represents a custom source of system events
 	Source interface {
 		rpcc.Stream
 		Recv() (Event, error)
 	}
 
+	// GenericSource represents a helper struct for generating custom event sources
 	GenericSource struct {
 		eventID ID
 		stream  rpcc.Stream
@@ -28,6 +32,10 @@ var (
 	Error = New("error")
 )
 
+// NewSource create a new custom event source
+// eventID - is a unique event ID
+// stream - is a custom event stream
+// recv - is a value conversion function
 func NewSource(
 	eventID ID,
 	stream rpcc.Stream,

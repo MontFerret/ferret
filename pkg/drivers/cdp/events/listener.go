@@ -19,7 +19,7 @@ type (
 	}
 )
 
-// Many is a helper function that tells event loop to always call the function
+// Always returns a handler wrapper that always gets executed by an event loop
 func Always(fn func(ctx context.Context, message interface{})) Handler {
 	return func(ctx context.Context, message interface{}) bool {
 		fn(ctx, message)
@@ -28,7 +28,7 @@ func Always(fn func(ctx context.Context, message interface{})) Handler {
 	}
 }
 
-// Many is a helper function that tells event loop to call the function only once
+// Once returns a handler wrapper that gets executed only once by an event loop
 func Once(fn func(ctx context.Context, message interface{})) Handler {
 	return func(ctx context.Context, message interface{}) bool {
 		fn(ctx, message)
