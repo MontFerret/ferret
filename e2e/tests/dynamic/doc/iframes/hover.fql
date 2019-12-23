@@ -1,6 +1,12 @@
 LET url = @dynamic + "?redirect=/iframe&src=/events"
 LET page = DOCUMENT(url, { driver: 'cdp' })
-LET doc = page.frames[1]
+LET frames = (
+    FOR f IN page.frames
+        LIMIT 1
+        FILTER f.name == "nested"
+        RETURN f
+)
+LET doc = FIRST(frames)
 
 WAIT_ELEMENT(doc, "#page-events")
 
