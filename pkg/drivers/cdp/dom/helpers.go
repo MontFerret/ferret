@@ -23,6 +23,8 @@ import (
 
 var emptyExpires = time.Time{}
 
+// parseAttrs is a helper function that parses a given interleaved array of node attribute names and values,
+// and returns an object that represents attribute keys and values.
 func parseAttrs(attrs []string) *values.Object {
 	var attr values.String
 
