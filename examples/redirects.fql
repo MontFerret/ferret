@@ -8,6 +8,8 @@ LET doc = DOCUMENT("http://waos.ovh/redirect.html", {
 
 CLICK(doc, '.click')
 
-WAIT_NAVIGATION(doc)
+WAIT_NAVIGATION(doc, {
+    target: "(\/[0-9].*\?|redirect2.html)"
+})
 
 RETURN ELEMENT(doc, '.title')
