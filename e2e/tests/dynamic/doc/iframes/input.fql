@@ -3,8 +3,8 @@ LET page = DOCUMENT(url, true)
 
 LET frames = (
     FOR f IN page.frames
-        LIMIT 1
         FILTER f.name == "nested"
+        LIMIT 1
         RETURN f
 )
 LET doc = FIRST(frames)
