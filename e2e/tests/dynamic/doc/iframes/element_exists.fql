@@ -1,7 +1,14 @@
 LET url = @dynamic + "?redirect=/iframe"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 
-LET doc = page.frames[1]
+LET frames = (
+    FOR f IN page.frames
+        FILTER f.name == "nested"
+        LIMIT 1
+        RETURN f
+)
+
+LET doc = FIRST(frames)
 
 LET expectedP = TRUE
 LET actualP = ELEMENT_EXISTS(doc, '.text-center')

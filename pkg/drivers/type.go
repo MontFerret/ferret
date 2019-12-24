@@ -6,6 +6,7 @@ var (
 	HTTPResponseType = core.NewType("HTTPResponse")
 	HTTPHeaderType   = core.NewType("HTTPHeaders")
 	HTTPCookieType   = core.NewType("HTTPCookie")
+	HTTPCookiesType  = core.NewType("HTTPCookies")
 	HTMLElementType  = core.NewType("HTMLElement")
 	HTMLDocumentType = core.NewType("HTMLDocument")
 	HTMLPageType     = core.NewType("HTMLPageType")
@@ -15,9 +16,10 @@ var (
 var typeComparisonTable = map[core.Type]uint64{
 	HTTPHeaderType:   0,
 	HTTPCookieType:   1,
-	HTMLElementType:  2,
-	HTMLDocumentType: 3,
-	HTMLPageType:     4,
+	HTTPCookiesType:  2,
+	HTMLElementType:  3,
+	HTMLDocumentType: 4,
+	HTMLPageType:     5,
 }
 
 func Compare(first, second core.Type) int64 {

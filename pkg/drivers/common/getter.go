@@ -63,22 +63,17 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 		case "url", "URL":
 			return page.GetMainFrame().GetURL(), nil
 		case "cookies":
+			cookies, err := page.GetCookies(ctx)
+
+			if err != nil {
+				return values.None, err
+			}
+
 			if len(path) == 1 {
-				return page.GetCookies(ctx)
+				return cookies, nil
 			}
 
-			switch idx := path[1].(type) {
-			case values.Int:
-				cookies, err := page.GetCookies(ctx)
-
-				if err != nil {
-					return values.None, err
-				}
-
-				return cookies.Get(idx), nil
-			default:
-				return values.None, core.TypeError(idx.Type(), types.Int)
-			}
+			return cookies.GetIn(ctx, path[1:])
 		case "isClosed":
 			return page.IsClosed(), nil
 		case "title":
@@ -109,7 +104,11 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 		case "title":
 			return doc.GetTitle(), nil
 		case "parent":
-			parent := doc.GetParentDocument()
+			parent, err := doc.GetParentDocument(ctx)
+
+			if err != nil {
+				return values.None, err
+			}
 
 			if parent == nil {
 				return values.None, nil

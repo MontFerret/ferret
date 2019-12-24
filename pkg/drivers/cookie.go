@@ -30,8 +30,6 @@ type (
 		HTTPOnly bool
 		SameSite SameSite
 	}
-
-	HTTPCookies map[string]HTTPCookie
 )
 
 const (

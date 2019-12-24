@@ -143,7 +143,7 @@ type (
 
 		GetName() values.String
 
-		GetParentDocument() HTMLDocument
+		GetParentDocument(ctx context.Context) (HTMLDocument, error)
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
@@ -192,25 +192,25 @@ type (
 
 		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
 
-		GetCookies(ctx context.Context) (*values.Array, error)
+		GetCookies(ctx context.Context) (HTTPCookies, error)
 
-		SetCookies(ctx context.Context, cookies ...HTTPCookie) error
+		SetCookies(ctx context.Context, cookies HTTPCookies) error
 
-		DeleteCookies(ctx context.Context, cookies ...HTTPCookie) error
+		DeleteCookies(ctx context.Context, cookies HTTPCookies) error
+
+		GetResponse(ctx context.Context) (*HTTPResponse, error)
 
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
 		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
 
-		WaitForNavigation(ctx context.Context) error
+		WaitForNavigation(ctx context.Context, targetURL values.String) error
 
 		Navigate(ctx context.Context, url values.String) error
 
 		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)
 
 		NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error)
-
-		GetResponse(ctx context.Context) (*HTTPResponse, error)
 	}
 )
 

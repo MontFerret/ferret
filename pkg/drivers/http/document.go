@@ -203,8 +203,8 @@ func (doc *HTMLDocument) GetName() values.String {
 	return ""
 }
 
-func (doc *HTMLDocument) GetParentDocument() drivers.HTMLDocument {
-	return doc.parent
+func (doc *HTMLDocument) GetParentDocument(_ context.Context) (drivers.HTMLDocument, error) {
+	return doc.parent, nil
 }
 
 func (doc *HTMLDocument) ScrollTop(_ context.Context) error {

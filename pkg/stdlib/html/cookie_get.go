@@ -39,15 +39,11 @@ func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	found, _ := cookies.Find(func(value core.Value, _ int) bool {
-		cookie, ok := value.(drivers.HTTPCookie)
+	cookie, found := cookies[name.String()]
 
-		if !ok {
-			return ok
-		}
+	if found {
+		return cookie, nil
+	}
 
-		return cookie.Name == name.String()
-	})
-
-	return found, nil
+	return values.None, nil
 }
