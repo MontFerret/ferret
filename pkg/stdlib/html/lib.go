@@ -43,6 +43,7 @@ func RegisterLib(ns core.Namespace) error {
 			"NAVIGATE_BACK":     NavigateBack,
 			"NAVIGATE_FORWARD":  NavigateForward,
 			"PAGINATION":        Pagination,
+			"PARSE":             Parse,
 			"PDF":               PDF,
 			"SCREENSHOT":        Screenshot,
 			"SCROLL":            ScrollXY,
