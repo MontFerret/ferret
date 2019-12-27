@@ -669,7 +669,13 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 		return result, nil
 	case "object":
 		if out.ObjectID == nil {
-			return values.None, nil
+			var value interface{}
+
+			if err := json.Unmarshal(out.Value, &value); err != nil {
+				return values.None, err
+			}
+
+			return values.Parse(value), nil
 		}
 
 		repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*out.ObjectID))
