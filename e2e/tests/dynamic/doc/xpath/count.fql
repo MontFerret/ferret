@@ -1,5 +1,5 @@
 LET url = @dynamic
-LET page = DOCUMENT(url, true)
+LET page = DOCUMENT(url, { driver: "cdp" })
 
 LET actual = XPATH(page, "count(//body)")
 
