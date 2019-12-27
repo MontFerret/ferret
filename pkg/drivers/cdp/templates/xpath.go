@@ -2,6 +2,9 @@ package templates
 
 const xPathTemplate = `
 		(element, expression) => {
+			const unwrap = (item) => {
+				return item.nodeType != 2 ? item : item.nodeValue;
+			};
 			const out = document.evaluate(
 				expression,
 				element,
@@ -17,7 +20,7 @@ const xPathTemplate = `
 					let item;
 		
 					while ((item = out.iterateNext())) {
-						result.push(item);
+						result.push(unwrap(item));
 					}
 		
 					break;
@@ -30,7 +33,7 @@ const xPathTemplate = `
 						const item = out.snapshotItem(i);
 		
 						if (item != null) {
-							result.push(item);
+							result.push(unwrap(item));
 						}
 					}
 					break;
@@ -49,7 +52,7 @@ const xPathTemplate = `
 				}
 				case XPathResult.ANY_UNORDERED_NODE_TYPE:
 				case XPathResult.FIRST_ORDERED_NODE_TYPE: {
-					result = out.singleNodeValue;
+					result = unwrap(out.singleNodeValue);
 					break;
 				}
 				default: {

@@ -627,6 +627,19 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 				continue
 			}
 
+			// it's not a Node, it's an attr value
+			if descr.Value.ObjectID == nil {
+				var value interface{}
+
+				if err := json.Unmarshal(descr.Value.Value, &value); err != nil {
+					return values.None, err
+				}
+
+				result.Push(values.Parse(value))
+
+				continue
+			}
+
 			repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*descr.Value.ObjectID))
 
 			if err != nil {
