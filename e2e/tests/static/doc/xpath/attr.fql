@@ -3,4 +3,4 @@ LET page = DOCUMENT(url)
 
 LET actual = XPATH(page, "//meta/@charset")
 
-RETURN EXPECT(["utf-8"], actual)
+RETURN EXPECT(["UTF-8"], actual)
