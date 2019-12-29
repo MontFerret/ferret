@@ -17,7 +17,7 @@ type ParseParams struct {
 
 // PARSE loads an HTML page from a given string or byte array
 // @param params (Object) - Optional, an object containing the following properties :
-// 		driver (String) - Optional, driver name.
+// 	driver (String) - Optional, driver name.
 //      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
 //      	i.e. not to open a page in the Incognito mode.
 //      cookies (HTTPCookies) - Optional, set of HTTP cookies.
