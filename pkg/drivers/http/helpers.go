@@ -15,20 +15,26 @@ import (
 )
 
 func parseXPathNode(nav *htmlquery.NodeNavigator) (core.Value, error) {
-	node := nav.Current()
-
-	if node == nil {
-		return values.None, nil
-	}
-
 	switch nav.NodeType() {
 	case xpath.ElementNode:
+		node := nav.Current()
+
+		if node == nil {
+			return values.None, nil
+		}
+
 		return NewHTMLElement(&goquery.Selection{Nodes: []*html.Node{node}})
 	case xpath.RootNode:
+		node := nav.Current()
+
+		if node == nil {
+			return values.None, nil
+		}
+
 		url := htmlquery.SelectAttr(node, "url")
 		return NewHTMLDocument(goquery.NewDocumentFromNode(node), url, nil)
 	default:
-		return values.Parse(node.Data), nil
+		return values.NewString(nav.Value()), nil
 	}
 }
 
