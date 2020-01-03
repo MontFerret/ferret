@@ -2,8 +2,6 @@ package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
-	"github.com/pkg/errors"
 	"hash/fnv"
 	"io"
 	"regexp"
@@ -12,9 +10,11 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
@@ -324,8 +324,8 @@ func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies drivers.HTTPCookie
 	return p.network.DeleteCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
 }
 
-func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
-	return nil, core.ErrNotSupported
+func (p *HTMLPage) GetResponse(ctx context.Context) (drivers.HTTPResponse, error) {
+	return p.network.GetResponse(ctx)
 }
 
 func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {

@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sync"
 
@@ -32,6 +33,7 @@ type (
 		eventLoop *events.Loop
 		cancel    context.CancelFunc
 		listeners []FrameLoadedListener
+		response  drivers.HTTPResponse
 	}
 )
 
@@ -170,6 +172,13 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	return nil
 }
 
+func (m *Manager) GetResponse(_ context.Context) (drivers.HTTPResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.response, nil
+}
+
 func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -291,6 +300,8 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		close(onEvent)
 	}()
 
+	go m.waitForResponseData(ctx, frameID)
+
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
@@ -337,4 +348,74 @@ func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.Li
 
 func (m *Manager) RemoveFrameLoadedListener(id events.ListenerID) {
 	m.eventLoop.RemoveListener(eventFrameLoad, id)
+}
+
+func (m *Manager) waitForResponseData(ctx context.Context, frameID page.FrameID) {
+	fmt.Println("waitForResponseData")
+
+	stream, err := m.client.Network.ResponseReceived(ctx)
+
+	if err != nil {
+		m.logger.Warn().Err(err).Msg("failed to listen to responses")
+
+		return
+	}
+
+	defer func() {
+		if err := stream.Close(); err != nil {
+			m.logger.Warn().Err(err).Msg("failed to close response stream")
+		}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("waitForResponseData: ctx.Done")
+			return
+		case <-stream.Ready():
+			if ctx.Err() != nil {
+				return
+			}
+
+			msg, err := stream.Recv()
+
+			// error is error. there is nothing we can do here.
+			if err != nil {
+				fmt.Println("waitForResponseData: err=", err)
+				return
+			}
+
+			fmt.Println("msg type", msg.Type)
+
+			// we are interested in documents only
+			if msg.Type != network.ResourceTypeDocument {
+				continue
+			}
+
+			// very unlikely, but by some reason it's marked as pointer
+			// which means it might be nil at some point
+			if msg.FrameID == nil {
+				continue
+			}
+
+			msgFrameID := *msg.FrameID
+
+			if msgFrameID != frameID {
+				continue
+			}
+
+			fmt.Println("headers:", string(msg.Response.Headers))
+
+			m.mu.Lock()
+			m.response = drivers.HTTPResponse{
+				StatusCode: msg.Response.Status,
+				Status:     msg.Response.StatusText,
+			}
+			m.mu.Unlock()
+
+			return
+		default:
+			continue
+		}
+	}
 }

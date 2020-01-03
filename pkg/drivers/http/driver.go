@@ -174,7 +174,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		Headers:    drivers.HTTPHeaders(resp.Header),
 	}
 
-	return NewHTMLPage(doc, params.URL, &r, cookies)
+	return NewHTMLPage(doc, params.URL, r, cookies)
 }
 
 func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
@@ -191,7 +191,7 @@ func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage
 		return nil, errors.Wrap(err, "failed to parse a document")
 	}
 
-	return NewHTMLPage(doc, "#blank", nil, nil)
+	return NewHTMLPage(doc, "#blank", drivers.HTTPResponse{}, nil)
 }
 
 func (drv *Driver) Close() error {
