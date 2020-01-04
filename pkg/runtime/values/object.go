@@ -220,6 +220,12 @@ func (t *Object) ForEach(predicate ObjectPredicate) {
 	}
 }
 
+func (t *Object) Has(key String) Boolean {
+	_, exists := t.value[string(key)]
+
+	return NewBoolean(exists)
+}
+
 func (t *Object) MustGet(key String) core.Value {
 	val, _ := t.Get(key)
 

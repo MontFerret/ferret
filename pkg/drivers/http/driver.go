@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
 	"github.com/sethgrid/pester"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 const DriverName = "http"
@@ -177,13 +177,8 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	return NewHTMLPage(doc, params.URL, &r, cookies)
 }
 
-func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
-	_, exists := drv.options.AllowedHTTPCodes[resp.StatusCode]
-	return exists
-}
-
-func (drv *Driver) Parse(_ context.Context, str values.String) (drivers.HTMLPage, error) {
-	buf := bytes.NewBuffer([]byte(str))
+func (drv *Driver) Parse(_ context.Context, params drivers.ParseParams) (drivers.HTMLPage, error) {
+	buf := bytes.NewBuffer(params.Content)
 
 	doc, err := goquery.NewDocumentFromReader(buf)
 
@@ -198,4 +193,9 @@ func (drv *Driver) Close() error {
 	drv.client = nil
 
 	return nil
+}
+
+func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
+	_, exists := drv.options.AllowedHTTPCodes[resp.StatusCode]
+	return exists
 }

@@ -17,4 +17,12 @@ type (
 		Headers     HTTPHeaders
 		Viewport    *Viewport
 	}
+
+	ParseParams struct {
+		Content     []byte
+		KeepCookies bool
+		Cookies     HTTPCookies
+		Headers     HTTPHeaders
+		Viewport    *Viewport
+	}
 )
