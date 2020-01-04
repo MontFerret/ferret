@@ -5,8 +5,8 @@ github.com/PuerkitoBio/goquery v1.5.0 h1:uGvmFXOA73IKluu/F84Xd1tt/z07GYm8X49XKHP
 github.com/PuerkitoBio/goquery v1.5.0/go.mod h1:qD2PgZ9lccMbQlc7eEOjaeRlFQON7xY8kdmcsrnKqMg=
 github.com/andybalholm/cascadia v1.0.0 h1:hOCXnnZ5A+3eVDX8pvgl4kofXv2ELss0bKcqRySc45o=
 github.com/andybalholm/cascadia v1.0.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
-github.com/antchfx/htmlquery v1.2.0 h1:oKShnsGlnOHX6t4uj5OHgLKkABcJoqnXpqnscoi9Lpw=
-github.com/antchfx/htmlquery v1.2.0/go.mod h1:MS9yksVSQXls00iXkiMqXr0J+umL/AmxXKuP28SUJM8=
+github.com/antchfx/htmlquery v1.2.1 h1:bSH+uvb5fh6gLAi2UXVwD4qGJVNJi9P+46gvPhZ+D/s=
+github.com/antchfx/htmlquery v1.2.1/go.mod h1:MS9yksVSQXls00iXkiMqXr0J+umL/AmxXKuP28SUJM8=
 github.com/antchfx/xpath v1.1.2 h1:YziPrtM0gEJBnhdUGxYcIVYXZ8FXbtbovxOi+UW/yWQ=
 github.com/antchfx/xpath v1.1.2/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
 github.com/antlr/antlr4 v0.0.0-20191217191749-ff67971f8580 h1:RlYuC6X3a1rMDn8p5S9YTlBws4aUxqiw/PBjPsD8bLk=
