@@ -93,7 +93,7 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-// RegexTest test wether the regexp has at least one match in the given text.
+// RegexTest test whether the regexp has at least one match in the given text.
 // @param text (String) - The string to split.
 // @param regex (String) - A regular expression to use for splitting the text.
 // @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.

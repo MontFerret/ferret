@@ -34,7 +34,7 @@ func variance(input *values.Array, sample values.Int) values.Float {
 
 	// When getting the mean of the squared differences
 	// "sample" will allow us to know if it's a sample
-	// or population and wether to subtract by one or not
+	// or population and whether to subtract by one or not
 	l := values.Float(input.Length() - (1 * sample))
 
 	return variance / l

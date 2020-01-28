@@ -11,7 +11,7 @@ import (
 
 // Split splits the given string value into a list of strings, using the separator.
 // @params text (String) - The string to split.
-// @params separator (String) - The sperator.
+// @params separator (String) - The separator.
 // @params limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
 // @returns strings (Array<String>) - Array of strings.
 func Split(_ context.Context, args ...core.Value) (core.Value, error) {

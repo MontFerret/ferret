@@ -61,7 +61,7 @@ func format(template string, args []core.Value) (string, error) {
 
 		if betweenBrackets == "" {
 			if argsCount <= lastArgIdx {
-				err = errors.Errorf("not enought arguments")
+				err = errors.Errorf("not enough arguments")
 				return ""
 			}
 

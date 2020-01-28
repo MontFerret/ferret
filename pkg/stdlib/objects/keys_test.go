@@ -67,7 +67,7 @@ func TestKeys(t *testing.T) {
 		So(int(keysArray.Length()), ShouldEqual, 0)
 	})
 
-	Convey("When not enought arguments", t, func() {
+	Convey("When not enough arguments", t, func() {
 		_, err := objects.Keys(context.Background())
 
 		So(err, ShouldBeError)
