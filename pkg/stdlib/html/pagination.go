@@ -21,7 +21,7 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -35,19 +35,19 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	selector := args[1].(values.String)
 
-	return &Paging{doc, selector}, nil
+	return &Paging{page, selector}, nil
 }
 
 var PagingType = core.NewType("paging")
 
 type (
 	Paging struct {
-		document drivers.HTMLDocument
+		page     drivers.HTMLPage
 		selector values.String
 	}
 
 	PagingIterator struct {
-		document drivers.HTMLDocument
+		page     drivers.HTMLPage
 		selector values.String
 		pos      values.Int
 	}
@@ -82,7 +82,7 @@ func (p *Paging) Copy() core.Value {
 }
 
 func (p *Paging) Iterate(_ context.Context) (core.Iterator, error) {
-	return &PagingIterator{p.document, p.selector, -1}, nil
+	return &PagingIterator{p.page, p.selector, -1}, nil
 }
 
 func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, error) {
@@ -92,7 +92,7 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 		return values.ZeroInt, values.ZeroInt, nil
 	}
 
-	exists, err := i.document.ExistsBySelector(ctx, i.selector)
+	exists, err := i.page.GetMainFrame().ExistsBySelector(ctx, i.selector)
 
 	if err != nil {
 		return values.None, values.None, err
@@ -102,7 +102,7 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 		return values.None, values.None, core.ErrNoMoreData
 	}
 
-	err = i.document.GetElement().ClickBySelector(ctx, i.selector, 1)
+	err = i.page.GetMainFrame().GetElement().ClickBySelector(ctx, i.selector, 1)
 
 	if err != nil {
 		return values.None, values.None, err
