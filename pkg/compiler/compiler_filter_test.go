@@ -333,7 +333,7 @@ func TestForFilter(t *testing.T) {
 		So(string(out), ShouldEqual, `[5,6,5]`)
 	})
 
-	Convey("Should call funcions", t, func() {
+	Convey("Should call functions", t, func() {
 		c := compiler.New()
 		counterA := 0
 		counterB := 0

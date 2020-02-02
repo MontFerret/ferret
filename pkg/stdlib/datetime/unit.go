@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Unit specifies an unit of time (Millsecond, Second...).
+// Unit specifies an unit of time (Millisecond, Second...).
 type Unit int
 
 const (

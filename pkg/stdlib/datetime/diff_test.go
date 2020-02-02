@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	isFloat       = values.NewBoolean(true)
-	beginingEpoch = values.NewDateTime(time.Time{})
+	isFloat        = values.NewBoolean(true)
+	beginningEpoch = values.NewDateTime(time.Time{})
 )
 
 func TestDiff(t *testing.T) {
@@ -20,28 +20,28 @@ func TestDiff(t *testing.T) {
 		&testCase{
 			Name:      "when less then 3 arguments",
 			Expected:  values.NewInt(1),
-			Args:      []core.Value{beginingEpoch},
+			Args:      []core.Value{beginningEpoch},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:      "when more then 4 arguments",
 			Expected:  values.NewInt(1),
-			Args:      []core.Value{beginingEpoch, beginingEpoch, beginingEpoch, beginingEpoch, beginingEpoch},
+			Args:      []core.Value{beginningEpoch, beginningEpoch, beginningEpoch, beginningEpoch, beginningEpoch},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:      "when wrong type argument",
 			Expected:  values.NewInt(1),
-			Args:      []core.Value{beginingEpoch, beginingEpoch, beginingEpoch},
+			Args:      []core.Value{beginningEpoch, beginningEpoch, beginningEpoch},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "when the difference is 1 year and 1 month (int)",
 			Expected: values.NewInt(1),
 			Args: []core.Value{
-				beginingEpoch,
+				beginningEpoch,
 				values.NewDateTime(
-					beginingEpoch.AddDate(1, 1, 0),
+					beginningEpoch.AddDate(1, 1, 0),
 				),
 				values.NewString("y"),
 			},
@@ -50,9 +50,9 @@ func TestDiff(t *testing.T) {
 			Name:     "when the difference is 1 year and 1 month (float)",
 			Expected: values.NewFloat(1.084931506849315),
 			Args: []core.Value{
-				beginingEpoch,
+				beginningEpoch,
 				values.NewDateTime(
-					beginingEpoch.AddDate(1, 1, 0),
+					beginningEpoch.AddDate(1, 1, 0),
 				),
 				values.NewString("year"),
 				isFloat,
@@ -62,9 +62,9 @@ func TestDiff(t *testing.T) {
 			Name:     "when date1 after date2 (int)",
 			Expected: values.NewInt(2),
 			Args: []core.Value{
-				beginingEpoch,
+				beginningEpoch,
 				values.NewDateTime(
-					beginingEpoch.Add(-time.Hour * 48),
+					beginningEpoch.Add(-time.Hour * 48),
 				),
 				values.NewString("d"),
 			},
@@ -73,9 +73,9 @@ func TestDiff(t *testing.T) {
 			Name:     "when date1 after date2 (float)",
 			Expected: values.NewFloat(2),
 			Args: []core.Value{
-				beginingEpoch,
+				beginningEpoch,
 				values.NewDateTime(
-					beginingEpoch.Add(-time.Hour * 48),
+					beginningEpoch.Add(-time.Hour * 48),
 				),
 				values.NewString("d"),
 				isFloat,
@@ -85,8 +85,8 @@ func TestDiff(t *testing.T) {
 			Name:     "when dates are equal (int)",
 			Expected: values.NewInt(0),
 			Args: []core.Value{
-				beginingEpoch,
-				beginingEpoch,
+				beginningEpoch,
+				beginningEpoch,
 				values.NewString("i"),
 			},
 		},
@@ -94,8 +94,8 @@ func TestDiff(t *testing.T) {
 			Name:     "when dates are equal (float)",
 			Expected: values.NewFloat(0),
 			Args: []core.Value{
-				beginingEpoch,
-				beginingEpoch,
+				beginningEpoch,
+				beginningEpoch,
 				values.NewString("y"),
 				isFloat,
 			},
@@ -115,9 +115,9 @@ func TestDiff(t *testing.T) {
 				Name:     "When difference is 1 " + unit + " (int)",
 				Expected: values.NewInt(1),
 				Args: []core.Value{
-					beginingEpoch,
+					beginningEpoch,
 					values.NewDateTime(
-						beginingEpoch.AddDate(dates[0], dates[1], dates[2]),
+						beginningEpoch.AddDate(dates[0], dates[1], dates[2]),
 					),
 					values.NewString(unit),
 				},
@@ -126,9 +126,9 @@ func TestDiff(t *testing.T) {
 				Name:     "When difference is 1 " + unit + " (float)",
 				Expected: values.NewFloat(1),
 				Args: []core.Value{
-					beginingEpoch,
+					beginningEpoch,
 					values.NewDateTime(
-						beginingEpoch.AddDate(dates[0], dates[1], dates[2]),
+						beginningEpoch.AddDate(dates[0], dates[1], dates[2]),
 					),
 					values.NewString(unit),
 					isFloat,
@@ -150,9 +150,9 @@ func TestDiff(t *testing.T) {
 				Name:     "When difference is 1 " + unit + " (int)",
 				Expected: values.NewInt(1),
 				Args: []core.Value{
-					beginingEpoch,
+					beginningEpoch,
 					values.NewDateTime(
-						beginingEpoch.Add(durn),
+						beginningEpoch.Add(durn),
 					),
 					values.NewString(unit),
 				},
@@ -161,9 +161,9 @@ func TestDiff(t *testing.T) {
 				Name:     "When difference is 1 " + unit + " (int)",
 				Expected: values.NewFloat(1),
 				Args: []core.Value{
-					beginingEpoch,
+					beginningEpoch,
 					values.NewDateTime(
-						beginingEpoch.Add(durn),
+						beginningEpoch.Add(durn),
 					),
 					values.NewString(unit),
 					isFloat,

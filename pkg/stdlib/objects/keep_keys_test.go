@@ -11,7 +11,7 @@ import (
 )
 
 func TestKeepKeys(t *testing.T) {
-	Convey("When not enought arguments)", t, func() {
+	Convey("When not enough arguments)", t, func() {
 		// there is no object
 		obj, err := objects.KeepKeys(context.Background())
 

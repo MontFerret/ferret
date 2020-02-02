@@ -9,7 +9,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestPrecentile(t *testing.T) {
+func TestPercentile(t *testing.T) {
 	Convey("Should return nth percentile value", t, func() {
 		out, err := math.Percentile(
 			context.Background(),

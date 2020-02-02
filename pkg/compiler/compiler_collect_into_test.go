@@ -115,7 +115,7 @@ func TestCollectInto(t *testing.T) {
 		So(string(out), ShouldEqual, `[{"gender":"f","values":[{"active":true},{"active":true}]},{"gender":"m","values":[{"active":true},{"active":true},{"active":false}]}]`)
 	})
 
-	Convey("Should create custom projection grouped by miltiple keys", t, func() {
+	Convey("Should create custom projection grouped by multiple keys", t, func() {
 		c := compiler.New()
 
 		prog, err := c.Compile(`

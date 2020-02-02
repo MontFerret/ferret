@@ -423,7 +423,7 @@ func main() {
 
 ## Proxy
 
-By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a prticular proxy. It should be done during a browser launch.
+By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a particular proxy. It should be done during a browser launch.
 
 But you can pass an address of a proxy server you want to use for static pages.
 

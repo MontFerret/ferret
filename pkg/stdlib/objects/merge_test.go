@@ -11,7 +11,7 @@ import (
 )
 
 func TestMerge(t *testing.T) {
-	Convey("When not enought arguments", t, func() {
+	Convey("When not enough arguments", t, func() {
 		obj, err := objects.Merge(context.Background())
 
 		So(err, ShouldBeError)
