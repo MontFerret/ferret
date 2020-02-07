@@ -57,7 +57,7 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	keys.ForEach(func(key core.Value, idx int) bool {
 		k = key.(values.String)
 
-		// this is necessary to impelement ArangoDB's behavior.
+		// this is necessary to implement ArangoDB's behavior.
 		// in ArangoDB the first value in values is
 		// associated with each key. Ex.:
 		// -- query --

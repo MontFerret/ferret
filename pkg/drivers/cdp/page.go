@@ -126,6 +126,51 @@ func LoadHTMLPage(
 	return p, nil
 }
 
+func LoadHTMLPageWithContent(
+	ctx context.Context,
+	conn *rpcc.Conn,
+	params drivers.Params,
+	content []byte,
+) (p *HTMLPage, err error) {
+	logger := logging.FromContext(ctx)
+	p, err = LoadHTMLPage(ctx, conn, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			if e := p.Close(); e != nil {
+				logger.Error().Err(e).Msg("failed to close page")
+			}
+		}
+	}()
+
+	frameID := p.getCurrentDocument().Frame().Frame.ID
+	err = p.client.Page.SetDocumentContent(ctx, page.NewSetDocumentContentArgs(frameID, string(content)))
+
+	if err != nil {
+		return nil, errors.Wrap(err, "set document content")
+	}
+
+	// Remove prev frames (from a blank page)
+	prev := p.dom.GetMainFrame()
+	err = p.dom.RemoveFrameRecursively(prev.Frame().Frame.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.loadMainFrame(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
 func NewHTMLPage(
 	logger *zerolog.Logger,
 	conn *rpcc.Conn,
