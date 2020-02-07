@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"io"
 	"regexp"
 	"sync"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -388,7 +388,7 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 		return
 	}
 
-	response := &drivers.HTTPResponse{
+	response := drivers.HTTPResponse{
 		StatusCode: msg.Response.Status,
 		Status:     msg.Response.StatusText,
 		Headers:    make(drivers.HTTPHeaders),
@@ -408,7 +408,7 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 		response.Headers.Set(key, value)
 	}
 
-	m.response.Store(msg.FrameID, response)
+	m.response.Store(*msg.FrameID, response)
 
 	return
 }
