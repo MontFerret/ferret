@@ -24,12 +24,12 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 		switch segment {
 		case "response":
 			resp, err := page.GetResponse(ctx)
+
 			if err != nil {
 				return nil, errors.Wrap(err, "get response")
 			}
 
 			return resp.GetIn(ctx, path[1:])
-
 		case "mainFrame", "document":
 			return GetInDocument(ctx, page.GetMainFrame(), path[1:])
 		case "frames":

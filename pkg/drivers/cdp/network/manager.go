@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"regexp"
 	"sync"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -25,13 +27,14 @@ type (
 	FrameLoadedListener = func(ctx context.Context, frame page.Frame)
 
 	Manager struct {
-		mu        sync.Mutex
-		logger    *zerolog.Logger
-		client    *cdp.Client
-		headers   drivers.HTTPHeaders
-		eventLoop *events.Loop
-		cancel    context.CancelFunc
-		listeners []FrameLoadedListener
+		mu                 sync.Mutex
+		logger             *zerolog.Logger
+		client             *cdp.Client
+		headers            drivers.HTTPHeaders
+		eventLoop          *events.Loop
+		cancel             context.CancelFunc
+		responseListenerID events.ListenerID
+		response           *sync.Map
 	}
 )
 
@@ -48,8 +51,25 @@ func New(
 	m.headers = make(drivers.HTTPHeaders)
 	m.eventLoop = eventLoop
 	m.cancel = cancel
+	m.response = new(sync.Map)
+
+	var err error
+
+	closers := make([]io.Closer, 0, 10)
+
+	defer func() {
+		if err != nil {
+			common.CloseAll(logger, closers, "failed to close a DOM event stream")
+		}
+	}()
 
 	frameNavigatedStream, err := m.client.Page.FrameNavigated(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseReceivedStream, err := m.client.Network.ResponseReceived(ctx)
 
 	if err != nil {
 		return nil, err
@@ -58,6 +78,12 @@ func New(
 	m.eventLoop.AddSource(events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
 		return stream.(page.FrameNavigatedClient).Recv()
 	}))
+
+	m.eventLoop.AddSource(events.NewSource(responseReceived, responseReceivedStream, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(network.ResponseReceivedClient).Recv()
+	}))
+
+	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
 
 	return m, nil
 }
@@ -168,6 +194,16 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	}
 
 	return nil
+}
+
+func (m *Manager) GetResponse(_ context.Context, frameID page.FrameID) (drivers.HTTPResponse, error) {
+	value, found := m.response.Load(frameID)
+
+	if !found {
+		return drivers.HTTPResponse{}, core.ErrNotFound
+	}
+
+	return value.(drivers.HTTPResponse), nil
 }
 
 func (m *Manager) Navigate(ctx context.Context, url values.String) error {
@@ -337,4 +373,42 @@ func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.Li
 
 func (m *Manager) RemoveFrameLoadedListener(id events.ListenerID) {
 	m.eventLoop.RemoveListener(eventFrameLoad, id)
+}
+
+func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) {
+	out = true
+	msg, ok := message.(*network.ResponseReceivedReply)
+
+	if !ok {
+		return
+	}
+
+	// we are interested in documents only
+	if msg.Type != network.ResourceTypeDocument {
+		return
+	}
+
+	response := drivers.HTTPResponse{
+		StatusCode: msg.Response.Status,
+		Status:     msg.Response.StatusText,
+		Headers:    make(drivers.HTTPHeaders),
+	}
+
+	deserialized := make(map[string]string)
+
+	if len(msg.Response.Headers) > 0 {
+		err := json.Unmarshal(msg.Response.Headers, &deserialized)
+
+		if err != nil {
+			m.logger.Error().Err(err).Msg("failed to deserialize response headers")
+		}
+	}
+
+	for key, value := range deserialized {
+		response.Headers.Set(key, value)
+	}
+
+	m.response.Store(*msg.FrameID, response)
+
+	return
 }

@@ -369,8 +369,14 @@ func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies drivers.HTTPCookie
 	return p.network.DeleteCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
 }
 
-func (p *HTMLPage) GetResponse(_ context.Context) (*drivers.HTTPResponse, error) {
-	return nil, core.ErrNotSupported
+func (p *HTMLPage) GetResponse(ctx context.Context) (drivers.HTTPResponse, error) {
+	doc := p.getCurrentDocument()
+
+	if doc == nil {
+		return drivers.HTTPResponse{}, nil
+	}
+
+	return p.network.GetResponse(ctx, doc.Frame().Frame.ID)
 }
 
 func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {

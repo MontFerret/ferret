@@ -198,7 +198,7 @@ type (
 
 		DeleteCookies(ctx context.Context, cookies HTTPCookies) error
 
-		GetResponse(ctx context.Context) (*HTTPResponse, error)
+		GetResponse(ctx context.Context) (HTTPResponse, error)
 
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
