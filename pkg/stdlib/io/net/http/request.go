@@ -111,7 +111,7 @@ func newParamsFrom(obj *values.Object) (Params, error) {
 	body, exists := obj.Get("body")
 
 	if exists {
-		if err := core.ValidateType(headers, types.Binary); err != nil {
+		if err := core.ValidateType(body, types.Binary); err != nil {
 			return Params{}, core.Error(err, ".body")
 		}
 
