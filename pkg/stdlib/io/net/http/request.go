@@ -19,10 +19,10 @@ type Params struct {
 }
 
 func REQUEST(ctx context.Context, args ...core.Value) (core.Value, error) {
-	return execMethod("", ctx, args)
+	return execMethod(ctx, "", args)
 }
 
-func execMethod(method values.String, ctx context.Context, args []core.Value) (core.Value, error) {
+func execMethod(ctx context.Context, method values.String, args []core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
 		return values.None, err
 	}

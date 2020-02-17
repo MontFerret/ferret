@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	h "net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -30,5 +31,5 @@ func GET(ctx context.Context, args ...core.Value) (core.Value, error) {
 		})
 	}
 
-	return execMethod("GET", ctx, args)
+	return execMethod(ctx, h.MethodGet, args)
 }
