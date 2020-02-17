@@ -88,7 +88,7 @@ func TestPOST(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.POST(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString("http://localhost:9999")),
+			values.NewObjectProperty("url", values.NewString("http://127.0.0.1:9999")),
 			values.NewObjectProperty("body", values.NewBinary(b)),
 		))
 

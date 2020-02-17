@@ -94,7 +94,7 @@ func TestGET(t *testing.T) {
 		}()
 
 		out, err := http.GET(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString("http://localhost:9999")),
+			values.NewObjectProperty("url", values.NewString("http://127.0.0.1:9999")),
 			values.NewObjectProperty("headers", values.NewObjectWith(
 				values.NewObjectProperty("X-Token", values.NewString("Ferret")),
 				values.NewObjectProperty("X-From", values.NewString("localhost")),
