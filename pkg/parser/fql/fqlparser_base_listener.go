@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.2. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.7.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -25,6 +25,24 @@ func (s *BaseFqlParserListener) EnterProgram(ctx *ProgramContext) {}
 
 // ExitProgram is called when production program is exited.
 func (s *BaseFqlParserListener) ExitProgram(ctx *ProgramContext) {}
+
+// EnterUseExpression is called when production useExpression is entered.
+func (s *BaseFqlParserListener) EnterUseExpression(ctx *UseExpressionContext) {}
+
+// ExitUseExpression is called when production useExpression is exited.
+func (s *BaseFqlParserListener) ExitUseExpression(ctx *UseExpressionContext) {}
+
+// EnterUseExpressionAs is called when production useExpressionAs is entered.
+func (s *BaseFqlParserListener) EnterUseExpressionAs(ctx *UseExpressionAsContext) {}
+
+// ExitUseExpressionAs is called when production useExpressionAs is exited.
+func (s *BaseFqlParserListener) ExitUseExpressionAs(ctx *UseExpressionAsContext) {}
+
+// EnterUseExpressionShortcut is called when production useExpressionShortcut is entered.
+func (s *BaseFqlParserListener) EnterUseExpressionShortcut(ctx *UseExpressionShortcutContext) {}
+
+// ExitUseExpressionShortcut is called when production useExpressionShortcut is exited.
+func (s *BaseFqlParserListener) ExitUseExpressionShortcut(ctx *UseExpressionShortcutContext) {}
 
 // EnterBody is called when production body is entered.
 func (s *BaseFqlParserListener) EnterBody(ctx *BodyContext) {}

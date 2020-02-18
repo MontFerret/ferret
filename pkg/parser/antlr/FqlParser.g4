@@ -6,8 +6,16 @@ program
     : body
     ;
 
+useExpression
+    : useExpressionAs
+    ;  
+
+useExpressionAs
+    : Use As
+    ;
+
 body
-    : (bodyStatement)* bodyExpression
+    : useExpression
     ;
 
 bodyStatement

@@ -60,6 +60,8 @@ SortDirection: 'ASC' | 'DESC';
 None: 'NONE';
 Null: 'NULL';
 BooleanLiteral: 'TRUE' | 'true' | 'FALSE' | 'false';
+Use: 'USE';
+As: 'AS';
 
 // Group operators
 Into: 'INTO';
