@@ -3,7 +3,9 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	h "net/http"
 	"testing"
 
@@ -15,6 +17,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
 )
 
+func randPort() string {
+	min := 8000
+	max := 8999
+	return fmt.Sprintf(":%d", rand.Intn(max-min)+min)
+}
+
 func TestDELETE(t *testing.T) {
 	Convey("Should successfully make request", t, func() {
 		type User struct {
@@ -22,8 +30,10 @@ func TestDELETE(t *testing.T) {
 			LastName  string `json:"last_name"`
 		}
 
+		port := randPort()
+
 		server := &h.Server{
-			Addr: ":9999",
+			Addr: port,
 			Handler: h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
 				var err error
 
@@ -88,7 +98,7 @@ func TestDELETE(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.DELETE(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString("http://127.0.0.1:9999")),
+			values.NewObjectProperty("url", values.NewString("http://127.0.0.1"+port)),
 			values.NewObjectProperty("body", values.NewBinary(b)),
 		))
 

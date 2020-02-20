@@ -22,8 +22,10 @@ func TestPOST(t *testing.T) {
 			LastName  string `json:"last_name"`
 		}
 
+		port := randPort()
+
 		server := &h.Server{
-			Addr: ":9999",
+			Addr: port,
 			Handler: h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
 				var err error
 
@@ -88,7 +90,7 @@ func TestPOST(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.POST(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString("http://127.0.0.1:9999")),
+			values.NewObjectProperty("url", values.NewString("http://127.0.0.1"+port)),
 			values.NewObjectProperty("body", values.NewBinary(b)),
 		))
 
