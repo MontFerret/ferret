@@ -16,7 +16,7 @@ import (
 )
 
 func TestPOST(t *testing.T) {
-	Convey("Should successfully make request", t, func() {
+	SkipConvey("Should successfully make request", t, func() {
 		type User struct {
 			FirstName string `json:"first_name"`
 			LastName  string `json:"last_name"`
