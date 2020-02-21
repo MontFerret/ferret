@@ -1,5 +1,27 @@
 ## Changelog
 
+### 0.10.0
+#### Added
+- Response information to drivers. [#391](https://github.com/MontFerret/ferret/pull/391), [#450](https://github.com/MontFerret/ferret/pull/450)
+- Сompilation check whether parameter values are provided. [#396](https://github.com/MontFerret/ferret/pull/396)
+- Allowed HTTP response codes to HTTP driver. [#398](https://github.com/MontFerret/ferret/pull/398)
+- IO functions to standard library. [#403](https://github.com/MontFerret/ferret/pull/403), [#405](https://github.com/MontFerret/ferret/pull/405), [#452](https://github.com/MontFerret/ferret/pull/452)
+- Сompilation check whether a variable name is unique. [#416](https://github.com/MontFerret/ferret/pull/416)
+- Loading HTML page into memory. Supported by all drivers. [#413](https://github.com/MontFerret/ferret/pull/434)
+
+#### Fixed
+- Fixes in HTTP driver. [#390](https://github.com/MontFerret/ferret/pull/390)
+- Inability to handle redirects correctly. [#432](https://github.com/MontFerret/ferret/pull/432)
+- XPath selector gives faulty output. [#435](https://github.com/MontFerret/ferret/pull/435)
+- Typos in README and comments. [#446](https://github.com/MontFerret/ferret/pull/446)
+- ``PAGINATION`` fails during redirects. [#448](https://github.com/MontFerret/ferret/pull/448)
+
+#### Changed
+- Made FQL keywords case insensitive. [#393](https://github.com/MontFerret/ferret/pull/393)
+- Performance boost in EventBroker. [#402](https://github.com/MontFerret/ferret/pull/402), [#407](https://github.com/MontFerret/ferret/pull/407), [#408](https://github.com/MontFerret/ferret/pull/408)
+- Updated dependencies.
+
+
 ### 0.9.0
 #### Added
 - ``INPUT_CLEAR`` function to clear input's value. [#366](https://github.com/MontFerret/ferret/pull/366)
