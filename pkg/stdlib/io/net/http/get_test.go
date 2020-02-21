@@ -46,7 +46,7 @@ func TestGET(t *testing.T) {
 		So(out.String(), ShouldEqual, "OK")
 	})
 
-	Convey("Should add headers to a request", t, func() {
+	SkipConvey("Should add headers to a request", t, func() {
 		port := randPort()
 
 		server := &h.Server{
