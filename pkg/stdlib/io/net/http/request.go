@@ -18,6 +18,12 @@ type Params struct {
 	Body    values.Binary
 }
 
+// REQUEST makes a HTTP request.
+// @params params (Object) - request parameters.
+//    * method (String) - HTTP method.
+//    * url (String) - Target url.
+//    * body (Binary) - POST data.
+//    * headers (Object) optional - HTTP headers.
 func REQUEST(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return execMethod(ctx, "", args)
 }

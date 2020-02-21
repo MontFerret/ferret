@@ -9,8 +9,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// GET makes a GET request to the specified URL.
-// @params url or  (String) - path to file to write into.
+// GET makes a HTTP GET request.
+// @params url or  (String) - target url or parameters.
+//    * url (String) - Target url
+//    * headers (Object) optional - HTTP headers
 func GET(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
 		return values.None, err
