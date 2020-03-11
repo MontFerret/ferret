@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 	"github.com/MontFerret/ferret/pkg/stdlib/html"
 	"github.com/MontFerret/ferret/pkg/stdlib/io"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
@@ -27,6 +28,10 @@ func RegisterLib(ns core.Namespace) error {
 	}
 
 	if err := collections.RegisterLib(ns); err != nil {
+		return err
+	}
+
+	if err := datetime.RegisterLib(ns); err != nil {
 		return err
 	}
 
