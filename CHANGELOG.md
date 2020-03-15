@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.10.1
+#### Fixed
+- Added string functions with correct names. [#461](https://github.com/MontFerret/ferret/pull/461)
+- Added missed datetime library. [#462](https://github.com/MontFerret/ferret/pull/462)
+
 ### 0.10.0
 #### Added
 - Response information to drivers. [#391](https://github.com/MontFerret/ferret/pull/391), [#450](https://github.com/MontFerret/ferret/pull/450)
