@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright Ferret Author(s) 2019
-version=$(curl -sI https://github.com/MontFerret/ferret/releases/latest | grep Location | awk -F"/" '{ printf "%s", $NF }' | tr -d '\r')
+version=$(curl -sI https://github.com/MontFerret/ferret/releases/latest | grep location | awk -F"/" '{ printf "%s", $NF }' | tr -d '\r')
 if [ ! $version ]; then
     echo "Failed while attempting to install ferret-cli. Please manually install:"
     echo ""
