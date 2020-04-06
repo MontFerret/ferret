@@ -58,11 +58,15 @@ jobs:
   - stage: e2e
     go: stable
     before_script:
-    - docker pull montferret/lab:0.2
+      - curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh | sh
+      - docker pull microbox/chromium-headless:77.0.3844.0
+      - docker run -d -p 9222:9222 microbox/chromium-headless:77.0.3844.0
+      - docker ps
     script:
-    - docker run -v .:/data -e FERRET_LAB_WAIT=http://127.0.0.1:9222/json/version -e FERRET_LAB_RUNTIME=bin:///data/bin/ferret -e FERRET_LAB_FILES=file:///data/e2e/tests -e FERRET_LAB_DIR=/data/e2e/pages/dynamic:8080@dynamic -e FERRET_LAB_DIR=/data/e2e/pages/static:8081@static montferret/lab:0.2
+      - make compile
+      - lab --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=file://./e2e/tests --dir=./e2e/pages/dynamic:8080@dynamic --dir=./e2e/pages/static:8081@static
     after_script:
-    - docker stop $(docker ps -q)
+      - docker stop $(docker ps -q)
   - stage: bench
     go: stable
     script:
