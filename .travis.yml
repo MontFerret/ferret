@@ -58,7 +58,8 @@ jobs:
   - stage: e2e
     go: stable
     before_script:
-      - sudo curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh | sh
+      - curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
+      - sudo sh install.sh
       - docker pull microbox/chromium-headless:77.0.3844.0
       - docker run -d -p 9222:9222 microbox/chromium-headless:77.0.3844.0
       - docker ps
