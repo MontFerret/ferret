@@ -30,8 +30,7 @@ cover:
 	curl -s https://codecov.io/bash | bash
 
 e2e:
-	go run ${DIR_E2E}/main.go --tests ${DIR_E2E}/tests --pages ${DIR_E2E}/pages
-	# --filter=e2e/tests/dynamic/element/inner_text/get_by_selector.fql
+	lab --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=file://./e2e/tests --dir=./e2e/pages/dynamic:8080@dynamic --dir=./e2e/pages/static:8081@static
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
