@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"math"
 	"math/rand"
 	"reflect"
@@ -50,4 +51,22 @@ func Random(max float64, min float64) float64 {
 	out := math.Floor(i) + min
 
 	return out
+}
+
+func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key Value) bool) error {
+	for {
+		value, key, err := iter.Next(ctx)
+
+		if err != nil {
+			if IsNoMoreData(err) {
+				return nil
+			}
+
+			return err
+		}
+
+		if !predicate(value, key) {
+			return nil
+		}
+	}
 }
