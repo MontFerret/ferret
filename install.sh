@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright Ferret Author(s) 2019
-version=$(curl -sI https://github.com/MontFerret/ferret/releases/latest | grep Location | awk -F"/" '{ printf "%s", $NF }' | tr -d '\r')
+version=$(curl -sI https://github.com/MontFerret/ferret/releases/latest | grep location | awk -F"/" '{ printf "%s", $NF }' | tr -d '\r')
 if [ ! $version ]; then
     echo "Failed while attempting to install ferret-cli. Please manually install:"
     echo ""
@@ -119,33 +119,20 @@ getPackage() {
     chmod +x $targetFile
 
     echo "Download complete."
-       
-        if [ "$userid" != "0" ]; then
-            echo
-            echo "=========================================================" 
-            echo "==    As the script was run as a non-root user the     =="
-            echo "==    following commands may need to be run manually   =="
-            echo "========================================================="
-            echo
-            echo "  sudo cp $targetFile /usr/local/bin/ferret"
-            echo "  rm -rf $targetDir"
-            echo
-        else
-            echo
-            echo "Running as root - Attempting to move $targetFile to /usr/local/bin"
+    echo
+    echo "Attempting to move $targetFile to /usr/local/bin"
 
-            mv $targetFile /usr/local/bin/ferret
-        
-            if [ "$?" = "0" ]; then
-                echo "New version of ferret installed to /usr/local/bin"
-            fi
+    mv $targetFile /usr/local/bin/ferret
 
-            if [ -d $targetDir ]; then
-                rm -rf $targetDir
-            fi
+    if [ "$?" = "0" ]; then
+        echo "New version of ferret installed to /usr/local/bin"
+    fi
 
-            ferret version
-        fi
+    if [ -d $targetDir ]; then
+        rm -rf $targetDir
+    fi
+
+    ferret --version
     fi
 }
 
