@@ -44,7 +44,7 @@ func (m *Mouse) DownWithCount(ctx context.Context, button string, count int) err
 	return m.client.Input.DispatchMouseEvent(
 		ctx,
 		input.NewDispatchMouseEventArgs("mousePressed", m.x, m.y).
-			SetButton(button).
+			SetButton(input.MouseButton(button)).
 			SetClickCount(count),
 	)
 }
@@ -57,7 +57,7 @@ func (m *Mouse) UpWithCount(ctx context.Context, button string, count int) error
 	return m.client.Input.DispatchMouseEvent(
 		ctx,
 		input.NewDispatchMouseEventArgs("mouseReleased", m.x, m.y).
-			SetButton(button).
+			SetButton(input.MouseButton(button)).
 			SetClickCount(count),
 	)
 }

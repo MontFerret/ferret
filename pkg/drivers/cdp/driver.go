@@ -211,7 +211,7 @@ func (drv *Driver) init(ctx context.Context) error {
 			return nil
 		}
 
-		createCtx, err := bc.Target.CreateBrowserContext(ctx)
+		createCtx, err := bc.Target.CreateBrowserContext(ctx, &target.CreateBrowserContextArgs{})
 
 		if err != nil {
 			bconn.Close()
