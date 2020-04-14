@@ -52,9 +52,9 @@ func RegisterLib(ns core.Namespace) error {
 		return err
 	}
 
-	if err := testing.RegisterLib(ns); err != nil {
+	if err := utils.RegisterLib(ns); err != nil {
 		return err
 	}
 
-	return utils.RegisterLib(ns)
+	return testing.RegisterLib(ns)
 }

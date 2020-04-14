@@ -2,11 +2,12 @@ package testing
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// IsFalse Asserts that value is false.
+// False asserts that value is false.
 // @param (Mixed) - Value to test.
 // @param (String) - Message to display on error.
 func False(_ context.Context, args ...core.Value) (core.Value, error) {

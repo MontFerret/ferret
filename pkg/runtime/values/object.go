@@ -220,6 +220,16 @@ func (t *Object) ForEach(predicate ObjectPredicate) {
 	}
 }
 
+func (t *Object) Find(predicate ObjectPredicate) (core.Value, Boolean) {
+	for idx, val := range t.value {
+		if predicate(val, idx) {
+			return val, True
+		}
+	}
+
+	return None, False
+}
+
 func (t *Object) Has(key String) Boolean {
 	_, exists := t.value[string(key)]
 

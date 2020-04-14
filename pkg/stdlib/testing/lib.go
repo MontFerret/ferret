@@ -18,11 +18,16 @@ func RegisterLib(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"ASSERT": Assert,
-			"EMPTY":  Empty,
-			"EQUAL":  Equal,
-			"FAIL":   Fail,
-			"FALSE":  False,
+			"ASSERT":  Assert,
+			"EMPTY":   Empty,
+			"EQUAL":   Equal,
+			"FAIL":    Fail,
+			"FALSE":   False,
+			"INCLUDE": Include,
+			"LEN":     Len,
+			"MATCH":   Match,
+			"NONE":    None,
+			"TRUE":    True,
 		}),
 	)
 }
@@ -32,9 +37,13 @@ func registerNOT(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"EMPTY": NotEmpty,
-			"EQUAL": NotEqual,
-			"FALSE": NotFalse,
+			"EMPTY":   NotEmpty,
+			"EQUAL":   NotEqual,
+			"FALSE":   NotFalse,
+			"INCLUDE": NotInclude,
+			"MATCH":   NotMatch,
+			"NONE":    NotNone,
+			"TRUE":    NotTrue,
 		}),
 	)
 }
