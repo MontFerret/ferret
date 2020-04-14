@@ -14,4 +14,4 @@ WAIT(1000)
 
 LET curr = el.style
 
-RETURN curr.color == "black" && curr["min-width"] == "100px" && curr["background-color"] == "#11111" ? "" : "styles should be updated"
+RETURN T::ASSERT(curr.color == "black" && curr["min-width"] == "100px" && curr["background-color"] == "#11111", "styles should be updated")

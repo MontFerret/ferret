@@ -10,4 +10,4 @@ CLICK(doc, btnSelector)
 
 WAIT_NO_ELEMENT(doc, elemSelector, 10000)
 
-RETURN ELEMENT_EXISTS(doc, elemSelector) ? "element should not be found" : ""
+RETURN T::FALSE(ELEMENT_EXISTS(doc, elemSelector), "element should not be found")

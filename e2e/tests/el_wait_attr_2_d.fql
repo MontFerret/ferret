@@ -11,4 +11,4 @@ WAIT_ATTR(el, "data-test", "test")
 ATTR_REMOVE(el, "class")
 WAIT_ATTR(el, "class", NONE)
 
-RETURN el.attributes.class == NONE ? "" : "attribute should be removed"
+RETURN T::NONE(el.attributes.class, "attribute should be removed")

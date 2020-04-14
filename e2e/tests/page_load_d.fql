@@ -4,4 +4,4 @@ LET doc = DOCUMENT(url, true)
 LET expected = url + '/'
 LET actual = doc.url
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQUAL(actual, expected)

@@ -3,10 +3,7 @@ LET doc = DOCUMENT(url)
 
 LET el = ELEMENT(doc, "#listings_table")
 
-LET expectedP = TRUE
-LET actualP = ELEMENT_EXISTS(el, '.odd')
+T::TRUE(ELEMENT_EXISTS(el, '.odd'))
+T::FALSE(ELEMENT_EXISTS(el, '.foo-bar'))
 
-LET expectedN = FALSE
-LET actualN = ELEMENT_EXISTS(el, '.foo-bar')
-
-RETURN EXPECT(expectedP + expectedN, actualP + expectedN)
+RETURN NONE

@@ -10,4 +10,4 @@ LET attrs = [
 LET expected = '["navbar-brand mr-0 mr-md-2","http://getbootstrap.com/"]'
 LET actual = TO_STRING(attrs)
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQUAL(actual, expected)

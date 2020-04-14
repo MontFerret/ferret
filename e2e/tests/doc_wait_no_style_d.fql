@@ -16,4 +16,4 @@ WAIT_NO_STYLE(doc, selector, "width", "100%")
 
 LET curr = el.style
 
-RETURN prev.width == "100%" && curr.width == "50%" ? "" : "style should be changed"
+RETURN T::ASSERT([prev.width == "100%", curr.width == "50%"], "style should be changed")

@@ -1,10 +1,7 @@
 LET url = @static + '/overview.html'
 LET doc = DOCUMENT(url)
 
-LET expectedP = TRUE
-LET actualP = ELEMENT_EXISTS(doc, '.section-nav')
+T::TRUE(ELEMENT_EXISTS(doc, '.section-nav'))
+T::FALSE(ELEMENT_EXISTS(doc, '.foo-bar'))
 
-LET expectedN = FALSE
-LET actualN = ELEMENT_EXISTS(doc, '.foo-bar')
-
-RETURN EXPECT(expectedP + expectedN, actualP + expectedN)
+RETURN NONE

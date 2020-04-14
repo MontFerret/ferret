@@ -1,4 +1,4 @@
 LET url = @static + '/overview.html'
 LET doc = DOCUMENT(url)
 
-RETURN EXPECT(doc.url, url)
+RETURN T::EQUAL(doc.url, url)

@@ -12,4 +12,4 @@ WAIT_STYLE(doc, selector, "width", "100%")
 
 LET curr = el.style
 
-RETURN prev.width == NONE && curr.width == "100%" ? "" : "style should be updated"
+RETURN T::ASSERT([prev.width == NONE, curr.width == "100%"], "style should be updated")

@@ -9,7 +9,7 @@ import (
 )
 
 // Assert checks whether value is a boolean value.
-// @param value (Boolean) - Expression to test for truthiness.
+// @param value (Boolean|Array) - Expression(s) to test for truthiness.
 // @param (String) - Message to display on error.
 func Assert(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -18,13 +18,28 @@ func Assert(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	if err := core.ValidateType(args[0], types.Boolean); err != nil {
+	if err := core.ValidateType(args[0], types.Boolean, types.Array); err != nil {
 		return values.None, err
 	}
 
-	exp := args[0].(values.Boolean)
+	result := values.True
 
-	if exp {
+	switch v := args[0].(type) {
+	case values.Boolean:
+		result = v
+		break
+	case *values.Array:
+		v.ForEach(func(value core.Value, idx int) bool {
+			if value.Compare(values.False) == 0 {
+				result = values.False
+				return false
+			}
+
+			return true
+		})
+	}
+
+	if result {
 		return values.None, nil
 	}
 
