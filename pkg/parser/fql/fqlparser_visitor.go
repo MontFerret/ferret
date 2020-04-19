@@ -10,6 +10,15 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#program.
 	VisitProgram(ctx *ProgramContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#head.
+	VisitHead(ctx *HeadContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#useExpression.
+	VisitUseExpression(ctx *UseExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#use.
+	VisitUse(ctx *UseContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#body.
 	VisitBody(ctx *BodyContext) interface{}
 
@@ -132,6 +141,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#expressionGroup.
 	VisitExpressionGroup(ctx *ExpressionGroupContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#namespaceIdentifier.
+	VisitNamespaceIdentifier(ctx *NamespaceIdentifierContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#namespace.
 	VisitNamespace(ctx *NamespaceContext) interface{}
