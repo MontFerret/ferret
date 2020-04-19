@@ -10,8 +10,9 @@ import (
 
 // SCROLL_TOP scrolls the document's window to its top.
 // @param doc (HTMLDocument) - Target document.
+// @param options (ScrollOptions) - Scroll options. Optional.
 func ScrollTop(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
 		return values.None, err
@@ -23,5 +24,17 @@ func ScrollTop(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.None, doc.ScrollTop(ctx)
+	var opts drivers.ScrollOptions
+
+	if len(args) > 1 {
+		opts, err = toScrollOptions(args[1])
+
+		if err != nil {
+			return values.None, err
+		}
+	} else {
+		opts = defaultScrollOptions()
+	}
+
+	return values.None, doc.ScrollTop(ctx, opts)
 }

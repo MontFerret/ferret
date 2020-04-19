@@ -207,19 +207,19 @@ func (doc *HTMLDocument) GetParentDocument(_ context.Context) (drivers.HTMLDocum
 	return doc.parent, nil
 }
 
-func (doc *HTMLDocument) ScrollTop(_ context.Context) error {
+func (doc *HTMLDocument) ScrollTop(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBottom(_ context.Context) error {
+func (doc *HTMLDocument) ScrollBottom(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String) error {
+func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float) error {
+func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 

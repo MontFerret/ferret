@@ -1101,8 +1101,8 @@ func (el *HTMLElement) SelectBySelector(ctx context.Context, selector values.Str
 	return el.input.SelectBySelector(ctx, el.id.NodeID, selector.String(), value)
 }
 
-func (el *HTMLElement) ScrollIntoView(ctx context.Context) error {
-	return el.input.ScrollIntoView(ctx, el.id.ObjectID)
+func (el *HTMLElement) ScrollIntoView(ctx context.Context, options drivers.ScrollOptions) error {
+	return el.input.ScrollIntoView(ctx, el.id.ObjectID, options)
 }
 
 func (el *HTMLElement) Focus(ctx context.Context) error {

@@ -111,7 +111,7 @@ type (
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
 
-		ScrollIntoView(ctx context.Context) error
+		ScrollIntoView(ctx context.Context, options ScrollOptions) error
 
 		Focus(ctx context.Context) error
 
@@ -147,13 +147,13 @@ type (
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
-		ScrollTop(ctx context.Context) error
+		ScrollTop(ctx context.Context, options ScrollOptions) error
 
-		ScrollBottom(ctx context.Context) error
+		ScrollBottom(ctx context.Context, options ScrollOptions) error
 
-		ScrollBySelector(ctx context.Context, selector values.String) error
+		ScrollBySelector(ctx context.Context, selector values.String, options ScrollOptions) error
 
-		ScrollByXY(ctx context.Context, x, y values.Float) error
+		ScrollByXY(ctx context.Context, x, y values.Float, options ScrollOptions) error
 
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
 

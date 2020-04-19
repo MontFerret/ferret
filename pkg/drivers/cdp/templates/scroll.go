@@ -19,11 +19,23 @@ const (
 		};
 	`
 
+	scrollTemplate = `
+		window.scrollTo({
+			left: %s,
+			top: %s,
+			behavior: %s,
+			block: %s, 
+			inline: %s
+  		});
+`
+
 	scrollTopTemplate = `
 		window.scrollTo({
 			left: 0,
 			top: 0,
-    		behavior: 'instant'
+			behavior: %s,
+			block: %s, 
+			inline: %s
   		});
 `
 
@@ -31,7 +43,9 @@ const (
 		window.scrollTo({
 			left: 0,
 			top: window.document.body.scrollHeight,
-    		behavior: 'instant'
+			behavior: %s,
+			block: %s, 
+			inline: %s
   		});
 `
 
@@ -42,53 +56,53 @@ const (
 
 			if (!isInViewport(el)) {
 				el.scrollIntoView({
-					block: 'center', 
-					inline: 'center',
-					behavior: 'instant'
+					behavior: %s,
+					block: %s, 
+					inline: %s
 				});
 			}
 	
 			return true;
 		}
 `
-)
 
-func Scroll(x, y string) string {
-	return fmt.Sprintf(`
-			window.scrollBy(%s, %s);
-`, x, y)
-}
-
-func ScrollTop() string {
-	return scrollTopTemplate
-}
-
-func ScrollBottom() string {
-	return scrollBottomTemplate
-}
-
-func ScrollIntoView() string {
-	return scrollIntoViewTemplate
-}
-
-func ScrollIntoViewBySelector(selector string) string {
-	return fmt.Sprintf(`
+	scrollIntoViewBySelectorTemplate = `
 		const el = document.querySelector('%s');
 
 		if (el == null) {
 			throw new Error('%s');
 		}
 
-		%s
+		` + isElementInViewportTemplate + `
 
 		if (!isInViewport(el)) {
 			el.scrollIntoView({
-				block: 'center', 
-				inline: 'center',
-    			behavior: 'instant'
+				behavior: %s,
+				block: %s, 
+				inline: %s
   			});
 		}
 
 		return true;
-`, selector, drivers.ErrNotFound, isElementInViewportTemplate)
+`
+)
+
+func Scroll(x, y string, options drivers.ScrollOptions) string {
+	return fmt.Sprintf(scrollTemplate, x, y, options.Behavior, options.Block, options.Inline)
+}
+
+func ScrollTop(options drivers.ScrollOptions) string {
+	return fmt.Sprintf(scrollTopTemplate, options.Behavior, options.Block, options.Inline)
+}
+
+func ScrollBottom(options drivers.ScrollOptions) string {
+	return fmt.Sprintf(scrollBottomTemplate, options.Behavior, options.Block, options.Inline)
+}
+
+func ScrollIntoView(options drivers.ScrollOptions) string {
+	return fmt.Sprintf(scrollIntoViewTemplate, options.Behavior, options.Block, options.Inline)
+}
+
+func ScrollIntoViewBySelector(selector string, options drivers.ScrollOptions) string {
+	return fmt.Sprintf(scrollIntoViewBySelectorTemplate, selector, drivers.ErrNotFound, options.Behavior, options.Block, options.Inline)
 }
