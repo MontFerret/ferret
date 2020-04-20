@@ -129,7 +129,7 @@ ferret
 
 ```shell
 Welcome to Ferret REPL
-Please use `Ctrl-D` to exit this program.
+Please use `exit` or `Ctrl-D` to exit this program.
 >%
 >LET doc = DOCUMENT('https://news.ycombinator.com/')
 >FOR post IN ELEMENTS(doc, '.storylink')
