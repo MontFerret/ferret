@@ -15,7 +15,6 @@ require (
 	github.com/derekparker/trie v0.0.0-20190812220523-e66023ee76eb
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/gorilla/css v1.0.0
 	github.com/labstack/echo/v4 v4.1.13
 	github.com/mafredri/cdp v0.28.0
