@@ -1,6 +1,5 @@
 ## Changelog
 
-
 ### 0.10.2
 #### Updated
 - Updated dependencies. [#466](https://github.com/MontFerret/ferret/pull/466) [#467](https://github.com/MontFerret/ferret/pull/467)
