@@ -12,29 +12,28 @@ import (
 )
 
 func TestUseExpression(t *testing.T) {
-	c := compiler.New()
 
-	c.Namespace("X").
-		RegisterFunctions(core.NewFunctionsFromMap(
-			map[string]core.Function{
-				"XXX_CONTAINS": strings.Contains,
-				"XXX_UPPER":    strings.Upper,
-			},
-		))
+	newCompiler := func() *compiler.Compiler {
+		c := compiler.New()
 
-	c.Namespace("Z").
-		RegisterFunction("XXX_TO_STRING", types.ToString)
+		err := c.Namespace("X").
+			RegisterFunctions(core.NewFunctionsFromMap(
+				map[string]core.Function{
+					"XXX_CONTAINS": strings.Contains,
+					"XXX_UPPER":    strings.Upper,
+				},
+			))
+		So(err, ShouldBeNil)
 
-	// Y contain the same function as Z to test for future collistions
-	c.Namespace("Y").
-		RegisterFunction("XXX_TO_STRING", types.ToString)
+		return c
+	}
 
 	Convey("Use Expression", t, func() {
 
 		Convey("Should compile", func() {
 
 			Convey("Single statement", func() {
-				p, err := c.Compile(`
+				p, err := newCompiler().Compile(`
 				USE X
 	
 				RETURN XXX_CONTAINS("s", "s")
@@ -47,7 +46,7 @@ func TestUseExpression(t *testing.T) {
 			})
 
 			Convey("Many functions from one lib", func() {
-				p, err := c.Compile(`
+				p, err := newCompiler().Compile(`
 				USE X
 	
 				RETURN XXX_CONTAINS(XXX_UPPER("s"), "S")
@@ -60,6 +59,12 @@ func TestUseExpression(t *testing.T) {
 			})
 
 			Convey("Many statements", func() {
+				c := newCompiler()
+
+				// Z must contain functions different from X
+				c.Namespace("Z").
+					RegisterFunction("XXX_TO_STRING", types.ToString)
+
 				p, err := c.Compile(`
 				USE X
 				USE Z
@@ -74,7 +79,7 @@ func TestUseExpression(t *testing.T) {
 			})
 
 			Convey("Namespace doesn't exists", func() {
-				p, err := c.Compile(`
+				p, err := newCompiler().Compile(`
 				USE NOT::EXISTS
 		
 				RETURN 1
@@ -85,9 +90,34 @@ func TestUseExpression(t *testing.T) {
 
 				So(string(out), ShouldEqual, "1")
 			})
+
+			Convey("Full and short path works together", func() {
+				p, err := newCompiler().Compile(`
+				USE X
+
+				LET short = XXX_CONTAINS("s", "s")
+				LET full = X::XXX_CONTAINS("s", "s")
+
+				RETURN short == full
+				`)
+
+				So(err, ShouldBeNil)
+				out := p.MustRun(context.Background())
+
+				So(string(out), ShouldEqual, "true")
+			})
 		})
 
 		Convey("Should not compile", func() {
+
+			c := newCompiler()
+
+			c.Namespace("Z").
+				RegisterFunction("XXX_TO_STRING", types.ToString)
+
+			// Y contain the same function as Z to test for future collistions
+			c.Namespace("Y").
+				RegisterFunction("XXX_TO_STRING", types.ToString)
 
 			testCases := []struct {
 				Name  string

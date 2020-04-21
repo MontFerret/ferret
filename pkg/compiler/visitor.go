@@ -118,9 +118,7 @@ func deleteNamespace(fns *core.Functions, namespace string) error {
 		}
 
 		fn, _ := fns.Get(name)
-
 		fns.Set(noprefix, fn)
-		fns.Unset(name)
 	}
 
 	return nil
