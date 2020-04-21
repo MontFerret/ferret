@@ -129,7 +129,7 @@ ferret
 
 ```shell
 Welcome to Ferret REPL
-Please use `Ctrl-D` to exit this program.
+Please use `exit` or `Ctrl-D` to exit this program.
 >%
 >LET doc = DOCUMENT('https://news.ycombinator.com/')
 >FOR post IN ELEMENTS(doc, '.storylink')
@@ -258,11 +258,11 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 			LIMIT 10
 			LET url = ELEMENT(el, "a")
 			LET name = ELEMENT(el, ".f3")
-			LET desc = ELEMENT(el, ".f5")
+			LET description = ELEMENT(el, ".f5")
 
 			RETURN {
 				name: TRIM(name.innerText),
-				description: TRIM(desc.innerText),
+				description: TRIM(description.innerText),
 				url: "https://github.com" + url.attributes.href
 			}
 	`

@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.10.2
+#### Updated
+- Updated dependencies. [#466](https://github.com/MontFerret/ferret/pull/466) [#467](https://github.com/MontFerret/ferret/pull/467)
+
 ### 0.10.1
 #### Fixed
 - Added string functions with correct names. [#461](https://github.com/MontFerret/ferret/pull/461)
