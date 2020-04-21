@@ -555,12 +555,12 @@ Thanks to everyone who contributed.
 Support this project by becoming a sponsor. Your logo will show up here with a link to your website.    
 
 <p>
-		    <a href="https://opencollective.com/ferret/donate" target="_blank">
+		    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
 	<img src="https://opencollective.com/ferret/sponsors.svg?width=890&button=false" />
 	</a>
 </p>
 <p>
-	    <a href="https://opencollective.com/ferret/donate" target="_blank">
+	    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
 	<img src="https://opencollective.com/ferret/backers.svg?width=890&button=false" />
 	</a>
 </p>
