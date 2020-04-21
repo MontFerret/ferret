@@ -56,8 +56,10 @@ func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 }
 
 func (v *visitor) doVisitHeads(heads []fql.IHeadContext) error {
+	namespaces := map[string]struct{}{}
+
 	for _, head := range heads {
-		err := v.doVisitHead(head.(*fql.HeadContext))
+		err := v.doVisitHead(head.(*fql.HeadContext), namespaces)
 		if err != nil {
 			return err
 		}
@@ -66,15 +68,21 @@ func (v *visitor) doVisitHeads(heads []fql.IHeadContext) error {
 	return nil
 }
 
-func (v *visitor) doVisitHead(head *fql.HeadContext) error {
+func (v *visitor) doVisitHead(head *fql.HeadContext, namespaces map[string]struct{}) error {
 	useexpr := head.UseExpression().(*fql.UseExpressionContext)
 
 	// TODO: Think about improving collision analysis to display more detailed errors.
-	// For example, "mamespaces X and Y both contain function F"
+	// For example, "namespaces X and Y both contain function F"
 	if iuse := useexpr.Use(); iuse != nil {
 		ns := iuse.(*fql.UseContext).
 			NamespaceIdentifier().
 			GetText()
+
+		if _, exists := namespaces[ns]; exists {
+			return errors.Errorf(`"%s" already imported`, ns)
+		}
+
+		namespaces[ns] = struct{}{}
 
 		err := deleteNamespace(v.funcs, ns)
 		if err != nil {
