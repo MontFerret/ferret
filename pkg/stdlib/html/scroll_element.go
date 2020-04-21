@@ -3,6 +3,8 @@ package html
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -27,24 +29,24 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	if len(args) == 3 {
 		if err = core.ValidateType(args[1], types.String); err != nil {
-			return values.None, err
+			return values.None, errors.Wrap(err, "selector")
 		}
 
 		if err = core.ValidateType(args[2], types.Object); err != nil {
-			return values.None, err
+			return values.None, errors.Wrap(err, "options")
 		}
 
 		doc, err = drivers.ToDocument(args[0])
 
 		if err != nil {
-			return values.None, err
+			return values.None, errors.Wrap(err, "document")
 		}
 
 		selector = values.ToString(args[1])
 		o, err := toScrollOptions(args[2])
 
 		if err != nil {
-			return values.None, err
+			return values.None, errors.Wrap(err, "options")
 		}
 
 		opts = o
@@ -57,7 +59,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 			doc, err = drivers.ToDocument(args[0])
 
 			if err != nil {
-				return values.None, err
+				return values.None, errors.Wrap(err, "document")
 			}
 
 			selector = values.ToString(args[1])
@@ -66,7 +68,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 			o, err := toScrollOptions(args[1])
 
 			if err != nil {
-				return values.None, err
+				return values.None, errors.Wrap(err, "options")
 			}
 
 			opts = o
@@ -75,7 +77,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 		el, err = drivers.ToElement(args[0])
 
 		if err != nil {
-			return values.None, err
+			return values.None, errors.Wrap(err, "element")
 		}
 	}
 
@@ -91,5 +93,10 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.ScrollIntoView(ctx, opts)
 	}
 
-	return values.None, core.TypeError(args[0].Type(), drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
+	return values.None, core.TypeError(
+		args[0].Type(),
+		drivers.HTMLPageType,
+		drivers.HTMLDocumentType,
+		drivers.HTMLElementType,
+	)
 }

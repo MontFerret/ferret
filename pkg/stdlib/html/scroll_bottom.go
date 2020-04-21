@@ -33,7 +33,7 @@ func ScrollBottom(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, err
 		}
 	} else {
-		opts = defaultScrollOptions()
+		opts = drivers.ScrollOptions{}
 	}
 
 	return values.None, doc.ScrollBottom(ctx, opts)

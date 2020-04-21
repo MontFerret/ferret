@@ -106,16 +106,8 @@ func waitTimeout(ctx context.Context, value values.Int) (context.Context, contex
 	)
 }
 
-func defaultScrollOptions() drivers.ScrollOptions {
-	return drivers.ScrollOptions{
-		Behavior: drivers.ScrollBehaviorInstant,
-		Inline:   drivers.ScrollHorizontalAlignmentCenter,
-		Block:    drivers.ScrollVerticalAlignmentCenter,
-	}
-}
-
 func toScrollOptions(value core.Value) (drivers.ScrollOptions, error) {
-	result := defaultScrollOptions()
+	result := drivers.ScrollOptions{}
 
 	err := core.ValidateType(value, types.Object)
 
