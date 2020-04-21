@@ -548,7 +548,7 @@ FOR cookie IN doc.cookies
 ## Contributors
 
 Thanks to everyone who contributed.
-<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890" /></a>
+<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890&button=false" /></a>
 
 ## Financial support
 
