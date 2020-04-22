@@ -38,6 +38,11 @@ func newVisitor(src string, funcs *core.Functions) *visitor {
 
 func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 	return newResultFrom(func() (interface{}, error) {
+		err := v.doVisitHeads(ctx.AllHead())
+		if err != nil {
+			return nil, err
+		}
+
 		gs := newGlobalScope()
 		rs := newRootScope(gs)
 		block, err := v.doVisitBody(ctx.Body().(*fql.BodyContext), rs)
@@ -48,6 +53,72 @@ func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 
 		return runtime.NewProgram(v.src, block, gs.params)
 	})
+}
+
+func (v *visitor) doVisitHeads(heads []fql.IHeadContext) error {
+	namespaces := map[string]struct{}{}
+
+	for _, head := range heads {
+		err := v.doVisitHead(head.(*fql.HeadContext), namespaces)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (v *visitor) doVisitHead(head *fql.HeadContext, namespaces map[string]struct{}) error {
+	useexpr := head.UseExpression().(*fql.UseExpressionContext)
+
+	// TODO: Think about improving collision analysis to display more detailed errors.
+	// For example, "namespaces X and Y both contain function F"
+	if iuse := useexpr.Use(); iuse != nil {
+		ns := iuse.(*fql.UseContext).
+			NamespaceIdentifier().
+			GetText()
+
+		if _, exists := namespaces[ns]; exists {
+			return errors.Errorf(`namespace "%s" already used`, ns)
+		}
+
+		namespaces[ns] = struct{}{}
+
+		err := copyFromNamespace(v.funcs, ns)
+		if err != nil {
+			return errors.Wrapf(err, `copy from namespace "%s"`, ns)
+		}
+	}
+
+	return nil
+}
+
+func copyFromNamespace(fns *core.Functions, namespace string) error {
+	// In the name of the function "A::B::C", the namespace is "A::B",
+	// not "A::B::".
+	//
+	// So add "::" at the end.
+	namespace += "::"
+
+	for _, name := range fns.Names() {
+		if !strings.HasPrefix(name, namespace) {
+			continue
+		}
+
+		noprefix := strings.Replace(name, namespace, "", 1)
+
+		if _, exists := fns.Get(noprefix); exists {
+			return errors.Errorf(
+				`collision occured: "%s" already registered`,
+				noprefix,
+			)
+		}
+
+		fn, _ := fns.Get(name)
+		fns.Set(noprefix, fn)
+	}
+
+	return nil
 }
 
 func (v *visitor) doVisitBody(ctx *fql.BodyContext, scope *scope) (core.Expression, error) {

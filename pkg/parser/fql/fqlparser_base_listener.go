@@ -26,6 +26,24 @@ func (s *BaseFqlParserListener) EnterProgram(ctx *ProgramContext) {}
 // ExitProgram is called when production program is exited.
 func (s *BaseFqlParserListener) ExitProgram(ctx *ProgramContext) {}
 
+// EnterHead is called when production head is entered.
+func (s *BaseFqlParserListener) EnterHead(ctx *HeadContext) {}
+
+// ExitHead is called when production head is exited.
+func (s *BaseFqlParserListener) ExitHead(ctx *HeadContext) {}
+
+// EnterUseExpression is called when production useExpression is entered.
+func (s *BaseFqlParserListener) EnterUseExpression(ctx *UseExpressionContext) {}
+
+// ExitUseExpression is called when production useExpression is exited.
+func (s *BaseFqlParserListener) ExitUseExpression(ctx *UseExpressionContext) {}
+
+// EnterUse is called when production use is entered.
+func (s *BaseFqlParserListener) EnterUse(ctx *UseContext) {}
+
+// ExitUse is called when production use is exited.
+func (s *BaseFqlParserListener) ExitUse(ctx *UseContext) {}
+
 // EnterBody is called when production body is entered.
 func (s *BaseFqlParserListener) EnterBody(ctx *BodyContext) {}
 
@@ -273,6 +291,12 @@ func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext
 
 // ExitExpressionGroup is called when production expressionGroup is exited.
 func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
+
+// EnterNamespaceIdentifier is called when production namespaceIdentifier is entered.
+func (s *BaseFqlParserListener) EnterNamespaceIdentifier(ctx *NamespaceIdentifierContext) {}
+
+// ExitNamespaceIdentifier is called when production namespaceIdentifier is exited.
+func (s *BaseFqlParserListener) ExitNamespaceIdentifier(ctx *NamespaceIdentifierContext) {}
 
 // EnterNamespace is called when production namespace is entered.
 func (s *BaseFqlParserListener) EnterNamespace(ctx *NamespaceContext) {}
