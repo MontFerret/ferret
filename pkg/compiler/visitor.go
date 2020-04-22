@@ -79,21 +79,21 @@ func (v *visitor) doVisitHead(head *fql.HeadContext, namespaces map[string]struc
 			GetText()
 
 		if _, exists := namespaces[ns]; exists {
-			return errors.Errorf(`"%s" already imported`, ns)
+			return errors.Errorf(`namespace "%s" already used`, ns)
 		}
 
 		namespaces[ns] = struct{}{}
 
-		err := deleteNamespace(v.funcs, ns)
+		err := copyFromNamespace(v.funcs, ns)
 		if err != nil {
-			return errors.Wrapf(err, `delete namespace "%s"`, ns)
+			return errors.Wrapf(err, `copy from namespace "%s"`, ns)
 		}
 	}
 
 	return nil
 }
 
-func deleteNamespace(fns *core.Functions, namespace string) error {
+func copyFromNamespace(fns *core.Functions, namespace string) error {
 	// In the name of the function "A::B::C", the namespace is "A::B",
 	// not "A::B::".
 	//
@@ -107,9 +107,6 @@ func deleteNamespace(fns *core.Functions, namespace string) error {
 
 		noprefix := strings.Replace(name, namespace, "", 1)
 
-		// Two USE for one library will not lead to a collision because
-		// after the first iteration all functions from the namespace
-		// will be deleted and skipped above in the second iteration.
 		if _, exists := fns.Get(noprefix); exists {
 			return errors.Errorf(
 				`collision occured: "%s" already registered`,
