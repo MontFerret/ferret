@@ -304,6 +304,12 @@ func (s *BaseFqlParserListener) EnterNamespace(ctx *NamespaceContext) {}
 // ExitNamespace is called when production namespace is exited.
 func (s *BaseFqlParserListener) ExitNamespace(ctx *NamespaceContext) {}
 
+// EnterFunctionIdentifier is called when production functionIdentifier is entered.
+func (s *BaseFqlParserListener) EnterFunctionIdentifier(ctx *FunctionIdentifierContext) {}
+
+// ExitFunctionIdentifier is called when production functionIdentifier is exited.
+func (s *BaseFqlParserListener) ExitFunctionIdentifier(ctx *FunctionIdentifierContext) {}
+
 // EnterFunctionCallExpression is called when production functionCallExpression is entered.
 func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
 

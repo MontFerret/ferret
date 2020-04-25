@@ -1171,7 +1171,7 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 		name += funcNS.GetText()
 	}
 
-	name += context.Identifier().GetText()
+	name += context.FunctionIdentifier().GetText()
 
 	fun, exists := v.funcs.Get(name)
 
