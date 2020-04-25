@@ -2,6 +2,9 @@ package drivers
 
 import "strings"
 
+// ScrollBehavior defines the transition animation.
+// In HTML specification, default value is auto, but in Ferret it's instant.
+// More details here https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
 type ScrollBehavior int
 
 const (
@@ -32,6 +35,9 @@ func (b ScrollBehavior) String() string {
 	}
 }
 
+// ScrollVerticalAlignment defines vertical alignment after scrolling.
+// In HTML specification, default value is start, but in Ferret it's center.
+// More details here https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
 type ScrollVerticalAlignment int
 
 const (
@@ -71,6 +77,9 @@ func (a ScrollVerticalAlignment) String() string {
 	}
 }
 
+// ScrollHorizontalAlignment defines horizontal alignment after scrolling.
+// In HTML specification, default value is nearest, but in Ferret it's center.
+// More details here https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
 type ScrollHorizontalAlignment int
 
 const (
@@ -110,6 +119,7 @@ func (a ScrollHorizontalAlignment) String() string {
 	}
 }
 
+// ScrollOptions defines how scroll animation should be performed.
 type ScrollOptions struct {
 	Behavior ScrollBehavior
 	Block    ScrollVerticalAlignment
