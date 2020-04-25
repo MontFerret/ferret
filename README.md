@@ -548,14 +548,21 @@ FOR cookie IN doc.cookies
 ## Contributors
 
 Thanks to everyone who contributed.
-<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890" /></a>
+<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890&button=false" /></a>
 
-## Sponsors
+## Financial support
 
 Support this project by becoming a sponsor. Your logo will show up here with a link to your website.    
 
 <p>
-    <a href="https://opencollective.com/ferret/sponsor/0/website" target="_blank"><img src="https://opencollective.com/ferret/sponsor/0/avatar.svg"></a>
+		    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
+	<img src="https://opencollective.com/ferret/sponsors.svg?width=890&button=false" />
+	</a>
+</p>
+<p>
+	    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
+	<img src="https://opencollective.com/ferret/backers.svg?width=890&button=false" />
+	</a>
 </p>
 
 <p align="center">

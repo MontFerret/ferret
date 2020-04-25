@@ -3,7 +3,20 @@ parser grammar FqlParser;
 options { tokenVocab=FqlLexer; }
 
 program
-    : body
+    : (head)* body
+    ;
+
+head
+    : useExpression
+    ;
+
+// TODO: add useAs expession
+useExpression
+    : use
+    ;
+
+use
+    : Use namespaceIdentifier
     ;
 
 body
@@ -200,6 +213,10 @@ propertyName
 
 expressionGroup
     : OpenParen expression CloseParen
+    ;
+
+namespaceIdentifier
+    : namespace Identifier
     ;
 
 namespace

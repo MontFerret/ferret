@@ -10,6 +10,15 @@ type FqlParserListener interface {
 	// EnterProgram is called when entering the program production.
 	EnterProgram(c *ProgramContext)
 
+	// EnterHead is called when entering the head production.
+	EnterHead(c *HeadContext)
+
+	// EnterUseExpression is called when entering the useExpression production.
+	EnterUseExpression(c *UseExpressionContext)
+
+	// EnterUse is called when entering the use production.
+	EnterUse(c *UseContext)
+
 	// EnterBody is called when entering the body production.
 	EnterBody(c *BodyContext)
 
@@ -133,6 +142,9 @@ type FqlParserListener interface {
 	// EnterExpressionGroup is called when entering the expressionGroup production.
 	EnterExpressionGroup(c *ExpressionGroupContext)
 
+	// EnterNamespaceIdentifier is called when entering the namespaceIdentifier production.
+	EnterNamespaceIdentifier(c *NamespaceIdentifierContext)
+
 	// EnterNamespace is called when entering the namespace production.
 	EnterNamespace(c *NamespaceContext)
 
@@ -186,6 +198,15 @@ type FqlParserListener interface {
 
 	// ExitProgram is called when exiting the program production.
 	ExitProgram(c *ProgramContext)
+
+	// ExitHead is called when exiting the head production.
+	ExitHead(c *HeadContext)
+
+	// ExitUseExpression is called when exiting the useExpression production.
+	ExitUseExpression(c *UseExpressionContext)
+
+	// ExitUse is called when exiting the use production.
+	ExitUse(c *UseContext)
 
 	// ExitBody is called when exiting the body production.
 	ExitBody(c *BodyContext)
@@ -309,6 +330,9 @@ type FqlParserListener interface {
 
 	// ExitExpressionGroup is called when exiting the expressionGroup production.
 	ExitExpressionGroup(c *ExpressionGroupContext)
+
+	// ExitNamespaceIdentifier is called when exiting the namespaceIdentifier production.
+	ExitNamespaceIdentifier(c *NamespaceIdentifierContext)
 
 	// ExitNamespace is called when exiting the namespace production.
 	ExitNamespace(c *NamespaceContext)
