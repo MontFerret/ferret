@@ -105,3 +105,35 @@ func waitTimeout(ctx context.Context, value values.Int) (context.Context, contex
 		time.Duration(value)*time.Millisecond,
 	)
 }
+
+func toScrollOptions(value core.Value) (drivers.ScrollOptions, error) {
+	result := drivers.ScrollOptions{}
+
+	err := core.ValidateType(value, types.Object)
+
+	if err != nil {
+		return result, err
+	}
+
+	obj := value.(*values.Object)
+
+	behavior, exists := obj.Get("behavior")
+
+	if exists {
+		result.Behavior = drivers.NewScrollBehavior(behavior.String())
+	}
+
+	block, exists := obj.Get("block")
+
+	if exists {
+		result.Block = drivers.NewScrollVerticalAlignment(block.String())
+	}
+
+	inline, exists := obj.Get("inline")
+
+	if exists {
+		result.Inline = drivers.NewScrollHorizontalAlignment(inline.String())
+	}
+
+	return result, nil
+}

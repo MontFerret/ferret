@@ -525,7 +525,7 @@ func (el *HTMLElement) SelectBySelector(_ context.Context, _ values.String, _ *v
 	return nil, core.ErrNotSupported
 }
 
-func (el *HTMLElement) ScrollIntoView(_ context.Context) error {
+func (el *HTMLElement) ScrollIntoView(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 

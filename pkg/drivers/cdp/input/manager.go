@@ -52,37 +52,41 @@ func (m *Manager) Mouse() *Mouse {
 	return m.mouse
 }
 
-func (m *Manager) ScrollTop(ctx context.Context) error {
-	return m.exec.Eval(ctx, templates.ScrollTop())
+func (m *Manager) ScrollTop(ctx context.Context, options drivers.ScrollOptions) error {
+	return m.exec.Eval(ctx, templates.ScrollTop(options))
 }
 
-func (m *Manager) ScrollBottom(ctx context.Context) error {
-	return m.exec.Eval(ctx, templates.ScrollBottom())
+func (m *Manager) ScrollBottom(ctx context.Context, options drivers.ScrollOptions) error {
+	return m.exec.Eval(ctx, templates.ScrollBottom(options))
 }
 
-func (m *Manager) ScrollIntoView(ctx context.Context, objectID runtime.RemoteObjectID) error {
+func (m *Manager) ScrollIntoView(ctx context.Context, objectID runtime.RemoteObjectID, options drivers.ScrollOptions) error {
 	return m.exec.EvalWithArguments(
 		ctx,
-		templates.ScrollIntoView(),
+		templates.ScrollIntoView(options),
 		runtime.CallArgument{
 			ObjectID: &objectID,
 		},
 	)
 }
 
-func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, selector string) error {
-	return m.exec.Eval(ctx, templates.ScrollIntoViewBySelector(selector))
+func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, selector string, options drivers.ScrollOptions) error {
+	return m.exec.Eval(ctx, templates.ScrollIntoViewBySelector(selector, options))
 }
 
-func (m *Manager) ScrollByXY(ctx context.Context, x, y float64) error {
+func (m *Manager) ScrollByXY(ctx context.Context, x, y float64, options drivers.ScrollOptions) error {
 	return m.exec.Eval(
 		ctx,
-		templates.Scroll(eval.ParamFloat(x), eval.ParamFloat(y)),
+		templates.Scroll(eval.ParamFloat(x), eval.ParamFloat(y), options),
 	)
 }
 
 func (m *Manager) Focus(ctx context.Context, objectID runtime.RemoteObjectID) error {
-	err := m.ScrollIntoView(ctx, objectID)
+	err := m.ScrollIntoView(ctx, objectID, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	})
 
 	if err != nil {
 		return err
@@ -92,7 +96,11 @@ func (m *Manager) Focus(ctx context.Context, objectID runtime.RemoteObjectID) er
 }
 
 func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
-	err := m.ScrollIntoViewBySelector(ctx, selector)
+	err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	})
 
 	if err != nil {
 		return err
@@ -120,7 +128,7 @@ func (m *Manager) BlurBySelector(ctx context.Context, parentObjectID runtime.Rem
 }
 
 func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID) error {
-	if err := m.ScrollIntoView(ctx, objectID); err != nil {
+	if err := m.ScrollIntoView(ctx, objectID, drivers.ScrollOptions{}); err != nil {
 		return err
 	}
 
@@ -134,7 +142,7 @@ func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID
 }
 
 func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
-	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
+	if err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{}); err != nil {
 		return err
 	}
 
@@ -154,7 +162,7 @@ func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.Node
 }
 
 func (m *Manager) MoveMouseByXY(ctx context.Context, x, y float64) error {
-	if err := m.ScrollByXY(ctx, x, y); err != nil {
+	if err := m.ScrollByXY(ctx, x, y, drivers.ScrollOptions{}); err != nil {
 		return err
 	}
 
@@ -162,7 +170,11 @@ func (m *Manager) MoveMouseByXY(ctx context.Context, x, y float64) error {
 }
 
 func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID, count int) error {
-	if err := m.ScrollIntoView(ctx, objectID); err != nil {
+	if err := m.ScrollIntoView(ctx, objectID, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	}); err != nil {
 		return err
 	}
 
@@ -182,7 +194,11 @@ func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID, co
 }
 
 func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, count int) error {
-	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
+	if err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	}); err != nil {
 		return err
 	}
 
@@ -208,7 +224,11 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 }
 
 func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeID, selector string, count int) error {
-	if err := m.ScrollIntoViewBySelector(ctx, selector); err != nil {
+	if err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	}); err != nil {
 		return err
 	}
 
@@ -240,7 +260,11 @@ func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeI
 }
 
 func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, params TypeParams) error {
-	err := m.ScrollIntoView(ctx, objectID)
+	err := m.ScrollIntoView(ctx, objectID, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	})
 
 	if err != nil {
 		return err
@@ -273,7 +297,11 @@ func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, par
 }
 
 func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, params TypeParams) error {
-	err := m.ScrollIntoViewBySelector(ctx, selector)
+	err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	})
 
 	if err != nil {
 		return err
@@ -312,7 +340,11 @@ func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, s
 }
 
 func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) error {
-	err := m.ScrollIntoView(ctx, objectID)
+	err := m.ScrollIntoView(ctx, objectID, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	})
 
 	if err != nil {
 		return err
@@ -334,7 +366,11 @@ func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) er
 }
 
 func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
-	err := m.ScrollIntoViewBySelector(ctx, selector)
+	err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+		Behavior: drivers.ScrollBehaviorAuto,
+		Block:    drivers.ScrollVerticalAlignmentCenter,
+		Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	})
 
 	if err != nil {
 		return err
