@@ -6,10 +6,8 @@ type ScrollBehavior int
 
 const (
 	ScrollBehaviorInstant ScrollBehavior = 0
-
-	ScrollBehaviorSmooth ScrollBehavior = 1
-
-	ScrollBehaviorAuto ScrollBehavior = 2
+	ScrollBehaviorSmooth  ScrollBehavior = 1
+	ScrollBehaviorAuto    ScrollBehavior = 2
 )
 
 func NewScrollBehavior(value string) ScrollBehavior {
