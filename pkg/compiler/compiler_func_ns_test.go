@@ -7,7 +7,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
-	"strings"
 	"testing"
 )
 
@@ -115,7 +114,7 @@ func TestFunctionNSCall(t *testing.T) {
 		}
 
 		for _, kw := range keywords {
-			segment := strings.ToUpper(kw)
+			segment := kw
 			err := c.Namespace("T").Namespace(segment).RegisterFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return values.True, nil
 			})
