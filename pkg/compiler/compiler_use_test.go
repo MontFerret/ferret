@@ -106,6 +106,40 @@ func TestUseExpression(t *testing.T) {
 
 				So(string(out), ShouldEqual, "true")
 			})
+
+			Convey("Nested namespace", func() {
+				c := newCompiler()
+
+				c.Namespace("X").
+					Namespace("Y").
+					RegisterFunction("YYY_CONTAINS", strings.Contains)
+
+				Convey("Short path", func() {
+					p, err := c.Compile(`
+					USE X
+		
+					RETURN Y::YYY_CONTAINS("s", "s")
+					`)
+
+					So(err, ShouldBeNil)
+					out := p.MustRun(context.Background())
+
+					So(string(out), ShouldEqual, "true")
+				})
+
+				Convey("Full path", func() {
+					p, err := c.Compile(`
+					USE X
+		
+					RETURN X::Y::YYY_CONTAINS("s", "s")
+					`)
+
+					So(err, ShouldBeNil)
+					out := p.MustRun(context.Background())
+
+					So(string(out), ShouldEqual, "true")
+				})
+			})
 		})
 
 		Convey("Should not compile", func() {
