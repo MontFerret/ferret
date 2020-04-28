@@ -144,18 +144,10 @@ func TestUseExpression(t *testing.T) {
 
 		Convey("Should not compile", func() {
 
-			c := newCompiler()
-
-			c.Namespace("Z").
-				RegisterFunction("XXX_TO_STRING", types.ToString)
-
-			// Y contain the same function as Z to test for future collistions
-			c.Namespace("Y").
-				RegisterFunction("XXX_TO_STRING", types.ToString)
-
 			testCases := []struct {
-				Name  string
-				Query string
+				Name     string
+				Query    string
+				Compiler func() *compiler.Compiler
 			}{
 				{
 					Name: "Wrong namespace format",
@@ -172,15 +164,6 @@ func TestUseExpression(t *testing.T) {
 					RETURN 1`,
 				},
 				{
-					Name: "Functions collision",
-					Query: `
-					// Z and Y both contain function "XXX_CONTAINS"
-					USE Z
-					USE Y
-
-					RETURN 1`,
-				},
-				{
 					Name: "USE namespace twice",
 					Query: `
 					USE X
@@ -189,10 +172,58 @@ func TestUseExpression(t *testing.T) {
 					RETURN XXX_CONTAINS("s", "s")
 					`,
 				},
+				{
+					Name: "Functions collision",
+					Query: `
+					// Z and Y both contain function "XXX_CONTAINS"
+					USE Z
+					USE Y
+
+					RETURN 1`,
+					Compiler: func() *compiler.Compiler {
+						c := newCompiler()
+
+						c.Namespace("Z").
+							RegisterFunction("XXX_TO_STRING", types.ToString)
+
+						// Y contain the same function as Z to test for future collistions
+						c.Namespace("Y").
+							RegisterFunction("XXX_TO_STRING", types.ToString)
+
+						return c
+					},
+				},
+				{
+					Name: "Nested namespace collision",
+					Query: `
+					USE X
+					USE Z
+
+					RETURN 1
+					`,
+					Compiler: func() *compiler.Compiler {
+						c := newCompiler()
+
+						c.Namespace("X").
+							Namespace("Y").
+							RegisterFunction("YYY_CONTAINS", strings.Contains)
+
+						c.Namespace("Z").
+							Namespace("Y").
+							RegisterFunction("YYY_CONTAINS", strings.Contains)
+
+						return c
+					},
+				},
 			}
 
 			for _, tC := range testCases {
 				Convey(tC.Name, func() {
+					c := newCompiler()
+					if tC.Compiler != nil {
+						c = tC.Compiler()
+					}
+
 					_, err := c.Compile(tC.Query)
 					So(err, ShouldNotBeNil)
 				})
