@@ -442,20 +442,20 @@ func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector
 	return err
 }
 
-func (doc *HTMLDocument) ScrollTop(ctx context.Context) error {
-	return doc.input.ScrollTop(ctx)
+func (doc *HTMLDocument) ScrollTop(ctx context.Context, options drivers.ScrollOptions) error {
+	return doc.input.ScrollTop(ctx, options)
 }
 
-func (doc *HTMLDocument) ScrollBottom(ctx context.Context) error {
-	return doc.input.ScrollBottom(ctx)
+func (doc *HTMLDocument) ScrollBottom(ctx context.Context, options drivers.ScrollOptions) error {
+	return doc.input.ScrollBottom(ctx, options)
 }
 
-func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String) error {
-	return doc.input.ScrollIntoViewBySelector(ctx, selector.String())
+func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String, options drivers.ScrollOptions) error {
+	return doc.input.ScrollIntoViewBySelector(ctx, selector.String(), options)
 }
 
-func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.ScrollByXY(ctx, float64(x), float64(y))
+func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float, options drivers.ScrollOptions) error {
+	return doc.input.ScrollByXY(ctx, float64(x), float64(y), options)
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {

@@ -129,7 +129,7 @@ ferret
 
 ```shell
 Welcome to Ferret REPL
-Please use `Ctrl-D` to exit this program.
+Please use `exit` or `Ctrl-D` to exit this program.
 >%
 >LET doc = DOCUMENT('https://news.ycombinator.com/')
 >FOR post IN ELEMENTS(doc, '.storylink')
@@ -258,11 +258,11 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 			LIMIT 10
 			LET url = ELEMENT(el, "a")
 			LET name = ELEMENT(el, ".f3")
-			LET desc = ELEMENT(el, ".f5")
+			LET description = ELEMENT(el, ".f5")
 
 			RETURN {
 				name: TRIM(name.innerText),
-				description: TRIM(desc.innerText),
+				description: TRIM(description.innerText),
 				url: "https://github.com" + url.attributes.href
 			}
 	`
@@ -548,14 +548,21 @@ FOR cookie IN doc.cookies
 ## Contributors
 
 Thanks to everyone who contributed.
-<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890" /></a>
+<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890&button=false" /></a>
 
-## Sponsors
+## Financial support
 
 Support this project by becoming a sponsor. Your logo will show up here with a link to your website.    
 
 <p>
-    <a href="https://opencollective.com/ferret/sponsor/0/website" target="_blank"><img src="https://opencollective.com/ferret/sponsor/0/avatar.svg"></a>
+		    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
+	<img src="https://opencollective.com/ferret/sponsors.svg?width=890&button=false" />
+	</a>
+</p>
+<p>
+	    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
+	<img src="https://opencollective.com/ferret/backers.svg?width=890&button=false" />
+	</a>
 </p>
 
 <p align="center">

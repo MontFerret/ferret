@@ -13,8 +13,9 @@ import (
 // @param doc (HTMLDocument) - HTML document.
 // @param x (Int|Float) - X coordinate.
 // @param y (Int|Float) - Y coordinate.
+// @param options (ScrollOptions) - Scroll options. Optional.
 func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 3, 3)
+	err := core.ValidateArgs(args, 3, 4)
 
 	if err != nil {
 		return values.None, err
@@ -41,5 +42,15 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 	x := values.ToFloat(args[1])
 	y := values.ToFloat(args[2])
 
-	return values.None, doc.ScrollByXY(ctx, x, y)
+	var opts drivers.ScrollOptions
+
+	if len(args) > 3 {
+		opts, err = toScrollOptions(args[3])
+
+		if err != nil {
+			return values.None, err
+		}
+	}
+
+	return values.None, doc.ScrollByXY(ctx, x, y, opts)
 }

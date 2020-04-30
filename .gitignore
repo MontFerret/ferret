@@ -131,3 +131,7 @@ bin
 *.orig
 dist
 coverage.txt
+
+# sometimes antlr generates stub
+**/.antlr
+gen
