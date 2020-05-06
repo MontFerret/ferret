@@ -545,6 +545,28 @@ FOR cookie IN doc.cookies
 	
 ```
 
+## File System
+
+#### Write
+```
+USE IO::FS
+
+LET favicon = DOWNLOAD("https://www.google.com/favicon.ico")
+
+RETURN WRITE("google.favicon.ico", favicon)
+```
+
+#### Read
+```
+USE IO::FS
+
+LET urls_data = READ("urls.json")
+LET urls = JSON_PARSE(urls_data)
+
+FOR url IN urls
+    RETURN DOCUMENT(url)
+```
+
 ## Contributors
 
 Thanks to everyone who contributed.
