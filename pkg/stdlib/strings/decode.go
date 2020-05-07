@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net/url"
+	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
@@ -42,6 +43,13 @@ func DecodeURIComponent(_ context.Context, args ...core.Value) (core.Value, erro
 
 	str, err := url.QueryUnescape(args[0].String())
 
+	if err != nil {
+		return values.None, err
+	}
+
+	// hack for decoding unicode symbols.
+	// eg. convert "\u0026" -> "&""
+	str, err = strconv.Unquote("\"" + str + "\"")
 	if err != nil {
 		return values.None, err
 	}
