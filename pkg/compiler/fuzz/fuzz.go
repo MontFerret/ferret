@@ -4,7 +4,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
-// Below function is our fuzzer.
+// Fuzz is our fuzzer.
 // The fuzzer is run on oss-fuzz.
 // Link to the project on oss-fuzz
 // will be added once the project is up.
