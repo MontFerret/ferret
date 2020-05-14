@@ -9,6 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/io"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
+	"github.com/MontFerret/ferret/pkg/stdlib/path"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/types"
@@ -49,6 +50,10 @@ func RegisterLib(ns core.Namespace) error {
 	}
 
 	if err := io.RegisterLib(ns); err != nil {
+		return err
+	}
+
+	if err := path.RegisterLib(ns); err != nil {
 		return err
 	}
 

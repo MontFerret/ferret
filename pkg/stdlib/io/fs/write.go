@@ -40,8 +40,8 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	// 0222 - write only permissions
-	file, err := os.OpenFile(fpath, params.ModeFlag, 0222)
+	// 0666 - read & write
+	file, err := os.OpenFile(fpath, params.ModeFlag, 0666)
 	if err != nil {
 		return values.None, core.Error(err, "open file")
 	}

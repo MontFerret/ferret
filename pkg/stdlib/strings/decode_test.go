@@ -44,3 +44,37 @@ func TestFromBase64(t *testing.T) {
 		So(out, ShouldEqual, "foobar")
 	})
 }
+
+func TestDecodeURIComponent(t *testing.T) {
+
+	Convey("Decode", t, func() {
+		testCases := []struct {
+			Name   string
+			InURI  string
+			OutURI string
+		}{
+			{
+				Name:   "Unicode",
+				InURI:  "https://thedomain/alphabet=M\u0026borough=Bronx\u0026a=b",
+				OutURI: "https://thedomain/alphabet=M&borough=Bronx&a=b",
+			},
+			{
+				Name:   "Percent-encoding",
+				InURI:  "https://ru.wikipedia.org/wiki/%D0%AF%D0%B7%D1%8B%D0%BA_%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F",
+				OutURI: "https://ru.wikipedia.org/wiki/Язык_программирования",
+			},
+		}
+
+		for _, tC := range testCases {
+			Convey(tC.Name, func() {
+				out, err := strings.DecodeURIComponent(
+					context.Background(),
+					values.NewString(tC.InURI),
+				)
+				So(err, ShouldBeNil)
+
+				So(out.String(), ShouldEqual, tC.OutURI)
+			})
+		}
+	})
+}
