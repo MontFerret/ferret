@@ -2,7 +2,6 @@ package testing
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -11,23 +10,12 @@ import (
 // @param (Mixed) - Actual value.
 // @param (Mixed) - Expected value.
 // @param (String) - Message to display on error.
-func Equal(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	actual := args[0]
-	expected := args[1]
-
-	if actual.Compare(expected) == 0 {
-		return values.None, nil
-	}
-
-	if len(args) > 2 {
-		return values.None, core.Error(ErrAssertion, args[2].String())
-	}
-
-	return values.None, core.Errorf(ErrAssertion, "expected %s to be %s", actual, expected)
+var Equal = Assertion{
+	DefaultMessage: "",
+	MessageArg:     0,
+	MinArgs:        0,
+	MaxArgs:        0,
+	Fn: func(ctx context.Context, args []core.Value) (values.Boolean, error) {
+		return compare(args, EqualOp)
+	},
 }
