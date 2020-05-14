@@ -2,9 +2,8 @@ package testing
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 )
 
@@ -12,29 +11,22 @@ import (
 // @param (Measurable) - Measurable value.
 // @param (Mixed) - Target length.
 // @param (String) - Message to display on error.
-func Len(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
+var Len = Assertion{
+	DefaultMessage: func(args []core.Value) string {
+		return fmt.Sprintf("has size of %s", args[1])
+	},
+	MinArgs: 2,
+	MaxArgs: 3,
+	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+		col := args[0]
+		size := args[1]
 
-	if err != nil {
-		return values.None, err
-	}
+		out, err := collections.Length(ctx, col)
 
-	col := args[0]
-	size := args[1]
+		if err != nil {
+			return false, err
+		}
 
-	out, err := collections.Length(ctx, col)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if out.Compare(size) == 0 {
-		return values.None, nil
-	}
-
-	if len(args) > 2 {
-		return values.None, core.Error(ErrAssertion, args[2].String())
-	}
-
-	return values.None, core.Errorf(ErrAssertion, "expected %s to has size %d", col, size)
+		return out.Compare(size) == 0, nil
+	},
 }

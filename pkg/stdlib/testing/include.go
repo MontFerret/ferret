@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -12,29 +13,22 @@ import (
 // @param (String|Array|Object|Iterable) - Haystack value.
 // @param (Mixed) - Needle value.
 // @param (String) - Message to display on error.
-func Include(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
+var Include = Assertion{
+	DefaultMessage: func(args []core.Value) string {
+		return fmt.Sprintf("include %s", args[1])
+	},
+	MinArgs: 2,
+	MaxArgs: 3,
+	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+		haystack := args[0]
+		needle := args[1]
 
-	if err != nil {
-		return values.None, err
-	}
+		out, err := collections.Includes(ctx, haystack, needle)
 
-	haystack := args[0]
-	needle := args[1]
+		if err != nil {
+			return false, err
+		}
 
-	out, err := collections.Includes(ctx, haystack, needle)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if out.Compare(values.True) == 0 {
-		return values.None, nil
-	}
-
-	if len(args) > 2 {
-		return values.None, core.Error(ErrAssertion, args[2].String())
-	}
-
-	return values.None, core.Errorf(ErrAssertion, "expected %s to include %s", haystack, needle)
+		return out.Compare(values.True) == 0, nil
+	},
 }

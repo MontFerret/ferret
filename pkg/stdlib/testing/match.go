@@ -2,39 +2,31 @@ package testing
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/stdlib/strings"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
 // Match asserts that value matches the regular expression.
 // @param (Mixed) - Actual value.
 // @param (String) - Regular expression.
 // @param (String) - Message to display on error.
-func Match(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
+var Match = Assertion{
+	DefaultMessage: func(args []core.Value) string {
+		return "match regular expression"
+	},
+	MinArgs: 2,
+	MaxArgs: 3,
+	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+		value := args[0]
+		regexp := args[1]
 
-	if err != nil {
-		return values.None, err
-	}
+		out, err := strings.RegexMatch(ctx, value, regexp)
 
-	value := args[0]
-	regexp := args[1]
+		if err != nil {
+			return false, err
+		}
 
-	out, err := strings.RegexMatch(ctx, value, regexp)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if out.Compare(values.True) == 0 {
-		return values.None, nil
-	}
-
-	if len(args) > 2 {
-		return values.None, core.Error(ErrAssertion, args[2].String())
-	}
-
-	return values.None, core.Errorf(ErrAssertion, "expected %s to match regular expression", value, regexp)
+		return out.Compare(values.True) == 0, nil
+	},
 }

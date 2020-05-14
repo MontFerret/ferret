@@ -2,8 +2,9 @@ package testing
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // Equal asserts equality of actual and expected values.
@@ -11,11 +12,12 @@ import (
 // @param (Mixed) - Expected value.
 // @param (String) - Message to display on error.
 var Equal = Assertion{
-	DefaultMessage: "",
-	MessageArg:     0,
-	MinArgs:        0,
-	MaxArgs:        0,
-	Fn: func(ctx context.Context, args []core.Value) (values.Boolean, error) {
+	DefaultMessage: func(args []core.Value) string {
+		return fmt.Sprintf("%s to be %s %s", args[0], EqualOp, args[1])
+	},
+	MinArgs: 2,
+	MaxArgs: 3,
+	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
 		return compare(args, EqualOp)
 	},
 }

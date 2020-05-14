@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -13,13 +14,12 @@ var (
 	ErrAssertion = errors.New("assertion error")
 )
 
-type AssertionFn func(ctx context.Context, args []core.Value) (values.Boolean, error)
+type AssertionFn func(ctx context.Context, args []core.Value) (bool, error)
 
-type MessageFn func(args []core.Value) values.String
+type MessageFn func(args []core.Value) string
 
 type Assertion struct {
 	DefaultMessage MessageFn
-	MessageArg     int
 	MinArgs        int
 	MaxArgs        int
 	Fn             AssertionFn
@@ -87,7 +87,6 @@ func registerNOT(ns core.Namespace) error {
 		core.NewFunctionsFromMap(map[string]core.Function{
 			"EMPTY":   negative(Empty),
 			"EQUAL":   negative(Equal),
-			"FAIL":    negative(Fail),
 			"FALSE":   negative(False),
 			"GT":      negative(Gt),
 			"GTE":     negative(Gte),
@@ -102,11 +101,11 @@ func registerNOT(ns core.Namespace) error {
 	)
 }
 
-func compare(args []core.Value, op CompareOperator) (core.Value, error) {
+func compare(args []core.Value, op CompareOperator) (bool, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return false, err
 	}
 
 	actual := args[0]
@@ -131,15 +130,7 @@ func compare(args []core.Value, op CompareOperator) (core.Value, error) {
 		result = c == 1 || c == 0
 	}
 
-	if result {
-		return values.None, nil
-	}
-
-	if len(args) > 2 {
-		return values.None, core.Error(ErrAssertion, args[2].String())
-	}
-
-	return values.None, core.Errorf(ErrAssertion, "expected %s to be %s %s", actual, op, expected)
+	return result, nil
 }
 
 func positive(assertion Assertion) core.Function {
@@ -160,11 +151,18 @@ func positive(assertion Assertion) core.Function {
 			return values.None, nil
 		}
 
-		if len(args) <= assertion.MessageArg {
-			return values.None, core.Errorf(ErrAssertion, assertion.DefaultMessage(args).String())
+		if len(args) != assertion.MaxArgs {
+			if assertion.MaxArgs > 1 {
+				actual := args[0]
+
+				return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected %s to %s", actual, assertion.DefaultMessage(args)))
+			}
+
+			return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected to %s", assertion.DefaultMessage(args)))
 		}
 
-		msg := args[assertion.MessageArg]
+		// Last argument is always is a custom message
+		msg := args[assertion.MaxArgs-1]
 
 		return values.None, core.Error(ErrAssertion, msg.String())
 	}
@@ -188,11 +186,18 @@ func negative(assertion Assertion) core.Function {
 			return values.None, nil
 		}
 
-		if len(args) <= assertion.MessageArg {
-			return values.None, core.Error(ErrAssertion, assertion.DefaultMessage(args).String())
+		if len(args) != assertion.MaxArgs {
+			if assertion.MaxArgs > 1 {
+				actual := args[0]
+
+				return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected %s not to %s", actual, assertion.DefaultMessage(args)))
+			}
+
+			return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected not to %s", assertion.DefaultMessage(args)))
 		}
 
-		msg := args[assertion.MessageArg]
+		// Last argument is always is a custom message
+		msg := args[assertion.MaxArgs-1]
 
 		return values.None, core.Error(ErrAssertion, msg.String())
 	}
