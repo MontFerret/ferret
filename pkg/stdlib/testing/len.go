@@ -13,7 +13,7 @@ import (
 // @param (String) - Message to display on error.
 var Len = Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("has size of %s", args[1])
+		return fmt.Sprintf("has size %s", args[1])
 	},
 	MinArgs: 2,
 	MaxArgs: 3,

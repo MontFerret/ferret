@@ -159,7 +159,7 @@ func newInternal(assertion Assertion, connotation bool) core.Function {
 			return values.None, nil
 		}
 
-		return values.None, toError(assertion, args, false)
+		return values.None, toError(assertion, args, connotation)
 	}
 }
 
