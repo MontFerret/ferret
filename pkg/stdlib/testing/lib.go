@@ -134,8 +134,16 @@ func compare(args []core.Value, op CompareOperator) (bool, error) {
 }
 
 func NewPositive(assertion Assertion) core.Function {
+	return newInternal(assertion, true)
+}
+
+func NewNegative(assertion Assertion) core.Function {
+	return newInternal(assertion, false)
+}
+
+func newInternal(assertion Assertion, connotation bool) core.Function {
 	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		err := core.ValidateArgs(args, 1, 2)
+		err := core.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
 
 		if err != nil {
 			return values.None, err
@@ -147,7 +155,7 @@ func NewPositive(assertion Assertion) core.Function {
 			return values.None, err
 		}
 
-		if res {
+		if res == connotation {
 			return values.None, nil
 		}
 
@@ -155,33 +163,11 @@ func NewPositive(assertion Assertion) core.Function {
 	}
 }
 
-func NewNegative(assertion Assertion) core.Function {
-	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		err := core.ValidateArgs(args, 1, 2)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		res, err := assertion.Fn(ctx, args)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		if !res {
-			return values.None, nil
-		}
-
-		return values.None, toError(assertion, args, true)
-	}
-}
-
-func toError(assertion Assertion, args []core.Value, negative bool) error {
+func toError(assertion Assertion, args []core.Value, positive bool) error {
 	if len(args) != assertion.MaxArgs {
 		connotation := ""
 
-		if negative {
+		if !positive {
 			connotation = "not "
 		}
 
