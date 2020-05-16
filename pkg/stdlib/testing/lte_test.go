@@ -46,7 +46,7 @@ func TestLte(t *t.T) {
 
 		Convey("When 1 and 2", func() {
 			Convey("It should not return an error", func() {
-				_, err := Lte(context.Background(), values.NewInt(1), values.NewInt(1))
+				_, err := Lte(context.Background(), values.NewInt(1), values.NewInt(2))
 
 				So(err, ShouldBeNil)
 			})
@@ -80,7 +80,7 @@ func TestNotLte(t *t.T) {
 		})
 
 		Convey("When 1 and 1", func() {
-			Convey("It should not return an error", func() {
+			Convey("It should return an error", func() {
 				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(1))
 
 				So(err, ShouldBeError)
