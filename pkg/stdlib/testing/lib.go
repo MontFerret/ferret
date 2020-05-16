@@ -62,20 +62,20 @@ func RegisterLib(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"ASSERT":  positive(Assert),
-			"EMPTY":   positive(Empty),
-			"EQUAL":   positive(Equal),
-			"FAIL":    positive(Fail),
-			"FALSE":   positive(False),
-			"GT":      positive(Gt),
-			"GTE":     positive(Gte),
-			"INCLUDE": positive(Include),
-			"LEN":     positive(Len),
-			"MATCH":   positive(Match),
-			"LT":      positive(Lt),
-			"LTE":     positive(Lte),
-			"NONE":    positive(None),
-			"TRUE":    positive(True),
+			"ASSERT":  NewPositive(Assert),
+			"EMPTY":   NewPositive(Empty),
+			"EQUAL":   NewPositive(Equal),
+			"FAIL":    NewPositive(Fail),
+			"FALSE":   NewPositive(False),
+			"GT":      NewPositive(Gt),
+			"GTE":     NewPositive(Gte),
+			"INCLUDE": NewPositive(Include),
+			"LEN":     NewPositive(Len),
+			"MATCH":   NewPositive(Match),
+			"LT":      NewPositive(Lt),
+			"LTE":     NewPositive(Lte),
+			"NONE":    NewPositive(None),
+			"TRUE":    NewPositive(True),
 		}),
 	)
 }
@@ -85,18 +85,18 @@ func registerNOT(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"EMPTY":   negative(Empty),
-			"EQUAL":   negative(Equal),
-			"FALSE":   negative(False),
-			"GT":      negative(Gt),
-			"GTE":     negative(Gte),
-			"INCLUDE": negative(Include),
-			"LEN":     negative(Len),
-			"MATCH":   negative(Match),
-			"LT":      negative(Lt),
-			"LTE":     negative(Lte),
-			"NONE":    negative(None),
-			"TRUE":    negative(True),
+			"EMPTY":   NewNegative(Empty),
+			"EQUAL":   NewNegative(Equal),
+			"FALSE":   NewNegative(False),
+			"GT":      NewNegative(Gt),
+			"GTE":     NewNegative(Gte),
+			"INCLUDE": NewNegative(Include),
+			"LEN":     NewNegative(Len),
+			"MATCH":   NewNegative(Match),
+			"LT":      NewNegative(Lt),
+			"LTE":     NewNegative(Lte),
+			"NONE":    NewNegative(None),
+			"TRUE":    NewNegative(True),
 		}),
 	)
 }
@@ -133,7 +133,7 @@ func compare(args []core.Value, op CompareOperator) (bool, error) {
 	return result, nil
 }
 
-func positive(assertion Assertion) core.Function {
+func NewPositive(assertion Assertion) core.Function {
 	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		err := core.ValidateArgs(args, 1, 2)
 
@@ -155,10 +155,10 @@ func positive(assertion Assertion) core.Function {
 			if assertion.MaxArgs > 1 {
 				actual := args[0]
 
-				return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected %s to %s", actual, assertion.DefaultMessage(args)))
+				return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected [%s] %s to %s", actual.Type(), actual, assertion.DefaultMessage(args)))
 			}
 
-			return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected to %s", assertion.DefaultMessage(args)))
+			return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected to %s", assertion.DefaultMessage(args)))
 		}
 
 		// Last argument is always is a custom message
@@ -168,7 +168,7 @@ func positive(assertion Assertion) core.Function {
 	}
 }
 
-func negative(assertion Assertion) core.Function {
+func NewNegative(assertion Assertion) core.Function {
 	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		err := core.ValidateArgs(args, 1, 2)
 
@@ -190,10 +190,10 @@ func negative(assertion Assertion) core.Function {
 			if assertion.MaxArgs > 1 {
 				actual := args[0]
 
-				return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected %s not to %s", actual, assertion.DefaultMessage(args)))
+				return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected [%s] %s not to %s", actual.Type(), actual, assertion.DefaultMessage(args)))
 			}
 
-			return values.None, core.Error(ErrAssertion, fmt.Sprintf("Expected not to %s", assertion.DefaultMessage(args)))
+			return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected to not %s", assertion.DefaultMessage(args)))
 		}
 
 		// Last argument is always is a custom message
