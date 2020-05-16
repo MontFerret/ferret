@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -12,7 +13,7 @@ import (
 // @param (String) - Message to display on error.
 var None = Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return "be none"
+		return fmt.Sprintf("be %s", formatValue(values.None))
 	},
 	MinArgs: 1,
 	MaxArgs: 2,

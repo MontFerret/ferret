@@ -26,7 +26,7 @@ func TestFalse(t *t.T) {
 			_, err := False(context.Background(), values.NewString("false"))
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [string] false to be [boolean] false")
+			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [string] 'false' to be [boolean] 'false'")
 		})
 	})
 
@@ -35,7 +35,7 @@ func TestFalse(t *t.T) {
 			_, err := False(context.Background(), values.True)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [boolean] true to be [boolean] false")
+			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [boolean] 'true' to be [boolean] 'false'")
 		})
 	})
 
@@ -72,7 +72,7 @@ func TestNotFalse(t *t.T) {
 			_, err := NotFalse(context.Background(), values.False)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [boolean] false not to be [boolean] false")
+			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [boolean] 'false' not to be [boolean] 'false'")
 		})
 	})
 

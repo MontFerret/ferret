@@ -173,13 +173,8 @@ func toError(assertion Assertion, args []core.Value, positive bool) error {
 
 		if assertion.MaxArgs > 1 {
 			actual := args[0]
-			actualValueStr := actual.String()
 
-			if actual == values.None {
-				actualValueStr = "none"
-			}
-
-			return core.Error(ErrAssertion, fmt.Sprintf("expected [%s] %s %sto %s", actual.Type(), actualValueStr, connotation, assertion.DefaultMessage(args)))
+			return core.Error(ErrAssertion, fmt.Sprintf("expected %s %sto %s", formatValue(actual), connotation, assertion.DefaultMessage(args)))
 		}
 
 		return core.Error(ErrAssertion, fmt.Sprintf("expected to %s%s", connotation, assertion.DefaultMessage(args)))
@@ -189,4 +184,14 @@ func toError(assertion Assertion, args []core.Value, positive bool) error {
 	msg := args[assertion.MaxArgs-1]
 
 	return core.Error(ErrAssertion, msg.String())
+}
+
+func formatValue(val core.Value) string {
+	valStr := val.String()
+
+	if val == values.None {
+		valStr = "none"
+	}
+
+	return fmt.Sprintf("[%s] '%s'", val.Type(), valStr)
 }

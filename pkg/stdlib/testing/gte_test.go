@@ -32,7 +32,7 @@ func TestGte(t *t.T) {
 				_, err := Gte(context.Background(), values.NewInt(1), values.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] 1 to be greater than or equal to [int] 2").Error())
+				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' to be greater than or equal to [int] '2'").Error())
 			})
 		})
 
@@ -83,7 +83,7 @@ func TestNotGte(t *t.T) {
 				_, err := NotGte(context.Background(), values.NewInt(1), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] 1 not to be greater than or equal to [int] 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' not to be greater than or equal to [int] '1'").Error())
 			})
 		})
 
@@ -92,7 +92,7 @@ func TestNotGte(t *t.T) {
 				_, err := NotGte(context.Background(), values.NewInt(2), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] 2 not to be greater than or equal to [int] 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '2' not to be greater than or equal to [int] '1'").Error())
 			})
 		})
 	})

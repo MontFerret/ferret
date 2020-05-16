@@ -32,7 +32,7 @@ func TestLte(t *t.T) {
 				_, err := Lte(context.Background(), values.NewInt(2), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] 2 to be less than or equal to [int] 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '2' to be less than or equal to [int] '1'").Error())
 			})
 		})
 
@@ -75,7 +75,7 @@ func TestNotLte(t *t.T) {
 				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] 1 not to be less than or equal to [int] 2").Error())
+				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '2'").Error())
 			})
 		})
 
@@ -84,7 +84,7 @@ func TestNotLte(t *t.T) {
 				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] 1 not to be less than or equal to [int] 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '1'").Error())
 			})
 		})
 

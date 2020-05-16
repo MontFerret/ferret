@@ -13,7 +13,7 @@ import (
 // @param (String) - Message to display on error.
 var False = Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("be [%s] false", values.False.Type())
+		return fmt.Sprintf("be %s", formatValue(values.False))
 	},
 	MinArgs: 1,
 	MaxArgs: 2,

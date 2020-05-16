@@ -12,7 +12,7 @@ import (
 // @param (String) - Message to display on error.
 var Gte = Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("be %s [%s] %s", GreaterOrEqualOp, args[1].Type(), args[1])
+		return fmt.Sprintf("be %s %s", GreaterOrEqualOp, formatValue(args[1]))
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
