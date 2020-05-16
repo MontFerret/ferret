@@ -38,7 +38,7 @@ func TestEqual(t *t.T) {
 
 		Convey("When 'Foo' and 'Foo'", func() {
 			Convey("It should not return an error", func() {
-				_, err := Equal(context.Background(), values.NewString("Foo"), values.NewString("Foor"))
+				_, err := Equal(context.Background(), values.NewString("Foo"), values.NewString("Foo"))
 
 				So(err, ShouldBeNil)
 			})

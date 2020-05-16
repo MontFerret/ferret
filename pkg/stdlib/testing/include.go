@@ -15,7 +15,7 @@ import (
 // @param (String) - Message to display on error.
 var Include = Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("include %s", args[1])
+		return fmt.Sprintf("include %s", formatValue(args[1]))
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
