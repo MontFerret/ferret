@@ -13,7 +13,7 @@ import (
 // @param (String) - Message to display on error.
 var Equal = Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("%s to be %s %s", args[0], EqualOp, args[1])
+		return fmt.Sprintf("be %s %s", EqualOp, formatValue(args[1]))
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
