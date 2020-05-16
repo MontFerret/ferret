@@ -151,20 +151,7 @@ func NewPositive(assertion Assertion) core.Function {
 			return values.None, nil
 		}
 
-		if len(args) != assertion.MaxArgs {
-			if assertion.MaxArgs > 1 {
-				actual := args[0]
-
-				return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected [%s] %s to %s", actual.Type(), actual, assertion.DefaultMessage(args)))
-			}
-
-			return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected to %s", assertion.DefaultMessage(args)))
-		}
-
-		// Last argument is always is a custom message
-		msg := args[assertion.MaxArgs-1]
-
-		return values.None, core.Error(ErrAssertion, msg.String())
+		return values.None, toError(assertion, args, false)
 	}
 }
 
@@ -186,19 +173,34 @@ func NewNegative(assertion Assertion) core.Function {
 			return values.None, nil
 		}
 
-		if len(args) != assertion.MaxArgs {
-			if assertion.MaxArgs > 1 {
-				actual := args[0]
+		return values.None, toError(assertion, args, true)
+	}
+}
 
-				return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected [%s] %s not to %s", actual.Type(), actual, assertion.DefaultMessage(args)))
-			}
+func toError(assertion Assertion, args []core.Value, negative bool) error {
+	if len(args) != assertion.MaxArgs {
+		connotation := ""
 
-			return values.None, core.Error(ErrAssertion, fmt.Sprintf("expected to not %s", assertion.DefaultMessage(args)))
+		if negative {
+			connotation = "not "
 		}
 
-		// Last argument is always is a custom message
-		msg := args[assertion.MaxArgs-1]
+		if assertion.MaxArgs > 1 {
+			actual := args[0]
+			actualValueStr := actual.String()
 
-		return values.None, core.Error(ErrAssertion, msg.String())
+			if actual == values.None {
+				actualValueStr = "none"
+			}
+
+			return core.Error(ErrAssertion, fmt.Sprintf("expected [%s] %s %sto %s", actual.Type(), actualValueStr, connotation, assertion.DefaultMessage(args)))
+		}
+
+		return core.Error(ErrAssertion, fmt.Sprintf("expected to %s%s", connotation, assertion.DefaultMessage(args)))
 	}
+
+	// Last argument is always is a custom message
+	msg := args[assertion.MaxArgs-1]
+
+	return core.Error(ErrAssertion, msg.String())
 }
