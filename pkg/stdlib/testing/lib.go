@@ -62,7 +62,6 @@ func RegisterLib(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"ASSERT":  NewPositive(Assert),
 			"EMPTY":   NewPositive(Empty),
 			"EQUAL":   NewPositive(Equal),
 			"FAIL":    NewPositive(Fail),
