@@ -13,7 +13,7 @@ func TestNamespaceBuilder(t *testing.T) {
 	Convey("Namespaces", t, func() {
 		Convey("Should return an error when a function name contains NS separator", func() {
 			c := compiler.New()
-			err := c.RegisterFunction("T::SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+			err := c.RegisterFunction("FOO::SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			})
 
@@ -22,7 +22,7 @@ func TestNamespaceBuilder(t *testing.T) {
 
 		Convey("Should successfully register a name within a namespace", func() {
 			c := compiler.New()
-			err := c.Namespace("T").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+			err := c.Namespace("FOO").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			})
 
@@ -33,7 +33,7 @@ func TestNamespaceBuilder(t *testing.T) {
 			var exists bool
 
 			for _, name := range funcs {
-				exists = name == "T::SPY"
+				exists = name == "FOO::SPY"
 
 				if exists {
 					break
@@ -45,7 +45,7 @@ func TestNamespaceBuilder(t *testing.T) {
 
 		Convey("Root namespace should return all registered functions", func() {
 			c := compiler.New()
-			err := c.Namespace("T").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+			err := c.Namespace("FOO").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			})
 
@@ -58,23 +58,23 @@ func TestNamespaceBuilder(t *testing.T) {
 
 		Convey("Namespace should return all registered functions", func() {
 			c := compiler.New()
-			err := c.Namespace("T").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+			err := c.Namespace("FOO").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			})
 
 			So(err, ShouldBeNil)
 
-			err = c.Namespace("T").Namespace("UTILS").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+			err = c.Namespace("FOO").Namespace("UTILS").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			})
 
 			So(err, ShouldBeNil)
 
-			funcs := c.Namespace("T").RegisteredFunctions()
+			funcs := c.Namespace("FOO").RegisteredFunctions()
 
 			So(funcs, ShouldHaveLength, 2)
 
-			funcs2 := c.Namespace("T").Namespace("UTILS").RegisteredFunctions()
+			funcs2 := c.Namespace("FOO").Namespace("UTILS").RegisteredFunctions()
 
 			So(funcs2, ShouldHaveLength, 1)
 		})
@@ -84,7 +84,7 @@ func TestNamespaceBuilder(t *testing.T) {
 			noop := func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 				return values.None, nil
 			}
-			err := c.Namespace("T::").RegisterFunction("SPY", noop)
+			err := c.Namespace("FOO::").RegisterFunction("SPY", noop)
 
 			So(err, ShouldNotBeNil)
 
