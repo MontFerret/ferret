@@ -1,4 +1,4 @@
-LET url = @static + '/value.html'
+LET url = @lab.cdn.static + '/value.html'
 LET doc = DOCUMENT(url)
 
 LET el = ELEMENT(doc, "#listings_table")

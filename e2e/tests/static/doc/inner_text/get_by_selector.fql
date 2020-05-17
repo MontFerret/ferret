@@ -1,4 +1,4 @@
-LET url = @static + '/simple.html'
+LET url = @lab.cdn.static + '/simple.html'
 LET doc = DOCUMENT(url)
 
 LET expected = `Title Hello world`
@@ -7,4 +7,4 @@ LET actual = INNER_TEXT(doc)
 LET r1 = '(\s|\")'
 LET r2 = '(\n|\s|\")'
 
-RETURN EXPECT(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))
+RETURN T::EQUAL(REGEXP_REPLACE(TRIM(actual), r2, ''), REGEXP_REPLACE(expected, r1, ''))

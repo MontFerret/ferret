@@ -1,6 +1,6 @@
-LET url = @static + '/value.html'
+LET url = @lab.cdn.static + '/value.html'
 LET page = DOCUMENT(url)
 
 LET actual = XPATH(page, "//tr[contains(@class, 'odd')]")
 
-RETURN EXPECT(20, LENGTH(actual))
+RETURN T::LEN(actual, 20)

@@ -1,4 +1,4 @@
-LET url = @static + "/api/ts"
+LET url = @lab.cdn.static + "/api/ts"
 LET page = DOCUMENT(url, {
     driver: "http_headers"
 })
@@ -11,7 +11,7 @@ LET expected = {
     "Multi_set_header":["multi_set_header_value"],
 }
 
-RETURN EXPECT(expected, {
+RETURN T::EQUAL({
     "Single_header": actual["Single_header"],
     "Multi_set_header": actual["Multi_set_header"],
-})
+}, expected)

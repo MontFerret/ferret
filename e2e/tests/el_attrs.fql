@@ -1,4 +1,4 @@
-LET url = @static + '/overview.html'
+LET url = @lab.cdn.static + '/overview.html'
 LET doc = DOCUMENT(url)
 
 LET el = ELEMENT(doc, "body > header > a")

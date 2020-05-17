@@ -1,4 +1,4 @@
-LET url = @static + "/api/ts"
+LET url = @lab.cdn.static + "/api/ts"
 LET page = DOCUMENT(url, {
     driver: "http_cookies"
 })
@@ -15,7 +15,7 @@ LET expected = {
     "Multi_set_cookie": "multi_set_cookie_value",
 }
 
-RETURN EXPECT(expected, {
+RETURN T::EQUAL({
     "Single_cookie": actual[2].Value,
     "Multi_set_cookie": actual[0].Value,
-})
+}, expected)

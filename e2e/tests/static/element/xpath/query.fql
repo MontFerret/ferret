@@ -1,4 +1,4 @@
-LET url = @static + '/value.html'
+LET url = @lab.cdn.static + '/value.html'
 LET page = DOCUMENT(url, true)
 
 LET element = ELEMENT(page, '.tablesorter')
