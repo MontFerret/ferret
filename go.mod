@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/antchfx/htmlquery v1.2.2
-	github.com/antchfx/xpath v1.1.5
+	github.com/antchfx/xpath v1.1.6
 	github.com/antlr/antlr4 v0.0.0-20200417160354-8c50731894e0
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
