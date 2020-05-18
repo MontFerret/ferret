@@ -148,6 +148,9 @@ type FqlParserListener interface {
 	// EnterNamespace is called when entering the namespace production.
 	EnterNamespace(c *NamespaceContext)
 
+	// EnterFunctionIdentifier is called when entering the functionIdentifier production.
+	EnterFunctionIdentifier(c *FunctionIdentifierContext)
+
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
 
@@ -336,6 +339,9 @@ type FqlParserListener interface {
 
 	// ExitNamespace is called when exiting the namespace production.
 	ExitNamespace(c *NamespaceContext)
+
+	// ExitFunctionIdentifier is called when exiting the functionIdentifier production.
+	ExitFunctionIdentifier(c *FunctionIdentifierContext)
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)

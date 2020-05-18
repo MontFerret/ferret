@@ -148,6 +148,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#namespace.
 	VisitNamespace(ctx *NamespaceContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#functionIdentifier.
+	VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
 

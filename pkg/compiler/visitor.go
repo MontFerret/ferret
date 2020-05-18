@@ -100,6 +100,10 @@ func copyFromNamespace(fns *core.Functions, namespace string) error {
 	// So add "::" at the end.
 	namespace += "::"
 
+	// core.Functions cast every function name to upper case. Thus
+	// namespace also shoud be in upper case.
+	namespace = strings.ToUpper(namespace)
+
 	for _, name := range fns.Names() {
 		if !strings.HasPrefix(name, namespace) {
 			continue
@@ -1171,7 +1175,7 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 		name += funcNS.GetText()
 	}
 
-	name += context.Identifier().GetText()
+	name += context.FunctionIdentifier().GetText()
 
 	fun, exists := v.funcs.Get(name)
 
