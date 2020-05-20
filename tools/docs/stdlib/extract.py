@@ -32,7 +32,7 @@ class Extract:
 
 
 stdlib_method_signature = re.compile(
-  'func (.+)\(_ context\.Context, args \.\.\.core\.Value\) \(core\.Value, error\)'
+  'func (.+)\((_|ctx) context\.Context, args \.\.\.core\.Value\) \(core\.Value, error\)'
 )
 
 
