@@ -13,7 +13,7 @@ import (
 // @param search (String) - The string to seek.
 // @param returnIndex (Boolean) - Values which indicates whether to return the character position of the match is returned instead of a boolean.
 // The default is false.
-// @returns (Boolean|Int)
+// @returns (Boolean|Int) - Returns index or a boolean value depending on returnIndex.
 func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

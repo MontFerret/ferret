@@ -13,8 +13,8 @@ import (
 // unescapes to "á", as does "&#225;" and "&#xE1;".
 // UnescapeString(EscapeString(s)) == s always holds, but the converse isn't
 // always true.
-// @param (String) - Uri to escape.
-// @returns String - Escaped string.
+// @param string (String) - URI to unescape.
+// @returns (String) - Escaped string.
 func UnescapeHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

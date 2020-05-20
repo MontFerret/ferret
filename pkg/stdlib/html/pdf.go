@@ -39,7 +39,7 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 //   HeaderTemplate (String) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document For example, `<span class=title></span>` would generate span containing the title.
 //   FooterTemplate (String) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
 //   PreferCSSPageSize (Bool) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size. *
-// @returns data (Binary) - Returns a base64 encoded string in binary format.
+// @returns (Binary) - Returns a base64 encoded string in binary format.
 func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

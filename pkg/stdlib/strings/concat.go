@@ -10,7 +10,7 @@ import (
 
 // Concat concatenates one or more instances of Read, or an Array.
 // @params src (String...|Array) - The source string / array.
-// @returns String
+// @returns (String) - Returns the concatenated string.
 func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
@@ -44,7 +44,7 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 // ConcatWithSeparator concatenates one or more instances of Read, or an Array with a given separator.
 // @params separator (string) - The separator string.
 // @params src (string...|array) - The source string / array.
-// @returns string
+// @returns (String) - Returns the concatenated string.
 func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

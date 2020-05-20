@@ -12,7 +12,7 @@ import (
 // @params value (String) - The source string.
 // @param offset (Int) - Start at offset, offsets start at position 0.
 // @param length (Int, optional) - At most length characters, omit to get the substring from offset to the end of the string. Optional.
-// @returns substring (String) - A substring of value.
+// @returns (String) - A substring of value.
 func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -58,7 +58,7 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 // Left returns the leftmost characters of the string value by index.
 // @param src (String) - The source string.
 // @params length (Int) - The amount of characters to return.
-// @returns substr (String)
+// @returns (String) - Returns the left substring.
 func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
@@ -85,7 +85,7 @@ func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 // Right returns the rightmost characters of the string value.
 // @param src (String) - The source string.
 // @params length (Int) - The amount of characters to return.
-// @returns substr (String)
+// @returns (String) - Returns the right substring.
 func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

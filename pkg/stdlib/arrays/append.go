@@ -12,7 +12,7 @@ import (
 // If ``uniqueOnly`` is set to true, then will add the item only if it's unique.
 // @param arr (Array) - Target array.
 // @param item (Read) - Target value to add.
-// @returns arr (Array) - New array.
+// @returns (Array) - New array.
 func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

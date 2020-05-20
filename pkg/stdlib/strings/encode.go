@@ -13,8 +13,8 @@ import (
 )
 
 // EncodeURIComponent returns the encoded String of uri.
-// @param (String) - Uri to encode.
-// @returns String - Encoded string.
+// @param uri (String) - URI to encode.
+// @returns (String) - Encoded string.
 func EncodeURIComponent(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -77,7 +77,7 @@ func Sha512(_ context.Context, args ...core.Value) (core.Value, error) {
 
 // ToBase64 returns the base64 representation of value.
 // @param value (string) - The string to encode.
-// @returns toBase64String (String) - A base64 representation of the string.
+// @returns (String) - A base64 representation of the string.
 func ToBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
