@@ -1,5 +1,7 @@
 import os
 
+from ruamel.yaml import YAML
+
 
 def walk(directory):
   for root, dirs, files in os.walk(directory):
@@ -12,3 +14,8 @@ def walk(directory):
         continue
 
       yield os.path.join(root, file)
+
+
+def dump_yaml(object, file_name):
+  with open(file_name, 'w+') as file:
+    YAML().dump(object, file)
