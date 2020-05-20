@@ -7,8 +7,8 @@ import (
 )
 
 // toArray takes an input value of any type and convert it into an array value.
-// @param (Value) - Input value of arbitrary type.
-// @returns (Array)
+// @param value (Value) - Input value of arbitrary type.
+// @returns (Array) -
 // None is converted to an empty array
 // Boolean values, numbers and strings are converted to an array containing the original value as its single element
 // Arrays keep their original value

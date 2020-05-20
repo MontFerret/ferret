@@ -9,6 +9,7 @@ import (
 )
 
 // Print writes messages into the system log.
+// @return (None) - Returns None
 func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
