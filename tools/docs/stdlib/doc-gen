@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+
+import os
+import re
+import sys
+
+from files import walk
+from extract import get_extracts
+
+
+def main():
+  arg = sys.argv[-1]
+
+  if arg == 'help':
+    print('Generate stdlib documentation')
+    return
+
+  stdlib_path = arg
+  stdlib_path = os.path.abspath(stdlib_path)
+
+  for file in walk(stdlib_path):
+    for extract in get_extracts(file, stdlib_path):
+      print(extract)
+
+
+if __name__ == '__main__':
+  main()
