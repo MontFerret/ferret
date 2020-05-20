@@ -4,8 +4,9 @@ import os
 import re
 import sys
 
-from files import walk
 from extract import get_extracts
+from files import dump_yaml
+from files import walk
 from transform import transform_extract
 
 
@@ -35,7 +36,7 @@ def main():
         'doc': transform_extract(extract),
       })
 
-  print(representations)
+  dump_yaml(representations, 'stdlib-docs-rep.yaml')
 
 
 if __name__ == '__main__':
