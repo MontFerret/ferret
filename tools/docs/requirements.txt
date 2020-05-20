@@ -1,0 +1,2 @@
+comment-parser~=1.1.6
+PyYAML~=5.3.1
