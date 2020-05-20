@@ -6,6 +6,7 @@ import sys
 
 from files import walk
 from extract import get_extracts
+from transform import transform_extract
 
 
 def main():
@@ -18,9 +19,23 @@ def main():
   stdlib_path = arg
   stdlib_path = os.path.abspath(stdlib_path)
 
+  representations = {}
+
   for file in walk(stdlib_path):
     for extract in get_extracts(file, stdlib_path):
-      print(extract)
+      package = extract.token_package
+
+      if not representations.get(package):
+        representations[package] = []
+
+      representations[package].append({
+        'token': extract.token_name,
+        'file_name': extract.file_name,
+        'line_number': extract.line_number,
+        'doc': transform_extract(extract),
+      })
+
+  print(representations)
 
 
 if __name__ == '__main__':

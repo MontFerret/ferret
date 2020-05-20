@@ -9,11 +9,13 @@ class Extract:
   def __init__(self,
                content,
                token_name,
+               token_package,
                file_name,
                line_number):
 
     self.content = content
     self.token_name = token_name
+    self.token_package = token_package
     self.file_name = file_name
     self.line_number = line_number
 
@@ -96,11 +98,15 @@ def get_extracts(go_file, directory):
       group,
     ))
 
+    file_name = os.path.relpath(go_file, directory)
+    token_package = os.path.dirname(file_name)
+
     # TODO: token_name should be the name the method registers itself with
     # instead of the name of the method that implements it.
     yield Extract(
       content=content,
       token_name=match.group(1),
+      token_package=token_package,
       line_number=group[-1].line_number(),
-      file_name=os.path.relpath(go_file, directory),
+      file_name=file_name,
     )
