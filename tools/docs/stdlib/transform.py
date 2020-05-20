@@ -39,6 +39,8 @@ def process_decorated(regex, target):
     filter(None, arg_type.split('|')),
   ))
 
+  arg_desc = arg_desc.capitalize()
+
   return arg_name, arg_types, arg_desc
 
 
