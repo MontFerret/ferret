@@ -9,6 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
+// Length returns the length of a measurable value.
+// @param value (String|Array|Object|Binary) - The value to measure.
+// @returns (Int) - Returns the length of the value.
 func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(inputs, 1, 1)
 
