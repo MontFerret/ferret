@@ -45,6 +45,19 @@ func TestUseExpression(t *testing.T) {
 				So(string(out), ShouldEqual, "true")
 			})
 
+			Convey("Single statement (lower case)", func() {
+				p, err := newCompiler().Compile(`
+				use x
+	
+				return xxx_contains("s", "s")
+				`)
+
+				So(err, ShouldBeNil)
+				out := p.MustRun(context.Background())
+
+				So(string(out), ShouldEqual, "true")
+			})
+
 			Convey("Many functions from one lib", func() {
 				p, err := newCompiler().Compile(`
 				USE X
