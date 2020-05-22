@@ -1,2 +1,0 @@
-comment-parser~=1.1.6
-ruamel.yaml~=0.16.10
