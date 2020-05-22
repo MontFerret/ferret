@@ -4,9 +4,11 @@ import os
 import re
 import sys
 
-from extract import get_extracts
+from extract import get_doc_extracts
+from extract import get_token_impl_map
 from files import dump_yaml
-from files import walk
+from files import walk_implementations
+from files import walk_indices
 from transform import transform_extract
 
 
@@ -20,10 +22,17 @@ def main():
   stdlib_path = arg
   stdlib_path = os.path.abspath(stdlib_path)
 
+  token_impl_map = {}
   representations = {}
 
-  for file in walk(stdlib_path):
-    for extract in get_extracts(file, stdlib_path):
+  # Extract the names of methods from lib.go
+  for file in walk_indices(stdlib_path):
+    for token in get_token_impl_map(file):
+      token_impl_map.update(**token)
+
+  # Extract the documentation data
+  for file in walk_implementations(stdlib_path):
+    for extract in get_doc_extracts(file, stdlib_path, token_impl_map):
       package = extract.token_package
 
       if not representations.get(package):

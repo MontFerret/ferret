@@ -36,7 +36,7 @@ stdlib_method_signature = re.compile(
 )
 
 
-def get_extracts(go_file, directory):
+def get_doc_extracts(go_file, directory, token_impl_map):
   go_lines, go_code = {}, None
 
   # Read the contents of a file as a string and also index lines by line
@@ -101,12 +101,31 @@ def get_extracts(go_file, directory):
     file_name = os.path.relpath(go_file, directory)
     token_package = os.path.dirname(file_name)
 
+    impl_name = match.group(1)
+    token_name = token_impl_map.get(impl_name, None)
+
+    if token_name is None:
+      token_name = impl_name
+      print(f'Token against {impl_name} was not found')
+
     # TODO: token_name should be the name the method registers itself with
     # instead of the name of the method that implements it.
     yield Extract(
       content=content,
-      token_name=match.group(1),
+      token_name=token_name,
       token_package=token_package,
       line_number=group[-1].line_number(),
       file_name=file_name,
     )
+
+
+def get_token_impl_map(go_file):
+  # Extract all implementations and token names from indices.
+
+  regex = re.compile(
+    '"(?P<token>[A-Z0-9_]+)":[ \t]*(?P<impl>[\w\d]+)'
+  )
+
+  with open(go_file, 'r') as file:
+    for match in regex.finditer(file.read()):
+      yield { match.group('impl'): match.group('token') }

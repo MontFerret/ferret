@@ -3,7 +3,15 @@ import os
 from ruamel.yaml import YAML
 
 
-def walk(directory):
+def walk_indices(directory):
+  for root, dirs, files in os.walk(directory):
+    for file in files:
+
+      if file == 'lib.go':
+        yield os.path.join(root, file)
+
+
+def walk_implementations(directory):
   for root, dirs, files in os.walk(directory):
     for file in files:
 
