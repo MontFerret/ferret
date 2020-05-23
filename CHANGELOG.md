@@ -1,5 +1,22 @@
 ## Changelog
 
+### 0.11.0
+#### Added
+- USE statement. [#470](https://github.com/MontFerret/ferret/pull/470)
+- Scroll options. [#471](https://github.com/MontFerret/ferret/pull/471)
+- Functions for working with file paths. [#505](https://github.com/MontFerret/ferret/pull/505)
+- Fuzzer. [#501](https://github.com/MontFerret/ferret/pull/501)
+
+## Updated
+- ``DECODED_URI_COMPONENT`` decodes unicode symbols now. [#499](https://github.com/MontFerret/ferret/pull/499) 
+- Dependencies. [87265cf](https://github.com/MontFerret/ferret/commit/87265cf470c4b614d144706020729dd453620a0c)
+
+# Fixed
+- ``RAND`` always returns same result . [#484](https://github.com/MontFerret/ferret/pull/484)
+- ``RAND`` does not work on Windows. [#497](https://github.com/MontFerret/ferret/pull/497)
+- ``IO::FS::WRITE`` does not add read permissions. [#494](https://github.com/MontFerret/ferret/pull/494)
+- Unable to use keywords in namespaces. [#481](https://github.com/MontFerret/ferret/pull/481)
+
 ### 0.10.2
 #### Updated
 - Updated dependencies. [#466](https://github.com/MontFerret/ferret/pull/466) [#467](https://github.com/MontFerret/ferret/pull/467)
