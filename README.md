@@ -93,7 +93,7 @@ You can download latest binaries from [here](https://github.com/MontFerret/ferre
 
 #### Development
 * GNU Make
-* ANTLR4 >=4.7.1
+* ANTLR4 >=4.8
 
 
 ```sh
