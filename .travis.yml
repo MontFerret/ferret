@@ -68,8 +68,8 @@ jobs:
     before_script:
       - curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
       - sudo sh install.sh
-      - docker pull microbox/chromium-headless:77.0.3844.0
-      - docker run -d -p 9222:9222 microbox/chromium-headless:77.0.3844.0
+      - docker pull alpeware/chrome-headless-stable:ver-83.0.4103.61
+      - docker run -d -p 9222:9222 alpeware/chrome-headless-stable:ver-83.0.4103.61
       - docker ps
     script:
       - make compile
