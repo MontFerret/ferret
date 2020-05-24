@@ -63,7 +63,7 @@ func RegisterLib(ns core.Namespace) error {
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
 			"EMPTY":   NewPositive(Empty),
-			"EQUAL":   NewPositive(Equal),
+			"EQ":      NewPositive(Equal),
 			"FAIL":    NewPositive(Fail),
 			"FALSE":   NewPositive(False),
 			"GT":      NewPositive(Gt),
@@ -85,7 +85,7 @@ func registerNOT(ns core.Namespace) error {
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
 			"EMPTY":   NewNegative(Empty),
-			"EQUAL":   NewNegative(Equal),
+			"EQ":      NewNegative(Equal),
 			"FALSE":   NewNegative(False),
 			"GT":      NewNegative(Gt),
 			"GTE":     NewNegative(Gte),

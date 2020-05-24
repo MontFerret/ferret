@@ -14,4 +14,7 @@ WAIT(1000)
 
 LET curr = el.attributes.style
 
-RETURN T::ASSERT(prev == "display: block;" && curr == NONE, "expected attribute to be removed")
+T::EQ(prev, "display: block;")
+T::NONE(curr, "expected attribute to be removed")
+
+RETURN NONE

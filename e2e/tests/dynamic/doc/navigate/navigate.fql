@@ -1,6 +1,6 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET p = DOCUMENT("", { driver: "cdp" })
 
 NAVIGATE(p, url)
 
-RETURN T::EXPECT(url + '/', p.url)
+RETURN T::EQ(p.url, url + '/')

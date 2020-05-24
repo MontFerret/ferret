@@ -7,4 +7,4 @@ LET cookiesPath = LENGTH(doc.cookies) > 0 ? "ok" : "false"
 LET cookie = COOKIE_GET(doc, "x-ferret")
 LET expected = "ok e2e"
 
-RETURN T::EQUAL(cookiesPath + " " + cookie.value, expected)
+RETURN T::EQ(cookiesPath + " " + cookie.value, expected)

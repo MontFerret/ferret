@@ -1,4 +1,4 @@
-LET url = @dynamic + "/#/pagination"
+LET url = @lab.cdn.dynamic + "/#/pagination"
 LET page = DOCUMENT(url, true)
 
 LET items = (
@@ -6,4 +6,4 @@ LET items = (
         RETURN i
 )
 
-RETURN EXPECT(5, LENGTH(items))
+RETURN T::LEN(items, 5)

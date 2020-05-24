@@ -9,4 +9,4 @@ LET actual = (
 		RETURN elem.value
 )
 
-RETURN T::EQUAL(actual, expected)
+RETURN T::EQ(actual, expected)

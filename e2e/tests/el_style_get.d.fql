@@ -8,4 +8,4 @@ WAIT_ELEMENT(doc, pageSelector)
 LET el = ELEMENT(doc, elemSelector)
 LET val = STYLE_GET(el, "display")
 
-RETURN T::EQUAL(val.display, "block", "could not get style values")
+RETURN T::EQ(val.display, "block", "could not get style values")

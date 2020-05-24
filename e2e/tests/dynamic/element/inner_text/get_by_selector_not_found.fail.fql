@@ -1,4 +1,4 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, true)
 LET el = ELEMENT(doc, ".jumbotron")
 

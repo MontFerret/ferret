@@ -13,6 +13,6 @@ LET page = PARSE(`
 
 LET title = ELEMENT(page, "title")
 
-T::EQUAL(title.innerText, "Offline")
+T::EQ(title.innerText, "Offline")
 
 RETURN NONE

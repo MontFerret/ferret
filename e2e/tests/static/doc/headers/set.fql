@@ -14,7 +14,7 @@ LET expected = {
     "X-Request-Id": ["foobar"]
 }
 
-RETURN EXPECT({
+RETURN T::EQ({
     "Access-Control-Allow-Origin": actual["Access-Control-Allow-Origin"],
     "X-Request-Id": actual["X-Request-Id"]
 }, expected)

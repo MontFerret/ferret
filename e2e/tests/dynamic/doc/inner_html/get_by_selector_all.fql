@@ -1,4 +1,4 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, true)
 
 WAIT_ELEMENT(doc, "#layout")
@@ -9,4 +9,4 @@ LET expected = [
 ]
 LET actual = INNER_HTML_ALL(doc, '#root > div > main > div > *')
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQ(actual, expected)

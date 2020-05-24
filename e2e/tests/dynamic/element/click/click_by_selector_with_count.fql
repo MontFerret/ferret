@@ -1,4 +1,4 @@
-LET url = @dynamic + "/#/forms"
+LET url = @lab.cdn.dynamic + "/#/forms"
 LET page = DOCUMENT(url, true)
 
 WAIT_ELEMENT(page, "form")
@@ -13,4 +13,4 @@ INPUT(input, "Bar")
 
 WAIT(100)
 
-RETURN EXPECT("Bar", input.value)
+RETURN T::EQ(input.value, "Bar")

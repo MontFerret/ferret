@@ -11,4 +11,7 @@ ATTR_SET(el, { style: "color: black;", "data-ferret-x": "test" })
 
 WAIT(1000)
 
-RETURN T::ASSERT(el.style.color == "black" && el.attributes["data-ferret-x"] == "test", "styles should be updated")
+T::EQ(el.style.color, "black")
+T::EQ(el.attributes["data-ferret-x"], "test", "styles should be updated")
+
+RETURN NONE

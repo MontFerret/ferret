@@ -10,4 +10,4 @@ LET attrs = [
 LET expected = '["jumbotron","page"]'
 LET actual = TO_STRING(attrs)
 
-RETURN T::EQUAL(actual, expected)
+RETURN T::EQ(actual, expected)

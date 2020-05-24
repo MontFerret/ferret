@@ -7,4 +7,4 @@ LET page = DOCUMENT(url, {
 LET h = ELEMENT(page, "#headers")
 LET headers = JSON_PARSE(h.innerText)
 
-RETURN T::EQUAL(ua, headers["User-Agent"][0])
+RETURN T::EQ(ua, headers["User-Agent"][0])

@@ -3,4 +3,4 @@ LET doc = DOCUMENT(url, {
     dynamic: true
 })
 
-RETURN T::EQUAL(doc.url, url)
+RETURN T::EQ(doc.url, url)

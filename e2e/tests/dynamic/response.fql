@@ -1,4 +1,4 @@
 LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, true)
 
-RETURN T::EQUAL(doc.response.status, "OK")
+RETURN T::EQ(doc.response.status, "OK")

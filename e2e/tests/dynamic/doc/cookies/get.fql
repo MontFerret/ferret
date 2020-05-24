@@ -1,4 +1,4 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, {
     driver: "cdp"
 })
@@ -9,4 +9,4 @@ LET expected = "ok e2e"
 
 T::LEN(doc.cookies
 
-RETURN EXPECT(expected, cookiesPath + " " + cookie.value)
+RETURN T::EQ(cookiesPath + " " + cookie.value, expected)

@@ -14,4 +14,4 @@ WAIT(1000)
 
 LET curr = el.style
 
-RETURN T::EQUAL(curr.color, "black", "styles should be updated")
+RETURN T::EQ(curr.color, "black", "styles should be updated")

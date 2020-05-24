@@ -15,4 +15,4 @@ LET expected = [
 ]
 LET actual = INNER_TEXT_ALL(doc, 'body > div.container-fluid > div > main > ul > li')
 
-RETURN T::EQUAL(actual, expected)
+RETURN T::EQ(actual, expected)

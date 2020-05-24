@@ -3,4 +3,4 @@ LET page = DOCUMENT(url)
 
 LET actual = XPATH(page, "count(//body)")
 
-RETURN T::EQUAL(actual, 1)
+RETURN T::EQ(actual, 1)

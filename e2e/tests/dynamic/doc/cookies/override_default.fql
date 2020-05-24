@@ -1,4 +1,4 @@
-LET url = @static + "/api/ts"
+LET url = @lab.cdn.static + "/api/ts"
 LET page = DOCUMENT(url, {
     driver: "cdp_cookies",
     cookies: [
@@ -25,7 +25,7 @@ LET expected = {
     "Multi_set_cookie": "Bar",
 }
 
-RETURN EXPECT(expected, {
+RETURN T::EQ({
     "Single_cookie": actual[1].Value,
     "Multi_set_cookie": actual[0].Value,
-})
+}, expected)

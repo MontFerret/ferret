@@ -1,4 +1,4 @@
-LET url = @static + "/api/ts"
+LET url = @lab.cdn.static + "/api/ts"
 LET page = DOCUMENT(url, {
     driver: "cdp",
     headers: {
@@ -14,7 +14,7 @@ LET expected = {
     "X-Request-Id": ["foobar"]
 }
 
-RETURN EXPECT(expected, {
+RETURN T::EQ({
     "Access-Control-Allow-Origin": actual["Access-Control-Allow-Origin"],
     "X-Request-Id": actual["X-Request-Id"]
-})
+}, expected)

@@ -6,4 +6,4 @@ LET el = ELEMENT(doc, "#select_input")
 LET expected = "1"
 LET actual = el.value
 
-RETURN T::EQUAL(actual, expected)
+RETURN T::EQ(actual, expected)

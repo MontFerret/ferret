@@ -14,4 +14,7 @@ WAIT(1000)
 
 LET curr = el.style
 
-RETURN T::ASSERT(prev.display == "block" && curr.display == NONE, "expected style to be removed")
+T::EQ(prev.display, "block")
+T::NONE(curr.display, "expected style to be removed")
+
+RETURN NONE

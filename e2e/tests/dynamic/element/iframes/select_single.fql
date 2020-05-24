@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/iframe&src=/forms"
+LET url = @lab.cdn.dynamic + "?redirect=/iframe&src=/forms"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 LET doc = page.frames[1]
 
@@ -8,4 +8,7 @@ LET input = ELEMENT(doc, "#select_input")
 LET output = ELEMENT(doc, "#select_output")
 LET result = SELECT(input, ["4"])
 
-RETURN EXPECT(output.innerText, "4") + EXPECT(JSON_STRINGIFY(result), '["4"]')
+T::EQ(output.innerText, "4")
+T::EQ(result, ["4"])
+
+RETURN NONE

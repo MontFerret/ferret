@@ -15,4 +15,7 @@ WAIT_STYLE(el, "color", NONE)
 
 LET curr = el.style
 
-RETURN T::ASSERT(prev.color == "black" && curr.color == NONE, "style should be removed")
+T::EQ(prev.color == "black")
+T::NONE(curr.color, "style should be removed")
+
+RETURN NONE

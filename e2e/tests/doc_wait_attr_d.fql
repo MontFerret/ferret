@@ -15,4 +15,7 @@ WAIT_ATTR(doc, selector, attrName, attrVal, 30000)
 
 LET curr = el.attributes
 
-RETURN T::ASSERT([prev[attrName] == NONE, curr[attrName] == attrVal], "attributes should be updated")
+T::NONE(prev[attrName])
+T::EQ(attrVal, curr[attrName], "attributes should be updated")
+
+RETURN NONE

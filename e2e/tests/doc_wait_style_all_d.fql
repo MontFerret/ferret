@@ -18,4 +18,4 @@ LET results = (
         RETURN el.style.color
 )
 
-RETURN T::EQUAL(CONCAT(results), "blackblack", "styles should be updated")
+RETURN T::EQ(CONCAT(results), "blackblack", "styles should be updated")
