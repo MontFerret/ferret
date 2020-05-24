@@ -4,6 +4,6 @@ LET page = DOCUMENT(url)
 LET el = ELEMENT(page, '#listings_table')
 LET actual = XPATH(el, "count(//tr)")
 
-T::LEN(actual, 41)
+T::EQ(actual, 41)
 
 RETURN NONE

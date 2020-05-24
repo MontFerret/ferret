@@ -1,6 +1,0 @@
-LET url = @lab.cdn.dynamic
-LET doc = DOCUMENT(url, {
-    dynamic: true
-})
-
-RETURN T::EQ(doc.url, url)

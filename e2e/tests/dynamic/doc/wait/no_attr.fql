@@ -1,0 +1,16 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+// with fixed timeout
+CLICK(doc, "#wait-no-class-btn")
+WAIT(1000)
+PRINT(ATTR_GET(ELEMENT(doc, "#wait-no-class-content"), "class"))
+WAIT_NO_ATTR(doc, "#wait-no-class-content", "class", "alert alert-success")
+
+// with random timeout
+CLICK(doc, "#wait-no-class-random-btn")
+WAIT_NO_ATTR(doc, "#wait-no-class-random-content", "class", "alert alert-success", 10000)
+
+RETURN NONE

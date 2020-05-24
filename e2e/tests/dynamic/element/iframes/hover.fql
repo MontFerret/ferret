@@ -2,7 +2,7 @@ LET url = @lab.cdn.dynamic + "?redirect=/iframe&src=/events"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 LET doc = page.frames[1]
 
-WAIT_ELEMENT(doc, "#page-events")
+WAIT_ELEMENT(doc, "#page-events", 5000)
 
 LET input = ELEMENT(doc, "#hoverable-btn")
 

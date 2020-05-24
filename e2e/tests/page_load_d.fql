@@ -1,7 +1,0 @@
-LET url = @lab.cdn.dynamic
-LET doc = DOCUMENT(url, true)
-
-LET expected = url + '/'
-LET actual = doc.url
-
-RETURN T::EQ(actual, expected)

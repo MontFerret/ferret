@@ -1,0 +1,21 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+LET el = ELEMENT(doc, "#wait-class-content")
+
+ATTR_SET(el, "style", "color: black")
+WAIT_STYLE(el, "color", "black")
+
+LET prev = el.style
+
+ATTR_REMOVE(el, "style")
+WAIT_STYLE(el, "color", NONE)
+
+LET curr = el.style
+
+T::EQ(prev.color, "black")
+T::NONE(curr.color, "style should be removed")
+
+RETURN NONE

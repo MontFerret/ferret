@@ -1,0 +1,13 @@
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "form")
+
+LET input = ELEMENT(doc, "#multi_select_input")
+LET output = ELEMENT(doc, "#multi_select_output")
+LET result = SELECT(input, ["1", "2", "4"])
+
+T::EQ(output.innerText, "1, 2, 4")
+T::EQ(result, ["1","2","4"])
+
+RETURN NONE

@@ -1,0 +1,9 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+CLICK_ALL(doc, "#wait-no-class-btn, #wait-no-class-random-btn")
+WAIT_NO_CLASS_ALL(doc, "#wait-no-class-content, #wait-no-class-random-content", "alert-success", 10000)
+
+RETURN NONE

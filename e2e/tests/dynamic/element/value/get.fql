@@ -1,0 +1,11 @@
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+LET el = ELEMENT(doc, "#select_input")
+
+LET expected = "1"
+LET actual = el.value
+
+T::EQ(actual, expected)
+
+RETURN NONE
