@@ -1,5 +1,12 @@
 ## Changelog
 
+### 0.11.1
+#### Fixed
+
+- Fixed use of unquoted scroll options [#521](https://github.com/MontFerret/ferret/pull/521)
+- Upgraded ANTLR version [#517](https://github.com/MontFerret/ferret/pull/517)
+
+
 ### 0.11.0
 #### Added
 - USE statement. [#470](https://github.com/MontFerret/ferret/pull/470)
