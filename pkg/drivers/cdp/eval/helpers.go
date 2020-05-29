@@ -19,14 +19,6 @@ func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
 	}
 
 	switch obj.Type {
-	case "string":
-		str, err := strconv.Unquote(string(obj.Value))
-
-		if err != nil {
-			return values.None, err
-		}
-
-		return values.NewString(str), nil
 	case "undefined", "null":
 		return values.None, nil
 	default:
