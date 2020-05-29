@@ -2,7 +2,6 @@ package eval
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
