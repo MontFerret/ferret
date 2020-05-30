@@ -1,0 +1,4 @@
+query:
+  src: file://../../../examples/click.fql
+assert: |
+  RETURN T::NOT::EMPTY(@lab.data.query)
