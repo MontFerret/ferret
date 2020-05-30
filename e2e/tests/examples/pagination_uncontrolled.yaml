@@ -1,0 +1,7 @@
+query:
+    ref: file://../../../examples/pagination_uncontrolled.fql
+    params:
+        criteria: "scraper"
+        limit: 2
+assert:
+    text: RETURN T::NOT::EMPTY(@lab.data.query.result)
