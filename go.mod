@@ -19,7 +19,7 @@ require (
 	github.com/mafredri/cdp v0.28.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.18.0
+	github.com/rs/zerolog v1.19.0
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
