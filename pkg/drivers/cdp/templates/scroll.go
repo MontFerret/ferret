@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
@@ -23,9 +24,9 @@ const (
 		window.scrollTo({
 			left: %s,
 			top: %s,
-			behavior: %s,
-			block: %s, 
-			inline: %s
+			behavior: '%s',
+			block: '%s', 
+			inline: '%s'
   		});
 `
 
@@ -33,9 +34,9 @@ const (
 		window.scrollTo({
 			left: 0,
 			top: 0,
-			behavior: %s,
-			block: %s, 
-			inline: %s
+			behavior: '%s',
+			block: '%s', 
+			inline: '%s'
   		});
 `
 
@@ -43,22 +44,21 @@ const (
 		window.scrollTo({
 			left: 0,
 			top: window.document.body.scrollHeight,
-			behavior: %s,
-			block: %s, 
-			inline: %s
+			behavior: '%s',
+			block: '%s', 
+			inline: '%s'
   		});
 `
 
 	scrollIntoViewTemplate = `
 		(el) => {
 			` + isElementInViewportTemplate + `
-			
 
 			if (!isInViewport(el)) {
 				el.scrollIntoView({
-					behavior: %s,
-					block: %s, 
-					inline: %s
+					behavior: '%s',
+					block: '%s', 
+					inline: '%s'
 				});
 			}
 	
@@ -77,9 +77,9 @@ const (
 
 		if (!isInViewport(el)) {
 			el.scrollIntoView({
-				behavior: %s,
-				block: %s, 
-				inline: %s
+				behavior: '%s',
+				block: '%s', 
+				inline: '%s'
   			});
 		}
 

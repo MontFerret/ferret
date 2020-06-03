@@ -32,23 +32,11 @@ func TestProgram(t *testing.T) {
 		c := compiler.New()
 		p := c.MustCompile(`WAIT(1000) RETURN TRUE`)
 
-		out := make(chan Result)
-
 		ctx, cancel := context.WithCancel(context.Background())
-
-		go func() {
-			v, err := p.Run(ctx)
-
-			out <- Result{
-				Value: v,
-				Error: err,
-			}
-		}()
-
 		cancel()
 
-		o := <-out
+		_, err := p.Run(ctx)
 
-		So(o.Error, ShouldEqual, core.ErrTerminated)
+		So(err, ShouldEqual, core.ErrTerminated)
 	})
 }
