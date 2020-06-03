@@ -1,4 +1,0 @@
-query:
-  ref: file://../../../examples/wait_class.fql
-assert:
-  text: RETURN T::TRUE(@lab.data.query.result)

@@ -1,32 +1,37 @@
-LET amazon = DOCUMENT('https://www.amazon.com/', { driver: "cdp" })
+LET baseURL = 'https://www.amazon.com/'
+LET amazon = DOCUMENT(baseURL, { driver: "cdp" })
 
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '.nav-search-submit input[type="submit"]')
 WAIT_NAVIGATION(amazon)
 
 LET resultListSelector = '#s-results-list-atf'
-LET resultItemSelector = '.s-result-item'
-LET nextBtnSelector = '#pagnNextLink'
-LET vendorSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div.a-row.a-spacing-small > div:nth-child(2) > span:nth-child(2)'
-LET priceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(4) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
-LET altPriceSelector = 'div > div > div > div.a-fixed-left-grid-col.a-col-right > div:nth-child(2) > div.a-column.a-span7 > div:nth-child(1) > div:nth-child(3) > a > span.a-offscreen'
+LET resultItemSelector = '[data-component-type="s-search-result"]'
+LET nextBtnSelector = 'ul.a-pagination .a-last a'
+LET priceWholeSelector = '.a-price-whole'
+LET priceFracSelector = '.a-price-fraction'
 
 LET result = (
     FOR pageNum IN PAGINATION(amazon, nextBtnSelector)
-        LIMIT @limit
+        LIMIT @pages
 
-        LET wait = pageNum > 0 ? WAIT_NAVIGATION(amazon) : false
+        LET wait = pageNum > 0 ? WAIT_NAVIGATION(amazon, 20000) : false
         LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
 
         LET items = (
             FOR el IN ELEMENTS(amazon, resultItemSelector)
-                LET priceTxtMain = INNER_TEXT(el, priceSelector)
-                LET priceTxt = priceTxtMain != "" ? priceTxtMain : INNER_TEXT(el, altPriceSelector)
+                LET hasPrice = ELEMENT_EXISTS(el, priceWholeSelector)
+                LET priceWholeTxt = hasPrice ? FIRST(REGEX_MATCH(INNER_TEXT(el, priceWholeSelector), "[0-9]+")) : "0"
+                LET priceFracTxt = hasPrice ? FIRST(REGEX_MATCH(INNER_TEXT(el, priceFracSelector), "[0-9]+")) : "00"
+		        LET price = TO_FLOAT(priceWholeTxt + "." + priceFracTxt)
+		        LET anchor = ELEMENT(el, "a")
+
+		        PRINT(priceWholeTxt, priceFracTxt)
 
                 RETURN {
+                    url: baseURL + anchor.attributes.href,
                     title: INNER_TEXT(el, 'h2'),
-                    vendor: INNER_TEXT(el, vendorSelector),
-                    price: TO_FLOAT(SUBSTITUTE(priceTxt, "$", ""))
+                    price
                 }
         )
 
