@@ -68,8 +68,7 @@ jobs:
     before_script:
       - curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
       - sudo sh install.sh
-      - docker pull alpeware/chrome-headless-stable:ver-83.0.4103.61
-      - docker run -d -p 9222:9222 alpeware/chrome-headless-stable:ver-83.0.4103.61
+      - docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --force-gpu-mem-available-mb --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
       - docker ps
     script:
       - make compile
