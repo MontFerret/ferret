@@ -8,8 +8,8 @@ import (
 )
 
 // Object asserts that value is a object type.
-// @param (Mixed) - Value to test.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Value to test.
+// @params message (String, optional) - Message to display on error.
 var Object = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be object"

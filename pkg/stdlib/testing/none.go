@@ -9,8 +9,8 @@ import (
 )
 
 // None asserts that value is none.
-// @param (Mixed) - Value to test.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Value to test.
+// @params message (String, optional) - Message to display on error.
 var None = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s", formatValue(values.None))

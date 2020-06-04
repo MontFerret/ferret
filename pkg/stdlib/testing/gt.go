@@ -8,9 +8,9 @@ import (
 )
 
 // Gt asserts that an actual value is greater than an expected one.
-// @param (Mixed) - Actual value.
-// @param (Mixed) - Expected value.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Actual value.
+// @params expected (Mixed) - Expected value.
+// @params message (String, optional) - Message to display on error.
 var Gt = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", GreaterOp, formatValue(args[1]))

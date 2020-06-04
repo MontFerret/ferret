@@ -9,8 +9,8 @@ import (
 )
 
 // False asserts that value is false.
-// @param (Mixed) - Value to test.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Value to test.
+// @params message (String) - Message to display on error.
 var False = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s", formatValue(values.False))

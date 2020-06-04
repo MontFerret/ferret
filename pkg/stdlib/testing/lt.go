@@ -7,9 +7,9 @@ import (
 )
 
 // Lt asserts that an actual value is lesser than an expected one.
-// @param (Mixed) - Actual value.
-// @param (Mixed) - Expected value.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Actual value.
+// @params expected (Mixed) - Expected value.
+// @params message (String, optional) - Message to display on error.
 var Lt = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", LessOp, formatValue(args[1]))

@@ -6,7 +6,7 @@ import (
 )
 
 // Fail returns an error.
-// @param (String) - Message to display on error.
+// @params message (String, optional) - Message to display on error.
 var Fail = Assertion{
 	DefaultMessage: func(_ []core.Value) string {
 		return "not fail"

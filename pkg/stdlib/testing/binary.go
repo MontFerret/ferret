@@ -8,8 +8,8 @@ import (
 )
 
 // Binary asserts that value is a binary type.
-// @param (Mixed) - Value to test.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Value to test.
+// @params message (String, optional) - Message to display on error.
 var Binary = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be binary"

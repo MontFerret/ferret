@@ -8,9 +8,9 @@ import (
 )
 
 // Equal asserts equality of actual and expected values.
-// @param (Mixed) - Actual value.
-// @param (Mixed) - Expected value.
-// @param (String) - Message to display on error.
+// @params actual (Mixed) - Actual value.
+// @params expected (Mixed) - Expected value.
+// @params message (String, optional) - Message to display on error.
 var Equal = Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", EqualOp, formatValue(args[1]))
