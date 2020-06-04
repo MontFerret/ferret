@@ -2,7 +2,7 @@ LET doc = DOCUMENT("https://github.com/", { driver: "cdp" })
 LET main = ELEMENT(doc, '.application-main')
 LET mainTxt = main.innerText
 
-NAVIGATE(doc, "https://github.com/features")
+NAVIGATE(doc, "https://github.com/features", 10000)
 
 LET features = ELEMENT(doc, '.application-main')
 LET featuresTxt = features.innerText
