@@ -62,19 +62,26 @@ func RegisterLib(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"EMPTY":   NewPositive(Empty),
-			"EQ":      NewPositive(Equal),
-			"FAIL":    NewPositive(Fail),
-			"FALSE":   NewPositive(False),
-			"GT":      NewPositive(Gt),
-			"GTE":     NewPositive(Gte),
-			"INCLUDE": NewPositive(Include),
-			"LEN":     NewPositive(Len),
-			"MATCH":   NewPositive(Match),
-			"LT":      NewPositive(Lt),
-			"LTE":     NewPositive(Lte),
-			"NONE":    NewPositive(None),
-			"TRUE":    NewPositive(True),
+			"EMPTY":    NewPositive(Empty),
+			"EQ":       NewPositive(Equal),
+			"FAIL":     NewPositive(Fail),
+			"FALSE":    NewPositive(False),
+			"GT":       NewPositive(Gt),
+			"GTE":      NewPositive(Gte),
+			"INCLUDE":  NewPositive(Include),
+			"LEN":      NewPositive(Len),
+			"MATCH":    NewPositive(Match),
+			"LT":       NewPositive(Lt),
+			"LTE":      NewPositive(Lte),
+			"NONE":     NewPositive(None),
+			"TRUE":     NewPositive(True),
+			"STRING":   NewPositive(String),
+			"INT":      NewPositive(Int),
+			"FLOAT":    NewPositive(Float),
+			"DATETIME": NewPositive(DateTime),
+			"ARRAY":    NewPositive(Array),
+			"OBJECT":   NewPositive(Object),
+			"BINARY":   NewPositive(Binary),
 		}),
 	)
 }
@@ -84,18 +91,25 @@ func registerNOT(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"EMPTY":   NewNegative(Empty),
-			"EQ":      NewNegative(Equal),
-			"FALSE":   NewNegative(False),
-			"GT":      NewNegative(Gt),
-			"GTE":     NewNegative(Gte),
-			"INCLUDE": NewNegative(Include),
-			"LEN":     NewNegative(Len),
-			"MATCH":   NewNegative(Match),
-			"LT":      NewNegative(Lt),
-			"LTE":     NewNegative(Lte),
-			"NONE":    NewNegative(None),
-			"TRUE":    NewNegative(True),
+			"EMPTY":    NewNegative(Empty),
+			"EQ":       NewNegative(Equal),
+			"FALSE":    NewNegative(False),
+			"GT":       NewNegative(Gt),
+			"GTE":      NewNegative(Gte),
+			"INCLUDE":  NewNegative(Include),
+			"LEN":      NewNegative(Len),
+			"MATCH":    NewNegative(Match),
+			"LT":       NewNegative(Lt),
+			"LTE":      NewNegative(Lte),
+			"NONE":     NewNegative(None),
+			"TRUE":     NewNegative(True),
+			"STRING":   NewNegative(String),
+			"INT":      NewNegative(Int),
+			"FLOAT":    NewNegative(Float),
+			"DATETIME": NewNegative(DateTime),
+			"ARRAY":    NewNegative(Array),
+			"OBJECT":   NewNegative(Object),
+			"BINARY":   NewNegative(Binary),
 		}),
 	)
 }
@@ -173,7 +187,19 @@ func toError(assertion Assertion, args []core.Value, positive bool) error {
 		if assertion.MaxArgs > 1 {
 			actual := args[0]
 
-			return core.Error(ErrAssertion, fmt.Sprintf("expected %s %sto %s", formatValue(actual), connotation, assertion.DefaultMessage(args)))
+			var msg string
+
+			if assertion.DefaultMessage != nil {
+				msg = assertion.DefaultMessage(args)
+			} else {
+				if len(args) > 1 {
+					msg = fmt.Sprintf("be %s", args[1].String())
+				} else {
+					msg = "exist"
+				}
+			}
+
+			return core.Error(ErrAssertion, fmt.Sprintf("expected %s %sto %s", formatValue(actual), connotation, msg))
 		}
 
 		return core.Error(ErrAssertion, fmt.Sprintf("expected to %s%s", connotation, assertion.DefaultMessage(args)))
