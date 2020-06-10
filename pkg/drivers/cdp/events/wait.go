@@ -33,27 +33,26 @@ func NewWaitTask(
 
 func (task *WaitTask) Run(ctx context.Context) (core.Value, error) {
 	for {
-		select {
-		case <-ctx.Done():
-			return values.None, core.ErrTimeout
-		default:
-			out, err := task.fun(ctx)
-
-			// expression failed
-			// terminating
-			if err != nil {
-				return values.None, err
-			}
-
-			// output is not empty
-			// terminating
-			if out != values.None {
-				return out, nil
-			}
-
-			// Nothing yet, let's wait before the next try
-			time.Sleep(task.polling)
+		if ctx.Err() != nil {
+			return values.None, ctx.Err()
 		}
+
+		out, err := task.fun(ctx)
+
+		// expression failed
+		// terminating
+		if err != nil {
+			return values.None, err
+		}
+
+		// output is not empty
+		// terminating
+		if out != values.None {
+			return out, nil
+		}
+
+		// Nothing yet, let's wait before the next try
+		<-time.After(task.polling)
 	}
 }
 
