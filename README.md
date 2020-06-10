@@ -107,7 +107,7 @@ For ease of use we recommend to run Chrome inside a Docker container:
 
 ```sh
 docker pull alpeware/chrome-headless-stable:ver-83.0.4103.61
-docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --force-gpu-mem-available-mb --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
 ```
 
 But if you want to see what's happening during query execution, just start your Chrome with remote debugging port:
