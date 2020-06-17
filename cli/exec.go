@@ -41,7 +41,6 @@ func Exec(query string, opts Options) {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	// signal.Notify(c, os.Kill)
 
 	go func() {
 		for {

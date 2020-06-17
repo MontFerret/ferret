@@ -12,18 +12,18 @@ import (
 )
 
 func TestFail(t *t.T) {
-	False := base.NewPositiveAssertion(testing.Fail)
+	Fail := base.NewPositiveAssertion(testing.Fail)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
-			_, err := False(context.Background())
+			_, err := Fail(context.Background())
 
 			So(err, ShouldBeError)
 		})
 	})
 
 	Convey("It should return an error", t, func() {
-		_, err := False(context.Background(), values.False)
+		_, err := Fail(context.Background(), values.False)
 
 		So(err, ShouldBeError)
 	})

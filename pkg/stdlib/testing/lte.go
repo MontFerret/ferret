@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Gte asserts that an actual value is lesser than or equal to an expected one.
+// Lte asserts that an actual value is lesser than or equal to an expected one.
 // @params actual (Mixed) - Actual value.
 // @params expected (Mixed) - Expected value.
 // @params message (String, optional) - Message to display on error.
