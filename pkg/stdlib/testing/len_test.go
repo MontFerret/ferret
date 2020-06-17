@@ -2,6 +2,7 @@ package testing_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 	t "testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestLen(t *t.T) {
-	Len := testing.NewPositive(testing.Len)
+	Len := base.NewPositiveAssertion(testing.Len)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -40,7 +41,7 @@ func TestLen(t *t.T) {
 				_, err := Len(context.Background(), values.NewString("Foo"), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'Foo' to has size 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' to has size 1").Error())
 			})
 		})
 
@@ -63,7 +64,7 @@ func TestLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1,2,3]' to has size 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to has size 1").Error())
 			})
 		})
 
@@ -94,7 +95,7 @@ func TestLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to has size 1").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to has size 1").Error())
 			})
 		})
 
@@ -117,7 +118,7 @@ func TestLen(t *t.T) {
 }
 
 func TestNotLen(t *t.T) {
-	NotLen := testing.NewNegative(testing.Len)
+	NotLen := base.NewNegativeAssertion(testing.Len)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -153,7 +154,7 @@ func TestNotLen(t *t.T) {
 				_, err := NotLen(context.Background(), values.NewString("Foo"), values.NewInt(3))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'Foo' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' not to has size 3").Error())
 			})
 		})
 	})
@@ -180,7 +181,7 @@ func TestNotLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1,2,3]' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to has size 3").Error())
 			})
 		})
 	})
@@ -215,7 +216,7 @@ func TestNotLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to has size 3").Error())
 			})
 		})
 	})

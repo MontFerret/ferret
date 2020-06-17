@@ -7,15 +7,16 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 // Include asserts that haystack includes needle.
 // @params actual (String|Array|Object|Iterable) - Haystack value.
 // @params expected (Mixed) - Expected value.
 // @params message (String, optional) - Message to display on error.
-var Include = Assertion{
+var Include = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("include %s", formatValue(args[1]))
+		return fmt.Sprintf("include %s", base.FormatValue(args[1]))
 	},
 	MinArgs: 2,
 	MaxArgs: 3,

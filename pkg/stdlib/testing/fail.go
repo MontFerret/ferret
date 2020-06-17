@@ -2,12 +2,14 @@ package testing
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 // Fail returns an error.
 // @params message (String, optional) - Message to display on error.
-var Fail = Assertion{
+var Fail = base.Assertion{
 	DefaultMessage: func(_ []core.Value) string {
 		return "not fail"
 	},

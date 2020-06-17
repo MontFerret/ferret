@@ -9,10 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 func TestEmpty(t *t.T) {
-	Empty := testing.NewPositive(testing.Empty)
+	Empty := base.NewPositiveAssertion(testing.Empty)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -40,7 +41,7 @@ func TestEmpty(t *t.T) {
 				_, err := Empty(context.Background(), values.NewString("Foo"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'Foo' to be empty").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' to be empty").Error())
 			})
 		})
 
@@ -62,7 +63,7 @@ func TestEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1,2,3]' to be empty").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to be empty").Error())
 			})
 		})
 
@@ -91,7 +92,7 @@ func TestEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to be empty").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to be empty").Error())
 			})
 		})
 
@@ -109,7 +110,7 @@ func TestEmpty(t *t.T) {
 }
 
 func TestNotEmpty(t *t.T) {
-	NotEmpty := testing.NewNegative(testing.Empty)
+	NotEmpty := base.NewNegativeAssertion(testing.Empty)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -145,7 +146,7 @@ func TestNotEmpty(t *t.T) {
 				_, err := NotEmpty(context.Background(), values.NewString(""))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] '' not to be empty").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] '' not to be empty").Error())
 			})
 		})
 	})
@@ -170,7 +171,7 @@ func TestNotEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[]' not to be empty").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[]' not to be empty").Error())
 			})
 		})
 	})
@@ -199,7 +200,7 @@ func TestNotEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [object] '{}' not to be empty").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{}' not to be empty").Error())
 			})
 		})
 	})

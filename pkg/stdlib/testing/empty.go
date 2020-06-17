@@ -2,15 +2,17 @@ package testing
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 // Empty asserts that the target does not contain any values.
 // @params actual (Measurable|Binary|Object|Array|String) - Value to test.
 // @params message (String, optional) - Message to display on error.
-var Empty = Assertion{
+var Empty = base.Assertion{
 	DefaultMessage: func(_ []core.Value) string {
 		return "be empty"
 	},

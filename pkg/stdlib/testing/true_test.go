@@ -2,16 +2,17 @@ package testing_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	t "testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 func TestTrue(t *t.T) {
-	True := testing.NewPositive(testing.True)
+	True := base.NewPositiveAssertion(testing.True)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -26,7 +27,7 @@ func TestTrue(t *t.T) {
 			_, err := True(context.Background(), values.NewString("true"))
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [string] 'true' to be [boolean] 'true'")
+			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'true' to be [boolean] 'true'")
 		})
 	})
 
@@ -35,7 +36,7 @@ func TestTrue(t *t.T) {
 			_, err := True(context.Background(), values.False)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [boolean] 'false' to be [boolean] 'true'")
+			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'false' to be [boolean] 'true'")
 		})
 	})
 
@@ -49,7 +50,7 @@ func TestTrue(t *t.T) {
 }
 
 func TestNotTrue(t *t.T) {
-	NotTrue := testing.NewNegative(testing.True)
+	NotTrue := base.NewNegativeAssertion(testing.True)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -72,7 +73,7 @@ func TestNotTrue(t *t.T) {
 			_, err := NotTrue(context.Background(), values.True)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, testing.ErrAssertion.Error()+": expected [boolean] 'true' not to be [boolean] 'true'")
+			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'true' not to be [boolean] 'true'")
 		})
 	})
 

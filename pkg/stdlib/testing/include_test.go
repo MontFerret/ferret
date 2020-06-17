@@ -9,10 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 func TestInclude(t *t.T) {
-	Include := testing.NewPositive(testing.Include)
+	Include := base.NewPositiveAssertion(testing.Include)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -32,7 +33,7 @@ func TestInclude(t *t.T) {
 				_, err := Include(context.Background(), values.NewString("Foo"), values.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'Foo' to include [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' to include [string] 'Bar'").Error())
 			})
 		})
 
@@ -55,7 +56,7 @@ func TestInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1,2,3]' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to include [int] '4'").Error())
 			})
 		})
 
@@ -86,7 +87,7 @@ func TestInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
 			})
 		})
 
@@ -109,7 +110,7 @@ func TestInclude(t *t.T) {
 }
 
 func TestNotInclude(t *t.T) {
-	NotInclude := testing.NewNegative(testing.Include)
+	NotInclude := base.NewNegativeAssertion(testing.Include)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -137,7 +138,7 @@ func TestNotInclude(t *t.T) {
 				_, err := NotInclude(context.Background(), values.NewString("FooBar"), values.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'FooBar' not to include [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'FooBar' not to include [string] 'Bar'").Error())
 			})
 		})
 	})
@@ -164,7 +165,7 @@ func TestNotInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1,2,3]' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to include [int] '2'").Error())
 			})
 		})
 	})
@@ -199,7 +200,7 @@ func TestNotInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
 			})
 		})
 	})

@@ -2,16 +2,17 @@ package testing_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	t "testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 func TestFail(t *t.T) {
-	False := testing.NewPositive(testing.Fail)
+	False := base.NewPositiveAssertion(testing.Fail)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {

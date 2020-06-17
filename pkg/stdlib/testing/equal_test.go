@@ -9,10 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 func TestEqual(t *t.T) {
-	Equal := testing.NewPositive(testing.Equal)
+	Equal := base.NewPositiveAssertion(testing.Equal)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -32,7 +33,7 @@ func TestEqual(t *t.T) {
 				_, err := Equal(context.Background(), values.NewString("Foo"), values.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'Foo' to be equal to [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' to be equal to [string] 'Bar'").Error())
 			})
 		})
 
@@ -51,7 +52,7 @@ func TestEqual(t *t.T) {
 				_, err := Equal(context.Background(), values.NewInt(1), values.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' to be equal to [int] '2'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' to be equal to [int] '2'").Error())
 			})
 		})
 
@@ -70,7 +71,7 @@ func TestEqual(t *t.T) {
 				_, err := Equal(context.Background(), values.False, values.True)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [boolean] 'false' to be equal to [boolean] 'true'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [boolean] 'false' to be equal to [boolean] 'true'").Error())
 			})
 		})
 
@@ -93,7 +94,7 @@ func TestEqual(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1]' to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1]' to be equal to [array] '[1,2]'").Error())
 			})
 		})
 
@@ -112,7 +113,7 @@ func TestEqual(t *t.T) {
 }
 
 func TestNotEqual(t *t.T) {
-	NotEqual := testing.NewNegative(testing.Equal)
+	NotEqual := base.NewNegativeAssertion(testing.Equal)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -140,7 +141,7 @@ func TestNotEqual(t *t.T) {
 				_, err := NotEqual(context.Background(), values.NewString("Foo"), values.NewString("Foo"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [string] 'Foo' not to be equal to [string] 'Foo'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' not to be equal to [string] 'Foo'").Error())
 			})
 		})
 	})
@@ -159,7 +160,7 @@ func TestNotEqual(t *t.T) {
 				_, err := NotEqual(context.Background(), values.NewInt(1), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' not to be equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be equal to [int] '1'").Error())
 			})
 		})
 	})
@@ -178,7 +179,7 @@ func TestNotEqual(t *t.T) {
 				_, err := NotEqual(context.Background(), values.False, values.False)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [boolean] 'false' not to be equal to [boolean] 'false'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [boolean] 'false' not to be equal to [boolean] 'false'").Error())
 			})
 		})
 	})
@@ -205,7 +206,7 @@ func TestNotEqual(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [array] '[1,2]' not to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2]' not to be equal to [array] '[1,2]'").Error())
 			})
 		})
 	})

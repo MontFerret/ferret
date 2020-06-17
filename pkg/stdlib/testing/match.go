@@ -2,16 +2,18 @@ package testing
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 // Match asserts that value matches the regular expression.
 // @params actual (Mixed) - Actual value.
 // @params expression (Mixed) - Regular expression.
 // @params message (String, optional) - Message to display on error.
-var Match = Assertion{
+var Match = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "match regular expression"
 	},

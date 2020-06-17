@@ -9,10 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 func TestLte(t *t.T) {
-	Lte := testing.NewPositive(testing.Lte)
+	Lte := base.NewPositiveAssertion(testing.Lte)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -32,7 +33,7 @@ func TestLte(t *t.T) {
 				_, err := Lte(context.Background(), values.NewInt(2), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '2' to be less than or equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '2' to be less than or equal to [int] '1'").Error())
 			})
 		})
 
@@ -55,7 +56,7 @@ func TestLte(t *t.T) {
 }
 
 func TestNotLte(t *t.T) {
-	NotLte := testing.NewNegative(testing.Lte)
+	NotLte := base.NewNegativeAssertion(testing.Lte)
 
 	Convey("When arg is not passed", t, func() {
 		Convey("It should return an error", func() {
@@ -75,7 +76,7 @@ func TestNotLte(t *t.T) {
 				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '2'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '2'").Error())
 			})
 		})
 
@@ -84,7 +85,7 @@ func TestNotLte(t *t.T) {
 				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(testing.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '1'").Error())
 			})
 		})
 

@@ -1,57 +1,9 @@
 package testing
 
 import (
-	"context"
-	"fmt"
-
-	"github.com/pkg/errors"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
-
-var (
-	ErrAssertion = errors.New("assertion error")
-)
-
-type AssertionFn func(ctx context.Context, args []core.Value) (bool, error)
-
-type MessageFn func(args []core.Value) string
-
-type Assertion struct {
-	DefaultMessage MessageFn
-	MinArgs        int
-	MaxArgs        int
-	Fn             AssertionFn
-}
-
-type CompareOperator int
-
-const (
-	NotEqualOp       CompareOperator = 0
-	EqualOp          CompareOperator = 1
-	LessOp           CompareOperator = 2
-	LessOrEqualOp    CompareOperator = 3
-	GreaterOp        CompareOperator = 4
-	GreaterOrEqualOp CompareOperator = 5
-)
-
-func (op CompareOperator) String() string {
-	switch op {
-	case NotEqualOp:
-		return "not equal to"
-	case EqualOp:
-		return "equal to"
-	case LessOp:
-		return "less than"
-	case LessOrEqualOp:
-		return "less than or equal to"
-	case GreaterOp:
-		return "greater than"
-	default:
-		return "greater than or equal to"
-	}
-}
 
 func RegisterLib(ns core.Namespace) error {
 	t := ns.Namespace("T")
@@ -62,26 +14,26 @@ func RegisterLib(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"EMPTY":    NewPositive(Empty),
-			"EQ":       NewPositive(Equal),
-			"FAIL":     NewPositive(Fail),
-			"FALSE":    NewPositive(False),
-			"GT":       NewPositive(Gt),
-			"GTE":      NewPositive(Gte),
-			"INCLUDE":  NewPositive(Include),
-			"LEN":      NewPositive(Len),
-			"MATCH":    NewPositive(Match),
-			"LT":       NewPositive(Lt),
-			"LTE":      NewPositive(Lte),
-			"NONE":     NewPositive(None),
-			"TRUE":     NewPositive(True),
-			"STRING":   NewPositive(String),
-			"INT":      NewPositive(Int),
-			"FLOAT":    NewPositive(Float),
-			"DATETIME": NewPositive(DateTime),
-			"ARRAY":    NewPositive(Array),
-			"OBJECT":   NewPositive(Object),
-			"BINARY":   NewPositive(Binary),
+			"EMPTY":    base.NewPositiveAssertion(Empty),
+			"EQ":       base.NewPositiveAssertion(Equal),
+			"FAIL":     base.NewPositiveAssertion(Fail),
+			"FALSE":    base.NewPositiveAssertion(False),
+			"GT":       base.NewPositiveAssertion(Gt),
+			"GTE":      base.NewPositiveAssertion(Gte),
+			"INCLUDE":  base.NewPositiveAssertion(Include),
+			"LEN":      base.NewPositiveAssertion(Len),
+			"MATCH":    base.NewPositiveAssertion(Match),
+			"LT":       base.NewPositiveAssertion(Lt),
+			"LTE":      base.NewPositiveAssertion(Lte),
+			"NONE":     base.NewPositiveAssertion(None),
+			"TRUE":     base.NewPositiveAssertion(True),
+			"STRING":   base.NewPositiveAssertion(String),
+			"INT":      base.NewPositiveAssertion(Int),
+			"FLOAT":    base.NewPositiveAssertion(Float),
+			"DATETIME": base.NewPositiveAssertion(DateTime),
+			"ARRAY":    base.NewPositiveAssertion(Array),
+			"OBJECT":   base.NewPositiveAssertion(Object),
+			"BINARY":   base.NewPositiveAssertion(Binary),
 		}),
 	)
 }
@@ -91,132 +43,25 @@ func registerNOT(ns core.Namespace) error {
 
 	return t.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
-			"EMPTY":    NewNegative(Empty),
-			"EQ":       NewNegative(Equal),
-			"FALSE":    NewNegative(False),
-			"GT":       NewNegative(Gt),
-			"GTE":      NewNegative(Gte),
-			"INCLUDE":  NewNegative(Include),
-			"LEN":      NewNegative(Len),
-			"MATCH":    NewNegative(Match),
-			"LT":       NewNegative(Lt),
-			"LTE":      NewNegative(Lte),
-			"NONE":     NewNegative(None),
-			"TRUE":     NewNegative(True),
-			"STRING":   NewNegative(String),
-			"INT":      NewNegative(Int),
-			"FLOAT":    NewNegative(Float),
-			"DATETIME": NewNegative(DateTime),
-			"ARRAY":    NewNegative(Array),
-			"OBJECT":   NewNegative(Object),
-			"BINARY":   NewNegative(Binary),
+			"EMPTY":    base.NewNegativeAssertion(Empty),
+			"EQ":       base.NewNegativeAssertion(Equal),
+			"FALSE":    base.NewNegativeAssertion(False),
+			"GT":       base.NewNegativeAssertion(Gt),
+			"GTE":      base.NewNegativeAssertion(Gte),
+			"INCLUDE":  base.NewNegativeAssertion(Include),
+			"LEN":      base.NewNegativeAssertion(Len),
+			"MATCH":    base.NewNegativeAssertion(Match),
+			"LT":       base.NewNegativeAssertion(Lt),
+			"LTE":      base.NewNegativeAssertion(Lte),
+			"NONE":     base.NewNegativeAssertion(None),
+			"TRUE":     base.NewNegativeAssertion(True),
+			"STRING":   base.NewNegativeAssertion(String),
+			"INT":      base.NewNegativeAssertion(Int),
+			"FLOAT":    base.NewNegativeAssertion(Float),
+			"DATETIME": base.NewNegativeAssertion(DateTime),
+			"ARRAY":    base.NewNegativeAssertion(Array),
+			"OBJECT":   base.NewNegativeAssertion(Object),
+			"BINARY":   base.NewNegativeAssertion(Binary),
 		}),
 	)
-}
-
-func compare(args []core.Value, op CompareOperator) (bool, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return false, err
-	}
-
-	actual := args[0]
-	expected := args[1]
-
-	var result bool
-
-	switch op {
-	case NotEqualOp:
-		result = actual.Compare(expected) != 0
-	case EqualOp:
-		result = actual.Compare(expected) == 0
-	case LessOp:
-		result = actual.Compare(expected) == -1
-	case LessOrEqualOp:
-		c := actual.Compare(expected)
-		result = c == -1 || c == 0
-	case GreaterOp:
-		result = actual.Compare(expected) == 1
-	default:
-		c := actual.Compare(expected)
-		result = c == 1 || c == 0
-	}
-
-	return result, nil
-}
-
-func NewPositive(assertion Assertion) core.Function {
-	return newInternal(assertion, true)
-}
-
-func NewNegative(assertion Assertion) core.Function {
-	return newInternal(assertion, false)
-}
-
-func newInternal(assertion Assertion, connotation bool) core.Function {
-	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		err := core.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		res, err := assertion.Fn(ctx, args)
-
-		if err != nil {
-			return values.None, err
-		}
-
-		if res == connotation {
-			return values.None, nil
-		}
-
-		return values.None, toError(assertion, args, connotation)
-	}
-}
-
-func toError(assertion Assertion, args []core.Value, positive bool) error {
-	if len(args) != assertion.MaxArgs {
-		connotation := ""
-
-		if !positive {
-			connotation = "not "
-		}
-
-		if assertion.MaxArgs > 1 {
-			actual := args[0]
-
-			var msg string
-
-			if assertion.DefaultMessage != nil {
-				msg = assertion.DefaultMessage(args)
-			} else {
-				if len(args) > 1 {
-					msg = fmt.Sprintf("be %s", args[1].String())
-				} else {
-					msg = "exist"
-				}
-			}
-
-			return core.Error(ErrAssertion, fmt.Sprintf("expected %s %sto %s", formatValue(actual), connotation, msg))
-		}
-
-		return core.Error(ErrAssertion, fmt.Sprintf("expected to %s%s", connotation, assertion.DefaultMessage(args)))
-	}
-
-	// Last argument is always is a custom message
-	msg := args[assertion.MaxArgs-1]
-
-	return core.Error(ErrAssertion, msg.String())
-}
-
-func formatValue(val core.Value) string {
-	valStr := val.String()
-
-	if val == values.None {
-		valStr = "none"
-	}
-
-	return fmt.Sprintf("[%s] '%s'", val.Type(), valStr)
 }
