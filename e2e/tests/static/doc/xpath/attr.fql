@@ -1,6 +1,6 @@
-LET url = @static + '/simple.html'
+LET url = @lab.cdn.static + '/simple.html'
 LET page = DOCUMENT(url)
 
 LET actual = XPATH(page, "//meta/@charset")
 
-RETURN EXPECT(["UTF-8"], actual)
+RETURN T::EQ(actual, ["UTF-8"])

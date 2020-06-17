@@ -1,9 +1,0 @@
-LET url = @dynamic + "?redirect=/forms"
-LET doc = DOCUMENT(url, true)
-
-WAIT_ELEMENT(doc, "form")
-
-LET output = ELEMENT(doc, "#select_output")
-LET result = SELECT(doc, "#select_input", ["4"])
-
-RETURN EXPECT(output.innerText, "4") + EXPECT(JSON_STRINGIFY(result), '["4"]')

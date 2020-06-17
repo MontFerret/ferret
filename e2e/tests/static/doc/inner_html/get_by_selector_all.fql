@@ -1,4 +1,4 @@
-LET url = @static + '/overview.html'
+LET url = @lab.cdn.static + '/overview.html'
 LET doc = DOCUMENT(url)
 
 LET expected = [
@@ -8,4 +8,4 @@ LET expected = [
 ]
 LET actual = INNER_HTML_ALL(doc, '.section-nav li')
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQ(actual, expected)

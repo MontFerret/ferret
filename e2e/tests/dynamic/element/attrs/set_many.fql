@@ -1,0 +1,17 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+LET pageSelector = "#page-events"
+LET elemSelector = "#wait-no-style-content"
+
+WAIT_ELEMENT(doc, pageSelector)
+
+LET el = ELEMENT(doc, elemSelector)
+
+ATTR_SET(el, { style: "color: black;", "data-ferret-x": "test" })
+
+WAIT(1000)
+
+T::EQ(el.style.color, "black")
+T::EQ(el.attributes["data-ferret-x"], "test", "styles should be updated")
+
+RETURN NONE

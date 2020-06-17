@@ -1,0 +1,7 @@
+LET url = @lab.cdn.static + '/overview.html'
+LET doc = DOCUMENT(url)
+
+T::TRUE(ELEMENT_EXISTS(doc, '.section-nav'))
+T::FALSE(ELEMENT_EXISTS(doc, '.foo-bar'))
+
+RETURN NONE

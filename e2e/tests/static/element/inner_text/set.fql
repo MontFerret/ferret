@@ -1,4 +1,4 @@
-LET url = @static + '/simple.html'
+LET url = @lab.cdn.static + '/simple.html'
 LET doc = DOCUMENT(url)
 LET el = ELEMENT(doc, "body")
 
@@ -11,4 +11,6 @@ LET actual = INNER_TEXT(el)
 LET r1 = '(\s|\")'
 LET r2 = '(\n|\s|\")'
 
-RETURN EXPECT(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))
+T::EQ(REGEXP_REPLACE(TRIM(actual), r2, ''), REGEXP_REPLACE(expected, r1, ''))
+
+RETURN NONE

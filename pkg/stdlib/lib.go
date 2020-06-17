@@ -11,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
+	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 )
@@ -56,5 +57,9 @@ func RegisterLib(ns core.Namespace) error {
 		return err
 	}
 
-	return utils.RegisterLib(ns)
+	if err := utils.RegisterLib(ns); err != nil {
+		return err
+	}
+
+	return testing.RegisterLib(ns)
 }

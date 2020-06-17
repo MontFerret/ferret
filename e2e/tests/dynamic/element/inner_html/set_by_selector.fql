@@ -1,4 +1,4 @@
-LET url = @dynamic + "/#/lists"
+LET url = @lab.cdn.dynamic + "/#/lists"
 LET doc = DOCUMENT(url, true)
 
 LET expected = [
@@ -22,4 +22,4 @@ LET actual = (
         }
 )
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQ(actual, expected)

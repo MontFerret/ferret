@@ -1,7 +1,9 @@
-LET url = @static + '/value.html'
+LET url = @lab.cdn.static + '/value.html'
 LET page = DOCUMENT(url)
 
 LET el = ELEMENT(page, '#listings_table')
 LET actual = XPATH(el, "count(//tr)")
 
-RETURN EXPECT(41, actual)
+T::EQ(actual, 41)
+
+RETURN NONE

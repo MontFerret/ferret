@@ -1,4 +1,4 @@
-LET url = @dynamic + "/#/events"
+LET url = @lab.cdn.dynamic + "/#/events"
 LET page = DOCUMENT(url, true)
 
 LET btn = ELEMENT(page, "#wait-class-random-btn")

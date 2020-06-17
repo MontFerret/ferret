@@ -1,0 +1,24 @@
+LET url = @lab.cdn.static + "/api/ts"
+LET page = DOCUMENT(url, {
+    driver: "cdp_cookies"
+})
+
+LET el = ELEMENT(page, "#cookies")
+LET actual = (
+    FOR c IN JSON_PARSE(el.innerText)
+        SORT c.Name
+        RETURN c
+)
+
+LET expected = {
+    "Single_cookie": "single_cookie_value",
+    "Multi_set_cookie": "multi_set_cookie_value",
+}
+
+T::EQ({
+    "Single_cookie": actual[2].Value,
+    "Multi_set_cookie": actual[0].Value,
+}, expected)
+
+
+RETURN NONE

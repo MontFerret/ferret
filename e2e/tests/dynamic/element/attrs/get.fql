@@ -1,0 +1,15 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, { driver: "cdp" })
+
+LET el = ELEMENT(doc, "#index")
+LET attrs = [
+    el.attributes.class,
+    el.attributes["data-type"]
+]
+
+LET expected = '["jumbotron","page"]'
+LET actual = TO_STRING(attrs)
+
+T::EQ(actual, expected)
+
+RETURN NONE

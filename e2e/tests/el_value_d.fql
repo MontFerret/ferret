@@ -1,9 +1,0 @@
-LET url = @dynamic + "?redirect=/forms"
-LET doc = DOCUMENT(url, true)
-
-LET el = ELEMENT(doc, "#select_input")
-
-LET expected = "1"
-LET actual = el.value
-
-RETURN EXPECT(actual, expected)

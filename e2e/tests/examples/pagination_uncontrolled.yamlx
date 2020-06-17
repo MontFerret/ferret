@@ -1,0 +1,8 @@
+timeout: 240
+query:
+  ref: file://../../../examples/pagination_uncontrolled.fql
+  params:
+    criteria: "scraper"
+    pages: 2
+assert:
+  text: RETURN T::NOT::EMPTY(@lab.data.query.result)

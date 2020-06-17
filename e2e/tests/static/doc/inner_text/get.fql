@@ -1,7 +1,7 @@
-LET url = @static + '/overview.html'
+LET url = @lab.cdn.static + '/overview.html'
 LET doc = DOCUMENT(url)
 
 LET expected = "Components and options for laying out your Bootstrap project, including wrapping containers, a powerful grid system, a flexible media object, and responsive utility classes."
 LET actual = INNER_TEXT(doc, 'body > div > div > main > p.bd-lead')
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQ(actual, expected)

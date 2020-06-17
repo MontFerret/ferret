@@ -1,8 +1,8 @@
-LET url = @dynamic + "?redirect=/iframe&src=/events"
+LET url = @lab.cdn.dynamic + "?redirect=/iframe&src=/events"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 LET doc = page.frames[1]
 
-WAIT_ELEMENT(doc, "#page-events")
+WAIT_ELEMENT(doc, "#page-events", 5000)
 
 LET input = ELEMENT(doc, "#hoverable-btn")
 
@@ -11,4 +11,4 @@ WAIT_ELEMENT(doc, "#hoverable-content")
 
 LET output = ELEMENT(doc, "#hoverable-content")
 
-RETURN EXPECT(output.innerText, "Lorem ipsum dolor sit amet.")
+RETURN T::EQ(output.innerText, "Lorem ipsum dolor sit amet.")

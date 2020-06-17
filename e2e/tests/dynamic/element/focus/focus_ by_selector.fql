@@ -1,8 +1,0 @@
-LET url = @dynamic + "/#/events"
-LET page = DOCUMENT(url, true)
-
-FOCUS(page, "#focus-input")
-
-WAIT_CLASS(page, "#focus-content", "alert-success")
-
-RETURN ""

@@ -1,4 +1,4 @@
-LET url = @static + '/grid.html'
+LET url = @lab.cdn.static + '/grid.html'
 LET doc = DOCUMENT(url)
 
 LET expected = [
@@ -15,4 +15,4 @@ LET expected = [
 ]
 LET actual = INNER_TEXT_ALL(doc, 'body > div.container-fluid > div > main > ul > li')
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQ(actual, expected)

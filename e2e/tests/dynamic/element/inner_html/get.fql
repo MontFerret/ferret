@@ -1,4 +1,4 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, true)
 LET el = ELEMENT(doc, "#root")
 
@@ -8,4 +8,4 @@ LET actual = INNER_HTML(el)
 LET r1 = '(\s|\")'
 LET r2 = '(\n|\s|\")'
 
-RETURN EXPECT(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))
+RETURN T::EQ(REGEXP_REPLACE(TRIM(actual), r2, ''), REGEXP_REPLACE(expected, r1, ''))

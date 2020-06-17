@@ -1,7 +1,7 @@
-LET url = @dynamic + "?redirect=/forms"
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
 LET page = DOCUMENT(url, true)
 
 LET element = ELEMENT(page, '#page-form')
 LET actual = XPATH(element, "//div[contains(@class, 'form-group')]")
 
-RETURN EXPECT(4, LENGTH(actual))
+RETURN T::LEN(actual, 4)

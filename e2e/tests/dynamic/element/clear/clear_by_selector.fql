@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/forms"
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
 LET doc = DOCUMENT(url, true)
 
 WAIT_ELEMENT(doc, "form")
@@ -11,4 +11,6 @@ INPUT_CLEAR(form, "#text_input")
 LET input = ELEMENT(doc, "#text_input")
 LET output = ELEMENT(doc, "#text_output")
 
-RETURN EXPECT("", output.innerText)
+T::EMPTY(output.innerText)
+
+RETURN NONE

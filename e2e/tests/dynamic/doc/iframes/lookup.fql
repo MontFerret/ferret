@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/iframe"
+LET url = @lab.cdn.dynamic + "?redirect=/iframe"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 
 LET frames = (
@@ -7,4 +7,4 @@ LET frames = (
         RETURN frame
 )
 
-RETURN EXPECT(1, LENGTH(frames))
+RETURN T::LEN(frames, 1)

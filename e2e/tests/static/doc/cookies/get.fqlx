@@ -1,0 +1,10 @@
+LET url = @lab.cdn.static + "/api/ts"
+LET doc = DOCUMENT(url, {
+    driver: "http"
+})
+
+LET cookiesPath = LENGTH(doc.cookies) > 0 ? "ok" : "false"
+LET cookie = COOKIE_GET(doc, "x-ferret")
+LET expected = "ok e2e"
+
+RETURN T::EQ(cookiesPath + " " + cookie.value, expected)

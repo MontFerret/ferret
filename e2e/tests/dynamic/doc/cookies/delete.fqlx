@@ -1,0 +1,21 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, {
+    driver: "cdp",
+    cookies: [{
+        name: "x-e2e",
+        value: "test"
+    }, {
+        name: "x-e2e-2",
+        value: "test2"
+    }]
+})
+
+COOKIE_DEL(doc, COOKIE_GET(doc, "x-e2e"), "x-e2e-2")
+
+LET cookie1 = COOKIE_GET(doc, "x-e2e")
+LET cookie2 = COOKIE_GET(doc, "x-e2e-2")
+
+T::EQ(cookie1, "none")
+T::EQ(cookie2, "none")
+
+RETURN NONE

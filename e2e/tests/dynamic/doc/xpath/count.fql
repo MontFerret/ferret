@@ -1,6 +1,6 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET page = DOCUMENT(url, { driver: "cdp" })
 
 LET actual = XPATH(page, "count(//body)")
 
-RETURN EXPECT(1, actual)
+RETURN T::EQ(actual, 1)

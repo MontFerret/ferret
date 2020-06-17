@@ -1,4 +1,4 @@
-LET doc = DOCUMENT("http://waos.ovh/redirect.html", {
+LET doc = DOCUMENT(@url, {
     driver: 'cdp',
     viewport: {
         width: 1920,
@@ -9,7 +9,7 @@ LET doc = DOCUMENT("http://waos.ovh/redirect.html", {
 CLICK(doc, '.click')
 
 WAIT_NAVIGATION(doc, {
-    target: "(\/[0-9].*\?|redirect2.html)"
+    target: @targetURL
 })
 
 RETURN ELEMENT(doc, '.title')

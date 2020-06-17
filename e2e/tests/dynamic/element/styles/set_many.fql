@@ -1,0 +1,21 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+LET pageSelector = "#page-events"
+LET elemSelector = "#wait-no-style-content"
+
+WAIT_ELEMENT(doc, pageSelector)
+
+LET el = ELEMENT(doc, elemSelector)
+LET prev = el.style
+
+STYLE_SET(el, { color: "black", "min-width": "100px", "background-color": "#11111" })
+
+WAIT(1000)
+
+LET curr = el.style
+
+T::EQ(curr.color, "black", "color should be updated")
+T::EQ(curr["min-width"], "100px", "min width should be updated")
+T::EQ(curr["background-color"], "#11111", "background color should be updated")
+
+RETURN NONE

@@ -1,0 +1,9 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, true)
+
+LET el = ELEMENT(doc, "#root")
+
+T::TRUE(ELEMENT_EXISTS(el, '.jumbotron'))
+T::FALSE(ELEMENT_EXISTS(el, '.foo-bar'))
+
+RETURN NONE

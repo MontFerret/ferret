@@ -1,7 +1,0 @@
-LET doc = DOCUMENT("http://getbootstrap.com/docs/4.1/components/collapse/", { driver: "cdp" })
-LET el = ELEMENT(doc, "#collapseTwo")
-
-CLICK(doc, "#headingTwo > h5 > button")
-WAIT_CLASS(el, "show")
-
-RETURN TRUE

@@ -1,4 +1,4 @@
-LET url = @dynamic
+LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, true)
 LET selector = '#root > div > main > div > *'
 
@@ -13,4 +13,4 @@ LET actual = (
         RETURN REGEXP_REPLACE(TRIM(str), '\n', '')
 )
 
-RETURN EXPECT(expected, actual)
+RETURN T::EQ(actual, expected)

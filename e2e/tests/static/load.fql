@@ -1,0 +1,6 @@
+LET url = @lab.cdn.static + '/overview.html'
+LET doc = DOCUMENT(url)
+
+T::EQ(doc.url, url)
+
+RETURN NONE

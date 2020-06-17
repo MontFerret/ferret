@@ -1,0 +1,4 @@
+query:
+  ref: file://../../../examples/navigate_back.fql
+assert:
+  text: RETURN T::TRUE(@lab.data.query.result)

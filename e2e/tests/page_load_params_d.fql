@@ -1,6 +1,0 @@
-LET url = @dynamic
-LET doc = DOCUMENT(url, {
-    dynamic: true
-})
-
-RETURN EXPECT(doc.url, url)

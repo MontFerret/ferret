@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/iframe"
+LET url = @lab.cdn.dynamic + "?redirect=/iframe"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 
 LET frames = (
@@ -10,10 +10,7 @@ LET frames = (
 
 LET doc = FIRST(frames)
 
-LET expectedP = TRUE
-LET actualP = ELEMENT_EXISTS(doc, '.text-center')
+T::TRUE(ELEMENT_EXISTS(doc, '.text-center'))
+T::FALSE(ELEMENT_EXISTS(doc, '.foo-bar'))
 
-LET expectedN = FALSE
-LET actualN = ELEMENT_EXISTS(doc, '.foo-bar')
-
-RETURN EXPECT(expectedP + expectedN, actualP + expectedN)
+RETURN NONE

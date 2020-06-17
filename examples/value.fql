@@ -1,4 +1,4 @@
-LET doc = DOCUMENT("https://www.yandex.com/search/?text=foobar", { driver: "cdp" })
-LET input = ELEMENT(doc, 'input[type="search"]')
+LET doc = DOCUMENT("https://www.google.com/search?q=foobar", { driver: "cdp" })
+LET input = ELEMENT(doc, 'input[name="q"]')
 
-RETURN input.value ? input.value : 'value not defined'
+RETURN input.value

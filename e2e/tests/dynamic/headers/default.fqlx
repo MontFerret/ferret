@@ -1,0 +1,17 @@
+LET url = @lab.cdn.static + "/api/ts"
+LET page = DOCUMENT(url, {
+    driver: "cdp_headers"
+})
+
+LET el = ELEMENT(page, "#headers")
+LET actual = JSON_PARSE(el.innerText)
+
+LET expected = {
+    "Single_header": ["single_header_value"],
+    "Multi_set_header":["multi_set_header_value"],
+}
+
+RETURN T::EQ({
+    "Single_header": actual["Single_header"],
+    "Multi_set_header": actual["Multi_set_header"],
+}, expected)

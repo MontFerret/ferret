@@ -1,0 +1,20 @@
+LET url = @lab.cdn.static + "/api/ts"
+LET page = DOCUMENT(url, {
+    driver: "cdp",
+    headers: {
+         "Access-Control-Allow-Origin": "*",
+         "X-Request-Id": "foobar"
+     }
+})
+
+LET el = ELEMENT(page, "#headers")
+LET actual = JSON_PARSE(el.innerText)
+LET expected = {
+    "Access-Control-Allow-Origin": ["*"],
+    "X-Request-Id": ["foobar"]
+}
+
+RETURN T::EQ({
+    "Access-Control-Allow-Origin": actual["Access-Control-Allow-Origin"],
+    "X-Request-Id": actual["X-Request-Id"]
+}, expected)

@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/iframe&src=/events"
+LET url = @lab.cdn.dynamic + "?redirect=/iframe&src=/events"
 LET page = DOCUMENT(url, { driver: 'cdp' })
 LET doc = page.frames[1]
 

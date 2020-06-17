@@ -1,0 +1,21 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+LET el = ELEMENT(doc, "#wait-class-content")
+
+ATTR_SET(el, "style", "color: black")
+WAIT_STYLE(el, "color", "black")
+
+LET prev = el.style
+
+ATTR_SET(el, "style", "color: red")
+WAIT_NO_STYLE(el, "color", "black")
+
+LET curr = el.style
+
+T::EQ(prev.color, "black")
+T::EQ(curr.color, "red", "style should be changed")
+
+RETURN NONE

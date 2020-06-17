@@ -1,0 +1,16 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+LET el = ELEMENT(doc, "#wait-class-content")
+
+ATTR_SET(el, "data-test", "test")
+WAIT_ATTR(el, "data-test", "test")
+
+ATTR_REMOVE(el, "class")
+WAIT_ATTR(el, "class", NONE)
+
+T::NONE(el.attributes.class, "attribute should be removed")
+
+RETURN NONE

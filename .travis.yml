@@ -66,13 +66,15 @@ jobs:
   - stage: e2e
     go: stable
     before_script:
-    - docker pull microbox/chromium-headless:77.0.3844.0
-    - docker run -d -p 9222:9222 microbox/chromium-headless:77.0.3844.0
-    - docker ps
+      - curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
+      - sudo sh install.sh
+      - docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+      - docker ps
     script:
-    - make e2e
+      - make compile
+      - make e2e
     after_script:
-    - docker stop $(docker ps -q)
+      - docker stop $(docker ps -q)
   - stage: bench
     go: stable
     script:

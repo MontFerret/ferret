@@ -1,0 +1,4 @@
+query:
+  ref: file://../../../examples/static-page.fql
+assert:
+  text: RETURN T::NOT::EMPTY(@lab.data.query.result)

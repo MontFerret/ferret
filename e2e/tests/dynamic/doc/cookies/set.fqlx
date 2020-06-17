@@ -1,0 +1,14 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(@lab.cdn.dynamic, {
+    driver: "cdp"
+})
+
+COOKIE_SET(doc, {
+    name: "x-e2e",
+    value: "test"
+})
+
+LET cookie = COOKIE_GET(doc, "x-e2e")
+LET expected = "test"
+
+RETURN T::EQ(cookie.value, expected)

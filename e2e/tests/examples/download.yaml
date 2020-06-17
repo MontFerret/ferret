@@ -1,0 +1,8 @@
+query:
+  ref: file://../../../examples/download.fql
+assert:
+  text: |
+    LET result = @lab.data.query.result
+    T::EQ(result.type, "png")
+    T::NOT::EMPTY(result.data)
+    RETURN NONE

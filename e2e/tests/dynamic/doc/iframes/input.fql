@@ -1,4 +1,4 @@
-LET url = @dynamic + "?redirect=/iframe&src=/forms"
+LET url = @lab.cdn.dynamic + "?redirect=/iframe&src=/forms"
 LET page = DOCUMENT(url, true)
 
 LET frames = (
@@ -15,4 +15,4 @@ LET output = ELEMENT(doc, "#text_output")
 
 INPUT(doc, "#text_input", "foo")
 
-RETURN EXPECT(output.innerText, "foo")
+RETURN T::EQ(output.innerText, "foo")

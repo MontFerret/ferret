@@ -1,7 +1,0 @@
-LET url = @dynamic
-LET doc = DOCUMENT(url, true)
-
-LET expected = url + '/'
-LET actual = doc.url
-
-RETURN EXPECT(expected, actual)

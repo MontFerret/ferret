@@ -1,0 +1,10 @@
+LET url = @lab.cdn.static + '/api/ts'
+LET ua = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) brave/0.7.10 Chrome/47.0.2526.110 Brave/0.36.5 Safari/537.36"
+LET page = DOCUMENT(url, {
+   userAgent: ua
+})
+
+LET h = ELEMENT(page, "#headers")
+LET headers = JSON_PARSE(h.innerText)
+
+RETURN T::EQ(ua, headers["User-Agent"][0])
