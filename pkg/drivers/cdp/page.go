@@ -15,7 +15,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
@@ -30,7 +29,6 @@ type HTMLPage struct {
 	logger   *zerolog.Logger
 	conn     *rpcc.Conn
 	client   *cdp.Client
-	events   *events.Loop
 	network  *net.Manager
 	dom      *dom.Manager
 	mouse    *input.Mouse
@@ -62,10 +60,7 @@ func LoadHTMLPage(
 		}
 	}()
 
-	eventLoop := events.NewLoop()
-	closers = append(closers, eventLoop)
-
-	netManager, err := net.New(logger, client, eventLoop)
+	netManager, err := net.New(logger, client)
 
 	if err != nil {
 		return nil, err
@@ -83,15 +78,12 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	eventLoop.Start()
-
 	mouse := input.NewMouse(client)
 	keyboard := input.NewKeyboard(client)
 
 	domManager, err := dom.New(
 		logger,
 		client,
-		eventLoop,
 		mouse,
 		keyboard,
 	)
@@ -106,7 +98,6 @@ func LoadHTMLPage(
 		logger,
 		conn,
 		client,
-		eventLoop,
 		netManager,
 		domManager,
 		mouse,
@@ -175,7 +166,6 @@ func NewHTMLPage(
 	logger *zerolog.Logger,
 	conn *rpcc.Conn,
 	client *cdp.Client,
-	eventLoop *events.Loop,
 	netManager *net.Manager,
 	domManager *dom.Manager,
 	mouse *input.Mouse,
@@ -186,13 +176,10 @@ func NewHTMLPage(
 	p.logger = logger
 	p.conn = conn
 	p.client = client
-	p.events = eventLoop
 	p.network = netManager
 	p.dom = domManager
 	p.mouse = mouse
 	p.keyboard = keyboard
-
-	eventLoop.AddListener(events.Error, events.Always(p.handleError))
 
 	return p
 }
@@ -270,17 +257,8 @@ func (p *HTMLPage) Close() error {
 	p.closed = values.True
 
 	doc := p.getCurrentDocument()
-	err := p.events.Stop().Close()
 
-	if err != nil {
-		p.logger.Warn().
-			Timestamp().
-			Str("url", doc.GetURL().String()).
-			Err(err).
-			Msg("failed to stop event loop")
-	}
-
-	err = p.dom.Close()
+	err := p.dom.Close()
 
 	if err != nil {
 		p.logger.Warn().
@@ -600,19 +578,6 @@ func (p *HTMLPage) loadMainFrame(ctx context.Context) error {
 	p.dom.SetMainFrame(next)
 
 	return nil
-}
-
-func (p *HTMLPage) handleError(_ context.Context, val interface{}) {
-	err, ok := val.(error)
-
-	if !ok {
-		return
-	}
-
-	p.logger.Error().
-		Timestamp().
-		Err(err).
-		Msg("unexpected error")
 }
 
 func (p *HTMLPage) getCurrentDocument() *dom.HTMLDocument {
