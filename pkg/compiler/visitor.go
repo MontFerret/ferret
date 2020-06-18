@@ -236,16 +236,11 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
 	var valVarName string
 	var keyVarName string
+	var ds collections.Iterable
+	var isWhileLoop bool
 
 	parsedClauses := make([]forOption, 0, 10)
 	forInScope := scope.Fork()
-
-	srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
-	srcExp, err := v.doVisitForExpressionSource(srcCtx, forInScope)
-
-	if err != nil {
-		return nil, err
-	}
 
 	valVar := ctx.ForExpressionValueVariable()
 	valVarName = valVar.GetText()
@@ -264,15 +259,37 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		}
 	}
 
-	src, err := expressions.NewDataSource(
-		v.getSourceMap(srcCtx),
-		valVarName,
-		keyVarName,
-		srcExp,
-	)
+	isWhileLoop = ctx.In() == nil
 
-	if err != nil {
-		return nil, err
+	if !isWhileLoop {
+		srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
+		srcExp, err := v.doVisitForExpressionSource(srcCtx, forInScope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		src, err := expressions.NewDataSource(
+			v.getSourceMap(srcCtx),
+			valVarName,
+			keyVarName,
+			srcExp,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		ds = src
+	} else {
+		whileExpCtx := ctx.Expression().(*fql.ExpressionContext)
+
+		whileExp, err := v.doVisitExpression(whileExpCtx, forInScope)
+
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	// Clauses.
@@ -345,7 +362,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 	forExp, err := expressions.NewForExpression(
 		v.getSourceMap(ctx),
-		src,
+		ds,
 		predicate,
 		distinct,
 		spread,

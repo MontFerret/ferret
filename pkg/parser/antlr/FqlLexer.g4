@@ -75,6 +75,7 @@ Aggregate: 'AGGREGATE';
 Like: 'LIKE';
 Not: 'NOT' | '!';
 In: 'IN';
+While: 'WHILE';
 
 // Literals
 Param: '@';
