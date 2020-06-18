@@ -234,42 +234,31 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 }
 
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
+	var err error
 	var valVarName string
 	var keyVarName string
 	var ds collections.Iterable
-	var isWhileLoop bool
-
-	parsedClauses := make([]forOption, 0, 10)
-	forInScope := scope.Fork()
 
 	valVar := ctx.ForExpressionValueVariable()
 	valVarName = valVar.GetText()
-
-	if err := forInScope.SetVariable(valVarName); err != nil {
-		return nil, err
-	}
 
 	keyVar := ctx.ForExpressionKeyVariable()
 
 	if keyVar != nil {
 		keyVarName = keyVar.GetText()
-
-		if err := forInScope.SetVariable(keyVarName); err != nil {
-			return nil, err
-		}
 	}
 
-	isWhileLoop = ctx.In() == nil
+	isWhileLoop := ctx.In() == nil
 
 	if !isWhileLoop {
 		srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
-		srcExp, err := v.doVisitForExpressionSource(srcCtx, forInScope)
+		srcExp, err := v.doVisitForExpressionSource(srcCtx, scope)
 
 		if err != nil {
 			return nil, err
 		}
 
-		src, err := expressions.NewDataSource(
+		ds, err = expressions.NewForInIterableExpression(
 			v.getSourceMap(srcCtx),
 			valVarName,
 			keyVarName,
@@ -279,18 +268,37 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		if err != nil {
 			return nil, err
 		}
-
-		ds = src
 	} else {
 		whileExpCtx := ctx.Expression().(*fql.ExpressionContext)
-
-		whileExp, err := v.doVisitExpression(whileExpCtx, forInScope)
+		conditionExp, err := v.doVisitExpression(whileExpCtx, scope)
 
 		if err != nil {
 			return nil, err
 		}
 
+		ds, err = expressions.NewForWhileIterableExpression(
+			v.getSourceMap(whileExpCtx),
+			valVarName,
+			conditionExp,
+		)
+
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	forInScope := scope.Fork()
+	if err := forInScope.SetVariable(valVarName); err != nil {
+		return nil, err
+	}
+
+	if keyVarName != "" {
+		if err := forInScope.SetVariable(keyVarName); err != nil {
+			return nil, err
+		}
+	}
+
+	parsedClauses := make([]forOption, 0, 10)
 
 	// Clauses.
 	// We put clauses parsing before parsing the query body because COLLECT clause overrides scope variables

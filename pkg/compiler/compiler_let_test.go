@@ -179,6 +179,23 @@ func TestLet(t *testing.T) {
 		So(string(out), ShouldEqual, "[1,2,3]")
 	})
 
+	Convey("Should compile LET i = (FOR i WHILE 0 > 1 RETURN i) RETURN i", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE 0 > 1 RETURN i)
+			RETURN i
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "[]")
+	})
+
 	Convey("Should compile LET i = { items: [1,2,3]}  FOR el IN i.items RETURN i", t, func() {
 		c := compiler.New()
 
