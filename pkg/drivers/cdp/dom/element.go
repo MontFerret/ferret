@@ -1182,7 +1182,7 @@ func (el *HTMLElement) handlePageReload(_ context.Context) {
 	el.Close()
 }
 
-func (el *HTMLElement) handleChildInserted(ctx context.Context, parentNodeID, prevNodeID dom.NodeID, node dom.Node) {
+func (el *HTMLElement) handleChildInserted(_ context.Context, parentNodeID, prevNodeID dom.NodeID, node dom.Node) {
 	if parentNodeID != el.id.NodeID {
 		return
 	}
@@ -1217,7 +1217,7 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, parentNodeID, pr
 	el.children = append(arr[:targetIDx], append([]HTMLElementIdentity{nextIdentity}, arr[targetIDx:]...)...)
 }
 
-func (el *HTMLElement) handleChildRemoved(ctx context.Context, nodeID, prevNodeID dom.NodeID) {
+func (el *HTMLElement) handleChildRemoved(_ context.Context, nodeID, prevNodeID dom.NodeID) {
 	if nodeID != el.id.NodeID {
 		return
 	}
