@@ -26,11 +26,9 @@ jobs:
         run: |
           sudo curl -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar
           export CLASSPATH=".:/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH"
-          mkdir $HOME/antlr-bin
-          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar "$@"' > $HOME/antlr-bin/antlr
-          echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/antlr-bin/grun
-          chmod +x $HOME/antlr-bin/*
-          export PATH=$PATH:$HOME/antlr-bin
+          sduo mkdir /usr/local/bin/antlr
+          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar "$@"' > /usr/local/bin/antlr/antlr
+          echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > /usr/local/bin/antlr/grun
           antlr
 
       - name: Set up linters
@@ -41,6 +39,7 @@ jobs:
 
       - name: Get dependencies
         run: make install
+
       - name: Lint
         run: |
           make vet
