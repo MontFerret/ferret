@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo curl -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar
           export CLASSPATH=".:/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH"
-          sduo mkdir /usr/local/bin/antlr
+          sudo mkdir /usr/local/bin/antlr
           echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar "$@"' > /usr/local/bin/antlr/antlr
           echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > /usr/local/bin/antlr/grun
           antlr
