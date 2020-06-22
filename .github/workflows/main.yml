@@ -1,0 +1,49 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+strategy:
+  matrix:
+    goVer: [1.12 1.13, 1.14]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go ${{ matrix.goVer }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.goVer }}
+        id: go
+
+      - name: Set up ANTLR
+        uses: NiccoMlt/setup-antlr4@v0.0.4
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: make install
+      - name: Lint
+        run: |
+          make vet
+          make lint
+          make fmt
+          git diff
+          if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
+      - name: Generate
+        run: make generate
+      - name: Compile
+        run: make compile
+      - name: Unit tests
+        run: make cover
+      - name: E2E tests
+        run: |
+          docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+          make e2e
+          docker stop $(docker ps -q)
