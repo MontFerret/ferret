@@ -26,8 +26,11 @@ jobs:
         run: |
           sudo curl -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar
           export CLASSPATH=".:/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH"
-          alias antlr='java -Xmx500M -cp "/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH" org.antlr.v4.Tool'
-          alias grun='java -Xmx500M -cp "/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH" org.antlr.v4.gui.TestRig'
+          mkdir $HOME/antlr-bin
+          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar "$@"' > $HOME/antlr-bin/antlr
+          echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/antlr-bin/grun
+          chmod +x $HOME/antlr-bin/*
+          export PATH=$PATH:$HOME/antlr-bin
           antlr
 
       - name: Set up linters
