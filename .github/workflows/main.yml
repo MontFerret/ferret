@@ -52,7 +52,7 @@ jobs:
 
       - name: Generate
         run: |
-          ls -la
+          ls $HOME -la
           make generate
 
       - name: Compile
