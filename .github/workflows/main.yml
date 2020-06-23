@@ -48,7 +48,7 @@ jobs:
 
       - name: Generate
         run: |
-          ls $HOME -la
+          export PATH=$PATH:$HOME/antlr-bin
           antlr
           make generate
 
