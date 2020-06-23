@@ -53,6 +53,7 @@ jobs:
       - name: Generate
         run: |
           ls $HOME -la
+          antlr
           make generate
 
       - name: Compile
