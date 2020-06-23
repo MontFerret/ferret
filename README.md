@@ -3,8 +3,8 @@
 	<a href="https://goreportcard.com/report/github.com/MontFerret/ferret">
 		<img alt="Go Report Status" src="https://goreportcard.com/badge/github.com/MontFerret/ferret">
 	</a>
-	<a href="https://travis-ci.com/MontFerret/ferret">
-		<img alt="Build Status" src="https://travis-ci.com/MontFerret/ferret.svg?branch=master">
+	<a href="https://github.com/MontFerret/ferret/actions">
+		<img alt="Build Status" src="https://github.com/MontFerret/ferret/workflows/build/badge.svg">
 	</a>
 	<a href="https://codecov.io/gh/MontFerret/ferret">
 		<img src="https://codecov.io/gh/MontFerret/ferret/branch/master/graph/badge.svg" />

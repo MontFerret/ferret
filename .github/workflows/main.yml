@@ -1,0 +1,69 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goVer: [1.12, 1.13, 1.14]
+    steps:
+      - name: Set up Go ${{ matrix.goVer }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.goVer }}
+        id: go
+
+      - name: Set up ANTLR
+        env:
+          ANTLR_VERSION: 4.8
+        run: |
+          sudo curl -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar
+          export CLASSPATH=".:/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH"
+          mkdir $HOME/antlr-bin
+          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.8-complete.jar "$@"' > $HOME/antlr-bin/antlr
+          echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/antlr-bin/grun
+          chmod +x $HOME/antlr-bin/*
+          export PATH=$PATH:$HOME/antlr-bin
+          antlr
+
+      - name: Set up Lab
+        run: |
+          curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
+          sudo sh install.sh
+
+      - name: Set up linters
+        run: go get -u github.com/mgechev/revive
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: make install
+
+      - name: Lint
+        run: |
+          make vet
+          make lint
+          make fmt
+          git diff
+          if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
+
+      - name: Generate
+        run: |
+          export PATH=$PATH:$HOME/antlr-bin
+          make generate
+
+      - name: Compile
+        run: make compile
+
+      - name: Unit tests
+        run: make cover
+
+      - name: E2E tests
+        run: |
+          docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+          make e2e
+          docker stop $(docker ps -q)
