@@ -47,12 +47,7 @@ jobs:
           if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
 
       - name: Generate
-        run: |
-          ls -al /usr/local/lib/
-          cat $HOME/antlr-bin/antlr
-          export PATH=$PATH:$HOME/antlr-bin
-          antlr
-          make generate
+        run: make generate
 
       - name: Compile
         run: make compile
@@ -62,6 +57,8 @@ jobs:
 
       - name: E2E tests
         run: |
+          curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
+          sudo sh install.sh
           docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
           make e2e
           docker stop $(docker ps -q)
