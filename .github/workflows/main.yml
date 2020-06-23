@@ -51,7 +51,9 @@ jobs:
           if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
 
       - name: Generate
-        run: make generate
+        run: |
+          ls -la
+          make generate
 
       - name: Compile
         run: make compile
