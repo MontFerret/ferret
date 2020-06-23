@@ -49,6 +49,7 @@ jobs:
       - name: Generate
         run: |
           ls -al /usr/local/lib/
+          cat $HOME/antlr-bin/antlr
           export PATH=$PATH:$HOME/antlr-bin
           antlr
           make generate
