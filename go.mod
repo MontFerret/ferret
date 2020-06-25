@@ -14,7 +14,7 @@ require (
 	github.com/corpix/uarand v0.1.1
 	github.com/derekparker/trie v0.0.0-20200317170641-1fdf38b7b0e9
 	github.com/gorilla/css v1.0.0
-	github.com/mafredri/cdp v0.28.0
+	github.com/mafredri/cdp v0.29.1
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.19.0
