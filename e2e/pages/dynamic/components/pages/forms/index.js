@@ -35,7 +35,7 @@ export default class FormsPage extends React.Component {
             });
         };
 
-        this.handleTtextarea = (evt) => {
+        this.handleTextarea = (evt) => {
             evt.preventDefault();
 
             this.setState({
@@ -110,7 +110,7 @@ export default class FormsPage extends React.Component {
                         id: "textarea_input",
                         rows:"5",
                         className: "form-control",
-                        onChange: this.handleTtextarea
+                        onChange: this.handleTextarea
                     }
                 ),
                 e("small", {

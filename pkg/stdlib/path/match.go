@@ -12,7 +12,7 @@ import (
 // Match reports whether name matches the pattern.
 // @param pattern (String) - The pattern.
 // @param name (String) - The name.
-// @returns (Boolean) - True if the name mathes the pattern.
+// @returns (Boolean) - True if the name matches the pattern.
 func Match(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
