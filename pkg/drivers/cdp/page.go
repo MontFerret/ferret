@@ -553,10 +553,6 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.Strin
 }
 
 func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
-	if err := p.dom.WaitForDOMReady(ctx); err != nil {
-		return err
-	}
-
 	prev := p.dom.GetMainFrame()
 
 	next, err := dom.LoadRootHTMLDocument(

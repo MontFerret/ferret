@@ -345,7 +345,16 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 		if matched {
 			if ctx.Err() == nil {
+				onContentReady, err := m.client.Page.DOMContentEventFired(ctx)
+
+				if err != nil {
+					return false
+				}
+
+				_, err = onContentReady.Recv()
+
 				onEvent <- struct{}{}
+				onContentReady.Close()
 			}
 		}
 
