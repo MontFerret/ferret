@@ -101,7 +101,7 @@ func copyFromNamespace(fns *core.Functions, namespace string) error {
 	namespace += "::"
 
 	// core.Functions cast every function name to upper case. Thus
-	// namespace also shoud be in upper case.
+	// namespace also should be in upper case.
 	namespace = strings.ToUpper(namespace)
 
 	for _, name := range fns.Names() {
@@ -113,7 +113,7 @@ func copyFromNamespace(fns *core.Functions, namespace string) error {
 
 		if _, exists := fns.Get(noprefix); exists {
 			return errors.Errorf(
-				`collision occured: "%s" already registered`,
+				`collision occurred: "%s" already registered`,
 				noprefix,
 			)
 		}

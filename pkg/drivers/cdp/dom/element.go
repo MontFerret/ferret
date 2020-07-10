@@ -37,32 +37,24 @@ type (
 	}
 
 	elementListeners struct {
-		pageReload            events.ListenerID
-		attrModified          events.ListenerID
-		attrRemoved           events.ListenerID
-		childNodeCountUpdated events.ListenerID
-		childNodeInserted     events.ListenerID
-		childNodeRemoved      events.ListenerID
+		pageReload        events.ListenerID
+		childNodeInserted events.ListenerID
+		childNodeRemoved  events.ListenerID
 	}
 
 	HTMLElement struct {
-		mu             sync.Mutex
-		logger         *zerolog.Logger
-		client         *cdp.Client
-		dom            *Manager
-		input          *input.Manager
-		exec           *eval.ExecutionContext
-		connected      values.Boolean
-		id             HTMLElementIdentity
-		nodeType       html.NodeType
-		nodeName       values.String
-		innerHTML      *common.LazyValue
-		innerText      *common.LazyValue
-		attributes     *common.LazyValue
-		style          *common.LazyValue
-		children       []HTMLElementIdentity
-		loadedChildren *common.LazyValue
-		listeners      *elementListeners
+		mu        sync.Mutex
+		logger    *zerolog.Logger
+		client    *cdp.Client
+		dom       *Manager
+		input     *input.Manager
+		exec      *eval.ExecutionContext
+		connected values.Boolean
+		id        HTMLElementIdentity
+		nodeType  html.NodeType
+		nodeName  values.String
+		children  []HTMLElementIdentity
+		listeners *elementListeners
 	}
 )
 
@@ -161,19 +153,11 @@ func NewHTMLElement(
 	el.id = id
 	el.nodeType = common.ToHTMLType(nodeType)
 	el.nodeName = values.NewString(nodeName)
-	el.innerHTML = common.NewLazyValue(el.loadInnerHTML)
-	el.innerText = common.NewLazyValue(el.loadInnerText)
-	el.attributes = common.NewLazyValue(el.loadAttrs)
-	el.style = common.NewLazyValue(el.parseStyle)
-	el.loadedChildren = common.NewLazyValue(el.loadChildren)
 	el.children = children
 	el.listeners = &elementListeners{
-		pageReload:            domManager.AddDocumentUpdatedListener(el.handlePageReload),
-		attrModified:          domManager.AddAttrModifiedListener(el.handleAttrModified),
-		attrRemoved:           domManager.AddAttrRemovedListener(el.handleAttrRemoved),
-		childNodeCountUpdated: domManager.AddChildNodeCountUpdatedListener(el.handleChildrenCountChanged),
-		childNodeInserted:     domManager.AddChildNodeInsertedListener(el.handleChildInserted),
-		childNodeRemoved:      domManager.AddChildNodeRemovedListener(el.handleChildRemoved),
+		pageReload:        domManager.AddDocumentUpdatedListener(el.handlePageReload),
+		childNodeInserted: domManager.AddChildNodeInsertedListener(el.handleChildInserted),
+		childNodeRemoved:  domManager.AddChildNodeRemovedListener(el.handleChildRemoved),
 	}
 
 	return el
@@ -191,9 +175,6 @@ func (el *HTMLElement) Close() error {
 	el.connected = values.False
 
 	el.dom.RemoveReloadListener(el.listeners.pageReload)
-	el.dom.RemoveAttrModifiedListener(el.listeners.attrModified)
-	el.dom.RemoveAttrRemovedListener(el.listeners.attrRemoved)
-	el.dom.RemoveChildNodeCountUpdatedListener(el.listeners.childNodeCountUpdated)
 	el.dom.RemoveChildNodeInsertedListener(el.listeners.childNodeInserted)
 	el.dom.RemoveChildNodeRemovedListener(el.listeners.childNodeRemoved)
 
@@ -293,29 +274,39 @@ func (el *HTMLElement) Length() values.Int {
 }
 
 func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
-	val, err := el.style.Read(ctx)
+	if el.IsDetached() {
+		return values.NewObject(), drivers.ErrDetached
+	}
+
+	value, err := el.GetAttribute(ctx, "style")
 
 	if err != nil {
 		return values.NewObject(), err
 	}
 
-	if val == values.None {
+	if value == values.None {
 		return values.NewObject(), nil
 	}
 
-	styles := val.(*values.Object)
+	if value.Type() != types.String {
+		return values.NewObject(), nil
+	}
 
-	return styles.Copy().(*values.Object), nil
+	return common.DeserializeStyles(value.(values.String))
 }
 
 func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
-	styles, err := el.style.Read(ctx)
+	if el.IsDetached() {
+		return values.None, drivers.ErrDetached
+	}
+
+	styles, err := el.GetStyles(ctx)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	val, found := styles.(*values.Object).Get(name)
+	val, found := styles.Get(name)
 
 	if !found {
 		return values.None, nil
@@ -325,17 +316,19 @@ func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.V
 }
 
 func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
 	if styles == nil {
 		return nil
 	}
 
-	val, err := el.style.Read(ctx)
+	currentStyles, err := el.GetStyles(ctx)
 
 	if err != nil {
 		return err
 	}
-
-	currentStyles := val.(*values.Object)
 
 	styles.ForEach(func(value core.Value, key string) bool {
 		currentStyles.Set(values.NewString(key), value)
@@ -349,13 +342,16 @@ func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) err
 }
 
 func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
-	val, err := el.style.Read(ctx)
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
+	styles, err := el.GetStyles(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	styles := val.(*values.Object)
 	styles.Set(name, value)
 
 	str := common.SerializeStyles(ctx, styles)
@@ -364,17 +360,19 @@ func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value c
 }
 
 func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
 	if len(names) == 0 {
 		return nil
 	}
 
-	val, err := el.style.Read(ctx)
+	styles, err := el.GetStyles(ctx)
 
 	if err != nil {
 		return err
 	}
-
-	styles := val.(*values.Object)
 
 	for _, name := range names {
 		styles.Remove(name)
@@ -386,35 +384,59 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 }
 
 func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
-	val, err := el.attributes.Read(ctx)
+	if el.IsDetached() {
+		return values.NewObject(), drivers.ErrDetached
+	}
+
+	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.NodeID))
 
 	if err != nil {
 		return values.NewObject(), err
 	}
 
-	attrs := val.(*values.Object)
+	attrs := values.NewObject()
 
-	// returning shallow copy
-	return attrs.Copy().(*values.Object), nil
+	traverseAttrs(repl.Attributes, func(name, value string) bool {
+		attrs.Set(values.NewString(name), values.NewString(value))
+
+		return true
+	})
+
+	return attrs, nil
 }
 
 func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (core.Value, error) {
-	attrs, err := el.attributes.Read(ctx)
+	if el.IsDetached() {
+		return values.None, drivers.ErrDetached
+	}
+
+	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.NodeID))
 
 	if err != nil {
 		return values.None, err
 	}
 
-	val, found := attrs.(*values.Object).Get(name)
+	result := values.EmptyString
+	targetName := strings.ToLower(name.String())
 
-	if !found {
-		return values.None, nil
-	}
+	traverseAttrs(repl.Attributes, func(name, value string) bool {
+		if name == targetName {
+			result = values.NewString(value)
 
-	return val, nil
+			return false
+		}
+
+		return true
+	})
+
+	return result, nil
 }
 
 func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
 	var err error
 
 	attrs.ForEach(func(value core.Value, key string) bool {
@@ -427,6 +449,10 @@ func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) 
 }
 
 func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
 	return el.client.DOM.SetAttributeValue(
 		ctx,
 		dom.NewSetAttributeValueArgs(el.id.NodeID, string(name), string(value)),
@@ -434,6 +460,10 @@ func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.Stri
 }
 
 func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.String) error {
+	if el.IsDetached() {
+		return drivers.ErrDetached
+	}
+
 	for _, name := range names {
 		err := el.client.DOM.RemoveAttribute(
 			ctx,
@@ -449,23 +479,51 @@ func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.Stri
 }
 
 func (el *HTMLElement) GetChildNodes(ctx context.Context) (*values.Array, error) {
-	val, err := el.loadedChildren.Read(ctx)
-
-	if err != nil {
-		return values.NewArray(0), err
+	if el.IsDetached() {
+		return values.NewArray(0), drivers.ErrDetached
 	}
 
-	return val.Copy().(*values.Array), nil
+	res := values.NewArray(len(el.children))
+
+	for _, childID := range el.children {
+		child, err := LoadHTMLElement(
+			ctx,
+			el.logger,
+			el.client,
+			el.dom,
+			el.input,
+			el.exec,
+			childID.NodeID,
+		)
+
+		if err != nil {
+			el.logError(err).Msg("failed to load child elements")
+
+			continue
+		}
+
+		res.Push(child)
+	}
+
+	return res, nil
 }
 
 func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
-	val, err := el.loadedChildren.Read(ctx)
-
-	if err != nil {
-		return values.None, err
+	if el.IsDetached() {
+		return values.None, drivers.ErrDetached
 	}
 
-	return val.(*values.Array).Get(idx), nil
+	nodeIdentity := el.children[idx]
+
+	return LoadHTMLElement(
+		ctx,
+		el.logger,
+		el.client,
+		el.dom,
+		el.input,
+		el.exec,
+		nodeIdentity.NodeID,
+	)
 }
 
 func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
@@ -702,25 +760,17 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 }
 
 func (el *HTMLElement) GetInnerText(ctx context.Context) (values.String, error) {
-	val, err := el.innerText.Read(ctx)
-
-	if err != nil {
-		return values.EmptyString, err
+	if el.IsDetached() {
+		return values.EmptyString, drivers.ErrDetached
 	}
 
-	if val == values.None {
-		return values.EmptyString, nil
-	}
-
-	return val.(values.String), nil
+	return getInnerText(ctx, el.client, el.exec, el.id, el.nodeType)
 }
 
 func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String) error {
 	if el.IsDetached() {
 		return drivers.ErrDetached
 	}
-
-	el.innerText.Reset()
 
 	return setInnerText(ctx, el.client, el.exec, el.id, innerText)
 }
@@ -822,25 +872,17 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 }
 
 func (el *HTMLElement) GetInnerHTML(ctx context.Context) (values.String, error) {
-	val, err := el.innerHTML.Read(ctx)
-
-	if err != nil {
-		return values.EmptyString, err
+	if el.IsDetached() {
+		return values.EmptyString, drivers.ErrDetached
 	}
 
-	if val == values.None {
-		return values.EmptyString, nil
-	}
-
-	return val.(values.String), nil
+	return getInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
 }
 
 func (el *HTMLElement) SetInnerHTML(ctx context.Context, innerHTML values.String) error {
 	if el.IsDetached() {
 		return drivers.ErrDetached
 	}
-
-	el.innerHTML.Reset()
 
 	return setInnerHTML(ctx, el.client, el.exec, el.id, innerHTML)
 }
@@ -1136,213 +1178,11 @@ func (el *HTMLElement) IsDetached() values.Boolean {
 	return !el.connected
 }
 
-func (el *HTMLElement) loadInnerHTML(ctx context.Context) (core.Value, error) {
-	if el.IsDetached() {
-		return values.None, drivers.ErrDetached
-	}
-
-	return getInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
-}
-
-func (el *HTMLElement) loadInnerText(ctx context.Context) (core.Value, error) {
-	if !el.IsDetached() {
-		text, err := getInnerText(ctx, el.client, el.exec, el.id, el.nodeType)
-
-		if err == nil {
-			return text, nil
-		}
-
-		el.logError(err).Msg("failed to get inner text from remote object")
-
-		// and just parse cached innerHTML
-	}
-
-	h, err := el.GetInnerHTML(ctx)
-
-	if err != nil {
-		el.logError(err).Msg("failed to get inner html from remote object")
-
-		return values.None, err
-	}
-
-	if h == values.EmptyString {
-		return h, nil
-	}
-
-	parsed, err := parseInnerText(h.String())
-
-	if err != nil {
-		el.logError(err).Msg("failed to parse inner html")
-
-		return values.EmptyString, err
-	}
-
-	return parsed, nil
-}
-
-func (el *HTMLElement) loadAttrs(ctx context.Context) (core.Value, error) {
-	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.NodeID))
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return parseAttrs(repl.Attributes), nil
-}
-
-func (el *HTMLElement) loadChildren(ctx context.Context) (core.Value, error) {
-	if el.IsDetached() {
-		return values.NewArray(0), nil
-	}
-
-	loaded := values.NewArray(len(el.children))
-
-	for _, childID := range el.children {
-		child, err := LoadHTMLElement(
-			ctx,
-			el.logger,
-			el.client,
-			el.dom,
-			el.input,
-			el.exec,
-			childID.NodeID,
-		)
-
-		if err != nil {
-			el.logError(err).Msg("failed to load child elements")
-
-			continue
-		}
-
-		loaded.Push(child)
-	}
-
-	return loaded, nil
-}
-
-func (el *HTMLElement) parseStyle(ctx context.Context) (core.Value, error) {
-	value, err := el.GetAttribute(ctx, "style")
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if value == values.None {
-		return values.NewObject(), nil
-	}
-
-	if value.Type() != types.String {
-		return values.NewObject(), nil
-	}
-
-	return common.DeserializeStyles(value.(values.String))
-}
-
 func (el *HTMLElement) handlePageReload(_ context.Context) {
 	el.Close()
 }
 
-func (el *HTMLElement) handleAttrModified(ctx context.Context, nodeID dom.NodeID, name, value string) {
-	// it's not for this el
-	if nodeID != el.id.NodeID {
-		return
-	}
-
-	// they are not event loaded
-	// just ignore the event
-	if !el.attributes.Ready() {
-		return
-	}
-
-	if el.IsDetached() {
-		return
-	}
-
-	el.attributes.Mutate(ctx, func(v core.Value, err error) {
-		if err != nil {
-			el.logError(err).Msg("failed to update element")
-
-			return
-		}
-
-		if name == "style" {
-			el.style.Reset()
-		}
-
-		attrs, ok := v.(*values.Object)
-
-		if !ok {
-			return
-		}
-
-		attrs.Set(values.NewString(name), values.NewString(value))
-	})
-}
-
-func (el *HTMLElement) handleAttrRemoved(ctx context.Context, nodeID dom.NodeID, name string) {
-	// it's not for this el
-	if nodeID != el.id.NodeID {
-		return
-	}
-
-	// they are not event loaded
-	// just ignore the event
-	if !el.attributes.Ready() {
-		return
-	}
-
-	if el.IsDetached() {
-		return
-	}
-
-	el.attributes.Mutate(ctx, func(v core.Value, err error) {
-		if err != nil {
-			el.logError(err).Msg("failed to update element")
-
-			return
-		}
-
-		if name == "style" {
-			el.style.Reset()
-		}
-
-		attrs, ok := v.(*values.Object)
-
-		if !ok {
-			return
-		}
-
-		attrs.Remove(values.NewString(name))
-	})
-}
-
-func (el *HTMLElement) handleChildrenCountChanged(ctx context.Context, nodeID dom.NodeID, _ int) {
-	if nodeID != el.id.NodeID {
-		return
-	}
-
-	if el.IsDetached() {
-		return
-	}
-
-	el.mu.Lock()
-	defer el.mu.Unlock()
-
-	node, err := el.client.DOM.DescribeNode(
-		ctx,
-		dom.NewDescribeNodeArgs().SetObjectID(el.id.ObjectID),
-	)
-
-	if err != nil {
-		el.logError(err).Msg("failed to update element")
-
-		return
-	}
-
-	el.children = createChildrenArray(node.Node.Children)
-}
-
-func (el *HTMLElement) handleChildInserted(ctx context.Context, parentNodeID, prevNodeID dom.NodeID, node dom.Node) {
+func (el *HTMLElement) handleChildInserted(_ context.Context, parentNodeID, prevNodeID dom.NodeID, node dom.Node) {
 	if parentNodeID != el.id.NodeID {
 		return
 	}
@@ -1375,37 +1215,9 @@ func (el *HTMLElement) handleChildInserted(ctx context.Context, parentNodeID, pr
 
 	arr := el.children
 	el.children = append(arr[:targetIDx], append([]HTMLElementIdentity{nextIdentity}, arr[targetIDx:]...)...)
-
-	if !el.loadedChildren.Ready() {
-		return
-	}
-
-	el.loadedChildren.Mutate(ctx, func(v core.Value, _ error) {
-		loadedArr := v.(*values.Array)
-		loadedEl, err := LoadHTMLElement(
-			ctx,
-			el.logger,
-			el.client,
-			el.dom,
-			el.input,
-			el.exec,
-			nextID,
-		)
-
-		if err != nil {
-			el.logError(err).Msg("failed to load an inserted element")
-
-			return
-		}
-
-		loadedArr.Insert(values.NewInt(targetIDx), loadedEl)
-
-		el.innerHTML.Reset()
-		el.innerText.Reset()
-	})
 }
 
-func (el *HTMLElement) handleChildRemoved(ctx context.Context, nodeID, prevNodeID dom.NodeID) {
+func (el *HTMLElement) handleChildRemoved(_ context.Context, nodeID, prevNodeID dom.NodeID) {
 	if nodeID != el.id.NodeID {
 		return
 	}
@@ -1433,28 +1245,6 @@ func (el *HTMLElement) handleChildRemoved(ctx context.Context, nodeID, prevNodeI
 
 	arr := el.children
 	el.children = append(arr[:targetIDx], arr[targetIDx+1:]...)
-
-	if !el.loadedChildren.Ready() {
-		return
-	}
-
-	el.loadedChildren.Mutate(ctx, func(v core.Value, err error) {
-		if err != nil {
-			el.logger.Error().
-				Timestamp().
-				Err(err).
-				Int("nodeID", int(el.id.NodeID)).
-				Msg("failed to update element")
-
-			return
-		}
-
-		loadedArr := v.(*values.Array)
-		loadedArr.RemoveAt(values.NewInt(targetIDx))
-
-		el.innerHTML.Reset()
-		el.innerText.Reset()
-	})
 }
 
 func (el *HTMLElement) logError(err error) *zerolog.Event {

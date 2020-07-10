@@ -17,12 +17,9 @@ import (
 )
 
 var (
-	eventDocumentUpdated       = events.New("doc_updated")
-	eventAttrModified          = events.New("attr_modified")
-	eventAttrRemoved           = events.New("attr_removed")
-	eventChildNodeCountUpdated = events.New("child_count_updated")
-	eventChildNodeInserted     = events.New("child_inserted")
-	eventChildNodeRemoved      = events.New("child_removed")
+	eventDocumentUpdated   = events.New("doc_updated")
+	eventChildNodeInserted = events.New("child_inserted")
+	eventChildNodeRemoved  = events.New("child_removed")
 )
 
 type (
@@ -58,7 +55,6 @@ func createContext() (context.Context, context.CancelFunc) {
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	eventLoop *events.Loop,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (manager *Manager, err error) {
@@ -128,20 +124,10 @@ func New(
 
 	closers = append(closers, onChildNodeRemoved)
 
+	eventLoop := events.NewLoop()
+
 	eventLoop.AddSource(events.NewSource(eventDocumentUpdated, onDocUpdated, func(stream rpcc.Stream) (i interface{}, e error) {
 		return stream.(dom.DocumentUpdatedClient).Recv()
-	}))
-
-	eventLoop.AddSource(events.NewSource(eventAttrModified, onAttrModified, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(dom.AttributeModifiedClient).Recv()
-	}))
-
-	eventLoop.AddSource(events.NewSource(eventAttrRemoved, onAttrRemoved, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(dom.AttributeRemovedClient).Recv()
-	}))
-
-	eventLoop.AddSource(events.NewSource(eventChildNodeCountUpdated, onChildCountUpdated, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(dom.ChildNodeCountUpdatedClient).Recv()
 	}))
 
 	eventLoop.AddSource(events.NewSource(eventChildNodeInserted, onChildNodeInserted, func(stream rpcc.Stream) (i interface{}, e error) {
@@ -162,16 +148,24 @@ func New(
 	manager.frames = NewAtomicFrameCollection()
 	manager.cancel = cancel
 
+	eventLoop.Start()
+
 	return manager, nil
 }
 
 func (m *Manager) Close() error {
+	errs := make([]error, 0, m.frames.Length()+1)
+
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
-	}
 
-	errs := make([]error, 0, m.frames.Length())
+		err := m.events.Stop().Close()
+
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
 
 	m.frames.ForEach(func(f Frame, key page.FrameID) bool {
 		// if initialized
@@ -289,48 +283,6 @@ func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) e
 
 func (m *Manager) RemoveReloadListener(listenerID events.ListenerID) {
 	m.events.RemoveListener(eventDocumentUpdated, listenerID)
-}
-
-func (m *Manager) AddAttrModifiedListener(listener AttrModifiedListener) events.ListenerID {
-	return m.events.AddListener(eventAttrModified, func(ctx context.Context, message interface{}) bool {
-		reply := message.(*dom.AttributeModifiedReply)
-
-		listener(ctx, reply.NodeID, reply.Name, reply.Value)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveAttrModifiedListener(listenerID events.ListenerID) {
-	m.events.RemoveListener(eventAttrModified, listenerID)
-}
-
-func (m *Manager) AddAttrRemovedListener(listener AttrRemovedListener) events.ListenerID {
-	return m.events.AddListener(eventAttrRemoved, func(ctx context.Context, message interface{}) bool {
-		reply := message.(*dom.AttributeRemovedReply)
-
-		listener(ctx, reply.NodeID, reply.Name)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveAttrRemovedListener(listenerID events.ListenerID) {
-	m.events.RemoveListener(eventAttrRemoved, listenerID)
-}
-
-func (m *Manager) AddChildNodeCountUpdatedListener(listener ChildNodeCountUpdatedListener) events.ListenerID {
-	return m.events.AddListener(eventChildNodeCountUpdated, func(ctx context.Context, message interface{}) bool {
-		reply := message.(*dom.ChildNodeCountUpdatedReply)
-
-		listener(ctx, reply.NodeID, reply.ChildNodeCount)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveChildNodeCountUpdatedListener(listenerID events.ListenerID) {
-	m.events.RemoveListener(eventChildNodeCountUpdated, listenerID)
 }
 
 func (m *Manager) AddChildNodeInsertedListener(listener ChildNodeInsertedListener) events.ListenerID {

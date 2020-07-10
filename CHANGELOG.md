@@ -36,10 +36,10 @@
 ### 0.10.0
 #### Added
 - Response information to drivers. [#391](https://github.com/MontFerret/ferret/pull/391), [#450](https://github.com/MontFerret/ferret/pull/450)
-- Сompilation check whether parameter values are provided. [#396](https://github.com/MontFerret/ferret/pull/396)
+- Compilation check whether parameter values are provided. [#396](https://github.com/MontFerret/ferret/pull/396)
 - Allowed HTTP response codes to HTTP driver. [#398](https://github.com/MontFerret/ferret/pull/398)
 - IO functions to standard library. [#403](https://github.com/MontFerret/ferret/pull/403), [#405](https://github.com/MontFerret/ferret/pull/405), [#452](https://github.com/MontFerret/ferret/pull/452)
-- Сompilation check whether a variable name is unique. [#416](https://github.com/MontFerret/ferret/pull/416)
+- Compilation check whether a variable name is unique. [#416](https://github.com/MontFerret/ferret/pull/416)
 - Loading HTML page into memory. Supported by all drivers. [#413](https://github.com/MontFerret/ferret/pull/434)
 
 #### Fixed
