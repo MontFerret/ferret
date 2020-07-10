@@ -2,21 +2,18 @@ package dom
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"io"
-	"sync"
-
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/rpcc"
-
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 )
 
 var (
@@ -41,21 +38,14 @@ type (
 
 	ChildNodeRemovedListener func(ctx context.Context, nodeID, previousNodeID dom.NodeID)
 
-	Frame struct {
-		tree  page.FrameTree
-		node  *HTMLDocument
-		ready bool
-	}
-
 	Manager struct {
-		mu        sync.Mutex
 		logger    *zerolog.Logger
 		client    *cdp.Client
 		events    *events.Loop
 		mouse     *input.Mouse
 		keyboard  *input.Keyboard
-		mainFrame page.FrameID
-		frames    map[page.FrameID]Frame
+		mainFrame *AtomicFrameID
+		frames    *AtomicFrameCollection
 		cancel    context.CancelFunc
 	}
 )
@@ -168,31 +158,31 @@ func New(
 	manager.events = eventLoop
 	manager.mouse = mouse
 	manager.keyboard = keyboard
-	manager.frames = make(map[page.FrameID]Frame)
+	manager.mainFrame = NewAtomicFrameID()
+	manager.frames = NewAtomicFrameCollection()
 	manager.cancel = cancel
 
 	return manager, nil
 }
 
 func (m *Manager) Close() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
 	}
 
-	errs := make([]error, 0, len(m.frames))
+	errs := make([]error, 0, m.frames.Length())
 
-	for _, f := range m.frames {
+	m.frames.ForEach(func(f Frame, key page.FrameID) bool {
 		// if initialized
 		if f.node != nil {
 			if err := f.node.Close(); err != nil {
 				errs = append(errs, err)
 			}
 		}
-	}
+
+		return true
+	})
 
 	if len(errs) > 0 {
 		return core.Errors(errs...)
@@ -202,14 +192,13 @@ func (m *Manager) Close() error {
 }
 
 func (m *Manager) GetMainFrame() *HTMLDocument {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	mainFrameID := m.mainFrame.Get()
 
-	if m.mainFrame == "" {
+	if mainFrameID == "" {
 		return nil
 	}
 
-	mainFrame, exists := m.frames[m.mainFrame]
+	mainFrame, exists := m.frames.Get(mainFrameID)
 
 	if exists {
 		return mainFrame.node
@@ -219,46 +208,33 @@ func (m *Manager) GetMainFrame() *HTMLDocument {
 }
 
 func (m *Manager) SetMainFrame(doc *HTMLDocument) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	mainFrameID := m.mainFrame.Get()
 
-	if m.mainFrame != "" {
-		if err := m.removeFrameRecursivelyInternal(m.mainFrame); err != nil {
+	if mainFrameID != "" {
+		if err := m.removeFrameRecursivelyInternal(mainFrameID); err != nil {
 			m.logger.Error().Err(err).Msg("failed to close previous main frame")
 		}
 	}
 
-	m.mainFrame = doc.frameTree.Frame.ID
+	m.mainFrame.Set(doc.frameTree.Frame.ID)
 
 	m.addPreloadedFrame(doc)
 }
 
 func (m *Manager) AddFrame(frame page.FrameTree) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	m.addFrameInternal(frame)
 }
 
 func (m *Manager) RemoveFrame(frameID page.FrameID) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	return m.removeFrameInternal(frameID)
 }
 
 func (m *Manager) RemoveFrameRecursively(frameID page.FrameID) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	return m.removeFrameRecursivelyInternal(frameID)
 }
 
 func (m *Manager) RemoveFramesByParentID(parentFrameID page.FrameID) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	frame, found := m.frames[parentFrameID]
+	frame, found := m.frames.Get(parentFrameID)
 
 	if !found {
 		return errors.New("frame not found")
@@ -274,17 +250,11 @@ func (m *Manager) RemoveFramesByParentID(parentFrameID page.FrameID) error {
 }
 
 func (m *Manager) GetFrameNode(ctx context.Context, frameID page.FrameID) (*HTMLDocument, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	return m.getFrameInternal(ctx, frameID)
 }
 
 func (m *Manager) GetFrameTree(_ context.Context, frameID page.FrameID) (page.FrameTree, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	frame, found := m.frames[frameID]
+	frame, found := m.frames.Get(frameID)
 
 	if !found {
 		return page.FrameTree{}, core.ErrNotFound
@@ -294,12 +264,9 @@ func (m *Manager) GetFrameTree(_ context.Context, frameID page.FrameID) (page.Fr
 }
 
 func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	arr := values.NewArray(m.frames.Length())
 
-	arr := values.NewArray(len(m.frames))
-
-	for _, f := range m.frames {
+	for _, f := range m.frames.ToSlice() {
 		doc, err := m.getFrameInternal(ctx, f.tree.Frame.ID)
 
 		if err != nil {
@@ -395,10 +362,10 @@ func (m *Manager) RemoveChildNodeRemovedListener(listenerID events.ListenerID) {
 }
 
 func (m *Manager) addFrameInternal(frame page.FrameTree) {
-	m.frames[frame.Frame.ID] = Frame{
+	m.frames.Set(frame.Frame.ID, Frame{
 		tree: frame,
 		node: nil,
-	}
+	})
 
 	for _, child := range frame.ChildFrames {
 		m.addFrameInternal(child)
@@ -406,10 +373,10 @@ func (m *Manager) addFrameInternal(frame page.FrameTree) {
 }
 
 func (m *Manager) addPreloadedFrame(doc *HTMLDocument) {
-	m.frames[doc.frameTree.Frame.ID] = Frame{
+	m.frames.Set(doc.frameTree.Frame.ID, Frame{
 		tree: doc.frameTree,
 		node: doc,
-	}
+	})
 
 	for _, child := range doc.frameTree.ChildFrames {
 		m.addFrameInternal(child)
@@ -417,7 +384,7 @@ func (m *Manager) addPreloadedFrame(doc *HTMLDocument) {
 }
 
 func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*HTMLDocument, error) {
-	frame, found := m.frames[frameID]
+	frame, found := m.frames.Get(frameID)
 
 	if !found {
 		return nil, core.ErrNotFound
@@ -457,16 +424,18 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 }
 
 func (m *Manager) removeFrameInternal(frameID page.FrameID) error {
-	current, exists := m.frames[frameID]
+	current, exists := m.frames.Get(frameID)
 
 	if !exists {
 		return core.Error(core.ErrNotFound, "frame")
 	}
 
-	delete(m.frames, frameID)
+	m.frames.Remove(frameID)
 
-	if frameID == m.mainFrame {
-		m.mainFrame = ""
+	mainFrameID := m.mainFrame.Get()
+
+	if frameID == mainFrameID {
+		m.mainFrame.Reset()
 	}
 
 	if current.node == nil {
@@ -477,7 +446,7 @@ func (m *Manager) removeFrameInternal(frameID page.FrameID) error {
 }
 
 func (m *Manager) removeFrameRecursivelyInternal(frameID page.FrameID) error {
-	parent, exists := m.frames[frameID]
+	parent, exists := m.frames.Get(frameID)
 
 	if !exists {
 		return core.Error(core.ErrNotFound, "frame")

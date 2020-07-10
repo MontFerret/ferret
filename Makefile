@@ -18,7 +18,7 @@ install:
 	go get
 
 compile:
-	go build -v -o ${DIR_BIN}/ferret \
+	go build -race -v -o ${DIR_BIN}/ferret \
 	-ldflags "-X main.version=${VERSION}" \
 	./main.go
 
