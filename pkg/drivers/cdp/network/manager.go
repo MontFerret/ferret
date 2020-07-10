@@ -326,10 +326,6 @@ func (m *Manager) WaitForNavigation(ctx context.Context, pattern *regexp.Regexp)
 func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlPattern *regexp.Regexp) error {
 	onEvent := make(chan struct{})
 
-	defer func() {
-		close(onEvent)
-	}()
-
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
@@ -357,6 +353,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 				_, err = onContentReady.Recv()
 
 				onEvent <- struct{}{}
+				close(onEvent)
 				onContentReady.Close()
 			}
 		}
