@@ -511,16 +511,10 @@ func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values
 }
 
 func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.String) error {
-	var pattern *regexp.Regexp
+	pattern, err := p.urlToRegexp(targetURL)
 
-	if targetURL != "" {
-		r, err := regexp.Compile(targetURL.String())
-
-		if err != nil {
-			return errors.Wrap(err, "invalid URL pattern")
-		}
-
-		pattern = r
+	if err != nil {
+		return err
 	}
 
 	if err := p.network.WaitForNavigation(ctx, pattern); err != nil {
@@ -528,6 +522,42 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.Strin
 	}
 
 	return p.reloadMainFrame(ctx)
+}
+
+func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTMLDocument, targetURL values.String) error {
+	current := p.dom.GetMainFrame()
+	doc, ok := frame.(*dom.HTMLDocument)
+
+	if !ok {
+		return errors.New("invalid frame type")
+	}
+
+	// if it's the current document
+	if current.Frame().Frame.ID == doc.Frame().Frame.ID {
+		return p.WaitForNavigation(ctx, targetURL)
+	}
+
+	pattern, err := p.urlToRegexp(targetURL)
+
+	if err != nil {
+		return err
+	}
+
+	return p.network.WaitForFrameNavigation(ctx, doc.Frame().Frame.ID, pattern)
+}
+
+func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {
+	if targetURL == "" {
+		return nil, nil
+	}
+
+	r, err := regexp.Compile(targetURL.String())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid URL pattern")
+	}
+
+	return r, nil
 }
 
 func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {

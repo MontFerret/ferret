@@ -206,6 +206,8 @@ type (
 
 		WaitForNavigation(ctx context.Context, targetURL values.String) error
 
+		WaitForFrameNavigation(ctx context.Context, frame HTMLDocument, targetURL values.String) error
+
 		Navigate(ctx context.Context, url values.String) error
 
 		NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error)

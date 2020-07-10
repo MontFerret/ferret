@@ -13,6 +13,7 @@ import (
 type WaitNavigationParams struct {
 	TargetURL values.String
 	Timeout   values.Int
+	Frame     drivers.HTMLDocument
 }
 
 // WAIT_NAVIGATION waits for a given page to navigate to a new url.
@@ -49,7 +50,11 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 	ctx, fn := waitTimeout(ctx, params.Timeout)
 	defer fn()
 
-	return values.None, doc.WaitForNavigation(ctx, params.TargetURL)
+	if params.Frame == nil {
+		return values.None, doc.WaitForNavigation(ctx, params.TargetURL)
+	}
+
+	return values.None, doc.WaitForFrameNavigation(ctx, params.Frame, params.TargetURL)
 }
 
 func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
@@ -62,7 +67,6 @@ func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
 
 	if arg.Type() == types.Int {
 		params.Timeout = arg.(values.Int)
-
 	} else {
 		obj := arg.(*values.Object)
 
@@ -84,6 +88,16 @@ func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
 			}
 
 			params.TargetURL = v.(values.String)
+		}
+
+		if v, exists := obj.Get("frame"); exists {
+			doc, err := drivers.ToDocument(v)
+
+			if err != nil {
+				return params, errors.Wrap(err, "navigation parameters: frame")
+			}
+
+			params.Frame = doc
 		}
 	}
 
