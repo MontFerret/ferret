@@ -6,12 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"golang.org/x/net/html"
-	"strings"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/PuerkitoBio/goquery"
@@ -23,34 +21,18 @@ import (
 
 var emptyExpires = time.Time{}
 
-// parseAttrs is a helper function that parses a given interleaved array of node attribute names and values,
-// and returns an object that represents attribute keys and values.
-func parseAttrs(attrs []string) *values.Object {
-	var attr values.String
+// traverseAttrs is a helper function that parses a given interleaved array of node attribute names and values,
+// and calls a given attribute on each key-value pair
+func traverseAttrs(attrs []string, predicate func(name, value string) bool) {
+	count := len(attrs)
 
-	res := values.NewObject()
-
-	for _, el := range attrs {
-		el = strings.TrimSpace(el)
-		str := values.NewString(el)
-
-		if common.IsAttribute(el) {
-			attr = str
-			res.Set(str, values.EmptyString)
-		} else {
-			current, ok := res.Get(attr)
-
-			if ok {
-				if current.String() != "" {
-					res.Set(attr, current.(values.String).Concat(values.SpaceString).Concat(str))
-				} else {
-					res.Set(attr, str)
-				}
+	for i := 0; i < count; i++ {
+		if i%2 != 0 {
+			if predicate(attrs[i-1], attrs[i]) == false {
+				break
 			}
 		}
 	}
-
-	return res
 }
 
 func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionContext, id HTMLElementIdentity, innerHTML values.String) error {

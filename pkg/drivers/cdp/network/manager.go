@@ -41,7 +41,6 @@ type (
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
-	eventLoop *events.Loop,
 ) (*Manager, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -49,7 +48,7 @@ func New(
 	m.logger = logger
 	m.client = client
 	m.headers = make(drivers.HTTPHeaders)
-	m.eventLoop = eventLoop
+	m.eventLoop = events.NewLoop()
 	m.cancel = cancel
 	m.response = new(sync.Map)
 
@@ -85,6 +84,8 @@ func New(
 
 	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
 
+	m.eventLoop.Start()
+
 	return m, nil
 }
 
@@ -95,6 +96,8 @@ func (m *Manager) Close() error {
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
+
+		return m.eventLoop.Stop().Close()
 	}
 
 	return nil
