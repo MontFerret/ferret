@@ -87,8 +87,6 @@ func NewValueWaitTask(
 			}
 
 			if when == drivers.WaitEventPresence {
-				println(current.String())
-
 				// Values appeared, exit
 				if current.Compare(value) == 0 {
 					// The value does not really matter if it's not None
