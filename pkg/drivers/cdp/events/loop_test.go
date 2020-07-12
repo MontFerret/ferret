@@ -180,8 +180,10 @@ func TestLoop(t *testing.T) {
 
 			loop.AddSource(src)
 
-			loop.Start()
-			defer loop.Stop()
+			ctx, cancel := context.WithCancel(context.Background())
+
+			loop.Run(ctx)
+			defer cancel()
 
 			onLoad.EmitDefault()
 
@@ -219,8 +221,10 @@ func TestLoop(t *testing.T) {
 					counter.Increase()
 				}))
 
-				loop.Start()
-				defer loop.Stop()
+				ctx, cancel := context.WithCancel(context.Background())
+
+				loop.Run(ctx)
+				defer cancel()
 
 				onLoad.EmitDefault()
 
@@ -252,8 +256,10 @@ func TestLoop(t *testing.T) {
 				counter.Increase()
 			}))
 
-			loop.Start()
-			defer loop.Stop()
+			ctx, cancel := context.WithCancel(context.Background())
+
+			loop.Run(ctx)
+			defer cancel()
 
 			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
 
@@ -282,8 +288,10 @@ func TestLoop(t *testing.T) {
 			loop := events.NewLoop()
 			counter := NewCounter()
 
-			loop.Start()
-			defer loop.Stop()
+			ctx, cancel := context.WithCancel(context.Background())
+
+			loop.Run(ctx)
+			defer cancel()
 
 			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 				counter.Increase()
@@ -342,8 +350,10 @@ func TestLoop(t *testing.T) {
 			return onLoad.Recv()
 		}))
 
-		loop.Start()
-		defer loop.Stop()
+		ctx, cancel := context.WithCancel(context.Background())
+
+		loop.Run(ctx)
+		defer cancel()
 
 		time.Sleep(time.Duration(100) * time.Millisecond)
 
@@ -365,8 +375,10 @@ func BenchmarkLoop_AddListenerSync(b *testing.B) {
 
 func BenchmarkLoop_AddListenerAsync(b *testing.B) {
 	loop := events.NewLoop()
-	loop.Start()
-	defer loop.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	loop.Run(ctx)
+	defer cancel()
 
 	for n := 0; n < b.N; n++ {
 		loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {}))
@@ -375,8 +387,10 @@ func BenchmarkLoop_AddListenerAsync(b *testing.B) {
 
 func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 	loop := events.NewLoop()
-	loop.Start()
-	defer loop.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	loop.Run(ctx)
+	defer cancel()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -417,8 +431,10 @@ func BenchmarkLoop_Start(b *testing.B) {
 		return onLoad.Recv()
 	}))
 
-	loop.Start()
-	defer loop.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	loop.Run(ctx)
+	defer cancel()
 
 	for n := 0; n < b.N; n++ {
 		onLoad.Emit(&page.LoadEventFiredReply{})

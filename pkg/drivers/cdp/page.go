@@ -288,7 +288,17 @@ func (p *HTMLPage) Close() error {
 			Msg("failed to close browser page")
 	}
 
-	return p.conn.Close()
+	err = p.conn.Close()
+
+	if err != nil {
+		p.logger.Warn().
+			Timestamp().
+			Str("url", doc.GetURL().String()).
+			Err(err).
+			Msg("failed to close connection")
+	}
+
+	return err
 }
 
 func (p *HTMLPage) IsClosed() values.Boolean {

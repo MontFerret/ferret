@@ -148,7 +148,7 @@ func New(
 	manager.frames = NewAtomicFrameCollection()
 	manager.cancel = cancel
 
-	eventLoop.Start()
+	eventLoop.Run(ctx)
 
 	return manager, nil
 }
@@ -159,12 +159,6 @@ func (m *Manager) Close() error {
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
-
-		err := m.events.Stop().Close()
-
-		if err != nil {
-			errs = append(errs, err)
-		}
 	}
 
 	m.frames.ForEach(func(f Frame, key page.FrameID) bool {

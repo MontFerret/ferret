@@ -84,7 +84,7 @@ func New(
 
 	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
 
-	m.eventLoop.Start()
+	m.eventLoop.Run(ctx)
 
 	return m, nil
 }
@@ -96,8 +96,6 @@ func (m *Manager) Close() error {
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
-
-		return m.eventLoop.Stop().Close()
 	}
 
 	return nil
