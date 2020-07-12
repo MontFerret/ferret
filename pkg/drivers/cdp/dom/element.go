@@ -416,7 +416,8 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (co
 		return values.None, err
 	}
 
-	result := values.EmptyString
+	var result core.Value
+	result = values.None
 	targetName := strings.ToLower(name.String())
 
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
