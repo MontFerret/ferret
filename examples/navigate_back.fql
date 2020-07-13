@@ -2,6 +2,6 @@ LET origin = "https://github.com/"
 LET doc = DOCUMENT(origin, { driver: "cdp" })
 
 NAVIGATE(doc, "https://github.com/features", 10000)
-NAVIGATE_BACK(doc, 10000)
+NAVIGATE_BACK(doc)
 
 RETURN doc.url == origin

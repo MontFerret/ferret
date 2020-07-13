@@ -1,5 +1,5 @@
 LET url = @lab.cdn.dynamic + "?redirect=/iframe"
-LET page = DOCUMENT(url, { driver: 'cdp' })
+LET page = DOCUMENT(url, { driver: 'cdp', timeout: 5000 })
 
 LET frames = (
     FOR frame IN page.frames

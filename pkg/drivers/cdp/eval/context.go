@@ -24,6 +24,16 @@ type ExecutionContext struct {
 	contextID runtime.ExecutionContextID
 }
 
+func NewExecutionContextFrom(ctx context.Context, client *cdp.Client, frame page.Frame) (*ExecutionContext, error) {
+	world, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(frame.ID))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewExecutionContext(client, frame, world.ExecutionContextID), nil
+}
+
 func NewExecutionContext(client *cdp.Client, frame page.Frame, contextID runtime.ExecutionContextID) *ExecutionContext {
 	ec := new(ExecutionContext)
 	ec.client = client
