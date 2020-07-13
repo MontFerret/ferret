@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateHour returns the hour of date as a number.
+// DATE_HOUR returns the hour of date as a number.
 // @params date (DateTime) - source DateTime.
 // @return (Int) - a hour number.
 func DateHour(_ context.Context, args ...core.Value) (core.Value, error) {

@@ -14,7 +14,7 @@ var (
 	emptyString   values.String
 )
 
-// DateAdd add amount given in unit to date.
+// DATE_ADD add amount given in unit to date.
 // @params date (DateTime) - source date.
 // @params amount (Int) - amount of units
 // @params unit (String) - unit.
@@ -44,7 +44,7 @@ func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewDateTime(tm), nil
 }
 
-// DateSubtract subtract amount given in unit to date.
+// DATE_SUBTRACT subtract amount given in unit to date.
 // @params date (DateTime) - source date.
 // @params amount (Int) - amount of units
 // @params unit (String) - unit.

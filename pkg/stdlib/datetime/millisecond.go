@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateMillisecond returns the millisecond of date as a number.
+// DATE_MILLISECOND returns the millisecond of date as a number.
 // @params date (DateTime) - source DateTime.
 // @return (Int) - a millisecond number.
 func DateMillisecond(_ context.Context, args ...core.Value) (core.Value, error) {

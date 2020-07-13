@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateDiff returns the difference between two dates in given time unit.
+// DATE_DIFF returns the difference between two dates in given time unit.
 // @params date1   (DateTime) - first DateTime.
 // @params date2   (DateTime) - second DateTime.
 // @params unit    (String)   - time unit to return the difference in.
