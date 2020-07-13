@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateYear returns the year extracted from the given date.
+// DATE_YEAR returns the year extracted from the given date.
 // @params date (DateTime) - source DateTime.
 // @return (Int) - a year number.
 func DateYear(_ context.Context, args ...core.Value) (core.Value, error) {
