@@ -3,12 +3,9 @@ package events
 import (
 	"context"
 	"math/rand"
-	"sync"
 )
 
 type Loop struct {
-	mu        sync.Mutex
-	cancel    context.CancelFunc
 	sources   *SourceCollection
 	listeners *ListenerCollection
 }
@@ -21,47 +18,8 @@ func NewLoop() *Loop {
 	return loop
 }
 
-func (loop *Loop) Start() *Loop {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel != nil {
-		return loop
-	}
-
-	loopCtx, cancel := context.WithCancel(context.Background())
-
-	loop.cancel = cancel
-
-	go loop.run(loopCtx)
-
-	return loop
-}
-
-func (loop *Loop) Stop() *Loop {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel == nil {
-		return loop
-	}
-
-	loop.cancel()
-	loop.cancel = nil
-
-	return loop
-}
-
-func (loop *Loop) Close() error {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel != nil {
-		loop.cancel()
-		loop.cancel = nil
-	}
-
-	return loop.sources.Close()
+func (loop *Loop) Run(ctx context.Context) {
+	go loop.run(ctx)
 }
 
 func (loop *Loop) AddSource(source Source) {
@@ -125,7 +83,6 @@ func (loop *Loop) run(ctx context.Context) {
 			source = noop
 		}
 
-		// commands have higher priority
 		select {
 		case <-ctx.Done():
 			return

@@ -1,6 +1,7 @@
 package events
 
 import (
+	"errors"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"sync"
 )
@@ -21,6 +22,10 @@ func (sc *SourceCollection) Close() error {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 
+	if sc.values == nil {
+		return errors.New("sources are already closed")
+	}
+
 	errs := make([]error, 0, len(sc.values))
 
 	for _, e := range sc.values {
@@ -28,6 +33,8 @@ func (sc *SourceCollection) Close() error {
 			errs = append(errs, err)
 		}
 	}
+
+	sc.values = nil
 
 	if len(errs) > 0 {
 		return core.Errors(errs...)

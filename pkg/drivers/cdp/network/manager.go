@@ -3,16 +3,17 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"io"
-	"regexp"
-	"sync"
-
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"io"
+	"regexp"
+	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -84,7 +85,7 @@ func New(
 
 	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
 
-	m.eventLoop.Start()
+	m.eventLoop.Run(ctx)
 
 	return m, nil
 }
@@ -96,8 +97,6 @@ func (m *Manager) Close() error {
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
-
-		return m.eventLoop.Stop().Close()
 	}
 
 	return nil
@@ -326,10 +325,6 @@ func (m *Manager) WaitForNavigation(ctx context.Context, pattern *regexp.Regexp)
 func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.FrameID, urlPattern *regexp.Regexp) error {
 	onEvent := make(chan struct{})
 
-	defer func() {
-		close(onEvent)
-	}()
-
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
@@ -348,7 +343,26 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 		if matched {
 			if ctx.Err() == nil {
+				ec, err := eval.NewExecutionContextFrom(ctx, m.client, repl.Frame)
+
+				if err != nil {
+					close(onEvent)
+					return false
+				}
+
+				_, err = events.NewEvalWaitTask(
+					ec,
+					templates.DOMReady(),
+					events.DefaultPolling,
+				).Run(ctx)
+
+				if err != nil {
+					close(onEvent)
+					return false
+				}
+
 				onEvent <- struct{}{}
+				close(onEvent)
 			}
 		}
 

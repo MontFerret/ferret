@@ -202,6 +202,10 @@ func (p *HTMLPage) WaitForNavigation(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
 
+func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocument, _ values.String) error {
+	return core.ErrNotSupported
+}
+
 func (p *HTMLPage) Navigate(_ context.Context, _ values.String) error {
 	return core.ErrNotSupported
 }
