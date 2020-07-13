@@ -542,18 +542,31 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 		return errors.New("invalid frame type")
 	}
 
-	// if it's the current document
-	if current.Frame().Frame.ID == doc.Frame().Frame.ID {
-		return p.WaitForNavigation(ctx, targetURL)
-	}
-
 	pattern, err := p.urlToRegexp(targetURL)
 
 	if err != nil {
 		return err
 	}
 
-	return p.network.WaitForFrameNavigation(ctx, doc.Frame().Frame.ID, pattern)
+	frameID := doc.Frame().Frame.ID
+	isMain := current.Frame().Frame.ID == frameID
+
+	// if it's the current document
+	if isMain {
+		err = p.network.WaitForNavigation(ctx, pattern)
+	} else {
+		err = p.network.WaitForFrameNavigation(ctx, frameID, pattern)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	//if isMain {
+	//
+	//}
+
+	return p.reloadMainFrame(ctx)
 }
 
 func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {

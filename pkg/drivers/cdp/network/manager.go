@@ -3,16 +3,17 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"io"
-	"regexp"
-	"sync"
-
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"io"
+	"regexp"
+	"sync"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
@@ -342,17 +343,26 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 		if matched {
 			if ctx.Err() == nil {
-				onContentReady, err := m.client.Page.DOMContentEventFired(ctx)
+				ec, err := eval.NewExecutionContextFrom(ctx, m.client, repl.Frame)
 
 				if err != nil {
+					close(onEvent)
 					return false
 				}
 
-				_, err = onContentReady.Recv()
+				_, err = events.NewEvalWaitTask(
+					ec,
+					templates.DOMReady(),
+					events.DefaultPolling,
+				).Run(ctx)
+
+				if err != nil {
+					close(onEvent)
+					return false
+				}
 
 				onEvent <- struct{}{}
 				close(onEvent)
-				onContentReady.Close()
 			}
 		}
 

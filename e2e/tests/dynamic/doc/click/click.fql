@@ -1,0 +1,8 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET page = DOCUMENT(url, { driver: "cdp" })
+
+CLICK(page, "#wait-class-random-btn")
+
+WAIT_CLASS(page, "#wait-class-random-content", "alert-success")
+
+RETURN ""

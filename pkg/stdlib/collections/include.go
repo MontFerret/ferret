@@ -29,7 +29,7 @@ func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 		break
 	case *values.Array:
-		_, result = v.Find(func(value core.Value, _ int) bool {
+		_, result = v.FindOne(func(value core.Value, _ int) bool {
 			return needle.Compare(value) == 0
 		})
 

@@ -345,7 +345,7 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 	node, execID, err := resolveFrame(ctx, m.client, frameID)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to resolve frame node")
+		return nil, errors.Wrapf(err, "failed to resolve frame node: %s", frameID)
 	}
 
 	doc, err := LoadHTMLDocument(

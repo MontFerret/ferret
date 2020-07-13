@@ -136,7 +136,19 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 	}
 }
 
-func (t *Array) Find(predicate ArrayPredicate) (core.Value, Boolean) {
+func (t *Array) Find(predicate ArrayPredicate) (*Array, Boolean) {
+	result := NewArray(len(t.items))
+
+	for idx, val := range t.items {
+		if predicate(val, idx) {
+			result.Push(val)
+		}
+	}
+
+	return result, result.Length() > 0
+}
+
+func (t *Array) FindOne(predicate ArrayPredicate) (core.Value, Boolean) {
 	for idx, val := range t.items {
 		if predicate(val, idx) {
 			return val, True
