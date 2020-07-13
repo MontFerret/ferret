@@ -7,6 +7,7 @@ func RegisterLib(ns core.Namespace) error {
 		core.NewFunctionsFromMap(map[string]core.Function{
 			"NOW":                Now,
 			"DATE":               Date,
+			"DATE_COMPARE":       DateCompare,
 			"DATE_DAYOFWEEK":     DateDayOfWeek,
 			"DATE_YEAR":          DateYear,
 			"DATE_MONTH":         DateMonth,

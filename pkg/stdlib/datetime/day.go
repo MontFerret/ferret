@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateDay returns the day of date as a number.
+// DATE_DAY returns the day of date as a number.
 // @params date (DateTime) - source DateTime.
 // @return (Int) - a day number.
 func DateDay(_ context.Context, args ...core.Value) (core.Value, error) {

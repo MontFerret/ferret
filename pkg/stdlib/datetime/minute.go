@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateMinute returns the minute of date as a number.
+// DATE_MINUTE returns the minute of date as a number.
 // @params date (DateTime) - source DateTime.
 // @return (Int) - a minute number.
 func DateMinute(_ context.Context, args ...core.Value) (core.Value, error) {
