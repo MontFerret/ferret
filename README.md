@@ -74,11 +74,7 @@ After some time looking for a tool that would let me to not write a code, but ju
 
 ## Inspiration
 FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
-But due to the domain specifics, there are some differences in how things work.     
-
-## WIP
-Be aware, that the project is under heavy development. There is no documentation and some things may change in the final release.    
-For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
+But due to the domain specifics, there are some differences in syntax and how things work.     
 
 
 ## Installation
