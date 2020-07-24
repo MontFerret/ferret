@@ -3,12 +3,13 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"io/ioutil"
 	"os"
 	"os/signal"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 func ExecFile(pathToFile string, opts Options) {
@@ -29,8 +30,8 @@ func Exec(query string, opts Options) {
 	prog, err := ferret.Compile(query)
 
 	if err != nil {
-		fmt.Println("Failed to compile the query")
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, "Failed to compile the query")
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 		return
 	}
@@ -70,8 +71,8 @@ func Exec(query string, opts Options) {
 	}
 
 	if err != nil {
-		fmt.Println("Failed to execute the query")
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, "Failed to execute the query")
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 		return
 	}
