@@ -10,7 +10,6 @@ head
     : useExpression
     ;
 
-// TODO: add useAs expession
 useExpression
     : use
     ;

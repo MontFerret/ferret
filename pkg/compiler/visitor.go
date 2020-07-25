@@ -278,6 +278,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 		ds, err = expressions.NewForWhileIterableExpression(
 			v.getSourceMap(whileExpCtx),
+			collections.WhileModePost,
 			valVarName,
 			conditionExp,
 		)

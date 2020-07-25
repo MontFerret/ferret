@@ -9,14 +9,14 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestWhileIterator(t *testing.T) {
+func TestDoWhileIterator(t *testing.T) {
 	Convey("Should iterate while a predicate returns true", t, func() {
 		predicateCounter := 0
 		iterationCounter := 0
 		expectedCount := 10
 
-		iterator, err := collections.NewDefaultWhileIterator(collections.WhileModePost, func(ctx context.Context, scope *core.Scope) (bool, error) {
-			if predicateCounter == expectedCount {
+		iterator, err := collections.NewDefaultWhileIterator(collections.WhileModePre, func(ctx context.Context, scope *core.Scope) (bool, error) {
+			if predicateCounter == (expectedCount - 1) {
 				return false, nil
 			}
 
@@ -39,11 +39,11 @@ func TestWhileIterator(t *testing.T) {
 		So(iterationCounter, ShouldEqual, expectedCount)
 	})
 
-	Convey("Should not iterate if a predicate returns false", t, func() {
+	Convey("Should iterate once if a predicate returns false", t, func() {
 		iterationCounter := 0
-		expectedCount := 0
+		expectedCount := 1
 
-		iterator, err := collections.NewDefaultWhileIterator(collections.WhileModePost, func(ctx context.Context, scope *core.Scope) (bool, error) {
+		iterator, err := collections.NewDefaultWhileIterator(collections.WhileModePre, func(ctx context.Context, scope *core.Scope) (bool, error) {
 			return false, nil
 		})
 

@@ -10,12 +10,14 @@ import (
 
 type ForWhileIterableExpression struct {
 	src         core.SourceMap
-	valVariable string
+	mode        collections.WhileMode
 	condition   core.Expression
+	valVariable string
 }
 
 func NewForWhileIterableExpression(
 	src core.SourceMap,
+	mode collections.WhileMode,
 	valVariable string,
 	condition core.Expression,
 ) (collections.Iterable, error) {
@@ -25,13 +27,14 @@ func NewForWhileIterableExpression(
 
 	return &ForWhileIterableExpression{
 		src:         src,
+		mode:        mode,
 		valVariable: valVariable,
 		condition:   condition,
 	}, nil
 }
 
 func (iterable *ForWhileIterableExpression) Iterate(_ context.Context, _ *core.Scope) (collections.Iterator, error) {
-	return collections.NewWhileIterator(iterable.valVariable, func(ctx context.Context, scope *core.Scope) (bool, error) {
+	return collections.NewWhileIterator(iterable.mode, iterable.valVariable, func(ctx context.Context, scope *core.Scope) (bool, error) {
 		res, err := iterable.condition.Exec(ctx, scope)
 
 		if err != nil {

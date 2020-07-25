@@ -8,16 +8,25 @@ import (
 )
 
 type (
+	WhileMode int
+
 	WhilePredicate func(ctx context.Context, scope *core.Scope) (bool, error)
 
 	WhileIterator struct {
-		valVar    string
+		mode      WhileMode
 		predicate WhilePredicate
+		valVar    string
 		pos       int
 	}
 )
 
+var (
+	WhileModePost WhileMode = 0
+	WhileModePre  WhileMode = 1
+)
+
 func NewWhileIterator(
+	mode WhileMode,
 	valVar string,
 	predicate WhilePredicate,
 ) (Iterator, error) {
@@ -29,33 +38,37 @@ func NewWhileIterator(
 		return nil, core.Error(core.ErrMissedArgument, "predicate")
 	}
 
-	return &WhileIterator{valVar, predicate, 0}, nil
+	return &WhileIterator{mode, predicate, valVar, 0}, nil
 }
 
-func NewDefaultWhileIterator(predicate WhilePredicate) (Iterator, error) {
-	return NewWhileIterator(DefaultValueVar, predicate)
+func NewDefaultWhileIterator(mode WhileMode, predicate WhilePredicate) (Iterator, error) {
+	return NewWhileIterator(mode, DefaultValueVar, predicate)
 }
 
 func (iterator *WhileIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
-	doNext, err := iterator.predicate(ctx, scope)
+	counter := values.NewInt(iterator.pos)
 
-	if err != nil {
-		return nil, err
-	}
+	// if it's Post conditional execution, step in always
+	// Otherwise, it's not the first iteration
+	if iterator.mode == WhileModePost || counter > 1 {
+		doNext, err := iterator.predicate(ctx, scope)
 
-	if doNext {
-		counter := values.NewInt(iterator.pos)
-
-		iterator.pos++
-
-		nextScope := scope.Fork()
-
-		if err := nextScope.SetVariable(iterator.valVar, counter); err != nil {
+		if err != nil {
 			return nil, err
 		}
 
-		return nextScope, nil
+		if !doNext {
+			return nil, core.ErrNoMoreData
+		}
 	}
 
-	return nil, core.ErrNoMoreData
+	iterator.pos++
+
+	nextScope := scope.Fork()
+
+	if err := nextScope.SetVariable(iterator.valVar, counter); err != nil {
+		return nil, err
+	}
+
+	return nextScope, nil
 }
