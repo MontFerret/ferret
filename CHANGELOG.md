@@ -1,8 +1,21 @@
 ## Changelog
 
+### 0.12.0
+#### Added
+- iframe navigation handling [#535](https://github.com/MontFerret/ferret/pull/535)
+- Assertion library [#526](https://github.com/MontFerret/ferret/pull/526)
+
+#### Changed
+- Removed property caching and tracking [#531](https://github.com/MontFerret/ferret/pull/531)
+- Updated dependencies [#528](https://github.com/MontFerret/ferret/pull/528), [#525](https://github.com/MontFerret/ferret/pull/525)
+
+#### Fixed
+- ``WAIT`` does not respect cancellation signal [#524](https://github.com/MontFerret/ferret/pull/524)
+- Missed ``DATE_COMPARE`` [#537](https://github.com/MontFerret/ferret/pull/537)
+- Spelling [#534](https://github.com/MontFerret/ferret/pull/534)
+
 ### 0.11.1
 #### Fixed
-
 - Fixed use of unquoted scroll options [#521](https://github.com/MontFerret/ferret/pull/521)
 - Upgraded ANTLR version [#517](https://github.com/MontFerret/ferret/pull/517)
 
