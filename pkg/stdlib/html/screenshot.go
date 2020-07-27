@@ -19,7 +19,7 @@ import (
 // 		height (Float|Int) - Optional, Height of the viewport.
 // 		format (String) - Optional, Either "jpeg" or "png".
 // 		quality (Int) - Optional, Quality, in [0, 100], only for jpeg format.
-// @returns data (Binary) - Returns a base64 encoded string in binary format.
+// @return (Binary) - Screenshot in binary format.
 func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

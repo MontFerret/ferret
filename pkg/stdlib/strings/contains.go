@@ -8,12 +8,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Contains returns a value indicating whether a specified substring occurs within a string.
+// CONTAINS returns a value indicating whether a specified substring occurs within a string.
 // @param src (String) - The source string.
 // @param search (String) - The string to seek.
-// @param returnIndex (Boolean) - Values which indicates whether to return the character position of the match is returned instead of a boolean.
-// The default is false.
-// @returns (Boolean|Int)
+// @param returnIndex (Boolean, optional) - Values which indicates whether to return the character position of the match is returned instead of a boolean.  The default is false.
+// @return (Boolean | Int) - A value indicating whether a specified substring occurs within a string.
 func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

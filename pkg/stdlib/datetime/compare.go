@@ -9,12 +9,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DATE_COMPARE check if two partial dates match.
-// @params date1, date2 (DateTime) - comparable dates.
-// @params unitRangeStart (String) - unit to start from.
-// @params unitRangeEnd (String, Optional) - unit to end with.
-// Error will be returned if unitRangeStart unit less that unitRangeEnd.
-// @return (Boolean) - true if the dates match, else false.
+// DateCompare checks if two partial dates match.
+// @param date1, date2 (DateTime) - Comparable dates.
+// @param unitRangeStart (String) - Unit to start from.
+// @param unitRangeEnd (String, optional) - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
+// @return (Boolean) - True if the dates match, else false.
 func DateCompare(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 	if err != nil {

@@ -9,8 +9,8 @@ import (
 )
 
 // Int asserts that value is a int type.
-// @params actual (Mixed) - Actual value.
-// @params message (String, optional) - Message to display on error.
+// @param actual (Value) - Actual value.
+// @param message (String, optional) - Message to display on error.
 var Int = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be int"

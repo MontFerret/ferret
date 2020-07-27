@@ -9,9 +9,9 @@ import (
 )
 
 // Includes checks whether a container includes a given value.
-// @param text (String|Array|Object|Iterable) - The value container.
-// @param text (Mixed) - The target value to assert.
-// @returns (Boolean) - Returns a boolean value that indicates whether a container contains a given value.
+// @param text (String | Array | Object | Iterable) - The value container.
+// @param text (Value) - The target value to assert.
+// @return (Boolean) - A boolean value that indicates whether a container contains a given value.
 func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

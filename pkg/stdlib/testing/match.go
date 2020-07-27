@@ -10,9 +10,9 @@ import (
 )
 
 // Match asserts that value matches the regular expression.
-// @params actual (Mixed) - Actual value.
-// @params expression (Mixed) - Regular expression.
-// @params message (String, optional) - Message to display on error.
+// @param actual (Value) - Actual value.
+// @param expression (Value) - Regular expression.
+// @param message (String, optional) - Message to display on error.
 var Match = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "match regular expression"

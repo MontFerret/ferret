@@ -10,8 +10,8 @@ import (
 )
 
 // True asserts that value is true.
-// @params actual (Mixed) - Value to test.
-// @params message (String, optional) - Message to display on error.
+// @param actual (Value) - Value to test.
+// @param message (String, optional) - Message to display on error.
 var True = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s", base.FormatValue(values.True))

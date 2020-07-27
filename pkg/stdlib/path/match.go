@@ -9,10 +9,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Match reports whether name matches the pattern.
+// MATCH reports whether name matches the pattern.
 // @param pattern (String) - The pattern.
 // @param name (String) - The name.
-// @returns (Boolean) - True if the name matches the pattern.
+// @return (Boolean) - True if the name matches the pattern.
 func Match(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsBool checks whether value is a boolean value.
+// IS_BOOL checks whether value is a boolean value.
 // @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is boolean, otherwise false.
+// @return (Boolean) - Returns true if value is boolean, otherwise false.
 func IsBool(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

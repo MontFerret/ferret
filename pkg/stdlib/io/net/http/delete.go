@@ -8,10 +8,11 @@ import (
 )
 
 // DELETE makes a HTTP DELETE request.
-// @params params (Object) - request parameters.
+// @param params (Object) - Request parameters.
 //    * url (String) - Target url
 //    * body (Binary) - POST data
 //    * headers (Object) optional - HTTP headers
+// @return (Binary) - Response in binary format
 func DELETE(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return execMethod(ctx, h.MethodDelete, args)
 }

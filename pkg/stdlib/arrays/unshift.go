@@ -10,10 +10,9 @@ import (
 
 // Unshift prepends value to a given array.
 // @param array (Array) - Target array.
-// @param value (Read) - Target value to prepend.
-// @param unique (Boolean, optional) - Optional value indicating whether a value must be unique to be prepended.
-// Default is false.
-// @returns (Array) - New array with prepended value.
+// @param value (Value) - Target value to prepend.
+// @param unique (Boolean, optional) - Optional value indicating whether a value must be unique to be prepended. Default is false.
+// @return (Array) - New array with prepended value.
 func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

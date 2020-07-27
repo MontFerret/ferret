@@ -10,10 +10,10 @@ import (
 
 // Nth returns the element of an array at a given position.
 // It is the same as anyArray[position] for positive positions, but does not support negative positions.
+// If position is negative or beyond the upper bound of the array, then NONE will be returned.
 // @param array (Array) - An array with elements of arbitrary type.
 // @param index (Int) - Position of desired element in array, positions start at 0.
-// @returns (Read) - The array element at the given position.
-// If position is negative or beyond the upper bound of the array, then NONE will be returned.
+// @return (Value) - The array element at the given position.
 func Nth(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

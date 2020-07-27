@@ -24,9 +24,9 @@ var daysCount = map[time.Month]int{
 	time.December:  31,
 }
 
-// DATE_DAYS_IN_MONTH returns the number of days in the month of date.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - number of the days.
+// DateDaysInMonth returns the number of days in the month of date.
+// @param date (DateTime) - Source DateTime.
+// @return (Int) - Number of the days.
 func DateDaysInMonth(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

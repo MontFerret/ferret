@@ -10,7 +10,7 @@ import (
 )
 
 // CLICK dispatches click event on a given element
-// @param source (Open | GetElement) - Event source.
+// @param parent (HTMLPage | HTMLDocument | HTMLElement) - Parent document or element.
 // @param selectorOrCount (String | Int, optional) - Optional selector or count of clicks.
 // @param count (Int, optional) - Optional count of clicks.
 func Click(ctx context.Context, args ...core.Value) (core.Value, error) {

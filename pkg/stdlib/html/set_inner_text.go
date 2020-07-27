@@ -10,7 +10,7 @@ import (
 )
 
 // INNER_TEXT_SET sets inner text string to a given or matched by CSS selector element
-// @param doc (Open|GetElement) - Parent document or element.
+// @param parent (HTMLPage | HTMLDocument | HTMLElement) - Parent document or element.
 // @param selector (String, optional) - String of CSS selector.
 // @param innerText (String) - String of inner text.
 func SetInnerText(ctx context.Context, args ...core.Value) (core.Value, error) {

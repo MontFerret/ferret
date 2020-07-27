@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsString checks whether value is a string value.
+// IS_STRING checks whether value is a string value.
 // @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is string, otherwise false.
+// @return (Boolean) - Returns true if value is string, otherwise false.
 func IsString(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

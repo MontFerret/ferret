@@ -13,7 +13,7 @@ import (
 // @param doc (HTMLDocument) - HTML document.
 // @param x (Int|Float) - X coordinate.
 // @param y (Int|Float) - Y coordinate.
-// @param options (ScrollOptions) - Scroll options. Optional.
+// @param options (ScrollOptions, optional) - Scroll options.
 func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 

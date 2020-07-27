@@ -11,7 +11,7 @@ import (
 // XPATH evaluates the XPath expression.
 // @param source (HTMLPage | HTMLDocument | HTMLElement) - Target HTML object.
 // @param expression (String) - XPath expression.
-// @returns (Value) - Returns result of a given XPath expression.
+// @return (Value) - Returns result of a given XPath expression.
 func XPath(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

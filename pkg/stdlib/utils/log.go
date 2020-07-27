@@ -8,7 +8,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Print writes messages into the system log.
+// PRINT writes messages into the system log.
+// @param message (Value, repeated) - Print message.
 func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 

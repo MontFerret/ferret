@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// RegexMatch returns the matches in the given string text, using the regex.
+// REGEX_MATCH returns the matches in the given string text, using the regex.
 // @param text (String) - The string to search in.
 // @param regex (String) - A regular expression to use for matching the text.
 // @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
@@ -50,7 +50,7 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-// RegexSplit splits the given string text into a list of strings, using the separator.
+// REGEX_SPLIT splits the given string text into a list of strings, using the separator.
 // @param text (String) - The string to split.
 // @param regex (String) - A regular expression to use for splitting the text.
 // @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
@@ -93,10 +93,10 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-// RegexTest test whether the regexp has at least one match in the given text.
+// REGEX_TEST test whether the regexp has at least one match in the given text.
 // @param text (String) - The string to test.
 // @param regex (String) - A regular expression to use for splitting the text.
-// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
+// @param caseInsensitive (Boolean, optional) - If set to true, the matching will be case-insensitive. The default is false.
 // @return (Boolean) - Returns true if the pattern is contained in text, and false otherwise.
 func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
@@ -125,11 +125,11 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewBoolean(matches), nil
 }
 
-// RegexReplace replace every substring matched with the regexp with a given string.
+// REGEX_REPLACE replace every substring matched with the regexp with a given string.
 // @param text (String) - The string to split.
 // @param regex (String) - A regular expression search pattern.
 // @param replacement (String) - The string to replace the search pattern with
-// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
+// @param caseInsensitive (Boolean, optional) - If set to true, the matching will be case-insensitive. The default is false.
 // @return (String) - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
 func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)

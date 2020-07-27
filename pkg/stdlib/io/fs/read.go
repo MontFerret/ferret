@@ -10,8 +10,8 @@ import (
 )
 
 // Read reads from a given file.
-// @params path (String) - path to file to read from.
-// @returns data (Binary) - the read file in binary format.
+// @param path (String) - Path to file to read from.
+// @return (Binary) - File content in binary format.
 func Read(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -12,7 +12,7 @@ import (
 // The function will use the default comparison order for FQL value types.
 // Additionally, the values in the result array will be made unique
 // @param array (Array) - Target array.
-// @returns (Array) - Sorted array.
+// @return (Array) - Sorted array.
 func SortedUnique(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

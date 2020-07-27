@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// IsHTMLElement checks whether value is a HTMLElement value.
+// IS_HTML_ELEMENT checks whether value is a HTMLElement value.
 // @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is HTMLElement, otherwise false.
+// @return (Boolean) - Returns true if value is HTMLElement, otherwise false.
 func IsHTMLElement(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

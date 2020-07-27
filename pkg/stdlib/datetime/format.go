@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DATE_FORMAT format date according to the given format string.
-// @params date (DateTime) - source DateTime object.
-// @return (String) - formatted date.
+// DateFormat format date according to the given format string.
+// @param date (DateTime) - Source DateTime object.
+// @return (String) - Formatted date.
 func DateFormat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 	if err != nil {

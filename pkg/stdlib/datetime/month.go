@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DATE_MONTH returns the month of date as a number.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - a month number.
+// DateMonth returns the month of date as a number.
+// @param date (DateTime) - Source DateTime.
+// @return (Int) - A month number.
 func DateMonth(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

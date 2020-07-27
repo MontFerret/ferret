@@ -10,8 +10,9 @@ import (
 
 // Position returns a value indicating whether an element is contained in array. Optionally returns its position.
 // @param array (Array) - The source array.
-// @param value (Read) - The target value.
-// @param returnIndex (Boolean, optional) - Read which indicates whether to return item's position.
+// @param value (Value) - The target value.
+// @param (Boolean, optional) - Read which indicates whether to return item's position.
+// @return (Boolean | Int) - A value indicating whether an element is contained in array.
 func Position(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

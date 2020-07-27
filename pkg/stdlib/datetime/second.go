@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DATE_SECOND returns the second of date as a number.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - a second number.
+// DateSecond returns the second of date as a number.
+// @param date (DateTime) - Source DateTime.
+// @return (Int) - A second number.
 func DateSecond(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

@@ -9,13 +9,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// FindFirst returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
+// FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
 // @param src (String) - The source string.
 // @param search (String) - The string to seek.
 // @param start (Int, optional) - Limit the search to a subset of the text, beginning at start.
 // @param end (Int, optional) - Limit the search to a subset of the text, ending at end
-// @returns (Int) - The character position of the match.
-// If search is not contained in text, -1 is returned. If search is empty, start is returned.
+// @return (Int) - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
@@ -56,13 +55,12 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewInt(found), nil
 }
 
-// FindLast returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
+// FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
 // @param src (String) - The source string.
 // @param search (String) - The string to seek.
 // @param start (Int, optional) - Limit the search to a subset of the text, beginning at start.
 // @param end (Int, optional) - Limit the search to a subset of the text, ending at end
-// @returns (Int) - The character position of the match.
-// If search is not contained in text, -1 is returned. If search is empty, start is returned.
+// @return (Int) - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

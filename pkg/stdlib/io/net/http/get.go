@@ -10,9 +10,10 @@ import (
 )
 
 // GET makes a HTTP GET request.
-// @params url or  (String) - target url or parameters.
+// @param urlOrParam (String) - Target url or parameters.
 //    * url (String) - Target url
 //    * headers (Object) optional - HTTP headers
+// @return (Binary) - Response in binary format
 func GET(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
 		return values.None, err

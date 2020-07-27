@@ -10,7 +10,7 @@ import (
 
 // First returns a first element from a given array.
 // @param arr (Array) - Target array.
-// @returns element (Read) - First element in a given array.
+// @return (Value) - First element in a given array.
 func First(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

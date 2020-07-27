@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DATE_QUARTER returns which quarter date belongs to.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - a quarter number.
+// DateQuarter returns which quarter date belongs to.
+// @param date (DateTime) - Source DateTime.
+// @return (Int) - A quarter number.
 func DateQuarter(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

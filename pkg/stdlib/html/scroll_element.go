@@ -14,7 +14,7 @@ import (
 // SCROLL_ELEMENT scrolls an element on.
 // @param docOrEl (HTMLDocument|HTMLElement) - Target document or element.
 // @param selector (String) - If document is passed, this param must represent an element selector.
-// @param options (ScrollOptions) - Scroll options. Optional.
+// @param options (ScrollOptions, optional) - Scroll options.
 func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 

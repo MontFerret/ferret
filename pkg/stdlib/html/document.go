@@ -29,7 +29,7 @@ type PageLoadParams struct {
 //      cookies (HTTPCookies) - Optional, set of HTTP cookies.
 //      headers (HTTPHeaders) - Optional, HTTP headers.
 //      viewport (Viewport) - Optional, viewport params.
-// @returns (HTMLPage) - Returns loaded HTML page.
+// @return (HTMLPage) - Loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

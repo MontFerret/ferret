@@ -9,7 +9,7 @@ import (
 )
 
 // FOCUS Sets focus on the element.
-// @param target (HTMLPage | HTMLDocument | HTMLElement) - Target node.
+// @param parent (HTMLPage | HTMLDocument | HTMLElement) - Parent document or element.
 // @param selector (String, optional) - Optional CSS selector.
 func Focus(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)

@@ -10,7 +10,7 @@ import (
 
 // Shift returns a new array without the first element.
 // @param array (Array) - Target array.
-// @returns (Array) - Copy of an array without the first element.
+// @return (Array) - Copy of an array without the first element.
 func Shift(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Like checks whether the pattern search is contained in the string text, using wildcard matching.
+// LIKE checks whether the pattern search is contained in the string text, using wildcard matching.
 // @param text (String) - The string to search in.
 // @param search (String) - A search pattern that can contain the wildcard characters.
 // @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.

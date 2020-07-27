@@ -9,9 +9,9 @@ import (
 )
 
 // Minus return the difference of all arrays specified.
-// @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
-// @returns array (Array) - An array of values that occur in the first array, but not in any of the subsequent arrays.
 // The order of the result array is undefined and should not be relied on. Duplicates will be removed.
+// @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
+// @return (Array) - An array of values that occur in the first array, but not in any of the subsequent arrays.
 func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

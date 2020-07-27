@@ -12,7 +12,7 @@ import (
 // @param array (Array) - Source array.
 // @param start (Int) - Start position of extraction.
 // @param length (Int, optional) - Read indicating how many elements to extract.
-// @returns (Array) - Sliced array.
+// @return (Array) - Sliced array.
 func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

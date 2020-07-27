@@ -11,9 +11,9 @@ import (
 
 // ELEMENT finds an element by a given CSS selector.
 // Returns NONE if element not found.
-// @param docOrEl (HTMLDocument|HTMLElement) - Parent document or element.
+// @param parent (HTMLPage | HTMLDocument | HTMLElement) - Parent document or element.
 // @param selector (String) - CSS selector.
-// @returns (HTMLElement | None) - Returns an HTMLElement if found, otherwise NONE.
+// @return (HTMLElement | None) - An HTMLElement if found, otherwise NONE.
 func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 

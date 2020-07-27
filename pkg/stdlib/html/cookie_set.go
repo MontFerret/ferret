@@ -10,7 +10,7 @@ import (
 
 // COOKIE_SET sets cookies to a given page
 // @param page (HTMLPage) - Target page.
-// @param cookie... (HTTPCookie) - Target cookies.
+// @param cookie (HTTPCookie, repeated) - Target cookies.
 func CookieSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

@@ -10,8 +10,8 @@ import (
 )
 
 // Empty asserts that the target does not contain any values.
-// @params actual (Measurable|Binary|Object|Array|String) - Value to test.
-// @params message (String, optional) - Message to display on error.
+// @param actual (Measurable|Binary|Object|Array|String) - Value to test.
+// @param message (String, optional) - Message to display on error.
 var Empty = base.Assertion{
 	DefaultMessage: func(_ []core.Value) string {
 		return "be empty"

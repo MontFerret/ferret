@@ -11,7 +11,7 @@ import (
 
 // STYLE_REMOVE removes single or more style attribute value(s) of a given element.
 // @param el (HTMLElement) - Target element.
-// @param names (...String) - Style name(s).
+// @param names (String, repeated) - Style name(s).
 func StyleRemove(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

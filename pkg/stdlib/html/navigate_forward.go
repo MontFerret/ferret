@@ -15,7 +15,7 @@ import (
 // @param page (HTMLPage) - Target page.
 // @param entry (Int, optional) - Optional value indicating how many pages to skip. Default 1.
 // @param timeout (Int, optional) - Optional timeout. Default is 5000.
-// @returns (Boolean) - Returns TRUE if history exists and the operation succeeded, otherwise FALSE.
+// @return (Boolean) - True if history exists and the operation succeeded, otherwise false.
 func NavigateForward(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 
