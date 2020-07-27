@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Slice returns a new sliced array.
+// SLICE returns a new sliced array.
 // @param array (Array) - Source array.
 // @param start (Int) - Start position of extraction.
 // @param length (Int, optional) - Read indicating how many elements to extract.

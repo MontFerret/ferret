@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Unshift prepends value to a given array.
+// UNSHIFT prepends value to a given array.
 // @param array (Array) - Target array.
 // @param value (Value) - Target value to prepend.
 // @param unique (Boolean, optional) - Optional value indicating whether a value must be unique to be prepended. Default is false.

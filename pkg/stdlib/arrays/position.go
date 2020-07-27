@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Position returns a value indicating whether an element is contained in array. Optionally returns its position.
+// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
 // @param array (Array) - The source array.
 // @param value (Value) - The target value.
 // @param (Boolean, optional) - Read which indicates whether to return item's position.

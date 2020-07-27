@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Read reads from a given file.
+// READ reads from a given file.
 // @param path (String) - Path to file to read from.
 // @return (Binary) - File content in binary format.
 func Read(_ context.Context, args ...core.Value) (core.Value, error) {

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DateCompare checks if two partial dates match.
+// DATE_COMPARE checks if two partial dates match.
 // @param date1, date2 (DateTime) - Comparable dates.
 // @param unitRangeStart (String) - Unit to start from.
 // @param unitRangeEnd (String, optional) - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.

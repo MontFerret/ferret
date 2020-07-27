@@ -14,7 +14,7 @@ var (
 	emptyString   values.String
 )
 
-// DateAdd adds amount given in unit to date.
+// DATE_ADD adds amount given in unit to date.
 // The following units are available:
 // * y, year, year
 // * m, month, months

@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Unique returns all unique elements from a given array.
+// UNIQUE returns all unique elements from a given array.
 // @param array (Array) - Target array.
 // @return (Array) - New array without duplicates.
 func Unique(_ context.Context, args ...core.Value) (core.Value, error) {

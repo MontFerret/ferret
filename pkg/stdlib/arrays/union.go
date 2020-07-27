@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Union returns the union of all passed arrays.
+// UNION returns the union of all passed arrays.
 // @param arrays (Array, repeated) - List of arrays to combine.
 // @return (Array) - All array elements combined in a single array, in any order.
 func Union(_ context.Context, args ...core.Value) (core.Value, error) {

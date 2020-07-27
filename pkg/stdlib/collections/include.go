@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Includes checks whether a container includes a given value.
+// INCLUDES checks whether a container includes a given value.
 // @param text (String | Array | Object | Iterable) - The value container.
 // @param text (Value) - The target value to assert.
 // @return (Boolean) - A boolean value that indicates whether a container contains a given value.

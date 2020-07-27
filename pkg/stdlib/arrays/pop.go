@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Pop returns a new array without last element.
+// POP returns a new array without last element.
 // @param array (Array) - Target array.
 // @return (Array) - Copy of an array without last element.
 func Pop(_ context.Context, args ...core.Value) (core.Value, error) {

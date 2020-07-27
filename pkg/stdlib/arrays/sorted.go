@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Sorted sorts all elements in anyArray.
+// SORTED sorts all elements in anyArray.
 // The function will use the default comparison order for FQL value types.
 // @param array (Array) - Target array.
 // @return (Array) - Sorted array.

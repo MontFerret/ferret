@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Last returns the last element of an array.
+// LAST returns the last element of an array.
 // @param array (Array) - The target array.
 // @return (Value) - Last element of an array.
 func Last(_ context.Context, args ...core.Value) (core.Value, error) {

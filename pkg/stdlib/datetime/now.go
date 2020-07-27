@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-// Now returns new DateTime object with Time equal to time.Now().
+// NOW returns new DateTime object with Time equal to time.Now().
 // @return (DateTime) - New DateTime object.
 func Now(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 0, 0)

@@ -41,7 +41,7 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-// CONCAT_SEPARATOR concatenates one or more instances of Read, or an Array with a given separator.
+// CONCAT_SEPARATOR concatenates one or more instances of String, or an Array with a given separator.
 // @param separator (String) - The separator string.
 // @param src (String, repeated | Array<String>) - The source string / array.
 // @return (String) - Concatenated string.

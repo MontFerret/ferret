@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Date converts RFC3339 date time string to DateTime object.
+// DATE converts RFC3339 date time string to DateTime object.
 // @param timeString (String) - String in RFC3339 format.
 // @return (DateTime) - New DateTime object derived from timeString.
 func Date(_ context.Context, args ...core.Value) (core.Value, error) {

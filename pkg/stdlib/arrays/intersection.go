@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Intersection return the intersection of all arrays specified.
+// INTERSECTION return the intersection of all arrays specified.
 // The result is an array of values that occur in all arguments.
 // The element order is random. Duplicates are removed.
 // @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).

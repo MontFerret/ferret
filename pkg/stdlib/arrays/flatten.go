@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Flatten turns an array of arrays into a flat array.
+// FLATTEN turns an array of arrays into a flat array.
 // All array elements in array will be expanded in the result array.
 // Non-array elements are added as they are.
 // The function will recurse into sub-arrays up to the specified depth.

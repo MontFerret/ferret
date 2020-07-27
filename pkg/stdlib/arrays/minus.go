@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Minus return the difference of all arrays specified.
+// MINUS return the difference of all arrays specified.
 // The order of the result array is undefined and should not be relied on. Duplicates will be removed.
 // @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
 // @return (Array) - An array of values that occur in the first array, but not in any of the subsequent arrays.

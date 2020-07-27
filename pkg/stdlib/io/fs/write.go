@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Write writes the given data into the file.
+// WRITE writes the given data into the file.
 // @param path (String) - File path to write into.
 // @param data (Binary) - Data to write.
 // @param params (Object, optional) - additional parameters:

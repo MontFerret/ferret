@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateDayOfWeek returns number of the weekday from the date. Sunday is the 0th day of week.
+// DATE_DAYOFWEEK returns number of the weekday from the date. Sunday is the 0th day of week.
 // @param date (DateTime) - Source DateTime.
 // @return (Int) - Number of the weekday.
 func DateDayOfWeek(_ context.Context, args ...core.Value) (core.Value, error) {

@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Push create a new array with appended value.
+// PUSH create a new array with appended value.
 // @param array (Array) - Source array.
 // @param value (Value) - Target value.
 // @param unique (Boolean, optional) - Read indicating whether to do uniqueness check.

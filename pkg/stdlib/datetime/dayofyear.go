@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DateDayOfYear returns the day of year number of date.
+// DATE_DAYOFYEAR returns the day of year number of date.
 // The return value range from 1 to 365 (366 in a leap year).
 // @param date (DateTime) - Source DateTime.
 // @return (Int) - A day of year number.

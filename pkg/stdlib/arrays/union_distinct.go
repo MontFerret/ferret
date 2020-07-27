@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// UnionDistinct returns the union of all passed arrays with unique values.
+// UNION_DISTINCT returns the union of all passed arrays with unique values.
 // @param arrays (Array, repeated) - List of arrays to combine.
 // @return (Array) - All unique array elements combined in a single array, in any order.
 func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
