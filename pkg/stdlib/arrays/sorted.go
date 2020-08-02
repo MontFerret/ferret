@@ -10,8 +10,8 @@ import (
 
 // SORTED sorts all elements in anyArray.
 // The function will use the default comparison order for FQL value types.
-// @param array (Array) - Target array.
-// @return (Array) - Sorted array.
+// @param {Array} array - Target array.
+// @return {Array} - Sorted array.
 func Sorted(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

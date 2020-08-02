@@ -9,7 +9,7 @@ import (
 )
 
 // WAIT pauses the execution for a given period.
-// @param timeout (Float | Int) - Number value which indicates for how long to stop an execution.
+// @param {Int | Float} timeout - Number value which indicates for how long to stop an execution.
 func Wait(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

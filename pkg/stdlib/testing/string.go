@@ -9,8 +9,8 @@ import (
 )
 
 // String asserts that value is a string type.
-// @param actual (Value) - Value to test.
-// @param message (String, optional) - Message to display on error.
+// @param actual {Value} - Value to test.
+// @param message {String, optional} - Message to display on error.
 var String = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be string"

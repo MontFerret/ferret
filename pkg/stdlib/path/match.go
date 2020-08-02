@@ -10,9 +10,9 @@ import (
 )
 
 // MATCH reports whether name matches the pattern.
-// @param pattern (String) - The pattern.
-// @param name (String) - The name.
-// @return (Boolean) - True if the name matches the pattern.
+// @param {String} pattern - The pattern.
+// @param {String} name - The name.
+// @return {Boolean} - True if the name matches the pattern.
 func Match(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

@@ -9,9 +9,9 @@ import (
 )
 
 // REMOVE_VALUES returns a new array with removed all occurrences of values in a given array.
-// @param array (Array) - Source array.
-// @param values (Array) - Target values.
-// @return (Array) - A new array with removed all occurrences of values in a given array.
+// @param {Array} array - Source array.
+// @param {Array} values - Target values.
+// @return {Array} - A new array with removed all occurrences of values in a given array.
 func RemoveValues(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

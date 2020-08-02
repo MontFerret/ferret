@@ -9,8 +9,8 @@ import (
 )
 
 // IS_OBJECT checks whether value is an object value.
-// @param value (Value) - Input value of arbitrary type.
-// @return (Boolean) - Returns true if value is object, otherwise false.
+// @param {Value} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is object, otherwise false.
 func IsObject(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

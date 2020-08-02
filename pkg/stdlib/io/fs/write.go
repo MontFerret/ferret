@@ -11,14 +11,13 @@ import (
 )
 
 // WRITE writes the given data into the file.
-// @param path (String) - File path to write into.
-// @param data (Binary) - Data to write.
-// @param params (Object, optional) - additional parameters:
-//   * mode (String):
-//     * x - Exclusive: returns an error if the file exist. It can be
-//     combined with other modes
-//     * a - Append: will create a file if the specified file does not exist
-//     * w - Write (Default): will create a file if the specified file does not exist
+// @param {String} path - File path to write into.
+// @param {Binary} data - Data to write.
+// @param {Object, optional} params - additional parameters:
+// @param {String, optional} params.mode - Write mode.
+// * x - Exclusive: returns an error if the file exist. It can be combined with other modes
+// * a - Append: will create a file if the specified file does not exist
+// * w - Write (Default): will create a file if the specified file does not exist
 func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := validateRequiredWriteArgs(args)
 	if err != nil {

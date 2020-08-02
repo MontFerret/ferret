@@ -11,9 +11,9 @@ import (
 
 // ZIP returns an object assembled from the separate parameters keys and values.
 // Keys and values must be arrays and have the same length.
-// @param keys (Array<String>) - An array of strings, to be used as key names in the result.
-// @param values (Array<Object>) - An array of core.Value, to be used as key values.
-// @return (Object) - An object with the keys and values assembled.
+// @param {Array<String>} keys - An array of strings, to be used as key names in the result.
+// @param {Array<Object>} values - An array of core.Value, to be used as key values.
+// @return {Object} - An object with the keys and values assembled.
 func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

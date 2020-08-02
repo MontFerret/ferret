@@ -9,7 +9,7 @@ import (
 )
 
 // PI returns Pi value.
-// @return (Float) - Pi value.
+// @return {Float} - Pi value.
 func Pi(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 0, 0)
 

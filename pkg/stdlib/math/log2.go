@@ -10,8 +10,8 @@ import (
 )
 
 // LOG2 returns the binary logarithm of a given value.
-// @param number (Int | Float) - Input number.
-// @return (Float) - The binary logarithm of a given value.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The binary logarithm of a given value.
 func Log2(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

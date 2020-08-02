@@ -9,8 +9,8 @@ import (
 )
 
 // HAS returns the value stored by the given key.
-// @param (String) - The key name string.
-// @return (Boolean) - True if the key exists else false.
+// @param {String} key - The key name string.
+// @return {Boolean} - True if the key exists else false.
 func Has(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

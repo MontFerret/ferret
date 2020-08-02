@@ -11,9 +11,9 @@ import (
 
 // ELEMENT finds an element by a given CSS selector.
 // Returns NONE if element not found.
-// @param parent (HTMLPage | HTMLDocument | HTMLElement) - Parent document or element.
-// @param selector (String) - CSS selector.
-// @return (HTMLElement | None) - An HTMLElement if found, otherwise NONE.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - CSS selector.
+// @return {HTMLElement} - A matched HTML element
 func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 

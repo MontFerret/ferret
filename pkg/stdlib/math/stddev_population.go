@@ -10,8 +10,8 @@ import (
 )
 
 // STDDEV_POPULATION returns the population standard deviation of the values in a given array.
-// @param (Array<Int> | Array<Float>) - Array of numbers.
-// @return (Float) - The population standard deviation.
+// @param {Array<Int> | Array<Float>} numbers - Array of numbers.
+// @return {Float} - The population standard deviation.
 func StandardDeviationPopulation(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -10,8 +10,8 @@ import (
 )
 
 // DIR returns the directory component of path.
-// @param path (String) - The path.
-// @return (String) - The directory component of path.
+// @param {String} path - The path.
+// @return {String} - The directory component of path.
 func Dir(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

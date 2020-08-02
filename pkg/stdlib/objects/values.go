@@ -9,8 +9,8 @@ import (
 )
 
 // VALUES return the attribute values of the object as an array.
-// @param obj (Object) - Target object.
-// @return (Array<Value>) - Values of document returned in any order.
+// @param {Object} object - Target object.
+// @return {Array<Value>} - Values of document returned in any order.
 func Values(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

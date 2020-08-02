@@ -9,8 +9,8 @@ import (
 )
 
 // IS_BOOL checks whether value is a boolean value.
-// @param value (Value) - Input value of arbitrary type.
-// @return (Boolean) - Returns true if value is boolean, otherwise false.
+// @param {Value} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is boolean, otherwise false.
 func IsBool(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -12,8 +12,8 @@ import (
 )
 
 // FROM_BASE64 returns the value of a base64 representation.
-// @param base64String (String) - The string to decode.
-// @return (String) - The decoded string.
+// @param {String} str - The string to decode.
+// @return {String} - The decoded string.
 func FromBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -32,8 +32,8 @@ func FromBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // DECODE_URI_COMPONENT returns the decoded String of uri.
-// @param uri (String) - Uri to decode.
-// @return (String) - Decoded string.
+// @param {String} uri - Uri to decode.
+// @return {String} - Decoded string.
 func DecodeURIComponent(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

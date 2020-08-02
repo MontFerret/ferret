@@ -9,8 +9,8 @@ import (
 )
 
 // DATE_LEAPYEAR returns true if date is in a leap year else false.
-// @param date (DateTime) - Source DateTime.
-// @return (Boolean) - Date is in a leap year.
+// @param {DateTime} date - Source DateTime.
+// @return {Boolean} - Date is in a leap year.
 func DateLeapYear(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

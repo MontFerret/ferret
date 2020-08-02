@@ -9,8 +9,8 @@ import (
 )
 
 // MERGE_RECURSIVE recursively merge the given objects into a single object.
-// @param objs (Objects, repeated) - objects to merge.
-// @return (Object) - Object created by merging.
+// @param {Objects, repeated} objects - Objects to merge.
+// @return {Object} - Object created by merging.
 func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 	if err != nil {

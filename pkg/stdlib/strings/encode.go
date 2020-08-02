@@ -13,8 +13,8 @@ import (
 )
 
 // ENCODE_URI_COMPONENT returns the encoded String of uri.
-// @param uri (String) - Uri to encode.
-// @return (String) - Encoded string.
+// @param {String} uri - Uri to encode.
+// @return {String} - Encoded string.
 func EncodeURIComponent(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -28,8 +28,8 @@ func EncodeURIComponent(_ context.Context, args ...core.Value) (core.Value, erro
 }
 
 // MD5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.
-// @param text (String) - The string to do calculations against to.
-// @return (String) - MD5 checksum as hex string.
+// @param {String} str - The string to do calculations against to.
+// @return {String} - MD5 checksum as hex string.
 func Md5(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -44,8 +44,8 @@ func Md5(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // SHA1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
-// @param text (String) - The string to do calculations against to.
-// @return (String) - Sha1 checksum as hex string.
+// @param {String} str - The string to do calculations against to.
+// @return {String} - Sha1 checksum as hex string.
 func Sha1(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -60,8 +60,8 @@ func Sha1(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // SHA512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
-// @param text (String) - The string to do calculations against to.
-// @return (String) - SHA512 checksum as hex string.
+// @param {String} str - The string to do calculations against to.
+// @return {String} - SHA512 checksum as hex string.
 func Sha512(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -76,8 +76,8 @@ func Sha512(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // TO_BASE64 returns the base64 representation of value.
-// @param value (string) - The string to encode.
-// @return (String) - A base64 representation of the string.
+// @param {String} str - The string to encode.
+// @return {String} - A base64 representation of the string.
 func ToBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

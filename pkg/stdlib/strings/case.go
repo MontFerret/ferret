@@ -9,8 +9,8 @@ import (
 )
 
 // LOWER converts strings to their lower-case counterparts. All other characters are returned unchanged.
-// @param src (String) - The source string.
-// @return (String) - THis string in lower case.
+// @param {String} str - The source string.
+// @return {String} - THis string in lower case.
 func Lower(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -24,8 +24,8 @@ func Lower(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // UPPER converts strings to their upper-case counterparts. All other characters are returned unchanged.
-// @param src (String) - The source string.
-// @return (String) - THis string in upper case.
+// @param {String} str - The source string.
+// @return {String} - THis string in upper case.
 func Upper(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

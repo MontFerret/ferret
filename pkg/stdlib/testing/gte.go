@@ -9,9 +9,9 @@ import (
 )
 
 // Gte asserts that an actual value is greater than or equal to an expected one.
-// @param actual (Value) - Actual value.
-// @param expected (Value) - Expected value.
-// @param message (String, optional) - Message to display on error.
+// @param actual {Value} - Actual value.
+// @param expected {Value} - Expected value.
+// @param message {String, optional} - Message to display on error.
 var Gte = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", base.GreaterOrEqualOp, base.FormatValue(args[1]))

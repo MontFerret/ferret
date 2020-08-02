@@ -9,10 +9,10 @@ import (
 )
 
 // SUBSTRING returns a substring of value.
-// @param value (String) - The source string.
-// @param offset (Int) - Start at offset, offsets start at position 0.
-// @param length (Int, optional) - At most length characters, omit to get the substring from offset to the end of the string. Optional.
-// @return (String) - A substring of value.
+// @param {String} str - The source string.
+// @param {Int} offset - Start at offset, offsets start at position 0.
+// @param {Int, optional} length - At most length characters, omit to get the substring from offset to the end of the string. Optional.
+// @return {String} - A substring of value.
 func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -56,9 +56,9 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // LEFT returns the leftmost characters of the string value by index.
-// @param src (String) - The source string.
-// @param length (Int) - The amount of characters to return.
-// @return (String) - The leftmost characters of the string value by index.
+// @param {String} str - The source string.
+// @param {Int} length - The amount of characters to return.
+// @return {String} - The leftmost characters of the string value by index.
 func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
@@ -83,9 +83,9 @@ func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // RIGHT returns the rightmost characters of the string value.
-// @param src (String) - The source string.
-// @param length (Int) - The amount of characters to return.
-// @return (String) - The rightmost characters of the string value.
+// @param {String} str - The source string.
+// @param {Int} length - The amount of characters to return.
+// @return {String} - The rightmost characters of the string value.
 func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

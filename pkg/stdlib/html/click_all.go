@@ -10,10 +10,10 @@ import (
 )
 
 // CLICK_ALL dispatches click event on all matched element
-// @param parent (HTMLPage | HTMLDocument | HTMLElement) - Parent document or element.
-// @param selector (String) - Selector.
-// @param count (Int, optional) - Optional count of clicks.
-// @return (Boolean) - True if matched at least one element.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - CSS selector.
+// @param {Int, optional} clicks - Optional count of clicks.
+// @return {Boolean} - True if matched at least one element.
 func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

@@ -10,10 +10,11 @@ import (
 )
 
 // DATE_COMPARE checks if two partial dates match.
-// @param date1, date2 (DateTime) - Comparable dates.
-// @param unitRangeStart (String) - Unit to start from.
-// @param unitRangeEnd (String, optional) - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
-// @return (Boolean) - True if the dates match, else false.
+// @param {DateTime} date1 - First date.
+// @param {DateTime} date2 - Second date.
+// @param {String} unitRangeStart - Unit to start from.
+// @param {String, optional} unitRangeEnd - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
+// @return {Boolean} - True if the dates match, else false.
 func DateCompare(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 	if err != nil {

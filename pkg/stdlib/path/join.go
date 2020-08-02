@@ -10,8 +10,8 @@ import (
 )
 
 // JOIN joins any number of path elements into a single path, separating them with slashes.
-// @param elem (String, repeated | Array<String>) - The path elements
-// @return (String) - Single path from the given elements.
+// @param {String, repeated | Array<String>} elements - The path elements
+// @return {String} - Single path from the given elements.
 func Join(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	argsCount := len(args)

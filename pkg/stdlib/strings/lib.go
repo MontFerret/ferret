@@ -21,10 +21,6 @@ func RegisterLib(ns core.Namespace) error {
 			"LTRIM":                LTrim,
 			"RANDOM_TOKEN":         RandomToken,
 			"MD5":                  Md5,
-			"REGEXP_MATCH":         RegexMatch,   // Deprecated
-			"REGEXP_SPLIT":         RegexSplit,   // Deprecated
-			"REGEXP_TEST":          RegexTest,    // Deprecated
-			"REGEXP_REPLACE":       RegexReplace, // Deprecated
 			"REGEX_MATCH":          RegexMatch,
 			"REGEX_SPLIT":          RegexSplit,
 			"REGEX_TEST":           RegexTest,

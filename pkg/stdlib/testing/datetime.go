@@ -9,8 +9,8 @@ import (
 )
 
 // DateTime asserts that value is a datetime type.
-// @param actual (Value) - Value to test.
-// @param message (String, optional) - Message to display on error.
+// @param actual {Value} - Value to test.
+// @param message {String, optional} - Message to display on error.
 var DateTime = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be datetime"

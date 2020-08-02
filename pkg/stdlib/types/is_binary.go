@@ -9,8 +9,8 @@ import (
 )
 
 // IS_BINARY checks whether value is a binary value.
-// @param value (Value) - Input value of arbitrary type.
-// @return (Boolean) - Returns true if value is binary, otherwise false.
+// @param {Value} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is binary, otherwise false.
 func IsBinary(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

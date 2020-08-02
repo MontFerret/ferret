@@ -10,9 +10,9 @@ import (
 )
 
 // POW returns the base to the exponent value.
-// @param base (Int | Float) - The base value.
-// @param exp (Int | Float) - The exponent value.
-// @return (Float) - The exponentiated value.
+// @param {Int | Float} base - The base value.
+// @param {Int | Float} exp - The exponent value.
+// @return {Float} - The exponentiated value.
 func Pow(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

@@ -16,14 +16,14 @@ type ParseParams struct {
 }
 
 // PARSE loads an HTML page from a given string or byte array
-// @param params (Object) - Optional, an object containing the following properties:
-// 		driver (String) - Optional, driver name.
-//      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
-//      	i.e. not to open a page in the Incognito mode.
-//      cookies (HTTPCookies) - Optional, set of HTTP cookies.
-//      headers (HTTPHeaders) - Optional, HTTP headers.
-//      viewport (Viewport) - Optional, viewport params.
-// @return (HTMLPage) - Returns parsed and loaded HTML page.
+// @param {String} html - HTML string to parse.
+// @param {Object, optional} params - An object containing the following properties:
+// @param {String} params.driver - Name of a driver to parse with.
+// @param {Boolean, optional} params.keepCookies - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
+// @param {HTTPCookies, optional} params.cookies - Set of HTTP cookies to use during page loading.
+// @param {HTTPHeaders, optional} params.headers - Set of HTTP headers to use during page loading.
+// @param {Viewport, optional} params.viewport - Viewport params.
+// @return {HTMLPage} - Returns parsed and loaded HTML page.
 func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 2); err != nil {
 		return values.None, err

@@ -10,8 +10,8 @@ import (
 )
 
 // SEPARATE separates the path into a directory and filename component.
-// @param path (String) - The path
-// @return (Array) - First item is a directory component, and second is a filename component.
+// @param {String} path - The path
+// @return {Array} - First item is a directory component, and second is a filename component.
 func Separate(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

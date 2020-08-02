@@ -8,8 +8,8 @@ import (
 )
 
 // TO_DATETIME takes an input value of any type and converts it into the appropriate date time value.
-// @param value (Value) - Input value of arbitrary type.
-// @return (DateTime) - Parsed date time.
+// @param {Value} value - Input value of arbitrary type.
+// @return {DateTime} - Parsed date time.
 func ToDateTime(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

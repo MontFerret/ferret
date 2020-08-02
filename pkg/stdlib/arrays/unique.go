@@ -9,8 +9,8 @@ import (
 )
 
 // UNIQUE returns all unique elements from a given array.
-// @param array (Array) - Target array.
-// @return (Array) - New array without duplicates.
+// @param {Array} array - Target array.
+// @return {Array} - New array without duplicates.
 func Unique(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

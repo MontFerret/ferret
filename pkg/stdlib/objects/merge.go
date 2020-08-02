@@ -9,8 +9,8 @@ import (
 )
 
 // MERGE merge the given objects into a single object.
-// @param objs (Array<Object> | Objects, repeated) - objects to merge.
-// @return (Object) - Object created by merging.
+// @param {Object, repeated} objects - Objects to merge.
+// @return {Object} - Object created by merging.
 func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 

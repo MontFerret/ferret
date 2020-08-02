@@ -22,8 +22,8 @@ const (
 var randSrc = rand.NewSource(time.Now().UnixNano())
 
 // RANDOM_TOKEN generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
-// @param length (Int) - The desired string length for the token. It must be greater than 0 and at most 65536.
-// @return (String) - A generated token consisting of lowercase letters, uppercase letters and numbers.
+// @param {Int} len - The desired string length for the token. It must be greater than 0 and at most 65536.
+// @return {String} - A generated token consisting of lowercase letters, uppercase letters and numbers.
 func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

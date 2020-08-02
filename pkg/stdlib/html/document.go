@@ -20,16 +20,15 @@ type PageLoadParams struct {
 
 // DOCUMENT opens an HTML page by a given url.
 // By default, loads a page by http call - resulted page does not support any interactions.
-// @param params (Object) - Optional, An object containing the following properties :
-// 		driver (String) - Optional, driver name.
-//      timeout (Int) - Optional, timeout.
-//      userAgent (String) - Optional, user agent.
-//      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
-//      	i.e. not to open a page in the Incognito mode.
-//      cookies (HTTPCookies) - Optional, set of HTTP cookies.
-//      headers (HTTPHeaders) - Optional, HTTP headers.
-//      viewport (Viewport) - Optional, viewport params.
-// @return (HTMLPage) - Loaded HTML page.
+// @param {Object} params - Optional, An object containing the following properties :
+// @param {String, optional} params.driver - Driver name to use.
+// @param {Int, optional} params.timeout - Page load timeout.
+// @param {String, optional} params.userAgent - Custom user agent.
+// @param {Boolean, optional} params.keepCookies - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
+// @param {HTTPCookies, optional} params.cookies - Set of HTTP cookies to use during page loading.
+// @param {HTTPHeaders, optional} params.headers - Set of HTTP headers to use during page loading.
+// @param {Viewport, optional} params.viewport - Viewport params.
+// @return {HTMLPage} - Loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

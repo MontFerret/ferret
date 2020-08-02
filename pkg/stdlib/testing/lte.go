@@ -9,9 +9,9 @@ import (
 )
 
 // Lte asserts that an actual value is lesser than or equal to an expected one.
-// @param actual (Value) - Actual value.
-// @param expected (Value) - Expected value.
-// @param message (String, optional) - Message to display on error.
+// @param actual {Value} - Actual value.
+// @param expected {Value} - Expected value.
+// @param message {String, optional} - Message to display on error.
 var Lte = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", base.LessOrEqualOp, base.FormatValue(args[1]))

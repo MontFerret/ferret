@@ -10,10 +10,10 @@ import (
 )
 
 // REGEX_MATCH returns the matches in the given string text, using the regex.
-// @param text (String) - The string to search in.
-// @param regex (String) - A regular expression to use for matching the text.
-// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
-// @return (Array) - An array of strings containing the matches.
+// @param {String} str - The string to search in.
+// @param {String} expression - A regular expression to use for matching the text.
+// @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @return {Array} - An array of strings containing the matches.
 func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -51,11 +51,11 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // REGEX_SPLIT splits the given string text into a list of strings, using the separator.
-// @param text (String) - The string to split.
-// @param regex (String) - A regular expression to use for splitting the text.
-// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
-// @param limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @return (Array) - An array of strings splited by the expression.
+// @param {String} str - The string to split.
+// @param {String} expression - A regular expression to use for splitting the text.
+// @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
+// @return {Array} - An array of strings splitted by the expression.
 func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
@@ -94,10 +94,10 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // REGEX_TEST test whether the regexp has at least one match in the given text.
-// @param text (String) - The string to test.
-// @param regex (String) - A regular expression to use for splitting the text.
-// @param caseInsensitive (Boolean, optional) - If set to true, the matching will be case-insensitive. The default is false.
-// @return (Boolean) - Returns true if the pattern is contained in text, and false otherwise.
+// @param {String} str - The string to test.
+// @param {String} expression - A regular expression to use for splitting the text.
+// @param {Boolean, optional} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
 func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -126,11 +126,11 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // REGEX_REPLACE replace every substring matched with the regexp with a given string.
-// @param text (String) - The string to split.
-// @param regex (String) - A regular expression search pattern.
-// @param replacement (String) - The string to replace the search pattern with
-// @param caseInsensitive (Boolean, optional) - If set to true, the matching will be case-insensitive. The default is false.
-// @return (String) - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
+// @param {String} str - The string to split.
+// @param {String} expression - A regular expression search pattern.
+// @param {String} replacement - The string to replace the search pattern with
+// @param {Boolean, optional} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @return {String} - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
 func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 

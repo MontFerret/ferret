@@ -10,8 +10,8 @@ import (
 )
 
 // IS_ABS reports whether the path is absolute.
-// @param path (String) - The path.
-// @return (Boolean) - True if the path is absolute.
+// @param {String} path - The path.
+// @return {Boolean} - True if the path is absolute.
 func IsAbs(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

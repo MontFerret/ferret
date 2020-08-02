@@ -12,8 +12,8 @@ import (
 
 // Include asserts that haystack includes needle.
 // @param actual (String|Array|Object|Iterable) - Haystack value.
-// @param expected (Value) - Expected value.
-// @param message (String, optional) - Message to display on error.
+// @param expected {Value} - Expected value.
+// @param message {String, optional} - Message to display on error.
 var Include = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("include %s", base.FormatValue(args[1]))

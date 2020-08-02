@@ -10,8 +10,8 @@ import (
 )
 
 // ABS returns the absolute value of a given number.
-// @param number (Int | Float) - Input number.
-// @return (Float) - The absolute value of a given number.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The absolute value of a given number.
 func Abs(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

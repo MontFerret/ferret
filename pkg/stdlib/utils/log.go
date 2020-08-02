@@ -9,7 +9,7 @@ import (
 )
 
 // PRINT writes messages into the system log.
-// @param message (Value, repeated) - Print message.
+// @param {Value, repeated} message - Print message.
 func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 

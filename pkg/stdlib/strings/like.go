@@ -9,10 +9,10 @@ import (
 )
 
 // LIKE checks whether the pattern search is contained in the string text, using wildcard matching.
-// @param text (String) - The string to search in.
-// @param search (String) - A search pattern that can contain the wildcard characters.
-// @param caseInsensitive (Boolean) - If set to true, the matching will be case-insensitive. The default is false.
-// @return (Boolean) - Returns true if the pattern is contained in text, and false otherwise.
+// @param {String} str - The string to search in.
+// @param {String} search - A search pattern that can contain the wildcard characters.
+// @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
 func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

@@ -10,11 +10,11 @@ import (
 )
 
 // SUBSTITUTE replaces search values in the string value.
-// @param text (String) - The string to modify
-// @param search (String) - The string representing a search pattern
-// @param replace (String) - The string representing a replace value
-// @param limit (Int) - The cap the number of replacements to this value.
-// @return (String) - Returns a string with replace substring.
+// @param {String} str - The string to modify
+// @param {String} search - The string representing a search pattern
+// @param {String} replace - The string representing a replace value
+// @param {Int} limit - The cap the number of replacements to this value.
+// @return {String} - Returns a string with replace substring.
 func Substitute(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

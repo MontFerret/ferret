@@ -9,8 +9,8 @@ import (
 )
 
 // LAST returns the last element of an array.
-// @param array (Array) - The target array.
-// @return (Value) - Last element of an array.
+// @param {Array} array - The target array.
+// @return {Value} - Last element of an array.
 func Last(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

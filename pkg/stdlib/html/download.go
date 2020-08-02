@@ -11,8 +11,8 @@ import (
 )
 
 // DOWNLOAD downloads a resource from the given GetURL.
-// @param url (String) - URL to download.
-// @return (Binary) - A base64 encoded string in binary format.
+// @param {String} url - URL to download.
+// @return {Binary} - A base64 encoded string in binary format.
 func Download(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

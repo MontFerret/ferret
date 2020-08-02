@@ -10,8 +10,8 @@ import (
 )
 
 // LENGTH returns the length of a measurable value.
-// @param text (Measurable) - The value to measure.
-// @return (Int) - The length of the value.
+// @param {Measurable} value - The value to measure.
+// @return {Int} - The length of the value.
 func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(inputs, 1, 1)
 

@@ -10,8 +10,8 @@ import (
 )
 
 // ACOS returns the arccosine, in radians, of a given number.
-// @param number (Int | Float) - Input number.
-// @return (Float) - The arccosine, in radians, of a given number.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The arccosine, in radians, of a given number.
 func Acos(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

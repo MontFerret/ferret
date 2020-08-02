@@ -10,10 +10,13 @@ import (
 )
 
 // SCROLL scrolls by given coordinates.
-// @param doc (HTMLDocument) - HTML document.
-// @param x (Int|Float) - X coordinate.
-// @param y (Int|Float) - Y coordinate.
-// @param options (ScrollOptions, optional) - Scroll options.
+// @param {HTMLDocument} document - HTML document.
+// @param {Int | Float} x - X coordinate.
+// @param {Int | Float} y - Y coordinate.
+// @param {Object, optional} params - Scroll params.
+// @param {String, optional} params.behavior - Scroll behavior
+// @param {String, optional} params.block - Scroll vertical alignment.
+// @param {String, optional}  params.inline - Scroll horizontal alignment.
 func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 

@@ -9,8 +9,8 @@ import (
 )
 
 // Array asserts that value is a array type.
-// @param actual (Value) - Value to test.
-// @param message (String, optional) - Message to display on error.
+// @param actual {Value} - Value to test.
+// @param message {String, optional} - Message to display on error.
 // @stdlib
 var Array = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

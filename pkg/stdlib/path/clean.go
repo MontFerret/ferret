@@ -10,8 +10,8 @@ import (
 )
 
 // CLEAN returns the shortest path name equivalent to path.
-// @param path (String) - The path.
-// @return (String) - The shortest path name equivalent to path
+// @param {String} path - The path.
+// @return {String} - The shortest path name equivalent to path
 func Clean(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

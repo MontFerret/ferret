@@ -9,9 +9,9 @@ import (
 )
 
 // TRIM returns the string value with whitespace stripped from the start and/or end.
-// @param value (String) - The string.
-// @param chars (String) - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
-// @return (String) - The string without chars on both sides.
+// @param {String} str - The string.
+// @param {String} chars - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
+// @return {String} - The string without chars on both sides.
 func Trim(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -29,9 +29,9 @@ func Trim(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // LTRIM returns the string value with whitespace stripped from the start only.
-// @param value (String) - The string.
-// @param chars (String) - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
-// @return (String) - The string without chars at the left-hand side.
+// @param {String} str - The string.
+// @param {String} chars - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
+// @return {String} - The string without chars at the left-hand side.
 func LTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -50,9 +50,9 @@ func LTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // RTRIM returns the string value with whitespace stripped from the end only.
-// @param value (String) - The string.
-// @param chars (String) - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
-// @return (String) - The string without chars at the right-hand side.
+// @param {String} str - The string.
+// @param {String} chars - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
+// @return {String} - The string without chars at the right-hand side.
 func RTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

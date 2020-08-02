@@ -10,21 +10,21 @@ import (
 )
 
 // WAIT_STYLE waits until a target style value appears
-// @param node (HTMLPage | HTMLDocument | HTMLElement) - Parent document.
-// @param styleNameOrSelector (String) - Style name or CSS selector.
-// @param valueOrStyleName (String | Any) - Style value or name.
-// @param valueOrTimeout (Any | Int, optional) - Style value or an optional timeout.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} styleNameOrSelector - Style name or CSS selector.
+// @param {String | Any} valueOrStyleName - Style value or name.
+// @param {Any | Int, optional} valueOrTimeout - Style value or an optional timeout.
+// @param {Int, optional} timeout - Optional timeout.
 func WaitStyle(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_STYLE waits until a target style value disappears
-// @param node (HTMLPage | HTMLDocument | HTMLElement) - Parent document.
-// @param styleNameOrSelector (String) - Style name or CSS selector.
-// @param valueOrStyleName (String | Any) - Style value or name.
-// @param valueOrTimeout (Any | Int, optional) - Style value or an optional timeout.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} styleNameOrSelector - Style name or CSS selector.
+// @param {String | Any} valueOrStyleName - Style value or name.
+// @param {Any | Int, optional} valueOrTimeout - Style value or an optional timeout.
+// @param {Int, optional} timeout - Optional timeout.
 func WaitNoStyle(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleWhen(ctx, args, drivers.WaitEventAbsence)
 }

@@ -10,8 +10,8 @@ import (
 )
 
 // EXP2 returns 2 raised to the power of value.
-// @param number (Int | Float) - Input number.
-// @return (Float) - 2 raised to the power of value.
+// @param {Int | Float} number - Input number.
+// @return {Float} - 2 raised to the power of value.
 func Exp2(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

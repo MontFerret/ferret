@@ -10,8 +10,8 @@ import (
 )
 
 // DATE converts RFC3339 date time string to DateTime object.
-// @param timeString (String) - String in RFC3339 format.
-// @return (DateTime) - New DateTime object derived from timeString.
+// @param {String} time - String in RFC3339 format.
+// @return {DateTime} - New DateTime object derived from timeString.
 func Date(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

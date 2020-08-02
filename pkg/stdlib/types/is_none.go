@@ -9,8 +9,8 @@ import (
 )
 
 // IS_NONE checks whether value is a none value.
-// @param value (Value) - Input value of arbitrary type.
-// @return (Boolean) - Returns true if value is none, otherwise false.
+// @param {Value} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is none, otherwise false.
 func IsNone(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

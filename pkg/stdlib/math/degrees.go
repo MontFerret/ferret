@@ -9,8 +9,8 @@ import (
 )
 
 // DEGREES returns the angle converted from radians to degrees.
-// @param number (Float | Int) - The input number.
-// @return (Float) - The angle in degrees.l
+// @param {Int | Float} number - The input number.
+// @return {Float} - The angle in degrees
 func Degrees(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

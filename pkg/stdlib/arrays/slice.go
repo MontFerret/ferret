@@ -9,10 +9,10 @@ import (
 )
 
 // SLICE returns a new sliced array.
-// @param array (Array) - Source array.
-// @param start (Int) - Start position of extraction.
-// @param length (Int, optional) - Read indicating how many elements to extract.
-// @return (Array) - Sliced array.
+// @param {Array} array - Source array.
+// @param {Int} start - Start position of extraction.
+// @param {Int, optional} length - Read indicating how many elements to extract.
+// @return {Array} - Sliced array.
 func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

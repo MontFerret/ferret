@@ -10,8 +10,8 @@ import (
 )
 
 // ATAN returns the arctangent, in radians, of a given number.
-// @param number (Int | Float) - Input number.
-// @return (Float) - The arctangent, in radians, of a given number.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The arctangent, in radians, of a given number.
 func Atan(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

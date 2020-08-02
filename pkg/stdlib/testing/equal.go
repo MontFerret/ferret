@@ -9,9 +9,9 @@ import (
 )
 
 // Equal asserts equality of actual and expected values.
-// @param actual (Value) - Actual value.
-// @param expected (Value) - Expected value.
-// @param message (String, optional) - Message to display on error.
+// @param actual {Value} - Actual value.
+// @param expected {Value} - Expected value.
+// @param message {String, optional} - Message to display on error.
 var Equal = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", base.EqualOp, base.FormatValue(args[1]))

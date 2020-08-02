@@ -9,8 +9,8 @@ import (
 )
 
 // REVERSE returns the reverse of a given string or array value.
-// @param text (String | Array) - The string or array to reverse.
-// @return (String | Array) - A reversed version of a given value.
+// @param {String | Array} value - The string or array to reverse.
+// @return {String | Array} - A reversed version of a given value.
 func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

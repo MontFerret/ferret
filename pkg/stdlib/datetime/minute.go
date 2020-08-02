@@ -9,8 +9,8 @@ import (
 )
 
 // DATE_MINUTE returns the minute of date as a number.
-// @param date (DateTime) -Source DateTime.
-// @return (Int) - A minute number.
+// @param {DateTime} date -Source DateTime.
+// @return {Int} - A minute number.
 func DateMinute(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

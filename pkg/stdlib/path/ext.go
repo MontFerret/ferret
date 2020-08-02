@@ -10,8 +10,8 @@ import (
 )
 
 // EXT returns the extension of the last component of path.
-// @param path (String) - The path.
-// @return (String) - The extension of the last component of path.
+// @param {String} path - The path.
+// @return {String} - The extension of the last component of path.
 func Ext(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

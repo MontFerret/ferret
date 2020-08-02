@@ -18,8 +18,8 @@ type WaitNavigationParams struct {
 
 // WAIT_NAVIGATION waits for a given page to navigate to a new url.
 // Stops the execution until the navigation ends or operation times out.
-// @param page (HTMLPage) - Target page.
-// @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
+// @param {HTMLPage} page - Target page.
+// @param {Int, optional} timeout - Optional timeout. Default 5000 ms.
 func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

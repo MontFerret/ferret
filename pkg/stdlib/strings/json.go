@@ -9,8 +9,8 @@ import (
 )
 
 // JSON_PARSE returns a value described by the JSON-encoded input string.
-// @param text (String) - The string to parse as JSON.
-// @return (Value) - Parsed value.
+// @param {String} str - The string to parse as JSON.
+// @return {Value} - Parsed value.
 func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -30,8 +30,8 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // JSON_STRINGIFY returns a JSON string representation of the input value.
-// @param value (Value) - The input value to serialize.
-// @return (String) - JSON string.
+// @param {Value} str - The input value to serialize.
+// @return {String} - JSON string.
 func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
