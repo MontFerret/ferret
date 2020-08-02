@@ -9,7 +9,7 @@ import (
 )
 
 // Object asserts that value is a object type.
-// @param actual {Value} - Value to test.
+// @param actual {Any} - Value to test.
 // @param message {String, optional} - Message to display on error.
 var Object = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

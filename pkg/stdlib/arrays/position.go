@@ -10,7 +10,7 @@ import (
 
 // POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
 // @param {Any[]} array - The source array.
-// @param {Value} value - The target value.
+// @param {Any} value - The target value.
 // @param {Boolean, optional} position - Boolean value which indicates whether to return item's position.
 // @return {Boolean | Int} - A value indicating whether an element is contained in array.
 func Position(_ context.Context, args ...core.Value) (core.Value, error) {

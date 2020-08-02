@@ -9,7 +9,7 @@ import (
 )
 
 // Int asserts that value is a int type.
-// @param actual {Value} - Actual value.
+// @param actual {Any} - Actual value.
 // @param message {String, optional} - Message to display on error.
 var Int = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

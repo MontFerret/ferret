@@ -11,7 +11,7 @@ import (
 // REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
 // Optionally with a limit to the number of removals.
 // @param {Any[]} array - Source array.
-// @param {Value} value - Target value.
+// @param {Any} value - Target value.
 // @param {Int, optional} limit - A limit to the number of removals.
 // @return {Any[]} - A new array with removed all occurrences of value in a given array.
 func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {

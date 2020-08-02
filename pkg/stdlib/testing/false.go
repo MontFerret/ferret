@@ -10,7 +10,7 @@ import (
 )
 
 // False asserts that value is false.
-// @param actual {Value} - Value to test.
+// @param actual {Any} - Value to test.
 // @param message {String} - Message to display on error.
 var False = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

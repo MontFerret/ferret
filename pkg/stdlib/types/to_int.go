@@ -16,7 +16,7 @@ import (
 // An empty array is converted to 0, an array with one member is converted into the result of TO_NUMBER() for its sole member.
 // An array with two or more members is converted to the number 0.
 // An object / HTML node is converted to the number 0.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Int} - An integer value.
 func ToInt(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

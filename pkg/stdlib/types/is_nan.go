@@ -9,7 +9,7 @@ import (
 )
 
 // IS_NAN checks whether value is NaN.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns true if value is NaN, otherwise false.
 func IsNaN(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

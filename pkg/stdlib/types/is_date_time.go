@@ -9,7 +9,7 @@ import (
 )
 
 // IS_DATETIME checks whether value is a date time value.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns true if value is date time, otherwise false.
 func IsDateTime(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

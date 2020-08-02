@@ -9,7 +9,7 @@ import (
 )
 
 // IS_FLOAT checks whether value is a float value.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns true if value is float, otherwise false.
 func IsFloat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

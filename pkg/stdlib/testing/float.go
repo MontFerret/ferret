@@ -9,7 +9,7 @@ import (
 )
 
 // Float asserts that value is a float type.
-// @param actual {Value} - Value to test.
+// @param actual {Any} - Value to test.
 // @param message {String, optional} - Message to display on error.
 var Float = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

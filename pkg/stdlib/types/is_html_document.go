@@ -9,7 +9,7 @@ import (
 )
 
 // IS_HTML_DOCUMENT checks whether value is a HTMLDocument value.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns true if value is HTMLDocument, otherwise false.
 func IsHTMLDocument(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

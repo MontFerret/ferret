@@ -11,7 +11,7 @@ import (
 // Returns an empty array if frames not found.
 // @param {HTMLPage} page - HTML page.
 // @param {String} property - Property selector.
-// @param {Value} value - Property value.
+// @param {Any} value - Property value.
 // @return {HTMLDocument[]} - Returns an array of found HTML frames.
 func Frames(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 3)

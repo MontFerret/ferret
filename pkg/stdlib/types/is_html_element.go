@@ -9,7 +9,7 @@ import (
 )
 
 // IS_HTML_ELEMENT checks whether value is a HTMLElement value.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns true if value is HTMLElement, otherwise false.
 func IsHTMLElement(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

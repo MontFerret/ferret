@@ -9,7 +9,7 @@ import (
 )
 
 // Array asserts that value is a array type.
-// @param actual {Value} - Value to test.
+// @param actual {Any} - Value to test.
 // @param message {String, optional} - Message to display on error.
 // @stdlib
 var Array = base.Assertion{

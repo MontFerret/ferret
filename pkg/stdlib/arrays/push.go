@@ -10,7 +10,7 @@ import (
 
 // PUSH create a new array with appended value.
 // @param {Any[]} array - Source array.
-// @param {Value} value - Target value.
+// @param {Any} value - Target value.
 // @param {Boolean, optional} unique - Read indicating whether to do uniqueness check.
 // @return {Any[]} - A new array with appended value.
 func Push(_ context.Context, args ...core.Value) (core.Value, error) {

@@ -11,7 +11,7 @@ import (
 // APPEND appends a new item to an array and returns a new array with a given element.
 // If ``uniqueOnly`` is set to true, then will add the item only if it's unique.
 // @param {Any[]} arr - Target array.
-// @param {Value} item - Target value to add.
+// @param {Any} item - Target value to add.
 // @return {Any[]} - New array.
 func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

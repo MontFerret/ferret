@@ -9,8 +9,8 @@ import (
 )
 
 // Lt asserts that an actual value is lesser than an expected one.
-// @param actual {Value} - Actual value.
-// @param expected {Value} - Expected value.
+// @param actual {Any} - Actual value.
+// @param expected {Any} - Expected value.
 // @param message {String, optional} - Message to display on error.
 var Lt = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

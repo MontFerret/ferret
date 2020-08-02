@@ -8,7 +8,7 @@ import (
 )
 
 // TYPENAME returns the data type name of value.
-// @param {Value} value - Input value of arbitrary type.
+// @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns string representation of a type.
 func TypeName(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
