@@ -9,8 +9,8 @@ import (
 )
 
 // UNION returns the union of all passed arrays.
-// @param {Array, repeated} arrays - List of arrays to combine.
-// @return {Array} - All array elements combined in a single array, in any order.
+// @param {Any[], repeated} arrays - List of arrays to combine.
+// @return {Any[]} - All array elements combined in a single array, in any order.
 func Union(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

@@ -12,7 +12,7 @@ import (
 // KEYS returns string array of object's keys
 // @param {Object} obj - The object whose keys you want to extract
 // @param {Boolean, optional} sort - If sort is true, then the returned keys will be sorted.
-// @return {Array<String>} - Array that contains object keys.
+// @return {String[]} - Array that contains object keys.
 func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {

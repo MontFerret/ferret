@@ -11,8 +11,8 @@ import (
 // INTERSECTION return the intersection of all arrays specified.
 // The result is an array of values that occur in all arguments.
 // The element order is random. Duplicates are removed.
-// @param {Array, repeated} arrays - An arbitrary number of arrays as multiple arguments (at least 2).
-// @return {Array} - A single array with only the elements, which exist in all provided arrays.
+// @param {Any[], repeated} arrays - An arbitrary number of arrays as multiple arguments (at least 2).
+// @return {Any[]} - A single array with only the elements, which exist in all provided arrays.
 func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
 	return sections(args, len(args))
 }

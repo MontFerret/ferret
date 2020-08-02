@@ -13,7 +13,7 @@ import (
 // @param {String} str - The string to split.
 // @param {String} separator - The separator.
 // @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @return {Array<String>} - Array of strings.
+// @return {String[]} - Array of strings.
 func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

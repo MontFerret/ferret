@@ -10,7 +10,7 @@ import (
 
 // VALUES return the attribute values of the object as an array.
 // @param {Object} object - Target object.
-// @return {Array<Value>} - Values of document returned in any order.
+// @return {Any[]} - Values of document returned in any order.
 func Values(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

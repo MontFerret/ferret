@@ -9,8 +9,8 @@ import (
 )
 
 // POP returns a new array without last element.
-// @param {Array} array - Target array.
-// @return {Array} - Copy of an array without last element.
+// @param {Any[]} array - Target array.
+// @return {Any[]} - Copy of an array without last element.
 func Pop(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

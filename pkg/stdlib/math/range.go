@@ -12,7 +12,7 @@ import (
 // @param {Int | Float} start - The value to start the range at (inclusive).
 // @param {Int | Float} end - The value to end the range with (inclusive).
 // @param {Int | Float, optional} step - How much to increment in every step, the default is 1.0.
-// @return {Array<Int> | Array<Float>} - Array of numbers in the specified range, optionally with increments other than 1.
+// @return {Int[] | Float[]} - Array of numbers in the specified range, optionally with increments other than 1.
 func Range(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

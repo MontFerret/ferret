@@ -13,7 +13,7 @@ import (
 // @param {String} str - The string to search in.
 // @param {String} expression - A regular expression to use for matching the text.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
-// @return {Array} - An array of strings containing the matches.
+// @return {Any[]} - An array of strings containing the matches.
 func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
@@ -55,7 +55,7 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param {String} expression - A regular expression to use for splitting the text.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @return {Array} - An array of strings splitted by the expression.
+// @return {Any[]} - An array of strings splitted by the expression.
 func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

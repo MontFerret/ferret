@@ -11,7 +11,7 @@ import (
 // Returns an empty array if element not found.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - CSS selector.
-// @return {Array} - An array of matched HTML elements.
+// @return {HTMLElement[]} - An array of matched HTML elements.
 func Elements(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 

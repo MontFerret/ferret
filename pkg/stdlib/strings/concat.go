@@ -9,7 +9,7 @@ import (
 )
 
 // CONCAT concatenates one or more instances of String, or an Array.
-// @param {String, repeated | Array<String>} src - The source string / array.
+// @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - A string value.
 func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
@@ -43,7 +43,7 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 
 // CONCAT_SEPARATOR concatenates one or more instances of String, or an Array with a given separator.
 // @param {String} separator - The separator string.
-// @param {String, repeated | Array<String>} src - The source string / array.
+// @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - Concatenated string.
 func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)

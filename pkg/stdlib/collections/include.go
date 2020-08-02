@@ -9,7 +9,7 @@ import (
 )
 
 // INCLUDES checks whether a container includes a given value.
-// @param {String | Array | Object | Iterable} haystack - The value container.
+// @param {String | Any[] | Object | Iterable} haystack - The value container.
 // @param {Value} needle - The target value to assert.
 // @return {Boolean} - A boolean value that indicates whether a container contains a given value.
 func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {

@@ -9,7 +9,7 @@ import (
 )
 
 // SUM returns the sum of the values in a given array.
-// @param {Array<Int> | Array<Float>} numbers - Array of numbers.
+// @param {Int[] | Float[]} numbers - Array of numbers.
 // @return {Float} - The sum of the values.
 func Sum(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

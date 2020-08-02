@@ -11,8 +11,8 @@ import (
 // SELECT selects a value from an underlying select element.
 // @param {HTMLElement} element - Target html element.
 // @param {String | String[]} valueOrSelector - Selector or a an array of strings as a value.
-// @param {Array<String>} value - Target value. Optional.
-// @return {Array<String>} - Array of selected values.
+// @param {String[]} value - Target value. Optional.
+// @return {String[]} - Array of selected values.
 func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

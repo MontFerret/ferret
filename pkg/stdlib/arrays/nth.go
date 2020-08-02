@@ -11,7 +11,7 @@ import (
 // NTH returns the element of an array at a given position.
 // It is the same as anyArray[position] for positive positions, but does not support negative positions.
 // If position is negative or beyond the upper bound of the array, then NONE will be returned.
-// @param {Array} array - An array with elements of arbitrary type.
+// @param {Any[]} array - An array with elements of arbitrary type.
 // @param {Int} index - Position of desired element in array, positions start at 0.
 // @return {Value} - The array element at the given position.
 func Nth(_ context.Context, args ...core.Value) (core.Value, error) {

@@ -12,7 +12,7 @@ import (
 // INNER_HTML_ALL returns an array of inner HTML strings of matched elements.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - String of CSS selector.
-// @return {String} - An array of inner HTML strings if all matched elements, otherwise empty array.
+// @return {String[]} - An array of inner HTML strings if all matched elements, otherwise empty array.
 func GetInnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

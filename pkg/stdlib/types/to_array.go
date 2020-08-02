@@ -12,7 +12,7 @@ import (
 // Arrays keep their original value
 // Objects / HTML nodes are converted to an array containing their attribute values as array elements.
 // @param {Value} input - Input value of arbitrary type.
-// @return {Array<Value>} - An array value.
+// @return {Any[]} - An array value.
 func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
