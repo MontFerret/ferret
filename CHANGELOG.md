@@ -8,6 +8,7 @@
 #### Changed
 - Removed property caching and tracking [#531](https://github.com/MontFerret/ferret/pull/531)
 - Updated dependencies [#528](https://github.com/MontFerret/ferret/pull/528), [#525](https://github.com/MontFerret/ferret/pull/525)
+- ``IO::FS::WRITE`` accepts any type as a file content [#544](https://github.com/MontFerret/ferret/pull/544)
 
 #### Fixed
 - ``WAIT`` does not respect cancellation signal [#524](https://github.com/MontFerret/ferret/pull/524)
