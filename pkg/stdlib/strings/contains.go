@@ -11,7 +11,7 @@ import (
 // CONTAINS returns a value indicating whether a specified substring occurs within a string.
 // @param {String} str - The source string.
 // @param {String} search - The string to seek.
-// @param {Boolean, optional} returnIndex - Values which indicates whether to return the character position of the match is returned instead of a boolean.  The default is false.
+// @param {Boolean} [returnIndex=False] - Values which indicates whether to return the character position of the match is returned instead of a boolean.
 // @return {Boolean | Int} - A value indicating whether a specified substring occurs within a string.
 func Contains(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

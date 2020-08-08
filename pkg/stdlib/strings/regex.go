@@ -96,7 +96,7 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 // REGEX_TEST test whether the regexp has at least one match in the given text.
 // @param {String} str - The string to test.
 // @param {String} expression - A regular expression to use for splitting the text.
-// @param {Boolean, optional} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @param {Boolean} [caseInsensitive=False] - If set to true, the matching will be case-insensitive.
 // @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
 func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
@@ -129,7 +129,7 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param {String} str - The string to split.
 // @param {String} expression - A regular expression search pattern.
 // @param {String} replacement - The string to replace the search pattern with
-// @param {Boolean, optional} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
+// @param {Boolean} [caseInsensitive=False] - If set to true, the matching will be case-insensitive.
 // @return {String} - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
 func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)

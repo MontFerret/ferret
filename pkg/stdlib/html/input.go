@@ -12,7 +12,7 @@ import (
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} valueOrSelector - CSS selector or a value.
 // @param {String} value - Target value.
-// @param {Int, optional} delay - Target value.
+// @param {Int} [delay] - Target value.
 // @return {Boolean} - Returns true if an element was found.
 func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)

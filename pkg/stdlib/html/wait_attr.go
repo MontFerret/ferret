@@ -13,8 +13,8 @@ import (
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} attrNameOrSelector - String of an attr name or CSS selector.
 // @param {String | Any} attrValueOrAttrName - Attr value or name.
-// @param {Any | Int, optional} attrValueOrTimeout - Attr value or an optional timeout.
-// @param {Int, optional} timeout - Optional timeout.
+// @param {Any | Int} [attrValueOrTimeout] - Attr value or a timeout.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitAttribute(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeWhen(ctx, args, drivers.WaitEventPresence)
 }
@@ -23,8 +23,8 @@ func WaitAttribute(ctx context.Context, args ...core.Value) (core.Value, error) 
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} attrNameOrSelector - String of an attr name or CSS selector.
 // @param {String | Any} attrValueOrAttrName - Attr value or name.
-// @param {Any | Int, optional} attrValueOrTimeout - Attr value or an optional timeout.
-// @param {Int, optional} timeout - Optional timeout.
+// @param {Any | Int} [attrValueOrTimeout] - Attr value or wait timeout.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoAttribute(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeWhen(ctx, args, drivers.WaitEventAbsence)
 }

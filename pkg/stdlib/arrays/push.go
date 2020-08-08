@@ -11,7 +11,7 @@ import (
 // PUSH create a new array with appended value.
 // @param {Any[]} array - Source array.
 // @param {Any} value - Target value.
-// @param {Boolean, optional} unique - Read indicating whether to do uniqueness check.
+// @param {Boolean} [unique=False] - Read indicating whether to do uniqueness check.
 // @return {Any[]} - A new array with appended value.
 func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

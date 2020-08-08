@@ -12,7 +12,7 @@ import (
 // @param {DateTime} date1 - First date.
 // @param {DateTime} date2 - Second date.
 // @param {String} unit - Time unit to return the difference in.
-// @param {Boolean, optional} asFloat - If true amount of unit will be as float.
+// @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
 // @return {Int | Float} - Difference between date1 and date2.
 func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)

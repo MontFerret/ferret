@@ -14,7 +14,7 @@ import (
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - String of CSS selector.
 // @param {String} class - String of target CSS class.
-// @param {Int, optional} timeout - Optional timeout.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitAttributeAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventPresence)
 }
@@ -24,7 +24,7 @@ func WaitAttributeAll(ctx context.Context, args ...core.Value) (core.Value, erro
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - String of CSS selector.
 // @param {String} class - String of target CSS class.
-// @param {Int, optional} timeout - Optional timeout.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoAttributeAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventAbsence)
 }

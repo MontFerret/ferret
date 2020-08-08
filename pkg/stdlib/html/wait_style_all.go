@@ -13,8 +13,8 @@ import (
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} styleNameOrSelector - Style name or CSS selector.
 // @param {String | Any} valueOrStyleName - Style value or name.
-// @param {Any | Int, optional} valueOrTimeout - Style value or an optional timeout.
-// @param {Int, optional} timeout - Optional timeout.
+// @param {Any | Int} [valueOrTimeout] - Style value or wait timeout.
+// @param {Int} [timeout=5000] - Timeout.
 func WaitStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleAllWhen(ctx, args, drivers.WaitEventPresence)
 }
@@ -23,8 +23,8 @@ func WaitStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} styleNameOrSelector - Style name or CSS selector.
 // @param {String | Any} valueOrStyleName - Style value or name.
-// @param {Any | Int, optional} valueOrTimeout - Style value or an optional timeout.
-// @param {Int, optional} timeout - Optional timeout.
+// @param {Any | Int} [valueOrTimeout] - Style value or wait timeout.
+// @param {Int} [timeout=5000] - Timeout.
 func WaitNoStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleAllWhen(ctx, args, drivers.WaitEventAbsence)
 }

@@ -11,7 +11,7 @@ import (
 // SUBSTRING returns a substring of value.
 // @param {String} str - The source string.
 // @param {Int} offset - Start at offset, offsets start at position 0.
-// @param {Int, optional} length - At most length characters, omit to get the substring from offset to the end of the string. Optional.
+// @param {Int} [length] - At most length characters, omit to get the substring from offset to the end of the string.
 // @return {String} - A substring of value.
 func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

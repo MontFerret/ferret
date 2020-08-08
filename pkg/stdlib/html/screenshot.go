@@ -12,13 +12,13 @@ import (
 
 // SCREENSHOT takes a screenshot of a given page.
 // @param {HTMLPage|String} target - Target page or url.
-// @param {Object, optional} params - An object containing the following properties :
-// @param {Float, optional | Int, optional}params.x - X position of the viewport.
-// @param {Float, optional | Int, optional}params.y - Y position of the viewport.
-// @param {Float, optional | Int, optional}params.width - Width of the viewport.
-// @param {Float, optional | Int, optional}params.height - Height of the viewport.
-// @param {String, optional} params.format - Either "jpeg" or "png".
-// @param {Int, optional} params.quality - Quality, in [0, 100], only for jpeg format.
+// @param {Object} [params] - An object containing the following properties :
+// @param {Float | Int} [params.x=0] - X position of the viewport.
+// @param {Float | Int} [params.y=0] - Y position of the viewport.
+// @param {Float | Int} [params.width] - Width of the viewport.
+// @param {Float | Int} [params.height] - Height of the viewport.
+// @param {String} [params.format="jpeg"] - Either "jpeg" or "png".
+// @param {Int} [params.quality=100] - Quality, in [0, 100], only for jpeg format.
 // @return {Binary} - Screenshot in binary format.
 func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)

@@ -10,8 +10,8 @@ import (
 )
 
 // RAND return a pseudo-random number between 0 and 1.
-// @param {Int | Float, optional} max - Upper limit.
-// @param {Int | Float, optional} min - Lower limit.
+// @param {Int | Float} [max] - Upper limit.
+// @param {Int | Float} [min] - Lower limit.
 // @return {Float} - A number greater than 0 and less than 1.
 func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 0, 2)

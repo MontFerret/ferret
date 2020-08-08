@@ -13,8 +13,8 @@ import (
 // The operation blocks the execution until the page gets loaded.
 // If the history is empty, the function returns FALSE.
 // @param {HTMLPage} page - Target page.
-// @param {Int, optional} entry - An integer value indicating how many pages to skip. Default 1.
-// @param {Int, optional} timeout - Navigation timeout. Default is 5000.
+// @param {Int} [entry=1] - An integer value indicating how many pages to skip.
+// @param {Int} [timeout=5000] - Navigation timeout.
 // @return {Boolean} - True if history exists and the operation succeeded, otherwise false.
 func NavigateForward(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)

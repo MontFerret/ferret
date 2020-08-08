@@ -10,7 +10,7 @@ import (
 
 // INPUT_CLEAR clears a value from an underlying input element.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
-// @param {String, optional} selector - CSS selector.
+// @param {String} [selector] - CSS selector.
 func InputClear(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

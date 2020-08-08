@@ -14,7 +14,7 @@ import (
 // Which means there is no need in WAIT_NAVIGATION function.
 // @param {HTMLPage} page - Target page.
 // @param {String} url - Target url to navigate.
-// @param {Int, optional} timeout - Navigation timeout. Default is 5000.
+// @param {Int} [timeout=5000] - Navigation timeout.
 func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

@@ -12,7 +12,7 @@ import (
 // Optionally with a limit to the number of removals.
 // @param {Any[]} array - Source array.
 // @param {Any} value - Target value.
-// @param {Int, optional} limit - A limit to the number of removals.
+// @param {Int} [limit] - A limit to the number of removals.
 // @return {Any[]} - A new array with removed all occurrences of value in a given array.
 func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

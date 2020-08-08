@@ -11,7 +11,7 @@ import (
 
 // INNER_HTML returns inner HTML string of a given or matched by CSS selector element
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
-// @param {String, optional} selector - String of CSS selector.
+// @param {String} [selector] - String of CSS selector.
 // @return {String} - Inner HTML string if a matched element, otherwise empty string.
 func GetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)

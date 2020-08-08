@@ -13,7 +13,7 @@ import (
 // PERCENTILE returns the nth percentile of the values in a given array.
 // @param {Int[] | Float[]} array - Array of numbers.
 // @param {Int} number - A number which must be between 0 (excluded) and 100 (included).
-// @param {String, optional} method - "rank" (default) or "interpolation".
+// @param {String} [method="rank"] - "rank" or "interpolation".
 // @return {Float} - The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
 func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

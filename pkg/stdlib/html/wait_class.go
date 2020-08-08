@@ -13,8 +13,8 @@ import (
 // Stops the execution until the navigation ends or operation times out.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selectorOrClass - If document is passed, this param must represent an element selector. Otherwise target class.
-// @param {String | Int, optional} classOrTimeout - If document is passed, this param must represent target class name. Otherwise timeout.
-// @param {Int, optional} timeout - If document is passed, this param must represent timeout. Otherwise not passed.
+// @param {String | Int} [classOrTimeout] - If document is passed, this param must represent target class name. Otherwise timeout.
+// @param {Int} [timeout] - If document is passed, this param must represent timeout. Otherwise not passed.
 func WaitClass(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassWhen(ctx, args, drivers.WaitEventPresence)
 }
@@ -23,8 +23,8 @@ func WaitClass(ctx context.Context, args ...core.Value) (core.Value, error) {
 // Stops the execution until the navigation ends or operation times out.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selectorOrClass - If document is passed, this param must represent an element selector. Otherwise target class.
-// @param {String | Int, optional} classOrTimeout - If document is passed, this param must represent target class name. Otherwise timeout.
-// @param {Int, optional} timeout - If document is passed, this param must represent timeout. Otherwise not passed.
+// @param {String | Int} [classOrTimeout] - If document is passed, this param must represent target class name. Otherwise timeout.
+// @param {Int} [timeout] - If document is passed, this param must represent timeout. Otherwise not passed.
 func WaitNoClass(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassWhen(ctx, args, drivers.WaitEventAbsence)
 }

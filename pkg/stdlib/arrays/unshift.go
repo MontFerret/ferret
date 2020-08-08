@@ -11,7 +11,7 @@ import (
 // UNSHIFT prepends value to a given array.
 // @param {Any[]} array - Target array.
 // @param {Any} value - Target value to prepend.
-// @param {Boolean, optional} unique - Optional value indicating whether a value must be unique to be prepended. Default is false.
+// @param {Boolean} [unique=False] - Optional value indicating whether a value must be unique to be prepended. Default is false.
 // @return {Any[]} - New array with prepended value.
 func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

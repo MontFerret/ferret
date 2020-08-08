@@ -13,8 +13,8 @@ import (
 // WRITE writes the given data into the file.
 // @param {String} path - File path to write into.
 // @param {Binary} data - Data to write.
-// @param {Object, optional} params - additional parameters:
-// @param {String, optional} params.mode - Write mode.
+// @param {Object} [params] - additional parameters:
+// @param {String} [params.mode] - Write mode.
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes
 // * a - Append: will create a file if the specified file does not exist
 // * w - Write (Default): will create a file if the specified file does not exist

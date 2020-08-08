@@ -13,7 +13,7 @@ import (
 // Stops the execution until it finds an element or operation times out.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - Target element's selector.
-// @param {Int, optional} timeout - Optional timeout. Default 5000 ms.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitElement(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitElementWhen(ctx, args, drivers.WaitEventPresence)
 }
@@ -22,7 +22,7 @@ func WaitElement(ctx context.Context, args ...core.Value) (core.Value, error) {
 // Stops the execution until it does not find an element or operation times out.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - Target element's selector.
-// @param {Int, optional} timeout - Optional timeout. Default 5000 ms.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoElement(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitElementWhen(ctx, args, drivers.WaitEventAbsence)
 }

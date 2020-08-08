@@ -14,7 +14,7 @@ import (
 // The function will recurse into sub-arrays up to the specified depth.
 // Duplicates will not be removed.
 // @param {Any[]} arr - Target array.
-// @param {Int, optional} depth - Depth level.
+// @param {Int} [depth] - Depth level.
 // @return {Any[]} - Flat array.
 func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
