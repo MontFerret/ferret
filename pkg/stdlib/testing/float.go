@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Float asserts that value is a float type.
-// @params actual (Mixed) - Value to test.
-// @params message (String, optional) - Message to display on error.
+// FLOAT asserts that value is a float type.
+// @param {Any} actual - Value to test.
+// @param {String} [message] - Message to display on error.
 var Float = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be float"

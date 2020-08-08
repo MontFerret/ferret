@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Radians returns the angle converted from degrees to radians.
-// @param number (Float|Int) - The input number.
-// @returns (Float) - The angle in radians.
+// RADIANS returns the angle converted from degrees to radians.
+// @param {Int | Float} number - The input number.
+// @return {Float} - The angle in radians.
 func Radians(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

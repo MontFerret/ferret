@@ -8,10 +8,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// RemoveNth returns a new array without an element by a given position.
-// @param array (Array) - Source array.
-// @param position (Int) - Target element position.
-// @return (Array) - A new array without an element by a given position.
+// REMOVE_NTH returns a new array without an element by a given position.
+// @param {Any[]} array - Source array.
+// @param {Int} position - Target element position.
+// @return {Any[]} - A new array without an element by a given position.
 func RemoveNth(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

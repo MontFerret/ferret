@@ -9,12 +9,22 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// WAIT_STYLE_ALL
+// WAIT_STYLE_ALL waits until a target style value appears on all matched elements with a given value.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} styleNameOrSelector - Style name or CSS selector.
+// @param {String | Any} valueOrStyleName - Style value or name.
+// @param {Any | Int} [valueOrTimeout] - Style value or wait timeout.
+// @param {Int} [timeout=5000] - Timeout.
 func WaitStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
-// WAIT_NO_STYLE_ALL
+// WAIT_NO_STYLE_ALL waits until a target style value disappears on all matched elements with a given value.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} styleNameOrSelector - Style name or CSS selector.
+// @param {String | Any} valueOrStyleName - Style value or name.
+// @param {Any | Int} [valueOrTimeout] - Style value or wait timeout.
+// @param {Int} [timeout=5000] - Timeout.
 func WaitNoStyleAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitStyleAllWhen(ctx, args, drivers.WaitEventAbsence)
 }

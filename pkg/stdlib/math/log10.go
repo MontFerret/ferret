@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Log10 returns the decimal logarithm of a given value.
-// @param number (Int|Float) - Input number.
-// @returns (Float) - The decimal logarithm of a given value.
+// LOG10 returns the decimal logarithm of a given value.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The decimal logarithm of a given value.
 func Log10(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

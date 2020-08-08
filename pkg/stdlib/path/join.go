@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Join joins any number of path elements into a single path, separating them with slashes.
-// @param elem (String...|Array<String>) - The path elements
-// @returns (String) - Single path from the given elements.
+// JOIN joins any number of path elements into a single path, separating them with slashes.
+// @param {String, repeated | String[]} elements - The path elements
+// @return {String} - Single path from the given elements.
 func Join(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	argsCount := len(args)

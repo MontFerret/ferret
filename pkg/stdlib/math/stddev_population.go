@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// StandardDeviationPopulation returns the population standard deviation of the values in a given array.
-// @params (Array) - Array of numbers.
-// @returns (Float) - The population standard deviation.
+// STDDEV_POPULATION returns the population standard deviation of the values in a given array.
+// @param {Int[] | Float[]} numbers - Array of numbers.
+// @return {Float} - The population standard deviation.
 func StandardDeviationPopulation(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

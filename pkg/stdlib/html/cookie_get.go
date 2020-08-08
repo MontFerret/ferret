@@ -10,8 +10,9 @@ import (
 )
 
 // COOKIE_GET gets a cookie from a given page by name.
-// @param page (HTMLPage) - Target page.
-// @param name (String) - Cookie or cookie name to delete.
+// @param {HTMLPage} page - Target page.
+// @param {String} name - Cookie or cookie name to delete.
+// @return {HTTPCookie} - Cookie if found, otherwise None.
 func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

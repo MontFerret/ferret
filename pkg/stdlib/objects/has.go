@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Has returns the value stored by the given key.
-// @params (String) - The key name string.
-// @returns (Boolean) - True if the key exists else false.
+// HAS returns the value stored by the given key.
+// @param {String} key - The key name string.
+// @return {Boolean} - True if the key exists else false.
 func Has(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

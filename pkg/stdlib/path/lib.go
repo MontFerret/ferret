@@ -3,6 +3,7 @@ package path
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 // RegisterLib register `PATH` namespace functions.
+// @namespace PATH
 func RegisterLib(ns core.Namespace) error {
 	return ns.
 		Namespace("PATH").

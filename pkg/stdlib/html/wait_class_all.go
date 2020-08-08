@@ -11,20 +11,20 @@ import (
 
 // WAIT_CLASS_ALL waits for a class to appear on all matched elements.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitClassAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_CLASS_ALL waits for a class to disappear on all matched elements.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoClassAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitClassAllWhen(ctx, args, drivers.WaitEventAbsence)
 }

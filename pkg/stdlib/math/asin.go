@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Asin returns the arcsine, in radians, of a given number.
-// @param number (Int|Float) - Input number.
-// @returns (Float) - The arcsine, in radians, of a given number.
+// ASIN returns the arcsine, in radians, of a given number.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The arcsine, in radians, of a given number.
 func Asin(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

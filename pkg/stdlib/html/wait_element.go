@@ -11,18 +11,18 @@ import (
 
 // WAIT_ELEMENT waits for element to appear in the DOM.
 // Stops the execution until it finds an element or operation times out.
-// @param n (HTMLDocument) - Driver HTMLDocument.
-// @param selector (String) - Target element's selector.
-// @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - Target element's selector.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitElement(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitElementWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_ELEMENT waits for element to disappear in the DOM.
 // Stops the execution until it does not find an element or operation times out.
-// @param doc (HTMLDocument) - Driver HTMLDocument.
-// @param selector (String) - Target element's selector.
-// @param timeout (Int, optional) - Optional timeout. Default 5000 ms.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - Target element's selector.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoElement(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitElementWhen(ctx, args, drivers.WaitEventAbsence)
 }

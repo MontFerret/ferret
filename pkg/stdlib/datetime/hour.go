@@ -9,8 +9,8 @@ import (
 )
 
 // DATE_HOUR returns the hour of date as a number.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - a hour number.
+// @param {DateTime} date - Source DateTime.
+// @return {Int} - An hour number.
 func DateHour(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

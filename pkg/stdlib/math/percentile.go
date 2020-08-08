@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Percentile returns the nth percentile of the values in a given array.
-// @param array (Array) - Array of numbers.
-// @param numb (Int) - A number which must be between 0 (excluded) and 100 (included).
-// @param method (String, optional) - "rank" (default) or "interpolation".
-// @returns (Float) - The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
+// PERCENTILE returns the nth percentile of the values in a given array.
+// @param {Int[] | Float[]} array - Array of numbers.
+// @param {Int} number - A number which must be between 0 (excluded) and 100 (included).
+// @param {String} [method="rank"] - "rank" or "interpolation".
+// @return {Float} - The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
 func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

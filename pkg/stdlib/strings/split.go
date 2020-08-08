@@ -9,11 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Split splits the given string value into a list of strings, using the separator.
-// @params text (String) - The string to split.
-// @params separator (String) - The separator.
-// @params limit (Int) - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @returns strings (Array<String>) - Array of strings.
+// SPLIT splits the given string value into a list of strings, using the separator.
+// @param {String} str - The string to split.
+// @param {String} separator - The separator.
+// @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
+// @return {String[]} - Array of strings.
 func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

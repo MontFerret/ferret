@@ -9,9 +9,9 @@ import (
 )
 
 // ATTR_GET gets single or more attribute(s) of a given element.
-// @param el (HTMLElement) - Target element.
-// @param names (...String) - Attribute name(s).
-// @returns Object - Key-value pairs of attribute values.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target node.
+// @param {String, repeated} attrNames - Attribute name(s).
+// @return {Object} - Key-value pairs of attribute values.
 func AttributeGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

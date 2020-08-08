@@ -22,24 +22,24 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 }
 
 // PDF prints a PDF of the current page.
-// @param target (HTMLPage|String) - Target page or url.
-// @param params (Object) - Optional, An object containing the following properties :
-//   Landscape (Bool) - Paper orientation. Defaults to false.
-//   DisplayHeaderFooter (Bool) - Display header and footer. Defaults to false.
-//   PrintBackground (Bool) - Print background graphics. Defaults to false.
-//   Scale (Float64) - Scale of the webpage rendering. Defaults to 1.
-//   PaperWidth (Float64) - Paper width in inches. Defaults to 8.5 inches.
-//   PaperHeight (Float64) - Paper height in inches. Defaults to 11 inches.
-//   MarginTop (Float64) - Top margin in inches. Defaults to 1cm (~0.4 inches).
-//   MarginBottom (Float64) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
-//   MarginLeft (Float64) - Left margin in inches. Defaults to 1cm (~0.4 inches).
-//   MarginRight (Float64) - Right margin in inches. Defaults to 1cm (~0.4 inches).
-//   PageRanges (String) - Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
-//   IgnoreInvalidPageRanges (Bool) - to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
-//   HeaderTemplate (String) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document For example, `<span class=title></span>` would generate span containing the title.
-//   FooterTemplate (String) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
-//   PreferCSSPageSize (Bool) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size. *
-// @returns data (Binary) - Returns a base64 encoded string in binary format.
+// @param {HTMLPage | String}target - Target page or url.
+// @param {Object} [params] - An object containing the following properties:
+// @param {Bool} [params.landscape=False] - Paper orientation.
+// @param {Bool} [params.displayHeaderFooter=False] - Display header and footer.
+// @param {Bool} [params.printBackground=False] - Print background graphics.
+// @param {Float} [params.scale=1] - Scale of the webpage rendering.
+// @param {Float} [params.paperWidth=22] - Paper width in inches.
+// @param {Float} [params.paperHeight=28] - Paper height in inches.
+// @param {Float} [params.marginTo=1] - Top margin in inches.
+// @param {Float} [params.marginBottom=1] - Bottom margin in inches.
+// @param {Float} [params.marginLeft=1] - Left margin in inches.
+// @param {Float} [params.marginRight=1] - Right margin in inches.
+// @param {String} [params.pageRanges] - Paper ranges to print, e.g., '1-5, 8, 11-13'.
+// @param {Bool} [params.ignoreInvalidPageRanges=False] - to silently ignore invalid but successfully parsed page ranges, such as '3-2'.
+// @param {String} [params.headerTemplate] - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document For example, `<span class=title></span>` would generate span containing the title.
+// @param {String} [params.footerTemplate] - HTML template for the print footer. Should use the same format as the `headerTemplate`.
+// @param {Bool} [params.preferCSSPageSize=False] - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size. *
+// @return {Binary} - PDF document in binary format.
 func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

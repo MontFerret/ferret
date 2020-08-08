@@ -9,11 +9,11 @@ import (
 )
 
 // DATE_DIFF returns the difference between two dates in given time unit.
-// @params date1   (DateTime) - first DateTime.
-// @params date2   (DateTime) - second DateTime.
-// @params unit    (String)   - time unit to return the difference in.
-// @params asFloat (Boolean, optional) - if true amount of unit will be as float.
-// @return (Int, Float) - difference between date1 and date2.
+// @param {DateTime} date1 - First date.
+// @param {DateTime} date2 - Second date.
+// @param {String} unit - Time unit to return the difference in.
+// @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
+// @return {Int | Float} - Difference between date1 and date2.
 func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 	if err != nil {

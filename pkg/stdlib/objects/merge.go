@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Merge merge the given objects into a single object.
-// @params objs (Array Of Object OR Objects) - objects to merge.
-// @returns (Object) - Object created by merging.
+// MERGE merge the given objects into a single object.
+// @param {Object, repeated} objects - Objects to merge.
+// @return {Object} - Object created by merging.
 func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 

@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Ext returns the extension of the last component of path.
-// @params path (String) - The path.
-// @returns (String) - The extension of the last component of path.
+// EXT returns the extension of the last component of path.
+// @param {String} path - The path.
+// @return {String} - The extension of the last component of path.
 func Ext(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

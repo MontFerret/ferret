@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// StandardDeviationSample returns the sample standard deviation of the values in a given array.
-// @params (Array) - Array of numbers.
-// @returns (Float) - The sample standard deviation.
+// STDDEV_SAMPLE returns the sample standard deviation of the values in a given array.
+// @param {Int[] | Float[]} numbers - Array of numbers.
+// @return {Float} - The sample standard deviation.
 func StandardDeviationSample(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

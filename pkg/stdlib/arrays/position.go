@@ -8,10 +8,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Position returns a value indicating whether an element is contained in array. Optionally returns its position.
-// @param array (Array) - The source array.
-// @param value (Read) - The target value.
-// @param returnIndex (Boolean, optional) - Read which indicates whether to return item's position.
+// POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
+// @param {Any[]} array - The source array.
+// @param {Any} value - The target value.
+// @param {Boolean} [position=False] - Boolean value which indicates whether to return item's position.
+// @return {Boolean | Int} - A value indicating whether an element is contained in array.
 func Position(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

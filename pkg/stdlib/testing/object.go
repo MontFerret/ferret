@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Object asserts that value is a object type.
-// @params actual (Mixed) - Value to test.
-// @params message (String, optional) - Message to display on error.
+// OBJECT asserts that value is a object type.
+// @param {Any} actual - Value to test.
+// @param {String} [message] - Message to display on error.
 var Object = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be object"

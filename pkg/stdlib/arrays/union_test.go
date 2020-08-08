@@ -10,8 +10,8 @@ import (
 )
 
 // TestUnion returns the union of distinct values of all passed arrays.
-// @param arrays (Array, repeated) - List of arrays to combine.
-// @returns (Array) - All array elements combined in a single array, without duplicates, in any order.
+// @param arrays {Any[], repeated} - List of arrays to combine.
+// @return {Any[]} - All array elements combined in a single array, without duplicates, in any order.
 func TestUnion(t *testing.T) {
 	Convey("Should union all arrays", t, func() {
 		arr1 := values.NewArrayWith(

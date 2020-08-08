@@ -10,9 +10,9 @@ import (
 )
 
 // INNER_HTML_SET sets inner HTML string to a given or matched by CSS selector element
-// @param doc (Open|GetElement) - Parent document or element.
-// @param selector (String, optional) - String of CSS selector.
-// @param innerHTML (String) - String of inner HTML.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} htmlOrSelector - HTML or CSS selector.
+// @param {String} [html] - String of inner HTML.
 func SetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

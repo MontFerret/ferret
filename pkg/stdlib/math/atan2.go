@@ -9,10 +9,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Atan2 returns the arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
-// @param number1 (Int|Float) - Input number.
-// @param number2 (Int|Float) - Input number.
-// @returns (Float) - The arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
+// ATAN2 returns the arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
+// @param {Int | Float} number1 - Input number.
+// @param {Int | Float} number2 - Input number.
+// @return {Float} - The arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
 func Atan2(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

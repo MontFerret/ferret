@@ -8,12 +8,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Unshift prepends value to a given array.
-// @param array (Array) - Target array.
-// @param value (Read) - Target value to prepend.
-// @param unique (Boolean, optional) - Optional value indicating whether a value must be unique to be prepended.
-// Default is false.
-// @returns (Array) - New array with prepended value.
+// UNSHIFT prepends value to a given array.
+// @param {Any[]} array - Target array.
+// @param {Any} value - Target value to prepend.
+// @param {Boolean} [unique=False] - Optional value indicating whether a value must be unique to be prepended. Default is false.
+// @return {Any[]} - New array with prepended value.
 func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
