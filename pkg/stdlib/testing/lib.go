@@ -5,6 +5,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
+// @namespace T
 func RegisterLib(ns core.Namespace) error {
 	t := ns.Namespace("T")
 

@@ -11,7 +11,6 @@ import (
 // ARRAY asserts that value is a array type.
 // @param {Any} actual - Value to test.
 // @param {String} [message] - Message to display on error.
-// @stdlib
 var Array = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be array"
