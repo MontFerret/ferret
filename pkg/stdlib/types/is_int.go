@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsInt checks whether value is a int value.
-// @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is int, otherwise false.
+// IS_INT checks whether value is a int value.
+// @param {Any} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is int, otherwise false.
 func IsInt(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// IsHTMLDocument checks whether value is a HTMLDocument value.
-// @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is HTMLDocument, otherwise false.
+// IS_HTML_DOCUMENT checks whether value is a HTMLDocument value.
+// @param {Any} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is HTMLDocument, otherwise false.
 func IsHTMLDocument(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

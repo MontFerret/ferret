@@ -5,6 +5,7 @@ import (
 )
 
 // RegisterLib register `FS` namespace functions.
+// @namespace FS
 func RegisterLib(ns core.Namespace) error {
 	return ns.
 		Namespace("FS").

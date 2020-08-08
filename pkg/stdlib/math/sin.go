@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Sin returns the sine of the radian argument.
-// @param number (Int|Float) - Input number.
-// @returns (Float) - The sin, in radians, of a given number.
+// SIN returns the sine of the radian argument.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The sin, in radians, of a given number.
 func Sin(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

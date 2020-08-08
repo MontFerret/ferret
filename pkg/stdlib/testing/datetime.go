@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// DateTime asserts that value is a datetime type.
-// @params actual (Mixed) - Value to test.
-// @params message (String, optional) - Message to display on error.
+// DATETIME asserts that value is a datetime type.
+// @param {Any} actual - Value to test.
+// @param {String} [message] - Message to display on error.
 var DateTime = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be datetime"

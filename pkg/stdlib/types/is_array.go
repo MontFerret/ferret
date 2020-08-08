@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsArray checks whether value is an array value.
-// @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is array, otherwise false.
+// IS_ARRAY checks whether value is an array value.
+// @param {Any} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is array, otherwise false.
 func IsArray(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

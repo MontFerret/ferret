@@ -8,14 +8,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Flatten turn an array of arrays into a flat array.
+// FLATTEN turns an array of arrays into a flat array.
 // All array elements in array will be expanded in the result array.
 // Non-array elements are added as they are.
 // The function will recurse into sub-arrays up to the specified depth.
 // Duplicates will not be removed.
-// @param arr (Array) - Target array.
-// @param depth (Int, optional) - Depth level.
-// @returns (Array) - Flat array.
+// @param {Any[]} arr - Target array.
+// @param {Int} [depth] - Depth level.
+// @return {Any[]} - Flat array.
 func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

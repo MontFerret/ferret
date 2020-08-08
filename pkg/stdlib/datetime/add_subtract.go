@@ -14,11 +14,7 @@ var (
 	emptyString   values.String
 )
 
-// DATE_ADD add amount given in unit to date.
-// @params date (DateTime) - source date.
-// @params amount (Int) - amount of units
-// @params unit (String) - unit.
-// @return (DateTime) - calculated date.
+// DATE_ADD adds amount given in unit to date.
 // The following units are available:
 // * y, year, year
 // * m, month, months
@@ -28,6 +24,10 @@ var (
 // * i, minute, minutes
 // * s, second, seconds
 // * f, millisecond, milliseconds
+// @param {DateTime} date - Source date.
+// @param {Int} amount - Amount of units
+// @param {String} unit - Unit.
+// @return {DateTime} - Calculated date.
 func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 	date, amount, unit, err := getArgs(args)
 	if err != nil {
@@ -45,10 +45,6 @@ func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 // DATE_SUBTRACT subtract amount given in unit to date.
-// @params date (DateTime) - source date.
-// @params amount (Int) - amount of units
-// @params unit (String) - unit.
-// @return (DateTime) - calculated date.
 // The following units are available:
 // * y, year, year
 // * m, month, months
@@ -58,6 +54,10 @@ func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 // * i, minute, minutes
 // * s, second, seconds
 // * f, millisecond, milliseconds
+// @param {DateTime} date - source date.
+// @param {Int} amount - amount of units
+// @param {String} unit - unit.
+// @return {DateTime} - calculated date.
 func DateSubtract(_ context.Context, args ...core.Value) (core.Value, error) {
 	date, amount, unit, err := getArgs(args)
 	if err != nil {

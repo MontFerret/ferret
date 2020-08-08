@@ -9,10 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Base returns the last component of the path.
-// or the path itself if it does not contain any directory separators.
-// @params path (String) - The path.
-// @returns (String) - The last component of the path.
+// BASE returns the last component of the path or the path itself if it does not contain any directory separators.
+// @param {String} path - The path.
+// @return {String} - The last component of the path.
 func Base(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

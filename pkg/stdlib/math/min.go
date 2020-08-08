@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Min returns the smallest (arithmetic mean) of the values in array.
-// @param array (Array) - Array of numbers.
-// @returns (Float) - The smallest of the values in array.
+// MIN returns the smallest (arithmetic mean) of the values in array.
+// @param {Int[] | Float[]} array - Array of numbers.
+// @return {Float} - The smallest of the values in array.
 func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

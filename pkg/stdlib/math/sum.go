@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Sum returns the sum of the values in a given array.
-// @param array (Array) - Array of numbers.
-// @returns (Float) - The sum of the values.
+// SUM returns the sum of the values in a given array.
+// @param {Int[] | Float[]} numbers - Array of numbers.
+// @return {Float} - The sum of the values.
 func Sum(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

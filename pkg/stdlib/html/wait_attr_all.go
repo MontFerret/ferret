@@ -11,20 +11,20 @@ import (
 
 // WAIT_ATTR_ALL waits for an attribute to appear on all matched elements with a given value.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitAttributeAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_ATTR_ALL waits for an attribute to disappear on all matched elements by a given value.
 // Stops the execution until the navigation ends or operation times out.
-// @param doc (HTMLDocument) - Parent document.
-// @param selector (String) - String of CSS selector.
-// @param class (String) - String of target CSS class.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - String of CSS selector.
+// @param {String} class - String of target CSS class.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoAttributeAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeAllWhen(ctx, args, drivers.WaitEventAbsence)
 }

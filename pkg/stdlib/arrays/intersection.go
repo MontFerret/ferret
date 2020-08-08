@@ -8,11 +8,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Intersection return the intersection of all arrays specified.
+// INTERSECTION return the intersection of all arrays specified.
 // The result is an array of values that occur in all arguments.
-// @param arrays (Array, repeated) - An arbitrary number of arrays as multiple arguments (at least 2).
-// @returns (Array) - A single array with only the elements, which exist in all provided arrays.
 // The element order is random. Duplicates are removed.
+// @param {Any[], repeated} arrays - An arbitrary number of arrays as multiple arguments (at least 2).
+// @return {Any[]} - A single array with only the elements, which exist in all provided arrays.
 func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
 	return sections(args, len(args))
 }

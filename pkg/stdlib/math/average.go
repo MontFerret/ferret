@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Average Returns the average (arithmetic mean) of the values in array.
-// @param array (Array) - Array of numbers.
-// @returns (Float) - The average of the values in array.
+// AVERAGE Returns the average (arithmetic mean) of the values in array.
+// @param {Int[] | Float[]} array - Array of numbers.
+// @return {Float} - The average of the values in array.
 func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

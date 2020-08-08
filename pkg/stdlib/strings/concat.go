@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Concat concatenates one or more instances of Read, or an Array.
-// @params src (String...|Array) - The source string / array.
-// @returns String
+// CONCAT concatenates one or more instances of String, or an Array.
+// @param {String, repeated | String[]} src - The source string / array.
+// @return {String} - A string value.
 func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
@@ -41,10 +41,10 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	return res, nil
 }
 
-// ConcatWithSeparator concatenates one or more instances of Read, or an Array with a given separator.
-// @params separator (string) - The separator string.
-// @params src (string...|array) - The source string / array.
-// @returns string
+// CONCAT_SEPARATOR concatenates one or more instances of String, or an Array with a given separator.
+// @param {String} separator - The separator string.
+// @param {String, repeated | String[]} src - The source string / array.
+// @return {String} - Concatenated string.
 func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

@@ -9,8 +9,8 @@ import (
 )
 
 // DATE_DAYOFWEEK returns number of the weekday from the date. Sunday is the 0th day of week.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - return number of the weekday.
+// @param {DateTime} date - Source DateTime.
+// @return {Int} - Number of the weekday.
 func DateDayOfWeek(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

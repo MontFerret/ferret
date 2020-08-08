@@ -10,9 +10,9 @@ import (
 )
 
 // ATTR_SET sets or updates a single or more attribute(s) of a given element.
-// @param el (HTMLElement) - Target element.
-// @param nameOrObj (String | Object) - Attribute name or an object representing a key-value pair of attributes.
-// @param value (String) - If a second parameter is a string value, this parameter represent an attribute value.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target node.
+// @param {String | Object} nameOrObj - Attribute name or an object representing a key-value pair of attributes.
+// @param {String} value - If a second parameter is a string value, this parameter represent an attribute value.
 func AttributeSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

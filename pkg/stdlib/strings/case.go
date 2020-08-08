@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-// Lower converts strings to their lower-case counterparts. All other characters are returned unchanged.
-// @param src (String) - The source string.
-// @returns (String) - THis string in lower case.
+// LOWER converts strings to their lower-case counterparts. All other characters are returned unchanged.
+// @param {String} str - The source string.
+// @return {String} - THis string in lower case.
 func Lower(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -23,9 +23,9 @@ func Lower(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewString(text), nil
 }
 
-// Upper converts strings to their upper-case counterparts. All other characters are returned unchanged.
-// @param src (String) - The source string.
-// @returns (String) - THis string in upper case.
+// UPPER converts strings to their upper-case counterparts. All other characters are returned unchanged.
+// @param {String} str - The source string.
+// @return {String} - THis string in upper case.
 func Upper(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Clean returns the shortest path name equivalent to path.
-// @params path (String) - The path.
-// @returns (String) - The shortest path name equivalent to path
+// CLEAN returns the shortest path name equivalent to path.
+// @param {String} path - The path.
+// @return {String} - The shortest path name equivalent to path
 func Clean(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

@@ -10,10 +10,10 @@ import (
 )
 
 // CLICK_ALL dispatches click event on all matched element
-// @param source (Open) - Open.
-// @param selector (String) - Selector.
-// @param count (Int, optional) - Optional count of clicks.
-// @returns (Boolean) - Returns true if matched at least one element.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - CSS selector.
+// @param {Int} [clicks=1] - Optional count of clicks.
+// @return {Boolean} - True if matched at least one element.
 func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

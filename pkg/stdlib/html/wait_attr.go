@@ -10,21 +10,21 @@ import (
 )
 
 // WAIT_ATTR waits until a target attribute's value appears
-// @param node (HTMLPage | HTMLDocument | HTMLElement) - Parent document.
-// @param attrNameOrSelector (String) - String of an attr name or CSS selector.
-// @param attrValueOrAttrName (String | Any) - Attr value or name.
-// @param attrValueOrTimeout (Any | Int, optional) - Attr value or an optional timeout.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} attrNameOrSelector - String of an attr name or CSS selector.
+// @param {String | Any} attrValueOrAttrName - Attr value or name.
+// @param {Any | Int} [attrValueOrTimeout] - Attr value or a timeout.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitAttribute(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeWhen(ctx, args, drivers.WaitEventPresence)
 }
 
 // WAIT_NO_ATTR waits until a target attribute's value disappears
-// @param node (HTMLPage | HTMLDocument | HTMLElement) - Parent document.
-// @param attrNameOrSelector (String) - String of an attr name or CSS selector.
-// @param attrValueOrAttrName (String | Any) - Attr value or name.
-// @param attrValueOrTimeout (Any | Int, optional) - Attr value or an optional timeout.
-// @param timeout (Int, optional) - Optional timeout.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} attrNameOrSelector - String of an attr name or CSS selector.
+// @param {String | Any} attrValueOrAttrName - Attr value or name.
+// @param {Any | Int} [attrValueOrTimeout] - Attr value or wait timeout.
+// @param {Int} [timeout=5000] - Wait timeout.
 func WaitNoAttribute(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return waitAttributeWhen(ctx, args, drivers.WaitEventAbsence)
 }

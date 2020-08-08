@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Cos returns the cosine of a given number.
-// @param number (Int|Float) - Input number.
-// @returns (Float) - The cosine of a given number.
+// COS returns the cosine of a given number.
+// @param {Int | Float} number - Input number.
+// @return {Float} - The cosine of a given number.
 func Cos(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
