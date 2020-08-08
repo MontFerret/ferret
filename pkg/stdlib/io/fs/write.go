@@ -20,16 +20,27 @@ import (
 // * w - Write (Default): will create a file if the specified file does not exist
 func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := validateRequiredWriteArgs(args)
+
 	if err != nil {
 		return values.None, err
 	}
 
 	fpath := args[0].String()
-	data := args[1].(values.Binary)
+	arg1 := args[1]
+
+	var data []byte
+
+	if arg1.Type() == types.Binary {
+		data = arg1.(values.Binary)
+	} else {
+		data = []byte(arg1.String())
+	}
+
 	params := defaultParams
 
 	if len(args) == 3 {
 		params, err = parseParams(args[2])
+
 		if err != nil {
 			return values.None, core.Error(
 				err,
@@ -40,12 +51,15 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	// 0666 - read & write
 	file, err := os.OpenFile(fpath, params.ModeFlag, 0666)
+
 	if err != nil {
 		return values.None, core.Error(err, "open file")
 	}
+
 	defer file.Close()
 
 	_, err = file.Write(data)
+
 	if err != nil {
 		return values.None, core.Error(err, "write file")
 	}
@@ -55,18 +69,15 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 
 func validateRequiredWriteArgs(args []core.Value) error {
 	err := core.ValidateArgs(args, 2, 3)
+
 	if err != nil {
-		return core.Error(err, "validate arguments number")
+		return err
 	}
 
-	pairs := []core.PairValueType{
-		core.NewPairValueType(args[0], types.String),
-		core.NewPairValueType(args[1], types.Binary),
-	}
+	err = core.ValidateType(args[0], types.String)
 
-	err = core.ValidateValueTypePairs(pairs...)
 	if err != nil {
-		return core.Error(err, "validate arguments")
+		return err
 	}
 
 	return nil
@@ -83,20 +94,21 @@ var defaultParams = parsedParams{
 }
 
 func parseParams(value core.Value) (parsedParams, error) {
-	obj, ok := value.(*values.Object)
-	if !ok {
-		return parsedParams{}, core.Error(
-			core.ErrInvalidArgument,
-			"value should be an object",
-		)
+	err := core.ValidateType(value, types.Object)
+
+	if err != nil {
+		return parsedParams{}, err
 	}
+
+	obj := value.(*values.Object)
 
 	params := defaultParams
 
 	modestr, exists := obj.Get(values.NewString("mode"))
-	if exists {
 
+	if exists {
 		flag, err := parseWriteMode(modestr.String())
+
 		if err != nil {
 			return parsedParams{}, core.Error(
 				core.ErrInvalidArgument,
@@ -142,10 +154,8 @@ func parseWriteMode(s string) (int, error) {
 	switch letters[0] {
 	case 'a':
 		flag |= os.O_APPEND
-
 	case 'w':
 		flag |= os.O_TRUNC
-
 	default:
 		return -1, core.Errorf(
 			core.ErrInvalidArgument,
