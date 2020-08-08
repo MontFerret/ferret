@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Binary asserts that value is a binary type.
-// @param actual {Any} - Value to test.
-// @param message {String, optional} - Message to display on error.
+// BINARY asserts that value is a binary type.
+// @param {Any} actual - Value to test.
+// @param {String} [message] - Message to display on error.
 var Binary = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be binary"

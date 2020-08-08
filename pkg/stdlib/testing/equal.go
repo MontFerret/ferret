@@ -8,10 +8,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Equal asserts equality of actual and expected values.
-// @param actual {Any} - Actual value.
-// @param expected {Any} - Expected value.
-// @param message {String, optional} - Message to display on error.
+// EQUAL asserts equality of actual and expected values.
+// @param {Any} actual - Actual value.
+// @param {Any} expected - Expected value.
+// @param {String} [message] - Message to display on error.
 var Equal = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", base.EqualOp, base.FormatValue(args[1]))

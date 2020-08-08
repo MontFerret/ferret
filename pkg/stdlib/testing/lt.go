@@ -8,10 +8,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Lt asserts that an actual value is lesser than an expected one.
-// @param actual {Any} - Actual value.
-// @param expected {Any} - Expected value.
-// @param message {String, optional} - Message to display on error.
+// LT asserts that an actual value is lesser than an expected one.
+// @param {Any} actual - Actual value.
+// @param {Any} expected - Expected value.
+// @param {String} [message] - Message to display on error.
 var Lt = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", base.LessOp, base.FormatValue(args[1]))

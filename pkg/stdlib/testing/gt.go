@@ -8,10 +8,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Gt asserts that an actual value is greater than an expected one.
-// @param actual {Any} - Actual value.
-// @param expected {Any} - Expected value.
-// @param message {String, optional} - Message to display on error.
+// GT asserts that an actual value is greater than an expected one.
+// @param {Any} actual - Actual value.
+// @param {Any} expected - Expected value.
+// @param {String} [message] - Message to display on error.
 var Gt = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("be %s %s", base.GreaterOp, base.FormatValue(args[1]))

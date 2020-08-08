@@ -9,10 +9,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Len asserts that a measurable value has a length or size with the expected value.
-// @param actual (Measurable) - Measurable value.
-// @param length {Any} - Target length.
-// @param message {String, optional} - Message to display on error.
+// LEN asserts that a measurable value has a length or size with the expected value.
+// @param {Measurable} actual - Measurable value.
+// @param {Int} length - Target length.
+// @param {String} [message] - Message to display on error.
 var Len = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return fmt.Sprintf("has size %s", args[1])

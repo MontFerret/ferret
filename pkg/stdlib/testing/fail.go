@@ -7,8 +7,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// Fail returns an error.
-// @param message {String, optional} - Message to display on error.
+// FAIL returns an error.
+// @param {String} [message] - Message to display on error.
 var Fail = base.Assertion{
 	DefaultMessage: func(_ []core.Value) string {
 		return "not fail"
