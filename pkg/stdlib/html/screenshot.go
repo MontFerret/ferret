@@ -29,7 +29,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	arg1 := args[0]
 
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, types.String)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, types.String)
 
 	if err != nil {
 		return values.None, err
