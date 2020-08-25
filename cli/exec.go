@@ -16,7 +16,7 @@ func ExecFile(pathToFile string, opts Options) {
 	query, err := ioutil.ReadFile(pathToFile)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 		return
 	}
