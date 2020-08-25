@@ -521,6 +521,9 @@ func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values
 }
 
 func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.String) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	pattern, err := p.urlToRegexp(targetURL)
 
 	if err != nil {
@@ -535,6 +538,9 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.Strin
 }
 
 func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTMLDocument, targetURL values.String) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	current := p.dom.GetMainFrame()
 	doc, ok := frame.(*dom.HTMLDocument)
 
@@ -562,10 +568,6 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 		return err
 	}
 
-	//if isMain {
-	//
-	//}
-
 	return p.reloadMainFrame(ctx)
 }
 
@@ -586,6 +588,12 @@ func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) 
 func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 	prev := p.dom.GetMainFrame()
 
+	if prev != nil {
+		if err := p.dom.RemoveFrameRecursively(prev.Frame().Frame.ID); err != nil {
+			p.logger.Error().Err(err).Msg("failed to remove main frame")
+		}
+	}
+
 	next, err := dom.LoadRootHTMLDocument(
 		ctx,
 		p.logger,
@@ -596,13 +604,9 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 	)
 
 	if err != nil {
-		return err
-	}
+		p.logger.Error().Err(err).Msg("failed to load a new root document")
 
-	if prev != nil {
-		if err := p.dom.RemoveFrameRecursively(prev.Frame().Frame.ID); err != nil {
-			p.logger.Error().Err(err).Msg("failed to remove main frame")
-		}
+		return err
 	}
 
 	p.dom.SetMainFrame(next)
