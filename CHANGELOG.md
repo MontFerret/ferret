@@ -9,11 +9,14 @@
 - Removed property caching and tracking [#531](https://github.com/MontFerret/ferret/pull/531)
 - Updated dependencies [#528](https://github.com/MontFerret/ferret/pull/528), [#525](https://github.com/MontFerret/ferret/pull/525)
 - ``IO::FS::WRITE`` accepts any type as a file content [#544](https://github.com/MontFerret/ferret/pull/544)
+- Print errors on stderr [#539](https://github.com/MontFerret/ferret/pull/539)
 
 #### Fixed
 - ``WAIT`` does not respect cancellation signal [#524](https://github.com/MontFerret/ferret/pull/524)
 - Missed ``DATE_COMPARE`` [#537](https://github.com/MontFerret/ferret/pull/537)
 - Spelling [#534](https://github.com/MontFerret/ferret/pull/534)
+- ``SCREENSHOT`` param type check [#545](https://github.com/MontFerret/ferret/pull/545)
+- Wrong base for int formatter [e283722](https://github.com/MontFerret/ferret/commit/e283722d37f392f755ace2a42232c0d4b37d1838)
 
 ### 0.11.1
 #### Fixed
