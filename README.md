@@ -99,11 +99,11 @@ go get github.com/MontFerret/ferret
 ## Environment
 
 In order to use all Ferret features, you will need to have Chrome either installed locally or running in Docker.
-For ease of use we recommend to run Chrome inside a Docker container:
+For ease of use we recommend to run [Chromium inside a Docker container](https://github.com/MontFerret/chromium):
 
 ```sh
-docker pull alpeware/chrome-headless-stable:ver-83.0.4103.61
-docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+docker pull montferret/chromium
+docker run -d -p 9222:9222 montferret/chromium
 ```
 
 But if you want to see what's happening during query execution, just start your Chrome with remote debugging port:
