@@ -47,10 +47,6 @@ func TestWrite(t *testing.T) {
 					Args: []core.Value{someInt},
 				},
 				{
-					Name: "Arguments Type: `data` not a binary",
-					Args: []core.Value{path, someInt},
-				},
-				{
 					Name: "Arguments Type: `params` not an object",
 					Args: []core.Value{path, data, someInt},
 				},
