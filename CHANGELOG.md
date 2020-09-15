@@ -2,7 +2,8 @@
 
 ### 0.12.0
 #### Added
-- iframe navigation handling [#535](https://github.com/MontFerret/ferret/pull/535)
+- iFrame navigation handling [#535](https://github.com/MontFerret/ferret/pull/535)
+- ``FRAMES`` function for fast frame lookup [#535](https://github.com/MontFerret/ferret/pull/535)
 - Assertion library [#526](https://github.com/MontFerret/ferret/pull/526)
 
 #### Changed
