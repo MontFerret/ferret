@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goVer: [1.12, 1.13, 1.14]
+        goVer: [1.13, 1.14, 1.15]
     steps:
       - name: Set up Go ${{ matrix.goVer }}
         uses: actions/setup-go@v2
@@ -64,6 +64,6 @@ jobs:
 
       - name: E2E tests
         run: |
-          docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+          docker run -d -p 9222:9222 ghcr.io/montferret/chromium:86.0.4240.0
           make e2e
           docker stop $(docker ps -q)
