@@ -22,7 +22,7 @@ type WaitNavigationParams struct {
 // @param {Int} [timeout=5000] - Navigation timeout.
 // @param {Object} [params=None] - Navigation parameters.
 // @param {Int} [params.timeout=5000] - Navigation timeout.
-// @param {Int} [params.target] - Navigation target url.
+// @param {String} [params.target] - Navigation target url.
 // @param {HTMLDocument} [params.frame] - Navigation frame.
 func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
