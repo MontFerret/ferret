@@ -46,6 +46,41 @@ func TestForFilter(t *testing.T) {
 		So(string(out), ShouldEqual, `[2,3,3]`)
 	})
 
+	Convey("Should compile query with a regexp FILTER statement", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET users = [
+				{
+					age: 31,
+					gender: "m",
+					name: "Josh"
+				},
+				{
+					age: 29,
+					gender: "f",
+					name: "Mary"
+				},
+				{
+					age: 36,
+					gender: "m",
+					name: "Peter"
+				}
+			]
+			FOR u IN users
+				FILTER u.name =~ "r"
+				RETURN u
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+
+		So(string(out), ShouldEqual, `[{"age":29,"gender":"f","name":"Mary"},{"age":36,"gender":"m","name":"Peter"}]`)
+	})
+
 	Convey("Should compile query with multiple FILTER statements", t, func() {
 		c := compiler.New()
 

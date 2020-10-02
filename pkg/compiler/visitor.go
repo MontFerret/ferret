@@ -434,6 +434,12 @@ func (v *visitor) doVisitFilterClause(ctx *fql.FilterClauseContext, scope *scope
 			return operators.NewEqualityOperator(v.getSourceMap(ctx), left, right, equalityOp.GetText())
 		}
 
+		regexpOp := exp.RegexpOperator()
+
+		if regexpOp != nil {
+			return operators.NewRegexpOperator(v.getSourceMap(ctx), left, right, regexpOp.GetText())
+		}
+
 		logicalAndOp := exp.LogicalAndOperator()
 
 		if logicalAndOp != nil {
