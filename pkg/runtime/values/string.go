@@ -1,12 +1,12 @@
 package values
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -68,7 +68,7 @@ func MustParseString(input interface{}) String {
 }
 
 func (t String) MarshalJSON() ([]byte, error) {
-	return json.Marshal(string(t))
+	return encoder.EncodeJSON(string(t))
 }
 
 func (t String) Type() core.Type {

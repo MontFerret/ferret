@@ -2,13 +2,13 @@ package values
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"math"
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -74,7 +74,7 @@ func IsInf(input Float, sign Int) Boolean {
 }
 
 func (t Float) MarshalJSON() ([]byte, error) {
-	return json.Marshal(float64(t))
+	return encoder.EncodeJSON(float64(t))
 }
 
 func (t Float) Type() core.Type {

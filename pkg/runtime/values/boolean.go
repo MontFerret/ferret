@@ -1,11 +1,11 @@
 package values
 
 import (
-	"encoding/json"
 	"hash/fnv"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -51,7 +51,7 @@ func MustParseBoolean(input interface{}) Boolean {
 }
 
 func (t Boolean) MarshalJSON() ([]byte, error) {
-	return json.Marshal(bool(t))
+	return encoder.EncodeJSON(bool(t))
 }
 
 func (t Boolean) Type() core.Type {

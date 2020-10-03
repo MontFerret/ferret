@@ -34,4 +34,15 @@ func TestString(t *testing.T) {
 			So(str.Length(), ShouldEqual, 7)
 		})
 	})
+
+	Convey(".MarshalJSON", t, func() {
+		Convey("Should not HTML escape", func() {
+			str := values.NewString("name=Jane&age=38")
+			expectedValue := []byte(`"name=Jane&age=38"`)
+
+			marshalled, err := str.MarshalJSON()
+			So(err, ShouldBeNil)
+			So(string(marshalled), ShouldEqual, string(expectedValue))
+		})
+	})
 }

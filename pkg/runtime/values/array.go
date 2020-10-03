@@ -3,11 +3,11 @@ package values
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -30,7 +30,7 @@ func NewArrayWith(values ...core.Value) *Array {
 }
 
 func (t *Array) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.items)
+	return encoder.EncodeJSON(t.items)
 }
 
 func (t *Array) Type() core.Type {

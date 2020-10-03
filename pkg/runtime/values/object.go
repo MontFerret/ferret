@@ -3,11 +3,11 @@ package values
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -43,7 +43,7 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 }
 
 func (t *Object) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.value)
+	return encoder.EncodeJSON(t.value)
 }
 
 func (t *Object) Type() core.Type {

@@ -2,11 +2,11 @@ package values
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -62,7 +62,7 @@ func MustParseInt(input interface{}) Int {
 }
 
 func (t Int) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64(t))
+	return encoder.EncodeJSON(int64(t))
 }
 
 func (t Int) Type() core.Type {

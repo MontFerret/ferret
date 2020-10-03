@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/encoder"
 )
 
 // JSON_PARSE returns a value described by the JSON-encoded input string.
@@ -39,7 +40,7 @@ func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	out, err := json.Marshal(args[0])
+	out, err := encoder.EncodeJSON(args[0])
 
 	if err != nil {
 		return values.EmptyString, err
