@@ -52,10 +52,18 @@ func LoadHTMLPage(
 		return nil, err
 	}
 
-	closers := make([]io.Closer, 0, 2)
+	closers := make([]io.Closer, 0, 4)
 
 	defer func() {
 		if err != nil {
+			if err := client.Page.Close(context.Background()); err != nil {
+				logger.Error().Err(err)
+			}
+
+			if err := conn.Close(); err != nil {
+				logger.Error().Err(err)
+			}
+
 			common.CloseAll(logger, closers, "failed to close a Page resource")
 		}
 	}()
