@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.12.1
+#### Fixed
+- Missing regexp FILTER operator [#558](https://github.com/MontFerret/ferret/pull/558)
+- Open tabs on page load error [#564](https://github.com/MontFerret/ferret/pull/564)
+- Docs for WAIT_NAVIGATION [#557](https://github.com/MontFerret/ferret/pull/557)
+
 ### 0.12.0
 #### Added
 - iFrame navigation handling [#535](https://github.com/MontFerret/ferret/pull/535)
