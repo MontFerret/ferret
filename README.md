@@ -580,6 +580,10 @@ FOR url IN urls
     RETURN DOCUMENT(url)
 ```
 
+## References
+
+Further documentation is available [at our website](https://www.montferret.dev/docs/introduction/)
+
 ## Contributors
 
 Thanks to everyone who contributed.
