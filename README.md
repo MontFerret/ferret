@@ -29,7 +29,14 @@ It is extremely portable, extensible and fast.
 
 [Read the introductory blog post about Ferret here!](https://medium.com/@ziflex/say-hello-to-ferret-a-modern-web-scraping-tool-5c9cc85ba183)
 
-## Show me some code
+### Features
+
+* Declarative language
+* Support of both static and dynamic web pages
+* Embeddable
+* Extensible
+
+### Show me some code
 The following example demonstrates the use of dynamic pages.    
 We load the main Google Search page, type search criteria into an input box and then click a search button.   
 The click action triggers a redirect, so we wait until its end.   
@@ -59,20 +66,14 @@ FOR result IN ELEMENTS(google, '.g')
 
 More examples you can find [here](./examples)
 
-## Features
 
-* Declarative language
-* Support of both static and dynamic web pages
-* Embeddable
-* Extensible
-
-## Motivation
+### Motivation
 Nowadays data is everything and who owns data - owns the world.    
 I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
 After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
 ```ferret``` project is an ambitious initiative trying to bring the universal platform for writing scrapers without any hassle.    
 
-## Inspiration
+### Inspiration
 FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
 But due to the domain specifics, there are some differences in syntax and how things work.     
 
@@ -96,7 +97,7 @@ You can download latest binaries from [here](https://github.com/MontFerret/ferre
 go get github.com/MontFerret/ferret
 ```
 
-## Environment
+### Environment
 
 In order to use all Ferret features, you will need to have Chrome either installed locally or running in Docker.
 For ease of use we recommend to run [Chromium inside a Docker container](https://github.com/MontFerret/chromium):
@@ -300,7 +301,9 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 
 ```
 
-## Extensibility
+## Extras
+
+### Extensibility
 
 That said, ```ferret``` is a very modular system which also allows not only embed it, but extend its standard library.
 
@@ -417,7 +420,7 @@ func main() {
 }
 ```
 
-## Proxy
+### Proxy
 
 By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a particular proxy. It should be done during a browser launch.
 
@@ -461,21 +464,45 @@ func run(q string) ([]byte, error) {
 
 ```
 
-## Cookies
+### Cookies
 
-### Non-incognito mode
+#### Get, Set, Delete
+For more precise work, you can set/get/delete cookies manually before and after loading the page:
+
+```
+LET doc = DOCUMENT("https://www.google.com", {
+    driver: "cdp",
+    cookies: [
+         {
+             name: "foo",
+             value: "bar"
+         }
+    ]
+})
+
+COOKIE_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
+COOKIE_DEL(doc, "foo")
+
+LET c = COOKIE_GET(doc, "baz")
+
+FOR cookie IN doc.cookies
+    RETURN cookie.name
+	
+```
+
+#### Access previously-set cookies (non-incognito mode)
 
 By default, ``CDP`` driver execute each query in an incognito mode in order to avoid any collisions related to some persisted cookies from previous queries.   
 However, sometimes it might not be a desirable behavior and a query needs to be executed within a Chrome tab with earlier persisted cookies.   
 In order to do that, we need to inform the driver to execute all queries in regular tabs. Here is how to do that:
 
-#### CLI
+##### CLI
 
 ```sh
 ferret --cdp-keep-cookies my-query.fql
 ```
 
-#### Code
+##### Code
 
 ```go
 package main
@@ -509,7 +536,7 @@ func run(q string) ([]byte, error) {
 }
 ```
 
-#### Query
+##### Query
 ```
 LET doc = DOCUMENT("https://www.google.com", {
     driver: "cdp",
@@ -517,31 +544,7 @@ LET doc = DOCUMENT("https://www.google.com", {
 })
 ```
 
-### Cookies manipulation
-For more precise work, you can set/get/delete cookies manually during and after page load:
-
-```
-LET doc = DOCUMENT("https://www.google.com", {
-    driver: "cdp",
-    cookies: [
-         {
-             name: "foo",
-             value: "bar"
-         }
-    ]
-})
-
-COOKIE_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
-COOKIE_DEL(doc, "foo")
-
-LET c = COOKIE_GET(doc, "baz")
-
-FOR cookie IN doc.cookies
-    RETURN cookie.name
-	
-```
-
-## File System
+### File System
 
 #### Write
 ```
