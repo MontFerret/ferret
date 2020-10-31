@@ -109,7 +109,7 @@ docker pull montferret/chromium
 docker run -d -p 9222:9222 montferret/chromium
 ```
 
-If you'd rathersee what's happening during query execution, just start launch Chrome from your host with the remote debugging port set:
+If you'd rather see what's happening during query execution, just start launch Chrome from your host with the remote debugging port set:
 
 ```sh
 chrome.exe --remote-debugging-port=9222
