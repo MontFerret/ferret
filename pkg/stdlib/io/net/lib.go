@@ -6,6 +6,7 @@ import (
 )
 
 // RegisterLib register `NET` namespace functions.
+// @namespace NET
 func RegisterLib(ns core.Namespace) error {
 	io := ns.Namespace("NET")
 

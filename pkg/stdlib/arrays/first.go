@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// First returns a first element from a given array.
-// @param arr (Array) - Target array.
-// @returns element (Read) - First element in a given array.
+// FIRST returns a first element from a given array.
+// @param {Any[]} arr - Target array.
+// @return {Any} - First element in a given array.
 func First(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

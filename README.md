@@ -25,16 +25,22 @@
 ## What is it?
 ```ferret``` is a web scraping system. It aims to simplify data extraction from the web for UI testing, machine learning, analytics and more.    
 ```ferret``` allows users to focus on the data. It abstracts away the technical details and complexity of underlying technologies using its own declarative language. 
-It is extremely portable, extensible and fast.
+It is extremely portable, extensible, and fast.
 
 [Read the introductory blog post about Ferret here!](https://medium.com/@ziflex/say-hello-to-ferret-a-modern-web-scraping-tool-5c9cc85ba183)
 
-## Show me some code
+### Features
+
+* Declarative language
+* Support of both static and dynamic web pages
+* Embeddable
+* Extensible
+
+### Show me some code
 The following example demonstrates the use of dynamic pages.    
-We load the main Google Search page, type search criteria into an input box and then click a search button.   
-The click action triggers a redirect, so we wait until its end.   
-Once the page gets loaded, we iterate over all elements in search results and assign the output to a variable.   
-The final for loop filters out empty elements that might be because of inaccurate use of selectors.      
+We load the main Google Search page, type a search criteria into the input box, and then click the search button.   
+The click action triggers a redirect, so we wait until the the page we were redirected to finishes loading.   
+Once the results page is loaded, we iterate over all elements in the search results and assign output to a variable.   
 
 ```aql
 LET google = DOCUMENT("https://www.google.com/", {
@@ -57,28 +63,20 @@ FOR result IN ELEMENTS(google, '.g')
     }
 ```
 
-More examples you can find [here](./examples)
+You can find more examples [here](./examples).
 
-## Features
 
-* Declarative language
-* Support of both static and dynamic web pages
-* Embeddable
-* Extensible
+### Motivation
+Nowadays, data is everything and who owns data - owns the world.    
+I have worked on multiple data-driven projects where data was an essential part of a system, and I realized how repetitive it is to write scraping code.
+Other scraping libraries require lots of boilerplate code and tend to encourage an imperative approach to extracting data.
+After some time looking for a tool that would let me declare which data I needed (instead of imperatively instructing it how to extract it), I decided to build my own solution.    
+```ferret``` project is an ambitious initiative trying to bring the universal platform for writing scrapers without the hassle of other scrapers.
 
-## Motivation
-Nowadays data is everything and who owns data - owns the world.    
-I have worked on multiple data-driven projects where data was an essential part of a system and I realized how cumbersome writing tons of scrapers is.    
-After some time looking for a tool that would let me to not write a code, but just express what data I need, decided to come up with my own solution.    
-```ferret``` project is an ambitious initiative trying to bring the universal platform for writing scrapers without any hassle.    
-
-## Inspiration
-FQL (Ferret Query Language) is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).    
-But due to the domain specifics, there are some differences in how things work.     
-
-## WIP
-Be aware, that the project is under heavy development. There is no documentation and some things may change in the final release.    
-For query syntax, you may go to [ArangoDB web site](https://docs.arangodb.com/3.3/AQL/index.html) and use AQL docs as docs for FQL - since they are identical.    
+### Inspiration
+FQL (Ferret Query Language) is meant to feel like writing a database query.
+It is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).
+But due to the domain specifics, there are some differences in syntax and how things work.     
 
 
 ## Installation
@@ -100,17 +98,18 @@ You can download latest binaries from [here](https://github.com/MontFerret/ferre
 go get github.com/MontFerret/ferret
 ```
 
-## Environment
+### Environment
 
 In order to use all Ferret features, you will need to have Chrome either installed locally or running in Docker.
-For ease of use we recommend to run Chrome inside a Docker container:
+For ease of use, we recommend to running Chromium inside a Docker container.
+You can probably use most Chromium-based headless images, but we've put together [an image that's ready to go](https://github.com/MontFerret/chromium):
 
 ```sh
-docker pull alpeware/chrome-headless-stable:ver-83.0.4103.61
-docker run -d -p 9222:9222 -e CHROME_OPTS='--disable-dev-shm-usage --full-memory-crash-report' alpeware/chrome-headless-stable:ver-83.0.4103.61
+docker pull montferret/chromium
+docker run -d -p 9222:9222 montferret/chromium
 ```
 
-But if you want to see what's happening during query execution, just start your Chrome with remote debugging port:
+If you'd rather see what's happening during query execution, just start launch Chrome from your host with the remote debugging port set:
 
 ```sh
 chrome.exe --remote-debugging-port=9222
@@ -120,7 +119,8 @@ chrome.exe --remote-debugging-port=9222
 
 ### Browserless mode
 
-If you want to play with ```fql``` and check its syntax, you can run CLI with the following commands:
+If you want to try out ```fql```, you can get started without Chrome or a Chromium container.
+Executing the `ferret` CLI without any options will open `ferret` in REPL mode.
 ```
 ferret
 ```
@@ -157,17 +157,18 @@ ferret < ./docs/examples/static-page.fql
 
 ### Browser mode
 
-By default, ``ferret`` loads HTML pages via HTTP protocol, because it's faster.    
-But nowadays, there are more and more websites rendered with JavaScript, and therefore, this 'old school' approach does not really work.    
-For such cases, you may fetch documents using Chrome or Chromium via Chrome DevTools protocol (aka CDP).    
-First, you need to make sure that you launched Chrome with ```remote-debugging-port=9222``` flag.    
+By default, ``ferret`` loads HTML pages directly via HTTP protocol, because it's faster.    
+But nowadays, more and more websites are rendered with JavaScript, and this 'old school' approach does not really work.    
+For these dynamic websites, you may fetch documents using Chrome or Chromium via Chrome DevTools protocol (aka CDP).    
+First, you need to make sure that you launched Chrome with ```remote-debugging-port=9222``` flag (see "Environment" in this README for instructions on setting this up).    
 Second, you need to pass the address to ```ferret``` CLI.    
 
 ```
 ferret --cdp http://127.0.0.1:9222
 ```
 
-**NOTE:** By default, ```ferret``` will try to use this local address as a default one, so it makes sense to explicitly pass the parameter only in case of either different port number or remote address.    
+**NOTE:** By default, ```ferret``` will try to use this local address as a default one.
+You only need to explicitly pass the parameter if you are using a different port number or remote address.
 
 Alternatively, you can tell CLI to launch Chrome for you.
 
@@ -177,7 +178,7 @@ ferret --cdp-launch
 
 **NOTE:** Launch command is currently broken on MacOS.
 
-Once ```ferret``` knows how to communicate with Chrome, you can use a function ```DOCUMENT(url, isDynamic)``` with ```true``` boolean value for dynamic pages:
+Once ```ferret``` knows how to communicate with Chrome, you can use the function ```DOCUMENT(url, isDynamic)```, setting ```isDynamic``` to ```{driver: "cdp"}``` for dynamic pages:
 
 ```shell
 Welcome to Ferret REPL
@@ -214,7 +215,11 @@ Please use `exit` or `Ctrl-D` to exit this program.
 
 ### Embedded mode
 
-```ferret``` is a very modular system and therefore, can be easily be embedded into your Go application.
+```ferret``` is a very modular system.
+It can be be embedded into your Go application in only a few lines of code.
+
+Here is an example of a short Go application that defines an `fql` query, compiles it, executes it, then returns the results.
+
 
 ```go
 package main
@@ -304,9 +309,13 @@ func getTopTenTrendingTopics() ([]*Topic, error) {
 
 ```
 
-## Extensibility
+## Extras
 
-That said, ```ferret``` is a very modular system which also allows not only embed it, but extend its standard library.
+### Extensibility
+
+With ```ferret```'s modular system, you can also extend its standard library.
+
+In this example, we define a `transform` function in Go, then register that function with ```ferret```, making it available for use in ```fql``` queries.
 
 ```go
 package main
@@ -396,15 +405,15 @@ func getStrings() ([]string, error) {
 }
 ```
 
-On top of that, you can completely turn off the standard library, bypassing the following option:
+You can completely turn off the ```ferret``` standard library, as follows:
 
 ```go
 comp := compiler.New(compiler.WithoutStdlib())
 ```
 
-And after that, you can easily provide your own implementation of functions from standard library.    
+After disabling ```stdlib```, you can register your own implementation of functions from standard library.    
 
-If you don't need a particular set of functions from standard library, you can turn off the entire ```stdlib``` and register separate packages from that:    
+If you only need a subset of the ```stdlib``` functions, you can only have those enabled by disabling the entire ```stdlib```, then registering the individual packages that are needed:    
 
 ```go
 package main
@@ -421,19 +430,19 @@ func main() {
 }
 ```
 
-## Proxy
+### Proxy
 
-By default, Ferret does not use any proxies. Partially, due to inability to force Chrome/Chromium (or any other Chrome Devtools Protocol compatible browser) to use a particular proxy. It should be done during a browser launch.
+By default, ```ferret``` does not attempt to use a proxy. This is due to an inability to CDP-compatible browsers to use an arbitrary proxy. If you need to use a proxy, it should be defined while launching the browser.
 
-But you can pass an address of a proxy server you want to use for static pages.
+However, if you are querying static pages, you can define a proxy while launching ``ferret``` from the CLI or from embedded applications.
 
-#### CLI
+#### CLI example
 
 ```sh
 ferret --proxy=http://localhost:8888 my-query.fql
 ```
 
-#### Code
+#### Embedded example
 
 ```go
 package main
@@ -465,21 +474,47 @@ func run(q string) ([]byte, error) {
 
 ```
 
-## Cookies
+### Cookies
 
-### Non-incognito mode
+#### Get, Set, Delete
+For more precise work, you can set/get/delete cookies manually before and after loading the page:
 
-By default, ``CDP`` driver execute each query in an incognito mode in order to avoid any collisions related to some persisted cookies from previous queries.   
-However, sometimes it might not be a desirable behavior and a query needs to be executed within a Chrome tab with earlier persisted cookies.   
-In order to do that, we need to inform the driver to execute all queries in regular tabs. Here is how to do that:
+```
+LET doc = DOCUMENT("https://www.google.com", {
+    driver: "cdp",
+    cookies: [
+         {
+             name: "foo",
+             value: "bar"
+         }
+    ]
+})
 
-#### CLI
+COOKIE_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
+COOKIE_DEL(doc, "foo")
+
+LET c = COOKIE_GET(doc, "baz")
+
+FOR cookie IN doc.cookies
+    RETURN cookie.name
+	
+```
+
+#### Access previously-set cookies (non-incognito mode)
+
+By default, ``CDP`` driver execute each query in an incognito mode in order to avoid collisions from cookies persisted by previous queries.   
+However, sometimes you might want access to persisted cookies (e.g. to avoid re-authenticating with a site).   
+In order to do that, we need to configure the driver to execute all queries in non-incognito tabs.
+
+Here is how to do that:
+
+##### CLI example
 
 ```sh
 ferret --cdp-keep-cookies my-query.fql
 ```
 
-#### Code
+##### Embedded example
 
 ```go
 package main
@@ -513,7 +548,7 @@ func run(q string) ([]byte, error) {
 }
 ```
 
-#### Query
+##### Query
 ```
 LET doc = DOCUMENT("https://www.google.com", {
     driver: "cdp",
@@ -521,33 +556,11 @@ LET doc = DOCUMENT("https://www.google.com", {
 })
 ```
 
-### Cookies manipulation
-For more precise work, you can set/get/delete cookies manually during and after page load:
+### File System
 
-```
-LET doc = DOCUMENT("https://www.google.com", {
-    driver: "cdp",
-    cookies: [
-         {
-             name: "foo",
-             value: "bar"
-         }
-    ]
-})
+```ferret``` can also read and write to the file system.
 
-COOKIE_SET(doc, { name: "baz", value: "qaz"}, { name: "daz", value: "gag" })
-COOKIE_DEL(doc, "foo")
-
-LET c = COOKIE_GET(doc, "baz")
-
-FOR cookie IN doc.cookies
-    RETURN cookie.name
-	
-```
-
-## File System
-
-#### Write
+#### Write example
 ```
 USE IO::FS
 
@@ -556,7 +569,7 @@ LET favicon = DOWNLOAD("https://www.google.com/favicon.ico")
 RETURN WRITE("google.favicon.ico", favicon)
 ```
 
-#### Read
+#### Read example
 ```
 USE IO::FS
 
@@ -566,6 +579,10 @@ LET urls = JSON_PARSE(urls_data)
 FOR url IN urls
     RETURN DOCUMENT(url)
 ```
+
+## References
+
+Further documentation is available [at our website](https://www.montferret.dev/docs/introduction/)
 
 ## Contributors
 

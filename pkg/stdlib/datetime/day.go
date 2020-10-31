@@ -9,8 +9,8 @@ import (
 )
 
 // DATE_DAY returns the day of date as a number.
-// @params date (DateTime) - source DateTime.
-// @return (Int) - a day number.
+// @param {DateTime} date - Source DateTime.
+// @return {Int} - A day number.
 func DateDay(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 	if err != nil {

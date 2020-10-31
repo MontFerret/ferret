@@ -9,10 +9,10 @@ import (
 )
 
 // SELECT selects a value from an underlying select element.
-// @param source (Open | GetElement) - Event target.
-// @param valueOrSelector (String | Array<String>) - Selector or a an array of strings as a value.
-// @param value (Array<String) - Target value. Optional.
-// @returns (Array<String>) - Returns an array of selected values.
+// @param {HTMLElement} element - Target html element.
+// @param {String | String[]} valueOrSelector - Selector or a an array of strings as a value.
+// @param {String[]} value - Target value. Optional.
+// @return {String[]} - Array of selected values.
 func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

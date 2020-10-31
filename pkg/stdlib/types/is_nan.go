@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsNaN checks whether value is NaN.
-// @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is NaN, otherwise false.
+// IS_NAN checks whether value is NaN.
+// @param {Any} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is NaN, otherwise false.
 func IsNaN(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

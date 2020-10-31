@@ -3,7 +3,7 @@ package events
 import "sync"
 
 type ListenerCollection struct {
-	mu     sync.Mutex
+	mu     sync.RWMutex
 	values map[ID]map[ListenerID]Listener
 }
 
@@ -15,8 +15,8 @@ func NewListenerCollection() *ListenerCollection {
 }
 
 func (lc *ListenerCollection) Size(eventID ID) int {
-	lc.mu.Lock()
-	defer lc.mu.Unlock()
+	lc.mu.RLock()
+	defer lc.mu.RUnlock()
 
 	bucket, exists := lc.values[eventID]
 
@@ -55,8 +55,8 @@ func (lc *ListenerCollection) Remove(eventID ID, listenerID ListenerID) {
 }
 
 func (lc *ListenerCollection) Values(eventID ID) []Listener {
-	lc.mu.Lock()
-	defer lc.mu.Unlock()
+	lc.mu.RLock()
+	defer lc.mu.RUnlock()
 
 	bucket, exists := lc.values[eventID]
 

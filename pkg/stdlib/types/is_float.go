@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsFloat checks whether value is a float value.
-// @param value (Value) - Input value of arbitrary type.
-// @returns (Boolean) - Returns true if value is float, otherwise false.
+// IS_FLOAT checks whether value is a float value.
+// @param {Any} value - Input value of arbitrary type.
+// @return {Boolean} - Returns true if value is float, otherwise false.
 func IsFloat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

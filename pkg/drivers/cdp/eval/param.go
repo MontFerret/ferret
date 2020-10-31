@@ -33,5 +33,5 @@ func ParamFloat(param float64) string {
 }
 
 func ParamInt(param int64) string {
-	return strconv.FormatInt(param, 64)
+	return strconv.FormatInt(param, 10)
 }

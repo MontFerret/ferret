@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// PopulationVariance returns the population variance of the values in a given array.
-// @params (Array) - Array of numbers.
-// @returns (Float) - The population variance.
+// VARIANCE_POPULATION returns the population variance of the values in a given array.
+// @param {Int[] | Float[]} numbers - Array of numbers.
+// @return {Float} - The population variance.
 func PopulationVariance(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

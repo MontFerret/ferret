@@ -10,9 +10,9 @@ import (
 )
 
 // CLICK dispatches click event on a given element
-// @param source (Open | GetElement) - Event source.
-// @param selectorOrCount (String | Int, optional) - Optional selector or count of clicks.
-// @param count (Int, optional) - Optional count of clicks.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String | Int} [cssSelectorOrClicks] - CSS selector or count of clicks.
+// @param {Int} [clicks=1] - Count of clicks.
 func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 

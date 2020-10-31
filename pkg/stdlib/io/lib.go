@@ -7,6 +7,7 @@ import (
 )
 
 // RegisterLib register `IO` namespace functions.
+// @namespace IO
 func RegisterLib(ns core.Namespace) error {
 	io := ns.Namespace("IO")
 

@@ -20,16 +20,20 @@ type PageLoadParams struct {
 
 // DOCUMENT opens an HTML page by a given url.
 // By default, loads a page by http call - resulted page does not support any interactions.
-// @param params (Object) - Optional, An object containing the following properties :
-// 		driver (String) - Optional, driver name.
-//      timeout (Int) - Optional, timeout.
-//      userAgent (String) - Optional, user agent.
-//      keepCookies (Boolean) - Optional, boolean value indicating whether to use cookies from previous sessions.
-//      	i.e. not to open a page in the Incognito mode.
-//      cookies (HTTPCookies) - Optional, set of HTTP cookies.
-//      headers (HTTPHeaders) - Optional, HTTP headers.
-//      viewport (Viewport) - Optional, viewport params.
-// @returns (HTMLPage) - Returns loaded HTML page.
+// @param {Object} [params] - An object containing the following properties :
+// @param {String} [params.driver] - Driver name to use.
+// @param {Int} [params.timeout=60000] - Page load timeout.
+// @param {String} [params.userAgent] - Custom user agent.
+// @param {Boolean} [params.keepCookies=False] - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
+// @param {HTTPCookies} [params.cookies] - Set of HTTP cookies to use during page loading.
+// @param {HTTPHeaders} [params.headers] - Set of HTTP headers to use during page loading.
+// @param {Object} [params.viewport] - Viewport params.
+// @param {Int} [params.viewport.height] - Viewport height.
+// @param {Int} [params.viewport.width] - Viewport width.
+// @param {Float} [params.viewport.scaleFactor] - Viewport scale factor.
+// @param {Boolean} [params.viewport.mobile] - Value that indicates whether to emulate mobile device.
+// @param {Boolean} [params.viewport.landscape] - Value that indicates whether to render a page in landscape position.
+// @return {HTMLPage} - Loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 

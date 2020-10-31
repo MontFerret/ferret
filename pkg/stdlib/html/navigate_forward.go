@@ -12,10 +12,10 @@ import (
 // NAVIGATE_FORWARD navigates a given page forward within its navigation history.
 // The operation blocks the execution until the page gets loaded.
 // If the history is empty, the function returns FALSE.
-// @param page (HTMLPage) - Target page.
-// @param entry (Int, optional) - Optional value indicating how many pages to skip. Default 1.
-// @param timeout (Int, optional) - Optional timeout. Default is 5000.
-// @returns (Boolean) - Returns TRUE if history exists and the operation succeeded, otherwise FALSE.
+// @param {HTMLPage} page - Target page.
+// @param {Int} [entry=1] - An integer value indicating how many pages to skip.
+// @param {Int} [timeout=5000] - Navigation timeout.
+// @return {Boolean} - True if history exists and the operation succeeded, otherwise false.
 func NavigateForward(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 

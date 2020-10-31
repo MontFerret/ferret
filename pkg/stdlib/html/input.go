@@ -9,11 +9,11 @@ import (
 )
 
 // INPUT types a value to an underlying input element.
-// @param source (HTMLPage | HTMLDocument | HTMLElement) - Event target.
-// @param valueOrSelector (String) - Selector or a value.
-// @param value (String) - Target value.
-// @param delay (Int, optional) - Target value.
-// @returns (Boolean) - Returns true if an element was found.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} valueOrSelector - CSS selector or a value.
+// @param {String} value - Target value.
+// @param {Int} [delay] - Target value.
+// @return {Boolean} - Returns true if an element was found.
 func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 

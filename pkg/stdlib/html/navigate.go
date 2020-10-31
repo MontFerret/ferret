@@ -12,9 +12,9 @@ import (
 // NAVIGATE navigates a given page to a new resource.
 // The operation blocks the execution until the page gets loaded.
 // Which means there is no need in WAIT_NAVIGATION function.
-// @param page (HTMLPage) - Target page.
-// @param url (String) - Target url to navigate.
-// @param timeout (Int, optional) - Optional timeout. Default is 5000.
+// @param {HTMLPage} page - Target page.
+// @param {String} url - Target url to navigate.
+// @param {Int} [timeout=5000] - Navigation timeout.
 func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

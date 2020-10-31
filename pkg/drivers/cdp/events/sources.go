@@ -7,7 +7,7 @@ import (
 )
 
 type SourceCollection struct {
-	mu     sync.Mutex
+	mu     sync.RWMutex
 	values []Source
 }
 
@@ -44,15 +44,15 @@ func (sc *SourceCollection) Close() error {
 }
 
 func (sc *SourceCollection) Size() int {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
 
 	return len(sc.values)
 }
 
 func (sc *SourceCollection) Get(idx int) (Source, error) {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
 
 	if len(sc.values) <= idx {
 		return nil, core.ErrNotFound

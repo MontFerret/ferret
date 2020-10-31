@@ -10,9 +10,9 @@ import (
 )
 
 // MOUSE moves mouse by given coordinates.
-// @param doc (HTMLDocument) - HTML document.
-// @param x (Int|Float) - X coordinate.
-// @param y (Int|Float) - Y coordinate.
+// @param {HTMLDocument} document - HTML document.
+// @param {Int|Float} x - X coordinate.
+// @param {Int|Float} y - Y coordinate.
 func MouseMoveXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 3)
 

@@ -10,8 +10,8 @@ import (
 )
 
 // COOKIE_DEL gets a cookie from a given page by name.
-// @param page (HTMLPage) - Target page.
-// @param cookie (...HTTPCookie|String) - Cookie or cookie name to delete.
+// @param {HTMLPage} page - Target page.
+// @param {HTTPCookie, repeated | String, repeated} cookiesOrNames - Cookie or cookie name to delete.
 func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

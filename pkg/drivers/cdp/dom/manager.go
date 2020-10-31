@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"io"
+	"sync"
 )
 
 var (
@@ -36,6 +37,7 @@ type (
 	ChildNodeRemovedListener func(ctx context.Context, nodeID, previousNodeID dom.NodeID)
 
 	Manager struct {
+		mu        sync.RWMutex
 		logger    *zerolog.Logger
 		client    *cdp.Client
 		events    *events.Loop
@@ -180,6 +182,9 @@ func (m *Manager) Close() error {
 }
 
 func (m *Manager) GetMainFrame() *HTMLDocument {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	mainFrameID := m.mainFrame.Get()
 
 	if mainFrameID == "" {
@@ -196,6 +201,9 @@ func (m *Manager) GetMainFrame() *HTMLDocument {
 }
 
 func (m *Manager) SetMainFrame(doc *HTMLDocument) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	mainFrameID := m.mainFrame.Get()
 
 	if mainFrameID != "" {
@@ -210,18 +218,30 @@ func (m *Manager) SetMainFrame(doc *HTMLDocument) {
 }
 
 func (m *Manager) AddFrame(frame page.FrameTree) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	m.addFrameInternal(frame)
 }
 
 func (m *Manager) RemoveFrame(frameID page.FrameID) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return m.removeFrameInternal(frameID)
 }
 
 func (m *Manager) RemoveFrameRecursively(frameID page.FrameID) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return m.removeFrameRecursivelyInternal(frameID)
 }
 
 func (m *Manager) RemoveFramesByParentID(parentFrameID page.FrameID) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	frame, found := m.frames.Get(parentFrameID)
 
 	if !found {
@@ -242,6 +262,9 @@ func (m *Manager) GetFrameNode(ctx context.Context, frameID page.FrameID) (*HTML
 }
 
 func (m *Manager) GetFrameTree(_ context.Context, frameID page.FrameID) (page.FrameTree, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	frame, found := m.frames.Get(frameID)
 
 	if !found {
@@ -252,6 +275,9 @@ func (m *Manager) GetFrameTree(_ context.Context, frameID page.FrameID) (page.Fr
 }
 
 func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	arr := values.NewArray(m.frames.Length())
 
 	for _, f := range m.frames.ToSlice() {
@@ -268,6 +294,9 @@ func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
 }
 
 func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) events.ListenerID {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return m.events.AddListener(eventDocumentUpdated, func(ctx context.Context, _ interface{}) bool {
 		listener(ctx)
 
@@ -276,10 +305,16 @@ func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) e
 }
 
 func (m *Manager) RemoveReloadListener(listenerID events.ListenerID) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	m.events.RemoveListener(eventDocumentUpdated, listenerID)
 }
 
 func (m *Manager) AddChildNodeInsertedListener(listener ChildNodeInsertedListener) events.ListenerID {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return m.events.AddListener(eventChildNodeInserted, func(ctx context.Context, message interface{}) bool {
 		reply := message.(*dom.ChildNodeInsertedReply)
 
@@ -290,10 +325,16 @@ func (m *Manager) AddChildNodeInsertedListener(listener ChildNodeInsertedListene
 }
 
 func (m *Manager) RemoveChildNodeInsertedListener(listenerID events.ListenerID) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	m.events.RemoveListener(eventChildNodeInserted, listenerID)
 }
 
 func (m *Manager) AddChildNodeRemovedListener(listener ChildNodeRemovedListener) events.ListenerID {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return m.events.AddListener(eventChildNodeRemoved, func(ctx context.Context, message interface{}) bool {
 		reply := message.(*dom.ChildNodeRemovedReply)
 
@@ -304,6 +345,9 @@ func (m *Manager) AddChildNodeRemovedListener(listener ChildNodeRemovedListener)
 }
 
 func (m *Manager) RemoveChildNodeRemovedListener(listenerID events.ListenerID) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	m.events.RemoveListener(eventChildNodeRemoved, listenerID)
 }
 

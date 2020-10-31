@@ -8,11 +8,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// Slice returns a new sliced array.
-// @param array (Array) - Source array.
-// @param start (Int) - Start position of extraction.
-// @param length (Int, optional) - Read indicating how many elements to extract.
-// @returns (Array) - Sliced array.
+// SLICE returns a new sliced array.
+// @param {Any[]} array - Source array.
+// @param {Int} start - Start position of extraction.
+// @param {Int} [length] - Read indicating how many elements to extract.
+// @return {Any[]} - Sliced array.
 func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 

@@ -9,9 +9,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// IsAbs reports whether the path is absolute.
-// @params path (String) - The path.
-// @returns (Boolean) - True if the path is absolute.
+// IS_ABS reports whether the path is absolute.
+// @param {String} path - The path.
+// @return {Boolean} - True if the path is absolute.
 func IsAbs(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

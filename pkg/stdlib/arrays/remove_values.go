@@ -8,10 +8,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// RemoveValues returns a new array with removed all occurrences of values in a given array.
-// @param array (Array) - Source array.
-// @param values (Array) - Target values.
-// @returns (Array) - A new array with removed all occurrences of values in a given array.
+// REMOVE_VALUES returns a new array with removed all occurrences of values in a given array.
+// @param {Any[]} array - Source array.
+// @param {Any[]} values - Target values.
+// @return {Any[]} - A new array with removed all occurrences of values in a given array.
 func RemoveValues(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 

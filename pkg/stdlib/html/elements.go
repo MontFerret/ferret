@@ -9,9 +9,9 @@ import (
 
 // ELEMENTS finds HTML elements by a given CSS selector.
 // Returns an empty array if element not found.
-// @param docOrEl (HTMLDocument|HTMLNode) - Parent document or element.
-// @param selector (String) - CSS selector.
-// @returns (Array) - Returns an array of found HTML element.
+// @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
+// @param {String} selector - CSS selector.
+// @return {HTMLElement[]} - An array of matched HTML elements.
 func Elements(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 

@@ -8,9 +8,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
-// String asserts that value is a string type.
-// @params actual (Mixed) - Value to test.
-// @params message (String, optional) - Message to display on error.
+// STRING asserts that value is a string type.
+// @param {Any} actual - Value to test.
+// @param {String} [message] - Message to display on error.
 var String = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
 		return "be string"

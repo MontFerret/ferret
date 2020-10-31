@@ -11,9 +11,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-// FromBase64 returns the value of a base64 representation.
-// @param base64String (String) - The string to decode.
-// @returns value (String) - The decoded string.
+// FROM_BASE64 returns the value of a base64 representation.
+// @param {String} str - The string to decode.
+// @return {String} - The decoded string.
 func FromBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
@@ -31,9 +31,9 @@ func FromBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	return values.NewString(string(out)), nil
 }
 
-// DecodeURIComponent returns the decoded String of uri.
-// @param (String) - Uri to decode.
-// @returns String - Decoded string.
+// DECODE_URI_COMPONENT returns the decoded String of uri.
+// @param {String} uri - Uri to decode.
+// @return {String} - Decoded string.
 func DecodeURIComponent(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 

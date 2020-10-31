@@ -11,15 +11,15 @@ import (
 )
 
 // SCREENSHOT takes a screenshot of a given page.
-// @param target (HTMLPage|String) - Target page or url.
-// @param params (Object) - Optional, An object containing the following properties :
-// 		x (Float|Int) - Optional, X position of the viewport.
-// 		x (Float|Int) - Optional,Y position of the viewport.
-// 		width (Float|Int) - Optional, Width of the viewport.
-// 		height (Float|Int) - Optional, Height of the viewport.
-// 		format (String) - Optional, Either "jpeg" or "png".
-// 		quality (Int) - Optional, Quality, in [0, 100], only for jpeg format.
-// @returns data (Binary) - Returns a base64 encoded string in binary format.
+// @param {HTMLPage|String} target - Target page or url.
+// @param {Object} [params] - An object containing the following properties :
+// @param {Float | Int} [params.x=0] - X position of the viewport.
+// @param {Float | Int} [params.y=0] - Y position of the viewport.
+// @param {Float | Int} [params.width] - Width of the viewport.
+// @param {Float | Int} [params.height] - Height of the viewport.
+// @param {String} [params.format="jpeg"] - Either "jpeg" or "png".
+// @param {Int} [params.quality=100] - Quality, in [0, 100], only for jpeg format.
+// @return {Binary} - Screenshot in binary format.
 func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
@@ -29,7 +29,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	arg1 := args[0]
 
-	err = core.ValidateType(arg1, drivers.HTMLDocumentType, types.String)
+	err = core.ValidateType(arg1, drivers.HTMLPageType, types.String)
 
 	if err != nil {
 		return values.None, err
