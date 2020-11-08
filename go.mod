@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/PuerkitoBio/goquery v1.5.1
+	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antchfx/xpath v1.1.10
 	github.com/antlr/antlr4 v0.0.0-20200417160354-8c50731894e0
