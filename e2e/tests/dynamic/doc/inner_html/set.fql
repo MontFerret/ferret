@@ -10,4 +10,4 @@ LET actual = INNER_HTML(doc, "body")
 LET r1 = '(\s|\")'
 LET r2 = '(\n|\s|\")'
 
-RETURN T::EQ(REGEXP_REPLACE(expected, r1, ''), REGEXP_REPLACE(TRIM(actual), r2, ''))
+RETURN T::EQ(REGEX_REPLACE(expected, r1, ''), REGEX_REPLACE(TRIM(actual), r2, ''))

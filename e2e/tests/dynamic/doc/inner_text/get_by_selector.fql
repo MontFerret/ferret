@@ -7,4 +7,4 @@ WAIT_ELEMENT(doc, "#layout")
 LET expected = 'Welcome to Ferret E2E test page!'
 LET actual = INNER_TEXT(doc, selector)
 
-RETURN T::EQ(REGEXP_REPLACE(TRIM(actual), '(\n|\s)', ''), REGEXP_REPLACE(expected, '\s', ''))
+RETURN T::EQ(REGEX_REPLACE(TRIM(actual), '(\n|\s)', ''), REGEX_REPLACE(expected, '\s', ''))

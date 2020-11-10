@@ -8,6 +8,6 @@ LET actual = INNER_TEXT(el)
 LET r1 = '(\s|\")'
 LET r2 = '(\n|\s|\")'
 
-T::EQ(REGEXP_REPLACE(TRIM(actual), r2, ''), REGEXP_REPLACE(expected, r1, ''))
+T::EQ(REGEX_REPLACE(TRIM(actual), r2, ''), REGEX_REPLACE(expected, r1, ''))
 
 RETURN NONE

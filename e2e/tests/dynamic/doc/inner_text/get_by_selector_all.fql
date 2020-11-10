@@ -10,7 +10,7 @@ LET expected = [
 ]
 LET actual = (
     FOR str IN INNER_TEXT_ALL(doc, selector)
-        RETURN REGEXP_REPLACE(TRIM(str), '\n', '')
+        RETURN REGEX_REPLACE(TRIM(str), '\n', '')
 )
 
 RETURN T::EQ(actual, expected)
