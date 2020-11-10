@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/PuerkitoBio/goquery v1.5.1
+	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antchfx/xpath v1.1.10
 	github.com/antlr/antlr4 v0.0.0-20200417160354-8c50731894e0
@@ -14,7 +14,7 @@ require (
 	github.com/corpix/uarand v0.1.1
 	github.com/derekparker/trie v0.0.0-20200317170641-1fdf38b7b0e9
 	github.com/gorilla/css v1.0.0
-	github.com/mafredri/cdp v0.29.2
+	github.com/mafredri/cdp v0.30.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.19.0
