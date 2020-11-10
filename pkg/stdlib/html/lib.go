@@ -14,6 +14,7 @@ func RegisterLib(ns core.Namespace) error {
 	return ns.RegisterFunctions(
 		core.NewFunctionsFromMap(map[string]core.Function{
 			"ATTR_GET":          AttributeGet,
+			"ATTR_QUERY":        AttributeQuery,
 			"ATTR_REMOVE":       AttributeRemove,
 			"ATTR_SET":          AttributeSet,
 			"BLUR":              Blur,

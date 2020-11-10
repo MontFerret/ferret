@@ -42,7 +42,7 @@ forExpression
     : For forExpressionValueVariable (Comma forExpressionKeyVariable)? In forExpressionSource
      (forExpressionBody)*
       forExpressionReturn
-    | For forExpressionValueVariable While expression
+    | For forExpressionValueVariable (Do)? While expression
      (forExpressionBody)*
       forExpressionReturn
     ;

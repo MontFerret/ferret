@@ -50,7 +50,7 @@ func (iterator *WhileIterator) Next(ctx context.Context, scope *core.Scope) (*co
 
 	// if it's Post conditional execution, step in always
 	// Otherwise, it's not the first iteration
-	if iterator.mode == WhileModePost || counter > 1 {
+	if iterator.mode == WhileModePost || counter > 0 {
 		doNext, err := iterator.predicate(ctx, scope)
 
 		if err != nil {

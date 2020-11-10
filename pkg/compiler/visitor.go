@@ -276,9 +276,15 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 			return nil, err
 		}
 
+		var mode collections.WhileMode
+
+		if ctx.Do() != nil {
+			mode = collections.WhileModePre
+		}
+
 		ds, err = expressions.NewForWhileIterableExpression(
 			v.getSourceMap(whileExpCtx),
-			collections.WhileModePost,
+			mode,
 			valVarName,
 			conditionExp,
 		)
