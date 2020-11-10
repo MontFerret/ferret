@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build
-    runs-on: macos-10.15
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         goVer: [1.13, 1.14, 1.15]
