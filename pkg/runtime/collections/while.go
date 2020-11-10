@@ -21,7 +21,7 @@ type (
 )
 
 var (
-	WhileModePost WhileMode = 0
+	WhileModePost WhileMode
 	WhileModePre  WhileMode = 1
 )
 
