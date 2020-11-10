@@ -1,4 +1,4 @@
 query:
-  ref: file://../../../examples/dynamic-page.fql
+  ref: ../../../examples/dynamic-page.fql
 assert:
   text: RETURN T::NOT::EMPTY(@lab.data.query.result)
