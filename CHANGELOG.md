@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.13.0
+#### Added
+- ``WHILE`` loop and ``ATTR_QUERY`` function [#567](https://github.com/MontFerret/ferret/pull/567)
+
 ### 0.12.1
 #### Fixed
 - Missing regexp FILTER operator [#558](https://github.com/MontFerret/ferret/pull/558)
