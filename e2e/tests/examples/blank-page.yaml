@@ -1,5 +1,5 @@
 query:
-  ref: file://../../../examples/blank-page.fql
+  ref: ../../../examples/blank-page.fql
 assert:
   text: |
     RETURN T::EQ(@lab.data.query.result, "https://www.google.com/")

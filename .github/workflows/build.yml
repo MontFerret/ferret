@@ -64,6 +64,6 @@ jobs:
 
       - name: E2E tests
         run: |
-          docker run -d -p 9222:9222 ghcr.io/montferret/chromium:86.0.4240.0
+          docker run -d -p 9222:9222 ghcr.io/montferret/chromium:87.0.4272.0
           make e2e
           docker stop $(docker ps -q)

@@ -1,5 +1,5 @@
 query:
-  ref: file://../../../examples/google-search.fql
+  ref: ../../../examples/google-search.fql
   params:
     criteria: "ferret"
 assert:

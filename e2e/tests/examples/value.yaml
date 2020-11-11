@@ -1,4 +1,4 @@
 query:
-  ref: file://../../../examples/value.fql
+  ref: ../../../examples/value.fql
 assert:
   text: RETURN T::NOT::EMPTY(@lab.data.query.result)

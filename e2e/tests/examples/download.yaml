@@ -1,5 +1,5 @@
 query:
-  ref: file://../../../examples/download.fql
+  ref: ../../../examples/download.fql
 assert:
   text: |
     LET result = @lab.data.query.result
