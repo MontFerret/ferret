@@ -81,7 +81,7 @@ func TestDataSource(t *testing.T) {
 				values.NewInt(10),
 			)
 
-			ds, err := expressions.NewDataSource(
+			ds, err := expressions.NewForInIterableExpression(
 				core.SourceMap{},
 				collections.DefaultValueVar,
 				collections.DefaultKeyVar,
@@ -142,7 +142,7 @@ func TestDataSource(t *testing.T) {
 				values.NewInt(10),
 			)
 
-			ds, err := expressions.NewDataSource(
+			ds, err := expressions.NewForInIterableExpression(
 				core.SourceMap{},
 				collections.DefaultValueVar,
 				collections.DefaultKeyVar,

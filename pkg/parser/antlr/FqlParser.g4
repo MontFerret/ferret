@@ -10,7 +10,6 @@ head
     : useExpression
     ;
 
-// TODO: add useAs expession
 useExpression
     : use
     ;
@@ -41,6 +40,9 @@ returnExpression
 
 forExpression
     : For forExpressionValueVariable (Comma forExpressionKeyVariable)? In forExpressionSource
+     (forExpressionBody)*
+      forExpressionReturn
+    | For forExpressionValueVariable (Do)? While expression
      (forExpressionBody)*
       forExpressionReturn
     ;

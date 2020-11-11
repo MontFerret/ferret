@@ -8,14 +8,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-type DataSource struct {
+type ForInIterableExpression struct {
 	src         core.SourceMap
 	valVariable string
 	keyVariable string
 	exp         core.Expression
 }
 
-func NewDataSource(
+func NewForInIterableExpression(
 	src core.SourceMap,
 	valVariable,
 	keyVariable string,
@@ -25,7 +25,7 @@ func NewDataSource(
 		return nil, core.Error(core.ErrMissedArgument, "expression")
 	}
 
-	return &DataSource{
+	return &ForInIterableExpression{
 		src,
 		valVariable,
 		keyVariable,
@@ -33,22 +33,22 @@ func NewDataSource(
 	}, nil
 }
 
-func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
+func (iterable *ForInIterableExpression) Iterate(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
 	select {
 	case <-ctx.Done():
 		return nil, core.ErrTerminated
 	default:
-		data, err := ds.exp.Exec(ctx, scope)
+		data, err := iterable.exp.Exec(ctx, scope)
 
 		if err != nil {
-			return nil, core.SourceError(ds.src, err)
+			return nil, core.SourceError(iterable.src, err)
 		}
 
 		switch data.Type() {
 		case types.Array:
-			return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, data.(collections.IndexedCollection))
+			return collections.NewIndexedIterator(iterable.valVariable, iterable.keyVariable, data.(collections.IndexedCollection))
 		case types.Object:
-			return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, data.(collections.KeyedCollection))
+			return collections.NewKeyedIterator(iterable.valVariable, iterable.keyVariable, data.(collections.KeyedCollection))
 		default:
 			// fallback to user defined types
 			switch collection := data.(type) {
@@ -59,11 +59,11 @@ func (ds *DataSource) Iterate(ctx context.Context, scope *core.Scope) (collectio
 					return nil, err
 				}
 
-				return collections.NewCoreIterator(ds.valVariable, ds.keyVariable, iterator)
+				return collections.NewCoreIterator(iterable.valVariable, iterable.keyVariable, iterator)
 			case collections.KeyedCollection:
-				return collections.NewKeyedIterator(ds.valVariable, ds.keyVariable, collection)
+				return collections.NewKeyedIterator(iterable.valVariable, iterable.keyVariable, collection)
 			case collections.IndexedCollection:
-				return collections.NewIndexedIterator(ds.valVariable, ds.keyVariable, collection)
+				return collections.NewIndexedIterator(iterable.valVariable, iterable.keyVariable, collection)
 			default:
 				return nil, core.TypeError(
 					data.Type(),

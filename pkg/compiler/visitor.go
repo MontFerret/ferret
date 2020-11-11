@@ -234,46 +234,78 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 }
 
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
+	var err error
 	var valVarName string
 	var keyVarName string
-
-	parsedClauses := make([]forOption, 0, 10)
-	forInScope := scope.Fork()
-
-	srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
-	srcExp, err := v.doVisitForExpressionSource(srcCtx, forInScope)
-
-	if err != nil {
-		return nil, err
-	}
+	var ds collections.Iterable
 
 	valVar := ctx.ForExpressionValueVariable()
 	valVarName = valVar.GetText()
-
-	if err := forInScope.SetVariable(valVarName); err != nil {
-		return nil, err
-	}
 
 	keyVar := ctx.ForExpressionKeyVariable()
 
 	if keyVar != nil {
 		keyVarName = keyVar.GetText()
+	}
 
+	isWhileLoop := ctx.In() == nil
+
+	if !isWhileLoop {
+		srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
+		srcExp, err := v.doVisitForExpressionSource(srcCtx, scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		ds, err = expressions.NewForInIterableExpression(
+			v.getSourceMap(srcCtx),
+			valVarName,
+			keyVarName,
+			srcExp,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		whileExpCtx := ctx.Expression().(*fql.ExpressionContext)
+		conditionExp, err := v.doVisitExpression(whileExpCtx, scope)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var mode collections.WhileMode
+
+		if ctx.Do() != nil {
+			mode = collections.WhileModePre
+		}
+
+		ds, err = expressions.NewForWhileIterableExpression(
+			v.getSourceMap(whileExpCtx),
+			mode,
+			valVarName,
+			conditionExp,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	forInScope := scope.Fork()
+	if err := forInScope.SetVariable(valVarName); err != nil {
+		return nil, err
+	}
+
+	if keyVarName != "" {
 		if err := forInScope.SetVariable(keyVarName); err != nil {
 			return nil, err
 		}
 	}
 
-	src, err := expressions.NewDataSource(
-		v.getSourceMap(srcCtx),
-		valVarName,
-		keyVarName,
-		srcExp,
-	)
-
-	if err != nil {
-		return nil, err
-	}
+	parsedClauses := make([]forOption, 0, 10)
 
 	// Clauses.
 	// We put clauses parsing before parsing the query body because COLLECT clause overrides scope variables
@@ -345,7 +377,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 
 	forExp, err := expressions.NewForExpression(
 		v.getSourceMap(ctx),
-		src,
+		ds,
 		predicate,
 		distinct,
 		spread,

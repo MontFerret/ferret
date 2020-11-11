@@ -33,6 +33,12 @@ func (nc *NamespaceContainer) Namespace(name string) core.Namespace {
 	return newNamespace(nc.funcs, nc.makeFullName(name))
 }
 
+func (nc *NamespaceContainer) MustRegisterFunction(name string, fun core.Function) {
+	if err := nc.RegisterFunction(name, fun); err != nil {
+		panic(err)
+	}
+}
+
 func (nc *NamespaceContainer) RegisterFunction(name string, fun core.Function) error {
 	nsName := nc.makeFullName(name)
 
@@ -58,6 +64,12 @@ func (nc *NamespaceContainer) RegisterFunction(name string, fun core.Function) e
 
 func (nc *NamespaceContainer) RemoveFunction(name string) {
 	nc.funcs.Unset(nc.makeFullName(name))
+}
+
+func (nc *NamespaceContainer) MustRegisterFunctions(funcs *core.Functions) {
+	if err := nc.RegisterFunctions(funcs); err != nil {
+		panic(err)
+	}
 }
 
 func (nc *NamespaceContainer) RegisterFunctions(funcs *core.Functions) error {

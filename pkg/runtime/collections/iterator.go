@@ -32,3 +32,21 @@ func ToSlice(ctx context.Context, scope *core.Scope, iterator Iterator) ([]*core
 		res = append(res, nextScope)
 	}
 }
+
+func ForEach(ctx context.Context, scope *core.Scope, iter Iterator, predicate func(ctx context.Context, scope *core.Scope) bool) error {
+	for {
+		nextScope, err := iter.Next(ctx, scope)
+
+		if err != nil {
+			if core.IsNoMoreData(err) {
+				return nil
+			}
+
+			return err
+		}
+
+		if !predicate(ctx, nextScope) {
+			return nil
+		}
+	}
+}
