@@ -1,0 +1,14 @@
+let page = document("https://github.com/marketplace/category/api-management", { driver: "cdp"})
+
+LET nextButtonSelector = '[data-test-selector="pagination"] .btn:nth-child(2)'
+LET resultsSelector = 'a[data-hydro-click*="search_result.click"]'
+
+FOR c WHILE attr(element(nextButtonSelector), 'disabled') == none
+    NEXT click(nextButtonSelector)
+
+    FOR el IN ELEMENTS(page, resultsSelector)
+        RETURN el.innerText
+
+
+
+

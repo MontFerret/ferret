@@ -20,7 +20,7 @@ type (
 
 func NewVariableExpression(src core.SourceMap, name string) (*VariableExpression, error) {
 	if name == "" {
-		return nil, core.Error(core.ErrMissedArgument, "missed variable name")
+		return nil, core.Error(core.ErrMissedArgument, "variable name")
 	}
 
 	return &VariableExpression{src, name}, nil
