@@ -1,0 +1,12 @@
+LET doc = DOCUMENT("https://github.com/marketplace/category/api-management", { driver: "cdp"})
+LET nextSelector = ".paginate-container .BtnGroup a:nth-child(2)"
+LET elementsSelector = '[data-hydro-click]'
+
+WAIT_ELEMENT(doc, elementsSelector)
+
+FOR i DO WHILE ELEMENT_EXISTS(doc, nextSelector)
+	LET wait = i > 0 ? CLICK(doc, nextSelector) : false
+	LET nav = wait ? WAIT(2000) && WAIT_ELEMENT(doc, elementsSelector) : false
+
+	FOR el IN ELEMENTS(doc, elementsSelector)
+		RETURN el
