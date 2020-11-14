@@ -489,6 +489,26 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
+func (el *HTMLElement) GetPreviousElementSibling(_ context.Context) (core.Value, error) {
+	sibling := el.selection.Prev()
+
+	if sibling == nil {
+		return values.None, nil
+	}
+
+	return NewHTMLElement(sibling)
+}
+
+func (el *HTMLElement) GetNextElementSibling(_ context.Context) (core.Value, error) {
+	sibling := el.selection.Next()
+
+	if sibling == nil {
+		return values.None, nil
+	}
+
+	return NewHTMLElement(sibling)
+}
+
 func (el *HTMLElement) Click(_ context.Context, _ values.Int) error {
 	return core.ErrNotSupported
 }
@@ -608,12 +628,14 @@ func (el *HTMLElement) ensureAttrs() {
 func (el *HTMLElement) parseAttrs() *values.Object {
 	obj := values.NewObject()
 
-	for _, name := range common.Attributes {
-		val, ok := el.selection.Attr(name)
+	if len(el.selection.Nodes) == 0 {
+		return obj
+	}
 
-		if ok {
-			obj.Set(values.NewString(name), values.NewString(val))
-		}
+	node := el.selection.Nodes[0]
+
+	for _, attr := range node.Attr {
+		obj.Set(values.NewString(attr.Key), values.NewString(attr.Val))
 	}
 
 	return obj

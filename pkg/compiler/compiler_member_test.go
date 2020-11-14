@@ -215,6 +215,26 @@ func TestMember(t *testing.T) {
 
 			So(string(out), ShouldEqual, `"Bob"`)
 		})
+
+		Convey("Computed property with quotes", func() {
+			c := compiler.New()
+
+			p := c.MustCompile(`
+				LET obj = {
+					attributes: {
+						'data-index': 1
+					}
+				}
+				
+				RETURN obj.attributes['data-index']
+			`)
+
+			out, err := p.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, "1")
+		})
 	})
 }
 

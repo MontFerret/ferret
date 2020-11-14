@@ -1,0 +1,12 @@
+LET doc = DOCUMENT(@lab.cdn.dynamic + "/#/lists", { driver:"cdp" })
+
+LET current = ELEMENT(doc, '[data-index="1"]')
+T::NOT::NONE(current)
+LET prev = current.previousElementSibling
+T::NOT::NONE(prev)
+
+LET currentIdx = TO_INT(current.attributes['data-index'])
+LET prevIdx = TO_INT(prev.attributes['data-index'])
+T::LT(prevIdx, currentIdx)
+
+RETURN NONE

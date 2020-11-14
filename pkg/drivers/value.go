@@ -93,6 +93,10 @@ type (
 
 		GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error)
 
+		GetPreviousElementSibling(ctx context.Context) (core.Value, error)
+
+		GetNextElementSibling(ctx context.Context) (core.Value, error)
+
 		Click(ctx context.Context, count values.Int) error
 
 		ClickBySelector(ctx context.Context, selector values.String, count values.Int) error
