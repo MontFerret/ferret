@@ -527,6 +527,53 @@ func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.V
 	)
 }
 
+func (el *HTMLElement) GetPreviousElementSibling(ctx context.Context) (core.Value, error) {
+	return el.getSibling(ctx, templates.GetPreviousElementSibling())
+}
+
+func (el *HTMLElement) GetNextElementSibling(ctx context.Context) (core.Value, error) {
+	return el.getSibling(ctx, templates.GetNextElementSibling())
+}
+
+func (el *HTMLElement) getSibling(ctx context.Context, expr string) (core.Value, error) {
+	if el.IsDetached() {
+		return values.None, drivers.ErrDetached
+	}
+
+	obj, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, expr, runtime.CallArgument{
+		ObjectID: &el.id.ObjectID,
+	})
+
+	if err != nil {
+		return values.None, err
+	}
+
+	el.logger.Debug().Interface("obj.ObjectID", obj.ObjectID).Msg("output")
+
+	if obj.Type != "object" || obj.ObjectID == nil {
+		return values.None, nil
+	}
+
+	repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*obj.ObjectID))
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return LoadHTMLElementWithID(
+		ctx,
+		el.logger,
+		el.client,
+		el.dom,
+		el.input,
+		el.exec,
+		HTMLElementIdentity{
+			NodeID:   repl.NodeID,
+			ObjectID: *obj.ObjectID,
+		},
+	)
+}
+
 func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
 	if el.IsDetached() {
 		return values.None, drivers.ErrDetached

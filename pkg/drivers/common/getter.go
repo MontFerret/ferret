@@ -194,6 +194,10 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 			}
 
 			return values.GetIn(ctx, styles, path[1:])
+		case "previousElementSibling":
+			return el.GetPreviousElementSibling(ctx)
+		case "nextElementSibling":
+			return el.GetNextElementSibling(ctx)
 		default:
 			return GetInNode(ctx, el, path)
 		}

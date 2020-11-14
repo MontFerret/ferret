@@ -4,8 +4,8 @@ const ITEMS = [{"artist":"Lil Tecca","track":"Ransom"},{"artist":"NLE Choppa","t
 
 export default class ListsPage extends React.Component {
     render() {
-        const items = ITEMS.map((i) => {
-            return e("li", { className: "list-group-item track"}, [
+        const items = ITEMS.map((i, idx) => {
+            return e("li", { className: "list-group-item track", 'data-index': idx }, [
                 e("div", { className: "track-details"}, [
                     e("h5", { className: "track-artist"}, i.artist),
                     e("small", { className: "track-name"}, i.track)
