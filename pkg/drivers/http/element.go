@@ -489,7 +489,7 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) GetPreviousElementSibling(ctx context.Context) (core.Value, error) {
+func (el *HTMLElement) GetPreviousElementSibling(_ context.Context) (core.Value, error) {
 	sibling := el.selection.Prev()
 
 	if sibling == nil {
@@ -499,7 +499,7 @@ func (el *HTMLElement) GetPreviousElementSibling(ctx context.Context) (core.Valu
 	return NewHTMLElement(sibling)
 }
 
-func (el *HTMLElement) GetNextElementSibling(ctx context.Context) (core.Value, error) {
+func (el *HTMLElement) GetNextElementSibling(_ context.Context) (core.Value, error) {
 	sibling := el.selection.Next()
 
 	if sibling == nil {
