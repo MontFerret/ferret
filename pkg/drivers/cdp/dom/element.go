@@ -548,8 +548,6 @@ func (el *HTMLElement) getSibling(ctx context.Context, expr string) (core.Value,
 		return values.None, err
 	}
 
-	el.logger.Debug().Interface("obj.ObjectID", obj.ObjectID).Msg("output")
-
 	if obj.Type != "object" || obj.ObjectID == nil {
 		return values.None, nil
 	}
