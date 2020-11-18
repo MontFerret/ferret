@@ -278,21 +278,19 @@ func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
 		return values.NewObject(), drivers.ErrDetached
 	}
 
-	value, err := el.GetAttribute(ctx, "style")
+	value, err := el.exec.EvalWithArgumentsAndReturnValue(ctx, templates.GetStyles(), runtime.CallArgument{
+		ObjectID: &el.id.ObjectID,
+	})
 
 	if err != nil {
 		return values.NewObject(), err
 	}
 
-	if value == values.None {
-		return values.NewObject(), nil
+	if value.Type() == types.Object {
+		return value.(*values.Object), err
 	}
 
-	if value.Type() != types.String {
-		return values.NewObject(), nil
-	}
-
-	return common.DeserializeStyles(value.(values.String))
+	return values.NewObject(), core.TypeError(value.Type(), types.Object)
 }
 
 func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
@@ -397,7 +395,22 @@ func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error
 	attrs := values.NewObject()
 
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
-		attrs.Set(values.NewString(name), values.NewString(value))
+		key := values.NewString(name)
+		var val core.Value = values.None
+
+		if name != "style" {
+			val = values.NewString(value)
+		} else {
+			parsed, err := common.DeserializeStyles(values.NewString(value))
+
+			if err == nil {
+				val = parsed
+			} else {
+				val = values.NewObject()
+			}
+		}
+
+		attrs.Set(key, val)
 
 		return true
 	})
@@ -416,13 +429,23 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (co
 		return values.None, err
 	}
 
-	var result core.Value
-	result = values.None
+	var result core.Value = values.None
 	targetName := strings.ToLower(name.String())
 
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
 		if name == targetName {
-			result = values.NewString(value)
+
+			if name != "style" {
+				result = values.NewString(value)
+			} else {
+				parsed, err := common.DeserializeStyles(values.NewString(value))
+
+				if err == nil {
+					result = parsed
+				} else {
+					result = values.NewObject()
+				}
+			}
 
 			return false
 		}
