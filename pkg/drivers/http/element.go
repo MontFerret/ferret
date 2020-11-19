@@ -248,14 +248,22 @@ func (el *HTMLElement) GetAttributes(_ context.Context) (*values.Object, error) 
 	return el.attrs.Copy().(*values.Object), nil
 }
 
-func (el *HTMLElement) GetAttribute(_ context.Context, name values.String) (core.Value, error) {
+func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (core.Value, error) {
 	el.ensureAttrs()
+
+	if name == common.AttrNameStyle {
+		return el.GetStyles(ctx)
+	}
 
 	return el.attrs.MustGet(name), nil
 }
 
 func (el *HTMLElement) SetAttribute(_ context.Context, name, value values.String) error {
 	el.ensureAttrs()
+
+	if name == common.AttrNameStyle {
+		el.styles = nil
+	}
 
 	el.attrs.Set(name, value)
 	el.selection.SetAttr(string(name), string(value))
