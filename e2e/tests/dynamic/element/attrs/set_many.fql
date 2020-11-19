@@ -7,11 +7,12 @@ WAIT_ELEMENT(doc, pageSelector)
 
 LET el = ELEMENT(doc, elemSelector)
 
-ATTR_SET(el, { style: "color: black;", "data-ferret-x": "test" })
-
-WAIT(1000)
+ATTR_SET(el, {
+    style: "color: black;",
+    "data-ferret-x": "test"
+})
 
 T::EQ(el.style.color, "black")
-T::EQ(el.attributes["data-ferret-x"], "test", "styles should be updated")
+T::EQ(el.attributes["data-ferret-x"], "test")
 
 RETURN NONE

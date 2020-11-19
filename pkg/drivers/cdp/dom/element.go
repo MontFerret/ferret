@@ -336,7 +336,7 @@ func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) err
 
 	str := common.SerializeStyles(ctx, currentStyles)
 
-	return el.SetAttribute(ctx, "style", str)
+	return el.SetAttribute(ctx, common.ATTR_NAME_STYLE, str)
 }
 
 func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
@@ -344,17 +344,24 @@ func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value c
 		return drivers.ErrDetached
 	}
 
-	styles, err := el.GetStyles(ctx)
+	// we manually set only those that are defined in attribute only
+	value, err := el.GetAttribute(ctx, common.ATTR_NAME_STYLE)
 
 	if err != nil {
 		return err
+	}
+
+	styles, ok := value.(*values.Object)
+
+	if !ok {
+		return core.TypeError(styles.Type(), types.Object)
 	}
 
 	styles.Set(name, value)
 
 	str := common.SerializeStyles(ctx, styles)
 
-	return el.SetAttribute(ctx, "style", str)
+	return el.SetAttribute(ctx, common.ATTR_NAME_STYLE, str)
 }
 
 func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
@@ -366,10 +373,16 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 		return nil
 	}
 
-	styles, err := el.GetStyles(ctx)
+	value, err := el.GetAttribute(ctx, common.ATTR_NAME_STYLE)
 
 	if err != nil {
 		return err
+	}
+
+	styles, ok := value.(*values.Object)
+
+	if !ok {
+		return core.TypeError(styles.Type(), types.Object)
 	}
 
 	for _, name := range names {
@@ -378,7 +391,7 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 
 	str := common.SerializeStyles(ctx, styles)
 
-	return el.SetAttribute(ctx, "style", str)
+	return el.SetAttribute(ctx, common.ATTR_NAME_STYLE, str)
 }
 
 func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
@@ -398,7 +411,7 @@ func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error
 		key := values.NewString(name)
 		var val core.Value = values.None
 
-		if name != "style" {
+		if name != common.ATTR_NAME_STYLE {
 			val = values.NewString(value)
 		} else {
 			parsed, err := common.DeserializeStyles(values.NewString(value))
@@ -435,7 +448,7 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (co
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
 		if name == targetName {
 
-			if name != "style" {
+			if name != common.ATTR_NAME_STYLE {
 				result = values.NewString(value)
 			} else {
 				parsed, err := common.DeserializeStyles(values.NewString(value))
@@ -692,7 +705,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
-			Value: json.RawMessage(exp),
+			Value: exp,
 		},
 	)
 

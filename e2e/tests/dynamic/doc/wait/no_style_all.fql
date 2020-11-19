@@ -27,6 +27,6 @@ LET results = (
         RETURN el.style.color
 )
 
-T::EQ(CONCAT(results), "redred", "styles should be updated")
+T::EQ(CONCAT(results), "redred")
 
 RETURN NONE

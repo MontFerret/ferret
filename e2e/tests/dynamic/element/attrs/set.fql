@@ -6,14 +6,14 @@ LET elemSelector = "#wait-no-style-content"
 WAIT_ELEMENT(doc, pageSelector)
 
 LET el = ELEMENT(doc, elemSelector)
-LET prev = el.style
+LET prev = el.attributes.style
 
-ATTR_SET(el, "style", "color: black;")
+ATTR_SET(el, "style", {
+    color: "black"
+})
 
-WAIT(1000)
+LET curr = el.attributes.style
 
-LET curr = el.style
-
-T::EQ(curr.color, "black", "styles should be updated")
+T::EQ(curr.color, "black")
 
 RETURN NONE

@@ -9,12 +9,12 @@ LET el = ELEMENT(doc, selector)
 ATTR_SET(el, "style", "width: 100%")
 WAIT_STYLE(doc, selector, "width", "100%")
 
-LET prev = el.style
+LET prev = el.attributes.style
 
 ATTR_SET(el, "style", "width: 50%")
 WAIT_NO_STYLE(doc, selector, "width", "100%")
 
-LET curr = el.style
+LET curr = el.attributes.style
 
 T::EQ(prev.width, "100%")
 T::EQ(curr.width, "50%")
