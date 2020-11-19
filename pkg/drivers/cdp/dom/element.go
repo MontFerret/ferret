@@ -336,7 +336,7 @@ func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) err
 
 	str := common.SerializeStyles(ctx, currentStyles)
 
-	return el.SetAttribute(ctx, common.ATTR_NAME_STYLE, str)
+	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
 func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
@@ -345,7 +345,7 @@ func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value c
 	}
 
 	// we manually set only those that are defined in attribute only
-	value, err := el.GetAttribute(ctx, common.ATTR_NAME_STYLE)
+	value, err := el.GetAttribute(ctx, common.AttrNameStyle)
 
 	if err != nil {
 		return err
@@ -361,7 +361,7 @@ func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value c
 
 	str := common.SerializeStyles(ctx, styles)
 
-	return el.SetAttribute(ctx, common.ATTR_NAME_STYLE, str)
+	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
 func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
@@ -373,7 +373,7 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 		return nil
 	}
 
-	value, err := el.GetAttribute(ctx, common.ATTR_NAME_STYLE)
+	value, err := el.GetAttribute(ctx, common.AttrNameStyle)
 
 	if err != nil {
 		return err
@@ -391,7 +391,7 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 
 	str := common.SerializeStyles(ctx, styles)
 
-	return el.SetAttribute(ctx, common.ATTR_NAME_STYLE, str)
+	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
 func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
@@ -411,7 +411,7 @@ func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error
 		key := values.NewString(name)
 		var val core.Value = values.None
 
-		if name != common.ATTR_NAME_STYLE {
+		if name != common.AttrNameStyle {
 			val = values.NewString(value)
 		} else {
 			parsed, err := common.DeserializeStyles(values.NewString(value))
@@ -448,7 +448,7 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (co
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
 		if name == targetName {
 
-			if name != common.ATTR_NAME_STYLE {
+			if name != common.AttrNameStyle {
 				result = values.NewString(value)
 			} else {
 				parsed, err := common.DeserializeStyles(values.NewString(value))

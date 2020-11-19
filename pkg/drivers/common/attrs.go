@@ -141,7 +141,7 @@ var Attributes = []string{
 }
 
 const (
-	ATTR_NAME_STYLE = "style"
+	AttrNameStyle = "style"
 )
 
 var attrMap = make(map[string]bool)
