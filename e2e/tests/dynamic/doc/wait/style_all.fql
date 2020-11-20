@@ -6,18 +6,18 @@ WAIT_ELEMENT(doc, "#page-events")
 
 LET n = (
     FOR el IN ELEMENTS(doc, selector)
-        ATTR_SET(el, "style", "color: black")
+        ATTR_SET(el, "style", "width: 200px")
 
         RETURN NONE
 )
 
-WAIT_STYLE_ALL(doc, selector, "color", "black", 10000)
+WAIT_STYLE_ALL(doc, selector, "width", "200px", 10000)
 
 LET results = (
     FOR el IN ELEMENTS(doc, selector)
-        RETURN el.style.color
+        RETURN el.style.width
 )
 
-T::EQ(CONCAT(results), "blackblack")
+T::EQ(results, ["200px","200px"])
 
 RETURN NONE

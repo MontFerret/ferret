@@ -12,7 +12,11 @@ ATTR_SET(el, "style", {
     color: "black"
 })
 
+WAIT(200)
+
 LET curr = el.attributes.style
+
+PRINT(el.attributes.style)
 
 T::EQ(curr.color, "black")
 

@@ -5,14 +5,14 @@ LET selector = "#wait-class-btn"
 WAIT_ELEMENT(doc, "#page-events")
 
 LET el = ELEMENT(doc, selector)
-LET prev = el.attributes.style
+LET prev = el.style
 
-ATTR_SET(el, "style", "width: 100%")
-WAIT_STYLE(doc, selector, "width", "100%")
+ATTR_SET(el, "style", "width: 200px")
+WAIT_STYLE(doc, selector, "width", "200px")
 
-LET curr = el.attributes.style
+LET curr = el.style
 
-T::NONE(prev.width)
-T::EQ(curr.width, "100%", "style should be updated")
+T::NOT::EQ(prev.width, "200px")
+T::EQ(curr.width, "200px")
 
 RETURN NONE

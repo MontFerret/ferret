@@ -11,7 +11,7 @@ LET n = (
         RETURN NONE
 )
 
-WAIT_STYLE_ALL(doc, selector, "color", "black", 10000)
+WAIT_STYLE_ALL(doc, selector, "color", "rgb(0, 0, 0)", 10000)
 
 LET n2 = (
     FOR el IN ELEMENTS(doc, selector)
@@ -20,13 +20,13 @@ LET n2 = (
         RETURN NONE
 )
 
-WAIT_NO_STYLE_ALL(doc, selector, "color", "black", 10000)
+WAIT_NO_STYLE_ALL(doc, selector, "color", "rgb(0, 0, 0)", 10000)
 
 LET results = (
     FOR el IN ELEMENTS(doc, selector)
         RETURN el.style.color
 )
 
-T::EQ(CONCAT(results), "redred")
+T::EQ(results, ["rgb(255, 0, 0)","rgb(255, 0, 0)"])
 
 RETURN NONE

@@ -9,9 +9,12 @@ import (
 
 func StyleRead(name values.String) string {
 	n := name.String()
-	return fmt.Sprintf(
-		`el.style[%s] != "" ? el.style[%s] : null`,
-		eval.ParamString(n),
-		eval.ParamString(n),
-	)
+	return fmt.Sprintf(`
+	((function() {
+		const cs = window.getComputedStyle(el);
+		const currentValue = cs.getPropertyValue(%s);
+
+		return currentValue || null;
+	})())
+`, eval.ParamString(n))
 }
