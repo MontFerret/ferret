@@ -174,7 +174,7 @@ func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.V
 	return el.styles.MustGet(name), nil
 }
 
-func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
+func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {
 	if err := el.ensureStyles(ctx); err != nil {
 		return err
 	}

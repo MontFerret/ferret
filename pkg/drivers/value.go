@@ -67,7 +67,7 @@ type (
 
 		SetStyles(ctx context.Context, values *values.Object) error
 
-		SetStyle(ctx context.Context, name values.String, value core.Value) error
+		SetStyle(ctx context.Context, name, value values.String) error
 
 		RemoveStyle(ctx context.Context, name ...values.String) error
 

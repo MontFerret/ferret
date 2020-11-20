@@ -12,7 +12,7 @@ ATTR_SET(el, {
     "data-ferret-x": "test"
 })
 
-T::EQ(el.style.color, "black")
+T::EQ(el.attributes.style.color, "black")
 T::EQ(el.attributes["data-ferret-x"], "test")
 
 RETURN NONE

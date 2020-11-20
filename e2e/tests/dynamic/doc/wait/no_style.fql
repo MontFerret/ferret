@@ -6,17 +6,20 @@ WAIT_ELEMENT(doc, "#page-events")
 
 LET el = ELEMENT(doc, selector)
 
-ATTR_SET(el, "style", "width: 100%")
-WAIT_STYLE(doc, selector, "width", "100%")
+STYLE_SET(el, "color", "green")
+WAIT(200)
 
-LET prev = el.attributes.style
+PRINT(el.style.color)
+WAIT_STYLE(doc, selector, "color", "rgb(0, 128, 0)")
 
-ATTR_SET(el, "style", "width: 50%")
-WAIT_NO_STYLE(doc, selector, "width", "100%")
+LET prev = el.style
 
-LET curr = el.attributes.style
+STYLE_SET(el, "color", "red")
+WAIT_NO_STYLE(doc, selector, "color", "rgb(0, 128, 0)")
 
-T::EQ(prev.width, "100%")
-T::EQ(curr.width, "50%")
+LET curr = el.style
+
+T::EQ(prev.color, "rgb(0, 128, 0)")
+T::EQ(curr.color, "rgb(255, 0, 0)")
 
 RETURN NONE

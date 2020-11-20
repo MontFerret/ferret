@@ -339,22 +339,30 @@ func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) err
 	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
-func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
+func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {
 	if el.IsDetached() {
 		return drivers.ErrDetached
 	}
 
 	// we manually set only those that are defined in attribute only
-	value, err := el.GetAttribute(ctx, common.AttrNameStyle)
+	attrValue, err := el.GetAttribute(ctx, common.AttrNameStyle)
 
 	if err != nil {
 		return err
 	}
 
-	styles, ok := value.(*values.Object)
+	var styles *values.Object
 
-	if !ok {
-		return core.TypeError(styles.Type(), types.Object)
+	if attrValue == values.None {
+		styles = values.NewObject()
+	} else {
+		styleAttr, ok := attrValue.(*values.Object)
+
+		if !ok {
+			return core.TypeError(attrValue.Type(), types.Object)
+		}
+
+		styles = styleAttr
 	}
 
 	styles.Set(name, value)
@@ -377,6 +385,11 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 
 	if err != nil {
 		return err
+	}
+
+	// no attribute
+	if value == values.None {
+		return nil
 	}
 
 	styles, ok := value.(*values.Object)
@@ -447,7 +460,6 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (co
 
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
 		if name == targetName {
-
 			if name != common.AttrNameStyle {
 				result = values.NewString(value)
 			} else {
