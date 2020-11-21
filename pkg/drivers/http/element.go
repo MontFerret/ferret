@@ -497,7 +497,7 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) GetParentElement(ctx context.Context) (core.Value, error) {
+func (el *HTMLElement) GetParentElement(_ context.Context) (core.Value, error) {
 	parent := el.selection.Parent()
 
 	if parent == nil {
