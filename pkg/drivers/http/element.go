@@ -497,6 +497,16 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
+func (el *HTMLElement) GetParentElement(ctx context.Context) (core.Value, error) {
+	parent := el.selection.Parent()
+
+	if parent == nil {
+		return values.None, nil
+	}
+
+	return NewHTMLElement(parent)
+}
+
 func (el *HTMLElement) GetPreviousElementSibling(_ context.Context) (core.Value, error) {
 	sibling := el.selection.Prev()
 
