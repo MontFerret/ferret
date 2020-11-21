@@ -198,6 +198,8 @@ func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 			return el.GetPreviousElementSibling(ctx)
 		case "nextElementSibling":
 			return el.GetNextElementSibling(ctx)
+		case "parentElement":
+			return el.GetParentElement(ctx)
 		default:
 			return GetInNode(ctx, el, path)
 		}

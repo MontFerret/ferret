@@ -575,15 +575,19 @@ func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.V
 	)
 }
 
+func (el *HTMLElement) GetParentElement(ctx context.Context) (core.Value, error) {
+	return el.evalAndGetElement(ctx, templates.GetParent())
+}
+
 func (el *HTMLElement) GetPreviousElementSibling(ctx context.Context) (core.Value, error) {
-	return el.getSibling(ctx, templates.GetPreviousElementSibling())
+	return el.evalAndGetElement(ctx, templates.GetPreviousElementSibling())
 }
 
 func (el *HTMLElement) GetNextElementSibling(ctx context.Context) (core.Value, error) {
-	return el.getSibling(ctx, templates.GetNextElementSibling())
+	return el.evalAndGetElement(ctx, templates.GetNextElementSibling())
 }
 
-func (el *HTMLElement) getSibling(ctx context.Context, expr string) (core.Value, error) {
+func (el *HTMLElement) evalAndGetElement(ctx context.Context, expr string) (core.Value, error) {
 	if el.IsDetached() {
 		return values.None, drivers.ErrDetached
 	}

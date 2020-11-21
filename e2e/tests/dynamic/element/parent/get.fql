@@ -1,0 +1,9 @@
+LET doc = DOCUMENT(@lab.cdn.dynamic + "/#/lists", { driver:"cdp" })
+
+LET child = ELEMENT(doc, ".track-list")
+LET parent = child.parentElement
+
+T::NOT::NONE(parent)
+T::EQ(parent.attributes.id, "tracks")
+
+RETURN NONE

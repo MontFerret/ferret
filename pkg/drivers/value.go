@@ -97,6 +97,8 @@ type (
 
 		GetNextElementSibling(ctx context.Context) (core.Value, error)
 
+		GetParentElement(ctx context.Context) (core.Value, error)
+
 		Click(ctx context.Context, count values.Int) error
 
 		ClickBySelector(ctx context.Context, selector values.String, count values.Int) error
