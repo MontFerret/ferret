@@ -9,14 +9,13 @@ LET el = ELEMENT(doc, selector)
 STYLE_SET(el, "color", "green")
 WAIT(200)
 
-PRINT(el.style.color)
 WAIT_STYLE(doc, selector, "color", "rgb(0, 128, 0)")
 
 LET prev = el.style
 
 STYLE_SET(el, "color", "red")
 WAIT_NO_STYLE(doc, selector, "color", "rgb(0, 128, 0)")
-
+WAIT_STYLE(doc, selector, "color", "rgb(255, 0, 0)")
 LET curr = el.style
 
 T::EQ(prev.color, "rgb(0, 128, 0)")
