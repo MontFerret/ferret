@@ -278,21 +278,19 @@ func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
 		return values.NewObject(), drivers.ErrDetached
 	}
 
-	value, err := el.GetAttribute(ctx, "style")
+	value, err := el.exec.EvalWithArgumentsAndReturnValue(ctx, templates.GetStyles(), runtime.CallArgument{
+		ObjectID: &el.id.ObjectID,
+	})
 
 	if err != nil {
 		return values.NewObject(), err
 	}
 
-	if value == values.None {
-		return values.NewObject(), nil
+	if value.Type() == types.Object {
+		return value.(*values.Object), err
 	}
 
-	if value.Type() != types.String {
-		return values.NewObject(), nil
-	}
-
-	return common.DeserializeStyles(value.(values.String))
+	return values.NewObject(), core.TypeError(value.Type(), types.Object)
 }
 
 func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
@@ -338,25 +336,40 @@ func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) err
 
 	str := common.SerializeStyles(ctx, currentStyles)
 
-	return el.SetAttribute(ctx, "style", str)
+	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
-func (el *HTMLElement) SetStyle(ctx context.Context, name values.String, value core.Value) error {
+func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {
 	if el.IsDetached() {
 		return drivers.ErrDetached
 	}
 
-	styles, err := el.GetStyles(ctx)
+	// we manually set only those that are defined in attribute only
+	attrValue, err := el.GetAttribute(ctx, common.AttrNameStyle)
 
 	if err != nil {
 		return err
+	}
+
+	var styles *values.Object
+
+	if attrValue == values.None {
+		styles = values.NewObject()
+	} else {
+		styleAttr, ok := attrValue.(*values.Object)
+
+		if !ok {
+			return core.TypeError(attrValue.Type(), types.Object)
+		}
+
+		styles = styleAttr
 	}
 
 	styles.Set(name, value)
 
 	str := common.SerializeStyles(ctx, styles)
 
-	return el.SetAttribute(ctx, "style", str)
+	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
 func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
@@ -368,10 +381,21 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 		return nil
 	}
 
-	styles, err := el.GetStyles(ctx)
+	value, err := el.GetAttribute(ctx, common.AttrNameStyle)
 
 	if err != nil {
 		return err
+	}
+
+	// no attribute
+	if value == values.None {
+		return nil
+	}
+
+	styles, ok := value.(*values.Object)
+
+	if !ok {
+		return core.TypeError(styles.Type(), types.Object)
 	}
 
 	for _, name := range names {
@@ -380,7 +404,7 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 
 	str := common.SerializeStyles(ctx, styles)
 
-	return el.SetAttribute(ctx, "style", str)
+	return el.SetAttribute(ctx, common.AttrNameStyle, str)
 }
 
 func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
@@ -397,7 +421,22 @@ func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error
 	attrs := values.NewObject()
 
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
-		attrs.Set(values.NewString(name), values.NewString(value))
+		key := values.NewString(name)
+		var val core.Value = values.None
+
+		if name != common.AttrNameStyle {
+			val = values.NewString(value)
+		} else {
+			parsed, err := common.DeserializeStyles(values.NewString(value))
+
+			if err == nil {
+				val = parsed
+			} else {
+				val = values.NewObject()
+			}
+		}
+
+		attrs.Set(key, val)
 
 		return true
 	})
@@ -416,13 +455,22 @@ func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (co
 		return values.None, err
 	}
 
-	var result core.Value
-	result = values.None
+	var result core.Value = values.None
 	targetName := strings.ToLower(name.String())
 
 	traverseAttrs(repl.Attributes, func(name, value string) bool {
 		if name == targetName {
-			result = values.NewString(value)
+			if name != common.AttrNameStyle {
+				result = values.NewString(value)
+			} else {
+				parsed, err := common.DeserializeStyles(values.NewString(value))
+
+				if err == nil {
+					result = parsed
+				} else {
+					result = values.NewObject()
+				}
+			}
 
 			return false
 		}
@@ -669,7 +717,7 @@ func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (res
 			ObjectID: &el.id.ObjectID,
 		},
 		runtime.CallArgument{
-			Value: json.RawMessage(exp),
+			Value: exp,
 		},
 	)
 

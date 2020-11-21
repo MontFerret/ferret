@@ -74,7 +74,7 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 			if len(path) > 1 {
 				attrName := path[1]
 
-				return el.SetStyle(ctx, values.NewString(attrName.String()), value)
+				return el.SetStyle(ctx, values.NewString(attrName.String()), values.NewString(value.String()))
 			}
 
 			err := core.ValidateType(value, types.Object)
@@ -93,7 +93,7 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 
 			obj := value.(*values.Object)
 			obj.ForEach(func(value core.Value, key string) bool {
-				err = el.SetStyle(ctx, values.NewString(key), value)
+				err = el.SetStyle(ctx, values.NewString(key), values.NewString(value.String()))
 
 				return err == nil
 			})

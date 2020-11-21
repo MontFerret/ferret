@@ -14,7 +14,7 @@ import (
 // @param {String | Object} nameOrObj - Style name or an object representing a key-value pair of attributes.
 // @param {String} value - If a second parameter is a string value, this parameter represent a style value.
 func StyleSet(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, core.MaxArgs)
+	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
 		return values.None, err
@@ -35,7 +35,7 @@ func StyleSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, nil
 		}
 
-		return values.None, el.SetStyle(ctx, arg1, args[2])
+		return values.None, el.SetStyle(ctx, arg1, values.NewString(args[2].String()))
 	case *values.Object:
 		// STYLE_SET(el, values)
 		return values.None, el.SetStyles(ctx, arg1)

@@ -6,7 +6,7 @@ WAIT_ELEMENT(doc, "#page-events")
 LET el = ELEMENT(doc, "#wait-class-content")
 
 ATTR_SET(el, "style", "color: black")
-WAIT_STYLE(el, "color", "black")
+WAIT_STYLE(el, "color", "rgb(0, 0, 0)")
 
 LET prev = el.style
 
@@ -15,7 +15,7 @@ WAIT_NO_STYLE(el, "color", "black")
 
 LET curr = el.style
 
-T::EQ(prev.color, "black")
-T::EQ(curr.color, "red", "style should be changed")
+T::EQ(prev.color, "rgb(0, 0, 0)")
+T::EQ(curr.color, "rgb(255, 0, 0)")
 
 RETURN NONE

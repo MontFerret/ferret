@@ -1,20 +1,20 @@
 LET url = @lab.cdn.dynamic + "?redirect=/events"
-LET doc = DOCUMENT(url, true)
+LET doc = DOCUMENT(url, { driver: "cdp" })
 LET pageSelector = "#page-events"
 LET elemSelector = "#wait-no-style-content"
 
 WAIT_ELEMENT(doc, pageSelector)
 LET el = ELEMENT(doc, elemSelector)
 
-LET prev = el.style
+LET prev = el.attributes.style
 
 STYLE_REMOVE(el, "display")
 
 WAIT(1000)
 
-LET curr = el.style
+LET curr = el.attributes.style
 
 T::EQ(prev.display, "block")
-T::NONE(curr.display, "expected style to be removed")
+T::NONE(curr.display)
 
 RETURN NONE

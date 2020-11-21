@@ -10,11 +10,11 @@ LET prev = el.attributes.style
 
 ATTR_REMOVE(el, "style")
 
-WAIT(1000)
-
 LET curr = el.attributes.style
 
-T::EQ(prev, "display: block;")
-T::NONE(curr, "expected attribute to be removed")
+T::EQ(prev, {
+    display: "block"
+})
+T::NONE(curr)
 
 RETURN NONE

@@ -140,6 +140,10 @@ var Attributes = []string{
 	"wrap",
 }
 
+const (
+	AttrNameStyle = "style"
+)
+
 var attrMap = make(map[string]bool)
 
 func init() {

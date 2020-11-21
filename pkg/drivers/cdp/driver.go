@@ -187,7 +187,12 @@ func (drv *Driver) init(ctx context.Context) error {
 			return errors.Wrap(err, "failed to initialize driver")
 		}
 
-		bconn, err := rpcc.DialContext(ctx, ver.WebSocketDebuggerURL)
+		bconn, err := rpcc.DialContext(
+			ctx,
+			ver.WebSocketDebuggerURL,
+			rpcc.WithWriteBufferSize(1048562),
+			rpcc.WithCompression(),
+		)
 
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize driver")
