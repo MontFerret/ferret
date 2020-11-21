@@ -48,7 +48,14 @@ LET google = DOCUMENT("https://www.google.com/", {
     userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.87 Safari/537.36"
 })
 
-INPUT(google, 'input[name="q"]', "ferret")
+HOVER(google, 'input[name="q"]')
+WAIT(RAND(100))
+INPUT(google, 'input[name="q"]', @criteria, 30)
+
+WAIT(RAND(100))
+
+WAIT_ELEMENT(google, '.UUbT9')
+WAIT(RAND(100))
 CLICK(google, 'input[name="btnK"]')
 
 WAIT_NAVIGATION(google)
@@ -58,7 +65,7 @@ FOR result IN ELEMENTS(google, '.g')
     FILTER TRIM(result.attributes.class) == 'g'
     RETURN {
         title: INNER_TEXT(result, 'h3'),
-        description: INNER_TEXT(result, '.st'),
+        description: INNER_TEXT(result, '.rc > div:nth-child(2) span'),
         url: INNER_TEXT(result, 'cite')
     }
 ```
@@ -76,13 +83,13 @@ After some time looking for a tool that would let me declare which data I needed
 ### Inspiration
 FQL (Ferret Query Language) is meant to feel like writing a database query.
 It is heavily inspired by [AQL](https://www.arangodb.com/) (ArangoDB Query Language).
-But due to the domain specifics, there are some differences in syntax and how things work.     
+But, due to the domain specifics, there are some differences in syntax and how things work.     
 
 
 ## Installation
 
 ### Binary
-You can download latest binaries from [here](https://github.com/MontFerret/ferret/releases).
+You can download the latest binaries from [here](https://github.com/MontFerret/ferret/releases).
 
 ### Source code
 #### Production
@@ -158,7 +165,7 @@ ferret < ./docs/examples/static-page.fql
 ### Browser mode
 
 By default, ``ferret`` loads HTML pages directly via HTTP protocol, because it's faster.    
-But nowadays, more and more websites are rendered with JavaScript, and this 'old school' approach does not really work.    
+But, nowadays, more and more websites are rendered with JavaScript, and this 'old school' approach does not really work.    
 For these dynamic websites, you may fetch documents using Chrome or Chromium via Chrome DevTools protocol (aka CDP).    
 First, you need to make sure that you launched Chrome with ```remote-debugging-port=9222``` flag (see "Environment" in this README for instructions on setting this up).    
 Second, you need to pass the address to ```ferret``` CLI.    
@@ -175,8 +182,6 @@ Alternatively, you can tell CLI to launch Chrome for you.
 ```shell
 ferret --cdp-launch
 ```
-
-**NOTE:** Launch command is currently broken on MacOS.
 
 Once ```ferret``` knows how to communicate with Chrome, you can use the function ```DOCUMENT(url, isDynamic)```, setting ```isDynamic``` to ```{driver: "cdp"}``` for dynamic pages:
 
@@ -216,7 +221,7 @@ Please use `exit` or `Ctrl-D` to exit this program.
 ### Embedded mode
 
 ```ferret``` is a very modular system.
-It can be be embedded into your Go application in only a few lines of code.
+It can be embedded into your Go application in only a few lines of code.
 
 Here is an example of a short Go application that defines an `fql` query, compiles it, executes it, then returns the results.
 
@@ -583,29 +588,3 @@ FOR url IN urls
 ## References
 
 Further documentation is available [at our website](https://www.montferret.dev/docs/introduction/)
-
-## Contributors
-
-Thanks to everyone who contributed.
-<a href="https://github.com/MontFerret/ferret/graphs/contributors"><img src="https://opencollective.com/ferret/contributors.svg?width=890&button=false" /></a>
-
-## Financial support
-
-Support this project by becoming a sponsor. Your logo will show up here with a link to your website.    
-
-<p>
-		    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
-	<img src="https://opencollective.com/ferret/sponsors.svg?width=890&button=false" />
-	</a>
-</p>
-<p>
-	    <a href="https://opencollective.com/ferret#section-contributors" target="_blank">
-	<img src="https://opencollective.com/ferret/backers.svg?width=890&button=false" />
-	</a>
-</p>
-
-<p align="center">
-    <a href="https://opencollective.com/ferret/donate" target="_blank">
-        <img src="https://opencollective.com/ferret/donate/button@2x.png?color=blue" width="300" />
-    </a>
-</p>
