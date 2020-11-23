@@ -1,11 +1,11 @@
 package values_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-	"encoding/json"
 )
 
 func TestString(t *testing.T) {
