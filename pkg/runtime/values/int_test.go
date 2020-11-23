@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"encoding/json"
 )
 
 func TestInt(t *testing.T) {
@@ -24,6 +25,20 @@ func TestInt(t *testing.T) {
 			v := values.NewInt(1)
 
 			So(v.Hash(), ShouldEqual, v.Hash())
+		})
+	})
+
+	Convey(".MarshalJSON", t, func() {
+		Convey("It should correctly serialize value", func() {
+			value := 10
+
+			json1, err := json.Marshal(value)
+			So(err, ShouldBeNil)
+
+			json2, err := values.NewInt(value).MarshalJSON()
+			So(err, ShouldBeNil)
+
+			So(json1, ShouldResemble, json2)
 		})
 	})
 }
