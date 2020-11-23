@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wI2L/jettison"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/wI2L/jettison"
 	"golang.org/x/net/html"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
