@@ -2,11 +2,12 @@ package values
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"math"
 	"strconv"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -74,7 +75,7 @@ func IsInf(input Float, sign Int) Boolean {
 }
 
 func (t Float) MarshalJSON() ([]byte, error) {
-	return json.Marshal(float64(t))
+	return jettison.MarshalOpts(float64(t), jettison.NoHTMLEscaping())
 }
 
 func (t Float) Type() core.Type {

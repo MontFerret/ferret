@@ -3,20 +3,22 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
+	"io"
+	"regexp"
+	"sync"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"io"
-	"regexp"
-	"sync"
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -180,7 +182,7 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 
 	m.headers = headers
 
-	j, err := json.Marshal(headers)
+	j, err := jettison.MarshalOpts(headers, jettison.NoHTMLEscaping())
 
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal headers")

@@ -1,10 +1,12 @@
 package network
 
 import (
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/mafredri/cdp/protocol/network"
 	"strings"
 	"time"
+
+	"github.com/mafredri/cdp/protocol/network"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
 var emptyExpires = time.Time{}

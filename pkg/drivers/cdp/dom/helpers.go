@@ -3,20 +3,19 @@ package dom
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"golang.org/x/net/html"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
+	"golang.org/x/net/html"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 var emptyExpires = time.Time{}
@@ -54,7 +53,7 @@ func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		objID = repl.Object.ObjectID
 	}
 
-	b, err := json.Marshal(innerHTML.String())
+	b, err := innerHTML.MarshalJSON()
 
 	if err != nil {
 		return err
@@ -65,7 +64,7 @@ func setInnerHTML(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 			ObjectID: objID,
 		},
 		runtime.CallArgument{
-			Value: json.RawMessage(b),
+			Value: b,
 		},
 	)
 
@@ -130,7 +129,7 @@ func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 		objID = repl.Object.ObjectID
 	}
 
-	b, err := json.Marshal(innerText.String())
+	b, err := innerText.MarshalJSON()
 
 	if err != nil {
 		return err
@@ -141,7 +140,7 @@ func setInnerText(ctx context.Context, client *cdp.Client, exec *eval.ExecutionC
 			ObjectID: objID,
 		},
 		runtime.CallArgument{
-			Value: json.RawMessage(b),
+			Value: b,
 		},
 	)
 

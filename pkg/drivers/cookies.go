@@ -3,13 +3,14 @@ package drivers
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+
+	"github.com/wI2L/jettison"
 )
 
 type HTTPCookies map[string]HTTPCookie
@@ -19,7 +20,7 @@ func NewHTTPCookies() HTTPCookies {
 }
 
 func (c HTTPCookies) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]HTTPCookie(c))
+	return jettison.MarshalOpts(map[string]HTTPCookie(c), jettison.NoHTMLEscaping())
 }
 
 func (c HTTPCookies) Type() core.Type {

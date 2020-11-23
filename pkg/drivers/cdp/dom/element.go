@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/wI2L/jettison"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
@@ -186,7 +187,7 @@ func (el *HTMLElement) Type() core.Type {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(el.String())
+	return jettison.MarshalOpts(el.String(), jettison.NoHTMLEscaping())
 }
 
 func (el *HTMLElement) String() string {

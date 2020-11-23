@@ -2,13 +2,15 @@ package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
 )
 
 type (

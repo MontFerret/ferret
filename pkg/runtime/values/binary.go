@@ -1,10 +1,11 @@
 package values
 
 import (
-	"encoding/json"
 	"hash/fnv"
 	"io"
 	"io/ioutil"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -27,7 +28,7 @@ func NewBinaryFrom(stream io.Reader) (Binary, error) {
 }
 
 func (b Binary) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]byte(b))
+	return jettison.MarshalOpts([]byte(b), jettison.NoHTMLEscaping())
 }
 
 func (b Binary) Type() core.Type {

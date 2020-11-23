@@ -4,6 +4,8 @@ import (
 	"hash/fnv"
 	"time"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
@@ -56,7 +58,7 @@ func MustParseDateTime(input interface{}) DateTime {
 }
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
-	return t.Time.MarshalJSON()
+	return jettison.MarshalOpts(t.Time, jettison.NoHTMLEscaping())
 }
 
 func (t DateTime) Type() core.Type {

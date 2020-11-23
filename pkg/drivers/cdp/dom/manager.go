@@ -2,19 +2,21 @@ package dom
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"io"
+	"sync"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"io"
-	"sync"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/common"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 var (

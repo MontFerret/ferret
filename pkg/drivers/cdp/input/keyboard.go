@@ -2,9 +2,9 @@ package input
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/input"
 )

@@ -20,7 +20,7 @@ require (
 	github.com/rs/zerolog v1.19.0
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/stretchr/testify v1.4.0 // indirect
+	github.com/wI2L/jettison v0.7.1
 	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect

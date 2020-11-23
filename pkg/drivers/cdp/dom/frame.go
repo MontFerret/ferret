@@ -1,8 +1,9 @@
 package dom
 
 import (
-	"github.com/mafredri/cdp/protocol/page"
 	"sync"
+
+	"github.com/mafredri/cdp/protocol/page"
 )
 
 type (
