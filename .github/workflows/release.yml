@@ -17,6 +17,8 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.15
+      - name: Set up ANTLR 4
+        uses: NiccoMlt/setup-antlr4@v0.0.5
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
