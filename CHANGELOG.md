@@ -3,6 +3,17 @@
 ### 0.13.0
 #### Added
 - ``WHILE`` loop and ``ATTR_QUERY`` function [#567](https://github.com/MontFerret/ferret/pull/567)
+- Support of Element.nextElementSibling and Element.previousElement [#569](https://github.com/MontFerret/ferret/pull/569)
+- Support of Element.getParentElement [#571](https://github.com/MontFerret/ferret/pull/571)
+- Support of computed styles [#570](https://github.com/MontFerret/ferret/pull/570)
+
+#### Fixed
+- HTML escaping [#573](https://github.com/MontFerret/ferret/pull/573)
+
+#### Updated 
+- Upgraded CDP client [#536](https://github.com/MontFerret/ferret/pull/563)
+- Upgraded GoQuery [#562](https://github.com/MontFerret/ferret/pull/562)
+- Upgraded XPath [#572](https://github.com/MontFerret/ferret/pull/572)
 
 ### 0.12.1
 #### Fixed
