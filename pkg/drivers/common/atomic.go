@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"sync"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (

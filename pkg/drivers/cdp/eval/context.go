@@ -3,15 +3,15 @@ package eval
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/mafredri/cdp/protocol/dom"
 	"strings"
 
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )

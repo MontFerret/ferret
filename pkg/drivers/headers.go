@@ -3,7 +3,6 @@ package drivers
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"net/textproto"
@@ -13,6 +12,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+
+	"github.com/wI2L/jettison"
 )
 
 // HTTPHeaders HTTP header object
@@ -111,7 +112,7 @@ func (h HTTPHeaders) MarshalJSON() ([]byte, error) {
 		headers[key] = strings.Join(val, ", ")
 	}
 
-	out, err := json.Marshal(headers)
+	out, err := jettison.MarshalOpts(headers, jettison.NoHTMLEscaping())
 
 	if err != nil {
 		return nil, err

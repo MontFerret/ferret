@@ -3,9 +3,10 @@ package values
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"sort"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -30,7 +31,7 @@ func NewArrayWith(values ...core.Value) *Array {
 }
 
 func (t *Array) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.items)
+	return jettison.MarshalOpts(t.items, jettison.NoHTMLEscaping())
 }
 
 func (t *Array) Type() core.Type {

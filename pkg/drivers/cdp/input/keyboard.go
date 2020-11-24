@@ -2,11 +2,11 @@ package input
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"time"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/input"
+	"github.com/pkg/errors"
 )
 
 const DefaultDelay = 25

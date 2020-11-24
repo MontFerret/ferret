@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -39,7 +41,7 @@ func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.EmptyString, err
 	}
 
-	out, err := json.Marshal(args[0])
+	out, err := jettison.MarshalOpts(args[0])
 
 	if err != nil {
 		return values.EmptyString, err

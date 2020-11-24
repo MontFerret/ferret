@@ -2,11 +2,12 @@ package drivers
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+
+	"github.com/wI2L/jettison"
 )
 
 // HTTPResponse HTTP response object.
@@ -66,10 +67,10 @@ type responseMarshal struct {
 
 func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
 	if resp == nil {
-		return json.Marshal(values.None)
+		return values.None.MarshalJSON()
 	}
 
-	return json.Marshal(responseMarshal(*resp))
+	return jettison.MarshalOpts(responseMarshal(*resp), jettison.NoHTMLEscaping())
 }
 
 func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {

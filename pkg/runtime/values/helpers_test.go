@@ -2,9 +2,12 @@ package values_test
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -416,6 +419,30 @@ func TestHelpers(t *testing.T) {
 
 				So(arr.String(), ShouldEqual, "[1,\"bar\",{}]")
 				So(arr.Get(values.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)
+			})
+		})
+
+		Convey("Unmarshal", func() {
+			Convey("Should deserialize object", func() {
+				input := map[string]interface{}{
+					"foo": []string{
+						"bar",
+						"qaz",
+					},
+				}
+				json1, err := json.Marshal(input)
+
+				So(err, ShouldBeNil)
+
+				val, err := values.Unmarshal(json1)
+
+				So(err, ShouldBeNil)
+				So(val.Type(), ShouldResemble, types.Object)
+
+				json2, err := val.MarshalJSON()
+
+				So(err, ShouldBeNil)
+				So(json2, ShouldResemble, json1)
 			})
 		})
 	})

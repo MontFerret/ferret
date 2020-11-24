@@ -2,9 +2,10 @@ package values
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"strconv"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -62,7 +63,7 @@ func MustParseInt(input interface{}) Int {
 }
 
 func (t Int) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64(t))
+	return jettison.MarshalOpts(int64(t), jettison.NoHTMLEscaping())
 }
 
 func (t Int) Type() core.Type {

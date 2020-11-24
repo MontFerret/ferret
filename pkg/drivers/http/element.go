@@ -2,18 +2,18 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"hash/fnv"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/antchfx/htmlquery"
+	"github.com/antchfx/xpath"
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-
-	"github.com/PuerkitoBio/goquery"
-	"github.com/antchfx/htmlquery"
-	"github.com/antchfx/xpath"
 )
 
 type HTMLElement struct {
@@ -32,7 +32,7 @@ func NewHTMLElement(node *goquery.Selection) (drivers.HTMLElement, error) {
 }
 
 func (el *HTMLElement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(el.String())
+	return jettison.MarshalOpts(el.String(), jettison.NoHTMLEscaping())
 }
 
 func (el *HTMLElement) Type() core.Type {

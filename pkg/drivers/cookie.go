@@ -2,12 +2,13 @@ package drivers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -152,7 +153,7 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 		"same_site": c.SameSite.String(),
 	}
 
-	out, err := json.Marshal(v)
+	out, err := jettison.MarshalOpts(v, jettison.NoHTMLEscaping())
 
 	if err != nil {
 		return nil, err
