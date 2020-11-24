@@ -27,8 +27,7 @@ jobs:
           echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.8-complete.jar "$@"' > $HOME/antlr-bin/antlr
           echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/antlr-bin/grun
           chmod +x $HOME/antlr-bin/*
-          export PATH=$PATH:$HOME/antlr-bin
-          echo "antlr=$HOME/antlr-bin/antlr" >> $GITHUB_ENV
+          sudo ln -s $HOME/antlr-bin/antlr /usr/local/bin/antlr
           antlr
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
