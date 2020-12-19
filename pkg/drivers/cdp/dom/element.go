@@ -37,14 +37,14 @@ type (
 	}
 
 	HTMLElement struct {
-		logger    *zerolog.Logger
-		client    *cdp.Client
-		dom       *Manager
-		input     *input.Manager
-		exec      *eval.ExecutionContext
-		id        HTMLElementIdentity
-		nodeType  html.NodeType
-		nodeName  values.String
+		logger   *zerolog.Logger
+		client   *cdp.Client
+		dom      *Manager
+		input    *input.Manager
+		exec     *eval.ExecutionContext
+		id       HTMLElementIdentity
+		nodeType html.NodeType
+		nodeName values.String
 	}
 )
 
