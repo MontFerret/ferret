@@ -102,7 +102,7 @@ func LoadHTMLElementWithID(
 		dom.
 			NewDescribeNodeArgs().
 			SetObjectID(id.ObjectID).
-			SetDepth(1),
+			SetDepth(0),
 	)
 
 	if err != nil {
