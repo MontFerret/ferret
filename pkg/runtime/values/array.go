@@ -22,6 +22,10 @@ type (
 	}
 )
 
+func EmptyArray() *Array {
+	return &Array{items: make([]core.Value, 0, 0)}
+}
+
 func NewArray(size int) *Array {
 	return &Array{items: make([]core.Value, 0, size)}
 }

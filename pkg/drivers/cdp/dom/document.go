@@ -193,10 +193,6 @@ func (doc *HTMLDocument) Frame() page.FrameTree {
 	return doc.frameTree
 }
 
-func (doc *HTMLDocument) IsDetached() values.Boolean {
-	return doc.element.IsDetached()
-}
-
 func (doc *HTMLDocument) GetNodeType() values.Int {
 	return 9
 }

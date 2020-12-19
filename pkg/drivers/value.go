@@ -24,8 +24,6 @@ type (
 		collections.Measurable
 		io.Closer
 
-		IsDetached() values.Boolean
-
 		GetNodeType() values.Int
 
 		GetNodeName() values.String

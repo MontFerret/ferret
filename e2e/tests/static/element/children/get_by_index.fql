@@ -1,0 +1,9 @@
+LET url = @lab.cdn.static + '/list.html'
+LET doc = DOCUMENT(url)
+
+LET list = ELEMENT(doc, ".track-list")
+
+T::NOT::NONE(list.children[0])
+T::NOT::NONE(list.children[1])
+
+RETURN NONE

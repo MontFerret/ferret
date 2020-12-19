@@ -86,10 +86,6 @@ func (el *HTMLElement) Copy() core.Value {
 	return c
 }
 
-func (el *HTMLElement) IsDetached() values.Boolean {
-	return values.True
-}
-
 func (el *HTMLElement) GetNodeType() values.Int {
 	nodes := el.selection.Nodes
 

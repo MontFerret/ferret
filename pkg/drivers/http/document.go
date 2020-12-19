@@ -178,10 +178,6 @@ func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (c
 	return doc.element.XPath(ctx, expression)
 }
 
-func (doc *HTMLDocument) IsDetached() values.Boolean {
-	return values.False
-}
-
 func (doc *HTMLDocument) GetTitle() values.String {
 	title := doc.doc.Find("head > title")
 
