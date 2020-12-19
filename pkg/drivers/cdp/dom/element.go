@@ -577,7 +577,7 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
 
 	if err != nil {
-		return values.NewArray(0), err
+		return values.EmptyArray(), err
 	}
 
 	arr := values.NewArray(len(res.NodeIDs))
@@ -602,16 +602,7 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 		)
 
 		if err != nil {
-			// close elements that are already loaded, but won't be used because of the error
-			if arr.Length() > 0 {
-				arr.ForEach(func(e core.Value, _ int) bool {
-					e.(*HTMLElement).Close()
-
-					return true
-				})
-			}
-
-			return values.NewArray(0), err
+			return values.EmptyArray(), err
 		}
 
 		arr.Push(childEl)
@@ -723,13 +714,13 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector v
 	)
 
 	if err != nil {
-		return values.NewArray(0), err
+		return values.EmptyArray(), err
 	}
 
 	arr, ok := out.(*values.Array)
 
 	if !ok {
-		return values.NewArray(0), errors.New("unexpected output")
+		return values.EmptyArray(), errors.New("unexpected output")
 	}
 
 	return arr, nil
@@ -800,7 +791,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 	sel, err := selector.MarshalJSON()
 
 	if err != nil {
-		return values.NewArray(0), err
+		return values.EmptyArray(), err
 	}
 
 	out, err := el.exec.EvalWithArgumentsAndReturnValue(
@@ -815,13 +806,13 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector v
 	)
 
 	if err != nil {
-		return values.NewArray(0), err
+		return values.EmptyArray(), err
 	}
 
 	arr, ok := out.(*values.Array)
 
 	if !ok {
-		return values.NewArray(0), errors.New("unexpected output")
+		return values.EmptyArray(), errors.New("unexpected output")
 	}
 
 	return arr, nil
@@ -1045,20 +1036,6 @@ func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.Remote
 
 		result := values.NewArray(len(props.Result))
 
-		defer func() {
-			if err != nil {
-				result.ForEach(func(value core.Value, idx int) bool {
-					el, ok := value.(*HTMLElement)
-
-					if ok {
-						el.Close()
-					}
-
-					return true
-				})
-			}
-		}()
-
 		for _, descr := range props.Result {
 			if !descr.Enumerable {
 				continue
@@ -1139,12 +1116,6 @@ func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.Remote
 		)
 	default:
 		return values.None, nil
-	}
-}
-
-func (el *HTMLElement) handlePageReload(_ context.Context) {
-	if err := el.Close(); err != nil {
-		el.logError(err)
 	}
 }
 
