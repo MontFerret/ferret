@@ -375,7 +375,7 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 
 		return arr
 	default:
-		return NewArray(0)
+		return EmptyArray()
 	}
 }
 

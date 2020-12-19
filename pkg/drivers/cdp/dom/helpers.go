@@ -203,6 +203,7 @@ func createChildrenArray(nodes []dom.Node) []HTMLElementIdentity {
 
 	for idx, child := range nodes {
 		child := child
+
 		children[idx] = HTMLElementIdentity{
 			NodeID: child.NodeID,
 		}

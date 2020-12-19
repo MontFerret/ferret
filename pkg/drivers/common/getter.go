@@ -230,8 +230,6 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 		segment := segment.(values.String)
 
 		switch segment {
-		case "isDetached":
-			return node.IsDetached(), nil
 		case "nodeType":
 			return node.GetNodeType(), nil
 		case "nodeName":
