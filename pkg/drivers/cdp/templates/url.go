@@ -1,7 +1,7 @@
 package templates
 
-const getUrl = `return window.location.toString()`
+const getURL = `return window.location.toString()`
 
 func GetURL() string {
-	return getUrl
+	return getURL
 }
