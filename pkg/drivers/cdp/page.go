@@ -262,6 +262,7 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	url := p.GetURL().String()
 	p.closed = values.True
 
 	doc := p.getCurrentDocument()
