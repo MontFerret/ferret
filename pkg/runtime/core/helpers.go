@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
+	"time"
 )
 
 func IsNil(input interface{}) bool {
@@ -45,8 +46,14 @@ func NumberLowerBoundary(input float64) float64 {
 	return input / 2
 }
 
+func RandomDefault() float64 {
+	rand.Seed(time.Now().UnixNano())
+
+	return rand.Float64()
+}
+
 func Random(max float64, min float64) float64 {
-	r := rand.Float64()
+	r := RandomDefault()
 	i := r * (max - min + 1)
 	out := math.Floor(i) + min
 

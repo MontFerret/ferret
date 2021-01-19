@@ -2,8 +2,6 @@ package math
 
 import (
 	"context"
-	"math/rand"
-	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -21,8 +19,7 @@ func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 0 {
-		rand.Seed(time.Now().UnixNano())
-		return values.NewFloat(rand.Float64()), nil
+		return values.NewFloat(core.RandomDefault()), nil
 	}
 
 	var max float64
