@@ -5,9 +5,9 @@ defaultVersion="latest"
 location=${LAB_LOCATION:-$defaultLocation}
 version=${LAB_VERSION:-$defaultVersion}
 
-echo "Installing location $location"
 # Copyright MontFerret Team 2020
-version=$(curl -sI https://github.com/MontFerret/ferret/releases/latest | grep location | awk -F"/" '{ printf "%s", $NF }' | tr -d '\r')
+version=$(curl -sI https://github.com/MontFerret/ferret/releases/latest | awk '{print tolower($0)}' | grep location: | awk -F"/" '{ printf "%s", $NF }' | tr -d '\r')
+echo "Installing Ferret $version to $location"
 
 if [ ! $version ]; then
     echo "Failed while attempting to install ferret-cli. Please manually install:"
