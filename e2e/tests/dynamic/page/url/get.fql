@@ -1,0 +1,16 @@
+LET page = DOCUMENT(@lab.cdn.dynamic, {
+    driver: 'cdp'
+})
+
+LET initialDoc = page.frames[0].url
+LET initial = page.url
+
+CLICK(page, ".nav-link-forms")
+
+LET currentDoc = page.frames[0].url
+LET current = page.url
+
+T::NOT::EQ(initial, current)
+T::EQ(initialDoc, currentDoc)
+
+RETURN NONE
