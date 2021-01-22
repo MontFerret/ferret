@@ -145,4 +145,28 @@ func TestParam(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(err.Error(), ShouldContainSubstring, "subattr")
 	})
+
+	Convey("Should be possible to use in struct with nested struct which nil", t, func() {
+		type Some2 struct {
+		}
+		type Some struct {
+			Some2 *Some2
+		}
+
+		someObj := &Some{}
+		prog := compiler.New().
+			MustCompile(`
+
+			RETURN null
+		`)
+
+		panics := func() {
+			_, _ = prog.Run(
+				context.Background(),
+				runtime.WithParam("struct", someObj),
+			)
+		}
+
+		So(panics, ShouldNotPanic)
+	})
 }
