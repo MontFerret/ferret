@@ -20,6 +20,7 @@ type (
 		Headers          drivers.HTTPHeaders
 		Cookies          drivers.HTTPCookies
 		AllowedHTTPCodes map[int]struct{}
+		HTTPTransport    *stdhttp.Transport
 	}
 )
 
@@ -141,5 +142,11 @@ func WithAllowedHTTPCodes(httpCodes []int) Option {
 		for _, code := range httpCodes {
 			opts.AllowedHTTPCodes[code] = struct{}{}
 		}
+	}
+}
+
+func WithCustomTransport(transport *stdhttp.Transport) Option {
+	return func(opts *Options) {
+		opts.HTTPTransport = transport
 	}
 }
