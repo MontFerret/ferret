@@ -2,10 +2,6 @@ package compiler
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
-	"strings"
-
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -16,6 +12,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/pkg/errors"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 type (
@@ -157,16 +156,16 @@ func (v *visitor) doVisitBody(ctx *fql.BodyContext, scope *scope) (core.Expressi
 }
 
 func (v *visitor) doVisitBodyStatement(ctx *fql.BodyStatementContext, scope *scope) (core.Expression, error) {
-	variable := ctx.VariableDeclaration()
-
-	if variable != nil {
+	if variable := ctx.VariableDeclaration(); variable != nil {
 		return v.doVisitVariableDeclaration(variable.(*fql.VariableDeclarationContext), scope)
 	}
 
-	funcCall := ctx.FunctionCallExpression()
-
-	if funcCall != nil {
+	if funcCall := ctx.FunctionCallExpression(); funcCall != nil {
 		return v.doVisitFunctionCallExpression(funcCall.(*fql.FunctionCallExpressionContext), scope)
+	}
+
+	if waitfor := ctx.WaitForStatement(); waitfor != nil {
+		return v.doVisitWaitForStatementContext(waitfor.(*fql.WaitForStatementContext), scope)
 	}
 
 	return nil, core.Error(ErrInvalidToken, ctx.GetText())
@@ -849,6 +848,107 @@ func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementC
 	return nil, v.unexpectedToken(ctx)
 }
 
+func (v *visitor) doVisitWaitForEventStatementContext(ctx *fql.WaitForEventStatementContext, s *scope) (core.Expression, error) {
+	eventName, err := v.doVisitWaitForEventNameContext(ctx.WaitForEventName().(*fql.WaitForEventNameContext), s)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid event name")
+	}
+
+	eventSource, err := v.doVisitWaitForEventSourceContext(ctx.WaitForEventSource().(*fql.WaitForEventSourceContext), s)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid event source")
+	}
+
+	var timeout core.Expression = nil
+
+	if timeoutCtx := ctx.WaitForTimeout(); timeoutCtx != nil {
+		timeoutExp, err := v.doVisitWaitForTimeoutValueContext(timeoutCtx.(*fql.WaitForTimeoutContext), s)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid timeout")
+		}
+
+		timeout = timeoutExp
+	}
+
+	return expressions.NewWaitForEventExpression(
+		v.getSourceMap(ctx),
+		eventName,
+		eventSource,
+		timeout,
+	)
+}
+
+func (v *visitor) doVisitWaitForEventNameContext(ctx *fql.WaitForEventNameContext, s *scope) (core.Expression, error) {
+	if str := ctx.StringLiteral(); str != nil {
+		return v.doVisitStringLiteral(str.(*fql.StringLiteralContext))
+	}
+
+	if variable := ctx.Variable(); variable != nil {
+		return v.doVisitVariable(variable.(*fql.VariableContext), s)
+	}
+
+	if param := ctx.Param(); param != nil {
+		return v.doVisitParamContext(param.(*fql.ParamContext), s)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	}
+
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	}
+
+	return nil, ErrNotImplemented
+}
+
+func (v *visitor) doVisitWaitForEventSourceContext(ctx *fql.WaitForEventSourceContext, s *scope) (core.Expression, error) {
+	if variable := ctx.Variable(); variable != nil {
+		return v.doVisitVariable(variable.(*fql.VariableContext), s)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	}
+
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	}
+
+	return nil, ErrNotImplemented
+}
+
+func (v *visitor) doVisitWaitForTimeoutValueContext(ctx *fql.WaitForTimeoutContext, s *scope) (core.Expression, error) {
+	if integer := ctx.IntegerLiteral(); integer != nil {
+		return v.doVisitIntegerLiteral(integer.(*fql.IntegerLiteralContext))
+	}
+
+	if variable := ctx.Variable(); variable != nil {
+		return v.doVisitVariable(variable.(*fql.VariableContext), s)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	}
+
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	}
+
+	return nil, ErrNotImplemented
+}
+
+func (v *visitor) doVisitWaitForStatementContext(ctx *fql.WaitForStatementContext, s *scope) (core.Expression, error) {
+	if event := ctx.WaitForEventStatement(); event != nil {
+		return v.doVisitWaitForEventStatementContext(event.(*fql.WaitForEventStatementContext), s)
+	}
+
+	return nil, ErrInvalidToken
+}
+
 func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scope *scope) (core.Expression, error) {
 	member, err := v.doVisitMember(ctx.Member().(*fql.MemberContext), scope)
 
@@ -1112,7 +1212,7 @@ func (v *visitor) doVisitNoneLiteral(_ *fql.NoneLiteralContext) (core.Expression
 }
 
 func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (core.Expression, error) {
-	name := ctx.Identifier().GetText()
+	name := ctx.GetText()
 
 	// check whether the variable is defined
 	if !scope.HasVariable(name) {
@@ -1459,129 +1559,87 @@ func (v *visitor) doVisitExpressionGroup(ctx *fql.ExpressionGroupContext, scope 
 }
 
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
-	seq := ctx.ExpressionGroup()
-
-	if seq != nil {
+	if seq := ctx.ExpressionGroup(); seq != nil {
 		return v.doVisitExpressionGroup(seq.(*fql.ExpressionGroupContext), scope)
 	}
 
-	member := ctx.MemberExpression()
-
-	if member != nil {
+	if member := ctx.MemberExpression(); member != nil {
 		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), scope)
 	}
 
-	funCall := ctx.FunctionCallExpression()
-
-	if funCall != nil {
+	if funCall := ctx.FunctionCallExpression(); funCall != nil {
 		return v.doVisitFunctionCallExpression(funCall.(*fql.FunctionCallExpressionContext), scope)
 	}
 
-	notOp := ctx.UnaryOperator()
-
-	if notOp != nil {
+	if notOp := ctx.UnaryOperator(); notOp != nil {
 		return v.doVisitUnaryOperator(ctx, scope)
 	}
 
-	multiOp := ctx.MultiplicativeOperator()
-
-	if multiOp != nil {
+	if multiOp := ctx.MultiplicativeOperator(); multiOp != nil {
 		return v.doVisitMathOperator(ctx, scope)
 	}
 
-	addOp := ctx.AdditiveOperator()
-
-	if addOp != nil {
+	if addOp := ctx.AdditiveOperator(); addOp != nil {
 		return v.doVisitMathOperator(ctx, scope)
 	}
 
-	arrOp := ctx.ArrayOperator()
-
-	if arrOp != nil {
+	if arrOp := ctx.ArrayOperator(); arrOp != nil {
 		return v.doVisitArrayOperator(ctx, scope)
 	}
 
-	equalityOp := ctx.EqualityOperator()
-
-	if equalityOp != nil {
+	if equalityOp := ctx.EqualityOperator(); equalityOp != nil {
 		return v.doVisitEqualityOperator(ctx, scope)
 	}
 
-	inOp := ctx.InOperator()
-
-	if inOp != nil {
+	if inOp := ctx.InOperator(); inOp != nil {
 		return v.doVisitInOperator(ctx, scope)
 	}
 
-	logicalAndOp := ctx.LogicalAndOperator()
-
-	if logicalAndOp != nil {
+	if logicalAndOp := ctx.LogicalAndOperator(); logicalAndOp != nil {
 		return v.doVisitLogicalOperator(ctx, scope)
 	}
 
-	logicalOrOp := ctx.LogicalOrOperator()
-
-	if logicalOrOp != nil {
+	if logicalOrOp := ctx.LogicalOrOperator(); logicalOrOp != nil {
 		return v.doVisitLogicalOperator(ctx, scope)
 	}
 
-	regexpOp := ctx.RegexpOperator()
-
-	if regexpOp != nil {
+	if regexpOp := ctx.RegexpOperator(); regexpOp != nil {
 		return v.doVisitRegexpOperator(ctx, scope)
 	}
 
-	variable := ctx.Variable()
-
-	if variable != nil {
+	if variable := ctx.Variable(); variable != nil {
 		return v.doVisitVariable(variable.(*fql.VariableContext), scope)
 	}
 
-	str := ctx.StringLiteral()
-
-	if str != nil {
+	if str := ctx.StringLiteral(); str != nil {
 		return v.doVisitStringLiteral(str.(*fql.StringLiteralContext))
 	}
 
-	integ := ctx.IntegerLiteral()
-
-	if integ != nil {
+	if integ := ctx.IntegerLiteral(); integ != nil {
 		return v.doVisitIntegerLiteral(integ.(*fql.IntegerLiteralContext))
 	}
 
-	float := ctx.FloatLiteral()
-
-	if float != nil {
+	if float := ctx.FloatLiteral(); float != nil {
 		return v.doVisitFloatLiteral(float.(*fql.FloatLiteralContext))
 	}
 
-	boolean := ctx.BooleanLiteral()
-
-	if boolean != nil {
+	if boolean := ctx.BooleanLiteral(); boolean != nil {
 		return v.doVisitBooleanLiteral(boolean.(*fql.BooleanLiteralContext))
 	}
 
-	arr := ctx.ArrayLiteral()
-
-	if arr != nil {
+	if arr := ctx.ArrayLiteral(); arr != nil {
 		return v.doVisitArrayLiteral(arr.(*fql.ArrayLiteralContext), scope)
 	}
 
-	obj := ctx.ObjectLiteral()
-
-	if obj != nil {
+	if obj := ctx.ObjectLiteral(); obj != nil {
 		return v.doVisitObjectLiteral(obj.(*fql.ObjectLiteralContext), scope)
 	}
 
-	none := ctx.NoneLiteral()
-
-	if none != nil {
+	if none := ctx.NoneLiteral(); none != nil {
 		return v.doVisitNoneLiteral(none.(*fql.NoneLiteralContext))
 	}
 
-	questionCtx := ctx.QuestionMark()
-
-	if questionCtx != nil {
+	if questionCtx := ctx.QuestionMark(); questionCtx != nil {
 		exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 		if err != nil {
@@ -1595,19 +1653,14 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		)
 	}
 
-	rangeOp := ctx.RangeOperator()
-
-	if rangeOp != nil {
+	if rangeOp := ctx.RangeOperator(); rangeOp != nil {
 		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
 	}
 
-	param := ctx.Param()
-
-	if param != nil {
+	if param := ctx.Param(); param != nil {
 		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
 	}
 
-	// TODO: Complete it
 	return nil, ErrNotImplemented
 }
 
@@ -1652,6 +1705,8 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 		out, err = v.doVisitForExpression(ctx, scope)
 	case *fql.ReturnExpressionContext:
 		out, err = v.doVisitReturnExpression(ctx, scope)
+	case *fql.WaitForStatementContext:
+		out, err = v.doVisitWaitForStatementContext(ctx, scope)
 	case *fql.ArrayLiteralContext:
 		out, err = v.doVisitArrayLiteral(ctx, scope)
 	case *fql.ObjectLiteralContext:

@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -90,6 +90,21 @@ type FqlParserListener interface {
 
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
+
+	// EnterWaitForStatement is called when entering the waitForStatement production.
+	EnterWaitForStatement(c *WaitForStatementContext)
+
+	// EnterWaitForTimeout is called when entering the waitForTimeout production.
+	EnterWaitForTimeout(c *WaitForTimeoutContext)
+
+	// EnterWaitForEventName is called when entering the waitForEventName production.
+	EnterWaitForEventName(c *WaitForEventNameContext)
+
+	// EnterWaitForEventSource is called when entering the waitForEventSource production.
+	EnterWaitForEventSource(c *WaitForEventSourceContext)
+
+	// EnterWaitForEventStatement is called when entering the waitForEventStatement production.
+	EnterWaitForEventStatement(c *WaitForEventStatementContext)
 
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
@@ -282,6 +297,21 @@ type FqlParserListener interface {
 
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)
+
+	// ExitWaitForStatement is called when exiting the waitForStatement production.
+	ExitWaitForStatement(c *WaitForStatementContext)
+
+	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
+	ExitWaitForTimeout(c *WaitForTimeoutContext)
+
+	// ExitWaitForEventName is called when exiting the waitForEventName production.
+	ExitWaitForEventName(c *WaitForEventNameContext)
+
+	// ExitWaitForEventSource is called when exiting the waitForEventSource production.
+	ExitWaitForEventSource(c *WaitForEventSourceContext)
+
+	// ExitWaitForEventStatement is called when exiting the waitForEventStatement production.
+	ExitWaitForEventStatement(c *WaitForEventStatementContext)
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)

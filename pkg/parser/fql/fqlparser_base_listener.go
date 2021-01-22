@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -189,6 +189,36 @@ func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) 
 
 // ExitCollectCounter is called when production collectCounter is exited.
 func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
+
+// EnterWaitForStatement is called when production waitForStatement is entered.
+func (s *BaseFqlParserListener) EnterWaitForStatement(ctx *WaitForStatementContext) {}
+
+// ExitWaitForStatement is called when production waitForStatement is exited.
+func (s *BaseFqlParserListener) ExitWaitForStatement(ctx *WaitForStatementContext) {}
+
+// EnterWaitForTimeout is called when production waitForTimeout is entered.
+func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) {}
+
+// ExitWaitForTimeout is called when production waitForTimeout is exited.
+func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
+
+// EnterWaitForEventName is called when production waitForEventName is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventName(ctx *WaitForEventNameContext) {}
+
+// ExitWaitForEventName is called when production waitForEventName is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventName(ctx *WaitForEventNameContext) {}
+
+// EnterWaitForEventSource is called when production waitForEventSource is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventSource(ctx *WaitForEventSourceContext) {}
+
+// ExitWaitForEventSource is called when production waitForEventSource is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventSource(ctx *WaitForEventSourceContext) {}
+
+// EnterWaitForEventStatement is called when production waitForEventStatement is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventStatement(ctx *WaitForEventStatementContext) {}
+
+// ExitWaitForEventStatement is called when production waitForEventStatement is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventStatement(ctx *WaitForEventStatementContext) {}
 
 // EnterVariableDeclaration is called when production variableDeclaration is entered.
 func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}

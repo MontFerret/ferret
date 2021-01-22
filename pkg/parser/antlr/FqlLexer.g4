@@ -50,6 +50,7 @@ RegexMatch: '=~';
 // Common Keywords
 For: 'FOR';
 Return: 'RETURN';
+Waitfor: 'WAITFOR';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
 Sort: 'SORT';
@@ -70,6 +71,9 @@ Count: 'COUNT';
 All: 'ALL';
 Any: 'ANY';
 Aggregate: 'AGGREGATE';
+
+// Wait operators
+Event: 'EVENT';
 
 // Unary operators
 Like: 'LIKE';

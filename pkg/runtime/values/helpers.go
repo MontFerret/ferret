@@ -329,6 +329,14 @@ func ToInt(input core.Value) Int {
 	}
 }
 
+func ToIntDefault(input core.Value, defaultValue Int) Int {
+	if result := ToInt(input); result > 0 {
+		return result
+	}
+
+	return defaultValue
+}
+
 func ToArray(ctx context.Context, input core.Value) *Array {
 	switch value := input.(type) {
 	case Boolean,

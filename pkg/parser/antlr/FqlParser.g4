@@ -25,6 +25,7 @@ body
 bodyStatement
     : functionCallExpression
     | variableDeclaration
+    | waitForStatement
     ;
 
 bodyExpression
@@ -142,6 +143,36 @@ collectCounter
     : With Count Into Identifier
     ;
 
+
+waitForStatement
+    : waitForEventStatement
+    ;
+
+waitForTimeout
+    : integerLiteral
+    | variable
+    | functionCallExpression
+    | memberExpression
+    ;
+
+waitForEventName
+    : stringLiteral
+    | variable
+    | param
+    | functionCallExpression
+    | memberExpression
+    ;
+
+waitForEventSource
+    : variable
+    | functionCallExpression
+    | memberExpression
+    ;
+
+waitForEventStatement
+    : Waitfor Event waitForEventName In waitForEventSource (waitForTimeout)?
+    ;
+
 variableDeclaration
     : Let Identifier Assign expression
     | Let Identifier Assign OpenParen forExpression CloseParen
@@ -252,6 +283,8 @@ functionIdentifier
     | Like
     | Not
     | In
+    | Waitfor
+    | Event
     ;
 
 functionCallExpression
