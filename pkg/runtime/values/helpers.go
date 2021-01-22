@@ -148,7 +148,13 @@ func Parse(input interface{}) core.Value {
 		kind := t.Kind()
 
 		if kind == reflect.Ptr {
-			return Parse(v.Elem().Interface())
+			el := v.Elem()
+
+			if el.Kind() == 0 {
+				return None
+			}
+
+			return Parse(el.Interface())
 		}
 
 		if kind == reflect.Slice || kind == reflect.Array {
