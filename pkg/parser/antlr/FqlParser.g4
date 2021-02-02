@@ -155,6 +155,10 @@ waitForTimeout
     | memberExpression
     ;
 
+waitForOptions
+    : objectLiteral
+    ;
+
 waitForEventName
     : stringLiteral
     | variable
@@ -170,7 +174,7 @@ waitForEventSource
     ;
 
 waitForEventStatement
-    : Waitfor Event waitForEventName In waitForEventSource (waitForTimeout)?
+    : Waitfor Event waitForEventName In waitForEventSource (Options waitForOptions)? (waitForTimeout)?
     ;
 
 variableDeclaration

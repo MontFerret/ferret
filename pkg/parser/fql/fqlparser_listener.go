@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.9. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -96,6 +96,9 @@ type FqlParserListener interface {
 
 	// EnterWaitForTimeout is called when entering the waitForTimeout production.
 	EnterWaitForTimeout(c *WaitForTimeoutContext)
+
+	// EnterWaitForOptions is called when entering the waitForOptions production.
+	EnterWaitForOptions(c *WaitForOptionsContext)
 
 	// EnterWaitForEventName is called when entering the waitForEventName production.
 	EnterWaitForEventName(c *WaitForEventNameContext)
@@ -303,6 +306,9 @@ type FqlParserListener interface {
 
 	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
 	ExitWaitForTimeout(c *WaitForTimeoutContext)
+
+	// ExitWaitForOptions is called when exiting the waitForOptions production.
+	ExitWaitForOptions(c *WaitForOptionsContext)
 
 	// ExitWaitForEventName is called when exiting the waitForEventName production.
 	ExitWaitForEventName(c *WaitForEventNameContext)

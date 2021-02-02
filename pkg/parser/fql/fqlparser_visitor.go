@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.9. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -96,6 +96,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#waitForTimeout.
 	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForOptions.
+	VisitWaitForOptions(ctx *WaitForOptionsContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#waitForEventName.
 	VisitWaitForEventName(ctx *WaitForEventNameContext) interface{}

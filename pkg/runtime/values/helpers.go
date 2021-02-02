@@ -387,6 +387,49 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 	}
 }
 
+func ToObject(ctx context.Context, input core.Value) *Object {
+	switch value := input.(type) {
+	case *Object:
+		return value
+	case *Array:
+		obj := NewObject()
+
+		value.ForEach(func(value core.Value, idx int) bool {
+			obj.Set(ToString(Int(idx)), value)
+
+			return true
+		})
+
+		return obj
+	case core.Iterable:
+		iterator, err := value.Iterate(ctx)
+
+		if err != nil {
+			return NewObject()
+		}
+
+		obj := NewObject()
+
+		for {
+			val, key, err := iterator.Next(ctx)
+
+			if err != nil {
+				return obj
+			}
+
+			if val == None {
+				break
+			}
+
+			obj.Set(String(key.String()), val)
+		}
+
+		return obj
+	default:
+		return NewObject()
+	}
+}
+
 func MapHash(input map[string]core.Value) uint64 {
 	h := fnv.New64a()
 

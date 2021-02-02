@@ -861,6 +861,18 @@ func (v *visitor) doVisitWaitForEventStatementContext(ctx *fql.WaitForEventState
 		return nil, errors.Wrap(err, "invalid event source")
 	}
 
+	var options core.Expression = nil
+
+	if optionsCtx := ctx.WaitForOptions(); optionsCtx != nil {
+		optionsExp, err := v.doVisitWaitForOptionsValue(optionsCtx.(*fql.WaitForOptionsContext), s)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid options")
+		}
+
+		options = optionsExp
+	}
+
 	var timeout core.Expression = nil
 
 	if timeoutCtx := ctx.WaitForTimeout(); timeoutCtx != nil {
@@ -877,8 +889,13 @@ func (v *visitor) doVisitWaitForEventStatementContext(ctx *fql.WaitForEventState
 		v.getSourceMap(ctx),
 		eventName,
 		eventSource,
+		options,
 		timeout,
 	)
+}
+
+func (v *visitor) doVisitWaitForOptionsValue(ctx *fql.WaitForOptionsContext, s *scope) (core.Expression, error) {
+	return v.doVisitObjectLiteral(ctx.ObjectLiteral().(*fql.ObjectLiteralContext), s)
 }
 
 func (v *visitor) doVisitWaitForEventNameContext(ctx *fql.WaitForEventNameContext, s *scope) (core.Expression, error) {

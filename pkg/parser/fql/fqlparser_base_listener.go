@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.9. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -201,6 +201,12 @@ func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) 
 
 // ExitWaitForTimeout is called when production waitForTimeout is exited.
 func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
+
+// EnterWaitForOptions is called when production waitForOptions is entered.
+func (s *BaseFqlParserListener) EnterWaitForOptions(ctx *WaitForOptionsContext) {}
+
+// ExitWaitForOptions is called when production waitForOptions is exited.
+func (s *BaseFqlParserListener) ExitWaitForOptions(ctx *WaitForOptionsContext) {}
 
 // EnterWaitForEventName is called when production waitForEventName is entered.
 func (s *BaseFqlParserListener) EnterWaitForEventName(ctx *WaitForEventNameContext) {}

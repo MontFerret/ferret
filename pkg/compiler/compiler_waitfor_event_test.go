@@ -5,6 +5,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -14,25 +15,43 @@ import (
 type MockedObservable struct {
 	*values.Object
 
-	subscribers map[string]chan struct{}
+	subscribers map[string]chan events.Event
+
+	Args map[string][]*values.Object
 }
 
 func NewMockedObservable() *MockedObservable {
-	return &MockedObservable{Object: values.NewObject(), subscribers: map[string]chan struct{}{}}
+	return &MockedObservable{
+		Object: values.NewObject(),
+		subscribers: map[string]chan events.Event{},
+		Args: map[string][]*values.Object{},
+	}
 }
 
-func (m *MockedObservable) Emit(eventName string, timeout int64) {
-	ch := make(chan struct{})
+func (m *MockedObservable) Emit(eventName string, args core.Value, err error, timeout int64) {
+	ch := make(chan events.Event)
 	m.subscribers[eventName] = ch
 
 	go func() {
 		<- time.After(time.Millisecond * time.Duration(timeout))
-		ch <- struct{}{}
+		ch <- events.Event{
+			Args: args,
+			Err:  err,
+		}
 	}()
 }
 
-func (m *MockedObservable) Subscribe(_ context.Context, eventName string) (<-chan struct{}, error) {
-	return m.subscribers[eventName], nil
+func (m *MockedObservable) Subscribe(_ context.Context, eventName string, opts *values.Object) <-chan events.Event {
+	calls, found := m.Args[eventName]
+
+	if !found {
+		calls = make([]*values.Object, 0, 10)
+		m.Args[eventName] = calls
+	}
+
+	m.Args[eventName] = append(calls, opts)
+
+	return m.subscribers[eventName]
 }
 
 func TestWaitforEventStatement(t *testing.T) {
@@ -46,6 +65,10 @@ func TestWaitforEventStatement(t *testing.T) {
 						return NewMockedObservable(), nil
 					},
 					"EMIT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+						if err := core.ValidateArgs(args, 2, 3); err != nil {
+							return values.None, err
+						}
+
 						observable := args[0].(*MockedObservable)
 						eventName := values.ToString(args[1])
 
@@ -55,7 +78,27 @@ func TestWaitforEventStatement(t *testing.T) {
 							timeout = values.ToInt(args[2])
 						}
 
-						observable.Emit(eventName.String(), int64(timeout))
+						observable.Emit(eventName.String(), values.None, nil, int64(timeout))
+
+						return values.None, nil
+					},
+					"EMIT_WITH": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+						if err := core.ValidateArgs(args, 3, 4); err != nil {
+							return values.None, err
+						}
+
+						observable := args[0].(*MockedObservable)
+						eventName := values.ToString(args[1])
+
+						opts := values.ToObject(ctx, args[2])
+
+						timeout := values.NewInt(100)
+
+						if len(args) > 3 {
+							timeout = values.ToInt(args[2])
+						}
+
+						observable.Emit(eventName.String(), opts, nil, int64(timeout))
 
 						return values.None, nil
 					},
@@ -141,6 +184,31 @@ RETURN NONE
 			_, err := prog.Run(context.Background(), runtime.WithParam("evt", "test"))
 
 			So(err, ShouldBeNil)
+		})
+
+		Convey("Should use options", func() {
+			observable := NewMockedObservable()
+			c := newCompiler()
+			c.Namespace("X").RegisterFunction("SINGLETONE", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+				return observable, nil
+			})
+
+			prog := c.MustCompile(`
+LET obj = X::SINGLETONE()
+
+X::EMIT(obj, "test", 1000)
+WAITFOR EVENT "test" IN obj OPTIONS { value: "foo" }
+
+RETURN NONE
+`)
+
+			_, err := prog.Run(context.Background())
+
+			So(err, ShouldNotBeNil)
+
+			options := observable.Args["test"][0]
+			So(options, ShouldNotBeNil)
+			So(options.MustGet("value").String(), ShouldEqual, "foo")
 		})
 
 		Convey("Should timeout", func() {

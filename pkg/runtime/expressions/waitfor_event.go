@@ -2,6 +2,8 @@ package expressions
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,6 +19,7 @@ type WaitForEventExpression struct {
 	src         core.SourceMap
 	eventName   core.Expression
 	eventSource core.Expression
+	options     core.Expression
 	timeout     core.Expression
 }
 
@@ -24,6 +27,7 @@ func NewWaitForEventExpression(
 	src core.SourceMap,
 	eventName core.Expression,
 	eventSource core.Expression,
+	options core.Expression,
 	timeout core.Expression,
 ) (*WaitForEventExpression, error) {
 	if eventName == nil {
@@ -42,6 +46,7 @@ func NewWaitForEventExpression(
 		src:         src,
 		eventName:   eventName,
 		eventSource: eventSource,
+		options: options,
 		timeout:     timeout,
 	}, nil
 }
@@ -59,7 +64,7 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 		return values.None, core.SourceError(e.src, err)
 	}
 
-	observable, ok := eventSource.(core.Observable)
+	observable, ok := eventSource.(events.Observable)
 
 	if !ok {
 		return values.None, core.TypeError(eventSource.Type(), core.NewType("Observable"))
@@ -69,11 +74,13 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 
 	defer cancel()
 
-	ch, err := observable.Subscribe(ctx, eventName)
+	opts, err := e.getOptions(ctx, scope)
 
 	if err != nil {
 		return values.None, core.SourceError(e.src, err)
 	}
+
+	ch := observable.Subscribe(ctx, eventName, opts)
 
 	timeout, err := e.getTimeout(ctx, scope)
 
@@ -84,8 +91,12 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 	timer := time.After(timeout * time.Millisecond)
 
 	select {
-	case <-ch:
-		return values.None, nil
+	case evt := <-ch:
+		if evt.Err != nil {
+			return values.None, core.SourceError(e.src, evt.Err)
+		}
+
+		return evt.Args, nil
 	case <-timer:
 		return values.None, core.SourceError(e.src, core.ErrTimeout)
 	}
@@ -99,6 +110,24 @@ func (e *WaitForEventExpression) getEventName(ctx context.Context, scope *core.S
 	}
 
 	return eventName.String(), nil
+}
+
+func (e *WaitForEventExpression) getOptions(ctx context.Context, scope *core.Scope) (*values.Object, error) {
+	if e.options == nil {
+		return nil, nil
+	}
+
+	options, err := e.options.Exec(ctx, scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := core.ValidateType(options, types.Object); err != nil {
+		return nil, err
+	}
+
+	return options.(*values.Object), nil
 }
 
 func (e *WaitForEventExpression) getTimeout(ctx context.Context, scope *core.Scope) (time.Duration, error) {

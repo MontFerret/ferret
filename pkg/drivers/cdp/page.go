@@ -23,17 +23,25 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type HTMLPage struct {
-	mu       sync.Mutex
-	closed   values.Boolean
-	logger   *zerolog.Logger
-	conn     *rpcc.Conn
-	client   *cdp.Client
-	network  *net.Manager
-	dom      *dom.Manager
-	mouse    *input.Mouse
-	keyboard *input.Keyboard
-}
+type (
+	HTMLPageEvent string
+
+	HTMLPage struct {
+		mu       sync.Mutex
+		closed   values.Boolean
+		logger   *zerolog.Logger
+		conn     *rpcc.Conn
+		client   *cdp.Client
+		network  *net.Manager
+		dom      *dom.Manager
+		mouse    *input.Mouse
+		keyboard *input.Keyboard
+	}
+)
+
+const (
+	HTMLPageEventNavigation HTMLPageEvent = "navigation"
+)
 
 func LoadHTMLPage(
 	ctx context.Context,
@@ -577,6 +585,16 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 	}
 
 	return p.reloadMainFrame(ctx)
+}
+
+func (p *HTMLPage) Subscribe(ctx context.Context, eventName string) (<-chan core.Value, error) {
+	ch := make(chan core.Value)
+
+	go func() {
+
+	}()
+
+	return ch, nil
 }
 
 func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {

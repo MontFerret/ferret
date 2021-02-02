@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.9. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -124,6 +124,10 @@ func (v *BaseFqlParserVisitor) VisitWaitForStatement(ctx *WaitForStatementContex
 }
 
 func (v *BaseFqlParserVisitor) VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForOptions(ctx *WaitForOptionsContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
