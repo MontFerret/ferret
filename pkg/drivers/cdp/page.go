@@ -613,7 +613,7 @@ func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *val
 
 func (p *HTMLPage) subscribeToNavigation(ctx context.Context, options *values.Object) (values.String, error) {
 	var frame drivers.HTMLDocument
-	var targetUrl values.String
+	var targetURL values.String
 
 	if options != nil {
 		if options.Has("frame") {
@@ -629,27 +629,27 @@ func (p *HTMLPage) subscribeToNavigation(ctx context.Context, options *values.Ob
 		}
 
 		if options.Has("target") {
-			targetUrlOpt, _ := options.Get("target")
+			targetURLOpt, _ := options.Get("target")
 
-			url, ok := targetUrlOpt.(values.String)
+			url, ok := targetURLOpt.(values.String)
 
 			if ok {
-				targetUrl = url
+				targetURL = url
 			} else {
-				return values.EmptyString, errors.Wrap(core.TypeError(targetUrlOpt.Type(), types.String), "invalid target")
+				return values.EmptyString, errors.Wrap(core.TypeError(targetURLOpt.Type(), types.String), "invalid target")
 			}
 		}
 	}
 
 	if frame == nil {
-		if err := p.WaitForNavigation(ctx, targetUrl); err != nil {
+		if err := p.WaitForNavigation(ctx, targetURL); err != nil {
 			return values.EmptyString, err
 		}
 
 		return p.GetURL(), nil
 	}
 
-	if err := p.WaitForFrameNavigation(ctx, frame, targetUrl); err != nil {
+	if err := p.WaitForFrameNavigation(ctx, frame, targetURL); err != nil {
 		return values.EmptyString, err
 	}
 
