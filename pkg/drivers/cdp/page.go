@@ -19,8 +19,10 @@ import (
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -587,14 +589,71 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 	return p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) Subscribe(ctx context.Context, eventName string) (<-chan core.Value, error) {
-	ch := make(chan core.Value)
+func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *values.Object) <-chan events.Event {
+	ch := make(chan events.Event)
 
 	go func() {
+		var err error
+		var data core.Value
 
+		if eventName == drivers.EventPageNavigation {
+			data, err = p.subscribeToNavigation(ctx, options)
+		} else {
+			err = core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", eventName)
+		}
+
+		ch <- events.Event{
+			Data: data,
+			Err:  err,
+		}
 	}()
 
-	return ch, nil
+	return ch
+}
+
+func (p *HTMLPage) subscribeToNavigation(ctx context.Context, options *values.Object) (values.String, error) {
+	var frame drivers.HTMLDocument
+	var targetUrl values.String
+
+	if options != nil {
+		if options.Has("frame") {
+			frameOpt, _ := options.Get("frame")
+
+			doc, ok := frameOpt.(drivers.HTMLDocument)
+
+			if ok {
+				frame = doc
+			} else {
+				return values.EmptyString, errors.Wrap(core.TypeError(frameOpt.Type(), drivers.HTMLDocumentType), "invalid frame")
+			}
+		}
+
+		if options.Has("target") {
+			targetUrlOpt, _ := options.Get("target")
+
+			url, ok := targetUrlOpt.(values.String)
+
+			if ok {
+				targetUrl = url
+			} else {
+				return values.EmptyString, errors.Wrap(core.TypeError(targetUrlOpt.Type(), types.String), "invalid target")
+			}
+		}
+	}
+
+	if frame == nil {
+		if err := p.WaitForNavigation(ctx, targetUrl); err != nil {
+			return values.EmptyString, err
+		}
+
+		return p.GetURL(), nil
+	}
+
+	if err := p.WaitForFrameNavigation(ctx, frame, targetUrl); err != nil {
+		return values.EmptyString, err
+	}
+
+	return frame.GetURL(), nil
 }
 
 func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {

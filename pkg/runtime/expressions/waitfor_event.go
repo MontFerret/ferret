@@ -13,7 +13,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-const DefaultWaitTimeout = 500
+const DefaultWaitTimeout = 5000
 
 type WaitForEventExpression struct {
 	src         core.SourceMap
@@ -46,7 +46,7 @@ func NewWaitForEventExpression(
 		src:         src,
 		eventName:   eventName,
 		eventSource: eventSource,
-		options: options,
+		options:     options,
 		timeout:     timeout,
 	}, nil
 }
@@ -84,7 +84,7 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 
 	timeout, err := e.getTimeout(ctx, scope)
 
-	if err !=nil {
+	if err != nil {
 		return values.None, core.SourceError(e.src, errors.Wrap(err, "failed to calculate timeout value"))
 	}
 
@@ -96,7 +96,7 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 			return values.None, core.SourceError(e.src, evt.Err)
 		}
 
-		return evt.Args, nil
+		return evt.Data, nil
 	case <-timer:
 		return values.None, core.SourceError(e.src, core.ErrTimeout)
 	}

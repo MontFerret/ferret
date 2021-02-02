@@ -7,8 +7,10 @@ import (
 )
 
 type (
+	// Event represents an event object that contains either an optional event data
+	// or error that occurred during an event
 	Event struct {
-		Args core.Value
+		Data core.Value
 		Err  error
 	}
 

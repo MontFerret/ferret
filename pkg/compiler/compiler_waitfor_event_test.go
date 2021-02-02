@@ -22,9 +22,9 @@ type MockedObservable struct {
 
 func NewMockedObservable() *MockedObservable {
 	return &MockedObservable{
-		Object: values.NewObject(),
+		Object:      values.NewObject(),
 		subscribers: map[string]chan events.Event{},
-		Args: map[string][]*values.Object{},
+		Args:        map[string][]*values.Object{},
 	}
 }
 
@@ -33,9 +33,9 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 	m.subscribers[eventName] = ch
 
 	go func() {
-		<- time.After(time.Millisecond * time.Duration(timeout))
+		<-time.After(time.Millisecond * time.Duration(timeout))
 		ch <- events.Event{
-			Args: args,
+			Data: args,
 			Err:  err,
 		}
 	}()
@@ -204,7 +204,7 @@ RETURN NONE
 
 			_, err := prog.Run(context.Background())
 
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 
 			options := observable.Args["test"][0]
 			So(options, ShouldNotBeNil)
@@ -217,7 +217,7 @@ RETURN NONE
 			prog := c.MustCompile(`
 LET obj = X::CREATE()
 
-X::EMIT(obj, @evt, 1000)
+X::EMIT(obj, @evt, 6000)
 WAITFOR EVENT @evt IN obj
 
 RETURN NONE

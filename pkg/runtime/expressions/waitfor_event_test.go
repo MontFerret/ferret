@@ -2,8 +2,8 @@ package expressions_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"testing"
@@ -24,9 +24,9 @@ type MockedObservable struct {
 
 func NewMockedObservable() *MockedObservable {
 	return &MockedObservable{
-		Object: values.NewObject(),
+		Object:      values.NewObject(),
 		subscribers: map[string]chan events.Event{},
-		Args: map[string][]*values.Object{},
+		Args:        map[string][]*values.Object{},
 	}
 }
 
@@ -35,9 +35,9 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 	m.subscribers[eventName] = ch
 
 	go func() {
-		<- time.After(time.Millisecond * time.Duration(timeout))
+		<-time.After(time.Millisecond * time.Duration(timeout))
 		ch <- events.Event{
-			Args: args,
+			Data: args,
 			Err:  err,
 		}
 	}()
