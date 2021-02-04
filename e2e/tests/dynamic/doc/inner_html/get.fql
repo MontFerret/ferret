@@ -1,5 +1,5 @@
 LET url = @lab.cdn.dynamic
-LET doc = DOCUMENT(url, true)
+LET doc = DOCUMENT(url, { driver: "cdp" })
 
 LET expected = `<head>
                         <meta charset="utf-8">
@@ -11,7 +11,7 @@ LET expected = `<head>
                         <link rel="stylesheet" href="index.css">
                     </head>
                     <body class="text-center">
-                        <div id="root"><div id="layout"><nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4" id="navbar"><a class="navbar-brand active" aria-current="page" href="#/">Ferret</a><button class="navbar-toggler" type="button"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse"><ul class="navbar-nav mr-auto"><li class="nav-item"><a class="nav-link" href="#/forms">Forms</a></li><li class="nav-item"><a class="nav-link" href="#/navigation">Navigation</a></li><li class="nav-item"><a class="nav-link" href="#/events">Events</a></li><li class="nav-item"><a class="nav-link" href="#/iframe">iFrame</a></li></ul></div></nav><main class="container"><div class="jumbotron" data-type="page" id="index"><div><h1>Welcome to Ferret E2E test page!</h1></div><div><p class="lead">It has several pages for testing different possibilities of the library</p></div></div></main></div></div>
+                        <div id="root"><div id="layout"><nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4" id="navbar"><a class="navbar-brand active" aria-current="page" href="#/">Ferret</a><button class="navbar-toggler" type="button"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse"><ul class="navbar-nav mr-auto"><li class="nav-item"><a class="nav-link nav-link-forms" href="#/forms">Forms</a></li><li class="nav-item"><a class="nav-link nav-link-navigation" href="#/navigation">Navigation</a></li><li class="nav-item"><a class="nav-link nav-link-events" href="#/events">Events</a></li><li class="nav-item"><a class="nav-link nav-link-iframe" href="#/iframe">iFrame</a></li></ul></div></nav><main class="container"><div class="jumbotron" data-type="page" id="index"><div><h1>Welcome to Ferret E2E test page!</h1></div><div><p class="lead">It has several pages for testing different possibilities of the library</p></div></div></main></div></div>
                         <script src="https://unpkg.com/react@16.8.6/umd/react.production.min.js"></script>
                         <script src="https://unpkg.com/react-dom@16.8.6/umd/react-dom.production.min.js"></script>
                         <script src="https://unpkg.com/history@4.9.0/umd/history.min.js"></script>
@@ -19,8 +19,6 @@ LET expected = `<head>
                         <script src="https://unpkg.com/react-router-dom@4.3.1/umd/react-router-dom.js"></script>
                         <script src="https://unpkg.com/react-bootstrap@next/dist/react-bootstrap.min.js" crossorigin=""> </script>
                         <script src="index.js" type="module"></script>
-
-
                 </body>`
 LET actual = INNER_HTML(doc)
 
