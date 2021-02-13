@@ -19,6 +19,17 @@ func TestLikeOperator(t *testing.T) {
 		So(string(out1), ShouldEqual, `true`)
 	})
 
+	Convey("RETURN LIKE('foo', 'f*')", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			RETURN LIKE('foo', 'f*') 
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `true`)
+	})
+
 	Convey("RETURN \"foo\" NOT LIKE  \"b*\" ", t, func() {
 		c := compiler.New()
 
