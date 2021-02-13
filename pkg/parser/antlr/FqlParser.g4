@@ -285,6 +285,7 @@ expression
     | expressionGroup
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
+    | expression likeOperator expression
     | expression equalityOperator expression
     | expression regexpOperator expression
     | expression logicalAndOperator expression
@@ -318,6 +319,11 @@ arrayOperator
 inOperator
     : In
     | Not In
+    ;
+
+likeOperator
+    : Like
+    | Not Like
     ;
 
 equalityOperator
@@ -357,5 +363,4 @@ unaryOperator
     : Not
     | Plus
     | Minus
-    | Like
     ;
