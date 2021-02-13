@@ -38,7 +38,7 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 	replaced := deprecatedLikeSyntax.ReplaceAllFunc([]byte(pattern), func(b []byte) []byte {
 		str := string(b)
 
-		switch str{
+		switch str {
 		case "%":
 			return []byte("*")
 		case "_":

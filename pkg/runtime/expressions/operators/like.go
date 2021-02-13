@@ -3,8 +3,8 @@ package operators
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/gobwas/glob"
+	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
