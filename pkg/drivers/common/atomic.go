@@ -34,10 +34,18 @@ func (av *AtomicValue) Read() core.Value {
 }
 
 // Write sets a new underlying value.
+func (av *AtomicValue) Write(next core.Value) {
+	av.mu.Lock()
+	defer av.mu.Unlock()
+
+	av.value = next
+}
+
+// WriteWith sets a new underlying value with a custom writer.
 // If writer fails, the operations gets terminated and an underlying value remains.
 // @param (AtomicValueWriter) - Writer function that receives a current value and returns new one.
 // @returns (Error) - Error if write operation failed
-func (av *AtomicValue) Write(writer AtomicValueWriter) error {
+func (av *AtomicValue) WriteWith(writer AtomicValueWriter) error {
 	av.mu.Lock()
 	defer av.mu.Unlock()
 

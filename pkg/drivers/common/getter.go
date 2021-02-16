@@ -61,7 +61,7 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 
 			return GetInDocument(ctx, frame, path[2:])
 		case "url", "URL":
-			return page.GetMainFrame().GetURL(), nil
+			return page.GetURL(), nil
 		case "cookies":
 			cookies, err := page.GetCookies(ctx)
 
@@ -74,10 +74,10 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 			}
 
 			return cookies.GetIn(ctx, path[1:])
-		case "isClosed":
-			return page.IsClosed(), nil
 		case "title":
 			return page.GetMainFrame().GetTitle(), nil
+		case "isClosed":
+			return page.IsClosed(), nil
 		default:
 			return GetInDocument(ctx, page.GetMainFrame(), path)
 		}
