@@ -178,6 +178,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#inOperator.
 	VisitInOperator(ctx *InOperatorContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#likeOperator.
+	VisitLikeOperator(ctx *LikeOperatorContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
 

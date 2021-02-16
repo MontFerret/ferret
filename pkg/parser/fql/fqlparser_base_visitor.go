@@ -235,6 +235,10 @@ func (v *BaseFqlParserVisitor) VisitInOperator(ctx *InOperatorContext) interface
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitLikeOperator(ctx *LikeOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitEqualityOperator(ctx *EqualityOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }

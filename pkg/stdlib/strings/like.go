@@ -2,10 +2,17 @@ package strings
 
 import (
 	"context"
-	"unicode"
+	"regexp"
+	"strings"
+
+	"github.com/gobwas/glob"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+)
+
+var (
+	deprecatedLikeSyntax = regexp.MustCompile("[%_]")
 )
 
 // LIKE checks whether the pattern search is contained in the string text, using wildcard matching.
@@ -20,46 +27,41 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	str := []rune(args[0].String())
-	pattern := []rune(args[1].String())
+	str := args[0].String()
+	pattern := args[1].String()
 
 	if len(pattern) == 0 {
 		return values.NewBoolean(len(str) == 0), nil
 	}
 
-	lookup := make([][]bool, len(str)+1)
+	// TODO: Remove me in next releases
+	replaced := deprecatedLikeSyntax.ReplaceAllFunc([]byte(pattern), func(b []byte) []byte {
+		str := string(b)
 
-	for i := range lookup {
-		lookup[i] = make([]bool, len(pattern)+1)
-	}
+		switch str {
+		case "%":
+			return []byte("*")
+		case "_":
+			return []byte("?")
+		default:
+			return b
+		}
+	})
 
-	lookup[0][0] = true
+	pattern = string(replaced)
 
-	for j := 1; j < len(pattern)+1; j++ {
-		if pattern[j-1] == '%' {
-			lookup[0][j] = lookup[0][j-1]
+	if len(args) > 2 {
+		if values.ToBoolean(args[2]) {
+			str = strings.ToLower(str)
+			pattern = strings.ToLower(pattern)
 		}
 	}
 
-	for i := 1; i < len(str)+1; i++ {
-		for j := 1; j < len(pattern)+1; j++ {
-			switch {
-			case pattern[j-1] == '%':
-				lookup[i][j] = lookup[i][j-1] || lookup[i-1][j]
-			case pattern[j-1] == '_' || str[i-1] == pattern[j-1]:
-				lookup[i][j] = lookup[i-1][j-1]
-			case len(args) > 2:
-				isEq := unicode.ToLower(str[i-1]) == unicode.ToLower(pattern[j-1])
-				if args[2] == values.True && isEq {
-					lookup[i][j] = lookup[i-1][j-1]
-				}
-			default:
-				lookup[i][j] = false
-			}
-		}
+	g, err := glob.Compile(pattern)
+
+	if err != nil {
+		return nil, err
 	}
 
-	matched := lookup[len(str)][len(pattern)]
-
-	return values.NewBoolean(matched), nil
+	return values.NewBoolean(g.Match(str)), nil
 }
