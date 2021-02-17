@@ -106,8 +106,8 @@ type FqlParserListener interface {
 	// EnterWaitForEventSource is called when entering the waitForEventSource production.
 	EnterWaitForEventSource(c *WaitForEventSourceContext)
 
-	// EnterWaitForEventStatement is called when entering the waitForEventStatement production.
-	EnterWaitForEventStatement(c *WaitForEventStatementContext)
+	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
+	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
 
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
@@ -319,8 +319,8 @@ type FqlParserListener interface {
 	// ExitWaitForEventSource is called when exiting the waitForEventSource production.
 	ExitWaitForEventSource(c *WaitForEventSourceContext)
 
-	// ExitWaitForEventStatement is called when exiting the waitForEventStatement production.
-	ExitWaitForEventStatement(c *WaitForEventStatementContext)
+	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
+	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)

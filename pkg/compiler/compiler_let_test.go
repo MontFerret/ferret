@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -247,5 +249,70 @@ func TestLet(t *testing.T) {
 		`)
 
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("Should use value returned from WAITFOR EVENT", t, func() {
+		c := compiler.New()
+
+		err := c.Namespace("X").
+			RegisterFunctions(core.NewFunctionsFromMap(
+				map[string]core.Function{
+					"CREATE": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+						return NewMockedObservable(), nil
+					},
+					"EMIT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+						if err := core.ValidateArgs(args, 2, 3); err != nil {
+							return values.None, err
+						}
+
+						observable := args[0].(*MockedObservable)
+						eventName := values.ToString(args[1])
+
+						timeout := values.NewInt(100)
+
+						if len(args) > 2 {
+							timeout = values.ToInt(args[2])
+						}
+
+						observable.Emit(eventName.String(), values.None, nil, int64(timeout))
+
+						return values.None, nil
+					},
+					"EMIT_WITH": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+						if err := core.ValidateArgs(args, 3, 4); err != nil {
+							return values.None, err
+						}
+
+						observable := args[0].(*MockedObservable)
+						eventName := values.ToString(args[1])
+
+						timeout := values.NewInt(100)
+
+						if len(args) > 3 {
+							timeout = values.ToInt(args[3])
+						}
+
+						observable.Emit(eventName.String(), args[2], nil, int64(timeout))
+
+						return values.None, nil
+					},
+					"EVENT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+						return values.NewString("test"), nil
+					},
+				},
+			))
+		So(err, ShouldBeNil)
+
+		out, err := c.MustCompile(`
+			LET obj = X::CREATE()
+
+			X::EMIT_WITH(obj, "event", "data", 100)
+			LET res = (WAITFOR EVENT "event" IN obj)
+
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `"data"`)
 	})
 }

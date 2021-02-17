@@ -808,7 +808,7 @@ func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementC
 	return nil, v.unexpectedToken(ctx)
 }
 
-func (v *visitor) doVisitWaitForEventStatementContext(ctx *fql.WaitForEventStatementContext, s *scope) (core.Expression, error) {
+func (v *visitor) doVisitWaitForEventExpressionContext(ctx *fql.WaitForEventExpressionContext, s *scope) (core.Expression, error) {
 	eventName, err := v.doVisitWaitForEventNameContext(ctx.WaitForEventName().(*fql.WaitForEventNameContext), s)
 
 	if err != nil {
@@ -919,8 +919,8 @@ func (v *visitor) doVisitWaitForTimeoutValueContext(ctx *fql.WaitForTimeoutConte
 }
 
 func (v *visitor) doVisitWaitForStatementContext(ctx *fql.WaitForStatementContext, s *scope) (core.Expression, error) {
-	if event := ctx.WaitForEventStatement(); event != nil {
-		return v.doVisitWaitForEventStatementContext(event.(*fql.WaitForEventStatementContext), s)
+	if event := ctx.WaitForEventExpression(); event != nil {
+		return v.doVisitWaitForEventExpressionContext(event.(*fql.WaitForEventExpressionContext), s)
 	}
 
 	return nil, ErrInvalidToken
@@ -1210,26 +1210,14 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 		return nil, err
 	}
 
-	exp := ctx.Expression()
-
-	if exp != nil {
+	if exp := ctx.Expression(); exp != nil {
 		init, err = v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
-	}
-
-	if init == nil && err == nil {
-		forIn := ctx.ForExpression()
-
-		if forIn != nil {
-			init, err = v.doVisitForExpression(forIn.(*fql.ForExpressionContext), scope)
-		}
-	}
-
-	if init == nil && err == nil {
-		forTer := ctx.ForTernaryExpression()
-
-		if forTer != nil {
-			init, err = v.doVisitForTernaryExpression(forTer.(*fql.ForTernaryExpressionContext), scope)
-		}
+	} else if exp := ctx.ForExpression(); exp != nil {
+		init, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
+	} else if exp := ctx.ForTernaryExpression(); exp != nil {
+		init, err = v.doVisitForTernaryExpression(exp.(*fql.ForTernaryExpressionContext), scope)
+	} else if exp := ctx.WaitForEventExpression(); exp != nil {
+		init, err = v.doVisitWaitForEventExpressionContext(exp.(*fql.WaitForEventExpressionContext), scope)
 	}
 
 	if err != nil {

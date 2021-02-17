@@ -139,7 +139,7 @@ func (v *BaseFqlParserVisitor) VisitWaitForEventSource(ctx *WaitForEventSourceCo
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitWaitForEventStatement(ctx *WaitForEventStatementContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

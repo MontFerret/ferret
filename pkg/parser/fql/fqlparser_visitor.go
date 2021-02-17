@@ -106,8 +106,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForEventSource.
 	VisitWaitForEventSource(ctx *WaitForEventSourceContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForEventStatement.
-	VisitWaitForEventStatement(ctx *WaitForEventStatementContext) interface{}
+	// Visit a parse tree produced by FqlParser#waitForEventExpression.
+	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}

@@ -145,7 +145,7 @@ collectCounter
 
 
 waitForStatement
-    : waitForEventStatement
+    : waitForEventExpression
     ;
 
 waitForTimeout
@@ -173,7 +173,7 @@ waitForEventSource
     | memberExpression
     ;
 
-waitForEventStatement
+waitForEventExpression
     : Waitfor Event waitForEventName In waitForEventSource (Options waitForOptions)? (waitForTimeout)?
     ;
 
@@ -181,6 +181,7 @@ variableDeclaration
     : Let Identifier Assign expression
     | Let Identifier Assign OpenParen forExpression CloseParen
     | Let Identifier Assign forTernaryExpression
+    | Let Identifier Assign OpenParen waitForEventExpression CloseParen
     ;
 
 param
@@ -343,8 +344,13 @@ expression
 
 forTernaryExpression
     : expression QuestionMark expression? Colon OpenParen forExpression CloseParen
+    | expression QuestionMark expression? Colon OpenParen waitForEventExpression CloseParen
     | expression QuestionMark OpenParen forExpression CloseParen Colon expression
     | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen forExpression CloseParen
+    | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen waitForEventExpression CloseParen
+    | expression QuestionMark OpenParen waitForEventExpression CloseParen Colon OpenParen waitForEventExpression CloseParen
+    | expression QuestionMark OpenParen waitForEventExpression CloseParen Colon OpenParen forExpression CloseParen
+    | expression QuestionMark OpenParen waitForEventExpression CloseParen Colon expression
     ;
 
 arrayOperator
