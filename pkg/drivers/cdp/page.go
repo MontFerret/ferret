@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"hash/fnv"
 	"io"
 	"regexp"
@@ -272,16 +273,15 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	url := p.GetURL().String()
 	p.closed = values.True
-
-	doc := p.getCurrentDocument()
 
 	err := p.dom.Close()
 
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close dom manager")
 	}
@@ -291,7 +291,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close network manager")
 	}
@@ -301,7 +301,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close browser page")
 	}
@@ -311,7 +311,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close connection")
 	}
@@ -327,6 +327,17 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 }
 
 func (p *HTMLPage) GetURL() values.String {
+	res, err := p.getCurrentDocument().Eval(context.Background(), templates.GetURL())
+
+	if err == nil {
+		return values.ToString(res)
+	}
+
+	p.logger.Warn().
+		Timestamp().
+		Err(err).
+		Msg("failed to retrieve URL")
+
 	return p.getCurrentDocument().GetURL()
 }
 

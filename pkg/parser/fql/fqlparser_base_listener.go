@@ -400,6 +400,12 @@ func (s *BaseFqlParserListener) EnterInOperator(ctx *InOperatorContext) {}
 // ExitInOperator is called when production inOperator is exited.
 func (s *BaseFqlParserListener) ExitInOperator(ctx *InOperatorContext) {}
 
+// EnterLikeOperator is called when production likeOperator is entered.
+func (s *BaseFqlParserListener) EnterLikeOperator(ctx *LikeOperatorContext) {}
+
+// ExitLikeOperator is called when production likeOperator is exited.
+func (s *BaseFqlParserListener) ExitLikeOperator(ctx *LikeOperatorContext) {}
+
 // EnterEqualityOperator is called when production equalityOperator is entered.
 func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorContext) {}
 

@@ -196,6 +196,9 @@ type FqlParserListener interface {
 	// EnterInOperator is called when entering the inOperator production.
 	EnterInOperator(c *InOperatorContext)
 
+	// EnterLikeOperator is called when entering the likeOperator production.
+	EnterLikeOperator(c *LikeOperatorContext)
+
 	// EnterEqualityOperator is called when entering the equalityOperator production.
 	EnterEqualityOperator(c *EqualityOperatorContext)
 
@@ -405,6 +408,9 @@ type FqlParserListener interface {
 
 	// ExitInOperator is called when exiting the inOperator production.
 	ExitInOperator(c *InOperatorContext)
+
+	// ExitLikeOperator is called when exiting the likeOperator production.
+	ExitLikeOperator(c *LikeOperatorContext)
 
 	// ExitEqualityOperator is called when exiting the equalityOperator production.
 	ExitEqualityOperator(c *EqualityOperatorContext)

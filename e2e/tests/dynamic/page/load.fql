@@ -1,7 +1,7 @@
 LET url = @lab.cdn.dynamic
 LET doc = DOCUMENT(url, { driver: "cdp" })
 
-LET expected = url + '/'
+LET expected = url + '/#/'
 LET actual = doc.url
 
 T::EQ(actual, expected)
