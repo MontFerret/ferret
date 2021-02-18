@@ -119,7 +119,7 @@ func (v *BaseFqlParserVisitor) VisitCollectCounter(ctx *CollectCounterContext) i
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitWaitForStatement(ctx *WaitForStatementContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitWaitForExpression(ctx *WaitForExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -247,7 +247,7 @@ func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitForTernaryExpression(ctx *ForTernaryExpressionContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitTernaryExpression(ctx *TernaryExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

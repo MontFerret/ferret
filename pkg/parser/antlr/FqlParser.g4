@@ -25,7 +25,7 @@ body
 bodyStatement
     : functionCallExpression
     | variableDeclaration
-    | waitForStatement
+    | waitForExpression
     ;
 
 bodyExpression
@@ -34,9 +34,10 @@ bodyExpression
     ;
 
 returnExpression
-    : Return (Distinct)? expression
-    | Return (Distinct)? OpenParen forExpression CloseParen
-    | Return forTernaryExpression
+    : Return (Distinct)? OpenParen forExpression CloseParen
+    | Return ternaryExpression
+    | Return OpenParen waitForExpression CloseParen
+    | Return (Distinct)? expression
     ;
 
 forExpression
@@ -144,7 +145,7 @@ collectCounter
     ;
 
 
-waitForStatement
+waitForExpression
     : waitForEventExpression
     ;
 
@@ -178,10 +179,10 @@ waitForEventExpression
     ;
 
 variableDeclaration
-    : Let Identifier Assign expression
-    | Let Identifier Assign OpenParen forExpression CloseParen
-    | Let Identifier Assign forTernaryExpression
-    | Let Identifier Assign OpenParen waitForEventExpression CloseParen
+    : Let Identifier Assign OpenParen forExpression CloseParen
+    | Let Identifier Assign ternaryExpression
+    | Let Identifier Assign OpenParen waitForExpression CloseParen
+    | Let Identifier Assign expression
     ;
 
 param
@@ -342,15 +343,15 @@ expression
     | param
     ;
 
-forTernaryExpression
-    : expression QuestionMark expression? Colon OpenParen forExpression CloseParen
-    | expression QuestionMark expression? Colon OpenParen waitForEventExpression CloseParen
+ternaryExpression
+    : expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen forExpression CloseParen
+    | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen waitForExpression CloseParen
+    | expression QuestionMark OpenParen waitForExpression CloseParen Colon OpenParen waitForExpression CloseParen
+    | expression QuestionMark OpenParen waitForExpression CloseParen Colon OpenParen forExpression CloseParen
+    | expression QuestionMark OpenParen waitForExpression CloseParen Colon expression
     | expression QuestionMark OpenParen forExpression CloseParen Colon expression
-    | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen forExpression CloseParen
-    | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen waitForEventExpression CloseParen
-    | expression QuestionMark OpenParen waitForEventExpression CloseParen Colon OpenParen waitForEventExpression CloseParen
-    | expression QuestionMark OpenParen waitForEventExpression CloseParen Colon OpenParen forExpression CloseParen
-    | expression QuestionMark OpenParen waitForEventExpression CloseParen Colon expression
+    | expression QuestionMark expression? Colon OpenParen forExpression CloseParen
+    | expression QuestionMark expression? Colon OpenParen waitForExpression CloseParen
     ;
 
 arrayOperator

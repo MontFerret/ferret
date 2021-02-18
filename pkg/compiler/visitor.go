@@ -164,72 +164,46 @@ func (v *visitor) doVisitBodyStatement(ctx *fql.BodyStatementContext, scope *sco
 		return v.doVisitFunctionCallExpression(funcCall.(*fql.FunctionCallExpressionContext), scope)
 	}
 
-	if waitfor := ctx.WaitForStatement(); waitfor != nil {
-		return v.doVisitWaitForStatementContext(waitfor.(*fql.WaitForStatementContext), scope)
+	if waitfor := ctx.WaitForExpression(); waitfor != nil {
+		return v.doVisitWaitForExpressionContext(waitfor.(*fql.WaitForExpressionContext), scope)
 	}
 
 	return nil, core.Error(ErrInvalidToken, ctx.GetText())
 }
 
 func (v *visitor) doVisitBodyExpression(ctx *fql.BodyExpressionContext, scope *scope) (core.Expression, error) {
-	forIn := ctx.ForExpression()
-
-	if forIn != nil {
-		return v.doVisitForExpression(forIn.(*fql.ForExpressionContext), scope)
+	if exp := ctx.ForExpression(); exp != nil {
+		return v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
 	}
 
-	ret := ctx.ReturnExpression()
-
-	if ret != nil {
-		return v.doVisitReturnExpression(ret.(*fql.ReturnExpressionContext), scope)
+	if exp := ctx.ReturnExpression(); exp != nil {
+		return v.doVisitReturnExpression(exp.(*fql.ReturnExpressionContext), scope)
 	}
 
-	return nil, nil
+	return nil, core.Error(ErrInvalidToken, ctx.GetText())
 }
 
 func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scope *scope) (core.Expression, error) {
-	var exp core.Expression
-	expCtx := ctx.Expression()
+	var out core.Expression
+	var err error
 
-	if expCtx != nil {
-		out, err := v.doVisitExpression(expCtx.(*fql.ExpressionContext), scope)
-
-		if err != nil {
-			return nil, err
-		}
-
-		exp = out
-
-		return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
+	if exp := ctx.ForExpression(); exp != nil {
+		out, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope.Fork())
+	} else if exp := ctx.TernaryExpression(); exp != nil {
+		out, err = v.doVisitTernaryExpression(exp.(*fql.TernaryExpressionContext), scope)
+	} else if exp := ctx.WaitForExpression(); exp != nil {
+		out, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
+	} else if exp := ctx.Expression(); exp != nil {
+		out, err = v.doVisitExpression(exp.(*fql.ExpressionContext), scope)
+	} else {
+		return nil, core.Error(ErrInvalidToken, ctx.GetText())
 	}
 
-	forIn := ctx.ForExpression()
-
-	if forIn != nil {
-		out, err := v.doVisitForExpression(ctx.ForExpression().(*fql.ForExpressionContext), scope.Fork())
-
-		if err != nil {
-			return nil, err
-		}
-
-		exp = out
-
-		return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
+	if err != nil {
+		return nil, err
 	}
 
-	forInTernary := ctx.ForTernaryExpression()
-
-	if forInTernary != nil {
-		out, err := v.doVisitForTernaryExpression(forInTernary.(*fql.ForTernaryExpressionContext), scope)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return expressions.NewReturnExpression(v.getSourceMap(ctx), out)
-	}
-
-	return nil, ErrNotImplemented
+	return expressions.NewReturnExpression(v.getSourceMap(ctx), out)
 }
 
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
@@ -918,7 +892,7 @@ func (v *visitor) doVisitWaitForTimeoutValueContext(ctx *fql.WaitForTimeoutConte
 	return nil, ErrNotImplemented
 }
 
-func (v *visitor) doVisitWaitForStatementContext(ctx *fql.WaitForStatementContext, s *scope) (core.Expression, error) {
+func (v *visitor) doVisitWaitForExpressionContext(ctx *fql.WaitForExpressionContext, s *scope) (core.Expression, error) {
 	if event := ctx.WaitForEventExpression(); event != nil {
 		return v.doVisitWaitForEventExpressionContext(event.(*fql.WaitForEventExpressionContext), s)
 	}
@@ -1214,10 +1188,10 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 		init, err = v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
 	} else if exp := ctx.ForExpression(); exp != nil {
 		init, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
-	} else if exp := ctx.ForTernaryExpression(); exp != nil {
-		init, err = v.doVisitForTernaryExpression(exp.(*fql.ForTernaryExpressionContext), scope)
-	} else if exp := ctx.WaitForEventExpression(); exp != nil {
-		init, err = v.doVisitWaitForEventExpressionContext(exp.(*fql.WaitForEventExpressionContext), scope)
+	} else if exp := ctx.TernaryExpression(); exp != nil {
+		init, err = v.doVisitTernaryExpression(exp.(*fql.TernaryExpressionContext), scope)
+	} else if exp := ctx.WaitForExpression(); exp != nil {
+		init, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
 	}
 
 	if err != nil {
@@ -1682,8 +1656,8 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 		out, err = v.doVisitForExpression(ctx, scope)
 	case *fql.ReturnExpressionContext:
 		out, err = v.doVisitReturnExpression(ctx, scope)
-	case *fql.WaitForStatementContext:
-		out, err = v.doVisitWaitForStatementContext(ctx, scope)
+	case *fql.WaitForExpressionContext:
+		out, err = v.doVisitWaitForExpressionContext(ctx, scope)
 	case *fql.ArrayLiteralContext:
 		out, err = v.doVisitArrayLiteral(ctx, scope)
 	case *fql.ObjectLiteralContext:
@@ -1713,7 +1687,7 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 	return out, err
 }
 
-func (v *visitor) doVisitForTernaryExpression(ctx *fql.ForTernaryExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
+func (v *visitor) doVisitTernaryExpression(ctx *fql.TernaryExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
 	exps, err := v.doVisitChildren(ctx, scope)
 
 	if err != nil {

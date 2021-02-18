@@ -54,68 +54,66 @@ func (m *MockedObservable) Subscribe(_ context.Context, eventName string, opts *
 	return m.subscribers[eventName]
 }
 
-func TestWaitforEventStatement(t *testing.T) {
-	newCompiler := func() *compiler.Compiler {
-		c := compiler.New()
+func newCompilerWithObservable() *compiler.Compiler {
+	c := compiler.New()
 
-		err := c.Namespace("X").
-			RegisterFunctions(core.NewFunctionsFromMap(
-				map[string]core.Function{
-					"CREATE": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-						return NewMockedObservable(), nil
-					},
-					"EMIT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-						if err := core.ValidateArgs(args, 2, 3); err != nil {
-							return values.None, err
-						}
-
-						observable := args[0].(*MockedObservable)
-						eventName := values.ToString(args[1])
-
-						timeout := values.NewInt(100)
-
-						if len(args) > 2 {
-							timeout = values.ToInt(args[2])
-						}
-
-						observable.Emit(eventName.String(), values.None, nil, int64(timeout))
-
-						return values.None, nil
-					},
-					"EMIT_WITH": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-						if err := core.ValidateArgs(args, 3, 4); err != nil {
-							return values.None, err
-						}
-
-						observable := args[0].(*MockedObservable)
-						eventName := values.ToString(args[1])
-
-						opts := values.ToObject(ctx, args[2])
-
-						timeout := values.NewInt(100)
-
-						if len(args) > 3 {
-							timeout = values.ToInt(args[2])
-						}
-
-						observable.Emit(eventName.String(), opts, nil, int64(timeout))
-
-						return values.None, nil
-					},
-					"EVENT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-						return values.NewString("test"), nil
-					},
+	err := c.Namespace("X").
+		RegisterFunctions(core.NewFunctionsFromMap(
+			map[string]core.Function{
+				"CREATE": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					return NewMockedObservable(), nil
 				},
-			))
-		So(err, ShouldBeNil)
+				"EMIT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					if err := core.ValidateArgs(args, 2, 3); err != nil {
+						return values.None, err
+					}
 
-		return c
-	}
+					observable := args[0].(*MockedObservable)
+					eventName := values.ToString(args[1])
 
+					timeout := values.NewInt(100)
+
+					if len(args) > 2 {
+						timeout = values.ToInt(args[2])
+					}
+
+					observable.Emit(eventName.String(), values.None, nil, int64(timeout))
+
+					return values.None, nil
+				},
+				"EMIT_WITH": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					if err := core.ValidateArgs(args, 3, 4); err != nil {
+						return values.None, err
+					}
+
+					observable := args[0].(*MockedObservable)
+					eventName := values.ToString(args[1])
+
+					timeout := values.NewInt(100)
+
+					if len(args) > 3 {
+						timeout = values.ToInt(args[3])
+					}
+
+					observable.Emit(eventName.String(), args[2], nil, int64(timeout))
+
+					return values.None, nil
+				},
+				"EVENT": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					return values.NewString("test"), nil
+				},
+			},
+		))
+	So(err, ShouldBeNil)
+
+	return c
+}
+
+func TestWaitforEventExpression(t *testing.T) {
 	Convey("WAITFOR EVENT X IN Y", t, func() {
 
 		Convey("Should wait for a given event", func() {
-			c := newCompiler()
+			c := newCompilerWithObservable()
 
 			prog := c.MustCompile(`
 LET obj = X::CREATE()
@@ -132,7 +130,7 @@ RETURN NONE
 		})
 
 		Convey("Should wait for a given event using variable", func() {
-			c := newCompiler()
+			c := newCompilerWithObservable()
 
 			prog := c.MustCompile(`
 LET obj = X::CREATE()
@@ -150,7 +148,7 @@ RETURN NONE
 		})
 
 		Convey("Should wait for a given event using object", func() {
-			c := newCompiler()
+			c := newCompilerWithObservable()
 
 			prog := c.MustCompile(`
 LET obj = X::CREATE()
@@ -170,7 +168,7 @@ RETURN NONE
 		})
 
 		Convey("Should wait for a given event using param", func() {
-			c := newCompiler()
+			c := newCompilerWithObservable()
 
 			prog := c.MustCompile(`
 LET obj = X::CREATE()
@@ -188,7 +186,7 @@ RETURN NONE
 
 		Convey("Should use options", func() {
 			observable := NewMockedObservable()
-			c := newCompiler()
+			c := newCompilerWithObservable()
 			c.Namespace("X").RegisterFunction("SINGLETONE", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return observable, nil
 			})
@@ -212,7 +210,7 @@ RETURN NONE
 		})
 
 		Convey("Should timeout", func() {
-			c := newCompiler()
+			c := newCompilerWithObservable()
 
 			prog := c.MustCompile(`
 LET obj = X::CREATE()

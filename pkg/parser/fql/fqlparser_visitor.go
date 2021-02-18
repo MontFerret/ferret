@@ -91,8 +91,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectCounter.
 	VisitCollectCounter(ctx *CollectCounterContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForStatement.
-	VisitWaitForStatement(ctx *WaitForStatementContext) interface{}
+	// Visit a parse tree produced by FqlParser#waitForExpression.
+	VisitWaitForExpression(ctx *WaitForExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#waitForTimeout.
 	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
@@ -187,8 +187,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#expression.
 	VisitExpression(ctx *ExpressionContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#forTernaryExpression.
-	VisitForTernaryExpression(ctx *ForTernaryExpressionContext) interface{}
+	// Visit a parse tree produced by FqlParser#ternaryExpression.
+	VisitTernaryExpression(ctx *TernaryExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#arrayOperator.
 	VisitArrayOperator(ctx *ArrayOperatorContext) interface{}

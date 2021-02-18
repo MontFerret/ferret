@@ -91,8 +91,8 @@ type FqlParserListener interface {
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
 
-	// EnterWaitForStatement is called when entering the waitForStatement production.
-	EnterWaitForStatement(c *WaitForStatementContext)
+	// EnterWaitForExpression is called when entering the waitForExpression production.
+	EnterWaitForExpression(c *WaitForExpressionContext)
 
 	// EnterWaitForTimeout is called when entering the waitForTimeout production.
 	EnterWaitForTimeout(c *WaitForTimeoutContext)
@@ -187,8 +187,8 @@ type FqlParserListener interface {
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
 
-	// EnterForTernaryExpression is called when entering the forTernaryExpression production.
-	EnterForTernaryExpression(c *ForTernaryExpressionContext)
+	// EnterTernaryExpression is called when entering the ternaryExpression production.
+	EnterTernaryExpression(c *TernaryExpressionContext)
 
 	// EnterArrayOperator is called when entering the arrayOperator production.
 	EnterArrayOperator(c *ArrayOperatorContext)
@@ -304,8 +304,8 @@ type FqlParserListener interface {
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)
 
-	// ExitWaitForStatement is called when exiting the waitForStatement production.
-	ExitWaitForStatement(c *WaitForStatementContext)
+	// ExitWaitForExpression is called when exiting the waitForExpression production.
+	ExitWaitForExpression(c *WaitForExpressionContext)
 
 	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
 	ExitWaitForTimeout(c *WaitForTimeoutContext)
@@ -400,8 +400,8 @@ type FqlParserListener interface {
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)
 
-	// ExitForTernaryExpression is called when exiting the forTernaryExpression production.
-	ExitForTernaryExpression(c *ForTernaryExpressionContext)
+	// ExitTernaryExpression is called when exiting the ternaryExpression production.
+	ExitTernaryExpression(c *TernaryExpressionContext)
 
 	// ExitArrayOperator is called when exiting the arrayOperator production.
 	ExitArrayOperator(c *ArrayOperatorContext)
