@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/fetch"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
@@ -37,6 +38,7 @@ type (
 		eventLoop          *events.Loop
 		cancel             context.CancelFunc
 		responseListenerID events.ListenerID
+		filterListenerID   events.ListenerID
 		response           *sync.Map
 	}
 )
@@ -44,6 +46,7 @@ type (
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
+	options Options,
 ) (*Manager, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -54,6 +57,20 @@ func New(
 	m.eventLoop = events.NewLoop()
 	m.cancel = cancel
 	m.response = new(sync.Map)
+
+	if len(options.Cookies) > 0 {
+		for url, cookies := range options.Cookies {
+			if err := m.setCookiesInternal(ctx, url, cookies); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(options.Headers) > 0 {
+		if err := m.setHeadersInternal(ctx, options.Headers); err != nil {
+			return nil, err
+		}
+	}
 
 	var err error
 
@@ -86,6 +103,32 @@ func New(
 	}))
 
 	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
+
+	if len(options.Filter.Patterns) > 0 {
+		el2 := events.NewLoop()
+
+		err = m.client.Fetch.Enable(ctx, toFetchArgs(options.Filter.Patterns))
+
+		if err != nil {
+			return nil, err
+		}
+
+		requestPausedStream, err := m.client.Fetch.RequestPaused(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		el2.AddSource(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
+			return stream.(fetch.RequestPausedClient).Recv()
+		}))
+
+		m.filterListenerID = el2.AddListener(requestPaused, m.onRequestPaused)
+
+		// run in a separate loop in order to get higher priority
+		// TODO: Consider adding support of event priorities to EventLoop
+		el2.Run(ctx)
+	}
 
 	m.eventLoop.Run(ctx)
 
@@ -128,6 +171,10 @@ func (m *Manager) SetCookies(ctx context.Context, url string, cookies drivers.HT
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	return m.setCookiesInternal(ctx, url, cookies)
+}
+
+func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
 	if len(cookies) == 0 {
 		return nil
 	}
@@ -176,6 +223,10 @@ func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) e
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	return m.setHeadersInternal(ctx, headers)
+}
+
+func (m *Manager) setHeadersInternal(ctx context.Context, headers drivers.HTTPHeaders) error {
 	if len(headers) == 0 {
 		return nil
 	}
@@ -428,6 +479,30 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 	}
 
 	m.response.Store(*msg.FrameID, response)
+
+	return
+}
+
+func (m *Manager) onRequestPaused(ctx context.Context, message interface{}) (out bool) {
+	out = true
+	msg, ok := message.(*fetch.RequestPausedReply)
+
+	if !ok {
+		return
+	}
+
+	err := m.client.Fetch.FailRequest(ctx, &fetch.FailRequestArgs{
+		RequestID:   msg.RequestID,
+		ErrorReason: network.ErrorReasonBlockedByClient,
+	})
+
+	if err != nil {
+		m.logger.
+			Err(err).
+			Str("resourceType", msg.ResourceType.String()).
+			Str("url", msg.Request.URL).
+			Msg("failed to terminate a request")
+	}
 
 	return
 }

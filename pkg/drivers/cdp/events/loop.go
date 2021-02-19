@@ -62,7 +62,6 @@ func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
 
 // run starts running an event loop.
 // It constantly iterates over each event source.
-// Additionally to that, on each iteration it checks the command channel in order to perform add/remove listener/source operations.
 func (loop *Loop) run(ctx context.Context) {
 	sources := loop.sources
 	size := sources.Size()

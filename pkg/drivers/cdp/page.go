@@ -69,19 +69,22 @@ func LoadHTMLPage(
 		}
 	}()
 
-	netManager, err := net.New(logger, client)
-
-	if err != nil {
-		return nil, err
+	netOpts := net.Options{
+		Headers: params.Headers,
 	}
 
-	err = netManager.SetCookies(ctx, params.URL, params.Cookies)
-
-	if err != nil {
-		return nil, err
+	if len(params.Cookies) > 0 {
+		netOpts.Cookies = make(map[string]drivers.HTTPCookies)
+		netOpts.Cookies[params.URL] = params.Cookies
 	}
 
-	err = netManager.SetHeaders(ctx, params.Headers)
+	if params.Disable != nil {
+		if len(params.Disable.Resources) > 0 {
+			netOpts.Filter.Patterns = params.Disable.Resources
+		}
+	}
+
+	netManager, err := net.New(logger, client, netOpts)
 
 	if err != nil {
 		return nil, err

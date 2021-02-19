@@ -27,6 +27,10 @@ type PageLoadParams struct {
 // @param {Boolean} [params.keepCookies=False] - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
 // @param {HTTPCookies} [params.cookies] - Set of HTTP cookies to use during page loading.
 // @param {HTTPHeaders} [params.headers] - Set of HTTP headers to use during page loading.
+// @param {Object} [params.disable] - Set of parameters to disable some page functionality or behavior.
+// @param {Object[]} [params.disable.resources] - Collection of rules to disable resources during page load and navigation.
+// @param {String} [params.disable.resources.*.url] - Resource url pattern. If set, requests for matching urls will be blocked. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
+// @param {String} [params.disable.resources.*.type] - Resource type. If set, requests for matching resource types will be blocked.
 // @param {Object} [params.viewport] - Viewport params.
 // @param {Int} [params.viewport.height] - Viewport height.
 // @param {Int} [params.viewport.width] - Viewport width.
@@ -185,6 +189,18 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			}
 
 			res.Viewport = viewport
+		}
+
+		disable, exists := obj.Get(values.NewString("disable"))
+
+		if exists {
+			disable, err := parseDisable(disable)
+
+			if err != nil {
+				return res, err
+			}
+
+			res.Disable = disable
 		}
 	case types.String:
 		res.Driver = arg.(values.String).String()
@@ -387,6 +403,59 @@ func parseViewport(value core.Value) (*drivers.Viewport, error) {
 
 	if exists {
 		res.ScaleFactor = float64(values.ToFloat(scaleFactor))
+	}
+
+	return res, nil
+}
+
+func parseDisable(value core.Value) (*drivers.Disable, error) {
+	if err := core.ValidateType(value, types.Object); err != nil {
+		return nil, err
+	}
+
+	res := &drivers.Disable{}
+
+	disable := value.(*values.Object)
+
+	resources, exists := disable.Get("resources")
+
+	if exists {
+		if err := core.ValidateType(resources, types.Array); err != nil {
+			return nil, err
+		}
+
+		resources := resources.(*values.Array)
+
+		res.Resources = make([]drivers.ResourceFilter, 0, resources.Length())
+
+		var e error
+
+		resources.ForEach(func(el core.Value, idx int) bool {
+			if e = core.ValidateType(el, types.Object); e != nil {
+				return false
+			}
+
+			pattern := el.(*values.Object)
+
+			url, urlExists := pattern.Get("url")
+			resType, resTypeExists := pattern.Get("type")
+
+			// ignore element
+			if !urlExists && !resTypeExists {
+				return true
+			}
+
+			res.Resources = append(res.Resources, drivers.ResourceFilter{
+				URL:  url.String(),
+				Type: resType.String(),
+			})
+
+			return true
+		})
+
+		if e != nil {
+			return nil, e
+		}
 	}
 
 	return res, nil
