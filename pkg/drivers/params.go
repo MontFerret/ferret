@@ -31,6 +31,7 @@ type (
 		Cookies     *HTTPCookies
 		Headers     *HTTPHeaders
 		Viewport    *Viewport
+		Charset     string
 		Ignore      *Ignore
 	}
 
