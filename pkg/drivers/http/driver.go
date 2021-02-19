@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"github.com/gobwas/glob"
+	"io"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/html/charset"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
@@ -130,8 +133,15 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		return nil, errors.New(resp.Status)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	body := io.Reader(resp.Body)
+	if params.Charset != "" {
+		body, err = drv.convertToUTF8(body, params.Charset)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed convert to UTF-8 a document %s", params.URL)
+		}
+	}
 
+	doc, err := goquery.NewDocumentFromReader(body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse a document %s", params.URL)
 	}
@@ -208,4 +218,13 @@ func (drv *Driver) responseCodeAllowed(resp *http.Response, additional []drivers
 	}
 
 	return allowed
+}
+
+func (drv *Driver) convertToUTF8(reader io.Reader, srcCharset string) (data io.Reader, err error) {
+	data, err = charset.NewReader(reader, srcCharset)
+	if err != nil {
+		return nil, err
+	}
+
+	return
 }
