@@ -27,11 +27,10 @@ type PageLoadParams struct {
 // @param {Boolean} [params.keepCookies=False] - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
 // @param {HTTPCookies} [params.cookies] - Set of HTTP cookies to use during page loading.
 // @param {HTTPHeaders} [params.headers] - Set of HTTP headers to use during page loading.
-// @param {Object} [params.requests] - Requests network params.
-// @param {Object} [params.requests.filter] - Requests network filtering params.
-// @param {Object[]} [params.requests.filter.patterns] - Requests network filtering patterns.
-// @param {String} [params.requests.filter.patterns.*.urlPattern] - Resource url pattern. If set, requests for matching urls will be blocked. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
-// @param {String} [params.requests.filter.patterns.*.resourceType] - Resource type. If set, requests for matching resource types will be blocked.
+// @param {Object} [params.disable] - Set of parameters to disable some page functionality or behavior.
+// @param {Object[]} [params.disable.resources] - Collection of rules to disable resources during page load and navigation.
+// @param {String} [params.disable.resources.*.url] - Resource url pattern. If set, requests for matching urls will be blocked. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
+// @param {String} [params.disable.resources.*.type] - Resource type. If set, requests for matching resource types will be blocked.
 // @param {Object} [params.viewport] - Viewport params.
 // @param {Int} [params.viewport.height] - Viewport height.
 // @param {Int} [params.viewport.width] - Viewport width.
