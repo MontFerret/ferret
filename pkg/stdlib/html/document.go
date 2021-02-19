@@ -33,6 +33,7 @@ type PageLoadParams struct {
 // @param {Float} [params.viewport.scaleFactor] - Viewport scale factor.
 // @param {Boolean} [params.viewport.mobile] - Value that indicates whether to emulate mobile device.
 // @param {Boolean} [params.viewport.landscape] - Value that indicates whether to render a page in landscape position.
+// @param {String} [params.charset] - (only HTTPDriver) Source charset content to convert UTF-8.
 // @return {HTMLPage} - Loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -185,6 +186,16 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			}
 
 			res.Viewport = viewport
+		}
+
+		charset, exists := obj.Get(values.NewString("charset"))
+
+		if exists {
+			if err := core.ValidateType(charset, types.String); err != nil {
+				return res, err
+			}
+
+			res.Charset = charset.String()
 		}
 	case types.String:
 		res.Driver = arg.(values.String).String()

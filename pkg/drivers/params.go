@@ -16,6 +16,7 @@ type (
 		Cookies     HTTPCookies
 		Headers     HTTPHeaders
 		Viewport    *Viewport
+		Charset     string
 	}
 
 	ParseParams struct {
