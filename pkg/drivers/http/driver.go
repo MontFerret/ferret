@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/gobwas/glob"
 	"net/http"
 	"net/url"
 
@@ -171,7 +172,13 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 
 	defer resp.Body.Close()
 
-	if !drv.responseCodeAllowed(resp) {
+	var queryFilters []drivers.StatusCodeFilter
+
+	if params.Ignore != nil {
+		queryFilters = params.Ignore.StatusCodes
+	}
+
+	if !drv.responseCodeAllowed(resp, queryFilters) {
 		return nil, errors.New(resp.Status)
 	}
 
@@ -214,7 +221,43 @@ func (drv *Driver) Close() error {
 	return nil
 }
 
-func (drv *Driver) responseCodeAllowed(resp *http.Response) bool {
-	_, exists := drv.options.AllowedHTTPCodes[resp.StatusCode]
-	return exists
+func (drv *Driver) responseCodeAllowed(resp *http.Response, additional []drivers.StatusCodeFilter) bool {
+	var allowed bool
+	reqURL := resp.Request.URL.String()
+
+	// OK is by default
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		return true
+	}
+
+	// Try to use those that are passed within a query
+	for _, filter := range additional {
+		allowed = filter.Code == resp.StatusCode
+
+		// check url
+		if allowed && filter.URL != "" {
+			allowed = glob.MustCompile(filter.URL).Match(reqURL)
+		}
+
+		if allowed {
+			break
+		}
+	}
+
+	// if still not allowed, try the default ones
+	if !allowed {
+		for _, filter := range drv.options.HTTPCodesFilter {
+			allowed = filter.Code == resp.StatusCode
+
+			if allowed && filter.URL != nil {
+				allowed = filter.URL.Match(reqURL)
+			}
+
+			if allowed {
+				break
+			}
+		}
+	}
+
+	return allowed
 }

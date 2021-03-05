@@ -6,8 +6,14 @@ type (
 		Type string
 	}
 
-	Disable struct {
-		Resources []ResourceFilter
+	StatusCodeFilter struct {
+		URL  string
+		Code int
+	}
+
+	Ignore struct {
+		Resources   []ResourceFilter
+		StatusCodes []StatusCodeFilter
 	}
 
 	Viewport struct {
@@ -25,7 +31,7 @@ type (
 		Cookies     HTTPCookies
 		Headers     HTTPHeaders
 		Viewport    *Viewport
-		Disable     *Disable
+		Ignore      *Ignore
 	}
 
 	ParseParams struct {

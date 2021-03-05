@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/gobwas/glob"
 	stdhttp "net/http"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -10,17 +11,22 @@ import (
 type (
 	Option func(opts *Options)
 
+	compiledStatusCodeFilter struct {
+		URL  glob.Glob
+		Code int
+	}
+
 	Options struct {
-		Name             string
-		Backoff          pester.BackoffStrategy
-		MaxRetries       int
-		Concurrency      int
-		Proxy            string
-		UserAgent        string
-		Headers          drivers.HTTPHeaders
-		Cookies          drivers.HTTPCookies
-		AllowedHTTPCodes map[int]struct{}
-		HTTPTransport    *stdhttp.Transport
+		Name            string
+		Backoff         pester.BackoffStrategy
+		MaxRetries      int
+		Concurrency     int
+		Proxy           string
+		UserAgent       string
+		Headers         drivers.HTTPHeaders
+		Cookies         drivers.HTTPCookies
+		HTTPCodesFilter []compiledStatusCodeFilter
+		HTTPTransport   *stdhttp.Transport
 	}
 )
 
@@ -30,7 +36,7 @@ func newOptions(setters []Option) *Options {
 	opts.Backoff = pester.ExponentialBackoff
 	opts.Concurrency = 3
 	opts.MaxRetries = 5
-	opts.AllowedHTTPCodes = map[int]struct{}{stdhttp.StatusOK: struct{}{}}
+	opts.HTTPCodesFilter = make([]compiledStatusCodeFilter, 0, 5)
 
 	for _, setter := range setters {
 		setter(opts)
@@ -133,14 +139,18 @@ func WithCookies(cookies []drivers.HTTPCookie) Option {
 
 func WithAllowedHTTPCode(httpCode int) Option {
 	return func(opts *Options) {
-		opts.AllowedHTTPCodes[httpCode] = struct{}{}
+		opts.HTTPCodesFilter = append(opts.HTTPCodesFilter, compiledStatusCodeFilter{
+			Code: httpCode,
+		})
 	}
 }
 
 func WithAllowedHTTPCodes(httpCodes []int) Option {
 	return func(opts *Options) {
 		for _, code := range httpCodes {
-			opts.AllowedHTTPCodes[code] = struct{}{}
+			opts.HTTPCodesFilter = append(opts.HTTPCodesFilter, compiledStatusCodeFilter{
+				Code: code,
+			})
 		}
 	}
 }

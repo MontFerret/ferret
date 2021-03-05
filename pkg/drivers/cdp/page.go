@@ -78,9 +78,9 @@ func LoadHTMLPage(
 		netOpts.Cookies[params.URL] = params.Cookies
 	}
 
-	if params.Disable != nil {
-		if len(params.Disable.Resources) > 0 {
-			netOpts.Filter.Patterns = params.Disable.Resources
+	if params.Ignore != nil {
+		if len(params.Ignore.Resources) > 0 {
+			netOpts.Filter.Patterns = params.Ignore.Resources
 		}
 	}
 
