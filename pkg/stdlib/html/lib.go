@@ -24,6 +24,7 @@ func RegisterLib(ns core.Namespace) error {
 			"CLICK":             Click,
 			"CLICK_ALL":         ClickAll,
 			"DOCUMENT":          Open,
+			"DOCUMENT_EXISTS":   DocumentExists,
 			"DOWNLOAD":          Download,
 			"ELEMENT":           Element,
 			"ELEMENT_EXISTS":    ElementExists,
