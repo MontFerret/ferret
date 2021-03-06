@@ -1,5 +1,19 @@
 ## Changelog
 
+### 0.14.0
+#### Added
+- Support of History API [#584](https://github.com/MontFerret/ferret/pull/584)
+- Support of custom http transport in HTTP driver [#586](https://github.com/MontFerret/ferret/pull/586)
+- ``LIKE`` operator [#591](https://github.com/MontFerret/ferret/pull/591)
+- Support of ignoring page resources [#592](https://github.com/MontFerret/ferret/pull/592)
+- Support of handling non-200 status codes in HTTP driver [#593](https://github.com/MontFerret/ferret/pull/593)
+- ``DOCUMENT_EXISTS`` function [#594](https://github.com/MontFerret/ferret/pull/594)
+
+#### Fixed
+- ``RAND(0,100)`` always same result [#579](https://github.com/MontFerret/ferret/pull/579)
+- Element.children always returns empty array [#580](https://github.com/MontFerret/ferret/pull/580)
+- Passing parameters with a nested nil structure leads to panic [#587](https://github.com/MontFerret/ferret/pull/587)
+
 ### 0.13.0
 #### Added
 - ``WHILE`` loop and ``ATTR_QUERY`` function [#567](https://github.com/MontFerret/ferret/pull/567)
