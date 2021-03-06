@@ -1,0 +1,16 @@
+LET page = DOCUMENT("https://soundcloud.com", { driver: "cdp"})
+LET doc = page.mainFrame
+
+WAIT_ELEMENT(doc, ".trendingTracks")
+SCROLL_ELEMENT(doc, ".trendingTracks")
+WAIT_ELEMENT(doc, ".trendingTracks .badgeList__item")
+
+LET song = ELEMENT(doc, ".trendingTracks .badgeList__item")
+CLICK(song)
+
+WAIT_ELEMENT(doc, ".l-listen-hero")
+
+RETURN {
+    page: page.url,
+    first: doc.url
+}

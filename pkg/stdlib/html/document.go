@@ -32,6 +32,9 @@ type PageLoadParams struct {
 // @param {Object[]} [params.ignore.resources] - Collection of rules to ignore resources during page load and navigation.
 // @param {String} [params.ignore.resources.*.url] - Resource url pattern. If set, requests for matching urls will be blocked. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
 // @param {String} [params.ignore.resources.*.type] - Resource type. If set, requests for matching resource types will be blocked.
+// @param {Object[]} [params.ignore.statusCodes] - Collection of rules to ignore certain HTTP codes that can cause failures.
+// @param {String} [params.ignore.statusCodes.*.url] - Url pattern. If set, codes for matching urls will be ignored. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
+// @param {Int} [params.ignore.statusCodes.*.code] - HTTP code to ignore.
 // @param {Object} [params.viewport] - Viewport params.
 // @param {Int} [params.viewport.height] - Viewport height.
 // @param {Int} [params.viewport.width] - Viewport width.
