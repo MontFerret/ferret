@@ -14,8 +14,8 @@ type (
 
 	Options struct {
 		Cookies Cookies
-		Headers drivers.HTTPHeaders
-		Filter  Filter
+		Headers *drivers.HTTPHeaders
+		Filter  *Filter
 	}
 )
 

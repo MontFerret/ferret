@@ -29,7 +29,7 @@ type (
 		UserAgent   string
 		KeepCookies bool
 		Cookies     HTTPCookies
-		Headers     HTTPHeaders
+		Headers     *HTTPHeaders
 		Viewport    *Viewport
 		Ignore      *Ignore
 	}
@@ -38,7 +38,7 @@ type (
 		Content     []byte
 		KeepCookies bool
 		Cookies     HTTPCookies
-		Headers     HTTPHeaders
+		Headers     *HTTPHeaders
 		Viewport    *Viewport
 	}
 )

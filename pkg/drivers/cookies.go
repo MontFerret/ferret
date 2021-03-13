@@ -19,6 +19,10 @@ func NewHTTPCookies() HTTPCookies {
 	return make(HTTPCookies)
 }
 
+func NewNewHTTPCookiesWith(values map[string]HTTPCookie) HTTPCookies {
+	return HTTPCookies(values)
+}
+
 func (c HTTPCookies) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(map[string]HTTPCookie(c), jettison.NoHTMLEscaping())
 }

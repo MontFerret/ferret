@@ -46,3 +46,44 @@ func ToElement(value core.Value) (HTMLElement, error) {
 		)
 	}
 }
+
+func SetDefaultParams(opts *Options, params *Params) {
+	if params.Headers == nil && opts.Headers != nil {
+		params.Headers = NewHTTPHeaders()
+	}
+
+	// set default headers
+	if opts.Headers != nil {
+		opts.Headers.ForEach(func(value []string, key string) bool {
+			val := params.Headers.Get(key)
+
+			// do not override user's set values
+			if val == "" {
+				params.Headers.SetArr(key, value)
+			}
+
+			return true
+		})
+	}
+
+	if params.Cookies == nil && opts.Cookies != nil {
+		params.Cookies = make(HTTPCookies)
+	}
+
+	// set default cookies
+	if opts.Cookies != nil {
+		for k, v := range opts.Cookies {
+			_, exists := params.Cookies[k]
+
+			// do not override user's set values
+			if !exists {
+				params.Cookies[k] = v
+			}
+		}
+	}
+
+	// set default user agent
+	if opts.UserAgent != "" && params.UserAgent == "" {
+		params.UserAgent = opts.UserAgent
+	}
+}

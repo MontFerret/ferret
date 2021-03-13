@@ -25,7 +25,7 @@ type Driver struct {
 
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
-	drv.options = newOptions(opts)
+	drv.options = NewOptions(opts)
 
 	drv.client = newHTTPClient(drv.options)
 	drv.client.Concurrency = drv.options.Concurrency
@@ -96,63 +96,11 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
-	if drv.options.Headers != nil && params.Headers == nil {
-		params.Headers = make(drivers.HTTPHeaders)
-	}
-
-	// Set default headers
-	for k, v := range drv.options.Headers {
-		_, exists := params.Headers[k]
-
-		// do not override user's set values
-		if !exists {
-			params.Headers[k] = v
-		}
-	}
-
-	for k := range params.Headers {
-		req.Header.Add(k, params.Headers.Get(k))
-
-		logger.
-			Debug().
-			Timestamp().
-			Str("header", k).
-			Msg("set header")
-	}
-
-	if drv.options.Cookies != nil && params.Cookies == nil {
-		params.Cookies = make(drivers.HTTPCookies)
-	}
-
-	// set default cookies
-	for k, v := range drv.options.Cookies {
-		_, exists := params.Cookies[k]
-
-		// do not override user's set values
-		if !exists {
-			params.Cookies[k] = v
-		}
-	}
-
-	for _, c := range params.Cookies {
-		req.AddCookie(fromDriverCookie(c))
-
-		logger.
-			Debug().
-			Timestamp().
-			Str("cookie", c.Name).
-			Msg("set cookie")
-	}
+	drivers.SetDefaultParams(drv.options.Options, &params)
 
 	req = req.WithContext(ctx)
 
-	var ua string
-
-	if params.UserAgent != "" {
-		ua = common.GetUserAgent(params.UserAgent)
-	} else {
-		ua = common.GetUserAgent(drv.options.UserAgent)
-	}
+	ua := common.GetUserAgent(params.UserAgent)
 
 	logger.
 		Debug().
@@ -197,7 +145,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	r := drivers.HTTPResponse{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
-		Headers:    drivers.HTTPHeaders(resp.Header),
+		Headers:    drivers.NewHTTPHeadersWith(resp.Header),
 	}
 
 	return NewHTMLPage(doc, params.URL, r, cookies)

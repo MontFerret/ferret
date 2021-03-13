@@ -350,11 +350,25 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	return cookie, err
 }
 
-func parseHeader(headers *values.Object) drivers.HTTPHeaders {
-	res := make(drivers.HTTPHeaders)
+func parseHeader(headers *values.Object) *drivers.HTTPHeaders {
+	res := drivers.NewHTTPHeaders()
 
 	headers.ForEach(func(value core.Value, key string) bool {
-		res.Set(key, value.String())
+		if value.Type() == types.Array {
+			value := value.(*values.Array)
+
+			keyValues := make([]string, 0, value.Length())
+
+			value.ForEach(func(v core.Value, idx int) bool {
+				keyValues = append(keyValues, v.String())
+
+				return true
+			})
+
+			res.SetArr(key, keyValues)
+		} else {
+			res.Set(key, value.String())
+		}
 
 		return true
 	})

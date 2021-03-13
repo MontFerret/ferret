@@ -34,7 +34,7 @@ type (
 		mu                 sync.Mutex
 		logger             *zerolog.Logger
 		client             *cdp.Client
-		headers            drivers.HTTPHeaders
+		headers            *drivers.HTTPHeaders
 		eventLoop          *events.Loop
 		cancel             context.CancelFunc
 		responseListenerID events.ListenerID
@@ -53,7 +53,7 @@ func New(
 	m := new(Manager)
 	m.logger = logger
 	m.client = client
-	m.headers = make(drivers.HTTPHeaders)
+	m.headers = drivers.NewHTTPHeaders()
 	m.eventLoop = events.NewLoop()
 	m.cancel = cancel
 	m.response = new(sync.Map)
@@ -66,7 +66,7 @@ func New(
 		}
 	}
 
-	if len(options.Headers) > 0 {
+	if options.Headers.Length() > 0 {
 		if err := m.setHeadersInternal(ctx, options.Headers); err != nil {
 			return nil, err
 		}
@@ -104,7 +104,7 @@ func New(
 
 	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
 
-	if len(options.Filter.Patterns) > 0 {
+	if options.Filter != nil && len(options.Filter.Patterns) > 0 {
 		el2 := events.NewLoop()
 
 		err = m.client.Fetch.Enable(ctx, toFetchArgs(options.Filter.Patterns))
@@ -209,25 +209,19 @@ func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies drivers
 	return err
 }
 
-func (m *Manager) GetHeaders(_ context.Context) (drivers.HTTPHeaders, error) {
-	copied := make(drivers.HTTPHeaders)
-
-	for k, v := range m.headers {
-		copied[k] = v
-	}
-
-	return copied, nil
+func (m *Manager) GetHeaders(_ context.Context) (*drivers.HTTPHeaders, error) {
+	return m.headers.Clone().(*drivers.HTTPHeaders), nil
 }
 
-func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) error {
+func (m *Manager) SetHeaders(ctx context.Context, headers *drivers.HTTPHeaders) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return m.setHeadersInternal(ctx, headers)
 }
 
-func (m *Manager) setHeadersInternal(ctx context.Context, headers drivers.HTTPHeaders) error {
-	if len(headers) == 0 {
+func (m *Manager) setHeadersInternal(ctx context.Context, headers *drivers.HTTPHeaders) error {
+	if headers.Length() == 0 {
 		return nil
 	}
 
@@ -461,7 +455,7 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 	response := drivers.HTTPResponse{
 		StatusCode: msg.Response.Status,
 		Status:     msg.Response.StatusText,
-		Headers:    make(drivers.HTTPHeaders),
+		Headers:    drivers.NewHTTPHeaders(),
 	}
 
 	deserialized := make(map[string]string)
