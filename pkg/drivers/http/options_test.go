@@ -74,7 +74,7 @@ func TestNewOptions(t *testing.T) {
 		So(opts.Name, ShouldEqual, expectedName)
 		So(opts.UserAgent, ShouldEqual, expectedUA)
 		So(opts.Proxy, ShouldEqual, expectedProxy)
-		So(len(opts.Cookies), ShouldEqual, 2)
+		So(opts.Cookies.Length(), ShouldEqual, 2)
 		So(opts.Headers.Length(), ShouldEqual, 2)
 		So(opts.Backoff, ShouldEqual, pester.DefaultBackoff)
 		So(opts.MaxRetries, ShouldEqual, expectedMaxRetries)

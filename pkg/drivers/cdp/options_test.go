@@ -65,7 +65,7 @@ func TestNewOptions(t *testing.T) {
 		So(opts.UserAgent, ShouldEqual, expectedUA)
 		So(opts.Proxy, ShouldEqual, expectedProxy)
 		So(opts.KeepCookies, ShouldBeTrue)
-		So(len(opts.Cookies), ShouldEqual, 2)
+		So(opts.Cookies.Length(), ShouldEqual, 2)
 		So(opts.Headers.Length(), ShouldEqual, 2)
 	})
 }

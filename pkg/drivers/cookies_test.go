@@ -44,7 +44,7 @@ func TestHTTPCookies(t *testing.T) {
 			Convey("Should set proper values", func() {
 				headers := drivers.NewHTTPCookies()
 
-				headers.Set("Authorization", drivers.HTTPCookie{
+				headers.Set(drivers.HTTPCookie{
 					Name:     "Authorization",
 					Value:    "e40b7d5eff464a4fb51efed2d1a19a24",
 					Path:     "/",
