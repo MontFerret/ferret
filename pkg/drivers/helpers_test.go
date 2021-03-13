@@ -1,11 +1,12 @@
 package drivers_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"testing"
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
 func TestSetDefaultParams(t *testing.T) {
@@ -16,7 +17,7 @@ func TestSetDefaultParams(t *testing.T) {
 			Headers: drivers.NewHTTPHeadersWith(map[string][]string{
 				"Accept": {"application/json"},
 			}),
-			Cookies: drivers.NewNewHTTPCookiesWith(map[string]drivers.HTTPCookie{
+			Cookies: drivers.NewHTTPCookiesWith(map[string]drivers.HTTPCookie{
 				"Session": drivers.HTTPCookie{
 					Name:     "Session",
 					Value:    "fsfsdfsd",

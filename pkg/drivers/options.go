@@ -12,7 +12,7 @@ type (
 		Proxy     string
 		UserAgent string
 		Headers   *HTTPHeaders
-		Cookies   HTTPCookies
+		Cookies   *HTTPCookies
 	}
 
 	Option func(opts *Options)
@@ -69,21 +69,21 @@ func WithHeaders(headers *HTTPHeaders) Option {
 func WithCookie(cookie HTTPCookie) Option {
 	return func(opts *Options) {
 		if opts.Cookies == nil {
-			opts.Cookies = make(HTTPCookies)
+			opts.Cookies = NewHTTPCookies()
 		}
 
-		opts.Cookies[cookie.Name] = cookie
+		opts.Cookies.Set(cookie)
 	}
 }
 
 func WithCookies(cookies []HTTPCookie) Option {
 	return func(opts *Options) {
 		if opts.Cookies == nil {
-			opts.Cookies = make(HTTPCookies)
+			opts.Cookies = NewHTTPCookies()
 		}
 
 		for _, c := range cookies {
-			opts.Cookies[c.Name] = c
+			opts.Cookies.Set(c)
 		}
 	}
 }

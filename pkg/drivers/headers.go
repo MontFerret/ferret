@@ -22,7 +22,7 @@ type HTTPHeaders struct {
 }
 
 func NewHTTPHeaders() *HTTPHeaders {
-	return &HTTPHeaders{values: make(map[string][]string)}
+	return NewHTTPHeadersWith(make(map[string][]string))
 }
 
 func NewHTTPHeadersWith(values map[string][]string) *HTTPHeaders {

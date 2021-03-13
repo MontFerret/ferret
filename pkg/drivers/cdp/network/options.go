@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	Cookies map[string]drivers.HTTPCookies
+	Cookies map[string]*drivers.HTTPCookies
 
 	Filter struct {
 		Patterns []drivers.ResourceFilter

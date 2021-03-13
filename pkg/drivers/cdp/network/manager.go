@@ -58,7 +58,7 @@ func New(
 	m.cancel = cancel
 	m.response = new(sync.Map)
 
-	if len(options.Cookies) > 0 {
+	if options.Cookies != nil && len(options.Cookies) > 0 {
 		for url, cookies := range options.Cookies {
 			if err := m.setCookiesInternal(ctx, url, cookies); err != nil {
 				return nil, err
@@ -66,7 +66,7 @@ func New(
 		}
 	}
 
-	if options.Headers.Length() > 0 {
+	if options.Headers != nil && options.Headers.Length() > 0 {
 		if err := m.setHeadersInternal(ctx, options.Headers); err != nil {
 			return nil, err
 		}
@@ -147,69 +147,88 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
+func (m *Manager) GetCookies(ctx context.Context) (*drivers.HTTPCookies, error) {
 	repl, err := m.client.Network.GetAllCookies(ctx)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get cookies")
 	}
 
-	cookies := make(drivers.HTTPCookies)
+	cookies := drivers.NewHTTPCookies()
 
 	if repl.Cookies == nil {
 		return cookies, nil
 	}
 
 	for _, c := range repl.Cookies {
-		cookies[c.Name] = toDriverCookie(c)
+		cookies.Set(toDriverCookie(c))
 	}
 
 	return cookies, nil
 }
 
-func (m *Manager) SetCookies(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
+func (m *Manager) SetCookies(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return m.setCookiesInternal(ctx, url, cookies)
 }
 
-func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
-	if len(cookies) == 0 {
+func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
+	if cookies == nil {
+		return errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
+	if cookies.Length() == 0 {
 		return nil
 	}
 
-	params := make([]network.CookieParam, 0, len(cookies))
+	params := make([]network.CookieParam, 0, cookies.Length())
 
-	for _, c := range cookies {
-		params = append(params, fromDriverCookie(url, c))
-	}
+	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+		params = append(params, fromDriverCookie(url, value))
+
+		return true
+	})
 
 	return m.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
 }
 
-func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
+func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if len(cookies) == 0 {
+	if cookies == nil {
+		return errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
+	if cookies.Length() == 0 {
 		return nil
 	}
 
 	var err error
 
-	for _, c := range cookies {
-		err = m.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(url, c))
+	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+		err = m.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(url, value))
 
 		if err != nil {
-			break
+			return false
 		}
-	}
+
+		return true
+	})
 
 	return err
 }
 
 func (m *Manager) GetHeaders(_ context.Context) (*drivers.HTTPHeaders, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.headers == nil {
+		return drivers.NewHTTPHeaders(), nil
+	}
+
 	return m.headers.Clone().(*drivers.HTTPHeaders), nil
 }
 

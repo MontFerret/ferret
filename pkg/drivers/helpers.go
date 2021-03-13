@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func ToPage(value core.Value) (HTMLPage, error) {
@@ -67,19 +68,21 @@ func SetDefaultParams(opts *Options, params *Params) {
 	}
 
 	if params.Cookies == nil && opts.Cookies != nil {
-		params.Cookies = make(HTTPCookies)
+		params.Cookies = NewHTTPCookies()
 	}
 
 	// set default cookies
 	if opts.Cookies != nil {
-		for k, v := range opts.Cookies {
-			_, exists := params.Cookies[k]
+		opts.Cookies.ForEach(func(value HTTPCookie, key values.String) bool {
+			_, exists := params.Cookies.Get(key)
 
 			// do not override user's set values
 			if !exists {
-				params.Cookies[k] = v
+				params.Cookies.Set(value)
 			}
-		}
+
+			return true
+		})
 	}
 
 	// set default user agent

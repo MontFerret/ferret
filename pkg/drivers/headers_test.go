@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
-func TestHTTPHeader(t *testing.T) {
+func TestHTTPHeaders(t *testing.T) {
 	Convey("HTTPHeaders", t, func() {
 		Convey(".MarshalJSON", func() {
 			Convey("Should serialize header values", func() {

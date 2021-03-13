@@ -168,7 +168,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 
 				res.Cookies = cookies
 			default:
-				res.Cookies = make(drivers.HTTPCookies)
+				res.Cookies = drivers.NewHTTPCookies()
 			}
 		}
 
@@ -220,9 +220,13 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 	return res, nil
 }
 
-func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
+func parseCookieObject(obj *values.Object) (*drivers.HTTPCookies, error) {
+	if obj == nil {
+		return nil, errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
 	var err error
-	res := make(drivers.HTTPCookies)
+	res := drivers.NewHTTPCookies()
 
 	obj.ForEach(func(value core.Value, _ string) bool {
 		cookie, e := parseCookie(value)
@@ -233,7 +237,7 @@ func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
 			return false
 		}
 
-		res[cookie.Name] = cookie
+		res.Set(cookie)
 
 		return true
 	})
@@ -241,9 +245,13 @@ func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
 	return res, err
 }
 
-func parseCookieArray(arr *values.Array) (drivers.HTTPCookies, error) {
+func parseCookieArray(arr *values.Array) (*drivers.HTTPCookies, error) {
+	if arr == nil {
+		return nil, errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
 	var err error
-	res := make(drivers.HTTPCookies)
+	res := drivers.NewHTTPCookies()
 
 	arr.ForEach(func(value core.Value, _ int) bool {
 		cookie, e := parseCookie(value)
@@ -254,7 +262,7 @@ func parseCookieArray(arr *values.Array) (drivers.HTTPCookies, error) {
 			return false
 		}
 
-		res[cookie.Name] = cookie
+		res.Set(cookie)
 
 		return true
 	})

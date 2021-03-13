@@ -28,7 +28,7 @@ type (
 		URL         string
 		UserAgent   string
 		KeepCookies bool
-		Cookies     HTTPCookies
+		Cookies     *HTTPCookies
 		Headers     *HTTPHeaders
 		Viewport    *Viewport
 		Ignore      *Ignore
@@ -37,7 +37,7 @@ type (
 	ParseParams struct {
 		Content     []byte
 		KeepCookies bool
-		Cookies     HTTPCookies
+		Cookies     *HTTPCookies
 		Headers     *HTTPHeaders
 		Viewport    *Viewport
 	}
