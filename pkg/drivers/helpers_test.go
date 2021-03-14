@@ -32,9 +32,7 @@ func TestSetDefaultParams(t *testing.T) {
 			}),
 		}
 
-		params := drivers.Params{}
-
-		drivers.SetDefaultParams(opts, &params)
+		params := drivers.SetDefaultParams(opts, drivers.Params{})
 
 		So(params.UserAgent, ShouldEqual, opts.UserAgent)
 		So(params.Headers, ShouldNotBeNil)
