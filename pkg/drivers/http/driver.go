@@ -96,7 +96,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
 
-	drivers.SetDefaultParams(drv.options.Options, &params)
+	params = drivers.SetDefaultParams(drv.options.Options, params)
 
 	req = req.WithContext(ctx)
 

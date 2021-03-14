@@ -141,9 +141,7 @@ func (drv *Driver) setDefaultParams(params drivers.Params) drivers.Params {
 		params.Viewport = defaultViewport
 	}
 
-	drivers.SetDefaultParams(drv.options.Options, &params)
-
-	return params
+	return drivers.SetDefaultParams(drv.options.Options, params)
 }
 
 func (drv *Driver) init(ctx context.Context) error {

@@ -48,7 +48,7 @@ func ToElement(value core.Value) (HTMLElement, error) {
 	}
 }
 
-func SetDefaultParams(opts *Options, params *Params) {
+func SetDefaultParams(opts *Options, params Params) Params {
 	if params.Headers == nil && opts.Headers != nil {
 		params.Headers = NewHTTPHeaders()
 	}
@@ -89,4 +89,6 @@ func SetDefaultParams(opts *Options, params *Params) {
 	if opts.UserAgent != "" && params.UserAgent == "" {
 		params.UserAgent = opts.UserAgent
 	}
+
+	return params
 }
