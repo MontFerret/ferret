@@ -201,7 +201,7 @@ func TestLet(t *testing.T) {
 
 		p, err := c.Compile(`
 			LET obj = { items: [1,2,3] }
-	
+
 			FOR i IN obj.items
 				RETURN i
 		`)

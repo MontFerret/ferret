@@ -18,11 +18,11 @@ func SetInnerHTML() string {
 var setInnerHTMLBySelectorTemplate = fmt.Sprintf(`
 		(el, selector, value) => {
 			const found = el.querySelector(selector);
-	
+
 			if (found == null) {
 				throw new Error('%s');
 			}
-	
+
 			found.innerHTML = value;
 		}
 	`,

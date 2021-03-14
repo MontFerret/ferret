@@ -7,7 +7,7 @@ FOR i DO WHILE ELEMENT_EXISTS(doc, nextSelector)
     LIMIT 3
 	LET wait = i > 0 ? CLICK(doc, nextSelector) : false
 	LET nav = wait ? WAIT_NAVIGATION(doc) : false
-	
+
 	FOR el IN ELEMENTS(doc, elementsSelector)
 		FILTER ELEMENT_EXISTS(el, ".octicon-organization")
 

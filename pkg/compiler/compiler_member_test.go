@@ -225,7 +225,7 @@ func TestMember(t *testing.T) {
 						'data-index': 1
 					}
 				}
-				
+
 				RETURN obj.attributes['data-index']
 			`)
 

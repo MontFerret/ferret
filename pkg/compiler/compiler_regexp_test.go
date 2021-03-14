@@ -15,7 +15,7 @@ func TestRegexpOperator(t *testing.T) {
 	Convey("Should be possible to use positive regular expression operator", t, func() {
 		out := compiler.New().
 			MustCompile(`
-			RETURN "foo" =~ "^f[o].$" 
+			RETURN "foo" =~ "^f[o].$"
 		`).
 			MustRun(context.Background())
 
@@ -25,7 +25,7 @@ func TestRegexpOperator(t *testing.T) {
 	Convey("Should be possible to use negative regular expression operator", t, func() {
 		out := compiler.New().
 			MustCompile(`
-			RETURN "foo" !~ "[a-z]+bar$" 
+			RETURN "foo" !~ "[a-z]+bar$"
 		`).
 			MustRun(context.Background())
 
@@ -50,7 +50,7 @@ func TestRegexpOperator(t *testing.T) {
 	Convey("Should return an error during compilation when a regexp string invalid", t, func() {
 		_, err := compiler.New().
 			Compile(`
-			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
+			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d"
 		`)
 
 		So(err, ShouldBeError)
@@ -68,7 +68,7 @@ func TestRegexpOperator(t *testing.T) {
 		for _, r := range right {
 			_, err := compiler.New().
 				Compile(fmt.Sprintf(`
-			RETURN "foo" !~ %s 
+			RETURN "foo" !~ %s
 		`, r))
 
 			So(err, ShouldBeError)

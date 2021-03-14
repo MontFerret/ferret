@@ -91,7 +91,7 @@ func BenchmarkTernaryOperator(b *testing.B) {
 			LET b = "b"
 			LET c = FALSE
 			RETURN c ? a : b;
-				
+
 		`)
 
 	for n := 0; n < b.N; n++ {
@@ -105,7 +105,7 @@ func BenchmarkTernaryOperatorDef(b *testing.B) {
 			LET b = "b"
 			LET c = FALSE
 			RETURN c ? : a;
-				
+
 		`)
 
 	for n := 0; n < b.N; n++ {

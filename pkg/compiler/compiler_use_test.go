@@ -35,7 +35,7 @@ func TestUseExpression(t *testing.T) {
 			Convey("Single statement", func() {
 				p, err := newCompiler().Compile(`
 				USE X
-	
+
 				RETURN XXX_CONTAINS("s", "s")
 				`)
 
@@ -48,7 +48,7 @@ func TestUseExpression(t *testing.T) {
 			Convey("Single statement (lower case)", func() {
 				p, err := newCompiler().Compile(`
 				use x
-	
+
 				return xxx_contains("s", "s")
 				`)
 
@@ -61,7 +61,7 @@ func TestUseExpression(t *testing.T) {
 			Convey("Many functions from one lib", func() {
 				p, err := newCompiler().Compile(`
 				USE X
-	
+
 				RETURN XXX_CONTAINS(XXX_UPPER("s"), "S")
 				`)
 
@@ -81,7 +81,7 @@ func TestUseExpression(t *testing.T) {
 				p, err := c.Compile(`
 				USE X
 				USE Z
-	
+
 				RETURN XXX_TO_STRING(XXX_CONTAINS("s", "s"))
 				`)
 
@@ -94,7 +94,7 @@ func TestUseExpression(t *testing.T) {
 			Convey("Namespace doesn't exists", func() {
 				p, err := newCompiler().Compile(`
 				USE NOT::EXISTS
-		
+
 				RETURN 1
 				`)
 
@@ -130,7 +130,7 @@ func TestUseExpression(t *testing.T) {
 				Convey("Short path", func() {
 					p, err := c.Compile(`
 					USE X
-		
+
 					RETURN Y::YYY_CONTAINS("s", "s")
 					`)
 
@@ -143,7 +143,7 @@ func TestUseExpression(t *testing.T) {
 				Convey("Full path", func() {
 					p, err := c.Compile(`
 					USE X
-		
+
 					RETURN X::Y::YYY_CONTAINS("s", "s")
 					`)
 
@@ -166,14 +166,14 @@ func TestUseExpression(t *testing.T) {
 					Name: "Wrong namespace format",
 					Query: `
 					USE NOT::EXISTS::
-			
+
 					RETURN 1`,
 				},
 				{
 					Name: "Empty namespace",
 					Query: `
 					USE
-			
+
 					RETURN 1`,
 				},
 				{

@@ -48,8 +48,8 @@ func TestAggregate(t *testing.T) {
 			FOR u IN users
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
-    				minAge, 
-    				maxAge 
+    				minAge,
+    				maxAge
   				}
 		`)
 
@@ -149,12 +149,12 @@ func TestAggregate(t *testing.T) {
 				}
 			]
 			FOR u IN users
-  				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
+  				COLLECT ageGroup = FLOOR(u.age / 5) * 5
   				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
 					ageGroup,
-    				minAge, 
-    				maxAge 
+    				minAge,
+    				maxAge
   				}
 		`)
 
@@ -205,8 +205,8 @@ func BenchmarkAggregate(b *testing.B) {
 			FOR u IN users
   				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
-    				minAge, 
-    				maxAge 
+    				minAge,
+    				maxAge
   				}
 		`)
 
@@ -294,12 +294,12 @@ func BenchmarkAggregate3(b *testing.B) {
 				}
 			]
 			FOR u IN users
-  				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
+  				COLLECT ageGroup = FLOOR(u.age / 5) * 5
   				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
   				RETURN {
 					ageGroup,
-    				minAge, 
-    				maxAge 
+    				minAge,
+    				maxAge
   				}
 		`)
 

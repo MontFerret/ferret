@@ -13,7 +13,7 @@ func WaitBySelector(selector values.String, when drivers.WaitEvent, value core.V
 	return fmt.Sprintf(
 		`
 			const el = document.querySelector(%s); // selector
-			
+
 			if (el == null) {
 				return false;
 			}
@@ -24,7 +24,7 @@ func WaitBySelector(selector values.String, when drivers.WaitEvent, value core.V
 			if (result %s %s) {
 				return true;
 			}
-			
+
 			// null means we need to repeat
 			return null;
 `,

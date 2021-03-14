@@ -12,26 +12,26 @@ const xPathTemplate = `
 				XPathResult.ANY_TYPE
 			);
 			let result;
-		
+
 			switch (out.resultType) {
 				case XPathResult.UNORDERED_NODE_ITERATOR_TYPE:
 				case XPathResult.ORDERED_NODE_ITERATOR_TYPE: {
 					result = [];
 					let item;
-		
+
 					while ((item = out.iterateNext())) {
 						result.push(unwrap(item));
 					}
-		
+
 					break;
 				}
 				case XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE:
 				case XPathResult.ORDERED_NODE_SNAPSHOT_TYPE: {
 					result = [];
-		
+
 					for (let i = 0; i < out.snapshotLength; i++) {
 						const item = out.snapshotItem(i);
-		
+
 						if (item != null) {
 							result.push(unwrap(item));
 						}
@@ -59,7 +59,7 @@ const xPathTemplate = `
 					break;
 				}
 			}
-		
+
 			return result;
 		}
 	`

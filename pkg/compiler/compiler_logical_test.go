@@ -105,7 +105,7 @@ func TestLogicalOperators(t *testing.T) {
 		c := compiler.New()
 
 		p, err := c.Compile(`
-			RETURN true && 23 
+			RETURN true && 23
 		`)
 
 		So(err, ShouldBeNil)

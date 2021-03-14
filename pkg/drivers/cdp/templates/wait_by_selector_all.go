@@ -12,13 +12,13 @@ import (
 func WaitBySelectorAll(selector values.String, when drivers.WaitEvent, value core.Value, check string) string {
 	return fmt.Sprintf(`
 			var elements = document.querySelectorAll(%s); // selector
-			
+
 			if (elements == null || elements.length === 0) {
 				return false;
 			}
 
 			var resultCount = 0;
-			
+
 			elements.forEach((el) => {
 				var result = %s; // check
 
@@ -27,11 +27,11 @@ func WaitBySelectorAll(selector values.String, when drivers.WaitEvent, value cor
 					resultCount++;
 				}
 			});
-	
+
 			if (resultCount === elements.length) {
 				return true;
 			}
-			
+
 			// null means we need to repeat
 			return null;
 	`,

@@ -62,7 +62,7 @@ func TestRangeOperator(t *testing.T) {
 	Convey("Should use variables", t, func() {
 		out := compiler.New().MustCompile(`
 				LET max = 10
-				
+
 				FOR i IN 1..max
 					RETURN i * 2
 		`).MustRun(context.Background())
@@ -71,7 +71,7 @@ func TestRangeOperator(t *testing.T) {
 
 		out2 := compiler.New().MustCompile(`
 				LET min = 1
-				
+
 				FOR i IN min..10
 					RETURN i * 2
 		`).MustRun(context.Background())
@@ -81,7 +81,7 @@ func TestRangeOperator(t *testing.T) {
 		out3 := compiler.New().MustCompile(`
 				LET min = 1
 				LET max = 10
-				
+
 				FOR i IN min..max
 					RETURN i * 2
 		`).MustRun(context.Background())

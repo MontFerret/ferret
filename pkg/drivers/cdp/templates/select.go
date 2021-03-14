@@ -19,7 +19,7 @@ func selectBase(values string) string {
 
 		for (var option of options) {
 			option.selected = values.includes(option.value);
-		
+
 			if (option.selected && !el.multiple) {
 				break;
 			}
@@ -27,7 +27,7 @@ func selectBase(values string) string {
 
 		el.dispatchEvent(new Event('input', { 'bubbles': true }));
 		el.dispatchEvent(new Event('change', { 'bubbles': true }));
-		
+
 		return options.filter(option => option.selected).map(option => option.value);
 	`, values,
 	)
@@ -45,7 +45,7 @@ func Select(values string) string {
 func SelectBySelector(selector, values string) string {
 	return fmt.Sprintf(`
 		const el = document.querySelector('%s');
-		
+
 		if (el == null) {
 			throw new Error("%s")
 		}

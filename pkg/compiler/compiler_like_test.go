@@ -12,7 +12,7 @@ func TestLikeOperator(t *testing.T) {
 		c := compiler.New()
 
 		out1, err := c.MustCompile(`
-			RETURN "foo" LIKE  "f*" 
+			RETURN "foo" LIKE  "f*"
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)
@@ -23,7 +23,7 @@ func TestLikeOperator(t *testing.T) {
 		c := compiler.New()
 
 		out1, err := c.MustCompile(`
-			RETURN LIKE('foo', 'f*') 
+			RETURN LIKE('foo', 'f*')
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)
@@ -34,7 +34,7 @@ func TestLikeOperator(t *testing.T) {
 		c := compiler.New()
 
 		out1, err := c.MustCompile(`
-			RETURN "foo" NOT LIKE  "b*" 
+			RETURN "foo" NOT LIKE  "b*"
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)
@@ -60,7 +60,7 @@ func TestLikeOperator(t *testing.T) {
 		out1, err := c.MustCompile(`
 			FOR str IN ["foo", "bar", "qaz"]
 				FILTER str LIKE "*a*"
-				RETURN str 
+				RETURN str
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)
@@ -73,7 +73,7 @@ func TestLikeOperator(t *testing.T) {
 		out1, err := c.MustCompile(`
 			FOR str IN ["foo", "bar", "qaz"]
 				FILTER str LIKE "*a*"
-				RETURN str 
+				RETURN str
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)

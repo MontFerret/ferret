@@ -10,7 +10,7 @@ const (
 	isElementInViewportTemplate = `
 		function isInViewport(elem) {
 			var bounding = elem.getBoundingClientRect();
-			
+
 			return (
 				bounding.top >= 0 &&
 				bounding.left >= 0 &&
@@ -25,7 +25,7 @@ const (
 			left: %s,
 			top: %s,
 			behavior: '%s',
-			block: '%s', 
+			block: '%s',
 			inline: '%s'
   		});
 `
@@ -35,7 +35,7 @@ const (
 			left: 0,
 			top: 0,
 			behavior: '%s',
-			block: '%s', 
+			block: '%s',
 			inline: '%s'
   		});
 `
@@ -45,7 +45,7 @@ const (
 			left: 0,
 			top: window.document.body.scrollHeight,
 			behavior: '%s',
-			block: '%s', 
+			block: '%s',
 			inline: '%s'
   		});
 `
@@ -57,11 +57,11 @@ const (
 			if (!isInViewport(el)) {
 				el.scrollIntoView({
 					behavior: '%s',
-					block: '%s', 
+					block: '%s',
 					inline: '%s'
 				});
 			}
-	
+
 			return true;
 		}
 `
@@ -78,7 +78,7 @@ const (
 		if (!isInViewport(el)) {
 			el.scrollIntoView({
 				behavior: '%s',
-				block: '%s', 
+				block: '%s',
 				inline: '%s'
   			});
 		}

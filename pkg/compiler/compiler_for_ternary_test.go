@@ -53,7 +53,7 @@ func TestForTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2) 
+			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
 			RETURN res
 		`).Run(context.Background())
 

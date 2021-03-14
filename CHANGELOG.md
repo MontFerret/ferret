@@ -24,7 +24,7 @@
 #### Fixed
 - HTML escaping [#573](https://github.com/MontFerret/ferret/pull/573)
 
-#### Updated 
+#### Updated
 - Upgraded CDP client [#536](https://github.com/MontFerret/ferret/pull/563)
 - Upgraded GoQuery [#562](https://github.com/MontFerret/ferret/pull/562)
 - Upgraded XPath [#572](https://github.com/MontFerret/ferret/pull/572)
@@ -68,7 +68,7 @@
 - Fuzzer. [#501](https://github.com/MontFerret/ferret/pull/501)
 
 ## Updated
-- ``DECODED_URI_COMPONENT`` decodes unicode symbols now. [#499](https://github.com/MontFerret/ferret/pull/499) 
+- ``DECODED_URI_COMPONENT`` decodes unicode symbols now. [#499](https://github.com/MontFerret/ferret/pull/499)
 - Dependencies. [87265cf](https://github.com/MontFerret/ferret/commit/87265cf470c4b614d144706020729dd453620a0c)
 
 # Fixed
@@ -125,7 +125,7 @@
 #### Changed
 - Updated zerolog. [#352](https://github.com/MontFerret/ferret/pull/352)
 - Runtime ``Object`` and ``Array`` values implement ``core.Getter`` interface. [#353](https://github.com/MontFerret/ferret/pull/353)
-- Externalized default timeout values. [#371](https://github.com/MontFerret/ferret/pull/371) 
+- Externalized default timeout values. [#371](https://github.com/MontFerret/ferret/pull/371)
 - Refactored ``drivers.HTMLDocument`` and ``drivers.HTMLElement`` interfaces. [#376](https://github.com/MontFerret/ferret/pull/376), [#375](https://github.com/MontFerret/ferret/pull/375)
 
 ### 0.8.3
@@ -159,7 +159,7 @@
 
 #### Changed
 - ``RAND`` accepts optional upper and lower limits. [#271](https://github.com/MontFerret/ferret/pull/271)
-- Updated CDP definitions. [#328](https://github.com/MontFerret/ferret/pull/328) 
+- Updated CDP definitions. [#328](https://github.com/MontFerret/ferret/pull/328)
 - Logic of iterator termination. [#330](https://github.com/MontFerret/ferret/pull/330)
 
 #### Fixed
@@ -207,7 +207,7 @@ LET doc = DOCUMENT(url, {
 - Incorrect string length computation [#238](https://github.com/MontFerret/ferret/pull/238).
 - Access to HTML object properties via dot notation [#239](https://github.com/MontFerret/ferret/pull/239).
 - Graceful process termination [#240](https://github.com/MontFerret/ferret/pull/240).
-- Browser launcher for macOS [#246](https://github.com/MontFerret/ferret/pull/246). 
+- Browser launcher for macOS [#246](https://github.com/MontFerret/ferret/pull/246).
 
 #### Breaking changes
 - New runtime type system [#232](https://github.com/MontFerret/ferret/pull/232).
@@ -240,7 +240,7 @@ LET doc = DOCUMENT("https://www.google.com/", {
     timeout: 10000
 })
 ```
- 
+
 #### Fixed
 - Math operators precedence [#202](https://github.com/MontFerret/ferret/pull/202).
 - Memory leak in ```DOWNLOAD``` function [#213](https://github.com/MontFerret/ferret/pull/213).
@@ -254,7 +254,7 @@ The initialization must be done via context manually.
 - Does not close browser tab when fails to load a page [#193](https://github.com/MontFerret/ferret/pull/193).
 - ```HTMLElement.value``` does not return actual value [#195](https://github.com/MontFerret/ferret/pull/195)
 - Compiles a query with duplicate variable in FOR statement [#196](https://github.com/MontFerret/ferret/pull/196)
-- Default CDP address [#197](https://github.com/MontFerret/ferret/pull/197).  
+- Default CDP address [#197](https://github.com/MontFerret/ferret/pull/197).
 
 ### 0.5.1
 #### Fixed
@@ -286,8 +286,8 @@ The initialization must be done via context manually.
 ### 0.4.0
 #### Added
 - ``COLLECT`` keyword [#141](https://github.com/MontFerret/ferret/pull/141)
-- ``VALUES`` function [#128](https://github.com/MontFerret/ferret/pull/128) 
-- ``MERGE_RECURSIVE`` function [#140](https://github.com/MontFerret/ferret/pull/140) 
+- ``VALUES`` function [#128](https://github.com/MontFerret/ferret/pull/128)
+- ``MERGE_RECURSIVE`` function [#140](https://github.com/MontFerret/ferret/pull/140)
 
 #### Fixed
 - Unable to use string literals as object properties [commit](https://github.com/MontFerret/ferret/commit/685c5872aaed42852ce32e7ab8b69b1a269185be)

@@ -305,11 +305,11 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 		fmt.Sprintf(
 			`
 				var el = document.querySelector(%s);
-				
+
 				if (el %s null) {
 					return true;
 				}
-				
+
 				// null means we need to repeat
 				return null;
 			`,
