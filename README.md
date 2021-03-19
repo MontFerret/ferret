@@ -39,7 +39,7 @@ It is extremely portable, extensible, and fast.
 ### Show me some code
 The following example demonstrates the use of dynamic pages.    
 We load the main Google Search page, type a search criteria into the input box, and then click the search button.   
-The click action triggers a redirect, so we wait until the the page we were redirected to finishes loading.   
+The click action triggers a redirect, so we wait until the page we were redirected to finishes loading.   
 Once the results page is loaded, we iterate over all elements in the search results and assign output to a variable.   
 
 ```aql
