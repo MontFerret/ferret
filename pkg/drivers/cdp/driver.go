@@ -36,7 +36,7 @@ type Driver struct {
 
 func NewDriver(opts ...Option) *Driver {
 	drv := new(Driver)
-	drv.options = newOptions(opts)
+	drv.options = NewOptions(opts)
 	drv.dev = devtool.New(drv.options.Address)
 
 	return drv
@@ -137,43 +137,11 @@ func (drv *Driver) createConnection(ctx context.Context, keepCookies bool) (*rpc
 }
 
 func (drv *Driver) setDefaultParams(params drivers.Params) drivers.Params {
-	if params.UserAgent == "" {
-		params.UserAgent = drv.options.UserAgent
-	}
-
 	if params.Viewport == nil {
 		params.Viewport = defaultViewport
 	}
 
-	if drv.options.Headers != nil && params.Headers == nil {
-		params.Headers = make(drivers.HTTPHeaders)
-	}
-
-	// set default headers
-	for k, v := range drv.options.Headers {
-		_, exists := params.Headers[k]
-
-		// do not override user's set values
-		if !exists {
-			params.Headers[k] = v
-		}
-	}
-
-	if drv.options.Cookies != nil && params.Cookies == nil {
-		params.Cookies = make(drivers.HTTPCookies)
-	}
-
-	// set default cookies
-	for k, v := range drv.options.Cookies {
-		_, exists := params.Cookies[k]
-
-		// do not override user's set values
-		if !exists {
-			params.Cookies[k] = v
-		}
-	}
-
-	return params
+	return drivers.SetDefaultParams(drv.options.Options, params)
 }
 
 func (drv *Driver) init(ctx context.Context) error {

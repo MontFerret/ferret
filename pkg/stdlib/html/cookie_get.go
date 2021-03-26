@@ -40,7 +40,7 @@ func CookieGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	cookie, found := cookies[name.String()]
+	cookie, found := cookies.Get(name)
 
 	if found {
 		return cookie, nil

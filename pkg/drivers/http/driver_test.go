@@ -2,6 +2,7 @@ package http
 
 import (
 	"crypto/tls"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"net/http"
 	"reflect"
 	"testing"
@@ -25,14 +26,18 @@ func Test_newHTTPClientWithTransport(t *testing.T) {
 		{
 			name: "check transport exist with pester.New()",
 			args: args{options: &Options{
-				Proxy:         "http://0.0.0.|",
+				Options: &drivers.Options{
+					Proxy: "http://0.0.0.|",
+				},
 				HTTPTransport: httpTransport,
 			}},
 		},
 		{
 			name: "check transport exist with pester.NewExtendedClient()",
 			args: args{options: &Options{
-				Proxy:         "http://0.0.0.0",
+				Options: &drivers.Options{
+					Proxy: "http://0.0.0.0",
+				},
 				HTTPTransport: httpTransport,
 			}},
 		},
@@ -69,7 +74,9 @@ func Test_newHTTPClient(t *testing.T) {
 	convey.Convey("pester.New()", t, func() {
 		var (
 			client = newHTTPClient(&Options{
-				Proxy: "http://0.0.0.|",
+				Options: &drivers.Options{
+					Proxy: "http://0.0.0.|",
+				},
 			})
 
 			rValue = reflect.ValueOf(client).Elem()
@@ -85,7 +92,9 @@ func Test_newHTTPClient(t *testing.T) {
 	convey.Convey("pester.NewExtend()", t, func() {
 		var (
 			client = newHTTPClient(&Options{
-				Proxy: "http://0.0.0.0",
+				Options: &drivers.Options{
+					Proxy: "http://0.0.0.0",
+				},
 			})
 
 			rValue = reflect.ValueOf(client).Elem()

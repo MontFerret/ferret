@@ -132,7 +132,7 @@ func parseParseParams(content []byte, arg *values.Object) (ParseParams, error) {
 
 			res.Cookies = cookies
 		default:
-			res.Cookies = make(drivers.HTTPCookies)
+			res.Cookies = drivers.NewHTTPCookies()
 		}
 	}
 

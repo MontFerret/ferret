@@ -196,11 +196,11 @@ type (
 
 		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
 
-		GetCookies(ctx context.Context) (HTTPCookies, error)
+		GetCookies(ctx context.Context) (*HTTPCookies, error)
 
-		SetCookies(ctx context.Context, cookies HTTPCookies) error
+		SetCookies(ctx context.Context, cookies *HTTPCookies) error
 
-		DeleteCookies(ctx context.Context, cookies HTTPCookies) error
+		DeleteCookies(ctx context.Context, cookies *HTTPCookies) error
 
 		GetResponse(ctx context.Context) (HTTPResponse, error)
 

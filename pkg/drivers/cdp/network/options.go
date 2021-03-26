@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	Cookies map[string]drivers.HTTPCookies
+	Cookies map[string]*drivers.HTTPCookies
 
 	Filter struct {
 		Patterns []drivers.ResourceFilter
@@ -14,8 +14,8 @@ type (
 
 	Options struct {
 		Cookies Cookies
-		Headers drivers.HTTPHeaders
-		Filter  Filter
+		Headers *drivers.HTTPHeaders
+		Filter  *Filter
 	}
 )
 

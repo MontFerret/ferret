@@ -54,8 +54,8 @@ func outerHTML(s *goquery.Selection) (string, error) {
 	return buf.String(), nil
 }
 
-func toDriverCookies(cookies []*HTTP.Cookie) (drivers.HTTPCookies, error) {
-	res := make(drivers.HTTPCookies)
+func toDriverCookies(cookies []*HTTP.Cookie) (*drivers.HTTPCookies, error) {
+	res := drivers.NewHTTPCookies()
 
 	for _, c := range cookies {
 		dc, err := toDriverCookie(c)
@@ -64,7 +64,7 @@ func toDriverCookies(cookies []*HTTP.Cookie) (drivers.HTTPCookies, error) {
 			return nil, err
 		}
 
-		res[dc.Name] = dc
+		res.Set(dc)
 	}
 
 	return res, nil
