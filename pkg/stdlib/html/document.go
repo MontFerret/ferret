@@ -303,14 +303,14 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	expires, exists := co.Get("expires")
 
 	if exists {
-		if err = core.ValidateType(maxAge, types.DateTime, types.String); err != nil {
+		if err = core.ValidateType(expires, types.DateTime, types.String); err != nil {
 			return drivers.HTTPCookie{}, err
 		}
 
 		if expires.Type() == types.DateTime {
 			cookie.Expires = expires.(values.DateTime).Unwrap().(time.Time)
 		} else {
-			t, err := time.Parse(expires.String(), values.DefaultTimeLayout)
+			t, err := time.Parse(values.DefaultTimeLayout, expires.String())
 
 			if err != nil {
 				return drivers.HTTPCookie{}, err
