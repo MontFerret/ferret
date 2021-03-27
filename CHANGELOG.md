@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.14.1
+#### Fixed
+- Parsing HTTP headers and cookies [#598](https://github.com/MontFerret/ferret/pull/598)
+- Parsing cookie expiration datetime [#602](https://github.com/MontFerret/ferret/pull/602)
+
 ### 0.14.0
 #### Added
 - Support of History API [#584](https://github.com/MontFerret/ferret/pull/584)
