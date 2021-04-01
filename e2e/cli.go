@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -16,6 +14,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Params []string
@@ -92,7 +92,8 @@ func main() {
 
 		query = string(b)
 	} else if flag.NArg() > 0 {
-		content, err := os.ReadFile(flag.Arg(0))
+		// backward compatibility
+		content, err := ioutil.ReadFile(flag.Arg(0))
 
 		if err != nil {
 			fmt.Println(err)
