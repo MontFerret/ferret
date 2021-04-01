@@ -22,6 +22,21 @@
 
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
+<p align="center">
+	<a href="https://www.montferret.dev/docs/introduction" style="margin: 0 15px">
+		<span>Docs</span>
+	</a>
+	<a href="https://github.com/MontFerret/cli" style="margin: 0 15px">
+		<span>CLI</span>
+	</a>
+	<a href="https://github.com/MontFerret/lab" style="margin: 0 15px">
+		<span>Test runner</span>
+	</a>
+	<a href="https://github.com/MontFerret/worker" style="margin: 0 15px">
+		<span>Web worker</span>
+	</a>
+</p>
+
 ## What is it?
 ```ferret``` is a web scraping system. It aims to simplify data extraction from the web for UI testing, machine learning, analytics and more.    
 ```ferret``` allows users to focus on the data. It abstracts away the technical details and complexity of underlying technologies using its own declarative language. 
