@@ -23,6 +23,9 @@
 ![ferret](https://raw.githubusercontent.com/MontFerret/ferret/master/assets/intro.jpg)
 
 <p align="center">
+	<a href="https://www.montferret.dev/try" style="margin: 0 15px">
+		<span>Try it!</span>
+	</a>
 	<a href="https://www.montferret.dev/docs/introduction" style="margin: 0 15px">
 		<span>Docs</span>
 	</a>
