@@ -243,6 +243,16 @@ func (t *Object) MustGet(key String) core.Value {
 	return val
 }
 
+func (t *Object) MustGetOr(key String, defaultValue core.Value) core.Value {
+	val, found := t.value[string(key)]
+
+	if found {
+		return val
+	}
+
+	return defaultValue
+}
+
 func (t *Object) Get(key String) (core.Value, Boolean) {
 	val, found := t.value[string(key)]
 

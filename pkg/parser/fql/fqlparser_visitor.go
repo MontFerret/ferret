@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -177,6 +177,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#inOperator.
 	VisitInOperator(ctx *InOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#likeOperator.
+	VisitLikeOperator(ctx *LikeOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#equalityOperator.
 	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}

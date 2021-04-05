@@ -14,7 +14,7 @@ import (
 type HTTPResponse struct {
 	StatusCode int
 	Status     string
-	Headers    HTTPHeaders
+	Headers    *HTTPHeaders
 }
 
 func (resp *HTTPResponse) Type() core.Type {
@@ -60,9 +60,9 @@ func (resp *HTTPResponse) Hash() uint64 {
 // responseMarshal is a structure that repeats HTTPResponse. It allows
 // easily Marshal the HTTPResponse object.
 type responseMarshal struct {
-	StatusCode int         `json:"status_code"`
-	Status     string      `json:"status"`
-	Headers    HTTPHeaders `json:"headers"`
+	StatusCode int          `json:"status_code"`
+	Status     string       `json:"status"`
+	Headers    *HTTPHeaders `json:"headers"`
 }
 
 func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {

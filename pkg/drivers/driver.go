@@ -11,7 +11,7 @@ type (
 	ctxKey struct{}
 
 	ctxValue struct {
-		opts    *options
+		opts    *globalOptions
 		drivers map[string]Driver
 	}
 
@@ -23,7 +23,7 @@ type (
 	}
 )
 
-func WithContext(ctx context.Context, drv Driver, opts ...Option) context.Context {
+func WithContext(ctx context.Context, drv Driver, opts ...GlobalOption) context.Context {
 	ctx, value := resolveValue(ctx)
 
 	value.drivers[drv.Name()] = drv
@@ -63,7 +63,7 @@ func resolveValue(ctx context.Context) (context.Context, *ctxValue) {
 
 	if !ok {
 		value = &ctxValue{
-			opts:    &options{},
+			opts:    &globalOptions{},
 			drivers: make(map[string]Driver),
 		}
 

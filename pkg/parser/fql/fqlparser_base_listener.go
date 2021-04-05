@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -363,6 +363,12 @@ func (s *BaseFqlParserListener) EnterInOperator(ctx *InOperatorContext) {}
 
 // ExitInOperator is called when production inOperator is exited.
 func (s *BaseFqlParserListener) ExitInOperator(ctx *InOperatorContext) {}
+
+// EnterLikeOperator is called when production likeOperator is entered.
+func (s *BaseFqlParserListener) EnterLikeOperator(ctx *LikeOperatorContext) {}
+
+// ExitLikeOperator is called when production likeOperator is exited.
+func (s *BaseFqlParserListener) ExitLikeOperator(ctx *LikeOperatorContext) {}
 
 // EnterEqualityOperator is called when production equalityOperator is entered.
 func (s *BaseFqlParserListener) EnterEqualityOperator(ctx *EqualityOperatorContext) {}

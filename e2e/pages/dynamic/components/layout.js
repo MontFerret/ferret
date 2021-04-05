@@ -11,16 +11,16 @@ export default function Layout({ children }) {
             e("div", { className: "collapse navbar-collapse" }, [
                 e("ul", { className: "navbar-nav mr-auto" }, [
                     e("li", { className: "nav-item"}, [
-                        e(NavLink, { className: "nav-link", to: "/forms" }, "Forms")
+                        e(NavLink, { className: "nav-link nav-link-forms", to: "/forms" }, "Forms")
                     ]),
                     e("li", { className: "nav-item"}, [
-                        e(NavLink, { className: "nav-link", to: "/navigation" }, "Navigation")
+                        e(NavLink, { className: "nav-link nav-link-navigation", to: "/navigation" }, "Navigation")
                     ]),
                     e("li", { className: "nav-item"}, [
-                        e(NavLink, { className: "nav-link", to: "/events" }, "Events")
+                        e(NavLink, { className: "nav-link nav-link-events", to: "/events" }, "Events")
                     ]),
                     e("li", { className: "nav-item"}, [
-                        e(NavLink, { className: "nav-link", to: "/iframe" }, "iFrame")
+                        e(NavLink, { className: "nav-link nav-link-iframe", to: "/iframe" }, "iFrame")
                     ])
                 ])
             ])

@@ -17,6 +17,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -68,19 +69,20 @@ func LoadHTMLPage(
 		}
 	}()
 
-	netManager, err := net.New(logger, client)
-
-	if err != nil {
-		return nil, err
+	netOpts := net.Options{
+		Headers: params.Headers,
 	}
 
-	err = netManager.SetCookies(ctx, params.URL, params.Cookies)
-
-	if err != nil {
-		return nil, err
+	if params.Cookies != nil && params.Cookies.Length() > 0 {
+		netOpts.Cookies = make(map[string]*drivers.HTTPCookies)
+		netOpts.Cookies[params.URL] = params.Cookies
 	}
 
-	err = netManager.SetHeaders(ctx, params.Headers)
+	if params.Ignore != nil && len(params.Ignore.Resources) > 0 {
+		netOpts.Filter.Patterns = params.Ignore.Resources
+	}
+
+	netManager, err := net.New(logger, client, netOpts)
 
 	if err != nil {
 		return nil, err
@@ -262,16 +264,15 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	url := p.GetURL().String()
 	p.closed = values.True
-
-	doc := p.getCurrentDocument()
 
 	err := p.dom.Close()
 
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close dom manager")
 	}
@@ -281,7 +282,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close network manager")
 	}
@@ -291,7 +292,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close browser page")
 	}
@@ -301,7 +302,7 @@ func (p *HTMLPage) Close() error {
 	if err != nil {
 		p.logger.Warn().
 			Timestamp().
-			Str("url", doc.GetURL().String()).
+			Str("url", url).
 			Err(err).
 			Msg("failed to close connection")
 	}
@@ -317,6 +318,17 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 }
 
 func (p *HTMLPage) GetURL() values.String {
+	res, err := p.getCurrentDocument().Eval(context.Background(), templates.GetURL())
+
+	if err == nil {
+		return values.ToString(res)
+	}
+
+	p.logger.Warn().
+		Timestamp().
+		Err(err).
+		Msg("failed to retrieve URL")
+
 	return p.getCurrentDocument().GetURL()
 }
 
@@ -344,21 +356,21 @@ func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, er
 	return frames.Get(idx), nil
 }
 
-func (p *HTMLPage) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
+func (p *HTMLPage) GetCookies(ctx context.Context) (*drivers.HTTPCookies, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.network.GetCookies(ctx)
 }
 
-func (p *HTMLPage) SetCookies(ctx context.Context, cookies drivers.HTTPCookies) error {
+func (p *HTMLPage) SetCookies(ctx context.Context, cookies *drivers.HTTPCookies) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.network.SetCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
 }
 
-func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies drivers.HTTPCookies) error {
+func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies *drivers.HTTPCookies) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

@@ -2,59 +2,29 @@ package dom
 
 import (
 	"context"
-	"io"
 	"sync"
 
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/mafredri/cdp/rpcc"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-var (
-	eventDocumentUpdated   = events.New("doc_updated")
-	eventChildNodeInserted = events.New("child_inserted")
-	eventChildNodeRemoved  = events.New("child_removed")
-)
-
 type (
-	DocumentUpdatedListener func(ctx context.Context)
-
-	AttrModifiedListener func(ctx context.Context, nodeID dom.NodeID, name, value string)
-
-	AttrRemovedListener func(ctx context.Context, nodeID dom.NodeID, name string)
-
-	ChildNodeCountUpdatedListener func(ctx context.Context, nodeID dom.NodeID, count int)
-
-	ChildNodeInsertedListener func(ctx context.Context, nodeID, previousNodeID dom.NodeID, node dom.Node)
-
-	ChildNodeRemovedListener func(ctx context.Context, nodeID, previousNodeID dom.NodeID)
-
 	Manager struct {
 		mu        sync.RWMutex
 		logger    *zerolog.Logger
 		client    *cdp.Client
-		events    *events.Loop
 		mouse     *input.Mouse
 		keyboard  *input.Keyboard
 		mainFrame *AtomicFrameID
 		frames    *AtomicFrameCollection
-		cancel    context.CancelFunc
 	}
 )
-
-// a dirty workaround to let pass the vet test
-func createContext() (context.Context, context.CancelFunc) {
-	return context.WithCancel(context.Background())
-}
 
 func New(
 	logger *zerolog.Logger,
@@ -62,108 +32,20 @@ func New(
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (manager *Manager, err error) {
-	ctx, cancel := createContext()
-
-	closers := make([]io.Closer, 0, 10)
-
-	defer func() {
-		if err != nil {
-			common.CloseAll(logger, closers, "failed to close a DOM event stream")
-		}
-	}()
-
-	onContentReady, err := client.Page.DOMContentEventFired(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onContentReady)
-
-	onDocUpdated, err := client.DOM.DocumentUpdated(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onDocUpdated)
-
-	onAttrModified, err := client.DOM.AttributeModified(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onAttrModified)
-
-	onAttrRemoved, err := client.DOM.AttributeRemoved(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onAttrRemoved)
-
-	onChildCountUpdated, err := client.DOM.ChildNodeCountUpdated(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onChildCountUpdated)
-
-	onChildNodeInserted, err := client.DOM.ChildNodeInserted(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onChildNodeInserted)
-
-	onChildNodeRemoved, err := client.DOM.ChildNodeRemoved(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	closers = append(closers, onChildNodeRemoved)
-
-	eventLoop := events.NewLoop()
-
-	eventLoop.AddSource(events.NewSource(eventDocumentUpdated, onDocUpdated, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(dom.DocumentUpdatedClient).Recv()
-	}))
-
-	eventLoop.AddSource(events.NewSource(eventChildNodeInserted, onChildNodeInserted, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(dom.ChildNodeInsertedClient).Recv()
-	}))
-
-	eventLoop.AddSource(events.NewSource(eventChildNodeRemoved, onChildNodeRemoved, func(stream rpcc.Stream) (i interface{}, e error) {
-		return stream.(dom.ChildNodeRemovedClient).Recv()
-	}))
 
 	manager = new(Manager)
 	manager.logger = logger
 	manager.client = client
-	manager.events = eventLoop
 	manager.mouse = mouse
 	manager.keyboard = keyboard
 	manager.mainFrame = NewAtomicFrameID()
 	manager.frames = NewAtomicFrameCollection()
-	manager.cancel = cancel
-
-	eventLoop.Run(ctx)
 
 	return manager, nil
 }
 
 func (m *Manager) Close() error {
 	errs := make([]error, 0, m.frames.Length()+1)
-
-	if m.cancel != nil {
-		m.cancel()
-		m.cancel = nil
-	}
 
 	m.frames.ForEach(func(f Frame, key page.FrameID) bool {
 		// if initialized
@@ -293,64 +175,6 @@ func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
 	}
 
 	return arr, nil
-}
-
-func (m *Manager) AddDocumentUpdatedListener(listener DocumentUpdatedListener) events.ListenerID {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.events.AddListener(eventDocumentUpdated, func(ctx context.Context, _ interface{}) bool {
-		listener(ctx)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveReloadListener(listenerID events.ListenerID) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	m.events.RemoveListener(eventDocumentUpdated, listenerID)
-}
-
-func (m *Manager) AddChildNodeInsertedListener(listener ChildNodeInsertedListener) events.ListenerID {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.events.AddListener(eventChildNodeInserted, func(ctx context.Context, message interface{}) bool {
-		reply := message.(*dom.ChildNodeInsertedReply)
-
-		listener(ctx, reply.ParentNodeID, reply.PreviousNodeID, reply.Node)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveChildNodeInsertedListener(listenerID events.ListenerID) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	m.events.RemoveListener(eventChildNodeInserted, listenerID)
-}
-
-func (m *Manager) AddChildNodeRemovedListener(listener ChildNodeRemovedListener) events.ListenerID {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.events.AddListener(eventChildNodeRemoved, func(ctx context.Context, message interface{}) bool {
-		reply := message.(*dom.ChildNodeRemovedReply)
-
-		listener(ctx, reply.ParentNodeID, reply.NodeID)
-
-		return true
-	})
-}
-
-func (m *Manager) RemoveChildNodeRemovedListener(listenerID events.ListenerID) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	m.events.RemoveListener(eventChildNodeRemoved, listenerID)
 }
 
 func (m *Manager) addFrameInternal(frame page.FrameTree) {

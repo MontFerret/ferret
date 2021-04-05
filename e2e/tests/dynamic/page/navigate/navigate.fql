@@ -3,4 +3,4 @@ LET p = DOCUMENT("", { driver: "cdp" })
 
 NAVIGATE(p, url)
 
-RETURN T::EQ(p.url, url + '/')
+RETURN T::EQ(p.url, url + '/#/')

@@ -448,47 +448,7 @@ func (v *visitor) doVisitLimitClauseValue(ctx *fql.LimitClauseValueContext, scop
 }
 
 func (v *visitor) doVisitFilterClause(ctx *fql.FilterClauseContext, scope *scope) (core.Expression, error) {
-	exp := ctx.Expression().(*fql.ExpressionContext)
-
-	exps, err := v.doVisitAllExpressions(exp.AllExpression(), scope)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(exps) == 2 {
-		left := exps[0]
-		right := exps[1]
-
-		equalityOp := exp.EqualityOperator()
-
-		if equalityOp != nil {
-			return operators.NewEqualityOperator(v.getSourceMap(ctx), left, right, equalityOp.GetText())
-		}
-
-		regexpOp := exp.RegexpOperator()
-
-		if regexpOp != nil {
-			return operators.NewRegexpOperator(v.getSourceMap(ctx), left, right, regexpOp.GetText())
-		}
-
-		logicalAndOp := exp.LogicalAndOperator()
-
-		if logicalAndOp != nil {
-			return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalAndOp.GetText())
-		}
-
-		logicalOrOp := exp.LogicalOrOperator()
-
-		if logicalOrOp != nil {
-			return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, logicalOrOp.GetText())
-		}
-	} else {
-		// should be unary operator
-		return v.doVisitExpression(exp, scope)
-	}
-
-	return nil, core.Error(ErrInvalidToken, ctx.GetText())
+	return v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
 }
 
 func (v *visitor) doVisitSortClause(ctx *fql.SortClauseContext, scope *scope) ([]*clauses.SorterExpression, error) {
@@ -1288,9 +1248,7 @@ func (v *visitor) doVisitMathOperator(ctx *fql.ExpressionContext, scope *scope) 
 	)
 }
 
-func (v *visitor) doVisitUnaryOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
-	op := ctx.UnaryOperator().(*fql.UnaryOperatorContext)
-
+func (v *visitor) doVisitUnaryOperator(ctx *fql.ExpressionContext, op *fql.UnaryOperatorContext, scope *scope) (core.OperatorExpression, error) {
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 	if err != nil {
@@ -1335,8 +1293,7 @@ func (v *visitor) doVisitLogicalOperator(ctx *fql.ExpressionContext, scope *scop
 	return operators.NewLogicalOperator(v.getSourceMap(ctx), left, right, operator)
 }
 
-func (v *visitor) doVisitEqualityOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
-	equalityOp := ctx.EqualityOperator().(*fql.EqualityOperatorContext)
+func (v *visitor) doVisitEqualityOperator(ctx *fql.ExpressionContext, op *fql.EqualityOperatorContext, scope *scope) (core.OperatorExpression, error) {
 	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 	if err != nil {
@@ -1346,11 +1303,10 @@ func (v *visitor) doVisitEqualityOperator(ctx *fql.ExpressionContext, scope *sco
 	left := exps[0]
 	right := exps[1]
 
-	return operators.NewEqualityOperator(v.getSourceMap(equalityOp), left, right, equalityOp.GetText())
+	return operators.NewEqualityOperator(v.getSourceMap(op), left, right, op.GetText())
 }
 
-func (v *visitor) doVisitRegexpOperator(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
-	regexpOp := ctx.RegexpOperator().(*fql.RegexpOperatorContext)
+func (v *visitor) doVisitRegexpOperator(ctx *fql.ExpressionContext, op *fql.RegexpOperatorContext, scope *scope) (core.Expression, error) {
 	rawExps := ctx.AllExpression()
 	exps, err := v.doVisitAllExpressions(rawExps, scope)
 
@@ -1376,7 +1332,7 @@ func (v *visitor) doVisitRegexpOperator(ctx *fql.ExpressionContext, scope *scope
 		return nil, errors.Wrap(errors.New("expected a string literal or a function call"), src.String())
 	}
 
-	return operators.NewRegexpOperator(v.getSourceMap(regexpOp), left, right, regexpOp.GetText())
+	return operators.NewRegexpOperator(v.getSourceMap(op), left, right, op.GetText())
 }
 
 func (v *visitor) doVisitInOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
@@ -1403,16 +1359,28 @@ func (v *visitor) doVisitInOperator(ctx *fql.ExpressionContext, scope *scope) (c
 	)
 }
 
+func (v *visitor) doVisitLikeOperator(ctx *fql.ExpressionContext, op *fql.LikeOperatorContext, s *scope) (core.Expression, error) {
+	exps, err := v.doVisitAllExpressions(ctx.AllExpression(), s)
+
+	if err != nil {
+		return nil, err
+	}
+
+	left := exps[0]
+	right := exps[1]
+
+	return operators.NewLikeOperator(v.getSourceMap(op), left, right, op.Not() != nil)
+}
+
 func (v *visitor) doVisitArrayOperator(ctx *fql.ExpressionContext, scope *scope) (core.OperatorExpression, error) {
 	var comparator core.OperatorExpression
 	var err error
 
-	switch {
-	case ctx.InOperator() != nil:
+	if op := ctx.InOperator(); op != nil {
 		comparator, err = v.doVisitInOperator(ctx, scope)
-	case ctx.EqualityOperator() != nil:
-		comparator, err = v.doVisitEqualityOperator(ctx, scope)
-	default:
+	} else if op := ctx.EqualityOperator(); op != nil {
+		comparator, err = v.doVisitEqualityOperator(ctx, op.(*fql.EqualityOperatorContext), scope)
+	} else {
 		return nil, v.unexpectedToken(ctx)
 	}
 
@@ -1459,129 +1427,91 @@ func (v *visitor) doVisitExpressionGroup(ctx *fql.ExpressionGroupContext, scope 
 }
 
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
-	seq := ctx.ExpressionGroup()
-
-	if seq != nil {
-		return v.doVisitExpressionGroup(seq.(*fql.ExpressionGroupContext), scope)
+	if exp := ctx.ExpressionGroup(); exp != nil {
+		return v.doVisitExpressionGroup(exp.(*fql.ExpressionGroupContext), scope)
 	}
 
-	member := ctx.MemberExpression()
-
-	if member != nil {
-		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), scope)
+	if exp := ctx.MemberExpression(); exp != nil {
+		return v.doVisitMemberExpression(exp.(*fql.MemberExpressionContext), scope)
 	}
 
-	funCall := ctx.FunctionCallExpression()
-
-	if funCall != nil {
-		return v.doVisitFunctionCallExpression(funCall.(*fql.FunctionCallExpressionContext), scope)
+	if exp := ctx.FunctionCallExpression(); exp != nil {
+		return v.doVisitFunctionCallExpression(exp.(*fql.FunctionCallExpressionContext), scope)
 	}
 
-	notOp := ctx.UnaryOperator()
-
-	if notOp != nil {
-		return v.doVisitUnaryOperator(ctx, scope)
+	if exp := ctx.UnaryOperator(); exp != nil {
+		return v.doVisitUnaryOperator(ctx, exp.(*fql.UnaryOperatorContext), scope)
 	}
 
-	multiOp := ctx.MultiplicativeOperator()
-
-	if multiOp != nil {
+	if exp := ctx.MultiplicativeOperator(); exp != nil {
 		return v.doVisitMathOperator(ctx, scope)
 	}
 
-	addOp := ctx.AdditiveOperator()
-
-	if addOp != nil {
+	if exp := ctx.AdditiveOperator(); exp != nil {
 		return v.doVisitMathOperator(ctx, scope)
 	}
 
-	arrOp := ctx.ArrayOperator()
-
-	if arrOp != nil {
+	if exp := ctx.ArrayOperator(); exp != nil {
 		return v.doVisitArrayOperator(ctx, scope)
 	}
 
-	equalityOp := ctx.EqualityOperator()
-
-	if equalityOp != nil {
-		return v.doVisitEqualityOperator(ctx, scope)
+	if exp := ctx.EqualityOperator(); exp != nil {
+		return v.doVisitEqualityOperator(ctx, exp.(*fql.EqualityOperatorContext), scope)
 	}
 
-	inOp := ctx.InOperator()
-
-	if inOp != nil {
+	if exp := ctx.InOperator(); exp != nil {
 		return v.doVisitInOperator(ctx, scope)
 	}
 
-	logicalAndOp := ctx.LogicalAndOperator()
+	if exp := ctx.LikeOperator(); exp != nil {
+		return v.doVisitLikeOperator(ctx, exp.(*fql.LikeOperatorContext), scope)
+	}
 
-	if logicalAndOp != nil {
+	if exp := ctx.LogicalAndOperator(); exp != nil {
 		return v.doVisitLogicalOperator(ctx, scope)
 	}
 
-	logicalOrOp := ctx.LogicalOrOperator()
-
-	if logicalOrOp != nil {
+	if exp := ctx.LogicalOrOperator(); exp != nil {
 		return v.doVisitLogicalOperator(ctx, scope)
 	}
 
-	regexpOp := ctx.RegexpOperator()
-
-	if regexpOp != nil {
-		return v.doVisitRegexpOperator(ctx, scope)
+	if exp := ctx.RegexpOperator(); exp != nil {
+		return v.doVisitRegexpOperator(ctx, exp.(*fql.RegexpOperatorContext), scope)
 	}
 
-	variable := ctx.Variable()
-
-	if variable != nil {
-		return v.doVisitVariable(variable.(*fql.VariableContext), scope)
+	if exp := ctx.Variable(); exp != nil {
+		return v.doVisitVariable(exp.(*fql.VariableContext), scope)
 	}
 
-	str := ctx.StringLiteral()
-
-	if str != nil {
-		return v.doVisitStringLiteral(str.(*fql.StringLiteralContext))
+	if exp := ctx.StringLiteral(); exp != nil {
+		return v.doVisitStringLiteral(exp.(*fql.StringLiteralContext))
 	}
 
-	integ := ctx.IntegerLiteral()
-
-	if integ != nil {
-		return v.doVisitIntegerLiteral(integ.(*fql.IntegerLiteralContext))
+	if exp := ctx.IntegerLiteral(); exp != nil {
+		return v.doVisitIntegerLiteral(exp.(*fql.IntegerLiteralContext))
 	}
 
-	float := ctx.FloatLiteral()
-
-	if float != nil {
-		return v.doVisitFloatLiteral(float.(*fql.FloatLiteralContext))
+	if exp := ctx.FloatLiteral(); exp != nil {
+		return v.doVisitFloatLiteral(exp.(*fql.FloatLiteralContext))
 	}
 
-	boolean := ctx.BooleanLiteral()
-
-	if boolean != nil {
-		return v.doVisitBooleanLiteral(boolean.(*fql.BooleanLiteralContext))
+	if exp := ctx.BooleanLiteral(); exp != nil {
+		return v.doVisitBooleanLiteral(exp.(*fql.BooleanLiteralContext))
 	}
 
-	arr := ctx.ArrayLiteral()
-
-	if arr != nil {
-		return v.doVisitArrayLiteral(arr.(*fql.ArrayLiteralContext), scope)
+	if exp := ctx.ArrayLiteral(); exp != nil {
+		return v.doVisitArrayLiteral(exp.(*fql.ArrayLiteralContext), scope)
 	}
 
-	obj := ctx.ObjectLiteral()
-
-	if obj != nil {
-		return v.doVisitObjectLiteral(obj.(*fql.ObjectLiteralContext), scope)
+	if exp := ctx.ObjectLiteral(); exp != nil {
+		return v.doVisitObjectLiteral(exp.(*fql.ObjectLiteralContext), scope)
 	}
 
-	none := ctx.NoneLiteral()
-
-	if none != nil {
-		return v.doVisitNoneLiteral(none.(*fql.NoneLiteralContext))
+	if exp := ctx.NoneLiteral(); exp != nil {
+		return v.doVisitNoneLiteral(exp.(*fql.NoneLiteralContext))
 	}
 
-	questionCtx := ctx.QuestionMark()
-
-	if questionCtx != nil {
+	if exp := ctx.QuestionMark(); exp != nil {
 		exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
 
 		if err != nil {
@@ -1595,19 +1525,14 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		)
 	}
 
-	rangeOp := ctx.RangeOperator()
-
-	if rangeOp != nil {
-		return v.doVisitRangeOperator(rangeOp.(*fql.RangeOperatorContext), scope)
+	if exp := ctx.RangeOperator(); exp != nil {
+		return v.doVisitRangeOperator(exp.(*fql.RangeOperatorContext), scope)
 	}
 
-	param := ctx.Param()
-
-	if param != nil {
+	if param := ctx.Param(); param != nil {
 		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
 	}
 
-	// TODO: Complete it
 	return nil, ErrNotImplemented
 }
 

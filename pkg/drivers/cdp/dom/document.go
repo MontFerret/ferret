@@ -454,6 +454,10 @@ func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float, opti
 	return doc.input.ScrollByXY(ctx, float64(x), float64(y), options)
 }
 
+func (doc *HTMLDocument) Eval(ctx context.Context, expression string) (core.Value, error) {
+	return doc.exec.EvalWithReturnValue(ctx, expression)
+}
+
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {
 	return doc.logger.
 		Error().

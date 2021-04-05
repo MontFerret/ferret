@@ -51,12 +51,6 @@ func enableFeatures(ctx context.Context, client *cdp.Client, params drivers.Para
 		func() error {
 			ua := common.GetUserAgent(params.UserAgent)
 
-			//logger.
-			//	Debug().
-			//	Timestamp().
-			//	Str("user-agent", ua).
-			//	Msg("using User-Agent")
-
 			// do not use custom user agent
 			if ua == "" {
 				return nil

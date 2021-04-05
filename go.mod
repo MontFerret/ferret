@@ -13,6 +13,7 @@ require (
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/corpix/uarand v0.1.1
 	github.com/derekparker/trie v0.0.0-20200317170641-1fdf38b7b0e9
+	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
 	github.com/mafredri/cdp v0.30.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
