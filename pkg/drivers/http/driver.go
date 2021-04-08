@@ -3,6 +3,8 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/gobwas/glob"
 	"io"
 	"net/http"
@@ -16,7 +18,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 const DriverName = "http"
@@ -87,40 +88,18 @@ func (drv *Driver) Name() string {
 
 func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	req, err := http.NewRequest(http.MethodGet, params.URL, nil)
-
 	if err != nil {
 		return nil, err
 	}
 
-	logger := logging.FromContext(ctx)
-
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9,ru;q=0.8")
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Pragma", "no-cache")
-
 	params = drivers.SetDefaultParams(drv.options.Options, params)
 
-	req = req.WithContext(ctx)
-
-	ua := common.GetUserAgent(params.UserAgent)
-
-	logger.
-		Debug().
-		Timestamp().
-		Str("user-agent", ua).
-		Msg("using User-Agent")
-
-	if ua != "" {
-		req.Header.Set("User-Agent", ua)
-	}
+	drv.makeRequest(ctx, req, params)
 
 	resp, err := drv.client.Do(req)
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to retrieve a document %s", params.URL)
 	}
-
 	defer resp.Body.Close()
 
 	var queryFilters []drivers.StatusCodeFilter
@@ -147,7 +126,6 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	}
 
 	cookies, err := toDriverCookies(resp.Cookies())
-
 	if err != nil {
 		return nil, err
 	}
@@ -227,4 +205,57 @@ func (drv *Driver) convertToUTF8(reader io.Reader, srcCharset string) (data io.R
 	}
 
 	return
+}
+
+func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params drivers.Params){
+	logger := logging.FromContext(ctx)
+
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9,ru;q=0.8")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Pragma", "no-cache")
+
+	params.Headers.ForEach(func(value []string, key string) bool {
+		v := params.Headers.Get(key)
+
+		req.Header.Add(key, v)
+
+		logger.
+			Debug().
+			Timestamp().
+			Str("header", key).
+			Msg("set header")
+
+		return true
+	})
+
+	params.Cookies.ForEach(func(value drivers.HTTPCookie, key values.String) bool {
+		v, exist := params.Cookies.Get(key)
+		if !exist {
+			return false
+		}
+
+		req.AddCookie(fromDriverCookie(v))
+
+		logger.
+			Debug().
+			Timestamp().
+			Str("cookie", key.String()).
+			Msg("set cookie")
+
+		return true
+	})
+
+	ua := common.GetUserAgent(params.UserAgent)
+	logger.
+		Debug().
+		Timestamp().
+		Str("user-agent", ua).
+		Msg("using User-Agent")
+
+	if ua != "" {
+		req.Header.Set("User-Agent", ua)
+	}
+
+	req = req.WithContext(ctx)
 }
