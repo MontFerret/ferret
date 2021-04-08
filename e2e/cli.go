@@ -87,7 +87,6 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
-			return
 		}
 
 		query = string(b)
@@ -98,7 +97,6 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
-			return
 		}
 
 		query = string(content)

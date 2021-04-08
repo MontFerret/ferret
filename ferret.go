@@ -40,7 +40,7 @@ func (i *Instance) Exec(ctx context.Context, query string, opts ...runtime.Optio
 		return nil, err
 	}
 
-	for _, drv := range i.drivers.RegisteredDrivers() {
+	for _, drv := range i.drivers.GetAll() {
 		ctx = drivers.WithContext(ctx, drv)
 	}
 

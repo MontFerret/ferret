@@ -14,13 +14,13 @@ func NewContainer() *Container {
 	}
 }
 
-func (c *Container) HasDriver(name string) bool {
+func (c *Container) Has(name string) bool {
 	_, exists := c.drivers[name]
 
 	return exists
 }
 
-func (c *Container) RegisterDriver(drv Driver) error {
+func (c *Container) Register(drv Driver) error {
 	if drv == nil {
 		return core.Error(core.ErrMissedArgument, "driver")
 	}
@@ -37,13 +37,17 @@ func (c *Container) RegisterDriver(drv Driver) error {
 	return nil
 }
 
-func (c *Container) RegisteredDriver(name string) (Driver, bool) {
+func (c *Container) Remove(name string) {
+	delete(c.drivers, name)
+}
+
+func (c *Container) Get(name string) (Driver, bool) {
 	found, exists := c.drivers[name]
 
 	return found, exists
 }
 
-func (c *Container) RegisteredDrivers() []Driver {
+func (c *Container) GetAll() []Driver {
 	res := make([]Driver, 0, len(c.drivers))
 
 	for _, drv := range c.drivers {
@@ -51,8 +55,4 @@ func (c *Container) RegisteredDrivers() []Driver {
 	}
 
 	return res
-}
-
-func (c *Container) RemoveDriver(name string) {
-	delete(c.drivers, name)
 }
