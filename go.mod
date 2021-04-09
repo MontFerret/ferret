@@ -16,9 +16,7 @@ require (
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/wI2L/jettison v0.7.1
-	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
-	golang.org/x/text v0.3.2
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/text v0.3.3
 )
