@@ -104,7 +104,7 @@ func TestBody(t *testing.T) {
 
 		value, err := s.Exec(context.Background(), scope)
 		So(err, ShouldNotBeNil)
-		So(err, ShouldHaveSameTypeAs, core.ErrNotFound)
+		So(err.(*core.SourceErrorDetail).BaseError, ShouldHaveSameTypeAs, core.ErrNotFound)
 		So(value, ShouldHaveSameTypeAs, values.None)
 	})
 
