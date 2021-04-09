@@ -34,3 +34,7 @@ func (p *Parser) AddErrorListener(listener antlr.ErrorListener) {
 func (p *Parser) Visit(visitor fql.FqlParserVisitor) interface{} {
 	return visitor.VisitProgram(p.tree.Program().(*fql.ProgramContext))
 }
+
+func (p *Parser) Walk(listener fql.FqlParserListener) {
+	antlr.ParseTreeWalkerDefault.Walk(listener, p.tree.Program())
+}
