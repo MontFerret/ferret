@@ -7,6 +7,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type SourceErrorDetail struct {
+	BaseError    error
+	ComputeError error
+}
+
+func (e *SourceErrorDetail) Error() string {
+	return e.ComputeError.Error()
+}
+
 var (
 	ErrMissedArgument        = errors.New("missed argument")
 	ErrInvalidArgument       = errors.New("invalid argument")
@@ -26,7 +35,10 @@ var (
 const typeErrorTemplate = "expected %s, but got %s"
 
 func SourceError(src SourceMap, err error) error {
-	return errors.Errorf("%s: %s", err.Error(), src.String())
+	return &SourceErrorDetail{
+		BaseError:    err,
+		ComputeError: errors.Errorf("%s: %s", err.Error(), src.String()),
+	}
 }
 
 func TypeError(actual Type, expected ...Type) error {
