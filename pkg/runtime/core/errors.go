@@ -8,7 +8,7 @@ import (
 )
 
 type SourceErrorDetail struct {
-	BaseError string
+	BaseError    string
 	ComputeError string
 }
 
