@@ -61,7 +61,7 @@ func TestParameterExpressionExec(t *testing.T) {
 		value, err := notExistExp.Exec(ctx, &core.Scope{})
 
 		So(err, ShouldNotBeNil)
-		So(err, ShouldHaveSameTypeAs, core.ErrNotFound)
+		So(err.(*core.SourceErrorDetail).BaseError, ShouldHaveSameTypeAs, core.ErrNotFound)
 		So(value.Type().Equals(types.None), ShouldBeTrue)
 	})
 }

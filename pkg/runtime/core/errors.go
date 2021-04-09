@@ -8,12 +8,12 @@ import (
 )
 
 type SourceErrorDetail struct {
-	BaseError    string
-	ComputeError string
+	BaseError    error
+	ComputeError error
 }
 
 func (e *SourceErrorDetail) Error() string {
-	return e.ComputeError
+	return e.ComputeError.Error()
 }
 
 var (
@@ -35,11 +35,9 @@ var (
 const typeErrorTemplate = "expected %s, but got %s"
 
 func SourceError(src SourceMap, err error) error {
-	ce := errors.Errorf("%s: %s", err.Error(), src.String())
-
 	return &SourceErrorDetail{
-		BaseError:    err.Error(),
-		ComputeError: ce.Error(),
+		BaseError:    err,
+		ComputeError: errors.Errorf("%s: %s", err.Error(), src.String()),
 	}
 }
 
