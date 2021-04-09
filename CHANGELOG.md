@@ -1,5 +1,15 @@
 ## Changelog
 
+### 0.15.0
+#### Added
+- Support of document charset in HTTP driver [#609](https://github.com/MontFerret/ferret/pull/609)
+- ``Walk`` method to FQL Parser [80c278e](https://github.com/MontFerret/ferret/commit/80c278ec6c783e29a8df12865da8208d1c148c65)
+#### Changed
+- Moved CLI to a separate repository [#608](https://github.com/MontFerret/ferret/pull/608)
+
+#### Fixed
+- Passing headers and cookies to HTTP driver [#614](https://github.com/MontFerret/ferret/pull/614)
+
 ### 0.14.1
 #### Fixed
 - Parsing HTTP headers and cookies [#598](https://github.com/MontFerret/ferret/pull/598)
