@@ -3,9 +3,10 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestMember(t *testing.T) {
@@ -118,6 +119,124 @@ func TestMember(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(string(out), ShouldEqual, `"wsx"`)
+		})
+
+		Convey("ObjectDecl by literal", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				RETURN { foo: "bar" }.foo
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `"bar"`)
+		})
+
+		Convey("ObjectDecl by literal passed to func call", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `{"second":"third"}`)
+		})
+
+		Convey("ObjectDecl by literal as forSource", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				FOR v, k IN {f: {foo: "bar"}}.f
+					RETURN [k, v]
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `[["foo","bar"]]`)
+		})
+
+		Convey("ObjectDecl by literal as expression", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				LET inexp = 1 IN {'foo': [1]}.foo
+				LET ternaryexp = FALSE ? TRUE : {foo: TRUE}.foo
+				RETURN inexp && ternaryexp
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `true`)
+		})
+
+		Convey("ArrayDecl by literal", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				RETURN ["bar", "foo"][0]
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `"bar"`)
+		})
+
+		Convey("ArrayDecl by literal passed to func call", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				RETURN FIRST([[1, 2]][0])
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `1`)
+		})
+
+		Convey("ArrayDecl by literal as forSource", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				FOR i IN [[1, 2]][0]
+					RETURN i
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `[1,2]`)
+		})
+
+		Convey("ArrayDecl by literal as expression", func() {
+			c := compiler.New()
+
+			p, err := c.Compile(`
+				LET inexp = 1 IN [[1]][0]
+				LET ternaryexp = FALSE ? TRUE : [TRUE][0]
+				RETURN inexp && ternaryexp
+			`)
+			So(err, ShouldBeNil)
+
+			out, err := p.Run(context.Background())
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `true`)
 		})
 
 		Convey("Deep path", func() {

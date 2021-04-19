@@ -1,3 +1,5 @@
+// $antlr-format off <-- used by VS Code Antlr extension
+
 parser grammar FqlParser;
 
 options { tokenVocab=FqlLexer; }
@@ -262,6 +264,8 @@ member
     : Identifier
     | functionCallExpression
     | param
+    | objectLiteral
+    | arrayLiteral
     ;
 
 memberPath
