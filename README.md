@@ -55,3 +55,7 @@ It is extremely portable, extensible, and fast.
 * Extensible
 
 Documentation is available [at our website](https://www.montferret.dev/docs/introduction/).
+
+### Different languages
+
+* Ferret for python. [Pyfer](https://github.com/MontFerret/pyfer)
