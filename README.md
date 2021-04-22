@@ -12,7 +12,7 @@
 	<a href="https://discord.gg/kzet32U">
 		<img alt="Discord Chat" src="https://img.shields.io/discord/501533080880676864.svg">
 	</a>
-	<a href="https://t.me/montferret">
+	<a href="https://t.me/montferret_chat">
 		<img alt="Discord Chat" src="https://raw.githubusercontent.com/Patrolavia/telegram-badge/master/chat.svg">
 	</a>
 	<a href="https://github.com/MontFerret/ferret/releases">
