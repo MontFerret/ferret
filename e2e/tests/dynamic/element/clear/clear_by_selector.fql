@@ -13,4 +13,16 @@ LET output = ELEMENT(doc, "#text_output")
 
 T::EMPTY(output.innerText)
 
+INPUT(form, "#text_input", "test0-test1", 100)
+
+INPUT_CLEAR(form, "#text_input")
+
+T::EMPTY(output.innerText)
+
+INPUT(form, "#text_input", "test0&test1", 100)
+
+INPUT_CLEAR(form, "#text_input")
+
+T::EMPTY(output.innerText)
+
 RETURN NONE

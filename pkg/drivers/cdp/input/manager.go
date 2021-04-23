@@ -399,7 +399,7 @@ func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 func (m *Manager) ClearByXY(ctx context.Context, points Quad) error {
 	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
-	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, 2)
+	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, 3)
 
 	if err != nil {
 		return err
