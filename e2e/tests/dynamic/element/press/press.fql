@@ -1,0 +1,14 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET page = DOCUMENT(url, true)
+
+LET input = ELEMENT(page, "#press-input")
+
+FOCUS(input)
+
+PRESS(page, "Enter")
+
+WAIT(100)
+
+T::EQ(INNER_TEXT(page, "#press-content"), "Enter")
+
+RETURN NONE

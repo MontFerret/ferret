@@ -7,8 +7,5 @@ import (
 )
 
 func randomDuration(delay int) time.Duration {
-	max, min := core.NumberBoundaries(float64(delay))
-	value := core.Random(max, min)
-
-	return time.Duration(int64(value))
+	return time.Duration(core.Random2(float64(delay)))
 }

@@ -111,6 +111,10 @@ type (
 
 		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
 
+		Press(ctx context.Context, keys []values.String, count values.Int) error
+
+		PressBySelector(ctx context.Context, selector values.String, keys []values.String, count values.Int) error
+
 		Select(ctx context.Context, value *values.Array) (*values.Array, error)
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)

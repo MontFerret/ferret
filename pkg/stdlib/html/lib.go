@@ -48,6 +48,8 @@ func RegisterLib(ns core.Namespace) error {
 			"PAGINATION":        Pagination,
 			"PARSE":             Parse,
 			"PDF":               PDF,
+			"PRESS":             Press,
+			"PRESS_SELECTOR":    PressSelector,
 			"SCREENSHOT":        Screenshot,
 			"SCROLL":            ScrollXY,
 			"SCROLL_BOTTOM":     ScrollBottom,
