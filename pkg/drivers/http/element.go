@@ -551,11 +551,11 @@ func (el *HTMLElement) InputBySelector(_ context.Context, _ values.String, _ cor
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) Press(_ context.Context, _ []values.String, count values.Int) error {
+func (el *HTMLElement) Press(_ context.Context, _ []values.String, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) PressBySelector(_ context.Context, _ values.String, _ []values.String, count values.Int) error {
+func (el *HTMLElement) PressBySelector(_ context.Context, _ values.String, _ []values.String, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
