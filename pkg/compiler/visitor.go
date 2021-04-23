@@ -1453,7 +1453,6 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 	}
 
 	if exp := ctx.Variable(); exp != nil {
-		fmt.Println("HEHRE")
 		return v.doVisitVariable(exp.(*fql.VariableContext), scope)
 	}
 

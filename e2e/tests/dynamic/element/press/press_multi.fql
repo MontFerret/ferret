@@ -1,0 +1,13 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET page = DOCUMENT(url, true)
+
+LET input = ELEMENT(page, "#press-input")
+
+FOCUS(input)
+INPUT(input, "foo")
+
+PRESS(page, "Backspace", 3) // Clear
+
+T::EQ(input.value, "")
+
+RETURN NONE

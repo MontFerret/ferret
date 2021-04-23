@@ -953,6 +953,14 @@ func (el *HTMLElement) InputBySelector(ctx context.Context, selector values.Stri
 	})
 }
 
+func (el *HTMLElement) Press(ctx context.Context, keys []values.String, count values.Int) error {
+	return el.input.Press(ctx, values.UnwrapStrings(keys), int(count))
+}
+
+func (el *HTMLElement) PressBySelector(ctx context.Context, selector values.String, keys []values.String, count values.Int) error {
+	return el.input.PressBySelector(ctx, el.id.NodeID, selector.String(), values.UnwrapStrings(keys), int(count))
+}
+
 func (el *HTMLElement) Clear(ctx context.Context) error {
 	return el.input.Clear(ctx, el.id.ObjectID)
 }

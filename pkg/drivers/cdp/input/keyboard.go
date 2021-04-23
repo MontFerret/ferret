@@ -6,10 +6,7 @@ import (
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/input"
-	"github.com/pkg/errors"
 )
-
-const DefaultDelay = 25
 
 type (
 	KeyboardModifier int
@@ -81,33 +78,63 @@ func (k *Keyboard) Type(ctx context.Context, text string, delay time.Duration) e
 	return nil
 }
 
-func (k *Keyboard) Press(ctx context.Context, name string) error {
-	key, found := usKeyboardLayout[name]
+func (k *Keyboard) Press(ctx context.Context, keys []string, count int, delay time.Duration) error {
+	for i := 0; i < count; i++ {
+		if i > 0 {
+			downDelay := randomDuration(int(delay))
+			time.Sleep(downDelay)
+		}
 
-	if !found {
-		return errors.New("invalid key")
+		if err := k.press(ctx, keys, delay); err != nil {
+			return err
+		}
 	}
 
-	err := k.client.Input.DispatchKeyEvent(
-		ctx,
-		input.NewDispatchKeyEventArgs("keyDown").
-			SetCode(key.Code).
-			SetKey(key.Key).
-			SetWindowsVirtualKeyCode(key.KeyCode),
-	)
+	return nil
+}
 
-	if err != nil {
-		return err
+func (k *Keyboard) press(ctx context.Context, keys []string, delay time.Duration) error {
+	for i, key := range keys {
+		if i > 0 {
+			downDelay := randomDuration(int(delay))
+			time.Sleep(downDelay)
+		}
+
+		if err := k.client.Input.DispatchKeyEvent(
+			ctx,
+			k.createPressEvent("keyDown", key),
+		); err != nil {
+			return err
+		}
 	}
 
-	releaseDelay := randomDuration(DefaultDelay)
-	time.Sleep(releaseDelay)
+	for _, key := range keys {
+		upDelay := randomDuration(int(delay))
+		time.Sleep(upDelay)
 
-	return k.client.Input.DispatchKeyEvent(
-		ctx,
-		input.NewDispatchKeyEventArgs("keyUp").
+		if err := k.client.Input.DispatchKeyEvent(
+			ctx,
+			k.createPressEvent("keyUp", key),
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (k *Keyboard) createPressEvent(event string, chars string) *input.DispatchKeyEventArgs {
+	args := input.NewDispatchKeyEventArgs(event)
+
+	key, found := usKeyboardLayout[chars]
+
+	if found {
+		args.
 			SetCode(key.Code).
 			SetKey(key.Key).
-			SetWindowsVirtualKeyCode(key.KeyCode),
-	)
+			SetModifiers(int(key.Modifier)).
+			SetWindowsVirtualKeyCode(key.KeyCode)
+	}
+
+	return args
 }
