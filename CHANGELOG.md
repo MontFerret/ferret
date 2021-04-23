@@ -4,11 +4,15 @@
 #### Added
 - Support of document charset in HTTP driver [#609](https://github.com/MontFerret/ferret/pull/609)
 - ``Walk`` method to FQL Parser [80c278e](https://github.com/MontFerret/ferret/commit/80c278ec6c783e29a8df12865da8208d1c148c65)
+- Possibility to send keyboard events like 'Enter' or 'Shift' [#618](https://github.com/MontFerret/ferret/pull/618)
+
 #### Changed
 - Moved CLI to a separate repository [#608](https://github.com/MontFerret/ferret/pull/608)
 
 #### Fixed
 - Passing headers and cookies to HTTP driver [#614](https://github.com/MontFerret/ferret/pull/614)
+- Reading property of anyonymous object [#616](https://github.com/MontFerret/ferret/pull/616)
+- Clearing input text containing special characteers [#619](https://github.com/MontFerret/ferret/pull/619)
 
 ### 0.14.1
 #### Fixed
