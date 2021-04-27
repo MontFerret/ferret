@@ -1,0 +1,5 @@
+LET proxy_header = {"Proxy-Authorization": ["Basic e40b7d5eff464a4fb51efed2d1a19a24"]}
+
+LET doc = DOCUMENT("https://google.com", { headers: proxy_header})
+
+RETURN doc

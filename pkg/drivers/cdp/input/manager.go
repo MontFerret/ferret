@@ -399,13 +399,25 @@ func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 func (m *Manager) ClearByXY(ctx context.Context, points Quad) error {
 	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
-	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, 2)
+	err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, 3)
 
 	if err != nil {
 		return err
 	}
 
-	return m.keyboard.Press(ctx, "Backspace")
+	return m.keyboard.Press(ctx, []string{"Backspace"}, 1, time.Duration(drivers.DefaultKeyboardDelay)*time.Millisecond)
+}
+
+func (m *Manager) Press(ctx context.Context, keys []string, count int) error {
+	return m.keyboard.Press(ctx, keys, count, time.Duration(drivers.DefaultKeyboardDelay)*time.Millisecond)
+}
+
+func (m *Manager) PressBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, keys []string, count int) error {
+	if err := m.FocusBySelector(ctx, parentNodeID, selector); err != nil {
+		return err
+	}
+
+	return m.Press(ctx, keys, count)
 }
 
 func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, value *values.Array) (*values.Array, error) {

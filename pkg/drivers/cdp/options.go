@@ -4,13 +4,9 @@ import "github.com/MontFerret/ferret/pkg/drivers"
 
 type (
 	Options struct {
-		Name        string
-		Proxy       string
-		UserAgent   string
+		*drivers.Options
 		Address     string
 		KeepCookies bool
-		Headers     drivers.HTTPHeaders
-		Cookies     drivers.HTTPCookies
 	}
 
 	Option func(opts *Options)
@@ -18,8 +14,9 @@ type (
 
 const DefaultAddress = "http://127.0.0.1:9222"
 
-func newOptions(setters []Option) *Options {
+func NewOptions(setters []Option) *Options {
 	opts := new(Options)
+	opts.Options = new(drivers.Options)
 	opts.Name = DriverName
 	opts.Address = DefaultAddress
 
@@ -40,13 +37,13 @@ func WithAddress(address string) Option {
 
 func WithProxy(address string) Option {
 	return func(opts *Options) {
-		opts.Proxy = address
+		drivers.WithProxy(address)(opts.Options)
 	}
 }
 
 func WithUserAgent(value string) Option {
 	return func(opts *Options) {
-		opts.UserAgent = value
+		drivers.WithUserAgent(value)(opts.Options)
 	}
 }
 
@@ -58,50 +55,30 @@ func WithKeepCookies() Option {
 
 func WithCustomName(name string) Option {
 	return func(opts *Options) {
-		opts.Name = name
+		drivers.WithCustomName(name)(opts.Options)
 	}
 }
 
-func WithHeader(name string, value []string) Option {
+func WithHeader(name string, header []string) Option {
 	return func(opts *Options) {
-		if opts.Headers == nil {
-			opts.Headers = make(drivers.HTTPHeaders)
-		}
-
-		opts.Headers[name] = value
+		drivers.WithHeader(name, header)(opts.Options)
 	}
 }
 
-func WithHeaders(headers drivers.HTTPHeaders) Option {
+func WithHeaders(headers *drivers.HTTPHeaders) Option {
 	return func(opts *Options) {
-		if opts.Headers == nil {
-			opts.Headers = make(drivers.HTTPHeaders)
-		}
-
-		for k, v := range headers {
-			opts.Headers[k] = v
-		}
+		drivers.WithHeaders(headers)(opts.Options)
 	}
 }
 
 func WithCookie(cookie drivers.HTTPCookie) Option {
 	return func(opts *Options) {
-		if opts.Cookies == nil {
-			opts.Cookies = make(drivers.HTTPCookies)
-		}
-
-		opts.Cookies[cookie.Name] = cookie
+		drivers.WithCookie(cookie)(opts.Options)
 	}
 }
 
 func WithCookies(cookies []drivers.HTTPCookie) Option {
 	return func(opts *Options) {
-		if opts.Cookies == nil {
-			opts.Cookies = make(drivers.HTTPCookies)
-		}
-
-		for _, c := range cookies {
-			opts.Cookies[c.Name] = c
-		}
+		drivers.WithCookies(cookies)(opts.Options)
 	}
 }

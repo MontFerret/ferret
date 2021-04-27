@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 
@@ -25,14 +26,31 @@ type PageLoadParams struct {
 // @param {Int} [params.timeout=60000] - Page load timeout.
 // @param {String} [params.userAgent] - Custom user agent.
 // @param {Boolean} [params.keepCookies=False] - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
-// @param {HTTPCookies} [params.cookies] - Set of HTTP cookies to use during page loading.
-// @param {HTTPHeaders} [params.headers] - Set of HTTP headers to use during page loading.
+// @param {Object[] | Object} [params.cookies] - Set of HTTP cookies to use during page loading.
+// @param {String} params.cookies.*.name - Cookie name.
+// @param {String} params.cookies.*.value - Cookie value.
+// @param {String} params.cookies.*.path - Cookie path.
+// @param {String} params.cookies.*.domain - Cookie domain.
+// @param {Int} [params.cookies.*.maxAge] - Cookie max age.
+// @param {String|DateTime} [params.cookies.*.expires] - Cookie expiration date time.
+// @param {String} [params.cookies.*.sameSite] - Cookie cross-origin policy.
+// @param {Boolean} [params.cookies.*.httpOnly=false] - Cookie cannot be accessed through client side script.
+// @param {Boolean} [params.cookies.*.secure=false] - Cookie sent to the server only with an encrypted request over the HTTPS protocol.
+// @param {Object} [params.headers] - Set of HTTP headers to use during page loading.
+// @param {Object} [params.ignore] - Set of parameters to ignore some page functionality or behavior.
+// @param {Object[]} [params.ignore.resources] - Collection of rules to ignore resources during page load and navigation.
+// @param {String} [params.ignore.resources.*.url] - Resource url pattern. If set, requests for matching urls will be blocked. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
+// @param {String} [params.ignore.resources.*.type] - Resource type. If set, requests for matching resource types will be blocked.
+// @param {Object[]} [params.ignore.statusCodes] - Collection of rules to ignore certain HTTP codes that can cause failures.
+// @param {String} [params.ignore.statusCodes.*.url] - Url pattern. If set, codes for matching urls will be ignored. Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed. Escape character is backslash. Omitting is equivalent to "*".
+// @param {Int} [params.ignore.statusCodes.*.code] - HTTP code to ignore.
 // @param {Object} [params.viewport] - Viewport params.
 // @param {Int} [params.viewport.height] - Viewport height.
 // @param {Int} [params.viewport.width] - Viewport width.
 // @param {Float} [params.viewport.scaleFactor] - Viewport scale factor.
 // @param {Boolean} [params.viewport.mobile] - Value that indicates whether to emulate mobile device.
 // @param {Boolean} [params.viewport.landscape] - Value that indicates whether to render a page in landscape position.
+// @param {String} [params.charset] - (only HTTPDriver) Source charset content to convert UTF-8.
 // @return {HTMLPage} - Loaded HTML page.
 func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
@@ -160,7 +178,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 
 				res.Cookies = cookies
 			default:
-				res.Cookies = make(drivers.HTTPCookies)
+				res.Cookies = drivers.NewHTTPCookies()
 			}
 		}
 
@@ -186,6 +204,28 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 
 			res.Viewport = viewport
 		}
+
+		ignore, exists := obj.Get(values.NewString("ignore"))
+
+		if exists {
+			ignore, err := parseIgnore(ignore)
+
+			if err != nil {
+				return res, err
+			}
+
+			res.Ignore = ignore
+		}
+
+		charset, exists := obj.Get(values.NewString("charset"))
+
+		if exists {
+			if err := core.ValidateType(charset, types.String); err != nil {
+				return res, err
+			}
+
+			res.Charset = charset.String()
+		}
 	case types.String:
 		res.Driver = arg.(values.String).String()
 	case types.Boolean:
@@ -200,9 +240,13 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 	return res, nil
 }
 
-func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
+func parseCookieObject(obj *values.Object) (*drivers.HTTPCookies, error) {
+	if obj == nil {
+		return nil, errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
 	var err error
-	res := make(drivers.HTTPCookies)
+	res := drivers.NewHTTPCookies()
 
 	obj.ForEach(func(value core.Value, _ string) bool {
 		cookie, e := parseCookie(value)
@@ -213,7 +257,7 @@ func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
 			return false
 		}
 
-		res[cookie.Name] = cookie
+		res.Set(cookie)
 
 		return true
 	})
@@ -221,9 +265,13 @@ func parseCookieObject(obj *values.Object) (drivers.HTTPCookies, error) {
 	return res, err
 }
 
-func parseCookieArray(arr *values.Array) (drivers.HTTPCookies, error) {
+func parseCookieArray(arr *values.Array) (*drivers.HTTPCookies, error) {
+	if arr == nil {
+		return nil, errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
 	var err error
-	res := make(drivers.HTTPCookies)
+	res := drivers.NewHTTPCookies()
 
 	arr.ForEach(func(value core.Value, _ int) bool {
 		cookie, e := parseCookie(value)
@@ -234,7 +282,7 @@ func parseCookieArray(arr *values.Array) (drivers.HTTPCookies, error) {
 			return false
 		}
 
-		res[cookie.Name] = cookie
+		res.Set(cookie)
 
 		return true
 	})
@@ -275,14 +323,14 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	expires, exists := co.Get("expires")
 
 	if exists {
-		if err = core.ValidateType(maxAge, types.DateTime, types.String); err != nil {
+		if err = core.ValidateType(expires, types.DateTime, types.String); err != nil {
 			return drivers.HTTPCookie{}, err
 		}
 
 		if expires.Type() == types.DateTime {
 			cookie.Expires = expires.(values.DateTime).Unwrap().(time.Time)
 		} else {
-			t, err := time.Parse(expires.String(), values.DefaultTimeLayout)
+			t, err := time.Parse(values.DefaultTimeLayout, expires.String())
 
 			if err != nil {
 				return drivers.HTTPCookie{}, err
@@ -330,11 +378,25 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 	return cookie, err
 }
 
-func parseHeader(headers *values.Object) drivers.HTTPHeaders {
-	res := make(drivers.HTTPHeaders)
+func parseHeader(headers *values.Object) *drivers.HTTPHeaders {
+	res := drivers.NewHTTPHeaders()
 
 	headers.ForEach(func(value core.Value, key string) bool {
-		res.Set(key, value.String())
+		if value.Type() == types.Array {
+			value := value.(*values.Array)
+
+			keyValues := make([]string, 0, value.Length())
+
+			value.ForEach(func(v core.Value, idx int) bool {
+				keyValues = append(keyValues, v.String())
+
+				return true
+			})
+
+			res.SetArr(key, keyValues)
+		} else {
+			res.Set(key, value.String())
+		}
 
 		return true
 	})
@@ -387,6 +449,97 @@ func parseViewport(value core.Value) (*drivers.Viewport, error) {
 
 	if exists {
 		res.ScaleFactor = float64(values.ToFloat(scaleFactor))
+	}
+
+	return res, nil
+}
+
+func parseIgnore(value core.Value) (*drivers.Ignore, error) {
+	if err := core.ValidateType(value, types.Object); err != nil {
+		return nil, err
+	}
+
+	res := &drivers.Ignore{}
+
+	ignore := value.(*values.Object)
+
+	resources, exists := ignore.Get("resources")
+
+	if exists {
+		if err := core.ValidateType(resources, types.Array); err != nil {
+			return nil, err
+		}
+
+		resources := resources.(*values.Array)
+
+		res.Resources = make([]drivers.ResourceFilter, 0, resources.Length())
+
+		var e error
+
+		resources.ForEach(func(el core.Value, idx int) bool {
+			if e = core.ValidateType(el, types.Object); e != nil {
+				return false
+			}
+
+			pattern := el.(*values.Object)
+
+			url, urlExists := pattern.Get("url")
+			resType, resTypeExists := pattern.Get("type")
+
+			// ignore element
+			if !urlExists && !resTypeExists {
+				return true
+			}
+
+			res.Resources = append(res.Resources, drivers.ResourceFilter{
+				URL:  url.String(),
+				Type: resType.String(),
+			})
+
+			return true
+		})
+
+		if e != nil {
+			return nil, e
+		}
+	}
+
+	statusCodes, exists := ignore.Get("statusCodes")
+
+	if exists {
+		if err := core.ValidateType(statusCodes, types.Array); err != nil {
+			return nil, err
+		}
+
+		statusCodes := statusCodes.(*values.Array)
+
+		res.StatusCodes = make([]drivers.StatusCodeFilter, 0, statusCodes.Length())
+
+		var e error
+
+		statusCodes.ForEach(func(el core.Value, idx int) bool {
+			if e = core.ValidateType(el, types.Object); e != nil {
+				return false
+			}
+
+			pattern := el.(*values.Object)
+
+			url := pattern.MustGetOr("url", values.NewString(""))
+			code, codeExists := pattern.Get("code")
+
+			// ignore element
+			if !codeExists {
+				e = errors.New("http code is required")
+				return false
+			}
+
+			res.StatusCodes = append(res.StatusCodes, drivers.StatusCodeFilter{
+				URL:  url.String(),
+				Code: int(values.ToInt(code)),
+			})
+
+			return true
+		})
 	}
 
 	return res, nil

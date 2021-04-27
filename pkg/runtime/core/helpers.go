@@ -60,6 +60,12 @@ func Random(max float64, min float64) float64 {
 	return out
 }
 
+func Random2(mid float64) float64 {
+	max, min := NumberBoundaries(mid)
+
+	return Random(max, min)
+}
+
 func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key Value) bool) error {
 	for {
 		value, key, err := iter.Next(ctx)

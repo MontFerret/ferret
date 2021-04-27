@@ -2,6 +2,7 @@ import Hoverable from "./hoverable.js";
 import Clickable from "./clickable.js";
 import Appearable from "./appearable.js";
 import Focusable from "./focusable.js";
+import Pressable from "./pressable.js";
 
 const e = React.createElement;
 
@@ -83,7 +84,15 @@ export default class EventsPage extends React.Component {
                         title: "Focusable"
                     })
                 ]),
-            ])
+
+                e("div", { className: "col-lg-4" }, [
+                    e(Pressable, {
+                        id: "press",
+                        appear: false,
+                        title: "Pressable"
+                    })
+                ]),
+            ]),
         ])
     }
 }

@@ -111,6 +111,10 @@ type (
 
 		InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error
 
+		Press(ctx context.Context, keys []values.String, count values.Int) error
+
+		PressBySelector(ctx context.Context, selector values.String, keys []values.String, count values.Int) error
+
 		Select(ctx context.Context, value *values.Array) (*values.Array, error)
 
 		SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error)
@@ -196,11 +200,11 @@ type (
 
 		GetFrame(ctx context.Context, idx values.Int) (core.Value, error)
 
-		GetCookies(ctx context.Context) (HTTPCookies, error)
+		GetCookies(ctx context.Context) (*HTTPCookies, error)
 
-		SetCookies(ctx context.Context, cookies HTTPCookies) error
+		SetCookies(ctx context.Context, cookies *HTTPCookies) error
 
-		DeleteCookies(ctx context.Context, cookies HTTPCookies) error
+		DeleteCookies(ctx context.Context, cookies *HTTPCookies) error
 
 		GetResponse(ctx context.Context) (HTTPResponse, error)
 

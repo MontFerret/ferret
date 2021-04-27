@@ -1,0 +1,11 @@
+LET p = DOCUMENT('https://www.g2.com/categories', {
+    ignore: {
+        statusCodes: [
+            {
+                code: 403
+            }
+        ]
+    }
+})
+
+RETURN p.response.statusCode

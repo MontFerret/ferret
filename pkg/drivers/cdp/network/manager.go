@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/fetch"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
@@ -33,10 +34,11 @@ type (
 		mu                 sync.Mutex
 		logger             *zerolog.Logger
 		client             *cdp.Client
-		headers            drivers.HTTPHeaders
+		headers            *drivers.HTTPHeaders
 		eventLoop          *events.Loop
 		cancel             context.CancelFunc
 		responseListenerID events.ListenerID
+		filterListenerID   events.ListenerID
 		response           *sync.Map
 	}
 )
@@ -44,16 +46,31 @@ type (
 func New(
 	logger *zerolog.Logger,
 	client *cdp.Client,
+	options Options,
 ) (*Manager, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	m := new(Manager)
 	m.logger = logger
 	m.client = client
-	m.headers = make(drivers.HTTPHeaders)
+	m.headers = drivers.NewHTTPHeaders()
 	m.eventLoop = events.NewLoop()
 	m.cancel = cancel
 	m.response = new(sync.Map)
+
+	if options.Cookies != nil && len(options.Cookies) > 0 {
+		for url, cookies := range options.Cookies {
+			if err := m.setCookiesInternal(ctx, url, cookies); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if options.Headers != nil && options.Headers.Length() > 0 {
+		if err := m.setHeadersInternal(ctx, options.Headers); err != nil {
+			return nil, err
+		}
+	}
 
 	var err error
 
@@ -87,6 +104,32 @@ func New(
 
 	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
 
+	if options.Filter != nil && len(options.Filter.Patterns) > 0 {
+		el2 := events.NewLoop()
+
+		err = m.client.Fetch.Enable(ctx, toFetchArgs(options.Filter.Patterns))
+
+		if err != nil {
+			return nil, err
+		}
+
+		requestPausedStream, err := m.client.Fetch.RequestPaused(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		el2.AddSource(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
+			return stream.(fetch.RequestPausedClient).Recv()
+		}))
+
+		m.filterListenerID = el2.AddListener(requestPaused, m.onRequestPaused)
+
+		// run in a separate loop in order to get higher priority
+		// TODO: Consider adding support of event priorities to EventLoop
+		el2.Run(ctx)
+	}
+
 	m.eventLoop.Run(ctx)
 
 	return m, nil
@@ -104,79 +147,100 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-func (m *Manager) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
+func (m *Manager) GetCookies(ctx context.Context) (*drivers.HTTPCookies, error) {
 	repl, err := m.client.Network.GetAllCookies(ctx)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get cookies")
 	}
 
-	cookies := make(drivers.HTTPCookies)
+	cookies := drivers.NewHTTPCookies()
 
 	if repl.Cookies == nil {
 		return cookies, nil
 	}
 
 	for _, c := range repl.Cookies {
-		cookies[c.Name] = toDriverCookie(c)
+		cookies.Set(toDriverCookie(c))
 	}
 
 	return cookies, nil
 }
 
-func (m *Manager) SetCookies(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
+func (m *Manager) SetCookies(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if len(cookies) == 0 {
+	return m.setCookiesInternal(ctx, url, cookies)
+}
+
+func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
+	if cookies == nil {
+		return errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
+	if cookies.Length() == 0 {
 		return nil
 	}
 
-	params := make([]network.CookieParam, 0, len(cookies))
+	params := make([]network.CookieParam, 0, cookies.Length())
 
-	for _, c := range cookies {
-		params = append(params, fromDriverCookie(url, c))
-	}
+	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+		params = append(params, fromDriverCookie(url, value))
+
+		return true
+	})
 
 	return m.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
 }
 
-func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies drivers.HTTPCookies) error {
+func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if len(cookies) == 0 {
+	if cookies == nil {
+		return errors.Wrap(core.ErrMissedArgument, "cookies")
+	}
+
+	if cookies.Length() == 0 {
 		return nil
 	}
 
 	var err error
 
-	for _, c := range cookies {
-		err = m.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(url, c))
+	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+		err = m.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(url, value))
 
 		if err != nil {
-			break
+			return false
 		}
-	}
+
+		return true
+	})
 
 	return err
 }
 
-func (m *Manager) GetHeaders(_ context.Context) (drivers.HTTPHeaders, error) {
-	copied := make(drivers.HTTPHeaders)
-
-	for k, v := range m.headers {
-		copied[k] = v
-	}
-
-	return copied, nil
-}
-
-func (m *Manager) SetHeaders(ctx context.Context, headers drivers.HTTPHeaders) error {
+func (m *Manager) GetHeaders(_ context.Context) (*drivers.HTTPHeaders, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if len(headers) == 0 {
+	if m.headers == nil {
+		return drivers.NewHTTPHeaders(), nil
+	}
+
+	return m.headers.Clone().(*drivers.HTTPHeaders), nil
+}
+
+func (m *Manager) SetHeaders(ctx context.Context, headers *drivers.HTTPHeaders) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.setHeadersInternal(ctx, headers)
+}
+
+func (m *Manager) setHeadersInternal(ctx context.Context, headers *drivers.HTTPHeaders) error {
+	if headers.Length() == 0 {
 		return nil
 	}
 
@@ -410,7 +474,7 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 	response := drivers.HTTPResponse{
 		StatusCode: msg.Response.Status,
 		Status:     msg.Response.StatusText,
-		Headers:    make(drivers.HTTPHeaders),
+		Headers:    drivers.NewHTTPHeaders(),
 	}
 
 	deserialized := make(map[string]string)
@@ -428,6 +492,30 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 	}
 
 	m.response.Store(*msg.FrameID, response)
+
+	return
+}
+
+func (m *Manager) onRequestPaused(ctx context.Context, message interface{}) (out bool) {
+	out = true
+	msg, ok := message.(*fetch.RequestPausedReply)
+
+	if !ok {
+		return
+	}
+
+	err := m.client.Fetch.FailRequest(ctx, &fetch.FailRequestArgs{
+		RequestID:   msg.RequestID,
+		ErrorReason: network.ErrorReasonBlockedByClient,
+	})
+
+	if err != nil {
+		m.logger.
+			Err(err).
+			Str("resourceType", msg.ResourceType.String()).
+			Str("url", msg.Request.URL).
+			Msg("failed to terminate a request")
+	}
 
 	return
 }

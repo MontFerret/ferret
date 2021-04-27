@@ -2,7 +2,6 @@ package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"hash/fnv"
 	"io"
 	"regexp"
@@ -18,6 +17,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
@@ -79,19 +79,20 @@ func LoadHTMLPage(
 		}
 	}()
 
-	netManager, err := net.New(logger, client)
-
-	if err != nil {
-		return nil, err
+	netOpts := net.Options{
+		Headers: params.Headers,
 	}
 
-	err = netManager.SetCookies(ctx, params.URL, params.Cookies)
-
-	if err != nil {
-		return nil, err
+	if params.Cookies != nil && params.Cookies.Length() > 0 {
+		netOpts.Cookies = make(map[string]*drivers.HTTPCookies)
+		netOpts.Cookies[params.URL] = params.Cookies
 	}
 
-	err = netManager.SetHeaders(ctx, params.Headers)
+	if params.Ignore != nil && len(params.Ignore.Resources) > 0 {
+		netOpts.Filter.Patterns = params.Ignore.Resources
+	}
+
+	netManager, err := net.New(logger, client, netOpts)
 
 	if err != nil {
 		return nil, err
@@ -365,21 +366,21 @@ func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, er
 	return frames.Get(idx), nil
 }
 
-func (p *HTMLPage) GetCookies(ctx context.Context) (drivers.HTTPCookies, error) {
+func (p *HTMLPage) GetCookies(ctx context.Context) (*drivers.HTTPCookies, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.network.GetCookies(ctx)
 }
 
-func (p *HTMLPage) SetCookies(ctx context.Context, cookies drivers.HTTPCookies) error {
+func (p *HTMLPage) SetCookies(ctx context.Context, cookies *drivers.HTTPCookies) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.network.SetCookies(ctx, p.getCurrentDocument().GetURL().String(), cookies)
 }
 
-func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies drivers.HTTPCookies) error {
+func (p *HTMLPage) DeleteCookies(ctx context.Context, cookies *drivers.HTTPCookies) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

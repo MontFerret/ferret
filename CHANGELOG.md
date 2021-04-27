@@ -1,5 +1,38 @@
 ## Changelog
 
+### 0.15.0
+#### Added
+- Support of document charset in HTTP driver [#609](https://github.com/MontFerret/ferret/pull/609)
+- ``Walk`` method to FQL Parser [80c278e](https://github.com/MontFerret/ferret/commit/80c278ec6c783e29a8df12865da8208d1c148c65)
+- Possibility to send keyboard events like 'Enter' or 'Shift' [#618](https://github.com/MontFerret/ferret/pull/618)
+
+#### Changed
+- Moved CLI to a separate repository [#608](https://github.com/MontFerret/ferret/pull/608)
+
+#### Fixed
+- Passing headers and cookies to HTTP driver [#614](https://github.com/MontFerret/ferret/pull/614)
+- Reading property of anyonymous object [#616](https://github.com/MontFerret/ferret/pull/616)
+- Clearing input text containing special characteers [#619](https://github.com/MontFerret/ferret/pull/619)
+
+### 0.14.1
+#### Fixed
+- Parsing HTTP headers and cookies [#598](https://github.com/MontFerret/ferret/pull/598)
+- Parsing cookie expiration datetime [#602](https://github.com/MontFerret/ferret/pull/602)
+
+### 0.14.0
+#### Added
+- Support of History API [#584](https://github.com/MontFerret/ferret/pull/584)
+- Support of custom http transport in HTTP driver [#586](https://github.com/MontFerret/ferret/pull/586)
+- ``LIKE`` operator [#591](https://github.com/MontFerret/ferret/pull/591)
+- Support of ignoring page resources [#592](https://github.com/MontFerret/ferret/pull/592)
+- Support of handling non-200 status codes in HTTP driver [#593](https://github.com/MontFerret/ferret/pull/593)
+- ``DOCUMENT_EXISTS`` function [#594](https://github.com/MontFerret/ferret/pull/594)
+
+#### Fixed
+- ``RAND(0,100)`` always same result [#579](https://github.com/MontFerret/ferret/pull/579)
+- Element.children always returns empty array [#580](https://github.com/MontFerret/ferret/pull/580)
+- Passing parameters with a nested nil structure leads to panic [#587](https://github.com/MontFerret/ferret/pull/587)
+
 ### 0.13.0
 #### Added
 - ``WHILE`` loop and ``ATTR_QUERY`` function [#567](https://github.com/MontFerret/ferret/pull/567)

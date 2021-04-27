@@ -11,4 +11,16 @@ INPUT_CLEAR(input)
 
 T::EMPTY(INNER_TEXT(doc, "#text_output"))
 
+INPUT(input, "test0-test1", 100)
+
+INPUT_CLEAR(input)
+
+T::EMPTY(INNER_TEXT(doc, "#text_output"))
+
+INPUT(input, "test0&test1", 100)
+
+INPUT_CLEAR(input)
+
+T::EMPTY(INNER_TEXT(doc, "#text_output"))
+
 RETURN NONE

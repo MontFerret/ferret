@@ -14,7 +14,7 @@ import (
 
 type HTMLPage struct {
 	document *HTMLDocument
-	cookies  drivers.HTTPCookies
+	cookies  *drivers.HTTPCookies
 	frames   *values.Array
 	response drivers.HTTPResponse
 }
@@ -23,7 +23,7 @@ func NewHTMLPage(
 	qdoc *goquery.Document,
 	url string,
 	response drivers.HTTPResponse,
-	cookies drivers.HTTPCookies,
+	cookies *drivers.HTTPCookies,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
 
@@ -84,10 +84,10 @@ func (p *HTMLPage) Hash() uint64 {
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	cookies := make(drivers.HTTPCookies)
+	var cookies *drivers.HTTPCookies
 
-	for k, v := range p.cookies {
-		cookies[k] = v
+	if p.cookies != nil {
+		cookies = p.cookies.Copy().(*drivers.HTTPCookies)
 	}
 
 	page, err := NewHTMLPage(
@@ -168,11 +168,15 @@ func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, er
 	return p.frames.Get(idx), nil
 }
 
-func (p *HTMLPage) GetCookies(_ context.Context) (drivers.HTTPCookies, error) {
-	res := make(drivers.HTTPCookies)
+func (p *HTMLPage) GetCookies(_ context.Context) (*drivers.HTTPCookies, error) {
+	res := drivers.NewHTTPCookies()
 
-	for n, v := range p.cookies {
-		res[n] = v
+	if p.cookies != nil {
+		p.cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+			res.Set(value)
+
+			return true
+		})
 	}
 
 	return res, nil
@@ -182,11 +186,11 @@ func (p *HTMLPage) GetResponse(_ context.Context) (drivers.HTTPResponse, error) 
 	return p.response, nil
 }
 
-func (p *HTMLPage) SetCookies(_ context.Context, _ drivers.HTTPCookies) error {
+func (p *HTMLPage) SetCookies(_ context.Context, _ *drivers.HTTPCookies) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) DeleteCookies(_ context.Context, _ drivers.HTTPCookies) error {
+func (p *HTMLPage) DeleteCookies(_ context.Context, _ *drivers.HTTPCookies) error {
 	return core.ErrNotSupported
 }
 

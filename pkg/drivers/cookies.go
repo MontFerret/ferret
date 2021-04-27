@@ -13,21 +13,27 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-type HTTPCookies map[string]HTTPCookie
-
-func NewHTTPCookies() HTTPCookies {
-	return make(HTTPCookies)
+type HTTPCookies struct {
+	values map[string]HTTPCookie
 }
 
-func (c HTTPCookies) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(map[string]HTTPCookie(c), jettison.NoHTMLEscaping())
+func NewHTTPCookies() *HTTPCookies {
+	return NewHTTPCookiesWith(make(map[string]HTTPCookie))
 }
 
-func (c HTTPCookies) Type() core.Type {
+func NewHTTPCookiesWith(values map[string]HTTPCookie) *HTTPCookies {
+	return &HTTPCookies{values}
+}
+
+func (c *HTTPCookies) MarshalJSON() ([]byte, error) {
+	return jettison.MarshalOpts(c.values, jettison.NoHTMLEscaping())
+}
+
+func (c *HTTPCookies) Type() core.Type {
 	return HTTPCookiesType
 }
 
-func (c HTTPCookies) String() string {
+func (c *HTTPCookies) String() string {
 	j, err := c.MarshalJSON()
 
 	if err != nil {
@@ -37,21 +43,21 @@ func (c HTTPCookies) String() string {
 	return string(j)
 }
 
-func (c HTTPCookies) Compare(other core.Value) int64 {
+func (c *HTTPCookies) Compare(other core.Value) int64 {
 	if other.Type() != HTTPCookiesType {
 		return Compare(HTTPCookiesType, other.Type())
 	}
 
-	oc := other.(HTTPCookies)
+	oc := other.(*HTTPCookies)
 
 	switch {
-	case len(c) > len(oc):
+	case len(c.values) > len(oc.values):
 		return 1
-	case len(c) < len(oc):
+	case len(c.values) < len(oc.values):
 		return -1
 	}
 
-	for name := range c {
+	for name := range c.values {
 		cEl, cExists := c.Get(values.NewString(name))
 
 		if !cExists {
@@ -74,20 +80,20 @@ func (c HTTPCookies) Compare(other core.Value) int64 {
 	return 0
 }
 
-func (c HTTPCookies) Unwrap() interface{} {
-	return map[string]HTTPCookie(c)
+func (c *HTTPCookies) Unwrap() interface{} {
+	return c.values
 }
 
-func (c HTTPCookies) Hash() uint64 {
+func (c *HTTPCookies) Hash() uint64 {
 	hash := fnv.New64a()
 
 	hash.Write([]byte(c.Type().String()))
 	hash.Write([]byte(":"))
 	hash.Write([]byte("{"))
 
-	keys := make([]string, 0, len(c))
+	keys := make([]string, 0, len(c.values))
 
-	for key := range c {
+	for key := range c.values {
 		keys = append(keys, key)
 	}
 
@@ -100,7 +106,7 @@ func (c HTTPCookies) Hash() uint64 {
 		hash.Write([]byte(key))
 		hash.Write([]byte(":"))
 
-		el := c[key]
+		el := c.values[key]
 
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
@@ -117,47 +123,59 @@ func (c HTTPCookies) Hash() uint64 {
 	return hash.Sum64()
 }
 
-func (c HTTPCookies) Copy() core.Value {
-	copied := make(HTTPCookies)
+func (c *HTTPCookies) Copy() core.Value {
+	return NewHTTPCookiesWith(c.values)
+}
 
-	for k, v := range c {
-		copied[k] = v
+func (c *HTTPCookies) Clone() core.Cloneable {
+	clone := make(map[string]HTTPCookie)
+
+	for _, cookie := range c.values {
+		clone[cookie.Name] = cookie
 	}
 
-	return copied
+	return NewHTTPCookiesWith(clone)
 }
 
-func (c HTTPCookies) Length() values.Int {
-	return values.NewInt(len(c))
+func (c *HTTPCookies) Length() values.Int {
+	return values.NewInt(len(c.values))
 }
 
-func (c HTTPCookies) Keys() []values.String {
-	keys := make([]values.String, 0, len(c))
+func (c *HTTPCookies) Keys() []values.String {
+	result := make([]values.String, 0, len(c.values))
 
-	for k := range c {
-		keys = append(keys, values.NewString(k))
+	for k := range c.values {
+		result = append(result, values.NewString(k))
 	}
 
-	return keys
+	return result
 }
 
-func (c HTTPCookies) Get(key values.String) (core.Value, values.Boolean) {
-	value, found := c[key.String()]
+func (c *HTTPCookies) Values() []HTTPCookie {
+	result := make([]HTTPCookie, 0, len(c.values))
+
+	for _, v := range c.values {
+		result = append(result, v)
+	}
+
+	return result
+}
+
+func (c *HTTPCookies) Get(key values.String) (HTTPCookie, values.Boolean) {
+	value, found := c.values[key.String()]
 
 	if found {
 		return value, values.True
 	}
 
-	return values.None, values.False
+	return HTTPCookie{}, values.False
 }
 
-func (c HTTPCookies) Set(key values.String, value core.Value) {
-	if cookie, ok := value.(HTTPCookie); ok {
-		c[key.String()] = cookie
-	}
+func (c *HTTPCookies) Set(cookie HTTPCookie) {
+	c.values[cookie.Name] = cookie
 }
 
-func (c HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (c *HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
@@ -170,7 +188,7 @@ func (c HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, 
 		return values.None, err
 	}
 
-	cookie, found := c[segment.String()]
+	cookie, found := c.values[segment.String()]
 
 	if found {
 		if len(path) == 1 {
@@ -181,4 +199,12 @@ func (c HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, 
 	}
 
 	return values.None, nil
+}
+
+func (c *HTTPCookies) ForEach(predicate func(value HTTPCookie, key values.String) bool) {
+	for key, val := range c.values {
+		if !predicate(val, values.NewString(key)) {
+			break
+		}
+	}
 }

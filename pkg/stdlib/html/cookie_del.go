@@ -26,8 +26,8 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	inputs := args[1:]
-	var currentCookies drivers.HTTPCookies
-	cookies := make(drivers.HTTPCookies)
+	var currentCookies *drivers.HTTPCookies
+	cookies := drivers.NewHTTPCookies()
 
 	for _, c := range inputs {
 		switch cookie := c.(type) {
@@ -42,14 +42,14 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 				currentCookies = current
 			}
 
-			found, isFound := currentCookies[cookie.String()]
+			found, isFound := currentCookies.Get(cookie)
 
 			if isFound {
-				cookies[cookie.String()] = found
+				cookies.Set(found)
 			}
 
 		case drivers.HTTPCookie:
-			cookies[cookie.Name] = cookie
+			cookies.Set(cookie)
 		default:
 			return values.None, core.TypeError(c.Type(), types.String, drivers.HTTPCookieType)
 		}

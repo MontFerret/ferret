@@ -15,7 +15,7 @@ COOKIE_DEL(doc, COOKIE_GET(doc, "x-e2e"), "x-e2e-2")
 LET cookie1 = COOKIE_GET(doc, "x-e2e")
 LET cookie2 = COOKIE_GET(doc, "x-e2e-2")
 
-T::EQ(cookie1, "none")
-T::EQ(cookie2, "none")
+T::EQ(cookie1, NONE)
+T::EQ(cookie2, NONE)
 
 RETURN NONE

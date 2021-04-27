@@ -79,4 +79,37 @@ func TestLikeOperator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out1), ShouldEqual, `["bar","qaz"]`)
 	})
+
+	Convey("LIKE ternary", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			RETURN ("foo" NOT LIKE  "b*") ? "foo" : "bar"
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `"foo"`)
+	})
+
+	Convey("LIKE ternary 2", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			RETURN true ? ("foo" NOT LIKE  "b*") : false
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `true`)
+	})
+
+	Convey("LIKE ternary 3", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			RETURN true ? false : ("foo" NOT LIKE  "b*")s
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `false`)
+	})
 }
