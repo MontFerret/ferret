@@ -114,6 +114,14 @@ func Parse(input interface{}) core.Value {
 		return NewBoolean(value)
 	case string:
 		return NewString(value)
+	case int64:
+		return NewInt(int(value))
+	case int32:
+		return NewInt(int(value))
+	case int16:
+		return NewInt(int(value))
+	case int8:
+		return NewInt(int(value))
 	case int:
 		return NewInt(value)
 	case float64:
