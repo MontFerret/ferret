@@ -91,24 +91,6 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectCounter.
 	VisitCollectCounter(ctx *CollectCounterContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForExpression.
-	VisitWaitForExpression(ctx *WaitForExpressionContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#waitForTimeout.
-	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#waitForOptions.
-	VisitWaitForOptions(ctx *WaitForOptionsContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#waitForEventName.
-	VisitWaitForEventName(ctx *WaitForEventNameContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#waitForEventSource.
-	VisitWaitForEventSource(ctx *WaitForEventSourceContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#waitForEventExpression.
-	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
 
@@ -183,6 +165,24 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#arguments.
 	VisitArguments(ctx *ArgumentsContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForExpression.
+	VisitWaitForExpression(ctx *WaitForExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForTimeout.
+	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForOptions.
+	VisitWaitForOptions(ctx *WaitForOptionsContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForEventName.
+	VisitWaitForEventName(ctx *WaitForEventNameContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForEventSource.
+	VisitWaitForEventSource(ctx *WaitForEventSourceContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForEventExpression.
+	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#expression.
 	VisitExpression(ctx *ExpressionContext) interface{}

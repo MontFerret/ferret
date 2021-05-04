@@ -91,24 +91,6 @@ type FqlParserListener interface {
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
 
-	// EnterWaitForExpression is called when entering the waitForExpression production.
-	EnterWaitForExpression(c *WaitForExpressionContext)
-
-	// EnterWaitForTimeout is called when entering the waitForTimeout production.
-	EnterWaitForTimeout(c *WaitForTimeoutContext)
-
-	// EnterWaitForOptions is called when entering the waitForOptions production.
-	EnterWaitForOptions(c *WaitForOptionsContext)
-
-	// EnterWaitForEventName is called when entering the waitForEventName production.
-	EnterWaitForEventName(c *WaitForEventNameContext)
-
-	// EnterWaitForEventSource is called when entering the waitForEventSource production.
-	EnterWaitForEventSource(c *WaitForEventSourceContext)
-
-	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
-	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
-
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
 
@@ -183,6 +165,24 @@ type FqlParserListener interface {
 
 	// EnterArguments is called when entering the arguments production.
 	EnterArguments(c *ArgumentsContext)
+
+	// EnterWaitForExpression is called when entering the waitForExpression production.
+	EnterWaitForExpression(c *WaitForExpressionContext)
+
+	// EnterWaitForTimeout is called when entering the waitForTimeout production.
+	EnterWaitForTimeout(c *WaitForTimeoutContext)
+
+	// EnterWaitForOptions is called when entering the waitForOptions production.
+	EnterWaitForOptions(c *WaitForOptionsContext)
+
+	// EnterWaitForEventName is called when entering the waitForEventName production.
+	EnterWaitForEventName(c *WaitForEventNameContext)
+
+	// EnterWaitForEventSource is called when entering the waitForEventSource production.
+	EnterWaitForEventSource(c *WaitForEventSourceContext)
+
+	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
+	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
 
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
@@ -304,24 +304,6 @@ type FqlParserListener interface {
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)
 
-	// ExitWaitForExpression is called when exiting the waitForExpression production.
-	ExitWaitForExpression(c *WaitForExpressionContext)
-
-	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
-	ExitWaitForTimeout(c *WaitForTimeoutContext)
-
-	// ExitWaitForOptions is called when exiting the waitForOptions production.
-	ExitWaitForOptions(c *WaitForOptionsContext)
-
-	// ExitWaitForEventName is called when exiting the waitForEventName production.
-	ExitWaitForEventName(c *WaitForEventNameContext)
-
-	// ExitWaitForEventSource is called when exiting the waitForEventSource production.
-	ExitWaitForEventSource(c *WaitForEventSourceContext)
-
-	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
-	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
-
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)
 
@@ -396,6 +378,24 @@ type FqlParserListener interface {
 
 	// ExitArguments is called when exiting the arguments production.
 	ExitArguments(c *ArgumentsContext)
+
+	// ExitWaitForExpression is called when exiting the waitForExpression production.
+	ExitWaitForExpression(c *WaitForExpressionContext)
+
+	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
+	ExitWaitForTimeout(c *WaitForTimeoutContext)
+
+	// ExitWaitForOptions is called when exiting the waitForOptions production.
+	ExitWaitForOptions(c *WaitForOptionsContext)
+
+	// ExitWaitForEventName is called when exiting the waitForEventName production.
+	ExitWaitForEventName(c *WaitForEventNameContext)
+
+	// ExitWaitForEventSource is called when exiting the waitForEventSource production.
+	ExitWaitForEventSource(c *WaitForEventSourceContext)
+
+	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
+	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
 
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)

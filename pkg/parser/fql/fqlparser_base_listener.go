@@ -190,42 +190,6 @@ func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) 
 // ExitCollectCounter is called when production collectCounter is exited.
 func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
 
-// EnterWaitForExpression is called when production waitForExpression is entered.
-func (s *BaseFqlParserListener) EnterWaitForExpression(ctx *WaitForExpressionContext) {}
-
-// ExitWaitForExpression is called when production waitForExpression is exited.
-func (s *BaseFqlParserListener) ExitWaitForExpression(ctx *WaitForExpressionContext) {}
-
-// EnterWaitForTimeout is called when production waitForTimeout is entered.
-func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) {}
-
-// ExitWaitForTimeout is called when production waitForTimeout is exited.
-func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
-
-// EnterWaitForOptions is called when production waitForOptions is entered.
-func (s *BaseFqlParserListener) EnterWaitForOptions(ctx *WaitForOptionsContext) {}
-
-// ExitWaitForOptions is called when production waitForOptions is exited.
-func (s *BaseFqlParserListener) ExitWaitForOptions(ctx *WaitForOptionsContext) {}
-
-// EnterWaitForEventName is called when production waitForEventName is entered.
-func (s *BaseFqlParserListener) EnterWaitForEventName(ctx *WaitForEventNameContext) {}
-
-// ExitWaitForEventName is called when production waitForEventName is exited.
-func (s *BaseFqlParserListener) ExitWaitForEventName(ctx *WaitForEventNameContext) {}
-
-// EnterWaitForEventSource is called when production waitForEventSource is entered.
-func (s *BaseFqlParserListener) EnterWaitForEventSource(ctx *WaitForEventSourceContext) {}
-
-// ExitWaitForEventSource is called when production waitForEventSource is exited.
-func (s *BaseFqlParserListener) ExitWaitForEventSource(ctx *WaitForEventSourceContext) {}
-
-// EnterWaitForEventExpression is called when production waitForEventExpression is entered.
-func (s *BaseFqlParserListener) EnterWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
-
-// ExitWaitForEventExpression is called when production waitForEventExpression is exited.
-func (s *BaseFqlParserListener) ExitWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
-
 // EnterVariableDeclaration is called when production variableDeclaration is entered.
 func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}
 
@@ -375,6 +339,42 @@ func (s *BaseFqlParserListener) EnterArguments(ctx *ArgumentsContext) {}
 
 // ExitArguments is called when production arguments is exited.
 func (s *BaseFqlParserListener) ExitArguments(ctx *ArgumentsContext) {}
+
+// EnterWaitForExpression is called when production waitForExpression is entered.
+func (s *BaseFqlParserListener) EnterWaitForExpression(ctx *WaitForExpressionContext) {}
+
+// ExitWaitForExpression is called when production waitForExpression is exited.
+func (s *BaseFqlParserListener) ExitWaitForExpression(ctx *WaitForExpressionContext) {}
+
+// EnterWaitForTimeout is called when production waitForTimeout is entered.
+func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) {}
+
+// ExitWaitForTimeout is called when production waitForTimeout is exited.
+func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
+
+// EnterWaitForOptions is called when production waitForOptions is entered.
+func (s *BaseFqlParserListener) EnterWaitForOptions(ctx *WaitForOptionsContext) {}
+
+// ExitWaitForOptions is called when production waitForOptions is exited.
+func (s *BaseFqlParserListener) ExitWaitForOptions(ctx *WaitForOptionsContext) {}
+
+// EnterWaitForEventName is called when production waitForEventName is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventName(ctx *WaitForEventNameContext) {}
+
+// ExitWaitForEventName is called when production waitForEventName is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventName(ctx *WaitForEventNameContext) {}
+
+// EnterWaitForEventSource is called when production waitForEventSource is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventSource(ctx *WaitForEventSourceContext) {}
+
+// ExitWaitForEventSource is called when production waitForEventSource is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventSource(ctx *WaitForEventSourceContext) {}
+
+// EnterWaitForEventExpression is called when production waitForEventExpression is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
+
+// ExitWaitForEventExpression is called when production waitForEventExpression is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
 
 // EnterExpression is called when production expression is entered.
 func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}

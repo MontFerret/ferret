@@ -146,7 +146,6 @@ collectCounter
     : With Count Into Identifier
     ;
 
-
 waitForExpression
     : waitForEventExpression
     ;
