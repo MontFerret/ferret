@@ -159,6 +159,28 @@ func TestHelpers(t *testing.T) {
 			})
 		})
 
+		Convey("Parse", func() {
+			Convey("It should parse values", func() {
+				inputs := []struct {
+					Parsed core.Value
+					Raw    interface{}
+				}{
+					{Parsed: values.NewInt(1), Raw: int(1)},
+					{Parsed: values.NewInt(1), Raw: int8(1)},
+					{Parsed: values.NewInt(1), Raw: int16(1)},
+					{Parsed: values.NewInt(1), Raw: int32(1)},
+					{Parsed: values.NewInt(1), Raw: int64(1)},
+				}
+
+				for _, input := range inputs {
+					out := values.Parse(input.Raw)
+
+					So(out.Type().ID(), ShouldEqual, input.Parsed.Type().ID())
+					So(out.Unwrap(), ShouldEqual, input.Parsed.Unwrap())
+				}
+			})
+		})
+
 		Convey("ToBoolean", func() {
 			Convey("Should convert values", func() {
 				inputs := [][]core.Value{
