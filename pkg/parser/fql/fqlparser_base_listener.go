@@ -190,6 +190,12 @@ func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) 
 // ExitCollectCounter is called when production collectCounter is exited.
 func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
 
+// EnterOptionsClause is called when production optionsClause is entered.
+func (s *BaseFqlParserListener) EnterOptionsClause(ctx *OptionsClauseContext) {}
+
+// ExitOptionsClause is called when production optionsClause is exited.
+func (s *BaseFqlParserListener) ExitOptionsClause(ctx *OptionsClauseContext) {}
+
 // EnterWaitForExpression is called when production waitForExpression is entered.
 func (s *BaseFqlParserListener) EnterWaitForExpression(ctx *WaitForExpressionContext) {}
 
@@ -201,12 +207,6 @@ func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) 
 
 // ExitWaitForTimeout is called when production waitForTimeout is exited.
 func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
-
-// EnterWaitForOptions is called when production waitForOptions is entered.
-func (s *BaseFqlParserListener) EnterWaitForOptions(ctx *WaitForOptionsContext) {}
-
-// ExitWaitForOptions is called when production waitForOptions is exited.
-func (s *BaseFqlParserListener) ExitWaitForOptions(ctx *WaitForOptionsContext) {}
 
 // EnterWaitForEventName is called when production waitForEventName is entered.
 func (s *BaseFqlParserListener) EnterWaitForEventName(ctx *WaitForEventNameContext) {}
@@ -381,12 +381,6 @@ func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
 
 // ExitExpression is called when production expression is exited.
 func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
-
-// EnterTernaryExpression is called when production ternaryExpression is entered.
-func (s *BaseFqlParserListener) EnterTernaryExpression(ctx *TernaryExpressionContext) {}
-
-// ExitTernaryExpression is called when production ternaryExpression is exited.
-func (s *BaseFqlParserListener) ExitTernaryExpression(ctx *TernaryExpressionContext) {}
 
 // EnterArrayOperator is called when production arrayOperator is entered.
 func (s *BaseFqlParserListener) EnterArrayOperator(ctx *ArrayOperatorContext) {}

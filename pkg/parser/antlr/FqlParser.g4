@@ -36,9 +36,7 @@ bodyExpression
     ;
 
 returnExpression
-    : Return (Distinct)? OpenParen forExpression CloseParen
-    | Return ternaryExpression
-    | Return OpenParen waitForExpression CloseParen
+    : Return (Distinct)? OpenParen (forExpression | waitForExpression) CloseParen
     | Return (Distinct)? expression
     ;
 
@@ -146,6 +144,11 @@ collectCounter
     : With Count Into Identifier
     ;
 
+optionsClause
+    : Options objectLiteral
+    | Options variable
+    ;
+
 waitForExpression
     : waitForEventExpression
     ;
@@ -155,10 +158,6 @@ waitForTimeout
     | variable
     | functionCallExpression
     | memberExpression
-    ;
-
-waitForOptions
-    : objectLiteral
     ;
 
 waitForEventName
@@ -176,12 +175,11 @@ waitForEventSource
     ;
 
 waitForEventExpression
-    : Waitfor Event waitForEventName In waitForEventSource (Options waitForOptions)? (waitForTimeout)?
+    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (waitForTimeout)?
     ;
 
 variableDeclaration
     : Let Identifier Assign OpenParen forExpression CloseParen
-    | Let Identifier Assign ternaryExpression
     | Let Identifier Assign OpenParen waitForExpression CloseParen
     | Let Identifier Assign expression
     ;
@@ -321,9 +319,10 @@ arguments
 
 expression
     : unaryOperator expression
+    | functionCallExpression
+    | memberExpression
     | expression multiplicativeOperator expression
     | expression additiveOperator expression
-    | functionCallExpression
     | expressionGroup
     | expression arrayOperator (inOperator | equalityOperator) expression
     | expression inOperator expression
@@ -332,6 +331,9 @@ expression
     | expression regexpOperator expression
     | expression logicalAndOperator expression
     | expression logicalOrOperator expression
+    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon OpenParen (forExpression | waitForExpression) CloseParen
+    | expression QuestionMark expression Colon OpenParen (forExpression | waitForExpression) CloseParen
+    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
     | stringLiteral
@@ -341,20 +343,8 @@ expression
     | arrayLiteral
     | objectLiteral
     | variable
-    | memberExpression
     | noneLiteral
     | param
-    ;
-
-ternaryExpression
-    : expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen forExpression CloseParen
-    | expression QuestionMark OpenParen forExpression CloseParen Colon OpenParen waitForExpression CloseParen
-    | expression QuestionMark OpenParen waitForExpression CloseParen Colon OpenParen waitForExpression CloseParen
-    | expression QuestionMark OpenParen waitForExpression CloseParen Colon OpenParen forExpression CloseParen
-    | expression QuestionMark OpenParen waitForExpression CloseParen Colon expression
-    | expression QuestionMark OpenParen forExpression CloseParen Colon expression
-    | expression QuestionMark expression? Colon OpenParen forExpression CloseParen
-    | expression QuestionMark expression? Colon OpenParen waitForExpression CloseParen
     ;
 
 arrayOperator

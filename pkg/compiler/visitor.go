@@ -186,8 +186,6 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 
 	if exp := ctx.ForExpression(); exp != nil {
 		out, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope.Fork())
-	} else if exp := ctx.TernaryExpression(); exp != nil {
-		out, err = v.doVisitTernaryExpression(exp.(*fql.TernaryExpressionContext), scope)
 	} else if exp := ctx.WaitForExpression(); exp != nil {
 		out, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
 	} else if exp := ctx.Expression(); exp != nil {
@@ -770,8 +768,8 @@ func (v *visitor) doVisitWaitForEventExpressionContext(ctx *fql.WaitForEventExpr
 
 	var options core.Expression
 
-	if optionsCtx := ctx.WaitForOptions(); optionsCtx != nil {
-		optionsExp, err := v.doVisitWaitForOptionsValue(optionsCtx.(*fql.WaitForOptionsContext), s)
+	if optionsCtx := ctx.OptionsClause(); optionsCtx != nil {
+		optionsExp, err := v.doVisitOptionsClause(optionsCtx.(*fql.OptionsClauseContext), s)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid options")
@@ -801,7 +799,7 @@ func (v *visitor) doVisitWaitForEventExpressionContext(ctx *fql.WaitForEventExpr
 	)
 }
 
-func (v *visitor) doVisitWaitForOptionsValue(ctx *fql.WaitForOptionsContext, s *scope) (core.Expression, error) {
+func (v *visitor) doVisitOptionsClause(ctx *fql.OptionsClauseContext, s *scope) (core.Expression, error) {
 	return v.doVisitObjectLiteral(ctx.ObjectLiteral().(*fql.ObjectLiteralContext), s)
 }
 
@@ -1168,8 +1166,6 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 		init, err = v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
 	} else if exp := ctx.ForExpression(); exp != nil {
 		init, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
-	} else if exp := ctx.TernaryExpression(); exp != nil {
-		init, err = v.doVisitTernaryExpression(exp.(*fql.TernaryExpressionContext), scope)
 	} else if exp := ctx.WaitForExpression(); exp != nil {
 		init, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
 	}
@@ -1525,6 +1521,10 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitRegexpOperator(ctx, exp.(*fql.RegexpOperatorContext), scope)
 	}
 
+	if exp := ctx.QuestionMark(); exp != nil {
+		return v.doVisitTernaryExpression(ctx, scope)
+	}
+
 	if exp := ctx.Variable(); exp != nil {
 		return v.doVisitVariable(exp.(*fql.VariableContext), scope)
 	}
@@ -1652,8 +1652,9 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 	return out, err
 }
 
-func (v *visitor) doVisitTernaryExpression(ctx *fql.TernaryExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
+func (v *visitor) doVisitTernaryExpression(ctx *fql.ExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
 	exps, err := v.doVisitChildren(ctx, scope)
+
 	if err != nil {
 		return nil, err
 	}

@@ -91,14 +91,14 @@ type FqlParserListener interface {
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
 
+	// EnterOptionsClause is called when entering the optionsClause production.
+	EnterOptionsClause(c *OptionsClauseContext)
+
 	// EnterWaitForExpression is called when entering the waitForExpression production.
 	EnterWaitForExpression(c *WaitForExpressionContext)
 
 	// EnterWaitForTimeout is called when entering the waitForTimeout production.
 	EnterWaitForTimeout(c *WaitForTimeoutContext)
-
-	// EnterWaitForOptions is called when entering the waitForOptions production.
-	EnterWaitForOptions(c *WaitForOptionsContext)
 
 	// EnterWaitForEventName is called when entering the waitForEventName production.
 	EnterWaitForEventName(c *WaitForEventNameContext)
@@ -186,9 +186,6 @@ type FqlParserListener interface {
 
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
-
-	// EnterTernaryExpression is called when entering the ternaryExpression production.
-	EnterTernaryExpression(c *TernaryExpressionContext)
 
 	// EnterArrayOperator is called when entering the arrayOperator production.
 	EnterArrayOperator(c *ArrayOperatorContext)
@@ -304,14 +301,14 @@ type FqlParserListener interface {
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)
 
+	// ExitOptionsClause is called when exiting the optionsClause production.
+	ExitOptionsClause(c *OptionsClauseContext)
+
 	// ExitWaitForExpression is called when exiting the waitForExpression production.
 	ExitWaitForExpression(c *WaitForExpressionContext)
 
 	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
 	ExitWaitForTimeout(c *WaitForTimeoutContext)
-
-	// ExitWaitForOptions is called when exiting the waitForOptions production.
-	ExitWaitForOptions(c *WaitForOptionsContext)
 
 	// ExitWaitForEventName is called when exiting the waitForEventName production.
 	ExitWaitForEventName(c *WaitForEventNameContext)
@@ -399,9 +396,6 @@ type FqlParserListener interface {
 
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)
-
-	// ExitTernaryExpression is called when exiting the ternaryExpression production.
-	ExitTernaryExpression(c *TernaryExpressionContext)
 
 	// ExitArrayOperator is called when exiting the arrayOperator production.
 	ExitArrayOperator(c *ArrayOperatorContext)

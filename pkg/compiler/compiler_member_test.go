@@ -272,7 +272,7 @@ func TestMember(t *testing.T) {
 		Convey("Deep computed path", func() {
 			c := compiler.New()
 
-			p, err := c.Compile(`
+			p := c.MustCompile(`
 				LET obj = {
 					first: {
 						second: {
@@ -289,8 +289,6 @@ func TestMember(t *testing.T) {
 
 				RETURN obj["first"]["second"]["third"]["fourth"]["fifth"].bottom
 			`)
-
-			So(err, ShouldBeNil)
 
 			out, err := p.Run(context.Background())
 
