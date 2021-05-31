@@ -273,21 +273,23 @@ func TestMember(t *testing.T) {
 			c := compiler.New()
 
 			p := c.MustCompile(`
-				LET obj = {
-					first: {
-						second: {
-							third: {
-								fourth: {
-									fifth: {
-										bottom: true
-									}
-								}
-							}
-						}
-					}
-				}
+LET o1 = {
+    first: {
+        second: {
+            third: {
+                fourth: {
+                    fifth: {
+                        bottom: true
+                    }
+                }
+            }
+        }
+    }
+}
 
-				RETURN obj["first"]["second"]["third"]["fourth"]["fifth"].bottom
+LET o2 = { prop: "third" }
+
+RETURN o1["first"]["second"][o2.prop]["fourth"]["fifth"].bottom
 			`)
 
 			out, err := p.Run(context.Background())

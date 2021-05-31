@@ -5,7 +5,7 @@ parser grammar FqlParser;
 options { tokenVocab=FqlLexer; }
 
 program
-    : (head)* body
+    : (head)* body EOF
     ;
 
 head
@@ -18,6 +18,11 @@ useExpression
 
 use
     : Use namespaceIdentifier
+    ;
+
+
+namespaceIdentifier
+    : namespace Identifier
     ;
 
 body
@@ -35,26 +40,24 @@ bodyExpression
     | forExpression
     ;
 
+variableDeclaration
+    : Let Identifier Assign OpenParen forExpression CloseParen
+    | Let Identifier Assign OpenParen waitForExpression CloseParen
+    | Let Identifier Assign expression
+    ;
+
 returnExpression
     : Return (Distinct)? OpenParen (forExpression | waitForExpression) CloseParen
     | Return (Distinct)? expression
     ;
 
 forExpression
-    : For forExpressionValueVariable (Comma forExpressionKeyVariable)? In forExpressionSource
+    : For Identifier (Comma Identifier)? In forExpressionSource
      (forExpressionBody)*
       forExpressionReturn
-    | For forExpressionValueVariable (Do)? While expression
+    | For Identifier (Do)? While expression
      (forExpressionBody)*
       forExpressionReturn
-    ;
-
-forExpressionValueVariable
-    : Identifier
-    ;
-
-forExpressionKeyVariable
-    : Identifier
     ;
 
 forExpressionSource
@@ -150,7 +153,7 @@ optionsClause
     ;
 
 waitForExpression
-    : waitForEventExpression
+    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (waitForTimeout)?
     ;
 
 waitForTimeout
@@ -169,27 +172,9 @@ waitForEventName
     ;
 
 waitForEventSource
-    : variable
-    | functionCallExpression
+    : functionCallExpression
+    | variable
     | memberExpression
-    ;
-
-waitForEventExpression
-    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (waitForTimeout)?
-    ;
-
-variableDeclaration
-    : Let Identifier Assign OpenParen forExpression CloseParen
-    | Let Identifier Assign OpenParen waitForExpression CloseParen
-    | Let Identifier Assign expression
-    ;
-
-param
-    : Param Identifier
-    ;
-
-variable
-    : Identifier
     ;
 
 rangeOperator
@@ -197,46 +182,17 @@ rangeOperator
     ;
 
 arrayLiteral
-    : OpenBracket arrayElementList? CloseBracket
+    : OpenBracket (expression (Comma expression)*)? CloseBracket
     ;
 
 objectLiteral
-    : OpenBrace (propertyAssignment (Comma propertyAssignment)*)? Comma? CloseBrace
-    ;
-
-booleanLiteral
-    : BooleanLiteral
-    ;
-
-stringLiteral
-    : StringLiteral
-    ;
-
-integerLiteral
-    : IntegerLiteral
-    ;
-
-floatLiteral
-    : FloatLiteral
-    ;
-
-noneLiteral
-    : Null
-    | None
-    ;
-
-arrayElementList
-    : expression (Comma + expression)*
+    : OpenBrace (propertyAssignment (Comma propertyAssignment)*)? CloseBrace
     ;
 
 propertyAssignment
-    : propertyName Colon expression
-    | computedPropertyName Colon expression
-    | shorthandPropertyName
-    ;
-
-shorthandPropertyName
-    : variable
+    : computedPropertyName Colon expression
+    | propertyName Colon expression
+    | variable
     ;
 
 computedPropertyName
@@ -249,16 +205,81 @@ propertyName
     | param
     ;
 
+booleanLiteral
+    : BooleanLiteral
+    ;
+
+stringLiteral
+    : StringLiteral
+    ;
+
+floatLiteral
+    : FloatLiteral
+    ;
+
+integerLiteral
+    : IntegerLiteral
+    ;
+
+noneLiteral
+    : Null
+    | None
+    ;
+
 expressionGroup
     : OpenParen expression CloseParen
     ;
 
-namespaceIdentifier
-    : namespace Identifier
+expression
+    : unaryOperator expression
+    | functionCallExpression
+    | expression multiplicativeOperator expression
+    | expression additiveOperator expression
+    | expression arrayOperator (inOperator | equalityOperator) expression
+    | expression inOperator expression
+    | expression likeOperator expression
+    | expression equalityOperator expression
+    | expression regexpOperator expression
+    | expression logicalAndOperator expression
+    | expression logicalOrOperator expression
+    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon OpenParen (forExpression | waitForExpression) CloseParen
+    | expression QuestionMark expression Colon OpenParen (forExpression | waitForExpression) CloseParen
+    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon expression
+    | expression QuestionMark expression? Colon expression
+    | rangeOperator
+    | stringLiteral
+    | floatLiteral
+    | integerLiteral
+    | booleanLiteral
+    | arrayLiteral
+    | objectLiteral
+    | param
+    | variable
+    | memberExpression
+    | noneLiteral
+    | expressionGroup
     ;
 
-namespace
-    : (NamespaceSegment)*
+
+memberExpression
+    : memberExpressionSource memberExpressionPath+
+    ;
+
+memberExpressionSource
+    : variable
+    | param
+    | functionCallExpression
+    | arrayLiteral
+    | objectLiteral
+    ;
+
+memberExpressionPath
+    : Dot propertyName
+    | computedPropertyName
+    ;
+
+functionCallExpression
+    : namespace functionIdentifier arguments
     ;
 
 functionIdentifier
@@ -292,59 +313,12 @@ functionIdentifier
     | Event
     ;
 
-functionCallExpression
-    : namespace functionIdentifier arguments
-    ;
-
-member
-    : Identifier
-    | functionCallExpression
-    | param
-    | objectLiteral
-    | arrayLiteral
-    ;
-
-memberPath
-    : (Dot propertyName (computedPropertyName)*)+
-    | computedPropertyName (Dot propertyName (computedPropertyName)*)* (computedPropertyName (Dot propertyName)*)*
-    ;
-
-memberExpression
-    : member memberPath
+namespace
+    : (NamespaceSegment)*
     ;
 
 arguments
-    : OpenParen(expression (Comma expression)*)?CloseParen
-    ;
-
-expression
-    : unaryOperator expression
-    | functionCallExpression
-    | memberExpression
-    | expression multiplicativeOperator expression
-    | expression additiveOperator expression
-    | expressionGroup
-    | expression arrayOperator (inOperator | equalityOperator) expression
-    | expression inOperator expression
-    | expression likeOperator expression
-    | expression equalityOperator expression
-    | expression regexpOperator expression
-    | expression logicalAndOperator expression
-    | expression logicalOrOperator expression
-    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon OpenParen (forExpression | waitForExpression) CloseParen
-    | expression QuestionMark expression Colon OpenParen (forExpression | waitForExpression) CloseParen
-    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon expression
-    | expression QuestionMark expression? Colon expression
-    | rangeOperator
-    | stringLiteral
-    | integerLiteral
-    | floatLiteral
-    | booleanLiteral
-    | arrayLiteral
-    | objectLiteral
-    | variable
-    | noneLiteral
-    | param
+    : OpenParen (expression (Comma expression)*)? CloseParen
     ;
 
 arrayOperator
@@ -400,4 +374,12 @@ unaryOperator
     : Not
     | Plus
     | Minus
+    ;
+
+param
+    : Param Identifier
+    ;
+
+variable
+    : Identifier
     ;
