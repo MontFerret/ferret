@@ -41,8 +41,7 @@ bodyExpression
     ;
 
 variableDeclaration
-    : Let Identifier Assign OpenParen forExpression CloseParen
-    | Let Identifier Assign OpenParen waitForExpression CloseParen
+    : Let Identifier Assign OpenParen (forExpression | waitForExpression) CloseParen
     | Let Identifier Assign expression
     ;
 
@@ -259,7 +258,6 @@ expression
     | noneLiteral
     | expressionGroup
     ;
-
 
 memberExpression
     : memberExpressionSource memberExpressionPath+
