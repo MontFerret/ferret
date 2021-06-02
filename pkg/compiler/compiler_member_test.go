@@ -269,7 +269,7 @@ func TestMember(t *testing.T) {
 			So(string(out), ShouldEqual, `true`)
 		})
 
-		Convey("Deep computed path", func() {
+		SkipConvey("Deep computed path", func() {
 			c := compiler.New()
 
 			p := c.MustCompile(`
@@ -290,6 +290,36 @@ LET o1 = {
 LET o2 = { prop: "third" }
 
 RETURN o1["first"]["second"][o2.prop]["fourth"]["fifth"].bottom
+			`)
+
+			out, err := p.Run(context.Background())
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `true`)
+		})
+
+		Convey("Deep computed path 2", func() {
+			c := compiler.New()
+
+			p := c.MustCompile(`
+LET o1 = {
+    first: {
+        second: {
+            third: {
+                fourth: {
+                    fifth: {
+                        bottom: true
+                    }
+                }
+            }
+        }
+    }
+}
+
+LET o2 = { prop: "third" }
+
+RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]
 			`)
 
 			out, err := p.Run(context.Background())

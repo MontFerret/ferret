@@ -95,7 +95,7 @@ FloatLiteral
 
 NamespaceSegment: Identifier NamespaceSeparator;
 
-ANY: .;
+UnknownIdentifier: .;
 
 // Fragments
 fragment HexDigit

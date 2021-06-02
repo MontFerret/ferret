@@ -284,6 +284,18 @@ func (s *BaseFqlParserListener) EnterNoneLiteral(ctx *NoneLiteralContext) {}
 // ExitNoneLiteral is called when production noneLiteral is exited.
 func (s *BaseFqlParserListener) ExitNoneLiteral(ctx *NoneLiteralContext) {}
 
+// EnterExpressionGroup is called when production expressionGroup is entered.
+func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
+
+// ExitExpressionGroup is called when production expressionGroup is exited.
+func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
+
+// EnterExpression is called when production expression is entered.
+func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
+
+// ExitExpression is called when production expression is exited.
+func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
+
 // EnterMemberExpression is called when production memberExpression is entered.
 func (s *BaseFqlParserListener) EnterMemberExpression(ctx *MemberExpressionContext) {}
 
@@ -301,18 +313,6 @@ func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionP
 
 // ExitMemberExpressionPath is called when production memberExpressionPath is exited.
 func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
-
-// EnterExpressionGroup is called when production expressionGroup is entered.
-func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
-
-// ExitExpressionGroup is called when production expressionGroup is exited.
-func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
-
-// EnterExpression is called when production expression is entered.
-func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
-
-// ExitExpression is called when production expression is exited.
-func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
 
 // EnterFunctionCallExpression is called when production functionCallExpression is entered.
 func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}

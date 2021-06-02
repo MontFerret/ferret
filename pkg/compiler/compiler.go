@@ -55,7 +55,6 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	}()
 
 	p := parser.New(query)
-	p.AddErrorListener(&errorListener{})
 
 	l := newVisitor(query, c.funcs)
 

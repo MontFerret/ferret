@@ -140,7 +140,7 @@ StringLiteral
 IntegerLiteral
 FloatLiteral
 NamespaceSegment
-ANY
+UnknownIdentifier
 
 rule names:
 MultiLineComment
@@ -211,7 +211,7 @@ StringLiteral
 IntegerLiteral
 FloatLiteral
 NamespaceSegment
-ANY
+UnknownIdentifier
 HexDigit
 DecimalIntegerLiteral
 ExponentPart

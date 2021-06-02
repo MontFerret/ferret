@@ -183,6 +183,14 @@ func (v *BaseFqlParserVisitor) VisitNoneLiteral(ctx *NoneLiteralContext) interfa
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitMemberExpression(ctx *MemberExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -192,14 +200,6 @@ func (v *BaseFqlParserVisitor) VisitMemberExpressionSource(ctx *MemberExpression
 }
 
 func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

@@ -309,7 +309,7 @@ var lexerSymbolicNames = []string{
 	"Let", "Collect", "SortDirection", "None", "Null", "BooleanLiteral", "Use",
 	"Into", "Keep", "With", "Count", "All", "Any", "Aggregate", "Event", "Like",
 	"Not", "In", "Do", "While", "Param", "Identifier", "StringLiteral", "IntegerLiteral",
-	"FloatLiteral", "NamespaceSegment", "ANY",
+	"FloatLiteral", "NamespaceSegment", "UnknownIdentifier",
 }
 
 var lexerRuleNames = []string{
@@ -322,7 +322,7 @@ var lexerRuleNames = []string{
 	"Let", "Collect", "SortDirection", "None", "Null", "BooleanLiteral", "Use",
 	"Into", "Keep", "With", "Count", "All", "Any", "Aggregate", "Event", "Like",
 	"Not", "In", "Do", "While", "Param", "Identifier", "StringLiteral", "IntegerLiteral",
-	"FloatLiteral", "NamespaceSegment", "ANY", "HexDigit", "DecimalIntegerLiteral",
+	"FloatLiteral", "NamespaceSegment", "UnknownIdentifier", "HexDigit", "DecimalIntegerLiteral",
 	"ExponentPart", "Letter", "Symbols", "Digit", "DQSring", "SQString", "BacktickString",
 	"TickString", "NamespaceSeparator",
 }
@@ -432,5 +432,5 @@ const (
 	FqlLexerIntegerLiteral    = 66
 	FqlLexerFloatLiteral      = 67
 	FqlLexerNamespaceSegment  = 68
-	FqlLexerANY               = 69
+	FqlLexerUnknownIdentifier = 69
 )

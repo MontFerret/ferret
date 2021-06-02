@@ -5,7 +5,7 @@ parser grammar FqlParser;
 options { tokenVocab=FqlLexer; }
 
 program
-    : (head)* body EOF
+    : head* body EOF
     ;
 
 head
@@ -20,18 +20,17 @@ use
     : Use namespaceIdentifier
     ;
 
-
 namespaceIdentifier
     : namespace Identifier
     ;
 
 body
-    : (bodyStatement)* bodyExpression
+    : bodyStatement* bodyExpression
     ;
 
 bodyStatement
-    : functionCallExpression
-    | variableDeclaration
+    : variableDeclaration
+    | functionCallExpression
     | waitForExpression
     ;
 
@@ -46,16 +45,16 @@ variableDeclaration
     ;
 
 returnExpression
-    : Return (Distinct)? OpenParen (forExpression | waitForExpression) CloseParen
-    | Return (Distinct)? expression
+    : Return Distinct? OpenParen (forExpression | waitForExpression) CloseParen
+    | Return Distinct? expression
     ;
 
 forExpression
     : For Identifier (Comma Identifier)? In forExpressionSource
-     (forExpressionBody)*
+     forExpressionBody*
       forExpressionReturn
-    | For Identifier (Do)? While expression
-     (forExpressionBody)*
+    | For Identifier Do? While expression
+     forExpressionBody*
       forExpressionReturn
     ;
 
@@ -189,8 +188,8 @@ objectLiteral
     ;
 
 propertyAssignment
-    : computedPropertyName Colon expression
-    | propertyName Colon expression
+    : propertyName Colon expression
+    | computedPropertyName Colon expression
     | variable
     ;
 
@@ -260,7 +259,7 @@ expression
     ;
 
 memberExpression
-    : memberExpressionSource memberExpressionPath+
+    : memberExpressionSource memberExpressionPath (memberExpressionPath)*
     ;
 
 memberExpressionSource
@@ -312,7 +311,7 @@ functionIdentifier
     ;
 
 namespace
-    : (NamespaceSegment)*
+    : NamespaceSegment*
     ;
 
 arguments

@@ -139,6 +139,12 @@ type FqlParserListener interface {
 	// EnterNoneLiteral is called when entering the noneLiteral production.
 	EnterNoneLiteral(c *NoneLiteralContext)
 
+	// EnterExpressionGroup is called when entering the expressionGroup production.
+	EnterExpressionGroup(c *ExpressionGroupContext)
+
+	// EnterExpression is called when entering the expression production.
+	EnterExpression(c *ExpressionContext)
+
 	// EnterMemberExpression is called when entering the memberExpression production.
 	EnterMemberExpression(c *MemberExpressionContext)
 
@@ -147,12 +153,6 @@ type FqlParserListener interface {
 
 	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
 	EnterMemberExpressionPath(c *MemberExpressionPathContext)
-
-	// EnterExpressionGroup is called when entering the expressionGroup production.
-	EnterExpressionGroup(c *ExpressionGroupContext)
-
-	// EnterExpression is called when entering the expression production.
-	EnterExpression(c *ExpressionContext)
 
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
@@ -334,6 +334,12 @@ type FqlParserListener interface {
 	// ExitNoneLiteral is called when exiting the noneLiteral production.
 	ExitNoneLiteral(c *NoneLiteralContext)
 
+	// ExitExpressionGroup is called when exiting the expressionGroup production.
+	ExitExpressionGroup(c *ExpressionGroupContext)
+
+	// ExitExpression is called when exiting the expression production.
+	ExitExpression(c *ExpressionContext)
+
 	// ExitMemberExpression is called when exiting the memberExpression production.
 	ExitMemberExpression(c *MemberExpressionContext)
 
@@ -342,12 +348,6 @@ type FqlParserListener interface {
 
 	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
 	ExitMemberExpressionPath(c *MemberExpressionPathContext)
-
-	// ExitExpressionGroup is called when exiting the expressionGroup production.
-	ExitExpressionGroup(c *ExpressionGroupContext)
-
-	// ExitExpression is called when exiting the expression production.
-	ExitExpression(c *ExpressionContext)
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
