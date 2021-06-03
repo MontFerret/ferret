@@ -15,7 +15,7 @@ var _ = reflect.Copy
 var _ = strconv.Itoa
 
 var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 71, 640,
+	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 71, 638,
 	4, 2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7,
 	4, 8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 4, 11, 9, 11, 4, 12, 9, 12, 4, 13,
 	9, 13, 4, 14, 9, 14, 4, 15, 9, 15, 4, 16, 9, 16, 4, 17, 9, 17, 4, 18, 9,
@@ -74,23 +74,23 @@ var parserATN = []uint16{
 	3, 47, 3, 47, 3, 47, 3, 47, 3, 47, 3, 47, 5, 47, 537, 10, 47, 3, 47, 3,
 	47, 3, 47, 3, 47, 3, 47, 5, 47, 544, 10, 47, 3, 47, 3, 47, 3, 47, 3, 47,
 	3, 47, 3, 47, 3, 47, 3, 47, 3, 47, 5, 47, 555, 10, 47, 3, 47, 3, 47, 7,
-	47, 559, 10, 47, 12, 47, 14, 47, 562, 11, 47, 3, 48, 3, 48, 3, 48, 7, 48,
-	567, 10, 48, 12, 48, 14, 48, 570, 11, 48, 3, 49, 3, 49, 3, 49, 3, 49, 3,
-	49, 5, 49, 577, 10, 49, 3, 50, 3, 50, 3, 50, 5, 50, 582, 10, 50, 3, 51,
-	3, 51, 3, 51, 3, 51, 3, 52, 3, 52, 3, 53, 7, 53, 591, 10, 53, 12, 53, 14,
-	53, 594, 11, 53, 3, 54, 3, 54, 3, 54, 3, 54, 7, 54, 600, 10, 54, 12, 54,
-	14, 54, 603, 11, 54, 5, 54, 605, 10, 54, 3, 54, 3, 54, 3, 55, 3, 55, 3,
-	56, 3, 56, 3, 56, 5, 56, 614, 10, 56, 3, 57, 3, 57, 3, 57, 5, 57, 619,
-	10, 57, 3, 58, 3, 58, 3, 59, 3, 59, 3, 60, 3, 60, 3, 61, 3, 61, 3, 62,
-	3, 62, 3, 63, 3, 63, 3, 64, 3, 64, 3, 65, 3, 65, 3, 65, 3, 66, 3, 66, 3,
-	66, 2, 3, 92, 67, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
-	32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66,
-	68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102,
-	104, 106, 108, 110, 112, 114, 116, 118, 120, 122, 124, 126, 128, 130, 2,
-	10, 3, 2, 48, 49, 6, 2, 30, 31, 37, 39, 41, 62, 66, 66, 4, 2, 48, 48, 56,
-	57, 3, 2, 17, 22, 3, 2, 35, 36, 3, 2, 23, 25, 3, 2, 26, 27, 4, 2, 26, 27,
-	61, 61, 2, 682, 2, 135, 3, 2, 2, 2, 4, 141, 3, 2, 2, 2, 6, 143, 3, 2, 2,
-	2, 8, 145, 3, 2, 2, 2, 10, 148, 3, 2, 2, 2, 12, 154, 3, 2, 2, 2, 14, 162,
+	47, 559, 10, 47, 12, 47, 14, 47, 562, 11, 47, 3, 48, 3, 48, 6, 48, 566,
+	10, 48, 13, 48, 14, 48, 567, 3, 49, 3, 49, 3, 49, 3, 49, 3, 49, 5, 49,
+	575, 10, 49, 3, 50, 3, 50, 3, 50, 5, 50, 580, 10, 50, 3, 51, 3, 51, 3,
+	51, 3, 51, 3, 52, 3, 52, 3, 53, 7, 53, 589, 10, 53, 12, 53, 14, 53, 592,
+	11, 53, 3, 54, 3, 54, 3, 54, 3, 54, 7, 54, 598, 10, 54, 12, 54, 14, 54,
+	601, 11, 54, 5, 54, 603, 10, 54, 3, 54, 3, 54, 3, 55, 3, 55, 3, 56, 3,
+	56, 3, 56, 5, 56, 612, 10, 56, 3, 57, 3, 57, 3, 57, 5, 57, 617, 10, 57,
+	3, 58, 3, 58, 3, 59, 3, 59, 3, 60, 3, 60, 3, 61, 3, 61, 3, 62, 3, 62, 3,
+	63, 3, 63, 3, 64, 3, 64, 3, 65, 3, 65, 3, 65, 3, 66, 3, 66, 3, 66, 2, 3,
+	92, 67, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34,
+	36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70,
+	72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104,
+	106, 108, 110, 112, 114, 116, 118, 120, 122, 124, 126, 128, 130, 2, 10,
+	3, 2, 48, 49, 6, 2, 30, 31, 37, 39, 41, 62, 66, 66, 4, 2, 48, 48, 56, 57,
+	3, 2, 17, 22, 3, 2, 35, 36, 3, 2, 23, 25, 3, 2, 26, 27, 4, 2, 26, 27, 61,
+	61, 2, 680, 2, 135, 3, 2, 2, 2, 4, 141, 3, 2, 2, 2, 6, 143, 3, 2, 2, 2,
+	8, 145, 3, 2, 2, 2, 10, 148, 3, 2, 2, 2, 12, 154, 3, 2, 2, 2, 14, 162,
 	3, 2, 2, 2, 16, 166, 3, 2, 2, 2, 18, 182, 3, 2, 2, 2, 20, 200, 3, 2, 2,
 	2, 22, 233, 3, 2, 2, 2, 24, 242, 3, 2, 2, 2, 26, 248, 3, 2, 2, 2, 28, 252,
 	3, 2, 2, 2, 30, 256, 3, 2, 2, 2, 32, 260, 3, 2, 2, 2, 34, 262, 3, 2, 2,
@@ -102,12 +102,12 @@ var parserATN = []uint16{
 	3, 2, 2, 2, 72, 407, 3, 2, 2, 2, 74, 429, 3, 2, 2, 2, 76, 431, 3, 2, 2,
 	2, 78, 438, 3, 2, 2, 2, 80, 440, 3, 2, 2, 2, 82, 442, 3, 2, 2, 2, 84, 444,
 	3, 2, 2, 2, 86, 446, 3, 2, 2, 2, 88, 448, 3, 2, 2, 2, 90, 450, 3, 2, 2,
-	2, 92, 471, 3, 2, 2, 2, 94, 563, 3, 2, 2, 2, 96, 576, 3, 2, 2, 2, 98, 581,
-	3, 2, 2, 2, 100, 583, 3, 2, 2, 2, 102, 587, 3, 2, 2, 2, 104, 592, 3, 2,
-	2, 2, 106, 595, 3, 2, 2, 2, 108, 608, 3, 2, 2, 2, 110, 613, 3, 2, 2, 2,
-	112, 618, 3, 2, 2, 2, 114, 620, 3, 2, 2, 2, 116, 622, 3, 2, 2, 2, 118,
-	624, 3, 2, 2, 2, 120, 626, 3, 2, 2, 2, 122, 628, 3, 2, 2, 2, 124, 630,
-	3, 2, 2, 2, 126, 632, 3, 2, 2, 2, 128, 634, 3, 2, 2, 2, 130, 637, 3, 2,
+	2, 92, 471, 3, 2, 2, 2, 94, 563, 3, 2, 2, 2, 96, 574, 3, 2, 2, 2, 98, 579,
+	3, 2, 2, 2, 100, 581, 3, 2, 2, 2, 102, 585, 3, 2, 2, 2, 104, 590, 3, 2,
+	2, 2, 106, 593, 3, 2, 2, 2, 108, 606, 3, 2, 2, 2, 110, 611, 3, 2, 2, 2,
+	112, 616, 3, 2, 2, 2, 114, 618, 3, 2, 2, 2, 116, 620, 3, 2, 2, 2, 118,
+	622, 3, 2, 2, 2, 120, 624, 3, 2, 2, 2, 122, 626, 3, 2, 2, 2, 124, 628,
+	3, 2, 2, 2, 126, 630, 3, 2, 2, 2, 128, 632, 3, 2, 2, 2, 130, 635, 3, 2,
 	2, 2, 132, 134, 5, 4, 3, 2, 133, 132, 3, 2, 2, 2, 134, 137, 3, 2, 2, 2,
 	135, 133, 3, 2, 2, 2, 135, 136, 3, 2, 2, 2, 136, 138, 3, 2, 2, 2, 137,
 	135, 3, 2, 2, 2, 138, 139, 5, 12, 7, 2, 139, 140, 7, 2, 2, 3, 140, 3, 3,
@@ -273,39 +273,38 @@ var parserATN = []uint16{
 	3, 2, 2, 2, 558, 501, 3, 2, 2, 2, 558, 505, 3, 2, 2, 2, 558, 509, 3, 2,
 	2, 2, 558, 513, 3, 2, 2, 2, 558, 524, 3, 2, 2, 2, 558, 531, 3, 2, 2, 2,
 	558, 547, 3, 2, 2, 2, 559, 562, 3, 2, 2, 2, 560, 558, 3, 2, 2, 2, 560,
-	561, 3, 2, 2, 2, 561, 93, 3, 2, 2, 2, 562, 560, 3, 2, 2, 2, 563, 564, 5,
-	96, 49, 2, 564, 568, 5, 98, 50, 2, 565, 567, 5, 98, 50, 2, 566, 565, 3,
-	2, 2, 2, 567, 570, 3, 2, 2, 2, 568, 566, 3, 2, 2, 2, 568, 569, 3, 2, 2,
-	2, 569, 95, 3, 2, 2, 2, 570, 568, 3, 2, 2, 2, 571, 577, 5, 130, 66, 2,
-	572, 577, 5, 128, 65, 2, 573, 577, 5, 100, 51, 2, 574, 577, 5, 70, 36,
-	2, 575, 577, 5, 72, 37, 2, 576, 571, 3, 2, 2, 2, 576, 572, 3, 2, 2, 2,
-	576, 573, 3, 2, 2, 2, 576, 574, 3, 2, 2, 2, 576, 575, 3, 2, 2, 2, 577,
-	97, 3, 2, 2, 2, 578, 579, 7, 9, 2, 2, 579, 582, 5, 78, 40, 2, 580, 582,
-	5, 76, 39, 2, 581, 578, 3, 2, 2, 2, 581, 580, 3, 2, 2, 2, 582, 99, 3, 2,
-	2, 2, 583, 584, 5, 104, 53, 2, 584, 585, 5, 102, 52, 2, 585, 586, 5, 106,
-	54, 2, 586, 101, 3, 2, 2, 2, 587, 588, 9, 3, 2, 2, 588, 103, 3, 2, 2, 2,
-	589, 591, 7, 70, 2, 2, 590, 589, 3, 2, 2, 2, 591, 594, 3, 2, 2, 2, 592,
-	590, 3, 2, 2, 2, 592, 593, 3, 2, 2, 2, 593, 105, 3, 2, 2, 2, 594, 592,
-	3, 2, 2, 2, 595, 604, 7, 13, 2, 2, 596, 601, 5, 92, 47, 2, 597, 598, 7,
-	10, 2, 2, 598, 600, 5, 92, 47, 2, 599, 597, 3, 2, 2, 2, 600, 603, 3, 2,
-	2, 2, 601, 599, 3, 2, 2, 2, 601, 602, 3, 2, 2, 2, 602, 605, 3, 2, 2, 2,
-	603, 601, 3, 2, 2, 2, 604, 596, 3, 2, 2, 2, 604, 605, 3, 2, 2, 2, 605,
-	606, 3, 2, 2, 2, 606, 607, 7, 14, 2, 2, 607, 107, 3, 2, 2, 2, 608, 609,
-	9, 4, 2, 2, 609, 109, 3, 2, 2, 2, 610, 614, 7, 62, 2, 2, 611, 612, 7, 61,
-	2, 2, 612, 614, 7, 62, 2, 2, 613, 610, 3, 2, 2, 2, 613, 611, 3, 2, 2, 2,
-	614, 111, 3, 2, 2, 2, 615, 619, 7, 60, 2, 2, 616, 617, 7, 61, 2, 2, 617,
-	619, 7, 60, 2, 2, 618, 615, 3, 2, 2, 2, 618, 616, 3, 2, 2, 2, 619, 113,
-	3, 2, 2, 2, 620, 621, 9, 5, 2, 2, 621, 115, 3, 2, 2, 2, 622, 623, 9, 6,
-	2, 2, 623, 117, 3, 2, 2, 2, 624, 625, 7, 30, 2, 2, 625, 119, 3, 2, 2, 2,
-	626, 627, 7, 31, 2, 2, 627, 121, 3, 2, 2, 2, 628, 629, 9, 7, 2, 2, 629,
-	123, 3, 2, 2, 2, 630, 631, 9, 8, 2, 2, 631, 125, 3, 2, 2, 2, 632, 633,
-	9, 9, 2, 2, 633, 127, 3, 2, 2, 2, 634, 635, 7, 65, 2, 2, 635, 636, 7, 66,
-	2, 2, 636, 129, 3, 2, 2, 2, 637, 638, 7, 66, 2, 2, 638, 131, 3, 2, 2, 2,
-	62, 135, 154, 162, 166, 174, 182, 186, 191, 197, 200, 206, 213, 221, 228,
-	233, 242, 248, 252, 256, 260, 269, 273, 281, 286, 306, 317, 326, 339, 341,
-	352, 360, 363, 369, 376, 381, 386, 392, 400, 403, 413, 416, 429, 438, 471,
-	485, 518, 527, 536, 543, 554, 558, 560, 568, 576, 581, 592, 601, 604, 613,
-	618,
+	561, 3, 2, 2, 2, 561, 93, 3, 2, 2, 2, 562, 560, 3, 2, 2, 2, 563, 565, 5,
+	96, 49, 2, 564, 566, 5, 98, 50, 2, 565, 564, 3, 2, 2, 2, 566, 567, 3, 2,
+	2, 2, 567, 565, 3, 2, 2, 2, 567, 568, 3, 2, 2, 2, 568, 95, 3, 2, 2, 2,
+	569, 575, 5, 130, 66, 2, 570, 575, 5, 128, 65, 2, 571, 575, 5, 100, 51,
+	2, 572, 575, 5, 70, 36, 2, 573, 575, 5, 72, 37, 2, 574, 569, 3, 2, 2, 2,
+	574, 570, 3, 2, 2, 2, 574, 571, 3, 2, 2, 2, 574, 572, 3, 2, 2, 2, 574,
+	573, 3, 2, 2, 2, 575, 97, 3, 2, 2, 2, 576, 577, 7, 9, 2, 2, 577, 580, 5,
+	78, 40, 2, 578, 580, 5, 76, 39, 2, 579, 576, 3, 2, 2, 2, 579, 578, 3, 2,
+	2, 2, 580, 99, 3, 2, 2, 2, 581, 582, 5, 104, 53, 2, 582, 583, 5, 102, 52,
+	2, 583, 584, 5, 106, 54, 2, 584, 101, 3, 2, 2, 2, 585, 586, 9, 3, 2, 2,
+	586, 103, 3, 2, 2, 2, 587, 589, 7, 70, 2, 2, 588, 587, 3, 2, 2, 2, 589,
+	592, 3, 2, 2, 2, 590, 588, 3, 2, 2, 2, 590, 591, 3, 2, 2, 2, 591, 105,
+	3, 2, 2, 2, 592, 590, 3, 2, 2, 2, 593, 602, 7, 13, 2, 2, 594, 599, 5, 92,
+	47, 2, 595, 596, 7, 10, 2, 2, 596, 598, 5, 92, 47, 2, 597, 595, 3, 2, 2,
+	2, 598, 601, 3, 2, 2, 2, 599, 597, 3, 2, 2, 2, 599, 600, 3, 2, 2, 2, 600,
+	603, 3, 2, 2, 2, 601, 599, 3, 2, 2, 2, 602, 594, 3, 2, 2, 2, 602, 603,
+	3, 2, 2, 2, 603, 604, 3, 2, 2, 2, 604, 605, 7, 14, 2, 2, 605, 107, 3, 2,
+	2, 2, 606, 607, 9, 4, 2, 2, 607, 109, 3, 2, 2, 2, 608, 612, 7, 62, 2, 2,
+	609, 610, 7, 61, 2, 2, 610, 612, 7, 62, 2, 2, 611, 608, 3, 2, 2, 2, 611,
+	609, 3, 2, 2, 2, 612, 111, 3, 2, 2, 2, 613, 617, 7, 60, 2, 2, 614, 615,
+	7, 61, 2, 2, 615, 617, 7, 60, 2, 2, 616, 613, 3, 2, 2, 2, 616, 614, 3,
+	2, 2, 2, 617, 113, 3, 2, 2, 2, 618, 619, 9, 5, 2, 2, 619, 115, 3, 2, 2,
+	2, 620, 621, 9, 6, 2, 2, 621, 117, 3, 2, 2, 2, 622, 623, 7, 30, 2, 2, 623,
+	119, 3, 2, 2, 2, 624, 625, 7, 31, 2, 2, 625, 121, 3, 2, 2, 2, 626, 627,
+	9, 7, 2, 2, 627, 123, 3, 2, 2, 2, 628, 629, 9, 8, 2, 2, 629, 125, 3, 2,
+	2, 2, 630, 631, 9, 9, 2, 2, 631, 127, 3, 2, 2, 2, 632, 633, 7, 65, 2, 2,
+	633, 634, 7, 66, 2, 2, 634, 129, 3, 2, 2, 2, 635, 636, 7, 66, 2, 2, 636,
+	131, 3, 2, 2, 2, 62, 135, 154, 162, 166, 174, 182, 186, 191, 197, 200,
+	206, 213, 221, 228, 233, 242, 248, 252, 256, 260, 269, 273, 281, 286, 306,
+	317, 326, 339, 341, 352, 360, 363, 369, 376, 381, 386, 392, 400, 403, 413,
+	416, 429, 438, 471, 485, 518, 527, 536, 543, 554, 558, 560, 567, 574, 579,
+	590, 599, 602, 611, 616,
 }
 var literalNames = []string{
 	"", "", "", "", "", "':'", "';'", "'.'", "','", "'['", "']'", "'('", "')'",
@@ -8243,23 +8242,22 @@ func (p *FqlParser) MemberExpression() (localctx IMemberExpressionContext) {
 		p.SetState(561)
 		p.MemberExpressionSource()
 	}
-	{
-		p.SetState(562)
-		p.MemberExpressionPath()
-	}
-	p.SetState(566)
+	p.SetState(563)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 52, p.GetParserRuleContext())
-
-	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
-		if _alt == 1 {
+	_alt = 1
+	for ok := true; ok; ok = _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
+		switch _alt {
+		case 1:
 			{
-				p.SetState(563)
+				p.SetState(562)
 				p.MemberExpressionPath()
 			}
 
+		default:
+			panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
 		}
-		p.SetState(568)
+
+		p.SetState(565)
 		p.GetErrorHandler().Sync(p)
 		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 52, p.GetParserRuleContext())
 	}
@@ -8405,41 +8403,41 @@ func (p *FqlParser) MemberExpressionSource() (localctx IMemberExpressionSourceCo
 		}
 	}()
 
-	p.SetState(574)
+	p.SetState(572)
 	p.GetErrorHandler().Sync(p)
 	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 53, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(569)
+			p.SetState(567)
 			p.Variable()
 		}
 
 	case 2:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(570)
+			p.SetState(568)
 			p.Param()
 		}
 
 	case 3:
 		p.EnterOuterAlt(localctx, 3)
 		{
-			p.SetState(571)
+			p.SetState(569)
 			p.FunctionCallExpression()
 		}
 
 	case 4:
 		p.EnterOuterAlt(localctx, 4)
 		{
-			p.SetState(572)
+			p.SetState(570)
 			p.ArrayLiteral()
 		}
 
 	case 5:
 		p.EnterOuterAlt(localctx, 5)
 		{
-			p.SetState(573)
+			p.SetState(571)
 			p.ObjectLiteral()
 		}
 
@@ -8560,25 +8558,25 @@ func (p *FqlParser) MemberExpressionPath() (localctx IMemberExpressionPathContex
 		}
 	}()
 
-	p.SetState(579)
+	p.SetState(577)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserDot:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(576)
+			p.SetState(574)
 			p.Match(FqlParserDot)
 		}
 		{
-			p.SetState(577)
+			p.SetState(575)
 			p.PropertyName()
 		}
 
 	case FqlParserOpenBracket:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(578)
+			p.SetState(576)
 			p.ComputedPropertyName()
 		}
 
@@ -8709,15 +8707,15 @@ func (p *FqlParser) FunctionCallExpression() (localctx IFunctionCallExpressionCo
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(581)
+		p.SetState(579)
 		p.Namespace()
 	}
 	{
-		p.SetState(582)
+		p.SetState(580)
 		p.FunctionIdentifier()
 	}
 	{
-		p.SetState(583)
+		p.SetState(581)
 		p.Arguments()
 	}
 
@@ -8927,7 +8925,7 @@ func (p *FqlParser) FunctionIdentifier() (localctx IFunctionIdentifierContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(585)
+		p.SetState(583)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == FqlParserAnd || _la == FqlParserOr || (((_la-35)&-(0x1f+1)) == 0 && ((1<<uint((_la-35)))&((1<<(FqlParserFor-35))|(1<<(FqlParserReturn-35))|(1<<(FqlParserWaitfor-35))|(1<<(FqlParserDistinct-35))|(1<<(FqlParserFilter-35))|(1<<(FqlParserSort-35))|(1<<(FqlParserLimit-35))|(1<<(FqlParserLet-35))|(1<<(FqlParserCollect-35))|(1<<(FqlParserSortDirection-35))|(1<<(FqlParserNone-35))|(1<<(FqlParserNull-35))|(1<<(FqlParserBooleanLiteral-35))|(1<<(FqlParserUse-35))|(1<<(FqlParserInto-35))|(1<<(FqlParserKeep-35))|(1<<(FqlParserWith-35))|(1<<(FqlParserCount-35))|(1<<(FqlParserAll-35))|(1<<(FqlParserAny-35))|(1<<(FqlParserAggregate-35))|(1<<(FqlParserEvent-35))|(1<<(FqlParserLike-35))|(1<<(FqlParserNot-35))|(1<<(FqlParserIn-35))|(1<<(FqlParserIdentifier-35)))) != 0)) {
@@ -9039,17 +9037,17 @@ func (p *FqlParser) Namespace() (localctx INamespaceContext) {
 	}()
 
 	p.EnterOuterAlt(localctx, 1)
-	p.SetState(590)
+	p.SetState(588)
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
 	for _la == FqlParserNamespaceSegment {
 		{
-			p.SetState(587)
+			p.SetState(585)
 			p.Match(FqlParserNamespaceSegment)
 		}
 
-		p.SetState(592)
+		p.SetState(590)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 	}
@@ -9187,40 +9185,40 @@ func (p *FqlParser) Arguments() (localctx IArgumentsContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(593)
+		p.SetState(591)
 		p.Match(FqlParserOpenParen)
 	}
-	p.SetState(602)
+	p.SetState(600)
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
 	if (((_la-9)&-(0x1f+1)) == 0 && ((1<<uint((_la-9)))&((1<<(FqlParserOpenBracket-9))|(1<<(FqlParserOpenParen-9))|(1<<(FqlParserOpenBrace-9))|(1<<(FqlParserPlus-9))|(1<<(FqlParserMinus-9))|(1<<(FqlParserAnd-9))|(1<<(FqlParserOr-9))|(1<<(FqlParserFor-9))|(1<<(FqlParserReturn-9))|(1<<(FqlParserWaitfor-9))|(1<<(FqlParserDistinct-9))|(1<<(FqlParserFilter-9)))) != 0) || (((_la-41)&-(0x1f+1)) == 0 && ((1<<uint((_la-41)))&((1<<(FqlParserSort-41))|(1<<(FqlParserLimit-41))|(1<<(FqlParserLet-41))|(1<<(FqlParserCollect-41))|(1<<(FqlParserSortDirection-41))|(1<<(FqlParserNone-41))|(1<<(FqlParserNull-41))|(1<<(FqlParserBooleanLiteral-41))|(1<<(FqlParserUse-41))|(1<<(FqlParserInto-41))|(1<<(FqlParserKeep-41))|(1<<(FqlParserWith-41))|(1<<(FqlParserCount-41))|(1<<(FqlParserAll-41))|(1<<(FqlParserAny-41))|(1<<(FqlParserAggregate-41))|(1<<(FqlParserEvent-41))|(1<<(FqlParserLike-41))|(1<<(FqlParserNot-41))|(1<<(FqlParserIn-41))|(1<<(FqlParserParam-41))|(1<<(FqlParserIdentifier-41))|(1<<(FqlParserStringLiteral-41))|(1<<(FqlParserIntegerLiteral-41))|(1<<(FqlParserFloatLiteral-41))|(1<<(FqlParserNamespaceSegment-41)))) != 0) {
 		{
-			p.SetState(594)
+			p.SetState(592)
 			p.expression(0)
 		}
-		p.SetState(599)
+		p.SetState(597)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == FqlParserComma {
 			{
-				p.SetState(595)
+				p.SetState(593)
 				p.Match(FqlParserComma)
 			}
 			{
-				p.SetState(596)
+				p.SetState(594)
 				p.expression(0)
 			}
 
-			p.SetState(601)
+			p.SetState(599)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
 
 	}
 	{
-		p.SetState(604)
+		p.SetState(602)
 		p.Match(FqlParserCloseParen)
 	}
 
@@ -9330,7 +9328,7 @@ func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(606)
+		p.SetState(604)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(((_la-46)&-(0x1f+1)) == 0 && ((1<<uint((_la-46)))&((1<<(FqlParserNone-46))|(1<<(FqlParserAll-46))|(1<<(FqlParserAny-46)))) != 0) {
@@ -9440,25 +9438,25 @@ func (p *FqlParser) InOperator() (localctx IInOperatorContext) {
 		}
 	}()
 
-	p.SetState(611)
+	p.SetState(609)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserIn:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(608)
+			p.SetState(606)
 			p.Match(FqlParserIn)
 		}
 
 	case FqlParserNot:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(609)
+			p.SetState(607)
 			p.Match(FqlParserNot)
 		}
 		{
-			p.SetState(610)
+			p.SetState(608)
 			p.Match(FqlParserIn)
 		}
 
@@ -9565,25 +9563,25 @@ func (p *FqlParser) LikeOperator() (localctx ILikeOperatorContext) {
 		}
 	}()
 
-	p.SetState(616)
+	p.SetState(614)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserLike:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(613)
+			p.SetState(611)
 			p.Match(FqlParserLike)
 		}
 
 	case FqlParserNot:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(614)
+			p.SetState(612)
 			p.Match(FqlParserNot)
 		}
 		{
-			p.SetState(615)
+			p.SetState(613)
 			p.Match(FqlParserLike)
 		}
 
@@ -9709,7 +9707,7 @@ func (p *FqlParser) EqualityOperator() (localctx IEqualityOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(618)
+		p.SetState(616)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<FqlParserGt)|(1<<FqlParserLt)|(1<<FqlParserEq)|(1<<FqlParserGte)|(1<<FqlParserLte)|(1<<FqlParserNeq))) != 0) {
@@ -9822,7 +9820,7 @@ func (p *FqlParser) RegexpOperator() (localctx IRegexpOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(620)
+		p.SetState(618)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == FqlParserRegexNotMatch || _la == FqlParserRegexMatch) {
@@ -9930,7 +9928,7 @@ func (p *FqlParser) LogicalAndOperator() (localctx ILogicalAndOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(622)
+		p.SetState(620)
 		p.Match(FqlParserAnd)
 	}
 
@@ -10031,7 +10029,7 @@ func (p *FqlParser) LogicalOrOperator() (localctx ILogicalOrOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(624)
+		p.SetState(622)
 		p.Match(FqlParserOr)
 	}
 
@@ -10141,7 +10139,7 @@ func (p *FqlParser) MultiplicativeOperator() (localctx IMultiplicativeOperatorCo
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(626)
+		p.SetState(624)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<FqlParserMulti)|(1<<FqlParserDiv)|(1<<FqlParserMod))) != 0) {
@@ -10254,7 +10252,7 @@ func (p *FqlParser) AdditiveOperator() (localctx IAdditiveOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(628)
+		p.SetState(626)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == FqlParserPlus || _la == FqlParserMinus) {
@@ -10371,7 +10369,7 @@ func (p *FqlParser) UnaryOperator() (localctx IUnaryOperatorContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(630)
+		p.SetState(628)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == FqlParserPlus || _la == FqlParserMinus || _la == FqlParserNot) {
@@ -10483,11 +10481,11 @@ func (p *FqlParser) Param() (localctx IParamContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(632)
+		p.SetState(630)
 		p.Match(FqlParserParam)
 	}
 	{
-		p.SetState(633)
+		p.SetState(631)
 		p.Match(FqlParserIdentifier)
 	}
 
@@ -10588,7 +10586,7 @@ func (p *FqlParser) Variable() (localctx IVariableContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(635)
+		p.SetState(633)
 		p.Match(FqlParserIdentifier)
 	}
 

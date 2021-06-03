@@ -259,7 +259,7 @@ expression
     ;
 
 memberExpression
-    : memberExpressionSource memberExpressionPath (memberExpressionPath)*
+    : memberExpressionSource memberExpressionPath+
     ;
 
 memberExpressionSource

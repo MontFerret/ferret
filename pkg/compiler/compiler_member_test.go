@@ -269,14 +269,14 @@ func TestMember(t *testing.T) {
 			So(string(out), ShouldEqual, `true`)
 		})
 
-		SkipConvey("Deep computed path", func() {
+		Convey("Deep computed path", func() {
 			c := compiler.New()
 
 			p := c.MustCompile(`
 LET o1 = {
     first: {
         second: {
-            third: {
+            ["third"]: {
                 fourth: {
                     fifth: {
                         bottom: true
