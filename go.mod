@@ -10,15 +10,13 @@ require (
 	github.com/corpix/uarand v0.1.1
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
-	github.com/mafredri/cdp v0.31.0
+	github.com/mafredri/cdp v0.31.1-0.20210518091851-fd8f409763f9
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.21.0
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/wI2L/jettison v0.7.1
-	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
-	golang.org/x/text v0.3.2
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/text v0.3.3
 )
