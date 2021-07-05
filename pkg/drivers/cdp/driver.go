@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/mafredri/cdp"
@@ -48,11 +49,6 @@ func (drv *Driver) Name() string {
 
 func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
-	drv.options.OpenPageLimiter <- struct{}{}
-	defer func() {
-		<-drv.options.OpenPageLimiter
-	}()
-	//
 	conn, err := drv.createConnection(ctx, params.KeepCookies)
 
 	if err != nil {
@@ -151,7 +147,8 @@ func (drv *Driver) setDefaultParams(params drivers.Params) drivers.Params {
 func (drv *Driver) init(ctx context.Context) error {
 	drv.mu.Lock()
 	defer drv.mu.Unlock()
-
+	tar, _ := drv.dev.List(ctx)
+	fmt.Println(tar)
 	if drv.session == nil {
 		ver, err := drv.dev.Version(ctx)
 
