@@ -48,6 +48,10 @@ func (drv *Driver) Name() string {
 
 func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
+	drv.options.OpenPageLimiter <- struct{}{}
+	defer func() {
+		drv.options.OpenPageLimiter <- struct{}{}
+	}()
 
 	conn, err := drv.createConnection(ctx, params.KeepCookies)
 

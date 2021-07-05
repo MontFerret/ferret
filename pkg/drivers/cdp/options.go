@@ -5,8 +5,9 @@ import "github.com/MontFerret/ferret/pkg/drivers"
 type (
 	Options struct {
 		*drivers.Options
-		Address     string
-		KeepCookies bool
+		Address         string
+		KeepCookies     bool
+		OpenPageLimiter chan struct{}
 	}
 
 	Option func(opts *Options)
@@ -80,5 +81,11 @@ func WithCookie(cookie drivers.HTTPCookie) Option {
 func WithCookies(cookies []drivers.HTTPCookie) Option {
 	return func(opts *Options) {
 		drivers.WithCookies(cookies)(opts.Options)
+	}
+}
+
+func WithOpenPageLimit(limit uint) Option {
+	return func(opts *Options) {
+		opts.OpenPageLimiter = make(chan struct{}, limit)
 	}
 }
