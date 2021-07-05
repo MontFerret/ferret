@@ -50,7 +50,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	logger := logging.FromContext(ctx)
 	drv.options.OpenPageLimiter <- struct{}{}
 	defer func() {
-		drv.options.OpenPageLimiter <- struct{}{}
+		<-drv.options.OpenPageLimiter
 	}()
 
 	conn, err := drv.createConnection(ctx, params.KeepCookies)
