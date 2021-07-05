@@ -52,7 +52,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	defer func() {
 		<-drv.options.OpenPageLimiter
 	}()
-
+	//
 	conn, err := drv.createConnection(ctx, params.KeepCookies)
 
 	if err != nil {
