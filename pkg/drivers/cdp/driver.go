@@ -2,7 +2,6 @@ package cdp
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/mafredri/cdp"
@@ -147,8 +146,7 @@ func (drv *Driver) setDefaultParams(params drivers.Params) drivers.Params {
 func (drv *Driver) init(ctx context.Context) error {
 	drv.mu.Lock()
 	defer drv.mu.Unlock()
-	tar, _ := drv.dev.List(ctx)
-	fmt.Println(tar)
+
 	if drv.session == nil {
 		ver, err := drv.dev.Version(ctx)
 
