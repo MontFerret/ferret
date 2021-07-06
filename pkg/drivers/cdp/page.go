@@ -83,7 +83,6 @@ func LoadHTMLPage(
 	}
 
 	netManager, err := net.New(logger, client, netOpts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +96,9 @@ func LoadHTMLPage(
 		mouse,
 		keyboard,
 	)
-
 	if err != nil {
 		return nil, err
 	}
-
-	closers = append(closers, domManager)
 
 	p = NewHTMLPage(
 		logger,
