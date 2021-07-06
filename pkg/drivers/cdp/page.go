@@ -48,7 +48,6 @@ func LoadHTMLPage(
 	}
 
 	client := cdp.NewClient(conn)
-
 	if err := enableFeatures(ctx, client, params); err != nil {
 		return nil, err
 	}
