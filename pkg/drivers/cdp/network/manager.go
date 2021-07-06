@@ -44,11 +44,12 @@ type (
 )
 
 func New(
+	ctx context.Context,
 	logger *zerolog.Logger,
 	client *cdp.Client,
 	options Options,
 ) (*Manager, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	m := new(Manager)
 	m.logger = logger
