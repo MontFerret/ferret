@@ -10,12 +10,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
+
 var sourceMap = core.NewSourceMap("hello", 2, 3)
 var rootScope, _ = core.NewRootScope()
 var _ = rootScope.SetVariable("key", values.NewString("value"))
 
 func TestNewVariableExpression(t *testing.T) {
-	
+
 	Convey("Should not throw error and create a VariableExpression given correct arguments", t, func() {
 		ret, err := expressions.NewVariableExpression(sourceMap, "foo")
 
@@ -52,7 +53,7 @@ func TestNewVariableDeclarationExpression(t *testing.T) {
 
 		So(err, ShouldHaveSameTypeAs, core.ErrMissedArgument)
 	})
-	
+
 	Convey("Calling .Exec should add the value retrieved by its VariableExpression with its own name as key to the given scope", t, func() {
 		variableExpression, _ := expressions.NewVariableExpression(sourceMap, "key")
 		variableDeclarationExpression, _ := expressions.NewVariableDeclarationExpression(sourceMap, "keyTwo", variableExpression)
