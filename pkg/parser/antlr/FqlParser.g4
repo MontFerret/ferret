@@ -180,11 +180,11 @@ rangeOperator
     ;
 
 arrayLiteral
-    : OpenBracket (expression (Comma expression)*)? CloseBracket
+    : OpenBracket (expression (Comma expression)* Comma?)? CloseBracket
     ;
 
 objectLiteral
-    : OpenBrace (propertyAssignment (Comma propertyAssignment)*)? CloseBrace
+    : OpenBrace (propertyAssignment (Comma propertyAssignment)* Comma?)? CloseBrace
     ;
 
 propertyAssignment
