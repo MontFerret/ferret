@@ -2,10 +2,6 @@ package compiler
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
-	"strings"
-
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -16,6 +12,9 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/pkg/errors"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 type (
@@ -154,77 +153,52 @@ func (v *visitor) doVisitBody(ctx *fql.BodyContext, scope *scope) (core.Expressi
 }
 
 func (v *visitor) doVisitBodyStatement(ctx *fql.BodyStatementContext, scope *scope) (core.Expression, error) {
-	variable := ctx.VariableDeclaration()
-
-	if variable != nil {
+	if variable := ctx.VariableDeclaration(); variable != nil {
 		return v.doVisitVariableDeclaration(variable.(*fql.VariableDeclarationContext), scope)
 	}
 
-	funcCall := ctx.FunctionCallExpression()
-
-	if funcCall != nil {
+	if funcCall := ctx.FunctionCallExpression(); funcCall != nil {
 		return v.doVisitFunctionCallExpression(funcCall.(*fql.FunctionCallExpressionContext), scope)
+	}
+
+	if waitfor := ctx.WaitForExpression(); waitfor != nil {
+		return v.doVisitWaitForExpressionContext(waitfor.(*fql.WaitForExpressionContext), scope)
 	}
 
 	return nil, core.Error(ErrInvalidToken, ctx.GetText())
 }
 
 func (v *visitor) doVisitBodyExpression(ctx *fql.BodyExpressionContext, scope *scope) (core.Expression, error) {
-	forIn := ctx.ForExpression()
-
-	if forIn != nil {
-		return v.doVisitForExpression(forIn.(*fql.ForExpressionContext), scope)
+	if exp := ctx.ForExpression(); exp != nil {
+		return v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
 	}
 
-	ret := ctx.ReturnExpression()
-
-	if ret != nil {
-		return v.doVisitReturnExpression(ret.(*fql.ReturnExpressionContext), scope)
+	if exp := ctx.ReturnExpression(); exp != nil {
+		return v.doVisitReturnExpression(exp.(*fql.ReturnExpressionContext), scope)
 	}
 
-	return nil, nil
+	return nil, core.Error(ErrInvalidToken, ctx.GetText())
 }
 
 func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scope *scope) (core.Expression, error) {
-	var exp core.Expression
-	expCtx := ctx.Expression()
+	var out core.Expression
+	var err error
 
-	if expCtx != nil {
-		out, err := v.doVisitExpression(expCtx.(*fql.ExpressionContext), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		exp = out
-
-		return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
+	if exp := ctx.ForExpression(); exp != nil {
+		out, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope.Fork())
+	} else if exp := ctx.WaitForExpression(); exp != nil {
+		out, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
+	} else if exp := ctx.Expression(); exp != nil {
+		out, err = v.doVisitExpression(exp.(*fql.ExpressionContext), scope)
+	} else {
+		return nil, core.Error(ErrInvalidToken, ctx.GetText())
 	}
 
-	forIn := ctx.ForExpression()
-
-	if forIn != nil {
-		out, err := v.doVisitForExpression(ctx.ForExpression().(*fql.ForExpressionContext), scope.Fork())
-		if err != nil {
-			return nil, err
-		}
-
-		exp = out
-
-		return expressions.NewReturnExpression(v.getSourceMap(ctx), exp)
+	if err != nil {
+		return nil, err
 	}
 
-	forInTernary := ctx.ForTernaryExpression()
-
-	if forInTernary != nil {
-		out, err := v.doVisitForTernaryExpression(forInTernary.(*fql.ForTernaryExpressionContext), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		return expressions.NewReturnExpression(v.getSourceMap(ctx), out)
-	}
-
-	return nil, ErrNotImplemented
+	return expressions.NewReturnExpression(v.getSourceMap(ctx), out)
 }
 
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
@@ -233,13 +207,14 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 	var keyVarName string
 	var ds collections.Iterable
 
-	valVar := ctx.ForExpressionValueVariable()
-	valVarName = valVar.GetText()
+	expVars := ctx.AllIdentifier()
 
-	keyVar := ctx.ForExpressionKeyVariable()
+	if len(expVars) > 0 {
+		valVarName = expVars[0].GetText()
+	}
 
-	if keyVar != nil {
-		keyVarName = keyVar.GetText()
+	if len(expVars) > 1 {
+		keyVarName = expVars[1].GetText()
 	}
 
 	isWhileLoop := ctx.In() == nil
@@ -779,127 +754,186 @@ func (v *visitor) doVisitForExpressionStatement(ctx *fql.ForExpressionStatementC
 	return nil, v.unexpectedToken(ctx)
 }
 
+func (v *visitor) doVisitOptionsClause(ctx *fql.OptionsClauseContext, s *scope) (core.Expression, error) {
+	return v.doVisitObjectLiteral(ctx.ObjectLiteral().(*fql.ObjectLiteralContext), s)
+}
+
+func (v *visitor) doVisitWaitForEventNameContext(ctx *fql.WaitForEventNameContext, s *scope) (core.Expression, error) {
+	if str := ctx.StringLiteral(); str != nil {
+		return v.doVisitStringLiteral(str.(*fql.StringLiteralContext))
+	}
+
+	if variable := ctx.Variable(); variable != nil {
+		return v.doVisitVariable(variable.(*fql.VariableContext), s)
+	}
+
+	if param := ctx.Param(); param != nil {
+		return v.doVisitParamContext(param.(*fql.ParamContext), s)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	}
+
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	}
+
+	return nil, ErrNotImplemented
+}
+
+func (v *visitor) doVisitWaitForEventSourceContext(ctx *fql.WaitForEventSourceContext, s *scope) (core.Expression, error) {
+	if variable := ctx.Variable(); variable != nil {
+		return v.doVisitVariable(variable.(*fql.VariableContext), s)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	}
+
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	}
+
+	return nil, ErrNotImplemented
+}
+
+func (v *visitor) doVisitWaitForTimeoutValueContext(ctx *fql.WaitForTimeoutContext, s *scope) (core.Expression, error) {
+	if integer := ctx.IntegerLiteral(); integer != nil {
+		return v.doVisitIntegerLiteral(integer.(*fql.IntegerLiteralContext))
+	}
+
+	if variable := ctx.Variable(); variable != nil {
+		return v.doVisitVariable(variable.(*fql.VariableContext), s)
+	}
+
+	if member := ctx.MemberExpression(); member != nil {
+		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	}
+
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	}
+
+	return nil, ErrNotImplemented
+}
+
+func (v *visitor) doVisitWaitForExpressionContext(ctx *fql.WaitForExpressionContext, s *scope) (core.Expression, error) {
+	var options core.Expression
+
+	if optionsCtx := ctx.OptionsClause(); optionsCtx != nil {
+		optionsExp, err := v.doVisitOptionsClause(optionsCtx.(*fql.OptionsClauseContext), s)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid options")
+		}
+
+		options = optionsExp
+	}
+
+	var timeout core.Expression
+
+	if timeoutCtx := ctx.WaitForTimeout(); timeoutCtx != nil {
+		timeoutExp, err := v.doVisitWaitForTimeoutValueContext(timeoutCtx.(*fql.WaitForTimeoutContext), s)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid timeout")
+		}
+
+		timeout = timeoutExp
+	}
+
+	if eventName := ctx.WaitForEventName(); eventName != nil {
+		eventName, err := v.doVisitWaitForEventNameContext(eventName.(*fql.WaitForEventNameContext), s)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid event name")
+		}
+
+		eventSource, err := v.doVisitWaitForEventSourceContext(ctx.WaitForEventSource().(*fql.WaitForEventSourceContext), s)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid event source")
+		}
+
+		return expressions.NewWaitForEventExpression(
+			v.getSourceMap(ctx),
+			eventName,
+			eventSource,
+			options,
+			timeout,
+		)
+	}
+
+	return nil, ErrInvalidToken
+}
+
 func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scope *scope) (core.Expression, error) {
-	member, err := v.doVisitMember(ctx.Member().(*fql.MemberContext), scope)
+	source, err := v.doVisitMemberExpressionSource(ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext), scope)
+
 	if err != nil {
 		return nil, err
 	}
 
-	children := ctx.MemberPath().GetChildren()
+	children := ctx.AllMemberExpressionPath()
 	path := make([]core.Expression, 0, len(children))
 
-	for _, child := range children {
-		_, ok := child.(antlr.TerminalNode)
-
-		if ok {
-			continue
-		}
-
+	for _, memberPath := range children {
 		var exp core.Expression
 		var err error
-		var parsed bool
 
-		prop, ok := child.(*fql.PropertyNameContext)
+		memberPath := memberPath.(*fql.MemberExpressionPathContext)
 
-		if ok {
-			exp, err = v.doVisitPropertyNameContext(prop, scope)
-			parsed = true
+		if prop := memberPath.PropertyName(); prop != nil {
+			exp, err = v.doVisitPropertyNameContext(prop.(*fql.PropertyNameContext), scope)
+		} else if prop := memberPath.ComputedPropertyName(); prop != nil {
+			exp, err = v.doVisitComputedPropertyNameContext(prop.(*fql.ComputedPropertyNameContext), scope)
 		} else {
-			computedProp, ok := child.(*fql.ComputedPropertyNameContext)
-
-			if ok {
-				exp, err = v.doVisitComputedPropertyNameContext(computedProp, scope)
-				parsed = true
-			}
+			return nil, v.unexpectedToken(memberPath)
 		}
 
 		if err != nil {
 			return nil, err
-		}
-
-		if !parsed {
-			// TODO: add more contextual information
-			return nil, ErrInvalidToken
 		}
 
 		path = append(path, exp)
 	}
 
-	exp, err := expressions.NewMemberExpression(
+	return expressions.NewMemberExpression(
 		v.getSourceMap(ctx),
-		member,
+		source,
 		path,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return exp, nil
 }
 
-func (v *visitor) doVisitMember(ctx *fql.MemberContext, scope *scope) (core.Expression, error) {
-	identifier := ctx.Identifier()
-
-	if identifier != nil {
-		varName := ctx.Identifier().GetText()
+func (v *visitor) doVisitMemberExpressionSource(ctx *fql.MemberExpressionSourceContext, scope *scope) (core.Expression, error) {
+	if variable := ctx.Variable(); variable != nil {
+		varName := variable.GetText()
 
 		if !scope.HasVariable(varName) {
 			return nil, core.Error(ErrVariableNotFound, varName)
 		}
 
-		exp, err := expressions.NewVariableExpression(v.getSourceMap(ctx), varName)
-		if err != nil {
-			return nil, err
-		}
-
-		return exp, nil
+		return expressions.NewVariableExpression(v.getSourceMap(ctx), varName)
 	}
 
-	fnCall := ctx.FunctionCallExpression()
-
-	if fnCall != nil {
-		exp, err := v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		return exp, nil
+	if param := ctx.Param(); param != nil {
+		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
 	}
 
-	param := ctx.Param()
-
-	if param != nil {
-		exp, err := v.doVisitParamContext(param.(*fql.ParamContext), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		return exp, nil
+	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), scope)
 	}
 
-	objectLiteral := ctx.ObjectLiteral()
-
-	if objectLiteral != nil {
-		exp, err := v.doVisitObjectLiteral(objectLiteral.(*fql.ObjectLiteralContext), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		return exp, nil
+	if objectLiteral := ctx.ObjectLiteral(); objectLiteral != nil {
+		return v.doVisitObjectLiteral(objectLiteral.(*fql.ObjectLiteralContext), scope)
 	}
 
-	arrayLiteral := ctx.ArrayLiteral()
-
-	if arrayLiteral != nil {
-		exp, err := v.doVisitArrayLiteral(arrayLiteral.(*fql.ArrayLiteralContext), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		return exp, nil
+	if arrayLiteral := ctx.ArrayLiteral(); arrayLiteral != nil {
+		return v.doVisitArrayLiteral(arrayLiteral.(*fql.ArrayLiteralContext), scope)
 	}
 
-	return nil, core.ErrNotImplemented
+	return nil, v.unexpectedToken(ctx)
 }
 
 func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *scope) (core.Expression, error) {
@@ -909,38 +943,37 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 	for _, assignment := range assignments {
 		var name core.Expression
 		var value core.Expression
+		var shortHand bool
 		var err error
 
-		assignment := assignment.(*fql.PropertyAssignmentContext)
+		pac := assignment.(*fql.PropertyAssignmentContext)
 
-		prop := assignment.PropertyName()
-		computedProp := assignment.ComputedPropertyName()
-		shortHand := assignment.ShorthandPropertyName()
-
-		switch {
-		case prop != nil:
+		if prop := pac.PropertyName(); prop != nil {
 			name, err = v.doVisitPropertyNameContext(prop.(*fql.PropertyNameContext), scope)
-		case computedProp != nil:
-			name, err = v.doVisitComputedPropertyNameContext(computedProp.(*fql.ComputedPropertyNameContext), scope)
-		default:
-			name, err = v.doVisitShorthandPropertyNameContext(shortHand.(*fql.ShorthandPropertyNameContext), scope)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		if shortHand == nil {
-			value, err = v.visit(assignment.Expression(), scope)
+		} else if comProp := pac.ComputedPropertyName(); comProp != nil {
+			name, err = v.doVisitComputedPropertyNameContext(comProp.(*fql.ComputedPropertyNameContext), scope)
+		} else if variable := pac.Variable(); variable != nil {
+			shortHand = true
+			name = literals.NewStringLiteral(variable.GetText())
+			value, err = v.doVisitVariable(variable.(*fql.VariableContext), scope)
 		} else {
-			value, err = v.doVisitVariable(shortHand.(*fql.ShorthandPropertyNameContext).Variable().(*fql.VariableContext), scope)
+			return nil, v.unexpectedToken(pac)
 		}
 
 		if err != nil {
 			return nil, err
+		}
+
+		if !shortHand {
+			value, err = v.visit(pac.Expression(), scope)
+
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		pa, err := literals.NewObjectPropertyAssignment(name, value)
+
 		if err != nil {
 			return nil, err
 		}
@@ -952,58 +985,34 @@ func (v *visitor) doVisitObjectLiteral(ctx *fql.ObjectLiteralContext, scope *sco
 }
 
 func (v *visitor) doVisitPropertyNameContext(ctx *fql.PropertyNameContext, scope *scope) (core.Expression, error) {
-	var name string
-
-	identifier := ctx.Identifier()
-
-	if identifier != nil {
-		name = identifier.GetText()
-	} else {
-		stringLiteral := ctx.StringLiteral()
-
-		if stringLiteral != nil {
-			runes := []rune(stringLiteral.GetText())
-			name = string(runes[1 : len(runes)-1])
-		} else {
-			param, err := v.doVisitParamContext(ctx.Param().(*fql.ParamContext), scope)
-			if err != nil {
-				return nil, err
-			}
-
-			return param, nil
-		}
+	if id := ctx.Identifier(); id != nil {
+		return literals.NewStringLiteral(id.GetText()), nil
 	}
 
-	if name == "" {
-		return nil, core.Error(core.ErrNotFound, "property name")
+	if stringLiteral := ctx.StringLiteral(); stringLiteral != nil {
+		runes := []rune(stringLiteral.GetText())
+
+		return literals.NewStringLiteral(string(runes[1 : len(runes)-1])), nil
 	}
 
-	return literals.NewStringLiteral(name), nil
+	if param := ctx.Param(); param != nil {
+		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
+	}
+
+	return nil, v.unexpectedToken(ctx)
 }
 
 func (v *visitor) doVisitComputedPropertyNameContext(ctx *fql.ComputedPropertyNameContext, scope *scope) (core.Expression, error) {
 	return v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
 }
 
-func (v *visitor) doVisitShorthandPropertyNameContext(ctx *fql.ShorthandPropertyNameContext, scope *scope) (core.Expression, error) {
-	name := ctx.Variable().GetText()
-
-	if !scope.HasVariable(name) {
-		return nil, core.Error(ErrVariableNotFound, name)
-	}
-
-	return literals.NewStringLiteral(ctx.Variable().GetText()), nil
-}
-
 func (v *visitor) doVisitArrayLiteral(ctx *fql.ArrayLiteralContext, scope *scope) (core.Expression, error) {
-	listCtx := ctx.ArrayElementList()
+	exp := ctx.AllExpression()
 
-	if listCtx == nil {
+	if exp == nil {
 		return literals.NewArrayLiteral(0), nil
 	}
 
-	list := listCtx.(*fql.ArrayElementListContext)
-	exp := list.AllExpression()
 	elements := make([]core.Expression, 0, len(exp))
 
 	for _, e := range exp {
@@ -1058,7 +1067,7 @@ func (v *visitor) doVisitNoneLiteral(_ *fql.NoneLiteralContext) (core.Expression
 }
 
 func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (core.Expression, error) {
-	name := ctx.Identifier().GetText()
+	name := ctx.GetText()
 
 	// check whether the variable is defined
 	if !scope.HasVariable(name) {
@@ -1079,26 +1088,12 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 		return nil, err
 	}
 
-	exp := ctx.Expression()
-
-	if exp != nil {
+	if exp := ctx.Expression(); exp != nil {
 		init, err = v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
-	}
-
-	if init == nil && err == nil {
-		forIn := ctx.ForExpression()
-
-		if forIn != nil {
-			init, err = v.doVisitForExpression(forIn.(*fql.ForExpressionContext), scope)
-		}
-	}
-
-	if init == nil && err == nil {
-		forTer := ctx.ForTernaryExpression()
-
-		if forTer != nil {
-			init, err = v.doVisitForTernaryExpression(forTer.(*fql.ForTernaryExpressionContext), scope)
-		}
+	} else if exp := ctx.ForExpression(); exp != nil {
+		init, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
+	} else if exp := ctx.WaitForExpression(); exp != nil {
+		init, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
 	}
 
 	if err != nil {
@@ -1452,6 +1447,10 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitRegexpOperator(ctx, exp.(*fql.RegexpOperatorContext), scope)
 	}
 
+	if exp := ctx.QuestionMark(); exp != nil {
+		return v.doVisitTernaryExpression(ctx, scope)
+	}
+
 	if exp := ctx.Variable(); exp != nil {
 		return v.doVisitVariable(exp.(*fql.VariableContext), scope)
 	}
@@ -1548,6 +1547,8 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 		out, err = v.doVisitForExpression(ctx, scope)
 	case *fql.ReturnExpressionContext:
 		out, err = v.doVisitReturnExpression(ctx, scope)
+	case *fql.WaitForExpressionContext:
+		out, err = v.doVisitWaitForExpressionContext(ctx, scope)
 	case *fql.ArrayLiteralContext:
 		out, err = v.doVisitArrayLiteral(ctx, scope)
 	case *fql.ObjectLiteralContext:
@@ -1577,8 +1578,9 @@ func (v *visitor) visit(node antlr.Tree, scope *scope) (core.Expression, error) 
 	return out, err
 }
 
-func (v *visitor) doVisitForTernaryExpression(ctx *fql.ForTernaryExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
+func (v *visitor) doVisitTernaryExpression(ctx *fql.ExpressionContext, scope *scope) (*expressions.ConditionExpression, error) {
 	exps, err := v.doVisitChildren(ctx, scope)
+
 	if err != nil {
 		return nil, err
 	}

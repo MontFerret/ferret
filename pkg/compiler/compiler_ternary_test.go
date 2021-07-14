@@ -13,7 +13,7 @@ func TestTernaryOperator(t *testing.T) {
 		c := compiler.New()
 		p, err := c.Compile(`
 			FOR i IN [1, 2, 3, 4, 5, 6]
-				RETURN i < 3 ? i * 3 : i * 2;
+				RETURN i < 3 ? i * 3 : i * 2
 		`)
 
 		So(err, ShouldBeNil)

@@ -248,4 +248,18 @@ func TestLet(t *testing.T) {
 
 		So(err, ShouldNotBeNil)
 	})
+
+	Convey("Should use value returned from WAITFOR EVENT", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET obj = X::CREATE()
+
+			X::EMIT_WITH(obj, "event", "data", 100)
+			LET res = (WAITFOR EVENT "event" IN obj)
+
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `"data"`)
+	})
 }

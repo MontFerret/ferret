@@ -44,6 +44,12 @@ func (s *BaseFqlParserListener) EnterUse(ctx *UseContext) {}
 // ExitUse is called when production use is exited.
 func (s *BaseFqlParserListener) ExitUse(ctx *UseContext) {}
 
+// EnterNamespaceIdentifier is called when production namespaceIdentifier is entered.
+func (s *BaseFqlParserListener) EnterNamespaceIdentifier(ctx *NamespaceIdentifierContext) {}
+
+// ExitNamespaceIdentifier is called when production namespaceIdentifier is exited.
+func (s *BaseFqlParserListener) ExitNamespaceIdentifier(ctx *NamespaceIdentifierContext) {}
+
 // EnterBody is called when production body is entered.
 func (s *BaseFqlParserListener) EnterBody(ctx *BodyContext) {}
 
@@ -62,6 +68,12 @@ func (s *BaseFqlParserListener) EnterBodyExpression(ctx *BodyExpressionContext) 
 // ExitBodyExpression is called when production bodyExpression is exited.
 func (s *BaseFqlParserListener) ExitBodyExpression(ctx *BodyExpressionContext) {}
 
+// EnterVariableDeclaration is called when production variableDeclaration is entered.
+func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}
+
+// ExitVariableDeclaration is called when production variableDeclaration is exited.
+func (s *BaseFqlParserListener) ExitVariableDeclaration(ctx *VariableDeclarationContext) {}
+
 // EnterReturnExpression is called when production returnExpression is entered.
 func (s *BaseFqlParserListener) EnterReturnExpression(ctx *ReturnExpressionContext) {}
 
@@ -73,20 +85,6 @@ func (s *BaseFqlParserListener) EnterForExpression(ctx *ForExpressionContext) {}
 
 // ExitForExpression is called when production forExpression is exited.
 func (s *BaseFqlParserListener) ExitForExpression(ctx *ForExpressionContext) {}
-
-// EnterForExpressionValueVariable is called when production forExpressionValueVariable is entered.
-func (s *BaseFqlParserListener) EnterForExpressionValueVariable(ctx *ForExpressionValueVariableContext) {
-}
-
-// ExitForExpressionValueVariable is called when production forExpressionValueVariable is exited.
-func (s *BaseFqlParserListener) ExitForExpressionValueVariable(ctx *ForExpressionValueVariableContext) {
-}
-
-// EnterForExpressionKeyVariable is called when production forExpressionKeyVariable is entered.
-func (s *BaseFqlParserListener) EnterForExpressionKeyVariable(ctx *ForExpressionKeyVariableContext) {}
-
-// ExitForExpressionKeyVariable is called when production forExpressionKeyVariable is exited.
-func (s *BaseFqlParserListener) ExitForExpressionKeyVariable(ctx *ForExpressionKeyVariableContext) {}
 
 // EnterForExpressionSource is called when production forExpressionSource is entered.
 func (s *BaseFqlParserListener) EnterForExpressionSource(ctx *ForExpressionSourceContext) {}
@@ -190,23 +188,35 @@ func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) 
 // ExitCollectCounter is called when production collectCounter is exited.
 func (s *BaseFqlParserListener) ExitCollectCounter(ctx *CollectCounterContext) {}
 
-// EnterVariableDeclaration is called when production variableDeclaration is entered.
-func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}
+// EnterOptionsClause is called when production optionsClause is entered.
+func (s *BaseFqlParserListener) EnterOptionsClause(ctx *OptionsClauseContext) {}
 
-// ExitVariableDeclaration is called when production variableDeclaration is exited.
-func (s *BaseFqlParserListener) ExitVariableDeclaration(ctx *VariableDeclarationContext) {}
+// ExitOptionsClause is called when production optionsClause is exited.
+func (s *BaseFqlParserListener) ExitOptionsClause(ctx *OptionsClauseContext) {}
 
-// EnterParam is called when production param is entered.
-func (s *BaseFqlParserListener) EnterParam(ctx *ParamContext) {}
+// EnterWaitForExpression is called when production waitForExpression is entered.
+func (s *BaseFqlParserListener) EnterWaitForExpression(ctx *WaitForExpressionContext) {}
 
-// ExitParam is called when production param is exited.
-func (s *BaseFqlParserListener) ExitParam(ctx *ParamContext) {}
+// ExitWaitForExpression is called when production waitForExpression is exited.
+func (s *BaseFqlParserListener) ExitWaitForExpression(ctx *WaitForExpressionContext) {}
 
-// EnterVariable is called when production variable is entered.
-func (s *BaseFqlParserListener) EnterVariable(ctx *VariableContext) {}
+// EnterWaitForTimeout is called when production waitForTimeout is entered.
+func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) {}
 
-// ExitVariable is called when production variable is exited.
-func (s *BaseFqlParserListener) ExitVariable(ctx *VariableContext) {}
+// ExitWaitForTimeout is called when production waitForTimeout is exited.
+func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
+
+// EnterWaitForEventName is called when production waitForEventName is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventName(ctx *WaitForEventNameContext) {}
+
+// ExitWaitForEventName is called when production waitForEventName is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventName(ctx *WaitForEventNameContext) {}
+
+// EnterWaitForEventSource is called when production waitForEventSource is entered.
+func (s *BaseFqlParserListener) EnterWaitForEventSource(ctx *WaitForEventSourceContext) {}
+
+// ExitWaitForEventSource is called when production waitForEventSource is exited.
+func (s *BaseFqlParserListener) ExitWaitForEventSource(ctx *WaitForEventSourceContext) {}
 
 // EnterRangeOperator is called when production rangeOperator is entered.
 func (s *BaseFqlParserListener) EnterRangeOperator(ctx *RangeOperatorContext) {}
@@ -226,53 +236,11 @@ func (s *BaseFqlParserListener) EnterObjectLiteral(ctx *ObjectLiteralContext) {}
 // ExitObjectLiteral is called when production objectLiteral is exited.
 func (s *BaseFqlParserListener) ExitObjectLiteral(ctx *ObjectLiteralContext) {}
 
-// EnterBooleanLiteral is called when production booleanLiteral is entered.
-func (s *BaseFqlParserListener) EnterBooleanLiteral(ctx *BooleanLiteralContext) {}
-
-// ExitBooleanLiteral is called when production booleanLiteral is exited.
-func (s *BaseFqlParserListener) ExitBooleanLiteral(ctx *BooleanLiteralContext) {}
-
-// EnterStringLiteral is called when production stringLiteral is entered.
-func (s *BaseFqlParserListener) EnterStringLiteral(ctx *StringLiteralContext) {}
-
-// ExitStringLiteral is called when production stringLiteral is exited.
-func (s *BaseFqlParserListener) ExitStringLiteral(ctx *StringLiteralContext) {}
-
-// EnterIntegerLiteral is called when production integerLiteral is entered.
-func (s *BaseFqlParserListener) EnterIntegerLiteral(ctx *IntegerLiteralContext) {}
-
-// ExitIntegerLiteral is called when production integerLiteral is exited.
-func (s *BaseFqlParserListener) ExitIntegerLiteral(ctx *IntegerLiteralContext) {}
-
-// EnterFloatLiteral is called when production floatLiteral is entered.
-func (s *BaseFqlParserListener) EnterFloatLiteral(ctx *FloatLiteralContext) {}
-
-// ExitFloatLiteral is called when production floatLiteral is exited.
-func (s *BaseFqlParserListener) ExitFloatLiteral(ctx *FloatLiteralContext) {}
-
-// EnterNoneLiteral is called when production noneLiteral is entered.
-func (s *BaseFqlParserListener) EnterNoneLiteral(ctx *NoneLiteralContext) {}
-
-// ExitNoneLiteral is called when production noneLiteral is exited.
-func (s *BaseFqlParserListener) ExitNoneLiteral(ctx *NoneLiteralContext) {}
-
-// EnterArrayElementList is called when production arrayElementList is entered.
-func (s *BaseFqlParserListener) EnterArrayElementList(ctx *ArrayElementListContext) {}
-
-// ExitArrayElementList is called when production arrayElementList is exited.
-func (s *BaseFqlParserListener) ExitArrayElementList(ctx *ArrayElementListContext) {}
-
 // EnterPropertyAssignment is called when production propertyAssignment is entered.
 func (s *BaseFqlParserListener) EnterPropertyAssignment(ctx *PropertyAssignmentContext) {}
 
 // ExitPropertyAssignment is called when production propertyAssignment is exited.
 func (s *BaseFqlParserListener) ExitPropertyAssignment(ctx *PropertyAssignmentContext) {}
-
-// EnterShorthandPropertyName is called when production shorthandPropertyName is entered.
-func (s *BaseFqlParserListener) EnterShorthandPropertyName(ctx *ShorthandPropertyNameContext) {}
-
-// ExitShorthandPropertyName is called when production shorthandPropertyName is exited.
-func (s *BaseFqlParserListener) ExitShorthandPropertyName(ctx *ShorthandPropertyNameContext) {}
 
 // EnterComputedPropertyName is called when production computedPropertyName is entered.
 func (s *BaseFqlParserListener) EnterComputedPropertyName(ctx *ComputedPropertyNameContext) {}
@@ -286,59 +254,41 @@ func (s *BaseFqlParserListener) EnterPropertyName(ctx *PropertyNameContext) {}
 // ExitPropertyName is called when production propertyName is exited.
 func (s *BaseFqlParserListener) ExitPropertyName(ctx *PropertyNameContext) {}
 
+// EnterBooleanLiteral is called when production booleanLiteral is entered.
+func (s *BaseFqlParserListener) EnterBooleanLiteral(ctx *BooleanLiteralContext) {}
+
+// ExitBooleanLiteral is called when production booleanLiteral is exited.
+func (s *BaseFqlParserListener) ExitBooleanLiteral(ctx *BooleanLiteralContext) {}
+
+// EnterStringLiteral is called when production stringLiteral is entered.
+func (s *BaseFqlParserListener) EnterStringLiteral(ctx *StringLiteralContext) {}
+
+// ExitStringLiteral is called when production stringLiteral is exited.
+func (s *BaseFqlParserListener) ExitStringLiteral(ctx *StringLiteralContext) {}
+
+// EnterFloatLiteral is called when production floatLiteral is entered.
+func (s *BaseFqlParserListener) EnterFloatLiteral(ctx *FloatLiteralContext) {}
+
+// ExitFloatLiteral is called when production floatLiteral is exited.
+func (s *BaseFqlParserListener) ExitFloatLiteral(ctx *FloatLiteralContext) {}
+
+// EnterIntegerLiteral is called when production integerLiteral is entered.
+func (s *BaseFqlParserListener) EnterIntegerLiteral(ctx *IntegerLiteralContext) {}
+
+// ExitIntegerLiteral is called when production integerLiteral is exited.
+func (s *BaseFqlParserListener) ExitIntegerLiteral(ctx *IntegerLiteralContext) {}
+
+// EnterNoneLiteral is called when production noneLiteral is entered.
+func (s *BaseFqlParserListener) EnterNoneLiteral(ctx *NoneLiteralContext) {}
+
+// ExitNoneLiteral is called when production noneLiteral is exited.
+func (s *BaseFqlParserListener) ExitNoneLiteral(ctx *NoneLiteralContext) {}
+
 // EnterExpressionGroup is called when production expressionGroup is entered.
 func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
 
 // ExitExpressionGroup is called when production expressionGroup is exited.
 func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
-
-// EnterNamespaceIdentifier is called when production namespaceIdentifier is entered.
-func (s *BaseFqlParserListener) EnterNamespaceIdentifier(ctx *NamespaceIdentifierContext) {}
-
-// ExitNamespaceIdentifier is called when production namespaceIdentifier is exited.
-func (s *BaseFqlParserListener) ExitNamespaceIdentifier(ctx *NamespaceIdentifierContext) {}
-
-// EnterNamespace is called when production namespace is entered.
-func (s *BaseFqlParserListener) EnterNamespace(ctx *NamespaceContext) {}
-
-// ExitNamespace is called when production namespace is exited.
-func (s *BaseFqlParserListener) ExitNamespace(ctx *NamespaceContext) {}
-
-// EnterFunctionIdentifier is called when production functionIdentifier is entered.
-func (s *BaseFqlParserListener) EnterFunctionIdentifier(ctx *FunctionIdentifierContext) {}
-
-// ExitFunctionIdentifier is called when production functionIdentifier is exited.
-func (s *BaseFqlParserListener) ExitFunctionIdentifier(ctx *FunctionIdentifierContext) {}
-
-// EnterFunctionCallExpression is called when production functionCallExpression is entered.
-func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
-
-// ExitFunctionCallExpression is called when production functionCallExpression is exited.
-func (s *BaseFqlParserListener) ExitFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
-
-// EnterMember is called when production member is entered.
-func (s *BaseFqlParserListener) EnterMember(ctx *MemberContext) {}
-
-// ExitMember is called when production member is exited.
-func (s *BaseFqlParserListener) ExitMember(ctx *MemberContext) {}
-
-// EnterMemberPath is called when production memberPath is entered.
-func (s *BaseFqlParserListener) EnterMemberPath(ctx *MemberPathContext) {}
-
-// ExitMemberPath is called when production memberPath is exited.
-func (s *BaseFqlParserListener) ExitMemberPath(ctx *MemberPathContext) {}
-
-// EnterMemberExpression is called when production memberExpression is entered.
-func (s *BaseFqlParserListener) EnterMemberExpression(ctx *MemberExpressionContext) {}
-
-// ExitMemberExpression is called when production memberExpression is exited.
-func (s *BaseFqlParserListener) ExitMemberExpression(ctx *MemberExpressionContext) {}
-
-// EnterArguments is called when production arguments is entered.
-func (s *BaseFqlParserListener) EnterArguments(ctx *ArgumentsContext) {}
-
-// ExitArguments is called when production arguments is exited.
-func (s *BaseFqlParserListener) ExitArguments(ctx *ArgumentsContext) {}
 
 // EnterExpression is called when production expression is entered.
 func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
@@ -346,11 +296,47 @@ func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
 // ExitExpression is called when production expression is exited.
 func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
 
-// EnterForTernaryExpression is called when production forTernaryExpression is entered.
-func (s *BaseFqlParserListener) EnterForTernaryExpression(ctx *ForTernaryExpressionContext) {}
+// EnterMemberExpression is called when production memberExpression is entered.
+func (s *BaseFqlParserListener) EnterMemberExpression(ctx *MemberExpressionContext) {}
 
-// ExitForTernaryExpression is called when production forTernaryExpression is exited.
-func (s *BaseFqlParserListener) ExitForTernaryExpression(ctx *ForTernaryExpressionContext) {}
+// ExitMemberExpression is called when production memberExpression is exited.
+func (s *BaseFqlParserListener) ExitMemberExpression(ctx *MemberExpressionContext) {}
+
+// EnterMemberExpressionSource is called when production memberExpressionSource is entered.
+func (s *BaseFqlParserListener) EnterMemberExpressionSource(ctx *MemberExpressionSourceContext) {}
+
+// ExitMemberExpressionSource is called when production memberExpressionSource is exited.
+func (s *BaseFqlParserListener) ExitMemberExpressionSource(ctx *MemberExpressionSourceContext) {}
+
+// EnterMemberExpressionPath is called when production memberExpressionPath is entered.
+func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionPathContext) {}
+
+// ExitMemberExpressionPath is called when production memberExpressionPath is exited.
+func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
+
+// EnterFunctionCallExpression is called when production functionCallExpression is entered.
+func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
+
+// ExitFunctionCallExpression is called when production functionCallExpression is exited.
+func (s *BaseFqlParserListener) ExitFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
+
+// EnterFunctionIdentifier is called when production functionIdentifier is entered.
+func (s *BaseFqlParserListener) EnterFunctionIdentifier(ctx *FunctionIdentifierContext) {}
+
+// ExitFunctionIdentifier is called when production functionIdentifier is exited.
+func (s *BaseFqlParserListener) ExitFunctionIdentifier(ctx *FunctionIdentifierContext) {}
+
+// EnterNamespace is called when production namespace is entered.
+func (s *BaseFqlParserListener) EnterNamespace(ctx *NamespaceContext) {}
+
+// ExitNamespace is called when production namespace is exited.
+func (s *BaseFqlParserListener) ExitNamespace(ctx *NamespaceContext) {}
+
+// EnterArguments is called when production arguments is entered.
+func (s *BaseFqlParserListener) EnterArguments(ctx *ArgumentsContext) {}
+
+// ExitArguments is called when production arguments is exited.
+func (s *BaseFqlParserListener) ExitArguments(ctx *ArgumentsContext) {}
 
 // EnterArrayOperator is called when production arrayOperator is entered.
 func (s *BaseFqlParserListener) EnterArrayOperator(ctx *ArrayOperatorContext) {}
@@ -411,3 +397,15 @@ func (s *BaseFqlParserListener) EnterUnaryOperator(ctx *UnaryOperatorContext) {}
 
 // ExitUnaryOperator is called when production unaryOperator is exited.
 func (s *BaseFqlParserListener) ExitUnaryOperator(ctx *UnaryOperatorContext) {}
+
+// EnterParam is called when production param is entered.
+func (s *BaseFqlParserListener) EnterParam(ctx *ParamContext) {}
+
+// ExitParam is called when production param is exited.
+func (s *BaseFqlParserListener) ExitParam(ctx *ParamContext) {}
+
+// EnterVariable is called when production variable is entered.
+func (s *BaseFqlParserListener) EnterVariable(ctx *VariableContext) {}
+
+// ExitVariable is called when production variable is exited.
+func (s *BaseFqlParserListener) ExitVariable(ctx *VariableContext) {}

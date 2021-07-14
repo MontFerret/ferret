@@ -106,7 +106,7 @@ func TestLikeOperator(t *testing.T) {
 		c := compiler.New()
 
 		out1, err := c.MustCompile(`
-			RETURN true ? false : ("foo" NOT LIKE  "b*")s
+			RETURN true ? false : ("foo" NOT LIKE  "b*")
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)

@@ -1,0 +1,9 @@
+LET url = @lab.cdn.dynamic + "/#/navigation"
+LET page = DOCUMENT(url, { driver: 'cdp' })
+
+INPUT(page, "#url", "https://getbootstrap.com/")
+CLICK(page, "#submit")
+
+WAITFOR EVENT "navigation" IN page
+
+RETURN T::EQ(page.URL, "https://getbootstrap.com/")

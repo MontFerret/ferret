@@ -50,6 +50,8 @@ RegexMatch: '=~';
 // Common Keywords
 For: 'FOR';
 Return: 'RETURN';
+Waitfor: 'WAITFOR';
+Options: 'OPTIONS';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
 Sort: 'SORT';
@@ -71,6 +73,9 @@ All: 'ALL';
 Any: 'ANY';
 Aggregate: 'AGGREGATE';
 
+// Wait operators
+Event: 'EVENT';
+
 // Unary operators
 Like: 'LIKE';
 Not: 'NOT' | '!';
@@ -89,6 +94,8 @@ FloatLiteral
     ;
 
 NamespaceSegment: Identifier NamespaceSeparator;
+
+UnknownIdentifier: .;
 
 // Fragments
 fragment HexDigit

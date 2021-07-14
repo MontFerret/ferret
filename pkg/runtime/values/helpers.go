@@ -343,6 +343,14 @@ func ToInt(input core.Value) Int {
 	}
 }
 
+func ToIntDefault(input core.Value, defaultValue Int) Int {
+	if result := ToInt(input); result > 0 {
+		return result
+	}
+
+	return defaultValue
+}
+
 func ToArray(ctx context.Context, input core.Value) *Array {
 	switch value := input.(type) {
 	case Boolean,
@@ -390,6 +398,49 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 		return arr
 	default:
 		return EmptyArray()
+	}
+}
+
+func ToObject(ctx context.Context, input core.Value) *Object {
+	switch value := input.(type) {
+	case *Object:
+		return value
+	case *Array:
+		obj := NewObject()
+
+		value.ForEach(func(value core.Value, idx int) bool {
+			obj.Set(ToString(Int(idx)), value)
+
+			return true
+		})
+
+		return obj
+	case core.Iterable:
+		iterator, err := value.Iterate(ctx)
+
+		if err != nil {
+			return NewObject()
+		}
+
+		obj := NewObject()
+
+		for {
+			val, key, err := iterator.Next(ctx)
+
+			if err != nil {
+				return obj
+			}
+
+			if val == None {
+				break
+			}
+
+			obj.Set(String(key.String()), val)
+		}
+
+		return obj
+	default:
+		return NewObject()
 	}
 }
 

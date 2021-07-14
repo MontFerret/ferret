@@ -13,7 +13,7 @@ type Parser struct {
 
 func New(query string) *Parser {
 	input := antlr.NewInputStream(query)
-	// converts tokens to upper case, so now it doesn’t matter
+	// converts tokens to upper case, so now it doesn't matter
 	// in which case the tokens were entered
 	upper := resources.NewCaseChangingStream(input, true)
 
@@ -22,7 +22,6 @@ func New(query string) *Parser {
 
 	p := fql.NewFqlParser(stream)
 	p.BuildParseTrees = true
-	p.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
 
 	return &Parser{tree: p}
 }

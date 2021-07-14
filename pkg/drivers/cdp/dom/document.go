@@ -165,6 +165,15 @@ func (doc *HTMLDocument) Copy() core.Value {
 func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	switch other.Type() {
 	case drivers.HTMLDocumentType:
+		cdpDoc, ok := other.(*HTMLDocument)
+
+		if ok {
+			thisID := values.NewString(string(doc.Frame().Frame.ID))
+			otherID := values.NewString(string(cdpDoc.Frame().Frame.ID))
+
+			return thisID.Compare(otherID)
+		}
+
 		other := other.(drivers.HTMLDocument)
 
 		return values.NewString(doc.frameTree.Frame.URL).Compare(other.GetURL())
