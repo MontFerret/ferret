@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/css v1.0.0
 	github.com/mafredri/cdp v0.31.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.22.0
+	github.com/rs/zerolog v1.23.0
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/wI2L/jettison v0.7.1
