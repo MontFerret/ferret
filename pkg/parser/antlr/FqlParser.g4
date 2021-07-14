@@ -230,7 +230,6 @@ expressionGroup
 
 expression
     : unaryOperator expression
-    | functionCallExpression
     | expression multiplicativeOperator expression
     | expression additiveOperator expression
     | expression arrayOperator (inOperator | equalityOperator) expression
@@ -251,9 +250,10 @@ expression
     | booleanLiteral
     | arrayLiteral
     | objectLiteral
+    | memberExpression
+    | functionCallExpression
     | param
     | variable
-    | memberExpression
     | noneLiteral
     | expressionGroup
     ;

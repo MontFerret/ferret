@@ -886,8 +886,8 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 
 		if prop := memberPath.PropertyName(); prop != nil {
 			exp, err = v.doVisitPropertyNameContext(prop.(*fql.PropertyNameContext), scope)
-		} else if comProp := memberPath.ComputedPropertyName(); comProp != nil {
-			exp, err = v.doVisitComputedPropertyNameContext(comProp.(*fql.ComputedPropertyNameContext), scope)
+		} else if prop := memberPath.ComputedPropertyName(); prop != nil {
+			exp, err = v.doVisitComputedPropertyNameContext(prop.(*fql.ComputedPropertyNameContext), scope)
 		} else {
 			return nil, v.unexpectedToken(memberPath)
 		}
