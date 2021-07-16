@@ -271,8 +271,8 @@ memberExpressionSource
     ;
 
 memberExpressionPath
-    : Dot propertyName
-    | computedPropertyName
+    : QuestionMark? Dot propertyName
+    | (QuestionMark Dot)? computedPropertyName
     ;
 
 functionCallExpression

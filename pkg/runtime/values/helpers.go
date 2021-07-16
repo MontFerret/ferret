@@ -18,6 +18,7 @@ import (
 // GetIn call from.GetIn method, otherwise return error.
 func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
 	getter, ok := from.(core.Getter)
+
 	if !ok {
 		return None, core.TypeError(
 			from.Type(),

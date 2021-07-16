@@ -385,6 +385,118 @@ RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]
 			So(string(out), ShouldEqual, "1")
 		})
 	})
+
+	Convey("Optional chaining", t, func() {
+		Convey("Object", func() {
+			Convey("When value does not exist", func() {
+				c := compiler.New()
+
+				p, err := c.Compile(`
+				LET obj = { foo: None }
+
+				RETURN obj.foo?.bar
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `null`)
+			})
+
+			Convey("When value does exists", func() {
+				c := compiler.New()
+
+				p, err := c.Compile(`
+				LET obj = { foo: { bar: "bar" } }
+
+				RETURN obj.foo?.bar
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `"bar"`)
+			})
+		})
+
+		Convey("Array", func() {
+			Convey("When value does not exist", func() {
+				c := compiler.New()
+
+				p, err := c.Compile(`
+				LET obj = { foo: None }
+
+				RETURN obj.foo?.bar?.[0]
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `null`)
+			})
+
+			Convey("When value does exists", func() {
+				c := compiler.New()
+
+				p, err := c.Compile(`
+				LET obj = { foo: { bar: ["bar"] } }
+
+				RETURN obj.foo?.bar?.[0]
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `"bar"`)
+			})
+		})
+
+		Convey("Function", func() {
+			Convey("When value does not exist", func() {
+				c := compiler.New()
+
+				p, err := c.Compile(`
+				RETURN FIRST([])?.foo
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `null`)
+			})
+
+			Convey("When value does exists", func() {
+				c := compiler.New()
+
+				p, err := c.Compile(`
+				RETURN FIRST([{ foo: "bar" }])?.foo
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `"bar"`)
+			})
+		})
+	})
 }
 
 func BenchmarkMemberArray(b *testing.B) {
