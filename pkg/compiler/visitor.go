@@ -876,13 +876,14 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 	}
 
 	children := ctx.AllMemberExpressionPath()
-	path := make([]core.Expression, 0, len(children))
+	path := make([]*expressions.MemberPathSegment, 0, len(children))
 
 	for _, memberPath := range children {
 		var exp core.Expression
 		var err error
 
 		memberPath := memberPath.(*fql.MemberExpressionPathContext)
+		optional := memberPath.QuestionMark() != nil
 
 		if prop := memberPath.PropertyName(); prop != nil {
 			exp, err = v.doVisitPropertyNameContext(prop.(*fql.PropertyNameContext), scope)
@@ -896,7 +897,13 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 			return nil, err
 		}
 
-		path = append(path, exp)
+		segment, err := expressions.NewMemberPathSegment(exp, optional)
+
+		if err != nil {
+			return nil, err
+		}
+
+		path = append(path, segment)
 	}
 
 	return expressions.NewMemberExpression(

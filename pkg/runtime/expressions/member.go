@@ -10,10 +10,10 @@ import (
 type MemberExpression struct {
 	src    core.SourceMap
 	source core.Expression
-	path   []core.Expression
+	path   []*MemberPathSegment
 }
 
-func NewMemberExpression(src core.SourceMap, source core.Expression, path []core.Expression) (*MemberExpression, error) {
+func NewMemberExpression(src core.SourceMap, source core.Expression, path []*MemberPathSegment) (*MemberExpression, error) {
 	if source == nil {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
@@ -38,8 +38,8 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 	out := val
 	path := make([]core.Value, 1)
 
-	for _, exp := range e.path {
-		segment, err := exp.Exec(ctx, scope)
+	for _, seg := range e.path {
+		segment, err := seg.exp.Exec(ctx, scope)
 
 		if err != nil {
 			return values.None, err
@@ -49,7 +49,11 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		c, err := values.GetIn(ctx, out, path)
 
 		if err != nil {
-			return values.None, core.SourceError(e.src, err)
+			if !seg.optional {
+				return values.None, core.SourceError(e.src, err)
+			}
+
+			return values.None, nil
 		}
 
 		out = c
