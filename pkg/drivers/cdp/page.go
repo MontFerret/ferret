@@ -58,7 +58,6 @@ func LoadHTMLPage(
 	}
 
 	client := cdp.NewClient(conn)
-
 	if err := enableFeatures(ctx, client, params); err != nil {
 		return nil, err
 	}
@@ -92,8 +91,7 @@ func LoadHTMLPage(
 		netOpts.Filter.Patterns = params.Ignore.Resources
 	}
 
-	netManager, err := net.New(logger, client, netOpts)
-
+	netManager, err := net.New(ctx, logger, client, netOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -107,12 +105,9 @@ func LoadHTMLPage(
 		mouse,
 		keyboard,
 	)
-
 	if err != nil {
 		return nil, err
 	}
-
-	closers = append(closers, domManager)
 
 	p = NewHTMLPage(
 		logger,
