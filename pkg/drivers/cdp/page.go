@@ -88,7 +88,9 @@ func LoadHTMLPage(
 	}
 
 	if params.Ignore != nil && len(params.Ignore.Resources) > 0 {
-		netOpts.Filter.Patterns = params.Ignore.Resources
+		netOpts.Filter = &net.Filter{
+			Patterns: params.Ignore.Resources,
+		}
 	}
 
 	netManager, err := net.New(ctx, logger, client, netOpts)
