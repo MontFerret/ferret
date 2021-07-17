@@ -78,8 +78,8 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, qargs *dom.GetCo
 		return Quad{}, err
 	}
 
-	clientWidth := layoutMetricsReply.LayoutViewport.ClientWidth
-	clientHeight := layoutMetricsReply.LayoutViewport.ClientHeight
+	clientWidth := layoutMetricsReply.CSSLayoutViewport.ClientWidth
+	clientHeight := layoutMetricsReply.CSSLayoutViewport.ClientHeight
 
 	quads := make([][]Quad, 0, len(contentQuadsReply.Quads))
 

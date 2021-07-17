@@ -476,11 +476,11 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 	}
 
 	if params.Width <= 0 {
-		params.Width = values.Float(metrics.LayoutViewport.ClientWidth) - params.X
+		params.Width = values.Float(metrics.CSSLayoutViewport.ClientWidth) - params.X
 	}
 
 	if params.Height <= 0 {
-		params.Height = values.Float(metrics.LayoutViewport.ClientHeight) - params.Y
+		params.Height = values.Float(metrics.CSSLayoutViewport.ClientHeight) - params.Y
 	}
 
 	clip := page.Viewport{
