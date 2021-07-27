@@ -4,7 +4,7 @@ HOVER(doc, ".HeaderMenu-details")
 CLICK(doc, ".HeaderMenu a")
 
 WAIT_NAVIGATION(doc)
-WAIT_ELEMENT(doc, '.IconNav')
+WAIT_ELEMENT(doc, 'main nav')
 
-FOR el IN ELEMENTS(doc, '.IconNav a')
+FOR el IN ELEMENTS(doc, 'main nav a')
     RETURN TRIM(el.innerText)
