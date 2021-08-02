@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	DefaultConcurrency = 3
+	DefaultConcurrency = 1
 	DefaultMaxRetries  = 5
 )
 
