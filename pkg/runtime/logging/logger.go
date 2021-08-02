@@ -28,6 +28,20 @@ const (
 	Disabled
 )
 
+func ParseLevel(input string) (Level, error) {
+	lvl, err := zerolog.ParseLevel(input)
+
+	if err != nil {
+		return NoLevel, err
+	}
+
+	return Level(lvl), nil
+}
+
+func (l Level) String() string {
+	return zerolog.Level(l).String()
+}
+
 func WithContext(ctx context.Context, opts Options) context.Context {
 	c := zerolog.New(opts.Writer).With().Timestamp()
 
@@ -35,8 +49,7 @@ func WithContext(ctx context.Context, opts Options) context.Context {
 		c = c.Interface(k, v)
 	}
 
-	logger := c.Logger()
-	logger.Level(zerolog.Level(opts.Level))
+	logger := c.Logger().Level(zerolog.Level(opts.Level))
 
 	return logger.WithContext(ctx)
 }
