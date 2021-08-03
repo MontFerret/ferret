@@ -157,8 +157,7 @@ waitForExpression
 waitForTimeout
     : integerLiteral
     | variable
-    | functionCallExpression
-    | memberExpression
+    | param
     ;
 
 waitForEventName

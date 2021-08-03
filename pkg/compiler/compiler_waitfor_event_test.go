@@ -110,8 +110,72 @@ func newCompilerWithObservable() *compiler.Compiler {
 }
 
 func TestWaitforEventExpression(t *testing.T) {
-	Convey("WAITFOR EVENT X IN Y", t, func() {
+	Convey("WAITFOR EVENT parser", t, func() {
+		Convey("Should parse", func() {
+			c := newCompilerWithObservable()
 
+			_, err := c.Compile(`
+LET obj = X::CREATE()
+
+X::EMIT(obj, "test", 100)
+WAITFOR EVENT "test" IN obj
+
+RETURN NONE
+`)
+
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Should parse 2", func() {
+			c := newCompilerWithObservable()
+
+			_, err := c.Compile(`
+LET obj = X::CREATE()
+
+X::EMIT(obj, "test", 100)
+WAITFOR EVENT "test" IN obj 1000
+
+RETURN NONE
+`)
+
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Should parse 3", func() {
+			c := newCompilerWithObservable()
+
+			_, err := c.Compile(`
+LET obj = X::CREATE()
+
+X::EMIT(obj, "test", 100)
+LET timeout = 1000
+WAITFOR EVENT "test" IN obj timeout
+
+RETURN NONE
+`)
+
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Should parse 4", func() {
+			c := newCompilerWithObservable()
+
+			_, err := c.Compile(`
+LET obj = X::CREATE()
+
+X::EMIT(obj, "test", 100)
+LET timeout = 1000
+WAITFOR EVENT "test" IN obj timeout
+
+X::EMIT(obj, "test", 100)
+
+RETURN NONE
+`)
+
+			So(err, ShouldBeNil)
+		})
+	})
+	Convey("WAITFOR EVENT X IN Y runtime", t, func() {
 		Convey("Should wait for a given event", func() {
 			c := newCompilerWithObservable()
 
