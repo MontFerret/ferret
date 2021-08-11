@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -61,6 +63,12 @@ var (
 		"",
 		"set CDP address",
 	)
+
+	logLevel = flag.String(
+		"log-level",
+		logging.ErrorLevel.String(),
+		"log level",
+	)
 )
 
 func main() {
@@ -113,13 +121,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := execFile(query, p); err != nil {
+	level, err := logging.ParseLevel(*logLevel)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := execFile(query, runtime.WithParams(p), runtime.WithLog(zerolog.ConsoleWriter{Out: os.Stderr}), runtime.WithLogLevel(level)); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func execFile(query string, params map[string]interface{}) error {
+func execFile(query string, opts ...runtime.Option) error {
 	ctx := drivers.WithContext(
 		context.Background(),
 		http.NewDriver(),
@@ -132,7 +147,7 @@ func execFile(query string, params map[string]interface{}) error {
 	)
 
 	i := ferret.New()
-	out, err := i.Exec(ctx, query, runtime.WithParams(params))
+	out, err := i.Exec(ctx, query, opts...)
 
 	if err != nil {
 		return err
