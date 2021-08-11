@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	Level uint8
+	Level int8
 
 	Options struct {
 		Writer io.Writer
@@ -26,6 +26,8 @@ const (
 	PanicLevel
 	NoLevel
 	Disabled
+
+	TraceLevel Level = -1
 )
 
 func ParseLevel(input string) (Level, error) {
@@ -54,6 +56,16 @@ func WithContext(ctx context.Context, opts Options) context.Context {
 	return logger.WithContext(ctx)
 }
 
-func FromContext(ctx context.Context) *zerolog.Logger {
-	return zerolog.Ctx(ctx)
+func FromContext(ctx context.Context) zerolog.Logger {
+	found := zerolog.Ctx(ctx)
+
+	if found == nil {
+		panic("logger is not set")
+	}
+
+	return *found
+}
+
+func WithName(ctx zerolog.Context, name string) zerolog.Context {
+	return ctx.Str("component", name)
 }
