@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"io"
 	"regexp"
 	"sync"
@@ -32,7 +33,7 @@ type (
 
 	Manager struct {
 		mu                 sync.RWMutex
-		logger             *zerolog.Logger
+		logger             zerolog.Logger
 		client             *cdp.Client
 		headers            *drivers.HTTPHeaders
 		eventLoop          *events.Loop
@@ -45,14 +46,14 @@ type (
 
 func New(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	options Options,
 ) (*Manager, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	m := new(Manager)
-	m.logger = logger
+	m.logger = logging.WithName(logger.With(), "network_manager").Logger()
 	m.client = client
 	m.headers = drivers.NewHTTPHeaders()
 	m.eventLoop = events.NewLoop()
@@ -186,17 +187,16 @@ func (m *Manager) SetCookies(ctx context.Context, url string, cookies *drivers.H
 }
 
 func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies *drivers.HTTPCookies) error {
-	log := m.logger.With().Str("url", url).Logger()
-	log.Trace().Msg("starting to set cookies")
+	m.logger.Trace().Str("url", url).Msg("starting to set cookies")
 
 	if cookies == nil {
-		log.Trace().Msg("nil cookies passed")
+		m.logger.Trace().Msg("nil cookies passed")
 
 		return errors.Wrap(core.ErrMissedArgument, "cookies")
 	}
 
 	if cookies.Length() == 0 {
-		log.Trace().Msg("no cookies passed")
+		m.logger.Trace().Msg("no cookies passed")
 
 		return nil
 	}
@@ -212,12 +212,12 @@ func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies *d
 	err := m.client.Network.SetCookies(ctx, network.NewSetCookiesArgs(params))
 
 	if err != nil {
-		log.Trace().Err(err).Msg("failed to set cookies")
+		m.logger.Trace().Err(err).Msg("failed to set cookies")
 
 		return err
 	}
 
-	log.Trace().Msg("succeeded to set cookies")
+	m.logger.Trace().Msg("succeeded to set cookies")
 
 	return nil
 }
@@ -226,17 +226,16 @@ func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies *driver
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	log := m.logger.With().Str("url", url).Logger()
-	log.Trace().Msg("starting to delete cookies")
+	m.logger.Trace().Str("url", url).Msg("starting to delete cookies")
 
 	if cookies == nil {
-		log.Trace().Msg("nil cookies passed")
+		m.logger.Trace().Msg("nil cookies passed")
 
 		return errors.Wrap(core.ErrMissedArgument, "cookies")
 	}
 
 	if cookies.Length() == 0 {
-		log.Trace().Msg("no cookies passed")
+		m.logger.Trace().Msg("no cookies passed")
 
 		return nil
 	}
@@ -244,17 +243,17 @@ func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies *driver
 	var err error
 
 	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
-		log.Trace().Str("name", value.Name).Msg("deleting a cookie")
+		m.logger.Trace().Str("name", value.Name).Msg("deleting a cookie")
 
 		err = m.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(url, value))
 
 		if err != nil {
-			log.Trace().Err(err).Str("name", value.Name).Msg("failed to delete a cookie")
+			m.logger.Trace().Err(err).Str("name", value.Name).Msg("failed to delete a cookie")
 
 			return false
 		}
 
-		log.Trace().Str("name", value.Name).Msg("succeeded to delete a cookie")
+		m.logger.Trace().Str("name", value.Name).Msg("succeeded to delete a cookie")
 
 		return true
 	})
@@ -281,28 +280,27 @@ func (m *Manager) SetHeaders(ctx context.Context, headers *drivers.HTTPHeaders) 
 }
 
 func (m *Manager) setHeadersInternal(ctx context.Context, headers *drivers.HTTPHeaders) error {
-	log := m.logger
-	log.Trace().Msg("starting to set headers")
+	m.logger.Trace().Msg("starting to set headers")
 
 	if headers.Length() == 0 {
-		log.Trace().Msg("no headers passed")
+		m.logger.Trace().Msg("no headers passed")
 
 		return nil
 	}
 
 	m.headers = headers
 
-	log.Trace().Msg("marshaling headers")
+	m.logger.Trace().Msg("marshaling headers")
 
 	j, err := jettison.MarshalOpts(headers, jettison.NoHTMLEscaping())
 
 	if err != nil {
-		log.Trace().Err(err).Msg("failed to marshal headers")
+		m.logger.Trace().Err(err).Msg("failed to marshal headers")
 
 		return errors.Wrap(err, "failed to marshal headers")
 	}
 
-	log.Trace().Msg("sending headers to browser")
+	m.logger.Trace().Msg("sending headers to browser")
 
 	err = m.client.Network.SetExtraHTTPHeaders(
 		ctx,
@@ -310,12 +308,12 @@ func (m *Manager) setHeadersInternal(ctx context.Context, headers *drivers.HTTPH
 	)
 
 	if err != nil {
-		log.Trace().Err(err).Msg("failed to set headers")
+		m.logger.Trace().Err(err).Msg("failed to set headers")
 
 		return errors.Wrap(err, "failed to set headers")
 	}
 
-	log.Trace().Msg("succeeded to set headers")
+	m.logger.Trace().Msg("succeeded to set headers")
 
 	return nil
 }
@@ -344,8 +342,7 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 	}
 
 	urlStr := url.String()
-	log := m.logger.With().Str("url", urlStr).Logger()
-	log.Trace().Msg("starting navigation")
+	m.logger.Trace().Str("url", urlStr).Msg("starting navigation")
 
 	repl, err := m.client.Page.Navigate(ctx, page.NewNavigateArgs(urlStr))
 
@@ -354,12 +351,12 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 	}
 
 	if err != nil {
-		log.Trace().Err(err).Msg("failed starting navigation")
+		m.logger.Trace().Err(err).Msg("failed starting navigation")
 
 		return err
 	}
 
-	log.Trace().Msg("succeeded starting navigation")
+	m.logger.Trace().Msg("succeeded starting navigation")
 
 	return m.WaitForNavigation(ctx, nil)
 }
@@ -368,14 +365,14 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	log := m.logger.With().
+	m.logger.Trace().
 		Int64("skip", int64(skip)).
-		Logger()
+		Msg("starting forward navigation")
 
 	history, err := m.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
-		log.Trace().
+		m.logger.Trace().
 			Err(err).
 			Msg("failed to get navigation history")
 
@@ -387,7 +384,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 
 	// nowhere to go forward
 	if history.CurrentIndex == lastIndex {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_last_index", lastIndex).
@@ -403,7 +400,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 	to := int(skip) + history.CurrentIndex
 
 	if to > lastIndex {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_last_index", lastIndex).
@@ -417,7 +414,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 	err = m.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(entry.ID))
 
 	if err != nil {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_last_index", lastIndex).
@@ -431,7 +428,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 	err = m.WaitForNavigation(ctx, nil)
 
 	if err != nil {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_last_index", lastIndex).
@@ -442,7 +439,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 		return values.False, err
 	}
 
-	log.Trace().
+	m.logger.Trace().
 		Int("history_entries", length).
 		Int("history_current_index", history.CurrentIndex).
 		Int("history_last_index", lastIndex).
@@ -456,14 +453,14 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	log := m.logger.With().Int64("skip", int64(skip)).Logger()
-
-	log.Trace().Msg("starting backward navigation")
+	m.logger.Trace().
+		Int64("skip", int64(skip)).
+		Msg("starting backward navigation")
 
 	history, err := m.client.Page.GetNavigationHistory(ctx)
 
 	if err != nil {
-		log.Trace().Err(err).Msg("failed to get navigation history")
+		m.logger.Trace().Err(err).Msg("failed to get navigation history")
 
 		return values.False, err
 	}
@@ -472,7 +469,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 
 	// we are in the beginning
 	if history.CurrentIndex == 0 {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Msg("no backward history. nowhere to navigate. done.")
@@ -487,7 +484,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	to := history.CurrentIndex - int(skip)
 
 	if to < 0 {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_target_index", to).
@@ -500,7 +497,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	err = m.client.Page.NavigateToHistoryEntry(ctx, page.NewNavigateToHistoryEntryArgs(entry.ID))
 
 	if err != nil {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_target_index", to).
@@ -513,7 +510,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	err = m.WaitForNavigation(ctx, nil)
 
 	if err != nil {
-		log.Trace().
+		m.logger.Trace().
 			Int("history_entries", length).
 			Int("history_current_index", history.CurrentIndex).
 			Int("history_target_index", to).
@@ -523,7 +520,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 		return values.False, err
 	}
 
-	log.Trace().
+	m.logger.Trace().
 		Int("history_entries", length).
 		Int("history_current_index", history.CurrentIndex).
 		Int("history_target_index", to).
