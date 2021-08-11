@@ -11,13 +11,14 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
 	Manager struct {
 		mu        sync.RWMutex
-		logger    *zerolog.Logger
+		logger    zerolog.Logger
 		client    *cdp.Client
 		mouse     *input.Mouse
 		keyboard  *input.Keyboard
@@ -27,14 +28,14 @@ type (
 )
 
 func New(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (manager *Manager, err error) {
 
 	manager = new(Manager)
-	manager.logger = logger
+	manager.logger = logging.WithName(logger.With(), "dom_manager").Logger()
 	manager.client = client
 	manager.mouse = mouse
 	manager.keyboard = keyboard

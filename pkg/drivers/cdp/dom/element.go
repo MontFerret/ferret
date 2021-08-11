@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -37,7 +38,7 @@ type (
 	}
 
 	HTMLElement struct {
-		logger   *zerolog.Logger
+		logger   zerolog.Logger
 		client   *cdp.Client
 		dom      *Manager
 		input    *input.Manager
@@ -50,7 +51,7 @@ type (
 
 func LoadHTMLElement(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
@@ -90,7 +91,7 @@ func LoadHTMLElement(
 
 func LoadHTMLElementWithID(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
@@ -122,7 +123,7 @@ func LoadHTMLElementWithID(
 }
 
 func NewHTMLElement(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
@@ -132,7 +133,12 @@ func NewHTMLElement(
 	nodeName string,
 ) *HTMLElement {
 	el := new(HTMLElement)
-	el.logger = logger
+	el.logger = logging.
+		WithName(logger.With(), "dom_element").
+		Int("node_id", int(id.NodeID)).
+		Str("object_id", string(id.ObjectID)).
+		Str("node_name", nodeName).
+		Logger()
 	el.client = client
 	el.dom = domManager
 	el.input = input

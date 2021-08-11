@@ -3,6 +3,7 @@ package dom
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"hash/fnv"
 
 	"github.com/mafredri/cdp"
@@ -23,7 +24,7 @@ import (
 )
 
 type HTMLDocument struct {
-	logger    *zerolog.Logger
+	logger    zerolog.Logger
 	client    *cdp.Client
 	dom       *Manager
 	input     *input.Manager
@@ -34,7 +35,7 @@ type HTMLDocument struct {
 
 func LoadRootHTMLDocument(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	mouse *input.Mouse,
@@ -73,7 +74,7 @@ func LoadRootHTMLDocument(
 
 func LoadHTMLDocument(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	mouse *input.Mouse,
@@ -83,7 +84,7 @@ func LoadHTMLDocument(
 	execID runtime.ExecutionContextID,
 ) (*HTMLDocument, error) {
 	exec := eval.NewExecutionContext(client, frameTree.Frame, execID)
-	inputManager := input.NewManager(client, exec, keyboard, mouse)
+	inputManager := input.NewManager(logger, client, exec, keyboard, mouse)
 
 	rootElement, err := LoadHTMLElement(
 		ctx,
@@ -111,7 +112,7 @@ func LoadHTMLDocument(
 }
 
 func NewHTMLDocument(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
@@ -120,7 +121,7 @@ func NewHTMLDocument(
 	frames page.FrameTree,
 ) *HTMLDocument {
 	doc := new(HTMLDocument)
-	doc.logger = logger
+	doc.logger = logging.WithName(logger.With(), "html_document").Logger()
 	doc.client = client
 	doc.dom = domManager
 	doc.input = input
