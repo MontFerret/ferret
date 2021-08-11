@@ -3,11 +3,11 @@ package drivers
 import (
 	"context"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
-	"github.com/wI2L/jettison"
 )
 
 // HTTPResponse HTTP response object.
@@ -89,6 +89,8 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 	field := path[0].(values.String).String()
 
 	switch field {
+	case "url", "URL":
+		return values.NewString(resp.URL), nil
 	case "status":
 		return values.NewString(resp.Status), nil
 	case "statusCode":
@@ -99,6 +101,9 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 		}
 
 		return resp.Headers.GetIn(ctx, path[1:])
+	case "responseTime":
+		return values.NewFloat(resp.ResponseTime), nil
+
 	}
 
 	return values.None, nil
