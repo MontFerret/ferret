@@ -2,7 +2,7 @@ LET doc = DOCUMENT("https://www.montferret.dev/", { driver: "cdp" })
 
 CLICK(doc, "#repl")
 
-WAIT_NAVIGATION(doc, 50000)
+WAITFOR EVENT "navigation" IN doc
 WAIT_ELEMENT(doc, '.code-editor-text')
 
-RETURN TRUE
+RETURN doc.url
