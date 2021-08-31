@@ -613,6 +613,8 @@ func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *val
 			Data: data,
 			Err:  err,
 		}
+
+		close(ch)
 	}()
 
 	return ch

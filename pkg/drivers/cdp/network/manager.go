@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"io"
 	"regexp"
@@ -609,6 +610,8 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 				close(onEvent)
 			}
 		}
+
+		log.Trace().Msg(fmt.Sprintf("continue waiting for navigation: %v", matched))
 
 		// if not matched - continue listening
 		return !matched

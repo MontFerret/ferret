@@ -129,7 +129,7 @@ func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err
 		case <-ctx.Done():
 			return
 		default:
-			// if returned false, it means the loops should call the handler anymore
+			// if returned false, it means the loops should not call the handler anymore
 			if !listener.Handler(ctx, message) {
 				loop.mu.RLock()
 				loop.listeners.Remove(eventID, listener.ID)
