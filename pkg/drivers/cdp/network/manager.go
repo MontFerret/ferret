@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"io"
 	"regexp"
 	"sync"
 
@@ -22,7 +21,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
-	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -37,7 +35,8 @@ type (
 		logger             zerolog.Logger
 		client             *cdp.Client
 		headers            *drivers.HTTPHeaders
-		eventLoop          *events.Loop
+		foregroundLoop     *events.Loop
+		backgroundLoop     *events.Loop
 		cancel             context.CancelFunc
 		responseListenerID events.ListenerID
 		filterListenerID   events.ListenerID
@@ -46,42 +45,37 @@ type (
 )
 
 func New(
-	ctx context.Context,
 	logger zerolog.Logger,
 	client *cdp.Client,
 	options Options,
 ) (*Manager, error) {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	m := new(Manager)
 	m.logger = logging.WithName(logger.With(), "network_manager").Logger()
 	m.client = client
 	m.headers = drivers.NewHTTPHeaders()
-	m.eventLoop = events.NewLoop()
+	m.foregroundLoop = events.NewLoop()
 	m.cancel = cancel
 	m.response = new(sync.Map)
 
-	if options.Cookies != nil && len(options.Cookies) > 0 {
-		for url, cookies := range options.Cookies {
-			if err := m.setCookiesInternal(ctx, url, cookies); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	if options.Headers != nil && options.Headers.Length() > 0 {
-		if err := m.setHeadersInternal(ctx, options.Headers); err != nil {
-			return nil, err
-		}
-	}
-
 	var err error
-
-	closers := make([]io.Closer, 0, 10)
 
 	defer func() {
 		if err != nil {
-			common.CloseAll(logger, closers, "failed to close a DOM event stream")
+			cancel()
+
+			if m.foregroundLoop != nil {
+				if err := m.foregroundLoop.Close(); err != nil {
+					m.logger.Trace().Err(err).Msg("failed to close the foreground loop during cleanup")
+				}
+			}
+
+			if m.backgroundLoop != nil {
+				if err := m.backgroundLoop.Close(); err != nil {
+					m.logger.Trace().Err(err).Msg("failed to close the background loop during cleanup")
+				}
+			}
 		}
 	}()
 
@@ -91,24 +85,24 @@ func New(
 		return nil, err
 	}
 
+	m.foregroundLoop.AddSource(events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(page.FrameNavigatedClient).Recv()
+	}))
+
 	responseReceivedStream, err := m.client.Network.ResponseReceived(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	m.eventLoop.AddSource(events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(page.FrameNavigatedClient).Recv()
-	}))
-
-	m.eventLoop.AddSource(events.NewSource(responseReceived, responseReceivedStream, func(stream rpcc.Stream) (interface{}, error) {
+	m.foregroundLoop.AddSource(events.NewSource(responseReceived, responseReceivedStream, func(stream rpcc.Stream) (interface{}, error) {
 		return stream.(network.ResponseReceivedClient).Recv()
 	}))
 
-	m.responseListenerID = m.eventLoop.AddListener(responseReceived, m.onResponse)
+	m.responseListenerID = m.foregroundLoop.AddListener(responseReceived, m.onResponse)
 
 	if options.Filter != nil && len(options.Filter.Patterns) > 0 {
-		el2 := events.NewLoop()
+		m.backgroundLoop = events.NewLoop()
 
 		err = m.client.Fetch.Enable(ctx, toFetchArgs(options.Filter.Patterns))
 
@@ -122,18 +116,46 @@ func New(
 			return nil, err
 		}
 
-		el2.AddSource(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
+		m.backgroundLoop.AddSource(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
 			return stream.(fetch.RequestPausedClient).Recv()
 		}))
 
-		m.filterListenerID = el2.AddListener(requestPaused, m.onRequestPaused)
-
-		// run in a separate loop in order to get higher priority
-		// TODO: Consider adding support of event priorities to EventLoop
-		el2.Run(ctx)
+		m.filterListenerID = m.backgroundLoop.AddListener(requestPaused, m.onRequestPaused)
 	}
 
-	m.eventLoop.Run(ctx)
+	if options.Cookies != nil && len(options.Cookies) > 0 {
+		for url, cookies := range options.Cookies {
+			err = m.setCookiesInternal(ctx, url, cookies)
+
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if options.Headers != nil && options.Headers.Length() > 0 {
+		err = m.setHeadersInternal(ctx, options.Headers)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = m.foregroundLoop.Run(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if m.backgroundLoop != nil {
+		// run in a separate loop in order to get higher priority
+		// TODO: Consider adding support of event priorities to EventLoop
+		err = m.backgroundLoop.Run(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return m, nil
 }
@@ -147,6 +169,12 @@ func (m *Manager) Close() error {
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
+	}
+
+	_ = m.foregroundLoop.Close()
+
+	if m.backgroundLoop != nil {
+		_ = m.backgroundLoop.Close()
 	}
 
 	return nil
@@ -548,7 +576,29 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		Str("url_pattern", urlPatternStr).
 		Msg("started waiting for frame navigation event")
 
-	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
+	go func() {
+		stream, err := m.client.Page.FrameNavigated(ctx)
+
+		if err != nil {
+			println("FAILED TO GET 2nd STREAM", err)
+
+			return
+		}
+
+		msg, err := stream.Recv()
+
+		if err != nil {
+			println("FAILED TO RECEIVE EVENT", err)
+
+			return
+		}
+
+		println("RECEIVED A MESSAGE", msg.Frame.URL)
+
+		println(stream.Close())
+	}()
+
+	m.foregroundLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 		log := m.logger.With().
 			Str("fame_id", string(frameID)).
@@ -626,7 +676,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 }
 
 func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.ListenerID {
-	return m.eventLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) bool {
+	return m.foregroundLoop.AddListener(eventFrameLoad, func(ctx context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
 		listener(ctx, repl.Frame)
@@ -636,7 +686,7 @@ func (m *Manager) AddFrameLoadedListener(listener FrameLoadedListener) events.Li
 }
 
 func (m *Manager) RemoveFrameLoadedListener(id events.ListenerID) {
-	m.eventLoop.RemoveListener(eventFrameLoad, id)
+	m.foregroundLoop.RemoveListener(eventFrameLoad, id)
 }
 
 func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) {

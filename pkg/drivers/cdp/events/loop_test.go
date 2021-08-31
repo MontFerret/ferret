@@ -50,9 +50,13 @@ type (
 var TestEvent = events.New("test_event")
 
 func NewTestEventStream() *TestEventStream {
+	return NewBufferedTestEventStream(0)
+}
+
+func NewBufferedTestEventStream(buffer int) *TestEventStream {
 	es := new(TestEventStream)
-	es.ready = make(chan struct{})
-	es.message = make(chan interface{})
+	es.ready = make(chan struct{}, buffer)
+	es.message = make(chan interface{}, buffer)
 	return es
 }
 
@@ -290,7 +294,7 @@ func TestLoop(t *testing.T) {
 
 			ctx, cancel := context.WithCancel(context.Background())
 
-			loop.Run(ctx)
+			So(loop.Run(ctx), ShouldBeNil)
 			defer cancel()
 
 			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
@@ -352,7 +356,7 @@ func TestLoop(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		loop.Run(ctx)
+		So(loop.Run(ctx), ShouldBeNil)
 		defer cancel()
 
 		time.Sleep(time.Duration(100) * time.Millisecond)
@@ -362,6 +366,43 @@ func TestLoop(t *testing.T) {
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
 		So(counter.Value(), ShouldEqual, 1)
+	})
+
+	Convey("Should stop on Context.Done", t, func() {
+		loop := events.NewLoop()
+		eventsToFire := 5
+		counter := NewCounter()
+
+		onLoad := &TestLoadEventFiredClient{NewBufferedTestEventStream(10)}
+		loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
+			return onLoad.Recv()
+		}))
+
+		loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+			counter.Increase()
+		}))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		So(loop.Run(ctx), ShouldBeNil)
+
+		for i := 0; i <= eventsToFire; i++ {
+			time.Sleep(time.Duration(100) * time.Millisecond)
+
+			onLoad.Emit(&page.LoadEventFiredReply{})
+		}
+
+		// Stop the loop
+		cancel()
+
+		onLoad.Emit(&page.LoadEventFiredReply{})
+
+		for i := 0; i <= eventsToFire; i++ {
+			time.Sleep(time.Duration(100) * time.Millisecond)
+
+			onLoad.Emit(&page.LoadEventFiredReply{})
+		}
+
+		So(counter.Value(), ShouldEqual, eventsToFire)
 	})
 }
 

@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"math/rand"
 	"sync"
 )
@@ -10,6 +11,7 @@ type Loop struct {
 	mu        sync.RWMutex
 	sources   *SourceCollection
 	listeners *ListenerCollection
+	cancel    context.CancelFunc
 }
 
 func NewLoop() *Loop {
@@ -20,8 +22,33 @@ func NewLoop() *Loop {
 	return loop
 }
 
-func (loop *Loop) Run(ctx context.Context) {
-	go loop.run(ctx)
+func (loop *Loop) Run(ctx context.Context) error {
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+
+	if loop.cancel != nil {
+		return core.Error(core.ErrInvalidOperation, "loop is already running")
+	}
+
+	childCtx, cancel := context.WithCancel(ctx)
+
+	loop.cancel = cancel
+
+	go loop.run(childCtx)
+
+	return nil
+}
+
+func (loop *Loop) Close() error {
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+
+	if loop.cancel != nil {
+		loop.cancel()
+		loop.cancel = nil
+	}
+
+	return loop.sources.Close()
 }
 
 func (loop *Loop) AddSource(source Source) {
@@ -36,6 +63,13 @@ func (loop *Loop) RemoveSource(source Source) {
 	defer loop.mu.RUnlock()
 
 	loop.sources.Remove(source)
+}
+
+func (loop *Loop) Listeners(eventID ID) int {
+	loop.mu.RLock()
+	defer loop.mu.RUnlock()
+
+	return loop.listeners.Size(eventID)
 }
 
 func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
@@ -67,11 +101,11 @@ func (loop *Loop) run(ctx context.Context) {
 	size := sources.Size()
 	counter := -1
 
-	// in case event array is empty
-	// we use this mock noop event source to simplify the logic
-	noop := newNoopSource()
-
 	for {
+		if isCtxDone(ctx) {
+			break
+		}
+
 		counter++
 
 		if counter >= size {
@@ -88,13 +122,12 @@ func (loop *Loop) run(ctx context.Context) {
 			if err == nil {
 				source = found
 			} else {
-				// might be removed
-				source = noop
 				// force to reset counter
 				counter = size
+				continue
 			}
 		} else {
-			source = noop
+			continue
 		}
 
 		select {

@@ -2,7 +2,7 @@ LET doc = DOCUMENT("https://www.montferret.dev/", { driver: "cdp" })
 
 CLICK(doc, "#repl")
 
-WAIT_NAVIGATION(doc, 20000)
+WAIT_NAVIGATION(doc, 50000)
 WAIT_ELEMENT(doc, '.code-editor-text')
 
 RETURN TRUE
