@@ -549,6 +549,14 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 	m.eventLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
+		log := m.logger.With().
+			Str("fame_id", string(frameID)).
+			Str("event_fame_id", string(repl.Frame.ID)).
+			Str("event_fame_url", repl.Frame.URL).
+			Str("url_pattern", urlPatternStr).
+			Logger()
+
+		log.Trace().Msg("received framed navigation event")
 
 		var matched bool
 
@@ -563,17 +571,9 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			}
 		}
 
-		log := m.logger.With().
-			Str("fame_id", string(frameID)).
-			Str("event_fame_id", string(repl.Frame.ID)).
-			Str("event_fame_url", repl.Frame.URL).
-			Str("url_pattern", urlPatternStr).
-			Bool("is_matched", matched).
-			Logger()
-
-		log.Trace().Msg("received framed navigation event")
-
 		if matched {
+			log.Trace().Msg("frame navigation url is matched with url pattern")
+
 			if ctx.Err() == nil {
 				log.Trace().Msg("creating frame execution context")
 
