@@ -5,13 +5,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"regexp"
 )
 
 // FRAMES finds HTML frames by a given property selector.
 // Returns an empty array if frames not found.
 // @param {HTMLPage} page - HTML page.
 // @param {String} property - Property selector.
-// @param {Any} value - Property value.
+// @param {String} exp - Regular expression to match property value.
 // @return {HTMLDocument[]} - Returns an array of found HTML frames.
 func Frames(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 3)
@@ -33,7 +34,11 @@ func Frames(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	propName := values.ToString(args[1])
-	propValue := args[2]
+	matcher, err := regexp.Compile(values.ToString(args[2]).String())
+
+	if err != nil {
+		return values.None, err
+	}
 
 	result, _ := frames.Find(func(value core.Value, idx int) bool {
 		doc, e := drivers.ToDocument(value)
@@ -51,7 +56,7 @@ func Frames(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return false
 		}
 
-		return currentPropValue.Compare(propValue) == 0
+		return matcher.MatchString(currentPropValue.String())
 	})
 
 	return result, err

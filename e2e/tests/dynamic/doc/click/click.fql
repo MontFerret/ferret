@@ -5,4 +5,4 @@ CLICK(page, "#wait-class-random-btn")
 
 WAIT_CLASS(page, "#wait-class-random-content", "alert-success")
 
-RETURN ""
+RETURN TRUE

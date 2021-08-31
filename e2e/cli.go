@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 type Params []string
@@ -128,7 +128,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := execFile(query, runtime.WithParams(p), runtime.WithLog(zerolog.ConsoleWriter{Out: os.Stderr}), runtime.WithLogLevel(level)); err != nil {
+	console := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: "15:04:05.999",
+	}
+
+	if err := execFile(query, runtime.WithParams(p), runtime.WithLog(console), runtime.WithLogLevel(level)); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
