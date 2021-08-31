@@ -576,28 +576,6 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		Str("url_pattern", urlPatternStr).
 		Msg("started waiting for frame navigation event")
 
-	go func() {
-		stream, err := m.client.Page.FrameNavigated(ctx)
-
-		if err != nil {
-			println("FAILED TO GET 2nd STREAM", err)
-
-			return
-		}
-
-		msg, err := stream.Recv()
-
-		if err != nil {
-			println("FAILED TO RECEIVE EVENT", err)
-
-			return
-		}
-
-		println("RECEIVED A MESSAGE", msg.Frame.URL)
-
-		println(stream.Close())
-	}()
-
 	m.foregroundLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 		log := m.logger.With().
