@@ -631,7 +631,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 					return false
 				}
 
-				log.Trace().Msg("DOM is ready. navigation completed")
+				log.Trace().Msg("DOM is ready")
 
 				onEvent <- struct{}{}
 				close(onEvent)
@@ -647,7 +647,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 		m.logger.Trace().
 			Str("fame_id", string(frameID)).
 			Str("url_pattern", urlPatternStr).
-			Msg("successfully finished to wait for frame navigation event")
+			Msg("navigation has completed")
 
 		return nil
 	case <-ctx.Done():
@@ -655,7 +655,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			Err(core.ErrTimeout).
 			Str("fame_id", string(frameID)).
 			Str("url_pattern", urlPatternStr).
-			Msg("failed to wait for frame navigation event")
+			Msg("navigation has failed")
 
 		return core.ErrTimeout
 	}

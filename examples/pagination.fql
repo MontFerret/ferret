@@ -2,15 +2,15 @@ LET baseURL = 'https://www.amazon.com/'
 LET amazon = DOCUMENT(baseURL, { driver: "cdp" })
 
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
-CLICK(amazon, '.nav-search-submit input[type="submit"]')
+CLICK(amazon, '#nav-search-submit-button')
 WAIT_NAVIGATION(amazon)
 
-LET resultListSelector = 'div.s-result-list'
+LET resultListSelector = '[data-component-type="s-search-results"]'
 LET resultItemSelector = '[data-component-type="s-search-result"]'
-LET nextBtnSelector = 'ul.a-pagination .a-last a'
+LET nextBtnSelector = '.s-pagination-next:not(.s-pagination-disabled)'
 LET priceWholeSelector = '.a-price-whole'
 LET priceFracSelector = '.a-price-fraction'
-LET pagers = ELEMENTS(amazon, 'ul.a-pagination li.a-disabled')
+LET pagers = ELEMENTS(amazon, '.s-pagination-item.s-pagination-disabled')
 LET pages = LENGTH(pagers) > 0 ? TO_INT(INNER_TEXT(LAST(pagers))) : 0
 
 LET result = (
@@ -18,8 +18,7 @@ LET result = (
         LIMIT @pages
 
         LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
-        LET wait = clicked ? WAIT_NAVIGATION(amazon, 10000) : false
-        LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
+        LET waitSelector = clicked ? WAIT_ELEMENT(amazon, resultListSelector) : false
 
         PRINT("page:", pageNum, "clicked", clicked)
 
@@ -32,6 +31,7 @@ LET result = (
 		        LET anchor = ELEMENT(el, "a")
 
                 RETURN {
+                    page: pageNum,
                     url: baseURL + anchor.attributes.href,
                     title: INNER_TEXT(el, 'h2'),
                     price
