@@ -40,6 +40,16 @@ func ParseLevel(input string) (Level, error) {
 	return Level(lvl), nil
 }
 
+func MustParseLevel(input string) Level {
+	lvl, err := zerolog.ParseLevel(input)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return Level(lvl)
+}
+
 func (l Level) String() string {
 	return zerolog.Level(l).String()
 }

@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"regexp"
 	"sync"
@@ -574,7 +573,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 	m.logger.Trace().
 		Str("fame_id", string(frameID)).
 		Str("url_pattern", urlPatternStr).
-		Msg("started waiting for frame navigation event")
+		Msg("starting to wait for frame navigation event")
 
 	m.foregroundLoop.AddListener(eventFrameLoad, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
@@ -639,16 +638,25 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			}
 		}
 
-		log.Trace().Msg(fmt.Sprintf("continue waiting for navigation: %v", matched))
-
 		// if not matched - continue listening
 		return !matched
 	})
 
 	select {
 	case <-onEvent:
+		m.logger.Trace().
+			Str("fame_id", string(frameID)).
+			Str("url_pattern", urlPatternStr).
+			Msg("successfully finished to wait for frame navigation event")
+
 		return nil
 	case <-ctx.Done():
+		m.logger.Trace().
+			Err(core.ErrTimeout).
+			Str("fame_id", string(frameID)).
+			Str("url_pattern", urlPatternStr).
+			Msg("failed to wait for frame navigation event")
+
 		return core.ErrTimeout
 	}
 }
@@ -720,7 +728,7 @@ func (m *Manager) onResponse(_ context.Context, message interface{}) (out bool) 
 
 	m.response.Store(*msg.FrameID, response)
 
-	log.Trace().Msg("updated frame response data")
+	log.Trace().Msg("updated frame response information")
 
 	return
 }

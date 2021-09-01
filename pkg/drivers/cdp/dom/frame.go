@@ -8,9 +8,8 @@ import (
 
 type (
 	Frame struct {
-		tree  page.FrameTree
-		node  *HTMLDocument
-		ready bool
+		tree page.FrameTree
+		node *HTMLDocument
 	}
 
 	AtomicFrameID struct {

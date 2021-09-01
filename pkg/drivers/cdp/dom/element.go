@@ -550,32 +550,19 @@ func (el *HTMLElement) evalAndGetElement(ctx context.Context, expr string) (core
 }
 
 func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
-	selectorArgs := dom.NewQuerySelectorArgs(el.id.NodeID, selector.String())
-	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+	obj, err := el.exec.EvalWithArgumentsAndReturnReference(
+		ctx,
+		templates.QuerySelector(selector.String()),
+		runtime.CallArgument{
+			ObjectID: &el.id.ObjectID,
+		},
+	)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	if found.NodeID == emptyNodeID {
-		return values.None, nil
-	}
-
-	res, err := LoadHTMLElement(
-		ctx,
-		el.logger,
-		el.client,
-		el.dom,
-		el.input,
-		el.exec,
-		found.NodeID,
-	)
-
-	if err != nil {
-		return values.None, nil
-	}
-
-	return res, nil
+	return el.convertEvalResult(ctx, obj)
 }
 
 func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
@@ -1029,9 +1016,7 @@ func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.Remote
 	}
 
 	switch typeName {
-	case "string", "number", "boolean":
-		return eval.Unmarshal(&out)
-	case "array":
+	case "array", "HTMLCollection":
 		if out.ObjectID == nil {
 			return values.None, nil
 		}
@@ -1128,6 +1113,8 @@ func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.Remote
 				ObjectID: *out.ObjectID,
 			},
 		)
+	case "string", "number", "boolean":
+		return eval.Unmarshal(&out)
 	default:
 		return values.None, nil
 	}
