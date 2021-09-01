@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -57,11 +58,19 @@ func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, er
 
 	defer func() {
 		if r := recover(); r != nil {
-			err := errors.Errorf("panic: %+v", r)
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = errors.WithStack(err)
+			default:
+				err = errors.New("unknown panic")
+			}
 
 			logger.Error().
 				Timestamp().
 				Err(err).
+				Str("stack", fmt.Sprintf("%+v", err)).
 				Msg("panic")
 
 			result = nil
