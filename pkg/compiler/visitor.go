@@ -807,13 +807,13 @@ func (v *visitor) doVisitWaitForTimeoutValueContext(ctx *fql.WaitForTimeoutConte
 		return v.doVisitVariable(variable.(*fql.VariableContext), s)
 	}
 
-	if member := ctx.MemberExpression(); member != nil {
-		return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
-	}
-
-	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
-		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
-	}
+	//if member := ctx.MemberExpression(); member != nil {
+	//	return v.doVisitMemberExpression(member.(*fql.MemberExpressionContext), s)
+	//}
+	//
+	//if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
+	//	return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), s)
+	//}
 
 	return nil, ErrNotImplemented
 }

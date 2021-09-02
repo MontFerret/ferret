@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -37,11 +38,11 @@ type (
 	}
 
 	HTMLElement struct {
-		logger   *zerolog.Logger
+		logger   zerolog.Logger
 		client   *cdp.Client
 		dom      *Manager
 		input    *input.Manager
-		exec     *eval.ExecutionContext
+		exec     *eval.Runtime
 		id       HTMLElementIdentity
 		nodeType html.NodeType
 		nodeName values.String
@@ -50,11 +51,11 @@ type (
 
 func LoadHTMLElement(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
-	exec *eval.ExecutionContext,
+	exec *eval.Runtime,
 	nodeID dom.NodeID,
 ) (*HTMLElement, error) {
 	if client == nil {
@@ -62,7 +63,7 @@ func LoadHTMLElement(
 	}
 
 	// getting a remote object that represents the current DOM Node
-	args := dom.NewResolveNodeArgs().SetNodeID(nodeID).SetExecutionContextID(exec.ID())
+	args := dom.NewResolveNodeArgs().SetNodeID(nodeID).SetExecutionContextID(exec.ContextID())
 
 	obj, err := client.DOM.ResolveNode(ctx, args)
 
@@ -90,11 +91,11 @@ func LoadHTMLElement(
 
 func LoadHTMLElementWithID(
 	ctx context.Context,
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
-	exec *eval.ExecutionContext,
+	exec *eval.Runtime,
 	id HTMLElementIdentity,
 ) (*HTMLElement, error) {
 	node, err := client.DOM.DescribeNode(
@@ -122,17 +123,22 @@ func LoadHTMLElementWithID(
 }
 
 func NewHTMLElement(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
-	exec *eval.ExecutionContext,
+	exec *eval.Runtime,
 	id HTMLElementIdentity,
 	nodeType int,
 	nodeName string,
 ) *HTMLElement {
 	el := new(HTMLElement)
-	el.logger = logger
+	el.logger = logging.
+		WithName(logger.With(), "dom_element").
+		Int("node_id", int(id.NodeID)).
+		Str("object_id", string(id.ObjectID)).
+		Str("node_name", nodeName).
+		Logger()
 	el.client = client
 	el.dom = domManager
 	el.input = input
@@ -229,9 +235,11 @@ func (el *HTMLElement) GetNodeName() values.String {
 }
 
 func (el *HTMLElement) Length() values.Int {
-	value, err := el.exec.EvalWithArgumentsAndReturnValue(context.Background(), templates.GetChildrenCount(), runtime.CallArgument{
-		ObjectID: &el.id.ObjectID,
-	})
+	value, err := el.exec.EvalValue(
+		context.Background(),
+		templates.GetChildrenCount(),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 
 	if err != nil {
 		el.logError(err)
@@ -243,9 +251,11 @@ func (el *HTMLElement) Length() values.Int {
 }
 
 func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
-	value, err := el.exec.EvalWithArgumentsAndReturnValue(ctx, templates.GetStyles(), runtime.CallArgument{
-		ObjectID: &el.id.ObjectID,
-	})
+	value, err := el.exec.EvalValue(
+		ctx,
+		templates.GetStyles(),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 
 	if err != nil {
 		return values.NewObject(), err
@@ -259,70 +269,27 @@ func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
 }
 
 func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
-	styles, err := el.GetStyles(ctx)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	val, found := styles.Get(name)
-
-	if !found {
-		return values.None, nil
-	}
-
-	return val, nil
+	return el.exec.EvalValue(
+		ctx,
+		templates.GetStyle(name.String()),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 }
 
 func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
-	if styles == nil {
-		return nil
-	}
-
-	currentStyles, err := el.GetStyles(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	styles.ForEach(func(value core.Value, key string) bool {
-		currentStyles.Set(values.NewString(key), value)
-
-		return true
-	})
-
-	str := common.SerializeStyles(ctx, currentStyles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.exec.Eval(
+		ctx,
+		templates.SetStyles(styles),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 }
 
 func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {
-	// we manually set only those that are defined in attribute only
-	attrValue, err := el.GetAttribute(ctx, common.AttrNameStyle)
-
-	if err != nil {
-		return err
-	}
-
-	var styles *values.Object
-
-	if attrValue == values.None {
-		styles = values.NewObject()
-	} else {
-		styleAttr, ok := attrValue.(*values.Object)
-
-		if !ok {
-			return core.TypeError(attrValue.Type(), types.Object)
-		}
-
-		styles = styleAttr
-	}
-
-	styles.Set(name, value)
-
-	str := common.SerializeStyles(ctx, styles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.exec.Eval(
+		ctx,
+		templates.SetStyle(name.String(), value.String()),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 }
 
 func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
@@ -330,30 +297,11 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 		return nil
 	}
 
-	value, err := el.GetAttribute(ctx, common.AttrNameStyle)
-
-	if err != nil {
-		return err
-	}
-
-	// no attribute
-	if value == values.None {
-		return nil
-	}
-
-	styles, ok := value.(*values.Object)
-
-	if !ok {
-		return core.TypeError(styles.Type(), types.Object)
-	}
-
-	for _, name := range names {
-		styles.Remove(name)
-	}
-
-	str := common.SerializeStyles(ctx, styles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.exec.Eval(
+		ctx,
+		templates.RemoveStyles(names),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 }
 
 func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
@@ -457,10 +405,10 @@ func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.Stri
 }
 
 func (el *HTMLElement) GetChildNodes(ctx context.Context) (*values.Array, error) {
-	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.GetChildren(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
+	out, err := el.exec.EvalRef(
+		ctx,
+		templates.GetChildren(),
+		eval.WithArgRef(el.id.ObjectID),
 	)
 
 	if err != nil {
@@ -485,10 +433,10 @@ func (el *HTMLElement) GetChildNodes(ctx context.Context) (*values.Array, error)
 }
 
 func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
-	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.GetChildByIndex(int64(idx)),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
+	out, err := el.exec.EvalRef(
+		ctx,
+		templates.GetChildByIndex(int64(idx)),
+		eval.WithArgRef(el.id.ObjectID),
 	)
 
 	if err != nil {
@@ -511,9 +459,11 @@ func (el *HTMLElement) GetNextElementSibling(ctx context.Context) (core.Value, e
 }
 
 func (el *HTMLElement) evalAndGetElement(ctx context.Context, expr string) (core.Value, error) {
-	obj, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, expr, runtime.CallArgument{
-		ObjectID: &el.id.ObjectID,
-	})
+	obj, err := el.exec.EvalRef(
+		ctx,
+		expr,
+		eval.WithArgRef(el.id.ObjectID),
+	)
 
 	if err != nil {
 		return values.None, err
@@ -544,32 +494,17 @@ func (el *HTMLElement) evalAndGetElement(ctx context.Context, expr string) (core
 }
 
 func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
-	selectorArgs := dom.NewQuerySelectorArgs(el.id.NodeID, selector.String())
-	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+	obj, err := el.exec.EvalRef(
+		ctx,
+		templates.QuerySelector(selector.String()),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	if found.NodeID == emptyNodeID {
-		return values.None, nil
-	}
-
-	res, err := LoadHTMLElement(
-		ctx,
-		el.logger,
-		el.client,
-		el.dom,
-		el.input,
-		el.exec,
-		found.NodeID,
-	)
-
-	if err != nil {
-		return values.None, nil
-	}
-
-	return res, nil
+	return el.convertEvalResult(ctx, obj)
 }
 
 func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
@@ -612,19 +547,11 @@ func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.Str
 }
 
 func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (result core.Value, err error) {
-	exp, err := expression.MarshalJSON()
-
-	if err != nil {
-		return values.None, err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.XPath(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: exp,
-		},
+	out, err := el.exec.EvalRef(
+		ctx,
+		templates.XPath(),
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(expression),
 	)
 
 	if err != nil {
@@ -643,21 +570,11 @@ func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String
 }
 
 func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error) {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+	out, err := el.exec.EvalValue(
 		ctx,
 		templates.GetInnerTextBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(selector),
 	)
 
 	if err != nil {
@@ -668,49 +585,21 @@ func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector valu
 }
 
 func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	val, err := innerText.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	return el.exec.EvalWithArguments(
+	return el.exec.Eval(
 		ctx,
 		templates.SetInnerTextBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-		runtime.CallArgument{
-			Value: val,
-		},
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(selector),
+		eval.WithArgValue(innerText),
 	)
 }
 
 func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+	out, err := el.exec.EvalValue(
 		ctx,
 		templates.GetInnerTextBySelectorAll(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(selector),
 	)
 
 	if err != nil {
@@ -735,21 +624,11 @@ func (el *HTMLElement) SetInnerHTML(ctx context.Context, innerHTML values.String
 }
 
 func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error) {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+	out, err := el.exec.EvalValue(
 		ctx,
 		templates.GetInnerHTMLBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(selector),
 	)
 
 	if err != nil {
@@ -760,49 +639,21 @@ func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector valu
 }
 
 func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	val, err := innerHTML.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	return el.exec.EvalWithArguments(
+	return el.exec.Eval(
 		ctx,
 		templates.SetInnerHTMLBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-		runtime.CallArgument{
-			Value: val,
-		},
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(selector),
+		eval.WithArgValue(innerHTML),
 	)
 }
 
 func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return values.EmptyArray(), err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
+	out, err := el.exec.EvalValue(
 		ctx,
 		templates.GetInnerHTMLBySelectorAll(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
+		eval.WithArgRef(el.id.ObjectID),
+		eval.WithArgValue(selector),
 	)
 
 	if err != nil {
@@ -912,9 +763,16 @@ func (el *HTMLElement) WaitForAttribute(
 }
 
 func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, value core.Value, when drivers.WaitEvent) error {
-	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
-		return el.GetStyle(ctx, name)
-	}, events.DefaultPolling)
+	task := events.NewEvalWaitTask(
+		el.exec,
+		templates.WaitForStyle(
+			name.String(),
+			value.String(),
+			when,
+		),
+		events.DefaultPolling,
+		eval.WithArgRef(el.id.ObjectID),
+	)
 
 	_, err := task.Run(ctx)
 
@@ -1023,9 +881,7 @@ func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.Remote
 	}
 
 	switch typeName {
-	case "string", "number", "boolean":
-		return eval.Unmarshal(&out)
-	case "array":
+	case "array", "HTMLCollection":
 		if out.ObjectID == nil {
 			return values.None, nil
 		}
@@ -1122,6 +978,8 @@ func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.Remote
 				ObjectID: *out.ObjectID,
 			},
 		)
+	case "string", "number", "boolean":
+		return eval.Unmarshal(&out)
 	default:
 		return values.None, nil
 	}
