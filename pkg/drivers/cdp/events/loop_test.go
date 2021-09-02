@@ -394,6 +394,8 @@ func TestLoop(t *testing.T) {
 		// Stop the loop
 		cancel()
 
+		time.Sleep(time.Duration(100) * time.Millisecond)
+
 		onLoad.Emit(&page.LoadEventFiredReply{})
 
 		for i := 0; i <= eventsToFire; i++ {
