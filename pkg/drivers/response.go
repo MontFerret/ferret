@@ -3,18 +3,20 @@ package drivers
 import (
 	"context"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
-	"github.com/wI2L/jettison"
 )
 
 // HTTPResponse HTTP response object.
 type HTTPResponse struct {
-	StatusCode int
-	Status     string
-	Headers    *HTTPHeaders
+	URL          string
+	StatusCode   int
+	Status       string
+	Headers      *HTTPHeaders
+	ResponseTime float64
 }
 
 func (resp *HTTPResponse) Type() core.Type {
@@ -60,9 +62,11 @@ func (resp *HTTPResponse) Hash() uint64 {
 // responseMarshal is a structure that repeats HTTPResponse. It allows
 // easily Marshal the HTTPResponse object.
 type responseMarshal struct {
-	StatusCode int          `json:"status_code"`
-	Status     string       `json:"status"`
-	Headers    *HTTPHeaders `json:"headers"`
+	URL          string       `json:"url"`
+	StatusCode   int          `json:"status_code"`
+	Status       string       `json:"status"`
+	Headers      *HTTPHeaders `json:"headers"`
+	ResponseTime float64      `json:"response_time"`
 }
 
 func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
@@ -85,6 +89,8 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 	field := path[0].(values.String).String()
 
 	switch field {
+	case "url", "URL":
+		return values.NewString(resp.URL), nil
 	case "status":
 		return values.NewString(resp.Status), nil
 	case "statusCode":
@@ -95,6 +101,9 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 		}
 
 		return resp.Headers.GetIn(ctx, path[1:])
+	case "responseTime":
+		return values.NewFloat(resp.ResponseTime), nil
+
 	}
 
 	return values.None, nil

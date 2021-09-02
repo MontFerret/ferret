@@ -18,6 +18,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/utils"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
@@ -32,7 +33,7 @@ type (
 	HTMLPage struct {
 		mu       sync.Mutex
 		closed   values.Boolean
-		logger   *zerolog.Logger
+		logger   zerolog.Logger
 		conn     *rpcc.Conn
 		client   *cdp.Client
 		network  *net.Manager
@@ -93,7 +94,12 @@ func LoadHTMLPage(
 		}
 	}
 
-	netManager, err := net.New(ctx, logger, client, netOpts)
+	netManager, err := net.New(
+		logger,
+		client,
+		netOpts,
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +186,7 @@ func LoadHTMLPageWithContent(
 }
 
 func NewHTMLPage(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	netManager *net.Manager,
@@ -190,7 +196,7 @@ func NewHTMLPage(
 ) *HTMLPage {
 	p := new(HTMLPage)
 	p.closed = values.False
-	p.logger = logger
+	p.logger = logging.WithName(logger.With(), "cdp_page").Logger()
 	p.conn = conn
 	p.client = client
 	p.network = netManager
@@ -271,14 +277,13 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	url := p.GetURL().String()
+	url := p.dom.GetMainFrame().GetURL().String()
 	p.closed = values.True
 
 	err := p.dom.Close()
 
 	if err != nil {
 		p.logger.Warn().
-			Timestamp().
 			Str("url", url).
 			Err(err).
 			Msg("failed to close dom manager")
@@ -288,7 +293,6 @@ func (p *HTMLPage) Close() error {
 
 	if err != nil {
 		p.logger.Warn().
-			Timestamp().
 			Str("url", url).
 			Err(err).
 			Msg("failed to close network manager")
@@ -298,23 +302,15 @@ func (p *HTMLPage) Close() error {
 
 	if err != nil {
 		p.logger.Warn().
-			Timestamp().
 			Str("url", url).
 			Err(err).
 			Msg("failed to close browser page")
 	}
 
-	err = p.conn.Close()
+	// Ignore errors from the connection object
+	p.conn.Close()
 
-	if err != nil {
-		p.logger.Warn().
-			Timestamp().
-			Str("url", url).
-			Err(err).
-			Msg("failed to close connection")
-	}
-
-	return err
+	return nil
 }
 
 func (p *HTMLPage) IsClosed() values.Boolean {
@@ -332,7 +328,6 @@ func (p *HTMLPage) GetURL() values.String {
 	}
 
 	p.logger.Warn().
-		Timestamp().
 		Err(err).
 		Msg("failed to retrieve URL")
 
@@ -477,12 +472,14 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 		params.Y = 0
 	}
 
+	clientWidth, clientHeight := utils.GetLayoutViewportWH(metrics)
+
 	if params.Width <= 0 {
-		params.Width = values.Float(metrics.CSSLayoutViewport.ClientWidth) - params.X
+		params.Width = values.Float(clientWidth) - params.X
 	}
 
 	if params.Height <= 0 {
-		params.Height = values.Float(metrics.CSSLayoutViewport.ClientHeight) - params.Y
+		params.Height = values.Float(clientHeight) - params.Y
 	}
 
 	clip := page.Viewport{
@@ -615,6 +612,8 @@ func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *val
 			Data: data,
 			Err:  err,
 		}
+
+		close(ch)
 	}()
 
 	return ch

@@ -6,16 +6,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/MontFerret/ferret"
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 type Params []string
@@ -61,7 +63,15 @@ var (
 		"",
 		"set CDP address",
 	)
+
+	logLevel = flag.String(
+		"log-level",
+		logging.ErrorLevel.String(),
+		"log level",
+	)
 )
+
+var logger zerolog.Logger
 
 func main() {
 	var params Params
@@ -74,9 +84,20 @@ func main() {
 
 	flag.Parse()
 
-	var query string
+	console := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: "15:04:05.999",
+	}
+	logger = zerolog.New(console).
+		Level(zerolog.Level(logging.MustParseLevel(*logLevel))).
+		With().
+		Timestamp().
+		Logger()
 
 	stat, _ := os.Stdin.Stat()
+
+	var query string
+	var files []string
 
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
 		// check whether the app is getting a query via standard input
@@ -91,18 +112,10 @@ func main() {
 
 		query = string(b)
 	} else if flag.NArg() > 0 {
-		// backward compatibility
-		content, err := ioutil.ReadFile(flag.Arg(0))
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		query = string(content)
+		files = flag.Args()
 	} else {
 		fmt.Println(flag.NArg())
-		fmt.Println("Missed file")
+		fmt.Println("File or input stream are required")
 		os.Exit(1)
 	}
 
@@ -113,26 +126,121 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := execFile(query, p); err != nil {
+	engine := ferret.New()
+	_ = engine.Drivers().Register(http.NewDriver())
+	_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
+
+	opts := []runtime.Option{
+		runtime.WithParams(p),
+		runtime.WithLog(console),
+		runtime.WithLogLevel(logging.MustParseLevel(*logLevel)),
+	}
+
+	if query != "" {
+		err = execQuery(engine, opts, query)
+	} else {
+		err = execFiles(engine, opts, files)
+	}
+
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func execFile(query string, params map[string]interface{}) error {
-	ctx := drivers.WithContext(
-		context.Background(),
-		http.NewDriver(),
-		drivers.AsDefault(),
-	)
+func execFiles(engine *ferret.Instance, opts []runtime.Option, files []string) error {
+	errList := make([]error, 0, len(files))
 
-	ctx = drivers.WithContext(
-		ctx,
-		cdp.NewDriver(cdp.WithAddress(*conn)),
-	)
+	for _, path := range files {
+		log := logger.With().Str("path", path).Logger()
+		log.Debug().Msg("checking path...")
 
-	i := ferret.New()
-	out, err := i.Exec(ctx, query, runtime.WithParams(params))
+		info, err := os.Stat(path)
+
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to get path info")
+
+			errList = append(errList, err)
+			continue
+		}
+
+		if info.IsDir() {
+			log.Debug().Msg("path points to a directory. retrieving list of files...")
+
+			fileInfos, err := ioutil.ReadDir(path)
+
+			if err != nil {
+				log.Debug().Err(err).Msg("failed to retrieve list of files")
+
+				errList = append(errList, err)
+				continue
+			}
+
+			log.Debug().Int("size", len(fileInfos)).Msg("retrieved list of files. starting to iterate...")
+
+			dirFiles := make([]string, 0, len(fileInfos))
+
+			for _, info := range fileInfos {
+				if filepath.Ext(info.Name()) == ".fql" {
+					dirFiles = append(dirFiles, filepath.Join(path, info.Name()))
+				}
+			}
+
+			if len(dirFiles) > 0 {
+				if err := execFiles(engine, opts, dirFiles); err != nil {
+					log.Debug().Err(err).Msg("failed to execute files")
+
+					errList = append(errList, err)
+				} else {
+					log.Debug().Int("size", len(fileInfos)).Err(err).Msg("successfully executed files")
+				}
+			} else {
+				log.Debug().Int("size", len(fileInfos)).Err(err).Msg("no FQL files found")
+			}
+
+			continue
+		}
+
+		log.Debug().Msg("path points to a file. starting to read content")
+
+		out, err := ioutil.ReadFile(path)
+
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to read content")
+
+			errList = append(errList, err)
+			continue
+		}
+
+		log.Debug().Msg("successfully read file")
+		log.Debug().Msg("executing file...")
+		err = execQuery(engine, opts, string(out))
+
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to execute file")
+
+			errList = append(errList, err)
+			continue
+		}
+
+		log.Debug().Msg("successfully executed file")
+	}
+
+	if len(errList) > 0 {
+		if len(errList) == len(files) {
+			logger.Debug().Errs("errors", errList).Msg("failed to execute file(s)")
+		} else {
+			logger.Debug().Errs("errors", errList).Msg("executed with errors")
+		}
+
+		return core.Errors(errList...)
+	}
+
+	return nil
+}
+
+func execQuery(engine *ferret.Instance, opts []runtime.Option, query string) error {
+	out, err := engine.Exec(context.Background(), query, opts...)
 
 	if err != nil {
 		return err

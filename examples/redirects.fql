@@ -1,15 +1,7 @@
-LET doc = DOCUMENT(@url, {
-    driver: 'cdp',
-    viewport: {
-        width: 1920,
-        height: 1080
-    }
-})
+LET doc = DOCUMENT(@url, { driver: 'cdp' })
 
 CLICK(doc, '.click')
 
-WAIT_NAVIGATION(doc, {
-    target: @targetURL
-})
+WAITFOR EVENT "navigation" IN doc { target: @targetURL }
 
 RETURN ELEMENT(doc, '.title')

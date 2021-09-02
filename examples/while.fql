@@ -1,17 +1,17 @@
 LET doc = DOCUMENT("https://github.com/MontFerret/ferret/stargazers", { driver: "cdp" })
 
-LET nextSelector = ".paginate-container .BtnGroup a:nth-child(2)"
-LET elementsSelector = '.follow-list li'
+LET nextSelector = '[data-test-selector="pagination"] .btn:nth-child(2):not([disabled])'
+LET elementsSelector = '#repos ol li'
 
 FOR i DO WHILE ELEMENT_EXISTS(doc, nextSelector)
     LIMIT 3
 	LET wait = i > 0 ? CLICK(doc, nextSelector) : false
-	LET nav = wait ? WAIT_NAVIGATION(doc) : false
+	LET nav = wait ? (WAITFOR EVENT "navigation" IN doc) : false
 	
 	FOR el IN ELEMENTS(doc, elementsSelector)
 		FILTER ELEMENT_EXISTS(el, ".octicon-organization")
 
 		RETURN {
-			name: INNER_TEXT(el, ".follow-list-name"),
-			company: INNER_TEXT(el, ".follow-list-info span")
+			name: INNER_TEXT(el, 'div > div:nth-child(2) [data-hovercard-type="user"]'),
+			company: INNER_TEXT(el, "div > div:nth-child(2) p")
 		}

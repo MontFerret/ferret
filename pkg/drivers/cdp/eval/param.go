@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"bytes"
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -22,6 +23,36 @@ func Param(input core.Value) string {
 
 		return value.String()
 	}
+}
+
+func ParamList(inputs []core.Value) string {
+	var buf bytes.Buffer
+	lastIndex := len(inputs) - 1
+
+	for i, input := range inputs {
+		buf.WriteString(Param(input))
+
+		if i != lastIndex {
+			buf.WriteString(",")
+		}
+	}
+
+	return buf.String()
+}
+
+func ParamStringList(inputs []values.String) string {
+	var buf bytes.Buffer
+	lastIndex := len(inputs) - 1
+
+	for i, input := range inputs {
+		buf.WriteString(ParamString(input.String()))
+
+		if i != lastIndex {
+			buf.WriteString(",")
+		}
+	}
+
+	return buf.String()
 }
 
 func ParamString(param string) string {

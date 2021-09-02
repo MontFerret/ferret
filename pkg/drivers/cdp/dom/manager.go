@@ -11,13 +11,14 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
 	Manager struct {
 		mu        sync.RWMutex
-		logger    *zerolog.Logger
+		logger    zerolog.Logger
 		client    *cdp.Client
 		mouse     *input.Mouse
 		keyboard  *input.Keyboard
@@ -27,14 +28,14 @@ type (
 )
 
 func New(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (manager *Manager, err error) {
 
 	manager = new(Manager)
-	manager.logger = logger
+	manager.logger = logging.WithName(logger.With(), "dom_manager").Logger()
 	manager.client = client
 	manager.mouse = mouse
 	manager.keyboard = keyboard
@@ -212,7 +213,7 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 	}
 
 	// the frames is not loaded yet
-	node, execID, err := resolveFrame(ctx, m.client, frameID)
+	node, exec, err := resolveFrame(ctx, m.client, frameID)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to resolve frame node: %s", frameID)
@@ -227,7 +228,7 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 		m.keyboard,
 		node,
 		frame.tree,
-		execID,
+		exec,
 	)
 
 	if err != nil {

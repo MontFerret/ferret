@@ -10,4 +10,4 @@ LET p = DOCUMENT("https://www.gettyimages.com/", {
     }
 })
 
-RETURN NONE
+RETURN TRUE

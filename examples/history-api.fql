@@ -11,6 +11,6 @@ CLICK(song)
 WAIT_ELEMENT(doc, ".l-listen-hero")
 
 RETURN {
-    page: page.url,
+    current: page.url,
     first: doc.url
 }
