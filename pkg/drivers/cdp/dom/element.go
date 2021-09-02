@@ -269,19 +269,11 @@ func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
 }
 
 func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
-	styles, err := el.GetStyles(ctx)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	val, found := styles.Get(name)
-
-	if !found {
-		return values.None, nil
-	}
-
-	return val, nil
+	return el.exec.EvalValue(
+		ctx,
+		templates.GetStyle(name.String()),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 }
 
 func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
@@ -309,14 +301,7 @@ func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) err
 func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {
 	return el.exec.Eval(
 		ctx,
-		fmt.Sprintf(`
-		(el) => {
-			el.style[%s] = %s;
-		}
-	`,
-			eval.Param(name),
-			eval.Param(value),
-		),
+		templates.SetStyle(name.String(), value.String()),
 		eval.WithArgRef(el.id.ObjectID),
 	)
 }
@@ -328,13 +313,8 @@ func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) 
 
 	return el.exec.Eval(
 		ctx,
-		fmt.Sprintf(`
-		(el) => {
-			const style = el.style;
-			[%s].forEach((name) => { style[name] = "" })
-		}
-	`,
-			eval.ParamStringList(names)),
+		templates.RemoveStyles(names),
+		eval.WithArgRef(el.id.ObjectID),
 	)
 }
 
