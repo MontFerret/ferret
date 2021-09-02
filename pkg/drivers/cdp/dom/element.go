@@ -277,25 +277,11 @@ func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.V
 }
 
 func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
-	if styles == nil {
-		return nil
-	}
-
-	currentStyles, err := el.GetStyles(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	styles.ForEach(func(value core.Value, key string) bool {
-		currentStyles.Set(values.NewString(key), value)
-
-		return true
-	})
-
-	str := common.SerializeStyles(ctx, currentStyles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.exec.Eval(
+		ctx,
+		templates.SetStyles(styles),
+		eval.WithArgRef(el.id.ObjectID),
+	)
 }
 
 func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {

@@ -47,6 +47,17 @@ func SetStyle(name, value string) string {
 `, eval.ParamString(name), eval.ParamString(value))
 }
 
+func SetStyles(pairs *values.Object) string {
+	return fmt.Sprintf(`
+		(el) => {
+			const values = %s;
+			Object.keys(values).forEach((key) => {
+				el.style[key] = values[key]
+			});
+		}
+`, eval.Param(pairs))
+}
+
 func RemoveStyles(names []values.String) string {
 	return fmt.Sprintf(`
 		(el) => {
