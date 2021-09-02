@@ -314,7 +314,10 @@ func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) 
 			el.style[%s] = %s;
 		}
 	`,
-			eval.Param(name), eval.Param(value)),
+			eval.Param(name),
+			eval.Param(value),
+		),
+		eval.WithArgRef(el.id.ObjectID),
 	)
 }
 
