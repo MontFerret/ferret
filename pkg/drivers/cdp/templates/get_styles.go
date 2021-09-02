@@ -1,5 +1,11 @@
 package templates
 
+import (
+	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+)
+
 var getStylesTemplate = `
 	(el) => {
 		const out = {};
@@ -19,4 +25,17 @@ var getStylesTemplate = `
 
 func GetStyles() string {
 	return getStylesTemplate
+}
+
+func WaitForStyle(name, value string, when drivers.WaitEvent) string {
+	return fmt.Sprintf(`
+	(el) => {
+		const styles = window.getComputedStyle(el);
+		const actual = styles[%s];
+		const expected = %s;
+
+		// null means we need to repeat
+		return actual %s expected ? true : null ;
+	}
+`, eval.ParamString(name), eval.ParamString(value), WaitEventToEqOperator(when))
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
@@ -28,7 +27,7 @@ type HTMLDocument struct {
 	client    *cdp.Client
 	dom       *Manager
 	input     *input.Manager
-	exec      *eval.ExecutionContext
+	exec      *eval.Runtime
 	frameTree page.FrameTree
 	element   *HTMLElement
 }
@@ -53,7 +52,7 @@ func LoadRootHTMLDocument(
 		return nil, err
 	}
 
-	worldRepl, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(ftRepl.FrameTree.Frame.ID))
+	exec, err := eval.New(ctx, client, ftRepl.FrameTree.Frame.ID)
 
 	if err != nil {
 		return nil, err
@@ -68,7 +67,7 @@ func LoadRootHTMLDocument(
 		keyboard,
 		gdRepl.Root,
 		ftRepl.FrameTree,
-		worldRepl.ExecutionContextID,
+		exec,
 	)
 }
 
@@ -81,9 +80,8 @@ func LoadHTMLDocument(
 	keyboard *input.Keyboard,
 	node dom.Node,
 	frameTree page.FrameTree,
-	execID runtime.ExecutionContextID,
+	exec *eval.Runtime,
 ) (*HTMLDocument, error) {
-	exec := eval.NewExecutionContext(client, frameTree.Frame, execID)
 	inputManager := input.NewManager(logger, client, exec, keyboard, mouse)
 
 	rootElement, err := LoadHTMLElement(
@@ -116,7 +114,7 @@ func NewHTMLDocument(
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
-	exec *eval.ExecutionContext,
+	exec *eval.Runtime,
 	rootElement *HTMLElement,
 	frames page.FrameTree,
 ) *HTMLDocument {
@@ -465,7 +463,7 @@ func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float, opti
 }
 
 func (doc *HTMLDocument) Eval(ctx context.Context, expression string) (core.Value, error) {
-	return doc.exec.EvalWithReturnValue(ctx, expression)
+	return doc.exec.EvalValue(ctx, expression)
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {

@@ -57,15 +57,17 @@ func (task *WaitTask) Run(ctx context.Context) (core.Value, error) {
 }
 
 func NewEvalWaitTask(
-	ec *eval.ExecutionContext,
+	ec *eval.Runtime,
 	predicate string,
 	polling time.Duration,
+	opts ...eval.FunctionOption,
 ) *WaitTask {
 	return NewWaitTask(
 		func(ctx context.Context) (core.Value, error) {
-			return ec.EvalWithReturnValue(
+			return ec.EvalValue(
 				ctx,
 				predicate,
+				opts...,
 			)
 		},
 		polling,

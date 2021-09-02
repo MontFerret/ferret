@@ -27,7 +27,7 @@ type (
 	Manager struct {
 		logger   zerolog.Logger
 		client   *cdp.Client
-		exec     *eval.ExecutionContext
+		exec     *eval.Runtime
 		keyboard *Keyboard
 		mouse    *Mouse
 	}
@@ -36,7 +36,7 @@ type (
 func NewManager(
 	logger zerolog.Logger,
 	client *cdp.Client,
-	exec *eval.ExecutionContext,
+	exec *eval.Runtime,
 	keyboard *Keyboard,
 	mouse *Mouse,
 ) *Manager {
@@ -103,12 +103,10 @@ func (m *Manager) ScrollIntoView(ctx context.Context, objectID runtime.RemoteObj
 		Str("inline", options.Inline.String()).
 		Msg("scrolling to an element")
 
-	if err := m.exec.EvalWithArguments(
+	if err := m.exec.Eval(
 		ctx,
 		templates.ScrollIntoView(options),
-		runtime.CallArgument{
-			ObjectID: &objectID,
-		},
+		eval.WithArgRef(objectID),
 	); err != nil {
 		m.logger.Trace().Err(err).Msg("failed to scroll to an element")
 
@@ -234,9 +232,7 @@ func (m *Manager) Blur(ctx context.Context, objectID runtime.RemoteObjectID) err
 		Str("object_id", string(objectID)).
 		Msg("removing focus from an element")
 
-	if err := m.exec.EvalWithArguments(ctx, templates.Blur(), runtime.CallArgument{
-		ObjectID: &objectID,
-	}); err != nil {
+	if err := m.exec.Eval(ctx, templates.Blur(), eval.WithArgRef(objectID)); err != nil {
 		m.logger.Trace().
 			Err(err).
 			Msg("failed removing focus from an element")
@@ -255,9 +251,7 @@ func (m *Manager) BlurBySelector(ctx context.Context, parentObjectID runtime.Rem
 		Str("selector", selector).
 		Msg("removing focus from an element by selector")
 
-	if err := m.exec.EvalWithArguments(ctx, templates.BlurBySelector(selector), runtime.CallArgument{
-		ObjectID: &parentObjectID,
-	}); err != nil {
+	if err := m.exec.Eval(ctx, templates.BlurBySelector(selector), eval.WithArgRef(parentObjectID)); err != nil {
 		m.logger.Trace().
 			Err(err).
 			Msg("failed removing focus from an element by selector")
@@ -844,9 +838,11 @@ func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, v
 	m.logger.Trace().Msg("selecting values")
 	m.logger.Trace().Msg("evaluating a JS function")
 
-	val, err := m.exec.EvalWithArgumentsAndReturnValue(ctx, templates.Select(value.String()), runtime.CallArgument{
-		ObjectID: &objectID,
-	})
+	val, err := m.exec.EvalValue(
+		ctx,
+		templates.Select(value.String()),
+		eval.WithArgRef(objectID),
+	)
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to evaluate a JS function")
@@ -882,7 +878,7 @@ func (m *Manager) SelectBySelector(ctx context.Context, parentNodeID dom.NodeID,
 	m.logger.Trace().Msg("selecting values")
 	m.logger.Trace().Msg("evaluating a JS function")
 
-	res, err := m.exec.EvalWithReturnValue(ctx, templates.SelectBySelector(selector, value.String()))
+	res, err := m.exec.EvalValue(ctx, templates.SelectBySelector(selector, value.String()))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to evaluate a JS function")

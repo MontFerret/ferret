@@ -2,11 +2,11 @@ package network_test
 
 import (
 	"context"
-	"github.com/mafredri/cdp/protocol/fetch"
 	"os"
 	"testing"
 
 	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/fetch"
 	network2 "github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/pkg/errors"
