@@ -123,17 +123,18 @@ func (rt *Runtime) ReadProperty(
 }
 
 func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) {
-	rt.logger.Trace().Str("eval", fn.String()).Msg("executing function...")
+	expression := fn.String()
+	rt.logger.Trace().Str("expression", expression).Msg("executing an expression...")
 	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.build(rt.contextID))
 
 	if err != nil {
-		rt.logger.Trace().Err(err).Msg("failed to execute a function")
+		rt.logger.Trace().Err(err).Str("expression", expression).Msg("failed to execute an expression")
 
 		return nil, errors.Wrap(err, "runtime call")
 	}
 
 	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
-		rt.logger.Trace().Err(err).Msg("function execution failed")
+		rt.logger.Trace().Err(err).Str("expression", expression).Msg("expression execution has failed")
 
 		return nil, err
 	}
@@ -151,11 +152,12 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) 
 	}
 
 	rt.logger.Trace().
+		Str("expression", expression).
 		Str("return-type", repl.Result.Type).
 		Str("return-sub-type", subtype).
 		Str("return-class-name", className).
 		Str("return-value", string(repl.Result.Value)).
-		Msg("succeeded to executed a function")
+		Msg("succeeded to executed an expression")
 
 	switch fn.returnType {
 	case ReturnValue:

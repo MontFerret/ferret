@@ -25,7 +25,7 @@ const getInnerText = `(el) => {
 }`
 
 func GetInnerText(id runtime.RemoteObjectID) *eval.Function {
-	return eval.F(setInnerText).WithArgRef(id)
+	return eval.F(getInnerText).WithArgRef(id)
 }
 
 var setInnerTextBySelector = fmt.Sprintf(`
