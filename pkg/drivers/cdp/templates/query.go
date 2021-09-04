@@ -26,7 +26,9 @@ func QuerySelector(id runtime.RemoteObjectID, selector values.String) *eval.Func
 	return eval.F(querySelector).WithArgRef(id).WithArgValue(selector)
 }
 
-const querySelectorAll = `(el, selector) => return el.querySelectorAll(selector);`
+const querySelectorAll = `(el, selector) => {
+	return el.querySelectorAll(selector);
+}`
 
 func QuerySelectorAll(id runtime.RemoteObjectID, selector values.String) *eval.Function {
 	return eval.F(querySelectorAll).WithArgRef(id).WithArgValue(selector)

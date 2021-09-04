@@ -15,7 +15,11 @@ func GetAttribute(id runtime.RemoteObjectID, name values.String) *eval.Function 
 }
 
 const getAttributes = `(el) => {
-	return el.getAttributeNames().map((name) => el.getAttribute(name));
+	return el.getAttributeNames().reduce((res, name) => {
+		const out = res;
+		out[name] = el.getAttribute(name);
+		return out;
+	}, {});
 }`
 
 func GetAttributes(id runtime.RemoteObjectID) *eval.Function {

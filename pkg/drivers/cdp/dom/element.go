@@ -697,13 +697,7 @@ func (el *HTMLElement) evalToElement(ctx context.Context, fn *eval.Function) (co
 }
 
 func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject) (core.Value, error) {
-	typeName := out.Type
-	var className string
 	var subtype string
-
-	if out.ClassName != nil {
-		className = *out.ClassName
-	}
 
 	if out.Subtype != nil {
 		subtype = *out.Subtype
@@ -713,20 +707,8 @@ func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject
 		return values.None, nil
 	}
 
-	// checking whether it's actually an array
-	if typeName == "object" {
-		switch className {
-		case "Array":
-			typeName = "array"
-		case "HTMLCollection":
-			typeName = "HTMLCollection"
-		default:
-			break
-		}
-	}
-
-	switch typeName {
-	case "array", "HTMLCollection":
+	switch subtype {
+	case "array", "HTMLCollection", "NodeList":
 		if out.ObjectID == nil {
 			return values.None, nil
 		}
@@ -785,7 +767,7 @@ func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject
 		}
 
 		return result, nil
-	case "object":
+	case "node":
 		if out.ObjectID == nil {
 			var value interface{}
 
@@ -805,10 +787,8 @@ func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject
 			el.exec,
 			out,
 		)
-	case "string", "number", "boolean":
-		return eval.Unmarshal(out)
 	default:
-		return values.None, nil
+		return eval.Unmarshal(out)
 	}
 }
 

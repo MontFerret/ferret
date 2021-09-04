@@ -62,8 +62,6 @@ func Unmarshal(obj runtime.RemoteObject) (core.Value, error) {
 		}
 
 		return values.NewString(str), nil
-	case "undefined", "null":
-		return values.None, nil
 	case "object":
 		if obj.Subtype != nil {
 			subtype := *obj.Subtype
