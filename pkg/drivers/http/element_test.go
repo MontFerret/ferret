@@ -257,7 +257,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.GetNodeType(), ShouldEqual, 1)
+		nt, err := el.GetNodeType(context.Background())
+
+		So(err, ShouldBeNil)
+		So(nt, ShouldEqual, 1)
 	})
 
 	Convey(".GetNodeName", t, func() {
@@ -273,7 +276,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.GetNodeName(), ShouldEqual, "body")
+		nn, err := el.GetNodeName(context.Background())
+
+		So(err, ShouldBeNil)
+		So(nn, ShouldEqual, "body")
 	})
 
 	Convey(".Length", t, func() {
@@ -399,10 +405,9 @@ func TestElement(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(found, ShouldNotEqual, values.None)
 
-		v := found.(drivers.HTMLNode).GetNodeName()
+		v, err := found.(drivers.HTMLNode).GetNodeName(context.Background())
 
 		So(err, ShouldBeNil)
-
 		So(v, ShouldEqual, "img")
 	})
 
