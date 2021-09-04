@@ -3,6 +3,7 @@ package dom
 import (
 	"bytes"
 	"context"
+	"github.com/rs/zerolog"
 	"regexp"
 	"strings"
 
@@ -16,8 +17,8 @@ import (
 
 var camelMatcher = regexp.MustCompile("[A-Za-z0-9]+")
 
-func resolveFrame(ctx context.Context, client *cdp.Client, frameID page.FrameID) (dom.Node, *eval.Runtime, error) {
-	exec, err := eval.New(ctx, client, frameID)
+func resolveFrame(ctx context.Context, logger zerolog.Logger, client *cdp.Client, frameID page.FrameID) (dom.Node, *eval.Runtime, error) {
+	exec, err := eval.New(ctx, logger, client, frameID)
 
 	if err != nil {
 		return dom.Node{}, nil, errors.Wrap(err, "create JS executor")

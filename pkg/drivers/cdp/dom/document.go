@@ -51,7 +51,7 @@ func LoadRootHTMLDocument(
 		return nil, err
 	}
 
-	exec, err := eval.New(ctx, client, ftRepl.FrameTree.Frame.ID)
+	exec, err := eval.New(ctx, logger, client, ftRepl.FrameTree.Frame.ID)
 
 	if err != nil {
 		return nil, err

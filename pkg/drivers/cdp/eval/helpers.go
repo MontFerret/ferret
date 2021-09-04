@@ -52,11 +52,7 @@ func wrapExp(exp string, args int) string {
 	return "function (" + buf.String() + ") {\n" + exp + "\n}"
 }
 
-func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
-	if obj == nil {
-		return values.None, nil
-	}
-
+func Unmarshal(obj runtime.RemoteObject) (core.Value, error) {
 	switch obj.Type {
 	case "string":
 		str, err := strconv.Unquote(string(obj.Value))
@@ -68,6 +64,16 @@ func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
 		return values.NewString(str), nil
 	case "undefined", "null":
 		return values.None, nil
+	case "object":
+		if obj.Subtype != nil {
+			subtype := *obj.Subtype
+
+			if subtype == "null" || subtype == "undefined" {
+				return values.None, nil
+			}
+		}
+
+		return values.Unmarshal(obj.Value)
 	default:
 		return values.Unmarshal(obj.Value)
 	}

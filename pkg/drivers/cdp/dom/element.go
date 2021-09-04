@@ -698,18 +698,30 @@ func (el *HTMLElement) evalToElement(ctx context.Context, fn *eval.Function) (co
 
 func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject) (core.Value, error) {
 	typeName := out.Type
+	var className string
+	var subtype string
+
+	if out.ClassName != nil {
+		className = *out.ClassName
+	}
+
+	if out.Subtype != nil {
+		subtype = *out.Subtype
+	}
+
+	if subtype == "null" || subtype == "undefined" {
+		return values.None, nil
+	}
 
 	// checking whether it's actually an array
 	if typeName == "object" {
-		if out.ClassName != nil {
-			switch *out.ClassName {
-			case "Array":
-				typeName = "array"
-			case "HTMLCollection":
-				typeName = "HTMLCollection"
-			default:
-				break
-			}
+		switch className {
+		case "Array":
+			typeName = "array"
+		case "HTMLCollection":
+			typeName = "HTMLCollection"
+		default:
+			break
 		}
 	}
 
@@ -794,7 +806,7 @@ func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject
 			out,
 		)
 	case "string", "number", "boolean":
-		return eval.Unmarshal(&out)
+		return eval.Unmarshal(out)
 	default:
 		return values.None, nil
 	}

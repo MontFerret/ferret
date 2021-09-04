@@ -10,7 +10,25 @@ import (
 )
 
 const (
-	waitFragment = `(el, expected, op, ...args) => {
+	waitExistenceFragment = `(el, op, ...args) => {
+	const actual = %s; // check
+
+	// presence 
+	if (op === 0) {
+		if (actual != null) {
+			return true;
+		}
+	} else {
+		if (actual == null) {
+			return true;
+		}
+	}
+	
+	// null means we need to repeat
+	return null;
+}`
+
+	waitEqualityFragment = `(el, expected, op, ...args) => {
 	const actual = %s; // check
 
 	// presence 
@@ -28,7 +46,31 @@ const (
 	return null;
 }`
 
-	waitBySelectorFragment = `(parent, selector, expected, op, ...args) => {
+	waitExistenceBySelectorFragment = `(parent, selector, op, ...args) => {
+	const el = parent.querySelector(selector); // selector
+	
+	if (el == null) {
+		return false;
+	}
+
+	const actual = %s; // check
+
+	// presence 
+	if (op === 0) {
+		if (actual != null) {
+			return true;
+		}
+	} else {
+		if (actual == null) {
+			return true;
+		}
+	}
+	
+	// null means we need to repeat
+	return null;
+}`
+
+	waitEqualityBySelectorFragment = `(parent, selector, expected, op, ...args) => {
 	const el = parent.querySelector(selector); // selector
 	
 	if (el == null) {
@@ -52,7 +94,40 @@ const (
 	return null;
 }`
 
-	waitBySelectorAllFragment = `(parent, selector, expected, op, ...args) => {
+	waitExistenceBySelectorAllFragment = `(parent, selector, op, ...args) => {
+	var elements = parent.querySelectorAll(selector); // selector
+	
+	if (elements == null || elements.length === 0) {
+		return false;
+	}
+	
+	var resultCount = 0;
+	
+	elements.forEach((el) => {
+		var actual = %s; // check
+	
+		// when
+		// presence 
+		if (op === 0) {
+			if (actual != null) {
+				resultCount++;
+			}
+		} else {
+			if (actual == null) {
+				resultCount++;
+			}
+		}
+	});
+	
+	if (resultCount === elements.length) {
+		return true;
+	}
+	
+	// null means we need to repeat
+	return null;
+}`
+
+	waitEqualityBySelectorAllFragment = `(parent, selector, expected, op, ...args) => {
 	var elements = parent.querySelectorAll(selector); // selector
 	
 	if (elements == null || elements.length === 0) {
@@ -86,30 +161,43 @@ const (
 }`
 )
 
-func partialWait(id runtime.RemoteObjectID, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
-	return eval.F(fmt.Sprintf(waitFragment, fragment)).
+func partialWaitExistence(id runtime.RemoteObjectID, when drivers.WaitEvent, fragment string) *eval.Function {
+	return eval.F(fmt.Sprintf(waitExistenceFragment, fragment)).
+		WithArgRef(id).
+		WithArg(int(when))
+}
+
+func partialWaitEquality(id runtime.RemoteObjectID, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
+	return eval.F(fmt.Sprintf(waitEqualityFragment, fragment)).
 		WithArgRef(id).
 		WithArgValue(expected).
 		WithArg(int(when))
 }
 
-func partialWaitAll(id runtime.RemoteObjectID, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
-	return eval.F(fmt.Sprintf(waitFragment, fragment)).
+func partialWaitExistenceBySelector(id runtime.RemoteObjectID, selector values.String, when drivers.WaitEvent, fragment string) *eval.Function {
+	return eval.F(fmt.Sprintf(waitExistenceBySelectorFragment, fragment)).
 		WithArgRef(id).
-		WithArgValue(expected).
+		WithArgValue(selector).
 		WithArg(int(when))
 }
 
-func partialWaitBySelector(id runtime.RemoteObjectID, selector values.String, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
-	return eval.F(fmt.Sprintf(waitBySelectorFragment, fragment)).
+func partialEqualityWaitBySelector(id runtime.RemoteObjectID, selector values.String, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
+	return eval.F(fmt.Sprintf(waitEqualityBySelectorFragment, fragment)).
 		WithArgRef(id).
 		WithArgValue(selector).
 		WithArgValue(expected).
 		WithArg(int(when))
 }
 
-func partialWaitBySelectorAll(id runtime.RemoteObjectID, selector values.String, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
-	return eval.F(fmt.Sprintf(waitBySelectorAllFragment, fragment)).
+func partialWaitExistenceBySelectorAll(id runtime.RemoteObjectID, selector values.String, when drivers.WaitEvent, fragment string) *eval.Function {
+	return eval.F(fmt.Sprintf(waitExistenceBySelectorAllFragment, fragment)).
+		WithArgRef(id).
+		WithArgValue(selector).
+		WithArg(int(when))
+}
+
+func partialWaitEqualityBySelectorAll(id runtime.RemoteObjectID, selector values.String, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
+	return eval.F(fmt.Sprintf(waitEqualityBySelectorAllFragment, fragment)).
 		WithArgRef(id).
 		WithArgValue(selector).
 		WithArgValue(expected).
@@ -119,7 +207,7 @@ func partialWaitBySelectorAll(id runtime.RemoteObjectID, selector values.String,
 const waitForElementFragment = `el.querySelector(args[0])`
 
 func WaitForElement(id runtime.RemoteObjectID, selector values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWait(id, values.None, when, waitForElementFragment).WithArgValue(selector)
+	return partialWaitExistence(id, when, waitForElementFragment).WithArgValue(selector)
 }
 
 const waitForElementAllFragment = `(function() {
@@ -129,35 +217,35 @@ return elements.length;
 })()`
 
 func WaitForElementAll(id runtime.RemoteObjectID, selector values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWait(id, values.ZeroInt, when, waitForElementAllFragment).WithArgValue(selector)
+	return partialWaitEquality(id, values.ZeroInt, when, waitForElementAllFragment).WithArgValue(selector)
 }
 
 const waitForClassFragment = `el.className.split(' ').find(i => i === args[0]);`
 
 func WaitForClass(id runtime.RemoteObjectID, class values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWait(id, values.None, when, waitForClassFragment).WithArgValue(class)
+	return partialWaitExistence(id, when, waitForClassFragment).WithArgValue(class)
 }
 
 func WaitForClassBySelector(id runtime.RemoteObjectID, selector, class values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWaitBySelector(id, selector, values.None, when, waitForClassFragment).WithArgValue(class)
+	return partialWaitExistenceBySelector(id, selector, when, waitForClassFragment).WithArgValue(class)
 }
 
 func WaitForClassBySelectorAll(id runtime.RemoteObjectID, selector, class values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWaitBySelectorAll(id, selector, values.None, when, waitForClassFragment).WithArgValue(class)
+	return partialWaitExistenceBySelectorAll(id, selector, when, waitForClassFragment).WithArgValue(class)
 }
 
-const waitForAttributeFragment = `el.attributes[name] != null ? el.attributes[name].value : null`
+const waitForAttributeFragment = `el.getAttribute(name)`
 
 func WaitForAttribute(id runtime.RemoteObjectID, name, expected values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWait(id, expected, when, waitForAttributeFragment).WithArgValue(name)
+	return partialWaitEquality(id, expected, when, waitForAttributeFragment).WithArgValue(name)
 }
 
 func WaitForAttributeBySelector(id runtime.RemoteObjectID, selector, name, expected values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWaitBySelector(id, selector, expected, when, waitForAttributeFragment).WithArgValue(name)
+	return partialEqualityWaitBySelector(id, selector, expected, when, waitForAttributeFragment).WithArgValue(name)
 }
 
 func WaitForAttributeBySelectorAll(id runtime.RemoteObjectID, selector, name, expected values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWaitBySelectorAll(id, selector, expected, when, waitForAttributeFragment).WithArgValue(name)
+	return partialWaitEqualityBySelectorAll(id, selector, expected, when, waitForAttributeFragment).WithArgValue(name)
 }
 
 const waitForStyleFragment = `(function getStyles() {
@@ -166,13 +254,13 @@ const waitForStyleFragment = `(function getStyles() {
 })()`
 
 func WaitForStyle(id runtime.RemoteObjectID, name, expected values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWait(id, expected, when, waitForStyleFragment).WithArgValue(name)
+	return partialWaitEquality(id, expected, when, waitForStyleFragment).WithArgValue(name)
 }
 
 func WaitForStyleBySelector(id runtime.RemoteObjectID, selector, name, expected values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWaitBySelector(id, selector, expected, when, waitForStyleFragment).WithArgValue(name)
+	return partialEqualityWaitBySelector(id, selector, expected, when, waitForStyleFragment).WithArgValue(name)
 }
 
 func WaitForStyleBySelectorAll(id runtime.RemoteObjectID, selector, name, expected values.String, when drivers.WaitEvent) *eval.Function {
-	return partialWaitBySelectorAll(id, selector, expected, when, waitForStyleFragment).WithArgValue(name)
+	return partialWaitEqualityBySelectorAll(id, selector, expected, when, waitForStyleFragment).WithArgValue(name)
 }

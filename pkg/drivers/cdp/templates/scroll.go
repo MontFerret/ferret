@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	isElementInViewportFragment = `(i) => {
+	isElementInViewportFragment = `function isInViewport(i) {
 	var bounding = i.getBoundingClientRect();
 	
 	return (
@@ -19,7 +19,7 @@ const (
 		bounding.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
 		bounding.right <= (window.innerWidth || document.documentElement.clientWidth)
 	);
-};`
+}`
 
 	scroll = `(opts) =>
 	window.scrollTo({
