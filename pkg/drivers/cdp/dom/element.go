@@ -589,7 +589,24 @@ func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.Stri
 }
 
 func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error {
-	return el.input.ClickBySelectorAll(ctx, el.id, selector, count)
+	elements, err := el.QuerySelectorAll(ctx, selector)
+
+	if err != nil {
+		return err
+	}
+
+	elements.ForEach(func(value core.Value, idx int) bool {
+		found := value.(*HTMLElement)
+
+		if e := found.Click(ctx, count); e != nil {
+			err = e
+			return false
+		}
+
+		return true
+	})
+
+	return err
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {

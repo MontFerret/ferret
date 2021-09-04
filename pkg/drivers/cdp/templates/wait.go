@@ -95,16 +95,16 @@ const (
 }`
 
 	waitExistenceBySelectorAllFragment = `(parent, selector, op, ...args) => {
-	var elements = parent.querySelectorAll(selector); // selector
+	const elements = parent.querySelectorAll(selector); // selector
 	
 	if (elements == null || elements.length === 0) {
 		return false;
 	}
 	
-	var resultCount = 0;
+	let resultCount = 0;
 	
 	elements.forEach((el) => {
-		var actual = %s; // check
+		let actual = %s; // check
 	
 		// when
 		// presence 
@@ -128,16 +128,16 @@ const (
 }`
 
 	waitEqualityBySelectorAllFragment = `(parent, selector, expected, op, ...args) => {
-	var elements = parent.querySelectorAll(selector); // selector
+	const elements = parent.querySelectorAll(selector); // selector
 	
 	if (elements == null || elements.length === 0) {
 		return false;
 	}
 	
-	var resultCount = 0;
-	
+	let resultCount = 0;
+
 	elements.forEach((el) => {
-		var actual = %s; // check
+		let actual = %s; // check
 	
 		// when
 		// presence 
