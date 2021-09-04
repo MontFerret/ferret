@@ -42,17 +42,14 @@ func (ex *Runtime) ContextID() runtime.ExecutionContextID {
 	return ex.contextID
 }
 
-func (ex *Runtime) Eval(ctx context.Context, exp string, opts ...FunctionOption) error {
-	_, err := ex.call(ctx, newFunction(exp, opts))
+func (ex *Runtime) Eval(ctx context.Context, fn *Function) error {
+	_, err := ex.call(ctx, fn)
 
 	return err
 }
 
-func (ex *Runtime) EvalValue(ctx context.Context, exp string, opts ...FunctionOption) (core.Value, error) {
-	fn := newFunction(exp, opts)
-	fn.Use(withReturnValue())
-
-	out, err := ex.call(ctx, fn)
+func (ex *Runtime) EvalValue(ctx context.Context, fn *Function) (core.Value, error) {
+	out, err := ex.call(ctx, fn.returnValue())
 
 	if err != nil {
 		return values.None, err
@@ -61,11 +58,8 @@ func (ex *Runtime) EvalValue(ctx context.Context, exp string, opts ...FunctionOp
 	return CastToValue(out)
 }
 
-func (ex *Runtime) EvalRef(ctx context.Context, exp string, opts ...FunctionOption) (runtime.RemoteObject, error) {
-	fn := newFunction(exp, opts)
-	fn.Use(withReturnRef())
-
-	out, err := ex.call(ctx, fn)
+func (ex *Runtime) EvalRef(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {
+	out, err := ex.call(ctx, fn.returnRef())
 
 	if err != nil {
 		return runtime.RemoteObject{}, err
@@ -119,7 +113,7 @@ func (ex *Runtime) ReadProperty(
 }
 
 func (ex *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) {
-	repl, err := ex.client.Runtime.CallFunctionOn(ctx, fn.toArgs(ex.contextID))
+	repl, err := ex.client.Runtime.CallFunctionOn(ctx, fn.build(ex.contextID))
 
 	if err != nil {
 		return nil, errors.Wrap(err, "runtime call")

@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 
@@ -31,8 +32,24 @@ func CastToReference(input interface{}) (runtime.RemoteObject, error) {
 	return value, nil
 }
 
-func wrapExp(exp string) string {
-	return "function () {" + exp + "}"
+func wrapExp(exp string, args int) string {
+	if args == 0 {
+		return "function () {\n" + exp + "\n}"
+	}
+
+	var buf bytes.Buffer
+	lastIndex := args - 1
+
+	for i := 0; i <= args; i++ {
+		buf.WriteString("arg")
+		buf.WriteString(strconv.Itoa(i))
+
+		if i != lastIndex {
+			buf.WriteString(",")
+		}
+	}
+
+	return "function (" + buf.String() + ") {\n" + exp + "\n}"
 }
 
 func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {

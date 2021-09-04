@@ -216,39 +216,11 @@ func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String, _ 
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float, _ drivers.ScrollOptions) error {
+func (doc *HTMLDocument) Scroll(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ values.Float) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

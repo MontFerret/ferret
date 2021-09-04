@@ -70,7 +70,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		doc, err := drivers.ToDocument(arg1)
+		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
 			return values.None, err
@@ -78,7 +78,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 
 		selector := args[1].(values.String)
 		name := args[2].(values.String)
-		value := args[3]
+		value := values.ToString(args[3])
 
 		if len(args) == 5 {
 			err = core.ValidateType(args[4], types.Int)
@@ -93,12 +93,12 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.None, doc.WaitForStyleBySelector(ctx, selector, name, value, when)
+		return values.None, el.WaitForStyleBySelector(ctx, selector, name, value, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
 	name := args[1].(values.String)
-	value := args[2]
+	value := values.ToString(args[2])
 
 	if len(args) == 4 {
 		err = core.ValidateType(args[3], types.Int)

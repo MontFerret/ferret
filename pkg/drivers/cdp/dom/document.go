@@ -2,8 +2,6 @@ package dom
 
 import (
 	"context"
-	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"hash/fnv"
 
 	"github.com/mafredri/cdp"
@@ -19,6 +17,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -234,7 +233,7 @@ func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.S
 }
 
 func (doc *HTMLDocument) GetTitle() values.String {
-	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id.ObjectID, "title")
+	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id, "title")
 
 	if err != nil {
 		doc.logError(errors.Wrap(err, "failed to read document title"))
@@ -296,34 +295,13 @@ func (doc *HTMLDocument) GetURL() values.String {
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
-	return doc.input.MoveMouseByXY(ctx, float64(x), float64(y))
+	return doc.input.MoveMouseByXY(ctx, x, y)
 }
 
 func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
-	var operator string
-
-	if when == drivers.WaitEventPresence {
-		operator = "!="
-	} else {
-		operator = "=="
-	}
-
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		fmt.Sprintf(
-			`
-				var el = document.querySelector(%s);
-				
-				if (el %s null) {
-					return true;
-				}
-				
-				// null means we need to repeat
-				return null;
-			`,
-			eval.ParamString(selector.String()),
-			operator,
-		),
+		templates.WaitForElement(doc.element.id, selector, when),
 		events.DefaultPolling,
 	)
 
@@ -335,12 +313,7 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		templates.WaitBySelector(
-			selector,
-			when,
-			class,
-			fmt.Sprintf("el.className.split(' ').find(i => i === %s)", eval.ParamString(class.String())),
-		),
+		templates.WaitForClassBySelector(doc.element.id, selector, class, when),
 		events.DefaultPolling,
 	)
 
@@ -352,12 +325,7 @@ func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, c
 func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		templates.WaitBySelectorAll(
-			selector,
-			when,
-			class,
-			fmt.Sprintf("el.className.split(' ').find(i => i === %s)", eval.ParamString(class.String())),
-		),
+		templates.WaitForClassBySelectorAll(doc.element.id, selector, class, when),
 		events.DefaultPolling,
 	)
 
@@ -369,18 +337,13 @@ func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector
 func (doc *HTMLDocument) WaitForAttributeBySelector(
 	ctx context.Context,
 	selector,
-	name values.String,
-	value core.Value,
+	name,
+	value values.String,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		templates.WaitBySelector(
-			selector,
-			when,
-			value,
-			templates.AttributeRead(name),
-		),
+		templates.WaitForAttributeBySelector(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
 
@@ -392,18 +355,13 @@ func (doc *HTMLDocument) WaitForAttributeBySelector(
 func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	ctx context.Context,
 	selector,
-	name values.String,
-	value core.Value,
+	name,
+	value values.String,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		templates.WaitBySelectorAll(
-			selector,
-			when,
-			value,
-			templates.AttributeRead(name),
-		),
+		templates.WaitForAttributeBySelectorAll(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
 
@@ -412,15 +370,10 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	return err
 }
 
-func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		templates.WaitBySelector(
-			selector,
-			when,
-			value,
-			templates.StyleRead(name),
-		),
+		templates.WaitForStyleBySelector(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
 
@@ -429,15 +382,10 @@ func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, n
 	return err
 }
 
-func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.exec,
-		templates.WaitBySelectorAll(
-			selector,
-			when,
-			value,
-			templates.StyleRead(name),
-		),
+		templates.WaitForStyleBySelectorAll(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
 
@@ -455,15 +403,15 @@ func (doc *HTMLDocument) ScrollBottom(ctx context.Context, options drivers.Scrol
 }
 
 func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String, options drivers.ScrollOptions) error {
-	return doc.input.ScrollIntoViewBySelector(ctx, selector.String(), options)
+	return doc.input.ScrollIntoViewBySelector(ctx, doc.element.id, selector, options)
 }
 
-func (doc *HTMLDocument) ScrollByXY(ctx context.Context, x, y values.Float, options drivers.ScrollOptions) error {
-	return doc.input.ScrollByXY(ctx, float64(x), float64(y), options)
+func (doc *HTMLDocument) Scroll(ctx context.Context, options drivers.ScrollOptions) error {
+	return doc.input.ScrollByXY(ctx, options)
 }
 
 func (doc *HTMLDocument) Eval(ctx context.Context, expression string) (core.Value, error) {
-	return doc.exec.EvalValue(ctx, expression)
+	return doc.exec.EvalValue(ctx, eval.F(expression))
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {

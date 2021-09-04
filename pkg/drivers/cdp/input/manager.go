@@ -95,19 +95,15 @@ func (m *Manager) ScrollBottom(ctx context.Context, options drivers.ScrollOption
 	return nil
 }
 
-func (m *Manager) ScrollIntoView(ctx context.Context, objectID runtime.RemoteObjectID, options drivers.ScrollOptions) error {
+func (m *Manager) ScrollIntoView(ctx context.Context, id runtime.RemoteObjectID, options drivers.ScrollOptions) error {
 	m.logger.Trace().
-		Str("object_id", string(objectID)).
+		Str("object_id", string(id)).
 		Str("behavior", options.Behavior.String()).
 		Str("block", options.Block.String()).
 		Str("inline", options.Inline.String()).
 		Msg("scrolling to an element")
 
-	if err := m.exec.Eval(
-		ctx,
-		templates.ScrollIntoView(options),
-		eval.WithArgRef(objectID),
-	); err != nil {
+	if err := m.exec.Eval(ctx, templates.ScrollIntoView(id, options)); err != nil {
 		m.logger.Trace().Err(err).Msg("failed to scroll to an element")
 
 		return err
@@ -118,15 +114,15 @@ func (m *Manager) ScrollIntoView(ctx context.Context, objectID runtime.RemoteObj
 	return nil
 }
 
-func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, selector string, options drivers.ScrollOptions) error {
+func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, options drivers.ScrollOptions) error {
 	m.logger.Trace().
-		Str("selector", selector).
+		Str("selector", selector.String()).
 		Str("behavior", options.Behavior.String()).
 		Str("block", options.Block.String()).
 		Str("inline", options.Inline.String()).
 		Msg("scrolling to an element by selector")
 
-	if err := m.exec.Eval(ctx, templates.ScrollIntoViewBySelector(selector, options)); err != nil {
+	if err := m.exec.Eval(ctx, templates.ScrollIntoViewBySelector(id, selector, options)); err != nil {
 		m.logger.Trace().Err(err).Msg("failed to scroll to an element by selector")
 
 		return err
@@ -137,19 +133,16 @@ func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, selector string,
 	return nil
 }
 
-func (m *Manager) ScrollByXY(ctx context.Context, x, y float64, options drivers.ScrollOptions) error {
+func (m *Manager) ScrollByXY(ctx context.Context, options drivers.ScrollOptions) error {
 	m.logger.Trace().
-		Float64("x", x).
-		Float64("y", y).
+		Float64("x", float64(options.Top)).
+		Float64("y", float64(options.Left)).
 		Str("behavior", options.Behavior.String()).
 		Str("block", options.Block.String()).
 		Str("inline", options.Inline.String()).
 		Msg("scrolling to an element by given coordinates")
 
-	if err := m.exec.Eval(
-		ctx,
-		templates.Scroll(eval.ParamFloat(x), eval.ParamFloat(y), options),
-	); err != nil {
+	if err := m.exec.Eval(ctx, templates.Scroll(options)); err != nil {
 		m.logger.Trace().Err(err).Msg("failed to scroll to an element by coordinates")
 
 		return err
@@ -186,13 +179,13 @@ func (m *Manager) Focus(ctx context.Context, objectID runtime.RemoteObjectID) er
 	return nil
 }
 
-func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
+func (m *Manager) FocusBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", selector.String()).
 		Msg("focusing on an element by selector")
 
-	err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+	err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
 		Behavior: drivers.ScrollBehaviorAuto,
 		Block:    drivers.ScrollVerticalAlignmentCenter,
 		Inline:   drivers.ScrollHorizontalAlignmentCenter,
@@ -204,7 +197,7 @@ func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 	m.logger.Trace().Msg("resolving an element by selector")
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
+	found, err := m.exec.EvalRef(ctx, templates.QuerySelector(id, selector))
 
 	if err != nil {
 		m.logger.Trace().
@@ -214,7 +207,15 @@ func (m *Manager) FocusBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 		return err
 	}
 
-	if err := m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(found.NodeID)); err != nil {
+	if found.ObjectID == nil {
+		m.logger.Trace().
+			Err(core.ErrNotFound).
+			Msg("element not found by selector")
+
+		return core.ErrNotFound
+	}
+
+	if err := m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(*found.ObjectID)); err != nil {
 		m.logger.Trace().
 			Err(err).
 			Msg("failed focusing on an element by selector")
@@ -232,7 +233,7 @@ func (m *Manager) Blur(ctx context.Context, objectID runtime.RemoteObjectID) err
 		Str("object_id", string(objectID)).
 		Msg("removing focus from an element")
 
-	if err := m.exec.Eval(ctx, templates.Blur(), eval.WithArgRef(objectID)); err != nil {
+	if err := m.exec.Eval(ctx, templates.Blur(objectID)); err != nil {
 		m.logger.Trace().
 			Err(err).
 			Msg("failed removing focus from an element")
@@ -245,13 +246,13 @@ func (m *Manager) Blur(ctx context.Context, objectID runtime.RemoteObjectID) err
 	return nil
 }
 
-func (m *Manager) BlurBySelector(ctx context.Context, parentObjectID runtime.RemoteObjectID, selector string) error {
+func (m *Manager) BlurBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
 	m.logger.Trace().
-		Str("parent_object_id", string(parentObjectID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", selector.String()).
 		Msg("removing focus from an element by selector")
 
-	if err := m.exec.Eval(ctx, templates.BlurBySelector(selector), eval.WithArgRef(parentObjectID)); err != nil {
+	if err := m.exec.Eval(ctx, templates.BlurBySelector(id, selector)); err != nil {
 		m.logger.Trace().
 			Err(err).
 			Msg("failed removing focus from an element by selector")
@@ -298,19 +299,19 @@ func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID
 	return nil
 }
 
-func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
+func (m *Manager) MoveMouseBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", selector.String()).
 		Msg("starting to move the mouse towards an element by selector")
 
-	if err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{}); err != nil {
+	if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{}); err != nil {
 		return err
 	}
 
 	m.logger.Trace().Msg("looking up for an element by selector")
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
+	found, err := m.exec.EvalRef(ctx, templates.QuerySelector(id, selector))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to find an element by selector")
@@ -318,9 +319,17 @@ func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.Node
 		return err
 	}
 
-	m.logger.Trace().Int("node_id", int(found.NodeID)).Msg("calculating clickable element points")
+	if found.ObjectID == nil {
+		m.logger.Trace().
+			Err(core.ErrNotFound).
+			Msg("element not found by selector")
 
-	points, err := GetClickablePointByNodeID(ctx, m.client, found.NodeID)
+		return core.ErrNotFound
+	}
+
+	m.logger.Trace().Str("object_id", string(*found.ObjectID)).Msg("calculating clickable element points")
+
+	points, err := GetClickablePointByObjectID(ctx, m.client, *found.ObjectID)
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
@@ -341,13 +350,19 @@ func (m *Manager) MoveMouseBySelector(ctx context.Context, parentNodeID dom.Node
 	return nil
 }
 
-func (m *Manager) MoveMouseByXY(ctx context.Context, x, y float64) error {
+func (m *Manager) MoveMouseByXY(ctx context.Context, xv, yv values.Float) error {
+	x := float64(xv)
+	y := float64(yv)
+
 	m.logger.Trace().
 		Float64("x", x).
 		Float64("y", y).
 		Msg("starting to move the mouse towards an element by given coordinates")
 
-	if err := m.ScrollByXY(ctx, x, y, drivers.ScrollOptions{}); err != nil {
+	if err := m.ScrollByXY(ctx, drivers.ScrollOptions{
+		Top:  xv,
+		Left: yv,
+	}); err != nil {
 		return err
 	}
 
@@ -404,14 +419,14 @@ func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID, co
 	return nil
 }
 
-func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, count int) error {
+func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, count values.Int) error {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
-		Int("count", count).
+		Str("parent_object_id", string(id)).
+		Str("selector", string(selector)).
+		Int("count", int(count)).
 		Msg("starting to click on an element by selector")
 
-	if err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+	if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
 		Behavior: drivers.ScrollBehaviorAuto,
 		Block:    drivers.ScrollVerticalAlignmentCenter,
 		Inline:   drivers.ScrollHorizontalAlignmentCenter,
@@ -421,7 +436,7 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 	m.logger.Trace().Msg("looking up for an element by selector")
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
+	found, err := m.exec.EvalRef(ctx, templates.QuerySelector(id, selector))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to find an element by selector")
@@ -429,9 +444,17 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 		return err
 	}
 
-	m.logger.Trace().Int("node_id", int(found.NodeID)).Msg("calculating clickable element points")
+	if found.ObjectID == nil {
+		m.logger.Trace().
+			Err(core.ErrNotFound).
+			Msg("element not found by selector")
 
-	points, err := GetClickablePointByNodeID(ctx, m.client, found.NodeID)
+		return core.ErrNotFound
+	}
+
+	m.logger.Trace().Str("object_id", string(*found.ObjectID)).Msg("calculating clickable element points")
+
+	points, err := GetClickablePointByObjectID(ctx, m.client, *found.ObjectID)
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
@@ -443,7 +466,7 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
 
-	if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
+	if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, int(count)); err != nil {
 		m.logger.Trace().Err(err).Msg("failed to click on an element")
 		return nil
 	}
@@ -453,62 +476,71 @@ func (m *Manager) ClickBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 	return nil
 }
 
-func (m *Manager) ClickBySelectorAll(ctx context.Context, parentNodeID dom.NodeID, selector string, count int) error {
-	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
-		Int("count", count).
-		Msg("starting to click on elements by selector")
-
-	if err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
-		Behavior: drivers.ScrollBehaviorAuto,
-		Block:    drivers.ScrollVerticalAlignmentCenter,
-		Inline:   drivers.ScrollHorizontalAlignmentCenter,
-	}); err != nil {
-		return err
-	}
-
-	m.logger.Trace().Msg("looking up for elements by selector")
-
-	found, err := m.client.DOM.QuerySelectorAll(ctx, dom.NewQuerySelectorAllArgs(parentNodeID, selector))
-
-	if err != nil {
-		m.logger.Trace().Err(err).Msg("failed to find elements by selector")
-
-		return err
-	}
-
-	for idx, nodeID := range found.NodeIDs {
-		if idx > 0 {
-			m.logger.Trace().Msg("pausing")
-			beforeClickDelay := time.Duration(core.NumberLowerBoundary(drivers.DefaultMouseDelay*10)) * time.Millisecond
-
-			time.Sleep(beforeClickDelay)
-		}
-
-		m.logger.Trace().Int("node_id", int(nodeID)).Msg("calculating clickable element points")
-
-		points, err := GetClickablePointByNodeID(ctx, m.client, nodeID)
-
-		if err != nil {
-			m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
-
-			return err
-		}
-
-		m.logger.Trace().Float64("x", points.X).Float64("y", points.Y).Msg("calculated clickable element points")
-
-		delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
-
-		if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
-			m.logger.Trace().Err(err).Msg("failed to click on an element")
-			return nil
-		}
-
-		m.logger.Trace().Msg("clicked on an element")
-	}
-
-	m.logger.Trace().Msg("clicked on all elements")
+func (m *Manager) ClickBySelectorAll(_ context.Context, _ runtime.RemoteObjectID, _ values.String, _ values.Int) error {
+	// TODO: Fix
+	//m.logger.Trace().
+	//	Str("parent_object_id", string(id)).
+	//	Str("selector", string(selector)).
+	//	Int("count", int(count)).
+	//	Msg("starting to click on elements by selector")
+	//
+	//if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
+	//	Behavior: drivers.ScrollBehaviorAuto,
+	//	Block:    drivers.ScrollVerticalAlignmentCenter,
+	//	Inline:   drivers.ScrollHorizontalAlignmentCenter,
+	//}); err != nil {
+	//	return err
+	//}
+	//
+	//m.logger.Trace().Msg("looking up for elements by selector")
+	//
+	//found, err := m.exec.EvalRef(ctx, templates.QuerySelectorAll(id, selector))
+	//
+	//if err != nil {
+	//	m.logger.Trace().Err(err).Msg("failed to find an element by selector")
+	//
+	//	return err
+	//}
+	//
+	//if found.ObjectID == nil {
+	//	m.logger.Trace().
+	//		Err(core.ErrNotFound).
+	//		Msg("element not found by selector")
+	//
+	//	return core.ErrNotFound
+	//}
+	//
+	//for idx, nodeID := range found.NodeIDs {
+	//	if idx > 0 {
+	//		m.logger.Trace().Msg("pausing")
+	//		beforeClickDelay := time.Duration(core.NumberLowerBoundary(drivers.DefaultMouseDelay*10)) * time.Millisecond
+	//
+	//		time.Sleep(beforeClickDelay)
+	//	}
+	//
+	//	m.logger.Trace().Int("object_id", int(nodeID)).Msg("calculating clickable element points")
+	//
+	//	points, err := GetClickablePointByNodeID(ctx, m.client, nodeID)
+	//
+	//	if err != nil {
+	//		m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
+	//
+	//		return err
+	//	}
+	//
+	//	m.logger.Trace().Float64("x", points.X).Float64("y", points.Y).Msg("calculated clickable element points")
+	//
+	//	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
+	//
+	//	if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
+	//		m.logger.Trace().Err(err).Msg("failed to click on an element")
+	//		return nil
+	//	}
+	//
+	//	m.logger.Trace().Msg("clicked on an element")
+	//}
+	//
+	//m.logger.Trace().Msg("clicked on all elements")
 
 	return nil
 }
@@ -576,13 +608,13 @@ func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, par
 	return nil
 }
 
-func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, params TypeParams) error {
+func (m *Manager) TypeBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, params TypeParams) error {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", string(selector)).
 		Msg("starting to type text by selector")
 
-	err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+	err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
 		Behavior: drivers.ScrollBehaviorAuto,
 		Block:    drivers.ScrollVerticalAlignmentCenter,
 		Inline:   drivers.ScrollHorizontalAlignmentCenter,
@@ -594,7 +626,7 @@ func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, s
 
 	m.logger.Trace().Msg("looking up for an element by selector")
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
+	found, err := m.exec.EvalRef(ctx, templates.QuerySelector(id, selector))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to find an element by selector")
@@ -602,9 +634,17 @@ func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, s
 		return err
 	}
 
-	m.logger.Trace().Int("node_id", int(found.NodeID)).Msg("focusing on an element")
+	if found.ObjectID == nil {
+		m.logger.Trace().
+			Err(core.ErrNotFound).
+			Msg("element not found by selector")
 
-	err = m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(found.NodeID))
+		return core.ErrNotFound
+	}
+
+	m.logger.Trace().Str("object_id", string(*found.ObjectID)).Msg("focusing on an element")
+
+	err = m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(*found.ObjectID))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to focus on an element")
@@ -617,7 +657,7 @@ func (m *Manager) TypeBySelector(ctx context.Context, parentNodeID dom.NodeID, s
 	if params.Clear {
 		m.logger.Trace().Msg("calculating clickable element points")
 
-		points, err := GetClickablePointByNodeID(ctx, m.client, found.NodeID)
+		points, err := GetClickablePointByObjectID(ctx, m.client, *found.ObjectID)
 
 		if err != nil {
 			m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
@@ -701,13 +741,13 @@ func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) er
 	return nil
 }
 
-func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string) error {
+func (m *Manager) ClearBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", string(selector)).
 		Msg("starting to clear element by selector")
 
-	err := m.ScrollIntoViewBySelector(ctx, selector, drivers.ScrollOptions{
+	err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
 		Behavior: drivers.ScrollBehaviorAuto,
 		Block:    drivers.ScrollVerticalAlignmentCenter,
 		Inline:   drivers.ScrollHorizontalAlignmentCenter,
@@ -719,7 +759,7 @@ func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 	m.logger.Trace().Msg("looking up for an element by selector")
 
-	found, err := m.client.DOM.QuerySelector(ctx, dom.NewQuerySelectorArgs(parentNodeID, selector))
+	found, err := m.exec.EvalRef(ctx, templates.QuerySelector(id, selector))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to find an element by selector")
@@ -727,9 +767,17 @@ func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 		return err
 	}
 
-	m.logger.Trace().Int("node_id", int(found.NodeID)).Msg("calculating clickable element points")
+	if found.ObjectID == nil {
+		m.logger.Trace().
+			Err(core.ErrNotFound).
+			Msg("element not found by selector")
 
-	points, err := GetClickablePointByNodeID(ctx, m.client, found.NodeID)
+		return core.ErrNotFound
+	}
+
+	m.logger.Trace().Str("object_id", string(*found.ObjectID)).Msg("calculating clickable element points")
+
+	points, err := GetClickablePointByObjectID(ctx, m.client, *found.ObjectID)
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
@@ -741,7 +789,7 @@ func (m *Manager) ClearBySelector(ctx context.Context, parentNodeID dom.NodeID, 
 
 	m.logger.Trace().Msg("focusing on an element")
 
-	err = m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetNodeID(found.NodeID))
+	err = m.client.DOM.Focus(ctx, dom.NewFocusArgs().SetObjectID(*found.ObjectID))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to focus on an element")
@@ -811,38 +859,34 @@ func (m *Manager) Press(ctx context.Context, keys []string, count int) error {
 	return nil
 }
 
-func (m *Manager) PressBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, keys []string, count int) error {
+func (m *Manager) PressBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, keys []string, count int) error {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", string(selector)).
 		Strs("keys", keys).
 		Int("count", count).
 		Msg("starting to press keyboard keys by selector")
 
-	if err := m.FocusBySelector(ctx, parentNodeID, selector); err != nil {
+	if err := m.FocusBySelector(ctx, id, selector); err != nil {
 		return err
 	}
 
 	return m.Press(ctx, keys, count)
 }
 
-func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, value *values.Array) (*values.Array, error) {
+func (m *Manager) Select(ctx context.Context, id runtime.RemoteObjectID, value *values.Array) (*values.Array, error) {
 	m.logger.Trace().
-		Str("object_id", string(objectID)).
+		Str("object_id", string(id)).
 		Msg("starting to select values")
 
-	if err := m.Focus(ctx, objectID); err != nil {
+	if err := m.Focus(ctx, id); err != nil {
 		return values.NewArray(0), err
 	}
 
 	m.logger.Trace().Msg("selecting values")
 	m.logger.Trace().Msg("evaluating a JS function")
 
-	val, err := m.exec.EvalValue(
-		ctx,
-		templates.Select(value.String()),
-		eval.WithArgRef(objectID),
-	)
+	val, err := m.exec.EvalValue(ctx, templates.Select(id, value))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to evaluate a JS function")
@@ -865,20 +909,20 @@ func (m *Manager) Select(ctx context.Context, objectID runtime.RemoteObjectID, v
 	return arr, nil
 }
 
-func (m *Manager) SelectBySelector(ctx context.Context, parentNodeID dom.NodeID, selector string, value *values.Array) (*values.Array, error) {
+func (m *Manager) SelectBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, value *values.Array) (*values.Array, error) {
 	m.logger.Trace().
-		Int("parent_node_id", int(parentNodeID)).
-		Str("selector", selector).
+		Str("parent_object_id", string(id)).
+		Str("selector", string(selector)).
 		Msg("starting to select values by selector")
 
-	if err := m.FocusBySelector(ctx, parentNodeID, selector); err != nil {
+	if err := m.FocusBySelector(ctx, id, selector); err != nil {
 		return values.NewArray(0), err
 	}
 
 	m.logger.Trace().Msg("selecting values")
 	m.logger.Trace().Msg("evaluating a JS function")
 
-	res, err := m.exec.EvalValue(ctx, templates.SelectBySelector(selector, value.String()))
+	res, err := m.exec.EvalValue(ctx, templates.SelectBySelector(id, selector, value))
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to evaluate a JS function")

@@ -36,7 +36,7 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -58,7 +58,7 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 
 	selector := args[1].(values.String)
 	name := args[2].(values.String)
-	value := args[3]
+	value := values.ToString(args[3])
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 5 {
@@ -74,5 +74,5 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.WaitForStyleBySelectorAll(ctx, selector, name, value, when)
+	return values.None, el.WaitForStyleBySelectorAll(ctx, selector, name, value, when)
 }
