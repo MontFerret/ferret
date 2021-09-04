@@ -61,3 +61,11 @@ const removeStyles = `(el, names) => {
 func RemoveStyles(id runtime.RemoteObjectID, names []values.String) *eval.Function {
 	return eval.F(removeStyles).WithArgRef(id).WithArg(names)
 }
+
+const removeStylesAll = `(el) => {
+	el.removeAttribute("style");
+}`
+
+func RemoveStylesAll(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(removeStylesAll).WithArgRef(id)
+}

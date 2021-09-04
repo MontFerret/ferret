@@ -2,17 +2,18 @@ LET url = @lab.cdn.dynamic + "?redirect=/events"
 LET doc = DOCUMENT(url, true)
 LET pageSelector = "#page-events"
 LET elemSelector = "#wait-no-style-content"
+LET color = "rgb(66, 66, 66)"
 
 WAIT_ELEMENT(doc, pageSelector)
 
 LET el = ELEMENT(doc, elemSelector)
 
 ATTR_SET(el, {
-    style: "color: black;",
+    style: "color:" + color,
     "data-ferret-x": "test"
 })
 
-T::EQ(el.attributes.style.color, "black")
+T::EQ(el.attributes.style.color, color)
 T::EQ(el.attributes["data-ferret-x"], "test")
 
-RETURN NONE
+RETURN TRUE
