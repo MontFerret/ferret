@@ -58,7 +58,7 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 
 	selector := args[1].(values.String)
 	name := args[2].(values.String)
-	value := values.ToString(args[3])
+	value := args[3]
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 5 {

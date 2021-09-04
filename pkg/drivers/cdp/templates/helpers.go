@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -78,4 +79,8 @@ func ParamInt(value values.Int) string {
 
 func EscapeString(value string) string {
 	return "`" + value + "`"
+}
+
+func flipWhen(when drivers.WaitEvent) drivers.WaitEvent {
+	return drivers.WaitEvent((int(when) + 1) % 2)
 }

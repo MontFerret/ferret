@@ -78,7 +78,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 
 		selector := args[1].(values.String)
 		name := args[2].(values.String)
-		value := values.ToString(args[3])
+		value := args[3]
 
 		if len(args) == 5 {
 			err = core.ValidateType(args[4], types.Int)
@@ -98,7 +98,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 
 	el := arg1.(drivers.HTMLElement)
 	name := args[1].(values.String)
-	value := values.ToString(args[2])
+	value := args[2]
 
 	if len(args) == 4 {
 		err = core.ValidateType(args[3], types.Int)

@@ -137,17 +137,17 @@ type (
 
 		WaitForElementAll(ctx context.Context, selector values.String, when WaitEvent) error
 
-		WaitForAttribute(ctx context.Context, name, value values.String, when WaitEvent) error
+		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
-		WaitForAttributeBySelector(ctx context.Context, selector, name, value values.String, when WaitEvent) error
+		WaitForAttributeBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
 
-		WaitForAttributeBySelectorAll(ctx context.Context, selector, name, value values.String, when WaitEvent) error
+		WaitForAttributeBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
 
-		WaitForStyle(ctx context.Context, name, value values.String, when WaitEvent) error
+		WaitForStyle(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
-		WaitForStyleBySelector(ctx context.Context, selector, name, value values.String, when WaitEvent) error
+		WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
 
-		WaitForStyleBySelectorAll(ctx context.Context, selector, name, value values.String, when WaitEvent) error
+		WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
 
 		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
 

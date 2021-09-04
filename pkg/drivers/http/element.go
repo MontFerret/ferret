@@ -607,27 +607,27 @@ func (el *HTMLElement) WaitForElementAll(_ context.Context, _ values.String, _ d
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttribute(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttribute(_ context.Context, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttributeBySelector(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttributeBySelectorAll(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyle(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyle(_ context.Context, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyleBySelector(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyleBySelectorAll(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

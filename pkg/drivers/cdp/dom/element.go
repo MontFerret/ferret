@@ -505,8 +505,8 @@ func (el *HTMLElement) WaitForClassBySelectorAll(ctx context.Context, selector, 
 
 func (el *HTMLElement) WaitForAttribute(
 	ctx context.Context,
-	name,
-	value values.String,
+	name values.String,
+	value core.Value,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
@@ -520,7 +520,7 @@ func (el *HTMLElement) WaitForAttribute(
 	return err
 }
 
-func (el *HTMLElement) WaitForAttributeBySelector(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelector(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		el.exec,
 		templates.WaitForAttributeBySelector(el.id, selector, name, value, when),
@@ -532,7 +532,7 @@ func (el *HTMLElement) WaitForAttributeBySelector(ctx context.Context, selector,
 	return err
 }
 
-func (el *HTMLElement) WaitForAttributeBySelectorAll(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		el.exec,
 		templates.WaitForAttributeBySelectorAll(el.id, selector, name, value, when),
@@ -544,7 +544,7 @@ func (el *HTMLElement) WaitForAttributeBySelectorAll(ctx context.Context, select
 	return err
 }
 
-func (el *HTMLElement) WaitForStyle(ctx context.Context, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		el.exec,
 		templates.WaitForStyle(el.id, name, value, when),
@@ -556,7 +556,7 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name, value values.Stri
 	return err
 }
 
-func (el *HTMLElement) WaitForStyleBySelector(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		el.exec,
 		templates.WaitForStyleBySelector(el.id, selector, name, value, when),
@@ -568,7 +568,7 @@ func (el *HTMLElement) WaitForStyleBySelector(ctx context.Context, selector, nam
 	return err
 }
 
-func (el *HTMLElement) WaitForStyleBySelectorAll(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		el.exec,
 		templates.WaitForStyleBySelectorAll(el.id, selector, name, value, when),

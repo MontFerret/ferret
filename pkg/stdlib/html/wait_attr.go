@@ -98,7 +98,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 
 	el := arg1.(drivers.HTMLElement)
 	name := args[1].(values.String)
-	value := values.ToString(args[2])
+	value := args[2]
 
 	if len(args) == 4 {
 		err = core.ValidateType(args[3], types.Int)

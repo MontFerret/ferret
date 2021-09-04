@@ -10,11 +10,9 @@ LET prev = el.attributes.style
 
 STYLE_REMOVE(el, "display")
 
-WAIT(1000)
-
 LET curr = el.attributes.style
 
 T::EQ(prev.display, "block")
-T::NONE(curr.display)
+T::EQ(curr.display, "inline")
 
-RETURN NONE
+RETURN TRUE
