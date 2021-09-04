@@ -24,9 +24,9 @@ type (
 		collections.Measurable
 		io.Closer
 
-		GetNodeType() values.Int
+		GetNodeType(ctx context.Context) (values.Int, error)
 
-		GetNodeName() values.String
+		GetNodeName(ctx context.Context) (values.String, error)
 
 		GetChildNodes(ctx context.Context) (*values.Array, error)
 

@@ -142,12 +142,12 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 	return common.SetInDocument(ctx, doc, path, value)
 }
 
-func (doc *HTMLDocument) GetNodeType() values.Int {
-	return 9
+func (doc *HTMLDocument) GetNodeType(_ context.Context) (values.Int, error) {
+	return 9, nil
 }
 
-func (doc *HTMLDocument) GetNodeName() values.String {
-	return "#document"
+func (doc *HTMLDocument) GetNodeName(_ context.Context) (values.String, error) {
+	return "#document", nil
 }
 
 func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {

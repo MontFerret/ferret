@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/runtime"
@@ -11,16 +12,30 @@ const getAttribute = `(el, name) => {
 }`
 
 func GetAttribute(id runtime.RemoteObjectID, name values.String) *eval.Function {
+	if name == "style" {
+		return GetStyles(id)
+	}
+
 	return eval.F(getAttribute).WithArgRef(id).WithArgValue(name)
 }
 
-const getAttributes = `(el) => {
-	return el.getAttributeNames().reduce((res, name) => {
+var getAttributes = fmt.Sprintf(`(element) => {
+	const getStyles = %s;
+	return element.getAttributeNames().reduce((res, name) => {
 		const out = res;
-		out[name] = el.getAttribute(name);
+		let value;
+	
+		if (name !== "style") {
+			value = element.getAttribute(name);
+		} else {
+			value = getStyles(element);
+		}
+
+		out[name] = value;
+
 		return out;
 	}, {});
-}`
+}`, getStyles)
 
 func GetAttributes(id runtime.RemoteObjectID) *eval.Function {
 	return eval.F(getAttributes).WithArgRef(id)
@@ -59,4 +74,16 @@ const removeAttributes = `(el, names) => {
 
 func RemoveAttributes(id runtime.RemoteObjectID, names []values.String) *eval.Function {
 	return eval.F(removeAttributes).WithArgRef(id).WithArg(names)
+}
+
+const getNodeType = `(el) => el.nodeType`
+
+func GetNodeType(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(getNodeType).WithArgRef(id)
+}
+
+const getNodeName = `(el) => el.nodeName`
+
+func GetNodeName(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(getNodeName).WithArgRef(id)
 }

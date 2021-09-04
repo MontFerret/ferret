@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/wI2L/jettison"
-	"golang.org/x/net/html"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -34,8 +33,8 @@ type HTMLElement struct {
 	input    *input.Manager
 	exec     *eval.Runtime
 	id       runtime.RemoteObjectID
-	nodeType html.NodeType
-	nodeName values.String
+	nodeType *common.LazyValue
+	nodeName *common.LazyValue
 }
 
 func LoadHTMLElement(
@@ -54,10 +53,14 @@ func LoadHTMLElement(
 	// getting a remote object that represents the current DOM Node
 	args := dom.NewResolveNodeArgs().SetNodeID(nodeID).SetExecutionContextID(exec.ContextID())
 
-	obj, err := client.DOM.ResolveNode(ctx, args)
+	ref, err := client.DOM.ResolveNode(ctx, args)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if ref.Object.ObjectID == nil {
+		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("element %s", ref.Object.Value))
 	}
 
 	return ResolveHTMLElement(
@@ -67,7 +70,7 @@ func LoadHTMLElement(
 		domManager,
 		input,
 		exec,
-		obj.Object,
+		ref.Object,
 	)
 }
 
@@ -86,18 +89,6 @@ func ResolveHTMLElement(
 
 	id := *ref.ObjectID
 
-	node, err := client.DOM.DescribeNode(
-		ctx,
-		dom.
-			NewDescribeNodeArgs().
-			SetObjectID(id).
-			SetDepth(0),
-	)
-
-	if err != nil {
-		return nil, core.Error(err, string(id))
-	}
-
 	return NewHTMLElement(
 		logger,
 		client,
@@ -105,8 +96,6 @@ func ResolveHTMLElement(
 		input,
 		exec,
 		id,
-		node.Node.NodeType,
-		node.Node.NodeName,
 	), nil
 }
 
@@ -117,22 +106,23 @@ func NewHTMLElement(
 	input *input.Manager,
 	exec *eval.Runtime,
 	id runtime.RemoteObjectID,
-	nodeType int,
-	nodeName string,
 ) *HTMLElement {
 	el := new(HTMLElement)
 	el.logger = logging.
 		WithName(logger.With(), "dom_element").
 		Str("object_id", string(id)).
-		Str("node_name", nodeName).
 		Logger()
 	el.client = client
 	el.dom = domManager
 	el.input = input
 	el.exec = exec
 	el.id = id
-	el.nodeType = common.ToHTMLType(nodeType)
-	el.nodeName = values.NewString(nodeName)
+	el.nodeType = common.NewLazyValue(func(ctx context.Context) (core.Value, error) {
+		return el.exec.EvalValue(ctx, templates.GetNodeType(el.id))
+	})
+	el.nodeName = common.NewLazyValue(func(ctx context.Context) (core.Value, error) {
+		return el.exec.EvalValue(ctx, templates.GetNodeName(el.id))
+	})
 
 	return el
 }
@@ -213,12 +203,24 @@ func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
 	return el.exec.Eval(ctx, templates.SetValue(el.id, value))
 }
 
-func (el *HTMLElement) GetNodeType() values.Int {
-	return values.NewInt(common.FromHTMLType(el.nodeType))
+func (el *HTMLElement) GetNodeType(ctx context.Context) (values.Int, error) {
+	out, err := el.nodeType.Read(ctx)
+
+	if err != nil {
+		return values.ZeroInt, err
+	}
+
+	return values.ToInt(out), nil
 }
 
-func (el *HTMLElement) GetNodeName() values.String {
-	return el.nodeName
+func (el *HTMLElement) GetNodeName(ctx context.Context) (values.String, error) {
+	out, err := el.nodeName.Read(ctx)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.ToString(out), nil
 }
 
 func (el *HTMLElement) Length() values.Int {
@@ -610,7 +612,13 @@ func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.S
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
-	if el.GetNodeName() != "INPUT" {
+	name, err := el.GetNodeName(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if strings.ToLower(string(name)) != "input" {
 		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")
 	}
 

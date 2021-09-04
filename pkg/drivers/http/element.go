@@ -86,22 +86,22 @@ func (el *HTMLElement) Copy() core.Value {
 	return c
 }
 
-func (el *HTMLElement) GetNodeType() values.Int {
+func (el *HTMLElement) GetNodeType(_ context.Context) (values.Int, error) {
 	nodes := el.selection.Nodes
 
 	if len(nodes) == 0 {
-		return 0
+		return 0, nil
 	}
 
-	return values.NewInt(common.FromHTMLType(nodes[0].Type))
+	return values.NewInt(common.FromHTMLType(nodes[0].Type)), nil
 }
 
 func (el *HTMLElement) Close() error {
 	return nil
 }
 
-func (el *HTMLElement) GetNodeName() values.String {
-	return values.NewString(goquery.NodeName(el.selection))
+func (el *HTMLElement) GetNodeName(_ context.Context) (values.String, error) {
+	return values.NewString(goquery.NodeName(el.selection)), nil
 }
 
 func (el *HTMLElement) Length() values.Int {
