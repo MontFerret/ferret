@@ -123,18 +123,26 @@ func (rt *Runtime) ReadProperty(
 }
 
 func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) {
-	expression := fn.String()
-	rt.logger.Trace().Str("expression", expression).Msg("executing an expression...")
+	log := rt.logger.With().
+		Str("expression", fn.String()).
+		Str("returns", fn.returnType.String()).
+		Bool("is-async", fn.async).
+		Str("owner", string(fn.ownerID)).
+		Array("arguments", fn.args).
+		Logger()
+
+	log.Trace().Msg("executing an expression...")
+
 	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.build(rt.contextID))
 
 	if err != nil {
-		rt.logger.Trace().Err(err).Str("expression", expression).Msg("failed to execute an expression")
+		log.Trace().Err(err).Msg("failed to execute an expression")
 
 		return nil, errors.Wrap(err, "runtime call")
 	}
 
 	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
-		rt.logger.Trace().Err(err).Str("expression", expression).Msg("expression execution has failed")
+		log.Trace().Err(err).Msg("expression execution has failed")
 
 		return nil, err
 	}
@@ -151,8 +159,7 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) 
 		subtype = *repl.Result.Subtype
 	}
 
-	rt.logger.Trace().
-		Str("expression", expression).
+	log.Trace().
 		Str("return-type", repl.Result.Type).
 		Str("return-sub-type", subtype).
 		Str("return-class-name", className).

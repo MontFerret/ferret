@@ -3,6 +3,7 @@ package eval
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/rs/zerolog"
 	"github.com/wI2L/jettison"
 	"strings"
 )
@@ -10,10 +11,12 @@ import (
 type (
 	FunctionReturnType int
 
+	FunctionArguments []runtime.CallArgument
+
 	Function struct {
 		exp        string
 		ownerID    runtime.RemoteObjectID
-		args       []runtime.CallArgument
+		args       FunctionArguments
 		returnType FunctionReturnType
 		async      bool
 	}
@@ -134,4 +137,25 @@ func (fn *Function) build(ctx runtime.ExecutionContextID) *runtime.CallFunctionO
 	}
 
 	return call
+}
+
+func (rt FunctionReturnType) String() string {
+	switch rt {
+	case ReturnValue:
+		return "value"
+	case ReturnRef:
+		return "reference"
+	default:
+		return "nothing"
+	}
+}
+
+func (args FunctionArguments) MarshalZerologArray(a *zerolog.Array) {
+	for _, arg := range args {
+		if arg.ObjectID != nil {
+			a.Str(string(*arg.ObjectID))
+		} else {
+			a.RawJSON(arg.Value)
+		}
+	}
 }
