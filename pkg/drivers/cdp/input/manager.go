@@ -476,7 +476,7 @@ func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID
 	return nil
 }
 
-func (m *Manager) ClickBySelectorAll(ctx context.Context, id runtime.RemoteObjectID, selector values.String, count values.Int) error {
+func (m *Manager) ClickBySelectorAll(_ context.Context, _ runtime.RemoteObjectID, _ values.String, _ values.Int) error {
 	// TODO: Use dom.QueryManager
 	//m.logger.Trace().
 	//	Str("parent_object_id", string(id)).

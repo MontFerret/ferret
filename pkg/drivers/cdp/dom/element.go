@@ -64,7 +64,6 @@ func LoadHTMLElement(
 	}
 
 	return ResolveHTMLElement(
-		ctx,
 		logger,
 		client,
 		domManager,
@@ -75,7 +74,6 @@ func LoadHTMLElement(
 }
 
 func ResolveHTMLElement(
-	ctx context.Context,
 	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
@@ -711,7 +709,6 @@ func (el *HTMLElement) evalToElement(ctx context.Context, fn *eval.Function) (co
 	}
 
 	return ResolveHTMLElement(
-		ctx,
 		el.logger,
 		el.client,
 		el.dom,
@@ -775,7 +772,6 @@ func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject
 			}
 
 			el, err := ResolveHTMLElement(
-				ctx,
 				el.logger,
 				el.client,
 				el.dom,
@@ -804,7 +800,6 @@ func (el *HTMLElement) fromEvalRef(ctx context.Context, out runtime.RemoteObject
 		}
 
 		return ResolveHTMLElement(
-			ctx,
 			el.logger,
 			el.client,
 			el.dom,
