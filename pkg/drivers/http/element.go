@@ -599,43 +599,43 @@ func (el *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ driver
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForElementAll(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForElementAll(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttribute(ctx context.Context, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttribute(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttributeBySelector(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelector(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttributeBySelectorAll(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelectorAll(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyle(ctx context.Context, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyle(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyleBySelector(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelector(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyleBySelectorAll(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelectorAll(_ context.Context, _, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForClassBySelector(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
