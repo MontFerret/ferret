@@ -264,18 +264,22 @@ memberExpression
 memberExpressionSource
     : variable
     | param
-    | functionCallExpression
     | arrayLiteral
     | objectLiteral
+    | functionCall
+    ;
+
+functionCall
+    : namespace functionIdentifier arguments
+    ;
+
+functionCallExpression
+    : functionCall QuestionMark?
     ;
 
 memberExpressionPath
     : QuestionMark? Dot propertyName
     | (QuestionMark Dot)? computedPropertyName
-    ;
-
-functionCallExpression
-    : namespace functionIdentifier arguments
     ;
 
 functionIdentifier
