@@ -1,16 +1,20 @@
 LET baseURL = 'https://www.amazon.com/'
 LET amazon = DOCUMENT(baseURL, { driver: "cdp" })
 
+WAIT_ELEMENT(amazon, '#nav-search-submit-button')
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '#nav-search-submit-button')
-WAIT_NAVIGATION(amazon)
 
+WAITFOR EVENT "navigation" IN amazon OPTIONS { target: "www\.amazon\.com\/s/ref"} 50000
+WAIT_ELEMENT(amazon, '.a-pagination')
+
+LET spinner = '[data-component-type="s-search-results"] .s-result-list-placeholder'
 LET resultListSelector = '[data-component-type="s-search-results"]'
 LET resultItemSelector = '[data-component-type="s-search-result"]'
-LET nextBtnSelector = '.s-pagination-next:not(.s-pagination-disabled)'
+LET nextBtnSelector = '.a-pagination li.a-last:not(.a-disabled)'
 LET priceWholeSelector = '.a-price-whole'
 LET priceFracSelector = '.a-price-fraction'
-LET pagers = ELEMENTS(amazon, '.s-pagination-item.s-pagination-disabled')
+LET pagers = ELEMENTS(amazon, '.a-pagination li:not(.a-last)')
 LET pages = LENGTH(pagers) > 0 ? TO_INT(INNER_TEXT(LAST(pagers))) : 0
 
 LET result = (
@@ -18,12 +22,14 @@ LET result = (
         LIMIT @pages
 
         LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
-        LET waitSelector = clicked ? WAIT_ELEMENT(amazon, resultListSelector) : false
+        LET waitSelector = clicked ? WAIT_NO_CLASS(amazon, spinner, 'aok-hidden') && WAIT_ELEMENT(amazon, resultItemSelector) : false
 
         PRINT("page:", pageNum, "clicked", clicked)
 
+        LET found = ELEMENTS(amazon, resultItemSelector)
+
         LET items = (
-            FOR el IN ELEMENTS(amazon, resultItemSelector)
+            FOR el IN found
                 LET hasPrice = ELEMENT_EXISTS(el, priceWholeSelector)
                 LET priceWholeTxt = hasPrice ? FIRST(REGEX_MATCH(INNER_TEXT(el, priceWholeSelector), "[0-9]+")) : "0"
                 LET priceFracTxt = hasPrice ? FIRST(REGEX_MATCH(INNER_TEXT(el, priceFracSelector), "[0-9]+")) : "00"

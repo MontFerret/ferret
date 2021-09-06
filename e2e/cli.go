@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 
@@ -85,7 +86,7 @@ func main() {
 	flag.Parse()
 
 	console := zerolog.ConsoleWriter{
-		Out:        os.Stderr,
+		Out:        os.Stdout,
 		TimeFormat: "15:04:05.999",
 	}
 	logger = zerolog.New(console).
@@ -136,10 +137,23 @@ func main() {
 		runtime.WithLogLevel(logging.MustParseLevel(*logLevel)),
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		for {
+			<-c
+			cancel()
+		}
+	}()
+
 	if query != "" {
-		err = execQuery(engine, opts, query)
+		err = execQuery(ctx, engine, opts, query)
 	} else {
-		err = execFiles(engine, opts, files)
+		err = execFiles(ctx, engine, opts, files)
 	}
 
 	if err != nil {
@@ -148,7 +162,7 @@ func main() {
 	}
 }
 
-func execFiles(engine *ferret.Instance, opts []runtime.Option, files []string) error {
+func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, files []string) error {
 	errList := make([]error, 0, len(files))
 
 	for _, path := range files {
@@ -187,7 +201,7 @@ func execFiles(engine *ferret.Instance, opts []runtime.Option, files []string) e
 			}
 
 			if len(dirFiles) > 0 {
-				if err := execFiles(engine, opts, dirFiles); err != nil {
+				if err := execFiles(ctx, engine, opts, dirFiles); err != nil {
 					log.Debug().Err(err).Msg("failed to execute files")
 
 					errList = append(errList, err)
@@ -214,7 +228,7 @@ func execFiles(engine *ferret.Instance, opts []runtime.Option, files []string) e
 
 		log.Debug().Msg("successfully read file")
 		log.Debug().Msg("executing file...")
-		err = execQuery(engine, opts, string(out))
+		err = execQuery(ctx, engine, opts, string(out))
 
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to execute file")
@@ -239,8 +253,8 @@ func execFiles(engine *ferret.Instance, opts []runtime.Option, files []string) e
 	return nil
 }
 
-func execQuery(engine *ferret.Instance, opts []runtime.Option, query string) error {
-	out, err := engine.Exec(context.Background(), query, opts...)
+func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+	out, err := engine.Exec(ctx, query, opts...)
 
 	if err != nil {
 		return err

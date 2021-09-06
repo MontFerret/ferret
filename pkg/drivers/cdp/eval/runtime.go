@@ -131,18 +131,18 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) 
 		Array("arguments", fn.args).
 		Logger()
 
-	log.Trace().Msg("executing an expression...")
+	log.Trace().Msg("executing expression...")
 
 	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.build(rt.contextID))
 
 	if err != nil {
-		log.Trace().Err(err).Msg("failed to execute an expression")
+		log.Trace().Err(err).Msg("failed executing expression")
 
 		return nil, errors.Wrap(err, "runtime call")
 	}
 
 	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
-		log.Trace().Err(err).Msg("expression execution has failed")
+		log.Trace().Err(err).Msg("expression has failed with runtime exception")
 
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) 
 		Str("return-sub-type", subtype).
 		Str("return-class-name", className).
 		Str("return-value", string(repl.Result.Value)).
-		Msg("succeeded to executed an expression")
+		Msg("succeeded executing expression")
 
 	switch fn.returnType {
 	case ReturnValue:

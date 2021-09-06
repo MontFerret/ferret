@@ -277,7 +277,13 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	url := p.dom.GetMainFrame().GetURL().String()
+	var url string
+	frame := p.dom.GetMainFrame()
+
+	if frame != nil {
+		url = frame.GetURL().String()
+	}
+
 	p.closed = values.True
 
 	err := p.dom.Close()
