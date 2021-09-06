@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -21,6 +22,7 @@ func TestFunctionCallExpression(t *testing.T) {
 
 					return values.True, nil
 				},
+				false,
 			)
 
 			So(err, ShouldBeNil)
@@ -46,6 +48,7 @@ func TestFunctionCallExpression(t *testing.T) {
 
 					return values.True, nil
 				},
+				false,
 				args...,
 			)
 
@@ -72,6 +75,7 @@ func TestFunctionCallExpression(t *testing.T) {
 
 					return values.True, nil
 				},
+				false,
 				args...,
 			)
 
@@ -84,6 +88,22 @@ func TestFunctionCallExpression(t *testing.T) {
 			_, err = f.Exec(ctx, rootScope.Fork())
 
 			So(err, ShouldEqual, core.ErrTerminated)
+		})
+
+		Convey("Should ignore errors and return NONE", func() {
+			f, err := expressions.NewFunctionCallExpression(
+				core.SourceMap{},
+				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+					return values.NewString("booo"), core.ErrNotImplemented
+				},
+				true,
+			)
+
+			So(err, ShouldBeNil)
+			out, err := f.Exec(context.Background(), rootScope.Fork())
+
+			So(err, ShouldBeNil)
+			So(out.Type().String(), ShouldEqual, types.None.String())
 		})
 	})
 }
