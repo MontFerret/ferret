@@ -29,6 +29,10 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 	val, err := e.source.Exec(ctx, scope)
 
 	if err != nil {
+		if e.path[0].optional {
+			return values.None, nil
+		}
+
 		return values.None, core.SourceError(
 			e.src,
 			err,

@@ -151,11 +151,14 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#memberExpressionSource.
 	VisitMemberExpressionSource(ctx *MemberExpressionSourceContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#memberExpressionPath.
-	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
+	// Visit a parse tree produced by FqlParser#functionCall.
+	VisitFunctionCall(ctx *FunctionCallContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#functionCallExpression.
 	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#memberExpressionPath.
+	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#functionIdentifier.
 	VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{}

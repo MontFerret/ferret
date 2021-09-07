@@ -151,11 +151,14 @@ type FqlParserListener interface {
 	// EnterMemberExpressionSource is called when entering the memberExpressionSource production.
 	EnterMemberExpressionSource(c *MemberExpressionSourceContext)
 
-	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
-	EnterMemberExpressionPath(c *MemberExpressionPathContext)
+	// EnterFunctionCall is called when entering the functionCall production.
+	EnterFunctionCall(c *FunctionCallContext)
 
 	// EnterFunctionCallExpression is called when entering the functionCallExpression production.
 	EnterFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
+	EnterMemberExpressionPath(c *MemberExpressionPathContext)
 
 	// EnterFunctionIdentifier is called when entering the functionIdentifier production.
 	EnterFunctionIdentifier(c *FunctionIdentifierContext)
@@ -346,11 +349,14 @@ type FqlParserListener interface {
 	// ExitMemberExpressionSource is called when exiting the memberExpressionSource production.
 	ExitMemberExpressionSource(c *MemberExpressionSourceContext)
 
-	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
-	ExitMemberExpressionPath(c *MemberExpressionPathContext)
+	// ExitFunctionCall is called when exiting the functionCall production.
+	ExitFunctionCall(c *FunctionCallContext)
 
 	// ExitFunctionCallExpression is called when exiting the functionCallExpression production.
 	ExitFunctionCallExpression(c *FunctionCallExpressionContext)
+
+	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
+	ExitMemberExpressionPath(c *MemberExpressionPathContext)
 
 	// ExitFunctionIdentifier is called when exiting the functionIdentifier production.
 	ExitFunctionIdentifier(c *FunctionIdentifierContext)
