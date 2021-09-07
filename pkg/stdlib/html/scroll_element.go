@@ -86,14 +86,14 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	if doc != nil {
 		if selector != values.EmptyString {
-			return values.None, doc.ScrollBySelector(ctx, selector, opts)
+			return values.True, doc.ScrollBySelector(ctx, selector, opts)
 		}
 
-		return values.None, doc.GetElement().ScrollIntoView(ctx, opts)
+		return values.True, doc.GetElement().ScrollIntoView(ctx, opts)
 	}
 
 	if el != nil {
-		return values.None, el.ScrollIntoView(ctx, opts)
+		return values.True, el.ScrollIntoView(ctx, opts)
 	}
 
 	return values.None, core.TypeError(

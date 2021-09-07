@@ -22,6 +22,8 @@ type (
 	}
 )
 
+const defaultArgsCount = 5
+
 const (
 	ReturnNothing FunctionReturnType = iota
 	ReturnValue
@@ -102,7 +104,7 @@ func (fn *Function) returnValue() *Function {
 
 func (fn *Function) withArg(arg runtime.CallArgument) *Function {
 	if fn.args == nil {
-		fn.args = make([]runtime.CallArgument, 0, 5)
+		fn.args = make([]runtime.CallArgument, 0, defaultArgsCount)
 	}
 
 	fn.args = append(fn.args, arg)

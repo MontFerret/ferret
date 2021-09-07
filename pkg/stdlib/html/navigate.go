@@ -49,5 +49,5 @@ func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, page.Navigate(ctx, args[1].(values.String))
+	return values.True, page.Navigate(ctx, args[1].(values.String))
 }

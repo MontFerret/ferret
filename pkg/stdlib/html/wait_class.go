@@ -91,7 +91,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.None, el.WaitForClassBySelector(ctx, selector, class, when)
+		return values.True, el.WaitForClassBySelector(ctx, selector, class, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -110,5 +110,5 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForClass(ctx, class, when)
+	return values.True, el.WaitForClass(ctx, class, when)
 }

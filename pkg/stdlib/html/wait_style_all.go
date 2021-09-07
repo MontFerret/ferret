@@ -74,5 +74,5 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForStyleBySelectorAll(ctx, selector, name, value, when)
+	return values.True, el.WaitForStyleBySelectorAll(ctx, selector, name, value, when)
 }

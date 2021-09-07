@@ -73,5 +73,5 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForClassBySelectorAll(ctx, selector, class, when)
+	return values.True, el.WaitForClassBySelectorAll(ctx, selector, class, when)
 }

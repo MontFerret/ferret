@@ -93,7 +93,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.None, el.WaitForAttributeBySelector(ctx, selector, name, value, when)
+		return values.True, el.WaitForAttributeBySelector(ctx, selector, name, value, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -113,5 +113,5 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForAttribute(ctx, name, value, when)
+	return values.True, el.WaitForAttribute(ctx, name, value, when)
 }

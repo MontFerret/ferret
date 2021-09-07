@@ -86,7 +86,7 @@ func main() {
 	flag.Parse()
 
 	console := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
+		Out:        os.Stderr,
 		TimeFormat: "15:04:05.999",
 	}
 	logger = zerolog.New(console).

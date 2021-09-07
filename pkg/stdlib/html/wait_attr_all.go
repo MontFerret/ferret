@@ -74,5 +74,5 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForAttributeBySelectorAll(ctx, selector, name, value, when)
+	return values.True, el.WaitForAttributeBySelectorAll(ctx, selector, name, value, when)
 }

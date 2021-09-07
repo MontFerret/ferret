@@ -56,5 +56,5 @@ func waitElementWhen(ctx context.Context, args []core.Value, when drivers.WaitEv
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForElement(ctx, values.NewString(selector), when)
+	return values.True, el.WaitForElement(ctx, values.NewString(selector), when)
 }

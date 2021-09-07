@@ -60,5 +60,5 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 		opts.Left = y
 	}
 
-	return values.None, doc.Scroll(ctx, opts)
+	return values.True, doc.Scroll(ctx, opts)
 }
