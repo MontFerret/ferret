@@ -80,6 +80,21 @@ func TestFunctionNSCall(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
+	Convey("T::FAIL()? should return NONE", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			RETURN T::FAIL()?
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `null`)
+	})
+
 	Convey("Should use keywords", t, func() {
 		c := compiler.New()
 

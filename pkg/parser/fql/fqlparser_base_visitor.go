@@ -199,11 +199,15 @@ func (v *BaseFqlParserVisitor) VisitMemberExpressionSource(ctx *MemberExpression
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitFunctionCall(ctx *FunctionCallContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
 func (v *BaseFqlParserVisitor) VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

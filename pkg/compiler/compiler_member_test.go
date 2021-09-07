@@ -3,6 +3,7 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -494,6 +495,25 @@ RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]
 				So(err, ShouldBeNil)
 
 				So(string(out), ShouldEqual, `"bar"`)
+			})
+
+			Convey("When function returns error", func() {
+				c := compiler.New()
+				c.RegisterFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					return nil, core.ErrNotImplemented
+				})
+
+				p, err := c.Compile(`
+				RETURN ERROR()?.foo
+			`)
+
+				So(err, ShouldBeNil)
+
+				out, err := p.Run(context.Background())
+
+				So(err, ShouldBeNil)
+
+				So(string(out), ShouldEqual, `null`)
 			})
 		})
 	})

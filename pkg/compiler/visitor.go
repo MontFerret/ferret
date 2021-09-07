@@ -928,8 +928,8 @@ func (v *visitor) doVisitMemberExpressionSource(ctx *fql.MemberExpressionSourceC
 		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
 	}
 
-	if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
-		return v.doVisitFunctionCallExpression(fnCall.(*fql.FunctionCallExpressionContext), scope)
+	if fnCall := ctx.FunctionCall(); fnCall != nil {
+		return v.doVisitFunctionCall(fnCall.(*fql.FunctionCallContext), false, scope)
 	}
 
 	if objectLiteral := ctx.ObjectLiteral(); objectLiteral != nil {
@@ -1134,7 +1134,7 @@ func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *sco
 	)
 }
 
-func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (core.Expression, error) {
+func (v *visitor) doVisitFunctionCall(context *fql.FunctionCallContext, ignoreErrors bool, scope *scope) (core.Expression, error) {
 	args := make([]core.Expression, 0, 5)
 	argsCtx := context.Arguments()
 
@@ -1170,7 +1170,16 @@ func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpress
 	return expressions.NewFunctionCallExpression(
 		v.getSourceMap(context),
 		fun,
+		ignoreErrors,
 		args...,
+	)
+}
+
+func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (core.Expression, error) {
+	return v.doVisitFunctionCall(
+		context.FunctionCall().(*fql.FunctionCallContext),
+		context.QuestionMark() != nil,
+		scope,
 	)
 }
 

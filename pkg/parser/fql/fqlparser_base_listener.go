@@ -308,17 +308,23 @@ func (s *BaseFqlParserListener) EnterMemberExpressionSource(ctx *MemberExpressio
 // ExitMemberExpressionSource is called when production memberExpressionSource is exited.
 func (s *BaseFqlParserListener) ExitMemberExpressionSource(ctx *MemberExpressionSourceContext) {}
 
-// EnterMemberExpressionPath is called when production memberExpressionPath is entered.
-func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionPathContext) {}
+// EnterFunctionCall is called when production functionCall is entered.
+func (s *BaseFqlParserListener) EnterFunctionCall(ctx *FunctionCallContext) {}
 
-// ExitMemberExpressionPath is called when production memberExpressionPath is exited.
-func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
+// ExitFunctionCall is called when production functionCall is exited.
+func (s *BaseFqlParserListener) ExitFunctionCall(ctx *FunctionCallContext) {}
 
 // EnterFunctionCallExpression is called when production functionCallExpression is entered.
 func (s *BaseFqlParserListener) EnterFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
 
 // ExitFunctionCallExpression is called when production functionCallExpression is exited.
 func (s *BaseFqlParserListener) ExitFunctionCallExpression(ctx *FunctionCallExpressionContext) {}
+
+// EnterMemberExpressionPath is called when production memberExpressionPath is entered.
+func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionPathContext) {}
+
+// ExitMemberExpressionPath is called when production memberExpressionPath is exited.
+func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
 
 // EnterFunctionIdentifier is called when production functionIdentifier is entered.
 func (s *BaseFqlParserListener) EnterFunctionIdentifier(ctx *FunctionIdentifierContext) {}
