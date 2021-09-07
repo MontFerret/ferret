@@ -57,6 +57,7 @@ func NewBufferedTestEventStream(buffer int) *TestEventStream {
 	es := new(TestEventStream)
 	es.ready = make(chan struct{}, buffer)
 	es.message = make(chan interface{}, buffer)
+
 	return es
 }
 
@@ -394,7 +395,7 @@ func TestLoop(t *testing.T) {
 		// Stop the loop
 		cancel()
 
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Duration(500) * time.Millisecond)
 
 		onLoad.Emit(&page.LoadEventFiredReply{})
 
@@ -403,6 +404,8 @@ func TestLoop(t *testing.T) {
 
 			onLoad.Emit(&page.LoadEventFiredReply{})
 		}
+
+		time.Sleep(time.Duration(500) * time.Millisecond)
 
 		So(counter.Value(), ShouldEqual, eventsToFire)
 	})
