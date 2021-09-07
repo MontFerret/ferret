@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/drivers/http"
@@ -234,7 +235,10 @@ func TestDocument(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			So(el.GetNodeType(), ShouldEqual, 9)
+			nt, err := el.GetNodeType(context.Background())
+
+			So(err, ShouldBeNil)
+			So(nt, ShouldEqual, 9)
 		})
 	})
 }

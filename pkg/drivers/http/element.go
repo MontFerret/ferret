@@ -86,22 +86,22 @@ func (el *HTMLElement) Copy() core.Value {
 	return c
 }
 
-func (el *HTMLElement) GetNodeType() values.Int {
+func (el *HTMLElement) GetNodeType(_ context.Context) (values.Int, error) {
 	nodes := el.selection.Nodes
 
 	if len(nodes) == 0 {
-		return 0
+		return 0, nil
 	}
 
-	return values.NewInt(common.FromHTMLType(nodes[0].Type))
+	return values.NewInt(common.FromHTMLType(nodes[0].Type)), nil
 }
 
 func (el *HTMLElement) Close() error {
 	return nil
 }
 
-func (el *HTMLElement) GetNodeName() values.String {
-	return values.NewString(goquery.NodeName(el.selection))
+func (el *HTMLElement) GetNodeName(_ context.Context) (values.String, error) {
+	return values.NewString(goquery.NodeName(el.selection)), nil
 }
 
 func (el *HTMLElement) Length() values.Int {
@@ -599,11 +599,43 @@ func (el *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ driver
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) WaitForElementAll(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) WaitForAttribute(_ context.Context, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
+func (el *HTMLElement) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
 func (el *HTMLElement) WaitForStyle(_ context.Context, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
+	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

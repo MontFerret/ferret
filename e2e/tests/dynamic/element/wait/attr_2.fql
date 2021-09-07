@@ -9,6 +9,7 @@ ATTR_SET(el, "data-test", "test")
 WAIT_ATTR(el, "data-test", "test")
 
 ATTR_REMOVE(el, "class")
+
 WAIT_ATTR(el, "class", NONE)
 
 T::NONE(el.attributes.class, "attribute should be removed")

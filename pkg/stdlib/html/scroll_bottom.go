@@ -39,5 +39,5 @@ func ScrollBottom(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	return values.None, doc.ScrollBottom(ctx, opts)
+	return values.True, doc.ScrollBottom(ctx, opts)
 }

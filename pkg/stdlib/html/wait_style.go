@@ -70,7 +70,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		doc, err := drivers.ToDocument(arg1)
+		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
 			return values.None, err
@@ -93,7 +93,7 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.None, doc.WaitForStyleBySelector(ctx, selector, name, value, when)
+		return values.True, el.WaitForStyleBySelector(ctx, selector, name, value, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -113,5 +113,5 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForStyle(ctx, name, value, when)
+	return values.True, el.WaitForStyle(ctx, name, value, when)
 }

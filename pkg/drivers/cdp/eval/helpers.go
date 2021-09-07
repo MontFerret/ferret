@@ -31,15 +31,27 @@ func CastToReference(input interface{}) (runtime.RemoteObject, error) {
 	return value, nil
 }
 
-func wrapExp(exp string) string {
-	return "function () {" + exp + "}"
-}
-
-func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
-	if obj == nil {
-		return values.None, nil
+func wrapExp(exp string, args int) string {
+	if args == 0 {
+		return "() => {\n" + exp + "\n}"
 	}
 
+	var buf strings.Builder
+	lastIndex := args - 1
+
+	for i := 0; i < args; i++ {
+		buf.WriteString("arg")
+		buf.WriteString(strconv.Itoa(i + 1))
+
+		if i != lastIndex {
+			buf.WriteString(",")
+		}
+	}
+
+	return "(" + buf.String() + ") => {\n" + exp + "\n}"
+}
+
+func Unmarshal(obj runtime.RemoteObject) (core.Value, error) {
 	switch obj.Type {
 	case "string":
 		str, err := strconv.Unquote(string(obj.Value))
@@ -49,8 +61,16 @@ func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
 		}
 
 		return values.NewString(str), nil
-	case "undefined", "null":
-		return values.None, nil
+	case "object":
+		if obj.Subtype != nil {
+			subtype := *obj.Subtype
+
+			if subtype == "null" || subtype == "undefined" {
+				return values.None, nil
+			}
+		}
+
+		return values.Unmarshal(obj.Value)
 	default:
 		return values.Unmarshal(obj.Value)
 	}
