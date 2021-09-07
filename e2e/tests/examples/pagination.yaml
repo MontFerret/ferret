@@ -5,4 +5,4 @@ query:
     criteria: "scraper"
     pages: 2
 assert:
-  text: RETURN T::NOT::EMPTY(@lab.data.query.result)
+  text: RETURN T::NOT::NONE(@lab.data.query.result)

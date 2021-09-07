@@ -3,26 +3,31 @@ package templates
 import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/mafredri/cdp/protocol/runtime"
 )
 
-func Blur() string {
-	return `
-		(el) => {
-			el.blur()
-		}
-	`
+const blur = `(el) => {
+	el.blur()
+}`
+
+func Blur(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(blur).WithArgRef(id)
 }
 
-func BlurBySelector(selector string) string {
-	return fmt.Sprintf(`
-		(parent) => {
-			const el = parent.querySelector('%s');
+var blurBySelector = fmt.Sprintf(`
+		(el, selector) => {
+			const found = el.querySelector(selector);
 
-			if (el == null) {
-				throw new Error('%s')
+			if (found == null) {
+				throw new Error(%s)
 			}
 
-			el.blur();
+			found.blur();
 		}
-`, selector, drivers.ErrNotFound)
+`, ParamErr(drivers.ErrNotFound))
+
+func BlurBySelector(id runtime.RemoteObjectID, selector values.String) *eval.Function {
+	return eval.F(blurBySelector).WithArgRef(id).WithArgValue(selector)
 }

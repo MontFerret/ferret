@@ -3,22 +3,26 @@ package eval
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/rs/zerolog"
+	"github.com/wI2L/jettison"
 	"strings"
 )
 
 type (
 	FunctionReturnType int
 
+	FunctionArguments []runtime.CallArgument
+
 	Function struct {
 		exp        string
-		ownerID    *runtime.RemoteObjectID
-		args       []runtime.CallArgument
+		ownerID    runtime.RemoteObjectID
+		args       FunctionArguments
 		returnType FunctionReturnType
 		async      bool
 	}
-
-	FunctionOption func(op *Function)
 )
+
+const defaultArgsCount = 5
 
 const (
 	ReturnNothing FunctionReturnType = iota
@@ -26,27 +30,93 @@ const (
 	ReturnRef
 )
 
-func newFunction(exp string, opts []FunctionOption) *Function {
+func F(exp string) *Function {
 	op := new(Function)
 	op.exp = exp
 	op.returnType = ReturnNothing
 
-	for _, opt := range opts {
-		opt(op)
-	}
-
 	return op
 }
 
-func (fn *Function) Use(opt FunctionOption) {
-	opt(fn)
+func (fn *Function) AsPartOf(id runtime.RemoteObjectID) *Function {
+	fn.ownerID = id
+
+	return fn
 }
 
-func (fn *Function) toArgs(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
+func (fn *Function) AsAsync() *Function {
+	fn.async = true
+
+	return fn
+}
+
+func (fn *Function) AsSync() *Function {
+	fn.async = false
+
+	return fn
+}
+
+func (fn *Function) WithArgRef(id runtime.RemoteObjectID) *Function {
+	return fn.withArg(runtime.CallArgument{
+		ObjectID: &id,
+	})
+}
+
+func (fn *Function) WithArgValue(value core.Value) *Function {
+	raw, err := value.MarshalJSON()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return fn.withArg(runtime.CallArgument{
+		Value: raw,
+	})
+}
+
+func (fn *Function) WithArg(value interface{}) *Function {
+	raw, err := jettison.MarshalOpts(value, jettison.NoHTMLEscaping())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return fn.withArg(runtime.CallArgument{
+		Value: raw,
+	})
+}
+
+func (fn *Function) String() string {
+	return fn.exp
+}
+
+func (fn *Function) returnRef() *Function {
+	fn.returnType = ReturnRef
+
+	return fn
+}
+
+func (fn *Function) returnValue() *Function {
+	fn.returnType = ReturnValue
+
+	return fn
+}
+
+func (fn *Function) withArg(arg runtime.CallArgument) *Function {
+	if fn.args == nil {
+		fn.args = make([]runtime.CallArgument, 0, defaultArgsCount)
+	}
+
+	fn.args = append(fn.args, arg)
+
+	return fn
+}
+
+func (fn *Function) build(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
 	exp := strings.TrimSpace(fn.exp)
 
 	if !strings.HasPrefix(exp, "(") && !strings.HasPrefix(exp, "function") {
-		exp = wrapExp(exp)
+		exp = wrapExp(exp, len(fn.args))
 	}
 
 	call := runtime.NewCallFunctionOnArgs(exp).
@@ -60,8 +130,8 @@ func (fn *Function) toArgs(ctx runtime.ExecutionContextID) *runtime.CallFunction
 		call.SetExecutionContextID(ctx)
 	}
 
-	if fn.ownerID != nil {
-		call.SetObjectID(*fn.ownerID)
+	if fn.ownerID != "" {
+		call.SetObjectID(fn.ownerID)
 	}
 
 	if len(fn.args) > 0 {
@@ -71,57 +141,23 @@ func (fn *Function) toArgs(ctx runtime.ExecutionContextID) *runtime.CallFunction
 	return call
 }
 
-func withReturnRef() FunctionOption {
-	return func(op *Function) {
-		op.returnType = ReturnRef
+func (rt FunctionReturnType) String() string {
+	switch rt {
+	case ReturnValue:
+		return "value"
+	case ReturnRef:
+		return "reference"
+	default:
+		return "nothing"
 	}
 }
 
-func withReturnValue() FunctionOption {
-	return func(op *Function) {
-		op.returnType = ReturnValue
-	}
-}
-
-func WithArgs(args ...runtime.CallArgument) FunctionOption {
-	return func(op *Function) {
-		if op.args == nil {
-			op.args = args
+func (args FunctionArguments) MarshalZerologArray(a *zerolog.Array) {
+	for _, arg := range args {
+		if arg.ObjectID != nil {
+			a.Str(string(*arg.ObjectID))
 		} else {
-			op.args = append(op.args, args...)
+			a.RawJSON(arg.Value)
 		}
-	}
-}
-
-func WithArgValue(value core.Value) FunctionOption {
-	raw, err := value.MarshalJSON()
-
-	if err != nil {
-		// we defer error
-		return WithArgs(runtime.CallArgument{
-			Value: []byte(err.Error()),
-		})
-	}
-
-	return WithArgs(runtime.CallArgument{
-		Value: raw,
-	})
-}
-
-func WithArgRef(id runtime.RemoteObjectID) FunctionOption {
-	return WithArgs(runtime.CallArgument{
-		ObjectID: &id,
-	})
-}
-
-func WithOwner(ctx *runtime.RemoteObjectID) FunctionOption {
-	return func(op *Function) {
-		op.ownerID = ctx
-	}
-}
-
-func WithAsync() FunctionOption {
-	return func(op *Function) {
-		op.async = true
 	}
 }

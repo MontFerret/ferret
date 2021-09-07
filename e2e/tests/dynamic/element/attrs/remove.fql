@@ -2,19 +2,19 @@ LET url = @lab.cdn.dynamic + "?redirect=/events"
 LET doc = DOCUMENT(url, true)
 LET pageSelector = "#page-events"
 LET elemSelector = "#wait-no-style-content"
+LET attrName = "data-e2e-test"
 
 WAIT_ELEMENT(doc, pageSelector)
 LET el = ELEMENT(doc, elemSelector)
+ATTR_SET(el, attrName, "true")
 
-LET prev = el.attributes.style
+LET prev = el.attributes[attrName]
 
-ATTR_REMOVE(el, "style")
+ATTR_REMOVE(el, attrName)
 
-LET curr = el.attributes.style
+LET curr = el.attributes[attrName]
 
-T::EQ(prev, {
-    display: "block"
-})
+T::EQ(prev, "true")
 T::NONE(curr)
 
-RETURN NONE
+RETURN TRUE

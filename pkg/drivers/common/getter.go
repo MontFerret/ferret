@@ -231,9 +231,9 @@ func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (c
 
 		switch segment {
 		case "nodeType":
-			return node.GetNodeType(), nil
+			return node.GetNodeType(ctx)
 		case "nodeName":
-			return node.GetNodeName(), nil
+			return node.GetNodeName(ctx)
 		case "children":
 			children, err := node.GetChildNodes(ctx)
 

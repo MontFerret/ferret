@@ -1,95 +1,71 @@
 package templates
 
 import (
-	"fmt"
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/mafredri/cdp/protocol/runtime"
 )
 
-var getStylesTemplate = `
-	(el) => {
-		const out = {};
-		const styles = window.getComputedStyle(el);
-	
-		Object.keys(styles).forEach((key) => {
-			if (!isNaN(parseFloat(key))) {
-				const name = styles[key];
-				const value = styles.getPropertyValue(name);
-				out[name] = value;
-			}
-		});
+const getStyles = `(el) => {
+	const out = {};
+	const styles = window.getComputedStyle(el);
 
-		return out;
-	}
-`
-
-func GetStyles() string {
-	return getStylesTemplate
-}
-
-func GetStyle(name string) string {
-	return fmt.Sprintf(`
-	(el) => {
-		const out = {};
-		const styles = window.getComputedStyle(el);
-
-		return styles[%s];
-	}
-`, eval.ParamString(name))
-}
-
-func SetStyle(name, value string) string {
-	return fmt.Sprintf(`
-		(el) => {
-			el.style[%s] = %s;
+	Object.keys(styles).forEach((key) => {
+		if (!isNaN(parseFloat(key))) {
+			const name = styles[key];
+			const value = styles.getPropertyValue(name);
+			out[name] = value;
 		}
-`, eval.ParamString(name), eval.ParamString(value))
+	});
+
+	return out;
+}`
+
+func GetStyles(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(getStyles).WithArgRef(id)
 }
 
-func SetStyles(pairs *values.Object) string {
-	return fmt.Sprintf(`
-		(el) => {
-			const values = %s;
-			Object.keys(values).forEach((key) => {
-				el.style[key] = values[key]
-			});
-		}
-`, eval.Param(pairs))
+const getStyle = `(el, name) => {
+	const styles = window.getComputedStyle(el);
+
+	return styles[name];
+}`
+
+func GetStyle(id runtime.RemoteObjectID, name values.String) *eval.Function {
+	return eval.F(getStyle).WithArgRef(id).WithArgValue(name)
 }
 
-func RemoveStyles(names []values.String) string {
-	return fmt.Sprintf(`
-		(el) => {
-			const style = el.style;
-			[%s].forEach((name) => { style[name] = "" })
-		}
-	`,
-		eval.ParamStringList(names),
-	)
+const setStyle = `(el, name, value) => {
+	el.style[name] = value;
+}`
+
+func SetStyle(id runtime.RemoteObjectID, name, value values.String) *eval.Function {
+	return eval.F(setStyle).WithArgRef(id).WithArgValue(name).WithArgValue(value)
 }
 
-func WaitForStyle(name, value string, when drivers.WaitEvent) string {
-	return fmt.Sprintf(`
-	(el) => {
-		const styles = window.getComputedStyle(el);
-		const actual = styles[%s];
-		const expected = %s;
+const setStyles = `(el, values) => {
+	Object.keys(values).forEach((key) => {
+		el.style[key] = values[key]
+	});
+}`
 
-		// null means we need to repeat
-		return actual %s expected ? true : null ;
-	}
-`, eval.ParamString(name), eval.ParamString(value), WaitEventToEqOperator(when))
+func SetStyles(id runtime.RemoteObjectID, values *values.Object) *eval.Function {
+	return eval.F(setStyles).WithArgRef(id).WithArgValue(values)
 }
 
-func StyleRead(name values.String) string {
-	n := name.String()
-	return fmt.Sprintf(`
-	((function() {
-		const cs = window.getComputedStyle(el);
-		const currentValue = cs.getPropertyValue(%s);
+const removeStyles = `(el, names) => {
+	const style = el.style;
+	names.forEach((name) => { style[name] = "" })
+}`
 
-		return currentValue || null;
-	})())
-`, eval.ParamString(n))
+func RemoveStyles(id runtime.RemoteObjectID, names []values.String) *eval.Function {
+	return eval.F(removeStyles).WithArgRef(id).WithArg(names)
+}
+
+const removeStylesAll = `(el) => {
+	el.removeAttribute("style");
+}`
+
+func RemoveStylesAll(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(removeStylesAll).WithArgRef(id)
 }

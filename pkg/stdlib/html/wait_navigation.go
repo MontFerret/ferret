@@ -55,10 +55,10 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 	defer fn()
 
 	if params.Frame == nil {
-		return values.None, doc.WaitForNavigation(ctx, params.TargetURL)
+		return values.True, doc.WaitForNavigation(ctx, params.TargetURL)
 	}
 
-	return values.None, doc.WaitForFrameNavigation(ctx, params.Frame, params.TargetURL)
+	return values.True, doc.WaitForFrameNavigation(ctx, params.Frame, params.TargetURL)
 }
 
 func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {

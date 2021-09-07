@@ -11,11 +11,10 @@ LET prev = el.attributes
 
 ATTR_SET(el, attrName, attrVal)
 WAIT_ATTR(doc, selector, attrName, attrVal, 30000)
-//WAIT_ATTR(el, attrName, attrVal)
 
 LET curr = el.attributes
 
 T::NONE(prev[attrName])
 T::EQ(attrVal, curr[attrName], "attributes should be updated")
 
-RETURN NONE
+RETURN TRUE

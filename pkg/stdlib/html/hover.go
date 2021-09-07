@@ -27,7 +27,7 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 1 {
-		return values.None, el.Hover(ctx)
+		return values.True, el.Hover(ctx)
 	}
 
 	err = core.ValidateType(args[1], types.String)
@@ -36,5 +36,5 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.None, el.HoverBySelector(ctx, values.ToString(args[1]))
+	return values.True, el.HoverBySelector(ctx, values.ToString(args[1]))
 }

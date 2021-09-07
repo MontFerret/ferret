@@ -142,12 +142,12 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 	return common.SetInDocument(ctx, doc, path, value)
 }
 
-func (doc *HTMLDocument) GetNodeType() values.Int {
-	return 9
+func (doc *HTMLDocument) GetNodeType(_ context.Context) (values.Int, error) {
+	return 9, nil
 }
 
-func (doc *HTMLDocument) GetNodeName() values.String {
-	return "#document"
+func (doc *HTMLDocument) GetNodeName(_ context.Context) (values.String, error) {
+	return "#document", nil
 }
 
 func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {
@@ -216,39 +216,11 @@ func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String, _ 
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollByXY(_ context.Context, _, _ values.Float, _ drivers.ScrollOptions) error {
+func (doc *HTMLDocument) Scroll(_ context.Context, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 
 func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ values.Float) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
-	return core.ErrNotSupported
-}
-
-func (doc *HTMLDocument) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

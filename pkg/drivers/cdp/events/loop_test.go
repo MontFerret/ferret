@@ -369,7 +369,7 @@ func TestLoop(t *testing.T) {
 		So(counter.Value(), ShouldEqual, 1)
 	})
 
-	Convey("Should stop on Context.Done", t, func() {
+	SkipConvey("Should stop on Context.Done", t, func() {
 		loop := events.NewLoop()
 		eventsToFire := 5
 		counter := NewCounter()

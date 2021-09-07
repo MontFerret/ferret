@@ -69,7 +69,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		doc, err := drivers.ToDocument(arg1)
+		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
 			return values.None, err
@@ -91,7 +91,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.None, doc.WaitForClassBySelector(ctx, selector, class, when)
+		return values.True, el.WaitForClassBySelector(ctx, selector, class, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -110,5 +110,5 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForClass(ctx, class, when)
+	return values.True, el.WaitForClass(ctx, class, when)
 }

@@ -8,8 +8,6 @@ WAIT_ELEMENT(doc, pageSelector)
 LET el = ELEMENT(doc, elemSelector)
 LET attrs = ATTR_GET(el, "style")
 
-T::EQ(attrs.style, {
-    display: "block"
-})
+T::EQ(attrs.style.display, "block")
 
-RETURN NONE
+RETURN TRUE

@@ -46,6 +46,8 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 	y := values.ToFloat(args[2])
 
 	var opts drivers.ScrollOptions
+	opts.Top = x
+	opts.Left = y
 
 	if len(args) > 3 {
 		opts, err = toScrollOptions(args[3])
@@ -53,7 +55,10 @@ func ScrollXY(ctx context.Context, args ...core.Value) (core.Value, error) {
 		if err != nil {
 			return values.None, err
 		}
+
+		opts.Top = x
+		opts.Left = y
 	}
 
-	return values.None, doc.ScrollByXY(ctx, x, y, opts)
+	return values.True, doc.Scroll(ctx, opts)
 }

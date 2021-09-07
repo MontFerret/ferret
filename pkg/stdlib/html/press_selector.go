@@ -43,9 +43,9 @@ func PressSelector(ctx context.Context, args ...core.Value) (core.Value, error) 
 
 	switch keys := keysArg.(type) {
 	case values.String:
-		return values.None, el.PressBySelector(ctx, selector, []values.String{keys}, count)
+		return values.True, el.PressBySelector(ctx, selector, []values.String{keys}, count)
 	case *values.Array:
-		return values.None, el.PressBySelector(ctx, selector, values.ToStrings2(keys), count)
+		return values.True, el.PressBySelector(ctx, selector, values.ToStrings2(keys), count)
 	default:
 		return values.None, core.TypeError(keysArg.Type(), types.String, types.Array)
 	}

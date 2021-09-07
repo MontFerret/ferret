@@ -2,22 +2,21 @@ LET url = @lab.cdn.dynamic + "?redirect=/events"
 LET doc = DOCUMENT(url, true)
 LET pageSelector = "#page-events"
 LET elemSelector = "#wait-no-style-content"
+LET attrName = "data-e2e-test"
 
 WAIT_ELEMENT(doc, pageSelector)
 
 LET el = ELEMENT(doc, elemSelector)
-LET prev = el.attributes.style
+ATTR_SET(el, attrName, "true")
 
-ATTR_SET(el, "style", {
-    color: "black"
-})
+LET prev = el.attributes[attrName]
 
-WAIT(200)
+T::EQ(prev, "true")
 
-LET curr = el.attributes.style
+ATTR_SET(el, attrName, "false")
 
-PRINT(el.attributes.style)
+LET curr = el.attributes[attrName]
 
-T::EQ(curr.color, "black")
+T::EQ(curr, "false")
 
-RETURN NONE
+RETURN TRUE

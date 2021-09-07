@@ -24,9 +24,9 @@ type (
 		collections.Measurable
 		io.Closer
 
-		GetNodeType() values.Int
+		GetNodeType(ctx context.Context) (values.Int, error)
 
-		GetNodeName() values.String
+		GetNodeName(ctx context.Context) (values.String, error)
 
 		GetChildNodes(ctx context.Context) (*values.Array, error)
 
@@ -133,11 +133,27 @@ type (
 
 		HoverBySelector(ctx context.Context, selector values.String) error
 
+		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
+
+		WaitForElementAll(ctx context.Context, selector values.String, when WaitEvent) error
+
 		WaitForAttribute(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForAttributeBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForAttributeBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
 
 		WaitForStyle(ctx context.Context, name values.String, value core.Value, when WaitEvent) error
 
+		WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
+
+		WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
+
 		WaitForClass(ctx context.Context, class values.String, when WaitEvent) error
+
+		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
+
+		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
 	}
 
 	HTMLDocument interface {
@@ -155,29 +171,15 @@ type (
 
 		GetChildDocuments(ctx context.Context) (*values.Array, error)
 
+		Scroll(ctx context.Context, options ScrollOptions) error
+
 		ScrollTop(ctx context.Context, options ScrollOptions) error
 
 		ScrollBottom(ctx context.Context, options ScrollOptions) error
 
 		ScrollBySelector(ctx context.Context, selector values.String, options ScrollOptions) error
 
-		ScrollByXY(ctx context.Context, x, y values.Float, options ScrollOptions) error
-
 		MoveMouseByXY(ctx context.Context, x, y values.Float) error
-
-		WaitForElement(ctx context.Context, selector values.String, when WaitEvent) error
-
-		WaitForAttributeBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForAttributeBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForStyleBySelector(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForStyleBySelectorAll(ctx context.Context, selector, name values.String, value core.Value, when WaitEvent) error
-
-		WaitForClassBySelector(ctx context.Context, selector, class values.String, when WaitEvent) error
-
-		WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when WaitEvent) error
 	}
 
 	// HTMLPage interface represents any web page loaded in the browser

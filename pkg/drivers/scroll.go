@@ -1,6 +1,10 @@
 package drivers
 
-import "strings"
+import (
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/wI2L/jettison"
+	"strings"
+)
 
 // ScrollBehavior defines the transition animation.
 // In HTML specification, default value is auto, but in Ferret it's instant.
@@ -22,6 +26,10 @@ func NewScrollBehavior(value string) ScrollBehavior {
 	default:
 		return ScrollBehaviorAuto
 	}
+}
+
+func (b ScrollBehavior) MarshalJSON() ([]byte, error) {
+	return jettison.MarshalOpts(b.String(), jettison.NoHTMLEscaping())
 }
 
 func (b ScrollBehavior) String() string {
@@ -60,6 +68,10 @@ func NewScrollVerticalAlignment(value string) ScrollVerticalAlignment {
 	default:
 		return ScrollVerticalAlignmentCenter
 	}
+}
+
+func (a ScrollVerticalAlignment) MarshalJSON() ([]byte, error) {
+	return jettison.MarshalOpts(a.String(), jettison.NoHTMLEscaping())
 }
 
 func (a ScrollVerticalAlignment) String() string {
@@ -104,6 +116,10 @@ func NewScrollHorizontalAlignment(value string) ScrollHorizontalAlignment {
 	}
 }
 
+func (a ScrollHorizontalAlignment) MarshalJSON() ([]byte, error) {
+	return jettison.MarshalOpts(a.String(), jettison.NoHTMLEscaping())
+}
+
 func (a ScrollHorizontalAlignment) String() string {
 	switch a {
 	case ScrollHorizontalAlignmentCenter:
@@ -121,7 +137,9 @@ func (a ScrollHorizontalAlignment) String() string {
 
 // ScrollOptions defines how scroll animation should be performed.
 type ScrollOptions struct {
-	Behavior ScrollBehavior
-	Block    ScrollVerticalAlignment
-	Inline   ScrollHorizontalAlignment
+	Top      values.Float              `json:"top"`
+	Left     values.Float              `json:"left"`
+	Behavior ScrollBehavior            `json:"behavior"`
+	Block    ScrollVerticalAlignment   `json:"block"`
+	Inline   ScrollHorizontalAlignment `json:"inline"`
 }
