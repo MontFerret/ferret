@@ -7,9 +7,49 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SourceErrorDetail struct {
-	BaseError    error
-	ComputeError error
+type (
+	SourceErrorDetail struct {
+		error
+		BaseError    error
+		ComputeError error
+	}
+
+	// PathError represents an interface of
+	// error type which returned when an error occurs during an execution of Getter.GetIn or Setter.SetIn functions
+	// and contains segment of a given path that caused the error.
+	PathError interface {
+		error
+		Path() []Value
+		Segment() int64
+	}
+
+	// DefaultPathError represents a default implementation of GetterError interface.
+	DefaultPathError struct {
+		cause   error
+		path    []Value
+		segment int64
+	}
+)
+
+// NewPathError is a constructor function of DefaultPathError struct.
+func NewPathError(err error, path []Value, segment int64) PathError {
+	return &DefaultPathError{
+		cause:   err,
+		path:    path,
+		segment: segment,
+	}
+}
+
+func (e *DefaultPathError) Error() string {
+	return e.cause.Error()
+}
+
+func (e *DefaultPathError) Path() []Value {
+	return e.path
+}
+
+func (e *DefaultPathError) Segment() int64 {
+	return e.segment
 }
 
 func (e *SourceErrorDetail) Error() string {

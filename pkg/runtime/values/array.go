@@ -277,13 +277,13 @@ func (t *Array) SortWith(sorter ArraySorter) *Array {
 	return res
 }
 
-func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return None, nil
 	}
 
 	if typ := path[0].Type(); typ != types.Int {
-		return None, core.TypeError(typ, types.Int)
+		return None, core.NewPathError(core.TypeError(typ, types.Int), path, 0)
 	}
 
 	first := t.Get(path[0].(Int))
@@ -293,11 +293,9 @@ func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, error
 	}
 
 	getter, ok := first.(core.Getter)
+
 	if !ok {
-		return None, core.TypeError(
-			first.Type(),
-			core.NewType("Getter"),
-		)
+		return GetIn(ctx, first, path[1:])
 	}
 
 	return getter.GetIn(ctx, path[1:])

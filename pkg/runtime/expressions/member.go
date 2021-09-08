@@ -26,7 +26,7 @@ func NewMemberExpression(src core.SourceMap, source core.Expression, path []*Mem
 }
 
 func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	val, err := e.source.Exec(ctx, scope)
+	member, err := e.source.Exec(ctx, scope)
 
 	if err != nil {
 		if e.path[0].optional {
@@ -39,28 +39,46 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		)
 	}
 
-	out := val
-	path := make([]core.Value, 1)
+	// keep information about all optional path segments
+	optionals := make(map[int]bool)
+	segments := make([]core.Value, len(e.path))
 
-	for _, seg := range e.path {
+	// unfold the path
+	for i, seg := range e.path {
 		segment, err := seg.exp.Exec(ctx, scope)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		path[0] = segment
-		c, err := values.GetIn(ctx, out, path)
+		segments[i] = segment
 
-		if err != nil {
-			if !seg.optional {
-				return values.None, core.SourceError(e.src, err)
-			}
+		if seg.optional {
+			optionals[i] = true
+		}
+	}
 
-			return values.None, nil
+	var pathErr core.PathError
+	var out core.Value = values.None
+
+	getter, ok := member.(core.Getter)
+
+	if ok {
+		out, pathErr = getter.GetIn(ctx, segments)
+	} else {
+		out, pathErr = values.GetIn(ctx, member, segments)
+	}
+
+	if pathErr != nil {
+		_, isOptional := optionals[int(pathErr.Segment())]
+
+		// we either cannot determine what segment caused the issue
+		// or it is not optional, thus we just return the error
+		if !isOptional {
+			return values.None, pathErr
 		}
 
-		out = c
+		return values.None, nil
 	}
 
 	return out, nil

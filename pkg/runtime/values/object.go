@@ -296,13 +296,13 @@ func (t *Object) Clone() core.Cloneable {
 	return cloned
 }
 
-func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return None, nil
 	}
 
 	if typ := path[0].Type(); typ != types.String {
-		return None, core.TypeError(typ, types.String)
+		return None, core.NewPathError(core.TypeError(typ, types.String), path, 0)
 	}
 
 	first, _ := t.Get(path[0].(String))
@@ -312,11 +312,9 @@ func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, erro
 	}
 
 	getter, ok := first.(core.Getter)
+
 	if !ok {
-		return None, core.TypeError(
-			first.Type(),
-			core.NewType("Getter"),
-		)
+		return GetIn(ctx, first, path[1:])
 	}
 
 	return getter.GetIn(ctx, path[1:])

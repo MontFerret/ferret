@@ -121,3 +121,7 @@ func (t String) IndexOf(other String) Int {
 func (t String) Concat(other core.Value) String {
 	return String(string(t) + other.String())
 }
+
+func (t String) At(index Int) String {
+	return String([]rune(t)[index])
+}

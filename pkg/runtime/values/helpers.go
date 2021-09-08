@@ -15,21 +15,73 @@ import (
 )
 
 // GetIn checks that from implements core.Getter interface. If it implements,
-// GetIn call from.GetIn method, otherwise return error.
-func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
-	getter, ok := from.(core.Getter)
-
-	if !ok {
-		return None, core.TypeError(
-			from.Type(),
-			core.NewType("Getter"),
-		)
+// GetIn call from.GetIn method, otherwise iterates over values and tries to resolve a given path.
+func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, core.PathError) {
+	if len(byPath) == 0 {
+		return None, nil
 	}
 
-	return getter.GetIn(ctx, byPath)
+	var result = from
+
+	for i, segment := range byPath {
+		if result == None || result == nil {
+			break
+		}
+
+		segType := segment.Type()
+
+		switch curVal := result.(type) {
+		case *Object:
+			if segType != types.String {
+				return nil, core.NewPathError(
+					core.TypeError(segType, types.String),
+					byPath,
+					int64(i),
+				)
+			}
+
+			result, _ = curVal.Get(segment.(String))
+		case *Array:
+			if segType != types.Int {
+				return nil, core.NewPathError(
+					core.TypeError(segType, types.Int),
+					byPath,
+					int64(i),
+				)
+			}
+
+			result = curVal.Get(segment.(Int))
+		case String:
+			if segType != types.Int {
+				return nil, core.NewPathError(
+					core.TypeError(segType, types.Int),
+					byPath,
+					int64(i),
+				)
+			}
+
+			result = curVal.At(ToInt(segment))
+		case core.Getter:
+			return curVal.GetIn(ctx, byPath[i:])
+		default:
+			return None, core.NewPathError(
+				core.TypeError(
+					from.Type(),
+					types.Array,
+					types.Object,
+					types.String,
+					core.NewType("Getter"),
+				),
+				byPath,
+				int64(i),
+			)
+		}
+	}
+
+	return result, nil
 }
 
-func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
+func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) core.PathError {
 	if len(byPath) == 0 {
 		return nil
 	}
@@ -46,7 +98,11 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 		switch parVal := parent.(type) {
 		case *Object:
 			if segmentType != types.String {
-				return core.TypeError(segmentType, types.String)
+				return core.NewPathError(
+					core.TypeError(segmentType, types.String),
+					byPath,
+					int64(idx),
+				)
 			}
 
 			if !isTarget {
@@ -56,14 +112,18 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			}
 		case *Array:
 			if segmentType != types.Int {
-				return core.TypeError(segmentType, types.Int)
+				return core.NewPathError(
+					core.TypeError(segmentType, types.Int),
+					byPath,
+					int64(idx),
+				)
 			}
 
 			if !isTarget {
 				current = parVal.Get(segment.(Int))
 			} else {
 				if err := parVal.Set(segment.(Int), value); err != nil {
-					return err
+					return core.NewPathError(err, byPath, int64(idx))
 				}
 			}
 		case core.Setter:
@@ -78,7 +138,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				parent = obj
 
 				if segmentType != types.String {
-					return core.TypeError(segmentType, types.String)
+					return core.NewPathError(core.TypeError(segmentType, types.String), byPath, int64(idx))
 				}
 
 				if isTarget {
@@ -90,13 +150,21 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 
 				if isTarget {
 					if err := arr.Set(segment.(Int), value); err != nil {
-						return err
+						return core.NewPathError(err, byPath, int64(idx))
 					}
 				}
 			}
 
 			// set new parent
-			if err := SetIn(ctx, to, byPath[0:idx-1], parent); err != nil {
+			nextPath := byPath
+
+			if idx > 0 {
+				nextPath = byPath[0 : idx-1]
+			} else {
+				nextPath = byPath[0:]
+			}
+
+			if err := SetIn(ctx, to, nextPath, parent); err != nil {
 				return err
 			}
 
