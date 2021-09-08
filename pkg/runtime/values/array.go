@@ -282,21 +282,29 @@ func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, core.
 		return None, nil
 	}
 
-	if typ := path[0].Type(); typ != types.Int {
-		return None, core.NewPathError(core.TypeError(typ, types.Int), 0)
+	segmentIdx := 0
+
+	if typ := path[segmentIdx].Type(); typ != types.Int {
+		return None, core.NewPathError(core.TypeError(typ, types.Int), segmentIdx)
 	}
 
-	first := t.Get(path[0].(Int))
+	first := t.Get(path[segmentIdx].(Int))
 
 	if len(path) == 1 {
 		return first, nil
 	}
 
+	segmentIdx++
+
+	if first == None || first == nil {
+		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
+	}
+
 	getter, ok := first.(core.Getter)
 
 	if !ok {
-		return GetIn(ctx, first, path[1:])
+		return GetIn(ctx, first, path[segmentIdx:])
 	}
 
-	return getter.GetIn(ctx, path[1:])
+	return getter.GetIn(ctx, path[segmentIdx:])
 }

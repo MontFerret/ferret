@@ -34,7 +34,7 @@ func (to *TestObject) GetIn(ctx context.Context, path []core.Value) (core.Value,
 
 	for i, segment := range path {
 		if segment.String() == to.failAt {
-			return values.None, core.NewPathError(core.ErrTerminated, i)
+			return values.None, core.NewPathError(core.ErrInvalidPath, i)
 		}
 
 		next, err := values.GetIn(ctx, current, []core.Value{segment})
@@ -218,11 +218,7 @@ func TestMemberExpression(t *testing.T) {
 
 				_, err = exp.Exec(context.Background(), root.Fork())
 				So(err, ShouldNotBeNil)
-				So(err, ShouldHaveSameTypeAs, core.NewPathError(core.ErrTerminated, 0))
-
-				pathErr := err.(core.PathError)
-
-				So(pathErr.Segment(), ShouldEqual, 1)
+				So(err.Error(), ShouldEqual, core.NewPathError(core.ErrInvalidPath, 1).Format(args))
 
 				o.AssertExpectations(t)
 			})

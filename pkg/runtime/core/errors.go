@@ -21,6 +21,7 @@ type (
 		error
 		Cause() error
 		Segment() int
+		Format(path []Value) string
 	}
 
 	// NativePathError represents a default implementation of GetterError interface.
@@ -57,6 +58,16 @@ func (e *NativePathError) Segment() int {
 	return e.segment
 }
 
+func (e *NativePathError) Format(path []Value) string {
+	err := e.cause
+
+	if err == ErrInvalidPath && len(path) > e.segment {
+		return err.Error() + " '" + path[e.segment].String() + "'"
+	}
+
+	return err.Error()
+}
+
 func (e *SourceErrorDetail) Error() string {
 	return e.ComputeError.Error()
 }
@@ -75,6 +86,7 @@ var (
 	ErrNotImplemented        = errors.New("not implemented")
 	ErrNotSupported          = errors.New("not supported")
 	ErrNoMoreData            = errors.New("no more data")
+	ErrInvalidPath           = errors.New("cannot read property")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"

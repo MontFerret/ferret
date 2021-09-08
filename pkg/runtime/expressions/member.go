@@ -2,6 +2,7 @@ package expressions
 
 import (
 	"context"
+	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -73,13 +74,13 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		// if invalid index is returned, we ignore the optionality check
 		// and return the pathErr
 		if segmentIdx >= len(e.path) {
-			return values.None, pathErr
+			return values.None, errors.New(pathErr.Format(segments))
 		}
 
 		segment := e.path[segmentIdx]
 
 		if !segment.optional {
-			return values.None, pathErr
+			return values.None, errors.New(pathErr.Format(segments))
 		}
 
 		return values.None, nil

@@ -301,21 +301,24 @@ func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, core
 		return None, nil
 	}
 
-	if typ := path[0].Type(); typ != types.String {
-		return None, core.NewPathError(core.TypeError(typ, types.String), 0)
-	}
-
-	first, _ := t.Get(path[0].(String))
+	segmentIdx := 0
+	first, _ := t.Get(ToString(path[segmentIdx]))
 
 	if len(path) == 1 {
 		return first, nil
 	}
 
+	segmentIdx++
+
+	if first == None || first == nil {
+		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
+	}
+
 	getter, ok := first.(core.Getter)
 
 	if !ok {
-		return GetIn(ctx, first, path[1:])
+		return GetIn(ctx, first, path[segmentIdx:])
 	}
 
-	return getter.GetIn(ctx, path[1:])
+	return getter.GetIn(ctx, path[segmentIdx:])
 }
