@@ -32,14 +32,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 
 		switch curVal := result.(type) {
 		case *Object:
-			if segType != types.String {
-				return nil, core.NewPathError(
-					core.TypeError(segType, types.String),
-					i,
-				)
-			}
-
-			result, _ = curVal.Get(segment.(String))
+			result, _ = curVal.Get(ToString(segment))
 		case *Array:
 			if segType != types.Int {
 				return nil, core.NewPathError(
@@ -61,16 +54,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 		case core.Getter:
 			return curVal.GetIn(ctx, byPath[i:])
 		default:
-			return None, core.NewPathError(
-				core.TypeError(
-					from.Type(),
-					types.Array,
-					types.Object,
-					types.String,
-					core.NewType("Getter"),
-				),
-				i,
-			)
+			return None, core.NewPathError(core.ErrInvalidPath, i)
 		}
 	}
 
