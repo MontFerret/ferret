@@ -8,12 +8,13 @@ import (
 )
 
 type MemberExpression struct {
-	src    core.SourceMap
-	source core.Expression
-	path   []*MemberPathSegment
+	src             core.SourceMap
+	source          core.Expression
+	path            []*MemberPathSegment
+	preCompiledPath []core.Value
 }
 
-func NewMemberExpression(src core.SourceMap, source core.Expression, path []*MemberPathSegment) (*MemberExpression, error) {
+func NewMemberExpression(src core.SourceMap, source core.Expression, path []*MemberPathSegment, preCompiledPath []core.Value) (*MemberExpression, error) {
 	if source == nil {
 		return nil, core.Error(core.ErrMissedArgument, "source")
 	}
@@ -22,7 +23,7 @@ func NewMemberExpression(src core.SourceMap, source core.Expression, path []*Mem
 		return nil, core.Error(core.ErrMissedArgument, "path expressions")
 	}
 
-	return &MemberExpression{src, source, path}, nil
+	return &MemberExpression{src, source, path, preCompiledPath}, nil
 }
 
 func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
@@ -39,17 +40,21 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		)
 	}
 
-	segments := make([]core.Value, len(e.path))
+	var segments = e.preCompiledPath
 
-	// unfold the path
-	for i, seg := range e.path {
-		segment, err := seg.exp.Exec(ctx, scope)
+	if e.preCompiledPath == nil {
+		segments = make([]core.Value, len(e.path))
 
-		if err != nil {
-			return values.None, err
+		// unfold the path
+		for i, seg := range e.path {
+			segment, err := seg.exp.Exec(ctx, scope)
+
+			if err != nil {
+				return values.None, err
+			}
+
+			segments[i] = segment
 		}
-
-		segments[i] = segment
 	}
 
 	var pathErr core.PathError

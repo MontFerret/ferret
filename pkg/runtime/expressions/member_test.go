@@ -96,6 +96,7 @@ func TestMemberExpression(t *testing.T) {
 					return o, nil
 				}),
 				segments,
+				nil,
 			)
 
 			So(err, ShouldBeNil)
@@ -137,6 +138,7 @@ func TestMemberExpression(t *testing.T) {
 					return o, nil
 				}),
 				segments,
+				nil,
 			)
 
 			So(err, ShouldBeNil)
@@ -201,6 +203,7 @@ func TestMemberExpression(t *testing.T) {
 						return o, nil
 					}),
 					segments,
+					nil,
 				)
 
 				So(err, ShouldBeNil)
@@ -272,6 +275,7 @@ func TestMemberExpression(t *testing.T) {
 						return o, nil
 					}),
 					segments,
+					nil,
 				)
 
 				So(err, ShouldBeNil)

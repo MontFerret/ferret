@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/clauses"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/pkg/errors"
 	"regexp"
@@ -877,6 +878,8 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 
 	children := ctx.AllMemberExpressionPath()
 	path := make([]*expressions.MemberPathSegment, 0, len(children))
+	preCompiledPath := make([]core.Value, 0, len(children))
+	skipOptimization := false
 
 	for _, memberPath := range children {
 		var exp core.Expression
@@ -903,6 +906,18 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 			return nil, err
 		}
 
+		if !skipOptimization {
+			switch t := exp.(type) {
+			case literals.StringLiteral:
+				preCompiledPath = append(preCompiledPath, values.NewString(string(t)))
+			case literals.IntLiteral:
+				preCompiledPath = append(preCompiledPath, values.NewInt(int(t)))
+			default:
+				skipOptimization = true
+				preCompiledPath = nil
+			}
+		}
+
 		path = append(path, segment)
 	}
 
@@ -910,6 +925,7 @@ func (v *visitor) doVisitMemberExpression(ctx *fql.MemberExpressionContext, scop
 		v.getSourceMap(ctx),
 		source,
 		path,
+		preCompiledPath,
 	)
 }
 
