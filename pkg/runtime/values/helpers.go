@@ -35,8 +35,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			if segType != types.String {
 				return nil, core.NewPathError(
 					core.TypeError(segType, types.String),
-					byPath,
-					int64(i),
+					i,
 				)
 			}
 
@@ -45,8 +44,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			if segType != types.Int {
 				return nil, core.NewPathError(
 					core.TypeError(segType, types.Int),
-					byPath,
-					int64(i),
+					i,
 				)
 			}
 
@@ -55,8 +53,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 			if segType != types.Int {
 				return nil, core.NewPathError(
 					core.TypeError(segType, types.Int),
-					byPath,
-					int64(i),
+					i,
 				)
 			}
 
@@ -72,8 +69,7 @@ func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Valu
 					types.String,
 					core.NewType("Getter"),
 				),
-				byPath,
-				int64(i),
+				i,
 			)
 		}
 	}
@@ -100,8 +96,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			if segmentType != types.String {
 				return core.NewPathError(
 					core.TypeError(segmentType, types.String),
-					byPath,
-					int64(idx),
+					idx,
 				)
 			}
 
@@ -114,8 +109,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			if segmentType != types.Int {
 				return core.NewPathError(
 					core.TypeError(segmentType, types.Int),
-					byPath,
-					int64(idx),
+					idx,
 				)
 			}
 
@@ -123,7 +117,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				current = parVal.Get(segment.(Int))
 			} else {
 				if err := parVal.Set(segment.(Int), value); err != nil {
-					return core.NewPathError(err, byPath, int64(idx))
+					return core.NewPathError(err, idx)
 				}
 			}
 		case core.Setter:
@@ -138,7 +132,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				parent = obj
 
 				if segmentType != types.String {
-					return core.NewPathError(core.TypeError(segmentType, types.String), byPath, int64(idx))
+					return core.NewPathError(core.TypeError(segmentType, types.String), idx)
 				}
 
 				if isTarget {
@@ -150,7 +144,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 
 				if isTarget {
 					if err := arr.Set(segment.(Int), value); err != nil {
-						return core.NewPathError(err, byPath, int64(idx))
+						return core.NewPathError(err, idx)
 					}
 				}
 			}
@@ -175,6 +169,30 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 	}
 
 	return nil
+}
+
+func ReturnOrNext(ctx context.Context, path []core.Value, idx int, out core.Value, err error) (core.Value, core.PathError) {
+	if err != nil {
+		pathErr, ok := err.(core.PathError)
+
+		if ok {
+			return None, core.NewPathErrorFrom(pathErr, idx)
+		}
+
+		return None, core.NewPathError(err, idx)
+	}
+
+	if len(path) > (idx + 1) {
+		out, pathErr := GetIn(ctx, out, path[idx+1:])
+
+		if pathErr != nil {
+			return None, core.NewPathErrorFrom(pathErr, idx)
+		}
+
+		return out, nil
+	}
+
+	return out, nil
 }
 
 func Parse(input interface{}) core.Value {

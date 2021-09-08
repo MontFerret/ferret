@@ -159,17 +159,18 @@ func (h *HTTPHeaders) Get(key string) string {
 	return textproto.MIMEHeader(h.values).Get(key)
 }
 
-func (h *HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (h *HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
 
-	segment := path[0]
+	segmentIx := 0
+	segment := path[segmentIx]
 
 	err := core.ValidateType(segment, types.String)
 
 	if err != nil {
-		return values.None, err
+		return values.None, core.NewPathError(err, segmentIx)
 	}
 
 	return values.NewString(h.Get(segment.String())), nil

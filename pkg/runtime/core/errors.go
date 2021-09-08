@@ -19,36 +19,41 @@ type (
 	// and contains segment of a given path that caused the error.
 	PathError interface {
 		error
-		Path() []Value
-		Segment() int64
+		Cause() error
+		Segment() int
 	}
 
-	// DefaultPathError represents a default implementation of GetterError interface.
-	DefaultPathError struct {
+	// NativePathError represents a default implementation of GetterError interface.
+	NativePathError struct {
 		cause   error
-		path    []Value
-		segment int64
+		segment int
 	}
 )
 
-// NewPathError is a constructor function of DefaultPathError struct.
-func NewPathError(err error, path []Value, segment int64) PathError {
-	return &DefaultPathError{
+// NewPathError is a constructor function of NativePathError struct.
+func NewPathError(err error, segment int) PathError {
+	return &NativePathError{
 		cause:   err,
-		path:    path,
 		segment: segment,
 	}
 }
 
-func (e *DefaultPathError) Error() string {
+// NewPathErrorFrom is a constructor function of NativePathError struct
+// that accepts nested PathError and original segment index.
+// It sums indexes to get the correct one that points to original path.
+func NewPathErrorFrom(err PathError, segment int) PathError {
+	return NewPathError(err.Cause(), err.Segment()+segment)
+}
+
+func (e *NativePathError) Cause() error {
+	return e.cause
+}
+
+func (e *NativePathError) Error() string {
 	return e.cause.Error()
 }
 
-func (e *DefaultPathError) Path() []Value {
-	return e.path
-}
-
-func (e *DefaultPathError) Segment() int64 {
+func (e *NativePathError) Segment() int {
 	return e.segment
 }
 

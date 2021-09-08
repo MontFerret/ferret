@@ -302,7 +302,7 @@ func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, core
 	}
 
 	if typ := path[0].Type(); typ != types.String {
-		return None, core.NewPathError(core.TypeError(typ, types.String), path, 0)
+		return None, core.NewPathError(core.TypeError(typ, types.String), 0)
 	}
 
 	first, _ := t.Get(path[0].(String))

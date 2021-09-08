@@ -39,8 +39,6 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		)
 	}
 
-	// keep information about all optional path segments
-	optionals := make(map[int]bool)
 	segments := make([]core.Value, len(e.path))
 
 	// unfold the path
@@ -52,10 +50,6 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 		}
 
 		segments[i] = segment
-
-		if seg.optional {
-			optionals[i] = true
-		}
 	}
 
 	var pathErr core.PathError
@@ -70,11 +64,16 @@ func (e *MemberExpression) Exec(ctx context.Context, scope *core.Scope) (core.Va
 	}
 
 	if pathErr != nil {
-		_, isOptional := optionals[int(pathErr.Segment())]
+		segmentIdx := pathErr.Segment()
+		// if invalid index is returned, we ignore the optionality check
+		// and return the pathErr
+		if segmentIdx >= len(e.path) {
+			return values.None, pathErr
+		}
 
-		// we either cannot determine what segment caused the issue
-		// or it is not optional, thus we just return the error
-		if !isOptional {
+		segment := e.path[segmentIdx]
+
+		if !segment.optional {
 			return values.None, pathErr
 		}
 
