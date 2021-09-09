@@ -12,7 +12,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -162,20 +161,14 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, error) {
+func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
 
 	segment := path[0]
 
-	err := core.ValidateType(segment, types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	switch segment.(values.String) {
+	switch values.ToString(segment) {
 	case "name":
 		return values.NewString(c.Name), nil
 	case "value":

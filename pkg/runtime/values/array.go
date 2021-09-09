@@ -277,28 +277,34 @@ func (t *Array) SortWith(sorter ArraySorter) *Array {
 	return res
 }
 
-func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return None, nil
 	}
 
-	if typ := path[0].Type(); typ != types.Int {
-		return None, core.TypeError(typ, types.Int)
+	segmentIdx := 0
+
+	if typ := path[segmentIdx].Type(); typ != types.Int {
+		return None, core.NewPathError(core.TypeError(typ, types.Int), segmentIdx)
 	}
 
-	first := t.Get(path[0].(Int))
+	first := t.Get(path[segmentIdx].(Int))
 
 	if len(path) == 1 {
 		return first, nil
 	}
 
-	getter, ok := first.(core.Getter)
-	if !ok {
-		return None, core.TypeError(
-			first.Type(),
-			core.NewType("Getter"),
-		)
+	segmentIdx++
+
+	if first == None || first == nil {
+		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
 	}
 
-	return getter.GetIn(ctx, path[1:])
+	getter, ok := first.(core.Getter)
+
+	if !ok {
+		return GetIn(ctx, first, path[segmentIdx:])
+	}
+
+	return getter.GetIn(ctx, path[segmentIdx:])
 }

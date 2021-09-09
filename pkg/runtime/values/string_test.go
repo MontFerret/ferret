@@ -63,5 +63,12 @@ func TestString(t *testing.T) {
 			So(string(json2), ShouldEqual, fmt.Sprintf(`"%s"`, value))
 		})
 	})
+	Convey(".At", t, func() {
+		Convey("It should return a character", func() {
+			v := values.NewString("abcdefg")
+			c := v.At(2)
 
+			So(string(c), ShouldEqual, "c")
+		})
+	})
 }

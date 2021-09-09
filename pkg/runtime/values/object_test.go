@@ -444,14 +444,15 @@ func TestObject(t *testing.T) {
 
 		Convey("Should error when input is not correct", func() {
 
-			Convey("Should error when path[0] is not a string", func() {
+			Convey("Should return None when path[0] is not a string", func() {
 				obj := values.NewObject()
 				path := []core.Value{values.NewInt(0)}
 
 				el, err := obj.GetIn(ctx, path)
 
-				So(err, ShouldBeError)
-				So(el.Compare(values.None), ShouldEqual, 0)
+				So(err, ShouldBeNil)
+				So(el, ShouldNotBeNil)
+				So(el.Type().String(), ShouldEqual, types.None.String())
 			})
 
 			Convey("Should error when first received item is not a Getter and len(path) > 1", func() {

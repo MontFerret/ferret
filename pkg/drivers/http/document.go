@@ -134,12 +134,12 @@ func (doc *HTMLDocument) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(doc.element)
 }
 
-func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInDocument(ctx, doc, path)
+func (doc *HTMLDocument) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInDocument(ctx, path, doc)
 }
 
-func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInDocument(ctx, doc, path, value)
+func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInDocument(ctx, path, doc, value)
 }
 
 func (doc *HTMLDocument) GetNodeType(_ context.Context) (values.Int, error) {

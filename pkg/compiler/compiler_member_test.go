@@ -557,9 +557,21 @@ func BenchmarkMemberObject(b *testing.B) {
 
 func BenchmarkMemberObjectComputed(b *testing.B) {
 	p := compiler.New().MustCompile(`
-				LET obj = { "foo": "bar"}
+				LET obj = {
+					first: {
+						second: {
+							third: {
+								fourth: {
+									fifth: {
+										bottom: true
+									}
+								}
+							}
+						}
+					}
+				}
 
-				RETURN obj["foo"]
+				RETURN obj["first"]["second"]["third"]["fourth"]["fifth"]["bottom"]
 			`)
 
 	for n := 0; n < b.N; n++ {

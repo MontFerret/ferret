@@ -77,16 +77,19 @@ func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(responseMarshal(*resp), jettison.NoHTMLEscaping())
 }
 
-func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return resp, nil
 	}
 
-	if typ := path[0].Type(); typ != types.String {
-		return values.None, core.TypeError(typ, types.String)
+	segmentIdx := 0
+	segment := path[segmentIdx]
+
+	if typ := segment.Type(); typ != types.String {
+		return values.None, core.NewPathError(core.TypeError(typ, types.String), segmentIdx)
 	}
 
-	field := path[0].(values.String).String()
+	field := segment.String()
 
 	switch field {
 	case "url", "URL":
@@ -100,7 +103,13 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 			return resp.Headers, nil
 		}
 
-		return resp.Headers.GetIn(ctx, path[1:])
+		out, pathErr := resp.Headers.GetIn(ctx, path[1:])
+
+		if pathErr != nil {
+			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+		}
+
+		return out, nil
 	case "responseTime":
 		return values.NewFloat(resp.ResponseTime), nil
 

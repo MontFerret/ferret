@@ -481,12 +481,12 @@ func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.Strin
 	return values.True, nil
 }
 
-func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInElement(ctx, el, path)
+func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInElement(ctx, path, el)
 }
 
-func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInElement(ctx, el, path, value)
+func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInElement(ctx, path, el, value)
 }
 
 func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
