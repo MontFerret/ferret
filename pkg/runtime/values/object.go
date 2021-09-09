@@ -296,28 +296,29 @@ func (t *Object) Clone() core.Cloneable {
 	return cloned
 }
 
-func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return None, nil
 	}
 
-	if typ := path[0].Type(); typ != types.String {
-		return None, core.TypeError(typ, types.String)
-	}
-
-	first, _ := t.Get(path[0].(String))
+	segmentIdx := 0
+	first, _ := t.Get(ToString(path[segmentIdx]))
 
 	if len(path) == 1 {
 		return first, nil
 	}
 
-	getter, ok := first.(core.Getter)
-	if !ok {
-		return None, core.TypeError(
-			first.Type(),
-			core.NewType("Getter"),
-		)
+	segmentIdx++
+
+	if first == None || first == nil {
+		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
 	}
 
-	return getter.GetIn(ctx, path[1:])
+	getter, ok := first.(core.Getter)
+
+	if !ok {
+		return GetIn(ctx, first, path[segmentIdx:])
+	}
+
+	return getter.GetIn(ctx, path[segmentIdx:])
 }

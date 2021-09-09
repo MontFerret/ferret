@@ -257,12 +257,12 @@ func (p *HTMLPage) Copy() core.Value {
 	return values.None
 }
 
-func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInPage(ctx, p, path)
+func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInPage(ctx, path, p)
 }
 
-func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInPage(ctx, p, path, value)
+func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInPage(ctx, path, p, value)
 }
 
 func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {

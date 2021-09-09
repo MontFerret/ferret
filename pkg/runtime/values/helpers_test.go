@@ -46,7 +46,7 @@ func (t *CustomValue) Copy() core.Value {
 	return values.None
 }
 
-func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
@@ -65,7 +65,7 @@ func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value,
 	return values.GetIn(ctx, propValue, path[1:])
 }
 
-func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
 	if len(path) == 0 {
 		return nil
 	}
