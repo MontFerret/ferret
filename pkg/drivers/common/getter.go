@@ -259,7 +259,7 @@ func GetInElement(ctx context.Context, path []core.Value, el drivers.HTMLElement
 		case "parentElement":
 			out, err = el.GetParentElement(ctx)
 		default:
-			out, err = GetInNode(ctx, path, el)
+			return GetInNode(ctx, path, el)
 		}
 
 		return values.ReturnOrNext(ctx, path, segmentIdx, out, err)
@@ -273,7 +273,6 @@ func GetInNode(ctx context.Context, path []core.Value, node drivers.HTMLNode) (c
 		return node, nil
 	}
 
-	nt := node.Type()
 	segmentIdx := 0
 	segment := path[segmentIdx]
 
@@ -282,13 +281,7 @@ func GetInNode(ctx context.Context, path []core.Value, node drivers.HTMLNode) (c
 
 	switch segment.Type() {
 	case types.Int:
-		if nt == drivers.HTMLElementType || nt == drivers.HTMLDocumentType {
-			re := node.(drivers.HTMLNode)
-
-			out, err = re.GetChildNode(ctx, values.ToInt(segment))
-		} else {
-			out, err = values.GetIn(ctx, node, path[1:])
-		}
+		out, err = node.GetChildNode(ctx, values.ToInt(segment))
 	case types.String:
 		segment := segment.(values.String)
 
