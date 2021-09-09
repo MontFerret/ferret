@@ -11,8 +11,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
 	"github.com/wI2L/jettison"
 )
 
@@ -167,13 +165,7 @@ func (h *HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, c
 	segmentIx := 0
 	segment := path[segmentIx]
 
-	err := core.ValidateType(segment, types.String)
-
-	if err != nil {
-		return values.None, core.NewPathError(err, segmentIx)
-	}
-
-	return values.NewString(h.Get(segment.String())), nil
+	return values.NewString(h.Get(string(values.ToString(segment)))), nil
 }
 
 func (h *HTTPHeaders) ForEach(predicate func(value []string, key string) bool) {
