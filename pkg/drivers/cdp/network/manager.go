@@ -605,7 +605,7 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 			if ctx.Err() == nil {
 				log.Trace().Msg("creating frame execution context")
 
-				ec, err := eval.New(ctx, m.logger, m.client, repl.Frame.ID)
+				ec, err := eval.Create(ctx, m.logger, m.client, repl.Frame.ID)
 
 				if err != nil {
 					log.Trace().Err(err).Msg("failed to create frame execution context")
