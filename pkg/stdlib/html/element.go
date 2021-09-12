@@ -21,27 +21,27 @@ func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return el.QuerySelector(ctx, selector)
+	return el.QuerySelector(ctx, drivers.ToQuerySelector(selector))
 }
 
-func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {
+func queryArgs(args []core.Value) (drivers.HTMLElement, drivers.QuerySelector, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return nil, values.EmptyString, err
+		return nil, drivers.QuerySelector{}, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return nil, values.EmptyString, err
+		return nil, drivers.QuerySelector{}, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	err = core.ValidateType(args[1], types.String, drivers.QuerySelectorType)
 
 	if err != nil {
-		return nil, values.EmptyString, err
+		return nil, drivers.QuerySelector{}, err
 	}
 
-	return el, args[1].(values.String), nil
+	return el, drivers.ToQuerySelector(args[1]), nil
 }

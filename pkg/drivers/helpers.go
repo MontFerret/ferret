@@ -48,6 +48,17 @@ func ToElement(value core.Value) (HTMLElement, error) {
 	}
 }
 
+func ToQuerySelector(value core.Value) QuerySelector {
+	switch v := value.(type) {
+	case QuerySelector:
+		return v
+	case values.String:
+		return NewCSSSelector(v)
+	default:
+		return NewCSSSelector(values.NewString(value.String()))
+	}
+}
+
 func SetDefaultParams(opts *Options, params Params) Params {
 	if params.Headers == nil && opts.Headers != nil {
 		params.Headers = NewHTTPHeaders()

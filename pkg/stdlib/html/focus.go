@@ -28,5 +28,7 @@ func Focus(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.True, el.Focus(ctx)
 	}
 
-	return values.True, el.FocusBySelector(ctx, values.ToString(args[1]))
+	selector := drivers.ToQuerySelector(args[1])
+
+	return values.True, el.FocusBySelector(ctx, selector)
 }

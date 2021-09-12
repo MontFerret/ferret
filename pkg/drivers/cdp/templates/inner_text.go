@@ -28,47 +28,81 @@ func GetInnerText(id runtime.RemoteObjectID) *eval.Function {
 	return eval.F(getInnerText).WithArgRef(id)
 }
 
-var setInnerTextBySelector = fmt.Sprintf(`
+var (
+	setInnerTextByCSSSelector = fmt.Sprintf(`
 (el, selector, value) => {
 	const found = el.querySelector(selector);
 
-	if (found == null) {
-		throw new Error(%s);
-	}
+	%s
 
 	found.innerText = value;
-}`, ParamErr(drivers.ErrNotFound))
+}`, notFoundErrorFragment)
 
-func SetInnerTextBySelector(id runtime.RemoteObjectID, selector, value values.String) *eval.Function {
-	return eval.F(setInnerTextBySelector).WithArgRef(id).WithArgValue(selector).WithArgValue(value)
+	setInnerTextByXPathSelector = fmt.Sprintf(`
+(el, selector, value) => {
+	%s
+
+	%s
+
+	found.innerText = value;
+}`, xpathAsElementFragment, notFoundErrorFragment)
+)
+
+func SetInnerTextBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, value values.String) *eval.Function {
+	return toFunction(selector, setInnerTextByCSSSelector, setInnerTextByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector).
+		WithArgValue(value)
 }
 
-var getInnerTextBySelector = fmt.Sprintf(`
+var (
+	getInnerTextByCSSSelector = fmt.Sprintf(`
 (el, selector) => {
 	const found = el.querySelector(selector);
 
-	if (found == null) {
-		throw new Error(%s);
-	}
+	%s
 
 	return found.innerText;
-}`, ParamErr(drivers.ErrNotFound))
+}`, notFoundErrorFragment)
 
-func GetInnerTextBySelector(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(getInnerTextBySelector).WithArgRef(id).WithArgValue(selector)
+	getInnerTextByXPathSelector = fmt.Sprintf(`
+(el, selector) => {
+	%s
+
+	%s
+
+	return found.innerText;
+}`, xpathAsElementFragment, notFoundErrorFragment)
+)
+
+func GetInnerTextBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, getInnerTextByCSSSelector, getInnerTextByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }
 
-var getInnerTextBySelectorAll = fmt.Sprintf(`
+var (
+	getInnerTextByCSSSelectorAll = fmt.Sprintf(`
 (el, selector) => {
 	const found = el.querySelectorAll(selector);
 
-	if (found == null) {
-		throw new Error(%s);
-	}
+	%s
 
 	return Array.from(found).map(i => i.innerText);
-}`, ParamErr(drivers.ErrNotFound))
+}`, notFoundErrorFragment)
 
-func GetInnerTextBySelectorAll(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(getInnerTextBySelectorAll).WithArgRef(id).WithArgValue(selector)
+	getInnerTextByXPathSelectorAll = fmt.Sprintf(`
+(el, selector) => {
+	%s
+
+	%s
+
+	return found.map(i => i.innerText);
+}`, xpathAsElementArrayFragment, notFoundErrorFragment)
+)
+
+func GetInnerTextBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, getInnerTextByCSSSelectorAll, getInnerTextByXPathSelectorAll).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }

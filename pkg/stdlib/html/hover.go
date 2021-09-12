@@ -36,5 +36,7 @@ func Hover(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	return values.True, el.HoverBySelector(ctx, values.ToString(args[1]))
+	selector := drivers.ToQuerySelector(args[1])
+
+	return values.True, el.HoverBySelector(ctx, selector)
 }

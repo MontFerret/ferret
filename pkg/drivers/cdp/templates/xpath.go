@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/runtime"
@@ -68,6 +69,20 @@ const xpath = `(el, expression) => {
 	return result;
 }
 `
+
+var (
+	xpathAsElementFragment = fmt.Sprintf(`
+const toElement = %s;
+const xpath = %s;
+const found = toElement(xpath(el, selector));
+`, toElementFragment, xpath)
+
+	xpathAsElementArrayFragment = fmt.Sprintf(`
+const toArray = %s;
+const xpath = %s;
+const found = toArray(xpath(el, selector));
+`, toElementArrayFragment, xpath)
+)
 
 func XPath(id runtime.RemoteObjectID, expression values.String) *eval.Function {
 	return eval.F(xpath).WithArgRef(id).WithArgValue(expression)

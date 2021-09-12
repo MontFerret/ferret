@@ -4,37 +4,63 @@ import (
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
-var querySelector = fmt.Sprintf(`
+const (
+	queryCSSSelectorFragment = "const found = el.querySelector(selector);"
+
+	queryCSSSelectorAllFragment = "const found = el.querySelectorAll(selector);"
+)
+
+var (
+	queryCSSSelector = fmt.Sprintf(`
 		(el, selector) => {
 			const found = el.querySelector(selector);
 	
-			if (found == null) {
-				throw new Error(%s);
-			}
+			%s
 	
 			return found;
 		}
 	`,
-	ParamErr(drivers.ErrNotFound),
+		notFoundErrorFragment,
+	)
+	queryXPathSelector = fmt.Sprintf(`
+		(el, selector) => {
+			%s
+
+			%s
+	
+			return found;
+		}
+	`,
+		xpathAsElementFragment, notFoundErrorFragment,
+	)
 )
 
-func QuerySelector(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(querySelector).WithArgRef(id).WithArgValue(selector)
+func QuerySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, queryCSSSelector, queryXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }
 
-const querySelectorAll = `(el, selector) => {
+const queryCSSSelectorAll = `(el, selector) => {
 	return el.querySelectorAll(selector);
 }`
 
-func QuerySelectorAll(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(querySelectorAll).WithArgRef(id).WithArgValue(selector)
+var queryXPathSelectorAll = fmt.Sprintf(`(el, selector) => {
+	%s
+
+	return found;
+}`, xpathAsElementArrayFragment)
+
+func QuerySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, queryCSSSelectorAll, queryXPathSelectorAll).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }
 
-const existsBySelector = `
+const existsByCSSSelector = `
 	(el, selector) => {
 		const found = el.querySelector(selector);
 
@@ -42,11 +68,21 @@ const existsBySelector = `
 	}
 `
 
-func ExistsBySelector(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(existsBySelector).WithArgRef(id).WithArgValue(selector)
+var existsByXPathSelector = fmt.Sprintf(`
+	(el, selector) => {
+		%s
+
+		return found != null;
+	}
+`, xpathAsElementFragment)
+
+func ExistsBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, existsByCSSSelector, existsByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }
 
-const countBySelector = `
+const countByCSSSelector = `
 	(el, selector) => {
 		const found = el.querySelectorAll(selector);
 
@@ -54,6 +90,16 @@ const countBySelector = `
 	}
 `
 
-func CountBySelector(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(countBySelector).WithArgRef(id).WithArgValue(selector)
+var countByXPathSelector = fmt.Sprintf(`
+	(el, selector) => {
+		%s
+
+		return found.length;
+	}
+`, xpathAsElementArrayFragment)
+
+func CountBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, countByCSSSelector, countByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }

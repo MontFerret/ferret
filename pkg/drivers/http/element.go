@@ -294,23 +294,40 @@ func (el *HTMLElement) GetChildNode(_ context.Context, idx values.Int) (core.Val
 	return el.children.Get(idx), nil
 }
 
-func (el *HTMLElement) QuerySelector(_ context.Context, selector values.String) (core.Value, error) {
-	selection := el.selection.Find(selector.String())
+func (el *HTMLElement) QuerySelector(ctx context.Context, selector drivers.QuerySelector) (core.Value, error) {
+	if selector.Variant() == drivers.CSSSelector {
+		selection := el.selection.Find(selector.String())
 
-	if selection.Length() == 0 {
-		return values.None, nil
+		if selection.Length() == 0 {
+			return values.None, drivers.ErrNotFound
+		}
+
+		res, err := NewHTMLElement(selection)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		return res, nil
 	}
 
-	res, err := NewHTMLElement(selection)
+	out, err := el.XPath(ctx, values.NewString(selector.String()))
 
 	if err != nil {
 		return values.None, err
 	}
 
-	return res, nil
+	found, err := drivers.ToElement(out)
+
+	// not node was returned
+	if err != nil {
+		return values.None, drivers.ErrNotFound
+	}
+
+	return found, nil
 }
 
-func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
+func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector drivers.QuerySelector) (*values.Array, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -375,7 +392,7 @@ func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.
 	}
 }
 
-func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector, innerHTML values.String) error {
+func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector drivers.QuerySelector, innerHTML values.String) error {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -387,7 +404,7 @@ func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector, inner
 	return nil
 }
 
-func (el *HTMLElement) GetInnerHTMLBySelector(_ context.Context, selector values.String) (values.String, error) {
+func (el *HTMLElement) GetInnerHTMLBySelector(_ context.Context, selector drivers.QuerySelector) (values.String, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -403,7 +420,7 @@ func (el *HTMLElement) GetInnerHTMLBySelector(_ context.Context, selector values
 	return values.NewString(str), nil
 }
 
-func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
+func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector drivers.QuerySelector) (*values.Array, error) {
 	var err error
 	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
@@ -428,7 +445,7 @@ func (el *HTMLElement) GetInnerHTMLBySelectorAll(_ context.Context, selector val
 	return arr, nil
 }
 
-func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector values.String) (values.String, error) {
+func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector drivers.QuerySelector) (values.String, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -438,7 +455,7 @@ func (el *HTMLElement) GetInnerTextBySelector(_ context.Context, selector values
 	return values.NewString(selection.Text()), nil
 }
 
-func (el *HTMLElement) SetInnerTextBySelector(_ context.Context, selector, innerText values.String) error {
+func (el *HTMLElement) SetInnerTextBySelector(_ context.Context, selector drivers.QuerySelector, innerText values.String) error {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -450,7 +467,7 @@ func (el *HTMLElement) SetInnerTextBySelector(_ context.Context, selector, inner
 	return nil
 }
 
-func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector values.String) (*values.Array, error) {
+func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector drivers.QuerySelector) (*values.Array, error) {
 	selection := el.selection.Find(selector.String())
 	arr := values.NewArray(selection.Length())
 
@@ -461,7 +478,7 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector val
 	return arr, nil
 }
 
-func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String) (values.Int, error) {
+func (el *HTMLElement) CountBySelector(_ context.Context, selector drivers.QuerySelector) (values.Int, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -471,7 +488,7 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector values.String
 	return values.NewInt(selection.Size()), nil
 }
 
-func (el *HTMLElement) ExistsBySelector(_ context.Context, selector values.String) (values.Boolean, error) {
+func (el *HTMLElement) ExistsBySelector(_ context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
 	selection := el.selection.Find(selector.String())
 
 	if selection.Length() == 0 {
@@ -527,11 +544,11 @@ func (el *HTMLElement) Click(_ context.Context, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClickBySelector(_ context.Context, _ values.String, _ values.Int) error {
+func (el *HTMLElement) ClickBySelector(_ context.Context, _ drivers.QuerySelector, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ values.String, _ values.Int) error {
+func (el *HTMLElement) ClickBySelectorAll(_ context.Context, _ drivers.QuerySelector, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
@@ -539,7 +556,7 @@ func (el *HTMLElement) Clear(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) ClearBySelector(_ context.Context, _ values.String) error {
+func (el *HTMLElement) ClearBySelector(_ context.Context, _ drivers.QuerySelector) error {
 	return core.ErrNotSupported
 }
 
@@ -547,7 +564,7 @@ func (el *HTMLElement) Input(_ context.Context, _ core.Value, _ values.Int) erro
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) InputBySelector(_ context.Context, _ values.String, _ core.Value, _ values.Int) error {
+func (el *HTMLElement) InputBySelector(_ context.Context, _ drivers.QuerySelector, _ core.Value, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
@@ -555,7 +572,7 @@ func (el *HTMLElement) Press(_ context.Context, _ []values.String, _ values.Int)
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) PressBySelector(_ context.Context, _ values.String, _ []values.String, _ values.Int) error {
+func (el *HTMLElement) PressBySelector(_ context.Context, _ drivers.QuerySelector, _ []values.String, _ values.Int) error {
 	return core.ErrNotSupported
 }
 
@@ -563,7 +580,7 @@ func (el *HTMLElement) Select(_ context.Context, _ *values.Array) (*values.Array
 	return nil, core.ErrNotSupported
 }
 
-func (el *HTMLElement) SelectBySelector(_ context.Context, _ values.String, _ *values.Array) (*values.Array, error) {
+func (el *HTMLElement) SelectBySelector(_ context.Context, _ drivers.QuerySelector, _ *values.Array) (*values.Array, error) {
 	return nil, core.ErrNotSupported
 }
 
@@ -575,7 +592,7 @@ func (el *HTMLElement) Focus(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) FocusBySelector(_ context.Context, _ values.String) error {
+func (el *HTMLElement) FocusBySelector(_ context.Context, _ drivers.QuerySelector) error {
 	return core.ErrNotSupported
 }
 
@@ -583,7 +600,7 @@ func (el *HTMLElement) Blur(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) BlurBySelector(_ context.Context, _ values.String) error {
+func (el *HTMLElement) BlurBySelector(_ context.Context, _ drivers.QuerySelector) error {
 	return core.ErrNotSupported
 }
 
@@ -591,7 +608,7 @@ func (el *HTMLElement) Hover(_ context.Context) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) HoverBySelector(_ context.Context, _ values.String) error {
+func (el *HTMLElement) HoverBySelector(_ context.Context, _ drivers.QuerySelector) error {
 	return core.ErrNotSupported
 }
 
@@ -599,11 +616,11 @@ func (el *HTMLElement) WaitForClass(_ context.Context, _ values.String, _ driver
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForElement(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForElement(_ context.Context, _ drivers.QuerySelector, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForElementAll(_ context.Context, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForElementAll(_ context.Context, _ drivers.QuerySelector, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
@@ -611,11 +628,11 @@ func (el *HTMLElement) WaitForAttribute(_ context.Context, _ values.String, _ co
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttributeBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelector(_ context.Context, _ drivers.QuerySelector, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForAttributeBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForAttributeBySelectorAll(_ context.Context, _ drivers.QuerySelector, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
@@ -623,19 +640,19 @@ func (el *HTMLElement) WaitForStyle(_ context.Context, _ values.String, _ core.V
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyleBySelector(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelector(_ context.Context, _ drivers.QuerySelector, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForStyleBySelectorAll(_ context.Context, _, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForStyleBySelectorAll(_ context.Context, _ drivers.QuerySelector, _ values.String, _ core.Value, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForClassBySelector(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForClassBySelector(_ context.Context, _ drivers.QuerySelector, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 
-func (el *HTMLElement) WaitForClassBySelectorAll(_ context.Context, _, _ values.String, _ drivers.WaitEvent) error {
+func (el *HTMLElement) WaitForClassBySelectorAll(_ context.Context, _ drivers.QuerySelector, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
 }
 

@@ -32,7 +32,7 @@ func Select(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return el.Select(ctx, arr)
 	}
 
-	selector := values.ToString(args[1])
+	selector := drivers.ToQuerySelector(args[1])
 	arr := values.ToArray(ctx, args[2])
 
 	return el.SelectBySelector(ctx, selector, arr)

@@ -39,7 +39,7 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		if args[1].Type() == types.String {
-			selector := values.ToString(args[1])
+			selector := drivers.ToQuerySelector(args[1])
 			exists, err := el.ExistsBySelector(ctx, selector)
 
 			if err != nil {
@@ -69,7 +69,7 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// CLICK(doc, selector)
-	selector := values.ToString(args[1])
+	selector := drivers.ToQuerySelector(args[1])
 	exists, err := el.ExistsBySelector(ctx, selector)
 
 	if err != nil {

@@ -75,7 +75,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		selector := args[1].(values.String)
+		selector := drivers.ToQuerySelector(args[1])
 		class := args[2].(values.String)
 
 		if len(args) == 4 {

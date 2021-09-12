@@ -28,5 +28,5 @@ func Blur(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.Blur(ctx)
 	}
 
-	return values.None, el.BlurBySelector(ctx, values.ToString(args[1]))
+	return values.None, el.BlurBySelector(ctx, drivers.ToQuerySelector(args[1]))
 }

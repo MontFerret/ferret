@@ -34,7 +34,7 @@ func Pagination(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
+	selector := drivers.ToQuerySelector(args[1])
 
 	logger := logging.
 		WithName(logging.FromContext(ctx).With(), "stdlib_html_pagination").
@@ -50,13 +50,13 @@ type (
 	Paging struct {
 		logger   zerolog.Logger
 		page     drivers.HTMLPage
-		selector values.String
+		selector drivers.QuerySelector
 	}
 
 	PagingIterator struct {
 		logger   zerolog.Logger
 		page     drivers.HTMLPage
-		selector values.String
+		selector drivers.QuerySelector
 		pos      values.Int
 	}
 )

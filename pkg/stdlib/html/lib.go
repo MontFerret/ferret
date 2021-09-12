@@ -75,6 +75,7 @@ func RegisterLib(ns core.Namespace) error {
 			"WAIT_NO_STYLE_ALL": WaitNoStyleAll,
 			"WAIT_NAVIGATION":   WaitNavigation,
 			"XPATH":             XPath,
+			"X":                 XPathSelector,
 		}))
 }
 

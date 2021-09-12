@@ -34,7 +34,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.True, el.Input(ctx, args[1], delay)
 	}
 
-	var selector values.String
+	var selector drivers.QuerySelector
 	var value core.Value
 
 	// INPUT(el, valueOrSelector, valueOrOpts)
@@ -52,7 +52,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return values.False, err
 			}
 
-			selector = values.ToString(args[1])
+			selector = drivers.ToQuerySelector(args[1])
 			value = args[2]
 		}
 	} else {
@@ -65,7 +65,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		selector = values.ToString(args[1])
+		selector = drivers.ToQuerySelector(args[1])
 		value = args[2]
 		delay = values.ToInt(args[3])
 	}

@@ -27,7 +27,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	var doc drivers.HTMLDocument
 	var el drivers.HTMLElement
-	var selector values.String
+	var selector drivers.QuerySelector
 	var opts drivers.ScrollOptions
 
 	if len(args) == 3 {
@@ -45,7 +45,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.None, errors.Wrap(err, "document")
 		}
 
-		selector = values.ToString(args[1])
+		selector = drivers.ToQuerySelector(args[1])
 		o, err := toScrollOptions(args[2])
 
 		if err != nil {
@@ -65,7 +65,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return values.None, errors.Wrap(err, "document")
 			}
 
-			selector = values.ToString(args[1])
+			selector = drivers.ToQuerySelector(args[1])
 		} else {
 			el, err = drivers.ToElement(args[0])
 			o, err := toScrollOptions(args[1])
@@ -85,7 +85,7 @@ func ScrollInto(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if doc != nil {
-		if selector != values.EmptyString {
+		if selector.String() != "" {
 			return values.True, doc.ScrollBySelector(ctx, selector, opts)
 		}
 
