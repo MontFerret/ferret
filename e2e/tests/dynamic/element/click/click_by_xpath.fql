@@ -3,8 +3,8 @@ LET page = DOCUMENT(url, true)
 
 LET div = ELEMENT(page, "#wait-class-random")
 
-CLICK(div, "button")
+CLICK(div, X(".//button"))
 
 WAIT_CLASS(page, "#wait-class-random-content", "alert-success", 10000)
 
-RETURN ""
+RETURN TRUE

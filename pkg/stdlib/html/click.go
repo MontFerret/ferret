@@ -32,13 +32,13 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) == 2 {
-		err := core.ValidateType(args[1], types.String, types.Int)
+		err := core.ValidateType(args[1], types.String, types.Int, drivers.QuerySelectorType)
 
 		if err != nil {
 			return values.False, err
 		}
 
-		if args[1].Type() == types.String {
+		if args[1].Type() == types.String || args[1].Type() == drivers.QuerySelectorType {
 			selector := drivers.ToQuerySelector(args[1])
 			exists, err := el.ExistsBySelector(ctx, selector)
 
@@ -56,7 +56,7 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.True, el.Click(ctx, values.ToInt(args[1]))
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	err = core.ValidateType(args[1], types.String, drivers.QuerySelectorType)
 
 	if err != nil {
 		return values.False, err

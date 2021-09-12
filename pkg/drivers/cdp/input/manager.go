@@ -424,7 +424,7 @@ func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
 		Int("count", int(count)).
-		Msg("starting to click on an element by selector")
+		Msg("clicking on an element by selector")
 
 	if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
 		Behavior: drivers.ScrollBehaviorAuto,

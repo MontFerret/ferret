@@ -1,0 +1,25 @@
+LET url = @lab.cdn.dynamic + "/#/lists"
+LET doc = DOCUMENT(url, true)
+
+LET expected = [
+    {"details":'<h5 class="track-artist">MEDUZA</h5><small class="track-name">Piece Of Your Heart (feat. Goodboys)</small>'},
+    {"details":'<h5 class="track-artist">Metanoia Music</h5><small class="track-name">Che Crozz x Orbis - Lift Me Up</small>'}
+]
+
+LET html = (
+    FOR t IN expected
+        RETURN '<li><div class="track-details">' + t.details + '</div></li>'
+)
+
+INNER_HTML_SET(doc, X(".//*[contains(@class, 'track-list')]"), CONCAT_SEPARATOR('\n', html))
+
+LET list = ELEMENT(doc, '.track-list')
+
+LET actual = (
+    FOR item IN ELEMENTS(doc, '.track-list li')
+        RETURN {
+            details: INNER_HTML(item, '.track-details'),
+        }
+)
+
+RETURN T::EQ(actual, expected)

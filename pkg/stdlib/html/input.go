@@ -48,7 +48,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.True, el.Input(ctx, value, delay)
 		default:
 			// INPUT(el, selector, value)
-			if err := core.ValidateType(args[1], types.String); err != nil {
+			if err := validateSelector(args[1]); err != nil {
 				return values.False, err
 			}
 
@@ -57,7 +57,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	} else {
 		// INPUT(el, selector, value, delay)
-		if err := core.ValidateType(args[1], types.String); err != nil {
+		if err := validateSelector(args[1]); err != nil {
 			return values.False, err
 		}
 

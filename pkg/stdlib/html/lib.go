@@ -143,3 +143,7 @@ func toScrollOptions(value core.Value) (drivers.ScrollOptions, error) {
 
 	return result, nil
 }
+
+func validateSelector(value core.Value) error {
+	return core.ValidateType(value, types.String, drivers.QuerySelectorType)
+}

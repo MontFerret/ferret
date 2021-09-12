@@ -36,7 +36,7 @@ func SetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.SetInnerHTML(ctx, values.ToString(args[1]))
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	err = core.ValidateType(args[1], types.String, drivers.QuerySelectorType)
 
 	if err != nil {
 		return values.None, err

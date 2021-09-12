@@ -7,7 +7,7 @@ import (
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
-const xpath = `(el, expression) => {
+const xpath = `(el, expression, resType) => {
 	const unwrap = (item) => {
 		return item.nodeType != 2 ? item : item.nodeValue;
 	};
@@ -15,7 +15,7 @@ const xpath = `(el, expression) => {
 		expression,
 		el,
 		null,
-		XPathResult.ANY_TYPE
+		resType == null ? XPathResult.ANY_TYPE : resType
 	);
 	let result;
 
@@ -58,7 +58,12 @@ const xpath = `(el, expression) => {
 		}
 		case XPathResult.ANY_UNORDERED_NODE_TYPE:
 		case XPathResult.FIRST_ORDERED_NODE_TYPE: {
-			result = unwrap(out.singleNodeValue);
+			const node = out.singleNodeValue;
+			
+			if (node != null) {
+				result = unwrap(node);
+			}
+			
 			break;
 		}
 		default: {
@@ -72,16 +77,14 @@ const xpath = `(el, expression) => {
 
 var (
 	xpathAsElementFragment = fmt.Sprintf(`
-const toElement = %s;
 const xpath = %s;
-const found = toElement(xpath(el, selector));
-`, toElementFragment, xpath)
+const found = xpath(el, selector, XPathResult.FIRST_ORDERED_NODE_TYPE);
+`, xpath)
 
 	xpathAsElementArrayFragment = fmt.Sprintf(`
-const toArray = %s;
 const xpath = %s;
-const found = toArray(xpath(el, selector));
-`, toElementArrayFragment, xpath)
+const found = xpath(el, selector, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+`, xpath)
 )
 
 func XPath(id runtime.RemoteObjectID, expression values.String) *eval.Function {

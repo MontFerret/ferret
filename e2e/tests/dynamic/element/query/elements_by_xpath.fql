@@ -1,0 +1,8 @@
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+LET els = ELEMENTS(doc, X(".//*[contains(@class, 'form-control')]"))
+
+T::NOT::EMPTY(els)
+
+RETURN TRUE
