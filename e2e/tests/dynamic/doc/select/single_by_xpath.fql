@@ -1,0 +1,12 @@
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, { driver: "cdp" })
+
+WAIT_ELEMENT(doc, "form")
+
+LET output = ELEMENT(doc, "#select_output")
+LET result = SELECT(doc, X("//*[@id='select_input']"), ["4"])
+
+T::EQ(output.innerText, "4")
+T::EQ(JSON_STRINGIFY(result), '["4"]')
+
+RETURN NONE

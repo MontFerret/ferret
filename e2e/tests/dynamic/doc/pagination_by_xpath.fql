@@ -1,0 +1,9 @@
+LET url = @lab.cdn.dynamic + "/#/pagination"
+LET page = DOCUMENT(url, true)
+
+LET items = (
+    FOR i IN PAGINATION(page, X("//li[contains(@class, 'page-item-next') and contains(@class, 'page-item') and not(contains(@class, 'disabled'))]"))
+        RETURN i
+)
+
+RETURN T::LEN(items, 5)

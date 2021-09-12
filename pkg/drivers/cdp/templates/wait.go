@@ -242,11 +242,13 @@ func partialWaitEqualityBySelectorAll(id runtime.RemoteObjectID, selector driver
 
 const waitForElementByCSSFragment = `el.querySelector(args[0])`
 
-var waitForElementByXPathFragment = fmt.Sprintf(`
+var waitForElementByXPathFragment = fmt.Sprintf(`(() => {
 const selector = args[0];
 
 %s
-`, xpathAsElementFragment)
+
+return found;
+})()`, xpathAsElementFragment)
 
 func WaitForElement(id runtime.RemoteObjectID, selector drivers.QuerySelector, when drivers.WaitEvent) *eval.Function {
 	var tmpl string

@@ -1,0 +1,8 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET page = DOCUMENT(url, { driver: "cdp" })
+
+FOCUS(page, X("//*[@id='focus-input']"))
+
+WAIT_CLASS(page, "#focus-content", "alert-success")
+
+RETURN TRUE

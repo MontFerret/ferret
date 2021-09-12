@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/rs/zerolog"
 )
 
@@ -28,9 +27,7 @@ func Pagination(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
+	if err := validateSelector(args[1]); err != nil {
 		return values.None, err
 	}
 

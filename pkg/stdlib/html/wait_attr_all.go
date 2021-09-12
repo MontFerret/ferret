@@ -43,7 +43,7 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 	}
 
 	// selector
-	err = core.ValidateType(args[1], types.String)
+	err = validateSelector(args[1])
 
 	if err != nil {
 		return values.None, err

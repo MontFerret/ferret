@@ -44,13 +44,6 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		return values.None, err
 	}
 
-	// selector or attr name
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
@@ -73,6 +66,10 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
+			return values.None, err
+		}
+
+		if err := validateSelector(args[1]); err != nil {
 			return values.None, err
 		}
 

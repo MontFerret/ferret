@@ -43,9 +43,7 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	}
 
 	// selector
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
+	if err := validateSelector(args[1]); err != nil {
 		return values.None, err
 	}
 

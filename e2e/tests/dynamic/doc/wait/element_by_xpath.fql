@@ -1,0 +1,15 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+LET pageSelector = X("//*[@id='page-events']")
+LET elemSelector = X("//*[@id='wait-element-content']")
+LET btnSelector = "#wait-element-btn"
+
+WAIT_ELEMENT(doc, pageSelector)
+
+CLICK(doc, btnSelector)
+
+WAIT_ELEMENT(doc, elemSelector, 10000)
+
+T::TRUE(ELEMENT_EXISTS(doc, elemSelector), "element not found")
+
+RETURN NONE
