@@ -69,11 +69,12 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 			return values.None, err
 		}
 
-		if err := validateSelector(args[1]); err != nil {
+		selector, err := drivers.ToQuerySelector(args[1])
+
+		if err != nil {
 			return values.None, err
 		}
 
-		selector := drivers.ToQuerySelector(args[1])
 		name := args[2].(values.String)
 		value := values.ToString(args[3])
 

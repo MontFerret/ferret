@@ -56,6 +56,12 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
+		selector, err := drivers.ToQuerySelector(args[1])
+
+		if err != nil {
+			return values.None, err
+		}
+
 		// attr name
 		err = core.ValidateType(args[2], types.String)
 
@@ -69,11 +75,6 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		if err := validateSelector(args[1]); err != nil {
-			return values.None, err
-		}
-
-		selector := drivers.ToQuerySelector(args[1])
 		name := args[2].(values.String)
 		value := args[3]
 

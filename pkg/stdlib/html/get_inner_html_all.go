@@ -25,13 +25,11 @@ func GetInnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error
 		return values.None, err
 	}
 
-	err = validateSelector(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
 	}
-
-	selector := drivers.ToQuerySelector(args[1])
 
 	return el.GetInnerHTMLBySelectorAll(ctx, selector)
 }

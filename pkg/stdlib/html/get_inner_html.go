@@ -29,7 +29,11 @@ func GetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return el.GetInnerHTML(ctx)
 	}
 
-	selector := drivers.ToQuerySelector(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	return el.GetInnerHTMLBySelector(ctx, selector)
 }

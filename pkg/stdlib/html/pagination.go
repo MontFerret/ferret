@@ -27,11 +27,11 @@ func Pagination(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	if err := validateSelector(args[1]); err != nil {
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
 		return values.None, err
 	}
-
-	selector := drivers.ToQuerySelector(args[1])
 
 	logger := logging.
 		WithName(logging.FromContext(ctx).With(), "stdlib_html_pagination").

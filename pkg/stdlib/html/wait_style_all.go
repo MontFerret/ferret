@@ -43,7 +43,9 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	}
 
 	// selector
-	if err := validateSelector(args[1]); err != nil {
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
 		return values.None, err
 	}
 
@@ -54,7 +56,6 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	selector := drivers.ToQuerySelector(args[1])
 	name := args[2].(values.String)
 	value := args[3]
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)

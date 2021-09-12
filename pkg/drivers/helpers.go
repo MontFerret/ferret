@@ -3,6 +3,7 @@ package drivers
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func ToPage(value core.Value) (HTMLPage, error) {
@@ -48,14 +49,14 @@ func ToElement(value core.Value) (HTMLElement, error) {
 	}
 }
 
-func ToQuerySelector(value core.Value) QuerySelector {
+func ToQuerySelector(value core.Value) (QuerySelector, error) {
 	switch v := value.(type) {
 	case QuerySelector:
-		return v
+		return v, nil
 	case values.String:
-		return NewCSSSelector(v)
+		return NewCSSSelector(v), nil
 	default:
-		return NewCSSSelector(values.NewString(value.String()))
+		return QuerySelector{}, core.TypeError(value.Type(), types.String, QuerySelectorType)
 	}
 }
 

@@ -29,7 +29,11 @@ func GetInnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return el.GetInnerText(ctx)
 	}
 
-	selector := drivers.ToQuerySelector(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	return el.GetInnerTextBySelector(ctx, selector)
 }

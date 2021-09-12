@@ -40,11 +40,12 @@ func waitElementWhen(ctx context.Context, args []core.Value, when drivers.WaitEv
 		return values.None, err
 	}
 
-	if err := validateSelector(args[1]); err != nil {
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
 		return values.None, err
 	}
 
-	selector := drivers.ToQuerySelector(args[1])
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 2 {
