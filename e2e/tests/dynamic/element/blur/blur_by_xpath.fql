@@ -5,7 +5,7 @@ FOCUS(page, "#focus-input")
 
 WAIT_CLASS(page, "#focus-content", "alert-success")
 
-BLUR(page, X('.//*[@id="focus-content"]'))
+BLUR(page, X('.//*[@id="focus-input"]'))
 
 WAIT_NO_CLASS(page, "#focus-content", "alert-success")
 
