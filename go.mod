@@ -15,7 +15,7 @@ require (
 	github.com/rs/zerolog v1.21.0
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/wI2L/jettison v0.7.1
+	github.com/wI2L/jettison v0.7.2
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.3
