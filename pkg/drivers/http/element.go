@@ -311,85 +311,35 @@ func (el *HTMLElement) QuerySelector(ctx context.Context, selector drivers.Query
 		return res, nil
 	}
 
-	out, err := el.XPath(ctx, values.NewString(selector.String()))
-
-	if err != nil {
-		return values.None, err
-	}
-
-	found, err := drivers.ToElement(out)
-
-	// not node was returned
-	if err != nil {
-		return values.None, drivers.ErrNotFound
-	}
-
-	return found, nil
+	return el.elementByXPath(ctx, selector.String())
 }
 
-func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector drivers.QuerySelector) (*values.Array, error) {
-	selection := el.selection.Find(selector.String())
+func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
+	if selector.Variant() == drivers.CSSSelector {
+		selection := el.selection.Find(selector.String())
 
-	if selection.Length() == 0 {
-		return values.NewArray(0), nil
+		if selection.Length() == 0 {
+			return values.NewArray(0), nil
+		}
+
+		arr := values.NewArray(selection.Length())
+
+		selection.Each(func(i int, selection *goquery.Selection) {
+			el, err := NewHTMLElement(selection)
+
+			if err == nil {
+				arr.Push(el)
+			}
+		})
+
+		return arr, nil
 	}
 
-	arr := values.NewArray(selection.Length())
-
-	selection.Each(func(i int, selection *goquery.Selection) {
-		el, err := NewHTMLElement(selection)
-
-		if err == nil {
-			arr.Push(el)
-		}
-	})
-
-	return arr, nil
+	return el.elementsByXPath(ctx, selector.String())
 }
 
-func (el *HTMLElement) XPath(_ context.Context, expression values.String) (core.Value, error) {
-	h, err := outerHTML(el.selection)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	exp, err := xpath.Compile(expression.String())
-
-	if err != nil {
-		return values.None, err
-	}
-
-	rootNode, err := htmlquery.Parse(strings.NewReader(h))
-
-	if err != nil {
-		return values.None, err
-	}
-
-	out := exp.Evaluate(htmlquery.CreateXPathNavigator(rootNode))
-
-	switch res := out.(type) {
-	case *xpath.NodeIterator:
-		items := values.NewArray(10)
-
-		for {
-			if !res.MoveNext() {
-				break
-			}
-
-			item, err := parseXPathNode(res.Current().(*htmlquery.NodeNavigator))
-
-			if err != nil {
-				return values.None, err
-			}
-
-			items.Push(item)
-		}
-
-		return items, nil
-	default:
-		return values.Parse(res), nil
-	}
+func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+	return el.xpathInternal(ctx, expression.String())
 }
 
 func (el *HTMLElement) SetInnerHTMLBySelector(_ context.Context, selector drivers.QuerySelector, innerHTML values.String) error {
@@ -478,24 +428,44 @@ func (el *HTMLElement) GetInnerTextBySelectorAll(_ context.Context, selector dri
 	return arr, nil
 }
 
-func (el *HTMLElement) CountBySelector(_ context.Context, selector drivers.QuerySelector) (values.Int, error) {
-	selection := el.selection.Find(selector.String())
+func (el *HTMLElement) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
+	if selector.Variant() == drivers.CSSSelector {
+		selection := el.selection.Find(selector.String())
 
-	if selection.Length() == 0 {
-		return values.ZeroInt, nil
+		if selection.Length() == 0 {
+			return values.ZeroInt, nil
+		}
+
+		return values.NewInt(selection.Size()), nil
 	}
 
-	return values.NewInt(selection.Size()), nil
+	found, err := el.elementsByXPath(ctx, selector.String())
+
+	if err != nil {
+		return 0, err
+	}
+
+	return found.Length(), nil
 }
 
-func (el *HTMLElement) ExistsBySelector(_ context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
-	selection := el.selection.Find(selector.String())
+func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
+	if selector.Variant() == drivers.CSSSelector {
+		selection := el.selection.Find(selector.String())
 
-	if selection.Length() == 0 {
-		return values.False, nil
+		if selection.Length() == 0 {
+			return values.False, nil
+		}
+
+		return values.True, nil
 	}
 
-	return values.True, nil
+	found, err := el.elementByXPath(ctx, selector.String())
+
+	if err != nil {
+		return values.False, err
+	}
+
+	return values.NewBoolean(found != nil), nil
 }
 
 func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
@@ -654,6 +624,94 @@ func (el *HTMLElement) WaitForClassBySelector(_ context.Context, _ drivers.Query
 
 func (el *HTMLElement) WaitForClassBySelectorAll(_ context.Context, _ drivers.QuerySelector, _ values.String, _ drivers.WaitEvent) error {
 	return core.ErrNotSupported
+}
+
+func (el *HTMLElement) xpathInternal(_ context.Context, expression string) (core.Value, error) {
+	h, err := outerHTML(el.selection)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	exp, err := xpath.Compile(expression)
+
+	if err != nil {
+		return values.None, err
+	}
+
+	rootNode, err := htmlquery.Parse(strings.NewReader(h))
+
+	if err != nil {
+		return values.None, err
+	}
+
+	out := exp.Evaluate(htmlquery.CreateXPathNavigator(rootNode))
+
+	switch res := out.(type) {
+	case *xpath.NodeIterator:
+		items := values.NewArray(10)
+
+		for {
+			if !res.MoveNext() {
+				break
+			}
+
+			item, err := parseXPathNode(res.Current().(*htmlquery.NodeNavigator))
+
+			if err != nil {
+				return values.None, err
+			}
+
+			items.Push(item)
+		}
+
+		return items, nil
+	default:
+		return values.Parse(res), nil
+	}
+}
+
+func (el *HTMLElement) elementByXPath(ctx context.Context, expression string) (drivers.HTMLElement, error) {
+	h, err := outerHTML(el.selection)
+
+	if err != nil {
+		return nil, err
+	}
+
+	exp, err := xpath.Compile(expression)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rootNode, err := htmlquery.Parse(strings.NewReader(h))
+
+	out, err := el.xpathInternal(ctx, expression)
+
+	if err != nil {
+		return nil, err
+	}
+
+	arr := values.ToArray(ctx, out)
+
+	found, err := drivers.ToElement(arr.First())
+
+	// not node was returned
+	if err != nil {
+		return nil, drivers.ErrNotFound
+	}
+
+	return found, nil
+}
+
+func (el *HTMLElement) elementsByXPath(ctx context.Context, expression string) (*values.Array, error) {
+	out, err := el.xpathInternal(ctx, expression)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return values.ToArray(ctx, out), nil
 }
 
 func (el *HTMLElement) ensureStyles(ctx context.Context) error {
