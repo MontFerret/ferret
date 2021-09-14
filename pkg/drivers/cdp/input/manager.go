@@ -423,7 +423,7 @@ func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
-		Int("count", int(count)).
+		Int64("count", int64(count)).
 		Msg("clicking on an element by selector")
 
 	if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
