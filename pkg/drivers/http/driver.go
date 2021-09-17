@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"golang.org/x/net/html/charset"
 
@@ -54,7 +55,7 @@ func newHTTPClient(options *Options) (httpClient *pester.Client) {
 		return
 	}
 
-	httpClient = pester.NewExtendedClient(&http.Client{Transport: httpClient.Transport})
+	httpClient = pester.NewExtendedClient(&http.Client{Transport: httpClient.Transport, Timeout: time.Second * 5})
 
 	return
 }
