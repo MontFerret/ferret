@@ -1,0 +1,7 @@
+LET url = @lab.cdn.static + '/overview.html'
+LET doc = DOCUMENT(url)
+
+LET expected = '<li class="toc-entry toc-h2"><a href="#containers">Containers</a></li><li class="toc-entry toc-h2"><a href="#responsive-breakpoints">Responsive breakpoints</a></li><li class="toc-entry toc-h2"><a href="#z-index">Z-index</a></li>'
+LET actual = INNER_HTML(doc, X("//[contains(@class, 'section-nav')]"))
+
+RETURN T::EQ(REGEX_REPLACE(TRIM(actual), '(\n|\s)', ''), REGEX_REPLACE(expected, '\s', ''))

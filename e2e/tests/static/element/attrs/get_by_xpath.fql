@@ -1,0 +1,10 @@
+LET url = @lab.cdn.static + '/overview.html'
+LET doc = DOCUMENT(url)
+
+LET element = ELEMENT(doc, X("//body/header/a"))
+LET actual = XPATH(element, "string(@href)")
+LET expected = "http://getbootstrap.com/"
+
+T::EQ(actual, expected)
+
+RETURN NONE

@@ -531,11 +531,7 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector drivers.Query
 	if selector.Kind() == drivers.CSSSelector {
 		selection := el.selection.Find(selector.String())
 
-		if selection.Length() == 0 {
-			return values.ZeroInt, nil
-		}
-
-		return values.NewInt(selection.Size()), nil
+		return values.NewInt(selection.Length()), nil
 	}
 
 	arr, err := EvalXPathToNodesWith(el.selection, selector.String(), func(node *html.Node) (core.Value, error) {
