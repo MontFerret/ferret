@@ -41,7 +41,7 @@ var (
 func BlurBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
 	var f *eval.Function
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		f = eval.F(blurByCSSSelector)
 	} else {
 		f = eval.F(blurByXPathSelector)

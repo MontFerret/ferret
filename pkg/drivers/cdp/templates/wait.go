@@ -181,7 +181,7 @@ func partialWaitEquality(id runtime.RemoteObjectID, expected core.Value, when dr
 func partialWaitExistenceBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, when drivers.WaitEvent, fragment string) *eval.Function {
 	var tmpl string
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		tmpl = fmt.Sprintf(waitExistenceBySelectorFragment, queryCSSSelectorFragment, fragment)
 	} else {
 		tmpl = fmt.Sprintf(waitExistenceBySelectorFragment, xpathAsElementFragment, fragment)
@@ -196,7 +196,7 @@ func partialWaitExistenceBySelector(id runtime.RemoteObjectID, selector drivers.
 func partialWaitEqualityBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
 	var tmpl string
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		tmpl = fmt.Sprintf(waitEqualityBySelectorFragment, queryCSSSelectorFragment, fragment)
 	} else {
 		tmpl = fmt.Sprintf(waitEqualityBySelectorFragment, xpathAsElementFragment, fragment)
@@ -212,7 +212,7 @@ func partialWaitEqualityBySelector(id runtime.RemoteObjectID, selector drivers.Q
 func partialWaitExistenceBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, when drivers.WaitEvent, fragment string) *eval.Function {
 	var tmpl string
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		tmpl = fmt.Sprintf(waitExistenceBySelectorAllFragment, queryCSSSelectorAllFragment, fragment)
 	} else {
 		tmpl = fmt.Sprintf(waitExistenceBySelectorAllFragment, xpathAsElementArrayFragment, fragment)
@@ -227,7 +227,7 @@ func partialWaitExistenceBySelectorAll(id runtime.RemoteObjectID, selector drive
 func partialWaitEqualityBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, expected core.Value, when drivers.WaitEvent, fragment string) *eval.Function {
 	var tmpl string
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		tmpl = fmt.Sprintf(waitEqualityBySelectorAllFragment, queryCSSSelectorAllFragment, fragment)
 	} else {
 		tmpl = fmt.Sprintf(waitEqualityBySelectorAllFragment, xpathAsElementArrayFragment, fragment)
@@ -253,7 +253,7 @@ return found;
 func WaitForElement(id runtime.RemoteObjectID, selector drivers.QuerySelector, when drivers.WaitEvent) *eval.Function {
 	var tmpl string
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		tmpl = waitForElementByCSSFragment
 	} else {
 		tmpl = waitForElementByXPathFragment
@@ -279,7 +279,7 @@ return found;
 func WaitForElementAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, when drivers.WaitEvent) *eval.Function {
 	var tmpl string
 
-	if selector.Variant() == drivers.CSSSelector {
+	if selector.Kind() == drivers.CSSSelector {
 		tmpl = waitForElementAllByCSSFragment
 	} else {
 		tmpl = waitForElementAllByXPathFragment

@@ -10,30 +10,30 @@ import (
 )
 
 type (
-	QuerySelectorVariant int
+	QuerySelectorKind int
 
 	QuerySelector struct {
 		core.Value
-		variant QuerySelectorVariant
-		value   values.String
+		kind  QuerySelectorKind
+		value values.String
 	}
 )
 
 const (
-	UnknownSelector QuerySelectorVariant = iota
+	UnknownSelector QuerySelectorKind = iota
 	CSSSelector
 	XPathSelector
 )
 
 var (
-	qsvStr = map[QuerySelectorVariant]string{
+	qsvStr = map[QuerySelectorKind]string{
 		UnknownSelector: "unknown",
 		CSSSelector:     "css",
 		XPathSelector:   "xpath",
 	}
 )
 
-func (v QuerySelectorVariant) String() string {
+func (v QuerySelectorKind) String() string {
 	str, found := qsvStr[v]
 
 	if found {
@@ -45,26 +45,26 @@ func (v QuerySelectorVariant) String() string {
 
 func NewCSSSelector(value values.String) QuerySelector {
 	return QuerySelector{
-		variant: CSSSelector,
-		value:   value,
+		kind:  CSSSelector,
+		value: value,
 	}
 }
 
 func NewXPathSelector(value values.String) QuerySelector {
 	return QuerySelector{
-		variant: XPathSelector,
-		value:   value,
+		kind:  XPathSelector,
+		value: value,
 	}
 }
 
-func (q QuerySelector) Variant() QuerySelectorVariant {
-	return q.variant
+func (q QuerySelector) Kind() QuerySelectorKind {
+	return q.kind
 }
 
 func (q QuerySelector) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(map[string]string{
-		"variant": q.variant.String(),
-		"value":   q.value.String(),
+		"kind":  q.kind.String(),
+		"value": q.value.String(),
 	}, jettison.NoHTMLEscaping())
 }
 
@@ -83,11 +83,11 @@ func (q QuerySelector) Compare(other core.Value) int64 {
 
 	otherQS := other.(*QuerySelector)
 
-	if q.variant == otherQS.Variant() {
+	if q.kind == otherQS.Kind() {
 		return q.value.Compare(values.NewString(otherQS.String()))
 	}
 
-	if q.variant == CSSSelector {
+	if q.kind == CSSSelector {
 		return -1
 	}
 
@@ -103,7 +103,7 @@ func (q QuerySelector) Hash() uint64 {
 
 	h.Write([]byte(q.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(q.variant.String()))
+	h.Write([]byte(q.kind.String()))
 	h.Write([]byte(":"))
 	h.Write([]byte(q.value.String()))
 
