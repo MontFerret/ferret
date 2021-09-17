@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	"golang.org/x/net/html/charset"
 
@@ -55,7 +54,7 @@ func newHTTPClient(options *Options) (httpClient *pester.Client) {
 		return
 	}
 
-	httpClient = pester.NewExtendedClient(&http.Client{Transport: httpClient.Transport, Timeout: time.Second * 5})
+	httpClient = pester.NewExtendedClient(&http.Client{Transport: httpClient.Transport})
 
 	return
 }
@@ -113,7 +112,9 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		return nil, errors.New(resp.Status)
 	}
 
-	body := io.Reader(resp.Body)
+	limitedReader := &io.LimitedReader{R: resp.Body, N: 3145728}
+
+	body := io.Reader(limitedReader)
 	if params.Charset != "" {
 		body, err = drv.convertToUTF8(body, params.Charset)
 		if err != nil {
