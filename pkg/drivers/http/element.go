@@ -545,7 +545,7 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector drivers.Query
 	return arr.Length(), nil
 }
 
-func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
+func (el *HTMLElement) ExistsBySelector(_ context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
 	if selector.Kind() == drivers.CSSSelector {
 		selection := el.selection.Find(selector.String())
 
