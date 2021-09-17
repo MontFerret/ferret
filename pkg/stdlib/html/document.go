@@ -3,9 +3,10 @@ package html
 import (
 	"bytes"
 	"context"
-	"github.com/pkg/errors"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
@@ -223,7 +224,6 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 		}
 
 		charset, exists := obj.Get(values.NewString("charset"))
-
 		if exists {
 			if err := core.ValidateType(charset, types.String); err != nil {
 				return res, err
