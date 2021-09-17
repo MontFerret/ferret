@@ -3,12 +3,13 @@ package http
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/gobwas/glob"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/gobwas/glob"
 
 	"golang.org/x/net/html/charset"
 
@@ -112,9 +113,11 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 		return nil, errors.New(resp.Status)
 	}
 
-	limitedReader := &io.LimitedReader{R: resp.Body, N: 3145728}
+	body := io.Reader(resp.Body)
+	if drv.options.BodyLimit > 0 {
+		body = &io.LimitedReader{R: body, N: drv.options.BodyLimit}
+	}
 
-	body := io.Reader(limitedReader)
 	if params.Charset != "" {
 		body, err = drv.convertToUTF8(body, params.Charset)
 		if err != nil {

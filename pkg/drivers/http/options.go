@@ -29,6 +29,7 @@ type (
 		Concurrency     int
 		HTTPCodesFilter []compiledStatusCodeFilter
 		HTTPTransport   *stdhttp.Transport
+		BodyLimit       int64
 	}
 )
 
@@ -141,5 +142,11 @@ func WithAllowedHTTPCodes(httpCodes []int) Option {
 func WithCustomTransport(transport *stdhttp.Transport) Option {
 	return func(opts *Options) {
 		opts.HTTPTransport = transport
+	}
+}
+
+func WithBodyLimit(limit int64) Option {
+	return func(opts *Options) {
+		opts.BodyLimit = limit
 	}
 }
