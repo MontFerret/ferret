@@ -1,0 +1,32 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+LET selector = X("//*[@id='wait-class-btn' or @id='wait-class-random-btn']")
+
+WAIT_ELEMENT(doc, "#page-events")
+
+LET n = (
+    FOR el IN ELEMENTS(doc, selector)
+        ATTR_SET(el, "style", "color: black")
+
+        RETURN NONE
+)
+
+WAIT_STYLE_ALL(doc, selector, "color", "rgb(0, 0, 0)", 10000)
+
+LET n2 = (
+    FOR el IN ELEMENTS(doc, selector)
+        ATTR_SET(el, "style", "color: red")
+
+        RETURN NONE
+)
+
+WAIT_NO_STYLE_ALL(doc, selector, "color", "rgb(0, 0, 0)", 10000)
+
+LET results = (
+    FOR el IN ELEMENTS(doc, selector)
+        RETURN el.style.color
+)
+
+T::EQ(results, ["rgb(255, 0, 0)","rgb(255, 0, 0)"])
+
+RETURN NONE

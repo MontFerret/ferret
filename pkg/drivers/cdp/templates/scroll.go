@@ -2,11 +2,11 @@ package templates
 
 import (
 	"fmt"
+
+	"github.com/mafredri/cdp/protocol/runtime"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 const (
@@ -67,17 +67,15 @@ var (
 	return true;
 }`, isElementInViewportFragment)
 
-	scrollIntoViewBySelector = fmt.Sprintf(`(parent, selector, opts) => {
-		const el = parent.querySelector(selector);
-
-		if (el == null) {
-			throw new Error(%s);
-		}
+	scrollIntoViewByCSSSelector = fmt.Sprintf(`(el, selector, opts) => {
+		const found = el.querySelector(selector);
 
 		%s
 
-		if (!isInViewport(el)) {
-			el.scrollIntoView({
+		%s
+
+		if (!isInViewport(found)) {
+			found.scrollIntoView({
 				behavior: opts.behavior,
 				block: opts.block, 
 				inline: opts.inline
@@ -85,7 +83,25 @@ var (
 		}
 
 		return true;
-}`, ParamErr(core.ErrNotFound), isElementInViewportFragment)
+}`, notFoundErrorFragment, isElementInViewportFragment)
+
+	scrollIntoViewByXPathSelector = fmt.Sprintf(`(el, selector, opts) => {
+		%s
+
+		%s
+
+		%s
+
+		if (!isInViewport(found)) {
+			found.scrollIntoView({
+				behavior: opts.behavior,
+				block: opts.block, 
+				inline: opts.inline
+  			});
+		}
+
+		return true;
+}`, xpathAsElementFragment, notFoundErrorFragment, isElementInViewportFragment)
 )
 
 func Scroll(options drivers.ScrollOptions) *eval.Function {
@@ -104,6 +120,9 @@ func ScrollIntoView(id runtime.RemoteObjectID, options drivers.ScrollOptions) *e
 	return eval.F(scrollIntoView).WithArgRef(id).WithArg(options)
 }
 
-func ScrollIntoViewBySelector(id runtime.RemoteObjectID, selector values.String, options drivers.ScrollOptions) *eval.Function {
-	return eval.F(scrollIntoViewBySelector).WithArgRef(id).WithArgValue(selector).WithArg(options)
+func ScrollIntoViewBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, options drivers.ScrollOptions) *eval.Function {
+	return toFunction(selector, scrollIntoViewByCSSSelector, scrollIntoViewByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector).
+		WithArg(options)
 }

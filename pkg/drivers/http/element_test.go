@@ -400,7 +400,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		found, err := el.QuerySelector(context.Background(), values.NewString("body .card-img-top:nth-child(1)"))
+		found, err := el.QuerySelector(context.Background(), drivers.NewCSSSelector("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
 		So(found, ShouldNotEqual, values.None)
@@ -422,7 +422,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v, err := el.CountBySelector(context.Background(), values.NewString("head meta"))
+		v, err := el.CountBySelector(context.Background(), drivers.NewCSSSelector("head meta"))
 
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 4)

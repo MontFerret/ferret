@@ -7,7 +7,7 @@ LET input = ELEMENT(page, "#text_input")
 
 INPUT(input, "Foo")
 
-CLICK(page, "#text_input", 2)
+T::TRUE(CLICK(page, "#text_input", 2))
 
 INPUT(input, "Bar")
 

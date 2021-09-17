@@ -5,4 +5,8 @@ FOCUS(page, "#focus-input")
 
 WAIT_CLASS(page, "#focus-content", "alert-success")
 
-RETURN ""
+BLUR(page, "#focus-input")
+
+WAIT_NO_CLASS(page, "#focus-content", "alert-success")
+
+RETURN TRUE

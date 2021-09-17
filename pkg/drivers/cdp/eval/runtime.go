@@ -2,15 +2,16 @@ package eval
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/rs/zerolog"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -21,23 +22,40 @@ type Runtime struct {
 	client    *cdp.Client
 	frame     page.Frame
 	contextID runtime.ExecutionContextID
+	resolver  *Resolver
 }
 
-func New(ctx context.Context, logger zerolog.Logger, client *cdp.Client, frameID page.FrameID) (*Runtime, error) {
+func Create(
+	ctx context.Context,
+	logger zerolog.Logger,
+	client *cdp.Client,
+	frameID page.FrameID,
+) (*Runtime, error) {
 	world, err := client.Page.CreateIsolatedWorld(ctx, page.NewCreateIsolatedWorldArgs(frameID))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return Create(logger, client, world.ExecutionContextID), nil
+	return New(logger, client, world.ExecutionContextID), nil
 }
 
-func Create(logger zerolog.Logger, client *cdp.Client, contextID runtime.ExecutionContextID) *Runtime {
+func New(
+	logger zerolog.Logger,
+	client *cdp.Client,
+	contextID runtime.ExecutionContextID,
+) *Runtime {
 	rt := new(Runtime)
 	rt.logger = logging.WithName(logger.With(), "js-eval").Logger()
 	rt.client = client
 	rt.contextID = contextID
+	rt.resolver = NewResolver(client.Runtime)
+
+	return rt
+}
+
+func (rt *Runtime) SetLoader(loader ValueLoader) *Runtime {
+	rt.resolver.SetLoader(loader)
 
 	return rt
 }
@@ -52,16 +70,6 @@ func (rt *Runtime) Eval(ctx context.Context, fn *Function) error {
 	return err
 }
 
-func (rt *Runtime) EvalValue(ctx context.Context, fn *Function) (core.Value, error) {
-	out, err := rt.call(ctx, fn.returnValue())
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return CastToValue(out)
-}
-
 func (rt *Runtime) EvalRef(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {
 	out, err := rt.call(ctx, fn.returnRef())
 
@@ -69,60 +77,52 @@ func (rt *Runtime) EvalRef(ctx context.Context, fn *Function) (runtime.RemoteObj
 		return runtime.RemoteObject{}, err
 	}
 
-	return CastToReference(out)
+	return out, nil
 }
 
-func (rt *Runtime) ReadProperty(
-	ctx context.Context,
-	objectID runtime.RemoteObjectID,
-	propName string,
-) (core.Value, error) {
-	res, err := rt.client.Runtime.GetProperties(
-		ctx,
-		runtime.NewGetPropertiesArgs(objectID),
-	)
+func (rt *Runtime) EvalValue(ctx context.Context, fn *Function) (core.Value, error) {
+	out, err := rt.call(ctx, fn.returnValue())
 
 	if err != nil {
 		return values.None, err
 	}
 
-	if res.ExceptionDetails != nil {
-		return values.None, res.ExceptionDetails
+	return rt.resolver.ToValue(ctx, out)
+}
+
+func (rt *Runtime) EvalElement(ctx context.Context, fn *Function) (drivers.HTMLElement, error) {
+	ref, err := rt.EvalRef(ctx, fn)
+
+	if err != nil {
+		return nil, err
 	}
 
-	// all props
-	if propName == "" {
-		arr := values.NewArray(len(res.Result))
+	return rt.resolver.ToElement(ctx, ref)
+}
 
-		for _, prop := range res.Result {
-			if prop.Value != nil {
-				val, err := Unmarshal(*prop.Value)
+func (rt *Runtime) EvalElements(ctx context.Context, fn *Function) (*values.Array, error) {
+	ref, err := rt.EvalRef(ctx, fn)
 
-				if err != nil {
-					return values.None, err
-				}
+	if err != nil {
+		return nil, err
+	}
 
-				arr.Push(val)
-			}
-		}
+	val, err := rt.resolver.ToValue(ctx, ref)
 
+	if err != nil {
+		return nil, err
+	}
+
+	arr, ok := val.(*values.Array)
+
+	if ok {
 		return arr, nil
 	}
 
-	for _, prop := range res.Result {
-		if prop.Name == propName {
-			if prop.Value != nil {
-				return Unmarshal(*prop.Value)
-			}
-
-			return values.None, nil
-		}
-	}
-
-	return values.None, nil
+	return values.NewArrayWith(val), nil
 }
 
-func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) {
+func (rt *Runtime) call(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {
 	log := rt.logger.With().
 		Str("expression", fn.String()).
 		Str("returns", fn.returnType.String()).
@@ -138,13 +138,13 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) 
 	if err != nil {
 		log.Trace().Err(err).Msg("failed executing expression")
 
-		return nil, errors.Wrap(err, "runtime call")
+		return runtime.RemoteObject{}, errors.Wrap(err, "runtime call")
 	}
 
 	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
 		log.Trace().Err(err).Msg("expression has failed with runtime exception")
 
-		return nil, err
+		return runtime.RemoteObject{}, err
 	}
 
 	var className string
@@ -166,12 +166,5 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (interface{}, error) 
 		Str("return-value", string(repl.Result.Value)).
 		Msg("succeeded executing expression")
 
-	switch fn.returnType {
-	case ReturnValue:
-		return Unmarshal(repl.Result)
-	case ReturnRef:
-		return repl.Result, nil
-	default:
-		return nil, nil
-	}
+	return repl.Result, nil
 }

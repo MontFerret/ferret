@@ -1,0 +1,37 @@
+LET url = @lab.cdn.dynamic + "/#/lists"
+LET doc = DOCUMENT(url, true)
+
+LET expected = [
+    {
+        "artist":'MEDUZA',
+        "track": 'Piece Of Your Heart (feat. Goodboys)'
+    },
+    {
+        "artist": 'Metanoia Music',
+        "track": 'Che Crozz x Orbis - Lift Me Up'
+    }
+]
+
+LET f = (
+    FOR item, idx IN ELEMENTS(doc, '.track-list li')
+    LIMIT 2
+        LET value = expected[idx]
+
+        INNER_HTML_SET(item, X(".//*[contains(@class, 'track-artist')]"), value.artist)
+        INNER_HTML_SET(item, X(".//*[contains(@class, 'track-name')]"), value.track)
+
+        RETURN NONE
+)
+
+LET list = ELEMENT(doc, '.track-list')
+
+LET actual = (
+    FOR item IN ELEMENTS(doc, '.track-list li')
+        LIMIT 2
+        RETURN {
+            artist: TRIM(INNER_TEXT(item, '.track-artist')),
+            track: TRIM(INNER_TEXT(item, '.track-name'))
+        }
+)
+
+RETURN T::EQ(actual, expected)

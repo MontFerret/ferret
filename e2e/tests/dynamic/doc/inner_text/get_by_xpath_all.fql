@@ -1,0 +1,16 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, true)
+LET selector = X('.//*[@id="root"]/div/main/div/*')
+
+WAIT_ELEMENT(doc, "#layout")
+
+LET expected = [
+    'Welcome to Ferret E2E test page!',
+    'It has several pages for testing different possibilities of the library'
+]
+LET actual = (
+    FOR str IN INNER_TEXT_ALL(doc, selector)
+        RETURN REGEX_REPLACE(TRIM(str), '\n', '')
+)
+
+RETURN T::EQ(actual, expected)

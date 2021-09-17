@@ -1,0 +1,10 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+CLICK_ALL(doc, "#wait-class-btn, #wait-class-random-btn")
+T::LEN(ELEMENTS(doc, X("//*[@id='wait-class-content' or @id='wait-class-random-content']")), 2)
+WAIT_ATTR_ALL(doc, X("//*[@id='wait-class-content' or @id='wait-class-random-content']"), "class", "alert alert-success", 10000)
+
+RETURN TRUE

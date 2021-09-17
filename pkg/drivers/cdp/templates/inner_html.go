@@ -28,40 +28,71 @@ func GetInnerHTML(id runtime.RemoteObjectID) *eval.Function {
 	return eval.F(getInnerHTML).WithArgRef(id)
 }
 
-var setInnerHTMLBySelector = fmt.Sprintf(`(el, selector, value) => {
+var (
+	setInnerHTMLByCSSSelector = fmt.Sprintf(`(el, selector, value) => {
 	const found = el.querySelector(selector);
 
-	if (found == null) {
-		throw new Error(%s);
-	}
+	%s
 
 	found.innerHTML = value;
-}`, ParamErr(drivers.ErrNotFound))
+}`, notFoundErrorFragment)
 
-func SetInnerHTMLBySelector(id runtime.RemoteObjectID, selector, value values.String) *eval.Function {
-	return eval.F(setInnerHTMLBySelector).WithArgRef(id).WithArgValue(selector).WithArgValue(value)
+	setInnerHTMLByXPathSelector = fmt.Sprintf(`(el, selector, value) => {
+	%s
+
+	%s
+
+	found.innerHTML = value;
+}`, xpathAsElementFragment, notFoundErrorFragment)
+)
+
+func SetInnerHTMLBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, value values.String) *eval.Function {
+	return toFunction(selector, setInnerHTMLByCSSSelector, setInnerHTMLByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector).
+		WithArgValue(value)
 }
 
-var getInnerHTMLBySelector = fmt.Sprintf(`(el, selector) => {
+var (
+	getInnerHTMLByCSSSelector = fmt.Sprintf(`(el, selector) => {
 	const found = el.querySelector(selector);
 
-	if (found == null) {
-		throw new Error(%s);
-	}
+	%s
 
 	return found.innerHTML;
-}`, ParamErr(drivers.ErrNotFound))
+}`, notFoundErrorFragment)
 
-func GetInnerHTMLBySelector(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(getInnerHTMLBySelector).WithArgRef(id).WithArgValue(selector)
+	getInnerHTMLByXPathSelector = fmt.Sprintf(`(el, selector) => {
+	%s
+
+	%s
+
+	return found.innerHTML;
+}`, xpathAsElementFragment, notFoundErrorFragment)
+)
+
+func GetInnerHTMLBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, getInnerHTMLByCSSSelector, getInnerHTMLByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }
 
-const getInnerHTMLBySelectorAll = `(el, selector) => {
+const getInnerHTMLByCSSSelectorAll = `(el, selector) => {
 	const found = el.querySelectorAll(selector);
 
 	return Array.from(found).map(i => i.innerHTML);
 }`
 
-func GetInnerHTMLBySelectorAll(id runtime.RemoteObjectID, selector values.String) *eval.Function {
-	return eval.F(getInnerHTMLBySelectorAll).WithArgRef(id).WithArgValue(selector)
+var getInnerHTMLByXPathSelectorAll = fmt.Sprintf(`(el, selector) => {
+	%s
+
+	%s
+
+	return found.map(i => i.innerHTML);
+}`, xpathAsElementArrayFragment, notFoundErrorFragment)
+
+func GetInnerHTMLBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	return toFunction(selector, getInnerHTMLByCSSSelectorAll, getInnerHTMLByXPathSelectorAll).
+		WithArgRef(id).
+		WithArgSelector(selector)
 }

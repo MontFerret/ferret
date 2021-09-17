@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/rs/zerolog"
@@ -72,6 +73,10 @@ func (fn *Function) WithArgValue(value core.Value) *Function {
 	return fn.withArg(runtime.CallArgument{
 		Value: raw,
 	})
+}
+
+func (fn *Function) WithArgSelector(selector drivers.QuerySelector) *Function {
+	return fn.WithArg(selector.String())
 }
 
 func (fn *Function) WithArg(value interface{}) *Function {

@@ -2,51 +2,66 @@ package templates
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 const selectFragment = `
-	if (el.nodeName.toLowerCase() !== 'select') {
+	if (found.nodeName.toLowerCase() !== 'select') {
 		throw new Error('element is not a <select> element.');
 	}
 
-	const options = Array.from(el.options);
+	const options = Array.from(found.options);
 
-	el.value = undefined;
+	found.value = undefined;
 
 	for (var option of options) {
 		option.selected = values.includes(option.value);
 	
-		if (option.selected && !el.multiple) {
+		if (option.selected && !found.multiple) {
 			break;
 		}
 	}
 
-	el.dispatchEvent(new Event('input', { 'bubbles': true }));
-	el.dispatchEvent(new Event('change', { 'bubbles': true }));
+	found.dispatchEvent(new Event('input', { 'bubbles': true }));
+	found.dispatchEvent(new Event('change', { 'bubbles': true }));
 	
 	return options.filter(option => option.selected).map(option => option.value);
 `
 
-const selec = `(el, values) => {` + selectFragment + `}`
+var selekt = fmt.Sprintf(`(el, values) => {
+const found = el;
+
+%s
+}`, selectFragment)
 
 func Select(id runtime.RemoteObjectID, inputs *values.Array) *eval.Function {
-	return eval.F(selec).WithArgRef(id).WithArgValue(inputs)
+	return eval.F(selekt).WithArgRef(id).WithArgValue(inputs)
 }
 
-var selectBySelector = fmt.Sprintf(`(parent, selector, values) => {
-	const el = parent.querySelector(selector);
+var (
+	selectByCSSSelector = fmt.Sprintf(`(el, selector, values) => {
+	%s
 	
-	if (el == null) {
-		throw new Error(%s)
-	}
+	%s
 
 	%s
-}`, ParamErr(core.ErrNotFound), selectFragment)
+}`, queryCSSSelectorFragment, notFoundErrorFragment, selectFragment)
 
-func SelectBySelector(id runtime.RemoteObjectID, selector values.String, inputs *values.Array) *eval.Function {
-	return eval.F(selectBySelector).WithArgRef(id).WithArgValue(selector).WithArgValue(inputs)
+	selectByXPathSelector = fmt.Sprintf(`(el, selector, values) => {
+	%s
+	
+	%s
+
+	%s
+}`, xpathAsElementFragment, notFoundErrorFragment, selectFragment)
+)
+
+func SelectBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, inputs *values.Array) *eval.Function {
+	return toFunction(selector, selectByCSSSelector, selectByXPathSelector).
+		WithArgRef(id).
+		WithArgSelector(selector).
+		WithArgValue(inputs)
 }

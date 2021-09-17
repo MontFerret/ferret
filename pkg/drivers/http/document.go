@@ -158,19 +158,19 @@ func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core
 	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector drivers.QuerySelector) (core.Value, error) {
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
@@ -212,7 +212,7 @@ func (doc *HTMLDocument) ScrollBottom(_ context.Context, _ drivers.ScrollOptions
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ values.String, _ drivers.ScrollOptions) error {
+func (doc *HTMLDocument) ScrollBySelector(_ context.Context, _ drivers.QuerySelector, _ drivers.ScrollOptions) error {
 	return core.ErrNotSupported
 }
 

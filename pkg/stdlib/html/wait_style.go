@@ -44,13 +44,6 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		return values.None, err
 	}
 
-	// selector or attr name
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
@@ -58,6 +51,12 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
 		// revalidate args with more accurate amount
 		err := core.ValidateArgs(args, 4, 5)
+
+		if err != nil {
+			return values.None, err
+		}
+
+		selector, err := drivers.ToQuerySelector(args[1])
 
 		if err != nil {
 			return values.None, err
@@ -76,7 +75,6 @@ func waitStyleWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 			return values.None, err
 		}
 
-		selector := args[1].(values.String)
 		name := args[2].(values.String)
 		value := args[3]
 

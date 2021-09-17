@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // INNER_TEXT returns inner text string of a given or matched by CSS selector element
@@ -30,13 +29,11 @@ func GetInnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return el.GetInnerText(ctx)
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
 	}
-
-	selector := args[1].(values.String)
 
 	return el.GetInnerTextBySelector(ctx, selector)
 }

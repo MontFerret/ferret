@@ -27,7 +27,11 @@ func ClickAll(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.False, err
 	}
 
-	selector := values.ToString(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	exists, err := el.ExistsBySelector(ctx, selector)
 

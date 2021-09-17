@@ -42,8 +42,7 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 		return values.None, err
 	}
 
-	// selector
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
@@ -56,7 +55,6 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
 	name := args[2].(values.String)
 	value := args[3]
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)

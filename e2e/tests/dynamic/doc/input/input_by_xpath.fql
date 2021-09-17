@@ -1,0 +1,10 @@
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "form")
+
+LET output = ELEMENT(doc, "#text_output")
+
+INPUT(doc, X("//*[@id='text_input']"), "foo")
+
+RETURN T::EQ(output.innerText, "foo")

@@ -1,0 +1,14 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+// with fixed timeout
+CLICK(doc, "#wait-no-class-btn")
+WAIT_NO_CLASS(doc, X("//*[@id='wait-no-class-content']"), "alert-success")
+
+// with random timeout
+CLICK(doc, "#wait-no-class-random-btn")
+WAIT_NO_CLASS(doc, X("//*[@id='wait-no-class-random-content']"), "alert-success", 10000)
+
+RETURN NONE

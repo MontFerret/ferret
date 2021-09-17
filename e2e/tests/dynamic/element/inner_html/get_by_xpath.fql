@@ -1,0 +1,34 @@
+LET url = @lab.cdn.dynamic + "/#/lists"
+LET doc = DOCUMENT(url, true)
+
+LET expected = [
+    {"details":'<h5 class="track-artist">Lil Tecca</h5><small class="track-name">Ransom</small>'},
+    {"details":'<h5 class="track-artist">NLE Choppa</h5><small class="track-name">Shotta Flow (Feat. Blueface) [Remix]</small>'},
+    {"details":'<h5 class="track-artist">Baby Jesus (DaBaby)</h5><small class="track-name">Suge</small>'},
+    {"details":'<h5 class="track-artist">NLE Choppa</h5><small class="track-name">Shotta Flow 3</small>'},
+    {"details":'<h5 class="track-artist">Lil Tecca </h5><small class="track-name">Lil Tecca - Did It Again</small>'},
+    {"details":'<h5 class="track-artist">NLE Choppa</h5><small class="track-name">Shotta Flow</small>'},
+    {"details":'<h5 class="track-artist">Ynw Melly</h5><small class="track-name">Dangerously In Love (772 Love Pt. 2)</small>'},
+    {"details":'<h5 class="track-artist">POLO G</h5><small class="track-name">Polo G feat. Lil TJay - Pop Out</small>'},
+    {"details":`<h5 class="track-artist">MUSTARD</h5><small class="track-name">Ballin' (feat. Roddy Ricch)</small>`},
+    {"details":'<h5 class="track-artist">Lil Nas X</h5><small class="track-name">Panini</small>'},
+    {"details":'<h5 class="track-artist">Juice WRLD</h5><small class="track-name">Juice Wrld - RUN</small>'},
+    {"details":'<h5 class="track-artist">Shordie Shordie</h5><small class="track-name">Betchua (Bitchuary)</small>'},
+    {"details":'<h5 class="track-artist">Post Malone</h5><small class="track-name">Goodbyes (feat. Young Thug)</small>'},
+    {"details":'<h5 class="track-artist">LIL UZI VERT</h5><small class="track-name">Sanguine Paradise</small>'},
+    {"details":'<h5 class="track-artist">Calboy</h5><small class="track-name">Envy Me</small>'},
+    {"details":'<h5 class="track-artist">Ambjaay</h5><small class="track-name">Uno</small>'},
+    {"details":'<h5 class="track-artist">Lil Tecca</h5><small class="track-name">Lil Tecca - Bossanova</small>'},
+    {"details":'<h5 class="track-artist">Lil Baby</h5><small class="track-name">Baby</small>'},
+    {"details":'<h5 class="track-artist">Lil Tjay</h5><small class="track-name">Lil Tjay - Brothers (Prod by JDONTHATRACK &amp; Protegebeatz)</small>'},
+    {"details":'<h5 class="track-artist">YK Osiris</h5><small class="track-name">Worth It</small>'}
+]
+
+LET actual = (
+    FOR item IN ELEMENTS(doc, '.track-list li')
+        RETURN {
+            details: INNER_HTML(item, X(".//*[contains(@class, 'track-details')]")),
+        }
+)
+
+RETURN T::EQ(actual, expected)

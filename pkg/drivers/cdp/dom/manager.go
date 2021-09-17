@@ -213,12 +213,6 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 	}
 
 	// the frames is not loaded yet
-	node, exec, err := resolveFrame(ctx, m.logger, m.client, frameID)
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to resolve frame node: %s", frameID)
-	}
-
 	doc, err := LoadHTMLDocument(
 		ctx,
 		m.logger,
@@ -226,9 +220,7 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 		m,
 		m.mouse,
 		m.keyboard,
-		node,
 		frame.tree,
-		exec,
 	)
 
 	if err != nil {

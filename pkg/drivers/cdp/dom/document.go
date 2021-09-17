@@ -2,10 +2,10 @@ package dom
 
 import (
 	"context"
+	"github.com/mafredri/cdp/protocol/runtime"
 	"hash/fnv"
 
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -26,7 +26,7 @@ type HTMLDocument struct {
 	client    *cdp.Client
 	dom       *Manager
 	input     *input.Manager
-	exec      *eval.Runtime
+	eval      *eval.Runtime
 	frameTree page.FrameTree
 	element   *HTMLElement
 }
@@ -39,19 +39,7 @@ func LoadRootHTMLDocument(
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (*HTMLDocument, error) {
-	gdRepl, err := client.DOM.GetDocument(ctx, dom.NewGetDocumentArgs().SetDepth(1))
-
-	if err != nil {
-		return nil, err
-	}
-
 	ftRepl, err := client.Page.GetFrameTree(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	exec, err := eval.New(ctx, logger, client, ftRepl.FrameTree.Frame.ID)
 
 	if err != nil {
 		return nil, err
@@ -64,9 +52,7 @@ func LoadRootHTMLDocument(
 		domManager,
 		mouse,
 		keyboard,
-		gdRepl.Root,
 		ftRepl.FrameTree,
-		exec,
 	)
 }
 
@@ -77,21 +63,21 @@ func LoadHTMLDocument(
 	domManager *Manager,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
-	node dom.Node,
 	frameTree page.FrameTree,
-	exec *eval.Runtime,
 ) (*HTMLDocument, error) {
+	exec, err := eval.Create(ctx, logger, client, frameTree.Frame.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
 	inputManager := input.NewManager(logger, client, exec, keyboard, mouse)
 
-	rootElement, err := LoadHTMLElement(
-		ctx,
-		logger,
-		client,
-		domManager,
-		inputManager,
-		exec,
-		node.NodeID,
-	)
+	exec.SetLoader(func(ctx context.Context, remoteType eval.RemoteType, id runtime.RemoteObjectID) (core.Value, error) {
+		return NewHTMLElement(logger, client, domManager, inputManager, exec, id), nil
+	})
+
+	rootElement, err := exec.EvalElement(ctx, templates.GetDocument())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load root element")
@@ -103,7 +89,7 @@ func LoadHTMLDocument(
 		domManager,
 		inputManager,
 		exec,
-		rootElement,
+		rootElement.(*HTMLElement),
 		frameTree,
 	), nil
 }
@@ -122,7 +108,7 @@ func NewHTMLDocument(
 	doc.client = client
 	doc.dom = domManager
 	doc.input = input
-	doc.exec = exec
+	doc.eval = exec
 	doc.element = rootElement
 	doc.frameTree = frames
 
@@ -216,24 +202,24 @@ func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core
 	return doc.element.GetChildNode(ctx, idx)
 }
 
-func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
+func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector drivers.QuerySelector) (core.Value, error) {
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
 func (doc *HTMLDocument) GetTitle() values.String {
-	value, err := doc.exec.ReadProperty(context.Background(), doc.element.id, "title")
+	value, err := doc.eval.EvalValue(context.Background(), templates.GetTitle())
 
 	if err != nil {
 		doc.logError(errors.Wrap(err, "failed to read document title"))
@@ -298,9 +284,9 @@ func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) e
 	return doc.input.MoveMouseByXY(ctx, x, y)
 }
 
-func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector drivers.QuerySelector, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForElement(doc.element.id, selector, when),
 		events.DefaultPolling,
 	)
@@ -310,9 +296,9 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector values.Str
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForClassBySelector(doc.element.id, selector, class, when),
 		events.DefaultPolling,
 	)
@@ -322,9 +308,9 @@ func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector, c
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector, class values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForClassBySelectorAll(doc.element.id, selector, class, when),
 		events.DefaultPolling,
 	)
@@ -336,13 +322,13 @@ func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector
 
 func (doc *HTMLDocument) WaitForAttributeBySelector(
 	ctx context.Context,
-	selector,
+	selector drivers.QuerySelector,
 	name,
 	value values.String,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForAttributeBySelector(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
@@ -354,13 +340,13 @@ func (doc *HTMLDocument) WaitForAttributeBySelector(
 
 func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	ctx context.Context,
-	selector,
+	selector drivers.QuerySelector,
 	name,
 	value values.String,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForAttributeBySelectorAll(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
@@ -370,9 +356,9 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	return err
 }
 
-func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector drivers.QuerySelector, name, value values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForStyleBySelector(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
@@ -382,9 +368,9 @@ func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector, n
 	return err
 }
 
-func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector, name, value values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector drivers.QuerySelector, name, value values.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
-		doc.exec,
+		doc.eval,
 		templates.WaitForStyleBySelectorAll(doc.element.id, selector, name, value, when),
 		events.DefaultPolling,
 	)
@@ -402,7 +388,7 @@ func (doc *HTMLDocument) ScrollBottom(ctx context.Context, options drivers.Scrol
 	return doc.input.ScrollBottom(ctx, options)
 }
 
-func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector values.String, options drivers.ScrollOptions) error {
+func (doc *HTMLDocument) ScrollBySelector(ctx context.Context, selector drivers.QuerySelector, options drivers.ScrollOptions) error {
 	return doc.input.ScrollIntoViewBySelector(ctx, doc.element.id, selector, options)
 }
 
@@ -411,7 +397,7 @@ func (doc *HTMLDocument) Scroll(ctx context.Context, options drivers.ScrollOptio
 }
 
 func (doc *HTMLDocument) Eval(ctx context.Context, expression string) (core.Value, error) {
-	return doc.exec.EvalValue(ctx, eval.F(expression))
+	return doc.eval.EvalValue(ctx, eval.F(expression))
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {

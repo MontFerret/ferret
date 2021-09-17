@@ -141,6 +141,26 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 	}
 }
 
+func (t *Array) First() core.Value {
+	if len(t.items) > 0 {
+		return t.items[0]
+	}
+
+	return None
+}
+
+func (t *Array) Last() core.Value {
+	size := len(t.items)
+
+	if size > 1 {
+		return t.items[size-1]
+	} else if size == 1 {
+		return t.items[0]
+	}
+
+	return None
+}
+
 func (t *Array) Find(predicate ArrayPredicate) (*Array, Boolean) {
 	result := NewArray(len(t.items))
 

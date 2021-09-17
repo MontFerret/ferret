@@ -34,7 +34,7 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.True, el.Input(ctx, args[1], delay)
 	}
 
-	var selector values.String
+	var selector drivers.QuerySelector
 	var value core.Value
 
 	// INPUT(el, valueOrSelector, valueOrOpts)
@@ -48,24 +48,26 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.True, el.Input(ctx, value, delay)
 		default:
 			// INPUT(el, selector, value)
-			if err := core.ValidateType(args[1], types.String); err != nil {
-				return values.False, err
+			selector, err = drivers.ToQuerySelector(args[1])
+
+			if err != nil {
+				return values.None, err
 			}
 
-			selector = values.ToString(args[1])
 			value = args[2]
 		}
 	} else {
 		// INPUT(el, selector, value, delay)
-		if err := core.ValidateType(args[1], types.String); err != nil {
-			return values.False, err
-		}
-
 		if err := core.ValidateType(args[3], types.Int); err != nil {
 			return values.False, err
 		}
 
-		selector = values.ToString(args[1])
+		selector, err = drivers.ToQuerySelector(args[1])
+
+		if err != nil {
+			return values.None, err
+		}
+
 		value = args[2]
 		delay = values.ToInt(args[3])
 	}

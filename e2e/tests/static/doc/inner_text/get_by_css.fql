@@ -1,0 +1,7 @@
+LET url = @lab.cdn.static + '/overview.html'
+LET doc = DOCUMENT(url)
+
+LET expected = 'ContainersResponsive breakpointsZ-index'
+LET actual = INNER_TEXT(doc, '.section-nav')
+
+RETURN T::EQ(REGEX_REPLACE(TRIM(actual), '(\n|\s)', ''), REGEX_REPLACE(expected, '\s', ''))

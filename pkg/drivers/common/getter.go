@@ -170,7 +170,7 @@ func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocum
 
 			return out, nil
 		case "body", "head":
-			out, err := doc.QuerySelector(ctx, segment)
+			out, err := doc.QuerySelector(ctx, drivers.NewCSSSelector(segment))
 
 			if err != nil {
 				return values.None, core.NewPathError(err, segmentIdx)

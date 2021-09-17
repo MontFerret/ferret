@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // INNER_HTML_ALL returns an array of inner HTML strings of matched elements.
@@ -20,19 +19,17 @@ func GetInnerHTMLAll(ctx context.Context, args ...core.Value) (core.Value, error
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
 
 	return el.GetInnerHTMLBySelectorAll(ctx, selector)
 }

@@ -1,0 +1,9 @@
+LET url = @lab.cdn.static + '/value.html'
+LET doc = DOCUMENT(url)
+
+LET el = ELEMENT(doc, "#listings_table")
+
+T::TRUE(ELEMENT_EXISTS(el, X("//*[contains(@class, 'odd')]")))
+T::FALSE(ELEMENT_EXISTS(el, X("//*[contains(@class, 'foo-bar')]")))
+
+RETURN NONE

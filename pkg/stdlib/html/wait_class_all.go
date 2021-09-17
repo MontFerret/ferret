@@ -43,7 +43,7 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	}
 
 	// selector
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
@@ -56,7 +56,6 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
 	class := args[2].(values.String)
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 

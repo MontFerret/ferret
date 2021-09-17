@@ -2,18 +2,18 @@ package input
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/rs/zerolog"
 	"time"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -114,7 +114,7 @@ func (m *Manager) ScrollIntoView(ctx context.Context, id runtime.RemoteObjectID,
 	return nil
 }
 
-func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, options drivers.ScrollOptions) error {
+func (m *Manager) ScrollIntoViewBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, options drivers.ScrollOptions) error {
 	m.logger.Trace().
 		Str("selector", selector.String()).
 		Str("behavior", options.Behavior.String()).
@@ -179,7 +179,7 @@ func (m *Manager) Focus(ctx context.Context, objectID runtime.RemoteObjectID) er
 	return nil
 }
 
-func (m *Manager) FocusBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
+func (m *Manager) FocusBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
@@ -246,7 +246,7 @@ func (m *Manager) Blur(ctx context.Context, objectID runtime.RemoteObjectID) err
 	return nil
 }
 
-func (m *Manager) BlurBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
+func (m *Manager) BlurBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
@@ -299,7 +299,7 @@ func (m *Manager) MoveMouse(ctx context.Context, objectID runtime.RemoteObjectID
 	return nil
 }
 
-func (m *Manager) MoveMouseBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
+func (m *Manager) MoveMouseBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
@@ -419,12 +419,12 @@ func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID, co
 	return nil
 }
 
-func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, count values.Int) error {
+func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, count values.Int) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
-		Str("selector", string(selector)).
-		Int("count", int(count)).
-		Msg("starting to click on an element by selector")
+		Str("selector", selector.String()).
+		Int64("count", int64(count)).
+		Msg("clicking on an element by selector")
 
 	if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
 		Behavior: drivers.ScrollBehaviorAuto,
@@ -473,75 +473,6 @@ func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID
 
 	m.logger.Trace().Msg("clicked on an element")
 
-	return nil
-}
-
-func (m *Manager) ClickBySelectorAll(_ context.Context, _ runtime.RemoteObjectID, _ values.String, _ values.Int) error {
-	// TODO: Use dom.QueryManager
-	//m.logger.Trace().
-	//	Str("parent_object_id", string(id)).
-	//	Str("selector", string(selector)).
-	//	Int("count", int(count)).
-	//	Msg("starting to click on elements by selector")
-	//
-	//if err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
-	//	Behavior: drivers.ScrollBehaviorAuto,
-	//	Block:    drivers.ScrollVerticalAlignmentCenter,
-	//	Inline:   drivers.ScrollHorizontalAlignmentCenter,
-	//}); err != nil {
-	//	return err
-	//}
-	//
-	//m.logger.Trace().Msg("looking up for elements by selector")
-	//
-	//found, err := m.exec.EvalRef(ctx, templates.QuerySelectorAll(id, selector))
-	//
-	//if err != nil {
-	//	m.logger.Trace().Err(err).Msg("failed to find an element by selector")
-	//
-	//	return err
-	//}
-	//
-	//if found.ObjectID == nil {
-	//	m.logger.Trace().
-	//		Err(core.ErrNotFound).
-	//		Msg("element not found by selector")
-	//
-	//	return core.ErrNotFound
-	//}
-	//
-	//for idx, nodeID := range found.NodeIDs {
-	//	if idx > 0 {
-	//		m.logger.Trace().Msg("pausing")
-	//		beforeClickDelay := time.Duration(core.NumberLowerBoundary(drivers.DefaultMouseDelay*10)) * time.Millisecond
-	//
-	//		time.Sleep(beforeClickDelay)
-	//	}
-	//
-	//	m.logger.Trace().Int("object_id", int(nodeID)).Msg("calculating clickable element points")
-	//
-	//	points, err := GetClickablePointByNodeID(ctx, m.client, nodeID)
-	//
-	//	if err != nil {
-	//		m.logger.Trace().Err(err).Msg("failed calculating clickable element points")
-	//
-	//		return err
-	//	}
-	//
-	//	m.logger.Trace().Float64("x", points.X).Float64("y", points.Y).Msg("calculated clickable element points")
-	//
-	//	delay := time.Duration(drivers.DefaultMouseDelay) * time.Millisecond
-	//
-	//	if err := m.mouse.ClickWithCount(ctx, points.X, points.Y, delay, count); err != nil {
-	//		m.logger.Trace().Err(err).Msg("failed to click on an element")
-	//		return nil
-	//	}
-	//
-	//	m.logger.Trace().Msg("clicked on an element")
-	//}
-	//
-	//m.logger.Trace().Msg("clicked on all elements")
-	//
 	return nil
 }
 
@@ -608,10 +539,10 @@ func (m *Manager) Type(ctx context.Context, objectID runtime.RemoteObjectID, par
 	return nil
 }
 
-func (m *Manager) TypeBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, params TypeParams) error {
+func (m *Manager) TypeBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, params TypeParams) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
-		Str("selector", string(selector)).
+		Str("selector", selector.String()).
 		Msg("starting to type text by selector")
 
 	err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
@@ -741,10 +672,10 @@ func (m *Manager) Clear(ctx context.Context, objectID runtime.RemoteObjectID) er
 	return nil
 }
 
-func (m *Manager) ClearBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String) error {
+func (m *Manager) ClearBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
-		Str("selector", string(selector)).
+		Str("selector", selector.String()).
 		Msg("starting to clear element by selector")
 
 	err := m.ScrollIntoViewBySelector(ctx, id, selector, drivers.ScrollOptions{
@@ -859,10 +790,10 @@ func (m *Manager) Press(ctx context.Context, keys []string, count int) error {
 	return nil
 }
 
-func (m *Manager) PressBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, keys []string, count int) error {
+func (m *Manager) PressBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, keys []string, count int) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
-		Str("selector", string(selector)).
+		Str("selector", selector.String()).
 		Strs("keys", keys).
 		Int("count", count).
 		Msg("starting to press keyboard keys by selector")
@@ -909,10 +840,10 @@ func (m *Manager) Select(ctx context.Context, id runtime.RemoteObjectID, value *
 	return arr, nil
 }
 
-func (m *Manager) SelectBySelector(ctx context.Context, id runtime.RemoteObjectID, selector values.String, value *values.Array) (*values.Array, error) {
+func (m *Manager) SelectBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, value *values.Array) (*values.Array, error) {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
-		Str("selector", string(selector)).
+		Str("selector", selector.String()).
 		Msg("starting to select values by selector")
 
 	if err := m.FocusBySelector(ctx, id, selector); err != nil {

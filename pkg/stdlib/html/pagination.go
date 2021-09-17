@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/rs/zerolog"
 )
 
@@ -28,13 +27,11 @@ func Pagination(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
 	}
-
-	selector := args[1].(values.String)
 
 	logger := logging.
 		WithName(logging.FromContext(ctx).With(), "stdlib_html_pagination").
@@ -50,13 +47,13 @@ type (
 	Paging struct {
 		logger   zerolog.Logger
 		page     drivers.HTMLPage
-		selector values.String
+		selector drivers.QuerySelector
 	}
 
 	PagingIterator struct {
 		logger   zerolog.Logger
 		page     drivers.HTMLPage
-		selector values.String
+		selector drivers.QuerySelector
 		pos      values.Int
 	}
 )

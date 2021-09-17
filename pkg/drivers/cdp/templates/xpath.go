@@ -1,12 +1,13 @@
 package templates
 
 import (
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/runtime"
 )
 
-const xpath = `(el, expression) => {
+const xpath = `(el, expression, resType) => {
 	const unwrap = (item) => {
 		return item.nodeType != 2 ? item : item.nodeValue;
 	};
@@ -14,7 +15,7 @@ const xpath = `(el, expression) => {
 		expression,
 		el,
 		null,
-		XPathResult.ANY_TYPE
+		resType == null ? XPathResult.ANY_TYPE : resType
 	);
 	let result;
 
@@ -57,7 +58,12 @@ const xpath = `(el, expression) => {
 		}
 		case XPathResult.ANY_UNORDERED_NODE_TYPE:
 		case XPathResult.FIRST_ORDERED_NODE_TYPE: {
-			result = unwrap(out.singleNodeValue);
+			const node = out.singleNodeValue;
+			
+			if (node != null) {
+				result = unwrap(node);
+			}
+			
 			break;
 		}
 		default: {
@@ -68,6 +74,18 @@ const xpath = `(el, expression) => {
 	return result;
 }
 `
+
+var (
+	xpathAsElementFragment = fmt.Sprintf(`
+const xpath = %s;
+const found = xpath(el, selector, XPathResult.FIRST_ORDERED_NODE_TYPE);
+`, xpath)
+
+	xpathAsElementArrayFragment = fmt.Sprintf(`
+const xpath = %s;
+const found = xpath(el, selector, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+`, xpath)
+)
 
 func XPath(id runtime.RemoteObjectID, expression values.String) *eval.Function {
 	return eval.F(xpath).WithArgRef(id).WithArgValue(expression)

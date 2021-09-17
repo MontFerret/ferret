@@ -1,0 +1,11 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#page-events")
+
+HOVER(doc, X('.//*[@id="hoverable-btn"]'))
+WAIT_ELEMENT(doc, "#hoverable-content")
+
+LET output = INNER_TEXT(doc, "#hoverable-content")
+
+RETURN T::EQ(output, "Lorem ipsum dolor sit amet.")

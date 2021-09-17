@@ -111,43 +111,6 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, qargs *dom.GetCo
 	}, nil
 }
 
-func getClickablePoint2(ctx context.Context, client *cdp.Client, qargs *dom.GetContentQuadsArgs) (Quad, error) {
-	contentQuadsReply, err := client.DOM.GetContentQuads(ctx, qargs)
-
-	if err != nil {
-		return Quad{}, err
-	}
-
-	if contentQuadsReply.Quads == nil || len(contentQuadsReply.Quads) == 0 {
-		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
-	}
-
-	content := contentQuadsReply.Quads[0]
-
-	c := len(content)
-
-	if c%2 != 0 || c < 1 {
-		return Quad{}, errors.New("node is either not visible or not an HTMLElement")
-	}
-
-	var x, y float64
-	for i := 0; i < c; i += 2 {
-		x += content[i]
-		y += content[i+1]
-	}
-	x /= float64(c / 2)
-	y /= float64(c / 2)
-
-	return Quad{
-		X: x,
-		Y: y,
-	}, nil
-}
-
-func GetClickablePointByNodeID(ctx context.Context, client *cdp.Client, nodeID dom.NodeID) (Quad, error) {
-	return getClickablePoint(ctx, client, dom.NewGetContentQuadsArgs().SetNodeID(nodeID))
-}
-
 func GetClickablePointByObjectID(ctx context.Context, client *cdp.Client, objectID runtime.RemoteObjectID) (Quad, error) {
 	return getClickablePoint(ctx, client, dom.NewGetContentQuadsArgs().SetObjectID(objectID))
 }

@@ -1,9 +1,8 @@
 LET url = @lab.cdn.static + '/list.html'
 LET doc = DOCUMENT(url)
 
-LET list = ELEMENT(doc, ".track-list")
+LET len = ELEMENTS_COUNT(doc, ".track-details")
 
-T::EQ(list.length, 20)
-T::LEN(list, 20)
+T::EQ(len, 20)
 
 RETURN NONE
