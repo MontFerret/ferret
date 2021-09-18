@@ -33,7 +33,7 @@ type (
 	}
 )
 
-func NewManager(
+func New(
 	logger zerolog.Logger,
 	client *cdp.Client,
 	exec *eval.Runtime,

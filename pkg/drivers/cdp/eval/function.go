@@ -4,32 +4,19 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/runtime"
-	"github.com/rs/zerolog"
 	"github.com/wI2L/jettison"
 	"strings"
 )
 
-type (
-	FunctionReturnType int
-
-	FunctionArguments []runtime.CallArgument
-
-	Function struct {
-		exp        string
-		ownerID    runtime.RemoteObjectID
-		args       FunctionArguments
-		returnType FunctionReturnType
-		async      bool
-	}
-)
+type Function struct {
+	exp        string
+	ownerID    runtime.RemoteObjectID
+	args       FunctionArguments
+	returnType ReturnType
+	async      bool
+}
 
 const defaultArgsCount = 5
-
-const (
-	ReturnNothing FunctionReturnType = iota
-	ReturnValue
-	ReturnRef
-)
 
 func F(exp string) *Function {
 	op := new(Function)
@@ -95,6 +82,12 @@ func (fn *Function) String() string {
 	return fn.exp
 }
 
+func (fn *Function) returnNothing() *Function {
+	fn.returnType = ReturnNothing
+
+	return fn
+}
+
 func (fn *Function) returnRef() *Function {
 	fn.returnType = ReturnRef
 
@@ -117,7 +110,7 @@ func (fn *Function) withArg(arg runtime.CallArgument) *Function {
 	return fn
 }
 
-func (fn *Function) build(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
+func (fn *Function) call(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
 	exp := strings.TrimSpace(fn.exp)
 
 	if !strings.HasPrefix(exp, "(") && !strings.HasPrefix(exp, "function") {
@@ -146,23 +139,60 @@ func (fn *Function) build(ctx runtime.ExecutionContextID) *runtime.CallFunctionO
 	return call
 }
 
-func (rt FunctionReturnType) String() string {
-	switch rt {
-	case ReturnValue:
-		return "value"
-	case ReturnRef:
-		return "reference"
-	default:
-		return "nothing"
+func (fn *Function) compile(ctx runtime.ExecutionContextID) *runtime.CompileScriptArgs {
+	exp := fn.precompileExp()
+
+	call := runtime.NewCompileScriptArgs(exp, "", true)
+
+	if ctx != EmptyExecutionContextID {
+		call.SetExecutionContextID(ctx)
 	}
+
+	return call
 }
 
-func (args FunctionArguments) MarshalZerologArray(a *zerolog.Array) {
-	for _, arg := range args {
-		if arg.ObjectID != nil {
-			a.Str(string(*arg.ObjectID))
-		} else {
-			a.RawJSON(arg.Value)
-		}
+func (fn *Function) precompileExp() string {
+	exp := strings.TrimSpace(fn.exp)
+	args := fn.args
+
+	if !strings.HasPrefix(exp, "(") && !strings.HasPrefix(exp, "function") {
+		exp = wrapExp(exp, len(args))
 	}
+
+	if len(args) == 0 {
+		return exp
+	}
+
+	var buf strings.Builder
+	var l = len(args)
+
+	buf.WriteString("(function () {\n")
+	buf.WriteString("const args = [")
+
+	for i := 0; i < l; i++ {
+		buf.WriteRune('\n')
+
+		arg := args[i]
+
+		if arg.Value != nil {
+			buf.Write(arg.Value)
+		} else if arg.ObjectID != nil {
+			buf.WriteString("(() => { throw new Error('Reference values cannot be used in pre-compiled scrips')})()")
+		}
+
+		buf.WriteString(",")
+	}
+	buf.WriteRune('\n')
+	buf.WriteString("];")
+
+	buf.WriteRune('\n')
+	buf.WriteString("const exp = ")
+	buf.WriteString(exp)
+	buf.WriteRune('\n')
+
+	buf.WriteString("return exp(...args);")
+
+	buf.WriteString("})")
+
+	return buf.String()
 }

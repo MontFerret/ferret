@@ -65,13 +65,13 @@ func (rt *Runtime) ContextID() runtime.ExecutionContextID {
 }
 
 func (rt *Runtime) Eval(ctx context.Context, fn *Function) error {
-	_, err := rt.call(ctx, fn)
+	_, err := rt.evalInternal(ctx, fn.returnNothing())
 
 	return err
 }
 
 func (rt *Runtime) EvalRef(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {
-	out, err := rt.call(ctx, fn.returnRef())
+	out, err := rt.evalInternal(ctx, fn.returnRef())
 
 	if err != nil {
 		return runtime.RemoteObject{}, err
@@ -81,7 +81,7 @@ func (rt *Runtime) EvalRef(ctx context.Context, fn *Function) (runtime.RemoteObj
 }
 
 func (rt *Runtime) EvalValue(ctx context.Context, fn *Function) (core.Value, error) {
-	out, err := rt.call(ctx, fn.returnValue())
+	out, err := rt.evalInternal(ctx, fn.returnValue())
 
 	if err != nil {
 		return values.None, err
@@ -122,7 +122,104 @@ func (rt *Runtime) EvalElements(ctx context.Context, fn *Function) (*values.Arra
 	return values.NewArrayWith(val), nil
 }
 
-func (rt *Runtime) call(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {
+func (rt *Runtime) Compile(ctx context.Context, fn *Function) (*CompiledFunction, error) {
+	log := rt.logger.With().
+		Str("expression", fn.String()).
+		Array("arguments", fn.args).
+		Logger()
+
+	arg := fn.compile(rt.contextID)
+
+	log.Trace().Str("script", arg.Expression).Msg("compiling expression...")
+
+	repl, err := rt.client.Runtime.CompileScript(ctx, arg)
+
+	if err != nil {
+		log.Trace().Err(err).Msg("failed compiling expression")
+
+		return nil, err
+	}
+
+	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
+		log.Trace().Err(err).Msg("compilation has failed with runtime exception")
+
+		return nil, err
+	}
+
+	if repl.ScriptID == nil {
+		log.Trace().Err(core.ErrUnexpected).Msg("compilation did not return script id")
+
+		return nil, core.ErrUnexpected
+	}
+
+	id := *repl.ScriptID
+
+	log.Trace().
+		Str("script-id", string(id)).
+		Msg("succeeded compiling expression")
+
+	return CF(id, fn), nil
+}
+
+func (rt *Runtime) Call(ctx context.Context, fn *CompiledFunction) error {
+	_, err := rt.callInternal(ctx, fn.returnNothing())
+
+	return err
+}
+
+func (rt *Runtime) CallRef(ctx context.Context, fn *CompiledFunction) (runtime.RemoteObject, error) {
+	out, err := rt.callInternal(ctx, fn.returnRef())
+
+	if err != nil {
+		return runtime.RemoteObject{}, err
+	}
+
+	return out, nil
+}
+
+func (rt *Runtime) CallValue(ctx context.Context, fn *CompiledFunction) (core.Value, error) {
+	out, err := rt.callInternal(ctx, fn.returnValue())
+
+	if err != nil {
+		return values.None, err
+	}
+
+	return rt.resolver.ToValue(ctx, out)
+}
+
+func (rt *Runtime) CallElement(ctx context.Context, fn *CompiledFunction) (drivers.HTMLElement, error) {
+	ref, err := rt.CallRef(ctx, fn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rt.resolver.ToElement(ctx, ref)
+}
+
+func (rt *Runtime) CallElements(ctx context.Context, fn *CompiledFunction) (*values.Array, error) {
+	ref, err := rt.CallRef(ctx, fn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := rt.resolver.ToValue(ctx, ref)
+
+	if err != nil {
+		return nil, err
+	}
+
+	arr, ok := val.(*values.Array)
+
+	if ok {
+		return arr, nil
+	}
+
+	return values.NewArrayWith(val), nil
+}
+
+func (rt *Runtime) evalInternal(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {
 	log := rt.logger.With().
 		Str("expression", fn.String()).
 		Str("returns", fn.returnType.String()).
@@ -133,12 +230,12 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (runtime.RemoteObject
 
 	log.Trace().Msg("executing expression...")
 
-	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.build(rt.contextID))
+	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.call(rt.contextID))
 
 	if err != nil {
 		log.Trace().Err(err).Msg("failed executing expression")
 
-		return runtime.RemoteObject{}, errors.Wrap(err, "runtime call")
+		return runtime.RemoteObject{}, errors.Wrap(err, "runtime evalInternal")
 	}
 
 	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
@@ -160,11 +257,57 @@ func (rt *Runtime) call(ctx context.Context, fn *Function) (runtime.RemoteObject
 	}
 
 	log.Trace().
-		Str("return-type", repl.Result.Type).
-		Str("return-sub-type", subtype).
-		Str("return-class-name", className).
-		Str("return-value", string(repl.Result.Value)).
+		Str("returned-type", repl.Result.Type).
+		Str("returned-sub-type", subtype).
+		Str("returned-class-name", className).
+		Str("returned-value", string(repl.Result.Value)).
 		Msg("succeeded executing expression")
+
+	return repl.Result, nil
+}
+
+func (rt *Runtime) callInternal(ctx context.Context, fn *CompiledFunction) (runtime.RemoteObject, error) {
+	log := rt.logger.With().
+		Str("script-id", string(fn.id)).
+		Str("returns", fn.src.returnType.String()).
+		Bool("is-async", fn.src.async).
+		Array("arguments", fn.src.args).
+		Logger()
+
+	log.Trace().Msg("executing compiled script...")
+
+	repl, err := rt.client.Runtime.RunScript(ctx, fn.call(rt.contextID))
+
+	if err != nil {
+		log.Trace().Err(err).Msg("failed executing compiled script")
+
+		return runtime.RemoteObject{}, errors.Wrap(err, "runtime evalInternal")
+	}
+
+	if err := parseRuntimeException(repl.ExceptionDetails); err != nil {
+		log.Trace().Err(err).Msg("compiled script has failed with runtime exception")
+
+		return runtime.RemoteObject{}, err
+	}
+
+	var className string
+
+	if repl.Result.ClassName != nil {
+		className = *repl.Result.ClassName
+	}
+
+	var subtype string
+
+	if repl.Result.Subtype != nil {
+		subtype = *repl.Result.Subtype
+	}
+
+	log.Trace().
+		Str("returned-type", repl.Result.Type).
+		Str("returned-sub-type", subtype).
+		Str("returned-class-name", className).
+		Str("returned-value", string(repl.Result.Value)).
+		Msg("succeeded executing compiled script")
 
 	return repl.Result, nil
 }
