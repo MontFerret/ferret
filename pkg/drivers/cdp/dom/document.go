@@ -332,8 +332,8 @@ func (doc *HTMLDocument) Scroll(ctx context.Context, options drivers.ScrollOptio
 	return doc.input.ScrollByXY(ctx, options)
 }
 
-func (doc *HTMLDocument) Eval(ctx context.Context, expression string) (core.Value, error) {
-	return doc.eval.EvalValue(ctx, eval.F(expression))
+func (doc *HTMLDocument) Eval() *eval.Runtime {
+	return doc.eval
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {

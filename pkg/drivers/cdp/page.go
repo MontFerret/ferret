@@ -316,7 +316,7 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 }
 
 func (p *HTMLPage) GetURL() values.String {
-	res, err := p.getCurrentDocument().Eval(context.Background(), templates.GetURL().String())
+	res, err := p.getCurrentDocument().Eval().EvalValue(context.Background(), templates.GetURL())
 
 	if err == nil {
 		return values.ToString(res)

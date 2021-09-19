@@ -62,6 +62,10 @@ func NewHTMLElement(
 	return el
 }
 
+func (el *HTMLElement) RemoteID() runtime.RemoteObjectID {
+	return el.id
+}
+
 func (el *HTMLElement) Close() error {
 	return nil
 }

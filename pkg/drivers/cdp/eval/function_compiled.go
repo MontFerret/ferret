@@ -35,11 +35,8 @@ func (fn *CompiledFunction) returnValue() *CompiledFunction {
 
 func (fn *CompiledFunction) call(ctx runtime.ExecutionContextID) *runtime.RunScriptArgs {
 	call := runtime.NewRunScriptArgs(fn.id).
-		SetAwaitPromise(fn.src.async)
-
-	if fn.src.returnType == ReturnValue {
-		call.SetReturnByValue(true)
-	}
+		SetAwaitPromise(fn.src.async).
+		SetReturnByValue(fn.src.returnType == ReturnValue)
 
 	if ctx != EmptyExecutionContextID {
 		call.SetExecutionContextID(ctx)
