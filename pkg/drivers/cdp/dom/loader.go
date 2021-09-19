@@ -17,6 +17,6 @@ func NewNodeLoader(dom *Manager) eval.ValueLoader {
 	return &NodeLoader{dom}
 }
 
-func (n *NodeLoader) Load(ctx context.Context, frameID page.FrameID, remoteType eval.RemoteObjectType, remoteClass eval.RemoteClassName, id runtime.RemoteObjectID) (core.Value, error) {
+func (n *NodeLoader) Load(ctx context.Context, frameID page.FrameID, _ eval.RemoteObjectType, _ eval.RemoteClassName, id runtime.RemoteObjectID) (core.Value, error) {
 	return n.dom.ResolveElement(ctx, frameID, id)
 }
