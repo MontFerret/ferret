@@ -64,6 +64,10 @@ func (fn *Function) AsNamed(name string) *Function {
 	return fn
 }
 
+func (fn *Function) WithArgRemoteValue(value RemoteValue) *Function {
+	return fn.WithArgRef(value.RemoteID())
+}
+
 func (fn *Function) WithArgRef(id runtime.RemoteObjectID) *Function {
 	return fn.withArg(runtime.CallArgument{
 		ObjectID: &id,
