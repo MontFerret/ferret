@@ -31,15 +31,13 @@ type (
 	HTMLPageEvent string
 
 	HTMLPage struct {
-		mu       sync.Mutex
-		closed   values.Boolean
-		logger   zerolog.Logger
-		conn     *rpcc.Conn
-		client   *cdp.Client
-		network  *net.Manager
-		dom      *dom.Manager
-		mouse    *input.Mouse
-		keyboard *input.Keyboard
+		mu      sync.Mutex
+		closed  values.Boolean
+		logger  zerolog.Logger
+		conn    *rpcc.Conn
+		client  *cdp.Client
+		network *net.Manager
+		dom     *dom.Manager
 	}
 )
 
@@ -109,6 +107,7 @@ func LoadHTMLPage(
 		mouse,
 		keyboard,
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +118,6 @@ func LoadHTMLPage(
 		client,
 		netManager,
 		domManager,
-		mouse,
-		keyboard,
 	)
 
 	if params.URL != BlankPageURL && params.URL != "" {
@@ -187,8 +184,6 @@ func NewHTMLPage(
 	client *cdp.Client,
 	netManager *net.Manager,
 	domManager *dom.Manager,
-	mouse *input.Mouse,
-	keyboard *input.Keyboard,
 ) *HTMLPage {
 	p := new(HTMLPage)
 	p.closed = values.False
@@ -197,8 +192,6 @@ func NewHTMLPage(
 	p.client = client
 	p.network = netManager
 	p.dom = domManager
-	p.mouse = mouse
-	p.keyboard = keyboard
 
 	return p
 }
