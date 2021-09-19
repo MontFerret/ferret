@@ -8,10 +8,11 @@ import (
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 type (
-	ValueLoader func(ctx context.Context, remoteType RemoteType, id runtime.RemoteObjectID) (core.Value, error)
+	ValueLoader func(ctx context.Context, remoteType RemoteObjectType, id runtime.RemoteObjectID) (core.Value, error)
 
 	Resolver struct {
 		runtime cdp.Runtime
@@ -35,10 +36,12 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 		return values.Unmarshal(ref.Value)
 	}
 
-	switch ToRemoteType(ref) {
-	case NullType, UndefinedType:
+	subtype := ToRemoteObjectType(ref)
+
+	switch subtype {
+	case NullObjectType, UndefinedObjectType:
 		return values.None, nil
-	case ArrayType:
+	case ArrayObjectType:
 		props, err := r.runtime.GetProperties(ctx, runtime.NewGetPropertiesArgs(*ref.ObjectID).SetOwnProperties(true))
 
 		if err != nil {
@@ -72,15 +75,32 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 		}
 
 		return result, nil
-	case NodeType:
+	case NodeObjectType:
 		// could it be possible?
 		if ref.ObjectID == nil {
 			return values.Unmarshal(ref.Value)
 		}
 
-		return r.loadValue(ctx, NodeType, *ref.ObjectID)
+		return r.loadValue(ctx, NodeObjectType, *ref.ObjectID)
 	default:
-		return Unmarshal(ref)
+		switch ToRemoteType(ref) {
+		case StringType:
+			str, err := strconv.Unquote(string(ref.Value))
+
+			if err != nil {
+				return values.None, err
+			}
+
+			return values.NewString(str), nil
+		case ObjectType:
+			if subtype == NullObjectType || subtype == UnknownObjectType {
+				return values.None, nil
+			}
+
+			return values.Unmarshal(ref.Value)
+		default:
+			return values.Unmarshal(ref.Value)
+		}
 	}
 }
 
@@ -89,7 +109,7 @@ func (r *Resolver) ToElement(ctx context.Context, ref runtime.RemoteObject) (dri
 		return nil, core.Error(core.ErrInvalidArgument, "ref id")
 	}
 
-	val, err := r.loadValue(ctx, ToRemoteType(ref), *ref.ObjectID)
+	val, err := r.loadValue(ctx, ToRemoteObjectType(ref), *ref.ObjectID)
 
 	if err != nil {
 		return nil, err
@@ -163,7 +183,7 @@ func (r *Resolver) ToProperties(
 	return arr, nil
 }
 
-func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteType, id runtime.RemoteObjectID) (core.Value, error) {
+func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteObjectType, id runtime.RemoteObjectID) (core.Value, error) {
 	if r.loader == nil {
 		return values.None, core.Error(core.ErrNotImplemented, "ValueLoader")
 	}

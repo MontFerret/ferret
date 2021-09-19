@@ -73,7 +73,7 @@ func LoadHTMLDocument(
 
 	inputManager := input.New(logger, client, exec, keyboard, mouse)
 
-	exec.SetLoader(func(ctx context.Context, remoteType eval.RemoteType, id runtime.RemoteObjectID) (core.Value, error) {
+	exec.SetLoader(func(ctx context.Context, remoteType eval.RemoteObjectType, id runtime.RemoteObjectID) (core.Value, error) {
 		return NewHTMLElement(logger, client, domManager, inputManager, exec, id), nil
 	})
 
