@@ -8,6 +8,8 @@ type (
 	RemoteType string
 
 	RemoteObjectType string
+
+	RemoteClassName string
 )
 
 // List of possible remote types
@@ -77,6 +79,16 @@ var remoteObjectTypeMap = map[string]RemoteObjectType{
 	string(DataViewObjectType):    DataViewObjectType,
 }
 
+// List of supported remote classses
+const (
+	UnknownClassName  RemoteClassName = ""
+	DocumentClassName RemoteClassName = "HTMLDocument"
+)
+
+var remoteClassNameMap = map[string]RemoteClassName{
+	string(DocumentClassName): DocumentClassName,
+}
+
 func ToRemoteType(ref runtime.RemoteObject) RemoteType {
 	remoteType, found := remoteTypeMap[ref.Type]
 
@@ -97,4 +109,16 @@ func ToRemoteObjectType(ref runtime.RemoteObject) RemoteObjectType {
 	}
 
 	return UnknownObjectType
+}
+
+func ToRemoteClassName(ref runtime.RemoteObject) RemoteClassName {
+	if ref.ClassName != nil {
+		remoteClassName, found := remoteClassNameMap[*ref.ClassName]
+
+		if found {
+			return remoteClassName
+		}
+	}
+
+	return UnknownClassName
 }

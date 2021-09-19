@@ -2,26 +2,56 @@ package eval
 
 import (
 	"context"
+	"strconv"
+
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/runtime"
-	"github.com/pkg/errors"
-	"strconv"
 )
 
 type (
-	ValueLoader func(ctx context.Context, remoteType RemoteObjectType, id runtime.RemoteObjectID) (core.Value, error)
+	ValueLoader interface {
+		Load(
+			ctx context.Context,
+			frameID page.FrameID,
+			remoteType RemoteObjectType,
+			remoteClass RemoteClassName,
+			id runtime.RemoteObjectID,
+		) (core.Value, error)
+	}
+
+	ValueLoaderFn func(
+		ctx context.Context,
+		frameID page.FrameID,
+		remoteType RemoteObjectType,
+		remoteClass RemoteClassName,
+		id runtime.RemoteObjectID,
+	) (core.Value, error)
 
 	Resolver struct {
 		runtime cdp.Runtime
+		frameID page.FrameID
 		loader  ValueLoader
 	}
 )
 
-func NewResolver(runtime cdp.Runtime) *Resolver {
-	return &Resolver{runtime, nil}
+func (f ValueLoaderFn) Load(
+	ctx context.Context,
+	frameID page.FrameID,
+	remoteType RemoteObjectType,
+	remoteClass RemoteClassName,
+	id runtime.RemoteObjectID,
+) (core.Value, error) {
+	return f(ctx, frameID, remoteType, remoteClass, id)
+}
+
+func NewResolver(runtime cdp.Runtime, frameID page.FrameID) *Resolver {
+	return &Resolver{runtime, frameID, nil}
 }
 
 func (r *Resolver) SetLoader(loader ValueLoader) *Resolver {
@@ -76,12 +106,12 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 
 		return result, nil
 	case NodeObjectType:
-		// could it be possible?
+		// is it even possible?
 		if ref.ObjectID == nil {
 			return values.Unmarshal(ref.Value)
 		}
 
-		return r.loadValue(ctx, NodeObjectType, *ref.ObjectID)
+		return r.loadValue(ctx, NodeObjectType, ToRemoteClassName(ref), *ref.ObjectID)
 	default:
 		switch ToRemoteType(ref) {
 		case StringType:
@@ -109,7 +139,7 @@ func (r *Resolver) ToElement(ctx context.Context, ref runtime.RemoteObject) (dri
 		return nil, core.Error(core.ErrInvalidArgument, "ref id")
 	}
 
-	val, err := r.loadValue(ctx, ToRemoteObjectType(ref), *ref.ObjectID)
+	val, err := r.loadValue(ctx, ToRemoteObjectType(ref), ToRemoteClassName(ref), *ref.ObjectID)
 
 	if err != nil {
 		return nil, err
@@ -183,10 +213,10 @@ func (r *Resolver) ToProperties(
 	return arr, nil
 }
 
-func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteObjectType, id runtime.RemoteObjectID) (core.Value, error) {
+func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteObjectType, remoteClass RemoteClassName, id runtime.RemoteObjectID) (core.Value, error) {
 	if r.loader == nil {
 		return values.None, core.Error(core.ErrNotImplemented, "ValueLoader")
 	}
 
-	return r.loader(ctx, remoteType, id)
+	return r.loader.Load(ctx, r.frameID, remoteType, remoteClass, id)
 }

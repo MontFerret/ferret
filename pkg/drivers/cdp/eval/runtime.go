@@ -40,19 +40,20 @@ func Create(
 		return nil, err
 	}
 
-	return New(logger, client, world.ExecutionContextID), nil
+	return New(logger, client, frameID, world.ExecutionContextID), nil
 }
 
 func New(
 	logger zerolog.Logger,
 	client *cdp.Client,
+	frameID page.FrameID,
 	contextID runtime.ExecutionContextID,
 ) *Runtime {
 	rt := new(Runtime)
 	rt.logger = logging.WithName(logger.With(), "js-eval").Logger()
 	rt.client = client
 	rt.contextID = contextID
-	rt.resolver = NewResolver(client.Runtime)
+	rt.resolver = NewResolver(client.Runtime, frameID)
 
 	return rt
 }

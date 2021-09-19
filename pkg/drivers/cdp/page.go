@@ -43,10 +43,6 @@ type (
 	}
 )
 
-const (
-	HTMLPageEventNavigation HTMLPageEvent = "navigation"
-)
-
 func LoadHTMLPage(
 	ctx context.Context,
 	conn *rpcc.Conn,
@@ -693,14 +689,7 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 		}
 	}
 
-	next, err := dom.LoadRootHTMLDocument(
-		ctx,
-		p.logger,
-		p.client,
-		p.dom,
-		p.mouse,
-		p.keyboard,
-	)
+	next, err := p.dom.LoadRootDocument(ctx)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("failed to load a new root document")
@@ -714,14 +703,7 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 }
 
 func (p *HTMLPage) loadMainFrame(ctx context.Context) error {
-	next, err := dom.LoadRootHTMLDocument(
-		ctx,
-		p.logger,
-		p.client,
-		p.dom,
-		p.mouse,
-		p.keyboard,
-	)
+	next, err := p.dom.LoadRootDocument(ctx)
 
 	if err != nil {
 		return err
