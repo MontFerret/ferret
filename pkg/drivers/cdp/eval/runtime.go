@@ -15,7 +15,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-const EmptyExecutionContextID = runtime.ExecutionContextID(-1)
+const (
+	EmptyExecutionContextID = runtime.ExecutionContextID(-1)
+	EmptyObjectID           = runtime.RemoteObjectID("")
+)
 
 type Runtime struct {
 	logger    zerolog.Logger

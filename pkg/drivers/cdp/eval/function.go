@@ -5,6 +5,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/wI2L/jettison"
+	"strconv"
 	"strings"
 )
 
@@ -26,7 +27,7 @@ func F(exp string) *Function {
 	return op
 }
 
-func (fn *Function) AsPartOf(id runtime.RemoteObjectID) *Function {
+func (fn *Function) CallOn(id runtime.RemoteObjectID) *Function {
 	fn.ownerID = id
 
 	return fn
@@ -82,6 +83,10 @@ func (fn *Function) String() string {
 	return fn.exp
 }
 
+func (fn *Function) Length() int {
+	return len(fn.args)
+}
+
 func (fn *Function) returnNothing() *Function {
 	fn.returnType = ReturnNothing
 
@@ -111,25 +116,16 @@ func (fn *Function) withArg(arg runtime.CallArgument) *Function {
 }
 
 func (fn *Function) call(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
-	exp := strings.TrimSpace(fn.exp)
-
-	if !strings.HasPrefix(exp, "(") && !strings.HasPrefix(exp, "function") {
-		exp = wrapExp(exp, len(fn.args))
-	}
+	exp := fn.prepExp()
 
 	call := runtime.NewCallFunctionOnArgs(exp).
-		SetAwaitPromise(fn.async)
+		SetAwaitPromise(fn.async).
+		SetReturnByValue(fn.returnType == ReturnValue)
 
-	if fn.returnType == ReturnValue {
-		call.SetReturnByValue(true)
-	}
-
-	if ctx != EmptyExecutionContextID {
-		call.SetExecutionContextID(ctx)
-	}
-
-	if fn.ownerID != "" {
+	if fn.ownerID != EmptyObjectID {
 		call.SetObjectID(fn.ownerID)
+	} else if ctx != EmptyExecutionContextID {
+		call.SetExecutionContextID(ctx)
 	}
 
 	if len(fn.args) > 0 {
@@ -151,13 +147,37 @@ func (fn *Function) compile(ctx runtime.ExecutionContextID) *runtime.CompileScri
 	return call
 }
 
-func (fn *Function) precompileExp() string {
+func (fn *Function) prepExp() string {
 	exp := strings.TrimSpace(fn.exp)
-	args := fn.args
 
-	if !strings.HasPrefix(exp, "(") && !strings.HasPrefix(exp, "function") {
-		exp = wrapExp(exp, len(args))
+	if strings.HasPrefix(exp, "(") || strings.HasPrefix(exp, "function") {
+		return exp
 	}
+
+	args := len(fn.args)
+
+	if args == 0 {
+		return "() => {\n" + exp + "\n}"
+	}
+
+	var buf strings.Builder
+	lastIndex := args - 1
+
+	for i := 0; i < args; i++ {
+		buf.WriteString("arg")
+		buf.WriteString(strconv.Itoa(i + 1))
+
+		if i != lastIndex {
+			buf.WriteString(",")
+		}
+	}
+
+	return "(" + buf.String() + ") => {\n" + exp + "\n}"
+}
+
+func (fn *Function) precompileExp() string {
+	exp := fn.prepExp()
+	args := fn.args
 
 	if len(args) == 0 {
 		return exp

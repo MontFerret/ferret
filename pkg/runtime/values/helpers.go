@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/wI2L/jettison"
 	"hash/fnv"
 	"reflect"
 	"sort"
@@ -292,6 +293,26 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	return Parse(o), nil
 }
 
+func MustMarshal(value core.Value) json.RawMessage {
+	out, err := value.MarshalJSON()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
+func MustMarshalAny(input interface{}) json.RawMessage {
+	out, err := jettison.MarshalOpts(input, jettison.NoHTMLEscaping())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
 func ToBoolean(input core.Value) Boolean {
 	switch input.Type() {
 	case types.Boolean:
@@ -515,17 +536,7 @@ func ToObject(ctx context.Context, input core.Value) *Object {
 	}
 }
 
-func ToStrings(input []core.Value) []String {
-	res := make([]String, len(input))
-
-	for i, v := range input {
-		res[i] = NewString(v.String())
-	}
-
-	return res
-}
-
-func ToStrings2(input *Array) []String {
+func ToStrings(input *Array) []String {
 	res := make([]String, input.Length())
 
 	input.ForEach(func(v core.Value, i int) bool {
