@@ -34,6 +34,165 @@ func TestFunction(t *testing.T) {
 			})
 		})
 
+		Convey(".AsNamed", func() {
+			Convey("When without args", func() {
+				Convey("Should generate a wrapper with a given function name", func() {
+					name := "getFoo"
+					exp := "return 'foo'"
+					f := F(exp).AsNamed(name)
+
+					So(f.name, ShouldEqual, name)
+
+					call := f.call(EmptyExecutionContextID)
+
+					expected := "function " + name + "() {\n" + exp + "\n}"
+
+					So(call.FunctionDeclaration, ShouldEqual, expected)
+				})
+			})
+
+			Convey("When with args", func() {
+				Convey("When a declaration is an expression", func() {
+					Convey("Should generate a wrapper with a given function name", func() {
+						name := "getFoo"
+						exp := "return 'foo'"
+						f := F(exp).
+							AsNamed(name).
+							WithArg("bar").
+							WithArg(1)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.call(EmptyExecutionContextID)
+
+						expected := "function " + name + "(arg1,arg2) {\n" + exp + "\n}"
+
+						So(call.FunctionDeclaration, ShouldEqual, expected)
+					})
+				})
+
+				Convey("When a declaration is an arrow function", func() {
+					Convey("Should generate a wrapper with a given function name", func() {
+						name := "getValue"
+						exp := "(el) => el.value"
+						f := F(exp).
+							AsNamed(name).
+							WithArgRef("my_element").
+							WithArg(1)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.call(EmptyExecutionContextID)
+
+						expected := "function " + name + "() {\n" +
+							"const $exp = " + exp + ";\n" +
+							"return $exp.apply(this, arguments);\n" +
+							"}"
+
+						So(call.FunctionDeclaration, ShouldEqual, expected)
+					})
+				})
+
+				Convey("When a declaration is a plain function", func() {
+					Convey("Should generate a wrapper with a given function name", func() {
+						name := "getValue"
+						exp := "function getElementValue(el) => el.value"
+						f := F(exp).
+							AsNamed(name).
+							WithArgRef("my_element").
+							WithArg(1)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.call(EmptyExecutionContextID)
+
+						expected := "function " + name + "() {\n" +
+							"const $exp = " + exp + ";\n" +
+							"return $exp.apply(this, arguments);\n" +
+							"}"
+
+						So(call.FunctionDeclaration, ShouldEqual, expected)
+					})
+				})
+			})
+		})
+
+		Convey(".AsAnonymous", func() {
+			Convey("When without args", func() {
+				Convey("Should generate an anonymous wrapper", func() {
+					name := ""
+					exp := "return 'foo'"
+					f := F(exp).AsNamed("getFoo").AsAnonymous()
+
+					So(f.name, ShouldEqual, name)
+
+					call := f.call(EmptyExecutionContextID)
+
+					expected := "function() {\n" + exp + "\n}"
+
+					So(call.FunctionDeclaration, ShouldEqual, expected)
+				})
+			})
+
+			Convey("When with args", func() {
+				Convey("When a declaration is an expression", func() {
+					Convey("Should generate an anonymous wrapper", func() {
+						name := ""
+						exp := "return 'foo'"
+						f := F(exp).
+							AsNamed("getFoo").
+							AsAnonymous().
+							WithArg("bar").
+							WithArg(1)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.call(EmptyExecutionContextID)
+
+						expected := "function(arg1,arg2) {\n" + exp + "\n}"
+
+						So(call.FunctionDeclaration, ShouldEqual, expected)
+					})
+				})
+
+				Convey("When a declaration is an arrow function", func() {
+					Convey("Should NOT generate a wrapper", func() {
+						name := ""
+						exp := "(el) => el.value"
+						f := F(exp).
+							AsNamed("getValue").
+							AsAnonymous().
+							WithArgRef("my_element").
+							WithArg(1)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.call(EmptyExecutionContextID)
+
+						So(call.FunctionDeclaration, ShouldEqual, exp)
+					})
+				})
+
+				Convey("When a declaration is a plain function", func() {
+					Convey("Should NOT generate a wrapper", func() {
+						name := ""
+						exp := "function(el) => el.value"
+						f := F(exp).
+							AsNamed("getValue").
+							AsAnonymous().
+							WithArgRef("my_element").
+							WithArg(1)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.call(EmptyExecutionContextID)
+
+						So(call.FunctionDeclaration, ShouldEqual, exp)
+					})
+				})
+			})
+		})
+
 		Convey(".CallOn", func() {
 			Convey("It should use a given ownerID over ContextID", func() {
 				ownerID := runtime.RemoteObjectID("foo")

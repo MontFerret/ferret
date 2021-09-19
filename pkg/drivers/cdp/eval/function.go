@@ -11,6 +11,7 @@ import (
 
 type Function struct {
 	exp        string
+	name       string
 	ownerID    runtime.RemoteObjectID
 	args       FunctionArguments
 	returnType ReturnType
@@ -41,6 +42,20 @@ func (fn *Function) AsAsync() *Function {
 
 func (fn *Function) AsSync() *Function {
 	fn.async = false
+
+	return fn
+}
+
+func (fn *Function) AsAnonymous() *Function {
+	fn.name = ""
+
+	return fn
+}
+
+func (fn *Function) AsNamed(name string) *Function {
+	if name != "" {
+		fn.name = name
+	}
 
 	return fn
 }
@@ -148,31 +163,67 @@ func (fn *Function) compile(ctx runtime.ExecutionContextID) *runtime.CompileScri
 }
 
 func (fn *Function) prepExp() string {
+	var invoke bool
 	exp := strings.TrimSpace(fn.exp)
+	name := fn.name
 
+	// If the given expression is either an arrow or plain function
 	if strings.HasPrefix(exp, "(") || strings.HasPrefix(exp, "function") {
-		return exp
+		// And if this function must be an anonymous
+		// we just pass the expression as is without wrapping it.
+		if name == "" {
+			return exp
+		}
+
+		// But if the function must be identified (named)
+		// we need to wrap the given function with a named one/
+		// And then call it with passing available arguments.
+		invoke = true
 	}
 
-	args := len(fn.args)
-
-	if args == 0 {
-		return "() => {\n" + exp + "\n}"
-	}
-
+	// Start building a wrapper
 	var buf strings.Builder
-	lastIndex := args - 1
+	buf.WriteString("function")
 
-	for i := 0; i < args; i++ {
-		buf.WriteString("arg")
-		buf.WriteString(strconv.Itoa(i + 1))
+	// Name the function if the name is set
+	if name != "" {
+		buf.WriteString(" ")
+		buf.WriteString(name)
+	}
 
-		if i != lastIndex {
-			buf.WriteString(",")
+	buf.WriteString("(")
+
+	// If the given expression is a function then we do not need to define wrapper's function arguments.
+	// Any available arguments will be passed down via 'arguments' runtime variable.
+	// Otherwise, we define a list of arguments as argN, so the given expression could access them by name.
+	if !invoke {
+		args := len(fn.args)
+		lastIndex := args - 1
+
+		for i := 0; i < args; i++ {
+			buf.WriteString("arg")
+			buf.WriteString(strconv.Itoa(i + 1))
+
+			if i != lastIndex {
+				buf.WriteString(",")
+			}
 		}
 	}
 
-	return "(" + buf.String() + ") => {\n" + exp + "\n}"
+	buf.WriteString(") {\n")
+
+	if !invoke {
+		buf.WriteString(exp)
+	} else {
+		buf.WriteString("const $exp = ")
+		buf.WriteString(exp)
+		buf.WriteString(";\n")
+		buf.WriteString("return $exp.apply(this, arguments);")
+	}
+
+	buf.WriteString("\n}")
+
+	return buf.String()
 }
 
 func (fn *Function) precompileExp() string {
