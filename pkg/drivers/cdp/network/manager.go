@@ -617,19 +617,9 @@ func (m *Manager) WaitForFrameNavigation(ctx context.Context, frameID page.Frame
 
 				log.Trace().Err(err).Msg("starting polling DOM ready event")
 
-				fn, err := ec.Compile(ctx, templates.DOMReady())
-
-				if err != nil {
-					log.Trace().Err(err).Msg("failed to pre-compile a polling function")
-
-					close(onEvent)
-
-					return false
-				}
-
-				_, err = events.NewCallWaitTask(
+				_, err = events.NewEvalWaitTask(
 					ec,
-					fn,
+					templates.DOMReady(),
 					events.DefaultPolling,
 				).Run(ctx)
 

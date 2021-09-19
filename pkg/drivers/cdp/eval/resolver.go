@@ -63,7 +63,11 @@ func (r *Resolver) SetLoader(loader ValueLoader) *Resolver {
 func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.Value, error) {
 	// It's not an actual ref but rather a plain value
 	if ref.ObjectID == nil {
-		return values.Unmarshal(ref.Value)
+		if ref.Value != nil {
+			return values.Unmarshal(ref.Value)
+		}
+
+		return values.None, nil
 	}
 
 	subtype := ToRemoteObjectType(ref)

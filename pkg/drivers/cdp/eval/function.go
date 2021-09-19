@@ -18,7 +18,11 @@ type Function struct {
 	async      bool
 }
 
-const defaultArgsCount = 5
+const (
+	defaultArgsCount = 5
+	expName          = "$exp"
+	compiledExpName  = "$$exp"
+)
 
 func F(exp string) *Function {
 	op := new(Function)
@@ -130,7 +134,7 @@ func (fn *Function) withArg(arg runtime.CallArgument) *Function {
 	return fn
 }
 
-func (fn *Function) call(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
+func (fn *Function) eval(ctx runtime.ExecutionContextID) *runtime.CallFunctionOnArgs {
 	exp := fn.prepExp()
 
 	call := runtime.NewCallFunctionOnArgs(exp).
@@ -177,7 +181,7 @@ func (fn *Function) prepExp() string {
 
 		// But if the function must be identified (named)
 		// we need to wrap the given function with a named one/
-		// And then call it with passing available arguments.
+		// And then eval it with passing available arguments.
 		invoke = true
 	}
 
@@ -215,10 +219,14 @@ func (fn *Function) prepExp() string {
 	if !invoke {
 		buf.WriteString(exp)
 	} else {
-		buf.WriteString("const $exp = ")
+		buf.WriteString("const ")
+		buf.WriteString(expName)
+		buf.WriteString(" = ")
 		buf.WriteString(exp)
 		buf.WriteString(";\n")
-		buf.WriteString("return $exp.apply(this, arguments);")
+		buf.WriteString("return ")
+		buf.WriteString(expName)
+		buf.WriteString(".apply(this, arguments);")
 	}
 
 	buf.WriteString("\n}")
@@ -230,40 +238,40 @@ func (fn *Function) precompileExp() string {
 	exp := fn.prepExp()
 	args := fn.args
 
-	if len(args) == 0 {
-		return exp
-	}
-
 	var buf strings.Builder
 	var l = len(args)
 
-	buf.WriteString("(function () {\n")
 	buf.WriteString("const args = [")
 
-	for i := 0; i < l; i++ {
-		buf.WriteRune('\n')
+	if l > 0 {
+		for i := 0; i < l; i++ {
+			buf.WriteRune('\n')
 
-		arg := args[i]
+			arg := args[i]
 
-		if arg.Value != nil {
-			buf.Write(arg.Value)
-		} else if arg.ObjectID != nil {
-			buf.WriteString("(() => { throw new Error('Reference values cannot be used in pre-compiled scrips')})()")
+			if arg.Value != nil {
+				buf.Write(arg.Value)
+			} else if arg.ObjectID != nil {
+				buf.WriteString("(() => { throw new Error('Reference values cannot be used in pre-compiled scrips')})()")
+			}
+
+			buf.WriteString(",")
 		}
 
-		buf.WriteString(",")
+		buf.WriteRune('\n')
 	}
-	buf.WriteRune('\n')
+
 	buf.WriteString("];")
 
 	buf.WriteRune('\n')
-	buf.WriteString("const exp = ")
+	buf.WriteString("const ")
+	buf.WriteString(compiledExpName)
+	buf.WriteString(" = ")
 	buf.WriteString(exp)
-	buf.WriteRune('\n')
-
-	buf.WriteString("return exp(...args);")
-
-	buf.WriteString("})")
+	buf.WriteString(";\n")
+	buf.WriteString(compiledExpName)
+	buf.WriteString(".apply(this, args);")
+	buf.WriteString("\n")
 
 	return buf.String()
 }

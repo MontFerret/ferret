@@ -234,7 +234,7 @@ func (rt *Runtime) evalInternal(ctx context.Context, fn *Function) (runtime.Remo
 
 	log.Trace().Msg("executing expression...")
 
-	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.call(rt.contextID))
+	repl, err := rt.client.Runtime.CallFunctionOn(ctx, fn.eval(rt.contextID))
 
 	if err != nil {
 		log.Trace().Err(err).Msg("failed executing expression")

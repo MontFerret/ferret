@@ -15,7 +15,7 @@ func TestFunction(t *testing.T) {
 		Convey(".AsAsync", func() {
 			Convey("Should set async=true", func() {
 				f := F("return 'foo'").AsAsync()
-				args := f.call(EmptyExecutionContextID)
+				args := f.eval(EmptyExecutionContextID)
 
 				So(*args.AwaitPromise, ShouldBeTrue)
 			})
@@ -24,11 +24,11 @@ func TestFunction(t *testing.T) {
 		Convey(".AsSync", func() {
 			Convey("Should set async=false", func() {
 				f := F("return 'foo'").AsAsync()
-				args := f.call(EmptyExecutionContextID)
+				args := f.eval(EmptyExecutionContextID)
 
 				So(*args.AwaitPromise, ShouldBeTrue)
 
-				args = f.AsSync().call(EmptyExecutionContextID)
+				args = f.AsSync().eval(EmptyExecutionContextID)
 
 				So(*args.AwaitPromise, ShouldBeFalse)
 			})
@@ -43,7 +43,7 @@ func TestFunction(t *testing.T) {
 
 					So(f.name, ShouldEqual, name)
 
-					call := f.call(EmptyExecutionContextID)
+					call := f.eval(EmptyExecutionContextID)
 
 					expected := "function " + name + "() {\n" + exp + "\n}"
 
@@ -63,7 +63,7 @@ func TestFunction(t *testing.T) {
 
 						So(f.name, ShouldEqual, name)
 
-						call := f.call(EmptyExecutionContextID)
+						call := f.eval(EmptyExecutionContextID)
 
 						expected := "function " + name + "(arg1,arg2) {\n" + exp + "\n}"
 
@@ -82,7 +82,7 @@ func TestFunction(t *testing.T) {
 
 						So(f.name, ShouldEqual, name)
 
-						call := f.call(EmptyExecutionContextID)
+						call := f.eval(EmptyExecutionContextID)
 
 						expected := "function " + name + "() {\n" +
 							"const $exp = " + exp + ";\n" +
@@ -104,7 +104,7 @@ func TestFunction(t *testing.T) {
 
 						So(f.name, ShouldEqual, name)
 
-						call := f.call(EmptyExecutionContextID)
+						call := f.eval(EmptyExecutionContextID)
 
 						expected := "function " + name + "() {\n" +
 							"const $exp = " + exp + ";\n" +
@@ -126,7 +126,7 @@ func TestFunction(t *testing.T) {
 
 					So(f.name, ShouldEqual, name)
 
-					call := f.call(EmptyExecutionContextID)
+					call := f.eval(EmptyExecutionContextID)
 
 					expected := "function() {\n" + exp + "\n}"
 
@@ -147,7 +147,7 @@ func TestFunction(t *testing.T) {
 
 						So(f.name, ShouldEqual, name)
 
-						call := f.call(EmptyExecutionContextID)
+						call := f.eval(EmptyExecutionContextID)
 
 						expected := "function(arg1,arg2) {\n" + exp + "\n}"
 
@@ -167,7 +167,7 @@ func TestFunction(t *testing.T) {
 
 						So(f.name, ShouldEqual, name)
 
-						call := f.call(EmptyExecutionContextID)
+						call := f.eval(EmptyExecutionContextID)
 
 						So(call.FunctionDeclaration, ShouldEqual, exp)
 					})
@@ -185,7 +185,7 @@ func TestFunction(t *testing.T) {
 
 						So(f.name, ShouldEqual, name)
 
-						call := f.call(EmptyExecutionContextID)
+						call := f.eval(EmptyExecutionContextID)
 
 						So(call.FunctionDeclaration, ShouldEqual, exp)
 					})
@@ -199,7 +199,7 @@ func TestFunction(t *testing.T) {
 				contextID := runtime.ExecutionContextID(42)
 
 				f := F("return 'foo'").CallOn(ownerID)
-				call := f.call(contextID)
+				call := f.eval(contextID)
 
 				So(call.ExecutionContextID, ShouldBeNil)
 				So(call.ObjectID, ShouldNotBeNil)
@@ -211,7 +211,7 @@ func TestFunction(t *testing.T) {
 				contextID := runtime.ExecutionContextID(42)
 
 				f := F("return 'foo'").CallOn(ownerID)
-				call := f.call(contextID)
+				call := f.eval(contextID)
 
 				So(call.ExecutionContextID, ShouldNotBeNil)
 				So(call.ObjectID, ShouldBeNil)
@@ -347,7 +347,7 @@ func TestFunction(t *testing.T) {
 		Convey(".returnNothing", func() {
 			Convey("It should set return by value to false", func() {
 				f := F("return 'foo'").returnNothing()
-				call := f.call(EmptyExecutionContextID)
+				call := f.eval(EmptyExecutionContextID)
 
 				So(*call.ReturnByValue, ShouldBeFalse)
 			})
@@ -356,7 +356,7 @@ func TestFunction(t *testing.T) {
 		Convey(".returnValue", func() {
 			Convey("It should set return by value to true", func() {
 				f := F("return 'foo'").returnValue()
-				call := f.call(EmptyExecutionContextID)
+				call := f.eval(EmptyExecutionContextID)
 
 				So(*call.ReturnByValue, ShouldBeTrue)
 			})
@@ -365,28 +365,100 @@ func TestFunction(t *testing.T) {
 		Convey(".returnRef", func() {
 			Convey("It should set return by value to false", func() {
 				f := F("return 'foo'").returnValue()
-				call := f.call(EmptyExecutionContextID)
+				call := f.eval(EmptyExecutionContextID)
 
 				So(*call.ReturnByValue, ShouldBeTrue)
 
 				f.returnRef()
 
-				call = f.call(EmptyExecutionContextID)
+				call = f.eval(EmptyExecutionContextID)
 
 				So(*call.ReturnByValue, ShouldBeFalse)
 			})
 		})
-	})
 
-	//Convey("prepExp", t, func() {
-	//	Convey("When a plain expression is passed", func() {
-	//		exp := "return true"
-	//		So(wrapExp(exp, 0), ShouldEqual, "() => {\n"+exp+"\n}")
-	//	})
-	//
-	//	Convey("When a plain expression is passed with args > 0", func() {
-	//		exp := "return true"
-	//		So(wrapExp(exp, 3), ShouldEqual, "(arg1,arg2,arg3) => {\n"+exp+"\n}")
-	//	})
-	//})
+		Convey(".compile", func() {
+			Convey("When Anonymous", func() {
+				Convey("When without args", func() {
+					Convey("Should generate an expression", func() {
+						name := ""
+						exp := "return 'foo'"
+						f := F(exp)
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.compile(EmptyExecutionContextID)
+
+						expected := "const args = [];\n" +
+							"const " + compiledExpName + " = function() {\n" + exp + "\n};\n" +
+							compiledExpName + ".apply(this, args);\n"
+
+						So(call.Expression, ShouldEqual, expected)
+					})
+
+					Convey("When a function is given", func() {
+						Convey("Should generate an expression", func() {
+							name := ""
+							exp := "() => return 'foo'"
+							f := F(exp)
+
+							So(f.name, ShouldEqual, name)
+
+							call := f.compile(EmptyExecutionContextID)
+
+							expected := "const args = [];\n" +
+								"const " + compiledExpName + " = " + exp + ";\n" +
+								compiledExpName + ".apply(this, args);\n"
+
+							So(call.Expression, ShouldEqual, expected)
+						})
+					})
+				})
+
+				Convey("When with args", func() {
+					Convey("Should generate an expression", func() {
+						name := ""
+						exp := "return 'foo'"
+						f := F(exp).WithArg(1).WithArg("test").WithArg([]int{1, 2})
+
+						So(f.name, ShouldEqual, name)
+
+						call := f.compile(EmptyExecutionContextID)
+
+						expected := "const args = [\n" +
+							"1,\n" +
+							"\"test\",\n" +
+							"[1,2],\n" +
+							"];\n" +
+							"const " + compiledExpName + " = function(arg1,arg2,arg3) {\n" + exp + "\n};\n" +
+							compiledExpName + ".apply(this, args);\n"
+
+						So(call.Expression, ShouldEqual, expected)
+					})
+
+					Convey("When a function is given", func() {
+						Convey("Should generate an expression", func() {
+							name := ""
+							exp := "() => return 'foo'"
+							f := F(exp).WithArg(1).WithArg("test").WithArg([]int{1, 2})
+
+							So(f.name, ShouldEqual, name)
+
+							call := f.compile(EmptyExecutionContextID)
+
+							expected := "const args = [\n" +
+								"1,\n" +
+								"\"test\",\n" +
+								"[1,2],\n" +
+								"];\n" +
+								"const " + compiledExpName + " = " + exp + ";\n" +
+								compiledExpName + ".apply(this, args);\n"
+
+							So(call.Expression, ShouldEqual, expected)
+						})
+					})
+				})
+			})
+		})
+	})
 }
