@@ -2,25 +2,56 @@ package eval
 
 import (
 	"context"
+	"strconv"
+
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/runtime"
-	"github.com/pkg/errors"
 )
 
 type (
-	ValueLoader func(ctx context.Context, remoteType RemoteType, id runtime.RemoteObjectID) (core.Value, error)
+	ValueLoader interface {
+		Load(
+			ctx context.Context,
+			frameID page.FrameID,
+			remoteType RemoteObjectType,
+			remoteClass RemoteClassName,
+			id runtime.RemoteObjectID,
+		) (core.Value, error)
+	}
+
+	ValueLoaderFn func(
+		ctx context.Context,
+		frameID page.FrameID,
+		remoteType RemoteObjectType,
+		remoteClass RemoteClassName,
+		id runtime.RemoteObjectID,
+	) (core.Value, error)
 
 	Resolver struct {
 		runtime cdp.Runtime
+		frameID page.FrameID
 		loader  ValueLoader
 	}
 )
 
-func NewResolver(runtime cdp.Runtime) *Resolver {
-	return &Resolver{runtime, nil}
+func (f ValueLoaderFn) Load(
+	ctx context.Context,
+	frameID page.FrameID,
+	remoteType RemoteObjectType,
+	remoteClass RemoteClassName,
+	id runtime.RemoteObjectID,
+) (core.Value, error) {
+	return f(ctx, frameID, remoteType, remoteClass, id)
+}
+
+func NewResolver(runtime cdp.Runtime, frameID page.FrameID) *Resolver {
+	return &Resolver{runtime, frameID, nil}
 }
 
 func (r *Resolver) SetLoader(loader ValueLoader) *Resolver {
@@ -32,13 +63,19 @@ func (r *Resolver) SetLoader(loader ValueLoader) *Resolver {
 func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.Value, error) {
 	// It's not an actual ref but rather a plain value
 	if ref.ObjectID == nil {
-		return values.Unmarshal(ref.Value)
+		if ref.Value != nil {
+			return values.Unmarshal(ref.Value)
+		}
+
+		return values.None, nil
 	}
 
-	switch ToRemoteType(ref) {
-	case NullType, UndefinedType:
+	subtype := ToRemoteObjectType(ref)
+
+	switch subtype {
+	case NullObjectType, UndefinedObjectType:
 		return values.None, nil
-	case ArrayType:
+	case ArrayObjectType:
 		props, err := r.runtime.GetProperties(ctx, runtime.NewGetPropertiesArgs(*ref.ObjectID).SetOwnProperties(true))
 
 		if err != nil {
@@ -72,15 +109,32 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 		}
 
 		return result, nil
-	case NodeType:
-		// could it be possible?
+	case NodeObjectType:
+		// is it even possible?
 		if ref.ObjectID == nil {
 			return values.Unmarshal(ref.Value)
 		}
 
-		return r.loadValue(ctx, NodeType, *ref.ObjectID)
+		return r.loadValue(ctx, NodeObjectType, ToRemoteClassName(ref), *ref.ObjectID)
 	default:
-		return Unmarshal(ref)
+		switch ToRemoteType(ref) {
+		case StringType:
+			str, err := strconv.Unquote(string(ref.Value))
+
+			if err != nil {
+				return values.None, err
+			}
+
+			return values.NewString(str), nil
+		case ObjectType:
+			if subtype == NullObjectType || subtype == UnknownObjectType {
+				return values.None, nil
+			}
+
+			return values.Unmarshal(ref.Value)
+		default:
+			return values.Unmarshal(ref.Value)
+		}
 	}
 }
 
@@ -89,7 +143,7 @@ func (r *Resolver) ToElement(ctx context.Context, ref runtime.RemoteObject) (dri
 		return nil, core.Error(core.ErrInvalidArgument, "ref id")
 	}
 
-	val, err := r.loadValue(ctx, ToRemoteType(ref), *ref.ObjectID)
+	val, err := r.loadValue(ctx, ToRemoteObjectType(ref), ToRemoteClassName(ref), *ref.ObjectID)
 
 	if err != nil {
 		return nil, err
@@ -163,10 +217,10 @@ func (r *Resolver) ToProperties(
 	return arr, nil
 }
 
-func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteType, id runtime.RemoteObjectID) (core.Value, error) {
+func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteObjectType, remoteClass RemoteClassName, id runtime.RemoteObjectID) (core.Value, error) {
 	if r.loader == nil {
 		return values.None, core.Error(core.ErrNotImplemented, "ValueLoader")
 	}
 
-	return r.loader(ctx, remoteType, id)
+	return r.loader.Load(ctx, r.frameID, remoteType, remoteClass, id)
 }

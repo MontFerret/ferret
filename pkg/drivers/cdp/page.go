@@ -31,20 +31,14 @@ type (
 	HTMLPageEvent string
 
 	HTMLPage struct {
-		mu       sync.Mutex
-		closed   values.Boolean
-		logger   zerolog.Logger
-		conn     *rpcc.Conn
-		client   *cdp.Client
-		network  *net.Manager
-		dom      *dom.Manager
-		mouse    *input.Mouse
-		keyboard *input.Keyboard
+		mu      sync.Mutex
+		closed  values.Boolean
+		logger  zerolog.Logger
+		conn    *rpcc.Conn
+		client  *cdp.Client
+		network *net.Manager
+		dom     *dom.Manager
 	}
-)
-
-const (
-	HTMLPageEventNavigation HTMLPageEvent = "navigation"
 )
 
 func LoadHTMLPage(
@@ -113,6 +107,7 @@ func LoadHTMLPage(
 		mouse,
 		keyboard,
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +118,6 @@ func LoadHTMLPage(
 		client,
 		netManager,
 		domManager,
-		mouse,
-		keyboard,
 	)
 
 	if params.URL != BlankPageURL && params.URL != "" {
@@ -191,8 +184,6 @@ func NewHTMLPage(
 	client *cdp.Client,
 	netManager *net.Manager,
 	domManager *dom.Manager,
-	mouse *input.Mouse,
-	keyboard *input.Keyboard,
 ) *HTMLPage {
 	p := new(HTMLPage)
 	p.closed = values.False
@@ -201,8 +192,6 @@ func NewHTMLPage(
 	p.client = client
 	p.network = netManager
 	p.dom = domManager
-	p.mouse = mouse
-	p.keyboard = keyboard
 
 	return p
 }
@@ -327,7 +316,7 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 }
 
 func (p *HTMLPage) GetURL() values.String {
-	res, err := p.getCurrentDocument().Eval(context.Background(), templates.GetURL().String())
+	res, err := p.getCurrentDocument().Eval().EvalValue(context.Background(), templates.GetURL())
 
 	if err == nil {
 		return values.ToString(res)
@@ -693,14 +682,7 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 		}
 	}
 
-	next, err := dom.LoadRootHTMLDocument(
-		ctx,
-		p.logger,
-		p.client,
-		p.dom,
-		p.mouse,
-		p.keyboard,
-	)
+	next, err := p.dom.LoadRootDocument(ctx)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("failed to load a new root document")
@@ -714,14 +696,7 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 }
 
 func (p *HTMLPage) loadMainFrame(ctx context.Context) error {
-	next, err := dom.LoadRootHTMLDocument(
-		ctx,
-		p.logger,
-		p.client,
-		p.dom,
-		p.mouse,
-		p.keyboard,
-	)
+	next, err := p.dom.LoadRootDocument(ctx)
 
 	if err != nil {
 		return err

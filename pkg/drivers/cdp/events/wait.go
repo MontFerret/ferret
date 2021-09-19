@@ -69,6 +69,19 @@ func NewEvalWaitTask(
 	)
 }
 
+func NewCallWaitTask(
+	ec *eval.Runtime,
+	fn *eval.CompiledFunction,
+	polling time.Duration,
+) *WaitTask {
+	return NewWaitTask(
+		func(ctx context.Context) (core.Value, error) {
+			return ec.CallValue(ctx, fn)
+		},
+		polling,
+	)
+}
+
 func NewValueWaitTask(
 	when drivers.WaitEvent,
 	value core.Value,

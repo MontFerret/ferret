@@ -2,7 +2,6 @@ package dom
 
 import (
 	"context"
-	"github.com/mafredri/cdp/protocol/runtime"
 	"hash/fnv"
 
 	"github.com/mafredri/cdp"
@@ -29,69 +28,6 @@ type HTMLDocument struct {
 	eval      *eval.Runtime
 	frameTree page.FrameTree
 	element   *HTMLElement
-}
-
-func LoadRootHTMLDocument(
-	ctx context.Context,
-	logger zerolog.Logger,
-	client *cdp.Client,
-	domManager *Manager,
-	mouse *input.Mouse,
-	keyboard *input.Keyboard,
-) (*HTMLDocument, error) {
-	ftRepl, err := client.Page.GetFrameTree(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return LoadHTMLDocument(
-		ctx,
-		logger,
-		client,
-		domManager,
-		mouse,
-		keyboard,
-		ftRepl.FrameTree,
-	)
-}
-
-func LoadHTMLDocument(
-	ctx context.Context,
-	logger zerolog.Logger,
-	client *cdp.Client,
-	domManager *Manager,
-	mouse *input.Mouse,
-	keyboard *input.Keyboard,
-	frameTree page.FrameTree,
-) (*HTMLDocument, error) {
-	exec, err := eval.Create(ctx, logger, client, frameTree.Frame.ID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	inputManager := input.NewManager(logger, client, exec, keyboard, mouse)
-
-	exec.SetLoader(func(ctx context.Context, remoteType eval.RemoteType, id runtime.RemoteObjectID) (core.Value, error) {
-		return NewHTMLElement(logger, client, domManager, inputManager, exec, id), nil
-	})
-
-	rootElement, err := exec.EvalElement(ctx, templates.GetDocument())
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load root element")
-	}
-
-	return NewHTMLDocument(
-		logger,
-		client,
-		domManager,
-		inputManager,
-		exec,
-		rootElement.(*HTMLElement),
-		frameTree,
-	), nil
 }
 
 func NewHTMLDocument(
@@ -396,8 +332,8 @@ func (doc *HTMLDocument) Scroll(ctx context.Context, options drivers.ScrollOptio
 	return doc.input.ScrollByXY(ctx, options)
 }
 
-func (doc *HTMLDocument) Eval(ctx context.Context, expression string) (core.Value, error) {
-	return doc.eval.EvalValue(ctx, eval.F(expression))
+func (doc *HTMLDocument) Eval() *eval.Runtime {
+	return doc.eval
 }
 
 func (doc *HTMLDocument) logError(err error) *zerolog.Event {
