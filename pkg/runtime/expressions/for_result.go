@@ -52,11 +52,10 @@ func (f *ForResult) Push(value core.Value) {
 	if f.distinct {
 		// We need to check whether the value already exists in the result set
 		hash := value.Hash()
-		_, exists := f.hashTable[hash]
 
 		// if already exists
 		// we skip it
-		if exists {
+		if f.hashTable[hash] {
 			return
 		}
 
