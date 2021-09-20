@@ -37,6 +37,12 @@ type FqlParserListener interface {
 	// EnterReturnExpression is called when entering the returnExpression production.
 	EnterReturnExpression(c *ReturnExpressionContext)
 
+	// EnterInlineHighLevelExpression is called when entering the inlineHighLevelExpression production.
+	EnterInlineHighLevelExpression(c *InlineHighLevelExpressionContext)
+
+	// EnterHighLevelExpression is called when entering the highLevelExpression production.
+	EnterHighLevelExpression(c *HighLevelExpressionContext)
+
 	// EnterForExpression is called when entering the forExpression production.
 	EnterForExpression(c *ForExpressionContext)
 
@@ -139,11 +145,11 @@ type FqlParserListener interface {
 	// EnterNoneLiteral is called when entering the noneLiteral production.
 	EnterNoneLiteral(c *NoneLiteralContext)
 
-	// EnterExpressionGroup is called when entering the expressionGroup production.
-	EnterExpressionGroup(c *ExpressionGroupContext)
-
 	// EnterExpression is called when entering the expression production.
 	EnterExpression(c *ExpressionContext)
+
+	// EnterExpressionGroup is called when entering the expressionGroup production.
+	EnterExpressionGroup(c *ExpressionGroupContext)
 
 	// EnterMemberExpression is called when entering the memberExpression production.
 	EnterMemberExpression(c *MemberExpressionContext)
@@ -159,6 +165,9 @@ type FqlParserListener interface {
 
 	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
 	EnterMemberExpressionPath(c *MemberExpressionPathContext)
+
+	// EnterErrorOperator is called when entering the errorOperator production.
+	EnterErrorOperator(c *ErrorOperatorContext)
 
 	// EnterFunctionIdentifier is called when entering the functionIdentifier production.
 	EnterFunctionIdentifier(c *FunctionIdentifierContext)
@@ -234,6 +243,12 @@ type FqlParserListener interface {
 
 	// ExitReturnExpression is called when exiting the returnExpression production.
 	ExitReturnExpression(c *ReturnExpressionContext)
+
+	// ExitInlineHighLevelExpression is called when exiting the inlineHighLevelExpression production.
+	ExitInlineHighLevelExpression(c *InlineHighLevelExpressionContext)
+
+	// ExitHighLevelExpression is called when exiting the highLevelExpression production.
+	ExitHighLevelExpression(c *HighLevelExpressionContext)
 
 	// ExitForExpression is called when exiting the forExpression production.
 	ExitForExpression(c *ForExpressionContext)
@@ -337,11 +352,11 @@ type FqlParserListener interface {
 	// ExitNoneLiteral is called when exiting the noneLiteral production.
 	ExitNoneLiteral(c *NoneLiteralContext)
 
-	// ExitExpressionGroup is called when exiting the expressionGroup production.
-	ExitExpressionGroup(c *ExpressionGroupContext)
-
 	// ExitExpression is called when exiting the expression production.
 	ExitExpression(c *ExpressionContext)
+
+	// ExitExpressionGroup is called when exiting the expressionGroup production.
+	ExitExpressionGroup(c *ExpressionGroupContext)
 
 	// ExitMemberExpression is called when exiting the memberExpression production.
 	ExitMemberExpression(c *MemberExpressionContext)
@@ -357,6 +372,9 @@ type FqlParserListener interface {
 
 	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
 	ExitMemberExpressionPath(c *MemberExpressionPathContext)
+
+	// ExitErrorOperator is called when exiting the errorOperator production.
+	ExitErrorOperator(c *ErrorOperatorContext)
 
 	// ExitFunctionIdentifier is called when exiting the functionIdentifier production.
 	ExitFunctionIdentifier(c *FunctionIdentifierContext)

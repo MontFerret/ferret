@@ -47,6 +47,14 @@ func (v *BaseFqlParserVisitor) VisitReturnExpression(ctx *ReturnExpressionContex
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitInlineHighLevelExpression(ctx *InlineHighLevelExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitHighLevelExpression(ctx *HighLevelExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitForExpression(ctx *ForExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -183,11 +191,11 @@ func (v *BaseFqlParserVisitor) VisitNoneLiteral(ctx *NoneLiteralContext) interfa
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -208,6 +216,10 @@ func (v *BaseFqlParserVisitor) VisitFunctionCallExpression(ctx *FunctionCallExpr
 }
 
 func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitErrorOperator(ctx *ErrorOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
