@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -179,11 +181,35 @@ func TestLet(t *testing.T) {
 		So(string(out), ShouldEqual, "[1,2,3]")
 	})
 
-	Convey("Should compile LET i = (FOR i WHILE 0 > 1 RETURN i) RETURN i", t, func() {
+	Convey("Should compile LET src = NONE LET i = (FOR i IN NONE RETURN i)? RETURN i == NONE", t, func() {
 		c := compiler.New()
 
 		p, err := c.Compile(`
-			LET i = (FOR i WHILE 0 > 1 RETURN i)
+			LET src = NONE
+			LET i = (FOR i IN src RETURN i)?
+			RETURN i == NONE
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "true")
+	})
+
+	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
+		c := compiler.New()
+		counter := -1
+		c.RegisterFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+
+			return values.NewInt(counter), nil
+		})
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE COUNTER() < 5 RETURN i)
 			RETURN i
 		`)
 
@@ -193,7 +219,30 @@ func TestLet(t *testing.T) {
 		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, "[]")
+		So(string(out), ShouldEqual, "[0,1,2,3,4]")
+	})
+
+	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)? RETURN i == NONE", t, func() {
+		c := compiler.New()
+		counter := -1
+		c.RegisterFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+
+			return values.NewInt(counter), nil
+		})
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)?
+			RETURN i == NONE
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "true")
 	})
 
 	Convey("Should compile LET i = { items: [1,2,3]}  FOR el IN i.items RETURN i", t, func() {
@@ -261,5 +310,18 @@ func TestLet(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `"data"`)
+	})
+
+	Convey("Should handle error from WAITFOR EVENT", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET obj = X::CREATE()
+
+			LET res = (WAITFOR EVENT "event" IN obj 100)?
+
+			RETURN res == NONE
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
 	})
 }

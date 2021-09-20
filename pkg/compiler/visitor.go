@@ -185,11 +185,7 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 	var out core.Expression
 	var err error
 
-	if exp := ctx.ForExpression(); exp != nil {
-		out, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope.Fork())
-	} else if exp := ctx.WaitForExpression(); exp != nil {
-		out, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
-	} else if exp := ctx.Expression(); exp != nil {
+	if exp := ctx.Expression(); exp != nil {
 		out, err = v.doVisitExpression(exp.(*fql.ExpressionContext), scope)
 	} else {
 		return nil, core.Error(ErrInvalidToken, ctx.GetText())
@@ -200,6 +196,36 @@ func (v *visitor) doVisitReturnExpression(ctx *fql.ReturnExpressionContext, scop
 	}
 
 	return expressions.NewReturnExpression(v.getSourceMap(ctx), out)
+}
+
+func (v *visitor) doVisitInlineHighLevelExpression(ctx *fql.InlineHighLevelExpressionContext, scope *scope) (core.Expression, error) {
+	hlexpCtx := ctx.HighLevelExpression()
+
+	if hlexpCtx == nil {
+		return nil, ErrInvalidToken
+	}
+
+	exp, err := v.doVisitHighLevelExpression(hlexpCtx.(*fql.HighLevelExpressionContext), scope.Fork())
+
+	if err != nil {
+		return nil, err
+	}
+
+	if ctx.ErrorOperator() == nil {
+		return exp, nil
+	}
+
+	return expressions.SuppressErrors(exp)
+}
+
+func (v *visitor) doVisitHighLevelExpression(ctx *fql.HighLevelExpressionContext, scope *scope) (core.Expression, error) {
+	if exp := ctx.ForExpression(); exp != nil {
+		return v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope.Fork())
+	} else if exp := ctx.WaitForExpression(); exp != nil {
+		return v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
+	}
+
+	return nil, ErrInvalidToken
 }
 
 func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *scope) (core.Expression, error) {
@@ -599,6 +625,7 @@ func (v *visitor) doVisitCollectAggregateSelector(ctx *fql.CollectAggregateSelec
 
 	if fnCtx != nil {
 		exp, err := v.doVisitFunctionCallExpression(fnCtx.(*fql.FunctionCallExpressionContext), scope)
+
 		if err != nil {
 			return nil, err
 		}
@@ -945,7 +972,7 @@ func (v *visitor) doVisitMemberExpressionSource(ctx *fql.MemberExpressionSourceC
 	}
 
 	if fnCall := ctx.FunctionCall(); fnCall != nil {
-		return v.doVisitFunctionCall(fnCall.(*fql.FunctionCallContext), false, scope)
+		return v.doVisitFunctionCall(fnCall.(*fql.FunctionCallContext), scope)
 	}
 
 	if objectLiteral := ctx.ObjectLiteral(); objectLiteral != nil {
@@ -1113,10 +1140,6 @@ func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext
 
 	if exp := ctx.Expression(); exp != nil {
 		init, err = v.doVisitExpression(ctx.Expression().(*fql.ExpressionContext), scope)
-	} else if exp := ctx.ForExpression(); exp != nil {
-		init, err = v.doVisitForExpression(exp.(*fql.ForExpressionContext), scope)
-	} else if exp := ctx.WaitForExpression(); exp != nil {
-		init, err = v.doVisitWaitForExpressionContext(exp.(*fql.WaitForExpressionContext), scope)
 	}
 
 	if err != nil {
@@ -1150,7 +1173,7 @@ func (v *visitor) doVisitRangeOperator(ctx *fql.RangeOperatorContext, scope *sco
 	)
 }
 
-func (v *visitor) doVisitFunctionCall(context *fql.FunctionCallContext, ignoreErrors bool, scope *scope) (core.Expression, error) {
+func (v *visitor) doVisitFunctionCall(context *fql.FunctionCallContext, scope *scope) (core.Expression, error) {
 	args := make([]core.Expression, 0, 5)
 	argsCtx := context.Arguments()
 
@@ -1186,17 +1209,25 @@ func (v *visitor) doVisitFunctionCall(context *fql.FunctionCallContext, ignoreEr
 	return expressions.NewFunctionCallExpression(
 		v.getSourceMap(context),
 		fun,
-		ignoreErrors,
 		args...,
 	)
 }
 
 func (v *visitor) doVisitFunctionCallExpression(context *fql.FunctionCallExpressionContext, scope *scope) (core.Expression, error) {
-	return v.doVisitFunctionCall(
+	exp, err := v.doVisitFunctionCall(
 		context.FunctionCall().(*fql.FunctionCallContext),
-		context.QuestionMark() != nil,
 		scope,
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if context.ErrorOperator() == nil {
+		return exp, nil
+	}
+
+	return expressions.SuppressErrors(exp)
 }
 
 func (v *visitor) doVisitParamContext(context *fql.ParamContext, s *scope) (core.Expression, error) {
@@ -1417,13 +1448,23 @@ func (v *visitor) doVisitArrayOperator(ctx *fql.ExpressionContext, scope *scope)
 }
 
 func (v *visitor) doVisitExpressionGroup(ctx *fql.ExpressionGroupContext, scope *scope) (core.Expression, error) {
-	exp := ctx.Expression()
+	expCtx := ctx.Expression()
 
-	if exp == nil {
+	if expCtx == nil {
 		return nil, ErrInvalidToken
 	}
 
-	return v.doVisitExpression(exp.(*fql.ExpressionContext), scope)
+	exp, err := v.doVisitExpression(expCtx.(*fql.ExpressionContext), scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if ctx.ErrorOperator() == nil {
+		return exp, nil
+	}
+
+	return expressions.SuppressErrors(exp)
 }
 
 func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (core.Expression, error) {
@@ -1515,25 +1556,16 @@ func (v *visitor) doVisitExpression(ctx *fql.ExpressionContext, scope *scope) (c
 		return v.doVisitNoneLiteral(exp.(*fql.NoneLiteralContext))
 	}
 
-	if exp := ctx.QuestionMark(); exp != nil {
-		exps, err := v.doVisitAllExpressions(ctx.AllExpression(), scope)
-		if err != nil {
-			return nil, err
-		}
-
-		return v.createTernaryOperator(
-			v.getSourceMap(ctx),
-			exps,
-			scope,
-		)
-	}
-
 	if exp := ctx.RangeOperator(); exp != nil {
 		return v.doVisitRangeOperator(exp.(*fql.RangeOperatorContext), scope)
 	}
 
 	if param := ctx.Param(); param != nil {
 		return v.doVisitParamContext(param.(*fql.ParamContext), scope)
+	}
+
+	if exp := ctx.InlineHighLevelExpression(); exp != nil {
+		return v.doVisitInlineHighLevelExpression(exp.(*fql.InlineHighLevelExpressionContext), scope)
 	}
 
 	return nil, ErrNotImplemented

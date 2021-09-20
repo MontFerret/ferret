@@ -40,13 +40,20 @@ bodyExpression
     ;
 
 variableDeclaration
-    : Let Identifier Assign OpenParen (forExpression | waitForExpression) CloseParen
-    | Let Identifier Assign expression
+    : Let Identifier Assign expression
     ;
 
 returnExpression
-    : Return Distinct? OpenParen (forExpression | waitForExpression) CloseParen
-    | Return Distinct? expression
+    : Return Distinct? expression
+    ;
+
+inlineHighLevelExpression
+    : OpenParen highLevelExpression CloseParen errorOperator?
+    ;
+
+highLevelExpression
+    : forExpression
+    | waitForExpression
     ;
 
 forExpression
@@ -223,10 +230,6 @@ noneLiteral
     | None
     ;
 
-expressionGroup
-    : OpenParen expression CloseParen
-    ;
-
 expression
     : unaryOperator expression
     | expression multiplicativeOperator expression
@@ -238,9 +241,6 @@ expression
     | expression regexpOperator expression
     | expression logicalAndOperator expression
     | expression logicalOrOperator expression
-    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon OpenParen (forExpression | waitForExpression) CloseParen
-    | expression QuestionMark expression Colon OpenParen (forExpression | waitForExpression) CloseParen
-    | expression QuestionMark OpenParen (forExpression | waitForExpression) CloseParen Colon expression
     | expression QuestionMark expression? Colon expression
     | rangeOperator
     | stringLiteral
@@ -255,6 +255,11 @@ expression
     | variable
     | noneLiteral
     | expressionGroup
+    | inlineHighLevelExpression
+    ;
+
+expressionGroup
+    : OpenParen expression CloseParen errorOperator?
     ;
 
 memberExpression
@@ -274,12 +279,16 @@ functionCall
     ;
 
 functionCallExpression
-    : functionCall QuestionMark?
+    : functionCall errorOperator?
     ;
 
 memberExpressionPath
     : QuestionMark? Dot propertyName
     | (QuestionMark Dot)? computedPropertyName
+    ;
+
+errorOperator
+    : QuestionMark
     ;
 
 functionIdentifier

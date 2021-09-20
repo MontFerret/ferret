@@ -37,6 +37,12 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#returnExpression.
 	VisitReturnExpression(ctx *ReturnExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#inlineHighLevelExpression.
+	VisitInlineHighLevelExpression(ctx *InlineHighLevelExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#highLevelExpression.
+	VisitHighLevelExpression(ctx *HighLevelExpressionContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#forExpression.
 	VisitForExpression(ctx *ForExpressionContext) interface{}
 
@@ -139,11 +145,11 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#noneLiteral.
 	VisitNoneLiteral(ctx *NoneLiteralContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#expressionGroup.
-	VisitExpressionGroup(ctx *ExpressionGroupContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#expression.
 	VisitExpression(ctx *ExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#expressionGroup.
+	VisitExpressionGroup(ctx *ExpressionGroupContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#memberExpression.
 	VisitMemberExpression(ctx *MemberExpressionContext) interface{}
@@ -159,6 +165,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#memberExpressionPath.
 	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#errorOperator.
+	VisitErrorOperator(ctx *ErrorOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#functionIdentifier.
 	VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{}

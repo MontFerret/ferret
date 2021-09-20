@@ -22,7 +22,6 @@ func TestFunctionCallExpression(t *testing.T) {
 
 					return values.True, nil
 				},
-				false,
 			)
 
 			So(err, ShouldBeNil)
@@ -48,7 +47,6 @@ func TestFunctionCallExpression(t *testing.T) {
 
 					return values.True, nil
 				},
-				false,
 				args...,
 			)
 
@@ -75,7 +73,6 @@ func TestFunctionCallExpression(t *testing.T) {
 
 					return values.True, nil
 				},
-				false,
 				args...,
 			)
 
@@ -96,11 +93,15 @@ func TestFunctionCallExpression(t *testing.T) {
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					return values.NewString("booo"), core.ErrNotImplemented
 				},
-				true,
 			)
 
 			So(err, ShouldBeNil)
-			out, err := f.Exec(context.Background(), rootScope.Fork())
+
+			fse, err := expressions.SuppressErrors(f)
+
+			So(err, ShouldBeNil)
+
+			out, err := fse.Exec(context.Background(), rootScope.Fork())
 
 			So(err, ShouldBeNil)
 			So(out.Type().String(), ShouldEqual, types.None.String())

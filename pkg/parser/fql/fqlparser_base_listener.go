@@ -80,6 +80,20 @@ func (s *BaseFqlParserListener) EnterReturnExpression(ctx *ReturnExpressionConte
 // ExitReturnExpression is called when production returnExpression is exited.
 func (s *BaseFqlParserListener) ExitReturnExpression(ctx *ReturnExpressionContext) {}
 
+// EnterInlineHighLevelExpression is called when production inlineHighLevelExpression is entered.
+func (s *BaseFqlParserListener) EnterInlineHighLevelExpression(ctx *InlineHighLevelExpressionContext) {
+}
+
+// ExitInlineHighLevelExpression is called when production inlineHighLevelExpression is exited.
+func (s *BaseFqlParserListener) ExitInlineHighLevelExpression(ctx *InlineHighLevelExpressionContext) {
+}
+
+// EnterHighLevelExpression is called when production highLevelExpression is entered.
+func (s *BaseFqlParserListener) EnterHighLevelExpression(ctx *HighLevelExpressionContext) {}
+
+// ExitHighLevelExpression is called when production highLevelExpression is exited.
+func (s *BaseFqlParserListener) ExitHighLevelExpression(ctx *HighLevelExpressionContext) {}
+
 // EnterForExpression is called when production forExpression is entered.
 func (s *BaseFqlParserListener) EnterForExpression(ctx *ForExpressionContext) {}
 
@@ -284,17 +298,17 @@ func (s *BaseFqlParserListener) EnterNoneLiteral(ctx *NoneLiteralContext) {}
 // ExitNoneLiteral is called when production noneLiteral is exited.
 func (s *BaseFqlParserListener) ExitNoneLiteral(ctx *NoneLiteralContext) {}
 
-// EnterExpressionGroup is called when production expressionGroup is entered.
-func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
-
-// ExitExpressionGroup is called when production expressionGroup is exited.
-func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
-
 // EnterExpression is called when production expression is entered.
 func (s *BaseFqlParserListener) EnterExpression(ctx *ExpressionContext) {}
 
 // ExitExpression is called when production expression is exited.
 func (s *BaseFqlParserListener) ExitExpression(ctx *ExpressionContext) {}
+
+// EnterExpressionGroup is called when production expressionGroup is entered.
+func (s *BaseFqlParserListener) EnterExpressionGroup(ctx *ExpressionGroupContext) {}
+
+// ExitExpressionGroup is called when production expressionGroup is exited.
+func (s *BaseFqlParserListener) ExitExpressionGroup(ctx *ExpressionGroupContext) {}
 
 // EnterMemberExpression is called when production memberExpression is entered.
 func (s *BaseFqlParserListener) EnterMemberExpression(ctx *MemberExpressionContext) {}
@@ -325,6 +339,12 @@ func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionP
 
 // ExitMemberExpressionPath is called when production memberExpressionPath is exited.
 func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
+
+// EnterErrorOperator is called when production errorOperator is entered.
+func (s *BaseFqlParserListener) EnterErrorOperator(ctx *ErrorOperatorContext) {}
+
+// ExitErrorOperator is called when production errorOperator is exited.
+func (s *BaseFqlParserListener) ExitErrorOperator(ctx *ErrorOperatorContext) {}
 
 // EnterFunctionIdentifier is called when production functionIdentifier is entered.
 func (s *BaseFqlParserListener) EnterFunctionIdentifier(ctx *FunctionIdentifierContext) {}

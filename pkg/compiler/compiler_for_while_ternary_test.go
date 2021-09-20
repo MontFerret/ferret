@@ -22,6 +22,18 @@ func TestForTernaryWhileExpression(t *testing.T) {
 		So(string(out1), ShouldEqual, `[]`)
 	})
 
+	Convey("RETURN foo ? TRUE : (FOR i WHILE T::FAIL() RETURN i*2)?", t, func() {
+		c := compiler.New()
+
+		out1, err := c.MustCompile(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i WHILE T::FAIL() RETURN i*2)?
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out1), ShouldEqual, `null`)
+	})
+
 	Convey("RETURN foo ? TRUE : (FOR i WHILE F() < 10 RETURN i*2)", t, func() {
 		c := compiler.New()
 
