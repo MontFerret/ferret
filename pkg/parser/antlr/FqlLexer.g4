@@ -86,6 +86,7 @@ While: 'WHILE';
 // Literals
 Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
+IgnoreIdentifier: Underscore;
 StringLiteral: SQString | DQSring | BacktickString | TickString;
 IntegerLiteral: [0-9]+;
 FloatLiteral
@@ -111,7 +112,8 @@ fragment ExponentPart
 fragment Letter
     : 'A'..'Z' | 'a'..'z'
     ;
-fragment Symbols: '_';
+fragment Symbols: Underscore;
+fragment Underscore: '_';
 fragment Digit
     : '0'..'9'
     ;

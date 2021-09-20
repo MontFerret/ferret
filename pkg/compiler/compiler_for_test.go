@@ -45,6 +45,23 @@ func TestFor(t *testing.T) {
 		So(string(out), ShouldEqual, "[1,2,3]")
 	})
 
+	Convey("Should not allocate memory if NONE is a return statement", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			FOR i IN 0..100
+				RETURN NONE
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "[]")
+	})
+
 	Convey("Should compile FOR i, k IN [1, 2, 3] RETURN k", t, func() {
 		c := compiler.New()
 

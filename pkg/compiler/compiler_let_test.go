@@ -337,4 +337,41 @@ func TestLet(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `false`)
 	})
+
+	Convey("Should use ignorable variable name", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN TRUE
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	Convey("Should allow to declare a variable name using _", t, func() {
+		c := compiler.New()
+
+		out, err := c.MustCompile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN TRUE
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	Convey("Should not allow to use ignorable variable name", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN _
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 }

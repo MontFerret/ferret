@@ -34,6 +34,10 @@ func NewArrayWith(values ...core.Value) *Array {
 	return &Array{items: values}
 }
 
+func NewArrayOf(values []core.Value) *Array {
+	return &Array{items: values}
+}
+
 func (t *Array) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(t.items, jettison.NoHTMLEscaping())
 }

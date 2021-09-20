@@ -55,6 +55,10 @@ func (s *scope) HasVariable(name string) bool {
 }
 
 func (s *scope) SetVariable(name string) error {
+	if name == core.IgnorableVariable {
+		return nil
+	}
+
 	_, exists := s.vars[name]
 
 	if exists {

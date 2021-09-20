@@ -249,6 +249,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 	if !isWhileLoop {
 		srcCtx := ctx.ForExpressionSource().(*fql.ForExpressionSourceContext)
 		srcExp, err := v.doVisitForExpressionSource(srcCtx, scope)
+
 		if err != nil {
 			return nil, err
 		}
@@ -266,6 +267,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 	} else {
 		whileExpCtx := ctx.Expression().(*fql.ExpressionContext)
 		conditionExp, err := v.doVisitExpression(whileExpCtx, scope)
+
 		if err != nil {
 			return nil, err
 		}
@@ -315,6 +317,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 				valVarName,
 				keyVarName,
 			)
+
 			if err != nil {
 				return nil, err
 			}
@@ -325,6 +328,7 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 				statementCtx.(*fql.ForExpressionStatementContext),
 				forInScope,
 			)
+
 			if err != nil {
 				return nil, err
 			}
@@ -336,12 +340,14 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 	var spread bool
 	var distinct bool
 	var predicate core.Expression
+	var passThrough bool
 	forRetCtx := ctx.ForExpressionReturn().(*fql.ForExpressionReturnContext)
 	returnCtx := forRetCtx.ReturnExpression()
 
 	if returnCtx != nil {
 		returnCtx := returnCtx.(*fql.ReturnExpressionContext)
 		returnExp, err := v.doVisitReturnExpression(returnCtx, forInScope)
+
 		if err != nil {
 			return nil, err
 		}
@@ -353,9 +359,13 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		}
 
 		predicate = returnExp
+
+		ret := returnExp.(*expressions.ReturnExpression)
+		passThrough = literals.IsNone(ret.Predicate())
 	} else {
 		forInCtx := forRetCtx.ForExpression().(*fql.ForExpressionContext)
 		forInExp, err := v.doVisitForExpression(forInCtx, forInScope)
+
 		if err != nil {
 			return nil, err
 		}
@@ -371,7 +381,9 @@ func (v *visitor) doVisitForExpression(ctx *fql.ForExpressionContext, scope *sco
 		predicate,
 		distinct,
 		spread,
+		passThrough,
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -1130,8 +1142,12 @@ func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (core.
 func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext, scope *scope) (core.Expression, error) {
 	var init core.Expression
 	var err error
+	name := core.IgnorableVariable
 
-	name := ctx.Identifier().GetText()
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	}
+
 	err = scope.SetVariable(name)
 
 	if err != nil {

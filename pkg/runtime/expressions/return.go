@@ -27,6 +27,10 @@ func NewReturnExpression(
 	}, nil
 }
 
+func (e *ReturnExpression) Predicate() core.Expression {
+	return e.predicate
+}
+
 func (e *ReturnExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
 	select {
 	case <-ctx.Done():
