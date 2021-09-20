@@ -9,11 +9,12 @@ import (
 )
 
 type ForExpression struct {
-	src        core.SourceMap
-	dataSource collections.Iterable
-	predicate  core.Expression
-	distinct   bool
-	spread     bool
+	src         core.SourceMap
+	dataSource  collections.Iterable
+	predicate   core.Expression
+	distinct    bool
+	spread      bool
+	passThrough bool
 }
 
 func NewForExpression(
@@ -21,7 +22,8 @@ func NewForExpression(
 	dataSource collections.Iterable,
 	predicate core.Expression,
 	distinct,
-	spread bool,
+	spread,
+	passThrough bool,
 ) (*ForExpression, error) {
 	if dataSource == nil {
 		return nil, core.Error(core.ErrMissedArgument, "missed source expression")
@@ -31,13 +33,15 @@ func NewForExpression(
 		return nil, core.Error(core.ErrMissedArgument, "missed return expression")
 	}
 
-	return &ForExpression{
-		src,
-		dataSource,
-		predicate,
-		distinct,
-		spread,
-	}, nil
+	exp := new(ForExpression)
+	exp.src = src
+	exp.dataSource = dataSource
+	exp.predicate = predicate
+	exp.distinct = distinct
+	exp.spread = spread
+	exp.passThrough = passThrough
+
+	return exp, nil
 }
 
 func (e *ForExpression) AddLimit(src core.SourceMap, size, count core.Expression) error {
@@ -118,14 +122,10 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 			return values.None, err
 		}
 
-		// Hash map for a check for uniqueness
-		var hashTable map[uint64]bool
-
-		if e.distinct {
-			hashTable = make(map[uint64]bool)
-		}
-
-		res := values.NewArray(10)
+		res := NewForResult(10).
+			Distinct(e.distinct).
+			Spread(e.spread).
+			PassThrough(e.passThrough)
 
 		for {
 			nextScope, err := iterator.Next(ctx, scope)
@@ -144,42 +144,9 @@ func (e *ForExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value
 				return values.None, err
 			}
 
-			var add bool
-
-			// The result shouldn't be distinct
-			// Just add the output
-			if !e.distinct {
-				add = true
-			} else {
-				// We need to check whether the value already exists in the result set
-				hash := out.Hash()
-				_, exists := hashTable[hash]
-
-				if !exists {
-					hashTable[hash] = true
-					add = true
-				}
-			}
-
-			if add {
-				if !e.spread {
-					res.Push(out)
-				} else {
-					elements, ok := out.(*values.Array)
-
-					if !ok {
-						return values.None, core.Error(core.ErrInvalidOperation, "spread of non-array value")
-					}
-
-					elements.ForEach(func(i core.Value, _ int) bool {
-						res.Push(i)
-
-						return true
-					})
-				}
-			}
+			res.Push(out)
 		}
 
-		return res, nil
+		return res.ToArray(), nil
 	}
 }
