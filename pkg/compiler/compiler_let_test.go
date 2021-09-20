@@ -324,4 +324,17 @@ func TestLet(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `true`)
 	})
+
+	Convey("Should compare result of handled error", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET obj = X::CREATE()
+
+			LET res = (WAITFOR EVENT "event" IN obj 100)? != NONE
+
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `false`)
+	})
 }
