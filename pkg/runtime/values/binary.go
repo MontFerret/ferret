@@ -24,11 +24,14 @@ func NewBinaryFrom(stream io.Reader) (Binary, error) {
 		return nil, err
 	}
 
-	return Binary(values), nil
+	return values, nil
 }
 
 func (b Binary) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts([]byte(b), jettison.NoHTMLEscaping())
+	return jettison.MarshalOpts([]byte(b),
+		jettison.NoStringEscaping(),
+		jettison.NoCompact(),
+	)
 }
 
 func (b Binary) Type() core.Type {
