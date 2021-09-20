@@ -41,6 +41,7 @@ bodyExpression
 
 variableDeclaration
     : Let Identifier Assign expression
+    | Let IgnoreIdentifier Assign expression
     ;
 
 returnExpression

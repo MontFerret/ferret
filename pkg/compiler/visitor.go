@@ -1142,8 +1142,12 @@ func (v *visitor) doVisitVariable(ctx *fql.VariableContext, scope *scope) (core.
 func (v *visitor) doVisitVariableDeclaration(ctx *fql.VariableDeclarationContext, scope *scope) (core.Expression, error) {
 	var init core.Expression
 	var err error
+	name := core.IgnorableVariable
 
-	name := ctx.Identifier().GetText()
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	}
+
 	err = scope.SetVariable(name)
 
 	if err != nil {
