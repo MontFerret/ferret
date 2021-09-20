@@ -60,20 +60,20 @@ func TestForTernaryExpression(t *testing.T) {
 		So(string(out2), ShouldEqual, `[1,2,3,4,5]`)
 	})
 
-	Convey("RETURN foo ? (FOR i IN 1..5 RETURN T::PANIC())? : (FOR i IN 1..5 RETURN T::PANIC())?", t, func() {
+	Convey("RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL())? : (FOR i IN 1..5 RETURN T::FAIL())?", t, func() {
 		c := compiler.New()
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			RETURN foo ? (FOR i IN 1..5 RETURN T::PANIC()) : (FOR i IN 1..5 RETURN T::PANIC())?
+			RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL()) : (FOR i IN 1..5 RETURN T::FAIL())?
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)
 		So(string(out1), ShouldEqual, `null`)
 
 		out2, err := c.MustCompile(`
-			LET foo = FALSE
-			RETURN foo ? (FOR i IN 1..5 RETURN T::PANIC())? : (FOR i IN 1..5 RETURN T::PANIC())
+			LET foo = TRUE
+			RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL())? : (FOR i IN 1..5 RETURN T::FAIL())
 		`).Run(context.Background())
 
 		So(err, ShouldBeNil)
@@ -124,11 +124,11 @@ func TestForTernaryExpression(t *testing.T) {
 		So(string(out2), ShouldEqual, `[1,2,3,4,5]`)
 	})
 
-	Convey("LET res = (FOR i IN 1..5 RETURN T::PANIC())? ? TRUE : FALSE", t, func() {
+	Convey("LET res = (FOR i IN 1..5 RETURN T::FAIL())? ? TRUE : FALSE", t, func() {
 		c := compiler.New()
 
 		out1, err := c.MustCompile(`
-			LET res = (FOR i IN 1..5 RETURN T::PANIC())? ? TRUE : FALSE
+			LET res = (FOR i IN 1..5 RETURN T::FAIL())? ? TRUE : FALSE
 			RETURN res
 		`).Run(context.Background())
 
