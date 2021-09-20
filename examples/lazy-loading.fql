@@ -1,0 +1,29 @@
+LET doc = DOCUMENT('https://soundcloud.com/charts/top', { driver: "cdp" })
+
+LET endSelector = ''
+LET listSelector = '.chartTracks ul'
+
+WAIT_ELEMENT(doc, listSelector)
+
+LET list = ELEMENT(doc, listSelector)
+LET initialCount = ELEMENTS_COUNT(list, 'li')
+LET lastItem = 50
+
+LET preload = (
+    FOR i DO WHILE !ELEMENT_EXISTS(doc, '.chartTracksEnd')
+        LET initial = i > 0 ? SCROLL_BOTTOM(doc) && WAIT(500) && SCROLL_TOP(doc) && false : true
+
+        RETURN NONE
+)
+
+WAIT_ELEMENT(list, FMT('li:nth-child({})', lastItem))
+
+FOR track, i IN ELEMENTS(list, 'li')
+    RETURN {
+        num: i + 1,
+        artist: TRIM(INNER_TEXT(track, '.chartTrack__details .chartTrack__username')),
+        track: TRIM(INNER_TEXT(track, '.chartTrack__details .chartTrack__title'))
+    }
+
+
+
