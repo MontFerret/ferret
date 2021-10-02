@@ -54,7 +54,6 @@ func New(
 	m.logger = logging.WithName(logger.With(), "network_manager").Logger()
 	m.client = client
 	m.headers = drivers.NewHTTPHeaders()
-	m.foregroundLoop = events.NewLoop()
 	m.cancel = cancel
 	m.response = new(sync.Map)
 
@@ -84,25 +83,23 @@ func New(
 		return nil, err
 	}
 
-	m.foregroundLoop.AddSource(events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(page.FrameNavigatedClient).Recv()
-	}))
-
 	responseReceivedStream, err := m.client.Network.ResponseReceived(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	m.foregroundLoop.AddSource(events.NewSource(responseReceived, responseReceivedStream, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(network.ResponseReceivedClient).Recv()
-	}))
-
+	m.foregroundLoop = events.NewLoop(
+		events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
+			return stream.(page.FrameNavigatedClient).Recv()
+		}),
+		events.NewSource(responseReceived, responseReceivedStream, func(stream rpcc.Stream) (interface{}, error) {
+			return stream.(network.ResponseReceivedClient).Recv()
+		}),
+	)
 	m.responseListenerID = m.foregroundLoop.AddListener(responseReceived, m.onResponse)
 
 	if options.Filter != nil && len(options.Filter.Patterns) > 0 {
-		m.backgroundLoop = events.NewLoop()
-
 		err = m.client.Fetch.Enable(ctx, toFetchArgs(options.Filter.Patterns))
 
 		if err != nil {
@@ -115,7 +112,7 @@ func New(
 			return nil, err
 		}
 
-		m.backgroundLoop.AddSource(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
+		m.backgroundLoop = events.NewLoop(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
 			return stream.(fetch.RequestPausedClient).Recv()
 		}))
 

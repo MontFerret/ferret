@@ -44,7 +44,7 @@ func NewSource(
 	return &GenericSource{eventID, stream, recv}
 }
 
-func (src *GenericSource) EventID() ID {
+func (src *GenericSource) ID() ID {
 	return src.eventID
 }
 
