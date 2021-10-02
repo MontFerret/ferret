@@ -1108,16 +1108,50 @@ func (v *visitor) doVisitIntegerLiteral(ctx *fql.IntegerLiteralContext) (core.Ex
 }
 
 func (v *visitor) doVisitStringLiteral(ctx *fql.StringLiteralContext) (core.Expression, error) {
-	var text string
+	var b strings.Builder
 
-	strLiteral := ctx.StringLiteral()
+	for _, child := range ctx.GetChildren() {
+		tree := child.(antlr.TerminalNode)
+		sym := tree.GetSymbol()
+		input := sym.GetInputStream()
 
-	if strLiteral != nil {
-		text = strLiteral.GetText()
+		if input == nil {
+			continue
+		}
+
+		size := input.Size()
+		// skip quotes
+		start := sym.GetStart() + 1
+		stop := sym.GetStop() - 1
+
+		if stop >= size {
+			stop = size - 1
+		}
+
+		if start < size && stop < size {
+			for i := start; i <= stop; i++ {
+				c := input.GetText(i, i)
+
+				switch c {
+				case "\\":
+					c2 := input.GetText(i, i+1)
+
+					switch c2 {
+					case "\\n":
+						b.WriteString("\n")
+						i++
+					case "\\t":
+						b.WriteString("\t")
+						i++
+					}
+				default:
+					b.WriteString(c)
+				}
+			}
+		}
 	}
 
-	// remove extra quotes
-	return literals.NewStringLiteral(text[1 : len(text)-1]), nil
+	return literals.NewStringLiteral(b.String()), nil
 }
 
 func (v *visitor) doVisitBooleanLiteral(ctx *fql.BooleanLiteralContext) (core.Expression, error) {
