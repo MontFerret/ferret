@@ -6,12 +6,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/rs/zerolog"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
+
+	"github.com/mattn/go-colorable"
+	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
@@ -85,10 +89,15 @@ func main() {
 
 	flag.Parse()
 
+	var writer io.Writer = os.Stderr
+	if goruntime.GOOS == "windows" {
+		writer = colorable.NewColorableStderr()
+	}
 	console := zerolog.ConsoleWriter{
-		Out:        os.Stderr,
+		Out:        writer,
 		TimeFormat: "15:04:05.999",
 	}
+
 	logger = zerolog.New(console).
 		Level(zerolog.Level(logging.MustParseLevel(*logLevel))).
 		With().
