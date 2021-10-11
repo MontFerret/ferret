@@ -19,9 +19,6 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#use.
 	VisitUse(ctx *UseContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#namespaceIdentifier.
-	VisitNamespaceIdentifier(ctx *NamespaceIdentifierContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#body.
 	VisitBody(ctx *BodyContext) interface{}
 
@@ -31,17 +28,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#bodyExpression.
 	VisitBodyExpression(ctx *BodyExpressionContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#variableDeclaration.
-	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#returnExpression.
 	VisitReturnExpression(ctx *ReturnExpressionContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#inlineHighLevelExpression.
-	VisitInlineHighLevelExpression(ctx *InlineHighLevelExpressionContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#highLevelExpression.
-	VisitHighLevelExpression(ctx *HighLevelExpressionContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#forExpression.
 	VisitForExpression(ctx *ForExpressionContext) interface{}
@@ -97,14 +85,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectCounter.
 	VisitCollectCounter(ctx *CollectCounterContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#optionsClause.
-	VisitOptionsClause(ctx *OptionsClauseContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#waitForExpression.
 	VisitWaitForExpression(ctx *WaitForExpressionContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#waitForTimeout.
-	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#waitForEventName.
 	VisitWaitForEventName(ctx *WaitForEventNameContext) interface{}
@@ -112,23 +94,29 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForEventSource.
 	VisitWaitForEventSource(ctx *WaitForEventSourceContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#rangeOperator.
-	VisitRangeOperator(ctx *RangeOperatorContext) interface{}
+	// Visit a parse tree produced by FqlParser#optionsClause.
+	VisitOptionsClause(ctx *OptionsClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForTimeout.
+	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#variableDeclaration.
+	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#param.
+	VisitParam(ctx *ParamContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#variable.
+	VisitVariable(ctx *VariableContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#literal.
+	VisitLiteral(ctx *LiteralContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#arrayLiteral.
 	VisitArrayLiteral(ctx *ArrayLiteralContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#objectLiteral.
 	VisitObjectLiteral(ctx *ObjectLiteralContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#propertyAssignment.
-	VisitPropertyAssignment(ctx *PropertyAssignmentContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#computedPropertyName.
-	VisitComputedPropertyName(ctx *ComputedPropertyNameContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#propertyName.
-	VisitPropertyName(ctx *PropertyNameContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#booleanLiteral.
 	VisitBooleanLiteral(ctx *BooleanLiteralContext) interface{}
@@ -145,11 +133,20 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#noneLiteral.
 	VisitNoneLiteral(ctx *NoneLiteralContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#expression.
-	VisitExpression(ctx *ExpressionContext) interface{}
+	// Visit a parse tree produced by FqlParser#propertyAssignment.
+	VisitPropertyAssignment(ctx *PropertyAssignmentContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#expressionGroup.
-	VisitExpressionGroup(ctx *ExpressionGroupContext) interface{}
+	// Visit a parse tree produced by FqlParser#computedPropertyName.
+	VisitComputedPropertyName(ctx *ComputedPropertyNameContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#propertyName.
+	VisitPropertyName(ctx *PropertyNameContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#namespaceIdentifier.
+	VisitNamespaceIdentifier(ctx *NamespaceIdentifierContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#namespace.
+	VisitNamespace(ctx *NamespaceContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#memberExpression.
 	VisitMemberExpression(ctx *MemberExpressionContext) interface{}
@@ -157,29 +154,41 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#memberExpressionSource.
 	VisitMemberExpressionSource(ctx *MemberExpressionSourceContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#functionCallExpression.
+	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#functionCall.
 	VisitFunctionCall(ctx *FunctionCallContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#functionCallExpression.
-	VisitFunctionCallExpression(ctx *FunctionCallExpressionContext) interface{}
+	// Visit a parse tree produced by FqlParser#argumentList.
+	VisitArgumentList(ctx *ArgumentListContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#memberExpressionPath.
 	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#errorOperator.
-	VisitErrorOperator(ctx *ErrorOperatorContext) interface{}
-
 	// Visit a parse tree produced by FqlParser#functionIdentifier.
 	VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#namespace.
-	VisitNamespace(ctx *NamespaceContext) interface{}
+	// Visit a parse tree produced by FqlParser#rangeOperator.
+	VisitRangeOperator(ctx *RangeOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#arguments.
-	VisitArguments(ctx *ArgumentsContext) interface{}
+	// Visit a parse tree produced by FqlParser#rangeOperand.
+	VisitRangeOperand(ctx *RangeOperandContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#expression.
+	VisitExpression(ctx *ExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#predicate.
+	VisitPredicate(ctx *PredicateContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#expressionAtom.
+	VisitExpressionAtom(ctx *ExpressionAtomContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#arrayOperator.
 	VisitArrayOperator(ctx *ArrayOperatorContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#equalityOperator.
+	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#inOperator.
 	VisitInOperator(ctx *InOperatorContext) interface{}
@@ -187,8 +196,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#likeOperator.
 	VisitLikeOperator(ctx *LikeOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#equalityOperator.
-	VisitEqualityOperator(ctx *EqualityOperatorContext) interface{}
+	// Visit a parse tree produced by FqlParser#unaryOperator.
+	VisitUnaryOperator(ctx *UnaryOperatorContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#regexpOperator.
 	VisitRegexpOperator(ctx *RegexpOperatorContext) interface{}
@@ -205,12 +214,6 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#additiveOperator.
 	VisitAdditiveOperator(ctx *AdditiveOperatorContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#unaryOperator.
-	VisitUnaryOperator(ctx *UnaryOperatorContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#param.
-	VisitParam(ctx *ParamContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#variable.
-	VisitVariable(ctx *VariableContext) interface{}
+	// Visit a parse tree produced by FqlParser#errorOperator.
+	VisitErrorOperator(ctx *ErrorOperatorContext) interface{}
 }

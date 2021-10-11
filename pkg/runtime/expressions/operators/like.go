@@ -13,14 +13,14 @@ import (
 
 type LikeOperator struct {
 	*baseOperator
-	not bool
+	negate bool
 }
 
 func NewLikeOperator(
 	src core.SourceMap,
 	left core.Expression,
 	right core.Expression,
-	not bool,
+	negate bool,
 ) (*LikeOperator, error) {
 	if left == nil {
 		return nil, core.Error(core.ErrMissedArgument, "left expression")
@@ -30,7 +30,7 @@ func NewLikeOperator(
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 
-	return &LikeOperator{&baseOperator{src, left, right}, not}, nil
+	return &LikeOperator{&baseOperator{src, left, right}, negate}, nil
 }
 
 func (operator *LikeOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
@@ -72,7 +72,7 @@ func (operator *LikeOperator) Eval(_ context.Context, left, right core.Value) (c
 
 	result := r.Match(left.String())
 
-	if operator.not {
+	if operator.negate {
 		return values.NewBoolean(!result), nil
 	}
 

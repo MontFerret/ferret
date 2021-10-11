@@ -8,30 +8,31 @@ import (
 )
 
 type (
-	RegexpOperatorType int
-	RegexpOperator     struct {
+	RegexpOperatorVariant int
+
+	RegexpOperator struct {
 		*baseOperator
-		opType RegexpOperatorType
+		variant RegexpOperatorVariant
 	}
 )
 
 const (
-	RegexpOperatorTypeNegative RegexpOperatorType = 0
-	RegexpOperatorTypePositive RegexpOperatorType = 1
+	RegexpOperatorVariantNegative RegexpOperatorVariant = 0
+	RegexpOperatorVariantPositive RegexpOperatorVariant = 1
 )
 
-var regexpOperators = map[string]RegexpOperatorType{
-	"!~": RegexpOperatorTypeNegative,
-	"=~": RegexpOperatorTypePositive,
+var regexpVariants = map[string]RegexpOperatorVariant{
+	"!~": RegexpOperatorVariantNegative,
+	"=~": RegexpOperatorVariantPositive,
 }
 
 func NewRegexpOperator(
 	src core.SourceMap,
 	left core.Expression,
 	right core.Expression,
-	operator string,
+	operatorStr string,
 ) (*RegexpOperator, error) {
-	op, exists := regexpOperators[operator]
+	variant, exists := regexpVariants[operatorStr]
 
 	if !exists {
 		return nil, core.Error(core.ErrInvalidArgument, "operator")
@@ -43,12 +44,12 @@ func NewRegexpOperator(
 			left,
 			right,
 		},
-		op,
+		variant,
 	}, nil
 }
 
-func (operator *RegexpOperator) Type() RegexpOperatorType {
-	return operator.opType
+func (operator *RegexpOperator) Type() RegexpOperatorVariant {
+	return operator.variant
 }
 
 func (operator *RegexpOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
@@ -77,7 +78,7 @@ func (operator *RegexpOperator) Eval(_ context.Context, left, right core.Value) 
 		return values.None, err
 	}
 
-	if operator.opType == RegexpOperatorTypePositive {
+	if operator.variant == RegexpOperatorVariantPositive {
 		return values.NewBoolean(r.MatchString(leftStr)), nil
 	}
 

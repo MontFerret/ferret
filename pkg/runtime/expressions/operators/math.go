@@ -7,43 +7,44 @@ import (
 )
 
 type (
-	MathOperatorType string
+	MathOperatorVariant string
 
 	MathOperator struct {
 		*baseOperator
-		opType   MathOperatorType
+		variant  MathOperatorVariant
 		fn       OperatorFunc
 		leftOnly bool
 	}
 )
 
 const (
-	MathOperatorTypeAdd       MathOperatorType = "+"
-	MathOperatorTypeSubtract  MathOperatorType = "-"
-	MathOperatorTypeMultiply  MathOperatorType = "*"
-	MathOperatorTypeDivide    MathOperatorType = "/"
-	MathOperatorTypeModulus   MathOperatorType = "%"
-	MathOperatorTypeIncrement MathOperatorType = "++"
-	MathOperatorTypeDecrement MathOperatorType = "--"
+	MathOperatorVariantAdd       MathOperatorVariant = "+"
+	MathOperatorVariantSubtract  MathOperatorVariant = "-"
+	MathOperatorVariantMultiply  MathOperatorVariant = "*"
+	MathOperatorVariantDivide    MathOperatorVariant = "/"
+	MathOperatorVariantModulus   MathOperatorVariant = "%"
+	MathOperatorVariantIncrement MathOperatorVariant = "++"
+	MathOperatorVariantDecrement MathOperatorVariant = "--"
 )
 
-var mathOperators = map[MathOperatorType]OperatorFunc{
-	MathOperatorTypeAdd:       Add,
-	MathOperatorTypeSubtract:  Subtract,
-	MathOperatorTypeMultiply:  Multiply,
-	MathOperatorTypeDivide:    Divide,
-	MathOperatorTypeModulus:   Modulus,
-	MathOperatorTypeIncrement: Increment,
-	MathOperatorTypeDecrement: Decrement,
+var mathOperatorVariants = map[MathOperatorVariant]OperatorFunc{
+	MathOperatorVariantAdd:       Add,
+	MathOperatorVariantSubtract:  Subtract,
+	MathOperatorVariantMultiply:  Multiply,
+	MathOperatorVariantDivide:    Divide,
+	MathOperatorVariantModulus:   Modulus,
+	MathOperatorVariantIncrement: Increment,
+	MathOperatorVariantDecrement: Decrement,
 }
 
 func NewMathOperator(
 	src core.SourceMap,
 	left core.Expression,
 	right core.Expression,
-	operator MathOperatorType,
+	variantStr string,
 ) (*MathOperator, error) {
-	fn, exists := mathOperators[operator]
+	variant := MathOperatorVariant(variantStr)
+	fn, exists := mathOperatorVariants[variant]
 
 	if !exists {
 		return nil, core.Error(core.ErrInvalidArgument, "operator type")
@@ -51,20 +52,20 @@ func NewMathOperator(
 
 	var leftOnly bool
 
-	if operator == "++" || operator == "--" {
+	if variant == "++" || variant == "--" {
 		leftOnly = true
 	}
 
 	return &MathOperator{
 		&baseOperator{src, left, right},
-		operator,
+		variant,
 		fn,
 		leftOnly,
 	}, nil
 }
 
-func (operator *MathOperator) Type() MathOperatorType {
-	return operator.opType
+func (operator *MathOperator) Type() MathOperatorVariant {
+	return operator.variant
 }
 
 func (operator *MathOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {

@@ -15,7 +15,7 @@ import (
 func TestFunctionCallExpression(t *testing.T) {
 	Convey(".Exec", t, func() {
 		Convey("Should execute an underlying function without arguments", func() {
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					So(args, ShouldHaveLength, 0)
@@ -40,7 +40,7 @@ func TestFunctionCallExpression(t *testing.T) {
 				literals.NewStringLiteral("foo"),
 			}
 
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					So(args, ShouldHaveLength, len(args))
@@ -66,7 +66,7 @@ func TestFunctionCallExpression(t *testing.T) {
 				literals.NewStringLiteral("foo"),
 			}
 
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					So(args, ShouldHaveLength, len(args))
@@ -88,7 +88,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		})
 
 		Convey("Should ignore errors and return NONE", func() {
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					return values.NewString("booo"), core.ErrNotImplemented

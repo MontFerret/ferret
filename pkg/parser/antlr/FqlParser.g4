@@ -5,7 +5,7 @@ parser grammar FqlParser;
 options { tokenVocab=FqlLexer; }
 
 program
-    : head* body EOF
+    : head* body
     ;
 
 head
@@ -18,10 +18,6 @@ useExpression
 
 use
     : Use namespaceIdentifier
-    ;
-
-namespaceIdentifier
-    : namespace Identifier
     ;
 
 body
@@ -39,29 +35,15 @@ bodyExpression
     | forExpression
     ;
 
-variableDeclaration
-    : Let Identifier Assign expression
-    | Let IgnoreIdentifier Assign expression
-    ;
-
 returnExpression
-    : Return Distinct? expression
-    ;
-
-inlineHighLevelExpression
-    : OpenParen highLevelExpression CloseParen errorOperator?
-    ;
-
-highLevelExpression
-    : forExpression
-    | waitForExpression
+    : Return (Distinct)? expression
     ;
 
 forExpression
-    : For Identifier (Comma Identifier)? In forExpressionSource
+    : For valueVariable=(Identifier | IgnoreIdentifier) (Comma counterVariable=Identifier)? In forExpressionSource
      forExpressionBody*
       forExpressionReturn
-    | For Identifier Do? While expression
+    | For counterVariable=(Identifier | IgnoreIdentifier) Do? While expression
      forExpressionBody*
       forExpressionReturn
     ;
@@ -153,19 +135,8 @@ collectCounter
     : With Count Into Identifier
     ;
 
-optionsClause
-    : Options objectLiteral
-    | Options variable
-    ;
-
 waitForExpression
     : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (waitForTimeout)?
-    ;
-
-waitForTimeout
-    : integerLiteral
-    | variable
-    | param
     ;
 
 waitForEventName
@@ -182,32 +153,45 @@ waitForEventSource
     | memberExpression
     ;
 
-rangeOperator
-    : (integerLiteral | variable | param) Range (integerLiteral | variable | param)
+optionsClause
+    : Options objectLiteral
+    ;
+
+waitForTimeout
+    : integerLiteral
+    | variable
+    | param
+    ;
+
+variableDeclaration
+    : Let Identifier Assign expression
+    | Let IgnoreIdentifier Assign expression
+    ;
+
+param
+    : Param Identifier
+    ;
+
+variable
+    : Identifier
+    ;
+
+literal
+    : arrayLiteral
+    | objectLiteral
+    | booleanLiteral
+    | stringLiteral
+    | floatLiteral
+    | integerLiteral
+    | noneLiteral
     ;
 
 arrayLiteral
-    : OpenBracket (expression (Comma expression)* Comma?)? CloseBracket
+    : OpenBracket argumentList? CloseBracket
     ;
 
 objectLiteral
     : OpenBrace (propertyAssignment (Comma propertyAssignment)* Comma?)? CloseBrace
-    ;
-
-propertyAssignment
-    : propertyName Colon expression
-    | computedPropertyName Colon expression
-    | variable
-    ;
-
-computedPropertyName
-    : OpenBracket expression CloseBracket
-    ;
-
-propertyName
-    : Identifier
-    | stringLiteral
-    | param
     ;
 
 booleanLiteral
@@ -231,36 +215,28 @@ noneLiteral
     | None
     ;
 
-expression
-    : unaryOperator expression
-    | expression multiplicativeOperator expression
-    | expression additiveOperator expression
-    | expression arrayOperator (inOperator | equalityOperator) expression
-    | expression inOperator expression
-    | expression likeOperator expression
-    | expression equalityOperator expression
-    | expression regexpOperator expression
-    | expression logicalAndOperator expression
-    | expression logicalOrOperator expression
-    | expression QuestionMark expression? Colon expression
-    | rangeOperator
-    | stringLiteral
-    | floatLiteral
-    | integerLiteral
-    | booleanLiteral
-    | arrayLiteral
-    | objectLiteral
-    | memberExpression
-    | functionCallExpression
-    | param
+propertyAssignment
+    : propertyName Colon expression
+    | computedPropertyName Colon expression
     | variable
-    | noneLiteral
-    | expressionGroup
-    | inlineHighLevelExpression
     ;
 
-expressionGroup
-    : OpenParen expression CloseParen errorOperator?
+computedPropertyName
+    : OpenBracket expression CloseBracket
+    ;
+
+propertyName
+    : Identifier
+    | stringLiteral
+    | param
+    ;
+
+namespaceIdentifier
+    : namespace Identifier
+    ;
+
+namespace
+    : NamespaceSegment*
     ;
 
 memberExpression
@@ -275,21 +251,21 @@ memberExpressionSource
     | functionCall
     ;
 
-functionCall
-    : namespace functionIdentifier arguments
-    ;
-
 functionCallExpression
     : functionCall errorOperator?
     ;
 
-memberExpressionPath
-    : QuestionMark? Dot propertyName
-    | (QuestionMark Dot)? computedPropertyName
+functionCall
+    : namespace functionIdentifier OpenParen argumentList? CloseParen
     ;
 
-errorOperator
-    : QuestionMark
+argumentList
+    : expression (Comma expression)* Comma?
+    ;
+
+memberExpressionPath
+    : errorOperator? Dot propertyName
+    | (errorOperator Dot)? computedPropertyName
     ;
 
 functionIdentifier
@@ -323,28 +299,47 @@ functionIdentifier
     | Event
     ;
 
-namespace
-    : NamespaceSegment*
+rangeOperator
+    : left=rangeOperand Range right=rangeOperand
     ;
 
-arguments
-    : OpenParen (expression (Comma expression)*)? CloseParen
+rangeOperand
+    : integerLiteral
+    | variable
+    | param
+    ;
+
+expression
+    : unaryOperator right=expression
+    | condition=expression ternaryOperator=QuestionMark onTrue=expression? Colon onFalse=expression
+    | left=expression logicalAndOperator right=expression
+    | left=expression logicalOrOperator right=expression
+    | predicate
+    ;
+
+predicate
+    : left=predicate equalityOperator right=predicate
+    | left=predicate arrayOperator right=predicate
+    | left=predicate inOperator right=predicate
+    | left=predicate likeOperator right=predicate
+    | expressionAtom
+    ;
+
+expressionAtom
+    : left=expressionAtom multiplicativeOperator right=expressionAtom
+    | left=expressionAtom additiveOperator right=expressionAtom
+    | left=expressionAtom regexpOperator right=expressionAtom
+    | functionCallExpression
+    | rangeOperator
+    | literal
+    | variable
+    | memberExpression
+    | param
+    | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
     ;
 
 arrayOperator
-    : All
-    | Any
-    | None
-    ;
-
-inOperator
-    : In
-    | Not In
-    ;
-
-likeOperator
-    : Like
-    | Not Like
+    : operator=(All | Any | None) (inOperator | equalityOperator)
     ;
 
 equalityOperator
@@ -354,6 +349,20 @@ equalityOperator
     | Gte
     | Lte
     | Neq
+    ;
+
+inOperator
+    : Not? In
+    ;
+
+likeOperator
+    : Not? Like
+    ;
+
+unaryOperator
+    : Not
+    | Plus
+    | Minus
     ;
 
 regexpOperator
@@ -380,16 +389,6 @@ additiveOperator
     | Minus
     ;
 
-unaryOperator
-    : Not
-    | Plus
-    | Minus
-    ;
-
-param
-    : Param Identifier
-    ;
-
-variable
-    : Identifier
+errorOperator
+    : QuestionMark
     ;

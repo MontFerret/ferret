@@ -31,8 +31,12 @@ func NewObjectPropertyAssignment(name, value core.Expression) (*ObjectPropertyAs
 	return &ObjectPropertyAssignment{name, value}, nil
 }
 
-func NewObjectLiteralWith(props ...*ObjectPropertyAssignment) *ObjectLiteral {
+func NewObjectLiteral(props []*ObjectPropertyAssignment) *ObjectLiteral {
 	return &ObjectLiteral{props}
+}
+
+func NewObjectLiteralWith(props ...*ObjectPropertyAssignment) *ObjectLiteral {
+	return NewObjectLiteral(props)
 }
 
 func (l *ObjectLiteral) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {

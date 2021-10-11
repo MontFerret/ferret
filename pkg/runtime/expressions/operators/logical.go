@@ -9,25 +9,26 @@ import (
 )
 
 type (
-	LogicalOperatorType int
-	LogicalOperator     struct {
+	LogicalOperatorVariant int
+
+	LogicalOperator struct {
 		*baseOperator
-		value LogicalOperatorType
+		variant LogicalOperatorVariant
 	}
 )
 
 const (
-	LogicalOperatorTypeAnd LogicalOperatorType = 0
-	LogicalOperatorTypeOr  LogicalOperatorType = 1
-	LogicalOperatorTypeNot LogicalOperatorType = 2
+	LogicalOperatorVariantAnd LogicalOperatorVariant = 0
+	LogicalOperatorVariantOr  LogicalOperatorVariant = 1
+	LogicalOperatorVariantNot LogicalOperatorVariant = 2
 )
 
-var logicalOperators = map[string]LogicalOperatorType{
-	"&&":  LogicalOperatorTypeAnd,
-	"AND": LogicalOperatorTypeAnd,
-	"||":  LogicalOperatorTypeOr,
-	"OR":  LogicalOperatorTypeOr,
-	"NOT": LogicalOperatorTypeNot,
+var logicalOperators = map[string]LogicalOperatorVariant{
+	"&&":  LogicalOperatorVariantAnd,
+	"AND": LogicalOperatorVariantAnd,
+	"||":  LogicalOperatorVariantOr,
+	"OR":  LogicalOperatorVariantOr,
+	"NOT": LogicalOperatorVariantNot,
 }
 
 func NewLogicalOperator(
@@ -53,7 +54,7 @@ func NewLogicalOperator(
 }
 
 func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
-	if operator.value == LogicalOperatorTypeNot {
+	if operator.variant == LogicalOperatorVariantNot {
 		val, err := operator.right.Exec(ctx, scope)
 
 		if err != nil {
@@ -71,7 +72,7 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 
 	leftBool := values.ToBoolean(left)
 
-	if operator.value == LogicalOperatorTypeAnd && leftBool == values.False {
+	if operator.variant == LogicalOperatorVariantAnd && leftBool == values.False {
 		if left.Type() == types.Boolean {
 			return values.False, nil
 		}
@@ -79,7 +80,7 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 		return left, nil
 	}
 
-	if operator.value == LogicalOperatorTypeOr && leftBool == values.True {
+	if operator.variant == LogicalOperatorVariantOr && leftBool == values.True {
 		return left, nil
 	}
 
@@ -93,13 +94,13 @@ func (operator *LogicalOperator) Exec(ctx context.Context, scope *core.Scope) (c
 }
 
 func (operator *LogicalOperator) Eval(_ context.Context, left, right core.Value) (core.Value, error) {
-	if operator.value == LogicalOperatorTypeNot {
+	if operator.variant == LogicalOperatorVariantNot {
 		return Not(right, values.None), nil
 	}
 
 	leftBool := values.ToBoolean(left)
 
-	if operator.value == LogicalOperatorTypeAnd && leftBool == values.False {
+	if operator.variant == LogicalOperatorVariantAnd && leftBool == values.False {
 		if left.Type() == types.Boolean {
 			return values.False, nil
 		}
@@ -107,7 +108,7 @@ func (operator *LogicalOperator) Eval(_ context.Context, left, right core.Value)
 		return left, nil
 	}
 
-	if operator.value == LogicalOperatorTypeOr && leftBool == values.True {
+	if operator.variant == LogicalOperatorVariantOr && leftBool == values.True {
 		return left, nil
 	}
 
