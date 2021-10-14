@@ -301,6 +301,7 @@ func analyzeQuery(engine *ferret.Instance, query string) error {
 	fmt.Println(fmt.Sprintf(`Time: %s`, timeAfter))
 	fmt.Println(fmt.Sprintf(`Memory before: %s`, byteCountDecimal(memBefore.Alloc)))
 	fmt.Println(fmt.Sprintf(`Memory after: %s`, byteCountDecimal(memAfter.Alloc)))
+	fmt.Println(fmt.Sprintf(`Memory total: %s`, byteCountDecimal(memAfter.TotalAlloc)))
 
 	return nil
 }
