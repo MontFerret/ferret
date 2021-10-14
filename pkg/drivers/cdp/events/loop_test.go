@@ -58,15 +58,21 @@ func (es *TestEventStream) Close() error {
 	return nil
 }
 
-func (es *TestEventStream) Emit(msg string) {
-	isClosed := es.closed.Load().(bool)
+func (es *TestEventStream) EmitP(msg string, skipCheck bool) {
+	if !skipCheck {
+		isClosed := es.closed.Load().(bool)
 
-	if isClosed {
-		return
+		if isClosed {
+			return
+		}
 	}
 
 	es.ready <- struct{}{}
 	es.messages <- msg
+}
+
+func (es *TestEventStream) Emit(msg string) {
+	es.EmitP(msg, false)
 }
 
 func (es *TestEventStream) EmitDefault() {
@@ -379,10 +385,65 @@ func BenchmarkLoop_Start(b *testing.B) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	loop.Run(ctx)
+	_, err := loop.Run(ctx)
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer cancel()
 
 	for n := 0; n < b.N; n++ {
-		tes.EmitDefault()
+		tes.EmitP("", true)
 	}
+}
+
+func BenchmarkLoop_StartAsync(b *testing.B) {
+	var tes *TestEventStream
+
+	loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+		tes = NewBufferedTestEventStream(b.N)
+		return tes, nil
+	}, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(*TestEventStream).Recv()
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	_, err := loop.Run(ctx)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer cancel()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			tes.EmitP("", true)
+		}
+	})
 }
