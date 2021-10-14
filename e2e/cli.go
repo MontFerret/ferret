@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
+	rt "runtime"
 	"strings"
+	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
@@ -63,6 +66,12 @@ var (
 		"cdp",
 		"",
 		"set CDP address",
+	)
+
+	dryRun = flag.Bool(
+		"dry-run",
+		false,
+		"compiles a given query, but does not execute",
 	)
 
 	logLevel = flag.String(
@@ -151,7 +160,7 @@ func main() {
 	}()
 
 	if query != "" {
-		err = execQuery(ctx, engine, opts, query)
+		err = runQuery(ctx, engine, opts, query)
 	} else {
 		err = execFiles(ctx, engine, opts, files)
 	}
@@ -228,7 +237,7 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 
 		log.Debug().Msg("successfully read file")
 		log.Debug().Msg("executing file...")
-		err = execQuery(ctx, engine, opts, string(out))
+		err = runQuery(ctx, engine, opts, string(out))
 
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to execute file")
@@ -253,6 +262,14 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 	return nil
 }
 
+func runQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+	if !(*dryRun) {
+		return execQuery(ctx, engine, opts, query)
+	}
+
+	return analyzeQuery(engine, query)
+}
+
 func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
 	out, err := engine.Exec(ctx, query, opts...)
 
@@ -263,4 +280,42 @@ func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 	fmt.Println(string(out))
 
 	return nil
+}
+
+func analyzeQuery(engine *ferret.Instance, query string) error {
+	memBefore := &rt.MemStats{}
+	rt.ReadMemStats(memBefore)
+
+	timeBefore := time.Now()
+	out, err := engine.Compile(query)
+
+	if err != nil {
+		return err
+	}
+
+	timeAfter := time.Since(timeBefore)
+	memAfter := &rt.MemStats{}
+	rt.ReadMemStats(memAfter)
+
+	fmt.Println(out.Source())
+	fmt.Println(fmt.Sprintf(`Time: %s`, timeAfter))
+	fmt.Println(fmt.Sprintf(`Memory before: %s`, byteCountDecimal(memBefore.Alloc)))
+	fmt.Println(fmt.Sprintf(`Memory after: %s`, byteCountDecimal(memAfter.Alloc)))
+
+	return nil
+}
+
+func byteCountDecimal(b uint64) string {
+	const unit = 1000
+
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
