@@ -4,53 +4,56 @@ import (
 	"context"
 	"math/rand"
 	"sync"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Loop struct {
 	mu        sync.RWMutex
-	sources   []Source
 	listeners map[ID]map[ListenerID]Listener
-	cancel    context.CancelFunc
+	sources   []SourceFactory
 }
 
-func NewLoop(sources ...Source) *Loop {
+func NewLoop(sources ...SourceFactory) *Loop {
 	loop := new(Loop)
-	loop.sources = sources
 	loop.listeners = make(map[ID]map[ListenerID]Listener)
+	loop.sources = sources
 
 	return loop
 }
 
-func (loop *Loop) Run(ctx context.Context) error {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
+func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
+	var err error
+	sources := make([]Source, 0, len(loop.sources))
 
-	if loop.cancel != nil {
-		return core.Error(core.ErrInvalidOperation, "loop is already running")
+	// create new sources
+	for _, factory := range loop.sources {
+		src, e := factory(ctx)
+
+		if e != nil {
+			err = e
+
+			break
+		}
+
+		sources = append(sources, src)
+	}
+
+	// if error occurred
+	if err != nil {
+		// clean up the open ones
+		for _, src := range sources {
+			src.Close()
+		}
+
+		return nil, err
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	loop.cancel = cancel
 
-	for _, source := range loop.sources {
-		loop.consume(ctx, source)
+	for _, src := range sources {
+		loop.consume(ctx, src)
 	}
 
-	return nil
-}
-
-func (loop *Loop) Close() error {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel != nil {
-		loop.cancel()
-		loop.cancel = nil
-	}
-
-	return nil
+	return cancel, nil
 }
 
 func (loop *Loop) Listeners(eventID ID) int {

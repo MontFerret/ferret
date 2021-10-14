@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"regexp"
 	"sync"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -35,7 +35,9 @@ type (
 		client             *cdp.Client
 		headers            *drivers.HTTPHeaders
 		foregroundLoop     *events.Loop
+		stopForegroundLoop context.CancelFunc
 		backgroundLoop     *events.Loop
+		stopBackgroundLoop context.CancelFunc
 		cancel             context.CancelFunc
 		responseListenerID events.ListenerID
 		filterListenerID   events.ListenerID
@@ -61,42 +63,31 @@ func New(
 
 	defer func() {
 		if err != nil {
-			cancel()
+			m.cancel()
 
-			if m.foregroundLoop != nil {
-				if err := m.foregroundLoop.Close(); err != nil {
-					m.logger.Trace().Err(err).Msg("failed to close the foreground loop during cleanup")
-				}
+			if m.stopForegroundLoop != nil {
+				m.stopForegroundLoop()
 			}
 
-			if m.backgroundLoop != nil {
-				if err := m.backgroundLoop.Close(); err != nil {
-					m.logger.Trace().Err(err).Msg("failed to close the background loop during cleanup")
-				}
+			if m.stopBackgroundLoop != nil {
+				m.stopBackgroundLoop()
 			}
 		}
 	}()
 
-	frameNavigatedStream, err := m.client.Page.FrameNavigated(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	responseReceivedStream, err := m.client.Network.ResponseReceived(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	m.foregroundLoop = events.NewLoop(
-		events.NewSource(eventFrameLoad, frameNavigatedStream, func(stream rpcc.Stream) (interface{}, error) {
+		events.NewStreamSourceFactory(eventFrameLoad, func(ctx context.Context) (rpcc.Stream, error) {
+			return m.client.Page.FrameNavigated(ctx)
+		}, func(stream rpcc.Stream) (interface{}, error) {
 			return stream.(page.FrameNavigatedClient).Recv()
 		}),
-		events.NewSource(responseReceived, responseReceivedStream, func(stream rpcc.Stream) (interface{}, error) {
+		events.NewStreamSourceFactory(responseReceived, func(ctx context.Context) (rpcc.Stream, error) {
+			return m.client.Network.ResponseReceived(ctx)
+		}, func(stream rpcc.Stream) (interface{}, error) {
 			return stream.(network.ResponseReceivedClient).Recv()
 		}),
 	)
+
 	m.responseListenerID = m.foregroundLoop.AddListener(responseReceived, m.onResponse)
 
 	if options.Filter != nil && len(options.Filter.Patterns) > 0 {
@@ -106,13 +97,9 @@ func New(
 			return nil, err
 		}
 
-		requestPausedStream, err := m.client.Fetch.RequestPaused(ctx)
-
-		if err != nil {
-			return nil, err
-		}
-
-		m.backgroundLoop = events.NewLoop(events.NewSource(requestPaused, requestPausedStream, func(stream rpcc.Stream) (interface{}, error) {
+		m.backgroundLoop = events.NewLoop(events.NewStreamSourceFactory(requestPaused, func(ctx context.Context) (rpcc.Stream, error) {
+			return m.client.Fetch.RequestPaused(ctx)
+		}, func(stream rpcc.Stream) (interface{}, error) {
 			return stream.(fetch.RequestPausedClient).Recv()
 		}))
 
@@ -137,20 +124,24 @@ func New(
 		}
 	}
 
-	err = m.foregroundLoop.Run(ctx)
+	cancel, err = m.foregroundLoop.Run(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
+	m.stopForegroundLoop = cancel
+
 	if m.backgroundLoop != nil {
 		// run in a separate loop in order to get higher priority
 		// TODO: Consider adding support of event priorities to EventLoop
-		err = m.backgroundLoop.Run(ctx)
+		cancel, err = m.backgroundLoop.Run(ctx)
 
 		if err != nil {
 			return nil, err
 		}
+
+		m.stopBackgroundLoop = cancel
 	}
 
 	return m, nil
@@ -167,10 +158,12 @@ func (m *Manager) Close() error {
 		m.cancel = nil
 	}
 
-	_ = m.foregroundLoop.Close()
+	if m.stopForegroundLoop != nil {
+		m.stopForegroundLoop()
+	}
 
-	if m.backgroundLoop != nil {
-		_ = m.backgroundLoop.Close()
+	if m.stopBackgroundLoop != nil {
+		m.stopBackgroundLoop()
 	}
 
 	return nil
