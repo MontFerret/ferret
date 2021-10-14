@@ -127,7 +127,7 @@ func (p *Profiler) Print(label string) {
 		fmt.Fprintln(writer, fmt.Sprintf("Heap Idle: %s", byteCountDecimal(stats.HeapIdle)))
 		fmt.Fprintln(writer, fmt.Sprintf("Heap In Use: %s", byteCountDecimal(stats.HeapInuse)))
 		fmt.Fprintln(writer, fmt.Sprintf("Heap Released: %s", byteCountDecimal(stats.HeapReleased)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap Objects: %s", byteCountDecimal(stats.HeapObjects)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap Objects: %d", stats.HeapObjects))
 	}
 
 	cpu, found := p.cpus[label]
