@@ -72,7 +72,7 @@ func (c *Container) WithContext(ctx context.Context) context.Context {
 	next := ctx
 
 	for _, entry := range c.drivers {
-		next = withContext(ctx, entry.Driver, entry.Options)
+		next = withContext(next, entry.Driver, entry.Options)
 	}
 
 	return next
