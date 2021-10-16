@@ -8,5 +8,6 @@ var (
 	ErrVariableNotFound  = errors.New("variable not found")
 	ErrVariableNotUnique = errors.New("variable is already defined")
 	ErrInvalidToken      = errors.New("invalid token")
+	ErrUnexpectedToken   = errors.New("unexpected token")
 	ErrInvalidDataSource = errors.New("invalid data source")
 )

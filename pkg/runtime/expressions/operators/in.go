@@ -10,14 +10,14 @@ import (
 
 type InOperator struct {
 	*baseOperator
-	not bool
+	negate bool
 }
 
 func NewInOperator(
 	src core.SourceMap,
 	left core.Expression,
 	right core.Expression,
-	not bool,
+	negate bool,
 ) (*InOperator, error) {
 	if left == nil {
 		return nil, core.Error(core.ErrMissedArgument, "left expression")
@@ -27,7 +27,7 @@ func NewInOperator(
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 
-	return &InOperator{&baseOperator{src, left, right}, not}, nil
+	return &InOperator{&baseOperator{src, left, right}, negate}, nil
 }
 
 func (operator *InOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
@@ -57,7 +57,7 @@ func (operator *InOperator) Eval(_ context.Context, left, right core.Value) (cor
 	arr := right.(*values.Array)
 	found := arr.IndexOf(left) > -1
 
-	if operator.not {
+	if operator.negate {
 		return values.NewBoolean(!found), nil
 	}
 

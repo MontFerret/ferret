@@ -8,35 +8,37 @@ import (
 )
 
 type (
-	UnaryOperatorType string
-	UnaryOperator     struct {
+	UnaryOperatorVariant string
+
+	UnaryOperator struct {
 		*baseOperator
 		fn OperatorFunc
 	}
 )
 
 const (
-	UnaryOperatorTypeNoop     UnaryOperatorType = ""
-	UnaryOperatorTypeNot      UnaryOperatorType = "!"
-	UnaryOperatorTypeNot2     UnaryOperatorType = "NOT"
-	UnaryOperatorTypeNegative UnaryOperatorType = "-"
-	UnaryOperatorTypePositive UnaryOperatorType = "+"
+	UnaryOperatorVariantNoop     UnaryOperatorVariant = ""
+	UnaryOperatorVariantNot      UnaryOperatorVariant = "!"
+	UnaryOperatorVariantNot2     UnaryOperatorVariant = "NOT"
+	UnaryOperatorVariantNegative UnaryOperatorVariant = "-"
+	UnaryOperatorVariantPositive UnaryOperatorVariant = "+"
 )
 
-var unaryOperators = map[UnaryOperatorType]OperatorFunc{
-	UnaryOperatorTypeNoop:     ToBoolean,
-	UnaryOperatorTypeNot:      Not,
-	UnaryOperatorTypeNot2:     Not,
-	UnaryOperatorTypeNegative: Negative,
-	UnaryOperatorTypePositive: Positive,
+var unaryOperatorVariants = map[UnaryOperatorVariant]OperatorFunc{
+	UnaryOperatorVariantNoop:     ToBoolean,
+	UnaryOperatorVariantNot:      Not,
+	UnaryOperatorVariantNot2:     Not,
+	UnaryOperatorVariantNegative: Negative,
+	UnaryOperatorVariantPositive: Positive,
 }
 
 func NewUnaryOperator(
 	src core.SourceMap,
 	exp core.Expression,
-	operator UnaryOperatorType,
+	variantStr string,
 ) (*UnaryOperator, error) {
-	fn, exists := unaryOperators[operator]
+	variant := UnaryOperatorVariant(variantStr)
+	fn, exists := unaryOperatorVariants[variant]
 
 	if !exists {
 		return nil, core.Error(core.ErrInvalidArgument, "operator")
