@@ -133,7 +133,7 @@ func normalizeCookieURL(url string) string {
 	return httpPrefix + url
 }
 
-func isUrlMatched(url string, pattern *regexp.Regexp) bool {
+func isURLMatched(url string, pattern *regexp.Regexp) bool {
 	var matched bool
 
 	// if a URL pattern is provided

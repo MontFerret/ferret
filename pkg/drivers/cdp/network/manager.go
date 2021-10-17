@@ -588,7 +588,7 @@ func (m *Manager) OnFrameNavigation(ctx context.Context, opts EventOptions) (<-c
 
 		log.Trace().Msg("received framed navigation event")
 
-		if !isFrameMatched(string(repl.Frame.ID), opts.FrameID) || !isUrlMatched(repl.Frame.URL, opts.URL) {
+		if !isFrameMatched(string(repl.Frame.ID), opts.FrameID) || !isURLMatched(repl.Frame.URL, opts.URL) {
 			log.Trace().Msg("frame does not match")
 
 			return true
@@ -699,7 +699,7 @@ func (m *Manager) OnRequest(ctx context.Context, opts EventOptions) (<-chan evts
 
 		log.Trace().Msg("trying to match an intercepted request...")
 
-		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isUrlMatched(msg.Request.URL, opts.URL) {
+		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isURLMatched(msg.Request.URL, opts.URL) {
 			log.Trace().Msg("request does not match")
 
 			return true
@@ -768,7 +768,7 @@ func (m *Manager) OnResponse(ctx context.Context, opts EventOptions) (<-chan evt
 
 		log.Trace().Msg("trying to match an intercepted response...")
 
-		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isUrlMatched(msg.Response.URL, opts.URL) {
+		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isURLMatched(msg.Response.URL, opts.URL) {
 			log.Trace().Msg("response does not match")
 
 			return true
