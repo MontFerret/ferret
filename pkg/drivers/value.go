@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -190,6 +191,7 @@ type (
 		core.Getter
 		core.Setter
 		collections.Measurable
+		events.Observable
 		io.Closer
 
 		IsClosed() values.Boolean
@@ -213,10 +215,6 @@ type (
 		PrintToPDF(ctx context.Context, params PDFParams) (values.Binary, error)
 
 		CaptureScreenshot(ctx context.Context, params ScreenshotParams) (values.Binary, error)
-
-		WaitForNavigation(ctx context.Context, targetURL values.String) error
-
-		WaitForFrameNavigation(ctx context.Context, frame HTMLDocument, targetURL values.String) error
 
 		Navigate(ctx context.Context, url values.String) error
 

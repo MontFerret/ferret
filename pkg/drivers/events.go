@@ -1,3 +1,7 @@
 package drivers
 
-const EventPageNavigation = "navigation"
+const (
+	NavigationPageEvent = "navigation"
+	RequestPageEvent    = "request"
+	ResponsePageEvent   = "response"
+)

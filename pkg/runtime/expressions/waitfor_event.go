@@ -80,7 +80,14 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 		return values.None, core.SourceError(e.src, err)
 	}
 
-	ch := observable.Subscribe(ctx, eventName, opts)
+	ch, err := observable.Subscribe(ctx, events.Subscription{
+		EventName: eventName,
+		Options:   opts,
+	})
+
+	if err != nil {
+		return values.None, core.SourceError(e.src, err)
+	}
 
 	timeout, err := e.getTimeout(ctx, scope)
 

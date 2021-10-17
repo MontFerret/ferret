@@ -3,6 +3,7 @@ package network
 import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/mafredri/cdp/protocol/fetch"
+	"regexp"
 )
 
 type (
@@ -16,6 +17,11 @@ type (
 		Cookies Cookies
 		Headers *drivers.HTTPHeaders
 		Filter  *Filter
+	}
+
+	EventOptions struct {
+		FrameID string
+		URL     *regexp.Regexp
 	}
 )
 

@@ -57,8 +57,8 @@ func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
 }
 
 func (loop *Loop) Listeners(eventID ID) int {
-	loop.mu.RLock()
-	defer loop.mu.RUnlock()
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
 
 	bucket, exists := loop.listeners[eventID]
 
@@ -70,8 +70,8 @@ func (loop *Loop) Listeners(eventID ID) int {
 }
 
 func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
-	loop.mu.RLock()
-	defer loop.mu.RUnlock()
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
 
 	listener := Listener{
 		ID:      ListenerID(rand.Int()),
@@ -92,8 +92,8 @@ func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
 }
 
 func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
-	loop.mu.RLock()
-	defer loop.mu.RUnlock()
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
 
 	bucket, exists := loop.listeners[eventID]
 
@@ -136,23 +136,31 @@ func (loop *Loop) consume(ctx context.Context, src Source) {
 }
 
 func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}) {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
+	var snapshot []Listener
 
+	loop.mu.Lock()
 	listeners, exist := loop.listeners[eventID]
 
-	if !exist {
-		return
+	if exist {
+		snapshot = make([]Listener, 0, len(listeners))
+
+		for _, listener := range listeners {
+			snapshot = append(snapshot, listener)
+		}
 	}
 
-	for _, listener := range listeners {
+	loop.mu.Unlock()
+
+	for _, listener := range snapshot {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			// if returned false, it means the loops should not call the handler anymore
 			if !listener.Handler(ctx, message) {
-				delete(listeners, listener.ID)
+				loop.mu.Lock()
+				delete(loop.listeners[eventID], listener.ID)
+				loop.mu.Unlock()
 			}
 		}
 	}

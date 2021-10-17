@@ -4,8 +4,9 @@ WAIT_ELEMENT(doc, '.chartTrack__details', 5000)
 
 LET tracks = ELEMENTS(doc, '.chartTrack__details')
 
-FOR track IN tracks
+FOR track, counter IN tracks
     RETURN {
+        num: counter + 1,
     	artist: TRIM(INNER_TEXT(track, '.chartTrack__username')),
     	track: TRIM(INNER_TEXT(track, '.chartTrack__title'))
     }

@@ -11,13 +11,25 @@ import (
 )
 
 // HTTPResponse HTTP response object.
-type HTTPResponse struct {
-	URL          string
-	StatusCode   int
-	Status       string
-	Headers      *HTTPHeaders
-	ResponseTime float64
-}
+type (
+	HTTPResponse struct {
+		URL          string
+		StatusCode   int
+		Status       string
+		Headers      *HTTPHeaders
+		ResponseTime float64
+	}
+
+	// responseMarshal is a structure that repeats HTTPResponse. It allows
+	// easily Marshal the HTTPResponse object.
+	responseMarshal struct {
+		URL          string       `json:"url"`
+		StatusCode   int          `json:"status_code"`
+		Status       string       `json:"status"`
+		Headers      *HTTPHeaders `json:"headers"`
+		ResponseTime float64      `json:"response_time"`
+	}
+)
 
 func (resp *HTTPResponse) Type() core.Type {
 	return HTTPResponseType
@@ -57,16 +69,6 @@ func (resp *HTTPResponse) Copy() core.Value {
 
 func (resp *HTTPResponse) Hash() uint64 {
 	return values.Parse(resp).Hash()
-}
-
-// responseMarshal is a structure that repeats HTTPResponse. It allows
-// easily Marshal the HTTPResponse object.
-type responseMarshal struct {
-	URL          string       `json:"url"`
-	StatusCode   int          `json:"status_code"`
-	Status       string       `json:"status"`
-	Headers      *HTTPHeaders `json:"headers"`
-	ResponseTime float64      `json:"response_time"`
 }
 
 func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
@@ -112,7 +114,6 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 		return out, nil
 	case "responseTime":
 		return values.NewFloat(resp.ResponseTime), nil
-
 	}
 
 	return values.None, nil

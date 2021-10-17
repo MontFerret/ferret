@@ -2,19 +2,13 @@ package html
 
 import (
 	"context"
-	"github.com/pkg/errors"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
-
-type WaitNavigationParams struct {
-	TargetURL values.String
-	Timeout   values.Int
-	Frame     drivers.HTMLDocument
-}
 
 // WAIT_NAVIGATION waits for a given page to navigate to a new url.
 // Stops the execution until the navigation ends or operation times out.
@@ -31,86 +25,52 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 		return values.None, err
 	}
 
-	doc, err := drivers.ToPage(args[0])
+	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	var params WaitNavigationParams
+	var timeout values.Int
+
+	sub := events.Subscription{
+		EventName: drivers.NavigationPageEvent,
+		Options:   values.NewObjectWith(),
+	}
 
 	if len(args) > 1 {
-		p, err := parseWaitNavigationParams(args[1])
-
-		if err != nil {
+		if err := core.ValidateType(args[1], types.Object, types.Int); err != nil {
 			return values.None, err
 		}
 
-		params = p
-	} else {
-		params = defaultWaitNavigationParams()
+		if types.Int == args[1].Type() {
+			timeout = values.ToInt(args[1])
+		} else {
+			obj := values.ToObject(ctx, args[1])
+
+			if obj.Has("timeout") {
+				timeout = values.ToInt(obj.MustGet("timeout"))
+				obj.Remove("timeout")
+			}
+
+			sub.Options = obj
+		}
 	}
 
-	ctx, fn := waitTimeout(ctx, params.Timeout)
+	if timeout <= 0 {
+		timeout = drivers.DefaultWaitTimeout
+	}
+
+	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	if params.Frame == nil {
-		return values.True, doc.WaitForNavigation(ctx, params.TargetURL)
-	}
-
-	return values.True, doc.WaitForFrameNavigation(ctx, params.Frame, params.TargetURL)
-}
-
-func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
-	params := defaultWaitNavigationParams()
-	err := core.ValidateType(arg, types.Int, types.Object)
+	ch, err := page.Subscribe(ctx, sub)
 
 	if err != nil {
-		return params, err
+		return values.None, err
 	}
 
-	if arg.Type() == types.Int {
-		params.Timeout = arg.(values.Int)
-	} else {
-		obj := arg.(*values.Object)
+	evt := <-ch
 
-		if v, exists := obj.Get("timeout"); exists {
-			err := core.ValidateType(v, types.Int)
-
-			if err != nil {
-				return params, errors.Wrap(err, "navigation parameters: timeout")
-			}
-
-			params.Timeout = v.(values.Int)
-		}
-
-		if v, exists := obj.Get("target"); exists {
-			err := core.ValidateType(v, types.String)
-
-			if err != nil {
-				return params, errors.Wrap(err, "navigation parameters: url")
-			}
-
-			params.TargetURL = v.(values.String)
-		}
-
-		if v, exists := obj.Get("frame"); exists {
-			doc, err := drivers.ToDocument(v)
-
-			if err != nil {
-				return params, errors.Wrap(err, "navigation parameters: frame")
-			}
-
-			params.Frame = doc
-		}
-	}
-
-	return params, nil
-}
-
-func defaultWaitNavigationParams() WaitNavigationParams {
-	return WaitNavigationParams{
-		TargetURL: "",
-		Timeout:   values.NewInt(drivers.DefaultWaitTimeout),
-	}
+	return evt.Data, evt.Err
 }

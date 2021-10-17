@@ -57,7 +57,7 @@ func (p *Profiler) StartTimer(label string) {
 	}
 
 	p.timers[label] = timer
-	p.labels = append(p.labels, label)
+	p.addLabel(label)
 }
 
 func (p *Profiler) StopTimer(label string) {
@@ -80,7 +80,7 @@ func (p *Profiler) HeapSnapshot(label string) {
 	}
 
 	p.heaps[label] = heap
-	p.labels = append(p.labels, label)
+	p.addLabel(label)
 }
 
 func (p *Profiler) Allocations(label string) {
@@ -89,7 +89,7 @@ func (p *Profiler) Allocations(label string) {
 	rt.ReadMemStats(stats)
 
 	p.allocs[label] = stats
-	p.labels = append(p.labels, label)
+	p.addLabel(label)
 }
 
 func (p *Profiler) StartCPU(label string) {
@@ -100,7 +100,7 @@ func (p *Profiler) StartCPU(label string) {
 	}
 
 	p.cpus[label] = b
-	p.labels = append(p.labels, label)
+	p.addLabel(label)
 }
 
 func (p *Profiler) StopCPU() {
@@ -130,11 +130,11 @@ func (p *Profiler) Print(label string) {
 		fmt.Fprintln(writer, fmt.Sprintf("Heap Objects: %d", stats.HeapObjects))
 	}
 
-	cpu, found := p.cpus[label]
-
-	if found {
-		fmt.Fprintln(writer, cpu.String())
-	}
+	//cpu, found := p.cpus[label]
+	//
+	//if found {
+	//	fmt.Fprintln(writer, cpu.String())
+	//}
 
 	if writer.Len() > 0 {
 		fmt.Println(fmt.Sprintf("%s:", label))
@@ -146,6 +146,21 @@ func (p *Profiler) Print(label string) {
 func (p *Profiler) PrintAll() {
 	for _, label := range p.labels {
 		p.Print(label)
+	}
+}
+
+func (p *Profiler) addLabel(label string) {
+	var found bool
+
+	for _, l := range p.labels {
+		if l == label {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		p.labels = append(p.labels, label)
 	}
 }
 
@@ -197,6 +212,12 @@ var (
 		"dry-run",
 		false,
 		"compiles a given query, but does not execute",
+	)
+
+	profiler = flag.Bool(
+		"profiler",
+		false,
+		"enables CPU and Memory profiler",
 	)
 
 	logLevel = flag.String(
@@ -392,14 +413,32 @@ func runQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Optio
 		return execQuery(ctx, engine, opts, query)
 	}
 
-	return analyzeQuery(ctx, engine, opts, query)
+	return analyzeQuery(engine, query)
 }
 
 func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
-	out, err := engine.Exec(ctx, query, opts...)
+	beforeExec := "Before Execution"
+	exec := "Execution"
+	afterExec := "After Execution"
 
-	if err != nil {
-		return err
+	prof := NewProfiler()
+
+	if *profiler {
+		prof.Allocations(beforeExec)
+		prof.StartCPU(exec)
+		prof.StartTimer(exec)
+	}
+
+	out := engine.MustExec(ctx, query, opts...)
+
+	if *profiler {
+		prof.Allocations(afterExec)
+		prof.StopTimer(exec)
+		prof.StopCPU()
+
+		prof.PrintAll()
+		fmt.Println(fmt.Sprintf("Output size: %s", byteCountDecimal(uint64(len(out)))))
+		fmt.Println("")
 	}
 
 	fmt.Println(string(out))
@@ -407,30 +446,27 @@ func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 	return nil
 }
 
-func analyzeQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+func analyzeQuery(engine *ferret.Instance, query string) error {
+	beforeCompilation := "Before Compilation"
 	compilation := "Compilation"
-	beforeCompilation := "Before compilation"
-	afterCompilation := "After compilation"
+	afterCompilation := "After Compilation"
 	prof := NewProfiler()
 
-	prof.Allocations(beforeCompilation)
+	fullProf := *profiler
+
+	if fullProf {
+		prof.Allocations(beforeCompilation)
+	}
+
 	prof.StartTimer(compilation)
-	program := engine.MustCompile(query)
+
+	engine.MustCompile(query)
 
 	prof.StopTimer(compilation)
-	prof.Allocations(afterCompilation)
 
-	exec := "Execution"
-	beforeExec := "Before execution"
-	afterExec := "After execution"
-
-	prof.Allocations(beforeExec)
-	prof.StartTimer(exec)
-
-	engine.MustRun(ctx, program, opts...)
-
-	prof.StopTimer(exec)
-	prof.Allocations(afterExec)
+	if fullProf {
+		prof.Allocations(afterCompilation)
+	}
 
 	prof.PrintAll()
 

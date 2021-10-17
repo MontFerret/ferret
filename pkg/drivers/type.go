@@ -3,6 +3,7 @@ package drivers
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 var (
+	HTTPRequestType   = core.NewType("HTTPRequest")
 	HTTPResponseType  = core.NewType("HTTPResponse")
 	HTTPHeaderType    = core.NewType("HTTPHeaders")
 	HTTPCookieType    = core.NewType("HTTPCookie")
@@ -19,9 +20,11 @@ var typeComparisonTable = map[core.Type]uint64{
 	HTTPHeaderType:    1,
 	HTTPCookieType:    2,
 	HTTPCookiesType:   3,
-	HTMLElementType:   4,
-	HTMLDocumentType:  5,
-	HTMLPageType:      6,
+	HTTPRequestType:   4,
+	HTTPResponseType:  5,
+	HTMLElementType:   6,
+	HTMLDocumentType:  7,
+	HTMLPageType:      8,
 }
 
 func Compare(first, second core.Type) int64 {

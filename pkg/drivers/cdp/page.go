@@ -24,7 +24,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -539,124 +538,44 @@ func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values
 	return ret, p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.String) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscription) (<-chan events.Event, error) {
+	opts := PageEventsOptions{}
 
-	pattern, err := p.urlToRegexp(targetURL)
-
-	if err != nil {
-		return err
-	}
-
-	if err := p.network.WaitForNavigation(ctx, pattern); err != nil {
-		return err
-	}
-
-	return p.reloadMainFrame(ctx)
-}
-
-func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTMLDocument, targetURL values.String) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	current := p.dom.GetMainFrame()
-	doc, ok := frame.(*dom.HTMLDocument)
-
-	if !ok {
-		return errors.New("invalid frame type")
-	}
-
-	pattern, err := p.urlToRegexp(targetURL)
-
-	if err != nil {
-		return err
-	}
-
-	frameID := doc.Frame().Frame.ID
-	isMain := current.Frame().Frame.ID == frameID
-
-	// if it's the current document
-	if isMain {
-		err = p.network.WaitForNavigation(ctx, pattern)
-	} else {
-		err = p.network.WaitForFrameNavigation(ctx, frameID, pattern)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	return p.reloadMainFrame(ctx)
-}
-
-func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *values.Object) <-chan events.Event {
-	ch := make(chan events.Event)
-
-	go func() {
-		var err error
-		var data core.Value
-
-		if eventName == drivers.EventPageNavigation {
-			data, err = p.subscribeToNavigation(ctx, options)
-		} else {
-			err = core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", eventName)
-		}
-
-		ch <- events.Event{
-			Data: data,
-			Err:  err,
-		}
-
-		close(ch)
-	}()
-
-	return ch
-}
-
-func (p *HTMLPage) subscribeToNavigation(ctx context.Context, options *values.Object) (values.String, error) {
-	var frame drivers.HTMLDocument
-	var targetURL values.String
-
-	if options != nil {
-		if options.Has("frame") {
-			frameOpt, _ := options.Get("frame")
-
-			doc, ok := frameOpt.(drivers.HTMLDocument)
-
-			if ok {
-				frame = doc
-			} else {
-				return values.EmptyString, errors.Wrap(core.TypeError(frameOpt.Type(), drivers.HTMLDocumentType), "invalid frame")
-			}
-		}
-
-		if options.Has("target") {
-			targetURLOpt, _ := options.Get("target")
-
-			url, ok := targetURLOpt.(values.String)
-
-			if ok {
-				targetURL = url
-			} else {
-				return values.EmptyString, errors.Wrap(core.TypeError(targetURLOpt.Type(), types.String), "invalid target")
-			}
+	if subscription.Options != nil {
+		if err := values.Bind(subscription.Options, &opts); err != nil {
+			return nil, err
 		}
 	}
 
-	if frame == nil {
-		if err := p.WaitForNavigation(ctx, targetURL); err != nil {
-			return values.EmptyString, err
+	evtOpts := net.EventOptions{
+		FrameID: "",
+		URL:     nil,
+	}
+
+	if opts.Frame != nil {
+		evtOpts.FrameID = string(opts.Frame.Frame().Frame.ID)
+	}
+
+	if opts.Target != "" {
+		r, err := regexp.Compile(opts.Target.String())
+
+		if err != nil {
+			return nil, err
 		}
 
-		return p.GetURL(), nil
+		evtOpts.URL = r
 	}
 
-	if err := p.WaitForFrameNavigation(ctx, frame, targetURL); err != nil {
-		return values.EmptyString, err
+	switch subscription.EventName {
+	case drivers.NavigationPageEvent:
+		return p.network.OnFrameNavigation(ctx, evtOpts)
+	case drivers.RequestPageEvent:
+		return p.network.OnRequest(ctx, evtOpts)
+	case drivers.ResponsePageEvent:
+		return p.network.OnResponse(ctx, evtOpts)
+	default:
+		return nil, core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", subscription.EventName)
 	}
-
-	return frame.GetURL(), nil
 }
 
 func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {
