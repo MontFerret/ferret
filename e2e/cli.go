@@ -429,7 +429,7 @@ func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 		prof.StartTimer(exec)
 	}
 
-	out := engine.MustExec(ctx, query, opts...)
+	out, err := engine.Exec(ctx, query, opts...)
 
 	if *profiler {
 		prof.Allocations(afterExec)
@@ -437,8 +437,16 @@ func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 		prof.StopCPU()
 
 		prof.PrintAll()
-		fmt.Println(fmt.Sprintf("Output size: %s", byteCountDecimal(uint64(len(out)))))
-		fmt.Println("")
+
+		if out != nil {
+			fmt.Println(fmt.Sprintf("Output size: %s", byteCountDecimal(uint64(len(out)))))
+			fmt.Println("")
+		}
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	fmt.Println(string(out))

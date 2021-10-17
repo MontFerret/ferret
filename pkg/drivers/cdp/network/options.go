@@ -2,7 +2,6 @@ package network
 
 import (
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/mafredri/cdp/protocol/fetch"
 	"regexp"
 )
 
@@ -24,20 +23,3 @@ type (
 		URL     *regexp.Regexp
 	}
 )
-
-func toFetchArgs(filterPatterns []drivers.ResourceFilter) *fetch.EnableArgs {
-	patterns := make([]fetch.RequestPattern, 0, len(filterPatterns))
-
-	for _, pattern := range filterPatterns {
-		rt := toResourceType(pattern.Type)
-
-		patterns = append(patterns, fetch.RequestPattern{
-			URLPattern:   &pattern.URL,
-			ResourceType: &rt,
-		})
-	}
-
-	return &fetch.EnableArgs{
-		Patterns: patterns,
-	}
-}

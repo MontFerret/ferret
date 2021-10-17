@@ -1,0 +1,7 @@
+LET page = DOCUMENT('https://soundcloud.com/charts/top', { driver: "cdp" })
+
+LET res = (WAITFOR EVENT "response" IN page OPTIONS { target: ".+\.json" } 20000)
+
+WAIT_ELEMENT(page, '.chartTrack__details', 5000)
+
+RETURN res.body

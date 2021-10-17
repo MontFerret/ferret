@@ -42,7 +42,7 @@ func createRequestPausedStreamFactory(client *cdp.Client) events.SourceFactory {
 }
 
 func createBeforeRequestStreamFactory(client *cdp.Client) events.SourceFactory {
-	return events.NewStreamSourceFactory(requestPausedEvent, func(ctx context.Context) (rpcc.Stream, error) {
+	return events.NewStreamSourceFactory(beforeRequestEvent, func(ctx context.Context) (rpcc.Stream, error) {
 		return client.Network.RequestWillBeSent(ctx)
 	}, func(stream rpcc.Stream) (interface{}, error) {
 		return stream.(network.RequestWillBeSentClient).Recv()

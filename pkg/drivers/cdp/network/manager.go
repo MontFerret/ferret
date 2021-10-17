@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/fetch"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/pkg/errors"
@@ -28,18 +27,15 @@ type (
 	FrameLoadedListener = func(ctx context.Context, frame page.Frame)
 
 	Manager struct {
-		mu                 sync.RWMutex
-		logger             zerolog.Logger
-		client             *cdp.Client
-		headers            *drivers.HTTPHeaders
-		foregroundLoop     *events.Loop
-		stopForegroundLoop context.CancelFunc
-		backgroundLoop     *events.Loop
-		stopBackgroundLoop context.CancelFunc
-		cancel             context.CancelFunc
-		responseListenerID events.ListenerID
-		filterListenerID   events.ListenerID
-		response           *sync.Map
+		mu          sync.RWMutex
+		logger      zerolog.Logger
+		client      *cdp.Client
+		headers     *drivers.HTTPHeaders
+		loop        *events.Loop
+		stopLoop    context.CancelFunc
+		interceptor *Interceptor
+		cancel      context.CancelFunc
+		response    *sync.Map
 	}
 )
 
@@ -63,33 +59,35 @@ func New(
 		if err != nil {
 			m.cancel()
 
-			if m.stopForegroundLoop != nil {
-				m.stopForegroundLoop()
+			if m.stopLoop != nil {
+				m.stopLoop()
 			}
 
-			if m.stopBackgroundLoop != nil {
-				m.stopBackgroundLoop()
+			if m.interceptor != nil && m.interceptor.IsRunning() {
+				if err := m.interceptor.Stop(ctx); err != nil {
+					m.logger.Err(err).Msg("failed to stop interceptor")
+				}
 			}
 		}
 	}()
 
-	m.foregroundLoop = events.NewLoop(
+	m.loop = events.NewLoop(
 		createFrameLoadStreamFactory(client),
-		createResponseReceivedStreamFactory(client),
+		//createResponseReceivedStreamFactory(client),
 	)
 
-	m.responseListenerID = m.foregroundLoop.AddListener(responseReceivedEvent, m.handleResponse)
+	m.loop.AddListener(responseReceivedEvent, m.handleResponse)
 
 	if options.Filter != nil && len(options.Filter.Patterns) > 0 {
-		err = m.client.Fetch.Enable(ctx, toFetchArgs(options.Filter.Patterns))
+		m.interceptor = NewInterceptor(logger, client)
 
-		if err != nil {
+		if err := m.interceptor.AddFilter("resources", options.Filter); err != nil {
 			return nil, err
 		}
 
-		m.backgroundLoop = events.NewLoop(createRequestPausedStreamFactory(client))
-
-		m.filterListenerID = m.backgroundLoop.AddListener(requestPausedEvent, m.handleRequestPaused)
+		if err = m.interceptor.Start(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	if options.Cookies != nil && len(options.Cookies) > 0 {
@@ -110,25 +108,13 @@ func New(
 		}
 	}
 
-	cancel, err = m.foregroundLoop.Run(ctx)
+	cancel, err = m.loop.Run(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	m.stopForegroundLoop = cancel
-
-	if m.backgroundLoop != nil {
-		// run in a separate loop in order to get higher priority
-		// TODO: Consider adding support of event priorities to EventLoop
-		cancel, err = m.backgroundLoop.Run(ctx)
-
-		if err != nil {
-			return nil, err
-		}
-
-		m.stopBackgroundLoop = cancel
-	}
+	m.stopLoop = cancel
 
 	return m, nil
 }
@@ -144,12 +130,17 @@ func (m *Manager) Close() error {
 		m.cancel = nil
 	}
 
-	if m.stopForegroundLoop != nil {
-		m.stopForegroundLoop()
+	if m.stopLoop != nil {
+		m.stopLoop()
 	}
 
-	if m.stopBackgroundLoop != nil {
-		m.stopBackgroundLoop()
+	if m.interceptor != nil && m.interceptor.IsRunning() {
+		ctx, cancel := context.WithTimeout(context.Background(), drivers.DefaultWaitTimeout)
+		defer cancel()
+
+		if err := m.interceptor.Stop(ctx); err != nil {
+			m.logger.Err(err).Msg("failed to stop interceptor")
+		}
 	}
 
 	return nil
@@ -576,7 +567,7 @@ func (m *Manager) OnFrameNavigation(ctx context.Context, opts EventOptions) (<-c
 		Str("url_pattern", urlPatternStr).
 		Msg("starting to wait for frame navigation event")
 
-	m.foregroundLoop.AddListener(frameNavigatedEvent, func(_ context.Context, message interface{}) bool {
+	m.loop.AddListener(frameNavigatedEvent, func(_ context.Context, message interface{}) bool {
 		repl := message.(*page.FrameNavigatedReply)
 
 		log := m.logger.With().
@@ -691,13 +682,14 @@ func (m *Manager) OnRequest(ctx context.Context, opts EventOptions) (<-chan evts
 		log := m.logger.With().
 			Str("url", msg.Request.URL).
 			Str("document_url", msg.DocumentURL).
-			Str("request_id", string(msg.RequestID)).
-			Interface("data", msg.Request).
-			Str("frame_id", string(eventFrameID)).
 			Str("resource_type", string(msg.Type)).
+			Str("request_id", string(msg.RequestID)).
+			Str("frame_id", string(eventFrameID)).
 			Logger()
 
-		log.Trace().Msg("trying to match an intercepted request...")
+		log.Trace().
+			Interface("data", msg.Request).
+			Msg("trying to match an intercepted request...")
 
 		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isURLMatched(msg.Request.URL, opts.URL) {
 			log.Trace().Msg("request does not match")
@@ -745,7 +737,7 @@ func (m *Manager) OnResponse(ctx context.Context, opts EventOptions) (<-chan evt
 
 	ch := make(chan evts.Event)
 
-	l.AddListener(beforeRequestEvent, func(ctx context.Context, message interface{}) bool {
+	l.AddListener(responseReceivedEvent, func(ctx context.Context, message interface{}) bool {
 		msg, ok := message.(*network.ResponseReceivedReply)
 
 		if !ok {
@@ -759,14 +751,15 @@ func (m *Manager) OnResponse(ctx context.Context, opts EventOptions) (<-chan evt
 		}
 
 		log := m.logger.With().
-			Str("frame_id", string(eventFrameID)).
-			Str("request_id", string(msg.RequestID)).
-			Interface("data", msg.Response).
 			Str("url", msg.Response.URL).
 			Str("resource_type", string(msg.Type)).
+			Str("frame_id", string(eventFrameID)).
+			Str("request_id", string(msg.RequestID)).
 			Logger()
 
-		log.Trace().Msg("trying to match an intercepted response...")
+		log.Trace().
+			Interface("data", msg.Response).
+			Msg("trying to match an intercepted response...")
 
 		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isURLMatched(msg.Response.URL, opts.URL) {
 			log.Trace().Msg("response does not match")
@@ -824,37 +817,6 @@ func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bo
 	m.response.Store(*msg.FrameID, toDriverResponse(msg.Response))
 
 	log.Trace().Msg("updated frame responseReceivedEvent information")
-
-	return
-}
-
-func (m *Manager) handleRequestPaused(ctx context.Context, message interface{}) (out bool) {
-	out = true
-	msg, ok := message.(*fetch.RequestPausedReply)
-
-	if !ok {
-		return
-	}
-
-	log := m.logger.With().
-		Str("request_id", string(msg.RequestID)).
-		Str("frame_id", string(msg.FrameID)).
-		Str("resource_type", string(msg.ResourceType)).
-		Str("url", msg.Request.URL).
-		Logger()
-
-	log.Trace().Msg("trying to block resource loading")
-
-	err := m.client.Fetch.FailRequest(ctx, &fetch.FailRequestArgs{
-		RequestID:   msg.RequestID,
-		ErrorReason: network.ErrorReasonBlockedByClient,
-	})
-
-	if err != nil {
-		log.Trace().Err(err).Msg("failed to block resource loading")
-	}
-
-	log.Trace().Msg("succeeded to block resource loading")
 
 	return
 }
