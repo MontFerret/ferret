@@ -1121,9 +1121,8 @@ func (v *visitor) visitIntegerLiteral(ctx fql.IIntegerLiteralContext) (core.Expr
 	return literals.NewIntLiteral(val), nil
 }
 
-func (v *visitor) visitStringLiteral(c fql.IStringLiteralContext) (core.Expression, error) {
-	ctx := c.(*fql.StringLiteralContext)
-	var text string
+func (v *visitor) visitStringLiteral(ctx fql.IStringLiteralContext) (core.Expression, error) {
+	var b strings.Builder
 
 	for _, child := range ctx.GetChildren() {
 		tree := child.(antlr.TerminalNode)
@@ -1154,11 +1153,13 @@ func (v *visitor) visitStringLiteral(c fql.IStringLiteralContext) (core.Expressi
 					switch c2 {
 					case "\\n":
 						b.WriteString("\n")
-						i++
 					case "\\t":
 						b.WriteString("\t")
-						i++
+					default:
+						b.WriteString(c2)
 					}
+
+					i++
 				default:
 					b.WriteString(c)
 				}
