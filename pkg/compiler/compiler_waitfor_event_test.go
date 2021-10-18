@@ -41,17 +41,17 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 	}()
 }
 
-func (m *MockedObservable) Subscribe(_ context.Context, eventName string, opts *values.Object) <-chan events.Event {
-	calls, found := m.Args[eventName]
+func (m *MockedObservable) Subscribe(ctx context.Context, subscription events.Subscription) (<-chan events.Event, error) {
+	calls, found := m.Args[subscription.EventName]
 
 	if !found {
 		calls = make([]*values.Object, 0, 10)
-		m.Args[eventName] = calls
+		m.Args[subscription.EventName] = calls
 	}
 
-	m.Args[eventName] = append(calls, opts)
+	m.Args[subscription.EventName] = append(calls, subscription.Options)
 
-	return m.subscribers[eventName]
+	return m.subscribers[subscription.EventName], nil
 }
 
 func newCompilerWithObservable() *compiler.Compiler {

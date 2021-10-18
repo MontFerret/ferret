@@ -32,9 +32,8 @@ type (
 		client      *cdp.Client
 		headers     *drivers.HTTPHeaders
 		loop        *events.Loop
-		stopLoop    context.CancelFunc
 		interceptor *Interceptor
-		cancel      context.CancelFunc
+		stop        context.CancelFunc
 		response    *sync.Map
 	}
 )
@@ -50,18 +49,14 @@ func New(
 	m.logger = logging.WithName(logger.With(), "network_manager").Logger()
 	m.client = client
 	m.headers = drivers.NewHTTPHeaders()
-	m.cancel = cancel
+	m.stop = cancel
 	m.response = new(sync.Map)
 
 	var err error
 
 	defer func() {
 		if err != nil {
-			m.cancel()
-
-			if m.stopLoop != nil {
-				m.stopLoop()
-			}
+			m.stop()
 
 			if m.interceptor != nil && m.interceptor.IsRunning() {
 				if err := m.interceptor.Stop(ctx); err != nil {
@@ -73,7 +68,7 @@ func New(
 
 	m.loop = events.NewLoop(
 		createFrameLoadStreamFactory(client),
-		//createResponseReceivedStreamFactory(client),
+		createResponseReceivedStreamFactory(client),
 	)
 
 	m.loop.AddListener(responseReceivedEvent, m.handleResponse)
@@ -108,13 +103,9 @@ func New(
 		}
 	}
 
-	cancel, err = m.loop.Run(ctx)
-
-	if err != nil {
+	if err = m.loop.Run(ctx); err != nil {
 		return nil, err
 	}
-
-	m.stopLoop = cancel
 
 	return m, nil
 }
@@ -125,13 +116,9 @@ func (m *Manager) Close() error {
 
 	m.logger.Trace().Msg("closing")
 
-	if m.cancel != nil {
-		m.cancel()
-		m.cancel = nil
-	}
-
-	if m.stopLoop != nil {
-		m.stopLoop()
+	if m.stop != nil {
+		m.stop()
+		m.stop = nil
 	}
 
 	if m.interceptor != nil && m.interceptor.IsRunning() {
@@ -658,9 +645,11 @@ func (m *Manager) OnRequest(ctx context.Context, opts EventOptions) (<-chan evts
 
 	l := events.NewLoop(createBeforeRequestStreamFactory(m.client))
 
-	stop, err := l.Run(ctx)
+	ctx, stop := context.WithCancel(ctx)
 
-	if err != nil {
+	if err := l.Run(ctx); err != nil {
+		stop()
+
 		return nil, err
 	}
 
@@ -729,9 +718,11 @@ func (m *Manager) OnResponse(ctx context.Context, opts EventOptions) (<-chan evt
 
 	l := events.NewLoop(createResponseReceivedStreamFactory(m.client))
 
-	stop, err := l.Run(ctx)
+	ctx, stop := context.WithCancel(ctx)
 
-	if err != nil {
+	if err := l.Run(ctx); err != nil {
+		stop()
+
 		return nil, err
 	}
 

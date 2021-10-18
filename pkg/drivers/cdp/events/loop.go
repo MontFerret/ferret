@@ -20,7 +20,7 @@ func NewLoop(sources ...SourceFactory) *Loop {
 	return loop
 }
 
-func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
+func (loop *Loop) Run(ctx context.Context) error {
 	var err error
 	sources := make([]Source, 0, len(loop.sources))
 
@@ -44,16 +44,14 @@ func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
 			src.Close()
 		}
 
-		return nil, err
+		return err
 	}
-
-	ctx, cancel := context.WithCancel(ctx)
 
 	for _, src := range sources {
 		loop.consume(ctx, src)
 	}
 
-	return cancel, nil
+	return nil
 }
 
 func (loop *Loop) Listeners(eventID ID) int {

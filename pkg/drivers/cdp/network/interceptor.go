@@ -21,13 +21,13 @@ type (
 	}
 
 	Interceptor struct {
-		mu       sync.RWMutex
-		running  bool
-		logger   zerolog.Logger
-		client   *cdp.Client
-		filters  map[string]*InterceptorFilter
-		loop     *events.Loop
-		stopLoop context.CancelFunc
+		mu      sync.RWMutex
+		running bool
+		logger  zerolog.Logger
+		client  *cdp.Client
+		filters map[string]*InterceptorFilter
+		loop    *events.Loop
+		stop    context.CancelFunc
 	}
 
 	InterceptorFilter struct {
@@ -154,16 +154,23 @@ func (i *Interceptor) Start(ctx context.Context) error {
 		return nil
 	}
 
+	ctx, stop := context.WithCancel(ctx)
+
+	defer func() {
+		if i.stop == nil {
+			stop()
+		}
+	}()
+
 	err := i.client.Fetch.Enable(ctx, fetch.NewEnableArgs())
 	i.running = err == nil
 
 	if err != nil {
+
 		return err
 	}
 
-	stop, err := i.loop.Run(ctx)
-
-	if err != nil {
+	if err := i.loop.Run(ctx); err != nil {
 		if e := i.client.Fetch.Disable(ctx); e != nil {
 			i.logger.Err(err).Msg("failed to disable fetch")
 		}
@@ -173,7 +180,7 @@ func (i *Interceptor) Start(ctx context.Context) error {
 		return err
 	}
 
-	i.stopLoop = stop
+	i.stop = stop
 
 	return nil
 }
@@ -181,6 +188,11 @@ func (i *Interceptor) Start(ctx context.Context) error {
 func (i *Interceptor) Stop(ctx context.Context) error {
 	i.mu.Lock()
 	defer i.mu.Unlock()
+
+	if i.stop != nil {
+		i.stop()
+		i.stop = nil
+	}
 
 	err := i.client.Fetch.Disable(ctx)
 	i.running = false
