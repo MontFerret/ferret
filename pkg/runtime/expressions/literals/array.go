@@ -14,7 +14,7 @@ func NewArrayLiteral(size int) *ArrayLiteral {
 	return &ArrayLiteral{make([]core.Expression, 0, size)}
 }
 
-func NewArrayLiteralWith(elements ...core.Expression) *ArrayLiteral {
+func NewArrayLiteralWith(elements []core.Expression) *ArrayLiteral {
 	return &ArrayLiteral{elements}
 }
 

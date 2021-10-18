@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/fetch"
@@ -183,19 +184,16 @@ func TestManager(t *testing.T) {
 					return frameNavigatedClient, nil
 				}
 
-				responseReceivedClient := NewResponseReceivedClient()
-				responseReceivedClient.On("Close", mock.Anything).Once().Return(nil)
-				setExtraHTTPHeadersErr := errors.New("test error")
+				responseReceivedErr := errors.New("test error")
 				networkAPI := new(NetworkAPI)
 				networkAPI.responseReceived = func(ctx context.Context) (network2.ResponseReceivedClient, error) {
-					return responseReceivedClient, nil
+					return nil, responseReceivedErr
 				}
 				networkAPI.setExtraHTTPHeaders = func(ctx context.Context, args *network2.SetExtraHTTPHeadersArgs) error {
-					return setExtraHTTPHeadersErr
+					return nil
 				}
 
 				requestPausedClient := NewRequestPausedClient()
-				requestPausedClient.On("Close", mock.Anything).Once().Return(nil)
 				fetchAPI := new(FetchAPI)
 				fetchAPI.enable = func(ctx context.Context, args *fetch.EnableArgs) error {
 					return nil
@@ -228,8 +226,6 @@ func TestManager(t *testing.T) {
 
 				So(err, ShouldNotBeNil)
 				frameNavigatedClient.AssertExpectations(t)
-				responseReceivedClient.AssertExpectations(t)
-				requestPausedClient.AssertExpectations(t)
 			})
 
 			Convey("Should close all resources on Close", func() {
@@ -285,6 +281,8 @@ func TestManager(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				So(mgr.Close(), ShouldBeNil)
+
+				time.Sleep(time.Duration(100) * time.Millisecond)
 
 				frameNavigatedClient.AssertExpectations(t)
 				responseReceivedClient.AssertExpectations(t)

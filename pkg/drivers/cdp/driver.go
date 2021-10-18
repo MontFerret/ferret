@@ -151,11 +151,22 @@ func (drv *Driver) init(ctx context.Context) error {
 			return errors.Wrap(err, "failed to initialize driver")
 		}
 
+		dialOpts := make([]rpcc.DialOption, 0, 2)
+
+		if drv.options.Connection != nil {
+			if drv.options.Connection.BufferSize > 0 {
+				dialOpts = append(dialOpts, rpcc.WithWriteBufferSize(drv.options.Connection.BufferSize))
+			}
+
+			if drv.options.Connection.Compression {
+				dialOpts = append(dialOpts, rpcc.WithCompression())
+			}
+		}
+
 		bconn, err := rpcc.DialContext(
 			ctx,
 			ver.WebSocketDebuggerURL,
-			rpcc.WithWriteBufferSize(104857586),
-			rpcc.WithCompression(),
+			dialOpts...,
 		)
 
 		if err != nil {

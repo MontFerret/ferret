@@ -15,13 +15,21 @@ type FunctionCallExpression struct {
 func NewFunctionCallExpression(
 	src core.SourceMap,
 	fun core.Function,
-	args ...core.Expression,
+	args []core.Expression,
 ) (*FunctionCallExpression, error) {
 	if fun == nil {
 		return nil, core.Error(core.ErrMissedArgument, "function")
 	}
 
 	return &FunctionCallExpression{src, fun, args}, nil
+}
+
+func NewFunctionCallExpressionWith(
+	src core.SourceMap,
+	fun core.Function,
+	args ...core.Expression,
+) (*FunctionCallExpression, error) {
+	return NewFunctionCallExpression(src, fun, args)
 }
 
 func (e *FunctionCallExpression) Arguments() []core.Expression {

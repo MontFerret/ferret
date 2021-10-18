@@ -24,20 +24,7 @@ type (
 )
 
 func WithContext(ctx context.Context, drv Driver, opts ...GlobalOption) context.Context {
-	ctx, value := resolveValue(ctx)
-
-	value.drivers[drv.Name()] = drv
-
-	for _, opt := range opts {
-		opt(drv, value.opts)
-	}
-
-	// set first registered driver as a default one
-	if value.opts.defaultDriver == "" {
-		value.opts.defaultDriver = drv.Name()
-	}
-
-	return ctx
+	return withContext(ctx, drv, opts)
 }
 
 func FromContext(ctx context.Context, name string) (Driver, error) {
@@ -54,6 +41,23 @@ func FromContext(ctx context.Context, name string) (Driver, error) {
 	}
 
 	return drv, nil
+}
+
+func withContext(ctx context.Context, drv Driver, opts []GlobalOption) context.Context {
+	ctx, value := resolveValue(ctx)
+
+	value.drivers[drv.Name()] = drv
+
+	for _, opt := range opts {
+		opt(drv, value.opts)
+	}
+
+	// set first registered driver as a default one
+	if value.opts.defaultDriver == "" {
+		value.opts.defaultDriver = drv.Name()
+	}
+
+	return ctx
 }
 
 func resolveValue(ctx context.Context) (context.Context, *ctxValue) {

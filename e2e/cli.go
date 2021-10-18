@@ -2,16 +2,21 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/rs/zerolog"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
+	rt "runtime"
+	"runtime/pprof"
 	"strings"
+	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
@@ -20,6 +25,129 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
+
+type (
+	Timer struct {
+		start time.Time
+		end   time.Time
+	}
+
+	Profiler struct {
+		labels []string
+		timers map[string]*Timer
+		allocs map[string]*rt.MemStats
+		cpus   map[string]*bytes.Buffer
+		heaps  map[string]*bytes.Buffer
+	}
+)
+
+func NewProfiler() *Profiler {
+	return &Profiler{
+		labels: make([]string, 0, 10),
+		timers: make(map[string]*Timer),
+		allocs: make(map[string]*rt.MemStats),
+		cpus:   make(map[string]*bytes.Buffer),
+		heaps:  make(map[string]*bytes.Buffer),
+	}
+}
+
+func (p *Profiler) StartTimer(label string) {
+	timer := &Timer{
+		start: time.Now(),
+	}
+
+	p.timers[label] = timer
+	p.labels = append(p.labels, label)
+}
+
+func (p *Profiler) StopTimer(label string) {
+	timer, found := p.timers[label]
+
+	if !found {
+		panic(fmt.Sprintf("Timer not found: %s", label))
+	}
+
+	timer.end = time.Now()
+}
+
+func (p *Profiler) HeapSnapshot(label string) {
+	heap := &bytes.Buffer{}
+
+	err := pprof.WriteHeapProfile(heap)
+
+	if err != nil {
+		panic(err)
+	}
+
+	p.heaps[label] = heap
+	p.labels = append(p.labels, label)
+}
+
+func (p *Profiler) Allocations(label string) {
+	stats := &rt.MemStats{}
+
+	rt.ReadMemStats(stats)
+
+	p.allocs[label] = stats
+	p.labels = append(p.labels, label)
+}
+
+func (p *Profiler) StartCPU(label string) {
+	b := &bytes.Buffer{}
+
+	if err := pprof.StartCPUProfile(b); err != nil {
+		panic(err)
+	}
+
+	p.cpus[label] = b
+	p.labels = append(p.labels, label)
+}
+
+func (p *Profiler) StopCPU() {
+	pprof.StopCPUProfile()
+}
+
+func (p *Profiler) Print(label string) {
+	writer := &bytes.Buffer{}
+
+	timer, found := p.timers[label]
+
+	if found {
+		fmt.Fprintln(writer, fmt.Sprintf("Time: %s", timer.end.Sub(timer.start)))
+	}
+
+	stats, found := p.allocs[label]
+
+	if found {
+		fmt.Fprintln(writer, fmt.Sprintf("Alloc: %s", byteCountDecimal(stats.Alloc)))
+		fmt.Fprintln(writer, fmt.Sprintf("Frees: %s", byteCountDecimal(stats.Frees)))
+		fmt.Fprintln(writer, fmt.Sprintf("Total Alloc: %s", byteCountDecimal(stats.TotalAlloc)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap Alloc: %s", byteCountDecimal(stats.HeapAlloc)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap Sys: %s", byteCountDecimal(stats.HeapSys)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap Idle: %s", byteCountDecimal(stats.HeapIdle)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap In Use: %s", byteCountDecimal(stats.HeapInuse)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap Released: %s", byteCountDecimal(stats.HeapReleased)))
+		fmt.Fprintln(writer, fmt.Sprintf("Heap Objects: %d", stats.HeapObjects))
+	}
+
+	cpu, found := p.cpus[label]
+
+	if found {
+		fmt.Fprintln(writer, cpu.String())
+	}
+
+	if writer.Len() > 0 {
+		fmt.Println(fmt.Sprintf("%s:", label))
+		fmt.Println("-----")
+		fmt.Println(writer.String())
+	}
+}
+
+func (p *Profiler) PrintAll() {
+	for _, label := range p.labels {
+		p.Print(label)
+	}
+}
 
 type Params []string
 
@@ -63,6 +191,12 @@ var (
 		"cdp",
 		"",
 		"set CDP address",
+	)
+
+	dryRun = flag.Bool(
+		"dry-run",
+		false,
+		"compiles a given query, but does not execute",
 	)
 
 	logLevel = flag.String(
@@ -151,7 +285,7 @@ func main() {
 	}()
 
 	if query != "" {
-		err = execQuery(ctx, engine, opts, query)
+		err = runQuery(ctx, engine, opts, query)
 	} else {
 		err = execFiles(ctx, engine, opts, files)
 	}
@@ -228,7 +362,7 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 
 		log.Debug().Msg("successfully read file")
 		log.Debug().Msg("executing file...")
-		err = execQuery(ctx, engine, opts, string(out))
+		err = runQuery(ctx, engine, opts, string(out))
 
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to execute file")
@@ -253,6 +387,14 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 	return nil
 }
 
+func runQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+	if !(*dryRun) {
+		return execQuery(ctx, engine, opts, query)
+	}
+
+	return analyzeQuery(ctx, engine, opts, query)
+}
+
 func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
 	out, err := engine.Exec(ctx, query, opts...)
 
@@ -263,4 +405,49 @@ func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 	fmt.Println(string(out))
 
 	return nil
+}
+
+func analyzeQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+	compilation := "Compilation"
+	beforeCompilation := "Before compilation"
+	afterCompilation := "After compilation"
+	prof := NewProfiler()
+
+	prof.Allocations(beforeCompilation)
+	prof.StartTimer(compilation)
+	program := engine.MustCompile(query)
+
+	prof.StopTimer(compilation)
+	prof.Allocations(afterCompilation)
+
+	exec := "Execution"
+	beforeExec := "Before execution"
+	afterExec := "After execution"
+
+	prof.Allocations(beforeExec)
+	prof.StartTimer(exec)
+
+	engine.MustRun(ctx, program, opts...)
+
+	prof.StopTimer(exec)
+	prof.Allocations(afterExec)
+
+	prof.PrintAll()
+
+	return nil
+}
+
+func byteCountDecimal(b uint64) string {
+	const unit = 1000
+
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }

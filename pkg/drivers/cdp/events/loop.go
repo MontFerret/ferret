@@ -2,74 +2,71 @@ package events
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"math/rand"
 	"sync"
 )
 
 type Loop struct {
 	mu        sync.RWMutex
-	sources   *SourceCollection
-	listeners *ListenerCollection
-	cancel    context.CancelFunc
+	listeners map[ID]map[ListenerID]Listener
+	sources   []SourceFactory
 }
 
-func NewLoop() *Loop {
+func NewLoop(sources ...SourceFactory) *Loop {
 	loop := new(Loop)
-	loop.sources = NewSourceCollection()
-	loop.listeners = NewListenerCollection()
+	loop.listeners = make(map[ID]map[ListenerID]Listener)
+	loop.sources = sources
 
 	return loop
 }
 
-func (loop *Loop) Run(ctx context.Context) error {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
+func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
+	var err error
+	sources := make([]Source, 0, len(loop.sources))
 
-	if loop.cancel != nil {
-		return core.Error(core.ErrInvalidOperation, "loop is already running")
+	// create new sources
+	for _, factory := range loop.sources {
+		src, e := factory(ctx)
+
+		if e != nil {
+			err = e
+
+			break
+		}
+
+		sources = append(sources, src)
 	}
 
-	childCtx, cancel := context.WithCancel(ctx)
+	// if error occurred
+	if err != nil {
+		// clean up the open ones
+		for _, src := range sources {
+			src.Close()
+		}
 
-	loop.cancel = cancel
-
-	go loop.run(childCtx)
-
-	return nil
-}
-
-func (loop *Loop) Close() error {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	if loop.cancel != nil {
-		loop.cancel()
-		loop.cancel = nil
+		return nil, err
 	}
 
-	return loop.sources.Close()
-}
+	ctx, cancel := context.WithCancel(ctx)
 
-func (loop *Loop) AddSource(source Source) {
-	loop.mu.RLock()
-	defer loop.mu.RUnlock()
+	for _, src := range sources {
+		loop.consume(ctx, src)
+	}
 
-	loop.sources.Add(source)
-}
-
-func (loop *Loop) RemoveSource(source Source) {
-	loop.mu.RLock()
-	defer loop.mu.RUnlock()
-
-	loop.sources.Remove(source)
+	return cancel, nil
 }
 
 func (loop *Loop) Listeners(eventID ID) int {
 	loop.mu.RLock()
 	defer loop.mu.RUnlock()
 
-	return loop.listeners.Size(eventID)
+	bucket, exists := loop.listeners[eventID]
+
+	if !exists {
+		return 0
+	}
+
+	return len(bucket)
 }
 
 func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
@@ -82,7 +79,14 @@ func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
 		Handler: handler,
 	}
 
-	loop.listeners.Add(listener)
+	bucket, exists := loop.listeners[listener.EventID]
+
+	if !exists {
+		bucket = make(map[ListenerID]Listener)
+		loop.listeners[listener.EventID] = bucket
+	}
+
+	bucket[listener.ID] = listener
 
 	return listener.ID
 }
@@ -91,82 +95,64 @@ func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
 	loop.mu.RLock()
 	defer loop.mu.RUnlock()
 
-	loop.listeners.Remove(eventID, listenerID)
+	bucket, exists := loop.listeners[eventID]
+
+	if !exists {
+		return
+	}
+
+	delete(bucket, listenerID)
 }
 
-// run starts running an event loop.
-// It constantly iterates over each event source.
-func (loop *Loop) run(ctx context.Context) {
-	sources := loop.sources
-	size := sources.Size()
-	counter := -1
-
-	for {
-		if isCtxDone(ctx) {
-			break
-		}
-
-		counter++
-
-		if counter >= size {
-			// reset the counter
-			size = sources.Size()
-			counter = 0
-		}
-
-		var source Source
-
-		if size > 0 {
-			found, err := sources.Get(counter)
-
-			if err == nil {
-				source = found
-			} else {
-				// force to reset counter
-				counter = size
-				continue
+func (loop *Loop) consume(ctx context.Context, src Source) {
+	go func() {
+		defer func() {
+			if err := src.Close(); err != nil {
+				loop.emit(ctx, Error, err)
 			}
-		} else {
-			continue
-		}
+		}()
 
-		select {
-		case <-ctx.Done():
-			return
-		case <-source.Ready():
-			if isCtxDone(ctx) {
+		for {
+			select {
+			case <-ctx.Done():
 				return
+			case <-src.Ready():
+				if isCtxDone(ctx) {
+					return
+				}
+
+				event, err := src.Recv()
+
+				if err != nil {
+					loop.emit(ctx, Error, err)
+
+					return
+				}
+
+				loop.emit(ctx, event.ID, event.Data)
 			}
-
-			event, err := source.Recv()
-
-			loop.emit(ctx, event.ID, event.Data, err)
-		default:
-			continue
 		}
-	}
+	}()
 }
 
-func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err error) {
-	if err != nil {
-		eventID = Error
-		message = err
+func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}) {
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+
+	listeners, exist := loop.listeners[eventID]
+
+	if !exist {
+		return
 	}
 
-	loop.mu.RLock()
-	snapshot := loop.listeners.Values(eventID)
-	loop.mu.RUnlock()
-
-	for _, listener := range snapshot {
+	for _, listener := range listeners {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			// if returned false, it means the loops should not call the handler anymore
 			if !listener.Handler(ctx, message) {
-				loop.mu.RLock()
-				loop.listeners.Remove(eventID, listener.ID)
-				loop.mu.RUnlock()
+				delete(listeners, listener.ID)
 			}
 		}
 	}
