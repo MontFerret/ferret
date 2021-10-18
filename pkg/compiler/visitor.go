@@ -1121,18 +1121,53 @@ func (v *visitor) visitIntegerLiteral(ctx fql.IIntegerLiteralContext) (core.Expr
 	return literals.NewIntLiteral(val), nil
 }
 
-func (v *visitor) visitStringLiteral(c fql.IStringLiteralContext) (core.Expression, error) {
-	ctx := c.(*fql.StringLiteralContext)
-	var text string
+func (v *visitor) visitStringLiteral(ctx fql.IStringLiteralContext) (core.Expression, error) {
+	var b strings.Builder
 
-	strLiteral := ctx.StringLiteral()
+	for _, child := range ctx.GetChildren() {
+		tree := child.(antlr.TerminalNode)
+		sym := tree.GetSymbol()
+		input := sym.GetInputStream()
 
-	if strLiteral != nil {
-		text = strLiteral.GetText()
+		if input == nil {
+			continue
+		}
+
+		size := input.Size()
+		// skip quotes
+		start := sym.GetStart() + 1
+		stop := sym.GetStop() - 1
+
+		if stop >= size {
+			stop = size - 1
+		}
+
+		if start < size && stop < size {
+			for i := start; i <= stop; i++ {
+				c := input.GetText(i, i)
+
+				switch c {
+				case "\\":
+					c2 := input.GetText(i, i+1)
+
+					switch c2 {
+					case "\\n":
+						b.WriteString("\n")
+					case "\\t":
+						b.WriteString("\t")
+					default:
+						b.WriteString(c2)
+					}
+
+					i++
+				default:
+					b.WriteString(c)
+				}
+			}
+		}
 	}
 
-	// remove extra quotes
-	return literals.NewStringLiteral(text[1 : len(text)-1]), nil
+	return literals.NewStringLiteral(b.String()), nil
 }
 
 func (v *visitor) visitBooleanLiteral(ctx fql.IBooleanLiteralContext) (core.Expression, error) {
