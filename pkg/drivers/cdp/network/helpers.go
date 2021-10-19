@@ -2,6 +2,7 @@ package network
 
 import (
 	"encoding/json"
+	"github.com/mafredri/cdp/protocol/page"
 	"github.com/rs/zerolog/log"
 	"regexp"
 	"strings"
@@ -147,7 +148,7 @@ func isURLMatched(url string, pattern *regexp.Regexp) bool {
 	return matched
 }
 
-func isFrameMatched(current, target string) bool {
+func isFrameMatched(current, target page.FrameID) bool {
 	// if frameID is empty string or equals to the current one
 	if len(target) == 0 {
 		return true

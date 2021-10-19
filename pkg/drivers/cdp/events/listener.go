@@ -36,3 +36,15 @@ func Once(fn func(ctx context.Context, message interface{})) Handler {
 		return false
 	}
 }
+
+func UntilDone(fn func(ctx context.Context, message interface{})) Handler {
+	return func(ctx context.Context, message interface{}) bool {
+		if err := ctx.Err(); err != nil {
+			return false
+		}
+
+		fn(ctx, message)
+
+		return true
+	}
+}

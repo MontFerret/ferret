@@ -342,7 +342,7 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 
 	m.logger.Trace().Msg("succeeded starting navigation")
 
-	return m.WaitForNavigation(ctx, EventOptions{})
+	return m.WaitForNavigation(ctx, WaitEventOptions{})
 }
 
 func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
@@ -409,7 +409,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 		return values.False, err
 	}
 
-	err = m.WaitForNavigation(ctx, EventOptions{})
+	err = m.WaitForNavigation(ctx, WaitEventOptions{})
 
 	if err != nil {
 		m.logger.Trace().
@@ -491,7 +491,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 		return values.False, err
 	}
 
-	err = m.WaitForNavigation(ctx, EventOptions{})
+	err = m.WaitForNavigation(ctx, WaitEventOptions{})
 
 	if err != nil {
 		m.logger.Trace().
@@ -513,264 +513,189 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	return values.True, nil
 }
 
-func (m *Manager) WaitForNavigation(ctx context.Context, opts EventOptions) error {
-	onEvent, err := m.OnFrameNavigation(ctx, opts)
+func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) error {
+	onNav, err := m.OnFrameNavigation(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	select {
-	case <-onEvent:
-		return nil
-	case <-ctx.Done():
-		var urlPatternStr string
+	m.logger.Trace().Msg("starting to wait for frame navigation event")
 
-		if opts.URL != nil {
-			urlPatternStr = opts.URL.String()
+	return evts.Consume(ctx, onNav, func(_ context.Context, data core.Value) error {
+		evt := data.(*NavigationEvent)
+
+		if isFrameMatched(evt.FrameID, opts.FrameID) && isURLMatched(evt.URL, opts.URL) {
+			log := m.logger.With().
+				Str("event_fame_id", string(evt.FrameID)).
+				Str("event_fame_url", evt.URL).
+				Logger()
+
+			log.Trace().Msg("received framed navigation event")
+
+			log.Trace().Msg("creating frame execution context")
+
+			ec, err := eval.Create(ctx, m.logger, m.client, evt.FrameID)
+
+			if err != nil {
+				log.Trace().Err(err).Msg("failed to create frame execution context")
+
+				return err
+			}
+
+			log.Trace().Err(err).Msg("starting polling DOM ready event")
+
+			_, err = events.NewEvalWaitTask(
+				ec,
+				templates.DOMReady(),
+				events.DefaultPolling,
+			).Run(ctx)
+
+			if err != nil {
+				log.Trace().Err(err).Msg("failed to poll DOM ready event")
+
+				return err
+			}
+
+			log.Trace().Msg("DOM is ready")
+			log.Trace().
+				Str("fame_id", string(evt.FrameID)).
+				Msg("navigation has completed")
+
+			return core.ErrDone
 		}
 
-		m.logger.Trace().
-			Err(core.ErrTimeout).
-			Str("fame_id", opts.FrameID).
-			Str("url_pattern", urlPatternStr).
-			Msg("navigation has been interrupted")
-
-		return core.ErrTimeout
-	}
+		// wait for the next one
+		return nil
+	})
 }
 
-func (m *Manager) OnFrameNavigation(ctx context.Context, opts EventOptions) (<-chan evts.Event, error) {
+func (m *Manager) OnFrameNavigation(ctx context.Context) (<-chan evts.Event, error) {
 	ch := make(chan evts.Event)
 
-	var urlPatternStr string
-
-	if opts.URL != nil {
-		urlPatternStr = opts.URL.String()
-	}
-
-	m.logger.Trace().
-		Str("fame_id", opts.FrameID).
-		Str("url_pattern", urlPatternStr).
-		Msg("starting to wait for frame navigation event")
+	m.logger.Trace().Msg("starting to wait for frame navigation event")
 
 	m.loop.AddListener(frameNavigatedEvent, func(_ context.Context, message interface{}) bool {
-		repl := message.(*page.FrameNavigatedReply)
-
-		log := m.logger.With().
-			Str("fame_id", opts.FrameID).
-			Str("event_fame_id", string(repl.Frame.ID)).
-			Str("event_fame_url", repl.Frame.URL).
-			Str("url_pattern", urlPatternStr).
-			Logger()
-
-		log.Trace().Msg("received framed navigation event")
-
-		if !isFrameMatched(string(repl.Frame.ID), opts.FrameID) || !isURLMatched(repl.Frame.URL, opts.URL) {
-			log.Trace().Msg("frame does not match")
-
-			return true
-		}
-
-		defer close(ch)
-
-		log.Trace().Msg("frame does match")
-
-		if ctx.Err() != nil {
+		if err := ctx.Err(); err != nil {
 			// terminated
-			return false
-		}
-
-		log.Trace().Msg("creating frame execution context")
-
-		ec, err := eval.Create(ctx, m.logger, m.client, repl.Frame.ID)
-
-		if err != nil {
-			log.Trace().Err(err).Msg("failed to create frame execution context")
-
-			ch <- evts.Event{
-				Err: err,
-			}
+			close(ch)
 
 			return false
 		}
 
-		log.Trace().Err(err).Msg("starting polling DOM ready event")
-
-		_, err = events.NewEvalWaitTask(
-			ec,
-			templates.DOMReady(),
-			events.DefaultPolling,
-		).Run(ctx)
-
-		if err != nil {
-			log.Trace().Err(err).Msg("failed to poll DOM ready event")
-
-			ch <- evts.Event{
-				Err: err,
-			}
-
-			return false
-		}
-
-		log.Trace().Msg("DOM is ready")
-
-		ch <- evts.Event{
-			Data: values.NewString(repl.Frame.URL),
-			Err:  nil,
-		}
+		msg := message.(*page.FrameNavigatedReply)
 
 		m.logger.Trace().
-			Str("fame_id", opts.FrameID).
-			Str("url_pattern", urlPatternStr).
-			Msg("navigation has completed")
+			Str("url", msg.Frame.URL).
+			Str("frame_id", string(msg.Frame.ID)).
+			Str("type", string(msg.Type)).
+			Msg("received frame navigation event")
 
-		return false
+		ch <- evts.Event{
+			Data: &NavigationEvent{
+				URL:     msg.Frame.URL,
+				FrameID: msg.Frame.ID,
+			},
+		}
+
+		return true
 	})
 
 	return ch, nil
 }
 
-func (m *Manager) OnRequest(ctx context.Context, opts EventOptions) (<-chan evts.Event, error) {
-	var urlPatternStr string
-
-	if opts.URL != nil {
-		urlPatternStr = opts.URL.String()
-	}
-
-	m.logger.Trace().
-		Str("fame_id", opts.FrameID).
-		Str("url_pattern", urlPatternStr).
-		Msg("starting to wait for request event")
+func (m *Manager) OnRequest(ctx context.Context) (<-chan evts.Event, error) {
+	m.logger.Trace().Msg("starting to receive request event")
 
 	l := events.NewLoop(createBeforeRequestStreamFactory(m.client))
 
-	ctx, stop := context.WithCancel(ctx)
-
 	if err := l.Run(ctx); err != nil {
-		stop()
-
 		return nil, err
 	}
 
 	ch := make(chan evts.Event)
 
 	l.AddListener(beforeRequestEvent, func(ctx context.Context, message interface{}) bool {
+		if ctx.Err() != nil {
+			// terminated
+			close(ch)
+
+			return false
+		}
+
 		msg, ok := message.(*network.RequestWillBeSentReply)
 
 		if !ok {
 			return true
 		}
 
-		var eventFrameID page.FrameID
+		var frameID string
 
 		if msg.FrameID != nil {
-			eventFrameID = *msg.FrameID
+			frameID = string(*msg.FrameID)
 		}
 
-		log := m.logger.With().
+		m.logger.Trace().
 			Str("url", msg.Request.URL).
 			Str("document_url", msg.DocumentURL).
-			Str("resource_type", string(msg.Type)).
-			Str("request_id", string(msg.RequestID)).
-			Str("frame_id", string(eventFrameID)).
-			Logger()
-
-		log.Trace().
+			Str("frame_id", frameID).
 			Interface("data", msg.Request).
-			Msg("trying to match an intercepted request...")
-
-		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isURLMatched(msg.Request.URL, opts.URL) {
-			log.Trace().Msg("request does not match")
-
-			return true
-		}
-
-		defer func() {
-			stop()
-			close(ch)
-		}()
-
-		log.Trace().Msg("request does match")
+			Msg("received request event")
 
 		ch <- evts.Event{
 			Data: toDriverRequest(msg.Request),
 		}
 
-		// exit
-		return false
+		return true
 	})
 
 	return ch, nil
 }
 
-func (m *Manager) OnResponse(ctx context.Context, opts EventOptions) (<-chan evts.Event, error) {
-	var urlPatternStr string
-
-	if opts.URL != nil {
-		urlPatternStr = opts.URL.String()
-	}
-
-	m.logger.Trace().
-		Str("fame_id", opts.FrameID).
-		Str("url_pattern", urlPatternStr).
-		Msg("starting to wait for response event")
+func (m *Manager) OnResponse(ctx context.Context) (<-chan evts.Event, error) {
+	m.logger.Trace().Msg("starting to receive response events")
 
 	l := events.NewLoop(createResponseReceivedStreamFactory(m.client))
 
-	ctx, stop := context.WithCancel(ctx)
-
 	if err := l.Run(ctx); err != nil {
-		stop()
-
 		return nil, err
 	}
 
 	ch := make(chan evts.Event)
 
 	l.AddListener(responseReceivedEvent, func(ctx context.Context, message interface{}) bool {
+		if ctx.Err() != nil {
+			// terminated
+			close(ch)
+
+			return false
+		}
+
 		msg, ok := message.(*network.ResponseReceivedReply)
 
 		if !ok {
 			return true
 		}
 
-		var eventFrameID page.FrameID
+		var frameID string
 
 		if msg.FrameID != nil {
-			eventFrameID = *msg.FrameID
+			frameID = string(*msg.FrameID)
 		}
 
-		log := m.logger.With().
+		m.logger.Trace().
 			Str("url", msg.Response.URL).
-			Str("resource_type", string(msg.Type)).
-			Str("frame_id", string(eventFrameID)).
+			Str("frame_id", frameID).
 			Str("request_id", string(msg.RequestID)).
-			Logger()
-
-		log.Trace().
 			Interface("data", msg.Response).
-			Msg("trying to match an intercepted response...")
-
-		if !isFrameMatched(string(eventFrameID), opts.FrameID) || !isURLMatched(msg.Response.URL, opts.URL) {
-			log.Trace().Msg("response does not match")
-
-			return true
-		}
-
-		defer func() {
-			stop()
-			close(ch)
-		}()
-
-		log.Trace().Msg("response does match")
+			Msg("received response event")
 
 		ch <- evts.Event{
 			Data: toDriverResponse(msg.Response),
 		}
 
 		// exit
-		return false
+		return true
 	})
 
 	return ch, nil
@@ -807,7 +732,7 @@ func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bo
 
 	m.response.Store(*msg.FrameID, toDriverResponse(msg.Response))
 
-	log.Trace().Msg("updated frame responseReceivedEvent information")
+	log.Trace().Msg("updated frame response information")
 
 	return
 }

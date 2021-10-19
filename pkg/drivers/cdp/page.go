@@ -547,13 +547,13 @@ func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscripti
 		}
 	}
 
-	evtOpts := net.EventOptions{
+	evtOpts := net.WaitEventOptions{
 		FrameID: "",
 		URL:     nil,
 	}
 
 	if opts.Frame != nil {
-		evtOpts.FrameID = string(opts.Frame.Frame().Frame.ID)
+		evtOpts.FrameID = opts.Frame.Frame().Frame.ID
 	}
 
 	if opts.Target != "" {
@@ -568,11 +568,11 @@ func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscripti
 
 	switch subscription.EventName {
 	case drivers.NavigationPageEvent:
-		return p.network.OnFrameNavigation(ctx, evtOpts)
+		return p.network.OnFrameNavigation(ctx)
 	case drivers.RequestPageEvent:
-		return p.network.OnRequest(ctx, evtOpts)
+		return p.network.OnRequest(ctx)
 	case drivers.ResponsePageEvent:
-		return p.network.OnResponse(ctx, evtOpts)
+		return p.network.OnResponse(ctx)
 	default:
 		return nil, core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", subscription.EventName)
 	}

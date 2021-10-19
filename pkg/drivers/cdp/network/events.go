@@ -1,50 +1,61 @@
 package network
 
 import (
-	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
-	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/fetch"
-	"github.com/mafredri/cdp/protocol/network"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/mafredri/cdp/rpcc"
+	"github.com/wI2L/jettison"
 )
 
-var (
-	frameNavigatedEvent   = events.New("frame_navigated")
-	responseReceivedEvent = events.New("response_received")
-	requestPausedEvent    = events.New("request_paused")
-	beforeRequestEvent    = events.New("before_request")
-)
+var NavigationEventType = core.NewType("network.NavigationEventType")
 
-func createFrameLoadStreamFactory(client *cdp.Client) events.SourceFactory {
-	return events.NewStreamSourceFactory(frameNavigatedEvent, func(ctx context.Context) (rpcc.Stream, error) {
-		return client.Page.FrameNavigated(ctx)
-	}, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(page.FrameNavigatedClient).Recv()
-	})
+type NavigationEvent struct {
+	URL     string
+	FrameID page.FrameID
 }
 
-func createResponseReceivedStreamFactory(client *cdp.Client) events.SourceFactory {
-	return events.NewStreamSourceFactory(responseReceivedEvent, func(ctx context.Context) (rpcc.Stream, error) {
-		return client.Network.ResponseReceived(ctx)
-	}, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(network.ResponseReceivedClient).Recv()
-	})
+func (evt *NavigationEvent) MarshalJSON() ([]byte, error) {
+	if evt == nil {
+		return values.None.MarshalJSON()
+	}
+
+	return jettison.MarshalOpts(map[string]string{
+		"url":      evt.URL,
+		"frame_id": string(evt.FrameID),
+	}, jettison.NoHTMLEscaping())
 }
 
-func createRequestPausedStreamFactory(client *cdp.Client) events.SourceFactory {
-	return events.NewStreamSourceFactory(requestPausedEvent, func(ctx context.Context) (rpcc.Stream, error) {
-		return client.Fetch.RequestPaused(ctx)
-	}, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(fetch.RequestPausedClient).Recv()
-	})
+func (evt *NavigationEvent) Type() core.Type {
+	return NavigationEventType
 }
 
-func createBeforeRequestStreamFactory(client *cdp.Client) events.SourceFactory {
-	return events.NewStreamSourceFactory(beforeRequestEvent, func(ctx context.Context) (rpcc.Stream, error) {
-		return client.Network.RequestWillBeSent(ctx)
-	}, func(stream rpcc.Stream) (interface{}, error) {
-		return stream.(network.RequestWillBeSentClient).Recv()
-	})
+func (evt *NavigationEvent) String() string {
+	return evt.URL
+}
+
+func (evt *NavigationEvent) Compare(other core.Value) int64 {
+	if other.Type() != NavigationEventType {
+		return -1
+	}
+
+	otherEvt := other.(*NavigationEvent)
+	comp := values.NewString(evt.URL).Compare(values.NewString(otherEvt.URL))
+
+	if comp != 0 {
+		return comp
+	}
+
+	return values.String(evt.FrameID).Compare(values.String(otherEvt.FrameID))
+}
+
+func (evt *NavigationEvent) Unwrap() interface{} {
+	return evt
+}
+
+func (evt *NavigationEvent) Hash() uint64 {
+	return values.Parse(evt).Hash()
+}
+
+func (evt *NavigationEvent) Copy() core.Value {
+	return *(&evt)
 }

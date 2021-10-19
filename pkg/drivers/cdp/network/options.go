@@ -2,6 +2,7 @@ package network
 
 import (
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/mafredri/cdp/protocol/page"
 	"regexp"
 )
 
@@ -18,8 +19,8 @@ type (
 		Filter  *Filter
 	}
 
-	EventOptions struct {
-		FrameID string
+	WaitEventOptions struct {
+		FrameID page.FrameID
 		URL     *regexp.Regexp
 	}
 )
