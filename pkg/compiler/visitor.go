@@ -1084,6 +1084,10 @@ func (v *visitor) visitPropertyName(c fql.IPropertyNameContext, scope *scope) (c
 		return literals.NewStringLiteral(id.GetText()), nil
 	}
 
+	if rw := ctx.ReservedWord(); rw != nil {
+		return literals.NewStringLiteral(rw.GetText()), nil
+	}
+
 	if stringLiteral := ctx.StringLiteral(); stringLiteral != nil {
 		runes := []rune(stringLiteral.GetText())
 
@@ -1299,7 +1303,7 @@ func (v *visitor) visitFunctionCall(c fql.IFunctionCallContext, scope *scope) (c
 		name += funcNS.GetText()
 	}
 
-	name += ctx.FunctionIdentifier().GetText()
+	name += ctx.FunctionName().GetText()
 
 	fun, exists := v.funcs.Get(name)
 

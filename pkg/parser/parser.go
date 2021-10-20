@@ -25,6 +25,10 @@ func New(query string) *Parser {
 	return &Parser{tree: p}
 }
 
+func (p *Parser) GetLiteralNames() []string {
+	return p.tree.GetLiteralNames()[:]
+}
+
 func (p *Parser) AddErrorListener(listener antlr.ErrorListener) {
 	p.tree.AddErrorListener(listener)
 }

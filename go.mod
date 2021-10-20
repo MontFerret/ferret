@@ -1,12 +1,12 @@
 module github.com/MontFerret/ferret
 
-go 1.13
+go 1.14
 
 require (
 	github.com/PuerkitoBio/goquery v1.7.1
 	github.com/antchfx/htmlquery v1.2.4
 	github.com/antchfx/xpath v1.2.0
-	github.com/antlr/antlr4 v0.0.0-20210503161921-88ad58426b90
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211014165551-23f93e0d1b42
 	github.com/corpix/uarand v0.1.1
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
@@ -18,7 +18,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.6
 	github.com/stretchr/testify v1.7.0
 	github.com/wI2L/jettison v0.7.2
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/net v0.0.0-20211020060615-d418f374d309
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
 )
