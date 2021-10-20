@@ -12,7 +12,7 @@ type (
 	}
 )
 
-func NewExpressionFn(fn func(ctx context.Context, scope *Scope) (Value, error)) Expression {
+func AsExpression(fn func(ctx context.Context, scope *Scope) (Value, error)) Expression {
 	return &ExpressionFn{fn}
 }
 

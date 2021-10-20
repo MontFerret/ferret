@@ -41,17 +41,17 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 	}()
 }
 
-func (m *MockedObservable) Subscribe(_ context.Context, eventName string, opts *values.Object) <-chan events.Event {
-	calls, found := m.Args[eventName]
+func (m *MockedObservable) Subscribe(_ context.Context, sub events.Subscription) (<-chan events.Event, error) {
+	calls, found := m.Args[sub.EventName]
 
 	if !found {
 		calls = make([]*values.Object, 0, 10)
-		m.Args[eventName] = calls
+		m.Args[sub.EventName] = calls
 	}
 
-	m.Args[eventName] = append(calls, opts)
+	m.Args[sub.EventName] = append(calls, sub.Options)
 
-	return m.subscribers[eventName]
+	return m.subscribers[sub.EventName], nil
 }
 
 func newCompilerWithObservable() *compiler.Compiler {
@@ -133,7 +133,7 @@ RETURN NONE
 LET obj = X::CREATE()
 
 X::EMIT(obj, "test", 100)
-WAITFOR EVENT "test" IN obj 1000
+WAITFOR EVENT "test" IN obj TIMEOUT 1000
 
 RETURN NONE
 `)
@@ -148,8 +148,8 @@ RETURN NONE
 LET obj = X::CREATE()
 
 X::EMIT(obj, "test", 100)
-LET timeout = 1000
-WAITFOR EVENT "test" IN obj timeout
+LET tmt = 1000
+WAITFOR EVENT "test" IN obj TIMEOUT tmt
 
 RETURN NONE
 `)
@@ -164,8 +164,8 @@ RETURN NONE
 LET obj = X::CREATE()
 
 X::EMIT(obj, "test", 100)
-LET timeout = 1000
-WAITFOR EVENT "test" IN obj timeout
+LET tmt = 1000
+WAITFOR EVENT "test" IN obj TIMEOUT tmt
 
 X::EMIT(obj, "test", 100)
 
@@ -290,6 +290,52 @@ RETURN NONE
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("Should use filter", func() {
+			c := newCompilerWithObservable()
+
+			prog := c.MustCompile(`
+LET obj = X::CREATE()
+
+LET _ = (FOR i IN 0..3
+	X::EMIT_WITH(obj, @evt, { counter: i })
+	RETURN NONE
+)
+
+LET evt = (WAITFOR EVENT @evt IN obj FILTER CURRENT.counter > 2)
+
+T::EQ(evt.counter, 3)
+
+RETURN evt
+`)
+
+			out, err := prog.Run(context.Background(), runtime.WithParam("evt", "test"))
+
+			So(err, ShouldBeNil)
+			So(string(out), ShouldEqual, `{"counter":3}`)
+		})
+
+		Convey("Should use filter and time out", func() {
+			c := newCompilerWithObservable()
+
+			prog := c.MustCompile(`
+LET obj = X::CREATE()
+
+LET _ = (FOR i IN 0..3
+	X::EMIT_WITH(obj, @evt, { counter: i })
+	RETURN NONE
+)
+
+LET evt = (WAITFOR EVENT @evt IN obj FILTER CURRENT.counter > 4)
+
+T::EQ(evt.counter, 5)
+
+RETURN evt
+`)
+
+			_, err := prog.Run(context.Background(), runtime.WithParam("evt", "test"))
+
+			So(err, ShouldNotBeNil)
+		})
 	})
 
 }

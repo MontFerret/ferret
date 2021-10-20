@@ -136,7 +136,7 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (waitForTimeout)?
+    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
     ;
 
 waitForEventName
@@ -157,10 +157,8 @@ optionsClause
     : Options objectLiteral
     ;
 
-waitForTimeout
-    : integerLiteral
-    | variable
-    | param
+timeoutClause
+    : Timeout (integerLiteral | variable | param | memberExpression | functionCall)
     ;
 
 variableDeclaration
@@ -297,6 +295,7 @@ functionIdentifier
     | In
     | Waitfor
     | Event
+    | Timeout
     ;
 
 rangeOperator

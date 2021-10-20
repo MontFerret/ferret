@@ -97,8 +97,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#optionsClause.
 	VisitOptionsClause(ctx *OptionsClauseContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForTimeout.
-	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
+	// Visit a parse tree produced by FqlParser#timeoutClause.
+	VisitTimeoutClause(ctx *TimeoutClauseContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#variableDeclaration.
 	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}

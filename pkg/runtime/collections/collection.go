@@ -1,8 +1,6 @@
 package collections
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -27,36 +25,4 @@ type (
 		Get(key values.String) (core.Value, values.Boolean)
 		Set(key values.String, value core.Value)
 	}
-
-	coreIterator struct {
-		valVar string
-		keyVar string
-		values core.Iterator
-	}
 )
-
-func NewCoreIterator(valVar, keyVar string, values core.Iterator) (Iterator, error) {
-	return &coreIterator{valVar, keyVar, values}, nil
-}
-
-func (iterator *coreIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
-	val, key, err := iterator.values.Next(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	nextScope := scope.Fork()
-
-	if err := nextScope.SetVariable(iterator.valVar, val); err != nil {
-		return nil, err
-	}
-
-	if iterator.keyVar != "" {
-		if err := nextScope.SetVariable(iterator.keyVar, key); err != nil {
-			return nil, err
-		}
-	}
-
-	return nextScope, nil
-}

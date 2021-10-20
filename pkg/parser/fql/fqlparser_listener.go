@@ -97,8 +97,8 @@ type FqlParserListener interface {
 	// EnterOptionsClause is called when entering the optionsClause production.
 	EnterOptionsClause(c *OptionsClauseContext)
 
-	// EnterWaitForTimeout is called when entering the waitForTimeout production.
-	EnterWaitForTimeout(c *WaitForTimeoutContext)
+	// EnterTimeoutClause is called when entering the timeoutClause production.
+	EnterTimeoutClause(c *TimeoutClauseContext)
 
 	// EnterVariableDeclaration is called when entering the variableDeclaration production.
 	EnterVariableDeclaration(c *VariableDeclarationContext)
@@ -307,8 +307,8 @@ type FqlParserListener interface {
 	// ExitOptionsClause is called when exiting the optionsClause production.
 	ExitOptionsClause(c *OptionsClauseContext)
 
-	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
-	ExitWaitForTimeout(c *WaitForTimeoutContext)
+	// ExitTimeoutClause is called when exiting the timeoutClause production.
+	ExitTimeoutClause(c *TimeoutClauseContext)
 
 	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
 	ExitVariableDeclaration(c *VariableDeclarationContext)

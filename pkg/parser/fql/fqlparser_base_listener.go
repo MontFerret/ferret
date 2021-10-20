@@ -200,11 +200,11 @@ func (s *BaseFqlParserListener) EnterOptionsClause(ctx *OptionsClauseContext) {}
 // ExitOptionsClause is called when production optionsClause is exited.
 func (s *BaseFqlParserListener) ExitOptionsClause(ctx *OptionsClauseContext) {}
 
-// EnterWaitForTimeout is called when production waitForTimeout is entered.
-func (s *BaseFqlParserListener) EnterWaitForTimeout(ctx *WaitForTimeoutContext) {}
+// EnterTimeoutClause is called when production timeoutClause is entered.
+func (s *BaseFqlParserListener) EnterTimeoutClause(ctx *TimeoutClauseContext) {}
 
-// ExitWaitForTimeout is called when production waitForTimeout is exited.
-func (s *BaseFqlParserListener) ExitWaitForTimeout(ctx *WaitForTimeoutContext) {}
+// ExitTimeoutClause is called when production timeoutClause is exited.
+func (s *BaseFqlParserListener) ExitTimeoutClause(ctx *TimeoutClauseContext) {}
 
 // EnterVariableDeclaration is called when production variableDeclaration is entered.
 func (s *BaseFqlParserListener) EnterVariableDeclaration(ctx *VariableDeclarationContext) {}

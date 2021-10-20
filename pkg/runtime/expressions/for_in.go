@@ -59,7 +59,7 @@ func (iterable *ForInIterableExpression) Iterate(ctx context.Context, scope *cor
 					return nil, err
 				}
 
-				return collections.NewCoreIterator(iterable.valVariable, iterable.keyVariable, iterator)
+				return collections.FromCoreIterator(iterable.valVariable, iterable.keyVariable, iterator)
 			case collections.KeyedCollection:
 				return collections.NewKeyedIterator(iterable.valVariable, iterable.keyVariable, collection)
 			case collections.IndexedCollection:

@@ -127,7 +127,7 @@ func (v *BaseFqlParserVisitor) VisitOptionsClause(ctx *OptionsClauseContext) int
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitTimeoutClause(ctx *TimeoutClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
