@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.25.0
 	github.com/sethgrid/pester v1.1.0
-	github.com/smartystreets/goconvey v1.6.6
+	github.com/smartystreets/goconvey v1.6.7
 	github.com/stretchr/testify v1.7.0
 	github.com/wI2L/jettison v0.7.2
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
