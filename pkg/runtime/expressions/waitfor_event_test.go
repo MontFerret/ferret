@@ -43,17 +43,17 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 	}()
 }
 
-func (m *MockedObservable) Subscribe(_ context.Context, eventName string, opts *values.Object) <-chan events.Event {
-	calls, found := m.Args[eventName]
+func (m *MockedObservable) Subscribe(_ context.Context, sub events.Subscription) (<-chan events.Event, error) {
+	calls, found := m.Args[sub.EventName]
 
 	if !found {
 		calls = make([]*values.Object, 0, 10)
-		m.Args[eventName] = calls
+		m.Args[sub.EventName] = calls
 	}
 
-	m.Args[eventName] = append(calls, opts)
+	m.Args[sub.EventName] = append(calls, sub.Options)
 
-	return m.subscribers[eventName]
+	return m.subscribers[sub.EventName], nil
 }
 
 func TestWaitForEventExpression(t *testing.T) {
@@ -67,8 +67,6 @@ func TestWaitForEventExpression(t *testing.T) {
 			sourceMap,
 			literals.NewStringLiteral("test"),
 			variable,
-			nil,
-			nil,
 		)
 		So(err, ShouldBeNil)
 		So(expression, ShouldNotBeNil)
@@ -89,8 +87,6 @@ func TestWaitForEventExpression(t *testing.T) {
 			sourceMap,
 			literals.NewStringLiteral(eventName),
 			variable,
-			nil,
-			nil,
 		)
 
 		So(err, ShouldBeNil)
@@ -125,11 +121,11 @@ func TestWaitForEventExpression(t *testing.T) {
 			sourceMap,
 			literals.NewStringLiteral(eventName),
 			variable,
-			literals.NewObjectLiteralWith(prop),
-			nil,
 		)
 
 		So(err, ShouldBeNil)
+
+		So(expression.SetOptions(literals.NewObjectLiteralWith(prop)), ShouldBeNil)
 
 		scope, _ := core.NewRootScope()
 		So(scope.SetVariable("observable", mock), ShouldBeNil)
@@ -157,8 +153,6 @@ func TestWaitForEventExpression(t *testing.T) {
 			sourceMap,
 			literals.NewStringLiteral(eventName),
 			variable,
-			nil,
-			nil,
 		)
 
 		So(err, ShouldBeNil)
@@ -188,8 +182,6 @@ func TestWaitForEventExpression(t *testing.T) {
 			sourceMap,
 			literals.NewStringLiteral(eventName),
 			variable,
-			nil,
-			nil,
 		)
 
 		So(err, ShouldBeNil)
@@ -199,5 +191,55 @@ func TestWaitForEventExpression(t *testing.T) {
 
 		_, err = expression.Exec(context.Background(), scope)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("Should filter", t, func() {
+		mock := NewMockedObservable()
+		eventName := "foobar"
+
+		eventNameExp, err := expressions.NewVariableExpression(
+			core.NewSourceMap("test", 1, 10),
+			"observable",
+		)
+
+		So(err, ShouldBeNil)
+
+		sourceMap := core.NewSourceMap("test", 2, 10)
+
+		expression, err := expressions.NewWaitForEventExpression(
+			sourceMap,
+			literals.NewStringLiteral(eventName),
+			eventNameExp,
+		)
+
+		So(err, ShouldBeNil)
+
+		evtVar := "CURRENT"
+
+		err = expression.SetFilter(core.SourceMap{}, evtVar, core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+			out, err := scope.GetVariable(evtVar)
+
+			if err != nil {
+				return nil, err
+			}
+
+			num := values.ToInt(out)
+
+			return values.NewBoolean(int64(num) > 2), nil
+		}))
+
+		So(err, ShouldBeNil)
+
+		mock.Emit(eventName, values.NewInt(0), nil, 0)
+		mock.Emit(eventName, values.NewInt(1), nil, 0)
+		mock.Emit(eventName, values.NewInt(2), nil, 0)
+		mock.Emit(eventName, values.NewInt(3), nil, 0)
+
+		scope, _ := core.NewRootScope()
+		So(scope.SetVariable("observable", mock), ShouldBeNil)
+		out, err := expression.Exec(context.Background(), scope)
+
+		So(err, ShouldBeNil)
+		So(int64(out.(values.Int)), ShouldEqual, 3)
 	})
 }

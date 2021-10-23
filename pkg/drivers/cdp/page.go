@@ -590,17 +590,17 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 	return p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *values.Object) <-chan events.Event {
+func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscription) (<-chan events.Event, error) {
 	ch := make(chan events.Event)
 
 	go func() {
 		var err error
 		var data core.Value
 
-		if eventName == drivers.EventPageNavigation {
-			data, err = p.subscribeToNavigation(ctx, options)
+		if subscription.EventName == drivers.EventPageNavigation {
+			data, err = p.subscribeToNavigation(ctx, subscription.Options)
 		} else {
-			err = core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", eventName)
+			err = core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", subscription.EventName)
 		}
 
 		ch <- events.Event{
@@ -611,7 +611,7 @@ func (p *HTMLPage) Subscribe(ctx context.Context, eventName string, options *val
 		close(ch)
 	}()
 
-	return ch
+	return ch, nil
 }
 
 func (p *HTMLPage) subscribeToNavigation(ctx context.Context, options *values.Object) (values.String, error) {

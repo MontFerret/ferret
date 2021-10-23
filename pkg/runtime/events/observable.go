@@ -14,9 +14,16 @@ type (
 		Err  error
 	}
 
+	// Subscription represents an event subscription object that contains target event name
+	// and optional event options.
+	Subscription struct {
+		EventName string
+		Options   *values.Object
+	}
+
 	// Observable represents an interface of
-	// complex types that can have event subscribers.
+	// complex types that can emit events.
 	Observable interface {
-		Subscribe(ctx context.Context, eventName string, options *values.Object) <-chan Event
+		Subscribe(ctx context.Context, subscription Subscription) (<-chan Event, error)
 	}
 )

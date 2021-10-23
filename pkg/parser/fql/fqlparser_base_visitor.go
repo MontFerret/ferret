@@ -35,6 +35,10 @@ func (v *BaseFqlParserVisitor) VisitBodyExpression(ctx *BodyExpressionContext) i
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitReturnExpression(ctx *ReturnExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -127,11 +131,7 @@ func (v *BaseFqlParserVisitor) VisitOptionsClause(ctx *OptionsClauseContext) int
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitTimeoutClause(ctx *TimeoutClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -211,6 +211,10 @@ func (v *BaseFqlParserVisitor) VisitFunctionCall(ctx *FunctionCallContext) inter
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitFunctionName(ctx *FunctionNameContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitArgumentList(ctx *ArgumentListContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -219,7 +223,7 @@ func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPa
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitReservedWord(ctx *ReservedWordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

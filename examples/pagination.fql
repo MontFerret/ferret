@@ -5,7 +5,10 @@ WAIT_ELEMENT(amazon, '#nav-search-submit-button')
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '#nav-search-submit-button')
 
-WAITFOR EVENT "navigation" IN amazon OPTIONS { target: "www\.amazon\.com\/s/ref"} 50000
+WAITFOR EVENT "navigation" IN amazon
+    OPTIONS { target: "www\.amazon\.com\/s/ref"}
+    TIMEOUT 50000
+
 WAIT_ELEMENT(amazon, '[class*="template=PAGINATION"]')
 
 LET paginator = ELEMENT(amazon, '[class*="-pagination"]')

@@ -52,6 +52,7 @@ For: 'FOR';
 Return: 'RETURN';
 Waitfor: 'WAITFOR';
 Options: 'OPTIONS';
+Timeout: 'TIMEOUT';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
 Sort: 'SORT';

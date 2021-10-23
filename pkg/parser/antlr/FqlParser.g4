@@ -35,6 +35,11 @@ bodyExpression
     | forExpression
     ;
 
+variableDeclaration
+    : Let Identifier Assign expression
+    | Let IgnoreIdentifier Assign expression
+    ;
+
 returnExpression
     : Return (Distinct)? expression
     ;
@@ -136,7 +141,7 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (waitForTimeout)?
+    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
     ;
 
 waitForEventName
@@ -157,15 +162,8 @@ optionsClause
     : Options objectLiteral
     ;
 
-waitForTimeout
-    : integerLiteral
-    | variable
-    | param
-    ;
-
-variableDeclaration
-    : Let Identifier Assign expression
-    | Let IgnoreIdentifier Assign expression
+timeoutClause
+    : Timeout (integerLiteral | variable | param | memberExpression | functionCall)
     ;
 
 param
@@ -229,6 +227,7 @@ propertyName
     : Identifier
     | stringLiteral
     | param
+    | reservedWord
     ;
 
 namespaceIdentifier
@@ -256,7 +255,12 @@ functionCallExpression
     ;
 
 functionCall
-    : namespace functionIdentifier OpenParen argumentList? CloseParen
+    : namespace functionName OpenParen argumentList? CloseParen
+    ;
+
+functionName
+    : Identifier
+    | reservedWord
     ;
 
 argumentList
@@ -268,9 +272,8 @@ memberExpressionPath
     | (errorOperator Dot)? computedPropertyName
     ;
 
-functionIdentifier
-    : Identifier
-    | And
+reservedWord
+    : And
     | Or
     | For
     | Return
@@ -297,6 +300,10 @@ functionIdentifier
     | In
     | Waitfor
     | Event
+    | Timeout
+    | Options
+    | Do
+    | While
     ;
 
 rangeOperator

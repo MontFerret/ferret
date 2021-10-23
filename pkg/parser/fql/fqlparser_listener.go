@@ -28,6 +28,9 @@ type FqlParserListener interface {
 	// EnterBodyExpression is called when entering the bodyExpression production.
 	EnterBodyExpression(c *BodyExpressionContext)
 
+	// EnterVariableDeclaration is called when entering the variableDeclaration production.
+	EnterVariableDeclaration(c *VariableDeclarationContext)
+
 	// EnterReturnExpression is called when entering the returnExpression production.
 	EnterReturnExpression(c *ReturnExpressionContext)
 
@@ -97,11 +100,8 @@ type FqlParserListener interface {
 	// EnterOptionsClause is called when entering the optionsClause production.
 	EnterOptionsClause(c *OptionsClauseContext)
 
-	// EnterWaitForTimeout is called when entering the waitForTimeout production.
-	EnterWaitForTimeout(c *WaitForTimeoutContext)
-
-	// EnterVariableDeclaration is called when entering the variableDeclaration production.
-	EnterVariableDeclaration(c *VariableDeclarationContext)
+	// EnterTimeoutClause is called when entering the timeoutClause production.
+	EnterTimeoutClause(c *TimeoutClauseContext)
 
 	// EnterParam is called when entering the param production.
 	EnterParam(c *ParamContext)
@@ -160,14 +160,17 @@ type FqlParserListener interface {
 	// EnterFunctionCall is called when entering the functionCall production.
 	EnterFunctionCall(c *FunctionCallContext)
 
+	// EnterFunctionName is called when entering the functionName production.
+	EnterFunctionName(c *FunctionNameContext)
+
 	// EnterArgumentList is called when entering the argumentList production.
 	EnterArgumentList(c *ArgumentListContext)
 
 	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
 	EnterMemberExpressionPath(c *MemberExpressionPathContext)
 
-	// EnterFunctionIdentifier is called when entering the functionIdentifier production.
-	EnterFunctionIdentifier(c *FunctionIdentifierContext)
+	// EnterReservedWord is called when entering the reservedWord production.
+	EnterReservedWord(c *ReservedWordContext)
 
 	// EnterRangeOperator is called when entering the rangeOperator production.
 	EnterRangeOperator(c *RangeOperatorContext)
@@ -238,6 +241,9 @@ type FqlParserListener interface {
 	// ExitBodyExpression is called when exiting the bodyExpression production.
 	ExitBodyExpression(c *BodyExpressionContext)
 
+	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
+	ExitVariableDeclaration(c *VariableDeclarationContext)
+
 	// ExitReturnExpression is called when exiting the returnExpression production.
 	ExitReturnExpression(c *ReturnExpressionContext)
 
@@ -307,11 +313,8 @@ type FqlParserListener interface {
 	// ExitOptionsClause is called when exiting the optionsClause production.
 	ExitOptionsClause(c *OptionsClauseContext)
 
-	// ExitWaitForTimeout is called when exiting the waitForTimeout production.
-	ExitWaitForTimeout(c *WaitForTimeoutContext)
-
-	// ExitVariableDeclaration is called when exiting the variableDeclaration production.
-	ExitVariableDeclaration(c *VariableDeclarationContext)
+	// ExitTimeoutClause is called when exiting the timeoutClause production.
+	ExitTimeoutClause(c *TimeoutClauseContext)
 
 	// ExitParam is called when exiting the param production.
 	ExitParam(c *ParamContext)
@@ -370,14 +373,17 @@ type FqlParserListener interface {
 	// ExitFunctionCall is called when exiting the functionCall production.
 	ExitFunctionCall(c *FunctionCallContext)
 
+	// ExitFunctionName is called when exiting the functionName production.
+	ExitFunctionName(c *FunctionNameContext)
+
 	// ExitArgumentList is called when exiting the argumentList production.
 	ExitArgumentList(c *ArgumentListContext)
 
 	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
 	ExitMemberExpressionPath(c *MemberExpressionPathContext)
 
-	// ExitFunctionIdentifier is called when exiting the functionIdentifier production.
-	ExitFunctionIdentifier(c *FunctionIdentifierContext)
+	// ExitReservedWord is called when exiting the reservedWord production.
+	ExitReservedWord(c *ReservedWordContext)
 
 	// ExitRangeOperator is called when exiting the rangeOperator production.
 	ExitRangeOperator(c *RangeOperatorContext)

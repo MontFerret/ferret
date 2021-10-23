@@ -28,6 +28,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#bodyExpression.
 	VisitBodyExpression(ctx *BodyExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#variableDeclaration.
+	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#returnExpression.
 	VisitReturnExpression(ctx *ReturnExpressionContext) interface{}
 
@@ -97,11 +100,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#optionsClause.
 	VisitOptionsClause(ctx *OptionsClauseContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#waitForTimeout.
-	VisitWaitForTimeout(ctx *WaitForTimeoutContext) interface{}
-
-	// Visit a parse tree produced by FqlParser#variableDeclaration.
-	VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{}
+	// Visit a parse tree produced by FqlParser#timeoutClause.
+	VisitTimeoutClause(ctx *TimeoutClauseContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#param.
 	VisitParam(ctx *ParamContext) interface{}
@@ -160,14 +160,17 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#functionCall.
 	VisitFunctionCall(ctx *FunctionCallContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#functionName.
+	VisitFunctionName(ctx *FunctionNameContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#argumentList.
 	VisitArgumentList(ctx *ArgumentListContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#memberExpressionPath.
 	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#functionIdentifier.
-	VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{}
+	// Visit a parse tree produced by FqlParser#reservedWord.
+	VisitReservedWord(ctx *ReservedWordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#rangeOperator.
 	VisitRangeOperator(ctx *RangeOperatorContext) interface{}

@@ -3,7 +3,11 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -516,6 +520,42 @@ RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]
 				So(string(out), ShouldEqual, `null`)
 			})
 		})
+	})
+
+	Convey("Reserved words as property name", t, func() {
+		p := parser.New("RETURN TRUE")
+
+		r := regexp.MustCompile("\\w+")
+
+		for idx, l := range p.GetLiteralNames() {
+			if r.MatchString(l) {
+				query := strings.Builder{}
+				query.WriteString("LET o = {\n")
+				query.WriteString(l[1 : len(l)-1])
+				query.WriteString(":")
+				query.WriteString(strconv.Itoa(idx))
+				query.WriteString(",\n")
+				query.WriteString("}\n")
+				query.WriteString("RETURN o")
+
+				expected := strings.Builder{}
+				expected.WriteString("{")
+				expected.WriteString(strings.ReplaceAll(l, "'", "\""))
+				expected.WriteString(":")
+				expected.WriteString(strconv.Itoa(idx))
+				expected.WriteString("}")
+
+				c := compiler.New()
+				prog, err := c.Compile(query.String())
+
+				So(err, ShouldBeNil)
+
+				out, err := prog.Run(context.Background())
+
+				So(err, ShouldBeNil)
+				So(string(out), ShouldEqual, expected.String())
+			}
+		}
 	})
 }
 

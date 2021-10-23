@@ -6,7 +6,9 @@ INPUT(original, "#url_input", "https://getbootstrap.com/")
 
 CLICK(original, "#submit")
 
-WAITFOR EVENT "navigation" IN page OPTIONS { frame: original } 10000
+WAITFOR EVENT "navigation" IN page
+    OPTIONS { frame: original }
+    TIMEOUT 10000
 
 LET current = FIRST(FRAMES(page, "name", "nested"))
 

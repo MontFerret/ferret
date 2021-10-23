@@ -68,21 +68,21 @@ func TestMemberExpression(t *testing.T) {
 			o.On("GetIn", args)
 
 			s1, _ := expressions.NewMemberPathSegment(
-				core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+				core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 					return args[0], nil
 				}),
 				false,
 			)
 
 			s2, _ := expressions.NewMemberPathSegment(
-				core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+				core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 					return args[1], nil
 				}),
 				false,
 			)
 
 			s3, _ := expressions.NewMemberPathSegment(
-				core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+				core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 					return args[2], nil
 				}),
 				false,
@@ -92,7 +92,7 @@ func TestMemberExpression(t *testing.T) {
 
 			exp, err := expressions.NewMemberExpression(
 				core.SourceMap{},
-				core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+				core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 					return o, nil
 				}),
 				segments,
@@ -124,7 +124,7 @@ func TestMemberExpression(t *testing.T) {
 			}
 
 			s1, _ := expressions.NewMemberPathSegment(
-				core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+				core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 					return args[0], nil
 				}),
 				false,
@@ -134,7 +134,7 @@ func TestMemberExpression(t *testing.T) {
 
 			exp, err := expressions.NewMemberExpression(
 				core.SourceMap{},
-				core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+				core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 					return o, nil
 				}),
 				segments,
@@ -175,21 +175,21 @@ func TestMemberExpression(t *testing.T) {
 				o.On("GetIn", mock.Anything)
 
 				s1, _ := expressions.NewMemberPathSegment(
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return args[0], nil
 					}),
 					false,
 				)
 
 				s2, _ := expressions.NewMemberPathSegment(
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return args[1], nil
 					}),
 					false,
 				)
 
 				s3, _ := expressions.NewMemberPathSegment(
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return args[2], nil
 					}),
 					false,
@@ -199,7 +199,7 @@ func TestMemberExpression(t *testing.T) {
 
 				exp, err := expressions.NewMemberExpression(
 					core.SourceMap{},
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return o, nil
 					}),
 					segments,
@@ -243,21 +243,21 @@ func TestMemberExpression(t *testing.T) {
 				o.On("GetIn", mock.Anything)
 
 				s1, _ := expressions.NewMemberPathSegment(
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return args[0], nil
 					}),
 					true,
 				)
 
 				s2, _ := expressions.NewMemberPathSegment(
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return args[1], nil
 					}),
 					true,
 				)
 
 				s3, _ := expressions.NewMemberPathSegment(
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return args[2], nil
 					}),
 					true,
@@ -267,7 +267,7 @@ func TestMemberExpression(t *testing.T) {
 
 				exp, err := expressions.NewMemberExpression(
 					core.SourceMap{},
-					core.NewExpressionFn(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
+					core.AsExpression(func(ctx context.Context, scope *core.Scope) (core.Value, error) {
 						return o, nil
 					}),
 					segments,

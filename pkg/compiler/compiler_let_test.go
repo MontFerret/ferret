@@ -316,7 +316,7 @@ func TestLet(t *testing.T) {
 		out, err := newCompilerWithObservable().MustCompile(`
 			LET obj = X::CREATE()
 
-			LET res = (WAITFOR EVENT "event" IN obj 100)?
+			LET res = (WAITFOR EVENT "event" IN obj TIMEOUT 100)?
 
 			RETURN res == NONE
 		`).Run(context.Background())
@@ -329,7 +329,7 @@ func TestLet(t *testing.T) {
 		out, err := newCompilerWithObservable().MustCompile(`
 			LET obj = X::CREATE()
 
-			LET res = (WAITFOR EVENT "event" IN obj 100)? != NONE
+			LET res = (WAITFOR EVENT "event" IN obj TIMEOUT 100)? != NONE
 
 			RETURN res
 		`).Run(context.Background())

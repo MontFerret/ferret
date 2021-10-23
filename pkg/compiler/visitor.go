@@ -30,6 +30,8 @@ type (
 	}
 )
 
+const pseudoVariable = "CURRENT"
+
 func newVisitor(src string, funcs *core.Functions) *visitor {
 	return &visitor{
 		&fql.BaseFqlParserVisitor{},
@@ -838,8 +840,8 @@ func (v *visitor) visitWaitForEventSourceContext(c fql.IWaitForEventSourceContex
 	return nil, ErrNotImplemented
 }
 
-func (v *visitor) visitWaitForTimeoutValue(c fql.IWaitForTimeoutContext, s *scope) (core.Expression, error) {
-	ctx := c.(*fql.WaitForTimeoutContext)
+func (v *visitor) visitTimeoutClause(c fql.ITimeoutClauseContext, s *scope) (core.Expression, error) {
+	ctx := c.(*fql.TimeoutClauseContext)
 
 	if integer := ctx.IntegerLiteral(); integer != nil {
 		return v.visitIntegerLiteral(integer)
@@ -853,13 +855,13 @@ func (v *visitor) visitWaitForTimeoutValue(c fql.IWaitForTimeoutContext, s *scop
 		return v.visitParam(param, s)
 	}
 
-	//if member := ctx.MemberExpression(); member != nil {
-	//	return v.visitMemberExpression(member.(fql.IMemberExpressionContext), s)
-	//}
-	//
-	//if fnCall := ctx.FunctionCallExpression(); fnCall != nil {
-	//	return v.visitFunctionCallExpression(fnCall.(fql.IFunctionCallExpressionContext), s)
-	//}
+	if member := ctx.MemberExpression(); member != nil {
+		return v.visitMemberExpression(member, s)
+	}
+
+	if fnCall := ctx.FunctionCall(); fnCall != nil {
+		return v.visitFunctionCall(fnCall, s)
+	}
 
 	return nil, ErrNotImplemented
 }
@@ -867,7 +869,27 @@ func (v *visitor) visitWaitForTimeoutValue(c fql.IWaitForTimeoutContext, s *scop
 func (v *visitor) visitWaitForExpression(c fql.IWaitForExpressionContext, s *scope) (core.Expression, error) {
 	ctx := c.(*fql.WaitForExpressionContext)
 
-	var options core.Expression
+	eventName, err := v.visitWaitForEventNameContext(ctx.WaitForEventName(), s)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid event name")
+	}
+
+	eventSource, err := v.visitWaitForEventSourceContext(ctx.WaitForEventSource(), s)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid event source")
+	}
+
+	waitForExp, err := expressions.NewWaitForEventExpression(
+		v.getSourceMap(ctx),
+		eventName,
+		eventSource,
+	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if optionsCtx := ctx.OptionsClause(); optionsCtx != nil {
 		optionsExp, err := v.visitOptionsClause(optionsCtx, s)
@@ -876,44 +898,40 @@ func (v *visitor) visitWaitForExpression(c fql.IWaitForExpressionContext, s *sco
 			return nil, errors.Wrap(err, "invalid options")
 		}
 
-		options = optionsExp
+		if err := waitForExp.SetOptions(optionsExp); err != nil {
+			return nil, err
+		}
 	}
 
-	var timeout core.Expression
+	if filterCtx := ctx.FilterClause(); filterCtx != nil {
+		if err := s.SetVariable(pseudoVariable); err != nil {
+			return nil, err
+		}
 
-	if timeoutCtx := ctx.WaitForTimeout(); timeoutCtx != nil {
-		timeoutExp, err := v.visitWaitForTimeoutValue(timeoutCtx, s)
+		filterExp, err := v.visitFilterClause(filterCtx, s)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err := waitForExp.SetFilter(v.getSourceMap(filterCtx), pseudoVariable, filterExp); err != nil {
+			return nil, err
+		}
+	}
+
+	if timeoutCtx := ctx.TimeoutClause(); timeoutCtx != nil {
+		timeoutExp, err := v.visitTimeoutClause(timeoutCtx, s)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid timeout")
 		}
 
-		timeout = timeoutExp
+		if err := waitForExp.SetTimeout(timeoutExp); err != nil {
+			return nil, err
+		}
 	}
 
-	if eventName := ctx.WaitForEventName(); eventName != nil {
-		eventName, err := v.visitWaitForEventNameContext(eventName, s)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "invalid event name")
-		}
-
-		eventSource, err := v.visitWaitForEventSourceContext(ctx.WaitForEventSource(), s)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "invalid event source")
-		}
-
-		return expressions.NewWaitForEventExpression(
-			v.getSourceMap(ctx),
-			eventName,
-			eventSource,
-			options,
-			timeout,
-		)
-	}
-
-	return nil, ErrInvalidToken
+	return waitForExp, nil
 }
 
 func (v *visitor) visitMemberExpression(c fql.IMemberExpressionContext, scope *scope) (core.Expression, error) {
@@ -1064,6 +1082,10 @@ func (v *visitor) visitPropertyName(c fql.IPropertyNameContext, scope *scope) (c
 
 	if id := ctx.Identifier(); id != nil {
 		return literals.NewStringLiteral(id.GetText()), nil
+	}
+
+	if rw := ctx.ReservedWord(); rw != nil {
+		return literals.NewStringLiteral(rw.GetText()), nil
 	}
 
 	if stringLiteral := ctx.StringLiteral(); stringLiteral != nil {
@@ -1281,7 +1303,7 @@ func (v *visitor) visitFunctionCall(c fql.IFunctionCallContext, scope *scope) (c
 		name += funcNS.GetText()
 	}
 
-	name += ctx.FunctionIdentifier().GetText()
+	name += ctx.FunctionName().GetText()
 
 	fun, exists := v.funcs.Get(name)
 
