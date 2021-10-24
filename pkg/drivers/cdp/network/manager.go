@@ -35,9 +35,7 @@ type (
 		client             *cdp.Client
 		headers            *drivers.HTTPHeaders
 		foregroundLoop     *events.Loop
-		stopForegroundLoop context.CancelFunc
 		backgroundLoop     *events.Loop
-		stopBackgroundLoop context.CancelFunc
 		cancel             context.CancelFunc
 		responseListenerID events.ListenerID
 		filterListenerID   events.ListenerID
@@ -64,14 +62,6 @@ func New(
 	defer func() {
 		if err != nil {
 			m.cancel()
-
-			if m.stopForegroundLoop != nil {
-				m.stopForegroundLoop()
-			}
-
-			if m.stopBackgroundLoop != nil {
-				m.stopBackgroundLoop()
-			}
 		}
 	}()
 
@@ -124,24 +114,20 @@ func New(
 		}
 	}
 
-	cancel, err = m.foregroundLoop.Run(ctx)
+	err = m.foregroundLoop.Run(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	m.stopForegroundLoop = cancel
-
 	if m.backgroundLoop != nil {
 		// run in a separate loop in order to get higher priority
 		// TODO: Consider adding support of event priorities to EventLoop
-		cancel, err = m.backgroundLoop.Run(ctx)
+		err = m.backgroundLoop.Run(ctx)
 
 		if err != nil {
 			return nil, err
 		}
-
-		m.stopBackgroundLoop = cancel
 	}
 
 	return m, nil
@@ -156,14 +142,6 @@ func (m *Manager) Close() error {
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
-	}
-
-	if m.stopForegroundLoop != nil {
-		m.stopForegroundLoop()
-	}
-
-	if m.stopBackgroundLoop != nil {
-		m.stopBackgroundLoop()
 	}
 
 	return nil

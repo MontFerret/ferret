@@ -133,7 +133,7 @@ func TestLoop(t *testing.T) {
 
 			ctx, cancel := context.WithCancel(context.Background())
 
-			_, err := loop.Run(ctx)
+			err := loop.Run(ctx)
 			defer cancel()
 
 			So(err, ShouldBeNil)
@@ -178,11 +178,10 @@ func TestLoop(t *testing.T) {
 
 				ctx, cancel := context.WithCancel(context.Background())
 
-				c, err := loop.Run(ctx)
+				err := loop.Run(ctx)
 				defer cancel()
 
 				So(err, ShouldBeNil)
-				So(c, ShouldHaveSameTypeAs, cancel)
 
 				test.EmitDefault()
 
@@ -233,7 +232,7 @@ func TestLoop(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		_, err := loop.Run(ctx)
+		err := loop.Run(ctx)
 		So(err, ShouldBeNil)
 		defer cancel()
 
@@ -264,41 +263,7 @@ func TestLoop(t *testing.T) {
 		}))
 
 		ctx, cancel := context.WithCancel(context.Background())
-		_, err := loop.Run(ctx)
-		So(err, ShouldBeNil)
-
-		for i := 0; i <= eventsToFire; i++ {
-			time.Sleep(time.Duration(100) * time.Millisecond)
-
-			tes.EmitDefault()
-		}
-
-		// Stop the loop
-		cancel()
-
-		time.Sleep(time.Duration(100) * time.Millisecond)
-
-		So(tes.IsClosed(), ShouldBeTrue)
-	})
-
-	Convey("Should stop on nested Context.Done", t, func() {
-		eventsToFire := 5
-		counter := NewCounter()
-
-		var tes *TestEventStream
-
-		loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
-			tes = NewTestEventStream()
-			return tes, nil
-		}, func(stream rpcc.Stream) (interface{}, error) {
-			return stream.(*TestEventStream).Recv()
-		}))
-
-		loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
-			counter.Increase()
-		}))
-
-		cancel, err := loop.Run(context.Background())
+		err := loop.Run(ctx)
 		So(err, ShouldBeNil)
 
 		for i := 0; i <= eventsToFire; i++ {
@@ -385,9 +350,7 @@ func BenchmarkLoop_Start(b *testing.B) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	_, err := loop.Run(ctx)
-
-	if err != nil {
+	if err := loop.Run(ctx); err != nil {
 		panic(err)
 	}
 
@@ -433,9 +396,7 @@ func BenchmarkLoop_StartAsync(b *testing.B) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	_, err := loop.Run(ctx)
-
-	if err != nil {
+	if err := loop.Run(ctx); err != nil {
 		panic(err)
 	}
 

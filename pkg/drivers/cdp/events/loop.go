@@ -20,7 +20,7 @@ func NewLoop(sources ...SourceFactory) *Loop {
 	return loop
 }
 
-func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
+func (loop *Loop) Run(ctx context.Context) error {
 	var err error
 	sources := make([]Source, 0, len(loop.sources))
 
@@ -44,16 +44,14 @@ func (loop *Loop) Run(ctx context.Context) (context.CancelFunc, error) {
 			src.Close()
 		}
 
-		return nil, err
+		return err
 	}
-
-	ctx, cancel := context.WithCancel(ctx)
 
 	for _, src := range sources {
 		loop.consume(ctx, src)
 	}
 
-	return cancel, nil
+	return nil
 }
 
 func (loop *Loop) Listeners(eventID ID) int {
@@ -137,23 +135,31 @@ func (loop *Loop) consume(ctx context.Context, src Source) {
 
 func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}) {
 	loop.mu.Lock()
-	defer loop.mu.Unlock()
 
+	var snapshot []Listener
 	listeners, exist := loop.listeners[eventID]
 
-	if !exist {
-		return
+	if exist {
+		snapshot = make([]Listener, 0, len(listeners))
+
+		for _, listener := range listeners {
+			snapshot = append(snapshot, listener)
+		}
 	}
 
-	for _, listener := range listeners {
-		select {
-		case <-ctx.Done():
+	loop.mu.Unlock()
+
+	for _, listener := range snapshot {
+		if isCtxDone(ctx) {
 			return
-		default:
-			// if returned false, it means the loops should not call the handler anymore
-			if !listener.Handler(ctx, message) {
-				delete(listeners, listener.ID)
-			}
+		}
+
+		// if returned false,
+		// the handler must be removed after the call
+		if !listener.Handler(ctx, message) {
+			loop.mu.Lock()
+			delete(loop.listeners[eventID], listener.ID)
+			loop.mu.Unlock()
 		}
 	}
 }
