@@ -1,6 +1,10 @@
 package cdp
 
-import "github.com/MontFerret/ferret/pkg/drivers"
+import (
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+)
 
 type (
 	Options struct {
@@ -16,6 +20,11 @@ type (
 	}
 
 	Option func(opts *Options)
+
+	PageEventsOptions struct {
+		Frame  *dom.HTMLDocument
+		Target values.String
+	}
 )
 
 const (

@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/wI2L/jettison"
 	"hash/fnv"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -599,4 +601,8 @@ func UnwrapStrings(values []String) []string {
 	}
 
 	return out
+}
+
+func Bind(from *Object, to interface{}) error {
+	return mapstructure.Decode(from.value, to)
 }

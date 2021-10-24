@@ -17,19 +17,6 @@ type NavigationEvent struct {
 	FrameID page.FrameID
 }
 
-func (evt *NavigationEvent) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
-		return values.None, nil
-	}
-
-	switch path[0].String() {
-	case "url", "URL":
-		return values.NewString(evt.URL), nil
-	default:
-		return values.None, nil
-	}
-}
-
 func (evt *NavigationEvent) MarshalJSON() ([]byte, error) {
 	if evt == nil {
 		return values.None.MarshalJSON()
@@ -74,4 +61,17 @@ func (evt *NavigationEvent) Hash() uint64 {
 
 func (evt *NavigationEvent) Copy() core.Value {
 	return *(&evt)
+}
+
+func (evt *NavigationEvent) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
+	if len(path) == 0 {
+		return evt, nil
+	}
+
+	switch path[0].String() {
+	case "url", "URL":
+		return values.NewString(evt.URL), nil
+	default:
+		return values.None, nil
+	}
 }

@@ -1,8 +1,11 @@
 package network
 
 import (
+	"regexp"
+
+	"github.com/mafredri/cdp/protocol/page"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/mafredri/cdp/protocol/fetch"
 )
 
 type (
@@ -17,21 +20,9 @@ type (
 		Headers *drivers.HTTPHeaders
 		Filter  *Filter
 	}
+
+	WaitEventOptions struct {
+		FrameID page.FrameID
+		URL     *regexp.Regexp
+	}
 )
-
-func toFetchArgs(filterPatterns []drivers.ResourceFilter) *fetch.EnableArgs {
-	patterns := make([]fetch.RequestPattern, 0, len(filterPatterns))
-
-	for _, pattern := range filterPatterns {
-		rt := toResourceType(pattern.Type)
-
-		patterns = append(patterns, fetch.RequestPattern{
-			URLPattern:   &pattern.URL,
-			ResourceType: &rt,
-		})
-	}
-
-	return &fetch.EnableArgs{
-		Patterns: patterns,
-	}
-}

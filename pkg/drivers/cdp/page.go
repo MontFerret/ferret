@@ -24,7 +24,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -549,7 +548,7 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.Strin
 		return err
 	}
 
-	if err := p.network.WaitForNavigation(ctx, pattern); err != nil {
+	if err := p.network.WaitForNavigation(ctx, net.WaitEventOptions{URL: pattern}); err != nil {
 		return err
 	}
 
@@ -576,14 +575,16 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 	frameID := doc.Frame().Frame.ID
 	isMain := current.Frame().Frame.ID == frameID
 
-	// if it's the current document
-	if isMain {
-		err = p.network.WaitForNavigation(ctx, pattern)
-	} else {
-		err = p.network.WaitForFrameNavigation(ctx, frameID, pattern)
+	opts := net.WaitEventOptions{
+		URL: pattern,
 	}
 
-	if err != nil {
+	// if it's the current document
+	if !isMain {
+		opts.FrameID = frameID
+	}
+
+	if err = p.network.WaitForNavigation(ctx, opts); err != nil {
 		return err
 	}
 
@@ -591,72 +592,43 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 }
 
 func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscription) (<-chan events.Event, error) {
-	ch := make(chan events.Event)
+	opts := PageEventsOptions{}
 
-	go func() {
-		var err error
-		var data core.Value
-
-		if subscription.EventName == drivers.EventPageNavigation {
-			data, err = p.subscribeToNavigation(ctx, subscription.Options)
-		} else {
-			err = core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", subscription.EventName)
-		}
-
-		ch <- events.Event{
-			Data: data,
-			Err:  err,
-		}
-
-		close(ch)
-	}()
-
-	return ch, nil
-}
-
-func (p *HTMLPage) subscribeToNavigation(ctx context.Context, options *values.Object) (values.String, error) {
-	var frame drivers.HTMLDocument
-	var targetURL values.String
-
-	if options != nil {
-		if options.Has("frame") {
-			frameOpt, _ := options.Get("frame")
-
-			doc, ok := frameOpt.(drivers.HTMLDocument)
-
-			if ok {
-				frame = doc
-			} else {
-				return values.EmptyString, errors.Wrap(core.TypeError(frameOpt.Type(), drivers.HTMLDocumentType), "invalid frame")
-			}
-		}
-
-		if options.Has("target") {
-			targetURLOpt, _ := options.Get("target")
-
-			url, ok := targetURLOpt.(values.String)
-
-			if ok {
-				targetURL = url
-			} else {
-				return values.EmptyString, errors.Wrap(core.TypeError(targetURLOpt.Type(), types.String), "invalid target")
-			}
+	if subscription.Options != nil {
+		if err := values.Bind(subscription.Options, &opts); err != nil {
+			return nil, err
 		}
 	}
 
-	if frame == nil {
-		if err := p.WaitForNavigation(ctx, targetURL); err != nil {
-			return values.EmptyString, err
+	evtOpts := net.WaitEventOptions{
+		FrameID: "",
+		URL:     nil,
+	}
+
+	if opts.Frame != nil {
+		evtOpts.FrameID = opts.Frame.Frame().Frame.ID
+	}
+
+	if opts.Target != "" {
+		r, err := regexp.Compile(opts.Target.String())
+
+		if err != nil {
+			return nil, err
 		}
 
-		return p.GetURL(), nil
+		evtOpts.URL = r
 	}
 
-	if err := p.WaitForFrameNavigation(ctx, frame, targetURL); err != nil {
-		return values.EmptyString, err
+	switch subscription.EventName {
+	case drivers.NavigationEvent:
+		return p.network.OnNavigation(ctx)
+	case drivers.RequestEvent:
+		return p.network.OnRequest(ctx)
+	case drivers.ResponseEvent:
+		return p.network.OnResponse(ctx)
+	default:
+		return nil, core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", subscription.EventName)
 	}
-
-	return frame.GetURL(), nil
 }
 
 func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {
