@@ -26,13 +26,13 @@ type (
 
 	StreamFactory func(ctx context.Context) (rpcc.Stream, error)
 
-	DataStreamReceiver func(stream rpcc.Stream) (interface{}, error)
+	StreamDecoder func(stream rpcc.Stream) (interface{}, error)
 
 	// StreamSource represents a helper struct for generating custom event sources
 	StreamSource struct {
-		eventID  ID
-		stream   rpcc.Stream
-		receiver DataStreamReceiver
+		eventID ID
+		stream  rpcc.Stream
+		decoder StreamDecoder
 	}
 )
 
@@ -43,13 +43,13 @@ var (
 // NewStreamSource create a new custom event source based on rpcc.Stream
 // eventID - is a unique event ID
 // stream - is a custom event stream
-// receiver - is a value conversion function
+// decoder - is a value conversion function
 func NewStreamSource(
 	eventID ID,
 	stream rpcc.Stream,
-	receiver DataStreamReceiver,
+	decoder StreamDecoder,
 ) Source {
-	return &StreamSource{eventID, stream, receiver}
+	return &StreamSource{eventID, stream, decoder}
 }
 
 func (src *StreamSource) ID() ID {
@@ -69,7 +69,7 @@ func (src *StreamSource) Close() error {
 }
 
 func (src *StreamSource) Recv() (Event, error) {
-	data, err := src.receiver(src.stream)
+	data, err := src.decoder(src.stream)
 
 	if err != nil {
 		return Event{}, err
@@ -81,7 +81,7 @@ func (src *StreamSource) Recv() (Event, error) {
 	}, nil
 }
 
-func NewStreamSourceFactory(eventID ID, factory StreamFactory, receiver DataStreamReceiver) SourceFactory {
+func NewStreamSourceFactory(eventID ID, factory StreamFactory, receiver StreamDecoder) SourceFactory {
 	return func(ctx context.Context) (Source, error) {
 		stream, err := factory(ctx)
 
