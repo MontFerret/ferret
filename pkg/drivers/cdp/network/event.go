@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/wI2L/jettison"
 
@@ -12,10 +11,15 @@ import (
 
 var NavigationEventType = core.NewType("network.NavigationEvent")
 
-type NavigationEvent struct {
-	URL     string
-	FrameID page.FrameID
-}
+type (
+	NavigationCompletionCheck func(ctx context.Context, frame page.FrameID) error
+
+	NavigationEvent struct {
+		URL        string
+		FrameID    page.FrameID
+		completion NavigationCompletionCheck
+	}
+)
 
 func (evt *NavigationEvent) MarshalJSON() ([]byte, error) {
 	if evt == nil {
@@ -74,4 +78,12 @@ func (evt *NavigationEvent) GetIn(_ context.Context, path []core.Value) (core.Va
 	default:
 		return values.None, nil
 	}
+}
+
+func (evt *NavigationEvent) Ready(ctx context.Context) error {
+	if evt.completion != nil {
+		return evt.completion(ctx, evt.FrameID)
+	}
+
+	return nil
 }

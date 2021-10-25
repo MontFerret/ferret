@@ -2,18 +2,10 @@ package events
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
-	// Event represents an event object that contains either an optional event data
-	// or error that occurred during an event
-	Event struct {
-		Data core.Value
-		Err  error
-	}
-
 	// Subscription represents an event subscription object that contains target event name
 	// and optional event options.
 	Subscription struct {

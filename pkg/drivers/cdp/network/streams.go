@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func newFrameNavigatedReader(logger zerolog.Logger) *streams.Reader {
+func newFrameNavigatedReader(logger zerolog.Logger, readiness NavigationCompletionCheck) *streams.Reader {
 	return streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
 		repl, err := stream.(page.FrameNavigatedClient).Recv()
 
@@ -27,8 +27,9 @@ func newFrameNavigatedReader(logger zerolog.Logger) *streams.Reader {
 			Msg("received frame navigation event")
 
 		return &NavigationEvent{
-			URL:     repl.Frame.URL,
-			FrameID: repl.Frame.ID,
+			URL:        repl.Frame.URL,
+			FrameID:    repl.Frame.ID,
+			completion: readiness,
 		}, nil
 	})
 }

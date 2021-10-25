@@ -34,17 +34,13 @@ func (reader *Reader) Read(ctx context.Context, stream rpcc.Stream) <-chan event
 				val, err := reader.decoder(stream)
 
 				if err != nil {
-					ch <- events.Event{
-						Err: err,
-					}
+					ch <- events.WithErr(err)
 
 					return
 				}
 
 				if val != nil && val != values.None {
-					ch <- events.Event{
-						Data: val,
-					}
+					ch <- events.WithValue(val)
 				}
 			}
 		}

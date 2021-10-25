@@ -124,29 +124,41 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	var val core.Value
+
 	if e.filter == nil {
-		return e.consumeFirst(ctx, observable, subscription)
+		val, err = e.consumeFirst(ctx, observable, subscription)
+	} else {
+		val, err = e.consumeFiltered(ctx, scope, observable, subscription)
 	}
 
-	return e.consumeFiltered(ctx, scope, observable, subscription)
+	if err != nil {
+		return nil, core.SourceError(e.src, err)
+	}
+
+	if err := events.Ready(ctx, val); err != nil {
+		return nil, core.SourceError(e.src, err)
+	}
+
+	return val, nil
 }
 
 func (e *WaitForEventExpression) consumeFirst(ctx context.Context, observable events.Observable, subscription events.Subscription) (core.Value, error) {
 	ch, err := observable.Subscribe(ctx, subscription)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	select {
 	case evt := <-ch:
-		if evt.Err != nil {
-			return values.None, core.SourceError(e.src, evt.Err)
+		if err := evt.Err(); err != nil {
+			return values.None, err
 		}
 
-		return evt.Data, nil
+		return evt.Value(), nil
 	case <-ctx.Done():
-		return values.None, core.SourceError(e.src, core.ErrTimeout)
+		return values.None, ctx.Err()
 	}
 }
 
@@ -154,7 +166,7 @@ func (e *WaitForEventExpression) consumeFiltered(ctx context.Context, scope *cor
 	ch, err := observable.Subscribe(ctx, subscription)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	iterable, err := clauses.NewFilterClause(
@@ -166,19 +178,19 @@ func (e *WaitForEventExpression) consumeFiltered(ctx context.Context, scope *cor
 	)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	iter, err := iterable.Iterate(ctx, scope)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	out, err := iter.Next(ctx, scope)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	return out.GetVariable(e.filterVariable)

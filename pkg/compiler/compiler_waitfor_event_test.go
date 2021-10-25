@@ -34,9 +34,11 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 
 	go func() {
 		<-time.After(time.Millisecond * time.Duration(timeout))
-		ch <- events.Event{
-			Data: args,
-			Err:  err,
+
+		if err == nil {
+			ch <- events.WithValue(args)
+		} else {
+			ch <- events.WithErr(err)
 		}
 	}()
 }

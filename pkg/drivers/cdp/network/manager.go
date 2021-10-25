@@ -508,15 +508,15 @@ func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) 
 	m.logger.Trace().Msg("starting to wait for frame navigation event")
 
 	for evt := range onNav {
-		if evt.Err != nil {
-			return nil
-		}
-
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		nav := evt.Data.(*NavigationEvent)
+		if err := evt.Err(); err != nil {
+			return nil
+		}
+
+		nav := evt.Value().(*NavigationEvent)
 
 		if !isFrameMatched(nav.FrameID, opts.FrameID) || !isURLMatched(nav.URL, opts.URL) {
 			continue
@@ -529,31 +529,10 @@ func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) 
 
 		log.Trace().Msg("received framed navigation event")
 
-		log.Trace().Msg("creating frame execution context")
-
-		ec, err := eval.Create(ctx, m.logger, m.client, nav.FrameID)
-
-		if err != nil {
-			log.Trace().Err(err).Msg("failed to create frame execution context")
-
+		if err := m.isDOMReady(ctx, nav.FrameID); err != nil {
 			return err
 		}
 
-		log.Trace().Err(err).Msg("starting polling DOM ready event")
-
-		_, err = events.NewEvalWaitTask(
-			ec,
-			templates.DOMReady(),
-			events.DefaultPolling,
-		).Run(ctx)
-
-		if err != nil {
-			log.Trace().Err(err).Msg("failed to poll DOM ready event")
-
-			return err
-		}
-
-		log.Trace().Msg("DOM is ready")
 		log.Trace().
 			Str("fame_id", string(nav.FrameID)).
 			Msg("navigation has completed")
@@ -577,7 +556,7 @@ func (m *Manager) OnNavigation(ctx context.Context) (<-chan rtEvents.Event, erro
 
 	m.logger.Trace().Err(err).Msg("succeeded to open frame navigation event stream")
 
-	reader := newFrameNavigatedReader(m.logger)
+	reader := newFrameNavigatedReader(m.logger, m.isDOMReady)
 
 	return reader.Read(ctx, stream), nil
 }
@@ -652,4 +631,37 @@ func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bo
 	log.Trace().Msg("updated frame response information")
 
 	return
+}
+
+func (m *Manager) isDOMReady(ctx context.Context, frame page.FrameID) error {
+	m.logger.Trace().Msg("creating frame execution context")
+
+	ec, err := eval.Create(ctx, m.logger, m.client, frame)
+
+	if err != nil {
+		m.logger.Trace().Err(err).Msg("failed to create frame execution context")
+
+		return err
+	}
+
+	m.logger.Trace().Err(err).Msg("starting polling DOM ready event")
+
+	_, err = events.NewEvalWaitTask(
+		ec,
+		templates.DOMReady(),
+		events.DefaultPolling,
+	).Run(ctx)
+
+	if err != nil {
+		m.logger.Trace().Err(err).Msg("failed to poll DOM ready event")
+
+		return err
+	}
+
+	m.logger.Trace().Msg("DOM is ready")
+	m.logger.Trace().
+		Str("fame_id", string(frame)).
+		Msg("navigation has completed")
+
+	return nil
 }
