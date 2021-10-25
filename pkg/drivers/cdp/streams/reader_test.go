@@ -114,6 +114,8 @@ func TestStreamReader(t *testing.T) {
 			evt := <-ch
 			So(evt.Err(), ShouldNotBeNil)
 
+			time.Sleep(time.Duration(100) * time.Millisecond)
+
 			stream.AssertExpectations(t)
 		})
 
