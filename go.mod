@@ -3,7 +3,7 @@ module github.com/MontFerret/ferret
 go 1.14
 
 require (
-	github.com/PuerkitoBio/goquery v1.7.1
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/antchfx/htmlquery v1.2.4
 	github.com/antchfx/xpath v1.2.0
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211014165551-23f93e0d1b42
