@@ -136,22 +136,20 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 		return nil, core.SourceError(e.src, err)
 	}
 
-	if err := events.Ready(ctx, val); err != nil {
-		return nil, core.SourceError(e.src, err)
-	}
-
 	return val, nil
 }
 
 func (e *WaitForEventExpression) consumeFirst(ctx context.Context, observable events.Observable, subscription events.Subscription) (core.Value, error) {
-	ch, err := observable.Subscribe(ctx, subscription)
+	stream, err := observable.Subscribe(ctx, subscription)
 
 	if err != nil {
 		return values.None, err
 	}
 
+	defer stream.Close(ctx)
+
 	select {
-	case evt := <-ch:
+	case evt := <-stream.Read(ctx):
 		if err := evt.Err(); err != nil {
 			return values.None, err
 		}
@@ -163,16 +161,18 @@ func (e *WaitForEventExpression) consumeFirst(ctx context.Context, observable ev
 }
 
 func (e *WaitForEventExpression) consumeFiltered(ctx context.Context, scope *core.Scope, observable events.Observable, subscription events.Subscription) (core.Value, error) {
-	ch, err := observable.Subscribe(ctx, subscription)
+	stream, err := observable.Subscribe(ctx, subscription)
 
 	if err != nil {
 		return values.None, err
 	}
 
+	defer stream.Close(ctx)
+
 	iterable, err := clauses.NewFilterClause(
 		e.filterSrc,
-		collections.AsIterable(func(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-			return collections.FromCoreIterator(e.filterVariable, "", events.NewIterator(ch))
+		collections.AsIterable(func(c context.Context, scope *core.Scope) (collections.Iterator, error) {
+			return collections.FromCoreIterator(e.filterVariable, "", events.NewIterator(stream.Read(c)))
 		}),
 		e.filter,
 	)

@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/wI2L/jettison"
 
@@ -9,17 +10,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-var NavigationEventType = core.NewType("network.NavigationEvent")
+var NavigationEventType = core.NewType("ferret.drivers.cdp.network.NavigationEvent")
 
-type (
-	NavigationCompletionCheck func(ctx context.Context, frame page.FrameID) error
-
-	NavigationEvent struct {
-		URL        string
-		FrameID    page.FrameID
-		completion NavigationCompletionCheck
-	}
-)
+type NavigationEvent struct {
+	URL      string
+	FrameID  page.FrameID
+	MimeType string
+}
 
 func (evt *NavigationEvent) MarshalJSON() ([]byte, error) {
 	if evt == nil {
@@ -75,15 +72,9 @@ func (evt *NavigationEvent) GetIn(_ context.Context, path []core.Value) (core.Va
 	switch path[0].String() {
 	case "url", "URL":
 		return values.NewString(evt.URL), nil
+	case "frame":
+		return dom.NewFrameID(evt.FrameID), nil
 	default:
 		return values.None, nil
 	}
-}
-
-func (evt *NavigationEvent) Ready(ctx context.Context) error {
-	if evt.completion != nil {
-		return evt.completion(ctx, evt.FrameID)
-	}
-
-	return nil
 }

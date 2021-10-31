@@ -1,41 +1,181 @@
 package network
 
 import (
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/streams"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"context"
+	"sync/atomic"
+
+	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/rs/zerolog"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	rtEvents "github.com/MontFerret/ferret/pkg/runtime/events"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func newFrameNavigatedReader(logger zerolog.Logger, readiness NavigationCompletionCheck) *streams.Reader {
-	return streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
-		repl, err := stream.(page.FrameNavigatedClient).Recv()
-
-		if err != nil {
-			logger.Trace().Err(err).Msg("failed to read data from frame navigation event stream")
-
-			return values.None, nil
-		}
-
-		logger.Trace().
-			Str("url", repl.Frame.URL).
-			Str("frame_id", string(repl.Frame.ID)).
-			Str("type", string(repl.Type)).
-			Msg("received frame navigation event")
-
-		return &NavigationEvent{
-			URL:        repl.Frame.URL,
-			FrameID:    repl.Frame.ID,
-			completion: readiness,
-		}, nil
-	})
+type NavigationEventStream struct {
+	logger  zerolog.Logger
+	client  *cdp.Client
+	tail    atomic.Value
+	onFrame page.FrameNavigatedClient
+	onDoc   page.NavigatedWithinDocumentClient
 }
 
-func newRequestWillBeSentReader(logger zerolog.Logger) *streams.Reader {
-	return streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
+func newNavigationEventStream(
+	logger zerolog.Logger,
+	client *cdp.Client,
+	onFrame page.FrameNavigatedClient,
+	onDoc page.NavigatedWithinDocumentClient,
+) rtEvents.Stream {
+	es := new(NavigationEventStream)
+	es.logger = logger
+	es.client = client
+	es.onFrame = onFrame
+	es.onDoc = onDoc
+
+	return es
+}
+
+func (s *NavigationEventStream) Read(ctx context.Context) <-chan rtEvents.Event {
+	ch := make(chan rtEvents.Event)
+
+	go func() {
+		defer close(ch)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-s.onDoc.Ready():
+				if ctx.Err() != nil {
+					return
+				}
+
+				repl, err := s.onDoc.Recv()
+
+				if err != nil {
+					ch <- rtEvents.WithErr(err)
+					s.logger.Trace().Err(err).Msg("failed to read data from within document navigation event stream")
+
+					return
+				}
+
+				evt := NavigationEvent{
+					URL:     repl.URL,
+					FrameID: repl.FrameID,
+				}
+
+				s.logger.Trace().
+					Str("url", evt.URL).
+					Str("frame_id", string(evt.FrameID)).
+					Str("type", evt.MimeType).
+					Msg("received withing document navigation event")
+
+				s.tail.Store(evt)
+
+				ch <- rtEvents.WithValue(&evt)
+			case <-s.onFrame.Ready():
+				if ctx.Err() != nil {
+					return
+				}
+
+				repl, err := s.onFrame.Recv()
+
+				if err != nil {
+					ch <- rtEvents.WithErr(err)
+					s.logger.Trace().Err(err).Msg("failed to read data from frame navigation event stream")
+
+					return
+				}
+
+				evt := NavigationEvent{
+					URL:      repl.Frame.URL,
+					FrameID:  repl.Frame.ID,
+					MimeType: repl.Frame.MimeType,
+				}
+
+				s.logger.Trace().
+					Str("url", evt.URL).
+					Str("frame_id", string(evt.FrameID)).
+					Str("type", evt.MimeType).
+					Msg("received frame navigation event")
+
+				s.tail.Store(evt)
+
+				ch <- rtEvents.WithValue(&evt)
+			}
+		}
+	}()
+
+	return ch
+}
+
+func (s *NavigationEventStream) Close(ctx context.Context) error {
+	val := s.tail.Load()
+
+	evt, ok := val.(NavigationEvent)
+
+	if !ok || evt.FrameID == "" {
+		// TODO: err?
+		return nil
+	}
+
+	_ = s.onFrame.Close()
+	_ = s.onDoc.Close()
+
+	s.logger.Trace().
+		Str("frame_id", string(evt.FrameID)).
+		Str("frame_url", evt.URL).
+		Msg("creating frame execution context")
+
+	ec, err := eval.Create(ctx, s.logger, s.client, evt.FrameID)
+
+	if err != nil {
+		s.logger.Trace().
+			Err(err).
+			Str("frame_id", string(evt.FrameID)).
+			Str("frame_url", evt.URL).
+			Msg("failed to create frame execution context")
+
+		return err
+	}
+
+	s.logger.Trace().
+		Str("frame_id", string(evt.FrameID)).
+		Str("frame_url", evt.URL).
+		Msg("starting polling DOM ready event")
+
+	_, err = events.NewEvalWaitTask(
+		ec,
+		templates.DOMReady(),
+		events.DefaultPolling,
+	).Run(ctx)
+
+	if err != nil {
+		s.logger.Trace().
+			Err(err).
+			Str("frame_id", string(evt.FrameID)).
+			Str("frame_url", evt.URL).
+			Msg("failed to poll DOM ready event")
+
+		return err
+	}
+
+	s.logger.Trace().
+		Str("frame_id", string(evt.FrameID)).
+		Str("frame_url", evt.URL).
+		Msg("DOM is ready. Navigation has completed")
+
+	return nil
+}
+
+func newRequestWillBeSentStream(logger zerolog.Logger, input network.RequestWillBeSentClient) rtEvents.Stream {
+	return events.NewEventStream(input, func(stream rpcc.Stream) (core.Value, error) {
 		repl, err := stream.(network.RequestWillBeSentClient).Recv()
 
 		if err != nil {
@@ -61,8 +201,8 @@ func newRequestWillBeSentReader(logger zerolog.Logger) *streams.Reader {
 	})
 }
 
-func newResponseReceivedReader(logger zerolog.Logger) *streams.Reader {
-	return streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
+func newResponseReceivedReader(logger zerolog.Logger, input network.ResponseReceivedClient) rtEvents.Stream {
+	return events.NewEventStream(input, func(stream rpcc.Stream) (core.Value, error) {
 		repl, err := stream.(network.ResponseReceivedClient).Recv()
 
 		if err != nil {

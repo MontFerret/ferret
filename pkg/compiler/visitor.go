@@ -30,7 +30,7 @@ type (
 	}
 )
 
-const pseudoVariable = "CURRENT"
+const pseudoVariable = "current"
 
 func newVisitor(src string, funcs *core.Functions) *visitor {
 	return &visitor{

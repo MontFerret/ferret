@@ -50,7 +50,11 @@ func New(
 	contextID runtime.ExecutionContextID,
 ) *Runtime {
 	rt := new(Runtime)
-	rt.logger = logging.WithName(logger.With(), "js-eval").Logger()
+	rt.logger = logging.
+		WithName(logger.With(), "js-eval").
+		Str("frame_id", string(frameID)).
+		Int("context_id", int(contextID)).
+		Logger()
 	rt.client = client
 	rt.contextID = contextID
 	rt.resolver = NewResolver(client.Runtime, frameID)
@@ -159,7 +163,7 @@ func (rt *Runtime) Compile(ctx context.Context, fn *Function) (*CompiledFunction
 	id := *repl.ScriptID
 
 	log.Trace().
-		Str("script-id", string(id)).
+		Str("script_id", string(id)).
 		Msg("succeeded compiling expression")
 
 	return CF(id, fn), nil
@@ -227,7 +231,7 @@ func (rt *Runtime) evalInternal(ctx context.Context, fn *Function) (runtime.Remo
 	log := rt.logger.With().
 		Str("expression", fn.String()).
 		Str("returns", fn.returnType.String()).
-		Bool("is-async", fn.async).
+		Bool("is_async", fn.async).
 		Str("owner", string(fn.ownerID)).
 		Array("arguments", fn.args).
 		Logger()
@@ -261,10 +265,10 @@ func (rt *Runtime) evalInternal(ctx context.Context, fn *Function) (runtime.Remo
 	}
 
 	log.Trace().
-		Str("returned-type", repl.Result.Type).
-		Str("returned-sub-type", subtype).
-		Str("returned-class-name", className).
-		Str("returned-value", string(repl.Result.Value)).
+		Str("returned_type", repl.Result.Type).
+		Str("returned_sub_type", subtype).
+		Str("returned_class_name", className).
+		Str("returned_value", string(repl.Result.Value)).
 		Msg("succeeded executing expression")
 
 	return repl.Result, nil
@@ -272,9 +276,9 @@ func (rt *Runtime) evalInternal(ctx context.Context, fn *Function) (runtime.Remo
 
 func (rt *Runtime) callInternal(ctx context.Context, fn *CompiledFunction) (runtime.RemoteObject, error) {
 	log := rt.logger.With().
-		Str("script-id", string(fn.id)).
+		Str("script_id", string(fn.id)).
 		Str("returns", fn.src.returnType.String()).
-		Bool("is-async", fn.src.async).
+		Bool("is_async", fn.src.async).
 		Array("arguments", fn.src.args).
 		Logger()
 
@@ -307,10 +311,10 @@ func (rt *Runtime) callInternal(ctx context.Context, fn *CompiledFunction) (runt
 	}
 
 	log.Trace().
-		Str("returned-type", repl.Result.Type).
-		Str("returned-sub-type", subtype).
-		Str("returned-class-name", className).
-		Str("returned-value", string(repl.Result.Value)).
+		Str("returned_type", repl.Result.Type).
+		Str("returned_sub_type", subtype).
+		Str("returned_class_name", className).
+		Str("returned_value", string(repl.Result.Value)).
 		Msg("succeeded executing compiled script")
 
 	return repl.Result, nil

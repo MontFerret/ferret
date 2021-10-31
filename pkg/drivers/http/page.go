@@ -223,6 +223,6 @@ func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Bool
 	return false, core.ErrNotSupported
 }
 
-func (p *HTMLPage) Subscribe(_ context.Context, _ events.Subscription) (<-chan events.Event, error) {
+func (p *HTMLPage) Subscribe(_ context.Context, _ events.Subscription) (events.Stream, error) {
 	return nil, core.ErrNotSupported
 }

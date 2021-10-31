@@ -591,37 +591,21 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 	return p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscription) (<-chan events.Event, error) {
-	opts := PageEventsOptions{}
+func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscription) (events.Stream, error) {
+	switch subscription.EventName {
+	case drivers.NavigationEvent:
+		p.mu.Lock()
+		defer p.mu.Unlock()
 
-	if subscription.Options != nil {
-		if err := values.Bind(subscription.Options, &opts); err != nil {
-			return nil, err
-		}
-	}
-
-	evtOpts := net.WaitEventOptions{
-		FrameID: "",
-		URL:     nil,
-	}
-
-	if opts.Frame != nil {
-		evtOpts.FrameID = opts.Frame.Frame().Frame.ID
-	}
-
-	if opts.Target != "" {
-		r, err := regexp.Compile(opts.Target.String())
+		stream, err := p.network.OnNavigation(ctx)
 
 		if err != nil {
 			return nil, err
 		}
 
-		evtOpts.URL = r
-	}
-
-	switch subscription.EventName {
-	case drivers.NavigationEvent:
-		return p.network.OnNavigation(ctx)
+		return newPageNavigationEventStream(stream, func(ctx context.Context) error {
+			return p.reloadMainFrame(ctx)
+		}), nil
 	case drivers.RequestEvent:
 		return p.network.OnRequest(ctx)
 	case drivers.ResponseEvent:

@@ -12,9 +12,7 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	rtEvents "github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
@@ -61,7 +59,7 @@ func New(
 	}()
 
 	m.loop = events.NewLoop(
-		createResponseReceivedStreamFactory(client),
+	// createResponseReceivedStreamFactory(client),
 	)
 
 	m.loop.AddListener(responseReceivedEvent, m.handleResponse)
@@ -499,15 +497,15 @@ func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	onNav, err := m.OnNavigation(ctx)
+	stream, err := m.OnNavigation(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	m.logger.Trace().Msg("starting to wait for frame navigation event")
+	defer stream.Close(ctx)
 
-	for evt := range onNav {
+	for evt := range stream.Read(ctx) {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -522,31 +520,16 @@ func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) 
 			continue
 		}
 
-		log := m.logger.With().
-			Str("event_fame_id", string(nav.FrameID)).
-			Str("event_fame_url", nav.URL).
-			Logger()
-
-		log.Trace().Msg("received framed navigation event")
-
-		if err := m.isDOMReady(ctx, nav.FrameID); err != nil {
-			return err
-		}
-
-		log.Trace().
-			Str("fame_id", string(nav.FrameID)).
-			Msg("navigation has completed")
-
 		return nil
 	}
 
 	return nil
 }
 
-func (m *Manager) OnNavigation(ctx context.Context) (<-chan rtEvents.Event, error) {
+func (m *Manager) OnNavigation(ctx context.Context) (rtEvents.Stream, error) {
 	m.logger.Trace().Msg("starting to wait for frame navigation event")
 
-	stream, err := m.client.Page.FrameNavigated(ctx)
+	stream1, err := m.client.Page.FrameNavigated(ctx)
 
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to open frame navigation event stream")
@@ -554,14 +537,19 @@ func (m *Manager) OnNavigation(ctx context.Context) (<-chan rtEvents.Event, erro
 		return nil, err
 	}
 
-	m.logger.Trace().Err(err).Msg("succeeded to open frame navigation event stream")
+	stream2, err := m.client.Page.NavigatedWithinDocument(ctx)
 
-	reader := newFrameNavigatedReader(m.logger, m.isDOMReady)
+	if err != nil {
+		_ = stream1.Close()
+		m.logger.Trace().Err(err).Msg("failed to open within document navigation event streams")
 
-	return reader.Read(ctx, stream), nil
+		return nil, err
+	}
+
+	return newNavigationEventStream(m.logger, m.client, stream1, stream2), nil
 }
 
-func (m *Manager) OnRequest(ctx context.Context) (<-chan rtEvents.Event, error) {
+func (m *Manager) OnRequest(ctx context.Context) (rtEvents.Stream, error) {
 	m.logger.Trace().Msg("starting to receive request event")
 
 	stream, err := m.client.Network.RequestWillBeSent(ctx)
@@ -574,12 +562,10 @@ func (m *Manager) OnRequest(ctx context.Context) (<-chan rtEvents.Event, error) 
 
 	m.logger.Trace().Msg("succeeded to receive request event")
 
-	reader := newRequestWillBeSentReader(m.logger)
-
-	return reader.Read(ctx, stream), nil
+	return newRequestWillBeSentStream(m.logger, stream), nil
 }
 
-func (m *Manager) OnResponse(ctx context.Context) (<-chan rtEvents.Event, error) {
+func (m *Manager) OnResponse(ctx context.Context) (rtEvents.Stream, error) {
 	m.logger.Trace().Msg("starting to receive response events")
 
 	stream, err := m.client.Network.ResponseReceived(ctx)
@@ -592,9 +578,7 @@ func (m *Manager) OnResponse(ctx context.Context) (<-chan rtEvents.Event, error)
 
 	m.logger.Trace().Msg("succeeded to receive response events")
 
-	reader := newResponseReceivedReader(m.logger)
-
-	return reader.Read(ctx, stream), nil
+	return newResponseReceivedReader(m.logger, stream), nil
 }
 
 func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bool) {
@@ -631,37 +615,4 @@ func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bo
 	log.Trace().Msg("updated frame response information")
 
 	return
-}
-
-func (m *Manager) isDOMReady(ctx context.Context, frame page.FrameID) error {
-	m.logger.Trace().Msg("creating frame execution context")
-
-	ec, err := eval.Create(ctx, m.logger, m.client, frame)
-
-	if err != nil {
-		m.logger.Trace().Err(err).Msg("failed to create frame execution context")
-
-		return err
-	}
-
-	m.logger.Trace().Err(err).Msg("starting polling DOM ready event")
-
-	_, err = events.NewEvalWaitTask(
-		ec,
-		templates.DOMReady(),
-		events.DefaultPolling,
-	).Run(ctx)
-
-	if err != nil {
-		m.logger.Trace().Err(err).Msg("failed to poll DOM ready event")
-
-		return err
-	}
-
-	m.logger.Trace().Msg("DOM is ready")
-	m.logger.Trace().
-		Str("fame_id", string(frame)).
-		Msg("navigation has completed")
-
-	return nil
 }

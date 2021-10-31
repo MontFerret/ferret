@@ -3,15 +3,15 @@ package drivers
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
 var (
-	HTTPRequestType   = core.NewType("drivers.HTTPRequest")
-	HTTPResponseType  = core.NewType("drivers.HTTPResponse")
-	HTTPHeaderType    = core.NewType("drivers.HTTPHeaders")
-	HTTPCookieType    = core.NewType("drivers.HTTPCookie")
-	HTTPCookiesType   = core.NewType("drivers.HTTPCookies")
-	HTMLElementType   = core.NewType("drivers.HTMLElement")
-	HTMLDocumentType  = core.NewType("drivers.HTMLDocument")
-	HTMLPageType      = core.NewType("drivers.HTMLPageType")
-	QuerySelectorType = core.NewType("drivers.QuerySelector")
+	HTTPRequestType   = core.NewType("ferret.drivers.HTTPRequest")
+	HTTPResponseType  = core.NewType("ferret.drivers.HTTPResponse")
+	HTTPHeaderType    = core.NewType("ferret.drivers.HTTPHeaders")
+	HTTPCookieType    = core.NewType("ferret.drivers.HTTPCookie")
+	HTTPCookiesType   = core.NewType("ferret.drivers.HTTPCookies")
+	HTMLElementType   = core.NewType("ferret.drivers.HTMLElement")
+	HTMLDocumentType  = core.NewType("ferret.drivers.HTMLDocument")
+	HTMLPageType      = core.NewType("ferret.drivers.HTMLPageType")
+	QuerySelectorType = core.NewType("ferret.drivers.QuerySelector")
 )
 
 // Comparison table of builtin types

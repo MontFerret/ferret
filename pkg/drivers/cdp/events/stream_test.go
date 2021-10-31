@@ -1,8 +1,8 @@
-package streams_test
+package events_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/streams"
+	events2 "github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -82,11 +82,11 @@ func TestStreamReader(t *testing.T) {
 
 			data := make([]string, 0, 3)
 
-			reader := streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
+			es := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
 				return stream.(*TestStream).Recv()
 			})
 
-			for evt := range reader.Read(ctx, stream) {
+			for evt := range es.Read(ctx) {
 				So(evt.Err(), ShouldBeNil)
 				So(evt.Value(), ShouldNotBeNil)
 
@@ -94,23 +94,26 @@ func TestStreamReader(t *testing.T) {
 			}
 
 			So(data, ShouldResemble, []string{"foo", "bar", "baz"})
+			So(es.Close(context.Background()), ShouldBeNil)
+
+			stream.AssertExpectations(t)
 		})
 
-		Convey("Should handle error and close Stream", func() {
+		Convey("Should not handle error and close Stream", func() {
 			ctx := context.Background()
 
 			stream := NewTestStream()
-			stream.On("Close", mock.Anything).Once().Return(nil)
+			stream.On("Close", mock.Anything).Times(0).Return(nil)
 
 			go func() {
 				stream.EmitError(errors.New("foo"))
 			}()
 
-			reader := streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
+			reader := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
 				return stream.(*TestStream).Recv()
 			})
 
-			ch := reader.Read(ctx, stream)
+			ch := reader.Read(ctx)
 			evt := <-ch
 			So(evt.Err(), ShouldNotBeNil)
 
@@ -119,17 +122,17 @@ func TestStreamReader(t *testing.T) {
 			stream.AssertExpectations(t)
 		})
 
-		Convey("Should close Stream when Context is cancelled", func() {
-			reader := streams.NewReader(func(stream rpcc.Stream) (core.Value, error) {
+		Convey("Should not close Stream when Context is cancelled", func() {
+			stream := NewTestStream()
+			stream.On("Close", mock.Anything).Times(0).Return(nil)
+
+			reader := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
 				return values.EmptyArray(), nil
 			})
 
-			stream := NewTestStream()
-			stream.On("Close", mock.Anything).Once().Return(nil)
-
 			ctx, cancel := context.WithCancel(context.Background())
 
-			_ = reader.Read(ctx, stream)
+			_ = reader.Read(ctx)
 
 			time.Sleep(time.Duration(100) * time.Millisecond)
 

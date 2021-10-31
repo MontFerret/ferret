@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -550,6 +549,16 @@ func ToStrings(input *Array) []String {
 	return res
 }
 
+func Hash(rtType core.Type, content []byte) uint64 {
+	h := fnv.New64a()
+
+	h.Write([]byte(rtType.String()))
+	h.Write([]byte(":"))
+	h.Write(content)
+
+	return h.Sum64()
+}
+
 func MapHash(input map[string]core.Value) uint64 {
 	h := fnv.New64a()
 
@@ -601,8 +610,4 @@ func UnwrapStrings(values []String) []string {
 	}
 
 	return out
-}
-
-func Bind(from *Object, to interface{}) error {
-	return mapstructure.Decode(from.value, to)
 }
