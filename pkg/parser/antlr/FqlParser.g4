@@ -172,6 +172,7 @@ param
 
 variable
     : Identifier
+    | Current
     ;
 
 literal
@@ -304,6 +305,7 @@ reservedWord
     | Options
     | Do
     | While
+    | Current
     ;
 
 rangeOperator

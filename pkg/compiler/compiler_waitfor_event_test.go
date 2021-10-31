@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
+	"sync"
 	"testing"
 	"time"
 )
@@ -15,25 +16,71 @@ import (
 type MockedObservable struct {
 	*values.Object
 
-	subscribers map[string]chan events.Event
+	subscribers map[string]*MockedEventStream
 
 	Args map[string][]*values.Object
+}
+
+type MockedEventStream struct {
+	mu     sync.Mutex
+	ch     chan events.Event
+	closed bool
+}
+
+func NewMockedEventStream(ch chan events.Event) *MockedEventStream {
+	es := new(MockedEventStream)
+	es.ch = ch
+
+	return es
+}
+
+func (m *MockedEventStream) Close(ctx context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	close(m.ch)
+	m.closed = true
+
+	return nil
+}
+
+func (m *MockedEventStream) Read(_ context.Context) <-chan events.Event {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.ch
+}
+
+func (m *MockedEventStream) IsClosed() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.closed
 }
 
 func NewMockedObservable() *MockedObservable {
 	return &MockedObservable{
 		Object:      values.NewObject(),
-		subscribers: map[string]chan events.Event{},
-		Args:        map[string][]*values.Object{},
+		subscribers: make(map[string]*MockedEventStream),
+		Args:        make(map[string][]*values.Object),
 	}
 }
 
-func (m *MockedObservable) Emit(eventName string, args core.Value, err error, timeout int64) {
+func (m *MockedObservable) Emit(ctx context.Context, eventName string, args core.Value, err error, timeout int64) {
 	ch := make(chan events.Event)
-	m.subscribers[eventName] = ch
+	se := NewMockedEventStream(ch)
+	m.subscribers[eventName] = se
 
 	go func() {
 		<-time.After(time.Millisecond * time.Duration(timeout))
+
+		if ctx.Err() != nil {
+			return
+		}
+
+		if se.IsClosed() {
+			return
+		}
 
 		if err == nil {
 			ch <- events.WithValue(args)
@@ -43,7 +90,7 @@ func (m *MockedObservable) Emit(eventName string, args core.Value, err error, ti
 	}()
 }
 
-func (m *MockedObservable) Subscribe(_ context.Context, sub events.Subscription) (<-chan events.Event, error) {
+func (m *MockedObservable) Subscribe(_ context.Context, sub events.Subscription) (events.Stream, error) {
 	calls, found := m.Args[sub.EventName]
 
 	if !found {
@@ -79,7 +126,7 @@ func newCompilerWithObservable() *compiler.Compiler {
 						timeout = values.ToInt(args[2])
 					}
 
-					observable.Emit(eventName.String(), values.None, nil, int64(timeout))
+					observable.Emit(ctx, eventName.String(), values.None, nil, int64(timeout))
 
 					return values.None, nil
 				},
@@ -97,7 +144,7 @@ func newCompilerWithObservable() *compiler.Compiler {
 						timeout = values.ToInt(args[3])
 					}
 
-					observable.Emit(eventName.String(), args[2], nil, int64(timeout))
+					observable.Emit(ctx, eventName.String(), args[2], nil, int64(timeout))
 
 					return values.None, nil
 				},
@@ -327,7 +374,30 @@ LET _ = (FOR i IN 0..3
 	RETURN NONE
 )
 
-LET evt = (WAITFOR EVENT @evt IN obj FILTER CURRENT.counter > 4)
+LET evt = (WAITFOR EVENT @evt IN obj FILTER CURRENT.counter > 4 TIMEOUT 100)
+
+T::EQ(evt.counter, 5)
+
+RETURN evt
+`)
+
+			_, err := prog.Run(context.Background(), runtime.WithParam("evt", "test"))
+
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Should support pseudo-variable in different cases", func() {
+			c := newCompilerWithObservable()
+
+			prog := c.MustCompile(`
+LET obj = X::CREATE()
+
+LET _ = (FOR i IN 0..3
+	X::EMIT_WITH(obj, @evt, { counter: i })
+	RETURN NONE
+)
+
+LET evt = (WAITFOR EVENT @evt IN obj FILTER CURRENT.counter > 4 && current.counter < 6)
 
 T::EQ(evt.counter, 5)
 

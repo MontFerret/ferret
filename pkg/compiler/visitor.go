@@ -30,7 +30,7 @@ type (
 	}
 )
 
-const pseudoVariable = "current"
+const pseudoVariable = "CURRENT"
 
 func newVisitor(src string, funcs *core.Functions) *visitor {
 	return &visitor{
@@ -904,11 +904,13 @@ func (v *visitor) visitWaitForExpression(c fql.IWaitForExpressionContext, s *sco
 	}
 
 	if filterCtx := ctx.FilterClause(); filterCtx != nil {
-		if err := s.SetVariable(pseudoVariable); err != nil {
+		nextScope := s.Fork()
+
+		if err := nextScope.SetVariable(pseudoVariable); err != nil {
 			return nil, err
 		}
 
-		filterExp, err := v.visitFilterClause(filterCtx, s)
+		filterExp, err := v.visitFilterClause(filterCtx, nextScope)
 
 		if err != nil {
 			return nil, err
@@ -1001,6 +1003,10 @@ func (v *visitor) visitMemberExpressionSource(c fql.IMemberExpressionSourceConte
 
 	if variable := ctx.Variable(); variable != nil {
 		varName := variable.GetText()
+
+		if strings.ToUpper(varName) == pseudoVariable {
+			varName = pseudoVariable
+		}
 
 		if !scope.HasVariable(varName) {
 			return nil, core.Error(ErrVariableNotFound, varName)

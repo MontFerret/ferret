@@ -1,0 +1,10 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "#ajax-input-seq-buttons")
+
+CLICK(doc, "#ajax-input-seq-buttons")
+
+LET evt = (WAITFOR EVENT "request" IN doc FILTER CURRENT.url =~ '\/blog\/' TIMEOUT 10000)
+
+RETURN T::EQ(evt.url, "www.montferret.dev/blog/")

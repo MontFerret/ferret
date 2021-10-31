@@ -55,6 +55,7 @@ Options: 'OPTIONS';
 Timeout: 'TIMEOUT';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
+Current: 'CURRENT';
 Sort: 'SORT';
 Limit: 'LIMIT';
 Let: 'LET';
