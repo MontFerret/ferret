@@ -17,6 +17,7 @@ type (
 		StatusCode   int
 		Status       string
 		Headers      *HTTPHeaders
+		Body         []byte
 		ResponseTime float64
 	}
 
@@ -27,6 +28,7 @@ type (
 		StatusCode   int          `json:"status_code"`
 		Status       string       `json:"status"`
 		Headers      *HTTPHeaders `json:"headers"`
+		Body         []byte       `json:"body"`
 		ResponseTime float64      `json:"response_time"`
 	}
 )
@@ -112,6 +114,8 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 		}
 
 		return out, nil
+	case "body":
+		return values.NewBinary(resp.Body), nil
 	case "responseTime":
 		return values.NewFloat(resp.ResponseTime), nil
 	}
