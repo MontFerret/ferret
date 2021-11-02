@@ -1090,7 +1090,11 @@ func (v *visitor) visitPropertyName(c fql.IPropertyNameContext, scope *scope) (c
 		return literals.NewStringLiteral(id.GetText()), nil
 	}
 
-	if rw := ctx.ReservedWord(); rw != nil {
+	if rw := ctx.SafeReservedWord(); rw != nil {
+		return literals.NewStringLiteral(rw.GetText()), nil
+	}
+
+	if rw := ctx.UnsafReservedWord(); rw != nil {
 		return literals.NewStringLiteral(rw.GetText()), nil
 	}
 
@@ -1225,7 +1229,7 @@ func (v *visitor) visitVariableDeclaration(c fql.IVariableDeclarationContext, sc
 
 	if id := ctx.Identifier(); id != nil {
 		name = id.GetText()
-	} else if reserved := ctx.ReservedWord(); reserved != nil {
+	} else if reserved := ctx.SafeReservedWord(); reserved != nil {
 		name = reserved.GetText()
 	}
 

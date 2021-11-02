@@ -169,8 +169,11 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#memberExpressionPath.
 	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#reservedWord.
-	VisitReservedWord(ctx *ReservedWordContext) interface{}
+	// Visit a parse tree produced by FqlParser#safeReservedWord.
+	VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#unsafReservedWord.
+	VisitUnsafReservedWord(ctx *UnsafReservedWordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#rangeOperator.
 	VisitRangeOperator(ctx *RangeOperatorContext) interface{}

@@ -37,7 +37,7 @@ bodyExpression
 
 variableDeclaration
     : Let id=(Identifier | IgnoreIdentifier) Assign expression
-    | Let reservedWord Assign expression
+    | Let safeReservedWord Assign expression
     ;
 
 returnExpression
@@ -172,7 +172,7 @@ param
 
 variable
     : Identifier
-    | reservedWord
+    | safeReservedWord
     ;
 
 literal
@@ -228,7 +228,8 @@ propertyName
     : Identifier
     | stringLiteral
     | param
-    | reservedWord
+    | safeReservedWord
+    | unsafReservedWord
     ;
 
 namespaceIdentifier
@@ -261,7 +262,8 @@ functionCall
 
 functionName
     : Identifier
-    | reservedWord
+    | safeReservedWord
+    | unsafReservedWord
     ;
 
 argumentList
@@ -273,22 +275,15 @@ memberExpressionPath
     | (errorOperator Dot)? computedPropertyName
     ;
 
-reservedWord
+safeReservedWord
     : And
     | Or
-    | For
-    | Return
     | Distinct
     | Filter
     | Sort
     | Limit
-    | Let
     | Collect
     | SortDirection
-    | None
-    | Null
-    | BooleanLiteral
-    | Use
     | Into
     | Keep
     | With
@@ -296,16 +291,26 @@ reservedWord
     | All
     | Any
     | Aggregate
-    | Like
-    | Not
-    | In
-    | Waitfor
     | Event
     | Timeout
     | Options
-    | Do
-    | While
     | Current
+    ;
+
+unsafReservedWord
+    : Return
+    | None
+    | Null
+    | Let
+    | Use
+    | Waitfor
+    | While
+    | Do
+    | In
+    | Like
+    | Not
+    | For
+    | BooleanLiteral
     ;
 
 rangeOperator
