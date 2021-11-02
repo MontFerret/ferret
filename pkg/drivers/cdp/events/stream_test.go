@@ -82,7 +82,7 @@ func TestStreamReader(t *testing.T) {
 
 			data := make([]string, 0, 3)
 
-			es := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
+			es := events2.NewEventStream(stream, func(_ context.Context, stream rpcc.Stream) (core.Value, error) {
 				return stream.(*TestStream).Recv()
 			})
 
@@ -110,7 +110,7 @@ func TestStreamReader(t *testing.T) {
 				stream.EmitError(errors.New("foo"))
 			}()
 
-			reader := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
+			reader := events2.NewEventStream(stream, func(_ context.Context, stream rpcc.Stream) (core.Value, error) {
 				return stream.(*TestStream).Recv()
 			})
 
@@ -127,7 +127,7 @@ func TestStreamReader(t *testing.T) {
 			stream := NewTestStream()
 			stream.On("Close", mock.Anything).Maybe().Return(nil)
 
-			reader := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
+			reader := events2.NewEventStream(stream, func(_ context.Context, stream rpcc.Stream) (core.Value, error) {
 				return values.EmptyArray(), nil
 			})
 
