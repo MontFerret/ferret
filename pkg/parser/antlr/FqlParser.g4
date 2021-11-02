@@ -36,8 +36,8 @@ bodyExpression
     ;
 
 variableDeclaration
-    : Let Identifier Assign expression
-    | Let IgnoreIdentifier Assign expression
+    : Let id=(Identifier | IgnoreIdentifier) Assign expression
+    | Let reservedWord Assign expression
     ;
 
 returnExpression
@@ -172,7 +172,7 @@ param
 
 variable
     : Identifier
-    | Current
+    | reservedWord
     ;
 
 literal

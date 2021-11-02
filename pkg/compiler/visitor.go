@@ -1225,6 +1225,8 @@ func (v *visitor) visitVariableDeclaration(c fql.IVariableDeclarationContext, sc
 
 	if id := ctx.Identifier(); id != nil {
 		name = id.GetText()
+	} else if reserved := ctx.ReservedWord(); reserved != nil {
+		name = reserved.GetText()
 	}
 
 	err = scope.SetVariable(name)
