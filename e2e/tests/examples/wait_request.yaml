@@ -1,0 +1,5 @@
+timeout: 240
+query:
+  ref: file://../../../examples/wait_request.fql
+assert:
+  text: RETURN T::NOT::EMPTY(@lab.data.query.result)
