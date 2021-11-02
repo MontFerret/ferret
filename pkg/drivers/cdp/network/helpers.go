@@ -42,12 +42,13 @@ func toDriverHeaders(headers network.Headers) *drivers.HTTPHeaders {
 	return result
 }
 
-func toDriverResponse(resp network.Response) *drivers.HTTPResponse {
+func toDriverResponse(resp network.Response, body []byte) *drivers.HTTPResponse {
 	return &drivers.HTTPResponse{
 		URL:          resp.URL,
 		StatusCode:   resp.Status,
 		Status:       resp.StatusText,
 		Headers:      toDriverHeaders(resp.Headers),
+		Body:         body,
 		ResponseTime: float64(resp.ResponseTime),
 	}
 }

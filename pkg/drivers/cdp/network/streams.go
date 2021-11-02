@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/base64"
 	"sync/atomic"
 
 	"github.com/mafredri/cdp"
@@ -175,7 +176,7 @@ func (s *NavigationEventStream) Close(ctx context.Context) error {
 }
 
 func newRequestWillBeSentStream(logger zerolog.Logger, input network.RequestWillBeSentClient) rtEvents.Stream {
-	return events.NewEventStream(input, func(stream rpcc.Stream) (core.Value, error) {
+	return events.NewEventStream(input, func(_ context.Context, stream rpcc.Stream) (core.Value, error) {
 		repl, err := stream.(network.RequestWillBeSentClient).Recv()
 
 		if err != nil {
@@ -201,8 +202,8 @@ func newRequestWillBeSentStream(logger zerolog.Logger, input network.RequestWill
 	})
 }
 
-func newResponseReceivedReader(logger zerolog.Logger, input network.ResponseReceivedClient) rtEvents.Stream {
-	return events.NewEventStream(input, func(stream rpcc.Stream) (core.Value, error) {
+func newResponseReceivedReader(logger zerolog.Logger, client *cdp.Client, input network.ResponseReceivedClient) rtEvents.Stream {
+	return events.NewEventStream(input, func(ctx context.Context, stream rpcc.Stream) (core.Value, error) {
 		repl, err := stream.(network.ResponseReceivedClient).Recv()
 
 		if err != nil {
@@ -224,6 +225,36 @@ func newResponseReceivedReader(logger zerolog.Logger, input network.ResponseRece
 			Interface("data", repl.Response).
 			Msg("received response event")
 
-		return toDriverResponse(repl.Response), nil
+		var body []byte
+
+		resp, err := client.Network.GetResponseBody(ctx, network.NewGetResponseBodyArgs(repl.RequestID))
+
+		if err == nil {
+			body = make([]byte, 0, 0)
+
+			if resp.Base64Encoded {
+				body, err = base64.StdEncoding.DecodeString(resp.Body)
+
+				if err != nil {
+					logger.Warn().
+						Str("url", repl.Response.URL).
+						Str("frame_id", frameID).
+						Str("request_id", string(repl.RequestID)).
+						Interface("data", repl.Response).
+						Msg("failed to decode response body")
+				}
+			} else {
+				body = []byte(resp.Body)
+			}
+		} else {
+			logger.Warn().
+				Str("url", repl.Response.URL).
+				Str("frame_id", frameID).
+				Str("request_id", string(repl.RequestID)).
+				Interface("data", repl.Response).
+				Msg("failed to get response body")
+		}
+
+		return toDriverResponse(repl.Response, body), nil
 	})
 }

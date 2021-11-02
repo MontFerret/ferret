@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	Decoder func(stream rpcc.Stream) (core.Value, error)
+	Decoder func(ctx context.Context, stream rpcc.Stream) (core.Value, error)
 
 	Factory func(ctx context.Context) (rpcc.Stream, error)
 
@@ -38,7 +38,7 @@ func (e *EventStream) Read(ctx context.Context) <-chan events.Event {
 			case <-ctx.Done():
 				return
 			case <-e.stream.Ready():
-				val, err := e.decoder(e.stream)
+				val, err := e.decoder(ctx, e.stream)
 
 				if err != nil {
 					ch <- events.WithErr(err)

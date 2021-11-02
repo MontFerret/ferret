@@ -578,7 +578,7 @@ func (m *Manager) OnResponse(ctx context.Context) (rtEvents.Stream, error) {
 
 	m.logger.Trace().Msg("succeeded to receive response events")
 
-	return newResponseReceivedReader(m.logger, stream), nil
+	return newResponseReceivedReader(m.logger, m.client, stream), nil
 }
 
 func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bool) {
@@ -610,7 +610,7 @@ func (m *Manager) handleResponse(_ context.Context, message interface{}) (out bo
 
 	log.Trace().Msg("received browser response")
 
-	m.response.Store(*msg.FrameID, toDriverResponse(msg.Response))
+	m.response.Store(*msg.FrameID, toDriverResponse(msg.Response, nil))
 
 	log.Trace().Msg("updated frame response information")
 
