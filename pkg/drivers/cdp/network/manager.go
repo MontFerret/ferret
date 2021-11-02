@@ -59,7 +59,7 @@ func New(
 	}()
 
 	m.loop = events.NewLoop(
-	// createResponseReceivedStreamFactory(client),
+		createResponseReceivedStreamFactory(client),
 	)
 
 	m.loop.AddListener(responseReceivedEvent, m.handleResponse)

@@ -71,7 +71,7 @@ func TestStreamReader(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 
 			stream := NewTestStream()
-			stream.On("Close", mock.Anything).Once().Return(nil)
+			stream.On("Close", mock.Anything).Maybe().Return(nil)
 
 			go func() {
 				stream.Emit(values.NewString("foo"))
@@ -94,16 +94,17 @@ func TestStreamReader(t *testing.T) {
 			}
 
 			So(data, ShouldResemble, []string{"foo", "bar", "baz"})
-			So(es.Close(context.Background()), ShouldBeNil)
 
 			stream.AssertExpectations(t)
+
+			So(es.Close(context.Background()), ShouldBeNil)
 		})
 
-		Convey("Should not handle error and close Stream", func() {
+		Convey("Should handle error but do not close Stream", func() {
 			ctx := context.Background()
 
 			stream := NewTestStream()
-			stream.On("Close", mock.Anything).Times(0).Return(nil)
+			stream.On("Close", mock.Anything).Maybe().Return(nil)
 
 			go func() {
 				stream.EmitError(errors.New("foo"))
@@ -124,7 +125,7 @@ func TestStreamReader(t *testing.T) {
 
 		Convey("Should not close Stream when Context is cancelled", func() {
 			stream := NewTestStream()
-			stream.On("Close", mock.Anything).Times(0).Return(nil)
+			stream.On("Close", mock.Anything).Maybe().Return(nil)
 
 			reader := events2.NewEventStream(stream, func(stream rpcc.Stream) (core.Value, error) {
 				return values.EmptyArray(), nil

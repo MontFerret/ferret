@@ -51,6 +51,13 @@ func (m *MockedEventStream) Read(_ context.Context) <-chan events.Event {
 	return m.ch
 }
 
+func (m *MockedEventStream) Write(_ context.Context, evt events.Event) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.ch <- evt
+}
+
 func (m *MockedEventStream) IsClosed() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -67,9 +74,11 @@ func NewMockedObservable() *MockedObservable {
 }
 
 func (m *MockedObservable) Emit(ctx context.Context, eventName string, args core.Value, err error, timeout int64) {
-	ch := make(chan events.Event)
-	se := NewMockedEventStream(ch)
-	m.subscribers[eventName] = se
+	stream, found := m.subscribers[eventName]
+
+	if !found {
+		stream = m.addStream(eventName)
+	}
 
 	go func() {
 		<-time.After(time.Millisecond * time.Duration(timeout))
@@ -78,14 +87,14 @@ func (m *MockedObservable) Emit(ctx context.Context, eventName string, args core
 			return
 		}
 
-		if se.IsClosed() {
+		if stream.IsClosed() {
 			return
 		}
 
 		if err == nil {
-			ch <- events.WithValue(args)
+			stream.Write(ctx, events.WithValue(args))
 		} else {
-			ch <- events.WithErr(err)
+			stream.Write(ctx, events.WithErr(err))
 		}
 	}()
 }
@@ -98,9 +107,23 @@ func (m *MockedObservable) Subscribe(_ context.Context, sub events.Subscription)
 		m.Args[sub.EventName] = calls
 	}
 
+	stream, found := m.subscribers[sub.EventName]
+
+	if !found {
+		stream = m.addStream(sub.EventName)
+		m.subscribers[sub.EventName] = stream
+	}
+
 	m.Args[sub.EventName] = append(calls, sub.Options)
 
-	return m.subscribers[sub.EventName], nil
+	return stream, nil
+}
+
+func (m *MockedObservable) addStream(eventName string) *MockedEventStream {
+	stream := NewMockedEventStream(make(chan events.Event))
+	m.subscribers[eventName] = stream
+
+	return stream
 }
 
 func newCompilerWithObservable() *compiler.Compiler {
