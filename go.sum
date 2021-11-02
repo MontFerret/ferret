@@ -74,8 +74,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/wI2L/jettison v0.7.2 h1:vJ66luIiQkqpswDHgN2dFq70+22cVL+9omH+NS0YxIo=
-github.com/wI2L/jettison v0.7.2/go.mod h1:W3PPso417OeZeWs9nV/olfapp0o4eSZcaeZk4HeSzfM=
+github.com/wI2L/jettison v0.7.3 h1:xvcEkxZap0X36Q/D2Vxe8XenI09TDrTo6XEOkWpjcDU=
+github.com/wI2L/jettison v0.7.3/go.mod h1:W3PPso417OeZeWs9nV/olfapp0o4eSZcaeZk4HeSzfM=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
