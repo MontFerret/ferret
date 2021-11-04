@@ -37,5 +37,5 @@ func (iterator *Iterator) Next(ctx context.Context) (value core.Value, key core.
 		return val, idx, nil
 	}
 
-	return values.None, values.None, nil
+	return values.None, values.None, core.ErrNoMoreData
 }
