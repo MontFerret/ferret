@@ -272,7 +272,7 @@ func (v *visitor) visitForExpression(c fql.IForExpressionContext, scope *scope) 
 		}
 	}
 
-	forInScope := scope.Fork()
+	forInScope := scope.Fork("for")
 	if err := forInScope.SetVariable(valVarName); err != nil {
 		return nil, err
 	}
@@ -904,7 +904,7 @@ func (v *visitor) visitWaitForExpression(c fql.IWaitForExpressionContext, s *sco
 	}
 
 	if filterCtx := ctx.FilterClause(); filterCtx != nil {
-		nextScope := s.Fork()
+		nextScope := s.Fork("waitfor")
 
 		if err := nextScope.SetVariable(pseudoVariable); err != nil {
 			return nil, err
@@ -1005,7 +1005,9 @@ func (v *visitor) visitMemberExpressionSource(c fql.IMemberExpressionSourceConte
 		varName := variable.GetText()
 
 		if strings.ToUpper(varName) == pseudoVariable {
-			varName = pseudoVariable
+			if scope.Name() == "waitfor" {
+				varName = pseudoVariable
+			}
 		}
 
 		if !scope.HasVariable(varName) {
