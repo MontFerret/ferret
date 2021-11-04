@@ -55,14 +55,9 @@ func (m *MockedEventStream) Write(_ context.Context, evt events.Event) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.ch <- evt
-}
-
-func (m *MockedEventStream) IsClosed() bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	return m.closed
+	if !m.closed {
+		m.ch <- evt
+	}
 }
 
 func NewMockedObservable() *MockedObservable {
@@ -84,10 +79,6 @@ func (m *MockedObservable) Emit(ctx context.Context, eventName string, args core
 		<-time.After(time.Millisecond * time.Duration(timeout))
 
 		if ctx.Err() != nil {
-			return
-		}
-
-		if stream.IsClosed() {
 			return
 		}
 
