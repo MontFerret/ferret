@@ -7,13 +7,12 @@ import (
 )
 
 func TestWaitforEventWithinTernaryExpression(t *testing.T) {
-	SkipConvey("RETURN foo ? TRUE : (WAITFOR EVENT \"event\" IN obj)", t, func() {
+	Convey("RETURN foo ? TRUE : (WAITFOR EVENT \"event\" IN obj)", t, func() {
 		c := newCompilerWithObservable()
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::CREATE()
-			X::EMIT_WITH(obj, "event", "data", 100)
+			LET obj = X::VAL("event", ["data"], 50)
 
 			RETURN foo ? TRUE : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -23,7 +22,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::CREATE()
+			LET obj = X::VAL("event", ["data"], 50)
 
 			RETURN foo ? TRUE : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -37,8 +36,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::CREATE()
-			X::EMIT_WITH(obj, "event2", "data2", 100)
+			LET obj = X::VAL("event2", ["data2"], 50)
 
 			RETURN foo ? (WAITFOR EVENT "event1" IN obj) : (WAITFOR EVENT "event2" IN obj)
 		`).Run(context.Background())
@@ -48,8 +46,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::CREATE()
-			X::EMIT_WITH(obj, "event1", "data1", 100)
+			LET obj = X::VAL("event1", ["data1"], 50)
 
 			RETURN foo ? (WAITFOR EVENT "event1" IN obj) : (WAITFOR EVENT "event2" IN obj)
 		`).Run(context.Background())
@@ -63,8 +60,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::CREATE()
-			X::EMIT_WITH(obj, "event", "data", 100)
+			LET obj = X::VAL("event", ["data"], 50)
 
 			RETURN foo ? (FOR i IN 1..3 RETURN i*2) : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -74,7 +70,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::CREATE()
+			LET obj = X::VAL("event", ["data"], 50)
 
 			RETURN foo ? (FOR i IN 1..3 RETURN i*2) : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -88,7 +84,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::CREATE()
+			LET obj = X::VAL("event", ["data"], 1000)
 
 			RETURN foo ? (WAITFOR EVENT "event" IN obj) : (FOR i IN 1..3 RETURN i*2)
 		`).Run(context.Background())
@@ -98,8 +94,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::CREATE()
-			X::EMIT_WITH(obj, "event", "data", 100)
+			LET obj = X::VAL("event", ["data"], 50)
 
 			RETURN foo ? (WAITFOR EVENT "event" IN obj) : (FOR i IN 1..3 RETURN i*2)
 		`).Run(context.Background())

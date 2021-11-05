@@ -30,7 +30,14 @@ type (
 	}
 )
 
-const pseudoVariable = "CURRENT"
+const (
+	waitPseudoVariable = "CURRENT"
+)
+
+const (
+	waitScope = "waitfor"
+	forScope  = "for"
+)
 
 func newVisitor(src string, funcs *core.Functions) *visitor {
 	return &visitor{
@@ -272,7 +279,7 @@ func (v *visitor) visitForExpression(c fql.IForExpressionContext, scope *scope) 
 		}
 	}
 
-	forInScope := scope.Fork("for")
+	forInScope := scope.Fork(forScope)
 	if err := forInScope.SetVariable(valVarName); err != nil {
 		return nil, err
 	}
@@ -904,9 +911,9 @@ func (v *visitor) visitWaitForExpression(c fql.IWaitForExpressionContext, s *sco
 	}
 
 	if filterCtx := ctx.FilterClause(); filterCtx != nil {
-		nextScope := s.Fork("waitfor")
+		nextScope := s.Fork(waitScope)
 
-		if err := nextScope.SetVariable(pseudoVariable); err != nil {
+		if err := nextScope.SetVariable(waitPseudoVariable); err != nil {
 			return nil, err
 		}
 
@@ -916,7 +923,7 @@ func (v *visitor) visitWaitForExpression(c fql.IWaitForExpressionContext, s *sco
 			return nil, err
 		}
 
-		if err := waitForExp.SetFilter(v.getSourceMap(filterCtx), pseudoVariable, filterExp); err != nil {
+		if err := waitForExp.SetFilter(v.getSourceMap(filterCtx), waitPseudoVariable, filterExp); err != nil {
 			return nil, err
 		}
 	}
@@ -1004,9 +1011,9 @@ func (v *visitor) visitMemberExpressionSource(c fql.IMemberExpressionSourceConte
 	if variable := ctx.Variable(); variable != nil {
 		varName := variable.GetText()
 
-		if strings.ToUpper(varName) == pseudoVariable {
-			if scope.Name() == "waitfor" {
-				varName = pseudoVariable
+		if strings.ToUpper(varName) == waitPseudoVariable {
+			if scope.Name() == waitScope {
+				varName = waitPseudoVariable
 			}
 		}
 
@@ -1217,6 +1224,10 @@ func (v *visitor) visitVariable(ctx fql.IVariableContext, scope *scope) (core.Ex
 
 	// check whether the variable is defined
 	if !scope.HasVariable(name) {
+		if scope.Name() == waitScope && strings.ToUpper(name) == waitPseudoVariable {
+			return expressions.NewVariableExpression(v.getSourceMap(ctx), waitPseudoVariable)
+		}
+
 		return nil, core.Error(ErrVariableNotFound, name)
 	}
 

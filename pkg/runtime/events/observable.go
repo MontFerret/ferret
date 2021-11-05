@@ -14,7 +14,7 @@ type (
 		Options   *values.Object
 	}
 
-	// Event represents an event or value that an Observable can emit.
+	// Event represents an event that an Observable can emit.
 	Event interface {
 		Value() core.Value
 		Err() error
