@@ -19,7 +19,7 @@ type (
 	TestStream struct {
 		mock.Mock
 		ready   chan struct{}
-		message chan events.Event
+		message chan events.Message
 	}
 )
 
@@ -30,7 +30,7 @@ func NewTestStream() *TestStream {
 func NewBufferedTestStream(buffer int) *TestStream {
 	es := new(TestStream)
 	es.ready = make(chan struct{}, buffer)
-	es.message = make(chan events.Event, buffer)
+	es.message = make(chan events.Message, buffer)
 	return es
 }
 

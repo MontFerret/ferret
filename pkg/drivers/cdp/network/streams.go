@@ -42,8 +42,8 @@ func newNavigationEventStream(
 	return es
 }
 
-func (s *NavigationEventStream) Read(ctx context.Context) <-chan rtEvents.Event {
-	ch := make(chan rtEvents.Event)
+func (s *NavigationEventStream) Read(ctx context.Context) <-chan rtEvents.Message {
+	ch := make(chan rtEvents.Message)
 
 	go func() {
 		defer close(ch)

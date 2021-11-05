@@ -25,11 +25,11 @@ type MockedObservable struct {
 
 type MockedEventStream struct {
 	mu     sync.Mutex
-	ch     chan events.Event
+	ch     chan events.Message
 	closed bool
 }
 
-func NewMockedEventStream(ch chan events.Event) *MockedEventStream {
+func NewMockedEventStream(ch chan events.Message) *MockedEventStream {
 	es := new(MockedEventStream)
 	es.ch = ch
 
@@ -46,14 +46,14 @@ func (m *MockedEventStream) Close(ctx context.Context) error {
 	return nil
 }
 
-func (m *MockedEventStream) Read(_ context.Context) <-chan events.Event {
+func (m *MockedEventStream) Read(_ context.Context) <-chan events.Message {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return m.ch
 }
 
-func (m *MockedEventStream) Write(ctx context.Context, evt events.Event) {
+func (m *MockedEventStream) Write(ctx context.Context, evt events.Message) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -116,7 +116,7 @@ func (m *MockedObservable) Subscribe(_ context.Context, sub events.Subscription)
 	es, found := m.subscribers[sub.EventName]
 
 	if !found {
-		es = NewMockedEventStream(make(chan events.Event))
+		es = NewMockedEventStream(make(chan events.Message))
 		m.subscribers[sub.EventName] = es
 	}
 

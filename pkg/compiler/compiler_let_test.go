@@ -300,9 +300,8 @@ func TestLet(t *testing.T) {
 
 	Convey("Should use value returned from WAITFOR EVENT", t, func() {
 		out, err := newCompilerWithObservable().MustCompile(`
-			LET obj = X::CREATE()
+			LET obj = X::VAL("event", ["data"], 10)
 
-			X::EMIT_WITH(obj, "event", "data", 100)
 			LET res = (WAITFOR EVENT "event" IN obj)
 
 			RETURN res
@@ -314,7 +313,7 @@ func TestLet(t *testing.T) {
 
 	Convey("Should handle error from WAITFOR EVENT", t, func() {
 		out, err := newCompilerWithObservable().MustCompile(`
-			LET obj = X::CREATE()
+			LET obj = X::VAL("foo", ["data"], 10)
 
 			LET res = (WAITFOR EVENT "event" IN obj TIMEOUT 100)?
 
@@ -327,7 +326,7 @@ func TestLet(t *testing.T) {
 
 	Convey("Should compare result of handled error", t, func() {
 		out, err := newCompilerWithObservable().MustCompile(`
-			LET obj = X::CREATE()
+			LET obj = X::VAL("event", ["foo"], 1000)
 
 			LET res = (WAITFOR EVENT "event" IN obj TIMEOUT 100)? != NONE
 

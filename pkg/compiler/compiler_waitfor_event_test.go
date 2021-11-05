@@ -18,16 +18,16 @@ type (
 	TestObservable struct {
 		*values.Object
 
-		name   string
-		events []events.Event
-		delay  time.Duration
-		calls  []events.Subscription
+		eventName string
+		messages  []events.Message
+		delay     time.Duration
+		calls     []events.Subscription
 	}
 
-	TestStream chan events.Event
+	TestStream chan events.Message
 )
 
-func NewTestStream(ch chan events.Event) events.Stream {
+func NewTestStream(ch chan events.Message) events.Stream {
 	return TestStream(ch)
 }
 
@@ -35,8 +35,8 @@ func (s TestStream) Close(_ context.Context) error {
 	return nil
 }
 
-func (s TestStream) Read(ctx context.Context) <-chan events.Event {
-	proxy := make(chan events.Event)
+func (s TestStream) Read(ctx context.Context) <-chan events.Message {
+	proxy := make(chan events.Message)
 
 	go func() {
 		defer close(proxy)
@@ -58,31 +58,31 @@ func (s TestStream) Read(ctx context.Context) <-chan events.Event {
 	return s
 }
 
-func NewTestObservable(name string, evts []events.Event, delay time.Duration) *TestObservable {
+func NewTestObservable(eventName string, messages []events.Message, delay time.Duration) *TestObservable {
 	return &TestObservable{
-		Object: values.NewObject(),
-		name:   name,
-		events: evts,
-		delay:  delay,
-		calls:  make([]events.Subscription, 0, 10),
+		Object:    values.NewObject(),
+		eventName: eventName,
+		messages:  messages,
+		delay:     delay,
+		calls:     make([]events.Subscription, 0, 10),
 	}
 }
 
 func (m *TestObservable) Subscribe(_ context.Context, sub events.Subscription) (events.Stream, error) {
 	m.calls = append(m.calls, sub)
 
-	if sub.EventName != m.name {
-		ch := make(chan events.Event)
+	if sub.EventName != m.eventName {
+		ch := make(chan events.Message)
 
 		return NewTestStream(ch), nil
 	}
 
-	ch := make(chan events.Event)
+	ch := make(chan events.Message)
 
 	go func() {
 		<-time.After(m.delay)
 
-		for _, e := range m.events {
+		for _, e := range m.messages {
 			ch <- e
 		}
 	}()
@@ -117,7 +117,7 @@ func newCompilerWithObservable() *compiler.Compiler {
 					arr := values.ToArray(ctx, args[1])
 					num := values.ToInt(args[2])
 
-					evts := make([]events.Event, 0, int(arr.Length()))
+					evts := make([]events.Message, 0, int(arr.Length()))
 
 					arr.ForEach(func(value core.Value, idx int) bool {
 						evts = append(evts, events.WithValue(value))
@@ -148,7 +148,7 @@ func newCompilerWithObservable() *compiler.Compiler {
 					str := values.ToString(args[1])
 					num := values.ToInt(args[1])
 
-					return NewTestObservable(name.String(), []events.Event{events.WithErr(errors.New(str.String()))}, time.Duration(num)*time.Millisecond), nil
+					return NewTestObservable(name.String(), []events.Message{events.WithErr(errors.New(str.String()))}, time.Duration(num)*time.Millisecond), nil
 
 				},
 			},
@@ -289,7 +289,7 @@ RETURN NONE
 		})
 
 		Convey("Should use options", func() {
-			observable := NewTestObservable("test", []events.Event{events.WithValue(values.NewInt(1))}, time.Duration(10)*time.Millisecond)
+			observable := NewTestObservable("test", []events.Message{events.WithValue(values.NewInt(1))}, time.Duration(10)*time.Millisecond)
 			c := newCompilerWithObservable()
 			c.Namespace("X").RegisterFunction("SINGLETONE", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return observable, nil

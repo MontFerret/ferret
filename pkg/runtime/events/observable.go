@@ -14,8 +14,8 @@ type (
 		Options   *values.Object
 	}
 
-	// Event represents an event that an Observable can emit.
-	Event interface {
+	// Message represents an event message that an Observable can emit.
+	Message interface {
 		Value() core.Value
 		Err() error
 	}
@@ -23,7 +23,7 @@ type (
 	// Stream represents an event stream that produces target event objects.
 	Stream interface {
 		Close(ctx context.Context) error
-		Read(ctx context.Context) <-chan Event
+		Read(ctx context.Context) <-chan Message
 	}
 
 	// Observable represents an interface of

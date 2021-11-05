@@ -26,11 +26,11 @@ func (m *mrger) Close(ctx context.Context) error {
 	return core.Errors(errs...)
 }
 
-func (m *mrger) Read(ctx context.Context) <-chan Event {
+func (m *mrger) Read(ctx context.Context) <-chan Message {
 	var wg sync.WaitGroup
 	wg.Add(len(m.inputs))
 
-	out := make(chan Event)
+	out := make(chan Message)
 	consume := func(c context.Context, input Stream) {
 		for evt := range input.Read(c) {
 			out <- evt

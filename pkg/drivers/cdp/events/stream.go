@@ -27,8 +27,8 @@ func (e *EventStream) Close(_ context.Context) error {
 	return e.stream.Close()
 }
 
-func (e *EventStream) Read(ctx context.Context) <-chan events.Event {
-	ch := make(chan events.Event)
+func (e *EventStream) Read(ctx context.Context) <-chan events.Message {
+	ch := make(chan events.Message)
 
 	go func() {
 		defer close(ch)

@@ -7,15 +7,15 @@ import (
 )
 
 type (
-	strm chan Event
+	strm chan Message
 
-	evt struct {
+	msg struct {
 		value core.Value
 		err   error
 	}
 )
 
-func New(source chan Event) Stream {
+func New(source chan Message) Stream {
 	return strm(source)
 }
 
@@ -25,8 +25,8 @@ func (s strm) Close(_ context.Context) error {
 	return nil
 }
 
-func (s strm) Read(ctx context.Context) <-chan Event {
-	proxy := make(chan Event)
+func (s strm) Read(ctx context.Context) <-chan Message {
+	proxy := make(chan Message)
 
 	go func() {
 		defer close(proxy)
@@ -48,18 +48,18 @@ func (s strm) Read(ctx context.Context) <-chan Event {
 	return s
 }
 
-func (n *evt) Value() core.Value {
+func (n *msg) Value() core.Value {
 	return n.value
 }
 
-func (n *evt) Err() error {
+func (n *msg) Err() error {
 	return n.err
 }
 
-func WithValue(val core.Value) Event {
-	return &evt{value: val}
+func WithValue(val core.Value) Message {
+	return &msg{value: val}
 }
 
-func WithErr(err error) Event {
-	return &evt{err: err, value: values.None}
+func WithErr(err error) Message {
+	return &msg{err: err, value: values.None}
 }

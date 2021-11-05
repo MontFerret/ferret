@@ -37,7 +37,7 @@ func (p *pageNavigationEventStream) Close(ctx context.Context) error {
 	return p.closer(ctx)
 }
 
-func (p *pageNavigationEventStream) Read(ctx context.Context) <-chan events.Event {
+func (p *pageNavigationEventStream) Read(ctx context.Context) <-chan events.Message {
 	return p.stream.Read(ctx)
 }
 
