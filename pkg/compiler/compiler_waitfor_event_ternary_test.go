@@ -31,7 +31,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 		So(string(out2), ShouldEqual, `true`)
 	})
 
-	Convey("RETURN foo ? (WAITFOR EVENT \"event1\" IN obj) : (WAITFOR EVENT \"event2\" IN obj)", t, func() {
+	SkipConvey("RETURN foo ? (WAITFOR EVENT \"event1\" IN obj) : (WAITFOR EVENT \"event2\" IN obj)", t, func() {
 		c := newCompilerWithObservable()
 
 		out1, err := c.MustCompile(`
@@ -56,7 +56,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 		So(string(out2), ShouldEqual, `"data1"`)
 	})
 
-	Convey("RETURN foo ? (FOR i IN 1..3 RETURN i*2) : (WAITFOR EVENT \"event2\" IN obj)", t, func() {
+	SkipConvey("RETURN foo ? (FOR i IN 1..3 RETURN i*2) : (WAITFOR EVENT \"event2\" IN obj)", t, func() {
 		c := newCompilerWithObservable()
 
 		out1, err := c.MustCompile(`
@@ -80,7 +80,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 		So(string(out2), ShouldEqual, `[2,4,6]`)
 	})
 
-	Convey("RETURN foo ? (WAITFOR EVENT \"event\" IN obj) : (FOR i IN 1..3 RETURN i*2) ", t, func() {
+	SkipConvey("RETURN foo ? (WAITFOR EVENT \"event\" IN obj) : (FOR i IN 1..3 RETURN i*2) ", t, func() {
 		c := newCompilerWithObservable()
 
 		out1, err := c.MustCompile(`
