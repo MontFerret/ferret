@@ -44,6 +44,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out1), ShouldEqual, `"data2"`)
 
+		c = newCompilerWithObservable()
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
 			LET obj = X::VAL("event1", ["data1"])
