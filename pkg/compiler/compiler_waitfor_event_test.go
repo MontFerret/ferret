@@ -80,11 +80,15 @@ func (m *TestObservable) Subscribe(_ context.Context, sub events.Subscription) (
 	ch := make(chan events.Message)
 
 	go func() {
-		<-time.After(m.delay)
+		if m.delay > 0 {
+			<-time.After(m.delay * time.Millisecond)
+		}
 
 		for _, e := range m.messages {
 			ch <- e
 		}
+
+		close(ch)
 	}()
 
 	return NewTestStream(ch), nil
@@ -97,7 +101,7 @@ func newCompilerWithObservable() *compiler.Compiler {
 		RegisterFunctions(core.NewFunctionsFromMap(
 			map[string]core.Function{
 				"VAL": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-					if err := core.ValidateArgs(args, 3, 3); err != nil {
+					if err := core.ValidateArgs(args, 2, 3); err != nil {
 						return values.None, nil
 					}
 
@@ -109,13 +113,17 @@ func newCompilerWithObservable() *compiler.Compiler {
 						return values.None, err
 					}
 
-					if err := core.ValidateType(args[2], types.Int); err != nil {
-						return values.None, err
-					}
-
 					name := values.ToString(args[0])
 					arr := values.ToArray(ctx, args[1])
-					num := values.ToInt(args[2])
+					num := values.Int(0)
+
+					if len(args) == 3 {
+						if err := core.ValidateType(args[2], types.Int); err != nil {
+							return values.None, err
+						}
+
+						num = values.ToInt(args[2])
+					}
 
 					evts := make([]events.Message, 0, int(arr.Length()))
 
@@ -125,7 +133,7 @@ func newCompilerWithObservable() *compiler.Compiler {
 						return true
 					})
 
-					return NewTestObservable(name.String(), evts, time.Duration(num)*time.Millisecond), nil
+					return NewTestObservable(name.String(), evts, time.Duration(num)), nil
 				},
 				"ERR": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 					if err := core.ValidateArgs(args, 3, 3); err != nil {
@@ -289,7 +297,7 @@ RETURN NONE
 		})
 
 		Convey("Should use options", func() {
-			observable := NewTestObservable("test", []events.Message{events.WithValue(values.NewInt(1))}, time.Duration(10)*time.Millisecond)
+			observable := NewTestObservable("test", []events.Message{events.WithValue(values.NewInt(1))}, 0)
 			c := newCompilerWithObservable()
 			c.Namespace("X").RegisterFunction("SINGLETONE", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 				return observable, nil

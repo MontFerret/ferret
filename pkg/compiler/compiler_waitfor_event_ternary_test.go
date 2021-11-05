@@ -12,7 +12,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::VAL("event", ["data"], 50)
+			LET obj = X::VAL("event", ["data"])
 
 			RETURN foo ? TRUE : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -22,7 +22,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::VAL("event", ["data"], 50)
+			LET obj = X::VAL("event", ["data"])
 
 			RETURN foo ? TRUE : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -36,7 +36,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::VAL("event2", ["data2"], 50)
+			LET obj = X::VAL("event2", ["data2"])
 
 			RETURN foo ? (WAITFOR EVENT "event1" IN obj) : (WAITFOR EVENT "event2" IN obj)
 		`).Run(context.Background())
@@ -46,7 +46,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::VAL("event1", ["data1"], 50)
+			LET obj = X::VAL("event1", ["data1"])
 
 			RETURN foo ? (WAITFOR EVENT "event1" IN obj) : (WAITFOR EVENT "event2" IN obj)
 		`).Run(context.Background())
@@ -60,7 +60,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out1, err := c.MustCompile(`
 			LET foo = FALSE
-			LET obj = X::VAL("event", ["data"], 50)
+			LET obj = X::VAL("event", ["data"])
 
 			RETURN foo ? (FOR i IN 1..3 RETURN i*2) : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -70,7 +70,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::VAL("event", ["data"], 50)
+			LET obj = X::VAL("event", ["data"])
 
 			RETURN foo ? (FOR i IN 1..3 RETURN i*2) : (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
@@ -94,7 +94,7 @@ func TestWaitforEventWithinTernaryExpression(t *testing.T) {
 
 		out2, err := c.MustCompile(`
 			LET foo = TRUE
-			LET obj = X::VAL("event", ["data"], 50)
+			LET obj = X::VAL("event", ["data"])
 
 			RETURN foo ? (WAITFOR EVENT "event" IN obj) : (FOR i IN 1..3 RETURN i*2)
 		`).Run(context.Background())
