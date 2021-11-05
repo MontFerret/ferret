@@ -294,7 +294,7 @@ func (m *Manager) GetResponse(_ context.Context, frameID page.FrameID) (drivers.
 		return drivers.HTTPResponse{}, core.ErrNotFound
 	}
 
-	return value.(drivers.HTTPResponse), nil
+	return *(value.(*drivers.HTTPResponse)), nil
 }
 
 func (m *Manager) Navigate(ctx context.Context, url values.String) error {
