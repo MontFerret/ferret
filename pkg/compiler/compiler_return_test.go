@@ -237,7 +237,7 @@ func TestReturn(t *testing.T) {
 		c := newCompilerWithObservable()
 
 		out, err := c.MustCompile(`
-			LET obj = X::VAL("event", ["data"], 10)
+			LET obj = X::VAL("event", ["data"])
 
 			RETURN (WAITFOR EVENT "event" IN obj)
 		`).Run(context.Background())
