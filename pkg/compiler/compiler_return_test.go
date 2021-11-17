@@ -233,7 +233,7 @@ func TestReturn(t *testing.T) {
 		So(string(out), ShouldEqual, "{\"a\":\"foo\"}")
 	})
 
-	Convey("Should compile RETURN (WAITFOR EVENT \"event\" IN obj)", t, func() {
+	SkipConvey("Should compile RETURN (WAITFOR EVENT \"event\" IN obj)", t, func() {
 		c := newCompilerWithObservable()
 
 		out, err := c.MustCompile(`

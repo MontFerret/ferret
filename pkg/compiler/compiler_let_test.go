@@ -298,7 +298,7 @@ func TestLet(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("Should use value returned from WAITFOR EVENT", t, func() {
+	SkipConvey("Should use value returned from WAITFOR EVENT", t, func() {
 		out, err := newCompilerWithObservable().MustCompile(`
 			LET obj = X::VAL("event", ["data"])
 
@@ -311,7 +311,7 @@ func TestLet(t *testing.T) {
 		So(string(out), ShouldEqual, `"data"`)
 	})
 
-	Convey("Should handle error from WAITFOR EVENT", t, func() {
+	SkipConvey("Should handle error from WAITFOR EVENT", t, func() {
 		out, err := newCompilerWithObservable().MustCompile(`
 			LET obj = X::VAL("foo", ["data"])
 
@@ -324,7 +324,7 @@ func TestLet(t *testing.T) {
 		So(string(out), ShouldEqual, `true`)
 	})
 
-	Convey("Should compare result of handled error", t, func() {
+	SkipConvey("Should compare result of handled error", t, func() {
 		out, err := newCompilerWithObservable().MustCompile(`
 			LET obj = X::VAL("event", ["foo"], 1000)
 
