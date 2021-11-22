@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"hash/fnv"
 
 	"github.com/PuerkitoBio/goquery"
@@ -220,4 +221,8 @@ func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean
 
 func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
+}
+
+func (p *HTMLPage) Subscribe(_ context.Context, _ events.Subscription) (events.Stream, error) {
+	return nil, core.ErrNotSupported
 }

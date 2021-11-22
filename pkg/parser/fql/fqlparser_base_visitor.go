@@ -223,7 +223,11 @@ func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPa
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitReservedWord(ctx *ReservedWordContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitUnsafReservedWord(ctx *UnsafReservedWordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

@@ -87,6 +87,7 @@ var (
 	ErrNotSupported          = errors.New("not supported")
 	ErrNoMoreData            = errors.New("no more data")
 	ErrInvalidPath           = errors.New("cannot read property")
+	ErrDone                  = errors.New("operation done")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"
@@ -140,4 +141,8 @@ func Errors(err ...error) error {
 
 func IsNoMoreData(err error) bool {
 	return err == ErrNoMoreData
+}
+
+func IsDone(err error) bool {
+	return err == ErrDone
 }

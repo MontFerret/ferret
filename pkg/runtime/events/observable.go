@@ -7,13 +7,6 @@ import (
 )
 
 type (
-	// Event represents an event object that contains either an optional event data
-	// or error that occurred during an event
-	Event struct {
-		Data core.Value
-		Err  error
-	}
-
 	// Subscription represents an event subscription object that contains target event name
 	// and optional event options.
 	Subscription struct {
@@ -21,9 +14,21 @@ type (
 		Options   *values.Object
 	}
 
+	// Message represents an event message that an Observable can emit.
+	Message interface {
+		Value() core.Value
+		Err() error
+	}
+
+	// Stream represents an event stream that produces target event objects.
+	Stream interface {
+		Close(ctx context.Context) error
+		Read(ctx context.Context) <-chan Message
+	}
+
 	// Observable represents an interface of
-	// complex types that can emit events.
+	// complex types that returns stream of events.
 	Observable interface {
-		Subscribe(ctx context.Context, subscription Subscription) (<-chan Event, error)
+		Subscribe(ctx context.Context, subscription Subscription) (Stream, error)
 	}
 )

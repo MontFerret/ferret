@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
@@ -190,6 +191,7 @@ type (
 		core.Getter
 		core.Setter
 		collections.Measurable
+		events.Observable
 		io.Closer
 
 		IsClosed() values.Boolean

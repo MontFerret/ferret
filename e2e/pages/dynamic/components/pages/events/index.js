@@ -3,6 +3,7 @@ import Clickable from "./clickable.js";
 import Appearable from "./appearable.js";
 import Focusable from "./focusable.js";
 import Pressable from "./pressable.js";
+import Ajax from "./ajax.js";
 
 const e = React.createElement;
 
@@ -90,6 +91,14 @@ export default class EventsPage extends React.Component {
                         id: "press",
                         appear: false,
                         title: "Pressable"
+                    })
+                ]),
+
+                e("div", { className: "col-lg-4" }, [
+                    e(Ajax, {
+                        id: "ajax",
+                        appear: false,
+                        title: "Requests"
                     })
                 ]),
             ]),

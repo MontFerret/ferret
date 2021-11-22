@@ -1,15 +1,66 @@
 package network
 
 import (
+	"encoding/json"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/mafredri/cdp/protocol/network"
+	"github.com/mafredri/cdp/protocol/page"
+	"github.com/rs/zerolog/log"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 )
 
 var emptyExpires = time.Time{}
+
+func toDriverBody(body *string) []byte {
+	if body == nil {
+		return nil
+	}
+
+	return []byte(*body)
+}
+
+func toDriverHeaders(headers network.Headers) *drivers.HTTPHeaders {
+	result := drivers.NewHTTPHeaders()
+	deserialized := make(map[string]string)
+
+	if len(headers) > 0 {
+		err := json.Unmarshal(headers, &deserialized)
+
+		if err != nil {
+			log.Trace().Err(err).Msg("failed to deserialize responseReceivedEvent headers")
+		}
+	}
+
+	for key, value := range deserialized {
+		result.Set(key, value)
+	}
+
+	return result
+}
+
+func toDriverResponse(resp network.Response, body []byte) *drivers.HTTPResponse {
+	return &drivers.HTTPResponse{
+		URL:          resp.URL,
+		StatusCode:   resp.Status,
+		Status:       resp.StatusText,
+		Headers:      toDriverHeaders(resp.Headers),
+		Body:         body,
+		ResponseTime: float64(resp.ResponseTime),
+	}
+}
+
+func toDriverRequest(req network.Request) *drivers.HTTPRequest {
+	return &drivers.HTTPRequest{
+		URL:     req.URL,
+		Method:  req.Method,
+		Headers: toDriverHeaders(req.Headers),
+		Body:    toDriverBody(req.PostData),
+	}
+}
 
 func fromDriverCookie(url string, cookie drivers.HTTPCookie) network.CookieParam {
 	sameSite := network.CookieSameSiteNotSet
@@ -82,4 +133,27 @@ func normalizeCookieURL(url string) string {
 	}
 
 	return httpPrefix + url
+}
+
+func isURLMatched(url string, pattern *regexp.Regexp) bool {
+	var matched bool
+
+	// if a URL pattern is provided
+	if pattern != nil {
+		matched = pattern.MatchString(url)
+	} else {
+		// otherwise, just match
+		matched = true
+	}
+
+	return matched
+}
+
+func isFrameMatched(current, target page.FrameID) bool {
+	// if frameID is empty string or equals to the current one
+	if len(target) == 0 {
+		return true
+	}
+
+	return target == current
 }

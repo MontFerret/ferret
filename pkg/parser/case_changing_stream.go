@@ -26,12 +26,15 @@ func newCaseChangingStream(in antlr.CharStream, upper bool) *CaseChangingStream 
 // or lower case.
 func (is *CaseChangingStream) LA(offset int) int {
 	in := is.CharStream.LA(offset)
+
 	if in < 0 {
 		// Such as antlr.TokenEOF which is -1
 		return in
 	}
+
 	if is.upper {
 		return int(unicode.ToUpper(rune(in)))
 	}
+
 	return int(unicode.ToLower(rune(in)))
 }

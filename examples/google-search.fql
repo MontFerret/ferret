@@ -13,15 +13,11 @@ WAITFOR EVENT "navigation" IN google
 
 WAIT_ELEMENT(google, "#res")
 
-FOR el IN ELEMENTS(google, '#kp-wp-tab-overview > [jsdata]')
-    // filter out extra elements like media and 'People also ask'
-    FILTER ELEMENT_EXISTS(el, "#media_result_group") == FALSE
-    FILTER ELEMENT_EXISTS(el, '[role="heading"]') == FALSE
+LET results = ELEMENTS(google, X("//*[text() = 'Search Results']/following-sibling::*/*"))
 
-    LET descr = (FOR i IN ELEMENTS(el, "span") FILTER LENGTH(i.attributes) == 0 RETURN i)
-
+FOR el IN results
     RETURN {
-        title: INNER_TEXT(el, 'h3'),
-        description: FIRST(descr),
+        title: INNER_TEXT(el, 'h3')?,
+        description: INNER_TEXT(el, X("//em/parent::*")),
         url: ELEMENT(el, 'a')?.attributes.href
     }

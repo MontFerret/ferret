@@ -10,7 +10,6 @@ import (
 	"github.com/mafredri/cdp/protocol/fetch"
 	network2 "github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
@@ -37,6 +36,7 @@ type (
 		mock.Mock
 		cdp.Fetch
 		enable        func(context.Context, *fetch.EnableArgs) error
+		disable       func(context.Context) error
 		requestPaused func(context.Context) (fetch.RequestPausedClient, error)
 	}
 
@@ -72,7 +72,19 @@ func (api *NetworkAPI) SetExtraHTTPHeaders(ctx context.Context, args *network2.S
 }
 
 func (api *FetchAPI) Enable(ctx context.Context, args *fetch.EnableArgs) error {
+	if api.enable == nil {
+		return nil
+	}
+
 	return api.enable(ctx, args)
+}
+
+func (api *FetchAPI) Disable(ctx context.Context) error {
+	if api.disable == nil {
+		return nil
+	}
+
+	return api.disable(ctx)
 }
 
 func (api *FetchAPI) RequestPaused(ctx context.Context) (fetch.RequestPausedClient, error) {
@@ -175,68 +187,7 @@ func TestManager(t *testing.T) {
 	Convey("Network manager", t, func() {
 
 		Convey("New", func() {
-			Convey("Should close all resources on error", func() {
-				frameNavigatedClient := NewFrameNavigatedClient()
-				frameNavigatedClient.On("Close", mock.Anything).Once().Return(nil)
-
-				pageAPI := new(PageAPI)
-				pageAPI.frameNavigated = func(ctx context.Context) (page.FrameNavigatedClient, error) {
-					return frameNavigatedClient, nil
-				}
-
-				responseReceivedErr := errors.New("test error")
-				networkAPI := new(NetworkAPI)
-				networkAPI.responseReceived = func(ctx context.Context) (network2.ResponseReceivedClient, error) {
-					return nil, responseReceivedErr
-				}
-				networkAPI.setExtraHTTPHeaders = func(ctx context.Context, args *network2.SetExtraHTTPHeadersArgs) error {
-					return nil
-				}
-
-				requestPausedClient := NewRequestPausedClient()
-				fetchAPI := new(FetchAPI)
-				fetchAPI.enable = func(ctx context.Context, args *fetch.EnableArgs) error {
-					return nil
-				}
-				fetchAPI.requestPaused = func(ctx context.Context) (fetch.RequestPausedClient, error) {
-					return requestPausedClient, nil
-				}
-
-				client := &cdp.Client{
-					Page:    pageAPI,
-					Network: networkAPI,
-					Fetch:   fetchAPI,
-				}
-
-				_, err := network.New(
-					zerolog.New(os.Stdout).Level(zerolog.Disabled),
-					client,
-					network.Options{
-						Headers: drivers.NewHTTPHeadersWith(map[string][]string{"x-correlation-id": {"foo"}}),
-						Filter: &network.Filter{
-							Patterns: []drivers.ResourceFilter{
-								{
-									URL:  "http://google.com",
-									Type: "img",
-								},
-							},
-						},
-					},
-				)
-
-				So(err, ShouldNotBeNil)
-				frameNavigatedClient.AssertExpectations(t)
-			})
-
 			Convey("Should close all resources on Close", func() {
-				frameNavigatedClient := NewFrameNavigatedClient()
-				frameNavigatedClient.On("Close", mock.Anything).Once().Return(nil)
-
-				pageAPI := new(PageAPI)
-				pageAPI.frameNavigated = func(ctx context.Context) (page.FrameNavigatedClient, error) {
-					return frameNavigatedClient, nil
-				}
-
 				responseReceivedClient := NewResponseReceivedClient()
 				responseReceivedClient.On("Close", mock.Anything).Once().Return(nil)
 				networkAPI := new(NetworkAPI)
@@ -258,7 +209,6 @@ func TestManager(t *testing.T) {
 				}
 
 				client := &cdp.Client{
-					Page:    pageAPI,
 					Network: networkAPI,
 					Fetch:   fetchAPI,
 				}
@@ -284,7 +234,6 @@ func TestManager(t *testing.T) {
 
 				time.Sleep(time.Duration(100) * time.Millisecond)
 
-				frameNavigatedClient.AssertExpectations(t)
 				responseReceivedClient.AssertExpectations(t)
 				requestPausedClient.AssertExpectations(t)
 			})

@@ -3,7 +3,10 @@ LET amazon = DOCUMENT(baseURL, { driver: "cdp" })
 
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '#nav-search-submit-button')
-WAIT_NAVIGATION(amazon)
+
+WAITFOR EVENT "navigation" IN amazon
+    FILTER current.url =~ "www\.amazon\.com\/s\?k="
+    TIMEOUT 50000
 
 LET resultListSelector = '[data-component-type="s-search-results"]'
 LET resultItemSelector = '[data-component-type="s-search-result"]'

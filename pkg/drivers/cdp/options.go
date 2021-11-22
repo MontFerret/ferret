@@ -1,6 +1,8 @@
 package cdp
 
-import "github.com/MontFerret/ferret/pkg/drivers"
+import (
+	"github.com/MontFerret/ferret/pkg/drivers"
+)
 
 type (
 	Options struct {

@@ -8,25 +8,25 @@ import (
 )
 
 type Iterator struct {
-	ch <-chan Event
+	messages <-chan Message
 }
 
-func NewIterator(ch <-chan Event) core.Iterator {
+func NewIterator(ch <-chan Message) core.Iterator {
 	return &Iterator{ch}
 }
 
 func (e *Iterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
 	select {
-	case evt, ok := <-e.ch:
+	case evt, ok := <-e.messages:
 		if !ok {
 			return values.None, values.None, core.ErrNoMoreData
 		}
 
-		if evt.Err != nil {
-			return values.None, values.None, evt.Err
+		if err := evt.Err(); err != nil {
+			return values.None, values.None, err
 		}
 
-		return evt.Data, values.None, nil
+		return evt.Value(), values.None, nil
 	case <-ctx.Done():
 		return values.None, values.None, ctx.Err()
 	}

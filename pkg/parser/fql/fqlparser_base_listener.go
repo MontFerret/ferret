@@ -344,11 +344,17 @@ func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionP
 // ExitMemberExpressionPath is called when production memberExpressionPath is exited.
 func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
 
-// EnterReservedWord is called when production reservedWord is entered.
-func (s *BaseFqlParserListener) EnterReservedWord(ctx *ReservedWordContext) {}
+// EnterSafeReservedWord is called when production safeReservedWord is entered.
+func (s *BaseFqlParserListener) EnterSafeReservedWord(ctx *SafeReservedWordContext) {}
 
-// ExitReservedWord is called when production reservedWord is exited.
-func (s *BaseFqlParserListener) ExitReservedWord(ctx *ReservedWordContext) {}
+// ExitSafeReservedWord is called when production safeReservedWord is exited.
+func (s *BaseFqlParserListener) ExitSafeReservedWord(ctx *SafeReservedWordContext) {}
+
+// EnterUnsafReservedWord is called when production unsafReservedWord is entered.
+func (s *BaseFqlParserListener) EnterUnsafReservedWord(ctx *UnsafReservedWordContext) {}
+
+// ExitUnsafReservedWord is called when production unsafReservedWord is exited.
+func (s *BaseFqlParserListener) ExitUnsafReservedWord(ctx *UnsafReservedWordContext) {}
 
 // EnterRangeOperator is called when production rangeOperator is entered.
 func (s *BaseFqlParserListener) EnterRangeOperator(ctx *RangeOperatorContext) {}

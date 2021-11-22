@@ -124,61 +124,73 @@ func (e *WaitForEventExpression) Exec(ctx context.Context, scope *core.Scope) (c
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	var val core.Value
+
 	if e.filter == nil {
-		return e.consumeFirst(ctx, observable, subscription)
+		val, err = e.consumeFirst(ctx, observable, subscription)
+	} else {
+		val, err = e.consumeFiltered(ctx, scope, observable, subscription)
 	}
 
-	return e.consumeFiltered(ctx, scope, observable, subscription)
+	if err != nil {
+		return nil, core.SourceError(e.src, err)
+	}
+
+	return val, nil
 }
 
 func (e *WaitForEventExpression) consumeFirst(ctx context.Context, observable events.Observable, subscription events.Subscription) (core.Value, error) {
-	ch, err := observable.Subscribe(ctx, subscription)
+	stream, err := observable.Subscribe(ctx, subscription)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
+	defer stream.Close(ctx)
+
 	select {
-	case evt := <-ch:
-		if evt.Err != nil {
-			return values.None, core.SourceError(e.src, evt.Err)
+	case evt := <-stream.Read(ctx):
+		if err := evt.Err(); err != nil {
+			return values.None, err
 		}
 
-		return evt.Data, nil
+		return evt.Value(), nil
 	case <-ctx.Done():
-		return values.None, core.SourceError(e.src, core.ErrTimeout)
+		return values.None, ctx.Err()
 	}
 }
 
 func (e *WaitForEventExpression) consumeFiltered(ctx context.Context, scope *core.Scope, observable events.Observable, subscription events.Subscription) (core.Value, error) {
-	ch, err := observable.Subscribe(ctx, subscription)
+	stream, err := observable.Subscribe(ctx, subscription)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
+
+	defer stream.Close(ctx)
 
 	iterable, err := clauses.NewFilterClause(
 		e.filterSrc,
-		collections.AsIterable(func(ctx context.Context, scope *core.Scope) (collections.Iterator, error) {
-			return collections.FromCoreIterator(e.filterVariable, "", events.NewIterator(ch))
+		collections.AsIterable(func(c context.Context, scope *core.Scope) (collections.Iterator, error) {
+			return collections.FromCoreIterator(e.filterVariable, "", events.NewIterator(stream.Read(c)))
 		}),
 		e.filter,
 	)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	iter, err := iterable.Iterate(ctx, scope)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	out, err := iter.Next(ctx, scope)
 
 	if err != nil {
-		return values.None, core.SourceError(e.src, err)
+		return values.None, err
 	}
 
 	return out.GetVariable(e.filterVariable)

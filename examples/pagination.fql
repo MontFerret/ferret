@@ -6,7 +6,7 @@ INPUT(amazon, '#twotabsearchtextbox', @criteria)
 CLICK(amazon, '#nav-search-submit-button')
 
 WAITFOR EVENT "navigation" IN amazon
-    OPTIONS { target: "www\.amazon\.com\/s/ref"}
+    FILTER current.url =~ "www\.amazon\.com\/s\?k="
     TIMEOUT 50000
 
 WAIT_ELEMENT(amazon, '[class*="template=PAGINATION"]')

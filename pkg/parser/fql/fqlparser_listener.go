@@ -169,8 +169,11 @@ type FqlParserListener interface {
 	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
 	EnterMemberExpressionPath(c *MemberExpressionPathContext)
 
-	// EnterReservedWord is called when entering the reservedWord production.
-	EnterReservedWord(c *ReservedWordContext)
+	// EnterSafeReservedWord is called when entering the safeReservedWord production.
+	EnterSafeReservedWord(c *SafeReservedWordContext)
+
+	// EnterUnsafReservedWord is called when entering the unsafReservedWord production.
+	EnterUnsafReservedWord(c *UnsafReservedWordContext)
 
 	// EnterRangeOperator is called when entering the rangeOperator production.
 	EnterRangeOperator(c *RangeOperatorContext)
@@ -382,8 +385,11 @@ type FqlParserListener interface {
 	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
 	ExitMemberExpressionPath(c *MemberExpressionPathContext)
 
-	// ExitReservedWord is called when exiting the reservedWord production.
-	ExitReservedWord(c *ReservedWordContext)
+	// ExitSafeReservedWord is called when exiting the safeReservedWord production.
+	ExitSafeReservedWord(c *SafeReservedWordContext)
+
+	// ExitUnsafReservedWord is called when exiting the unsafReservedWord production.
+	ExitUnsafReservedWord(c *UnsafReservedWordContext)
 
 	// ExitRangeOperator is called when exiting the rangeOperator production.
 	ExitRangeOperator(c *RangeOperatorContext)

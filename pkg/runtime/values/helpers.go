@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/wI2L/jettison"
 	"hash/fnv"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -546,6 +547,16 @@ func ToStrings(input *Array) []String {
 	})
 
 	return res
+}
+
+func Hash(rtType core.Type, content []byte) uint64 {
+	h := fnv.New64a()
+
+	h.Write([]byte(rtType.String()))
+	h.Write([]byte(":"))
+	h.Write(content)
+
+	return h.Sum64()
 }
 
 func MapHash(input map[string]core.Value) uint64 {

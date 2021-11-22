@@ -8,8 +8,8 @@ import (
 
 type Loop struct {
 	mu        sync.RWMutex
-	listeners map[ID]map[ListenerID]Listener
 	sources   []SourceFactory
+	listeners map[ID]map[ListenerID]Listener
 }
 
 func NewLoop(sources ...SourceFactory) *Loop {
@@ -115,7 +115,7 @@ func (loop *Loop) consume(ctx context.Context, src Source) {
 			case <-ctx.Done():
 				return
 			case <-src.Ready():
-				if isCtxDone(ctx) {
+				if ctx.Err() != nil {
 					return
 				}
 
@@ -150,7 +150,7 @@ func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}) {
 	loop.mu.Unlock()
 
 	for _, listener := range snapshot {
-		if isCtxDone(ctx) {
+		if ctx.Err() != nil {
 			return
 		}
 
