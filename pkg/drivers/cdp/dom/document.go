@@ -97,6 +97,8 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 		other := other.(drivers.HTMLDocument)
 
 		return values.NewString(doc.frameTree.Frame.URL).Compare(other.GetURL())
+	case FrameIDType:
+		return values.NewString(string(doc.frameTree.Frame.ID)).Compare(values.NewString(other.String()))
 	default:
 		return drivers.Compare(doc.Type(), other.Type())
 	}
