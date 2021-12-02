@@ -26,7 +26,13 @@ func AttributeQuery(ctx context.Context, args ...core.Value) (core.Value, error)
 		return values.None, err
 	}
 
-	found, err := parent.QuerySelector(ctx, values.ToString(args[1]))
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
+	found, err := parent.QuerySelector(ctx, selector)
 
 	if err != nil {
 		return values.None, err

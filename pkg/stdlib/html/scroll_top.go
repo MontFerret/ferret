@@ -39,5 +39,5 @@ func ScrollTop(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	return values.None, doc.ScrollTop(ctx, opts)
+	return values.True, doc.ScrollTop(ctx, opts)
 }

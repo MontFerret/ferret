@@ -8,6 +8,8 @@ import (
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/utils"
 )
 
 type Quad struct {
@@ -78,9 +80,7 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, qargs *dom.GetCo
 		return Quad{}, err
 	}
 
-	clientWidth := layoutMetricsReply.LayoutViewport.ClientWidth
-	clientHeight := layoutMetricsReply.LayoutViewport.ClientHeight
-
+	clientWidth, clientHeight := utils.GetLayoutViewportWH(layoutMetricsReply)
 	quads := make([][]Quad, 0, len(contentQuadsReply.Quads))
 
 	for _, q := range contentQuadsReply.Quads {
@@ -109,10 +109,6 @@ func getClickablePoint(ctx context.Context, client *cdp.Client, qargs *dom.GetCo
 		X: x / 4,
 		Y: y / 4,
 	}, nil
-}
-
-func GetClickablePointByNodeID(ctx context.Context, client *cdp.Client, nodeID dom.NodeID) (Quad, error) {
-	return getClickablePoint(ctx, client, dom.NewGetContentQuadsArgs().SetNodeID(nodeID))
 }
 
 func GetClickablePointByObjectID(ctx context.Context, client *cdp.Client, objectID runtime.RemoteObjectID) (Quad, error) {

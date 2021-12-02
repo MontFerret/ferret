@@ -4,18 +4,19 @@ LET doc = DOCUMENT(url, true)
 WAIT_ELEMENT(doc, "#page-events")
 
 LET el = ELEMENT(doc, "#wait-class-content")
+LET original = el.style.color
 
 ATTR_SET(el, "style", "color: black")
-WAIT_STYLE(el, "color", "black")
+WAIT_STYLE(el, "color", "rgb(0, 0, 0)")
 
 LET prev = el.style
 
 ATTR_REMOVE(el, "style")
-WAIT_STYLE(el, "color", NONE)
+WAIT_STYLE(el, "color", original)
 
 LET curr = el.style
 
-T::EQ(prev.color, "black")
-T::NONE(curr.color, "style should be removed")
+T::EQ(prev.color, "rgb(0, 0, 0)")
+T::EQ(curr.color, original, "style should be returned to original")
 
 RETURN NONE

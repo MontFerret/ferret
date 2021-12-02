@@ -36,14 +36,14 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
 	// selector
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
@@ -56,7 +56,6 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
 	class := args[2].(values.String)
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
@@ -73,5 +72,5 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.WaitForClassBySelectorAll(ctx, selector, class, when)
+	return values.True, el.WaitForClassBySelectorAll(ctx, selector, class, when)
 }

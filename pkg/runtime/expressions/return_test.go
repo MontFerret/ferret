@@ -41,8 +41,8 @@ func TestReturnExpression(t *testing.T) {
 
 		rootScope, fn := core.NewRootScope()
 		scope := rootScope.Fork()
-		scope.SetVariable("test", values.NewString("value"))
-		fn()
+		So(scope.SetVariable("test", values.NewString("value")), ShouldBeNil)
+		So(fn(), ShouldBeNil)
 
 		value, err := exp.Exec(context.Background(), scope)
 		So(err, ShouldBeNil)

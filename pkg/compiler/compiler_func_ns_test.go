@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
+	"regexp"
 	"testing"
 )
 
@@ -80,72 +82,64 @@ func TestFunctionNSCall(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("Should use keywords", t, func() {
+	Convey("T::FAIL()? should return NONE", t, func() {
 		c := compiler.New()
 
-		keywords := []string{
-			"And",
-			"Or",
-			"For",
-			"Return",
-			"Distinct",
-			"Filter",
-			"Sort",
-			"Limit",
-			"Let",
-			"Collect",
-			"Desc",
-			"Asc",
-			"None",
-			"Null",
-			"True",
-			"False",
-			"Use",
-			"Into",
-			"Keep",
-			"With",
-			"Count",
-			"All",
-			"Any",
-			"Aggregate",
-			"Like",
-			"Not",
-			"In",
-		}
+		p, err := c.Compile(`
+			RETURN T::FAIL()?
+		`)
 
-		for _, kw := range keywords {
-			segment := kw
-			err := c.Namespace("T").Namespace(segment).RegisterFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
-				return values.True, nil
-			})
+		So(err, ShouldBeNil)
 
-			So(err, ShouldBeNil)
+		out, err := p.Run(context.Background())
 
-			err = c.Namespace("T").Namespace(segment).RegisterFunction(segment, func(ctx context.Context, args ...core.Value) (core.Value, error) {
-				return values.True, nil
-			})
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `null`)
+	})
 
-			So(err, ShouldBeNil)
+	Convey("Should use keywords", t, func() {
+		p := parser.New("RETURN TRUE")
+		c := compiler.New()
 
-			p, err := c.Compile(fmt.Sprintf(`
+		r := regexp.MustCompile("\\w+")
+
+		for _, l := range p.GetLiteralNames() {
+			if r.MatchString(l) {
+				kw := l[1 : len(l)-1]
+
+				segment := kw
+				err := c.Namespace("T").Namespace(segment).RegisterFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					return values.True, nil
+				})
+
+				So(err, ShouldBeNil)
+
+				err = c.Namespace("T").Namespace(segment).RegisterFunction(segment, func(ctx context.Context, args ...core.Value) (core.Value, error) {
+					return values.True, nil
+				})
+
+				So(err, ShouldBeNil)
+
+				p, err := c.Compile(fmt.Sprintf(`
 			RETURN T::%s::TEST()
 		`, segment))
 
-			So(err, ShouldBeNil)
+				So(err, ShouldBeNil)
 
-			out := p.MustRun(context.Background())
+				out := p.MustRun(context.Background())
 
-			So(string(out), ShouldEqual, "true")
+				So(string(out), ShouldEqual, "true")
 
-			p, err = c.Compile(fmt.Sprintf(`
+				p, err = c.Compile(fmt.Sprintf(`
 			RETURN T::%s::%s()
 		`, segment, segment))
 
-			So(err, ShouldBeNil)
+				So(err, ShouldBeNil)
 
-			out = p.MustRun(context.Background())
+				out = p.MustRun(context.Background())
 
-			So(string(out), ShouldEqual, "true")
+				So(string(out), ShouldEqual, "true")
+			}
 		}
 	})
 

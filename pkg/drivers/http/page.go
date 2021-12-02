@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"hash/fnv"
 
 	"github.com/PuerkitoBio/goquery"
@@ -108,12 +109,12 @@ func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
 	return p.document.Iterate(ctx)
 }
 
-func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInPage(ctx, p, path)
+func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInPage(ctx, path, p)
 }
 
-func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInPage(ctx, p, path, value)
+func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInPage(ctx, path, p, value)
 }
 
 func (p *HTMLPage) Length() values.Int {
@@ -220,4 +221,8 @@ func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean
 
 func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
 	return false, core.ErrNotSupported
+}
+
+func (p *HTMLPage) Subscribe(_ context.Context, _ events.Subscription) (events.Stream, error) {
+	return nil, core.ErrNotSupported
 }

@@ -1,23 +1,25 @@
 package templates
 
 import (
-	"fmt"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 const getChildren = "(el) => Array.from(el.children)"
+
+func GetChildren(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(getChildren).WithArgRef(id)
+}
+
 const getChildrenCount = "(el) => el.children.length"
 
-func GetChildren() string {
-	return getChildren
+func GetChildrenCount(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(getChildrenCount).WithArgRef(id)
 }
 
-func GetChildrenCount() string {
-	return getChildrenCount
-}
+const getChildByIndex = "(el, idx) => el.children[idx]"
 
-func GetChildByIndex(idx int64) string {
-	return fmt.Sprintf(`
-		(el) => el.children[%s]
-`, eval.ParamInt(idx))
+func GetChildByIndex(id runtime.RemoteObjectID, index values.Int) *eval.Function {
+	return eval.F(getChildByIndex).WithArgRef(id).WithArgValue(index)
 }

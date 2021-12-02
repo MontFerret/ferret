@@ -46,7 +46,7 @@ func (t *CustomValue) Copy() core.Value {
 	return values.None
 }
 
-func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
@@ -65,7 +65,7 @@ func (t *CustomValue) GetIn(ctx context.Context, path []core.Value) (core.Value,
 	return values.GetIn(ctx, propValue, path[1:])
 }
 
-func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
+func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
 	if len(path) == 0 {
 		return nil
 	}
@@ -156,6 +156,28 @@ func TestHelpers(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				So(qaz, ShouldEqual, values.NewString("foobar"))
+			})
+		})
+
+		Convey("Parse", func() {
+			Convey("It should parse values", func() {
+				inputs := []struct {
+					Parsed core.Value
+					Raw    interface{}
+				}{
+					{Parsed: values.NewInt(1), Raw: int(1)},
+					{Parsed: values.NewInt(1), Raw: int8(1)},
+					{Parsed: values.NewInt(1), Raw: int16(1)},
+					{Parsed: values.NewInt(1), Raw: int32(1)},
+					{Parsed: values.NewInt(1), Raw: int64(1)},
+				}
+
+				for _, input := range inputs {
+					out := values.Parse(input.Raw)
+
+					So(out.Type().ID(), ShouldEqual, input.Parsed.Type().ID())
+					So(out.Unwrap(), ShouldEqual, input.Parsed.Unwrap())
+				}
 			})
 		})
 

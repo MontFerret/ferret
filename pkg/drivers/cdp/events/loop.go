@@ -8,34 +8,63 @@ import (
 
 type Loop struct {
 	mu        sync.RWMutex
-	sources   *SourceCollection
-	listeners *ListenerCollection
+	sources   []SourceFactory
+	listeners map[ID]map[ListenerID]Listener
 }
 
-func NewLoop() *Loop {
+func NewLoop(sources ...SourceFactory) *Loop {
 	loop := new(Loop)
-	loop.sources = NewSourceCollection()
-	loop.listeners = NewListenerCollection()
+	loop.listeners = make(map[ID]map[ListenerID]Listener)
+	loop.sources = sources
 
 	return loop
 }
 
-func (loop *Loop) Run(ctx context.Context) {
-	go loop.run(ctx)
+func (loop *Loop) Run(ctx context.Context) error {
+	var err error
+	sources := make([]Source, 0, len(loop.sources))
+
+	// create new sources
+	for _, factory := range loop.sources {
+		src, e := factory(ctx)
+
+		if e != nil {
+			err = e
+
+			break
+		}
+
+		sources = append(sources, src)
+	}
+
+	// if error occurred
+	if err != nil {
+		// clean up the open ones
+		for _, src := range sources {
+			src.Close()
+		}
+
+		return err
+	}
+
+	for _, src := range sources {
+		loop.consume(ctx, src)
+	}
+
+	return nil
 }
 
-func (loop *Loop) AddSource(source Source) {
+func (loop *Loop) Listeners(eventID ID) int {
 	loop.mu.RLock()
 	defer loop.mu.RUnlock()
 
-	loop.sources.Add(source)
-}
+	bucket, exists := loop.listeners[eventID]
 
-func (loop *Loop) RemoveSource(source Source) {
-	loop.mu.RLock()
-	defer loop.mu.RUnlock()
+	if !exists {
+		return 0
+	}
 
-	loop.sources.Remove(source)
+	return len(bucket)
 }
 
 func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
@@ -48,7 +77,14 @@ func (loop *Loop) AddListener(eventID ID, handler Handler) ListenerID {
 		Handler: handler,
 	}
 
-	loop.listeners.Add(listener)
+	bucket, exists := loop.listeners[listener.EventID]
+
+	if !exists {
+		bucket = make(map[ListenerID]Listener)
+		loop.listeners[listener.EventID] = bucket
+	}
+
+	bucket[listener.ID] = listener
 
 	return listener.ID
 }
@@ -57,84 +93,73 @@ func (loop *Loop) RemoveListener(eventID ID, listenerID ListenerID) {
 	loop.mu.RLock()
 	defer loop.mu.RUnlock()
 
-	loop.listeners.Remove(eventID, listenerID)
+	bucket, exists := loop.listeners[eventID]
+
+	if !exists {
+		return
+	}
+
+	delete(bucket, listenerID)
 }
 
-// run starts running an event loop.
-// It constantly iterates over each event source.
-func (loop *Loop) run(ctx context.Context) {
-	sources := loop.sources
-	size := sources.Size()
-	counter := -1
-
-	// in case event array is empty
-	// we use this mock noop event source to simplify the logic
-	noop := newNoopSource()
-
-	for {
-		counter++
-
-		if counter >= size {
-			// reset the counter
-			size = sources.Size()
-			counter = 0
-		}
-
-		var source Source
-
-		if size > 0 {
-			found, err := sources.Get(counter)
-
-			if err == nil {
-				source = found
-			} else {
-				// might be removed
-				source = noop
-				// force to reset counter
-				counter = size
+func (loop *Loop) consume(ctx context.Context, src Source) {
+	go func() {
+		defer func() {
+			if err := src.Close(); err != nil {
+				loop.emit(ctx, Error, err)
 			}
-		} else {
-			source = noop
-		}
+		}()
 
-		select {
-		case <-ctx.Done():
-			return
-		case <-source.Ready():
-			if isCtxDone(ctx) {
+		for {
+			select {
+			case <-ctx.Done():
 				return
+			case <-src.Ready():
+				if ctx.Err() != nil {
+					return
+				}
+
+				event, err := src.Recv()
+
+				if err != nil {
+					loop.emit(ctx, Error, err)
+
+					return
+				}
+
+				loop.emit(ctx, event.ID, event.Data)
 			}
-
-			event, err := source.Recv()
-
-			loop.emit(ctx, event.ID, event.Data, err)
-		default:
-			continue
 		}
-	}
+	}()
 }
 
-func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}, err error) {
-	if err != nil {
-		eventID = Error
-		message = err
+func (loop *Loop) emit(ctx context.Context, eventID ID, message interface{}) {
+	loop.mu.Lock()
+
+	var snapshot []Listener
+	listeners, exist := loop.listeners[eventID]
+
+	if exist {
+		snapshot = make([]Listener, 0, len(listeners))
+
+		for _, listener := range listeners {
+			snapshot = append(snapshot, listener)
+		}
 	}
 
-	loop.mu.RLock()
-	snapshot := loop.listeners.Values(eventID)
-	loop.mu.RUnlock()
+	loop.mu.Unlock()
 
 	for _, listener := range snapshot {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return
-		default:
-			// if returned false, it means the loops should call the handler anymore
-			if !listener.Handler(ctx, message) {
-				loop.mu.RLock()
-				loop.listeners.Remove(eventID, listener.ID)
-				loop.mu.RUnlock()
-			}
+		}
+
+		// if returned false,
+		// the handler must be removed after the call
+		if !listener.Handler(ctx, message) {
+			loop.mu.Lock()
+			delete(loop.listeners[eventID], listener.ID)
+			loop.mu.Unlock()
 		}
 	}
 }

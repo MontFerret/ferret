@@ -1,0 +1,14 @@
+LET url = @lab.cdn.static + '/overview.html'
+LET doc = DOCUMENT(url)
+
+LET expected = [
+'<a href="#containers">Containers</a>',
+'<a href="#responsive-breakpoints">Responsive breakpoints</a>',
+'<a href="#z-index">Z-index</a>'
+]
+LET actual = (
+    FOR i IN INNER_HTML_ALL(doc, X("//*[contains(@class, 'section-nav')]/li"))
+        RETURN TRIM(i)
+)
+
+RETURN T::EQ(actual, expected)

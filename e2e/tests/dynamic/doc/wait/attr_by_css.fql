@@ -1,0 +1,20 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+LET selector = "#wait-class-btn"
+LET attrName = "data-ferret-x"
+LET attrVal = "foobar"
+
+WAIT_ELEMENT(doc, "#page-events")
+
+LET el = ELEMENT(doc, selector)
+LET prev = el.attributes
+
+ATTR_SET(el, attrName, attrVal)
+WAIT_ATTR(doc, selector, attrName, attrVal, 30000)
+
+LET curr = el.attributes
+
+T::NONE(prev[attrName])
+T::EQ(attrVal, curr[attrName], "attributes should be updated")
+
+RETURN TRUE

@@ -36,19 +36,18 @@ func SetInnerText(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, el.SetInnerText(ctx, values.ToString(args[1]))
 	}
 
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	err = core.ValidateType(args[2], types.String)
 
 	if err != nil {
 		return values.None, err
 	}
 
-	selector := values.ToString(args[1])
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	innerHTML := values.ToString(args[2])
 
 	return values.None, el.SetInnerTextBySelector(ctx, selector, innerHTML)

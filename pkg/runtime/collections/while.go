@@ -46,11 +46,9 @@ func NewDefaultWhileIterator(mode WhileMode, predicate WhilePredicate) (Iterator
 }
 
 func (iterator *WhileIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
-	counter := values.NewInt(iterator.pos)
-
 	// if it's Post conditional execution, step in always
 	// Otherwise, it's not the first iteration
-	if iterator.mode == WhileModePost || counter > 0 {
+	if iterator.mode == WhileModePost || iterator.pos > 0 {
 		doNext, err := iterator.predicate(ctx, scope)
 
 		if err != nil {
@@ -62,6 +60,7 @@ func (iterator *WhileIterator) Next(ctx context.Context, scope *core.Scope) (*co
 		}
 	}
 
+	counter := values.NewInt(iterator.pos)
 	iterator.pos++
 
 	nextScope := scope.Fork()

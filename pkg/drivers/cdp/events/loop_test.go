@@ -3,57 +3,37 @@ package events_test
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
-	"github.com/mafredri/cdp/protocol/dom"
-	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/rpcc"
 	. "github.com/smartystreets/goconvey/convey"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
-type (
-	TestEventStream struct {
-		ready   chan struct{}
-		message chan interface{}
-	}
-
-	TestLoadEventFiredClient struct {
-		*TestEventStream
-	}
-
-	TestDocumentUpdatedClient struct {
-		*TestEventStream
-	}
-
-	TestAttributeModifiedClient struct {
-		*TestEventStream
-	}
-
-	TestAttributeRemovedClient struct {
-		*TestEventStream
-	}
-
-	TestChildNodeCountUpdatedClient struct {
-		*TestEventStream
-	}
-
-	TestChildNodeInsertedClient struct {
-		*TestEventStream
-	}
-
-	TestChildNodeRemovedClient struct {
-		*TestEventStream
-	}
-)
+type TestEventStream struct {
+	closed   atomic.Value
+	ready    chan struct{}
+	messages chan string
+}
 
 var TestEvent = events.New("test_event")
 
 func NewTestEventStream() *TestEventStream {
+	return NewBufferedTestEventStream(0)
+}
+
+func NewBufferedTestEventStream(buffer int) *TestEventStream {
 	es := new(TestEventStream)
-	es.ready = make(chan struct{})
-	es.message = make(chan interface{})
+	es.ready = make(chan struct{}, buffer)
+	es.messages = make(chan string, buffer)
+	es.closed.Store(false)
+
 	return es
+}
+
+func (es *TestEventStream) IsClosed() bool {
+	return es.closed.Load().(bool)
 }
 
 func (es *TestEventStream) Ready() <-chan struct{} {
@@ -65,68 +45,38 @@ func (es *TestEventStream) RecvMsg(i interface{}) error {
 	return nil
 }
 
+func (es *TestEventStream) Recv() (interface{}, error) {
+	msg := <-es.messages
+
+	return msg, nil
+}
+
 func (es *TestEventStream) Close() error {
-	close(es.message)
+	es.closed.Store(true)
+	close(es.messages)
 	close(es.ready)
 	return nil
 }
 
-func (es *TestEventStream) Emit(msg interface{}) {
+func (es *TestEventStream) EmitP(msg string, skipCheck bool) {
+	if !skipCheck {
+		isClosed := es.closed.Load().(bool)
+
+		if isClosed {
+			return
+		}
+	}
+
 	es.ready <- struct{}{}
-	es.message <- msg
+	es.messages <- msg
 }
 
-func (es *TestLoadEventFiredClient) Recv() (*page.LoadEventFiredReply, error) {
-	r := <-es.message
-	reply := r.(*page.LoadEventFiredReply)
-
-	return reply, nil
+func (es *TestEventStream) Emit(msg string) {
+	es.EmitP(msg, false)
 }
 
-func (es *TestLoadEventFiredClient) EmitDefault() {
-	es.TestEventStream.Emit(&page.LoadEventFiredReply{})
-}
-
-func (es *TestDocumentUpdatedClient) Recv() (*dom.DocumentUpdatedReply, error) {
-	r := <-es.message
-	reply := r.(*dom.DocumentUpdatedReply)
-
-	return reply, nil
-}
-
-func (es *TestAttributeModifiedClient) Recv() (*dom.AttributeModifiedReply, error) {
-	r := <-es.message
-	reply := r.(*dom.AttributeModifiedReply)
-
-	return reply, nil
-}
-
-func (es *TestAttributeRemovedClient) Recv() (*dom.AttributeRemovedReply, error) {
-	r := <-es.message
-	reply := r.(*dom.AttributeRemovedReply)
-
-	return reply, nil
-}
-
-func (es *TestChildNodeCountUpdatedClient) Recv() (*dom.ChildNodeCountUpdatedReply, error) {
-	r := <-es.message
-	reply := r.(*dom.ChildNodeCountUpdatedReply)
-
-	return reply, nil
-}
-
-func (es *TestChildNodeInsertedClient) Recv() (*dom.ChildNodeInsertedReply, error) {
-	r := <-es.message
-	reply := r.(*dom.ChildNodeInsertedReply)
-
-	return reply, nil
-}
-
-func (es *TestChildNodeRemovedClient) Recv() (*dom.ChildNodeRemovedReply, error) {
-	r := <-es.message
-	reply := r.(*dom.ChildNodeRemovedReply)
-
-	return reply, nil
+func (es *TestEventStream) EmitDefault() {
+	es.Emit("")
 }
 
 func wait() {
@@ -170,22 +120,25 @@ func (c *Counter) Value() int64 {
 func TestLoop(t *testing.T) {
 	Convey(".AddListener", t, func() {
 		Convey("Should add a new listener", func() {
-			loop := events.NewLoop()
 			counter := NewCounter()
 
-			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-				return onLoad.Recv()
-			})
+			var tes *TestEventStream
 
-			loop.AddSource(src)
+			loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+				tes = NewTestEventStream()
+				return tes, nil
+			}, func(stream rpcc.Stream) (interface{}, error) {
+				return stream.(*TestEventStream).Recv()
+			}))
 
 			ctx, cancel := context.WithCancel(context.Background())
 
-			loop.Run(ctx)
+			err := loop.Run(ctx)
 			defer cancel()
 
-			onLoad.EmitDefault()
+			So(err, ShouldBeNil)
+
+			tes.EmitDefault()
 
 			wait()
 
@@ -197,7 +150,7 @@ func TestLoop(t *testing.T) {
 
 			wait()
 
-			onLoad.EmitDefault()
+			tes.EmitDefault()
 
 			wait()
 
@@ -208,25 +161,29 @@ func TestLoop(t *testing.T) {
 	Convey(".RemoveListener", t, func() {
 		Convey("Should remove a listener", func() {
 			Convey("Should add a new listener", func() {
-				loop := events.NewLoop()
 				counter := NewCounter()
 
-				onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-				src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-					return onLoad.Recv()
-				})
+				var test *TestEventStream
 
-				loop.AddSource(src)
+				loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+					test = NewTestEventStream()
+					return test, nil
+				}, func(stream rpcc.Stream) (interface{}, error) {
+					return stream.(*TestEventStream).Recv()
+				}))
+
 				id := loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 					counter.Increase()
 				}))
 
 				ctx, cancel := context.WithCancel(context.Background())
 
-				loop.Run(ctx)
+				err := loop.Run(ctx)
 				defer cancel()
 
-				onLoad.EmitDefault()
+				So(err, ShouldBeNil)
+
+				test.EmitDefault()
 
 				wait()
 
@@ -238,7 +195,7 @@ func TestLoop(t *testing.T) {
 
 				wait()
 
-				onLoad.EmitDefault()
+				test.EmitDefault()
 
 				wait()
 
@@ -247,87 +204,16 @@ func TestLoop(t *testing.T) {
 		})
 	})
 
-	Convey(".AddSource", t, func() {
-		Convey("Should add a new event source when not started", func() {
-			loop := events.NewLoop()
-			counter := NewCounter()
-
-			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
-				counter.Increase()
-			}))
-
-			ctx, cancel := context.WithCancel(context.Background())
-
-			loop.Run(ctx)
-			defer cancel()
-
-			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-
-			go func() {
-				onLoad.EmitDefault()
-			}()
-
-			wait()
-
-			So(counter.Value(), ShouldEqual, 0)
-
-			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-				return onLoad.Recv()
-			})
-
-			loop.AddSource(src)
-
-			wait()
-
-			So(counter.Value(), ShouldEqual, 1)
-		})
-	})
-
-	Convey(".RemoveSource", t, func() {
-		Convey("Should remove a source", func() {
-			loop := events.NewLoop()
-			counter := NewCounter()
-
-			ctx, cancel := context.WithCancel(context.Background())
-
-			loop.Run(ctx)
-			defer cancel()
-
-			loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
-				counter.Increase()
-			}))
-
-			onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-			src := events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-				return onLoad.Recv()
-			})
-
-			loop.AddSource(src)
-
-			wait()
-
-			onLoad.EmitDefault()
-
-			wait()
-
-			So(counter.Value(), ShouldEqual, 1)
-
-			loop.RemoveSource(src)
-
-			wait()
-
-			go func() {
-				onLoad.EmitDefault()
-			}()
-
-			wait()
-
-			So(counter.Value(), ShouldEqual, 1)
-		})
-	})
-
 	Convey("Should not call listener once it was removed", t, func() {
-		loop := events.NewLoop()
+		var tes *TestEventStream
+
+		loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+			tes = NewTestEventStream()
+			return tes, nil
+		}, func(stream rpcc.Stream) (interface{}, error) {
+			return stream.(*TestEventStream).Recv()
+		}))
+
 		onEvent := make(chan struct{})
 
 		counter := NewCounter()
@@ -344,24 +230,54 @@ func TestLoop(t *testing.T) {
 			loop.RemoveListener(TestEvent, id)
 		}()
 
-		onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
-
-		loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-			return onLoad.Recv()
-		}))
-
 		ctx, cancel := context.WithCancel(context.Background())
 
-		loop.Run(ctx)
+		err := loop.Run(ctx)
+		So(err, ShouldBeNil)
 		defer cancel()
 
 		time.Sleep(time.Duration(100) * time.Millisecond)
 
-		onLoad.Emit(&page.LoadEventFiredReply{})
+		tes.EmitDefault()
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
 		So(counter.Value(), ShouldEqual, 1)
+	})
+
+	Convey("Should stop on Context.Done", t, func() {
+		eventsToFire := 5
+		counter := NewCounter()
+
+		var tes *TestEventStream
+
+		loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+			tes = NewTestEventStream()
+			return tes, nil
+		}, func(stream rpcc.Stream) (interface{}, error) {
+			return stream.(*TestEventStream).Recv()
+		}))
+
+		loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+			counter.Increase()
+		}))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		err := loop.Run(ctx)
+		So(err, ShouldBeNil)
+
+		for i := 0; i <= eventsToFire; i++ {
+			time.Sleep(time.Duration(100) * time.Millisecond)
+
+			tes.EmitDefault()
+		}
+
+		// Stop the loop
+		cancel()
+
+		time.Sleep(time.Duration(100) * time.Millisecond)
+
+		So(tes.IsClosed(), ShouldBeTrue)
 	})
 }
 
@@ -400,23 +316,18 @@ func BenchmarkLoop_AddListenerAsync2(b *testing.B) {
 }
 
 func BenchmarkLoop_Start(b *testing.B) {
-	loop := events.NewLoop()
+	var tes *TestEventStream
 
-	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
-
-	}))
-	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
-
-	}))
-
-	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
-
+	loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+		tes = NewTestEventStream()
+		return tes, nil
+	}, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(*TestEventStream).Recv()
 	}))
 
 	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
 	}))
-
 	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
 	}))
@@ -425,18 +336,75 @@ func BenchmarkLoop_Start(b *testing.B) {
 
 	}))
 
-	onLoad := &TestLoadEventFiredClient{NewTestEventStream()}
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
 
-	loop.AddSource(events.NewSource(TestEvent, onLoad, func(_ rpcc.Stream) (i interface{}, e error) {
-		return onLoad.Recv()
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
 	}))
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	loop.Run(ctx)
+	if err := loop.Run(ctx); err != nil {
+		panic(err)
+	}
+
 	defer cancel()
 
 	for n := 0; n < b.N; n++ {
-		onLoad.Emit(&page.LoadEventFiredReply{})
+		tes.EmitP("", true)
 	}
+}
+
+func BenchmarkLoop_StartAsync(b *testing.B) {
+	var tes *TestEventStream
+
+	loop := events.NewLoop(events.NewStreamSourceFactory(TestEvent, func(ctx context.Context) (rpcc.Stream, error) {
+		tes = NewBufferedTestEventStream(b.N)
+		return tes, nil
+	}, func(stream rpcc.Stream) (interface{}, error) {
+		return stream.(*TestEventStream).Recv()
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	loop.AddListener(TestEvent, events.Always(func(ctx context.Context, message interface{}) {
+
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	if err := loop.Run(ctx); err != nil {
+		panic(err)
+	}
+
+	defer cancel()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			tes.EmitP("", true)
+		}
+	})
 }

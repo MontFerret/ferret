@@ -175,17 +175,18 @@ func (c *HTTPCookies) Set(cookie HTTPCookie) {
 	c.values[cookie.Name] = cookie
 }
 
-func (c *HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
+func (c *HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return values.None, nil
 	}
 
-	segment := path[0]
+	segmentIdx := 0
+	segment := path[segmentIdx]
 
 	err := core.ValidateType(segment, types.String)
 
 	if err != nil {
-		return values.None, err
+		return values.None, core.NewPathError(err, segmentIdx)
 	}
 
 	cookie, found := c.values[segment.String()]
@@ -195,7 +196,7 @@ func (c *HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value,
 			return cookie, nil
 		}
 
-		return values.GetIn(ctx, cookie, path[1:])
+		return values.GetIn(ctx, cookie, path[segmentIdx+1:])
 	}
 
 	return values.None, nil

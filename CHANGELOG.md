@@ -1,5 +1,53 @@
 ## Changelog
 
+### 0.16.0
+
+### Added
+- New ``WAITFOR EVENT`` syntax [#590](https://github.com/MontFerret/ferret/pull/590)
+- Support of optional chaining [#634](https://github.com/MontFerret/ferret/pull/634)
+- Tracing to CDP driver [#648](https://github.com/MontFerret/ferret/pull/648)
+- Support of errors suppression in function calls [#652](https://github.com/MontFerret/ferret/pull/652)
+- Support of error suppression in inline expressions [#671](https://github.com/MontFerret/ferret/pull/671)
+- Support of XPath selectors throughout drivers API [#657](https://github.com/MontFerret/ferret/pull/657)
+- Zero-allocation in ``FOR`` loops returning ``NONE`` [#673](https://github.com/MontFerret/ferret/pull/673)
+- Ignorable ``_`` variable [#673](https://github.com/MontFerret/ferret/pull/673)
+
+### Changed
+- Updated Root API [#622](https://github.com/MontFerret/ferret/pull/622)
+- Increased websocket maximum buffer size in CDP driver [#648](https://github.com/MontFerret/ferret/pull/648)
+
+### Fixed
+- ``values.Parse`` does not parse int64 [#621](https://github.com/MontFerret/ferret/pull/621)
+- CPU leakage [#635](https://github.com/MontFerret/ferret/pull/635), [90792bc](https://github.com/MontFerret/ferret/pull/648/commits/90792bcf3cd0b95075988aafe5d1c5072f2985bc)
+- Nil pointer exception [#636](https://github.com/MontFerret/ferret/pull/636)
+- Use of deprecated CDP API methods [#637](https://github.com/MontFerret/ferret/pull/637)
+- HTTP driver makes multiple requests [#642](https://github.com/MontFerret/ferret/pull/642)
+- Log level is ignored [aeb1247](https://github.com/MontFerret/ferret/commit/aeb1247ab34c3107b66ef76cfedde0c747904889)
+
+#### Dependencies 
+- Upgraded github.com/mafredri/cdp
+- Upgraded github.com/antchfx/xpath
+- Upgraded github.com/PuerkitoBio/goquery
+- Upgraded github.com/rs/zerolog
+
+#### Other
+- Dropped support of Go 1.13 [0cb7623](https://github.com/MontFerret/ferret/commit/0cb7623a7fca00cc044ba3b62822b78557d96f2f)
+- New Eval API in CDP driver [#651](https://github.com/MontFerret/ferret/pull/651), [#658](https://github.com/MontFerret/ferret/pull/658)
+
+### 0.15.0
+#### Added
+- Support of document charset in HTTP driver [#609](https://github.com/MontFerret/ferret/pull/609)
+- ``Walk`` method to FQL Parser [80c278e](https://github.com/MontFerret/ferret/commit/80c278ec6c783e29a8df12865da8208d1c148c65)
+- Possibility to send keyboard events like 'Enter' or 'Shift' [#618](https://github.com/MontFerret/ferret/pull/618)
+
+#### Changed
+- Moved CLI to a separate repository [#608](https://github.com/MontFerret/ferret/pull/608)
+
+#### Fixed
+- Passing headers and cookies to HTTP driver [#614](https://github.com/MontFerret/ferret/pull/614)
+- Reading property of anyonymous object [#616](https://github.com/MontFerret/ferret/pull/616)
+- Clearing input text containing special characteers [#619](https://github.com/MontFerret/ferret/pull/619)
+
 ### 0.14.1
 #### Fixed
 - Parsing HTTP headers and cookies [#598](https://github.com/MontFerret/ferret/pull/598)

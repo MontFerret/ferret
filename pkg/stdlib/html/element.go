@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // ELEMENT finds an element by a given CSS selector.
@@ -24,24 +23,24 @@ func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return el.QuerySelector(ctx, selector)
 }
 
-func queryArgs(args []core.Value) (drivers.HTMLElement, values.String, error) {
+func queryArgs(args []core.Value) (drivers.HTMLElement, drivers.QuerySelector, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return nil, values.EmptyString, err
+		return nil, drivers.QuerySelector{}, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return nil, values.EmptyString, err
+		return nil, drivers.QuerySelector{}, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return nil, values.EmptyString, err
+		return nil, drivers.QuerySelector{}, err
 	}
 
-	return el, args[1].(values.String), nil
+	return el, selector, nil
 }

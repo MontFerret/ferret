@@ -2,12 +2,15 @@ LET baseURL = 'https://www.amazon.com/'
 LET amazon = DOCUMENT(baseURL, { driver: "cdp" })
 
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
-CLICK(amazon, '.nav-search-submit input[type="submit"]')
-WAIT_NAVIGATION(amazon)
+CLICK(amazon, '#nav-search-submit-button')
 
-LET resultListSelector = '#s-results-list-atf'
+WAITFOR EVENT "navigation" IN amazon
+    FILTER current.url =~ "www\.amazon\.com\/s\?k="
+    TIMEOUT 50000
+
+LET resultListSelector = '[data-component-type="s-search-results"]'
 LET resultItemSelector = '[data-component-type="s-search-result"]'
-LET nextBtnSelector = 'ul.a-pagination .a-last a'
+LET nextBtnSelector = '.s-pagination-next:not(.s-pagination-disabled)'
 LET priceWholeSelector = '.a-price-whole'
 LET priceFracSelector = '.a-price-fraction'
 
@@ -15,8 +18,7 @@ LET result = (
     FOR pageNum IN PAGINATION(amazon, nextBtnSelector)
         LIMIT @pages
 
-        LET wait = pageNum > 0 ? WAIT_NAVIGATION(amazon, 20000) : false
-        LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
+        LET waitSelector = pageNum > 0 ? WAIT_ELEMENT(amazon, resultListSelector) : false
 
         LET items = (
             FOR el IN ELEMENTS(amazon, resultItemSelector)
@@ -26,9 +28,8 @@ LET result = (
 		        LET price = TO_FLOAT(priceWholeTxt + "." + priceFracTxt)
 		        LET anchor = ELEMENT(el, "a")
 
-		        PRINT(priceWholeTxt, priceFracTxt)
-
                 RETURN {
+                    page: pageNum,
                     url: baseURL + anchor.attributes.href,
                     title: INNER_TEXT(el, 'h2'),
                     price

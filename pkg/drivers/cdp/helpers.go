@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"
@@ -15,7 +16,30 @@ import (
 
 type (
 	batchFunc = func() error
+
+	closer func(ctx context.Context) error
+
+	pageNavigationEventStream struct {
+		stream events.Stream
+		closer
+	}
 )
+
+func newPageNavigationEventStream(stream events.Stream, closer closer) events.Stream {
+	return &pageNavigationEventStream{stream, closer}
+}
+
+func (p *pageNavigationEventStream) Close(ctx context.Context) error {
+	if err := p.stream.Close(ctx); err != nil {
+		return err
+	}
+
+	return p.closer(ctx)
+}
+
+func (p *pageNavigationEventStream) Read(ctx context.Context) <-chan events.Message {
+	return p.stream.Read(ctx)
+}
 
 func runBatch(funcs ...batchFunc) error {
 	eg := errgroup.Group{}

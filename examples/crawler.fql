@@ -1,15 +1,26 @@
 LET doc = DOCUMENT('https://www.theverge.com/tech', {
-    driver: "cdp"
+    driver: "cdp",
+    ignore: {
+        resources: [
+            {
+                url: "*",
+                type: "image"
+            }
+        ]
+    }
 })
+
 WAIT_ELEMENT(doc, '.c-compact-river__entry', 5000)
 LET articles = ELEMENTS(doc, '.c-entry-box--compact__image-wrapper')
 LET links = (
     FOR article IN articles
+        FILTER article.attributes?.href LIKE 'https://www.theverge.com/*'
         RETURN article.attributes.href
 )
+
 FOR link IN links
     // The Verge has pretty heavy pages, so let's increase the navigation wait time
     NAVIGATE(doc, link, 20000)
-    WAIT_ELEMENT(doc, '.c-entry-content', 5000)
+    WAIT_ELEMENT(doc, '.c-entry-content', 15000)
     LET texter = ELEMENT(doc, '.c-entry-content')
     RETURN texter.innerText

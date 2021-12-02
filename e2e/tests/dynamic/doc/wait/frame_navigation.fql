@@ -1,13 +1,14 @@
 LET url = @lab.cdn.dynamic + "?redirect=/iframe&src=/iframe"
 LET page = DOCUMENT(url, { driver: 'cdp' })
-LET original = FIRST(FRAMES(page, "name", "nested"))
+LET original = FIRST(FRAMES(page, "url", "/\?redirect=/iframe$"))
 
 INPUT(original, "#url_input", "https://getbootstrap.com/")
+
 CLICK(original, "#submit")
 
-WAIT_NAVIGATION(page, {
-    frame: original
-})
+WAITFOR EVENT "navigation" IN page
+    FILTER original == current.frame
+    TIMEOUT 10000
 
 LET current = FIRST(FRAMES(page, "name", "nested"))
 

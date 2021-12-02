@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/gobwas/glob"
 	"io"
 	"net/http"
 	"net/url"

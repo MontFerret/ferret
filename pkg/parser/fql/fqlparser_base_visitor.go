@@ -1,4 +1,4 @@
-// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.1. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.9.2. DO NOT EDIT.
 
 package fql // FqlParser
 import "github.com/antlr/antlr4/runtime/Go/antlr"
@@ -35,19 +35,15 @@ func (v *BaseFqlParserVisitor) VisitBodyExpression(ctx *BodyExpressionContext) i
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitReturnExpression(ctx *ReturnExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
 func (v *BaseFqlParserVisitor) VisitForExpression(ctx *ForExpressionContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitForExpressionValueVariable(ctx *ForExpressionValueVariableContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitForExpressionKeyVariable(ctx *ForExpressionKeyVariableContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -119,7 +115,23 @@ func (v *BaseFqlParserVisitor) VisitCollectCounter(ctx *CollectCounterContext) i
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitVariableDeclaration(ctx *VariableDeclarationContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitWaitForExpression(ctx *WaitForExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForEventName(ctx *WaitForEventNameContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForEventSource(ctx *WaitForEventSourceContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitOptionsClause(ctx *OptionsClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitTimeoutClause(ctx *TimeoutClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -131,7 +143,7 @@ func (v *BaseFqlParserVisitor) VisitVariable(ctx *VariableContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitRangeOperator(ctx *RangeOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitLiteral(ctx *LiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -151,11 +163,11 @@ func (v *BaseFqlParserVisitor) VisitStringLiteral(ctx *StringLiteralContext) int
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitIntegerLiteral(ctx *IntegerLiteralContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitFloatLiteral(ctx *FloatLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitFloatLiteral(ctx *FloatLiteralContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitIntegerLiteral(ctx *IntegerLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -163,15 +175,7 @@ func (v *BaseFqlParserVisitor) VisitNoneLiteral(ctx *NoneLiteralContext) interfa
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitArrayElementList(ctx *ArrayElementListContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
 func (v *BaseFqlParserVisitor) VisitPropertyAssignment(ctx *PropertyAssignmentContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BaseFqlParserVisitor) VisitShorthandPropertyName(ctx *ShorthandPropertyNameContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -183,10 +187,6 @@ func (v *BaseFqlParserVisitor) VisitPropertyName(ctx *PropertyNameContext) inter
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitExpressionGroup(ctx *ExpressionGroupContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
 func (v *BaseFqlParserVisitor) VisitNamespaceIdentifier(ctx *NamespaceIdentifierContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -195,7 +195,11 @@ func (v *BaseFqlParserVisitor) VisitNamespace(ctx *NamespaceContext) interface{}
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitFunctionIdentifier(ctx *FunctionIdentifierContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitMemberExpression(ctx *MemberExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitMemberExpressionSource(ctx *MemberExpressionSourceContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -203,19 +207,35 @@ func (v *BaseFqlParserVisitor) VisitFunctionCallExpression(ctx *FunctionCallExpr
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMember(ctx *MemberContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitFunctionCall(ctx *FunctionCallContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMemberPath(ctx *MemberPathContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitFunctionName(ctx *FunctionNameContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitMemberExpression(ctx *MemberExpressionContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitArgumentList(ctx *ArgumentListContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitArguments(ctx *ArgumentsContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitUnsafReservedWord(ctx *UnsafReservedWordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRangeOperator(ctx *RangeOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitRangeOperand(ctx *RangeOperandContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -223,11 +243,19 @@ func (v *BaseFqlParserVisitor) VisitExpression(ctx *ExpressionContext) interface
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitForTernaryExpression(ctx *ForTernaryExpressionContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitPredicate(ctx *PredicateContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitExpressionAtom(ctx *ExpressionAtomContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
 func (v *BaseFqlParserVisitor) VisitArrayOperator(ctx *ArrayOperatorContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitEqualityOperator(ctx *EqualityOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -239,7 +267,7 @@ func (v *BaseFqlParserVisitor) VisitLikeOperator(ctx *LikeOperatorContext) inter
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitEqualityOperator(ctx *EqualityOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitUnaryOperator(ctx *UnaryOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -263,6 +291,6 @@ func (v *BaseFqlParserVisitor) VisitAdditiveOperator(ctx *AdditiveOperatorContex
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitUnaryOperator(ctx *UnaryOperatorContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitErrorOperator(ctx *ErrorOperatorContext) interface{} {
 	return v.VisitChildren(ctx)
 }

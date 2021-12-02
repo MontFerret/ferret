@@ -6,20 +6,18 @@ LET google = DOCUMENT("https://www.google.com/", {
 HOVER(google, 'input[name="q"]')
 WAIT(RAND(100))
 INPUT(google, 'input[name="q"]', @criteria, 30)
-
-WAIT(RAND(100))
-
-WAIT_ELEMENT(google, '.UUbT9')
 WAIT(RAND(100))
 CLICK(google, 'input[name="btnK"]')
 
-WAIT_NAVIGATION(google)
+WAITFOR EVENT "navigation" IN google
 
-FOR result IN ELEMENTS(google, '.g')
-    // filter out extra elements like videos and 'People also ask'
-    FILTER TRIM(result.attributes.class) == 'g'
+WAIT_ELEMENT(google, "#res")
+
+LET results = ELEMENTS(google, X("//*[text() = 'Search Results']/following-sibling::*/*"))
+
+FOR el IN results
     RETURN {
-        title: INNER_TEXT(result, 'h3'),
-        description: INNER_TEXT(result, '.rc > div:nth-child(2) span'),
-        url: INNER_TEXT(result, 'cite')
+        title: INNER_TEXT(el, 'h3')?,
+        description: INNER_TEXT(el, X("//em/parent::*")),
+        url: ELEMENT(el, 'a')?.attributes.href
     }

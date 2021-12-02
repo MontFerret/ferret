@@ -1,0 +1,9 @@
+LET url = @lab.cdn.static + '/list.html'
+LET doc = DOCUMENT(url)
+
+LET list = ELEMENT(doc, X("//*[contains(@class, 'track-list')]"))
+LET children = list.children
+T::NOT::NONE(children)
+T::NOT::EMPTY(children)
+
+RETURN NONE

@@ -2,20 +2,15 @@ package dom
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"hash/fnv"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/wI2L/jettison"
-	"golang.org/x/net/html"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
@@ -24,124 +19,51 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-var emptyNodeID = dom.NodeID(0)
-
-type (
-	HTMLElementIdentity struct {
-		NodeID   dom.NodeID
-		ObjectID runtime.RemoteObjectID
-	}
-
-	HTMLElement struct {
-		logger   *zerolog.Logger
-		client   *cdp.Client
-		dom      *Manager
-		input    *input.Manager
-		exec     *eval.ExecutionContext
-		id       HTMLElementIdentity
-		nodeType html.NodeType
-		nodeName values.String
-	}
-)
-
-func LoadHTMLElement(
-	ctx context.Context,
-	logger *zerolog.Logger,
-	client *cdp.Client,
-	domManager *Manager,
-	input *input.Manager,
-	exec *eval.ExecutionContext,
-	nodeID dom.NodeID,
-) (*HTMLElement, error) {
-	if client == nil {
-		return nil, core.Error(core.ErrMissedArgument, "client")
-	}
-
-	// getting a remote object that represents the current DOM Node
-	args := dom.NewResolveNodeArgs().SetNodeID(nodeID).SetExecutionContextID(exec.ID())
-
-	obj, err := client.DOM.ResolveNode(ctx, args)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if obj.Object.ObjectID == nil {
-		return nil, core.Error(core.ErrNotFound, fmt.Sprintf("element %d", nodeID))
-	}
-
-	return LoadHTMLElementWithID(
-		ctx,
-		logger,
-		client,
-		domManager,
-		input,
-		exec,
-		HTMLElementIdentity{
-			NodeID:   nodeID,
-			ObjectID: *obj.Object.ObjectID,
-		},
-	)
-}
-
-func LoadHTMLElementWithID(
-	ctx context.Context,
-	logger *zerolog.Logger,
-	client *cdp.Client,
-	domManager *Manager,
-	input *input.Manager,
-	exec *eval.ExecutionContext,
-	id HTMLElementIdentity,
-) (*HTMLElement, error) {
-	node, err := client.DOM.DescribeNode(
-		ctx,
-		dom.
-			NewDescribeNodeArgs().
-			SetObjectID(id.ObjectID).
-			SetDepth(0),
-	)
-
-	if err != nil {
-		return nil, core.Error(err, strconv.Itoa(int(id.NodeID)))
-	}
-
-	return NewHTMLElement(
-		logger,
-		client,
-		domManager,
-		input,
-		exec,
-		id,
-		node.Node.NodeType,
-		node.Node.NodeName,
-	), nil
+type HTMLElement struct {
+	logger   zerolog.Logger
+	client   *cdp.Client
+	dom      *Manager
+	input    *input.Manager
+	eval     *eval.Runtime
+	id       runtime.RemoteObjectID
+	nodeType *common.LazyValue
+	nodeName *common.LazyValue
 }
 
 func NewHTMLElement(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	domManager *Manager,
 	input *input.Manager,
-	exec *eval.ExecutionContext,
-	id HTMLElementIdentity,
-	nodeType int,
-	nodeName string,
+	exec *eval.Runtime,
+	id runtime.RemoteObjectID,
 ) *HTMLElement {
 	el := new(HTMLElement)
-	el.logger = logger
+	el.logger = logging.
+		WithName(logger.With(), "dom_element").
+		Str("object_id", string(id)).
+		Logger()
 	el.client = client
 	el.dom = domManager
 	el.input = input
-	el.exec = exec
+	el.eval = exec
 	el.id = id
-	el.nodeType = common.ToHTMLType(nodeType)
-	el.nodeName = values.NewString(nodeName)
+	el.nodeType = common.NewLazyValue(func(ctx context.Context) (core.Value, error) {
+		return el.eval.EvalValue(ctx, templates.GetNodeType(el.id))
+	})
+	el.nodeName = common.NewLazyValue(func(ctx context.Context) (core.Value, error) {
+		return el.eval.EvalValue(ctx, templates.GetNodeName(el.id))
+	})
 
 	return el
+}
+
+func (el *HTMLElement) RemoteID() runtime.RemoteObjectID {
+	return el.id
 }
 
 func (el *HTMLElement) Close() error {
@@ -191,7 +113,7 @@ func (el *HTMLElement) Hash() uint64 {
 
 	h.Write([]byte(el.Type().String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(strconv.Itoa(int(el.id.NodeID))))
+	h.Write([]byte(el.id))
 
 	return h.Sum64()
 }
@@ -204,34 +126,44 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInElement(ctx, el, path)
+func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInElement(ctx, path, el)
 }
 
-func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInElement(ctx, el, path, value)
+func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInElement(ctx, path, el, value)
 }
 
 func (el *HTMLElement) GetValue(ctx context.Context) (core.Value, error) {
-	return el.exec.ReadProperty(ctx, el.id.ObjectID, "value")
+	return el.eval.EvalValue(ctx, templates.GetValue(el.id))
 }
 
 func (el *HTMLElement) SetValue(ctx context.Context, value core.Value) error {
-	return el.client.DOM.SetNodeValue(ctx, dom.NewSetNodeValueArgs(el.id.NodeID, value.String()))
+	return el.eval.Eval(ctx, templates.SetValue(el.id, value))
 }
 
-func (el *HTMLElement) GetNodeType() values.Int {
-	return values.NewInt(common.FromHTMLType(el.nodeType))
+func (el *HTMLElement) GetNodeType(ctx context.Context) (values.Int, error) {
+	out, err := el.nodeType.Read(ctx)
+
+	if err != nil {
+		return values.ZeroInt, err
+	}
+
+	return values.ToInt(out), nil
 }
 
-func (el *HTMLElement) GetNodeName() values.String {
-	return el.nodeName
+func (el *HTMLElement) GetNodeName(ctx context.Context) (values.String, error) {
+	out, err := el.nodeName.Read(ctx)
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.ToString(out), nil
 }
 
 func (el *HTMLElement) Length() values.Int {
-	value, err := el.exec.EvalWithArgumentsAndReturnValue(context.Background(), templates.GetChildrenCount(), runtime.CallArgument{
-		ObjectID: &el.id.ObjectID,
-	})
+	value, err := el.eval.EvalValue(context.Background(), templates.GetChildrenCount(el.id))
 
 	if err != nil {
 		el.logError(err)
@@ -243,651 +175,243 @@ func (el *HTMLElement) Length() values.Int {
 }
 
 func (el *HTMLElement) GetStyles(ctx context.Context) (*values.Object, error) {
-	value, err := el.exec.EvalWithArgumentsAndReturnValue(ctx, templates.GetStyles(), runtime.CallArgument{
-		ObjectID: &el.id.ObjectID,
-	})
+	out, err := el.eval.EvalValue(ctx, templates.GetStyles(el.id))
 
 	if err != nil {
 		return values.NewObject(), err
 	}
 
-	if value.Type() == types.Object {
-		return value.(*values.Object), err
-	}
-
-	return values.NewObject(), core.TypeError(value.Type(), types.Object)
+	return values.ToObject(ctx, out), nil
 }
 
 func (el *HTMLElement) GetStyle(ctx context.Context, name values.String) (core.Value, error) {
-	styles, err := el.GetStyles(ctx)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	val, found := styles.Get(name)
-
-	if !found {
-		return values.None, nil
-	}
-
-	return val, nil
+	return el.eval.EvalValue(ctx, templates.GetStyle(el.id, name))
 }
 
 func (el *HTMLElement) SetStyles(ctx context.Context, styles *values.Object) error {
-	if styles == nil {
-		return nil
-	}
-
-	currentStyles, err := el.GetStyles(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	styles.ForEach(func(value core.Value, key string) bool {
-		currentStyles.Set(values.NewString(key), value)
-
-		return true
-	})
-
-	str := common.SerializeStyles(ctx, currentStyles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.eval.Eval(ctx, templates.SetStyles(el.id, styles))
 }
 
 func (el *HTMLElement) SetStyle(ctx context.Context, name, value values.String) error {
-	// we manually set only those that are defined in attribute only
-	attrValue, err := el.GetAttribute(ctx, common.AttrNameStyle)
-
-	if err != nil {
-		return err
-	}
-
-	var styles *values.Object
-
-	if attrValue == values.None {
-		styles = values.NewObject()
-	} else {
-		styleAttr, ok := attrValue.(*values.Object)
-
-		if !ok {
-			return core.TypeError(attrValue.Type(), types.Object)
-		}
-
-		styles = styleAttr
-	}
-
-	styles.Set(name, value)
-
-	str := common.SerializeStyles(ctx, styles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.eval.Eval(ctx, templates.SetStyle(el.id, name, value))
 }
 
 func (el *HTMLElement) RemoveStyle(ctx context.Context, names ...values.String) error {
-	if len(names) == 0 {
-		return nil
-	}
-
-	value, err := el.GetAttribute(ctx, common.AttrNameStyle)
-
-	if err != nil {
-		return err
-	}
-
-	// no attribute
-	if value == values.None {
-		return nil
-	}
-
-	styles, ok := value.(*values.Object)
-
-	if !ok {
-		return core.TypeError(styles.Type(), types.Object)
-	}
-
-	for _, name := range names {
-		styles.Remove(name)
-	}
-
-	str := common.SerializeStyles(ctx, styles)
-
-	return el.SetAttribute(ctx, common.AttrNameStyle, str)
+	return el.eval.Eval(ctx, templates.RemoveStyles(el.id, names))
 }
 
 func (el *HTMLElement) GetAttributes(ctx context.Context) (*values.Object, error) {
-	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.NodeID))
+	out, err := el.eval.EvalValue(ctx, templates.GetAttributes(el.id))
 
 	if err != nil {
 		return values.NewObject(), err
 	}
 
-	attrs := values.NewObject()
-
-	traverseAttrs(repl.Attributes, func(name, value string) bool {
-		key := values.NewString(name)
-		var val core.Value = values.None
-
-		if name != common.AttrNameStyle {
-			val = values.NewString(value)
-		} else {
-			parsed, err := common.DeserializeStyles(values.NewString(value))
-
-			if err == nil {
-				val = parsed
-			} else {
-				val = values.NewObject()
-			}
-		}
-
-		attrs.Set(key, val)
-
-		return true
-	})
-
-	return attrs, nil
+	return values.ToObject(ctx, out), nil
 }
 
 func (el *HTMLElement) GetAttribute(ctx context.Context, name values.String) (core.Value, error) {
-	repl, err := el.client.DOM.GetAttributes(ctx, dom.NewGetAttributesArgs(el.id.NodeID))
-
-	if err != nil {
-		return values.None, err
-	}
-
-	var result core.Value = values.None
-	targetName := strings.ToLower(name.String())
-
-	traverseAttrs(repl.Attributes, func(name, value string) bool {
-		if name == targetName {
-			if name != common.AttrNameStyle {
-				result = values.NewString(value)
-			} else {
-				parsed, err := common.DeserializeStyles(values.NewString(value))
-
-				if err == nil {
-					result = parsed
-				} else {
-					result = values.NewObject()
-				}
-			}
-
-			return false
-		}
-
-		return true
-	})
-
-	return result, nil
+	return el.eval.EvalValue(ctx, templates.GetAttribute(el.id, name))
 }
 
 func (el *HTMLElement) SetAttributes(ctx context.Context, attrs *values.Object) error {
-	var err error
-
-	attrs.ForEach(func(value core.Value, key string) bool {
-		err = el.SetAttribute(ctx, values.NewString(key), values.NewString(value.String()))
-
-		return err == nil
-	})
-
-	return err
+	return el.eval.Eval(ctx, templates.SetAttributes(el.id, attrs))
 }
 
 func (el *HTMLElement) SetAttribute(ctx context.Context, name, value values.String) error {
-	return el.client.DOM.SetAttributeValue(
-		ctx,
-		dom.NewSetAttributeValueArgs(el.id.NodeID, string(name), string(value)),
-	)
+	return el.eval.Eval(ctx, templates.SetAttribute(el.id, name, value))
 }
 
 func (el *HTMLElement) RemoveAttribute(ctx context.Context, names ...values.String) error {
-	for _, name := range names {
-		err := el.client.DOM.RemoveAttribute(
-			ctx,
-			dom.NewRemoveAttributeArgs(el.id.NodeID, name.String()),
-		)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return el.eval.Eval(ctx, templates.RemoveAttributes(el.id, names))
 }
 
 func (el *HTMLElement) GetChildNodes(ctx context.Context) (*values.Array, error) {
-	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.GetChildren(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-	)
-
-	if err != nil {
-		return values.EmptyArray(), err
-	}
-
-	val, err := el.convertEvalResult(ctx, out)
-
-	if err != nil {
-		el.logError(err)
-
-		return values.EmptyArray(), err
-	}
-
-	arr, ok := val.(*values.Array)
-
-	if ok {
-		return arr, nil
-	}
-
-	return values.EmptyArray(), nil
+	return el.eval.EvalElements(ctx, templates.GetChildren(el.id))
 }
 
 func (el *HTMLElement) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
-	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.GetChildByIndex(int64(idx)),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-	)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return el.convertEvalResult(ctx, out)
+	return el.eval.EvalElement(ctx, templates.GetChildByIndex(el.id, idx))
 }
 
 func (el *HTMLElement) GetParentElement(ctx context.Context) (core.Value, error) {
-	return el.evalAndGetElement(ctx, templates.GetParent())
+	return el.eval.EvalElement(ctx, templates.GetParent(el.id))
 }
 
 func (el *HTMLElement) GetPreviousElementSibling(ctx context.Context) (core.Value, error) {
-	return el.evalAndGetElement(ctx, templates.GetPreviousElementSibling())
+	return el.eval.EvalElement(ctx, templates.GetPreviousElementSibling(el.id))
 }
 
 func (el *HTMLElement) GetNextElementSibling(ctx context.Context) (core.Value, error) {
-	return el.evalAndGetElement(ctx, templates.GetNextElementSibling())
+	return el.eval.EvalElement(ctx, templates.GetNextElementSibling(el.id))
 }
 
-func (el *HTMLElement) evalAndGetElement(ctx context.Context, expr string) (core.Value, error) {
-	obj, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, expr, runtime.CallArgument{
-		ObjectID: &el.id.ObjectID,
-	})
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if obj.Type != "object" || obj.ObjectID == nil {
-		return values.None, nil
-	}
-
-	repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*obj.ObjectID))
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return LoadHTMLElementWithID(
-		ctx,
-		el.logger,
-		el.client,
-		el.dom,
-		el.input,
-		el.exec,
-		HTMLElementIdentity{
-			NodeID:   repl.NodeID,
-			ObjectID: *obj.ObjectID,
-		},
-	)
+func (el *HTMLElement) QuerySelector(ctx context.Context, selector drivers.QuerySelector) (core.Value, error) {
+	return el.eval.EvalElement(ctx, templates.QuerySelector(el.id, selector))
 }
 
-func (el *HTMLElement) QuerySelector(ctx context.Context, selector values.String) (core.Value, error) {
-	selectorArgs := dom.NewQuerySelectorArgs(el.id.NodeID, selector.String())
-	found, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	if found.NodeID == emptyNodeID {
-		return values.None, nil
-	}
-
-	res, err := LoadHTMLElement(
-		ctx,
-		el.logger,
-		el.client,
-		el.dom,
-		el.input,
-		el.exec,
-		found.NodeID,
-	)
-
-	if err != nil {
-		return values.None, nil
-	}
-
-	return res, nil
-}
-
-func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
-	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.NodeID, selector.String())
-	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
-
-	if err != nil {
-		return values.EmptyArray(), err
-	}
-
-	arr := values.NewArray(len(res.NodeIDs))
-
-	for _, id := range res.NodeIDs {
-		if id == emptyNodeID {
-			el.logError(err).
-				Str("selector", selector.String()).
-				Msg("failed to find a node by selector. returned 0 NodeID")
-
-			continue
-		}
-
-		childEl, err := LoadHTMLElement(
-			ctx,
-			el.logger,
-			el.client,
-			el.dom,
-			el.input,
-			el.exec,
-			id,
-		)
-
-		if err != nil {
-			return values.EmptyArray(), err
-		}
-
-		arr.Push(childEl)
-	}
-
-	return arr, nil
+func (el *HTMLElement) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
+	return el.eval.EvalElements(ctx, templates.QuerySelectorAll(el.id, selector))
 }
 
 func (el *HTMLElement) XPath(ctx context.Context, expression values.String) (result core.Value, err error) {
-	exp, err := expression.MarshalJSON()
-
-	if err != nil {
-		return values.None, err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnReference(ctx, templates.XPath(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: exp,
-		},
-	)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	return el.convertEvalResult(ctx, out)
+	return el.eval.EvalValue(ctx, templates.XPath(el.id, expression))
 }
 
 func (el *HTMLElement) GetInnerText(ctx context.Context) (values.String, error) {
-	return getInnerText(ctx, el.client, el.exec, el.id, el.nodeType)
+	out, err := el.eval.EvalValue(ctx, templates.GetInnerText(el.id))
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.ToString(out), nil
 }
 
 func (el *HTMLElement) SetInnerText(ctx context.Context, innerText values.String) error {
-	return setInnerText(ctx, el.client, el.exec, el.id, innerText)
+	return el.eval.Eval(
+		ctx,
+		templates.SetInnerText(el.id, innerText),
+	)
 }
 
-func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector values.String) (values.String, error) {
-	sel, err := selector.MarshalJSON()
+func (el *HTMLElement) GetInnerTextBySelector(ctx context.Context, selector drivers.QuerySelector) (values.String, error) {
+	out, err := el.eval.EvalValue(ctx, templates.GetInnerTextBySelector(el.id, selector))
 
 	if err != nil {
 		return values.EmptyString, err
 	}
 
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
-		ctx,
-		templates.GetInnerTextBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-	)
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	return values.NewString(out.String()), nil
+	return values.ToString(out), nil
 }
 
-func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector, innerText values.String) error {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	val, err := innerText.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	return el.exec.EvalWithArguments(
+func (el *HTMLElement) SetInnerTextBySelector(ctx context.Context, selector drivers.QuerySelector, innerText values.String) error {
+	return el.eval.Eval(
 		ctx,
-		templates.SetInnerTextBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-		runtime.CallArgument{
-			Value: val,
-		},
+		templates.SetInnerTextBySelector(el.id, selector, innerText),
 	)
 }
 
-func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
-		ctx,
-		templates.GetInnerTextBySelectorAll(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-	)
+func (el *HTMLElement) GetInnerTextBySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
+	out, err := el.eval.EvalValue(ctx, templates.GetInnerTextBySelectorAll(el.id, selector))
 
 	if err != nil {
 		return values.EmptyArray(), err
 	}
 
-	arr, ok := out.(*values.Array)
-
-	if !ok {
-		return values.EmptyArray(), errors.New("unexpected output")
-	}
-
-	return arr, nil
+	return values.ToArray(ctx, out), nil
 }
 
 func (el *HTMLElement) GetInnerHTML(ctx context.Context) (values.String, error) {
-	return getInnerHTML(ctx, el.client, el.exec, el.id, el.nodeType)
+	out, err := el.eval.EvalValue(ctx, templates.GetInnerHTML(el.id))
+
+	if err != nil {
+		return values.EmptyString, err
+	}
+
+	return values.ToString(out), nil
 }
 
 func (el *HTMLElement) SetInnerHTML(ctx context.Context, innerHTML values.String) error {
-	return setInnerHTML(ctx, el.client, el.exec, el.id, innerHTML)
+	return el.eval.Eval(ctx, templates.SetInnerHTML(el.id, innerHTML))
 }
 
-func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector values.String) (values.String, error) {
-	sel, err := selector.MarshalJSON()
+func (el *HTMLElement) GetInnerHTMLBySelector(ctx context.Context, selector drivers.QuerySelector) (values.String, error) {
+	out, err := el.eval.EvalValue(ctx, templates.GetInnerHTMLBySelector(el.id, selector))
 
 	if err != nil {
 		return values.EmptyString, err
 	}
 
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
-		ctx,
-		templates.GetInnerHTMLBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-	)
-
-	if err != nil {
-		return values.EmptyString, err
-	}
-
-	return values.NewString(out.String()), nil
+	return values.ToString(out), nil
 }
 
-func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector, innerHTML values.String) error {
-	sel, err := selector.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	val, err := innerHTML.MarshalJSON()
-
-	if err != nil {
-		return err
-	}
-
-	return el.exec.EvalWithArguments(
-		ctx,
-		templates.SetInnerHTMLBySelector(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-		runtime.CallArgument{
-			Value: val,
-		},
-	)
+func (el *HTMLElement) SetInnerHTMLBySelector(ctx context.Context, selector drivers.QuerySelector, innerHTML values.String) error {
+	return el.eval.Eval(ctx, templates.SetInnerHTMLBySelector(el.id, selector, innerHTML))
 }
 
-func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector values.String) (*values.Array, error) {
-	sel, err := selector.MarshalJSON()
+func (el *HTMLElement) GetInnerHTMLBySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
+	out, err := el.eval.EvalValue(ctx, templates.GetInnerHTMLBySelectorAll(el.id, selector))
 
 	if err != nil {
 		return values.EmptyArray(), err
 	}
 
-	out, err := el.exec.EvalWithArgumentsAndReturnValue(
-		ctx,
-		templates.GetInnerHTMLBySelectorAll(),
-		runtime.CallArgument{
-			ObjectID: &el.id.ObjectID,
-		},
-		runtime.CallArgument{
-			Value: sel,
-		},
-	)
-
-	if err != nil {
-		return values.EmptyArray(), err
-	}
-
-	arr, ok := out.(*values.Array)
-
-	if !ok {
-		return values.EmptyArray(), errors.New("unexpected output")
-	}
-
-	return arr, nil
+	return values.ToArray(ctx, out), nil
 }
 
-func (el *HTMLElement) CountBySelector(ctx context.Context, selector values.String) (values.Int, error) {
-	selectorArgs := dom.NewQuerySelectorAllArgs(el.id.NodeID, selector.String())
-	res, err := el.client.DOM.QuerySelectorAll(ctx, selectorArgs)
+func (el *HTMLElement) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
+	out, err := el.eval.EvalValue(ctx, templates.CountBySelector(el.id, selector))
 
 	if err != nil {
 		return values.ZeroInt, err
 	}
 
-	return values.NewInt(len(res.NodeIDs)), nil
+	return values.ToInt(out), nil
 }
 
-func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector values.String) (values.Boolean, error) {
-	selectorArgs := dom.NewQuerySelectorArgs(el.id.NodeID, selector.String())
-	res, err := el.client.DOM.QuerySelector(ctx, selectorArgs)
+func (el *HTMLElement) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
+	out, err := el.eval.EvalValue(ctx, templates.ExistsBySelector(el.id, selector))
 
 	if err != nil {
 		return values.False, err
 	}
 
-	if res.NodeID == 0 {
-		return values.False, nil
-	}
+	return values.ToBoolean(out), nil
+}
 
-	return values.True, nil
+func (el *HTMLElement) WaitForElement(ctx context.Context, selector drivers.QuerySelector, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForElement(el.id, selector, when),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForElementAll(ctx context.Context, selector drivers.QuerySelector, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForElementAll(el.id, selector, when),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
 }
 
 func (el *HTMLElement) WaitForClass(ctx context.Context, class values.String, when drivers.WaitEvent) error {
-	task := events.NewWaitTask(
-		func(ctx2 context.Context) (core.Value, error) {
-			current, err := el.GetAttribute(ctx2, "class")
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForClass(el.id, class, when),
+		events.DefaultPolling,
+	)
 
-			if err != nil {
-				return values.None, nil
-			}
+	_, err := task.Run(ctx)
 
-			if current.Type() != types.String {
-				return values.None, nil
-			}
+	return err
+}
 
-			str := current.(values.String)
-			classStr := string(class)
-			classes := strings.Split(string(str), " ")
+func (el *HTMLElement) WaitForClassBySelector(ctx context.Context, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForClassBySelector(el.id, selector, class, when),
+		events.DefaultPolling,
+	)
 
-			if when != drivers.WaitEventAbsence {
-				for _, c := range classes {
-					if c == classStr {
-						// The value does not really matter if it's not None
-						// None indicates that operation needs to be repeated
-						return values.True, nil
-					}
-				}
-			} else {
-				var found values.Boolean
+	_, err := task.Run(ctx)
 
-				for _, c := range classes {
-					if c == classStr {
-						found = values.True
-						break
-					}
-				}
+	return err
+}
 
-				if found == values.False {
-					// The value does not really matter if it's not None
-					// None indicates that operation needs to be repeated
-					return values.False, nil
-				}
-			}
-
-			return values.None, nil
-		},
+func (el *HTMLElement) WaitForClassBySelectorAll(ctx context.Context, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForClassBySelectorAll(el.id, selector, class, when),
 		events.DefaultPolling,
 	)
 
@@ -902,9 +426,35 @@ func (el *HTMLElement) WaitForAttribute(
 	value core.Value,
 	when drivers.WaitEvent,
 ) error {
-	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
-		return el.GetAttribute(ctx, name)
-	}, events.DefaultPolling)
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForAttribute(el.id, name, value, when),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForAttributeBySelector(ctx context.Context, selector drivers.QuerySelector, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForAttributeBySelector(el.id, selector, name, value, when),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForAttributeBySelectorAll(ctx context.Context, selector drivers.QuerySelector, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForAttributeBySelectorAll(el.id, selector, name, value, when),
+		events.DefaultPolling,
+	)
 
 	_, err := task.Run(ctx)
 
@@ -912,9 +462,35 @@ func (el *HTMLElement) WaitForAttribute(
 }
 
 func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, value core.Value, when drivers.WaitEvent) error {
-	task := events.NewValueWaitTask(when, value, func(ctx context.Context) (core.Value, error) {
-		return el.GetStyle(ctx, name)
-	}, events.DefaultPolling)
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForStyle(el.id, name, value, when),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForStyleBySelector(ctx context.Context, selector drivers.QuerySelector, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForStyleBySelector(el.id, selector, name, value, when),
+		events.DefaultPolling,
+	)
+
+	_, err := task.Run(ctx)
+
+	return err
+}
+
+func (el *HTMLElement) WaitForStyleBySelectorAll(ctx context.Context, selector drivers.QuerySelector, name values.String, value core.Value, when drivers.WaitEvent) error {
+	task := events.NewEvalWaitTask(
+		el.eval,
+		templates.WaitForStyleBySelectorAll(el.id, selector, name, value, when),
+		events.DefaultPolling,
+	)
 
 	_, err := task.Run(ctx)
 
@@ -922,208 +498,116 @@ func (el *HTMLElement) WaitForStyle(ctx context.Context, name values.String, val
 }
 
 func (el *HTMLElement) Click(ctx context.Context, count values.Int) error {
-	return el.input.Click(ctx, el.id.ObjectID, int(count))
+	return el.input.Click(ctx, el.id, int(count))
 }
 
-func (el *HTMLElement) ClickBySelector(ctx context.Context, selector values.String, count values.Int) error {
-	return el.input.ClickBySelector(ctx, el.id.NodeID, selector.String(), int(count))
+func (el *HTMLElement) ClickBySelector(ctx context.Context, selector drivers.QuerySelector, count values.Int) error {
+	return el.input.ClickBySelector(ctx, el.id, selector, count)
 }
 
-func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector values.String, count values.Int) error {
-	return el.input.ClickBySelectorAll(ctx, el.id.NodeID, selector.String(), int(count))
+func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector drivers.QuerySelector, count values.Int) error {
+	elements, err := el.QuerySelectorAll(ctx, selector)
+
+	if err != nil {
+		return err
+	}
+
+	elements.ForEach(func(value core.Value, idx int) bool {
+		found := value.(*HTMLElement)
+
+		if e := found.Click(ctx, count); e != nil {
+			err = e
+			return false
+		}
+
+		return true
+	})
+
+	return err
 }
 
 func (el *HTMLElement) Input(ctx context.Context, value core.Value, delay values.Int) error {
-	if el.GetNodeName() != "INPUT" {
+	name, err := el.GetNodeName(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if strings.ToLower(string(name)) != "input" {
 		return core.Error(core.ErrInvalidOperation, "element is not an <input> element.")
 	}
 
-	return el.input.Type(ctx, el.id.ObjectID, input.TypeParams{
+	return el.input.Type(ctx, el.id, input.TypeParams{
 		Text:  value.String(),
 		Clear: false,
 		Delay: time.Duration(delay) * time.Millisecond,
 	})
 }
 
-func (el *HTMLElement) InputBySelector(ctx context.Context, selector values.String, value core.Value, delay values.Int) error {
-	return el.input.TypeBySelector(ctx, el.id.NodeID, selector.String(), input.TypeParams{
+func (el *HTMLElement) InputBySelector(ctx context.Context, selector drivers.QuerySelector, value core.Value, delay values.Int) error {
+	return el.input.TypeBySelector(ctx, el.id, selector, input.TypeParams{
 		Text:  value.String(),
 		Clear: false,
 		Delay: time.Duration(delay) * time.Millisecond,
 	})
+}
+
+func (el *HTMLElement) Press(ctx context.Context, keys []values.String, count values.Int) error {
+	return el.input.Press(ctx, values.UnwrapStrings(keys), int(count))
+}
+
+func (el *HTMLElement) PressBySelector(ctx context.Context, selector drivers.QuerySelector, keys []values.String, count values.Int) error {
+	return el.input.PressBySelector(ctx, el.id, selector, values.UnwrapStrings(keys), int(count))
 }
 
 func (el *HTMLElement) Clear(ctx context.Context) error {
-	return el.input.Clear(ctx, el.id.ObjectID)
+	return el.input.Clear(ctx, el.id)
 }
 
-func (el *HTMLElement) ClearBySelector(ctx context.Context, selector values.String) error {
-	return el.input.ClearBySelector(ctx, el.id.NodeID, selector.String())
+func (el *HTMLElement) ClearBySelector(ctx context.Context, selector drivers.QuerySelector) error {
+	return el.input.ClearBySelector(ctx, el.id, selector)
 }
 
 func (el *HTMLElement) Select(ctx context.Context, value *values.Array) (*values.Array, error) {
-	return el.input.Select(ctx, el.id.ObjectID, value)
+	return el.input.Select(ctx, el.id, value)
 }
 
-func (el *HTMLElement) SelectBySelector(ctx context.Context, selector values.String, value *values.Array) (*values.Array, error) {
-	return el.input.SelectBySelector(ctx, el.id.NodeID, selector.String(), value)
+func (el *HTMLElement) SelectBySelector(ctx context.Context, selector drivers.QuerySelector, value *values.Array) (*values.Array, error) {
+	return el.input.SelectBySelector(ctx, el.id, selector, value)
 }
 
 func (el *HTMLElement) ScrollIntoView(ctx context.Context, options drivers.ScrollOptions) error {
-	return el.input.ScrollIntoView(ctx, el.id.ObjectID, options)
+	return el.input.ScrollIntoView(ctx, el.id, options)
 }
 
 func (el *HTMLElement) Focus(ctx context.Context) error {
-	return el.input.Focus(ctx, el.id.ObjectID)
+	return el.input.Focus(ctx, el.id)
 }
 
-func (el *HTMLElement) FocusBySelector(ctx context.Context, selector values.String) error {
-	return el.input.FocusBySelector(ctx, el.id.NodeID, selector.String())
+func (el *HTMLElement) FocusBySelector(ctx context.Context, selector drivers.QuerySelector) error {
+	return el.input.FocusBySelector(ctx, el.id, selector)
 }
 
 func (el *HTMLElement) Blur(ctx context.Context) error {
-	return el.input.Blur(ctx, el.id.ObjectID)
+	return el.input.Blur(ctx, el.id)
 }
 
-func (el *HTMLElement) BlurBySelector(ctx context.Context, selector values.String) error {
-	return el.input.BlurBySelector(ctx, el.id.ObjectID, selector.String())
+func (el *HTMLElement) BlurBySelector(ctx context.Context, selector drivers.QuerySelector) error {
+	return el.input.BlurBySelector(ctx, el.id, selector)
 }
 
 func (el *HTMLElement) Hover(ctx context.Context) error {
-	return el.input.MoveMouse(ctx, el.id.ObjectID)
+	return el.input.MoveMouse(ctx, el.id)
 }
 
-func (el *HTMLElement) HoverBySelector(ctx context.Context, selector values.String) error {
-	return el.input.MoveMouseBySelector(ctx, el.id.NodeID, selector.String())
-}
-
-func (el *HTMLElement) convertEvalResult(ctx context.Context, out runtime.RemoteObject) (core.Value, error) {
-	typeName := out.Type
-
-	// checking whether it's actually an array
-	if typeName == "object" {
-		if out.ClassName != nil {
-			switch *out.ClassName {
-			case "Array":
-				typeName = "array"
-			case "HTMLCollection":
-				typeName = "HTMLCollection"
-			default:
-				break
-			}
-		}
-	}
-
-	switch typeName {
-	case "string", "number", "boolean":
-		return eval.Unmarshal(&out)
-	case "array":
-		if out.ObjectID == nil {
-			return values.None, nil
-		}
-
-		props, err := el.client.Runtime.GetProperties(ctx, runtime.NewGetPropertiesArgs(*out.ObjectID).SetOwnProperties(true))
-
-		if err != nil {
-			return values.None, err
-		}
-
-		if props.ExceptionDetails != nil {
-			exception := *props.ExceptionDetails
-
-			return values.None, errors.New(exception.Text)
-		}
-
-		result := values.NewArray(len(props.Result))
-
-		for _, descr := range props.Result {
-			if !descr.Enumerable {
-				continue
-			}
-
-			if descr.Value == nil {
-				continue
-			}
-
-			// it's not a Node, it's an attr value
-			if descr.Value.ObjectID == nil {
-				var value interface{}
-
-				if err := json.Unmarshal(descr.Value.Value, &value); err != nil {
-					return values.None, err
-				}
-
-				result.Push(values.Parse(value))
-
-				continue
-			}
-
-			repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*descr.Value.ObjectID))
-
-			if err != nil {
-				return values.None, err
-			}
-
-			el, err := LoadHTMLElementWithID(
-				ctx,
-				el.logger,
-				el.client,
-				el.dom,
-				el.input,
-				el.exec,
-				HTMLElementIdentity{
-					NodeID:   repl.NodeID,
-					ObjectID: *descr.Value.ObjectID,
-				},
-			)
-
-			if err != nil {
-				return values.None, err
-			}
-
-			result.Push(el)
-		}
-
-		return result, nil
-	case "object":
-		if out.ObjectID == nil {
-			var value interface{}
-
-			if err := json.Unmarshal(out.Value, &value); err != nil {
-				return values.None, err
-			}
-
-			return values.Parse(value), nil
-		}
-
-		repl, err := el.client.DOM.RequestNode(ctx, dom.NewRequestNodeArgs(*out.ObjectID))
-
-		if err != nil {
-			return values.None, err
-		}
-
-		return LoadHTMLElementWithID(
-			ctx,
-			el.logger,
-			el.client,
-			el.dom,
-			el.input,
-			el.exec,
-			HTMLElementIdentity{
-				NodeID:   repl.NodeID,
-				ObjectID: *out.ObjectID,
-			},
-		)
-	default:
-		return values.None, nil
-	}
+func (el *HTMLElement) HoverBySelector(ctx context.Context, selector drivers.QuerySelector) error {
+	return el.input.MoveMouseBySelector(ctx, el.id, selector)
 }
 
 func (el *HTMLElement) logError(err error) *zerolog.Event {
 	return el.logger.
 		Error().
 		Timestamp().
-		Int("nodeID", int(el.id.NodeID)).
-		Str("objectID", string(el.id.ObjectID)).
+		Str("objectID", string(el.id)).
 		Err(err)
 }

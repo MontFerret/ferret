@@ -74,20 +74,23 @@ func newScope(root *RootScope, parent *Scope) *Scope {
 }
 
 func (s *Scope) SetVariable(name string, val Value) error {
-	_, exists := s.vars[name]
+	if name != IgnorableVariable {
+		_, exists := s.vars[name]
 
-	// it already has been declared in the current scope
-	if exists {
-		return Errorf(ErrNotUnique, "variable is already declared: '%s'", name)
+		// it already has been declared in the current scope
+		if exists {
+			return Errorf(ErrNotUnique, "variable is already declared: '%s'", name)
+		}
+
+		s.vars[name] = val
 	}
 
+	// we still want to make sure that nothing than needs to be closed leaks out
 	disposable, ok := val.(io.Closer)
 
 	if ok {
 		s.root.AddDisposable(disposable)
 	}
-
-	s.vars[name] = val
 
 	return nil
 }

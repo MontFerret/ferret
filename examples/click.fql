@@ -1,10 +1,8 @@
-LET doc = DOCUMENT("https://github.com/", { driver: "cdp" })
+LET doc = DOCUMENT("https://www.montferret.dev/", { driver: "cdp" })
 
-HOVER(doc, ".HeaderMenu-details")
-CLICK(doc, ".HeaderMenu a")
+CLICK(doc, "#repl")
 
-WAIT_NAVIGATION(doc)
-WAIT_ELEMENT(doc, '.IconNav')
+WAITFOR EVENT "navigation" IN doc
+WAIT_ELEMENT(doc, '.code-editor-text')
 
-FOR el IN ELEMENTS(doc, '.IconNav a')
-    RETURN TRIM(el.innerText)
+RETURN doc.url

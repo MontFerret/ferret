@@ -1,0 +1,8 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET page = DOCUMENT(url, true)
+
+T::TRUE(CLICK(page, X("//button[@id='wait-class-random-btn']")))
+
+WAIT_CLASS(page, "#wait-class-random-content", "alert-success", 10000)
+
+RETURN TRUE

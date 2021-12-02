@@ -257,7 +257,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.GetNodeType(), ShouldEqual, 1)
+		nt, err := el.GetNodeType(context.Background())
+
+		So(err, ShouldBeNil)
+		So(nt, ShouldEqual, 1)
 	})
 
 	Convey(".GetNodeName", t, func() {
@@ -273,7 +276,10 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.GetNodeName(), ShouldEqual, "body")
+		nn, err := el.GetNodeName(context.Background())
+
+		So(err, ShouldBeNil)
+		So(nn, ShouldEqual, "body")
 	})
 
 	Convey(".Length", t, func() {
@@ -394,15 +400,14 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		found, err := el.QuerySelector(context.Background(), values.NewString("body .card-img-top:nth-child(1)"))
+		found, err := el.QuerySelector(context.Background(), drivers.NewCSSSelector("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
 		So(found, ShouldNotEqual, values.None)
 
-		v := found.(drivers.HTMLNode).GetNodeName()
+		v, err := found.(drivers.HTMLNode).GetNodeName(context.Background())
 
 		So(err, ShouldBeNil)
-
 		So(v, ShouldEqual, "img")
 	})
 
@@ -417,7 +422,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		v, err := el.CountBySelector(context.Background(), values.NewString("head meta"))
+		v, err := el.CountBySelector(context.Background(), drivers.NewCSSSelector("head meta"))
 
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 4)

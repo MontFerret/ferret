@@ -2,8 +2,10 @@ package compiler_test
 
 import (
 	"context"
+	"errors"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -71,7 +73,43 @@ func TestLogicalOperators(t *testing.T) {
 		So(string(out), ShouldEqual, `"foo"`)
 	})
 
-	Convey("NONE && true  should return null", t, func() {
+	Convey("ERROR()? || 'boo'  should return 'boo'", t, func() {
+		c := compiler.New()
+		c.RegisterFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			return nil, errors.New("test")
+		})
+
+		p, err := c.Compile(`
+			RETURN ERROR()? || 'boo'
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `"boo"`)
+	})
+
+	Convey("!ERROR()? && TRUE should return false", t, func() {
+		c := compiler.New()
+		c.RegisterFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			return nil, errors.New("test")
+		})
+
+		p, err := c.Compile(`
+			RETURN !ERROR()? && TRUE
+		`)
+
+		So(err, ShouldBeNil)
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	Convey("NONE && true should return null", t, func() {
 		c := compiler.New()
 
 		p, err := c.Compile(`

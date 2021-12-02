@@ -18,23 +18,27 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	net "github.com/MontFerret/ferret/pkg/drivers/cdp/network"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/utils"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type HTMLPage struct {
-	mu       sync.Mutex
-	closed   values.Boolean
-	logger   *zerolog.Logger
-	conn     *rpcc.Conn
-	client   *cdp.Client
-	network  *net.Manager
-	dom      *dom.Manager
-	mouse    *input.Mouse
-	keyboard *input.Keyboard
-}
+type (
+	HTMLPageEvent string
+
+	HTMLPage struct {
+		mu      sync.Mutex
+		closed  values.Boolean
+		logger  zerolog.Logger
+		conn    *rpcc.Conn
+		client  *cdp.Client
+		network *net.Manager
+		dom     *dom.Manager
+	}
+)
 
 func LoadHTMLPage(
 	ctx context.Context,
@@ -78,10 +82,17 @@ func LoadHTMLPage(
 	}
 
 	if params.Ignore != nil && len(params.Ignore.Resources) > 0 {
-		netOpts.Filter.Patterns = params.Ignore.Resources
+		netOpts.Filter = &net.Filter{
+			Patterns: params.Ignore.Resources,
+		}
 	}
 
-	netManager, err := net.New(ctx, logger, client, netOpts)
+	netManager, err := net.New(
+		logger,
+		client,
+		netOpts,
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +106,7 @@ func LoadHTMLPage(
 		mouse,
 		keyboard,
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +117,6 @@ func LoadHTMLPage(
 		client,
 		netManager,
 		domManager,
-		mouse,
-		keyboard,
 	)
 
 	if params.URL != BlankPageURL && params.URL != "" {
@@ -168,23 +178,19 @@ func LoadHTMLPageWithContent(
 }
 
 func NewHTMLPage(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	conn *rpcc.Conn,
 	client *cdp.Client,
 	netManager *net.Manager,
 	domManager *dom.Manager,
-	mouse *input.Mouse,
-	keyboard *input.Keyboard,
 ) *HTMLPage {
 	p := new(HTMLPage)
 	p.closed = values.False
-	p.logger = logger
+	p.logger = logging.WithName(logger.With(), "cdp_page").Logger()
 	p.conn = conn
 	p.client = client
 	p.network = netManager
 	p.dom = domManager
-	p.mouse = mouse
-	p.keyboard = keyboard
 
 	return p
 }
@@ -239,12 +245,12 @@ func (p *HTMLPage) Copy() core.Value {
 	return values.None
 }
 
-func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, error) {
-	return common.GetInPage(ctx, p, path)
+func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+	return common.GetInPage(ctx, path, p)
 }
 
-func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) error {
-	return common.SetInPage(ctx, p, path, value)
+func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {
+	return common.SetInPage(ctx, path, p, value)
 }
 
 func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
@@ -259,14 +265,19 @@ func (p *HTMLPage) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	url := p.GetURL().String()
+	var url string
+	frame := p.dom.GetMainFrame()
+
+	if frame != nil {
+		url = frame.GetURL().String()
+	}
+
 	p.closed = values.True
 
 	err := p.dom.Close()
 
 	if err != nil {
 		p.logger.Warn().
-			Timestamp().
 			Str("url", url).
 			Err(err).
 			Msg("failed to close dom manager")
@@ -276,7 +287,6 @@ func (p *HTMLPage) Close() error {
 
 	if err != nil {
 		p.logger.Warn().
-			Timestamp().
 			Str("url", url).
 			Err(err).
 			Msg("failed to close network manager")
@@ -286,23 +296,15 @@ func (p *HTMLPage) Close() error {
 
 	if err != nil {
 		p.logger.Warn().
-			Timestamp().
 			Str("url", url).
 			Err(err).
 			Msg("failed to close browser page")
 	}
 
-	err = p.conn.Close()
+	// Ignore errors from the connection object
+	p.conn.Close()
 
-	if err != nil {
-		p.logger.Warn().
-			Timestamp().
-			Str("url", url).
-			Err(err).
-			Msg("failed to close connection")
-	}
-
-	return err
+	return nil
 }
 
 func (p *HTMLPage) IsClosed() values.Boolean {
@@ -313,14 +315,13 @@ func (p *HTMLPage) IsClosed() values.Boolean {
 }
 
 func (p *HTMLPage) GetURL() values.String {
-	res, err := p.getCurrentDocument().Eval(context.Background(), templates.GetURL())
+	res, err := p.getCurrentDocument().Eval().EvalValue(context.Background(), templates.GetURL())
 
 	if err == nil {
 		return values.ToString(res)
 	}
 
 	p.logger.Warn().
-		Timestamp().
 		Err(err).
 		Msg("failed to retrieve URL")
 
@@ -465,12 +466,14 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 		params.Y = 0
 	}
 
+	clientWidth, clientHeight := utils.GetLayoutViewportWH(metrics)
+
 	if params.Width <= 0 {
-		params.Width = values.Float(metrics.LayoutViewport.ClientWidth) - params.X
+		params.Width = values.Float(clientWidth) - params.X
 	}
 
 	if params.Height <= 0 {
-		params.Height = values.Float(metrics.LayoutViewport.ClientHeight) - params.Y
+		params.Height = values.Float(clientHeight) - params.Y
 	}
 
 	clip := page.Viewport{
@@ -545,7 +548,7 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.Strin
 		return err
 	}
 
-	if err := p.network.WaitForNavigation(ctx, pattern); err != nil {
+	if err := p.network.WaitForNavigation(ctx, net.WaitEventOptions{URL: pattern}); err != nil {
 		return err
 	}
 
@@ -572,18 +575,44 @@ func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTM
 	frameID := doc.Frame().Frame.ID
 	isMain := current.Frame().Frame.ID == frameID
 
-	// if it's the current document
-	if isMain {
-		err = p.network.WaitForNavigation(ctx, pattern)
-	} else {
-		err = p.network.WaitForFrameNavigation(ctx, frameID, pattern)
+	opts := net.WaitEventOptions{
+		URL: pattern,
 	}
 
-	if err != nil {
+	// if it's the current document
+	if !isMain {
+		opts.FrameID = frameID
+	}
+
+	if err = p.network.WaitForNavigation(ctx, opts); err != nil {
 		return err
 	}
 
 	return p.reloadMainFrame(ctx)
+}
+
+func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscription) (events.Stream, error) {
+	switch subscription.EventName {
+	case drivers.NavigationEvent:
+		p.mu.Lock()
+		defer p.mu.Unlock()
+
+		stream, err := p.network.OnNavigation(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return newPageNavigationEventStream(stream, func(ctx context.Context) error {
+			return p.reloadMainFrame(ctx)
+		}), nil
+	case drivers.RequestEvent:
+		return p.network.OnRequest(ctx)
+	case drivers.ResponseEvent:
+		return p.network.OnResponse(ctx)
+	default:
+		return nil, core.Errorf(core.ErrInvalidOperation, "unknown event name: %s", subscription.EventName)
+	}
 }
 
 func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {
@@ -609,14 +638,7 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 		}
 	}
 
-	next, err := dom.LoadRootHTMLDocument(
-		ctx,
-		p.logger,
-		p.client,
-		p.dom,
-		p.mouse,
-		p.keyboard,
-	)
+	next, err := p.dom.LoadRootDocument(ctx)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("failed to load a new root document")
@@ -630,14 +652,7 @@ func (p *HTMLPage) reloadMainFrame(ctx context.Context) error {
 }
 
 func (p *HTMLPage) loadMainFrame(ctx context.Context) error {
-	next, err := dom.LoadRootHTMLDocument(
-		ctx,
-		p.logger,
-		p.client,
-		p.dom,
-		p.mouse,
-		p.keyboard,
-	)
+	next, err := p.dom.LoadRootDocument(ctx)
 
 	if err != nil {
 		return err

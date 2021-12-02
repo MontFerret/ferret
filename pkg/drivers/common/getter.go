@@ -11,12 +11,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (core.Value, error) {
+func GetInPage(ctx context.Context, path []core.Value, page drivers.HTMLPage) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return page, nil
 	}
 
-	segment := path[0]
+	segmentIdx := 0
+	segment := path[segmentIdx]
 
 	if segment.Type() == types.String {
 		segment := segment.(values.String)
@@ -26,27 +27,55 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 			resp, err := page.GetResponse(ctx)
 
 			if err != nil {
-				return nil, errors.Wrap(err, "get response")
+				return nil, core.NewPathError(
+					errors.Wrap(err, "get response"),
+					0,
+				)
 			}
 
-			return resp.GetIn(ctx, path[1:])
+			out, pathErr := resp.GetIn(ctx, path[segmentIdx+1:])
+
+			if pathErr != nil {
+				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			}
+
+			return out, nil
 		case "mainFrame", "document":
-			return GetInDocument(ctx, page.GetMainFrame(), path[1:])
+			out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], page.GetMainFrame())
+
+			if pathErr != nil {
+				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			}
+
+			return out, nil
 		case "frames":
 			if len(path) == 1 {
-				return page.GetFrames(ctx)
+				out, err := page.GetFrames(ctx)
+
+				if err != nil {
+					return nil, core.NewPathError(
+						errors.Wrap(err, "get response"),
+						segmentIdx,
+					)
+				}
+
+				return out, nil
 			}
 
-			idx := path[1]
+			segmentIdx = +1
+			idx := path[segmentIdx]
 
 			if !values.IsNumber(idx) {
-				return values.None, core.TypeError(idx.Type(), types.Int, types.Float)
+				return values.None, core.NewPathError(
+					core.TypeError(idx.Type(), types.Int, types.Float),
+					segmentIdx,
+				)
 			}
 
 			value, err := page.GetFrame(ctx, values.ToInt(idx))
 
 			if err != nil {
-				return values.None, err
+				return values.None, core.NewPathError(err, segmentIdx)
 			}
 
 			if len(path) == 2 {
@@ -56,42 +85,57 @@ func GetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value) (c
 			frame, err := drivers.ToDocument(value)
 
 			if err != nil {
-				return values.None, err
+				return values.None, core.NewPathError(err, segmentIdx)
 			}
 
-			return GetInDocument(ctx, frame, path[2:])
+			out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], frame)
+
+			if err != nil {
+				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			}
+
+			return out, nil
 		case "url", "URL":
 			return page.GetURL(), nil
 		case "cookies":
 			cookies, err := page.GetCookies(ctx)
 
 			if err != nil {
-				return values.None, err
+				return values.None, core.NewPathError(err, segmentIdx)
 			}
 
 			if len(path) == 1 {
 				return cookies, nil
 			}
 
-			return cookies.GetIn(ctx, path[1:])
+			out, pathErr := cookies.GetIn(ctx, path[segmentIdx+1:])
+
+			if err != nil {
+				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			}
+
+			return out, nil
 		case "title":
 			return page.GetMainFrame().GetTitle(), nil
 		case "isClosed":
 			return page.IsClosed(), nil
 		default:
-			return GetInDocument(ctx, page.GetMainFrame(), path)
+			return GetInDocument(ctx, path, page.GetMainFrame())
 		}
 	}
 
-	return GetInDocument(ctx, page.GetMainFrame(), path)
+	return GetInDocument(ctx, path, page.GetMainFrame())
 }
 
-func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value) (core.Value, error) {
+func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocument) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return doc, nil
 	}
 
-	segment := path[0]
+	var out core.Value
+	var err error
+	segmentIdx := 0
+	segment := path[segmentIdx]
 
 	if segment.Type() == types.String {
 		segment := segment.(values.String)
@@ -107,7 +151,7 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 			parent, err := doc.GetParentDocument(ctx)
 
 			if err != nil {
-				return values.None, err
+				return values.None, core.NewPathError(err, segmentIdx)
 			}
 
 			if parent == nil {
@@ -118,12 +162,18 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 				return parent, nil
 			}
 
-			return GetInDocument(ctx, parent, path[1:])
+			out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], parent)
+
+			if pathErr != nil {
+				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			}
+
+			return out, nil
 		case "body", "head":
-			out, err := doc.QuerySelector(ctx, segment)
+			out, err := doc.QuerySelector(ctx, drivers.NewCSSSelector(segment))
 
 			if err != nil {
-				return values.None, err
+				return values.None, core.NewPathError(err, segmentIdx)
 			}
 
 			if out == values.None {
@@ -137,121 +187,127 @@ func GetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Va
 			el, err := drivers.ToElement(out)
 
 			if err != nil {
-				return values.None, err
+				return values.None, core.NewPathError(err, segmentIdx)
 			}
 
-			return GetInElement(ctx, el, path[1:])
+			out, pathErr := GetInElement(ctx, path[segmentIdx+1:], el)
+
+			if pathErr != nil {
+				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			}
+
+			return out, nil
 		case "innerHTML":
-			return doc.GetElement().GetInnerHTML(ctx)
+			out, err = doc.GetElement().GetInnerHTML(ctx)
 		case "innerText":
-			return doc.GetElement().GetInnerText(ctx)
+			out, err = doc.GetElement().GetInnerText(ctx)
 		default:
-			return GetInNode(ctx, doc.GetElement(), path)
+			return GetInNode(ctx, path, doc.GetElement())
 		}
+
+		return values.ReturnOrNext(ctx, path, segmentIdx, out, err)
 	}
 
-	return GetInNode(ctx, doc.GetElement(), path)
+	return GetInNode(ctx, path, doc.GetElement())
 }
 
-func GetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value) (core.Value, error) {
+func GetInElement(ctx context.Context, path []core.Value, el drivers.HTMLElement) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return el, nil
 	}
 
-	segment := path[0]
+	segmentIdx := 0
+	segment := path[segmentIdx]
 
 	if segment.Type() == types.String {
+		var out core.Value
+		var err error
+
 		segment := segment.(values.String)
 
 		switch segment {
 		case "innerText":
-			return el.GetInnerText(ctx)
+			out, err = el.GetInnerText(ctx)
 		case "innerHTML":
-			return el.GetInnerHTML(ctx)
+			out, err = el.GetInnerHTML(ctx)
 		case "value":
-			return el.GetValue(ctx)
+			out, err = el.GetValue(ctx)
 		case "attributes":
-			attrs, err := el.GetAttributes(ctx)
-
-			if err != nil {
-				return values.None, err
-			}
-
 			if len(path) == 1 {
-				return attrs, nil
-			}
+				out, err = el.GetAttributes(ctx)
+			} else {
+				// e.g. attributes.href
+				segmentIdx++
+				attrName := path[segmentIdx]
 
-			return values.GetIn(ctx, attrs, path[1:])
+				out, err = el.GetAttribute(ctx, values.ToString(attrName))
+			}
 		case "style":
-			styles, err := el.GetStyles(ctx)
-
-			if err != nil {
-				return values.None, err
-			}
-
 			if len(path) == 1 {
-				return styles, nil
-			}
+				out, err = el.GetStyles(ctx)
+			} else {
+				// e.g. style.color
+				segmentIdx++
+				styleName := path[segmentIdx]
 
-			return values.GetIn(ctx, styles, path[1:])
+				out, err = el.GetStyle(ctx, values.ToString(styleName))
+			}
 		case "previousElementSibling":
-			return el.GetPreviousElementSibling(ctx)
+			out, err = el.GetPreviousElementSibling(ctx)
 		case "nextElementSibling":
-			return el.GetNextElementSibling(ctx)
+			out, err = el.GetNextElementSibling(ctx)
 		case "parentElement":
-			return el.GetParentElement(ctx)
+			out, err = el.GetParentElement(ctx)
 		default:
-			return GetInNode(ctx, el, path)
+			return GetInNode(ctx, path, el)
 		}
+
+		return values.ReturnOrNext(ctx, path, segmentIdx, out, err)
 	}
 
-	return GetInNode(ctx, el, path)
+	return GetInNode(ctx, path, el)
 }
 
-func GetInNode(ctx context.Context, node drivers.HTMLNode, path []core.Value) (core.Value, error) {
+func GetInNode(ctx context.Context, path []core.Value, node drivers.HTMLNode) (core.Value, core.PathError) {
 	if len(path) == 0 {
 		return node, nil
 	}
 
-	nt := node.Type()
-	segment := path[0]
-	st := segment.Type()
+	segmentIdx := 0
+	segment := path[segmentIdx]
 
-	switch st {
+	var out core.Value
+	var err error
+
+	switch segment.Type() {
 	case types.Int:
-		if nt == drivers.HTMLElementType || nt == drivers.HTMLDocumentType {
-			re := node.(drivers.HTMLNode)
-
-			return re.GetChildNode(ctx, values.ToInt(segment))
-		}
-
-		return values.GetIn(ctx, node, path[1:])
+		out, err = node.GetChildNode(ctx, values.ToInt(segment))
 	case types.String:
 		segment := segment.(values.String)
 
 		switch segment {
 		case "nodeType":
-			return node.GetNodeType(), nil
+			out, err = node.GetNodeType(ctx)
 		case "nodeName":
-			return node.GetNodeName(), nil
+			out, err = node.GetNodeName(ctx)
 		case "children":
-			children, err := node.GetChildNodes(ctx)
-
-			if err != nil {
-				return values.None, err
-			}
-
 			if len(path) == 1 {
-				return children, nil
+				out, err = node.GetChildNodes(ctx)
+			} else {
+				segmentIdx++
+				out, err = node.GetChildNode(ctx, values.ToInt(path[segmentIdx]))
 			}
-
-			return values.GetIn(ctx, children, path[1:])
 		case "length":
 			return node.Length(), nil
 		default:
 			return values.None, nil
 		}
 	default:
-		return values.None, core.TypeError(st, types.Int, types.String)
+		return values.None, core.NewPathError(
+			core.TypeError(segment.Type(), types.Int, types.String),
+			segmentIdx,
+		)
 	}
+
+	return values.ReturnOrNext(ctx, path, segmentIdx, out, err)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -179,11 +181,35 @@ func TestLet(t *testing.T) {
 		So(string(out), ShouldEqual, "[1,2,3]")
 	})
 
-	Convey("Should compile LET i = (FOR i WHILE 0 > 1 RETURN i) RETURN i", t, func() {
+	Convey("Should compile LET src = NONE LET i = (FOR i IN NONE RETURN i)? RETURN i == NONE", t, func() {
 		c := compiler.New()
 
 		p, err := c.Compile(`
-			LET i = (FOR i WHILE 0 > 1 RETURN i)
+			LET src = NONE
+			LET i = (FOR i IN src RETURN i)?
+			RETURN i == NONE
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "true")
+	})
+
+	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
+		c := compiler.New()
+		counter := -1
+		c.RegisterFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+
+			return values.NewInt(counter), nil
+		})
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE COUNTER() < 5 RETURN i)
 			RETURN i
 		`)
 
@@ -193,7 +219,30 @@ func TestLet(t *testing.T) {
 		out, err := p.Run(context.Background())
 
 		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, "[]")
+		So(string(out), ShouldEqual, "[0,1,2,3,4]")
+	})
+
+	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)? RETURN i == NONE", t, func() {
+		c := compiler.New()
+		counter := -1
+		c.RegisterFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+
+			return values.NewInt(counter), nil
+		})
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)?
+			RETURN i == NONE
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := p.Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "true")
 	})
 
 	Convey("Should compile LET i = { items: [1,2,3]}  FOR el IN i.items RETURN i", t, func() {
@@ -244,6 +293,82 @@ func TestLet(t *testing.T) {
 			LET foo = "baz"
 
 			RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
+
+	SkipConvey("Should use value returned from WAITFOR EVENT", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET obj = X::VAL("event", ["data"])
+
+			LET res = (WAITFOR EVENT "event" IN obj)
+
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `"data"`)
+	})
+
+	SkipConvey("Should handle error from WAITFOR EVENT", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET obj = X::VAL("foo", ["data"])
+
+			LET res = (WAITFOR EVENT "event" IN obj TIMEOUT 100)?
+
+			RETURN res == NONE
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	SkipConvey("Should compare result of handled error", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET obj = X::VAL("event", ["foo"], 1000)
+
+			LET res = (WAITFOR EVENT "event" IN obj TIMEOUT 100)? != NONE
+
+			RETURN res
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `false`)
+	})
+
+	Convey("Should use ignorable variable name", t, func() {
+		out, err := newCompilerWithObservable().MustCompile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN TRUE
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	Convey("Should allow to declare a variable name using _", t, func() {
+		c := compiler.New()
+
+		out, err := c.MustCompile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN TRUE
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `true`)
+	})
+
+	Convey("Should not allow to use ignorable variable name", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN _
 		`)
 
 		So(err, ShouldNotBeNil)

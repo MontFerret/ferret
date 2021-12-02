@@ -1,30 +1,70 @@
 LET baseURL = 'https://www.amazon.com/'
 LET amazon = DOCUMENT(baseURL, { driver: "cdp" })
 
+WAIT_ELEMENT(amazon, '#nav-search-submit-button')
 INPUT(amazon, '#twotabsearchtextbox', @criteria)
-CLICK(amazon, '.nav-search-submit input[type="submit"]')
-WAIT_NAVIGATION(amazon)
+CLICK(amazon, '#nav-search-submit-button')
 
-LET resultListSelector = 'div.s-result-list'
-LET resultItemSelector = '[data-component-type="s-search-result"]'
-LET nextBtnSelector = 'ul.a-pagination .a-last a'
+WAITFOR EVENT "navigation" IN amazon
+    FILTER current.url =~ "www\.amazon\.com\/s\?k="
+    TIMEOUT 50000
+
+WAIT_ELEMENT(amazon, '[class*="template=PAGINATION"]')
+
+LET paginator = ELEMENT(amazon, '[class*="-pagination"]')
+LET foundPrefixes = (FOR cn IN SPLIT(paginator.attributes.class, " ")
+    FILTER cn LIKE "*-pagination*"
+    LIMIT 1
+    RETURN FIRST(SPLIT(cn, "-"))
+)
+
+LET prefix = FIRST(foundPrefixes)
+T::NOT::EMPTY(prefix, "CSS prefix should not be empty")
+PRINT("CSS Prefix is:", prefix)
+
+LET paginationItems = paginator.length
+
+LET variants = {
+    "s": {
+        nextBtnSelector: ".s-pagination-next",
+        pagersSelector: ".s-pagination-item:not(.s-pagination-next, .s-pagination-previous):last-of-type"
+    },
+    "a": {
+        nextBtnSelector: ".a-pagination .a-last",
+        pagersSelector: FMT("ul.a-pagination li:nth-of-type({})", paginator.length - 1)
+    }
+}
+
+LET selectors = variants[prefix]
+
+T::NOT::NONE(selectors, "Supported CSS selectors not found")
+
+LET spinner = FMT('[data-component-type="{0}-search-results"] .{0}-result-list-placeholder', prefix)
+LET resultListSelector = FMT('[data-component-type="{}-search-results"]', prefix)
+LET resultItemSelector = FMT('[data-component-type="{}-search-result"]', prefix)
+
+LET pagersSelector = FMT('.{0}-pagination :not(.{0}-last)', prefix)
 LET priceWholeSelector = '.a-price-whole'
 LET priceFracSelector = '.a-price-fraction'
-LET pagers = ELEMENTS(amazon, 'ul.a-pagination li.a-disabled')
+
+LET pagers = ELEMENTS(amazon, pagersSelector)
 LET pages = LENGTH(pagers) > 0 ? TO_INT(INNER_TEXT(LAST(pagers))) : 0
+
+PRINT("Found pages:", pages)
 
 LET result = (
     FOR pageNum IN 1..pages
         LIMIT @pages
 
-        LET clicked = pageNum == 1 ? false : CLICK(amazon, nextBtnSelector)
-        LET wait = clicked ? WAIT_NAVIGATION(amazon, 10000) : false
-        LET waitSelector = wait ? WAIT_ELEMENT(amazon, resultListSelector) : false
+        LET clicked = pageNum == 1 ? false : CLICK(amazon, selectors.nextBtnSelector)
+        LET waitSelector = clicked ? WAIT_NO_CLASS(amazon, spinner, 'aok-hidden') && WAIT_ELEMENT(amazon, resultItemSelector) : false
 
         PRINT("page:", pageNum, "clicked", clicked)
 
+        LET found = ELEMENTS(amazon, resultItemSelector)
+
         LET items = (
-            FOR el IN ELEMENTS(amazon, resultItemSelector)
+            FOR el IN found
                 LET hasPrice = ELEMENT_EXISTS(el, priceWholeSelector)
                 LET priceWholeTxt = hasPrice ? FIRST(REGEX_MATCH(INNER_TEXT(el, priceWholeSelector), "[0-9]+")) : "0"
                 LET priceFracTxt = hasPrice ? FIRST(REGEX_MATCH(INNER_TEXT(el, priceFracSelector), "[0-9]+")) : "00"
@@ -32,6 +72,7 @@ LET result = (
 		        LET anchor = ELEMENT(el, "a")
 
                 RETURN {
+                    page: pageNum,
                     url: baseURL + anchor.attributes.href,
                     title: INNER_TEXT(el, 'h2'),
                     price
@@ -42,3 +83,5 @@ LET result = (
 )
 
 RETURN FLATTEN(result)
+
+

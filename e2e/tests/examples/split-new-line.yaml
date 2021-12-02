@@ -1,0 +1,5 @@
+timeout: 240
+query:
+  ref: file://../../../examples/split-new-line.fql
+assert:
+  text: RETURN T::NOT::EMPTY(@lab.data.query.result)

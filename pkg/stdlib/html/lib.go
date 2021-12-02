@@ -48,6 +48,8 @@ func RegisterLib(ns core.Namespace) error {
 			"PAGINATION":        Pagination,
 			"PARSE":             Parse,
 			"PDF":               PDF,
+			"PRESS":             Press,
+			"PRESS_SELECTOR":    PressSelector,
 			"SCREENSHOT":        Screenshot,
 			"SCROLL":            ScrollXY,
 			"SCROLL_BOTTOM":     ScrollBottom,
@@ -73,6 +75,7 @@ func RegisterLib(ns core.Namespace) error {
 			"WAIT_NO_STYLE_ALL": WaitNoStyleAll,
 			"WAIT_NAVIGATION":   WaitNavigation,
 			"XPATH":             XPath,
+			"X":                 XPathSelector,
 		}))
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,7 +15,7 @@ import (
 func TestFunctionCallExpression(t *testing.T) {
 	Convey(".Exec", t, func() {
 		Convey("Should execute an underlying function without arguments", func() {
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					So(args, ShouldHaveLength, 0)
@@ -39,7 +40,7 @@ func TestFunctionCallExpression(t *testing.T) {
 				literals.NewStringLiteral("foo"),
 			}
 
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					So(args, ShouldHaveLength, len(args))
@@ -65,7 +66,7 @@ func TestFunctionCallExpression(t *testing.T) {
 				literals.NewStringLiteral("foo"),
 			}
 
-			f, err := expressions.NewFunctionCallExpression(
+			f, err := expressions.NewFunctionCallExpressionWith(
 				core.SourceMap{},
 				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
 					So(args, ShouldHaveLength, len(args))
@@ -84,6 +85,26 @@ func TestFunctionCallExpression(t *testing.T) {
 			_, err = f.Exec(ctx, rootScope.Fork())
 
 			So(err, ShouldEqual, core.ErrTerminated)
+		})
+
+		Convey("Should ignore errors and return NONE", func() {
+			f, err := expressions.NewFunctionCallExpressionWith(
+				core.SourceMap{},
+				func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
+					return values.NewString("booo"), core.ErrNotImplemented
+				},
+			)
+
+			So(err, ShouldBeNil)
+
+			fse, err := expressions.SuppressErrors(f)
+
+			So(err, ShouldBeNil)
+
+			out, err := fse.Exec(context.Background(), rootScope.Fork())
+
+			So(err, ShouldBeNil)
+			So(out.Type().String(), ShouldEqual, types.None.String())
 		})
 	})
 }

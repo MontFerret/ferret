@@ -1,0 +1,28 @@
+LET url = @lab.cdn.dynamic + "?redirect=/forms"
+LET doc = DOCUMENT(url, true)
+
+WAIT_ELEMENT(doc, "form")
+
+LET form = ELEMENT(doc, "#page-form")
+
+INPUT(form, "#text_input", "foo")
+INPUT_CLEAR(form, "#text_input")
+
+LET input = ELEMENT(doc, "#text_input")
+LET output = ELEMENT(doc, "#text_output")
+
+T::EMPTY(output.innerText)
+
+INPUT(form, "#text_input", "test0-test1", 100)
+
+INPUT_CLEAR(form, "#text_input")
+
+T::EMPTY(output.innerText)
+
+INPUT(form, "#text_input", "test0&test1", 100)
+
+INPUT_CLEAR(form, "#text_input")
+
+T::EMPTY(output.innerText)
+
+RETURN NONE

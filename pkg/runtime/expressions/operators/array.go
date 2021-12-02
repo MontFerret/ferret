@@ -2,6 +2,7 @@ package operators
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -9,39 +10,31 @@ import (
 )
 
 type (
-	ArrayOperatorType int
-	ArrayOperator     struct {
+	ArrayOperatorVariant int
+
+	ArrayOperator struct {
 		*baseOperator
-		aotype     ArrayOperatorType
-		comparator core.OperatorExpression
+		variant    ArrayOperatorVariant
+		comparator core.Predicate
 	}
 )
 
 const (
-	ArrayOperatorTypeAll  ArrayOperatorType = 0
-	ArrayOperatorTypeAny  ArrayOperatorType = 1
-	ArrayOperatorTypeNone ArrayOperatorType = 2
+	ArrayOperatorVariantAll ArrayOperatorVariant = iota
+	ArrayOperatorVariantAny
+	ArrayOperatorVariantNone
 )
 
-func IsValidArrayOperatorType(aotype ArrayOperatorType) bool {
-	switch aotype {
-	case ArrayOperatorTypeAll, ArrayOperatorTypeAny, ArrayOperatorTypeNone:
-		return true
-	default:
-		return false
-	}
-}
-
-func ToIsValidArrayOperatorType(stype string) (ArrayOperatorType, error) {
-	switch stype {
+func ToArrayOperatorVariant(name string) (ArrayOperatorVariant, error) {
+	switch strings.ToUpper(name) {
 	case "ALL":
-		return ArrayOperatorTypeAll, nil
+		return ArrayOperatorVariantAll, nil
 	case "ANY":
-		return ArrayOperatorTypeAny, nil
+		return ArrayOperatorVariantAny, nil
 	case "NONE":
-		return ArrayOperatorTypeNone, nil
+		return ArrayOperatorVariantNone, nil
 	default:
-		return ArrayOperatorType(-1), core.Error(core.ErrInvalidArgument, stype)
+		return ArrayOperatorVariant(-1), core.Error(core.ErrInvalidArgument, name)
 	}
 }
 
@@ -49,8 +42,8 @@ func NewArrayOperator(
 	src core.SourceMap,
 	left core.Expression,
 	right core.Expression,
-	aotype ArrayOperatorType,
-	comparator core.OperatorExpression,
+	variantStr string,
+	comparator core.Predicate,
 ) (*ArrayOperator, error) {
 	if left == nil {
 		return nil, core.Error(core.ErrMissedArgument, "left expression")
@@ -60,8 +53,10 @@ func NewArrayOperator(
 		return nil, core.Error(core.ErrMissedArgument, "right expression")
 	}
 
-	if !IsValidArrayOperatorType(aotype) {
-		return nil, core.Error(core.ErrInvalidArgument, "operator")
+	variant, err := ToArrayOperatorVariant(variantStr)
+
+	if err != nil {
+		return nil, err
 	}
 
 	if comparator == nil {
@@ -70,7 +65,7 @@ func NewArrayOperator(
 
 	base := &baseOperator{src, left, right}
 
-	return &ArrayOperator{base, aotype, comparator}, nil
+	return &ArrayOperator{base, variant, comparator}, nil
 }
 
 func (operator *ArrayOperator) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
@@ -99,10 +94,10 @@ func (operator *ArrayOperator) Eval(ctx context.Context, left, right core.Value)
 
 	arr := left.(*values.Array)
 
-	switch operator.aotype {
-	case ArrayOperatorTypeAll:
+	switch operator.variant {
+	case ArrayOperatorVariantAll:
 		return operator.all(ctx, arr, right)
-	case ArrayOperatorTypeAny:
+	case ArrayOperatorVariantAny:
 		return operator.any(ctx, arr, right)
 	default:
 		return operator.none(ctx, arr, right)

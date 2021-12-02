@@ -1,0 +1,8 @@
+timeout: 240
+query:
+  ref: file://../../../examples/pagination.fql
+  params:
+    criteria: "scraper"
+    pages: 2
+assert:
+  text: RETURN T::NOT::NONE(@lab.data.query.result)

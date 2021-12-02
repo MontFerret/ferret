@@ -34,13 +34,18 @@ func waitElementWhen(ctx context.Context, args []core.Value, when drivers.WaitEv
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	selector := args[1].String()
+	selector, err := drivers.ToQuerySelector(args[1])
+
+	if err != nil {
+		return values.None, err
+	}
+
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 2 {
@@ -56,5 +61,5 @@ func waitElementWhen(ctx context.Context, args []core.Value, when drivers.WaitEv
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.WaitForElement(ctx, values.NewString(selector), when)
+	return values.True, el.WaitForElement(ctx, selector, when)
 }

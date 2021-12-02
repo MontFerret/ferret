@@ -232,4 +232,17 @@ func TestReturn(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, "{\"a\":\"foo\"}")
 	})
+
+	SkipConvey("Should compile RETURN (WAITFOR EVENT \"event\" IN obj)", t, func() {
+		c := newCompilerWithObservable()
+
+		out, err := c.MustCompile(`
+			LET obj = X::VAL("event", ["data"])
+
+			RETURN (WAITFOR EVENT "event" IN obj)
+		`).Run(context.Background())
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, `"data"`)
+	})
 }

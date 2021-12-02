@@ -10,6 +10,7 @@ LET frames = (
 
 LET doc = FIRST(frames)
 
+T::NOT::NONE(doc)
 T::TRUE(ELEMENT_EXISTS(doc, '.text-center'))
 T::FALSE(ELEMENT_EXISTS(doc, '.foo-bar'))
 

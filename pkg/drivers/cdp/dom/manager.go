@@ -6,35 +6,37 @@ import (
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
+	"github.com/mafredri/cdp/protocol/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type (
-	Manager struct {
-		mu        sync.RWMutex
-		logger    *zerolog.Logger
-		client    *cdp.Client
-		mouse     *input.Mouse
-		keyboard  *input.Keyboard
-		mainFrame *AtomicFrameID
-		frames    *AtomicFrameCollection
-	}
-)
+type Manager struct {
+	mu        sync.RWMutex
+	logger    zerolog.Logger
+	client    *cdp.Client
+	mouse     *input.Mouse
+	keyboard  *input.Keyboard
+	mainFrame *AtomicFrameID
+	frames    *AtomicFrameCollection
+}
 
 func New(
-	logger *zerolog.Logger,
+	logger zerolog.Logger,
 	client *cdp.Client,
 	mouse *input.Mouse,
 	keyboard *input.Keyboard,
 ) (manager *Manager, err error) {
 
 	manager = new(Manager)
-	manager.logger = logger
+	manager.logger = logging.WithName(logger.With(), "dom_manager").Logger()
 	manager.client = client
 	manager.mouse = mouse
 	manager.keyboard = keyboard
@@ -63,6 +65,70 @@ func (m *Manager) Close() error {
 	}
 
 	return nil
+}
+
+func (m *Manager) LoadRootDocument(ctx context.Context) (*HTMLDocument, error) {
+	ftRepl, err := m.client.Page.GetFrameTree(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return m.LoadDocument(ctx, ftRepl.FrameTree)
+}
+
+func (m *Manager) LoadDocument(ctx context.Context, frame page.FrameTree) (*HTMLDocument, error) {
+	exec, err := eval.Create(ctx, m.logger, m.client, frame.Frame.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	inputs := input.New(m.logger, m.client, exec, m.keyboard, m.mouse)
+
+	ref, err := exec.EvalRef(ctx, templates.GetDocument())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load root element")
+	}
+
+	exec.SetLoader(NewNodeLoader(m))
+
+	rootElement := NewHTMLElement(
+		m.logger,
+		m.client,
+		m,
+		inputs,
+		exec,
+		*ref.ObjectID,
+	)
+
+	return NewHTMLDocument(
+		m.logger,
+		m.client,
+		m,
+		inputs,
+		exec,
+		rootElement,
+		frame,
+	), nil
+}
+
+func (m *Manager) ResolveElement(ctx context.Context, frameID page.FrameID, id runtime.RemoteObjectID) (*HTMLElement, error) {
+	doc, err := m.GetFrameNode(ctx, frameID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewHTMLElement(
+		m.logger,
+		m.client,
+		m,
+		doc.input,
+		doc.eval,
+		id,
+	), nil
 }
 
 func (m *Manager) GetMainFrame() *HTMLDocument {
@@ -211,24 +277,8 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 		return frame.node, nil
 	}
 
-	// the frames is not loaded yet
-	node, execID, err := resolveFrame(ctx, m.client, frameID)
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to resolve frame node: %s", frameID)
-	}
-
-	doc, err := LoadHTMLDocument(
-		ctx,
-		m.logger,
-		m.client,
-		m,
-		m.mouse,
-		m.keyboard,
-		node,
-		frame.tree,
-		execID,
-	)
+	// the frame is not loaded yet
+	doc, err := m.LoadDocument(ctx, frame.tree)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load frame document")

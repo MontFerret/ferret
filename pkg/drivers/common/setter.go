@@ -9,28 +9,29 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func SetInPage(ctx context.Context, page drivers.HTMLPage, path []core.Value, value core.Value) error {
+func SetInPage(ctx context.Context, path []core.Value, page drivers.HTMLPage, value core.Value) core.PathError {
 	if len(path) == 0 {
 		return nil
 	}
 
-	return SetInDocument(ctx, page.GetMainFrame(), path, value)
+	return SetInDocument(ctx, path, page.GetMainFrame(), value)
 }
 
-func SetInDocument(ctx context.Context, doc drivers.HTMLDocument, path []core.Value, value core.Value) error {
+func SetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocument, value core.Value) core.PathError {
 	if len(path) == 0 {
 		return nil
 	}
 
-	return SetInNode(ctx, doc, path, value)
+	return SetInNode(ctx, path, doc, value)
 }
 
-func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value, value core.Value) error {
+func SetInElement(ctx context.Context, path []core.Value, el drivers.HTMLElement, value core.Value) core.PathError {
 	if len(path) == 0 {
 		return nil
 	}
 
-	segment := path[0]
+	segmentIdx := 0
+	segment := path[segmentIdx]
 
 	if segment.Type() == types.String {
 		segment := segment.(values.String)
@@ -39,27 +40,32 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 		case "attributes":
 			if len(path) > 1 {
 				attrName := path[1]
+				err := el.SetAttribute(ctx, values.NewString(attrName.String()), values.NewString(value.String()))
 
-				return el.SetAttribute(ctx, values.NewString(attrName.String()), values.NewString(value.String()))
+				if err != nil {
+					return core.NewPathError(err, segmentIdx)
+				}
+
+				return nil
 			}
 
 			err := core.ValidateType(value, types.Object)
 
 			if err != nil {
-				return err
+				return core.NewPathError(err, segmentIdx)
 			}
 
 			curr, err := el.GetAttributes(ctx)
 
 			if err != nil {
-				return err
+				return core.NewPathError(err, segmentIdx)
 			}
 
 			// remove all previous attributes
 			err = el.RemoveAttribute(ctx, curr.Keys()...)
 
 			if err != nil {
-				return err
+				return core.NewPathError(err, segmentIdx)
 			}
 
 			obj := value.(*values.Object)
@@ -69,24 +75,34 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 				return err == nil
 			})
 
-			return err
+			if err != nil {
+				return core.NewPathError(err, segmentIdx)
+			}
+
+			return nil
 		case "style":
 			if len(path) > 1 {
 				attrName := path[1]
 
-				return el.SetStyle(ctx, values.NewString(attrName.String()), values.NewString(value.String()))
+				err := el.SetStyle(ctx, values.NewString(attrName.String()), values.NewString(value.String()))
+
+				if err != nil {
+					return core.NewPathError(err, segmentIdx)
+				}
+
+				return nil
 			}
 
 			err := core.ValidateType(value, types.Object)
 
 			if err != nil {
-				return err
+				return core.NewPathError(err, segmentIdx)
 			}
 
 			styles, err := el.GetStyles(ctx)
 
 			if err != nil {
-				return err
+				return core.NewPathError(err, segmentIdx)
 			}
 
 			err = el.RemoveStyle(ctx, styles.Keys()...)
@@ -98,30 +114,33 @@ func SetInElement(ctx context.Context, el drivers.HTMLElement, path []core.Value
 				return err == nil
 			})
 
-			return err
-		case "value":
-			if len(path) > 1 {
-				return core.Error(ErrInvalidPath, PathToString(path[1:]))
+			if err != nil {
+				return core.NewPathError(err, segmentIdx)
 			}
 
-			return el.SetValue(ctx, value)
+			return nil
+		case "value":
+			if len(path) > 1 {
+				return core.NewPathError(ErrInvalidPath, segmentIdx+1)
+			}
+
+			err := el.SetValue(ctx, value)
+
+			if err != nil {
+				return core.NewPathError(err, segmentIdx)
+			}
+
+			return nil
 		}
 	}
 
-	return SetInNode(ctx, el, path, value)
+	return SetInNode(ctx, path, el, value)
 }
 
-func SetInNode(_ context.Context, _ drivers.HTMLNode, path []core.Value, _ core.Value) error {
+func SetInNode(_ context.Context, path []core.Value, _ drivers.HTMLNode, _ core.Value) core.PathError {
 	if len(path) == 0 {
 		return nil
 	}
 
-	segment := path[0]
-	st := segment.Type()
-
-	if st == types.Int {
-		return core.Error(core.ErrInvalidOperation, "children are read-only")
-	}
-
-	return core.Error(ErrReadOnly, PathToString(path))
+	return core.NewPathError(ErrReadOnly, 0)
 }

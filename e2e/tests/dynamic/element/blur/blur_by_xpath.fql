@@ -1,0 +1,12 @@
+LET url = @lab.cdn.dynamic + "/#/events"
+LET page = DOCUMENT(url, true)
+
+FOCUS(page, "#focus-input")
+
+WAIT_CLASS(page, "#focus-content", "alert-success")
+
+BLUR(page, X('.//*[@id="focus-input"]'))
+
+WAIT_NO_CLASS(page, "#focus-content", "alert-success")
+
+RETURN TRUE

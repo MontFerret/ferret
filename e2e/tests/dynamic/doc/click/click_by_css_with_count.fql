@@ -1,0 +1,16 @@
+LET url = @lab.cdn.dynamic + "/#/forms"
+LET page = DOCUMENT(url, true)
+
+WAIT_ELEMENT(page, "form")
+
+LET input = ELEMENT(page, "#text_input")
+
+INPUT(input, "Foo")
+
+T::TRUE(CLICK(page, "#text_input", 2))
+
+INPUT(input, "Bar")
+
+WAIT(100)
+
+RETURN T::EQ(input.value, "Bar")

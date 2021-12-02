@@ -51,9 +51,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	conn, err := drv.createConnection(ctx, params.KeepCookies)
 
 	if err != nil {
-		logger.
-			Error().
-			Timestamp().
+		logger.Error().
 			Err(err).
 			Str("driver", drv.options.Name).
 			Msg("failed to create a new connection")
@@ -70,9 +68,7 @@ func (drv *Driver) Parse(ctx context.Context, params drivers.ParseParams) (drive
 	conn, err := drv.createConnection(ctx, true)
 
 	if err != nil {
-		logger.
-			Error().
-			Timestamp().
+		logger.Error().
 			Err(err).
 			Str("driver", drv.options.Name).
 			Msg("failed to create a new connection")
@@ -154,11 +150,22 @@ func (drv *Driver) init(ctx context.Context) error {
 			return errors.Wrap(err, "failed to initialize driver")
 		}
 
+		dialOpts := make([]rpcc.DialOption, 0, 2)
+
+		if drv.options.Connection != nil {
+			if drv.options.Connection.BufferSize > 0 {
+				dialOpts = append(dialOpts, rpcc.WithWriteBufferSize(drv.options.Connection.BufferSize))
+			}
+
+			if drv.options.Connection.Compression {
+				dialOpts = append(dialOpts, rpcc.WithCompression())
+			}
+		}
+
 		bconn, err := rpcc.DialContext(
 			ctx,
 			ver.WebSocketDebuggerURL,
-			rpcc.WithWriteBufferSize(1048562),
-			rpcc.WithCompression(),
+			dialOpts...,
 		)
 
 		if err != nil {

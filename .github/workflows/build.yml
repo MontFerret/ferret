@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goVer: [1.13, 1.14, 1.15, 1.16]
+        goVer: [1.14, 1.15, 1.16, 1.17]
     steps:
       - name: Set up Go ${{ matrix.goVer }}
         uses: actions/setup-go@v2
@@ -64,6 +64,6 @@ jobs:
 
       - name: E2E tests
         run: |
-          docker run -d -p 9222:9222 ghcr.io/montferret/chromium:88.0.4298.0
+          docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0
           make e2e
           docker stop $(docker ps -q)

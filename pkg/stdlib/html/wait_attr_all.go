@@ -36,14 +36,13 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 		return values.None, err
 	}
 
-	doc, err := drivers.ToDocument(args[0])
+	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	// selector
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
@@ -56,7 +55,6 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
 	name := args[2].(values.String)
 	value := args[3]
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
@@ -74,5 +72,5 @@ func waitAttributeAllWhen(ctx context.Context, args []core.Value, when drivers.W
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, doc.WaitForAttributeBySelectorAll(ctx, selector, name, value, when)
+	return values.True, el.WaitForAttributeBySelectorAll(ctx, selector, name, value, when)
 }

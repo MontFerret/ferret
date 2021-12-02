@@ -1,0 +1,10 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, { driver: "cdp" })
+LET selector = X('.//*[@id="root"]/div/main/div/*/h1')
+
+WAIT_ELEMENT(doc, "#layout")
+
+LET expected = 'Welcome to Ferret E2E test page!'
+LET actual = INNER_TEXT(doc, selector)
+
+RETURN T::EQ(REGEX_REPLACE(TRIM(actual), '(\n|\s)', ''), REGEX_REPLACE(expected, '\s', ''))

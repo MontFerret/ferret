@@ -44,13 +44,6 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 		return values.None, err
 	}
 
-	// selector or attr name
-	err = core.ValidateType(args[1], types.String)
-
-	if err != nil {
-		return values.None, err
-	}
-
 	timeout := values.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
@@ -70,15 +63,20 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 			return values.None, err
 		}
 
-		doc, err := drivers.ToDocument(arg1)
+		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
 			return values.None, err
 		}
 
-		selector := args[1].(values.String)
+		selector, err := drivers.ToQuerySelector(args[1])
+
+		if err != nil {
+			return values.None, err
+		}
+
 		name := args[2].(values.String)
-		value := args[3]
+		value := values.ToString(args[3])
 
 		if len(args) == 5 {
 			err = core.ValidateType(args[4], types.Int)
@@ -93,7 +91,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.None, doc.WaitForAttributeBySelector(ctx, selector, name, value, when)
+		return values.True, el.WaitForAttributeBySelector(ctx, selector, name, value, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
@@ -113,5 +111,5 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.None, el.WaitForAttribute(ctx, name, value, when)
+	return values.True, el.WaitForAttribute(ctx, name, value, when)
 }

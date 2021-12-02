@@ -12,6 +12,7 @@ type (
 	scope struct {
 		global *globalScope
 		parent *scope
+		name   string
 		vars   map[string]struct{}
 	}
 )
@@ -26,14 +27,28 @@ func newRootScope(global *globalScope) *scope {
 	return &scope{
 		global: global,
 		vars:   make(map[string]struct{}),
+		name:   "root",
 	}
 }
 
-func newScope(parent *scope) *scope {
+func newScope(parent *scope, name string) *scope {
 	s := newRootScope(parent.global)
 	s.parent = parent
+	s.name = name
 
 	return s
+}
+
+func (s *scope) Name() string {
+	if s.name != "" {
+		return s.name
+	}
+
+	if s.parent != nil {
+		return s.parent.Name()
+	}
+
+	return ""
 }
 
 func (s *scope) AddParam(name string) {
@@ -55,6 +70,10 @@ func (s *scope) HasVariable(name string) bool {
 }
 
 func (s *scope) SetVariable(name string) error {
+	if name == core.IgnorableVariable {
+		return nil
+	}
+
 	_, exists := s.vars[name]
 
 	if exists {
@@ -83,6 +102,6 @@ func (s *scope) ClearVariables() {
 	s.vars = make(map[string]struct{})
 }
 
-func (s *scope) Fork() *scope {
-	return newScope(s)
+func (s *scope) Fork(name string) *scope {
+	return newScope(s, name)
 }

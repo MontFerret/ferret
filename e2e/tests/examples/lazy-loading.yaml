@@ -1,0 +1,5 @@
+
+query:
+  ref: ../../../examples/lazy-loading.fql
+assert:
+  text: RETURN T::LEN(@lab.data.query.result, 50)

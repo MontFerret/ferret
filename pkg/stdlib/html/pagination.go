@@ -2,11 +2,11 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/rs/zerolog"
 )
 
 // PAGINATION creates an iterator that goes through pages using CSS selector.
@@ -14,7 +14,7 @@ import (
 // That allows you to keep scraping logic inside FOR loop.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - CSS selector for a pagination on the page.
-func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
+func Pagination(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -27,28 +27,33 @@ func Pagination(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
 		return values.None, err
 	}
 
-	selector := args[1].(values.String)
+	logger := logging.
+		WithName(logging.FromContext(ctx).With(), "stdlib_html_pagination").
+		Str("selector", selector.String()).
+		Logger()
 
-	return &Paging{page, selector}, nil
+	return &Paging{logger, page, selector}, nil
 }
 
 var PagingType = core.NewType("paging")
 
 type (
 	Paging struct {
+		logger   zerolog.Logger
 		page     drivers.HTMLPage
-		selector values.String
+		selector drivers.QuerySelector
 	}
 
 	PagingIterator struct {
+		logger   zerolog.Logger
 		page     drivers.HTMLPage
-		selector values.String
+		selector drivers.QuerySelector
 		pos      values.Int
 	}
 )
@@ -82,31 +87,45 @@ func (p *Paging) Copy() core.Value {
 }
 
 func (p *Paging) Iterate(_ context.Context) (core.Iterator, error) {
-	return &PagingIterator{p.page, p.selector, -1}, nil
+	return &PagingIterator{p.logger, p.page, p.selector, -1}, nil
 }
 
 func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, error) {
 	i.pos++
 
+	i.logger.Trace().Int("position", int(i.pos)).Msg("starting to advance iteration")
+
 	if i.pos == 0 {
+		i.logger.Trace().Msg("starting point of pagination. nothing to do. exit")
 		return values.ZeroInt, values.ZeroInt, nil
 	}
 
+	i.logger.Trace().Msg("checking if an element exists...")
 	exists, err := i.page.GetMainFrame().ExistsBySelector(ctx, i.selector)
 
 	if err != nil {
+		i.logger.Trace().Err(err).Msg("failed to check")
+
 		return values.None, values.None, err
 	}
 
 	if !exists {
+		i.logger.Trace().Bool("exists", bool(exists)).Msg("element does not exist. exit")
+
 		return values.None, values.None, core.ErrNoMoreData
 	}
+
+	i.logger.Trace().Bool("exists", bool(exists)).Msg("element exists. clicking...")
 
 	err = i.page.GetMainFrame().GetElement().ClickBySelector(ctx, i.selector, 1)
 
 	if err != nil {
+		i.logger.Trace().Err(err).Msg("failed to click. exit")
+
 		return values.None, values.None, err
 	}
+
+	i.logger.Trace().Msg("successfully clicked on element. iteration has succeeded")
 
 	// terminate
 	return i.pos, i.pos, nil

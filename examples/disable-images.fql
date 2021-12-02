@@ -1,6 +1,6 @@
 LET p = DOCUMENT("https://www.gettyimages.com/", {
     driver: "cdp",
-    disable: {
+    ignore: {
         resources: [
             {
                 url: "*",
@@ -10,4 +10,4 @@ LET p = DOCUMENT("https://www.gettyimages.com/", {
     }
 })
 
-RETURN NONE
+RETURN TRUE

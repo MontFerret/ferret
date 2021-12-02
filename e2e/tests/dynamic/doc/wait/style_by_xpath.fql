@@ -1,0 +1,18 @@
+LET url = @lab.cdn.dynamic + "?redirect=/events"
+LET doc = DOCUMENT(url, true)
+LET selector = X("//*[@id='wait-class-btn']")
+
+WAIT_ELEMENT(doc, "#page-events")
+
+LET el = ELEMENT(doc, selector)
+LET prev = el.style
+
+ATTR_SET(el, "style", "width: 200px")
+WAIT_STYLE(doc, selector, "width", "200px")
+
+LET curr = el.style
+
+T::NOT::EQ(prev.width, "200px")
+T::EQ(curr.width, "200px")
+
+RETURN NONE

@@ -1,24 +1,39 @@
 package cdp
 
-import "github.com/MontFerret/ferret/pkg/drivers"
+import (
+	"github.com/MontFerret/ferret/pkg/drivers"
+)
 
 type (
 	Options struct {
 		*drivers.Options
 		Address     string
 		KeepCookies bool
+		Connection  *ConnectionOptions
+	}
+
+	ConnectionOptions struct {
+		BufferSize  int
+		Compression bool
 	}
 
 	Option func(opts *Options)
 )
 
-const DefaultAddress = "http://127.0.0.1:9222"
+const (
+	DefaultAddress    = "http://127.0.0.1:9222"
+	DefaultBufferSize = 1048562
+)
 
 func NewOptions(setters []Option) *Options {
 	opts := new(Options)
 	opts.Options = new(drivers.Options)
 	opts.Name = DriverName
 	opts.Address = DefaultAddress
+	opts.Connection = &ConnectionOptions{
+		BufferSize:  DefaultBufferSize,
+		Compression: true,
+	}
 
 	for _, setter := range setters {
 		setter(opts)
@@ -80,5 +95,23 @@ func WithCookie(cookie drivers.HTTPCookie) Option {
 func WithCookies(cookies []drivers.HTTPCookie) Option {
 	return func(opts *Options) {
 		drivers.WithCookies(cookies)(opts.Options)
+	}
+}
+
+func WithBufferSize(size int) Option {
+	return func(opts *Options) {
+		opts.Connection.BufferSize = size
+	}
+}
+
+func WithCompression() Option {
+	return func(opts *Options) {
+		opts.Connection.Compression = true
+	}
+}
+
+func WithNoCompression() Option {
+	return func(opts *Options) {
+		opts.Connection.Compression = false
 	}
 }

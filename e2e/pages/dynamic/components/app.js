@@ -6,6 +6,7 @@ import IframePage from './pages/iframes/index.js';
 import MediaPage from './pages/media/index.js';
 import PaginationPage from './pages/pagination/index.js';
 import ListsPage from './pages/lists/index.js';
+import NavigationPage from './pages/navigation/index.js';
 
 const e = React.createElement;
 const Router = ReactRouter.Router;
@@ -65,6 +66,10 @@ export default React.memo(function AppComponent(params = {}) {
                 e(Route, {
                     path: '/lists',
                     component: ListsPage
+                }),
+                e(Route, {
+                    path: '/navigation',
+                    component: NavigationPage
                 }),
             ]),
             redirectTo

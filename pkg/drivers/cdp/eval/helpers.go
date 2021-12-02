@@ -1,36 +1,27 @@
 package eval
 
 import (
-	"fmt"
-	"strconv"
+	"strings"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func PrepareEval(exp string) string {
-	return fmt.Sprintf("((function () {%s})())", exp)
-}
-
-func Unmarshal(obj *runtime.RemoteObject) (core.Value, error) {
-	if obj == nil {
-		return values.None, nil
+func parseRuntimeException(details *runtime.ExceptionDetails) error {
+	if details == nil || details.Exception == nil {
+		return nil
 	}
 
-	switch obj.Type {
-	case "string":
-		str, err := strconv.Unquote(string(obj.Value))
+	desc := *details.Exception.Description
 
-		if err != nil {
-			return values.None, err
-		}
-
-		return values.NewString(str), nil
-	case "undefined", "null":
-		return values.None, nil
-	default:
-		return values.Unmarshal(obj.Value)
+	if strings.Contains(desc, drivers.ErrNotFound.Error()) {
+		return drivers.ErrNotFound
 	}
+
+	return core.Error(
+		core.ErrUnexpected,
+		desc,
+	)
 }

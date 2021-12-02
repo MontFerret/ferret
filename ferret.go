@@ -14,9 +14,11 @@ type Instance struct {
 	drivers  *drivers.Container
 }
 
-func New() *Instance {
+func New(setters ...Option) *Instance {
+	opts := NewOptions(setters)
+
 	return &Instance{
-		compiler: compiler.New(),
+		compiler: compiler.New(opts.compiler...),
 		drivers:  drivers.NewContainer(),
 	}
 }
@@ -33,6 +35,10 @@ func (i *Instance) Compile(query string) (*runtime.Program, error) {
 	return i.compiler.Compile(query)
 }
 
+func (i *Instance) MustCompile(query string) *runtime.Program {
+	return i.compiler.MustCompile(query)
+}
+
 func (i *Instance) Exec(ctx context.Context, query string, opts ...runtime.Option) ([]byte, error) {
 	p, err := i.Compile(query)
 
@@ -40,9 +46,37 @@ func (i *Instance) Exec(ctx context.Context, query string, opts ...runtime.Optio
 		return nil, err
 	}
 
-	for _, drv := range i.drivers.GetAll() {
-		ctx = drivers.WithContext(ctx, drv)
-	}
+	ctx = i.drivers.WithContext(ctx)
 
 	return p.Run(ctx, opts...)
+}
+
+func (i *Instance) MustExec(ctx context.Context, query string, opts ...runtime.Option) []byte {
+	out, err := i.Exec(ctx, query, opts...)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
+func (i *Instance) Run(ctx context.Context, program *runtime.Program, opts ...runtime.Option) ([]byte, error) {
+	if program == nil {
+		return nil, core.Error(core.ErrInvalidArgument, "program")
+	}
+
+	ctx = i.drivers.WithContext(ctx)
+
+	return program.Run(ctx, opts...)
+}
+
+func (i *Instance) MustRun(ctx context.Context, program *runtime.Program, opts ...runtime.Option) []byte {
+	out, err := i.Run(ctx, program, opts...)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
 }

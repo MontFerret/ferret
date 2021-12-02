@@ -10,25 +10,60 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // GetIn checks that from implements core.Getter interface. If it implements,
-// GetIn call from.GetIn method, otherwise return error.
-func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, error) {
-	getter, ok := from.(core.Getter)
-	if !ok {
-		return None, core.TypeError(
-			from.Type(),
-			core.NewType("Getter"),
-		)
+// GetIn call from.GetIn method, otherwise iterates over values and tries to resolve a given path.
+func GetIn(ctx context.Context, from core.Value, byPath []core.Value) (core.Value, core.PathError) {
+	if len(byPath) == 0 {
+		return None, nil
 	}
 
-	return getter.GetIn(ctx, byPath)
+	var result = from
+
+	for i, segment := range byPath {
+		if result == None || result == nil {
+			break
+		}
+
+		segType := segment.Type()
+
+		switch curVal := result.(type) {
+		case *Object:
+			result, _ = curVal.Get(ToString(segment))
+		case *Array:
+			if segType != types.Int {
+				return nil, core.NewPathError(
+					core.TypeError(segType, types.Int),
+					i,
+				)
+			}
+
+			result = curVal.Get(segment.(Int))
+		case String:
+			if segType != types.Int {
+				return nil, core.NewPathError(
+					core.TypeError(segType, types.Int),
+					i,
+				)
+			}
+
+			result = curVal.At(ToInt(segment))
+		case core.Getter:
+			return curVal.GetIn(ctx, byPath[i:])
+		default:
+			return None, core.NewPathError(core.ErrInvalidPath, i)
+		}
+	}
+
+	return result, nil
 }
 
-func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) error {
+func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.Value) core.PathError {
 	if len(byPath) == 0 {
 		return nil
 	}
@@ -45,7 +80,10 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 		switch parVal := parent.(type) {
 		case *Object:
 			if segmentType != types.String {
-				return core.TypeError(segmentType, types.String)
+				return core.NewPathError(
+					core.TypeError(segmentType, types.String),
+					idx,
+				)
 			}
 
 			if !isTarget {
@@ -55,14 +93,17 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 			}
 		case *Array:
 			if segmentType != types.Int {
-				return core.TypeError(segmentType, types.Int)
+				return core.NewPathError(
+					core.TypeError(segmentType, types.Int),
+					idx,
+				)
 			}
 
 			if !isTarget {
 				current = parVal.Get(segment.(Int))
 			} else {
 				if err := parVal.Set(segment.(Int), value); err != nil {
-					return err
+					return core.NewPathError(err, idx)
 				}
 			}
 		case core.Setter:
@@ -77,7 +118,7 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 				parent = obj
 
 				if segmentType != types.String {
-					return core.TypeError(segmentType, types.String)
+					return core.NewPathError(core.TypeError(segmentType, types.String), idx)
 				}
 
 				if isTarget {
@@ -89,13 +130,21 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 
 				if isTarget {
 					if err := arr.Set(segment.(Int), value); err != nil {
-						return err
+						return core.NewPathError(err, idx)
 					}
 				}
 			}
 
 			// set new parent
-			if err := SetIn(ctx, to, byPath[0:idx-1], parent); err != nil {
+			nextPath := byPath
+
+			if idx > 0 {
+				nextPath = byPath[0 : idx-1]
+			} else {
+				nextPath = byPath[0:]
+			}
+
+			if err := SetIn(ctx, to, nextPath, parent); err != nil {
 				return err
 			}
 
@@ -108,12 +157,44 @@ func SetIn(ctx context.Context, to core.Value, byPath []core.Value, value core.V
 	return nil
 }
 
+func ReturnOrNext(ctx context.Context, path []core.Value, idx int, out core.Value, err error) (core.Value, core.PathError) {
+	if err != nil {
+		pathErr, ok := err.(core.PathError)
+
+		if ok {
+			return None, core.NewPathErrorFrom(pathErr, idx)
+		}
+
+		return None, core.NewPathError(err, idx)
+	}
+
+	if len(path) > (idx + 1) {
+		out, pathErr := GetIn(ctx, out, path[idx+1:])
+
+		if pathErr != nil {
+			return None, core.NewPathErrorFrom(pathErr, idx)
+		}
+
+		return out, nil
+	}
+
+	return out, nil
+}
+
 func Parse(input interface{}) core.Value {
 	switch value := input.(type) {
 	case bool:
 		return NewBoolean(value)
 	case string:
 		return NewString(value)
+	case int64:
+		return NewInt(int(value))
+	case int32:
+		return NewInt(int(value))
+	case int16:
+		return NewInt(int(value))
+	case int8:
+		return NewInt(int(value))
 	case int:
 		return NewInt(value)
 	case float64:
@@ -211,6 +292,26 @@ func Unmarshal(value json.RawMessage) (core.Value, error) {
 	}
 
 	return Parse(o), nil
+}
+
+func MustMarshal(value core.Value) json.RawMessage {
+	out, err := value.MarshalJSON()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
+func MustMarshalAny(input interface{}) json.RawMessage {
+	out, err := jettison.MarshalOpts(input, jettison.NoHTMLEscaping())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return out
 }
 
 func ToBoolean(input core.Value) Boolean {
@@ -335,6 +436,14 @@ func ToInt(input core.Value) Int {
 	}
 }
 
+func ToIntDefault(input core.Value, defaultValue Int) Int {
+	if result := ToInt(input); result > 0 {
+		return result
+	}
+
+	return defaultValue
+}
+
 func ToArray(ctx context.Context, input core.Value) *Array {
 	switch value := input.(type) {
 	case Boolean,
@@ -385,6 +494,71 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 	}
 }
 
+func ToObject(ctx context.Context, input core.Value) *Object {
+	switch value := input.(type) {
+	case *Object:
+		return value
+	case *Array:
+		obj := NewObject()
+
+		value.ForEach(func(value core.Value, idx int) bool {
+			obj.Set(ToString(Int(idx)), value)
+
+			return true
+		})
+
+		return obj
+	case core.Iterable:
+		iterator, err := value.Iterate(ctx)
+
+		if err != nil {
+			return NewObject()
+		}
+
+		obj := NewObject()
+
+		for {
+			val, key, err := iterator.Next(ctx)
+
+			if err != nil {
+				return obj
+			}
+
+			if val == None {
+				break
+			}
+
+			obj.Set(String(key.String()), val)
+		}
+
+		return obj
+	default:
+		return NewObject()
+	}
+}
+
+func ToStrings(input *Array) []String {
+	res := make([]String, input.Length())
+
+	input.ForEach(func(v core.Value, i int) bool {
+		res[i] = NewString(v.String())
+
+		return true
+	})
+
+	return res
+}
+
+func Hash(rtType core.Type, content []byte) uint64 {
+	h := fnv.New64a()
+
+	h.Write([]byte(rtType.String()))
+	h.Write([]byte(":"))
+	h.Write(content)
+
+	return h.Sum64()
+}
+
 func MapHash(input map[string]core.Value) uint64 {
 	h := fnv.New64a()
 
@@ -426,4 +600,14 @@ func IsNumber(input core.Value) Boolean {
 	t := input.Type()
 
 	return t == types.Int || t == types.Float
+}
+
+func UnwrapStrings(values []String) []string {
+	out := make([]string, len(values))
+
+	for i, v := range values {
+		out[i] = v.String()
+	}
+
+	return out
 }

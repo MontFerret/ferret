@@ -2,27 +2,50 @@ package templates
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
+	"github.com/mafredri/cdp/protocol/runtime"
 )
 
-func Blur() string {
-	return `
-		(el) => {
-			el.blur()
-		}
-	`
+const blur = `(el) => {
+	el.blur()
+}`
+
+func Blur(id runtime.RemoteObjectID) *eval.Function {
+	return eval.F(blur).WithArgRef(id)
 }
 
-func BlurBySelector(selector string) string {
-	return fmt.Sprintf(`
-		(parent) => {
-			const el = parent.querySelector('%s');
+var (
+	blurByCSSSelector = fmt.Sprintf(`
+		(el, selector) => {
+			const found = el.querySelector(selector);
 
-			if (el == null) {
-				throw new Error('%s')
-			}
+			%s
 
-			el.blur();
+			found.blur();
 		}
-`, selector, drivers.ErrNotFound)
+`, notFoundErrorFragment)
+
+	blurByXPathSelector = fmt.Sprintf(`
+		(el, selector) => {
+			%s
+
+			%s
+
+			found.blur();
+		}
+`, xpathAsElementFragment, notFoundErrorFragment)
+)
+
+func BlurBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector) *eval.Function {
+	var f *eval.Function
+
+	if selector.Kind() == drivers.CSSSelector {
+		f = eval.F(blurByCSSSelector)
+	} else {
+		f = eval.F(blurByXPathSelector)
+	}
+
+	return f.WithArgRef(id).WithArgSelector(selector)
 }

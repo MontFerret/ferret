@@ -1,0 +1,7 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, { driver: "cdp" })
+
+T::TRUE(ELEMENT_EXISTS(doc, X(".//*[contains(@class, 'text-center')]")))
+T::FALSE(ELEMENT_EXISTS(doc, X(".//*[contains(@class, 'foo-bar')]")))
+
+RETURN NONE
