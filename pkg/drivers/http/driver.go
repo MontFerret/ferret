@@ -224,7 +224,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 		params.Headers.ForEach(func(value []string, key string) bool {
 			v := params.Headers.Get(key)
 
-			req.Header.Add(key, v)
+			req.Header.Set(key, v)
 
 			logger.
 				Debug().
