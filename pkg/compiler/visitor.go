@@ -422,20 +422,25 @@ func (v *visitor) visitLimitClause(c fql.ILimitClauseContext, scope *scope) (cor
 
 func (v *visitor) visitLimitClauseValue(c fql.ILimitClauseValueContext, scope *scope) (core.Expression, error) {
 	ctx := c.(*fql.LimitClauseValueContext)
-	literalCtx := ctx.IntegerLiteral()
 
-	if literalCtx != nil {
+	if literalCtx := ctx.IntegerLiteral(); literalCtx != nil {
 		i, err := strconv.Atoi(literalCtx.GetText())
 		if err != nil {
 			return nil, err
 		}
 
 		return literals.NewIntLiteral(i), nil
+	} else if paramCtx := ctx.Param(); paramCtx != nil {
+		return v.visitParam(paramCtx.(fql.IParamContext), scope)
+	} else if variableCtx := ctx.Variable(); variableCtx != nil {
+		return v.visitVariable(variableCtx, scope)
+	} else if funcCtx := ctx.FunctionCallExpression(); funcCtx != nil {
+		return v.visitFunctionCallExpression(funcCtx, scope)
+	} else if memCtx := ctx.MemberExpression(); memCtx != nil {
+		return v.visitMemberExpression(memCtx, scope)
 	}
 
-	paramCtx := ctx.Param()
-
-	return v.visitParam(paramCtx.(fql.IParamContext), scope)
+	return nil, v.unexpectedToken(ctx)
 }
 
 func (v *visitor) visitFilterClause(c fql.IFilterClauseContext, scope *scope) (core.Expression, error) {

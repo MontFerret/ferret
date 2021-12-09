@@ -96,6 +96,9 @@ limitClause
 limitClauseValue
     : IntegerLiteral
     | param
+    | variable
+    | functionCallExpression
+    | memberExpression
     ;
 
 sortClause
