@@ -83,6 +83,20 @@ func TestTernaryOperator(t *testing.T) {
 			So(string(out), ShouldEqual, `["no value",2,4,6]`)
 		}
 	})
+
+	Convey("Multi expression", t, func() {
+		out := compiler.New().MustCompile(`
+			RETURN 0 && true ? "1" : "some"
+		`).MustRun(context.Background())
+
+		So(string(out), ShouldEqual, `"some"`)
+
+		out = compiler.New().MustCompile(`
+			RETURN length([]) > 0 && true ? "1" : "some"
+		`).MustRun(context.Background())
+
+		So(string(out), ShouldEqual, `"some"`)
+	})
 }
 
 func BenchmarkTernaryOperator(b *testing.B) {
