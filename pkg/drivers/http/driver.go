@@ -114,6 +114,10 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 	}
 
 	body := io.Reader(resp.Body)
+	if drv.options.BodyLimit > 0 {
+		body = &io.LimitedReader{R: body, N: drv.options.BodyLimit}
+	}
+
 	if params.Charset != "" {
 		body, err = drv.convertToUTF8(body, params.Charset)
 		if err != nil {
@@ -220,7 +224,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 		params.Headers.ForEach(func(value []string, key string) bool {
 			v := params.Headers.Get(key)
 
-			req.Header.Add(key, v)
+			req.Header.Set(key, v)
 
 			logger.
 				Debug().

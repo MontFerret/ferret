@@ -48,7 +48,6 @@ func (drv *Driver) Name() string {
 
 func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
 	logger := logging.FromContext(ctx)
-
 	conn, err := drv.createConnection(ctx, params.KeepCookies)
 
 	if err != nil {
