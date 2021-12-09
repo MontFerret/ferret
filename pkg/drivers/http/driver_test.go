@@ -39,15 +39,6 @@ func Test_newHTTPClientWithTransport(t *testing.T) {
 				HTTPTransport: httpTransport,
 			}},
 		},
-		{
-			name: "check transport exist with pester.NewExtendedClient()",
-			args: args{options: &Options{
-				Options: &drivers.Options{
-					Proxy: "http://0.0.0.0",
-				},
-				HTTPTransport: httpTransport,
-			}},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -94,24 +85,6 @@ func Test_newHTTPClient(t *testing.T) {
 		hc := rField.Interface().(*http.Client)
 
 		So(hc, ShouldBeNil)
-	})
-
-	Convey("pester.NewExtend()", t, func() {
-		var (
-			client = newHTTPClient(&Options{
-				Options: &drivers.Options{
-					Proxy: "http://0.0.0.0",
-				},
-			})
-
-			rValue = reflect.ValueOf(client).Elem()
-			rField = rValue.Field(0)
-		)
-
-		rField = reflect.NewAt(rField.Type(), unsafe.Pointer(rField.UnsafeAddr())).Elem()
-		hc := rField.Interface().(*http.Client)
-
-		So(hc, ShouldNotBeNil)
 	})
 }
 
