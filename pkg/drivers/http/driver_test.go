@@ -95,24 +95,6 @@ func Test_newHTTPClient(t *testing.T) {
 
 		So(hc, ShouldBeNil)
 	})
-
-	Convey("pester.NewExtend()", t, func() {
-		var (
-			client = newHTTPClient(&Options{
-				Options: &drivers.Options{
-					Proxy: "http://0.0.0.0",
-				},
-			})
-
-			rValue = reflect.ValueOf(client).Elem()
-			rField = rValue.Field(0)
-		)
-
-		rField = reflect.NewAt(rField.Type(), unsafe.Pointer(rField.UnsafeAddr())).Elem()
-		hc := rField.Interface().(*http.Client)
-
-		So(hc, ShouldNotBeNil)
-	})
 }
 
 func TestDriver_convertToUTF8(t *testing.T) {
