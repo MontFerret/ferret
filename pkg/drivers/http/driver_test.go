@@ -39,15 +39,6 @@ func Test_newHTTPClientWithTransport(t *testing.T) {
 				HTTPTransport: httpTransport,
 			}},
 		},
-		{
-			name: "check transport exist with pester.NewExtendedClient()",
-			args: args{options: &Options{
-				Options: &drivers.Options{
-					Proxy: "http://0.0.0.0",
-				},
-				HTTPTransport: httpTransport,
-			}},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
