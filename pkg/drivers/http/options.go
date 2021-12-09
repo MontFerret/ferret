@@ -42,6 +42,7 @@ func NewOptions(setters []Option) *Options {
 	opts.Backoff = pester.ExponentialBackoff
 	opts.Concurrency = DefaultConcurrency
 	opts.MaxRetries = DefaultMaxRetries
+	opts.Timeout = DefaultTimeout
 	opts.HTTPCodesFilter = make([]compiledStatusCodeFilter, 0, 5)
 
 	for _, setter := range setters {
