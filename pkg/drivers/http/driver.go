@@ -3,12 +3,13 @@ package http
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/gobwas/glob"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/gobwas/glob"
 
 	"golang.org/x/net/html/charset"
 
@@ -219,7 +220,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 		params.Headers.ForEach(func(value []string, key string) bool {
 			v := params.Headers.Get(key)
 
-			req.Header.Add(key, v)
+			req.Header.Set(key, v)
 
 			logger.
 				Debug().
