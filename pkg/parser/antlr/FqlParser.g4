@@ -325,9 +325,9 @@ rangeOperand
 
 expression
     : unaryOperator right=expression
-    | condition=expression ternaryOperator=QuestionMark onTrue=expression? Colon onFalse=expression
     | left=expression logicalAndOperator right=expression
     | left=expression logicalOrOperator right=expression
+    | condition=expression ternaryOperator=QuestionMark onTrue=expression? Colon onFalse=expression
     | predicate
     ;
 
