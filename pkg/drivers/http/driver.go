@@ -3,12 +3,13 @@ package http
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/gobwas/glob"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/MontFerret/ferret/pkg/runtime/logging"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/gobwas/glob"
 
 	"golang.org/x/net/html/charset"
 
@@ -32,15 +33,17 @@ func NewDriver(opts ...Option) *Driver {
 	drv.options = NewOptions(opts)
 
 	drv.client = newHTTPClient(drv.options)
-	drv.client.Concurrency = drv.options.Concurrency
-	drv.client.MaxRetries = drv.options.MaxRetries
-	drv.client.Backoff = drv.options.Backoff
 
 	return drv
 }
 
 func newHTTPClient(options *Options) (httpClient *pester.Client) {
 	httpClient = pester.New()
+
+	httpClient.Concurrency = options.Concurrency
+	httpClient.MaxRetries = options.MaxRetries
+	httpClient.Backoff = options.Backoff
+	httpClient.Timeout = options.Timeout
 
 	if options.HTTPTransport != nil {
 		httpClient.Transport = options.HTTPTransport
@@ -53,8 +56,6 @@ func newHTTPClient(options *Options) (httpClient *pester.Client) {
 	if err := addProxy(httpClient, options.Proxy); err != nil {
 		return
 	}
-
-	httpClient = pester.NewExtendedClient(&http.Client{Transport: httpClient.Transport})
 
 	return
 }
@@ -219,7 +220,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 		params.Headers.ForEach(func(value []string, key string) bool {
 			v := params.Headers.Get(key)
 
-			req.Header.Add(key, v)
+			req.Header.Set(key, v)
 
 			logger.
 				Debug().
