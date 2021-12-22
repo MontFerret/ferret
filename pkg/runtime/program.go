@@ -2,7 +2,7 @@ package runtime
 
 import (
 	"context"
-	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -58,20 +58,24 @@ func (p *Program) Run(ctx context.Context, setters ...Option) (result []byte, er
 
 	defer func() {
 		if r := recover(); r != nil {
+			// find out exactly what the error was and set err
 			switch x := r.(type) {
 			case string:
 				err = errors.New(x)
 			case error:
-				err = errors.WithStack(err)
+				err = x
 			default:
 				err = errors.New("unknown panic")
 			}
 
+			b := make([]byte, 0, 20)
+			runtime.Stack(b, true)
+
 			logger.Error().
 				Timestamp().
 				Err(err).
-				Str("stack", fmt.Sprintf("%+v", err)).
-				Msg("panic")
+				Str("stack", string(b)).
+				Msg("Panic")
 
 			result = nil
 		}
@@ -119,6 +123,7 @@ func (p *Program) validateParams(opts *Options) error {
 	var missedParams []string
 
 	for n := range p.params {
+		opts.mxParam.RLock()
 		_, exists := opts.params[n]
 
 		if !exists {
@@ -128,6 +133,8 @@ func (p *Program) validateParams(opts *Options) error {
 
 			missedParams = append(missedParams, "@"+n)
 		}
+
+		opts.mxParam.RUnlock()
 	}
 
 	if len(missedParams) > 0 {
