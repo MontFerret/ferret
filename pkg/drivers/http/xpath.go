@@ -94,7 +94,7 @@ func EvalXPathTo(selection *goquery.Selection, expression string) (core.Value, e
 				if err != nil {
 					return nil, err
 				}
-				
+
 				item = i
 			}
 
