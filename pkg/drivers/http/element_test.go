@@ -427,4 +427,25 @@ func TestElement(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 4)
 	})
+
+	Convey(".XPath", t, func() {
+		Convey("Text nodes", func() {
+			buff := bytes.NewBuffer([]byte(doc))
+
+			buff.Write([]byte(doc))
+
+			doc, err := goquery.NewDocumentFromReader(buff)
+
+			So(err, ShouldBeNil)
+
+			el, err := http.NewHTMLElement(doc.Find("html"))
+
+			So(err, ShouldBeNil)
+
+			nt, err := el.XPath(context.Background(), values.NewString("/head/title/text()"))
+
+			So(err, ShouldBeNil)
+			So(nt.String(), ShouldEqual, "[\"Album example for Bootstrap\"]")
+		})
+	})
 }
