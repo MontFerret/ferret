@@ -18,8 +18,8 @@ type (
 )
 
 const (
-	DebugLevel Level = iota
-	InfoLevel
+	DebugLevel Level = -1
+	InfoLevel        = iota
 	WarnLevel
 	ErrorLevel
 	FatalLevel
