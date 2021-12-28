@@ -1,6 +1,7 @@
 package html
 
 import (
+	"bytes"
 	"context"
 	"github.com/pkg/errors"
 	"strings"
@@ -85,9 +86,13 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	defer cancel()
 
 	drv, err := drivers.FromContext(ctx, params.Driver)
-
 	if err != nil {
 		return values.None, err
+	}
+
+	if params.SimpleHTTPRequest != nil {
+		return drv.DoSimpleHTTPRequest(ctx, params.Params)
+
 	}
 
 	return drv.Open(ctx, params.Params)
@@ -226,6 +231,18 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 
 			res.Charset = charset.String()
 		}
+
+		simpleRequest, exists := obj.Get(values.NewString("simpleRequest"))
+		if exists {
+			simpleRequest, err := parseSimpleHTTPRequest(simpleRequest)
+
+			if err != nil {
+				return res, err
+			}
+
+			res.SimpleHTTPRequest = simpleRequest
+		}
+
 	case types.String:
 		res.Driver = arg.(values.String).String()
 	case types.Boolean:
@@ -543,4 +560,33 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 	}
 
 	return res, nil
+}
+
+func parseSimpleHTTPRequest(value core.Value) (*drivers.SimpleHTTPRequest, error) {
+	if err := core.ValidateType(value, types.Object); err != nil {
+		return nil, err
+	}
+
+	req := &drivers.SimpleHTTPRequest{}
+
+	reqObj := value.(*values.Object)
+
+	method, methodExists := reqObj.Get("method")
+	body, bodyExists := reqObj.Get("body")
+
+	if !methodExists {
+		return nil, errors.New("method doesn't exists")
+	}
+
+	if bodyExists {
+		if err := core.ValidateType(body, types.Binary); err != nil {
+			return nil, core.Error(err, ".body")
+		}
+
+		req.Body = bytes.NewBuffer(body.(values.Binary))
+	}
+
+	req.Method = method.String()
+
+	return req, nil
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/browser"
@@ -85,6 +87,10 @@ func (drv *Driver) Parse(ctx context.Context, params drivers.ParseParams) (drive
 		Headers:     params.Headers,
 		Viewport:    params.Viewport,
 	}), params.Content)
+}
+
+func (drv *Driver) DoSimpleHTTPRequest(ctx context.Context, params drivers.Params) (*drivers.HTTPResponse, error) {
+	return nil, core.ErrNotSupported
 }
 
 func (drv *Driver) Close() error {

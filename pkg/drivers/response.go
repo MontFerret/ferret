@@ -19,6 +19,7 @@ type (
 		Headers      *HTTPHeaders
 		Body         []byte
 		ResponseTime float64
+		Cookies      *HTTPCookies
 	}
 
 	// responseMarshal is a structure that repeats HTTPResponse. It allows
@@ -30,6 +31,7 @@ type (
 		Headers      *HTTPHeaders `json:"headers"`
 		Body         []byte       `json:"body"`
 		ResponseTime float64      `json:"response_time"`
+		Cookies      *HTTPCookies `json:"cookies"`
 	}
 )
 
@@ -108,7 +110,6 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 		}
 
 		out, pathErr := resp.Headers.GetIn(ctx, path[1:])
-
 		if pathErr != nil {
 			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
 		}
@@ -118,6 +119,23 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 		return values.NewBinary(resp.Body), nil
 	case "responseTime":
 		return values.NewFloat(resp.ResponseTime), nil
+	case "cookies":
+		res := NewHTTPCookies()
+
+		if resp.Cookies != nil {
+			resp.Cookies.ForEach(func(value HTTPCookie, _ values.String) bool {
+				res.Set(value)
+
+				return true
+			})
+		}
+
+		out, pathErr := res.GetIn(ctx, path[segmentIdx+1:])
+		if pathErr != nil {
+			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+		}
+
+		return out, nil
 	}
 
 	return values.None, nil

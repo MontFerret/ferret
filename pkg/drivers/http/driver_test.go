@@ -11,11 +11,11 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/jarcoal/httpmock"
-	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/text/encoding/charmap"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/jarcoal/httpmock"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func Test_newHTTPClientWithTransport(t *testing.T) {
@@ -145,6 +145,44 @@ func TestDriver_convertToUTF8(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				So(page.GetMainFrame().String(), ShouldEqual, tt.expected)
+			})
+
+			Convey("with simpleHTTPRequest", t, func() {
+
+				httpmock.Activate()
+				defer httpmock.DeactivateAndReset()
+
+				data, err := ioutil.ReadAll(bytes.NewBufferString(tt.args.inputData))
+				if err != nil {
+					panic(err)
+				}
+
+				encodedData := make([]byte, len(data)*2)
+
+				dec := charmap.Windows1251.NewEncoder()
+				nDst, _, err := dec.Transform(encodedData, data, false)
+				if err != nil {
+					panic(err)
+				}
+
+				encodedData = encodedData[:nDst]
+
+				httpmock.RegisterResponder("GET", "http://localhost:1111",
+					httpmock.NewStringResponder(200, string(encodedData)))
+
+				drv := NewDriver()
+
+				resp, err := drv.DoSimpleHTTPRequest(context.Background(), drivers.Params{
+					URL:     "http://localhost:1111",
+					Charset: "windows-1251",
+					SimpleHTTPRequest: &drivers.SimpleHTTPRequest{
+						Method: "GET",
+						Body:   nil,
+					},
+				})
+
+				So(err, ShouldBeNil)
+				So(string(resp.Body), ShouldEqual, tt.expected)
 			})
 
 		})

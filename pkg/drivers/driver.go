@@ -19,6 +19,7 @@ type (
 		io.Closer
 		Name() string
 		Open(ctx context.Context, params Params) (HTMLPage, error)
+		DoSimpleHTTPRequest(ctx context.Context, params Params) (*HTTPResponse, error)
 		Parse(ctx context.Context, params ParseParams) (HTMLPage, error)
 	}
 )

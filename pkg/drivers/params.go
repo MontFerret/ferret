@@ -1,5 +1,7 @@
 package drivers
 
+import "io"
+
 type (
 	ResourceFilter struct {
 		URL  string
@@ -25,14 +27,20 @@ type (
 	}
 
 	Params struct {
-		URL         string
-		UserAgent   string
-		KeepCookies bool
-		Cookies     *HTTPCookies
-		Headers     *HTTPHeaders
-		Viewport    *Viewport
-		Charset     string
-		Ignore      *Ignore
+		URL               string
+		UserAgent         string
+		KeepCookies       bool
+		Cookies           *HTTPCookies
+		Headers           *HTTPHeaders
+		Viewport          *Viewport
+		Charset           string
+		Ignore            *Ignore
+		SimpleHTTPRequest *SimpleHTTPRequest
+	}
+
+	SimpleHTTPRequest struct {
+		Method string
+		Body   io.Reader
 	}
 
 	ParseParams struct {
