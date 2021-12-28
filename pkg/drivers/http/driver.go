@@ -129,6 +129,7 @@ func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTM
 
 func (drv *Driver) DoSimpleHTTPRequest(ctx context.Context, params drivers.Params) (*drivers.HTTPResponse, error) {
 	logger := logging.FromContext(ctx)
+
 	req, err := http.NewRequest(params.SimpleHTTPRequest.Method, params.URL, params.SimpleHTTPRequest.Body)
 	if err != nil {
 		return nil, err
