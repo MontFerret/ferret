@@ -112,9 +112,11 @@ func TestDriver_convertToUTF8(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			drv := &Driver{}
 
-			Convey(tt.name, t, func() {
+			Convey("without simpleHTTPRequest", t, func() {
+
+				httpmock.Activate()
+				defer httpmock.DeactivateAndReset()
 
 				data, err := ioutil.ReadAll(bytes.NewBufferString(tt.args.inputData))
 				if err != nil {
@@ -131,14 +133,18 @@ func TestDriver_convertToUTF8(t *testing.T) {
 
 				encodedData = encodedData[:nDst]
 
-				gotData, err := drv.convertToUTF8(bytes.NewReader(encodedData), tt.args.srcCharset)
+				httpmock.RegisterResponder("GET", "http://localhost:1111",
+					httpmock.NewStringResponder(200, string(encodedData)))
+
+				drv := NewDriver()
+
+				page, err := drv.Open(context.Background(), drivers.Params{
+					URL:     "http://localhost:1111",
+					Charset: "windows-1251",
+				})
+
 				So(err, ShouldBeNil)
-
-				outData, err := ioutil.ReadAll(gotData)
-				So(err, ShouldBeNil)
-
-				So(string(outData), ShouldEqual, tt.expected)
-
+				So(page.GetMainFrame().String(), ShouldEqual, tt.expected)
 			})
 
 		})
