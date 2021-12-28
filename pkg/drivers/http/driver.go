@@ -138,12 +138,12 @@ func (drv *Driver) DoSimpleHTTPRequest(ctx context.Context, params drivers.Param
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := drv.prepareResponseBody(resp.Body, params)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	var (
 		respBodyBin bytes.Buffer
