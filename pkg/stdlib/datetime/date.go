@@ -9,23 +9,32 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// DATE converts RFC3339 date time string to DateTime object.
-// @param {String} time - String in RFC3339 format.
+// DATE parses a formatted string and returns DateTime object it represents.
+// @param {String} time - String representation of DateTime.
+// @param {String} [layout = "2006-01-02T15:04:05Z07:00"] - String layout.
 // @return {DateTime} - New DateTime object derived from timeString.
 func Date(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-	if err != nil {
+	if err := core.ValidateArgs(args, 1, 2); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.String)
-	if err != nil {
+	if err := core.ValidateType(args[0], types.String); err != nil {
 		return values.None, err
 	}
 
-	timeStrings := args[0].(values.String)
+	str := args[0].(values.String)
+	layout := values.DefaultTimeLayout
 
-	t, err := time.Parse(values.DefaultTimeLayout, timeStrings.String())
+	if len(args) > 1 {
+		if err := core.ValidateType(args[1], types.String); err != nil {
+			return values.None, err
+		}
+
+		layout = values.ToString(args[1]).String()
+	}
+
+	t, err := time.Parse(layout, str.String())
+
 	if err != nil {
 		return values.None, err
 	}
