@@ -1,4 +1,5 @@
 .PHONY: build install compile test e2e doc fmt lint vet release
+export CGO_ENABLED=0
 
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
@@ -12,14 +13,14 @@ install:
 	go get
 
 compile:
-	go build -race -v -o ${DIR_BIN}/ferret \
+	go build -v -o ${DIR_BIN}/ferret \
 	${DIR_E2E}/cli.go
 
 test:
-	go test -race ${DIR_PKG}/...
+	go test ${DIR_PKG}/...
 
 cover:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
+	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
 	curl -s https://codecov.io/bash | bash
 
 e2e:

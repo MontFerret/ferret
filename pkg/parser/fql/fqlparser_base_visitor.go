@@ -227,7 +227,7 @@ func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContex
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitUnsafReservedWord(ctx *UnsafReservedWordContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitUnsafeReservedWord(ctx *UnsafeReservedWordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
