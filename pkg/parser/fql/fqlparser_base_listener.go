@@ -350,11 +350,11 @@ func (s *BaseFqlParserListener) EnterSafeReservedWord(ctx *SafeReservedWordConte
 // ExitSafeReservedWord is called when production safeReservedWord is exited.
 func (s *BaseFqlParserListener) ExitSafeReservedWord(ctx *SafeReservedWordContext) {}
 
-// EnterUnsafReservedWord is called when production unsafReservedWord is entered.
-func (s *BaseFqlParserListener) EnterUnsafReservedWord(ctx *UnsafReservedWordContext) {}
+// EnterUnsafeReservedWord is called when production unsafeReservedWord is entered.
+func (s *BaseFqlParserListener) EnterUnsafeReservedWord(ctx *UnsafeReservedWordContext) {}
 
-// ExitUnsafReservedWord is called when production unsafReservedWord is exited.
-func (s *BaseFqlParserListener) ExitUnsafReservedWord(ctx *UnsafReservedWordContext) {}
+// ExitUnsafeReservedWord is called when production unsafeReservedWord is exited.
+func (s *BaseFqlParserListener) ExitUnsafeReservedWord(ctx *UnsafeReservedWordContext) {}
 
 // EnterRangeOperator is called when production rangeOperator is entered.
 func (s *BaseFqlParserListener) EnterRangeOperator(ctx *RangeOperatorContext) {}

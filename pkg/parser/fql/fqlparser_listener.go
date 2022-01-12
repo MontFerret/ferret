@@ -172,8 +172,8 @@ type FqlParserListener interface {
 	// EnterSafeReservedWord is called when entering the safeReservedWord production.
 	EnterSafeReservedWord(c *SafeReservedWordContext)
 
-	// EnterUnsafReservedWord is called when entering the unsafReservedWord production.
-	EnterUnsafReservedWord(c *UnsafReservedWordContext)
+	// EnterUnsafeReservedWord is called when entering the unsafeReservedWord production.
+	EnterUnsafeReservedWord(c *UnsafeReservedWordContext)
 
 	// EnterRangeOperator is called when entering the rangeOperator production.
 	EnterRangeOperator(c *RangeOperatorContext)
@@ -388,8 +388,8 @@ type FqlParserListener interface {
 	// ExitSafeReservedWord is called when exiting the safeReservedWord production.
 	ExitSafeReservedWord(c *SafeReservedWordContext)
 
-	// ExitUnsafReservedWord is called when exiting the unsafReservedWord production.
-	ExitUnsafReservedWord(c *UnsafReservedWordContext)
+	// ExitUnsafeReservedWord is called when exiting the unsafeReservedWord production.
+	ExitUnsafeReservedWord(c *UnsafeReservedWordContext)
 
 	// ExitRangeOperator is called when exiting the rangeOperator production.
 	ExitRangeOperator(c *RangeOperatorContext)

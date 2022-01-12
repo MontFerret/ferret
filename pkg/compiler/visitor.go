@@ -1108,7 +1108,7 @@ func (v *visitor) visitPropertyName(c fql.IPropertyNameContext, scope *scope) (c
 		return literals.NewStringLiteral(rw.GetText()), nil
 	}
 
-	if rw := ctx.UnsafReservedWord(); rw != nil {
+	if rw := ctx.UnsafeReservedWord(); rw != nil {
 		return literals.NewStringLiteral(rw.GetText()), nil
 	}
 

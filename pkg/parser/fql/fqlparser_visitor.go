@@ -172,8 +172,8 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#safeReservedWord.
 	VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{}
 
-	// Visit a parse tree produced by FqlParser#unsafReservedWord.
-	VisitUnsafReservedWord(ctx *UnsafReservedWordContext) interface{}
+	// Visit a parse tree produced by FqlParser#unsafeReservedWord.
+	VisitUnsafeReservedWord(ctx *UnsafeReservedWordContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#rangeOperator.
 	VisitRangeOperator(ctx *RangeOperatorContext) interface{}
