@@ -1,0 +1,8 @@
+LET doc = DOCUMENT(@lab.cdn.dynamic + "/#/lists", { driver:"cdp" })
+
+LET current = ELEMENT(doc, 'head')
+T::NOT::NONE(current)
+LET prev = current.previousElementSibling
+T::NONE(prev)
+
+RETURN NONE

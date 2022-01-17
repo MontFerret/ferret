@@ -14,27 +14,21 @@ const (
 )
 
 var (
-	queryCSSSelector = fmt.Sprintf(`
+	queryCSSSelector = `
 		(el, selector) => {
 			const found = el.querySelector(selector);
 	
-			%s
-	
 			return found;
 		}
-	`,
-		notFoundErrorFragment,
-	)
+	`
 	queryXPathSelector = fmt.Sprintf(`
 		(el, selector) => {
 			%s
-
-			%s
 	
 			return found;
 		}
 	`,
-		xpathAsElementFragment, notFoundErrorFragment,
+		xpathAsElementFragment,
 	)
 )
 

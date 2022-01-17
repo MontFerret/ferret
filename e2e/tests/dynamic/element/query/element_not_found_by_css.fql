@@ -1,0 +1,8 @@
+LET url = @lab.cdn.dynamic
+LET doc = DOCUMENT(url, { driver: "cdp" })
+
+LET el = ELEMENT(doc, "#do-not-exist")
+
+T::NONE(el)
+
+RETURN TRUE
