@@ -98,11 +98,15 @@ func (rt *Runtime) EvalValue(ctx context.Context, fn *Function) (core.Value, err
 	return rt.resolver.ToValue(ctx, out)
 }
 
-func (rt *Runtime) EvalElement(ctx context.Context, fn *Function) (drivers.HTMLElement, error) {
+func (rt *Runtime) EvalElement(ctx context.Context, fn *Function) (core.Value, error) {
 	ref, err := rt.EvalRef(ctx, fn)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if ref.ObjectID == nil {
+		return values.None, nil
 	}
 
 	return rt.resolver.ToElement(ctx, ref)
