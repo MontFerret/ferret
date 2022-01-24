@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -446,6 +447,37 @@ func TestElement(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(nt.String(), ShouldEqual, "[\"Album example for Bootstrap\"]")
+		})
+
+		Convey("Attributes", func() {
+			buff := bytes.NewBuffer([]byte(`<!DOCTYPE html><body><div><a title="30"/></div></body></html>`))
+			godoc, err := goquery.NewDocumentFromReader(buff)
+			So(err, ShouldBeNil)
+
+			doc, err := http.NewRootHTMLDocument(godoc, "localhost:9090")
+			So(err, ShouldBeNil)
+
+			nt, err := doc.XPath(context.Background(), values.NewString("//a/@title"))
+
+			So(err, ShouldBeNil)
+			So(nt.Type().String(), ShouldEqual, types.Array.String())
+			So(nt.(*values.Array).First().Type().String(), ShouldEqual, types.String.String())
+			So(nt.(*values.Array).First().String(), ShouldEqual, "30")
+		})
+
+		Convey("Element node", func() {
+			buff := bytes.NewBuffer([]byte(`<!DOCTYPE html><body><div><a title="30"/></div></body></html>`))
+			godoc, err := goquery.NewDocumentFromReader(buff)
+			So(err, ShouldBeNil)
+
+			doc, err := http.NewRootHTMLDocument(godoc, "localhost:9090")
+			So(err, ShouldBeNil)
+
+			nt, err := doc.XPath(context.Background(), values.NewString("//div"))
+
+			So(err, ShouldBeNil)
+			So(nt.Type().String(), ShouldEqual, types.Array.String())
+			So(nt.(*values.Array).First().Type().String(), ShouldEqual, drivers.HTMLElementType.String())
 		})
 	})
 }
