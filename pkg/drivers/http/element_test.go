@@ -449,6 +449,25 @@ func TestElement(t *testing.T) {
 			So(nt.String(), ShouldEqual, "[\"Album example for Bootstrap\"]")
 		})
 
+		Convey("Func", func() {
+			buff := bytes.NewBuffer([]byte(doc))
+
+			buff.Write([]byte(doc))
+
+			doc, err := goquery.NewDocumentFromReader(buff)
+
+			So(err, ShouldBeNil)
+
+			el, err := http.NewHTMLElement(doc.Find("html"))
+
+			So(err, ShouldBeNil)
+
+			nt, err := el.XPath(context.Background(), values.NewString("count(//div)"))
+
+			So(err, ShouldBeNil)
+			So(nt.Type().String(), ShouldEqual, types.Float.String())
+		})
+
 		Convey("Attributes", func() {
 			buff := bytes.NewBuffer([]byte(`<!DOCTYPE html><body><div><a title="30"/></div></body></html>`))
 			godoc, err := goquery.NewDocumentFromReader(buff)
