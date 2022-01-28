@@ -84,12 +84,15 @@ func EvalXPathTo(selection *goquery.Selection, expression string) (core.Value, e
 		for res.MoveNext() {
 			var item core.Value
 
-			node := res.Current().(*htmlquery.NodeNavigator).Current()
+			node := res.Current()
 
-			if node.Type == html.TextNode {
-				item = values.NewString(node.Data)
-			} else {
-				i, err := parseXPathNode(node)
+			switch node.NodeType() {
+			case xpath.TextNode:
+				item = values.NewString(node.Value())
+			case xpath.AttributeNode:
+				item = values.NewString(node.Value())
+			default:
+				i, err := parseXPathNode(node.(*htmlquery.NodeNavigator).Current())
 
 				if err != nil {
 					return nil, err

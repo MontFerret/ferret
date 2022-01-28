@@ -1,0 +1,8 @@
+LET url = @lab.cdn.dynamic
+LET page = DOCUMENT(url, true)
+
+LET actual = XPATH(page, "//body/@class")
+
+T::NOT::EMPTY(actual)
+
+RETURN T::EQ(actual[0], "text-center")
