@@ -500,10 +500,10 @@ func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) 
 	}
 
 	defer stream.Close(ctx)
-	
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	
+
 	for evt := range stream.Read(ctx) {
 		if err := ctx.Err(); err != nil {
 			return err
