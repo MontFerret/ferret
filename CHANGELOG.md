@@ -1,5 +1,44 @@
 ## Changelog
 
+### 0.16.6
+
+### Fixed
+- Invalid XPath evaluation in HTTP driver [#725](https://github.com/MontFerret/ferret/pull/725)
+- Go routines leakage [#726](https://github.com/MontFerret/ferret/pull/726)
+
+### Updated
+- Small tweak in FQL Parser for FQL Formatter [#723](https://github.com/MontFerret/ferret/pull/723)
+
+### 0.16.5
+
+### Fixed
+- Query fails if an element is not found (regression) [#722](https://github.com/MontFerret/ferret/pull/722)
+
+### Updated
+- Small tweak in FQL Parser for FQL Formatter [#723](https://github.com/MontFerret/ferret/pull/723)
+
+### 0.16.4
+
+### Fixed
+- Fixed inability to parse custom date formats with DATE function [#720](https://github.com/MontFerret/ferret/pull/720)
+
+### 0.16.3
+
+### Fixed
+- Panic during XPath execution by HTTP driver [#715](https://github.com/MontFerret/ferret/pull/715)
+
+### 0.16.2
+
+### Fixed
+- Unable to use dynamic values in LIMIT clause [#706](https://github.com/MontFerret/ferret/pull/706)
+- HTTP driver does not allow to override header values [#707](https://github.com/MontFerret/ferret/pull/707), [#709](https://github.com/MontFerret/ferret/pull/709)
+- Cleaned up deps [#710](https://github.com/MontFerret/ferret/pull/710), [#711](https://github.com/MontFerret/ferret/pull/711)
+
+### 0.16.1
+
+### Fixed
+- Logical precedence in ternary operator condition [#704](https://github.com/MontFerret/ferret/pull/704)
+
 ### 0.16.0
 
 ### Added
