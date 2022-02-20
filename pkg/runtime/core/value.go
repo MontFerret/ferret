@@ -28,4 +28,9 @@ type (
 	Iterator interface {
 		Next(ctx context.Context) (value Value, key Value, err error)
 	}
+
+	// Convertible represents a Go type that can be converted into Ferret type.
+	Convertible interface {
+		Convert() Value
+	}
 )

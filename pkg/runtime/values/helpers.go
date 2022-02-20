@@ -183,6 +183,8 @@ func ReturnOrNext(ctx context.Context, path []core.Value, idx int, out core.Valu
 
 func Parse(input interface{}) core.Value {
 	switch value := input.(type) {
+	case core.Convertible:
+		return value.Convert()
 	case bool:
 		return NewBoolean(value)
 	case string:

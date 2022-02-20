@@ -86,6 +86,18 @@ func (t *CustomValue) SetIn(ctx context.Context, path []core.Value, value core.V
 	return values.SetIn(ctx, propValue, path[1:], value)
 }
 
+type ConvertibleStub struct {
+	ret core.Value
+}
+
+func (c *ConvertibleStub) Convert() core.Value {
+	return c.ret
+}
+
+func NewConvertibleStub(ret core.Value) core.Convertible {
+	return &ConvertibleStub{ret}
+}
+
 func TestHelpers(t *testing.T) {
 	Convey("Helpers", t, func() {
 		Convey("Getter", func() {
@@ -465,6 +477,15 @@ func TestHelpers(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				So(json2, ShouldResemble, json1)
+			})
+		})
+
+		Convey("Convertible", func() {
+			Convey("Should convert Go type to Runtime type", func() {
+				expected := values.NewString("foobar")
+				actual := values.Parse(NewConvertibleStub(expected))
+
+				So(actual.Compare(expected) == 0, ShouldBeTrue)
 			})
 		})
 	})

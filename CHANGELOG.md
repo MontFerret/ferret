@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.17.0
+- Added new "Convertible" interface for manual value conversion.
+
 ### 0.16.6
 
 ### Fixed
