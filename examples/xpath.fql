@@ -1,0 +1,5 @@
+LET doc = DOCUMENT("https://www.google.ca", {
+  driver: 'cdp'
+})
+
+RETURN XPATH(doc, "//meta/@charset") // ["UTF-8"]
