@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/antchfx/htmlquery v1.2.4
-	github.com/antchfx/xpath v1.2.0
+	github.com/antchfx/xpath v1.2.1
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211211185417-43fb4c2dbe28
 	github.com/corpix/uarand v0.1.1
 	github.com/gobwas/glob v0.2.3
