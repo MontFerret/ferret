@@ -1,10 +1,11 @@
 package operators_test
 
 import (
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -1020,6 +1021,202 @@ func TestDivide(t *testing.T) {
 					}, ShouldPanic)
 				})
 			}
+		})
+	})
+}
+
+func TestPositive(t *testing.T) {
+	Convey("converts value to positive", t, func() {
+		Convey("when int", func() {
+			Convey("postive", func() {
+				So(operators.Positive(values.NewInt(1), nil), ShouldEqual, 1)
+			})
+			Convey("negative", func() {
+				So(operators.Positive(values.NewInt(-1), nil), ShouldEqual, -1)
+			})
+		})
+
+		Convey("when float", func() {
+			Convey("postive", func() {
+				So(operators.Positive(values.NewFloat(1.0), nil), ShouldEqual, 1)
+			})
+			Convey("negative", func() {
+				So(operators.Positive(values.NewFloat(-1.0), nil), ShouldEqual, -1.0)
+			})
+		})
+
+		Convey("non numeric", func() {
+			Convey("string", func() {
+				So(operators.Positive(values.String("1"), nil), ShouldEqual, "1")
+			})
+		})
+	})
+}
+
+func TestNegative(t *testing.T) {
+	Convey("converts value to negative", t, func() {
+		Convey("when int", func() {
+			Convey("postive", func() {
+				So(operators.Negative(values.NewInt(1), nil), ShouldEqual, -1)
+			})
+			Convey("negative", func() {
+				So(operators.Negative(values.NewInt(-1), nil), ShouldEqual, 1)
+			})
+		})
+
+		Convey("when float", func() {
+			Convey("postive", func() {
+				So(operators.Negative(values.NewFloat(1.0), nil), ShouldEqual, -1.0)
+			})
+			Convey("negative", func() {
+				So(operators.Negative(values.NewFloat(-1.0), nil), ShouldEqual, 1.0)
+			})
+		})
+
+		Convey("non numeric", func() {
+			Convey("string", func() {
+				So(operators.Negative(values.String("1"), nil), ShouldEqual, "1")
+			})
+		})
+	})
+}
+
+func TestDecrement(t *testing.T) {
+	Convey("decrement values", t, func() {
+		Convey("decrement int", func() {
+			Convey("positives", func() {
+				So(operators.Decrement(values.NewInt(1), nil), ShouldEqual, 0)
+			})
+			Convey("negatives", func() {
+				So(operators.Decrement(values.NewInt(-1), nil), ShouldEqual, -2)
+			})
+		})
+
+		Convey("decrement float", func() {
+			Convey("positives", func() {
+				So(operators.Decrement(values.NewFloat(1.1), nil), ShouldEqual, 0.10000000000000009)
+			})
+			Convey("negatives", func() {
+				So(operators.Decrement(values.NewFloat(-1.1), nil), ShouldEqual, -2.1)
+			})
+		})
+
+		Convey("other values", func() {
+			So(operators.Decrement(values.None, nil), ShouldEqual, -1)
+		})
+	})
+}
+
+func TestIncrement(t *testing.T) {
+	Convey("increment values", t, func() {
+		Convey("increment int", func() {
+			Convey("positives", func() {
+				So(operators.Increment(values.NewInt(1), nil), ShouldEqual, 2)
+			})
+			Convey("negatives", func() {
+				So(operators.Increment(values.NewInt(-1), nil), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Increment float", func() {
+			Convey("positives", func() {
+				So(operators.Increment(values.NewFloat(1.1), nil), ShouldEqual, 2.1)
+			})
+			Convey("negatives", func() {
+				So(operators.Increment(values.NewFloat(-1.1), nil), ShouldEqual, -0.10000000000000009)
+			})
+		})
+
+		Convey("other values", func() {
+			So(operators.Increment(values.None, nil), ShouldEqual, 1)
+		})
+	})
+}
+
+func TestEqual(t *testing.T) {
+	Convey("Equality in values", t, func() {
+		Convey("1 == 1", func() {
+			So(operators.Equal(values.NewInt(1), values.NewInt(1)), ShouldEqual, values.True)
+		})
+
+		Convey("1 != 2", func() {
+			So(operators.Equal(values.NewInt(1), values.NewInt(2)), ShouldEqual, values.False)
+		})
+
+		Convey("'hello' == 'hello", func() {
+			So(operators.Equal(values.String("hello"), values.String("hello")), ShouldEqual, values.True)
+		})
+
+		Convey("'foo' != 'bar", func() {
+			So(operators.Equal(values.String("foo"), values.String("bar")), ShouldEqual, values.False)
+		})
+	})
+}
+
+func TestNotEqual(t *testing.T) {
+	Convey("Inequality in values", t, func() {
+		Convey("1 == 1", func() {
+			So(operators.NotEqual(values.NewInt(1), values.NewInt(1)), ShouldEqual, values.False)
+		})
+
+		Convey("1 != 2", func() {
+			So(operators.NotEqual(values.NewInt(1), values.NewInt(2)), ShouldEqual, values.True)
+		})
+
+		Convey("'hello' == 'hello", func() {
+			So(operators.NotEqual(values.String("hello"), values.String("hello")), ShouldEqual, values.False)
+		})
+
+		Convey("'foo' != 'bar", func() {
+			So(operators.NotEqual(values.String("foo"), values.String("bar")), ShouldEqual, values.True)
+		})
+	})
+}
+
+func TestModulus(t *testing.T) {
+	Convey("Modulus", t, func() {
+		Convey("5 % 2", func() {
+			So(operators.Modulus(values.NewInt(5), values.NewInt(2)), ShouldEqual, 1)
+		})
+
+		Convey("5.0 % 2", func() {
+			So(operators.Modulus(values.NewFloat(5.0), values.NewInt(2)), ShouldEqual, 1)
+		})
+
+		Convey("5 % 2.0", func() {
+			So(operators.Modulus(values.NewInt(5), values.NewFloat(2.0)), ShouldEqual, 1)
+		})
+
+		Convey("5.1 % 3.2", func() {
+			So(operators.Modulus(values.NewFloat(5.1), values.NewFloat(3.2)), ShouldEqual, 2)
+		})
+
+		Convey("Non int or float", func() {
+			So(operators.Modulus(values.String("foo"), values.NewFloat(3.2)), ShouldEqual, 0)
+		})
+	})
+}
+
+func TestGreater(t *testing.T) {
+	Convey("Greater than value", t, func() {
+		Convey("5 > 2", func() {
+			So(operators.Greater(values.NewInt(5), values.NewInt(2)), ShouldEqual, values.True)
+		})
+
+		Convey("2 > 5", func() {
+			So(operators.Greater(values.NewInt(2), values.NewInt(5)), ShouldEqual, values.False)
+		})
+	})
+}
+
+func TestGreaterOrEqual(t *testing.T) {
+	Convey("Greater or equal than value", t, func() {
+		Convey("5 >= 5", func() {
+			So(operators.GreaterOrEqual(values.NewInt(5), values.NewInt(5)), ShouldEqual, values.True)
+		})
+
+		Convey("2 >= 5", func() {
+			So(operators.GreaterOrEqual(values.NewInt(2), values.NewInt(5)), ShouldEqual, values.False)
 		})
 	})
 }
