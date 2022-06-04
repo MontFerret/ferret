@@ -1220,3 +1220,63 @@ func TestGreaterOrEqual(t *testing.T) {
 		})
 	})
 }
+
+func TestLess(t *testing.T) {
+	Convey("Less than value", t, func() {
+		Convey("1 < 5", func() {
+			So(operators.Less(values.NewInt(1), values.NewInt(5)), ShouldEqual, values.True)
+		})
+		Convey("5 < 2", func() {
+			So(operators.Less(values.NewInt(5), values.NewInt(2)), ShouldEqual, values.False)
+		})
+	})
+}
+
+func TestLessOrEqual(t *testing.T) {
+	Convey("Less than value", t, func() {
+		Convey("1 < 5", func() {
+			So(operators.LessOrEqual(values.NewInt(1), values.NewInt(5)), ShouldEqual, values.True)
+		})
+		Convey("5 < 2", func() {
+			So(operators.LessOrEqual(values.NewInt(5), values.NewInt(2)), ShouldEqual, values.False)
+		})
+		Convey("5 <= 5", func() {
+			So(operators.LessOrEqual(values.NewInt(5), values.NewInt(5)), ShouldEqual, values.True)
+		})
+	})
+}
+
+func TestNot(t *testing.T) {
+	Convey("Invert truthiness", t, func() {
+		Convey("true turns false", func() {
+			So(operators.Not(values.NewBoolean(true), nil), ShouldEqual, values.False)
+		})
+		Convey("false turns true", func() {
+			So(operators.Not(values.NewBoolean(false), nil), ShouldEqual, values.True)
+		})
+		Convey("'' turns true", func() {
+			So(operators.Not(values.NewString(""), nil), ShouldEqual, values.True)
+		})
+		Convey("'foo' turns false", func() {
+			So(operators.Not(values.NewString("foo"), nil), ShouldEqual, values.False)
+		})
+		Convey("1 turns false", func() {
+			So(operators.Not(values.NewInt(1), nil), ShouldEqual, values.False)
+		})
+		Convey("0 turns true", func() {
+			So(operators.Not(values.NewInt(0), nil), ShouldEqual, values.True)
+		})
+		Convey("1.0 turns false", func() {
+			So(operators.Not(values.NewFloat(1), nil), ShouldEqual, values.False)
+		})
+		Convey("0.0 turns true", func() {
+			So(operators.Not(values.NewFloat(0.0), nil), ShouldEqual, values.True)
+		})
+		Convey("current turns false", func() {
+			So(operators.Not(values.NewDateTime(values.NewCurrentDateTime().Time), nil), ShouldEqual, values.False)
+		})
+		Convey("zerotime turns true", func() {
+			So(operators.Not(values.NewDateTime(values.ZeroDateTime.Time), nil), ShouldEqual, values.True)
+		})
+	})
+}
