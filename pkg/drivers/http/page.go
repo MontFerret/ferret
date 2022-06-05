@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"hash/fnv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/events"
+	"github.com/MontFerret/ferret/pkg/stdlib/html"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -211,8 +213,20 @@ func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocum
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) Navigate(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
+func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
+	page, err := html.Open(ctx, url)
+	if err != nil {
+		return err
+	}
+
+	pp := page.(*HTMLPage)
+
+	p.document = pp.document
+	p.cookies = pp.cookies
+	p.frames = pp.frames
+	p.response = pp.response
+
+	return nil
 }
 
 func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
