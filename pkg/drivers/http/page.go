@@ -5,7 +5,6 @@ import (
 	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/events"
-	"github.com/MontFerret/ferret/pkg/stdlib/html"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -16,6 +15,7 @@ import (
 )
 
 type HTMLPage struct {
+	driver   *Driver
 	document *HTMLDocument
 	cookies  *drivers.HTTPCookies
 	frames   *values.Array
@@ -27,6 +27,7 @@ func NewHTMLPage(
 	url string,
 	response drivers.HTTPResponse,
 	cookies *drivers.HTTPCookies,
+	driver *Driver,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
 
@@ -39,6 +40,7 @@ func NewHTMLPage(
 	p.cookies = cookies
 	p.frames = nil
 	p.response = response
+	p.driver = driver
 
 	return p, nil
 }
@@ -98,6 +100,7 @@ func (p *HTMLPage) Copy() core.Value {
 		p.document.GetURL().String(),
 		p.response,
 		cookies,
+		p.driver,
 	)
 
 	if err != nil {
@@ -214,7 +217,9 @@ func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocum
 }
 
 func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
-	page, err := html.Open(ctx, url)
+	page, err := p.driver.Open(ctx, drivers.Params{
+		URL: url.String(),
+	})
 	if err != nil {
 		return err
 	}
