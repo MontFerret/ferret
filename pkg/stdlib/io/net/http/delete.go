@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-// DELETE makes a HTTP DELETE request.
+// DELETE makes a DELETE request.
 // @param {Object} params - Request parameters.
 // @param {String} params.url - Target url
 // @param {Binary} params.body - Request data

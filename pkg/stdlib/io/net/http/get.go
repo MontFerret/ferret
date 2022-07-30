@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-// GET makes a HTTP GET request.
+// GET makes a GET request.
 // @param {Object | String} urlOrParam - Target url or parameters.
 // @param {String} [param.url] - Target url or parameters.
 // @param {Object} [param.headers] - HTTP headers

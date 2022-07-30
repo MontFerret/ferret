@@ -10,7 +10,7 @@ import (
 // PUT makes a PUT HTTP request.
 // @param {Object} params - Request parameters.
 // @param {String} params.url - Target url
-// @param {Binary} params.body - Request data
+// @param {Any} params.body - Request data
 // @param {Object} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
 func PUT(ctx context.Context, args ...core.Value) (core.Value, error) {
