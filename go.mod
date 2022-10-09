@@ -7,7 +7,7 @@ require (
 	github.com/antchfx/htmlquery v1.2.5
 	github.com/antchfx/xpath v1.2.1
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211211185417-43fb4c2dbe28
-	github.com/corpix/uarand v0.1.1
+	github.com/corpix/uarand v0.2.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
 	github.com/jarcoal/httpmock v1.2.0
@@ -35,5 +35,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
+	golang.org/x/sys v0.0.0-20220318055525-2edf467146b5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
