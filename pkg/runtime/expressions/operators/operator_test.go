@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1277,6 +1276,17 @@ func TestNot(t *testing.T) {
 		})
 		Convey("zerotime turns true", func() {
 			So(operators.Not(values.NewDateTime(values.ZeroDateTime.Time), nil), ShouldEqual, values.True)
+		})
+	})
+}
+
+func TestToBoolean(t *testing.T) {
+	Convey("To Boolean", t, func() {
+		Convey("is true", func() {
+			So(operators.ToBoolean(values.NewBoolean(true), values.NewBoolean(true)), ShouldEqual, values.True)
+		})
+		Convey("is false", func() {
+			So(operators.ToBoolean(values.NewBoolean(false), values.NewBoolean(true)), ShouldEqual, values.False)
 		})
 	})
 }
