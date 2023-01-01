@@ -25,14 +25,15 @@ type (
 	}
 
 	Params struct {
-		URL         string
-		UserAgent   string
-		KeepCookies bool
-		Cookies     *HTTPCookies
-		Headers     *HTTPHeaders
-		Viewport    *Viewport
-		Charset     string
-		Ignore      *Ignore
+		URL               string
+		UserAgent         string
+		KeepCookies       bool
+		Cookies           *HTTPCookies
+		Headers           *HTTPHeaders
+		Viewport          *Viewport
+		Charset           string
+		Ignore            *Ignore
+		IncludeWhitespace *string //Values: "none", "all".
 	}
 
 	ParseParams struct {

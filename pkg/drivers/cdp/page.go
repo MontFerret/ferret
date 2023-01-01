@@ -392,7 +392,6 @@ func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (va
 		SetLandscape(bool(params.Landscape)).
 		SetDisplayHeaderFooter(bool(params.DisplayHeaderFooter)).
 		SetPrintBackground(bool(params.PrintBackground)).
-		SetIgnoreInvalidPageRanges(bool(params.IgnoreInvalidPageRanges)).
 		SetPreferCSSPageSize(bool(params.PreferCSSPageSize))
 
 	if params.Scale > 0 {
