@@ -13,7 +13,7 @@ require (
 	github.com/jarcoal/httpmock v1.2.0
 	github.com/mafredri/cdp v0.33.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/sethgrid/pester v1.1.0
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/stretchr/testify v1.8.1
