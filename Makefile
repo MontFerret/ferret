@@ -10,7 +10,8 @@ default: build
 build: vet generate test compile
 
 install-tools:
-	go install honnef.co/go/tools/cmd/staticcheck@latest
+	go install honnef.co/go/tools/cmd/staticcheck@latest && \
+	go install github.com/mgechev/revive@latest
 
 install:
 	go get
