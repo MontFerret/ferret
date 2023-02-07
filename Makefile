@@ -9,6 +9,9 @@ default: build
 
 build: vet generate test compile
 
+install-tools:
+	go install honnef.co/go/tools/cmd/staticcheck@latest
+
 install:
 	go get
 
@@ -42,6 +45,7 @@ fmt:
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
+	staticcheck ./pkg/compiler ./pkg/drivers ./pkg/runtime ./pkg/stdlib && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
 
 # http://godoc.org/code.google.com/p/go.tools/cmd/vet

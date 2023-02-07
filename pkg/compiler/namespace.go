@@ -90,9 +90,7 @@ func (nc *NamespaceContainer) RegisteredFunctions() []string {
 
 	// root namespace, return all functions
 	if nc.name == emptyNS {
-		for _, k := range fnames {
-			res = append(res, k)
-		}
+		res = append(res, fnames...)
 	} else {
 		nsPrefix := nc.name + separator
 		for _, k := range fnames {

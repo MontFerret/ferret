@@ -76,7 +76,8 @@ func (req *HTTPRequest) Hash() uint64 {
 }
 
 func (req *HTTPRequest) Copy() core.Value {
-	return *(&req)
+	cop := *req
+	return &cop
 }
 
 func (req *HTTPRequest) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {

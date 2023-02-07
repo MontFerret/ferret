@@ -3,6 +3,8 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"strings"
 	"testing"
 
@@ -57,7 +59,8 @@ func TestCases(t *testing.T) {
 				"Mixed": func(s string) string {
 					// Capitalize string.
 					// Source: https://stackoverflow.com/questions/33696034/make-first-letter-of-words-uppercase-in-a-string
-					return strings.Title(strings.ToLower(s))
+					// return strings.Title(strings.ToLower(s))
+					return cases.Title(language.English).String(strings.ToLower(s))
 				},
 				"Upper": strings.ToUpper,
 				"Lower": strings.ToLower,

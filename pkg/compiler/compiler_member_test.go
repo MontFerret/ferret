@@ -525,7 +525,7 @@ RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]
 	Convey("Reserved words as property name", t, func() {
 		p := parser.New("RETURN TRUE")
 
-		r := regexp.MustCompile("\\w+")
+		r := regexp.MustCompile(`\w+`)
 
 		for idx, l := range p.GetLiteralNames() {
 			if r.MatchString(l) {

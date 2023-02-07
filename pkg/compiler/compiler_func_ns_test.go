@@ -101,7 +101,7 @@ func TestFunctionNSCall(t *testing.T) {
 		p := parser.New("RETURN TRUE")
 		c := compiler.New()
 
-		r := regexp.MustCompile("\\w+")
+		r := regexp.MustCompile(`\w+`)
 
 		for _, l := range p.GetLiteralNames() {
 			if r.MatchString(l) {
