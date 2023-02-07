@@ -3,7 +3,6 @@ package values
 import (
 	"hash/fnv"
 	"io"
-	"io/ioutil"
 
 	"github.com/wI2L/jettison"
 
@@ -18,7 +17,7 @@ func NewBinary(values []byte) Binary {
 }
 
 func NewBinaryFrom(stream io.Reader) (Binary, error) {
-	values, err := ioutil.ReadAll(stream)
+	values, err := io.ReadAll(stream)
 
 	if err != nil {
 		return nil, err

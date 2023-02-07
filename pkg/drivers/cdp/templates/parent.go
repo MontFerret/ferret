@@ -1,8 +1,9 @@
 package templates
 
 import (
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/mafredri/cdp/protocol/runtime"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 )
 
 const getParent = "(el) => el.parentElement"

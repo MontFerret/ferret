@@ -3,9 +3,11 @@ package values_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestString(t *testing.T) {

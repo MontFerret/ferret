@@ -35,7 +35,6 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 // @param {Float} [params.marginLeft=1] - Left margin in inches.
 // @param {Float} [params.marginRight=1] - Right margin in inches.
 // @param {String} [params.pageRanges] - Paper ranges to print, e.g., '1-5, 8, 11-13'.
-// @param {Bool} [params.ignoreInvalidPageRanges=False] - to silently ignore invalid but successfully parsed page ranges, such as '3-2'.
 // @param {String} [params.headerTemplate] - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document For example, `<span class=title></span>` would generate span containing the title.
 // @param {String} [params.footerTemplate] - HTML template for the print footer. Should use the same format as the `headerTemplate`.
 // @param {Bool} [params.preferCSSPageSize=False] - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size. *
@@ -244,18 +243,6 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			}
 
 			pdfParams.PageRanges = pageRanges.(values.String)
-		}
-
-		ignoreInvalidPageRanges, found := params.Get("ignoreInvalidPageRanges")
-
-		if found {
-			err = core.ValidateType(ignoreInvalidPageRanges, types.Boolean)
-
-			if err != nil {
-				return values.None, err
-			}
-
-			pdfParams.IgnoreInvalidPageRanges = ignoreInvalidPageRanges.(values.Boolean)
 		}
 
 		headerTemplate, found := params.Get("headerTemplate")

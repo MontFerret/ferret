@@ -4,8 +4,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
@@ -90,9 +91,7 @@ func (nc *NamespaceContainer) RegisteredFunctions() []string {
 
 	// root namespace, return all functions
 	if nc.name == emptyNS {
-		for _, k := range fnames {
-			res = append(res, k)
-		}
+		res = append(res, fnames...)
 	} else {
 		nsPrefix := nc.name + separator
 		for _, k := range fnames {

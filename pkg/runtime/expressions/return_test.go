@@ -7,9 +7,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/literals"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestReturnExpression(t *testing.T) {

@@ -2,8 +2,9 @@ package compiler_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/compiler"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

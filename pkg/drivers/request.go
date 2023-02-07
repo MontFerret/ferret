@@ -2,10 +2,12 @@ package drivers
 
 import (
 	"context"
+
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/wI2L/jettison"
 )
 
 // HTTPRequest HTTP request object.
@@ -76,7 +78,8 @@ func (req *HTTPRequest) Hash() uint64 {
 }
 
 func (req *HTTPRequest) Copy() core.Value {
-	return *(&req)
+	cop := *req
+	return &cop
 }
 
 func (req *HTTPRequest) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {

@@ -2,12 +2,14 @@ package compiler_test
 
 import (
 	"context"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestForWhile(t *testing.T) {

@@ -2,10 +2,12 @@ package templates
 
 import (
 	"fmt"
+
+	"github.com/mafredri/cdp/protocol/runtime"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 const setInnerText = `(el, value) => {

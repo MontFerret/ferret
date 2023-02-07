@@ -2,9 +2,10 @@ package testing_test
 
 import (
 	"context"
+	t "testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
-	t "testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 

@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gobwas/glob"
+
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/gobwas/glob"
 
 	"golang.org/x/net/html/charset"
 

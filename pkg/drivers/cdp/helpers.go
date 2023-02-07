@@ -2,6 +2,9 @@ package cdp
 
 import (
 	"context"
+
+	"github.com/mafredri/cdp/protocol/dom"
+
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 
 	"github.com/mafredri/cdp"
@@ -65,7 +68,7 @@ func enableFeatures(ctx context.Context, client *cdp.Client, params drivers.Para
 		},
 
 		func() error {
-			return client.DOM.Enable(ctx)
+			return client.DOM.Enable(ctx, dom.NewEnableArgs().SetIncludeWhitespace("all"))
 		},
 
 		func() error {

@@ -2,9 +2,11 @@ package html
 
 import (
 	"context"
+
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"

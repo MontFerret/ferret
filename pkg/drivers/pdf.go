@@ -26,8 +26,6 @@ type PDFParams struct {
 	MarginRight values.Float
 	// Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
 	PageRanges values.String
-	// Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
-	IgnoreInvalidPageRanges values.Boolean
 	// HTML template for the print values. Should be valid HTML markup with following classes used to inject printing values into them: - `date`: formatted print date - `title`: document title - `url`: document location - `pageNumber`: current page number - `totalPages`: total pages in the document
 	// For example, `<span class=title></span>` would generate span containing the title.
 	HeaderTemplate values.String

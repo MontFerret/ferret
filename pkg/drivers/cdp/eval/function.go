@@ -1,12 +1,14 @@
 package eval
 
 import (
-	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/mafredri/cdp/protocol/runtime"
-	"github.com/wI2L/jettison"
 	"strconv"
 	"strings"
+
+	"github.com/mafredri/cdp/protocol/runtime"
+	"github.com/wI2L/jettison"
+
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Function struct {

@@ -94,20 +94,24 @@ type PairValueType struct {
 //
 // The common pattern of using PairValueType is:
 // ```
-// pairs := []core.PairValueType{
-//     core.PairValueType{args[0], []core.Type{types.String}},               // go vet warning
-//     core.PairValueType{Value: args[1], Types: []core.Type{types.Binary}}, // too long
-// }
+//
+//	pairs := []core.PairValueType{
+//	    core.PairValueType{args[0], []core.Type{types.String}},               // go vet warning
+//	    core.PairValueType{Value: args[1], Types: []core.Type{types.Binary}}, // too long
+//	}
+//
 // ```
 // With NewPairValueType there is no need to type `[]core.Type{...}` and code becomes
 // more readable and maintainable.
 //
 // That is how the code above looks like with NewPairValueType:
 // ```
-// pairs := []core.PairValueType{
-//     core.NewPairValueType(args[0], types.String),
-//     core.NewPairValueType(args[1], types.Binary),
-// }
+//
+//	pairs := []core.PairValueType{
+//	    core.NewPairValueType(args[0], types.String),
+//	    core.NewPairValueType(args[1], types.Binary),
+//	}
+//
 // ```
 func NewPairValueType(value Value, types ...Type) PairValueType {
 	return PairValueType{

@@ -3,9 +3,10 @@ package templates
 import (
 	"fmt"
 
+	"github.com/mafredri/cdp/protocol/runtime"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 const blur = `(el) => {

@@ -2,12 +2,14 @@ package expressions_test
 
 import (
 	"context"
+	"testing"
+
+	"github.com/stretchr/testify/mock"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/stretchr/testify/mock"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -47,6 +49,10 @@ func (to *TestObject) GetIn(ctx context.Context, path []core.Value) (core.Value,
 	}
 
 	return current, nil
+}
+
+func (to *TestObject) String() string {
+	return to.Object.String()
 }
 
 func TestMemberExpression(t *testing.T) {

@@ -2,11 +2,15 @@ package http_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/pkg/errors"
 	h "net/http"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
+
+	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -14,91 +18,47 @@ import (
 )
 
 func TestGET(t *testing.T) {
-	SkipConvey("Should successfully make request", t, func() {
-		port := randPort()
+	url := "https://api.montferret.io/users"
 
-		server := &h.Server{
-			Addr: port,
-			Handler: h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
-				if r.Method == "GET" {
-					w.Write([]byte("OK"))
-				} else {
-					w.Write([]byte("Expected method to be GET"))
-				}
-			}),
-		}
+	Convey("Should successfully make request", t, func() {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		httpmock.RegisterResponder("GET", url,
+			func(req *h.Request) (*h.Response, error) {
+				return httpmock.NewStringResponse(200, "OK"), nil
+			})
 
-		go func() {
-			server.ListenAndServe()
-		}()
+		ctx := context.Background()
 
-		defer func() {
-			cancel()
-			server.Shutdown(ctx)
-		}()
-
-		out, err := http.GET(ctx, values.NewString("http://localhost"+port))
+		out, err := http.GET(ctx, values.NewString(url))
 
 		So(err, ShouldBeNil)
 		So(out.Type().ID(), ShouldEqual, types.Binary.ID())
 		So(out.String(), ShouldEqual, "OK")
 	})
 
-	SkipConvey("Should add headers to a request", t, func() {
-		port := randPort()
+	Convey("Should add headers to a request", t, func() {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 
-		server := &h.Server{
-			Addr: port,
-			Handler: h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
-				var err error
-
-				defer func() {
-					if err != nil {
-						w.Write([]byte(err.Error()))
-					} else {
-						w.Write([]byte("OK"))
-					}
-				}()
-
-				if r.Method != "GET" {
-					err = errors.Errorf("Expected method to be GET, but got %s", r.Method)
-
-					return
+		httpmock.RegisterResponder("GET", url,
+			func(req *h.Request) (*h.Response, error) {
+				if req.Header.Get("X-Token") != "Ferret" {
+					return nil, errors.Errorf("Expected X-Token to be Ferret, but got %s", req.Header.Get("X-Token"))
 				}
 
-				token := r.Header.Get("X-Token")
-
-				if token != "Ferret" {
-					err = errors.Errorf("Expected X-Token header to equal to Ferret, but got %s", token)
-
-					return
+				if req.Header.Get("X-From") != "localhost" {
+					return nil, errors.Errorf("Expected X-From to be localhost, but got %s", req.Header.Get("X-From"))
 				}
 
-				from := r.Header.Get("X-From")
+				return httpmock.NewStringResponse(200, "OK"), nil
+			})
 
-				if from != "localhost" {
-					err = errors.Errorf("Expected X-From header to equal to localhost, but got %s", from)
-
-					return
-				}
-			}),
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-
-		go func() {
-			server.ListenAndServe()
-		}()
-
-		defer func() {
-			cancel()
-			server.Shutdown(ctx)
-		}()
+		ctx := context.Background()
 
 		out, err := http.GET(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString("http://127.0.0.1"+port)),
+			values.NewObjectProperty("url", values.NewString(url)),
 			values.NewObjectProperty("headers", values.NewObjectWith(
 				values.NewObjectProperty("X-Token", values.NewString("Ferret")),
 				values.NewObjectProperty("X-From", values.NewString("localhost")),

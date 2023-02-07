@@ -3,9 +3,10 @@ package core_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 func TestSourceError(t *testing.T) {

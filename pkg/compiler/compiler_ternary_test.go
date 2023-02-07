@@ -3,9 +3,11 @@ package compiler_test
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/compiler"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestTernaryOperator(t *testing.T) {

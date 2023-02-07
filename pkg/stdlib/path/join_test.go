@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestJoin(t *testing.T) {

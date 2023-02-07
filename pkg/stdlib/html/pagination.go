@@ -2,11 +2,13 @@ package html
 
 import (
 	"context"
+
+	"github.com/rs/zerolog"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/rs/zerolog"
 )
 
 // PAGINATION creates an iterator that goes through pages using CSS selector.

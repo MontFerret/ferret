@@ -2,9 +2,11 @@ package network
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
+
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/wI2L/jettison"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/dom"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"

@@ -2,15 +2,17 @@ package events_test
 
 import (
 	"context"
+	"testing"
+	"time"
+
+	"github.com/mafredri/cdp/rpcc"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/mock"
+
 	events2 "github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp/rpcc"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

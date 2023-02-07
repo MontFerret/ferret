@@ -1,10 +1,12 @@
 package types_test
 
 import (
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 type TestValue struct {

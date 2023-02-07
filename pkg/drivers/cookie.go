@@ -136,7 +136,8 @@ func (c HTTPCookie) Hash() uint64 {
 }
 
 func (c HTTPCookie) Copy() core.Value {
-	return *(&c)
+	cop := c
+	return &cop
 }
 
 func (c HTTPCookie) MarshalJSON() ([]byte, error) {

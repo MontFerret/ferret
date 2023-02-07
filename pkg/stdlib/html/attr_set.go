@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 
 	"github.com/MontFerret/ferret/pkg/drivers"

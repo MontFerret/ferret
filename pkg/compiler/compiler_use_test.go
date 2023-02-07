@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	"github.com/MontFerret/ferret/pkg/stdlib/types"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestUseExpression(t *testing.T) {

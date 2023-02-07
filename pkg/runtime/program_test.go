@@ -2,10 +2,12 @@ package runtime_test
 
 import (
 	"context"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 type Result struct {

@@ -2,10 +2,11 @@ package html
 
 import (
 	"context"
+	"regexp"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"regexp"
 )
 
 // FRAMES finds HTML frames by a given property selector.

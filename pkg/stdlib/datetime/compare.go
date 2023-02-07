@@ -3,10 +3,11 @@ package datetime
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/pkg/errors"
 )
 
 // DATE_COMPARE checks if two partial dates match.

@@ -2,7 +2,7 @@ package html
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -35,7 +35,7 @@ func Download(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return values.None, err

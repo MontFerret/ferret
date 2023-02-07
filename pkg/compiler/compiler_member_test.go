@@ -3,15 +3,17 @@ package compiler_test
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/parser"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/parser"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestMember(t *testing.T) {
@@ -525,7 +527,7 @@ RETURN o1.first["second"][o2.prop].fourth["fifth"]["bottom"]
 	Convey("Reserved words as property name", t, func() {
 		p := parser.New("RETURN TRUE")
 
-		r := regexp.MustCompile("\\w+")
+		r := regexp.MustCompile(`\w+`)
 
 		for idx, l := range p.GetLiteralNames() {
 			if r.MatchString(l) {

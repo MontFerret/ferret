@@ -2,8 +2,9 @@
 package parser
 
 import (
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/parser/fql"
-	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
 type Parser struct {
