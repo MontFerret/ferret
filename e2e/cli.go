@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -259,7 +260,7 @@ func main() {
 		// check whether the app is getting a query via standard input
 		std := bufio.NewReader(os.Stdin)
 
-		b, err := ioutil.ReadAll(std)
+		b, err := io.ReadAll(std)
 
 		if err != nil {
 			fmt.Println(err)

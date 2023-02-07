@@ -3,11 +3,11 @@ package http_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"math/rand"
+	"io"
 	h "net/http"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
 
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
@@ -17,44 +17,24 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
 )
 
-func randPort() string {
-	min := 8000
-	max := 8999
-	return fmt.Sprintf(":%d", rand.Intn(max-min)+min)
-}
-
 func TestDELETE(t *testing.T) {
-	SkipConvey("Should successfully make request", t, func() {
-		type User struct {
-			FirstName string `json:"first_name"`
-			LastName  string `json:"last_name"`
-		}
+	url := "https://api.montferret.io/users"
 
-		port := randPort()
+	type User struct {
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+	}
 
-		server := &h.Server{
-			Addr: port,
-			Handler: h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
-				var err error
+	Convey("Should successfully make request", t, func() {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 
-				defer func() {
-					if err != nil {
-						w.Write([]byte(err.Error()))
-					} else {
-						w.Write([]byte("OK"))
-					}
-				}()
-
-				if r.Method != "DELETE" {
-					err = errors.Errorf("Expected method to be DELETE, but got %s", r.Method)
-
-					return
-				}
-
-				data, err := ioutil.ReadAll(r.Body)
+		httpmock.RegisterResponder("DELETE", url,
+			func(req *h.Request) (*h.Response, error) {
+				data, err := io.ReadAll(req.Body)
 
 				if err != nil {
-					return
+					return nil, err
 				}
 
 				user := User{}
@@ -62,33 +42,21 @@ func TestDELETE(t *testing.T) {
 				err = json.Unmarshal(data, &user)
 
 				if err != nil {
-					return
+					return nil, err
 				}
 
 				if user.FirstName != "Rob" {
-					err = errors.Errorf("Expected FirstName to be Rob, but got %s", user.FirstName)
-
-					return
+					return nil, errors.Errorf("Expected FirstName to be Rob, but got %s", user.FirstName)
 				}
 
 				if user.LastName != "Pike" {
-					err = errors.Errorf("Expected LastName to be Pike, but got %s", user.LastName)
-
-					return
+					return nil, errors.Errorf("Expected LastName to be Pike, but got %s", user.LastName)
 				}
-			}),
-		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+				return httpmock.NewStringResponse(200, "OK"), nil
+			})
 
-		go func() {
-			server.ListenAndServe()
-		}()
-
-		defer func() {
-			cancel()
-			server.Shutdown(ctx)
-		}()
+		ctx := context.Background()
 
 		b, err := json.Marshal(User{
 			FirstName: "Rob",
@@ -98,7 +66,7 @@ func TestDELETE(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.DELETE(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString("http://127.0.0.1"+port)),
+			values.NewObjectProperty("url", values.NewString(url)),
 			values.NewObjectProperty("body", values.NewBinary(b)),
 		))
 

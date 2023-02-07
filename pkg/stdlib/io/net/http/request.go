@@ -3,7 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	h "net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -77,7 +77,7 @@ func makeRequest(ctx context.Context, params Params) (core.Value, error) {
 		return values.None, err
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return values.None, err
