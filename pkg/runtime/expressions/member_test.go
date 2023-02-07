@@ -49,6 +49,10 @@ func (to *TestObject) GetIn(ctx context.Context, path []core.Value) (core.Value,
 	return current, nil
 }
 
+func (to *TestObject) String() string {
+	return to.Object.String()
+}
+
 func TestMemberExpression(t *testing.T) {
 	Convey(".Exec", t, func() {
 		Convey("Should use .Getter interface if a source implements it", func() {

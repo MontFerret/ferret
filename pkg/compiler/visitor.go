@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr"
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/parser/fql"
