@@ -2,13 +2,15 @@ package expressions_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/collections"
+
+	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type IterableFn func(ctx context.Context, scope *core.Scope) (collections.Iterator, error)

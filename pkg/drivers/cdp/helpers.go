@@ -2,8 +2,10 @@ package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/events"
+
 	"github.com/mafredri/cdp/protocol/dom"
+
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/emulation"

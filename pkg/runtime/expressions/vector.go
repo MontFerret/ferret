@@ -1,9 +1,10 @@
 package expressions
 
 import (
+	"math"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"math"
 )
 
 // Vector TODO: Finish and add unit tests

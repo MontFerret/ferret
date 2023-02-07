@@ -11,6 +11,7 @@ build: vet generate test compile
 
 install-tools:
 	go install honnef.co/go/tools/cmd/staticcheck@latest && \
+	go install golang.org/x/tools/cmd/goimports@latest && \
 	go install github.com/mgechev/revive@latest
 
 install:
@@ -41,7 +42,8 @@ doc:
 
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
-	go fmt ${DIR_PKG}/...
+	go fmt ${DIR_PKG}/... && \
+	goimports -w -local github.com/MontFerret ./pkg ./e2e
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive

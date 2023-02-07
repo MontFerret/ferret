@@ -2,10 +2,12 @@ package events
 
 import (
 	"context"
+
+	"github.com/mafredri/cdp/rpcc"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/mafredri/cdp/rpcc"
 )
 
 type (

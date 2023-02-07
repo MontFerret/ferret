@@ -2,10 +2,12 @@ package drivers
 
 import (
 	"context"
+
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/wI2L/jettison"
 )
 
 // HTTPRequest HTTP request object.

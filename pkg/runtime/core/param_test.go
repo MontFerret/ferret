@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestParamsWith(t *testing.T) {

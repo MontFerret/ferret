@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestKeepKeys(t *testing.T) {

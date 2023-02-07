@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 )

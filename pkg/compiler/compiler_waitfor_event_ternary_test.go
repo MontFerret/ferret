@@ -2,8 +2,9 @@ package compiler_test
 
 import (
 	"context"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestWaitforEventWithinTernaryExpression(t *testing.T) {

@@ -2,13 +2,15 @@ package events_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
-	"github.com/mafredri/cdp/rpcc"
-	. "github.com/smartystreets/goconvey/convey"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/mafredri/cdp/rpcc"
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 )
 
 type TestEventStream struct {

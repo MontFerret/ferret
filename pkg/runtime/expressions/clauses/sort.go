@@ -2,6 +2,7 @@ package clauses
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )

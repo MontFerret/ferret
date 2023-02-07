@@ -2,9 +2,10 @@ package http
 
 import (
 	"context"
-	"golang.org/x/net/html"
 	"hash/fnv"
 	"strings"
+
+	"golang.org/x/net/html"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/wI2L/jettison"

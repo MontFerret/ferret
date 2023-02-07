@@ -2,9 +2,10 @@ package collections_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

@@ -2,9 +2,11 @@ package math_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/stdlib/math"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/stdlib/math"
 )
 
 func TestRand(t *testing.T) {

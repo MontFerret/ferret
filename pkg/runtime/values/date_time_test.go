@@ -2,10 +2,12 @@ package values_test
 
 import (
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestDateTime(t *testing.T) {

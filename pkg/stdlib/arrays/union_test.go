@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 // TestUnion returns the union of distinct values of all passed arrays.

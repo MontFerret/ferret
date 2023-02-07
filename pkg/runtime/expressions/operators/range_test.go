@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type MockExpressionInt int

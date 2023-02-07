@@ -2,10 +2,11 @@ package common_test
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

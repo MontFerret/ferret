@@ -2,10 +2,12 @@ package strings_test
 
 import (
 	"context"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestLower(t *testing.T) {

@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestJSONParse(t *testing.T) {

@@ -3,8 +3,9 @@ package values_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"

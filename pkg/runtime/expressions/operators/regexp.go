@@ -2,9 +2,10 @@ package operators
 
 import (
 	"context"
+	"regexp"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"regexp"
 )
 
 type (

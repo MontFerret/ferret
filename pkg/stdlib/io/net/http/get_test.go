@@ -2,11 +2,13 @@ package http_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/pkg/errors"
 	h "net/http"
 	"testing"
+
+	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	. "github.com/smartystreets/goconvey/convey"
 

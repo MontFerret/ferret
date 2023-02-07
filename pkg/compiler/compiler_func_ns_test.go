@@ -3,13 +3,15 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
-	"regexp"
-	"testing"
 )
 
 func TestFunctionNSCall(t *testing.T) {

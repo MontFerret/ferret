@@ -3,13 +3,15 @@ package http_test
 import (
 	"bytes"
 	"context"
+	"testing"
+
+	"github.com/PuerkitoBio/goquery"
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/PuerkitoBio/goquery"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestElement(t *testing.T) {

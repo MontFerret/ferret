@@ -3,15 +3,17 @@ package compiler_test
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/parser"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/parser"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestMember(t *testing.T) {

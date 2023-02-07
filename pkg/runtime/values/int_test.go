@@ -2,9 +2,11 @@ package values_test
 
 import (
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestInt(t *testing.T) {

@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/pkg/errors"
 )
 
 // FMT formats the template using these arguments.

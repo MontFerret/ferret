@@ -6,10 +6,11 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewParameterExpression(t *testing.T) {

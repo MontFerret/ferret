@@ -3,11 +3,13 @@ package compiler_test
 import (
 	"context"
 	"errors"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestLogicalOperators(t *testing.T) {

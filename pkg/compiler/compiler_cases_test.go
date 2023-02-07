@@ -3,10 +3,11 @@ package compiler_test
 import (
 	"context"
 	"fmt"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"strings"
 	"testing"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"

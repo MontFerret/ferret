@@ -2,6 +2,7 @@ package expressions
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"

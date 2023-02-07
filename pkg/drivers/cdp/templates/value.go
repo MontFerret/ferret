@@ -1,9 +1,10 @@
 package templates
 
 import (
+	"github.com/mafredri/cdp/protocol/runtime"
+
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/mafredri/cdp/protocol/runtime"
 )
 
 const getValue = `(el) => {

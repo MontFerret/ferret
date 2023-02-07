@@ -2,9 +2,10 @@ package html
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"

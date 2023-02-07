@@ -4,10 +4,11 @@ import (
 	"context"
 	"math"
 
+	"github.com/pkg/errors"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/pkg/errors"
 )
 
 // PERCENTILE returns the nth percentile of the values in a given array.
