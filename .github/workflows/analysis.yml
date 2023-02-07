@@ -17,8 +17,6 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
-  schedule:
-    - cron: '44 5 * * 4'
 
 jobs:
   analyze:
@@ -37,7 +35,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    # Initializes the CodeQL tools for scanning.
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '>=1.19'
+
+    - name: Set up linters
+      run: make install-tools
+
+    - name: Lint
+      run: |
+          make vet
+          make lint
+          make fmt
+          git diff
+          if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
+
+      # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
       with:

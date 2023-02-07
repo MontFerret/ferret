@@ -37,19 +37,8 @@ jobs:
           curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
           sudo sh install.sh
 
-      - name: Set up linters
-        run: make install-tools
-
       - name: Get dependencies
         run: make install
-
-      - name: Lint
-        run: |
-          make vet
-          make lint
-          make fmt
-          git diff
-          if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
 
       - name: Generate
         run: |
