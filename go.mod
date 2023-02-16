@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/antchfx/htmlquery v1.3.0
-	github.com/antchfx/xpath v1.2.3
+	github.com/antchfx/xpath v1.2.4
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20221202181307-76fa05c21b12
 	github.com/corpix/uarand v0.2.0
 	github.com/gobwas/glob v0.2.3
