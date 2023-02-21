@@ -14,6 +14,7 @@ func RegisterLib(ns core.Namespace) error {
 			"TO_STRING":        ToString,
 			"TO_DATETIME":      ToDateTime,
 			"TO_ARRAY":         ToArray,
+			"TO_BINARY":        ToBinary,
 			"IS_NONE":          IsNone,
 			"IS_BOOL":          IsBool,
 			"IS_INT":           IsInt,
