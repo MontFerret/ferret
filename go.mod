@@ -16,7 +16,7 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/sethgrid/pester v1.2.0
 	github.com/smartystreets/goconvey v1.7.2
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/wI2L/jettison v0.7.4
 	golang.org/x/net v0.5.0
 	golang.org/x/sync v0.1.0
