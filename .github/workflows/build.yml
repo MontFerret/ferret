@@ -59,7 +59,7 @@ jobs:
       - name: Set up Lab
         run: |
           curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
-          sh install.sh
+          LOCATION=$PWD sh install.sh
 
       - name: Get dependencies
         run: make install
