@@ -1280,3 +1280,39 @@ func TestNot(t *testing.T) {
 		})
 	})
 }
+
+func TestToNumberOrString(t *testing.T) {
+	Convey("Invert to numeric value", t, func() {
+		Convey("0 turns 0", func() {
+			So(operators.ToNumberOrString(values.NewInt(0)), ShouldEqual, 0)
+		})
+		Convey("1 turns 1", func() {
+			So(operators.ToNumberOrString(values.NewInt(1)), ShouldEqual, 1)
+		})
+		Convey("-1 turns -1", func() {
+			So(operators.ToNumberOrString(values.NewInt(-1)), ShouldEqual, -1)
+		})
+		Convey("0.0 turns 0.0", func() {
+			So(operators.ToNumberOrString(values.NewFloat(0.0)), ShouldEqual, 0.0)
+		})
+		Convey("-1.0 turns -1.0", func() {
+			So(operators.ToNumberOrString(values.NewFloat(-1.0)), ShouldEqual, -1.0)
+		})
+		Convey("1.0 turns 1.0", func() {
+			So(operators.ToNumberOrString(values.NewFloat(1.0)), ShouldEqual, 1.0)
+		})
+		Convey("string type 0 turns string type 0", func() {
+			So(operators.ToNumberOrString(values.NewString("0")), ShouldEqual, "0")
+		})
+		Convey("string type 1 turns string type 1", func() {
+			So(operators.ToNumberOrString(values.NewString("1")), ShouldEqual, "1")
+		})
+		Convey("string type -1 turns string type -1", func() {
+			So(operators.ToNumberOrString(values.NewString("-1")), ShouldEqual, "-1")
+		})
+		Convey("string type 0.0 turns string type 0.0", func() {
+			So(operators.ToNumberOrString(values.NewString("0.0")), ShouldEqual, 0)
+		})
+
+	})
+}
