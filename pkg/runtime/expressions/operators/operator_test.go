@@ -2,6 +2,7 @@ package operators_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
@@ -1321,6 +1322,33 @@ func TestToNumberOrString(t *testing.T) {
 		})
 		Convey("false turns 0", func() {
 			So(operators.ToNumberOrString(values.NewBoolean(false)), ShouldEqual, 0)
+		})
+		Convey("current DateTime turns unix", func() {
+			So(operators.ToNumberOrString(values.NewDateTime(time.Now())), ShouldEqual, time.Now().Unix())
+		})
+		Convey("zero value DateTime turns 0", func() {
+			var zero time.Time
+			So(operators.ToNumberOrString(values.NewDateTime(zero)), ShouldEqual, 0)
+		})
+		Convey("[1] turns 1", func() {
+			arg := values.NewArrayWith(values.NewInt(1))
+			So(operators.ToNumberOrString(arg), ShouldEqual, 1)
+		})
+		Convey("[1, 2] turns 3", func() {
+			arg := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
+			So(operators.ToNumberOrString(arg), ShouldEqual, 3)
+		})
+		Convey("[a] turns 0", func() {
+			arg := values.NewArrayWith(values.NewString("a"))
+			So(operators.ToNumberOrString(arg), ShouldEqual, 0)
+		})
+		Convey("[true] turns 1", func() {
+			arg := values.NewArrayWith(values.NewBoolean(true))
+			So(operators.ToNumberOrString(arg), ShouldEqual, 1)
+		})
+		Convey("[false] turns 0", func() {
+			arg := values.NewArrayWith(values.NewBoolean(false))
+			So(operators.ToNumberOrString(arg), ShouldEqual, 0)
 		})
 
 	})
