@@ -1350,6 +1350,14 @@ func TestToNumberOrString(t *testing.T) {
 			arg := values.NewArrayWith(values.NewBoolean(false))
 			So(operators.ToNumberOrString(arg), ShouldEqual, 0)
 		})
+	})
+}
+
+func TestToNumberOnly(t *testing.T) {
+	Convey("Invert to int", t, func() {
+		Convey("0 turns 0", func() {
+			So(operators.ToNumberOrString(values.NewInt(0)), ShouldEqual, 0)
+		})
 
 	})
 }
