@@ -1311,7 +1311,16 @@ func TestToNumberOrString(t *testing.T) {
 			So(operators.ToNumberOrString(values.NewString("-1")), ShouldEqual, "-1")
 		})
 		Convey("string type 0.0 turns string type 0.0", func() {
-			So(operators.ToNumberOrString(values.NewString("0.0")), ShouldEqual, 0)
+			So(operators.ToNumberOrString(values.NewString("0.0")), ShouldEqual, "0.0")
+		})
+		Convey("a turns a", func() {
+			So(operators.ToNumberOrString(values.NewString("a")), ShouldEqual, "a")
+		})
+		Convey("true turns 1", func() {
+			So(operators.ToNumberOrString(values.NewBoolean(true)), ShouldEqual, 1)
+		})
+		Convey("false turns 0", func() {
+			So(operators.ToNumberOrString(values.NewBoolean(false)), ShouldEqual, 0)
 		})
 
 	})
