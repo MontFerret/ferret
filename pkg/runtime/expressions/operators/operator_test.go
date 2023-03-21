@@ -1356,8 +1356,71 @@ func TestToNumberOrString(t *testing.T) {
 func TestToNumberOnly(t *testing.T) {
 	Convey("Invert to int", t, func() {
 		Convey("0 turns 0", func() {
-			So(operators.ToNumberOrString(values.NewInt(0)), ShouldEqual, 0)
+			So(operators.ToNumberOnly(values.NewInt(0)), ShouldEqual, 0)
+		})
+		Convey("1 turns 1", func() {
+			So(operators.ToNumberOnly(values.NewInt(1)), ShouldEqual, 1)
+		})
+		Convey("-1 turns -1", func() {
+			So(operators.ToNumberOnly(values.NewInt(-1)), ShouldEqual, -1)
+		})
+		Convey("0.0 turns 0.0", func() {
+			So(operators.ToNumberOnly(values.NewFloat(0.0)), ShouldEqual, 0.0)
+		})
+		Convey("-1.0 turns -1.0", func() {
+			So(operators.ToNumberOnly(values.NewFloat(-1.0)), ShouldEqual, -1.0)
+		})
+		Convey("1.0 turns 1.0", func() {
+			So(operators.ToNumberOnly(values.NewFloat(1.0)), ShouldEqual, 1.0)
+		})
+		Convey("string type 0 turns 0", func() {
+			So(operators.ToNumberOnly(values.NewString("0")), ShouldEqual, 0)
+		})
+		Convey("string type 1 turns 1", func() {
+			So(operators.ToNumberOnly(values.NewString("1")), ShouldEqual, 1)
+		})
+		Convey("string type -1 turns -1", func() {
+			So(operators.ToNumberOnly(values.NewString("-1")), ShouldEqual, -1)
+		})
+		Convey("string type 0.0 turns 0.0", func() {
+			So(operators.ToNumberOnly(values.NewString("0.0")), ShouldEqual, 0.0)
 		})
 
+		Convey("a turns 0", func() {
+			So(operators.ToNumberOnly(values.NewString("a")), ShouldEqual, 0)
+		})
+		Convey("true turns 1", func() {
+			So(operators.ToNumberOnly(values.NewBoolean(true)), ShouldEqual, 1)
+		})
+		Convey("false turns 0", func() {
+			So(operators.ToNumberOnly(values.NewBoolean(false)), ShouldEqual, 0)
+		})
+		Convey("current DateTime turns unix", func() {
+			So(operators.ToNumberOnly(values.NewDateTime(time.Now())), ShouldEqual, time.Now().Unix())
+		})
+		Convey("zero value DateTime turns 0", func() {
+			var zero time.Time
+			So(operators.ToNumberOnly(values.NewDateTime(zero)), ShouldEqual, 0)
+		})
+		Convey("[1] turns 1", func() {
+			arg := values.NewArrayWith(values.NewInt(1))
+			So(operators.ToNumberOnly(arg), ShouldEqual, 1)
+		})
+		Convey("[1, 2] turns 3", func() {
+			arg := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
+			So(operators.ToNumberOnly(arg), ShouldEqual, 3)
+		})
+		Convey("[a] turns 0", func() {
+			arg := values.NewArrayWith(values.NewString("a"))
+			So(operators.ToNumberOnly(arg), ShouldEqual, 0)
+		})
+		Convey("[true] turns 1", func() {
+			arg := values.NewArrayWith(values.NewBoolean(true))
+			So(operators.ToNumberOnly(arg), ShouldEqual, 1)
+		})
+		Convey("[false] turns 0", func() {
+			arg := values.NewArrayWith(values.NewBoolean(false))
+			So(operators.ToNumberOnly(arg), ShouldEqual, 0)
+		})
 	})
 }
