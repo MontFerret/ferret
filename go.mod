@@ -11,7 +11,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
 	github.com/jarcoal/httpmock v1.3.0
-	github.com/mafredri/cdp v0.33.0
+	github.com/mafredri/cdp v0.34.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
 	github.com/sethgrid/pester v1.2.0

@@ -51,8 +51,8 @@ github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfV
 github.com/klauspost/compress v1.10.3 h1:OP96hzwJVBIHYU52pVTI6CczrxPvrGfgqF9N5eTO0Q8=
 github.com/klauspost/compress v1.10.3/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
-github.com/mafredri/cdp v0.33.0 h1:McuQjNe0DyctTUxt8zY6jGTlpPoy2gciqxtvKhz0XPM=
-github.com/mafredri/cdp v0.33.0/go.mod h1:Dbsh7eY/zhQlsddEDWzZGOztv9Jf2gzKq47M7a2P3C4=
+github.com/mafredri/cdp v0.34.0 h1:kC8LFc1IJcjexESrt6U+MkqLtbwLV+WQ9hgcn1hntc4=
+github.com/mafredri/cdp v0.34.0/go.mod h1:Dbsh7eY/zhQlsddEDWzZGOztv9Jf2gzKq47M7a2P3C4=
 github.com/mafredri/go-lint v0.0.0-20180911205320-920981dfc79e/go.mod h1:k/zdyxI3q6dup24o8xpYjJKTCf2F7rfxLp6w/efTiWs=
 github.com/mattn/go-colorable v0.1.12 h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=
 github.com/mattn/go-colorable v0.1.12/go.mod h1:u5H1YNBxpqRaxsYJYSkiCWKzEfiAb1Gb520KVy5xxl4=
