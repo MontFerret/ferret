@@ -3,24 +3,24 @@ module github.com/MontFerret/ferret
 go 1.18
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/antchfx/htmlquery v1.3.0
-	github.com/antchfx/xpath v1.2.3
-	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20221202181307-76fa05c21b12
+	github.com/antchfx/xpath v1.2.4
+	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230321174746-8dcc6526cfb1
 	github.com/corpix/uarand v0.2.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/css v1.0.0
 	github.com/jarcoal/httpmock v1.3.0
-	github.com/mafredri/cdp v0.33.0
+	github.com/mafredri/cdp v0.34.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
 	github.com/sethgrid/pester v1.2.0
 	github.com/smartystreets/goconvey v1.7.2
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/wI2L/jettison v0.7.4
-	golang.org/x/net v0.5.0
+	golang.org/x/net v0.8.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.8.0
 )
 
 require (
@@ -36,6 +36,6 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
-	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
