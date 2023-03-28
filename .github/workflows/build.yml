@@ -60,6 +60,7 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
           chmod +x ./install.sh
+          mkdir $PWD/lab-bin
           LOCATION=$PWD/lab-bin ./install.sh
           export PATH=$PATH:$PWD/lab-bin
 
