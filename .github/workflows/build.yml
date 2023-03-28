@@ -60,9 +60,7 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/MontFerret/lab/master/install.sh -o install.sh
           chmod +x ./install.sh
-          mkdir $PWD/lab-bin
-          LOCATION=$PWD/lab-bin ./install.sh
-          export PATH=$PATH:$PWD/lab-bin
+          LOCATION=$PWD ./install.sh
 
       - name: Get dependencies
         run: make install
@@ -81,5 +79,5 @@ jobs:
       - name: E2E tests
         run: |
           docker run -d -p 9222:9222 ghcr.io/montferret/chromium:92.0.4512.0
-          make e2e
+          LAB_BIN=$PWD/lab make e2e
           docker stop $(docker ps -q)
