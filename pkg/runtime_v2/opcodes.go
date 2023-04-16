@@ -22,6 +22,7 @@ const (
 	OpGte
 	OpLte
 	OpLike
+	OpNotLike
 	OpAdd
 	OpSub
 	OpMulti
@@ -33,4 +34,5 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 	OpJumpIfFalse
+	OpJump
 )

@@ -9,7 +9,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func Like(left, right core.Value) (core.Value, error) {
+func Like(left, right core.Value) (values.Boolean, error) {
 	err := core.ValidateType(right, types.String)
 
 	if err != nil {
@@ -27,7 +27,7 @@ func Like(left, right core.Value) (core.Value, error) {
 	r, err := glob.Compile(right.String())
 
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid glob pattern")
+		return values.False, errors.Wrap(err, "invalid glob pattern")
 	}
 
 	result := r.Match(left.String())

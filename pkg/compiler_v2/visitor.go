@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/MontFerret/ferret/pkg/runtime_v2"
+	runtime "github.com/MontFerret/ferret/pkg/runtime_v2"
 )
 
 type (
@@ -26,7 +26,7 @@ type (
 		funcs          *core.Functions
 		constantsIndex map[uint64]int
 		locations      []core.Location
-		bytecode       []runtime_v2.Opcode
+		bytecode       []runtime.Opcode
 		arguments      []int
 		constants      []core.Value
 		scope          int
@@ -36,6 +36,7 @@ type (
 )
 
 const (
+	jumpPlaceholder         = -1
 	ignoreVarPseudoVariable = "_"
 	waitPseudoVariable      = "CURRENT"
 	waitScope               = "waitfor"
@@ -49,7 +50,7 @@ func newVisitor(src string, funcs *core.Functions) *visitor {
 	v.funcs = funcs
 	v.constantsIndex = make(map[uint64]int)
 	v.locations = make([]core.Location, 0)
-	v.bytecode = make([]runtime_v2.Opcode, 0)
+	v.bytecode = make([]runtime.Opcode, 0)
 	v.arguments = make([]int, 0)
 	v.constants = make([]core.Value, 0)
 	v.scope = 0
@@ -137,7 +138,7 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 			panic(core.Error(ErrVariableNotFound, name))
 		}
 
-		v.emit(runtime_v2.OpGetGlobal, index)
+		v.emit(runtime.OpGetGlobal, index)
 	}
 
 	return nil
@@ -189,7 +190,7 @@ func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} 
 		}
 	}
 
-	v.emitConstant(runtime_v2.OpConstant, values.NewString(b.String()))
+	v.emitConstant(runtime.OpConstant, values.NewString(b.String()))
 
 	return nil
 }
@@ -201,7 +202,7 @@ func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{
 		panic(err)
 	}
 
-	v.emitConstant(runtime_v2.OpConstant, values.NewInt(val))
+	v.emitConstant(runtime.OpConstant, values.NewInt(val))
 
 	return nil
 }
@@ -213,7 +214,7 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 		panic(err)
 	}
 
-	v.emitConstant(runtime_v2.OpConstant, values.NewFloat(val))
+	v.emitConstant(runtime.OpConstant, values.NewFloat(val))
 
 	return nil
 }
@@ -221,9 +222,9 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		v.emit(runtime_v2.OpTrue)
+		v.emit(runtime.OpTrue)
 	case "false":
-		v.emit(runtime_v2.OpFalse)
+		v.emit(runtime.OpFalse)
 	default:
 		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
@@ -232,7 +233,7 @@ func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{
 }
 
 func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
-	v.emit(runtime_v2.OpNone)
+	v.emit(runtime.OpNone)
 
 	return nil
 }
@@ -256,7 +257,7 @@ func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
 	ctx.Expression().Accept(v)
 
-	v.emit(runtime_v2.OpReturn)
+	v.emit(runtime.OpReturn)
 
 	return nil
 }
@@ -269,7 +270,23 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	} else if op := ctx.LogicalOrOperator(); op != nil {
 
 	} else if op := ctx.GetTernaryOperator(); op != nil {
+		ctx.GetCondition().Accept(v)
 
+		otherwise := v.emitJump(runtime.OpJumpIfFalse)
+
+		if onTrue := ctx.GetOnTrue(); onTrue != nil {
+			// Remove the top value from the stack (the condition)
+			v.emitPop()
+			onTrue.Accept(v)
+		}
+
+		end := v.emitJump(runtime.OpJump)
+		v.patchJump(otherwise)
+
+		// Remove the top value from the stack (the condition)
+		v.emitPop()
+		ctx.GetOnFalse().Accept(v)
+		v.patchJump(end)
 	} else if c := ctx.Predicate(); c != nil {
 		c.Accept(v)
 	}
@@ -284,17 +301,17 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 
 		switch op.GetText() {
 		case "==":
-			v.emit(runtime_v2.OpEq)
+			v.emit(runtime.OpEq)
 		case "!=":
-			v.emit(runtime_v2.OpNeq)
+			v.emit(runtime.OpNeq)
 		case ">":
-			v.emit(runtime_v2.OpGt)
+			v.emit(runtime.OpGt)
 		case ">=":
-			v.emit(runtime_v2.OpGte)
+			v.emit(runtime.OpGte)
 		case "<":
-			v.emit(runtime_v2.OpLt)
+			v.emit(runtime.OpLt)
 		case "<=":
-			v.emit(runtime_v2.OpLte)
+			v.emit(runtime.OpLte)
 		default:
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
@@ -304,12 +321,17 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 		ctx.Predicate(0).Accept(v)
 		ctx.Predicate(1).Accept(v)
 
-		v.emit(runtime_v2.OpIn)
+		v.emit(runtime.OpIn)
 	} else if op := ctx.LikeOperator(); op != nil {
 		ctx.Predicate(0).Accept(v)
 		ctx.Predicate(1).Accept(v)
 
-		v.emit(runtime_v2.OpLike)
+		if op.(*fql.LikeOperatorContext).Not() != nil {
+			v.emit(runtime.OpNotLike)
+		} else {
+			v.emit(runtime.OpLike)
+		}
+
 	} else if c := ctx.ExpressionAtom(); c != nil {
 		c.Accept(v)
 	}
@@ -324,11 +346,11 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "*":
-			v.emit(runtime_v2.OpMulti)
+			v.emit(runtime.OpMulti)
 		case "/":
-			v.emit(runtime_v2.OpDiv)
+			v.emit(runtime.OpDiv)
 		case "%":
-			v.emit(runtime_v2.OpMod)
+			v.emit(runtime.OpMod)
 		}
 	} else if op := ctx.AdditiveOperator(); op != nil {
 		ctx.ExpressionAtom(0).Accept(v)
@@ -336,9 +358,9 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "+":
-			v.emit(runtime_v2.OpAdd)
+			v.emit(runtime.OpAdd)
 		case "-":
-			v.emit(runtime_v2.OpSub)
+			v.emit(runtime.OpSub)
 		}
 	} else if op := ctx.RegexpOperator(); op != nil {
 		ctx.ExpressionAtom(0).Accept(v)
@@ -346,9 +368,9 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "=~":
-			v.emit(runtime_v2.OpRegexpPositive)
+			v.emit(runtime.OpRegexpPositive)
 		case "!~":
-			v.emit(runtime_v2.OpRegexpNegative)
+			v.emit(runtime.OpRegexpNegative)
 		default:
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
@@ -421,16 +443,33 @@ func (v *visitor) declareVariable(name string) int {
 // defineVariable defines a variable in the current scope.
 func (v *visitor) defineVariable(index int) {
 	if v.scope == 0 {
-		v.emit(runtime_v2.OpDefineGlobal, index)
+		v.emit(runtime.OpDefineGlobal, index)
 	}
 }
 
 // emitConstant emits an opcode with a constant argument.
-func (v *visitor) emitConstant(op runtime_v2.Opcode, constant core.Value) {
+func (v *visitor) emitConstant(op runtime.Opcode, constant core.Value) {
 	v.emit(op, v.addConstant(constant))
 }
 
-func (v *visitor) emit(op runtime_v2.Opcode, args ...int) {
+// emitJump emits an opcode with a jump offset argument.
+func (v *visitor) emitJump(op runtime.Opcode) int {
+	v.emit(op, jumpPlaceholder)
+
+	return len(v.bytecode)
+}
+
+// patchJump patches a jump offset argument.
+func (v *visitor) patchJump(offset int) {
+	jump := len(v.bytecode) - offset
+	v.arguments[offset-1] = jump
+}
+
+func (v *visitor) emitPop() {
+	v.emit(runtime.OpPop)
+}
+
+func (v *visitor) emit(op runtime.Opcode, args ...int) {
 	v.bytecode = append(v.bytecode, op)
 
 	var arg int

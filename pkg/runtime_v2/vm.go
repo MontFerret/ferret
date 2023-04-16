@@ -110,6 +110,17 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 
 			stack.Push(res)
 
+		case OpNotLike:
+			right := stack.Pop()
+			left := stack.Pop()
+			res, err := operators.Like(left, right)
+
+			if err != nil {
+				panic(err)
+			}
+
+			stack.Push(!res)
+
 		case OpAdd:
 			right := stack.Pop()
 			left := stack.Pop()
@@ -159,6 +170,14 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			}
 
 			stack.Push(res)
+
+		case OpJumpIfFalse:
+			if !values.ToBoolean(stack.Peek()) {
+				vm.ip += arg
+			}
+
+		case OpJump:
+			vm.ip += arg
 
 		case OpReturn:
 			res := stack.Pop()
