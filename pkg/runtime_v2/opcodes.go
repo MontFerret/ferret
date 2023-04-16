@@ -5,12 +5,12 @@ type Opcode byte
 const (
 	OpNone Opcode = iota
 	OpConstant
+	OpCastBool
 	OpTrue
 	OpFalse
 	OpPop
 	OpDefineGlobal
 	OpGetGlobal
-	OpReturn
 	OpNegate
 	OpNot
 	OpEq
@@ -34,5 +34,7 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 	OpJumpIfFalse
+	OpJumpIfTrue
 	OpJump
+	OpReturn
 )

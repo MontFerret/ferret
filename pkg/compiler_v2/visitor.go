@@ -266,9 +266,17 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if op := ctx.UnaryOperator(); op != nil {
 
 	} else if op := ctx.LogicalAndOperator(); op != nil {
-
+		ctx.GetLeft().Accept(v)
+		end := v.emitJump(runtime.OpJumpIfFalse)
+		v.emitPop()
+		ctx.GetRight().Accept(v)
+		v.patchJump(end)
 	} else if op := ctx.LogicalOrOperator(); op != nil {
-
+		ctx.GetLeft().Accept(v)
+		end := v.emitJump(runtime.OpJumpIfTrue)
+		v.emitPop()
+		ctx.GetRight().Accept(v)
+		v.patchJump(end)
 	} else if op := ctx.GetTernaryOperator(); op != nil {
 		ctx.GetCondition().Accept(v)
 

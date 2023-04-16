@@ -38,6 +38,9 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		case OpConstant:
 			stack.Push(program.Constants[arg])
 
+		case OpCastBool:
+			stack.Push(values.ToBoolean(stack.Pop()))
+
 		case OpTrue:
 			stack.Push(values.True)
 
@@ -173,6 +176,10 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 
 		case OpJumpIfFalse:
 			if !values.ToBoolean(stack.Peek()) {
+				vm.ip += arg
+			}
+		case OpJumpIfTrue:
+			if values.ToBoolean(stack.Peek()) {
 				vm.ip += arg
 			}
 
