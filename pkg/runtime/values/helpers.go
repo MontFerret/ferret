@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/wI2L/jettison"
@@ -610,4 +611,82 @@ func UnwrapStrings(values []String) []string {
 	}
 
 	return out
+}
+
+func Negate(input core.Value) core.Value {
+	switch val := input.(type) {
+	case Int:
+		return -val
+	case Float:
+		return -val
+	case Boolean:
+		return !val
+	default:
+		return None
+	}
+}
+
+func Contains(input core.Value, value core.Value) Boolean {
+	switch val := input.(type) {
+	case *Array:
+		return val.Contains(value)
+	case String:
+		return Boolean(strings.Contains(val.String(), value.String()))
+	default:
+		return false
+	}
+}
+
+func ToNumberOrString(input core.Value) core.Value {
+	switch input.Type() {
+	case types.Int, types.Float, types.String:
+		return input
+	default:
+		return ToInt(input)
+	}
+}
+
+func ToNumberOnly(input core.Value) core.Value {
+	switch input.Type() {
+	case types.Int, types.Float:
+		return input
+	case types.String:
+		if strings.Contains(input.String(), ".") {
+			return ToFloat(input)
+		}
+
+		return ToInt(input)
+	case types.Array:
+		arr := input.(*Array)
+		length := arr.Length()
+
+		if length == 0 {
+			return ZeroInt
+		}
+
+		i := ZeroInt
+		f := ZeroFloat
+
+		for y := Int(0); y < length; y++ {
+			out := ToNumberOnly(arr.Get(y))
+
+			if out.Type() == types.Int {
+				i += out.(Int)
+			} else {
+				f += out.(Float)
+			}
+		}
+
+		if f == 0 {
+			return i
+		}
+
+		return Float(i) + f
+	default:
+		return ToInt(input)
+	}
+}
+
+func CompareStrings(a, b String) Int {
+	return Int(strings.Compare(a.String(), b.String()))
 }

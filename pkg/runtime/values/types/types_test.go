@@ -52,6 +52,7 @@ func TestType(t *testing.T) {
 		So(types.Array.String(), ShouldEqual, "array")
 		So(types.Object.String(), ShouldEqual, "object")
 		So(types.Binary.String(), ShouldEqual, "binary")
+		So(types.Regexp.String(), ShouldEqual, "regexp")
 	})
 
 	Convey("==", t, func() {
@@ -65,6 +66,7 @@ func TestType(t *testing.T) {
 			types.Array,
 			types.Object,
 			types.Binary,
+			types.Regexp,
 		}
 
 		valuesList := []core.Value{
@@ -77,6 +79,7 @@ func TestType(t *testing.T) {
 			TestValue{types.Array},
 			TestValue{types.Object},
 			TestValue{types.Binary},
+			TestValue{types.Regexp},
 		}
 
 		for i, t := range typesList {

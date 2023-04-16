@@ -11,8 +11,9 @@ var typeComparisonTable = map[core.Type]uint64{
 	String:   4,
 	DateTime: 5,
 	Array:    6,
-	Object:   7,
-	Binary:   8,
+	Regexp:   7,
+	Object:   8,
+	Binary:   9,
 }
 
 func Compare(first, second core.Type) int64 {
@@ -39,4 +40,16 @@ func Compare(first, second core.Type) int64 {
 	}
 
 	return -1
+}
+
+func IsNumeric(t core.Type) bool {
+	return t == Int || t == Float
+}
+
+func IsScalar(t core.Type) bool {
+	return t == Boolean || t == Int || t == Float || t == String || t == DateTime || t == Regexp
+}
+
+func IsCollection(t core.Type) bool {
+	return t == Array || t == Object
 }

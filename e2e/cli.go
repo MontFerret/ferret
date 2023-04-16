@@ -22,7 +22,6 @@ import (
 	"github.com/MontFerret/ferret"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
@@ -287,10 +286,10 @@ func main() {
 	_ = engine.Drivers().Register(http.NewDriver())
 	_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
 
-	opts := []runtime.Option{
-		runtime.WithParams(p),
-		runtime.WithLog(console),
-		runtime.WithLogLevel(logging.MustParseLevel(*logLevel)),
+	opts := []runtime_old.Option{
+		runtime_old.WithParams(p),
+		runtime_old.WithLog(console),
+		runtime_old.WithLogLevel(logging.MustParseLevel(*logLevel)),
 	}
 
 	c := make(chan os.Signal, 1)
@@ -318,7 +317,7 @@ func main() {
 	}
 }
 
-func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, files []string) error {
+func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime_old.Option, files []string) error {
 	errList := make([]error, 0, len(files))
 
 	for _, path := range files {
@@ -409,7 +408,7 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 	return nil
 }
 
-func runQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+func runQuery(ctx context.Context, engine *ferret.Instance, opts []runtime_old.Option, query string) error {
 	if !(*dryRun) {
 		return execQuery(ctx, engine, opts, query)
 	}
@@ -417,7 +416,7 @@ func runQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Optio
 	return analyzeQuery(engine, query)
 }
 
-func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Option, query string) error {
+func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime_old.Option, query string) error {
 	beforeExec := "Before Execution"
 	exec := "Execution"
 	afterExec := "After Execution"

@@ -19,6 +19,7 @@ func TestHelpers(t *testing.T) {
 			types.String,
 			types.DateTime,
 			types.Array,
+			types.Regexp,
 			types.Object,
 			types.Binary,
 		}
@@ -156,6 +157,8 @@ func TestHelpers(t *testing.T) {
 					So(types.Compare(types.Object, t), ShouldEqual, 1)
 				case types.Array.ID():
 					So(types.Compare(types.Object, t), ShouldEqual, 1)
+				case types.Regexp.ID():
+					So(types.Compare(types.Object, t), ShouldEqual, 1)
 				case types.Object.ID():
 					So(types.Compare(types.Object, t), ShouldEqual, 0)
 				default:
@@ -171,6 +174,21 @@ func TestHelpers(t *testing.T) {
 					So(types.Compare(types.Binary, t), ShouldEqual, 0)
 				default:
 					So(types.Compare(types.Binary, t), ShouldEqual, 1)
+				}
+			}
+		})
+
+		Convey("Regexp", func() {
+			for _, t := range typesList {
+				switch t.ID() {
+				case types.Regexp.ID():
+					So(types.Compare(types.Regexp, t), ShouldEqual, 0)
+				case types.Object.ID():
+					So(types.Compare(types.Regexp, t), ShouldEqual, -1)
+				case types.Binary.ID():
+					So(types.Compare(types.Regexp, t), ShouldEqual, -1)
+				default:
+					So(types.Compare(types.Regexp, t), ShouldEqual, 1)
 				}
 			}
 		})

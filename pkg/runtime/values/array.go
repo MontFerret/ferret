@@ -234,6 +234,10 @@ func (t *Array) Slice(from, to Int) *Array {
 	return result
 }
 
+func (t *Array) Contains(item core.Value) Boolean {
+	return t.IndexOf(item) >= 0
+}
+
 func (t *Array) IndexOf(item core.Value) Int {
 	res := Int(-1)
 

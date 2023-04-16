@@ -12,4 +12,5 @@ var (
 	Array    = core.NewType("array")
 	Object   = core.NewType("object")
 	Binary   = core.NewType("binary")
+	Regexp   = core.NewType("regexp")
 )
