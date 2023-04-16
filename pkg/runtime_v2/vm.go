@@ -59,6 +59,12 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		case OpNegate:
 			stack.Push(values.Negate(stack.Pop()))
 
+		case OpFlipPositive:
+			stack.Push(values.Positive(stack.Pop()))
+
+		case OpFlipNegative:
+			stack.Push(values.Negative(stack.Pop()))
+
 		case OpNot:
 			stack.Push(!values.ToBoolean(stack.Pop()))
 
@@ -149,10 +155,10 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			left := stack.Pop()
 			stack.Push(operators.Modulus(left, right))
 
-		case OpIncrement:
+		case OpIncr:
 			stack.Push(operators.Increment(stack.Pop()))
 
-		case OpDecrement:
+		case OpDecr:
 			stack.Push(operators.Decrement(stack.Pop()))
 
 		case OpRegexpPositive:

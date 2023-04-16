@@ -626,6 +626,30 @@ func Negate(input core.Value) core.Value {
 	}
 }
 
+func Negative(value core.Value) core.Value {
+	if value.Type() == types.Int {
+		return -value.(Int)
+	}
+
+	if value.Type() == types.Float {
+		return -value.(Float)
+	}
+
+	return value
+}
+
+func Positive(value core.Value) core.Value {
+	if value.Type() == types.Int {
+		return +value.(Int)
+	}
+
+	if value.Type() == types.Float {
+		return +value.(Float)
+	}
+
+	return value
+}
+
 func Contains(input core.Value, value core.Value) Boolean {
 	switch val := input.(type) {
 	case *Array:

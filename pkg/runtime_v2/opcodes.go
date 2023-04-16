@@ -12,6 +12,8 @@ const (
 	OpDefineGlobal
 	OpGetGlobal
 	OpNegate
+	OpFlipPositive
+	OpFlipNegative
 	OpNot
 	OpEq
 	OpNeq
@@ -28,8 +30,8 @@ const (
 	OpMulti
 	OpDiv
 	OpMod
-	OpIncrement
-	OpDecrement
+	OpIncr
+	OpDecr
 	OpRange
 	OpRegexpPositive
 	OpRegexpNegative

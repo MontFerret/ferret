@@ -12,7 +12,7 @@ import (
 )
 
 func TestTernaryOperator(t *testing.T) {
-	run := func(p *runtime.Program) (int, error) {
+	run := func(p *runtime.Program) (any, error) {
 		vm := runtime.NewVM()
 
 		out, err := vm.Run(context.Background(), p)
@@ -21,12 +21,12 @@ func TestTernaryOperator(t *testing.T) {
 			return 0, err
 		}
 
-		var res int
+		var res any
 
 		err = j.Unmarshal(out, &res)
 
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 
 		return res, err
@@ -34,13 +34,21 @@ func TestTernaryOperator(t *testing.T) {
 
 	type UseCase struct {
 		Expression string
-		Expected   int
+		Expected   any
 	}
 
 	useCases := []UseCase{
 		{"RETURN 1 < 2 ? 3 : 4", 3},
 		{"RETURN 1 > 2 ? 3 : 4", 4},
 		{"RETURN 2 ? : 4", 2},
+		{`
+LET foo = TRUE
+RETURN foo ? TRUE : FALSE
+`, true},
+		{`
+LET foo = FALSE
+RETURN foo ? TRUE : FALSE
+`, false},
 	}
 
 	for _, useCase := range useCases {

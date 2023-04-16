@@ -264,7 +264,19 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 
 func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if op := ctx.UnaryOperator(); op != nil {
+		ctx.GetRight().Accept(v)
 
+		op := op.(*fql.UnaryOperatorContext)
+
+		if op.Not() != nil {
+			v.emit(runtime.OpNot)
+		} else if op.Minus() != nil {
+			v.emit(runtime.OpFlipNegative)
+		} else if op.Plus() != nil {
+			v.emit(runtime.OpFlipPositive)
+		} else {
+			panic(core.Error(ErrUnexpectedToken, op.GetText()))
+		}
 	} else if op := ctx.LogicalAndOperator(); op != nil {
 		ctx.GetLeft().Accept(v)
 		end := v.emitJump(runtime.OpJumpIfFalse)
