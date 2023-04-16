@@ -59,49 +59,49 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		case OpNot:
 			stack.Push(!values.ToBoolean(stack.Pop()))
 
-		case OpEqual:
+		case OpEq:
 			left := stack.Pop()
 			right := stack.Pop()
 			stack.Push(values.NewBoolean(left.Compare(right) == 0))
 
-		case OpNotEqual:
+		case OpNeq:
 			left := stack.Pop()
 			right := stack.Pop()
 			stack.Push(values.NewBoolean(left.Compare(right) != 0))
 
-		case OpGreater:
-			left := stack.Pop()
+		case OpGt:
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(values.NewBoolean(left.Compare(right) > 0))
 
-		case OpIn:
-			left := stack.Pop()
+		case OpLt:
 			right := stack.Pop()
+			left := stack.Pop()
+			stack.Push(values.NewBoolean(left.Compare(right) < 0))
+
+		case OpGte:
+			right := stack.Pop()
+			left := stack.Pop()
+			stack.Push(values.NewBoolean(left.Compare(right) >= 0))
+
+		case OpLte:
+			right := stack.Pop()
+			left := stack.Pop()
+			stack.Push(values.NewBoolean(left.Compare(right) <= 0))
+
+		case OpIn:
+			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(values.Contains(right, left))
 
 		case OpNotIn:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(!values.Contains(right, left))
 
-		case OpLess:
-			left := stack.Pop()
-			right := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) < 0))
-
-		case OpGreaterOrEqual:
-			left := stack.Pop()
-			right := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) >= 0))
-
-		case OpLessOrEqual:
-			left := stack.Pop()
-			right := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) <= 0))
-
 		case OpLike:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			res, err := operators.Like(left, right)
 
 			if err != nil {
@@ -111,28 +111,28 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			stack.Push(res)
 
 		case OpAdd:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(operators.Add(left, right))
 
 		case OpSub:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(operators.Subtract(left, right))
 
 		case OpMulti:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(operators.Multiply(left, right))
 
 		case OpDiv:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(operators.Divide(left, right))
 
 		case OpMod:
-			left := stack.Pop()
 			right := stack.Pop()
+			left := stack.Pop()
 			stack.Push(operators.Modulus(left, right))
 
 		case OpIncrement:
@@ -167,5 +167,7 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		}
 	}
 
+	// TODO: return error
+	// program should exit with return statement
 	return nil, nil
 }

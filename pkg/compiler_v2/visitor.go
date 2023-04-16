@@ -219,9 +219,14 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 }
 
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
-	val := ctx.GetText() == "true"
-
-	v.emitConstant(runtime_v2.OpConstant, values.NewBoolean(val))
+	switch strings.ToLower(ctx.GetText()) {
+	case "true":
+		v.emit(runtime_v2.OpTrue)
+	case "false":
+		v.emit(runtime_v2.OpFalse)
+	default:
+		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+	}
 
 	return nil
 }
@@ -279,9 +284,19 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 
 		switch op.GetText() {
 		case "==":
-			v.emit(runtime_v2.OpEqual)
+			v.emit(runtime_v2.OpEq)
 		case "!=":
-			v.emit(runtime_v2.OpNotEqual)
+			v.emit(runtime_v2.OpNeq)
+		case ">":
+			v.emit(runtime_v2.OpGt)
+		case ">=":
+			v.emit(runtime_v2.OpGte)
+		case "<":
+			v.emit(runtime_v2.OpLt)
+		case "<=":
+			v.emit(runtime_v2.OpLte)
+		default:
+			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
 	} else if op := ctx.ArrayOperator(); op != nil {
 

@@ -11,6 +11,14 @@ import (
 )
 
 func TestLet(t *testing.T) {
+	run := func(p *runtime.Program) (string, error) {
+		vm := runtime.NewVM()
+
+		out, err := vm.Run(context.Background(), p)
+
+		return string(out), err
+	}
+
 	Convey("Should compile LET i = NONE RETURN i", t, func() {
 		c := compiler.New()
 
@@ -22,81 +30,79 @@ func TestLet(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
 
-		vm := runtime.NewVM()
-
-		out, err := vm.Run(context.Background(), p)
+		out, err := run(p)
 
 		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, "null")
+		So(out, ShouldEqual, "null")
 	})
 
-	//Convey("Should compile LET i = TRUE RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = TRUE
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "true")
-	//})
-	//
-	//Convey("Should compile LET i = 1 RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = 1
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "1")
-	//})
-	//
-	//Convey("Should compile LET i = 1.1 RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = 1.1
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "1.1")
-	//})
-	//
-	//Convey("Should compile LET i = 'foo' RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = "foo"
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "\"foo\"")
-	//})
+	Convey("Should compile LET i = TRUE RETURN i", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = TRUE
+			RETURN i
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := run(p)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, "true")
+	})
+
+	Convey("Should compile LET i = 1 RETURN i", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = 1
+			RETURN i
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := run(p)
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "1")
+	})
+
+	Convey("Should compile LET i = 1.1 RETURN i", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = 1.1
+			RETURN i
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := run(p)
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "1.1")
+	})
+
+	Convey("Should compile LET i = 'foo' RETURN i", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = "foo"
+			RETURN i
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		out, err := run(p)
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "\"foo\"")
+	})
 	//
 	//Convey("Should compile LET i = [] RETURN i", t, func() {
 	//	c := compiler.New()
@@ -277,29 +283,29 @@ func TestLet(t *testing.T) {
 	//	So(err, ShouldNotBeNil)
 	//})
 	//
-	//Convey("Should not compile if a variable not defined", t, func() {
-	//	c := compiler.New()
-	//
-	//	_, err := c.Compile(`
-	//		RETURN foo
-	//	`)
-	//
-	//	So(err, ShouldNotBeNil)
-	//})
-	//
-	//Convey("Should not compile if a variable is not unique", t, func() {
-	//	c := compiler.New()
-	//
-	//	_, err := c.Compile(`
-	//		LET foo = "bar"
-	//		LET foo = "baz"
-	//
-	//		RETURN foo
-	//	`)
-	//
-	//	So(err, ShouldNotBeNil)
-	//})
-	//
+	Convey("Should not compile if a variable not defined", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("Should not compile if a variable is not unique", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET foo = "bar"
+			LET foo = "baz"
+	
+			RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
+
 	//SkipConvey("Should use value returned from WAITFOR EVENT", t, func() {
 	//	out, err := newCompilerWithObservable().MustCompile(`
 	//		LET obj = X::VAL("event", ["data"])
@@ -363,16 +369,16 @@ func TestLet(t *testing.T) {
 	//	So(err, ShouldBeNil)
 	//	So(string(out), ShouldEqual, `true`)
 	//})
-	//
-	//Convey("Should not allow to use ignorable variable name", t, func() {
-	//	c := compiler.New()
-	//
-	//	_, err := c.Compile(`
-	//		LET _ = (FOR i IN 1..100 RETURN NONE)
-	//
-	//		RETURN _
-	//	`)
-	//
-	//	So(err, ShouldNotBeNil)
-	//})
+
+	Convey("Should not allow to use ignorable variable name", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+	
+			RETURN _
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 }

@@ -13,14 +13,14 @@ const (
 	OpReturn
 	OpNegate
 	OpNot
-	OpEqual
-	OpNotEqual
+	OpEq
+	OpNeq
 	OpIn
 	OpNotIn
-	OpGreater
-	OpLess
-	OpGreaterOrEqual
-	OpLessOrEqual
+	OpGt
+	OpLt
+	OpGte
+	OpLte
 	OpLike
 	OpAdd
 	OpSub
@@ -32,4 +32,5 @@ const (
 	OpRange
 	OpRegexpPositive
 	OpRegexpNegative
+	OpJumpIfFalse
 )
