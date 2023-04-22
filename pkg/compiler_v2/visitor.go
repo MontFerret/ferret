@@ -144,6 +144,67 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 	return nil
 }
 
+func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
+	var size int
+
+	if args := ctx.ArgumentList(); args != nil {
+		args := args.(*fql.ArgumentListContext)
+		exps := args.AllExpression()
+		size = len(exps)
+
+		for _, arg := range exps {
+			arg.Accept(v)
+		}
+	}
+
+	v.emit(runtime.OpArray, size)
+
+	return nil
+}
+
+func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
+	assignments := ctx.AllPropertyAssignment()
+
+	for _, pa := range assignments {
+		pac := pa.(*fql.PropertyAssignmentContext)
+
+		if prop, ok := pac.PropertyName().(*fql.PropertyNameContext); ok {
+			prop.Accept(v)
+			pac.Expression().Accept(v)
+		} else if comProp, ok := pac.ComputedPropertyName().(*fql.ComputedPropertyNameContext); ok {
+			comProp.Accept(v)
+			pac.Expression().Accept(v)
+		} else if variable := pac.Variable(); variable != nil {
+			v.emitConstant(runtime.OpConstant, values.NewString(variable.GetText()))
+			variable.Accept(v)
+		}
+	}
+
+	v.emit(runtime.OpObject, len(assignments))
+
+	return nil
+}
+
+func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
+	if id := ctx.Identifier(); id != nil {
+		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+	} else if str := ctx.StringLiteral(); str != nil {
+		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+	} else if word := ctx.SafeReservedWord(); word != nil {
+		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+	} else if word := ctx.UnsafeReservedWord(); word != nil {
+		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+	}
+
+	return nil
+}
+
+func (v *visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
+	ctx.Expression().Accept(v)
+
+	return nil
+}
+
 func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} {
 	var b strings.Builder
 
@@ -240,19 +301,9 @@ func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
 
 func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 	if c := ctx.ArrayLiteral(); c != nil {
-		start := len(v.bytecode)
-		c := c.(*fql.ArrayLiteralContext)
-
-		if c.ArgumentList() != nil {
-			args := c.ArgumentList().(*fql.ArgumentListContext)
-
-			for _, arg := range args.AllExpression() {
-				arg.Accept(v)
-			}
-		}
-
-		end := len(v.bytecode)
-		v.emit(runtime.OpArray, end-start)
+		c.Accept(v)
+	} else if c := ctx.ObjectLiteral(); c != nil {
+		c.Accept(v)
 	} else if c := ctx.StringLiteral(); c != nil {
 		c.Accept(v)
 	} else if c := ctx.IntegerLiteral(); c != nil {

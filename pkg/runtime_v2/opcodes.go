@@ -9,7 +9,7 @@ const (
 	OpTrue
 	OpFalse
 	OpArray
-	OpPop
+	OpObject
 	OpDefineGlobal
 	OpGetGlobal
 	OpNegate
@@ -36,6 +36,8 @@ const (
 	OpRange
 	OpRegexpPositive
 	OpRegexpNegative
+	OpPop
+	OpPush
 	OpJumpIfFalse
 	OpJumpIfTrue
 	OpJump

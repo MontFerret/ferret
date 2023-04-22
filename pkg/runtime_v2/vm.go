@@ -48,15 +48,28 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			stack.Push(values.False)
 
 		case OpArray:
-			arr := values.NewSizedArray(arg)
+			size := arg
+			arr := values.NewSizedArray(size)
 
 			// iterate from the end to the beginning
 			// because stack is LIFO
-			for i := arg - 1; i >= 0; i-- {
+			for i := size - 1; i >= 0; i-- {
 				arr.MustSet(values.Int(i), stack.Pop())
 			}
 
 			stack.Push(arr)
+
+		case OpObject:
+			obj := values.NewObject()
+			propertyCount := arg
+
+			for i := 0; i < propertyCount; i++ {
+				value := stack.Pop()
+				key := stack.Pop()
+				obj.Set(values.ToString(key), value)
+			}
+
+			stack.Push(obj)
 
 		case OpPop:
 			stack.Pop()

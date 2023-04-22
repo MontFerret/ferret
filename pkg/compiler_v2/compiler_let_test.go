@@ -50,76 +50,48 @@ func TestLet(t *testing.T) {
 			[]any{nil, false, "foo", 1, 1.1},
 			ShouldEqualJSON,
 		},
+		{
+			`LET i = {} RETURN i`,
+			map[string]any{},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = {a: 1, b: 2} RETURN i`,
+			map[string]any{"a": 1, "b": 2},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = {a: 1, b: [1]} RETURN i`,
+			map[string]any{"a": 1, "b": []any{1}},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = {a: {c: 1}, b: [1]} RETURN i`,
+			map[string]any{"a": map[string]any{"c": 1}, "b": []any{1}},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = {a: 'foo', b: 1, c: TRUE, d: [], e: {}} RETURN i`,
+			map[string]any{"a": "foo", "b": 1, "c": true, "d": []any{}, "e": map[string]any{}},
+			ShouldEqualJSON,
+		},
+		{
+			`LET prop = "name" LET i = { [prop]: "foo" } RETURN i`,
+			map[string]any{"name": "foo"},
+			ShouldEqualJSON,
+		},
+		{
+			`LET name="foo" LET i = { name } RETURN i`,
+			map[string]any{"name": "foo"},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = [{a: {c: 1}, b: [1]}] RETURN i`,
+			[]any{map[string]any{"a": map[string]any{"c": 1}, "b": []any{1}}},
+			ShouldEqualJSON,
+		},
 	})
 
-	//
-	//Convey("Should compile LET i = [] RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = []
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "[]")
-	//})
-	//
-	//Convey("Should compile LET i = [1, 2, 3] RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = [1, 2, 3]
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "[1,2,3]")
-	//})
-	//
-	//Convey("Should compile LET i = {} RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = {}
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "{}")
-	//})
-	//
-	//Convey("Should compile LET i = {a: 'foo', b: 1, c: TRUE, d: [], e: {}} RETURN i", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET i = {a: 'foo', b: 1, c: TRUE, d: [], e: {}}
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "{\"a\":\"foo\",\"b\":1,\"c\":true,\"d\":[],\"e\":{}}")
-	//})
 	//
 	//Convey("Should compile LET i = (FOR i IN [1,2,3] RETURN i) RETURN i", t, func() {
 	//	c := compiler.New()
@@ -232,6 +204,7 @@ func TestLet(t *testing.T) {
 	//	So(err, ShouldNotBeNil)
 	//})
 	//
+
 	Convey("Should not compile if a variable not defined", t, func() {
 		c := compiler.New()
 
