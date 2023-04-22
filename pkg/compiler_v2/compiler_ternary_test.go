@@ -1,71 +1,25 @@
 package compiler_v2_test
 
 import (
-	"context"
-	j "encoding/json"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-
 	compiler "github.com/MontFerret/ferret/pkg/compiler_v2"
-	runtime "github.com/MontFerret/ferret/pkg/runtime_v2"
 )
 
 func TestTernaryOperator(t *testing.T) {
-	run := func(p *runtime.Program) (any, error) {
-		vm := runtime.NewVM()
-
-		out, err := vm.Run(context.Background(), p)
-
-		if err != nil {
-			return 0, err
-		}
-
-		var res any
-
-		err = j.Unmarshal(out, &res)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return res, err
-	}
-
-	type UseCase struct {
-		Expression string
-		Expected   any
-	}
-
-	useCases := []UseCase{
-		{"RETURN 1 < 2 ? 3 : 4", 3},
-		{"RETURN 1 > 2 ? 3 : 4", 4},
-		{"RETURN 2 ? : 4", 2},
+	RunUseCases(t, compiler.New(), []UseCase{
+		{"RETURN 1 < 2 ? 3 : 4", 3, nil},
+		{"RETURN 1 > 2 ? 3 : 4", 4, nil},
+		{"RETURN 2 ? : 4", 2, nil},
 		{`
 LET foo = TRUE
 RETURN foo ? TRUE : FALSE
-`, true},
+`, true, nil},
 		{`
 LET foo = FALSE
 RETURN foo ? TRUE : FALSE
-`, false},
-	}
-
-	for _, useCase := range useCases {
-		Convey("Should compile "+useCase.Expression, t, func() {
-			c := compiler.New()
-
-			p, err := c.Compile(useCase.Expression)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := run(p)
-
-			So(err, ShouldBeNil)
-			So(out, ShouldEqual, useCase.Expected)
-		})
-	}
+`, false, nil},
+	})
 
 	//Convey("Should compile ternary operator", t, func() {
 	//	c := compiler.New()

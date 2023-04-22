@@ -1,108 +1,57 @@
 package compiler_v2_test
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	compiler "github.com/MontFerret/ferret/pkg/compiler_v2"
-	runtime "github.com/MontFerret/ferret/pkg/runtime_v2"
 )
 
 func TestLet(t *testing.T) {
-	run := func(p *runtime.Program) (string, error) {
-		vm := runtime.NewVM()
-
-		out, err := vm.Run(context.Background(), p)
-
-		return string(out), err
-	}
-
-	Convey("Should compile LET i = NONE RETURN i", t, func() {
-		c := compiler.New()
-
-		p, err := c.Compile(`
-			LET i = NONE
-			RETURN i
-		`)
-
-		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-		out, err := run(p)
-
-		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "null")
+	RunUseCases(t, compiler.New(), []UseCase{
+		{
+			`LET i = NONE RETURN i`,
+			nil,
+			nil,
+		},
+		{
+			`LET a = TRUE RETURN a`,
+			true,
+			nil,
+		},
+		{
+			`LET a = 1 RETURN a`,
+			1,
+			nil,
+		},
+		{
+			`LET a = 1.1 RETURN a`,
+			1.1,
+			nil,
+		},
+		{
+			`LET i = 'foo' RETURN i`,
+			"foo",
+			nil,
+		},
+		{
+			`LET i = [] RETURN i`,
+			[]any{},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = [1, 2, 3] RETURN i`,
+			[]any{1, 2, 3},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = [None, FALSE, "foo", 1, 1.1] RETURN i`,
+			[]any{nil, false, "foo", 1, 1.1},
+			ShouldEqualJSON,
+		},
 	})
 
-	Convey("Should compile LET i = TRUE RETURN i", t, func() {
-		c := compiler.New()
-
-		p, err := c.Compile(`
-			LET i = TRUE
-			RETURN i
-		`)
-
-		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-		out, err := run(p)
-
-		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "true")
-	})
-
-	Convey("Should compile LET i = 1 RETURN i", t, func() {
-		c := compiler.New()
-
-		p, err := c.Compile(`
-			LET i = 1
-			RETURN i
-		`)
-
-		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-		out, err := run(p)
-
-		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, "1")
-	})
-
-	Convey("Should compile LET i = 1.1 RETURN i", t, func() {
-		c := compiler.New()
-
-		p, err := c.Compile(`
-			LET i = 1.1
-			RETURN i
-		`)
-
-		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-		out, err := run(p)
-
-		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, "1.1")
-	})
-
-	Convey("Should compile LET i = 'foo' RETURN i", t, func() {
-		c := compiler.New()
-
-		p, err := c.Compile(`
-			LET i = "foo"
-			RETURN i
-		`)
-
-		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-		out, err := run(p)
-
-		So(err, ShouldBeNil)
-		So(string(out), ShouldEqual, "\"foo\"")
-	})
 	//
 	//Convey("Should compile LET i = [] RETURN i", t, func() {
 	//	c := compiler.New()

@@ -30,11 +30,11 @@ func NewArray(size int) *Array {
 	return &Array{items: make([]core.Value, 0, size)}
 }
 
-func NewArrayWith(values ...core.Value) *Array {
-	return &Array{items: values}
+func NewSizedArray(size int) *Array {
+	return &Array{items: make([]core.Value, size)}
 }
 
-func NewArrayOf(values []core.Value) *Array {
+func NewArrayWith(values ...core.Value) *Array {
 	return &Array{items: values}
 }
 
@@ -211,6 +211,10 @@ func (t *Array) Set(idx Int, value core.Value) error {
 	}
 
 	return core.Error(core.ErrInvalidOperation, "out of bounds")
+}
+
+func (t *Array) MustSet(idx Int, value core.Value) {
+	t.items[idx] = value
 }
 
 func (t *Array) Push(item core.Value) {

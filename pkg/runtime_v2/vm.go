@@ -47,6 +47,17 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		case OpFalse:
 			stack.Push(values.False)
 
+		case OpArray:
+			arr := values.NewSizedArray(arg)
+
+			// iterate from the end to the beginning
+			// because stack is LIFO
+			for i := arg - 1; i >= 0; i-- {
+				arr.MustSet(values.Int(i), stack.Pop())
+			}
+
+			stack.Push(arr)
+
 		case OpPop:
 			stack.Pop()
 

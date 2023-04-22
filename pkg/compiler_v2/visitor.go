@@ -239,7 +239,21 @@ func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
 }
 
 func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
-	if c := ctx.StringLiteral(); c != nil {
+	if c := ctx.ArrayLiteral(); c != nil {
+		start := len(v.bytecode)
+		c := c.(*fql.ArrayLiteralContext)
+
+		if c.ArgumentList() != nil {
+			args := c.ArgumentList().(*fql.ArgumentListContext)
+
+			for _, arg := range args.AllExpression() {
+				arg.Accept(v)
+			}
+		}
+
+		end := len(v.bytecode)
+		v.emit(runtime.OpArray, end-start)
+	} else if c := ctx.StringLiteral(); c != nil {
 		c.Accept(v)
 	} else if c := ctx.IntegerLiteral(); c != nil {
 		c.Accept(v)

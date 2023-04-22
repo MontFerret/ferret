@@ -8,6 +8,7 @@ const (
 	OpCastBool
 	OpTrue
 	OpFalse
+	OpArray
 	OpPop
 	OpDefineGlobal
 	OpGetGlobal
