@@ -2,6 +2,7 @@ package runtime_v2
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -20,7 +21,22 @@ func NewVM() *VM {
 	return &VM{}
 }
 
-func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
+func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+
+			program = nil
+		}
+	}()
+
 	stack := NewStack(DefaultStackSize)
 	vm.stack = stack
 	vm.globals = make(map[string]core.Value)
@@ -80,6 +96,27 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		case OpGetGlobal:
 			stack.Push(vm.globals[program.Constants[arg].String()])
 
+		case OpGetProperty, OpGetPropertyOptional:
+			fieldName := stack.Pop()
+			val := stack.Pop()
+
+			switch src := val.(type) {
+			case *values.Array:
+				idx := values.ToInt(fieldName)
+
+				stack.Push(src.Get(idx))
+			case *values.Object:
+				fieldName := values.ToString(fieldName)
+
+				stack.Push(src.MustGetOr(fieldName, values.None))
+			default:
+				if op != OpGetPropertyOptional {
+					return nil, core.ErrValueUndefined
+				}
+
+				stack.Push(values.None)
+			}
+
 		case OpNegate:
 			stack.Push(values.Negate(stack.Pop()))
 
@@ -138,7 +175,7 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			res, err := operators.Like(left, right)
 
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 
 			stack.Push(res)
@@ -149,7 +186,7 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			res, err := operators.Like(left, right)
 
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 
 			stack.Push(!res)
@@ -199,7 +236,7 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 			res, err := operators.Range(left, right)
 
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 
 			stack.Push(res)
@@ -223,7 +260,6 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 		}
 	}
 
-	// TODO: return error
 	// program should exit with return statement
-	return nil, nil
+	return
 }

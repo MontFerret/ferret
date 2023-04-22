@@ -63,15 +63,19 @@ func RunUseCases(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 
 			out, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON))
 
-			So(err, ShouldBeNil)
+			if !ArePtrsEqual(useCase.Assertion, ShouldBeError) {
+				So(err, ShouldBeNil)
+			}
 
-			if useCase.Assertion != nil {
-				if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
-					expected, err := j.Marshal(useCase.Expected)
-					So(err, ShouldBeNil)
-					So(out, ShouldEqualJSON, string(expected))
+			if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
+				expected, err := j.Marshal(useCase.Expected)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqualJSON, string(expected))
+			} else if ArePtrsEqual(useCase.Assertion, ShouldBeError) {
+				if useCase.Expected != nil {
+					So(err, ShouldBeError, useCase.Expected)
 				} else {
-					So(out, useCase.Assertion, useCase.Expected)
+					So(err, ShouldBeError)
 				}
 			} else {
 				So(out, ShouldEqual, useCase.Expected)

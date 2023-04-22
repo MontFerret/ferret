@@ -73,6 +73,8 @@ func (e *SourceErrorDetail) Error() string {
 }
 
 var (
+	ErrPropertyNotFound      = errors.New("cannot read property")
+	ErrValueUndefined        = errors.New("value is undefined")
 	ErrMissedArgument        = errors.New("missed argument")
 	ErrInvalidArgument       = errors.New("invalid argument")
 	ErrInvalidArgumentNumber = errors.New("invalid argument number")

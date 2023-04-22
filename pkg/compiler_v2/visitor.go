@@ -106,6 +106,42 @@ func (v *visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 	return nil
 }
 
+func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
+	src := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
+
+	if c := src.Variable(); c != nil {
+		c.Accept(v)
+	} else if c := src.Param(); c != nil {
+		c.Accept(v)
+	} else if c := src.ObjectLiteral(); c != nil {
+		c.Accept(v)
+	} else if c := src.ArrayLiteral(); c != nil {
+		c.Accept(v)
+	} else if c := src.FunctionCall(); c != nil {
+		c.Accept(v)
+	}
+
+	segments := ctx.AllMemberExpressionPath()
+
+	for _, segment := range segments {
+		p := segment.(*fql.MemberExpressionPathContext)
+
+		if c := p.PropertyName(); c != nil {
+			c.Accept(v)
+		} else if c := p.ComputedPropertyName(); c != nil {
+			c.Accept(v)
+		}
+
+		if p.ErrorOperator() != nil {
+			v.emit(runtime.OpGetPropertyOptional)
+		} else {
+			v.emit(runtime.OpGetProperty)
+		}
+	}
+
+	return nil
+}
+
 func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {
 	name := ignoreVarPseudoVariable
 
@@ -189,7 +225,7 @@ func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
 	if id := ctx.Identifier(); id != nil {
 		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
 	} else if str := ctx.StringLiteral(); str != nil {
-		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+		str.Accept(v)
 	} else if word := ctx.SafeReservedWord(); word != nil {
 		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
 	} else if word := ctx.UnsafeReservedWord(); word != nil {

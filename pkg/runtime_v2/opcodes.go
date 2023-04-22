@@ -12,6 +12,9 @@ const (
 	OpObject
 	OpDefineGlobal
 	OpGetGlobal
+	OpGetLocal
+	OpGetProperty
+	OpGetPropertyOptional
 	OpNegate
 	OpFlipPositive
 	OpFlipNegative
