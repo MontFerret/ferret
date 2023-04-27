@@ -19,19 +19,19 @@ type NamespaceContainer struct {
 	name  string
 }
 
-func newRootNamespace() *NamespaceContainer {
+func NewRootNamespace() *NamespaceContainer {
 	ns := new(NamespaceContainer)
 	ns.funcs = core.NewFunctions()
 
 	return ns
 }
 
-func newNamespace(funcs *core.Functions, name string) *NamespaceContainer {
+func NewNamespace(funcs *core.Functions, name string) *NamespaceContainer {
 	return &NamespaceContainer{funcs, strings.ToUpper(name)}
 }
 
 func (nc *NamespaceContainer) Namespace(name string) core.Namespace {
-	return newNamespace(nc.funcs, nc.makeFullName(name))
+	return NewNamespace(nc.funcs, nc.makeFullName(name))
 }
 
 func (nc *NamespaceContainer) MustRegisterFunction(name string, fun core.Function) {
@@ -104,7 +104,13 @@ func (nc *NamespaceContainer) RegisteredFunctions() []string {
 	return res
 }
 
+func (nc *NamespaceContainer) Functions() *core.Functions {
+	return nc.funcs
+}
+
 func (nc *NamespaceContainer) makeFullName(name string) string {
+	name = strings.ToUpper(name)
+
 	if nc.name == emptyNS {
 		return name
 	}

@@ -1,11 +1,10 @@
 package compiler
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/parser"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib"
 )
 
@@ -15,8 +14,7 @@ type Compiler struct {
 
 func New(setters ...Option) *Compiler {
 	c := &Compiler{}
-	c.NamespaceContainer = newRootNamespace()
-	c.funcs = core.NewFunctions()
+	c.NamespaceContainer = NewRootNamespace()
 
 	opts := &Options{}
 
@@ -59,13 +57,17 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 
 	l := newVisitor(query, c.funcs)
 
-	res := p.Visit(l).(*result)
+	p.Visit(l)
 
-	if res.Ok() {
-		program = res.Data().(*runtime.Program)
-	} else {
-		err = res.Error()
+	if l.err != nil {
+		return nil, l.err
 	}
+
+	program = &runtime.Program{}
+	program.Bytecode = l.bytecode
+	program.Arguments = l.arguments
+	program.Constants = l.constants
+	program.Locations = l.locations
 
 	return program, err
 }

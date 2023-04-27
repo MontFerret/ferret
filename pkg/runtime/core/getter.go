@@ -16,6 +16,10 @@ type (
 		GetIn(ctx context.Context, path []Value) (Value, PathError)
 	}
 
+	GetterV2 interface {
+		GetIn(ctx context.Context, path Value) (Value, error)
+	}
+
 	// GetterFn represents a type of helper functions that implement complex path resolutions.
 	GetterFn func(ctx context.Context, path []Value, src Getter) (Value, PathError)
 )

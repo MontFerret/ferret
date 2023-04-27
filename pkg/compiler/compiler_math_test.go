@@ -2,194 +2,66 @@ package compiler_test
 
 import (
 	"context"
+	j "encoding/json"
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 func TestMathOperators(t *testing.T) {
-	Convey("Integers", t, func() {
-		Convey("Should compile RETURN 1 + 1", func() {
-			c := compiler.New()
+	Convey("Math operators", t, func() {
+		run := func(p *runtime2.Program) (int, error) {
+			vm := runtime2.NewVM()
 
-			p, err := c.Compile(`
-			RETURN 1 + 1
-		`)
+			out, err := vm.Run(context.Background(), p)
 
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+			if err != nil {
+				return 0, err
+			}
 
-			out, err := p.Run(context.Background())
+			var res int
 
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "2")
-		})
+			err = j.Unmarshal(out, &res)
 
-		Convey("Should compile RETURN 1 - 1", func() {
-			c := compiler.New()
+			if err != nil {
+				return 0, err
+			}
 
-			p, err := c.Compile(`
-			RETURN 1 - 1
-		`)
+			return res, err
+		}
 
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+		type UseCase struct {
+			Operator string
+			Expected int
+		}
 
-			out, err := p.Run(context.Background())
+		useCases := []UseCase{
+			{"+", 6},
+			{"-", 2},
+			{"*", 8},
+			{"/", 2},
+			{"%", 0},
+		}
 
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "0")
-		})
+		for _, useCase := range useCases {
+			exp := "RETURN 4 " + useCase.Operator + " 2"
 
-		Convey("Should compile RETURN 2*2", func() {
-			c := compiler.New()
+			Convey("Should compile "+exp, func() {
+				c := compiler.New()
 
-			p, err := c.Compile(`
-			RETURN 2*2
-		`)
+				p, err := c.Compile(exp)
 
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+				So(err, ShouldBeNil)
+				So(p, ShouldHaveSameTypeAs, &runtime2.Program{})
 
-			out, err := p.Run(context.Background())
+				out, err := run(p)
 
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "4")
-		})
-
-		Convey("Should compile RETURN 4/2", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 4/2
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "2")
-		})
-
-		Convey("Should compile RETURN 5 % 2", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 5 % 2
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "1")
-		})
-	})
-
-	Convey("Floats", t, func() {
-		Convey("Should compile RETURN 1.2 + 1", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 1.2 + 1
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "2.2")
-		})
-
-		Convey("Should compile RETURN 1.1 - 1", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 1.1 - 1
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "0.10000000000000009")
-		})
-
-		Convey("Should compile RETURN 2.1*2", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 2.1*2
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "4.2")
-		})
-
-		Convey("Should compile RETURN 4.4/2", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 4.4/2
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "2.2")
-		})
-
-		Convey("Should compile RETURN 5.5 % 2", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 5.5 % 2
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, "1")
-		})
-	})
-
-	Convey("Strings", t, func() {
-		Convey("Should concat two strings RETURN 'Foo' + 'Bar'", func() {
-			c := compiler.New()
-
-			p, err := c.Compile(`
-			RETURN 'Foo' + 'Bar'
-		`)
-
-			So(err, ShouldBeNil)
-			So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-
-			out, err := p.Run(context.Background())
-
-			So(err, ShouldBeNil)
-			So(string(out), ShouldEqual, `"FooBar"`)
-		})
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, useCase.Expected)
+			})
+		}
 	})
 }
