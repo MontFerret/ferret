@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"errors"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/parser"

@@ -27,3 +27,11 @@ func (s *Stack) Pop() core.Value {
 	s.values = s.values[:len(s.values)-1]
 	return value
 }
+
+func (s *Stack) Get(index int) core.Value {
+	return s.values[index]
+}
+
+func (s *Stack) Set(index int, value core.Value) {
+	s.values[index] = value
+}

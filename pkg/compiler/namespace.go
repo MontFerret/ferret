@@ -15,7 +15,7 @@ const emptyNS = ""
 const separator = "::"
 
 type NamespaceContainer struct {
-	funcs *core.Functions
+	funcs core.Functions
 	name  string
 }
 
@@ -26,7 +26,7 @@ func NewRootNamespace() *NamespaceContainer {
 	return ns
 }
 
-func NewNamespace(funcs *core.Functions, name string) *NamespaceContainer {
+func NewNamespace(funcs core.Functions, name string) *NamespaceContainer {
 	return &NamespaceContainer{funcs, strings.ToUpper(name)}
 }
 
@@ -67,13 +67,13 @@ func (nc *NamespaceContainer) RemoveFunction(name string) {
 	nc.funcs.Unset(nc.makeFullName(name))
 }
 
-func (nc *NamespaceContainer) MustRegisterFunctions(funcs *core.Functions) {
+func (nc *NamespaceContainer) MustRegisterFunctions(funcs core.Functions) {
 	if err := nc.RegisterFunctions(funcs); err != nil {
 		panic(err)
 	}
 }
 
-func (nc *NamespaceContainer) RegisterFunctions(funcs *core.Functions) error {
+func (nc *NamespaceContainer) RegisterFunctions(funcs core.Functions) error {
 	for _, name := range funcs.Names() {
 		fun, _ := funcs.Get(name)
 
@@ -104,7 +104,7 @@ func (nc *NamespaceContainer) RegisteredFunctions() []string {
 	return res
 }
 
-func (nc *NamespaceContainer) Functions() *core.Functions {
+func (nc *NamespaceContainer) Functions() core.Functions {
 	return nc.funcs
 }
 

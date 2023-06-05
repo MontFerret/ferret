@@ -1,8 +1,9 @@
 package compiler_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestFunctionCall(t *testing.T) {

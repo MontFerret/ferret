@@ -10,9 +10,10 @@ const (
 	OpFalse
 	OpArray
 	OpObject
-	OpDefineGlobal
+	OpSetGlobal
 	OpGetGlobal
 	OpGetLocal
+	OpSetLocal
 	OpGetProperty
 	OpGetPropertyOptional
 	OpNegate
@@ -40,21 +41,18 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 	OpCall
-	OpSafeCall
 	OpCall1
-	OpSafeCall1
 	OpCall2
-	OpSafeCall2
 	OpCall3
-	OpSafeCall3
 	OpCall4
-	OpSafeCall4
 	OpCallN
-	OpSafeCallN
 	OpPop
 	OpPush
 	OpJumpIfFalse
 	OpJumpIfTrue
 	OpJump
+	OpLoopInit
+	OpLoop
+	OpLoopPush
 	OpReturn
 )

@@ -2,9 +2,11 @@ package compiler
 
 import (
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"math"
 	"strconv"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 
@@ -24,7 +26,7 @@ type (
 		*fql.BaseFqlParserVisitor
 		err            error
 		src            string
-		funcs          *core.Functions
+		funcs          core.Functions
 		constantsIndex map[uint64]int
 		locations      []core.Location
 		bytecode       []runtime.Opcode
@@ -37,14 +39,14 @@ type (
 )
 
 const (
-	jumpPlaceholder         = -1
-	ignoreVarPseudoVariable = "_"
-	waitPseudoVariable      = "CURRENT"
-	waitScope               = "waitfor"
-	forScope                = "for"
+	jumpPlaceholder      = -1
+	ignorePseudoVariable = "_"
+	pseudoVariable       = "CURRENT"
+	waitScope            = "waitfor"
+	forScope             = "for"
 )
 
-func newVisitor(src string, funcs *core.Functions) *visitor {
+func newVisitor(src string, funcs core.Functions) *visitor {
 	v := new(visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.src = src
@@ -107,6 +109,86 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 	return nil
 }
 
+func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
+	v.beginScope()
+
+	loopStart := len(v.bytecode)
+	var exitJump int
+	// identify whether it's WHILE or FOR loop
+	isForInLoop := ctx.While() == nil
+
+	v.emit(runtime.OpLoopInit)
+
+	if isForInLoop {
+		// Loop data source to iterate over
+		if c := ctx.ForExpressionSource(); c != nil {
+			c.Accept(v)
+		}
+	} else {
+		// Condition expression
+		ctx.Expression().Accept(v)
+
+		// Condition check
+		exitJump = v.emitJump(runtime.OpJumpIfFalse)
+		v.emitPop()
+
+		counterVar := ctx.GetCounterVariable().GetText()
+
+		// declare counter variable
+		// and increment it by 1
+		index := v.declareVariable(counterVar)
+		v.emitConstant(runtime.OpIncr, values.NewInt(0))
+		v.defineVariable(index)
+	}
+
+	//// filter
+	//if c := ctx.ForExpressionFilter(); c != nil {
+	//	c.Accept(v)
+	//}
+	//
+	//// sort
+	//if c := ctx.ForExpressionSortClause(); c != nil {
+	//	c.Accept(v)
+	//}
+	//
+	//// limit
+	//if c := ctx.ForExpressionLimitClause(); c != nil {
+	//	c.Accept(v)
+	//}
+	//
+	//// collect
+	//if c := ctx.ForExpressionCollectClause(); c != nil {
+	//	c.Accept(v)
+	//}
+	//
+	//// return
+	//if c := ctx.ForExpressionReturnClause(); c != nil {
+	//	c.Accept(v)
+	//}
+
+	// return
+	if c := ctx.ForExpressionReturn(); c != nil {
+		c.Accept(v)
+	}
+
+	v.emitLoop(loopStart)
+	v.patchJump(exitJump)
+	// v.emitPop()
+	v.endScope()
+
+	return nil
+}
+
+func (v *visitor) VisitForExpressionReturn(ctx *fql.ForExpressionReturnContext) interface{} {
+	if c := ctx.ReturnExpression(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.ForExpression(); c != nil {
+		c.Accept(v)
+	}
+
+	return nil
+}
+
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
 	call := ctx.FunctionCall().(*fql.FunctionCallContext)
 
@@ -126,7 +208,7 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 		panic(core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name)))
 	}
 
-	regularCall := ctx.ErrorOperator() == nil
+	//regularCall := ctx.ErrorOperator() == nil
 
 	v.emit(runtime.OpConstant, v.addConstant(values.String(name)))
 
@@ -139,40 +221,17 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 
 	switch size {
 	case 0:
-		if regularCall {
-			v.emit(runtime.OpCall, 0)
-
-		} else {
-			v.emit(runtime.OpSafeCall, 0)
-		}
+		v.emit(runtime.OpCall, 0)
 	case 1:
-		if regularCall {
-			v.emit(runtime.OpCall1, 1)
-		} else {
-			v.emit(runtime.OpSafeCall1, 1)
-		}
+		v.emit(runtime.OpCall1, 1)
 	case 2:
-		if regularCall {
-			v.emit(runtime.OpCall2, 2)
-		} else {
-			v.emit(runtime.OpSafeCall2, 2)
-		}
+		v.emit(runtime.OpCall2, 2)
 	case 3:
-		if regularCall {
-			v.emit(runtime.OpCall3, 3)
-		} else {
-			v.emit(runtime.OpSafeCall3, 3)
-		}
+		v.emit(runtime.OpCall3, 3)
 	case 4:
-		if regularCall {
-			v.emit(runtime.OpCall4, 4)
-		}
+		v.emit(runtime.OpCall4, 4)
 	default:
-		if regularCall {
-			v.emit(runtime.OpCallN, size)
-		} else {
-			v.emit(runtime.OpSafeCallN, size)
-		}
+		v.emit(runtime.OpCallN, size)
 	}
 
 	return nil
@@ -215,7 +274,7 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 }
 
 func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {
-	name := ignoreVarPseudoVariable
+	name := ignorePseudoVariable
 
 	if id := ctx.Identifier(); id != nil {
 		name = id.GetText()
@@ -233,21 +292,7 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 }
 
 func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
-	name := ctx.GetText()
-
-	if name == waitPseudoVariable {
-		return nil
-	}
-
-	if v.scope == 0 {
-		index, ok := v.globals[name]
-
-		if !ok {
-			panic(core.Error(ErrVariableNotFound, name))
-		}
-
-		v.emit(runtime.OpGetGlobal, index)
-	}
+	v.readVariable(ctx.GetText())
 
 	return nil
 }
@@ -436,7 +481,11 @@ func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
 	ctx.Expression().Accept(v)
 
-	v.emit(runtime.OpReturn)
+	if v.scope == 0 {
+		v.emit(runtime.OpReturn)
+	} else {
+		v.emit(runtime.OpLoopPush)
+	}
 
 	return nil
 }
@@ -530,7 +579,6 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 		} else {
 			v.emit(runtime.OpLike)
 		}
-
 	} else if c := ctx.ExpressionAtom(); c != nil {
 		c.Accept(v)
 	}
@@ -602,13 +650,52 @@ func (v *visitor) beginScope() {
 
 func (v *visitor) endScope() {
 	v.scope--
+
+	// Pop all local variables from the stack within the closed scope.
+	for len(v.locals) > 0 && v.locals[len(v.locals)-1].depth > v.scope {
+		v.emitPop()
+		v.locals = v.locals[:len(v.locals)-1]
+	}
+}
+
+func (v *visitor) resolveLocalVariable(name string) int {
+	for i := len(v.locals) - 1; i >= 0; i-- {
+		if v.locals[i].name == name {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (v *visitor) readVariable(name string) {
+	if name == pseudoVariable {
+		return
+	}
+
+	// Resolve the variable name to an index.
+	arg := v.resolveLocalVariable(name)
+
+	if arg > -1 {
+		v.emit(runtime.OpGetLocal, arg)
+
+		return
+	}
+
+	index, ok := v.globals[name]
+
+	if !ok {
+		panic(core.Error(ErrVariableNotFound, name))
+	}
+
+	v.emit(runtime.OpGetGlobal, index)
 }
 
 func (v *visitor) declareVariable(name string) int {
-	//if name == ignoreVarPseudoVariable {
-	//	return
-	//}
-	//
+	if name == ignorePseudoVariable {
+		return -1
+	}
+
 	if v.scope == 0 {
 		// Check for duplicate global variable names.
 		_, ok := v.globals[name]
@@ -625,11 +712,13 @@ func (v *visitor) declareVariable(name string) int {
 
 	// Check for duplicate variable names in the current scope.
 	for i := len(v.locals) - 1; i >= 0; i-- {
-		if v.locals[i].depth != v.scope {
+		local := v.locals[i]
+
+		if local.depth > -1 && local.depth < v.scope {
 			break
 		}
 
-		if v.locals[i].name == name {
+		if local.name == name {
 			panic(core.Error(ErrVariableNotUnique, name))
 		}
 	}
@@ -642,13 +731,30 @@ func (v *visitor) declareVariable(name string) int {
 // defineVariable defines a variable in the current scope.
 func (v *visitor) defineVariable(index int) {
 	if v.scope == 0 {
-		v.emit(runtime.OpDefineGlobal, index)
+		v.emit(runtime.OpSetGlobal, index)
+
+		return
 	}
+
+	v.emit(runtime.OpSetLocal, index)
 }
 
 // emitConstant emits an opcode with a constant argument.
 func (v *visitor) emitConstant(op runtime.Opcode, constant core.Value) {
 	v.emit(op, v.addConstant(constant))
+}
+
+// emitLoop emits a loop instruction.
+func (v *visitor) emitLoop(loopStart int) {
+	v.emit(runtime.OpLoop, loopStart)
+
+	jump := len(v.bytecode) - loopStart + 2
+
+	if jump > math.MaxUint16 {
+		// panic(core.Error(ErrTooManyLoopIterations))
+	}
+
+	v.arguments[loopStart] = jump
 }
 
 // emitJump emits an opcode with a jump offset argument.

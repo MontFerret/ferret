@@ -46,6 +46,7 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 	vm.globals = make(map[string]core.Value)
 	vm.ip = 0
 
+loop:
 	for vm.ip < len(program.Bytecode) {
 		op := program.Bytecode[vm.ip]
 		arg := program.Arguments[vm.ip]
@@ -91,14 +92,23 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 
 			stack.Push(obj)
 
+		case OpPush:
+			stack.Push(program.Constants[arg])
+
 		case OpPop:
 			stack.Pop()
 
-		case OpDefineGlobal:
+		case OpSetGlobal:
 			vm.globals[program.Constants[arg].String()] = stack.Pop()
 
 		case OpGetGlobal:
 			stack.Push(vm.globals[program.Constants[arg].String()])
+
+		case OpSetLocal:
+			stack.Set(arg, stack.Peek())
+
+		case OpGetLocal:
+			stack.Push(stack.Get(arg))
 
 		case OpGetProperty, OpGetPropertyOptional:
 			fieldName := stack.Pop()
@@ -188,22 +198,22 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 			left := stack.Pop()
 			res, err := operators.Like(left, right)
 
-			if err != nil {
+			if err == nil {
+				stack.Push(res)
+			} else {
 				return nil, err
 			}
-
-			stack.Push(res)
 
 		case OpNotLike:
 			right := stack.Pop()
 			left := stack.Pop()
 			res, err := operators.Like(left, right)
 
-			if err != nil {
+			if err == nil {
+				stack.Push(!res)
+			} else {
 				return nil, err
 			}
-
-			stack.Push(!res)
 
 		case OpAdd:
 			right := stack.Pop()
@@ -244,32 +254,28 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 			reg := program.Constants[arg].(*values.Regexp)
 			stack.Push(!reg.Match(stack.Pop()))
 
-		case OpCall, OpSafeCall:
+		case OpCall:
 			fnName := stack.Pop().String()
 			res, err := vm.env.GetFunction(fnName)(ctx)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpSafeCall {
-				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall1, OpSafeCall1:
+		case OpCall1:
 			arg := stack.Pop()
 			fnName := stack.Pop().String()
 			res, err := vm.env.GetFunction(fnName)(ctx, arg)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpSafeCall1 {
-				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall2, OpSafeCall2:
+		case OpCall2:
 			arg2 := stack.Pop()
 			arg1 := stack.Pop()
 			fnName := stack.Pop().String()
@@ -277,13 +283,11 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpSafeCall2 {
-				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall3, OpSafeCall3:
+		case OpCall3:
 			arg3 := stack.Pop()
 			arg2 := stack.Pop()
 			arg1 := stack.Pop()
@@ -292,13 +296,11 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpSafeCall3 {
-				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall4, OpSafeCall4:
+		case OpCall4:
 			arg4 := stack.Pop()
 			arg3 := stack.Pop()
 			arg2 := stack.Pop()
@@ -308,8 +310,6 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpSafeCall4 {
-				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
@@ -332,8 +332,6 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpSafeCallN {
-				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
@@ -343,16 +341,25 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 			left := stack.Pop()
 			res, err := operators.Range(left, right)
 
-			if err != nil {
+			if err == nil {
+				stack.Push(res)
+			} else {
 				return nil, err
 			}
 
-			stack.Push(res)
+		case OpLoopInit:
+			// push a new array to the stack
+			stack.Push(values.NewArray(0))
+
+		case OpLoop:
+			// jump back to the start of the loop
+			vm.ip -= arg
 
 		case OpJumpIfFalse:
 			if !values.ToBoolean(stack.Peek()) {
 				vm.ip += arg
 			}
+
 		case OpJumpIfTrue:
 			if values.ToBoolean(stack.Peek()) {
 				vm.ip += arg
@@ -361,13 +368,16 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 		case OpJump:
 			vm.ip += arg
 
-		case OpReturn:
+		case OpLoopPush:
+			// pop the return value from the stack
 			res := stack.Pop()
+			arr := stack.Peek()
+			arr.(*values.Array).Push(res)
 
-			return res.MarshalJSON()
+		case OpReturn:
+			break loop
 		}
 	}
 
-	// program should exit with return statement
-	return
+	return stack.Pop().MarshalJSON()
 }

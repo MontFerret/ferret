@@ -2,11 +2,12 @@ package compiler_test
 
 import (
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 

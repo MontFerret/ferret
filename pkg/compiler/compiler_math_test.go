@@ -3,8 +3,9 @@ package compiler_test
 import (
 	"context"
 	j "encoding/json"
-	runtime2 "github.com/MontFerret/ferret/pkg/runtime"
 	"testing"
+
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 

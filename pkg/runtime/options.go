@@ -41,14 +41,6 @@ func WithParam(name string, value interface{}) Option {
 	}
 }
 
-func WithParams(params map[string]interface{}) Option {
-	return func(options *Options) {
-		for name, value := range params {
-			options.params[name] = values.Parse(value)
-		}
-	}
-}
-
 func WithLog(writer io.Writer) Option {
 	return func(options *Options) {
 		options.logging.Writer = writer
