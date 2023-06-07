@@ -1,7 +1,7 @@
 // Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
 
 package fql // FqlParser
-import "github.com/antlr/antlr4/runtime/Go/antlr/v4"
+import "github.com/antlr4-go/antlr"
 
 type BaseFqlParserVisitor struct {
 	*antlr.BaseParseTreeVisitor
