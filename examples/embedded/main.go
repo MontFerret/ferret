@@ -27,7 +27,7 @@ func main() {
 	}
 
 	for _, topic := range topics {
-		fmt.Println(fmt.Sprintf("%s: %s %s", topic.Name, topic.Description, topic.URL))
+		fmt.Printf("%s: %s %s\n", topic.Name, topic.Description, topic.URL)
 	}
 }
 
