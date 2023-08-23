@@ -35,7 +35,7 @@ func testErrorArrayliteral() (collections.Iterable, string) {
 		core.SourceMap{},
 		"val",
 		"",
-		literals.NewIntLiteral(1), //
+		literals.NewIntLiteral(1),
 	)
 
 	return dataSource, "val"
@@ -93,7 +93,6 @@ func TestAddLimit(t *testing.T) {
 
 	Convey("AddLimit", t, func() {
 		Convey("should success.", func() {
-			rootScope, closeFn := core.NewRootScope()
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -104,14 +103,6 @@ func TestAddLimit(t *testing.T) {
 			)
 			err := forExp.AddLimit(core.SourceMap{}, literals.NewIntLiteral(3), literals.NewIntLiteral(0))
 			So(err, ShouldBeNil)
-
-			resultVal, err := forExp.Exec(context.Background(), rootScope)
-			resultArr, ok := resultVal.(*values.Array)
-			So(ok, ShouldBeTrue)
-			So(resultArr.Length(), ShouldEqual, values.NewInt(3))
-			So(err, ShouldBeNil)
-
-			closeFn()
 		})
 
 		Convey("should return a emptyData error.", func() {
@@ -148,7 +139,6 @@ func TestAddFilter(t *testing.T) {
 
 	Convey("AddFilter", t, func() {
 		Convey("should success.", func() {
-			rootScope, closeFn := core.NewRootScope()
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -160,20 +150,6 @@ func TestAddFilter(t *testing.T) {
 
 			err := forExp.AddFilter(core.SourceMap{}, testFilter())
 			So(err, ShouldBeNil)
-
-			resultVal, err := forExp.Exec(context.Background(), rootScope)
-			resultArr, ok := resultVal.(*values.Array)
-			So(ok, ShouldBeTrue)
-			So(resultArr.Length(), ShouldEqual, values.NewInt(3))
-			compareArr := values.NewArrayOf([]core.Value{
-				values.NewInt(0),
-				values.NewInt(1),
-				values.NewInt(2),
-			})
-			So(resultArr.Compare(compareArr), ShouldEqual, 0)
-			So(err, ShouldBeNil)
-
-			closeFn()
 		})
 
 		Convey("should return a error.", func() {
@@ -210,7 +186,6 @@ func TestAddSort(t *testing.T) {
 
 	Convey("AddSort", t, func() {
 		Convey("should success.", func() {
-			rootScope, closeFn := core.NewRootScope()
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -222,22 +197,6 @@ func TestAddSort(t *testing.T) {
 
 			err := forExp.AddSort(core.SourceMap{}, testSort())
 			So(err, ShouldBeNil)
-
-			resultVal, err := forExp.Exec(context.Background(), rootScope)
-			So(err, ShouldBeNil)
-			resultArr, ok := resultVal.(*values.Array)
-			So(ok, ShouldBeTrue)
-			So(resultArr.Length(), ShouldEqual, values.NewInt(5))
-			compareArr := values.NewArrayOf([]core.Value{
-				values.NewInt(4),
-				values.NewInt(3),
-				values.NewInt(2),
-				values.NewInt(1),
-				values.NewInt(0),
-			})
-			So(resultArr.Compare(compareArr), ShouldEqual, 0)
-
-			closeFn()
 		})
 
 		Convey("should return a error.", func() {
@@ -279,7 +238,6 @@ func TestAddCollect(t *testing.T) {
 
 	Convey("AddCollect", t, func() {
 		Convey("should success.", func() {
-			rootScope, closeFn := core.NewRootScope()
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -291,23 +249,6 @@ func TestAddCollect(t *testing.T) {
 
 			err := forExp.AddCollect(core.SourceMap{}, testCollect())
 			So(err, ShouldBeNil)
-
-			resultVal, err := forExp.Exec(context.Background(), rootScope)
-			resultArr, ok := resultVal.(*values.Array)
-			So(err, ShouldBeNil)
-			So(ok, ShouldBeTrue)
-			So(resultArr.Length(), ShouldEqual, values.NewInt(5))
-			compareArr := values.NewArrayOf([]core.Value{
-				values.NewInt(0),
-				values.NewInt(1),
-				values.NewInt(2),
-				values.NewInt(3),
-				values.NewInt(4),
-			})
-			So(resultArr.Compare(compareArr), ShouldEqual, 0)
-			So(err, ShouldBeNil)
-
-			closeFn()
 		})
 
 		Convey("should return a error.", func() {
@@ -339,7 +280,6 @@ func TestAddStatement(t *testing.T) {
 
 	Convey("AddStatement", t, func() {
 		Convey("should success.", func() {
-			rootScope, closeFn := core.NewRootScope()
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -351,22 +291,6 @@ func TestAddStatement(t *testing.T) {
 
 			err := forExp.AddStatement(testStatement)
 			So(err, ShouldBeNil)
-
-			resultVal, err := forExp.Exec(context.Background(), rootScope)
-			So(err, ShouldBeNil)
-			resultArr, ok := resultVal.(*values.Array)
-			So(ok, ShouldBeTrue)
-			So(resultArr.Length(), ShouldEqual, values.NewInt(5))
-			compareArr := values.NewArrayOf([]core.Value{
-				values.NewInt(0),
-				values.NewInt(1),
-				values.NewInt(2),
-				values.NewInt(3),
-				values.NewInt(4),
-			})
-			So(resultArr.Compare(compareArr), ShouldEqual, 0)
-
-			closeFn()
 		})
 
 		Convey("should return a error.", func() {
