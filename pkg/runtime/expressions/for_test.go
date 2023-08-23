@@ -30,51 +30,26 @@ func testIntArrayLiteral() (collections.Iterable, string) {
 	return dataSource, "val"
 }
 
-func testErrorArrayliteral() (collections.Iterable, string) {
-	dataSource, _ := NewForInIterableExpression(
-		core.SourceMap{},
-		"val",
-		"",
-		literals.NewIntLiteral(1),
-	)
-
-	return dataSource, "val"
-}
-
-func testElementErrorArrayliteral() (collections.Iterable, string) {
-	errorEle, _ := NewVariableExpression(core.SourceMap{}, "a")
-	dataSource, _ := NewForInIterableExpression(
-		core.SourceMap{},
-		"val",
-		"",
-		literals.NewArrayLiteralWith([]core.Expression{
-			literals.NewIntLiteral(0),
-			literals.NewIntLiteral(1),
-			literals.NewIntLiteral(2),
-			errorEle,
-		}),
-	)
-
-	return dataSource, "val"
-}
-
 func TestNewForExpression(t *testing.T) {
 	dataSource, _ := testIntArrayLiteral()
 	returnExp, _ := NewVariableExpression(core.SourceMap{}, "testExp")
 
 	Convey("NewForExpression", t, func() {
-		Convey("should return new ForExPresssion.", func() {
+		Convey("should return new ForExpresssion.", func() {
 			forExp, err := NewForExpression(core.SourceMap{}, dataSource, returnExp, false, false, false)
 			So(forExp, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
-		Convey("should return core.ErrMissedArgument.", func() {
+
+		Convey("should return error when a dataSource is nil", func() {
 			forExp, err := NewForExpression(core.SourceMap{}, nil, returnExp, false, false, false)
 			So(forExp, ShouldBeNil)
 			So(err, ShouldNotBeNil)
 			So(err, ShouldEqual, err)
+		})
 
-			forExp, err = NewForExpression(core.SourceMap{}, dataSource, nil, false, false, false)
+		Convey("should return error when a predicate is nil", func() {
+			forExp, err := NewForExpression(core.SourceMap{}, dataSource, nil, false, false, false)
 			So(forExp, ShouldBeNil)
 			So(err, ShouldNotBeNil)
 			So(err, ShouldEqual, err)
@@ -85,14 +60,14 @@ func TestNewForExpression(t *testing.T) {
 func TestAddLimit(t *testing.T) {
 	dataSource, valName := testIntArrayLiteral()
 
-	returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+	returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 	returnExp, _ := NewReturnExpression(
 		core.SourceMap{},
-		returnedValExp,
+		returnInValExp,
 	)
 
 	Convey("AddLimit", t, func() {
-		Convey("should success.", func() {
+		Convey("should success. (An Error should be nil.)", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -105,7 +80,7 @@ func TestAddLimit(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("should return a emptyData error.", func() {
+		Convey("should return an error.", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -124,10 +99,10 @@ func TestAddLimit(t *testing.T) {
 func TestAddFilter(t *testing.T) {
 	dataSource, valName := testIntArrayLiteral()
 
-	returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+	returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 	returnExp, _ := NewReturnExpression(
 		core.SourceMap{},
-		returnedValExp,
+		returnInValExp,
 	)
 
 	testFilter := func() core.Expression {
@@ -138,7 +113,7 @@ func TestAddFilter(t *testing.T) {
 	}
 
 	Convey("AddFilter", t, func() {
-		Convey("should success.", func() {
+		Convey("should success. (An Error should be nil.)", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -152,7 +127,7 @@ func TestAddFilter(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("should return a error.", func() {
+		Convey("should return an error.", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -172,10 +147,10 @@ func TestAddFilter(t *testing.T) {
 func TestAddSort(t *testing.T) {
 	dataSource, valName := testIntArrayLiteral()
 
-	returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+	returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 	returnExp, _ := NewReturnExpression(
 		core.SourceMap{},
-		returnedValExp,
+		returnInValExp,
 	)
 
 	testSort := func() *clauses.SorterExpression {
@@ -185,7 +160,7 @@ func TestAddSort(t *testing.T) {
 	}
 
 	Convey("AddSort", t, func() {
-		Convey("should success.", func() {
+		Convey("should success.(An Error should be nil.)", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -199,7 +174,7 @@ func TestAddSort(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("should return a error.", func() {
+		Convey("should return an error.", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -230,14 +205,14 @@ func TestAddCollect(t *testing.T) {
 		return collect
 	}
 
-	returnedValExp, _ := NewVariableExpression(core.SourceMap{}, selectorValName)
+	returnInValExp, _ := NewVariableExpression(core.SourceMap{}, selectorValName)
 	returnExp, _ := NewReturnExpression(
 		core.SourceMap{},
-		returnedValExp,
+		returnInValExp,
 	)
 
 	Convey("AddCollect", t, func() {
-		Convey("should success.", func() {
+		Convey("should success. (Error should be nil.)", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -251,7 +226,7 @@ func TestAddCollect(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("should return a error.", func() {
+		Convey("should return an error.", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -270,10 +245,10 @@ func TestAddCollect(t *testing.T) {
 func TestAddStatement(t *testing.T) {
 	dataSource, valName := testIntArrayLiteral()
 
-	returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+	returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 	returnExp, _ := NewReturnExpression(
 		core.SourceMap{},
-		returnedValExp,
+		returnInValExp,
 	)
 
 	testStatement, _ := NewVariableDeclarationExpression(core.SourceMap{}, "newVal", literals.NewIntLiteral(0))
@@ -293,7 +268,7 @@ func TestAddStatement(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("should return a error.", func() {
+		Convey("should return an error. (Error should be nil.)", func() {
 			forExp, _ := NewForExpression(
 				core.SourceMap{},
 				dataSource,
@@ -314,10 +289,10 @@ func TestExec(t *testing.T) {
 		Convey("should success.", func() {
 			dataSource, valName := testIntArrayLiteral()
 
-			returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+			returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 			returnExp, _ := NewReturnExpression(
 				core.SourceMap{},
-				returnedValExp,
+				returnInValExp,
 			)
 
 			rootScope, closeFn := core.NewRootScope()
@@ -347,13 +322,13 @@ func TestExec(t *testing.T) {
 			closeFn()
 		})
 
-		Convey("should return contextdone error.", func() {
+		Convey("should stop an execution when context is cancelled.", func() {
 			dataSource, valName := testIntArrayLiteral()
 
-			returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+			returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 			returnExp, _ := NewReturnExpression(
 				core.SourceMap{},
-				returnedValExp,
+				returnInValExp,
 			)
 
 			rootScope, closeFn := core.NewRootScope()
@@ -376,14 +351,23 @@ func TestExec(t *testing.T) {
 			closeFn()
 		})
 
-		Convey("should return a emptyData error.", func() {
+		Convey("should return an error when a dataSource expression is invalidated.", func() {
 			rootScope, closeFn := core.NewRootScope()
-			errorDataSource, valName := testErrorArrayliteral()
+			errorDataSource, valName := func() (collections.Iterable, string) {
+				dataSource, _ := NewForInIterableExpression(
+					core.SourceMap{},
+					"val",
+					"",
+					literals.NewIntLiteral(1),
+				)
 
-			returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+				return dataSource, "val"
+			}()
+
+			returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 			returnExp, _ := NewReturnExpression(
 				core.SourceMap{},
-				returnedValExp,
+				returnInValExp,
 			)
 
 			forExp, _ := NewForExpression(
@@ -402,14 +386,30 @@ func TestExec(t *testing.T) {
 			closeFn()
 		})
 
-		Convey("should return a elementData error.", func() {
+		Convey("should return an error when element expressions of dataSource is invalidated.", func() {
 			rootScope, closeFn := core.NewRootScope()
-			errorDataSource, valName := testElementErrorArrayliteral()
 
-			returnedValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
+			errorDataSource, valName := func() (collections.Iterable, string) {
+				errorEle, _ := NewVariableExpression(core.SourceMap{}, "a")
+				dataSource, _ := NewForInIterableExpression(
+					core.SourceMap{},
+					"val",
+					"",
+					literals.NewArrayLiteralWith([]core.Expression{
+						literals.NewIntLiteral(0),
+						literals.NewIntLiteral(1),
+						literals.NewIntLiteral(2),
+						errorEle,
+					}),
+				)
+
+				return dataSource, "val"
+			}()
+
+			returnInValExp, _ := NewVariableExpression(core.SourceMap{}, valName)
 			returnExp, _ := NewReturnExpression(
 				core.SourceMap{},
-				returnedValExp,
+				returnInValExp,
 			)
 
 			forExp, _ := NewForExpression(
@@ -428,14 +428,14 @@ func TestExec(t *testing.T) {
 			closeFn()
 		})
 
-		Convey("should return a errorreturn error.", func() {
+		Convey("should return an error when an predicate expression is invalidated.", func() {
 			rootScope, closeFn := core.NewRootScope()
 			dataSource, _ := testIntArrayLiteral()
 
-			returnedValExp, _ := NewVariableExpression(core.SourceMap{}, "notExistVal")
+			returnInValExp, _ := NewVariableExpression(core.SourceMap{}, "notExistVal")
 			returnExp, _ := NewReturnExpression(
 				core.SourceMap{},
-				returnedValExp,
+				returnInValExp,
 			)
 
 			forExp, _ := NewForExpression(
