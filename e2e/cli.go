@@ -114,21 +114,21 @@ func (p *Profiler) Print(label string) {
 	timer, found := p.timers[label]
 
 	if found {
-		fmt.Fprintln(writer, fmt.Sprintf("Time: %s", timer.end.Sub(timer.start)))
+		fmt.Fprintf(writer, "Time: %s\n", timer.end.Sub(timer.start))
 	}
 
 	stats, found := p.allocs[label]
 
 	if found {
-		fmt.Fprintln(writer, fmt.Sprintf("Alloc: %s", byteCountDecimal(stats.Alloc)))
-		fmt.Fprintln(writer, fmt.Sprintf("Frees: %s", byteCountDecimal(stats.Frees)))
-		fmt.Fprintln(writer, fmt.Sprintf("Total Alloc: %s", byteCountDecimal(stats.TotalAlloc)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap Alloc: %s", byteCountDecimal(stats.HeapAlloc)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap Sys: %s", byteCountDecimal(stats.HeapSys)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap Idle: %s", byteCountDecimal(stats.HeapIdle)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap In Use: %s", byteCountDecimal(stats.HeapInuse)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap Released: %s", byteCountDecimal(stats.HeapReleased)))
-		fmt.Fprintln(writer, fmt.Sprintf("Heap Objects: %d", stats.HeapObjects))
+		fmt.Fprintf(writer, "Alloc: %s\n", byteCountDecimal(stats.Alloc))
+		fmt.Fprintf(writer, "Frees: %s\n", byteCountDecimal(stats.Frees))
+		fmt.Fprintf(writer, "Total Alloc: %s\n", byteCountDecimal(stats.TotalAlloc))
+		fmt.Fprintf(writer, "Heap Alloc: %s\n", byteCountDecimal(stats.HeapAlloc))
+		fmt.Fprintf(writer, "Heap Sys: %s\n", byteCountDecimal(stats.HeapSys))
+		fmt.Fprintf(writer, "Heap Idle: %s\n", byteCountDecimal(stats.HeapIdle))
+		fmt.Fprintf(writer, "Heap In Use: %s\n", byteCountDecimal(stats.HeapInuse))
+		fmt.Fprintf(writer, "Heap Released: %s\n", byteCountDecimal(stats.HeapReleased))
+		fmt.Fprintf(writer, "Heap Objects: %d\n", stats.HeapObjects)
 	}
 
 	//cpu, found := p.cpus[label]
@@ -138,7 +138,7 @@ func (p *Profiler) Print(label string) {
 	//}
 
 	if writer.Len() > 0 {
-		fmt.Println(fmt.Sprintf("%s:", label))
+		fmt.Printf("%s:\n", label)
 		fmt.Println("-----")
 		fmt.Println(writer.String())
 	}
@@ -440,7 +440,7 @@ func execQuery(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 		prof.PrintAll()
 
 		if out != nil {
-			fmt.Println(fmt.Sprintf("Output size: %s", byteCountDecimal(uint64(len(out)))))
+			fmt.Printf("Output size: %s\n", byteCountDecimal(uint64(len(out))))
 			fmt.Println("")
 		}
 	}
