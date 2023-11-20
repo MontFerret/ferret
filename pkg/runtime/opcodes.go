@@ -10,12 +10,12 @@ const (
 	OpFalse
 	OpArray
 	OpObject
-	OpSetGlobal
-	OpGetGlobal
-	OpGetLocal
-	OpSetLocal
-	OpGetProperty
-	OpGetPropertyOptional
+	OpLoadGlobal
+	OpStoreGlobal
+	OpLoadLocal
+	OpStoreLocal
+	OpLoadProperty
+	OpLoadPropertyOptional
 	OpNegate
 	OpFlipPositive
 	OpFlipNegative
@@ -52,6 +52,10 @@ const (
 	OpJumpIfTrue
 	OpJump
 	OpLoopInit
+	OpLoopHasNext
+	OpLoopNext
+	OpLoopNextValue
+	OpLoopNextCounter
 	OpLoop
 	OpLoopPush
 	OpReturn

@@ -1,19 +1,15 @@
 package compiler
 
 import (
-	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/pkg/parser/fql"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -24,9 +20,9 @@ type (
 
 	visitor struct {
 		*fql.BaseFqlParserVisitor
-		err            error
-		src            string
-		funcs          core.Functions
+		err error
+		src string
+		//funcs          core.Functions
 		constantsIndex map[uint64]int
 		locations      []core.Location
 		bytecode       []runtime.Opcode
@@ -46,11 +42,11 @@ const (
 	forScope             = "for"
 )
 
-func newVisitor(src string, funcs core.Functions) *visitor {
+func newVisitor(src string) *visitor {
 	v := new(visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.src = src
-	v.funcs = funcs
+	//v.funcs = funcs
 	v.constantsIndex = make(map[uint64]int)
 	v.locations = make([]core.Location, 0)
 	v.bytecode = make([]runtime.Opcode, 0)
@@ -111,20 +107,68 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
 	v.beginScope()
+	v.emit(runtime.OpArray)
 
-	loopStart := len(v.bytecode)
-	var exitJump int
+	var loopStart, exitJump int
 	// identify whether it's WHILE or FOR loop
 	isForInLoop := ctx.While() == nil
 
-	v.emit(runtime.OpLoopInit)
-
 	if isForInLoop {
+		loopStart = len(v.bytecode)
+
 		// Loop data source to iterate over
 		if c := ctx.ForExpressionSource(); c != nil {
 			c.Accept(v)
 		}
+
+		v.emit(runtime.OpLoopInit)
+		v.emit(runtime.OpLoopHasNext)
+		exitJump = v.emitJump(runtime.OpJumpIfFalse)
+		v.emitPop()
+
+		valVar := ctx.GetValueVariable().GetText()
+		counterVarCtx := ctx.GetCounterVariable()
+
+		hasValVar := valVar != ignorePseudoVariable
+		var hasCounterVar bool
+		var counterVar string
+
+		if counterVarCtx != nil {
+			counterVar = counterVarCtx.GetText()
+			hasCounterVar = true
+		}
+
+		if hasValVar && hasCounterVar {
+			v.emit(runtime.OpLoopNext)
+		} else if hasValVar {
+			v.emit(runtime.OpLoopNextValue)
+		} else if hasCounterVar {
+			v.emit(runtime.OpLoopNextCounter)
+		} else {
+			panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+		}
+
+		// declare value variable
+		valVarIndex := v.declareVariable(valVar)
+
+		var counterVarIndex int
+
+		if hasCounterVar {
+			// declare counter variable
+			counterVarIndex = v.declareVariable(counterVar)
+		}
+
+		v.defineVariable(valVarIndex)
+
+		if hasCounterVar {
+			v.defineVariable(counterVarIndex)
+		}
 	} else {
+		// Create initial value for the loop counter
+		v.emitConstant(runtime.OpPush, values.NewInt(0))
+
+		loopStart = len(v.bytecode)
+
 		// Condition expression
 		ctx.Expression().Accept(v)
 
@@ -137,7 +181,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		// declare counter variable
 		// and increment it by 1
 		index := v.declareVariable(counterVar)
-		v.emitConstant(runtime.OpIncr, values.NewInt(0))
+		v.emit(runtime.OpIncr)
 		v.defineVariable(index)
 	}
 
@@ -173,7 +217,8 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	v.emitLoop(loopStart)
 	v.patchJump(exitJump)
-	// v.emitPop()
+	// pop loop counter
+	v.emitPop()
 	v.endScope()
 
 	return nil
@@ -202,11 +247,11 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 
 	name += call.FunctionName().GetText()
 
-	exists := v.funcs.Has(name)
-
-	if !exists {
-		panic(core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name)))
-	}
+	//exists := v.funcs.Has(name)
+	//
+	//if !exists {
+	//	panic(core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name)))
+	//}
 
 	//regularCall := ctx.ErrorOperator() == nil
 
@@ -264,10 +309,33 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 		}
 
 		if p.ErrorOperator() != nil {
-			v.emit(runtime.OpGetPropertyOptional)
+			v.emit(runtime.OpLoadPropertyOptional)
 		} else {
-			v.emit(runtime.OpGetProperty)
+			v.emit(runtime.OpLoadProperty)
 		}
+	}
+
+	return nil
+}
+
+func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
+	ctx.GetLeft().Accept(v)
+	ctx.GetRight().Accept(v)
+
+	v.emit(runtime.OpRange)
+
+	return nil
+}
+
+func (v *visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
+	if c := ctx.IntegerLiteral(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.Variable(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.Param(); c != nil {
+		c.Accept(v)
+	} else {
+		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
 
 	return nil
@@ -677,7 +745,7 @@ func (v *visitor) readVariable(name string) {
 	arg := v.resolveLocalVariable(name)
 
 	if arg > -1 {
-		v.emit(runtime.OpGetLocal, arg)
+		v.emit(runtime.OpLoadLocal, arg)
 
 		return
 	}
@@ -688,7 +756,7 @@ func (v *visitor) readVariable(name string) {
 		panic(core.Error(ErrVariableNotFound, name))
 	}
 
-	v.emit(runtime.OpGetGlobal, index)
+	v.emit(runtime.OpLoadGlobal, index)
 }
 
 func (v *visitor) declareVariable(name string) int {
@@ -731,12 +799,12 @@ func (v *visitor) declareVariable(name string) int {
 // defineVariable defines a variable in the current scope.
 func (v *visitor) defineVariable(index int) {
 	if v.scope == 0 {
-		v.emit(runtime.OpSetGlobal, index)
+		v.emit(runtime.OpStoreGlobal, index)
 
 		return
 	}
 
-	v.emit(runtime.OpSetLocal, index)
+	v.emit(runtime.OpStoreLocal, index)
 }
 
 // emitConstant emits an opcode with a constant argument.
@@ -746,15 +814,9 @@ func (v *visitor) emitConstant(op runtime.Opcode, constant core.Value) {
 
 // emitLoop emits a loop instruction.
 func (v *visitor) emitLoop(loopStart int) {
-	v.emit(runtime.OpLoop, loopStart)
-
-	jump := len(v.bytecode) - loopStart + 2
-
-	if jump > math.MaxUint16 {
-		// panic(core.Error(ErrTooManyLoopIterations))
-	}
-
-	v.arguments[loopStart] = jump
+	pos := v.emitJump(runtime.OpLoop)
+	jump := pos - loopStart + 2
+	v.arguments[pos-1] = jump
 }
 
 // emitJump emits an opcode with a jump offset argument.
@@ -792,7 +854,7 @@ func (v *visitor) emit(op runtime.Opcode, args ...int) {
 func (v *visitor) addConstant(constant core.Value) int {
 	var hash uint64
 
-	if types.IsScalar(constant.Type()) {
+	if values.IsScalar(constant) {
 		hash = constant.Hash()
 	}
 

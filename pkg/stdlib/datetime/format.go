@@ -2,10 +2,8 @@ package datetime
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DATE_FORMAT format date according to the given format string.
@@ -13,18 +11,15 @@ import (
 // @param {String} format - String format.
 // @return {String} - Formatted date.
 func DateFormat(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 2)
-	if err != nil {
+	if err := core.ValidateArgs(args, 2, 2); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.DateTime)
-	if err != nil {
+	if err := values.AssertDateTime(args[0]); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
-	if err != nil {
+	if err := values.AssertString(args[1]); err != nil {
 		return values.None, err
 	}
 

@@ -12,21 +12,25 @@ import (
 // @param {Object, repeated} objects - Objects to merge.
 // @return {Object} - Object created by merging.
 func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, core.MaxArgs)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
 		return values.None, err
 	}
 
-	objs := values.NewArrayWith(args...)
+	var objs *values.Array
 
-	if len(args) == 1 && args[0].Type().Equals(types.Array) {
-		objs = args[0].(*values.Array)
+	if len(args) == 1 {
+		arr, ok := args[0].(*values.Array)
+
+		if ok {
+			objs = arr
+		}
 	}
 
-	err = validateArrayOf(types.Object, objs)
+	if objs == nil {
+		objs = values.NewArrayWith(args...)
+	}
 
-	if err != nil {
+	if err := validateArrayOf(types.Object, objs); err != nil {
 		return values.None, err
 	}
 

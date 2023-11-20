@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
@@ -31,18 +30,18 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	end := values.NewInt(len(text))
 
 	if argsCount == 3 {
-		arg3 := args[2]
+		arg3, ok := args[2].(values.Int)
 
-		if arg3.Type() == types.Int {
-			start = arg3.(values.Int)
+		if ok {
+			start = arg3
 		}
 	}
 
 	if argsCount == 4 {
-		arg4 := args[3]
+		arg4, ok := args[3].(values.Int)
 
-		if arg4.Type() == types.Int {
-			end = arg4.(values.Int)
+		if ok {
+			end = arg4
 		}
 	}
 
@@ -77,18 +76,18 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	end := values.NewInt(len(text))
 
 	if argsCount == 3 {
-		arg3 := args[2]
+		arg3, ok := args[2].(values.Int)
 
-		if arg3.Type() == types.Int {
-			start = arg3.(values.Int)
+		if ok {
+			start = arg3
 		}
 	}
 
 	if argsCount == 4 {
-		arg4 := args[3]
+		arg4, ok := args[3].(values.Int)
 
-		if arg4.Type() == types.Int {
-			end = arg4.(values.Int)
+		if ok {
+			end = arg4
 		}
 	}
 

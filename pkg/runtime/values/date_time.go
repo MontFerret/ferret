@@ -1,13 +1,13 @@
 package values
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"time"
 
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const DefaultTimeLayout = time.RFC3339
@@ -70,21 +70,21 @@ func (t DateTime) String() string {
 }
 
 func (t DateTime) Compare(other core.Value) int64 {
-	if other.Type() == types.DateTime {
-		other := other.(DateTime)
+	otherDt, ok := other.(DateTime)
 
-		if t.After(other.Time) {
-			return 1
-		}
-
-		if t.Before(other.Time) {
-			return -1
-		}
-
-		return 0
+	if !ok {
+		return types.Compare(types.DateTime, core.Reflect(other))
 	}
 
-	return types.Compare(types.DateTime, other.Type())
+	if t.After(otherDt.Time) {
+		return 1
+	}
+
+	if t.Before(otherDt.Time) {
+		return -1
+	}
+
+	return 0
 }
 
 func (t DateTime) Unwrap() interface{} {
@@ -94,7 +94,7 @@ func (t DateTime) Unwrap() interface{} {
 func (t DateTime) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.DateTime.String()))
 	h.Write([]byte(":"))
 
 	bytes, err := t.Time.GobEncode()

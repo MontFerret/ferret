@@ -1,4 +1,4 @@
-// Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
+// Code generated from antlr/FqlLexer.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package fql
 
@@ -7,7 +7,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 // Suppress unused import error
@@ -22,28 +22,28 @@ type FqlLexer struct {
 	// TODO: EOF string
 }
 
-var fqllexerLexerStaticData struct {
+var FqlLexerLexerStaticData struct {
 	once                   sync.Once
 	serializedATN          []int32
-	channelNames           []string
-	modeNames              []string
-	literalNames           []string
-	symbolicNames          []string
-	ruleNames              []string
-	predictionContextCache *antlr.PredictionContextCache
+	ChannelNames           []string
+	ModeNames              []string
+	LiteralNames           []string
+	SymbolicNames          []string
+	RuleNames              []string
+	PredictionContextCache *antlr.PredictionContextCache
 	atn                    *antlr.ATN
 	decisionToDFA          []*antlr.DFA
 }
 
 func fqllexerLexerInit() {
-	staticData := &fqllexerLexerStaticData
-	staticData.channelNames = []string{
+	staticData := &FqlLexerLexerStaticData
+	staticData.ChannelNames = []string{
 		"DEFAULT_TOKEN_CHANNEL", "HIDDEN",
 	}
-	staticData.modeNames = []string{
+	staticData.ModeNames = []string{
 		"DEFAULT_MODE",
 	}
-	staticData.literalNames = []string{
+	staticData.LiteralNames = []string{
 		"", "", "", "", "", "':'", "';'", "'.'", "','", "'['", "']'", "'('",
 		"')'", "'{'", "'}'", "'>'", "'<'", "'=='", "'>='", "'<='", "'!='", "'*'",
 		"'/'", "'%'", "'+'", "'-'", "'--'", "'++'", "", "", "", "'='", "'?'",
@@ -53,7 +53,7 @@ func fqllexerLexerInit() {
 		"'WITH'", "'COUNT'", "'ALL'", "'ANY'", "'AGGREGATE'", "'EVENT'", "'LIKE'",
 		"", "'IN'", "'DO'", "'WHILE'", "'@'",
 	}
-	staticData.symbolicNames = []string{
+	staticData.SymbolicNames = []string{
 		"", "MultiLineComment", "SingleLineComment", "WhiteSpaces", "LineTerminator",
 		"Colon", "SemiColon", "Dot", "Comma", "OpenBracket", "CloseBracket",
 		"OpenParen", "CloseParen", "OpenBrace", "CloseBrace", "Gt", "Lt", "Eq",
@@ -66,7 +66,7 @@ func fqllexerLexerInit() {
 		"Param", "Identifier", "IgnoreIdentifier", "StringLiteral", "IntegerLiteral",
 		"FloatLiteral", "NamespaceSegment", "UnknownIdentifier",
 	}
-	staticData.ruleNames = []string{
+	staticData.RuleNames = []string{
 		"MultiLineComment", "SingleLineComment", "WhiteSpaces", "LineTerminator",
 		"Colon", "SemiColon", "Dot", "Comma", "OpenBracket", "CloseBracket",
 		"OpenParen", "CloseParen", "OpenBrace", "CloseBrace", "Gt", "Lt", "Eq",
@@ -81,7 +81,7 @@ func fqllexerLexerInit() {
 		"DecimalIntegerLiteral", "ExponentPart", "Letter", "Symbols", "Underscore",
 		"Digit", "DQSring", "SQString", "BacktickString", "TickString", "NamespaceSeparator",
 	}
-	staticData.predictionContextCache = antlr.NewPredictionContextCache()
+	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
 		4, 0, 72, 621, 6, -1, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2,
 		4, 7, 4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2,
@@ -374,7 +374,7 @@ func fqllexerLexerInit() {
 // NewFqlLexer(). You can call this function if you wish to initialize the static state ahead
 // of time.
 func FqlLexerInit() {
-	staticData := &fqllexerLexerStaticData
+	staticData := &FqlLexerLexerStaticData
 	staticData.once.Do(fqllexerLexerInit)
 }
 
@@ -383,13 +383,13 @@ func NewFqlLexer(input antlr.CharStream) *FqlLexer {
 	FqlLexerInit()
 	l := new(FqlLexer)
 	l.BaseLexer = antlr.NewBaseLexer(input)
-	staticData := &fqllexerLexerStaticData
-	l.Interpreter = antlr.NewLexerATNSimulator(l, staticData.atn, staticData.decisionToDFA, staticData.predictionContextCache)
-	l.channelNames = staticData.channelNames
-	l.modeNames = staticData.modeNames
-	l.RuleNames = staticData.ruleNames
-	l.LiteralNames = staticData.literalNames
-	l.SymbolicNames = staticData.symbolicNames
+	staticData := &FqlLexerLexerStaticData
+	l.Interpreter = antlr.NewLexerATNSimulator(l, staticData.atn, staticData.decisionToDFA, staticData.PredictionContextCache)
+	l.channelNames = staticData.ChannelNames
+	l.modeNames = staticData.ModeNames
+	l.RuleNames = staticData.RuleNames
+	l.LiteralNames = staticData.LiteralNames
+	l.SymbolicNames = staticData.SymbolicNames
 	l.GrammarFileName = "FqlLexer.g4"
 	// TODO: l.EOF = antlr.TokenEOF
 

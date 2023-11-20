@@ -55,7 +55,7 @@ func (p *HTMLPage) String() string {
 }
 
 func (p *HTMLPage) Compare(other core.Value) int64 {
-	tc := drivers.Compare(p.Type(), other.Type())
+	tc := drivers.CompareTypes(p.Type(), other.Type())
 
 	if tc != 0 {
 		return tc

@@ -90,6 +90,11 @@ func TestLet(t *testing.T) {
 			[]any{map[string]any{"a": map[string]any{"c": 1}, "b": []any{1}}},
 			ShouldEqualJSON,
 		},
+		{
+			"LET a = 'a' LET b = a LET c = 'c' RETURN b",
+			"a",
+			ShouldEqual,
+		},
 	})
 
 	//

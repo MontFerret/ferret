@@ -5,16 +5,13 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // CONCAT concatenates one or more instances of String, or an Array.
 // @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - A string value.
 func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, core.MaxArgs)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
 		return values.EmptyString, err
 	}
 
@@ -22,16 +19,18 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	res := values.EmptyString
 
-	if argsCount == 1 && args[0].Type() == types.Array {
-		arr := args[0].(*values.Array)
+	if argsCount == 1 {
+		argv, ok := args[0].(*values.Array)
 
-		arr.ForEach(func(value core.Value, _ int) bool {
-			res = res.Concat(value)
+		if ok {
+			argv.ForEach(func(value core.Value, _ int) bool {
+				res = res.Concat(value)
 
-			return true
-		})
+				return true
+			})
 
-		return res, nil
+			return res, nil
+		}
 	}
 
 	for _, str := range args {
@@ -54,26 +53,19 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 
 	separator := args[0]
 
-	if separator.Type() != types.String {
+	separator, ok := args[0].(values.String)
+
+	if !ok {
 		separator = values.NewString(separator.String())
 	}
 
 	res := values.EmptyString
 
 	for idx, arg := range args[1:] {
-		if arg.Type() != types.Array {
-			if arg.Type() != types.None {
-				if idx > 0 {
-					res = res.Concat(separator)
-				}
-
-				res = res.Concat(arg)
-			}
-		} else {
-			arr := arg.(*values.Array)
-
-			arr.ForEach(func(value core.Value, idx int) bool {
-				if value.Type() != types.None {
+		switch argv := arg.(type) {
+		case *values.Array:
+			argv.ForEach(func(value core.Value, idx int) bool {
+				if value != values.None {
 					if idx > 0 {
 						res = res.Concat(separator)
 					}
@@ -83,6 +75,15 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 
 				return true
 			})
+		default:
+			if argv != values.None {
+				if idx > 0 {
+					res = res.Concat(separator)
+				}
+
+				res = res.Concat(argv)
+			}
+
 		}
 	}
 

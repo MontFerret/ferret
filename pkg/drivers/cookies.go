@@ -8,8 +8,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
 	"github.com/wI2L/jettison"
 )
 
@@ -29,10 +27,6 @@ func (c *HTTPCookies) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(c.values, jettison.NoHTMLEscaping())
 }
 
-func (c *HTTPCookies) Type() core.Type {
-	return HTTPCookiesType
-}
-
 func (c *HTTPCookies) String() string {
 	j, err := c.MarshalJSON()
 
@@ -44,11 +38,12 @@ func (c *HTTPCookies) String() string {
 }
 
 func (c *HTTPCookies) Compare(other core.Value) int64 {
-	if other.Type() != HTTPCookiesType {
-		return Compare(HTTPCookiesType, other.Type())
-	}
+	oc, ok := other.(*HTTPCookies)
 
-	oc := other.(*HTTPCookies)
+	if !ok {
+		// TODO: Implement
+		return 1
+	}
 
 	switch {
 	case len(c.values) > len(oc.values):
@@ -87,7 +82,7 @@ func (c *HTTPCookies) Unwrap() interface{} {
 func (c *HTTPCookies) Hash() uint64 {
 	hash := fnv.New64a()
 
-	hash.Write([]byte(c.Type().String()))
+	hash.Write([]byte("HTMLCookies"))
 	hash.Write([]byte(":"))
 	hash.Write([]byte("{"))
 
@@ -175,30 +170,8 @@ func (c *HTTPCookies) Set(cookie HTTPCookie) {
 	c.values[cookie.Name] = cookie
 }
 
-func (c *HTTPCookies) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
-		return values.None, nil
-	}
-
-	segmentIdx := 0
-	segment := path[segmentIdx]
-
-	err := core.ValidateType(segment, types.String)
-
-	if err != nil {
-		return values.None, core.NewPathError(err, segmentIdx)
-	}
-
-	cookie, found := c.values[segment.String()]
-
-	if found {
-		if len(path) == 1 {
-			return cookie, nil
-		}
-
-		return values.GetIn(ctx, cookie, path[segmentIdx+1:])
-	}
-
+func (c *HTTPCookies) GetByKey(ctx context.Context, key string) (core.Value, error) {
+	// TODO: Implement
 	return values.None, nil
 }
 

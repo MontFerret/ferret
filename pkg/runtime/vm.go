@@ -3,10 +3,10 @@ package runtime
 import (
 	"context"
 	"errors"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const DefaultStackSize = 128
@@ -98,49 +98,68 @@ loop:
 		case OpPop:
 			stack.Pop()
 
-		case OpSetGlobal:
+		case OpStoreGlobal:
 			vm.globals[program.Constants[arg].String()] = stack.Pop()
 
-		case OpGetGlobal:
+		case OpLoadGlobal:
 			stack.Push(vm.globals[program.Constants[arg].String()])
 
-		case OpSetLocal:
+		case OpStoreLocal:
 			stack.Set(arg, stack.Peek())
 
-		case OpGetLocal:
+		case OpLoadLocal:
 			stack.Push(stack.Get(arg))
 
-		case OpGetProperty, OpGetPropertyOptional:
-			fieldName := stack.Pop()
+		case OpLoadProperty, OpLoadPropertyOptional:
+			prop := stack.Pop()
 			val := stack.Pop()
 
-			switch src := val.(type) {
-			case *values.Array:
-				idx := values.ToInt(fieldName)
+			switch getter := prop.(type) {
+			case values.String:
+				switch src := val.(type) {
+				case *values.Object:
+					stack.Push(src.MustGetOr(getter, values.None))
+				case core.Keyed:
+					out, err := src.GetByKey(ctx, getter.String())
 
-				stack.Push(src.Get(idx))
-			case *values.Object:
-				fieldName := values.ToString(fieldName)
+					if err == nil {
+						stack.Push(out)
+					} else if op == OpLoadPropertyOptional {
+						stack.Push(values.None)
+					} else {
+						return nil, err
+					}
+				default:
+					if op != OpLoadPropertyOptional {
+						return nil, core.TypeError(src, types.Object, types.Keyed)
+					}
 
-				stack.Push(src.MustGetOr(fieldName, values.None))
-			case core.GetterV2:
-				out, err := src.GetIn(ctx, fieldName)
-
-				if err == nil {
-					stack.Push(out)
-				} else if op == OpGetPropertyOptional {
 					stack.Push(values.None)
-				} else {
-					return nil, err
 				}
-			default:
-				if op != OpGetPropertyOptional {
-					return nil, ErrValueUndefined
-				}
+			case values.Float, values.Int:
+				switch src := val.(type) {
+				case *values.Array:
+					idx := values.ToInt(getter)
 
-				stack.Push(values.None)
+					stack.Push(src.Get(idx))
+				case core.Indexed:
+					out, err := src.GetByIndex(ctx, int(values.ToInt(getter)))
+
+					if err == nil {
+						stack.Push(out)
+					} else if op == OpLoadPropertyOptional {
+						stack.Push(values.None)
+					} else {
+						return nil, err
+					}
+				default:
+					if op != OpLoadPropertyOptional {
+						return nil, core.TypeError(src, types.Array, types.Indexed)
+					}
+
+					stack.Push(values.None)
+				}
 			}
-
 		case OpNegate:
 			stack.Push(values.Negate(stack.Pop()))
 
@@ -156,32 +175,32 @@ loop:
 		case OpEq:
 			left := stack.Pop()
 			right := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) == 0))
+			stack.Push(values.NewBoolean(values.Compare(left, right) == 0))
 
 		case OpNeq:
 			left := stack.Pop()
 			right := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) != 0))
+			stack.Push(values.NewBoolean(values.Compare(left, right) != 0))
 
 		case OpGt:
 			right := stack.Pop()
 			left := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) > 0))
+			stack.Push(values.NewBoolean(values.Compare(left, right) > 0))
 
 		case OpLt:
 			right := stack.Pop()
 			left := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) < 0))
+			stack.Push(values.NewBoolean(values.Compare(left, right) < 0))
 
 		case OpGte:
 			right := stack.Pop()
 			left := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) >= 0))
+			stack.Push(values.NewBoolean(values.Compare(left, right) >= 0))
 
 		case OpLte:
 			right := stack.Pop()
 			left := stack.Pop()
-			stack.Push(values.NewBoolean(left.Compare(right) <= 0))
+			stack.Push(values.NewBoolean(values.Compare(left, right) <= 0))
 
 		case OpIn:
 			right := stack.Pop()
@@ -348,8 +367,53 @@ loop:
 			}
 
 		case OpLoopInit:
-			// push a new array to the stack
-			stack.Push(values.NewArray(0))
+			// start a new iteration
+			src := stack.Pop()
+
+			switch src := src.(type) {
+			case core.Iterable:
+				iterator, err := src.Iterate(ctx)
+
+				if err != nil {
+					return nil, err
+				}
+
+				stack.Push(values.NewBoxedValue(iterator))
+			default:
+				return nil, core.TypeError(src, types.Iterable)
+			}
+
+		case OpLoopHasNext:
+			boxed := stack.Peek()
+			iterator := boxed.Unwrap().(core.Iterator)
+			hasNext, err := iterator.HasNext(ctx)
+
+			if err != nil {
+				return nil, err
+			}
+
+			stack.Push(values.NewBoolean(hasNext))
+
+		case OpLoopNext, OpLoopNextValue, OpLoopNextCounter:
+			boxed := stack.Peek()
+			iterator := boxed.Unwrap().(core.Iterator)
+
+			// get the next value from the iterator
+			val, key, err := iterator.Next(ctx)
+
+			if err != nil {
+				return nil, err
+			}
+
+			switch op {
+			case OpLoopNextValue:
+				stack.Push(val)
+			case OpLoopNextCounter:
+				stack.Push(key)
+			default:
+				stack.Push(val)
+				stack.Push(key)
+			}
 
 		case OpLoop:
 			// jump back to the start of the loop

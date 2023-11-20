@@ -3,13 +3,13 @@ package values
 import (
 	"context"
 	"encoding/binary"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"sort"
 
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -21,7 +21,7 @@ type (
 	}
 
 	Object struct {
-		value map[string]core.Value
+		data map[string]core.Value
 	}
 )
 
@@ -37,18 +37,18 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 	obj := NewObject()
 
 	for _, prop := range props {
-		obj.value[prop.key] = prop.value
+		obj.data[prop.key] = prop.value
 	}
 
 	return obj
 }
 
-func (t *Object) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(t.value, jettison.NoHTMLEscaping())
-}
-
 func (t *Object) Type() core.Type {
 	return types.Object
+}
+
+func (t *Object) MarshalJSON() ([]byte, error) {
+	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }
 
 func (t *Object) String() string {
@@ -65,75 +65,75 @@ func (t *Object) String() string {
 // The behavior of the Compare is similar
 // to the comparison of objects in ArangoDB
 func (t *Object) Compare(other core.Value) int64 {
-	if other.Type() == t.Type() {
-		other := other.(*Object)
+	otherObject, ok := other.(*Object)
 
-		if t.Length() == 0 && other.Length() == 0 {
-			return 0
-		}
-
-		if t.Length() < other.Length() {
-			return -1
-		}
-
-		if t.Length() > other.Length() {
-			return 1
-		}
-
-		var res int64
-
-		tKeys := make([]string, 0, len(t.value))
-
-		for k := range t.value {
-			tKeys = append(tKeys, k)
-		}
-
-		sortedT := sort.StringSlice(tKeys)
-		sortedT.Sort()
-
-		otherKeys := make([]string, 0, other.Length())
-
-		other.ForEach(func(value core.Value, k string) bool {
-			otherKeys = append(otherKeys, k)
-			return true
-		})
-
-		sortedOther := sort.StringSlice(otherKeys)
-		sortedOther.Sort()
-
-		var tVal, otherVal core.Value
-		var tKey, otherKey string
-
-		for i := 0; i < len(t.value) && res == 0; i++ {
-			tKey, otherKey = sortedT[i], sortedOther[i]
-
-			if tKey == otherKey {
-				tVal, _ = t.Get(NewString(tKey))
-				otherVal, _ = other.Get(NewString(tKey))
-				res = tVal.Compare(otherVal)
-
-				continue
-			}
-
-			if tKey < otherKey {
-				res = 1
-			} else {
-				res = -1
-			}
-
-			break
-		}
-
-		return res
+	if !ok {
+		return types.Compare(types.Object, core.Reflect(other))
 	}
 
-	return types.Compare(types.Object, other.Type())
+	if t.Length() == 0 && otherObject.Length() == 0 {
+		return 0
+	}
+
+	if t.Length() < otherObject.Length() {
+		return -1
+	}
+
+	if t.Length() > otherObject.Length() {
+		return 1
+	}
+
+	var res int64
+
+	tKeys := make([]string, 0, len(t.data))
+
+	for k := range t.data {
+		tKeys = append(tKeys, k)
+	}
+
+	sortedT := sort.StringSlice(tKeys)
+	sortedT.Sort()
+
+	otherKeys := make([]string, 0, otherObject.Length())
+
+	otherObject.ForEach(func(value core.Value, k string) bool {
+		otherKeys = append(otherKeys, k)
+		return true
+	})
+
+	sortedOther := sort.StringSlice(otherKeys)
+	sortedOther.Sort()
+
+	var tVal, otherVal core.Value
+	var tKey, otherKey string
+
+	for i := 0; i < len(t.data) && res == 0; i++ {
+		tKey, otherKey = sortedT[i], sortedOther[i]
+
+		if tKey == otherKey {
+			tVal, _ = t.Get(NewString(tKey))
+			otherVal, _ = otherObject.Get(NewString(tKey))
+			res = Compare(tVal, otherVal)
+
+			continue
+		}
+
+		if tKey < otherKey {
+			res = 1
+		} else {
+			res = -1
+		}
+
+		break
+	}
+
+	return res
 }
 
 func (t *Object) Unwrap() interface{} {
 	obj := make(map[string]interface{})
 
-	for key, val := range t.value {
+	for key, val := range t.data {
 		obj[key] = val.Unwrap()
 	}
 
@@ -143,13 +143,13 @@ func (t *Object) Unwrap() interface{} {
 func (t *Object) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.Object.String()))
 	h.Write([]byte(":"))
 	h.Write([]byte("{"))
 
-	keys := make([]string, 0, len(t.value))
+	keys := make([]string, 0, len(t.data))
 
-	for key := range t.value {
+	for key := range t.data {
 		keys = append(keys, key)
 	}
 
@@ -162,7 +162,7 @@ func (t *Object) Hash() uint64 {
 		h.Write([]byte(key))
 		h.Write([]byte(":"))
 
-		el := t.value[key]
+		el := t.data[key]
 
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
@@ -182,7 +182,7 @@ func (t *Object) Hash() uint64 {
 func (t *Object) Copy() core.Value {
 	c := NewObject()
 
-	for k, v := range t.value {
+	for k, v := range t.data {
 		c.Set(NewString(k), v)
 	}
 
@@ -190,13 +190,13 @@ func (t *Object) Copy() core.Value {
 }
 
 func (t *Object) Length() Int {
-	return Int(len(t.value))
+	return Int(len(t.data))
 }
 
 func (t *Object) Keys() []String {
-	keys := make([]String, 0, len(t.value))
+	keys := make([]String, 0, len(t.data))
 
-	for k := range t.value {
+	for k := range t.data {
 		keys = append(keys, NewString(k))
 	}
 
@@ -204,9 +204,9 @@ func (t *Object) Keys() []String {
 }
 
 func (t *Object) Values() []core.Value {
-	keys := make([]core.Value, 0, len(t.value))
+	keys := make([]core.Value, 0, len(t.data))
 
-	for _, v := range t.value {
+	for _, v := range t.data {
 		keys = append(keys, v)
 	}
 
@@ -214,7 +214,7 @@ func (t *Object) Values() []core.Value {
 }
 
 func (t *Object) ForEach(predicate ObjectPredicate) {
-	for key, val := range t.value {
+	for key, val := range t.data {
 		if !predicate(val, key) {
 			break
 		}
@@ -222,7 +222,7 @@ func (t *Object) ForEach(predicate ObjectPredicate) {
 }
 
 func (t *Object) Find(predicate ObjectPredicate) (core.Value, Boolean) {
-	for idx, val := range t.value {
+	for idx, val := range t.data {
 		if predicate(val, idx) {
 			return val, True
 		}
@@ -232,7 +232,7 @@ func (t *Object) Find(predicate ObjectPredicate) (core.Value, Boolean) {
 }
 
 func (t *Object) Has(key String) Boolean {
-	_, exists := t.value[string(key)]
+	_, exists := t.data[string(key)]
 
 	return NewBoolean(exists)
 }
@@ -244,7 +244,7 @@ func (t *Object) MustGet(key String) core.Value {
 }
 
 func (t *Object) MustGetOr(key String, defaultValue core.Value) core.Value {
-	val, found := t.value[string(key)]
+	val, found := t.data[string(key)]
 
 	if found {
 		return val
@@ -254,7 +254,7 @@ func (t *Object) MustGetOr(key String, defaultValue core.Value) core.Value {
 }
 
 func (t *Object) Get(key String) (core.Value, Boolean) {
-	val, found := t.value[string(key)]
+	val, found := t.data[string(key)]
 
 	if found {
 		return val, NewBoolean(found)
@@ -265,14 +265,14 @@ func (t *Object) Get(key String) (core.Value, Boolean) {
 
 func (t *Object) Set(key String, value core.Value) {
 	if value != nil {
-		t.value[string(key)] = value
+		t.data[string(key)] = value
 	} else {
-		t.value[string(key)] = None
+		t.data[string(key)] = None
 	}
 }
 
 func (t *Object) Remove(key String) {
-	delete(t.value, string(key))
+	delete(t.data, string(key))
 }
 
 func (t *Object) Clone() core.Cloneable {
@@ -281,7 +281,7 @@ func (t *Object) Clone() core.Cloneable {
 	var value core.Value
 	var keyString String
 
-	for key := range t.value {
+	for key := range t.data {
 		keyString = NewString(key)
 		value, _ = t.Get(keyString)
 
@@ -296,29 +296,7 @@ func (t *Object) Clone() core.Cloneable {
 	return cloned
 }
 
-func (t *Object) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
-		return None, nil
-	}
-
-	segmentIdx := 0
-	first, _ := t.Get(ToString(path[segmentIdx]))
-
-	if len(path) == 1 {
-		return first, nil
-	}
-
-	segmentIdx++
-
-	if first == None || first == nil {
-		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
-	}
-
-	getter, ok := first.(core.Getter)
-
-	if !ok {
-		return GetIn(ctx, first, path[segmentIdx:])
-	}
-
-	return getter.GetIn(ctx, path[segmentIdx:])
+func (t *Object) Iterate(_ context.Context) (core.Iterator, error) {
+	// TODO: implement channel based iterator
+	return NewObjectIterator(t), nil
 }

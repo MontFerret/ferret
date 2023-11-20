@@ -30,13 +30,13 @@ func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 		break
 	case *values.Array:
 		_, result = v.FindOne(func(value core.Value, _ int) bool {
-			return needle.Compare(value) == 0
+			return values.Compare(needle, value) == 0
 		})
 
 		break
 	case *values.Object:
 		_, result = v.Find(func(value core.Value, _ string) bool {
-			return needle.Compare(value) == 0
+			return values.Compare(needle, value) == 0
 		})
 
 		break
@@ -48,7 +48,7 @@ func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		err = core.ForEach(ctx, iter, func(value core.Value, key core.Value) bool {
-			if needle.Compare(value) == 0 {
+			if values.Compare(needle, value) == 0 {
 				result = values.True
 
 				return false
@@ -61,11 +61,11 @@ func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 	default:
-		return values.None, core.TypeError(haystack.Type(),
+		return values.None, core.TypeError(haystack,
 			types.String,
 			types.Array,
 			types.Object,
-			core.NewType("Iterable"),
+			types.Iterable,
 		)
 	}
 

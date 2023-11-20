@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DATE parses a formatted string and returns DateTime object it represents.
@@ -18,7 +17,7 @@ func Date(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	if err := core.ValidateType(args[0], types.String); err != nil {
+	if err := values.AssertString(args[0]); err != nil {
 		return values.None, err
 	}
 
@@ -26,11 +25,11 @@ func Date(_ context.Context, args ...core.Value) (core.Value, error) {
 	layout := values.DefaultTimeLayout
 
 	if len(args) > 1 {
-		if err := core.ValidateType(args[1], types.String); err != nil {
+		if err := values.AssertString(args[1]); err != nil {
 			return values.None, err
 		}
 
-		layout = values.ToString(args[1]).String()
+		layout = args[1].String()
 	}
 
 	t, err := time.Parse(layout, str.String())

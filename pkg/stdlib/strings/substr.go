@@ -33,8 +33,10 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	length := size
 
 	if len(args) > 2 {
-		if args[2].Type() == types.Int {
-			length = int(args[2].(values.Int))
+		arg2, ok := args[2].(values.Int)
+
+		if ok {
+			length = int(arg2)
 		}
 	}
 
@@ -70,9 +72,10 @@ func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 	runes := []rune(text)
 
 	var pos int
+	arg1, ok := args[1].(values.Int)
 
-	if args[1].Type() == types.Int {
-		pos = int(args[1].(values.Int))
+	if ok {
+		pos = int(arg1)
 	}
 
 	if len(text) < pos {
@@ -98,8 +101,10 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	size := len(runes)
 	pos := size
 
-	if args[1].Type() == types.Int {
-		pos = int(args[1].(values.Int))
+	arg1, ok := args[1].(values.Int)
+
+	if ok {
+		pos = int(arg1)
 	}
 
 	if len(text) < pos {

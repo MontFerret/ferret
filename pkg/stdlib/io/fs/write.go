@@ -25,17 +25,8 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	fpath := args[0].String()
-	arg1 := args[1]
-
-	var data []byte
-
-	if arg1.Type() == types.Binary {
-		data = arg1.(values.Binary)
-	} else {
-		data = []byte(arg1.String())
-	}
-
+	fpath := values.ToString(args[0])
+	data := values.ToBinary(args[1])
 	params := defaultParams
 
 	if len(args) == 3 {
@@ -50,7 +41,7 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	// 0666 - read & write
-	file, err := os.OpenFile(fpath, params.ModeFlag, 0666)
+	file, err := os.OpenFile(string(fpath), params.ModeFlag, 0666)
 
 	if err != nil {
 		return values.None, core.Error(err, "open file")

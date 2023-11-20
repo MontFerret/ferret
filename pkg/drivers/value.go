@@ -4,10 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/MontFerret/ferret/pkg/runtime/events"
-
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/events"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -21,9 +19,8 @@ type (
 	HTMLNode interface {
 		core.Value
 		core.Iterable
-		core.Getter
-		core.Setter
-		collections.Measurable
+		core.Keyed
+		core.Measurable
 		io.Closer
 
 		GetNodeType(ctx context.Context) (values.Int, error)
@@ -189,9 +186,8 @@ type (
 	HTMLPage interface {
 		core.Value
 		core.Iterable
-		core.Getter
-		core.Setter
-		collections.Measurable
+		core.Keyed
+		core.Measurable
 		events.Observable
 		io.Closer
 

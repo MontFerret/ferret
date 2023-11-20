@@ -14,5 +14,5 @@ func FormatValue(val core.Value) string {
 		valStr = "none"
 	}
 
-	return fmt.Sprintf("[%s] '%s'", val.Type(), valStr)
+	return fmt.Sprintf("[%s] '%s'", core.Reflect(val), valStr)
 }

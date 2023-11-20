@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -17,12 +16,6 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	if err != nil {
 		return values.EmptyString, err
-	}
-
-	err = core.ValidateType(args[0], types.Array, types.String)
-
-	if err != nil {
-		return values.None, err
 	}
 
 	switch col := args[0].(type) {
@@ -47,6 +40,6 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 		return result, nil
 
 	default:
-		return values.None, nil
+		return values.None, core.TypeError(args[0], types.Array, types.String)
 	}
 }

@@ -100,7 +100,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 	case FrameIDType:
 		return values.NewString(string(doc.frameTree.Frame.ID)).Compare(values.NewString(other.String()))
 	default:
-		return drivers.Compare(doc.Type(), other.Type())
+		return drivers.CompareTypes(doc.Type(), other.Type())
 	}
 }
 

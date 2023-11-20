@@ -77,14 +77,14 @@ func (q QuerySelector) String() string {
 }
 
 func (q QuerySelector) Compare(other core.Value) int64 {
-	if other.Type() != QuerySelectorType {
-		return Compare(QuerySelectorType, other.Type())
+	otherSelector, ok := other.(*QuerySelector)
+
+	if !ok {
+		return CompareTypes(QuerySelectorType, core.Reflect(other))
 	}
 
-	otherQS := other.(*QuerySelector)
-
-	if q.kind == otherQS.Kind() {
-		return q.value.Compare(values.NewString(otherQS.String()))
+	if q.kind == otherSelector.Kind() {
+		return q.value.Compare(values.NewString(otherSelector.String()))
 	}
 
 	if q.kind == CSSSelector {

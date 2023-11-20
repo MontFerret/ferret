@@ -7,7 +7,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func TestBoolean(t *testing.T) {
@@ -19,12 +18,6 @@ func TestBoolean(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(string(marshaled), ShouldEqual, "true")
-		})
-	})
-
-	Convey(".Type", t, func() {
-		Convey("Should return a type", func() {
-			So(values.True.Type().Equals(types.Boolean), ShouldBeTrue)
 		})
 	})
 

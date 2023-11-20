@@ -2,10 +2,8 @@ package arrays
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // UNSHIFT prepends value to a given array.
@@ -14,30 +12,20 @@ import (
 // @param {Boolean} [unique=False] - Optional value indicating whether a value must be unique to be prepended. Default is false.
 // @return {Any[]} - New array with prepended value.
 func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 2, 3); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	arr := args[0].(*values.Array)
+	arr, err := values.CastArray(args[0])
 	value := args[1]
 	uniq := values.False
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], types.Boolean)
+		uniq, err = values.CastBoolean(args[2])
 
 		if err != nil {
 			return values.None, err
 		}
-
-		uniq = args[2].(values.Boolean)
 	}
 
 	result := values.NewArray(int(arr.Length() + 1))
@@ -58,7 +46,7 @@ func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 		result.Push(value)
 
 		arr.ForEach(func(el core.Value, idx int) bool {
-			if el.Compare(value) != 0 {
+			if values.Compare(el, value) != 0 {
 				result.Push(el)
 
 				return true

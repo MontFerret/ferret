@@ -3,13 +3,13 @@ package values
 import (
 	"context"
 	"encoding/binary"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"sort"
 
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type (
@@ -18,28 +18,32 @@ type (
 	ArraySorter = func(first, second core.Value) bool
 
 	Array struct {
-		items []core.Value
+		data []core.Value
 	}
 )
 
 func EmptyArray() *Array {
-	return &Array{items: make([]core.Value, 0, 0)}
+	return &Array{data: make([]core.Value, 0, 0)}
 }
 
 func NewArray(size int) *Array {
-	return &Array{items: make([]core.Value, 0, size)}
+	return &Array{data: make([]core.Value, 0, size)}
 }
 
 func NewSizedArray(size int) *Array {
-	return &Array{items: make([]core.Value, size)}
+	return &Array{data: make([]core.Value, size)}
 }
 
 func NewArrayWith(values ...core.Value) *Array {
-	return &Array{items: values}
+	return &Array{data: values}
+}
+
+func (t *Array) Iterate(ctx context.Context) (core.Iterator, error) {
+	return NewArrayIterator(t), nil
 }
 
 func (t *Array) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(t.items, jettison.NoHTMLEscaping())
+	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }
 
 func (t *Array) Type() core.Type {
@@ -57,41 +61,41 @@ func (t *Array) String() string {
 }
 
 func (t *Array) Compare(other core.Value) int64 {
-	if other.Type() == types.Array {
-		other := other.(*Array)
+	otherArr, ok := other.(*Array)
 
-		if t.Length() == 0 && other.Length() == 0 {
-			return 0
-		}
-
-		if t.Length() < other.Length() {
-			return -1
-		}
-
-		if t.Length() > other.Length() {
-			return 1
-		}
-
-		var res int64
-		var val core.Value
-
-		other.ForEach(func(otherVal core.Value, idx int) bool {
-			val = t.Get(NewInt(idx))
-			res = val.Compare(otherVal)
-
-			return res == 0
-		})
-
-		return res
+	if !ok {
+		return types.Compare(types.Array, core.Reflect(other))
 	}
 
-	return types.Compare(types.Array, other.Type())
+	if t.Length() == 0 && otherArr.Length() == 0 {
+		return 0
+	}
+
+	if t.Length() < otherArr.Length() {
+		return -1
+	}
+
+	if t.Length() > otherArr.Length() {
+		return 1
+	}
+
+	var res int64
+	var val core.Value
+
+	otherArr.ForEach(func(otherVal core.Value, idx int) bool {
+		val = t.Get(NewInt(idx))
+		res = Compare(val, otherVal)
+
+		return res == 0
+	})
+
+	return res
 }
 
 func (t *Array) Unwrap() interface{} {
 	arr := make([]interface{}, t.Length())
 
-	for idx, val := range t.items {
+	for idx, val := range t.data {
 		arr[idx] = val.Unwrap()
 	}
 
@@ -101,13 +105,13 @@ func (t *Array) Unwrap() interface{} {
 func (t *Array) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.Array.String()))
 	h.Write([]byte(":"))
 	h.Write([]byte("["))
 
-	endIndex := len(t.items) - 1
+	endIndex := len(t.data) - 1
 
-	for i, el := range t.items {
+	for i, el := range t.data {
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
 
@@ -124,9 +128,9 @@ func (t *Array) Hash() uint64 {
 }
 
 func (t *Array) Copy() core.Value {
-	c := NewArray(len(t.items))
+	c := NewArray(len(t.data))
 
-	for _, el := range t.items {
+	for _, el := range t.data {
 		c.Push(el)
 	}
 
@@ -134,11 +138,11 @@ func (t *Array) Copy() core.Value {
 }
 
 func (t *Array) Length() Int {
-	return Int(len(t.items))
+	return Int(len(t.data))
 }
 
 func (t *Array) ForEach(predicate ArrayPredicate) {
-	for idx, val := range t.items {
+	for idx, val := range t.data {
 		if !predicate(val, idx) {
 			break
 		}
@@ -146,29 +150,29 @@ func (t *Array) ForEach(predicate ArrayPredicate) {
 }
 
 func (t *Array) First() core.Value {
-	if len(t.items) > 0 {
-		return t.items[0]
+	if len(t.data) > 0 {
+		return t.data[0]
 	}
 
 	return None
 }
 
 func (t *Array) Last() core.Value {
-	size := len(t.items)
+	size := len(t.data)
 
 	if size > 1 {
-		return t.items[size-1]
+		return t.data[size-1]
 	} else if size == 1 {
-		return t.items[0]
+		return t.data[0]
 	}
 
 	return None
 }
 
 func (t *Array) Find(predicate ArrayPredicate) (*Array, Boolean) {
-	result := NewArray(len(t.items))
+	result := NewArray(len(t.data))
 
-	for idx, val := range t.items {
+	for idx, val := range t.data {
 		if predicate(val, idx) {
 			result.Push(val)
 		}
@@ -178,7 +182,7 @@ func (t *Array) Find(predicate ArrayPredicate) (*Array, Boolean) {
 }
 
 func (t *Array) FindOne(predicate ArrayPredicate) (core.Value, Boolean) {
-	for idx, val := range t.items {
+	for idx, val := range t.data {
 		if predicate(val, idx) {
 			return val, True
 		}
@@ -188,7 +192,7 @@ func (t *Array) FindOne(predicate ArrayPredicate) (core.Value, Boolean) {
 }
 
 func (t *Array) Get(idx Int) core.Value {
-	l := len(t.items) - 1
+	l := len(t.data) - 1
 
 	if l < 0 {
 		return None
@@ -198,14 +202,14 @@ func (t *Array) Get(idx Int) core.Value {
 		return None
 	}
 
-	return t.items[idx]
+	return t.data[idx]
 }
 
 func (t *Array) Set(idx Int, value core.Value) error {
-	last := len(t.items) - 1
+	last := len(t.data) - 1
 
 	if last >= int(idx) {
-		t.items[idx] = value
+		t.data[idx] = value
 
 		return nil
 	}
@@ -214,11 +218,11 @@ func (t *Array) Set(idx Int, value core.Value) error {
 }
 
 func (t *Array) MustSet(idx Int, value core.Value) {
-	t.items[idx] = value
+	t.data[idx] = value
 }
 
 func (t *Array) Push(item core.Value) {
-	t.items = append(t.items, item)
+	t.data = append(t.data, item)
 }
 
 func (t *Array) Slice(from, to Int) *Array {
@@ -233,7 +237,7 @@ func (t *Array) Slice(from, to Int) *Array {
 	}
 
 	result := new(Array)
-	result.items = t.items[from:to]
+	result.data = t.data[from:to]
 
 	return result
 }
@@ -245,8 +249,8 @@ func (t *Array) Contains(item core.Value) Boolean {
 func (t *Array) IndexOf(item core.Value) Int {
 	res := Int(-1)
 
-	for idx, el := range t.items {
-		if el.Compare(item) == 0 {
+	for idx, el := range t.data {
+		if Compare(item, el) == 0 {
 			res = Int(idx)
 			break
 		}
@@ -256,18 +260,18 @@ func (t *Array) IndexOf(item core.Value) Int {
 }
 
 func (t *Array) Insert(idx Int, value core.Value) {
-	t.items = append(t.items[:idx], append([]core.Value{value}, t.items[idx:]...)...)
+	t.data = append(t.data[:idx], append([]core.Value{value}, t.data[idx:]...)...)
 }
 
 func (t *Array) RemoveAt(idx Int) {
 	i := int(idx)
-	max := len(t.items) - 1
+	max := len(t.data) - 1
 
 	if i > max {
 		return
 	}
 
-	t.items = append(t.items[:i], t.items[i+1:]...)
+	t.data = append(t.data[:i], t.data[i+1:]...)
 }
 
 func (t *Array) Clone() core.Cloneable {
@@ -291,52 +295,20 @@ func (t *Array) Clone() core.Cloneable {
 
 func (t *Array) Sort() *Array {
 	return t.SortWith(func(first, second core.Value) bool {
-		return first.Compare(second) == -1
+		return Compare(first, second) == -1
 	})
 }
 
 func (t *Array) SortWith(sorter ArraySorter) *Array {
-	c := make([]core.Value, len(t.items))
-	copy(c, t.items)
+	c := make([]core.Value, len(t.data))
+	copy(c, t.data)
 
 	sort.SliceStable(c, func(i, j int) bool {
 		return sorter(c[i], c[j])
 	})
 
 	res := new(Array)
-	res.items = c
+	res.data = c
 
 	return res
-}
-
-func (t *Array) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
-		return None, nil
-	}
-
-	segmentIdx := 0
-
-	if typ := path[segmentIdx].Type(); typ != types.Int {
-		return None, core.NewPathError(core.TypeError(typ, types.Int), segmentIdx)
-	}
-
-	first := t.Get(path[segmentIdx].(Int))
-
-	if len(path) == 1 {
-		return first, nil
-	}
-
-	segmentIdx++
-
-	if first == None || first == nil {
-		return None, core.NewPathError(core.ErrInvalidPath, segmentIdx)
-	}
-
-	getter, ok := first.(core.Getter)
-
-	if !ok {
-		return GetIn(ctx, first, path[segmentIdx:])
-	}
-
-	return getter.GetIn(ctx, path[segmentIdx:])
 }

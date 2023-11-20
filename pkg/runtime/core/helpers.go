@@ -47,9 +47,8 @@ func NumberLowerBoundary(input float64) float64 {
 }
 
 func RandomDefault() float64 {
-	rand.Seed(time.Now().UnixNano())
-
-	return rand.Float64()
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return rnd.Float64()
 }
 
 func Random(max float64, min float64) float64 {
@@ -68,13 +67,19 @@ func Random2(mid float64) float64 {
 
 func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key Value) bool) error {
 	for {
+		hasNext, err := iter.HasNext(ctx)
+
+		if err != nil {
+			return err
+		}
+
+		if !hasNext {
+			return nil
+		}
+
 		value, key, err := iter.Next(ctx)
 
 		if err != nil {
-			if IsNoMoreData(err) {
-				return nil
-			}
-
 			return err
 		}
 

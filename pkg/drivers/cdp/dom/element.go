@@ -94,14 +94,13 @@ func (el *HTMLElement) String() string {
 }
 
 func (el *HTMLElement) Compare(other core.Value) int64 {
-	switch other.Type() {
-	case drivers.HTMLElementType:
-		other := other.(drivers.HTMLElement)
+	other, ok := other.(drivers.HTMLElement)
 
-		return int64(strings.Compare(el.String(), other.String()))
-	default:
-		return drivers.Compare(el.Type(), other.Type())
+	if !ok {
+		return drivers.CompareTypes(el.Type(), core.Reflect(other))
 	}
+
+	return int64(strings.Compare(el.String(), other.String()))
 }
 
 func (el *HTMLElement) Unwrap() interface{} {
@@ -126,8 +125,8 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
-	return common.GetInElement(ctx, path, el)
+func (el *HTMLElement) GetByKey(ctx context.Context, key string) (core.Value, error) {
+	return common.GetInElement(ctx, key, el)
 }
 
 func (el *HTMLElement) SetIn(ctx context.Context, path []core.Value, value core.Value) core.PathError {

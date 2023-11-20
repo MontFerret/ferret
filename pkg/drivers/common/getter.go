@@ -11,120 +11,96 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func GetInPage(ctx context.Context, path []core.Value, page drivers.HTMLPage) (core.Value, core.PathError) {
-	if len(path) == 0 {
+func GetInPage(ctx context.Context, key string, page drivers.HTMLPage) (core.Value, error) {
+	if len(key) == 0 {
 		return page, nil
 	}
 
-	segmentIdx := 0
-	segment := path[segmentIdx]
+	switch key {
+	case "response":
+		resp, err := page.GetResponse(ctx)
 
-	if segment.Type() == types.String {
-		segment := segment.(values.String)
+		if err != nil {
+			return values.None, err
+		}
 
-		switch segment {
-		case "response":
-			resp, err := page.GetResponse(ctx)
+		return resp, nil
+	case "mainFrame", "document":
+		return page.GetMainFrame(), nil
+	case "frames":
+		if len(path) == 1 {
+			out, err := page.GetFrames(ctx)
 
 			if err != nil {
 				return nil, core.NewPathError(
 					errors.Wrap(err, "get response"),
-					0,
-				)
-			}
-
-			out, pathErr := resp.GetIn(ctx, path[segmentIdx+1:])
-
-			if pathErr != nil {
-				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
-			}
-
-			return out, nil
-		case "mainFrame", "document":
-			out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], page.GetMainFrame())
-
-			if pathErr != nil {
-				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
-			}
-
-			return out, nil
-		case "frames":
-			if len(path) == 1 {
-				out, err := page.GetFrames(ctx)
-
-				if err != nil {
-					return nil, core.NewPathError(
-						errors.Wrap(err, "get response"),
-						segmentIdx,
-					)
-				}
-
-				return out, nil
-			}
-
-			segmentIdx = +1
-			idx := path[segmentIdx]
-
-			if !values.IsNumber(idx) {
-				return values.None, core.NewPathError(
-					core.TypeError(idx.Type(), types.Int, types.Float),
 					segmentIdx,
 				)
 			}
 
-			value, err := page.GetFrame(ctx, values.ToInt(idx))
-
-			if err != nil {
-				return values.None, core.NewPathError(err, segmentIdx)
-			}
-
-			if len(path) == 2 {
-				return value, nil
-			}
-
-			frame, err := drivers.ToDocument(value)
-
-			if err != nil {
-				return values.None, core.NewPathError(err, segmentIdx)
-			}
-
-			out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], frame)
-
-			if err != nil {
-				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
-			}
-
 			return out, nil
-		case "url", "URL":
-			return page.GetURL(), nil
-		case "cookies":
-			cookies, err := page.GetCookies(ctx)
-
-			if err != nil {
-				return values.None, core.NewPathError(err, segmentIdx)
-			}
-
-			if len(path) == 1 {
-				return cookies, nil
-			}
-
-			out, pathErr := cookies.GetIn(ctx, path[segmentIdx+1:])
-
-			if err != nil {
-				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
-			}
-
-			return out, nil
-		case "title":
-			return page.GetMainFrame().GetTitle(), nil
-		case "isClosed":
-			return page.IsClosed(), nil
-		default:
-			return GetInDocument(ctx, path, page.GetMainFrame())
 		}
-	}
 
-	return GetInDocument(ctx, path, page.GetMainFrame())
+		segmentIdx = +1
+		idx := path[segmentIdx]
+
+		if !values.IsNumber(idx) {
+			return values.None, core.NewPathError(
+				core.TypeError(idx.Type(), types.Int, types.Float),
+				segmentIdx,
+			)
+		}
+
+		value, err := page.GetFrame(ctx, values.ToInt(idx))
+
+		if err != nil {
+			return values.None, core.NewPathError(err, segmentIdx)
+		}
+
+		if len(path) == 2 {
+			return value, nil
+		}
+
+		frame, err := drivers.ToDocument(value)
+
+		if err != nil {
+			return values.None, core.NewPathError(err, segmentIdx)
+		}
+
+		out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], frame)
+
+		if err != nil {
+			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+		}
+
+		return out, nil
+	case "url", "URL":
+		return page.GetURL(), nil
+	case "cookies":
+		cookies, err := page.GetCookies(ctx)
+
+		if err != nil {
+			return values.None, core.NewPathError(err, segmentIdx)
+		}
+
+		if len(path) == 1 {
+			return cookies, nil
+		}
+
+		out, pathErr := cookies.GetIn(ctx, path[segmentIdx+1:])
+
+		if err != nil {
+			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+		}
+
+		return out, nil
+	case "title":
+		return page.GetMainFrame().GetTitle(), nil
+	case "isClosed":
+		return page.IsClosed(), nil
+	default:
+		return GetInDocument(ctx, path, page.GetMainFrame())
+	}
 }
 
 func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocument) (core.Value, core.PathError) {

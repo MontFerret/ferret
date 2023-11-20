@@ -13,15 +13,11 @@ import (
 // @param {Int | Float} number - Input number.
 // @return {Float} - The cosine of a given number.
 func Cos(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 1, 1); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Int, types.Float)
-
-	if err != nil {
+	if err := core.ValidateType(args[0], types.Int, types.Float); err != nil {
 		return values.None, err
 	}
 

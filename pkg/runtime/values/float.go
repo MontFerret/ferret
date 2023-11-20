@@ -3,6 +3,7 @@ package values
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"math"
 	"strconv"
@@ -10,12 +11,13 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Float float64
 
-var NaN = Float(math.NaN())
+var (
+	NaN = Float(math.NaN())
+)
 
 const ZeroFloat = Float(0.0)
 
@@ -87,39 +89,32 @@ func (t Float) String() string {
 }
 
 func (t Float) Compare(other core.Value) int64 {
-	otherType := other.Type()
-	raw := float64(t)
-
-	if otherType == types.Float {
-		f := other.Unwrap().(float64)
-
-		if raw == f {
+	switch otherVal := other.(type) {
+	case Float:
+		if t == otherVal {
 			return 0
 		}
 
-		if raw < f {
+		if t < otherVal {
 			return -1
 		}
 
 		return +1
-	}
+	case Int:
+		f := Float(otherVal)
 
-	if otherType == types.Int {
-		i := other.Unwrap().(int)
-		f := float64(i)
-
-		if raw == f {
+		if t == f {
 			return 0
 		}
 
-		if raw < f {
+		if t < f {
 			return -1
 		}
 
 		return +1
+	default:
+		return types.Compare(types.Float, core.Reflect(other))
 	}
-
-	return types.Compare(types.Float, otherType)
 }
 
 func (t Float) Unwrap() interface{} {
@@ -129,7 +124,7 @@ func (t Float) Unwrap() interface{} {
 func (t Float) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.Float.String()))
 	h.Write([]byte(":"))
 
 	bytes := make([]byte, 8)

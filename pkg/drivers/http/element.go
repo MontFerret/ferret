@@ -56,7 +56,7 @@ func (el *HTMLElement) Compare(other core.Value) int64 {
 
 		return int64(strings.Compare(el.String(), other.String()))
 	default:
-		return drivers.Compare(el.Type(), other.Type())
+		return drivers.CompareTypes(el.Type(), other.Type())
 	}
 }
 

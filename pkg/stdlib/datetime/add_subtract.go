@@ -2,10 +2,8 @@ package datetime
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 var (
@@ -75,17 +73,19 @@ func DateSubtract(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 func getArgs(args []core.Value) (values.DateTime, values.Int, values.String, error) {
-	err := core.ValidateArgs(args, 3, 3)
-	if err != nil {
+	if err := core.ValidateArgs(args, 3, 3); err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
 	}
 
-	err = core.ValidateValueTypePairs(
-		core.NewPairValueType(args[0], types.DateTime),
-		core.NewPairValueType(args[1], types.Int),
-		core.NewPairValueType(args[2], types.String),
-	)
-	if err != nil {
+	if err := values.AssertDateTime(args[0]); err != nil {
+		return emptyDateTime, emptyInt, emptyString, err
+	}
+
+	if err := values.AssertInt(args[1]); err != nil {
+		return emptyDateTime, emptyInt, emptyString, err
+	}
+
+	if err := values.AssertString(args[2]); err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
 	}
 

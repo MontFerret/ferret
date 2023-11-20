@@ -2,10 +2,8 @@ package arrays
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // POP returns a new array without last element.
@@ -18,7 +16,7 @@ func Pop(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	err = values.AssertArray(args[0])
 
 	if err != nil {
 		return values.None, err

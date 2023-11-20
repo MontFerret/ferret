@@ -13,18 +13,19 @@ import (
 // @param {String, repeated | String[]} elements - The path elements
 // @return {String} - Single path from the given elements.
 func Join(_ context.Context, args ...core.Value) (core.Value, error) {
-
 	argsCount := len(args)
+
 	if argsCount == 0 {
 		return values.EmptyString, nil
 	}
 
-	arr := &values.Array{}
+	var arr *values.Array
 
-	if argsCount != 1 && args[0].Type() != types.Array {
+	switch arg := args[0].(type) {
+	case *values.Array:
+		arr = arg
+	default:
 		arr = values.NewArrayWith(args...)
-	} else {
-		arr = args[0].(*values.Array)
 	}
 
 	elems := make([]string, arr.Length())

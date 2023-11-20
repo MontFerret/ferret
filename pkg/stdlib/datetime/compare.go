@@ -2,12 +2,10 @@ package datetime
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DATE_COMPARE checks if two partial dates match.
@@ -17,17 +15,19 @@ import (
 // @param {String} [unitRangeEnd="millisecond"] - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
 // @return {Boolean} - True if the dates match, else false.
 func DateCompare(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 3, 4)
-	if err != nil {
+	if err := core.ValidateArgs(args, 3, 4); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateValueTypePairs(
-		core.NewPairValueType(args[0], types.DateTime),
-		core.NewPairValueType(args[1], types.DateTime),
-		core.NewPairValueType(args[2], types.String),
-	)
-	if err != nil {
+	if err := values.AssertDateTime(args[0]); err != nil {
+		return values.None, err
+	}
+
+	if err := values.AssertDateTime(args[1]); err != nil {
+		return values.None, err
+	}
+
+	if err := values.AssertString(args[2]); err != nil {
 		return values.None, err
 	}
 
@@ -37,9 +37,7 @@ func DateCompare(_ context.Context, args ...core.Value) (core.Value, error) {
 	rangeEnd := values.NewString("millisecond")
 
 	if len(args) == 4 {
-		err = core.ValidateType(args[3], types.String)
-
-		if err != nil {
+		if err := values.AssertString(args[3]); err != nil {
 			return values.None, err
 		}
 

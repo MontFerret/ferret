@@ -2,9 +2,9 @@ package testing
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -18,6 +18,10 @@ var Int = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
-		return args[0].Type() == types.Int, nil
+		if err := values.AssertInt(args[0]); err != nil {
+			return false, err
+		}
+
+		return true, nil
 	},
 }

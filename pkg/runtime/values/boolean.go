@@ -1,13 +1,13 @@
 package values
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"strings"
 
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Boolean bool
@@ -68,23 +68,21 @@ func (t Boolean) String() string {
 }
 
 func (t Boolean) Compare(other core.Value) int64 {
-	raw := bool(t)
+	otherBool, ok := other.(Boolean)
 
-	if types.Boolean.Equals(other.Type()) {
-		i := other.Unwrap().(bool)
-
-		if raw == i {
-			return 0
-		}
-
-		if !raw && i {
-			return -1
-		}
-
-		return +1
+	if !ok {
+		return types.Compare(types.Boolean, core.Reflect(other))
 	}
 
-	return types.Compare(types.Boolean, other.Type())
+	if t == otherBool {
+		return 0
+	}
+
+	if !t && otherBool {
+		return -1
+	}
+
+	return +1
 }
 
 func (t Boolean) Unwrap() interface{} {
@@ -94,7 +92,7 @@ func (t Boolean) Unwrap() interface{} {
 func (t Boolean) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.Boolean.String()))
 	h.Write([]byte(":"))
 	h.Write([]byte(t.String()))
 

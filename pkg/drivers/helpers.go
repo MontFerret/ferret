@@ -7,13 +7,13 @@ import (
 )
 
 func ToPage(value core.Value) (HTMLPage, error) {
-	err := core.ValidateType(value, HTMLPageType)
+	page, ok := value.(HTMLPage)
 
-	if err != nil {
-		return nil, err
+	if !ok {
+		return nil, core.TypeError(value, HTMLPageType)
 	}
 
-	return value.(HTMLPage), nil
+	return page, nil
 }
 
 func ToDocument(value core.Value) (HTMLDocument, error) {
@@ -24,7 +24,7 @@ func ToDocument(value core.Value) (HTMLDocument, error) {
 		return v, nil
 	default:
 		return nil, core.TypeError(
-			value.Type(),
+			value,
 			HTMLPageType,
 			HTMLDocumentType,
 		)
@@ -41,7 +41,7 @@ func ToElement(value core.Value) (HTMLElement, error) {
 		return v, nil
 	default:
 		return nil, core.TypeError(
-			value.Type(),
+			value,
 			HTMLPageType,
 			HTMLDocumentType,
 			HTMLElementType,
@@ -56,7 +56,7 @@ func ToQuerySelector(value core.Value) (QuerySelector, error) {
 	case values.String:
 		return NewCSSSelector(v), nil
 	default:
-		return QuerySelector{}, core.TypeError(value.Type(), types.String, QuerySelectorType)
+		return QuerySelector{}, core.TypeError(value, types.String, QuerySelectorType)
 	}
 }
 

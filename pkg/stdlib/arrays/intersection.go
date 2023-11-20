@@ -2,10 +2,8 @@ package arrays
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // INTERSECTION return the intersection of all arrays specified.
@@ -28,7 +26,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 	capacity := len(args)
 
 	for _, i := range args {
-		err := core.ValidateType(i, types.Array)
+		err := values.AssertArray(i)
 
 		if err != nil {
 			return values.None, err

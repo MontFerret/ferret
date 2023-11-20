@@ -88,7 +88,7 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 
 		return doc.url.Compare(otherDoc.GetURL())
 	default:
-		return drivers.Compare(doc.Type(), other.Type())
+		return drivers.CompareTypes(doc.Type(), other.Type())
 	}
 }
 

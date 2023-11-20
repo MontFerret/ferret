@@ -7,7 +7,9 @@ import (
 
 type none struct{}
 
-var None = &none{}
+var (
+	None = &none{}
+)
 
 func (t *none) MarshalJSON() ([]byte, error) {
 	return []byte("null"), nil
@@ -22,7 +24,7 @@ func (t *none) String() string {
 }
 
 func (t *none) Compare(other core.Value) int64 {
-	if other.Type() == types.None {
+	if t == other {
 		return 0
 	}
 

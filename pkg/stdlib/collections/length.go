@@ -2,8 +2,6 @@ package collections
 
 import (
 	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -21,17 +19,17 @@ func Length(_ context.Context, inputs ...core.Value) (core.Value, error) {
 
 	value := inputs[0]
 
-	c, ok := value.(collections.Measurable)
+	c, ok := value.(core.Measurable)
 
 	if !ok {
-		return values.None, core.TypeError(value.Type(),
+		return values.None, core.TypeError(value,
 			types.String,
 			types.Array,
 			types.Object,
 			types.Binary,
-			core.NewType("Measurable"),
+			types.Measurable,
 		)
 	}
 
-	return c.Length(), nil
+	return values.Int(c.Length()), nil
 }

@@ -11,11 +11,9 @@ import (
 // @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - Returns string representation of a type.
 func TypeName(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 1, 1); err != nil {
 		return values.None, err
 	}
 
-	return values.NewString(args[0].Type().String()), nil
+	return values.NewString(core.Reflect(args[0]).Name()), nil
 }

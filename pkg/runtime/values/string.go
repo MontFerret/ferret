@@ -2,13 +2,13 @@ package values
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"strings"
 
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type String string
@@ -68,12 +68,12 @@ func MustParseString(input interface{}) String {
 	return res
 }
 
-func (t String) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(string(t), jettison.NoHTMLEscaping())
-}
-
 func (t String) Type() core.Type {
 	return types.String
+}
+
+func (t String) MarshalJSON() ([]byte, error) {
+	return jettison.MarshalOpts(string(t), jettison.NoHTMLEscaping())
 }
 
 func (t String) String() string {
@@ -81,11 +81,13 @@ func (t String) String() string {
 }
 
 func (t String) Compare(other core.Value) int64 {
-	if other.Type() == types.String {
-		return int64(strings.Compare(string(t), other.Unwrap().(string)))
+	otherString, ok := other.(String)
+
+	if !ok {
+		return types.Compare(types.String, core.Reflect(other))
 	}
 
-	return types.Compare(types.String, other.Type())
+	return int64(strings.Compare(string(t), otherString.Unwrap().(string)))
 }
 
 func (t String) Unwrap() interface{} {
@@ -95,7 +97,7 @@ func (t String) Unwrap() interface{} {
 func (t String) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.String.String()))
 	h.Write([]byte(":"))
 	h.Write([]byte(t))
 

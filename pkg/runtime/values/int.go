@@ -2,13 +2,13 @@ package values
 
 import (
 	"encoding/binary"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"strconv"
 
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Int int64
@@ -17,6 +17,10 @@ const ZeroInt = Int(0)
 
 func NewInt(input int) Int {
 	return Int(int64(input))
+}
+
+func NewInt64(input int64) Int {
+	return Int(input)
 }
 
 func ParseInt(input interface{}) (Int, error) {
@@ -75,38 +79,34 @@ func (t Int) String() string {
 }
 
 func (t Int) Compare(other core.Value) int64 {
-	otherType := other.Type()
-
-	if otherType == types.Int {
-		i := other.(Int)
-
-		if t == i {
+	switch otherVal := other.(type) {
+	case Int:
+		if t == otherVal {
 			return 0
 		}
 
-		if t < i {
+		if t < otherVal {
 			return -1
 		}
 
 		return +1
-	}
 
-	if otherType == types.Float {
-		f := other.(Float)
-		f2 := Float(t)
+	case Float:
+		f := Float(t)
 
-		if f2 == f {
+		if f == otherVal {
 			return 0
 		}
 
-		if f2 < f {
+		if f < otherVal {
 			return -1
 		}
 
 		return +1
-	}
 
-	return types.Compare(types.Int, otherType)
+	default:
+		return types.Compare(types.Int, core.Reflect(other))
+	}
 }
 
 func (t Int) Unwrap() interface{} {
@@ -116,7 +116,7 @@ func (t Int) Unwrap() interface{} {
 func (t Int) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(t.Type().String()))
+	h.Write([]byte(types.Int.String()))
 	h.Write([]byte(":"))
 
 	bytes := make([]byte, 8)

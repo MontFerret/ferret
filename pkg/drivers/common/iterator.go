@@ -23,19 +23,19 @@ func NewIterator(
 	return &Iterator{node, 0}, nil
 }
 
+func (iterator *Iterator) HasNext(_ context.Context) (bool, error) {
+	return iterator.node.Length() > int(iterator.pos), nil
+}
+
 func (iterator *Iterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
-	if iterator.node.Length() > iterator.pos {
-		idx := iterator.pos
-		val, err := iterator.node.GetChildNode(ctx, idx)
+	idx := iterator.pos
+	val, err := iterator.node.GetChildNode(ctx, idx)
 
-		if err != nil {
-			return values.None, values.None, err
-		}
-
-		iterator.pos++
-
-		return val, idx, nil
+	if err != nil {
+		return values.None, values.None, err
 	}
 
-	return values.None, values.None, core.ErrNoMoreData
+	iterator.pos++
+
+	return val, idx, nil
 }

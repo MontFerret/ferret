@@ -3,9 +3,8 @@ package compiler
 import (
 	"errors"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-
 	"github.com/MontFerret/ferret/pkg/parser"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib"
 )
 
@@ -56,7 +55,7 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	p := parser.New(query)
 	p.AddErrorListener(newErrorListener())
 
-	l := newVisitor(query, c.funcs)
+	l := newVisitor(query)
 
 	p.Visit(l)
 

@@ -60,9 +60,12 @@ func RunUseCases(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ..
 
 			So(err, ShouldBeNil)
 
-			opts = append(opts, runtime.WithFunctions(c.Functions().Unwrap()))
+			options := []runtime.EnvironmentOption{
+				runtime.WithFunctions(c.Functions().Unwrap()),
+			}
+			options = append(options, opts...)
 
-			out, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), opts...)
+			out, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), options...)
 
 			if !ArePtrsEqual(useCase.Assertion, ShouldBeError) {
 				So(err, ShouldBeNil)

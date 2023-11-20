@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 var daysCount = map[time.Month]int{
@@ -28,13 +27,11 @@ var daysCount = map[time.Month]int{
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - Number of the days.
 func DateDaysInMonth(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-	if err != nil {
+	if err := core.ValidateArgs(args, 1, 1); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.DateTime)
-	if err != nil {
+	if err := values.AssertDateTime(args[0]); err != nil {
 		return values.None, err
 	}
 

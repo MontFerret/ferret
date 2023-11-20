@@ -208,7 +208,7 @@ func (p *HTMLPage) String() string {
 }
 
 func (p *HTMLPage) Compare(other core.Value) int64 {
-	tc := drivers.Compare(p.Type(), other.Type())
+	tc := drivers.CompareTypes(p.Type(), other.Type())
 
 	if tc != 0 {
 		return tc
@@ -245,7 +245,7 @@ func (p *HTMLPage) Copy() core.Value {
 	return values.None
 }
 
-func (p *HTMLPage) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
+func (p *HTMLPage) GetByKey(ctx context.Context, key string) (core.Value, error) {
 	return common.GetInPage(ctx, path, p)
 }
 

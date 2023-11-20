@@ -2,10 +2,8 @@ package arrays
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // APPEND appends a new item to an array and returns a new array with a given element.
@@ -20,7 +18,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	err = values.AssertArray(args[0])
 
 	if err != nil {
 		return values.None, err
@@ -31,7 +29,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	unique := values.False
 
 	if len(args) > 2 {
-		err = core.ValidateType(args[2], types.Boolean)
+		err = values.AssertBoolean(args[2])
 
 		if err != nil {
 			return values.None, err
@@ -60,7 +58,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 		next.Push(item)
 
 		if !hasDuplicate {
-			hasDuplicate = item.Compare(arg) == 0
+			hasDuplicate = values.Compare(item, arg) == 0
 		}
 
 		return true

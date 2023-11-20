@@ -1,25 +1,19 @@
 package operators
 
 import (
-	"github.com/gobwas/glob"
-	"github.com/pkg/errors"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/gobwas/glob"
+	"github.com/pkg/errors"
 )
 
 func Like(left, right core.Value) (values.Boolean, error) {
-	err := core.ValidateType(right, types.String)
-
-	if err != nil {
+	if err := values.AssertString(left); err != nil {
 		// TODO: Return the error? AQL just returns false
 		return values.False, nil
 	}
 
-	err = core.ValidateType(left, types.String)
-
-	if err != nil {
+	if err := values.AssertString(right); err != nil {
 		// TODO: Return the error? AQL just returns false
 		return values.False, nil
 	}

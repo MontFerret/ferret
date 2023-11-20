@@ -2,10 +2,8 @@ package datetime
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // DATE_DIFF returns the difference between two dates in given time unit.
@@ -15,17 +13,19 @@ import (
 // @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
 // @return {Int | Float} - Difference between date1 and date2.
 func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 3, 4)
-	if err != nil {
+	if err := core.ValidateArgs(args, 3, 4); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateValueTypePairs(
-		core.NewPairValueType(args[0], types.DateTime),
-		core.NewPairValueType(args[1], types.DateTime),
-		core.NewPairValueType(args[2], types.String),
-	)
-	if err != nil {
+	if err := values.AssertDateTime(args[0]); err != nil {
+		return values.None, err
+	}
+
+	if err := values.AssertDateTime(args[1]); err != nil {
+		return values.None, err
+	}
+
+	if err := values.AssertString(args[2]); err != nil {
 		return values.None, err
 	}
 
@@ -35,10 +35,10 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	isFloat := values.NewBoolean(false)
 
 	if len(args) == 4 {
-		err = core.ValidateType(args[3], types.Boolean)
-		if err != nil {
+		if err := values.AssertBoolean(args[3]); err != nil {
 			return values.None, err
 		}
+
 		isFloat = args[3].(values.Boolean)
 	}
 

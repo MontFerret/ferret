@@ -34,13 +34,13 @@ func execMethod(ctx context.Context, method values.String, args []core.Value) (c
 		return values.None, err
 	}
 
-	arg := args[0]
+	params, err := values.CastObject(args[0])
 
-	if err := core.ValidateType(arg, types.Object); err != nil {
+	if err != nil {
 		return values.None, err
 	}
 
-	p, err := newParamsFrom(arg.(*values.Object))
+	p, err := newParamsFrom(params)
 
 	if err != nil {
 		return values.None, err
@@ -118,8 +118,10 @@ func newParamsFrom(obj *values.Object) (Params, error) {
 	body, exists := obj.Get("body")
 
 	if exists {
-		if core.IsTypeOf(body, types.Binary) {
-			p.Body = body.(values.Binary)
+		bin, ok := body.(values.Binary)
+
+		if ok {
+			p.Body = bin
 		} else {
 			j, err := body.MarshalJSON()
 

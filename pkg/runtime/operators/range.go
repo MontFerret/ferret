@@ -3,42 +3,15 @@ package operators
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func Range(left, right core.Value) (core.Value, error) {
-	err := core.ValidateType(left, types.Int, types.Float)
+	start := values.ToInt(left)
+	end := values.ToInt(right)
 
-	if err != nil {
-		return values.None, err
+	if start > end {
+		return values.None, nil
 	}
 
-	err = core.ValidateType(right, types.Int, types.Float)
-
-	if err != nil {
-		return values.None, err
-	}
-
-	var start int
-	var end int
-
-	if left.Type() == types.Float {
-		start = int(left.(values.Float))
-	} else {
-		start = int(left.(values.Int))
-	}
-
-	if right.Type() == types.Float {
-		end = int(right.(values.Float))
-	} else {
-		end = int(right.(values.Int))
-	}
-
-	arr := values.NewArray(10)
-
-	for i := start; i <= end; i++ {
-		arr.Push(values.NewInt(i))
-	}
-
-	return arr, nil
+	return values.NewRange(uint64(start), uint64(end)), nil
 }

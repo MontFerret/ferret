@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 const (
@@ -55,9 +54,12 @@ func RegisterLib(ns core.Namespace) error {
 }
 
 func toFloat(arg core.Value) float64 {
-	if arg.Type() == types.Int {
-		return float64(arg.(values.Int))
+	switch v := arg.(type) {
+	case values.Float:
+		return float64(v)
+	case values.Int:
+		return float64(v)
+	default:
+		return 0
 	}
-
-	return float64(arg.(values.Float))
 }

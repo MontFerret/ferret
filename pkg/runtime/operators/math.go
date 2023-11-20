@@ -3,252 +3,199 @@ package operators
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func Add(inputL, inputR core.Value) core.Value {
 	left := values.ToNumberOrString(inputL)
-	right := values.ToNumberOrString(inputR)
 
-	if left.Type() == types.Int {
-		if right.Type() == types.Int {
-			l := left.(values.Int)
-			r := right.(values.Int)
-
-			return l + r
-		}
-
-		if right.Type() == types.Float {
-			l := left.(values.Int)
-			r := right.(values.Float)
-
-			return values.Float(l) + r
-		}
+	switch leftVal := left.(type) {
+	case values.Int:
+		return addLeftInt(leftVal, inputR)
+	case values.Float:
+		return addLeftFloat(leftVal, inputR)
+	case values.String:
+		return addLeftString(leftVal, inputR)
+	default:
+		return values.String(leftVal.String() + inputR.String())
 	}
+}
 
-	if left.Type() == types.Float {
-		if right.Type() == types.Float {
-			l := left.(values.Float)
-			r := right.(values.Float)
+func addLeftInt(integer values.Int, input core.Value) core.Value {
+	right := values.ToNumberOrString(input)
 
-			return l + r
-		}
-
-		if right.Type() == types.Int {
-			l := left.(values.Float)
-			r := right.(values.Int)
-
-			return l + values.Float(r)
-		}
+	switch rightVal := right.(type) {
+	case values.Int:
+		return integer + rightVal
+	case values.Float:
+		return values.Float(integer) + rightVal
+	default:
+		return values.String(integer.String() + rightVal.String())
 	}
+}
 
-	return values.String(left.String() + right.String())
+func addLeftFloat(float values.Float, input core.Value) core.Value {
+	right := values.ToNumberOrString(input)
+
+	switch rightVal := right.(type) {
+	case values.Int:
+		return float + values.Float(rightVal)
+	case values.Float:
+		return float + rightVal
+	default:
+		return values.String(float.String() + rightVal.String())
+	}
+}
+
+func addLeftString(str values.String, input core.Value) core.Value {
+	return values.String(str.String() + input.String())
 }
 
 func Subtract(inputL, inputR core.Value) core.Value {
 	left := values.ToNumberOnly(inputL)
-	right := values.ToNumberOnly(inputR)
 
-	if left.Type() == types.Int {
-		if right.Type() == types.Int {
-			l := left.(values.Int)
-			r := right.(values.Int)
-
-			return l - r
-		}
-
-		if right.Type() == types.Float {
-			l := left.(values.Int)
-			r := right.(values.Float)
-
-			return values.Float(l) - r
-		}
+	switch leftVal := left.(type) {
+	case values.Int:
+		return subtractLeftInt(leftVal, inputR)
+	case values.Float:
+		return subtractLeftFloat(leftVal, inputR)
+	default:
+		return values.ZeroInt
 	}
+}
 
-	if left.Type() == types.Float {
-		if right.Type() == types.Float {
-			l := left.(values.Float)
-			r := right.(values.Float)
+func subtractLeftInt(integer values.Int, input core.Value) core.Value {
+	right := values.ToNumberOnly(input)
 
-			return l - r
-		}
-
-		if right.Type() == types.Int {
-			l := left.(values.Float)
-			r := right.(values.Int)
-
-			return l - values.Float(r)
-		}
+	switch rightVal := right.(type) {
+	case values.Int:
+		return integer - rightVal
+	case values.Float:
+		return values.Float(integer) - rightVal
+	default:
+		return values.ZeroInt
 	}
+}
 
-	return values.ZeroInt
+func subtractLeftFloat(float values.Float, input core.Value) core.Value {
+	right := values.ToNumberOnly(input)
+
+	switch rightVal := right.(type) {
+	case values.Int:
+		return float - values.Float(rightVal)
+	case values.Float:
+		return float - rightVal
+	default:
+		return values.ZeroInt
+	}
 }
 
 func Multiply(inputL, inputR core.Value) core.Value {
 	left := values.ToNumberOnly(inputL)
-	right := values.ToNumberOnly(inputR)
 
-	if left.Type() == types.Int {
-		if right.Type() == types.Int {
-			l := left.(values.Int)
-			r := right.(values.Int)
-
-			return l * r
-		}
-
-		if right.Type() == types.Float {
-			l := left.(values.Int)
-			r := right.(values.Float)
-
-			return values.Float(l) * r
-		}
+	switch leftVal := left.(type) {
+	case values.Int:
+		return multiplyLeftInt(leftVal, inputR)
+	case values.Float:
+		return multiplyLeftFloat(leftVal, inputR)
+	default:
+		return values.ZeroInt
 	}
+}
 
-	if left.Type() == types.Float {
-		if right.Type() == types.Float {
-			l := left.(values.Float)
-			r := right.(values.Float)
+func multiplyLeftInt(integer values.Int, input core.Value) core.Value {
+	right := values.ToNumberOnly(input)
 
-			return l * r
-		}
-
-		if right.Type() == types.Int {
-			l := left.(values.Float)
-			r := right.(values.Int)
-
-			return l * values.Float(r)
-		}
+	switch rightVal := right.(type) {
+	case values.Int:
+		return integer * rightVal
+	case values.Float:
+		return values.Float(integer) * rightVal
+	default:
+		return values.ZeroInt
 	}
+}
 
-	return values.ZeroInt
+func multiplyLeftFloat(float values.Float, input core.Value) core.Value {
+	right := values.ToNumberOnly(input)
+
+	switch rightVal := right.(type) {
+	case values.Int:
+		return float * values.Float(rightVal)
+	case values.Float:
+		return float * rightVal
+	default:
+		return values.ZeroInt
+	}
 }
 
 func Divide(inputL, inputR core.Value) core.Value {
 	left := values.ToNumberOnly(inputL)
-	right := values.ToNumberOnly(inputR)
 
-	if left.Type() == types.Int {
-		if right.Type() == types.Int {
-			l := values.Float(left.(values.Int))
-			r := values.Float(right.(values.Int))
-
-			if r == 0.0 {
-				panic("divide by zero")
-			}
-
-			return l / r
-		}
-
-		if right.Type() == types.Float {
-			l := values.Float(left.(values.Int))
-			r := right.(values.Float)
-
-			if r == 0.0 {
-				panic("divide by zero")
-			}
-
-			return l / r
-		}
+	switch leftVal := left.(type) {
+	case values.Int:
+		return divideLeftInt(leftVal, inputR)
+	case values.Float:
+		return divideLeftFloat(leftVal, inputR)
+	default:
+		return values.ZeroInt
 	}
+}
 
-	if left.Type() == types.Float {
-		if right.Type() == types.Float {
-			l := left.(values.Float)
-			r := right.(values.Float)
+func divideLeftInt(integer values.Int, input core.Value) core.Value {
+	right := values.ToNumberOnly(input)
 
-			if r == 0.0 {
-				panic("divide by zero")
-			}
-
-			return l / r
-		}
-
-		if right.Type() == types.Int {
-			l := left.(values.Float)
-			r := values.Float(right.(values.Int))
-
-			if r == 0.0 {
-				panic("divide by zero")
-			}
-
-			return l / r
-		}
+	switch rightVal := right.(type) {
+	case values.Int:
+		return integer / rightVal
+	case values.Float:
+		return values.Float(integer) / rightVal
+	default:
+		return values.ZeroInt
 	}
+}
 
-	return values.ZeroInt
+func divideLeftFloat(float values.Float, input core.Value) core.Value {
+	right := values.ToNumberOnly(input)
+
+	switch rightVal := right.(type) {
+	case values.Int:
+		return float / values.Float(rightVal)
+	case values.Float:
+		return float / rightVal
+	default:
+		return values.ZeroInt
+	}
 }
 
 func Modulus(inputL, inputR core.Value) core.Value {
-	left := values.ToNumberOnly(inputL)
-	right := values.ToNumberOnly(inputR)
+	left := values.ToInt(inputL)
+	right := values.ToInt(inputR)
 
-	if left.Type() == types.Int {
-		if right.Type() == types.Int {
-			l := left.(values.Int)
-			r := right.(values.Int)
-
-			return l % r
-		}
-
-		if right.Type() == types.Float {
-			l := left.(values.Int)
-			r := right.(values.Float)
-
-			return l % values.Int(r)
-		}
-	}
-
-	if left.Type() == types.Float {
-		if right.Type() == types.Float {
-			l := left.(values.Float)
-			r := right.(values.Float)
-
-			return values.Int(l) % values.Int(r)
-		}
-
-		if right.Type() == types.Int {
-			l := left.(values.Float)
-			r := right.(values.Int)
-
-			return values.Int(l) % r
-		}
-	}
-
-	return values.ZeroInt
+	return left % right
 }
 
 func Increment(input core.Value) core.Value {
 	left := values.ToNumberOnly(input)
 
-	if left.Type() == types.Int {
-		l := left.(values.Int)
-
-		return l + 1
+	switch value := left.(type) {
+	case values.Int:
+		return value + 1
+	case values.Float:
+		return value + 1
+	default:
+		return values.None
 	}
-
-	if left.Type() == types.Float {
-		l := left.(values.Float)
-
-		return l + 1
-	}
-
-	return values.None
 }
 
 func Decrement(input core.Value) core.Value {
 	left := values.ToNumberOnly(input)
 
-	if left.Type() == types.Int {
-		l := left.(values.Int)
-
-		return l - 1
+	switch value := left.(type) {
+	case values.Int:
+		return value - 1
+	case values.Float:
+		return value - 1
+	default:
+		return values.None
 	}
-
-	if left.Type() == types.Float {
-		l := left.(values.Float)
-
-		return l - 1
-	}
-
-	return values.None
 }

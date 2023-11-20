@@ -33,16 +33,21 @@ func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 }
 
 func merge(src, dst core.Value) core.Value {
-	if src.Type() != dst.Type() {
+	if !types.Equal(core.Reflect(src), core.Reflect(dst)) {
+		return src
+	}
+
+	srcObj, ok := src.(*values.Object)
+
+	if !ok {
 		return dst
 	}
 
-	if src.Type() != types.Object {
-		return dst
-	}
+	dstObj, ok := dst.(*values.Object)
 
-	srcObj := src.(*values.Object)
-	dstObj := dst.(*values.Object)
+	if !ok {
+		return src
+	}
 
 	if dstObj.Length() == 0 {
 		return src

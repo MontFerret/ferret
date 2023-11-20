@@ -3,6 +3,7 @@ package testing
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
@@ -29,6 +30,6 @@ var Len = base.Assertion{
 			return false, err
 		}
 
-		return out.Compare(size) == 0, nil
+		return values.Compare(out, size) == 0, nil
 	},
 }

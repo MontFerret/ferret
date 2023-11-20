@@ -21,18 +21,17 @@ func GET(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	arg := args[0]
 
-	if err := core.ValidateType(arg, types.String, types.Object); err != nil {
-		return values.None, err
-	}
-
-	if arg.Type() == types.String {
+	switch v := arg.(type) {
+	case values.String:
 		return makeRequest(ctx, Params{
 			Method:  "GET",
-			URL:     values.ToString(arg),
+			URL:     v,
 			Headers: nil,
 			Body:    nil,
 		})
+	case *values.Object:
+		return execMethod(ctx, h.MethodGet, args)
+	default:
+		return values.None, core.TypeError(arg, types.String, types.Object)
 	}
-
-	return execMethod(ctx, h.MethodGet, args)
 }

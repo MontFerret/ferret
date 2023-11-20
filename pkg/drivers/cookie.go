@@ -58,11 +58,11 @@ func (c HTTPCookie) String() string {
 }
 
 func (c HTTPCookie) Compare(other core.Value) int64 {
-	if other.Type() != HTTPCookieType {
-		return Compare(HTTPCookieType, other.Type())
-	}
+	oc, ok := other.(HTTPCookie)
 
-	oc := other.(HTTPCookie)
+	if !ok {
+		return CompareTypes(HTTPCookieType, core.Reflect(other))
+	}
 
 	if c.Name != oc.Name {
 		return int64(strings.Compare(c.Name, oc.Name))
@@ -162,14 +162,12 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (c HTTPCookie) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
+func (c HTTPCookie) GetByKey(_ context.Context, key string) (core.Value, error) {
+	if key == "" {
 		return values.None, nil
 	}
 
-	segment := path[0]
-
-	switch values.ToString(segment) {
+	switch key {
 	case "name":
 		return values.NewString(c.Name), nil
 	case "value":

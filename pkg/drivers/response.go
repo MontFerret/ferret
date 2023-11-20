@@ -2,12 +2,10 @@ package drivers
 
 import (
 	"context"
-
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // HTTPResponse HTTP response object.
@@ -42,15 +40,14 @@ func (resp *HTTPResponse) String() string {
 }
 
 func (resp *HTTPResponse) Compare(other core.Value) int64 {
-	if other.Type() != HTTPResponseType {
-		return Compare(HTTPResponseType, other.Type())
+	otherResp, ok := other.(*HTTPResponse)
+
+	if !ok {
+		return CompareTypes(HTTPResponseType, core.Reflect(other))
 	}
 
-	// this is a safe cast. Only *HTTPResponse implements core.Value.
-	// HTTPResponse does not.
-	otherResp := other.(*HTTPResponse)
-
 	comp := resp.Headers.Compare(otherResp.Headers)
+
 	if comp != 0 {
 		return comp
 	}
@@ -82,21 +79,12 @@ func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(responseMarshal(*resp), jettison.NoHTMLEscaping())
 }
 
-func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
+func (resp *HTTPResponse) GetByKey(_ context.Context, key string) (core.Value, error) {
+	if len(key) == 0 {
 		return resp, nil
 	}
 
-	segmentIdx := 0
-	segment := path[segmentIdx]
-
-	if typ := segment.Type(); typ != types.String {
-		return values.None, core.NewPathError(core.TypeError(typ, types.String), segmentIdx)
-	}
-
-	field := segment.String()
-
-	switch field {
+	switch key {
 	case "url", "URL":
 		return values.NewString(resp.URL), nil
 	case "status":
@@ -104,17 +92,7 @@ func (resp *HTTPResponse) GetIn(ctx context.Context, path []core.Value) (core.Va
 	case "statusCode":
 		return values.NewInt(resp.StatusCode), nil
 	case "headers":
-		if len(path) == 1 {
-			return resp.Headers, nil
-		}
-
-		out, pathErr := resp.Headers.GetIn(ctx, path[1:])
-
-		if pathErr != nil {
-			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
-		}
-
-		return out, nil
+		return resp.Headers, nil
 	case "body":
 		return values.NewBinary(resp.Body), nil
 	case "responseTime":

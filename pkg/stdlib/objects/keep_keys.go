@@ -13,27 +13,29 @@ import (
 // @param {String, repeated} keys - Keys that need to be kept.
 // @return {Object} - New Object with only given keys.
 func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, core.MaxArgs)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 2, core.MaxArgs); err != nil {
 		return values.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Object)
-
-	if err != nil {
+	if err := core.ValidateType(args[0], types.Object); err != nil {
 		return values.None, err
 	}
 
-	keys := values.NewArrayWith(args[1:]...)
+	var keys *values.Array
 
-	if len(args) == 2 && args[1].Type().Equals(types.Array) {
-		keys = args[1].(*values.Array)
+	if len(args) == 2 {
+		arr, ok := args[1].(*values.Array)
+
+		if ok {
+			keys = arr
+		}
 	}
 
-	err = validateArrayOf(types.String, keys)
-
-	if err != nil {
+	if keys == nil {
+		keys = values.NewArrayWith(args[1:]...)
+	}
+	
+	if err := validateArrayOf(types.String, keys); err != nil {
 		return values.None, err
 	}
 

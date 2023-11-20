@@ -29,6 +29,6 @@ var Match = base.Assertion{
 			return false, err
 		}
 
-		return out.Compare(values.True) == 0, nil
+		return values.Compare(out, values.True) == 0, nil
 	},
 }

@@ -2,10 +2,8 @@ package arrays
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // MINUS return the difference of all arrays specified.
@@ -24,7 +22,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	for idx, i := range args {
 		idx := idx
-		err := core.ValidateType(i, types.Array)
+		err := values.AssertArray(i)
 
 		if err != nil {
 			return values.None, err

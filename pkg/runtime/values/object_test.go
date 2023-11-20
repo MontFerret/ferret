@@ -1,13 +1,10 @@
 package values_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -59,14 +56,6 @@ func TestObject(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(string(marshaled), ShouldEqual, "{\"array\":[],\"boolean\":false,\"float\":1,\"int\":1,\"none\":null,\"object\":{},\"string\":\"1\"}")
-		})
-	})
-
-	Convey(".Type", t, func() {
-		Convey("Should return type", func() {
-			obj := values.NewObject()
-
-			So(obj.Type().Equals(types.Object), ShouldBeTrue)
 		})
 	})
 
@@ -408,89 +397,6 @@ func TestObject(t *testing.T) {
 			nestedInCloneArr := nestedInClone.(*values.Array)
 
 			So(nestedInObjArr.Compare(nestedInCloneArr), ShouldNotEqual, 0)
-		})
-	})
-
-	Convey(".GetIn", t, func() {
-
-		ctx := context.Background()
-
-		Convey("Should return the same as .Get when input is correct", func() {
-
-			Convey("Should return item by key", func() {
-				key := values.NewString("foo")
-				obj := values.NewObjectWith(
-					values.NewObjectProperty(key.String(), values.NewInt(1)),
-				)
-
-				el, err := obj.GetIn(ctx, []core.Value{key})
-				elGet, _ := obj.Get(key)
-
-				So(err, ShouldBeNil)
-				So(el.Compare(elGet), ShouldEqual, 0)
-			})
-
-			Convey("Should return None when no items", func() {
-				key := values.NewString("foo")
-				obj := values.NewObject()
-
-				el, err := obj.GetIn(ctx, []core.Value{key})
-				elGet, _ := obj.Get(key)
-
-				So(err, ShouldBeNil)
-				So(el.Compare(elGet), ShouldEqual, 0)
-			})
-		})
-
-		Convey("Should error when input is not correct", func() {
-
-			Convey("Should return None when path[0] is not a string", func() {
-				obj := values.NewObject()
-				path := []core.Value{values.NewInt(0)}
-
-				el, err := obj.GetIn(ctx, path)
-
-				So(err, ShouldBeNil)
-				So(el, ShouldNotBeNil)
-				So(el.Type().String(), ShouldEqual, types.None.String())
-			})
-
-			Convey("Should error when first received item is not a Getter and len(path) > 1", func() {
-				key := values.NewString("foo")
-				obj := values.NewObjectWith(
-					values.NewObjectProperty(key.String(), values.NewInt(1)),
-				)
-				path := []core.Value{key, key}
-
-				el, err := obj.GetIn(ctx, path)
-
-				So(err, ShouldBeError)
-				So(el.Compare(values.None), ShouldEqual, 0)
-			})
-		})
-
-		Convey("Should return None when len(path) == 0", func() {
-			obj := values.NewObject()
-
-			el, err := obj.GetIn(ctx, nil)
-
-			So(err, ShouldBeNil)
-			So(el.Compare(values.None), ShouldEqual, 0)
-		})
-
-		Convey("Should call the nested Getter", func() {
-			key := values.NewString("foo")
-			obj := values.NewObjectWith(
-				values.NewObjectProperty(key.String(), values.NewArrayWith(key)),
-			)
-
-			el, err := obj.GetIn(ctx, []core.Value{
-				key,              // obj.foo
-				values.NewInt(0), // obj.foo[0]
-			})
-
-			So(err, ShouldBeNil)
-			So(el.Compare(key), ShouldEqual, 0)
 		})
 	})
 }

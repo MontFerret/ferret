@@ -47,11 +47,11 @@ func (h *HTTPHeaders) String() string {
 }
 
 func (h *HTTPHeaders) Compare(other core.Value) int64 {
-	if other.Type() != HTTPHeaderType {
-		return Compare(HTTPHeaderType, other.Type())
-	}
+	oh, ok := other.(*HTTPHeaders)
 
-	oh := other.(*HTTPHeaders)
+	if !ok {
+		return CompareTypes(h.Type(), core.Reflect(other))
+	}
 
 	if len(h.values) > len(oh.values) {
 		return 1
@@ -158,15 +158,12 @@ func (h *HTTPHeaders) Get(key string) string {
 	return textproto.MIMEHeader(h.values).Get(key)
 }
 
-func (h *HTTPHeaders) GetIn(_ context.Context, path []core.Value) (core.Value, core.PathError) {
-	if len(path) == 0 {
+func (h *HTTPHeaders) GetByKey(_ context.Context, key string) (core.Value, error) {
+	if key == "" {
 		return values.None, nil
 	}
 
-	segmentIx := 0
-	segment := path[segmentIx]
-
-	return values.NewString(h.Get(string(values.ToString(segment)))), nil
+	return values.NewString(h.Get(key)), nil
 }
 
 func (h *HTTPHeaders) ForEach(predicate func(value []string, key string) bool) {

@@ -1,14 +1,11 @@
 package values_test
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -52,14 +49,6 @@ func TestArray(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(string(marshaled), ShouldEqual, "[1,2,3]")
-		})
-	})
-
-	Convey(".Type", t, func() {
-		Convey("Should return type", func() {
-			arr := values.NewArray(1)
-
-			So(arr.Type().Equals(types.Array), ShouldBeTrue)
 		})
 	})
 
@@ -561,92 +550,6 @@ func TestArray(t *testing.T) {
 			nestedInClone := clone.Get(values.NewInt(0)).(*values.Array)
 
 			So(nestedInArr.Compare(nestedInClone), ShouldNotEqual, 0)
-		})
-	})
-
-	Convey(".GetIn", t, func() {
-
-		ctx := context.Background()
-
-		Convey("Should return the same as .Get when input is correct", func() {
-
-			Convey("Should return item by key", func() {
-				key := values.NewInt(0)
-				arr := values.NewArrayWith(
-					values.NewInt(0),
-				)
-
-				el, err := arr.GetIn(ctx, []core.Value{key})
-				elGet := arr.Get(key)
-
-				So(err, ShouldBeNil)
-				So(el.Compare(elGet), ShouldEqual, 0)
-			})
-
-			Convey("Should return None when no items", func() {
-				key := values.NewInt(0)
-				arr := values.NewArray(0)
-
-				el, err := arr.GetIn(ctx, []core.Value{key})
-				elGet := arr.Get(key)
-
-				So(err, ShouldBeNil)
-				So(el.Compare(elGet), ShouldEqual, 0)
-			})
-		})
-
-		Convey("Should error when input is not correct", func() {
-
-			Convey("Should error when path[0] is not an int", func() {
-				arr := values.NewArray(0)
-				path := []core.Value{values.NewString("")}
-
-				el, err := arr.GetIn(ctx, path)
-
-				So(err, ShouldBeError)
-				So(el.Compare(values.None), ShouldEqual, 0)
-			})
-
-			Convey("Should error when first received item is not a Getter and len(path) > 1", func() {
-				key := values.NewInt(0)
-				arr := values.NewArrayWith(
-					values.NewInt(1),
-				)
-				path := []core.Value{key, key}
-
-				el, err := arr.GetIn(ctx, path)
-
-				So(err, ShouldBeError)
-				So(el.Compare(values.None), ShouldEqual, 0)
-			})
-		})
-
-		Convey("Should return None when len(path) == 0", func() {
-			arr := values.NewArrayWith(
-				values.NewInt(1),
-			)
-
-			el, err := arr.GetIn(ctx, nil)
-
-			So(err, ShouldBeNil)
-			So(el.Compare(values.None), ShouldEqual, 0)
-		})
-
-		Convey("Should call the nested Getter", func() {
-			key := values.NewInt(0)
-			arr := values.NewArrayWith(
-				values.NewObjectWith(
-					values.NewObjectProperty("foo", key),
-				),
-			)
-
-			el, err := arr.GetIn(ctx, []core.Value{
-				key,                     // obj[0]
-				values.NewString("foo"), // obj[0].foo
-			})
-
-			So(err, ShouldBeNil)
-			So(el.Compare(key), ShouldEqual, 0)
 		})
 	})
 }

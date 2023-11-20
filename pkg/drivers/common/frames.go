@@ -21,7 +21,7 @@ func CollectFrames(ctx context.Context, receiver *values.Array, doc drivers.HTML
 		childDoc, ok := value.(drivers.HTMLDocument)
 
 		if !ok {
-			err = core.TypeError(value.Type(), drivers.HTMLDocumentType)
+			err = core.TypeError(value, drivers.HTMLDocumentType)
 
 			return false
 		}

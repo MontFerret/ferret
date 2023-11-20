@@ -13,60 +13,7 @@ type (
 		BaseError    error
 		ComputeError error
 	}
-
-	// PathError represents an interface of
-	// error type which returned when an error occurs during an execution of Getter.GetIn or Setter.SetIn functions
-	// and contains segment of a given path that caused the error.
-	PathError interface {
-		error
-		Cause() error
-		Segment() int
-		Format(path []Value) string
-	}
-
-	// NativePathError represents a default implementation of GetterError interface.
-	NativePathError struct {
-		cause   error
-		segment int
-	}
 )
-
-// NewPathError is a constructor function of NativePathError struct.
-func NewPathError(err error, segment int) PathError {
-	return &NativePathError{
-		cause:   err,
-		segment: segment,
-	}
-}
-
-// NewPathErrorFrom is a constructor function of NativePathError struct
-// that accepts nested PathError and original segment index.
-// It sums indexes to get the correct one that points to original path.
-func NewPathErrorFrom(err PathError, segment int) PathError {
-	return NewPathError(err.Cause(), err.Segment()+segment)
-}
-
-func (e *NativePathError) Cause() error {
-	return e.cause
-}
-
-func (e *NativePathError) Error() string {
-	return e.cause.Error()
-}
-
-func (e *NativePathError) Segment() int {
-	return e.segment
-}
-
-func (e *NativePathError) Format(path []Value) string {
-	err := e.cause
-
-	if err == ErrInvalidPath && len(path) > e.segment {
-		return err.Error() + " '" + path[e.segment].String() + "'"
-	}
-
-	return err.Error()
-}
 
 func (e *SourceErrorDetail) Error() string {
 	return e.ComputeError.Error()
@@ -99,7 +46,9 @@ func SourceError(src SourceMap, err error) error {
 	}
 }
 
-func TypeError(actual Type, expected ...Type) error {
+func TypeError(value Value, expected ...Type) error {
+	actual := Reflect(value)
+
 	if len(expected) == 0 {
 		return Error(ErrInvalidType, actual.String())
 	}
@@ -137,10 +86,6 @@ func Errors(err ...error) error {
 	}
 
 	return errors.New(message)
-}
-
-func IsNoMoreData(err error) bool {
-	return err == ErrNoMoreData
 }
 
 func IsDone(err error) bool {

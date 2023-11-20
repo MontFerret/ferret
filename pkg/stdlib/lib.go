@@ -5,7 +5,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
-	"github.com/MontFerret/ferret/pkg/stdlib/html"
 	"github.com/MontFerret/ferret/pkg/stdlib/io"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
@@ -45,9 +44,9 @@ func RegisterLib(ns core.Namespace) error {
 		return err
 	}
 
-	if err := html.RegisterLib(ns); err != nil {
-		return err
-	}
+	//if err := html.RegisterLib(ns); err != nil {
+	//	return err
+	//}
 
 	if err := io.RegisterLib(ns); err != nil {
 		return err
