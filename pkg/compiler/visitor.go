@@ -224,6 +224,26 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	return nil
 }
 
+func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) interface{} {
+	if c := ctx.FunctionCallExpression(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.MemberExpression(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.Variable(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.Param(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.RangeOperator(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.ArrayLiteral(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.ObjectLiteral(); c != nil {
+		c.Accept(v)
+	}
+
+	return nil
+}
+
 func (v *visitor) VisitForExpressionReturn(ctx *fql.ForExpressionReturnContext) interface{} {
 	if c := ctx.ReturnExpression(); c != nil {
 		c.Accept(v)
