@@ -6,9 +6,10 @@ import (
 )
 
 type RangeIterator struct {
-	values *Range
-	dir    int64
-	pos    int64
+	values  *Range
+	dir     int64
+	pos     int64
+	counter int64
 }
 
 func NewRangeIterator(values *Range) core.Iterator {
@@ -29,8 +30,10 @@ func (iterator *RangeIterator) HasNext(_ context.Context) (bool, error) {
 
 func (iterator *RangeIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
 	val := NewInt64(iterator.pos)
+	counter := NewInt64(iterator.counter)
 
 	iterator.pos += iterator.dir
+	iterator.counter++
 
-	return val, val, nil
+	return val, counter, nil
 }

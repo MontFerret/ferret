@@ -199,30 +199,12 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		v.defineVariable(index)
 	}
 
-	//// filter
-	//if c := ctx.ForExpressionFilter(); c != nil {
-	//	c.Accept(v)
-	//}
-	//
-	//// sort
-	//if c := ctx.ForExpressionSortClause(); c != nil {
-	//	c.Accept(v)
-	//}
-	//
-	//// limit
-	//if c := ctx.ForExpressionLimitClause(); c != nil {
-	//	c.Accept(v)
-	//}
-	//
-	//// collect
-	//if c := ctx.ForExpressionCollectClause(); c != nil {
-	//	c.Accept(v)
-	//}
-	//
-	//// return
-	//if c := ctx.ForExpressionReturnClause(); c != nil {
-	//	c.Accept(v)
-	//}
+	// body
+	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+		for _, b := range body {
+			b.Accept(v)
+		}
+	}
 
 	// return
 	if c := ctx.ForExpressionReturn(); c != nil {
@@ -257,6 +239,24 @@ func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) 
 	} else if c := ctx.ArrayLiteral(); c != nil {
 		c.Accept(v)
 	} else if c := ctx.ObjectLiteral(); c != nil {
+		c.Accept(v)
+	}
+
+	return nil
+}
+
+func (v *visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) interface{} {
+	if c := ctx.ForExpressionStatement(); c != nil {
+		c.Accept(v)
+	}
+
+	return nil
+}
+
+func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
+	if c := ctx.VariableDeclaration(); c != nil {
+		c.Accept(v)
+	} else if c := ctx.FunctionCallExpression(); c != nil {
 		c.Accept(v)
 	}
 
