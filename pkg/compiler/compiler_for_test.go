@@ -15,5 +15,14 @@ func TestFor(t *testing.T) {
 			[]any{1, 2, 3, 4, 5},
 			ShouldEqualJSON,
 		},
+		{
+			`FOR i IN 1..5
+                            LET x = i
+                            PRINT(x)
+							RETURN i
+`,
+			[]any{1, 2, 3, 4, 5},
+			ShouldEqualJSON,
+		},
 	})
 }

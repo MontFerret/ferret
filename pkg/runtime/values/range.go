@@ -11,29 +11,20 @@ import (
 )
 
 type Range struct {
-	start uint64
-	end   uint64
+	start int64
+	end   int64
 }
 
-func NewRange(start, end uint64) *Range {
+func NewRange(start, end int64) *Range {
 	return &Range{start, end}
 }
-func (r *Range) Start() uint64 {
+
+func (r *Range) Start() int64 {
 	return r.start
 }
 
-func (r *Range) End() uint64 {
+func (r *Range) End() int64 {
 	return r.end
-}
-
-func (r *Range) MarshalJSON() ([]byte, error) {
-	arr := make([]uint64, r.end-r.start+1)
-
-	for i := r.start; i <= r.end; i++ {
-		arr[i-r.start] = i
-	}
-
-	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
 }
 
 func (r *Range) String() string {
@@ -57,7 +48,7 @@ func (r *Range) Compare(other core.Value) int64 {
 }
 
 func (r *Range) Unwrap() interface{} {
-	return []uint64{r.start, r.end}
+	return []int64{r.start, r.end}
 }
 
 func (r *Range) Hash() uint64 {
@@ -65,11 +56,25 @@ func (r *Range) Hash() uint64 {
 
 	h.Write([]byte(types.Range.String()))
 	h.Write([]byte(":"))
+
+	startMultiplier := 1
+	if r.start < 0 {
+		h.Write([]byte("-"))
+		startMultiplier = -1
+	}
+
 	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, r.start)
+	binary.LittleEndian.PutUint64(bytes, uint64(r.start*int64(startMultiplier)))
 	h.Write(bytes)
 	h.Write([]byte(".."))
-	binary.LittleEndian.PutUint64(bytes, r.end)
+
+	endMultiplier := 1
+	if r.start < 0 {
+		h.Write([]byte("-"))
+		endMultiplier = -1
+	}
+
+	binary.LittleEndian.PutUint64(bytes, uint64(r.end*int64(endMultiplier)))
 	h.Write(bytes)
 
 	return h.Sum64()
@@ -81,4 +86,54 @@ func (r *Range) Copy() core.Value {
 
 func (r *Range) Iterate(_ context.Context) (core.Iterator, error) {
 	return NewRangeIterator(r), nil
+}
+
+func (r *Range) MarshalJSON() ([]byte, error) {
+	start := r.start
+	end := r.end
+
+	var arr []int64
+
+	if start <= end {
+		arr = r.populateArray(start, end, r.calculateCapacity(start, end), true)
+	} else {
+		arr = r.populateArray(start, end, r.calculateCapacity(start, end), false)
+	}
+
+	return jettison.MarshalOpts(arr, jettison.NoHTMLEscaping())
+}
+
+func (r *Range) calculateCapacity(start int64, end int64) int64 {
+	var capacity int64
+	if start <= end {
+		if end < 0 {
+			capacity = start + (end * -1) + 1
+		} else {
+			capacity = end - start + 1
+		}
+	} else {
+		if start < 0 {
+			capacity = end + (start * -1) + 1
+		} else {
+			capacity = start - end + 1
+		}
+	}
+	return capacity
+}
+
+func (r *Range) populateArray(start int64, end int64, capacity int64, ascending bool) []int64 {
+	arr := make([]int64, 0, capacity)
+
+	if ascending {
+		// start to end
+		for i := start; i <= end; i++ {
+			arr = append(arr, i)
+		}
+	} else {
+		// end to start
+		for i := start; i >= end; i-- {
+			arr = append(arr, i)
+		}
+	}
+	return arr
 }

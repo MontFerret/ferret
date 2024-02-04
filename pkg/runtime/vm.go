@@ -9,8 +9,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-const DefaultStackSize = 128
-
 type VM struct {
 	ip      int
 	stack   *Stack
@@ -41,7 +39,8 @@ func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error)
 		}
 	}()
 
-	stack := NewStack(DefaultStackSize)
+	// TODO: Add code analysis to calculate the number of operands and variables
+	stack := NewStack(len(program.Bytecode), 8)
 	vm.stack = stack
 	vm.globals = make(map[string]core.Value)
 	vm.ip = 0
@@ -53,6 +52,24 @@ loop:
 		vm.ip++
 
 		switch op {
+		case OpPush:
+			stack.Push(program.Constants[arg])
+
+		case OpPop:
+			stack.Pop()
+
+		case OpStoreGlobal:
+			vm.globals[program.Constants[arg].String()] = stack.Pop()
+
+		case OpLoadGlobal:
+			stack.Push(vm.globals[program.Constants[arg].String()])
+
+		case OpStoreLocal:
+			stack.SetVariable(arg, stack.Peek())
+
+		case OpLoadLocal:
+			stack.Push(stack.GetVariable(arg))
+
 		case OpNone:
 			stack.Push(values.None)
 
@@ -91,24 +108,6 @@ loop:
 			}
 
 			stack.Push(obj)
-
-		case OpPush:
-			stack.Push(program.Constants[arg])
-
-		case OpPop:
-			stack.Pop()
-
-		case OpStoreGlobal:
-			vm.globals[program.Constants[arg].String()] = stack.Pop()
-
-		case OpLoadGlobal:
-			stack.Push(vm.globals[program.Constants[arg].String()])
-
-		case OpStoreLocal:
-			stack.Set(arg, stack.Peek())
-
-		case OpLoadLocal:
-			stack.Push(stack.Get(arg))
 
 		case OpLoadProperty, OpLoadPropertyOptional:
 			prop := stack.Pop()
@@ -435,8 +434,8 @@ loop:
 		case OpLoopPush:
 			// pop the return value from the stack
 			res := stack.Pop()
-			arr := stack.Peek()
-			arr.(*values.Array).Push(res)
+			arr := stack.Get(arg).(*values.Array)
+			arr.Push(res)
 
 		case OpReturn:
 			break loop

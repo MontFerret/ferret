@@ -9,9 +9,5 @@ func Range(left, right core.Value) (core.Value, error) {
 	start := values.ToInt(left)
 	end := values.ToInt(right)
 
-	if start > end {
-		return values.None, nil
-	}
-
-	return values.NewRange(uint64(start), uint64(end)), nil
+	return values.NewRange(int64(start), int64(end)), nil
 }

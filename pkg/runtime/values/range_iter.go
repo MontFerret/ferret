@@ -7,21 +7,30 @@ import (
 
 type RangeIterator struct {
 	values *Range
-	pos    uint64
+	dir    int64
+	pos    int64
 }
 
 func NewRangeIterator(values *Range) core.Iterator {
-	return &RangeIterator{values: values, pos: values.start}
+	if values.start > values.end {
+		return &RangeIterator{values: values, dir: -1, pos: values.start}
+	}
+
+	return &RangeIterator{values: values, dir: 1, pos: values.start}
 }
 
-func (iterator *RangeIterator) HasNext(ctx context.Context) (bool, error) {
-	return iterator.values.end > iterator.pos, nil
+func (iterator *RangeIterator) HasNext(_ context.Context) (bool, error) {
+	if iterator.dir == 1 {
+		return iterator.values.end > (iterator.pos - 1), nil
+	}
+
+	return iterator.values.start > iterator.pos, nil
 }
 
 func (iterator *RangeIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
-	val := NewInt64(int64(iterator.pos))
+	val := NewInt64(iterator.pos)
 
-	iterator.pos++
+	iterator.pos += iterator.dir
 
 	return val, val, nil
 }

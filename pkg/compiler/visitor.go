@@ -36,6 +36,7 @@ type (
 
 const (
 	jumpPlaceholder      = -1
+	undefinedVariable    = -1
 	ignorePseudoVariable = "_"
 	pseudoVariable       = "CURRENT"
 	waitScope            = "waitfor"
@@ -108,22 +109,23 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
 	v.beginScope()
 	v.emit(runtime.OpArray)
+	resArrayIndex := len(v.bytecode) - 1
 
-	var loopStart, exitJump int
+	var loopJump, exitJump int
 	// identify whether it's WHILE or FOR loop
 	isForInLoop := ctx.While() == nil
 
 	if isForInLoop {
-		loopStart = len(v.bytecode)
-
 		// Loop data source to iterate over
 		if c := ctx.ForExpressionSource(); c != nil {
 			c.Accept(v)
 		}
 
 		v.emit(runtime.OpLoopInit)
+		loopJump = len(v.bytecode)
 		v.emit(runtime.OpLoopHasNext)
 		exitJump = v.emitJump(runtime.OpJumpIfFalse)
+		// pop the boolean value from the stack
 		v.emitPop()
 
 		valVar := ctx.GetValueVariable().GetText()
@@ -138,7 +140,22 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 			hasCounterVar = true
 		}
 
+		var valVarIndex int
+
+		// declare value variable
+		if hasValVar {
+			valVarIndex = v.declareVariable(valVar)
+		}
+
+		var counterVarIndex int
+
+		if hasCounterVar {
+			// declare counter variable
+			counterVarIndex = v.declareVariable(counterVar)
+		}
+
 		if hasValVar && hasCounterVar {
+			// we will calculate the index of the counter variable
 			v.emit(runtime.OpLoopNext)
 		} else if hasValVar {
 			v.emit(runtime.OpLoopNextValue)
@@ -148,32 +165,29 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 			panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 		}
 
-		// declare value variable
-		valVarIndex := v.declareVariable(valVar)
-
-		var counterVarIndex int
-
-		if hasCounterVar {
-			// declare counter variable
-			counterVarIndex = v.declareVariable(counterVar)
+		if hasValVar {
+			v.defineVariable(valVarIndex)
+			// remove the value from the stack
+			v.emitPop()
 		}
-
-		v.defineVariable(valVarIndex)
 
 		if hasCounterVar {
 			v.defineVariable(counterVarIndex)
+			// remove the counter from the stack
+			v.emitPop()
 		}
 	} else {
 		// Create initial value for the loop counter
 		v.emitConstant(runtime.OpPush, values.NewInt(0))
 
-		loopStart = len(v.bytecode)
+		loopJump = len(v.bytecode)
 
 		// Condition expression
 		ctx.Expression().Accept(v)
 
 		// Condition check
 		exitJump = v.emitJump(runtime.OpJumpIfFalse)
+		// pop the boolean value from the stack
 		v.emitPop()
 
 		counterVar := ctx.GetCounterVariable().GetText()
@@ -212,12 +226,17 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	// return
 	if c := ctx.ForExpressionReturn(); c != nil {
+		returnIdx := len(v.bytecode)
 		c.Accept(v)
+
+		// patch return in order to access the resulting array
+		v.arguments[returnIdx-1] = resArrayIndex
 	}
 
-	v.emitLoop(loopStart)
+	v.emitLoop(loopJump)
 	v.patchJump(exitJump)
 	// pop loop counter
+	v.emitPop()
 	v.emitPop()
 	v.endScope()
 
@@ -811,7 +830,7 @@ func (v *visitor) declareVariable(name string) int {
 		}
 	}
 
-	v.locals = append(v.locals, variable{name, v.scope})
+	v.locals = append(v.locals, variable{name, undefinedVariable})
 
 	return len(v.locals) - 1
 }
@@ -835,7 +854,7 @@ func (v *visitor) emitConstant(op runtime.Opcode, constant core.Value) {
 // emitLoop emits a loop instruction.
 func (v *visitor) emitLoop(loopStart int) {
 	pos := v.emitJump(runtime.OpLoop)
-	jump := pos - loopStart + 2
+	jump := pos - loopStart
 	v.arguments[pos-1] = jump
 }
 
