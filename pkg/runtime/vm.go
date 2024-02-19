@@ -65,7 +65,10 @@ loop:
 			stack.Push(vm.globals[program.Constants[arg].String()])
 
 		case OpStoreLocal:
-			stack.SetVariable(arg, stack.Peek())
+			stack.SetVariable(arg, stack.Pop())
+
+		case OpPopLocal:
+			stack.PopVariable()
 
 		case OpLoadLocal:
 			stack.Push(stack.GetVariable(arg))
@@ -367,7 +370,12 @@ loop:
 
 		case OpLoopInit:
 			// start a new iteration
+
+			// get the data source
 			src := stack.Pop()
+			// create new data destination
+			dst := values.NewArray(0)
+			stack.Push(dst)
 
 			switch src := src.(type) {
 			case core.Iterable:
@@ -410,12 +418,14 @@ loop:
 			case OpLoopNextCounter:
 				stack.Push(key)
 			default:
-				stack.Push(val)
 				stack.Push(key)
+				stack.Push(val)
 			}
 
-		case OpLoop:
-			// jump back to the start of the loop
+		case OpJump:
+			vm.ip += arg
+
+		case OpJumpBackward:
 			vm.ip -= arg
 
 		case OpJumpIfFalse:
@@ -428,10 +438,7 @@ loop:
 				vm.ip += arg
 			}
 
-		case OpJump:
-			vm.ip += arg
-
-		case OpLoopPush:
+		case OpLoopReturn:
 			// pop the return value from the stack
 			res := stack.Pop()
 			arr := stack.Get(arg).(*values.Array)

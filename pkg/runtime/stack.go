@@ -1,6 +1,8 @@
 package runtime
 
-import "github.com/MontFerret/ferret/pkg/runtime/core"
+import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+)
 
 type Stack struct {
 	operands  []core.Value
@@ -54,6 +56,10 @@ func (s *Stack) SetVariable(index int, value core.Value) {
 	s.variables[index] = value
 }
 
-func (s *Stack) PushVariable(value core.Value) {
-	s.variables = append(s.variables, value)
+func (s *Stack) PopVariable() {
+	if len(s.variables) == 0 {
+		return
+	}
+
+	s.variables = s.variables[:len(s.variables)-1]
 }

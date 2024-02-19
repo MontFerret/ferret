@@ -85,6 +85,8 @@ func (v *visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} 
 		c.Accept(v)
 	} else if c := ctx.FunctionCallExpression(); c != nil {
 		c.Accept(v)
+		// remove un-used return value
+		v.emitPop()
 	} else if c := ctx.WaitForExpression(); c != nil {
 		c.Accept(v)
 	}
@@ -108,8 +110,6 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
 	v.beginScope()
-	v.emit(runtime.OpArray)
-	resArrayIndex := len(v.bytecode) - 1
 
 	var loopJump, exitJump int
 	// identify whether it's WHILE or FOR loop
@@ -167,14 +167,10 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 		if hasValVar {
 			v.defineVariable(valVarIndex)
-			// remove the value from the stack
-			v.emitPop()
 		}
 
 		if hasCounterVar {
 			v.defineVariable(counterVarIndex)
-			// remove the counter from the stack
-			v.emitPop()
 		}
 	} else {
 		// Create initial value for the loop counter
@@ -208,19 +204,19 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	// return
 	if c := ctx.ForExpressionReturn(); c != nil {
-		returnIdx := len(v.bytecode)
 		c.Accept(v)
-
-		// patch return in order to access the resulting array
-		v.arguments[returnIdx-1] = resArrayIndex
 	}
 
 	v.emitLoop(loopJump)
 	v.patchJump(exitJump)
-	// pop loop counter
-	v.emitPop()
-	v.emitPop()
 	v.endScope()
+	// pop the boolean value from the stack
+	v.emitPop()
+
+	if isForInLoop {
+		// pop the iterator
+		v.emitPop()
+	}
 
 	return nil
 }
@@ -258,6 +254,8 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 		c.Accept(v)
 	} else if c := ctx.FunctionCallExpression(); c != nil {
 		c.Accept(v)
+		// remove un-used return value
+		v.emitPop()
 	}
 
 	return nil
@@ -285,12 +283,6 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 	}
 
 	name += call.FunctionName().GetText()
-
-	//exists := v.funcs.Has(name)
-	//
-	//if !exists {
-	//	panic(core.Error(core.ErrNotFound, fmt.Sprintf("function: '%s'", name)))
-	//}
 
 	//regularCall := ctx.ErrorOperator() == nil
 
@@ -591,7 +583,7 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 	if v.scope == 0 {
 		v.emit(runtime.OpReturn)
 	} else {
-		v.emit(runtime.OpLoopPush)
+		v.emit(runtime.OpLoopReturn)
 	}
 
 	return nil
@@ -671,7 +663,7 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
 	} else if op := ctx.ArrayOperator(); op != nil {
-
+		// TODO: Implement me
 	} else if op := ctx.InOperator(); op != nil {
 		ctx.Predicate(0).Accept(v)
 		ctx.Predicate(1).Accept(v)
@@ -760,7 +752,7 @@ func (v *visitor) endScope() {
 
 	// Pop all local variables from the stack within the closed scope.
 	for len(v.locals) > 0 && v.locals[len(v.locals)-1].depth > v.scope {
-		v.emitPop()
+		v.emit(runtime.OpPopLocal)
 		v.locals = v.locals[:len(v.locals)-1]
 	}
 }
@@ -844,6 +836,7 @@ func (v *visitor) defineVariable(index int) {
 	}
 
 	v.emit(runtime.OpStoreLocal, index)
+	v.locals[index].depth = v.scope
 }
 
 // emitConstant emits an opcode with a constant argument.
@@ -853,7 +846,7 @@ func (v *visitor) emitConstant(op runtime.Opcode, constant core.Value) {
 
 // emitLoop emits a loop instruction.
 func (v *visitor) emitLoop(loopStart int) {
-	pos := v.emitJump(runtime.OpLoop)
+	pos := v.emitJump(runtime.OpJumpBackward)
 	jump := pos - loopStart
 	v.arguments[pos-1] = jump
 }

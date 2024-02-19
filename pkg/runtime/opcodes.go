@@ -14,6 +14,7 @@ const (
 	OpStoreGlobal
 	OpLoadLocal
 	OpStoreLocal
+	OpPopLocal
 	OpLoadProperty
 	OpLoadPropertyOptional
 	OpNegate
@@ -51,12 +52,12 @@ const (
 	OpJumpIfFalse
 	OpJumpIfTrue
 	OpJump
+	OpJumpBackward
 	OpLoopInit
 	OpLoopHasNext
 	OpLoopNext
 	OpLoopNextValue
 	OpLoopNextCounter
-	OpLoop
-	OpLoopPush
+	OpLoopReturn
 	OpReturn
 )
