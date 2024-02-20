@@ -53,6 +53,18 @@ func ArePtrsEqual(expected, actual any) bool {
 	return p1 == p2
 }
 
+func ShouldHaveSameItems(actual any, expected ...any) string {
+	expectedArr := expected[0].([]any)
+
+	for _, item := range expectedArr {
+		if err := ShouldContain(actual, item); err != "" {
+			return err
+		}
+	}
+
+	return ""
+}
+
 func RunUseCases(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
 	for _, useCase := range useCases {
 		Convey(useCase.Expression, t, func() {
@@ -81,6 +93,8 @@ func RunUseCases(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ..
 				} else {
 					So(err, ShouldBeError)
 				}
+			} else if ArePtrsEqual(useCase.Assertion, ShouldHaveSameItems) {
+				So(out, ShouldHaveSameItems, useCase.Expected)
 			} else {
 				So(out, ShouldEqual, useCase.Expected)
 			}

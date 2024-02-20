@@ -9,6 +9,13 @@ import (
 )
 
 func TestFor(t *testing.T) {
+	// Should not allocate memory if NONE is a return statement
+	//{
+	//	`FOR i IN 0..100
+	//		RETURN NONE`,
+	//	[]any{},
+	//	ShouldEqualJSON,
+	//},
 	RunUseCases(t, compiler.New(), []UseCase{
 		{
 			"FOR i IN 1..5 RETURN i",
@@ -26,8 +33,8 @@ func TestFor(t *testing.T) {
 		},
 		{
 			`FOR val, counter IN 1..5
-		                          LET x = val
-		                          PRINT(counter)
+		                         LET x = val
+		                         PRINT(counter)
 									LET y = counter
 									RETURN [x, y]
 		`,
@@ -46,17 +53,31 @@ func TestFor(t *testing.T) {
 			[]any{1, 2, 3},
 			ShouldEqualJSON,
 		},
-		// Should not allocate memory if NONE is a return statement
-		//{
-		//	`FOR i IN 0..100
-		//		RETURN NONE`,
-		//	[]any{},
-		//	ShouldEqualJSON,
-		//},
+
 		{
 			`FOR i, k IN [1, 2, 3] RETURN k`,
 			[]any{0, 1, 2},
 			ShouldEqualJSON,
+		},
+		{
+			`FOR i IN ['foo', 'bar', 'qaz'] RETURN i`,
+			[]any{"foo", "bar", "qaz"},
+			ShouldEqualJSON,
+		},
+		{
+			`FOR i IN {a: 'bar', b: 'foo', c: 'qaz'} RETURN i`,
+			[]any{"foo", "bar", "qaz"},
+			ShouldHaveSameItems,
+		},
+		{
+			`FOR i, k IN {a: 'foo', b: 'bar', c: 'qaz'} RETURN k`,
+			[]any{"a", "b", "c"},
+			ShouldHaveSameItems,
+		},
+		{
+			`FOR i IN [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] RETURN i.name`,
+			[]any{"foo", "bar", "qaz"},
+			ShouldHaveSameItems,
 		},
 	})
 }

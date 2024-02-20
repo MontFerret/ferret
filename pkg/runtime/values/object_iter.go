@@ -12,29 +12,23 @@ type ObjectIterator struct {
 }
 
 func NewObjectIterator(obj *Object) core.Iterator {
-	return &ObjectIterator{data: obj.data, keys: nil}
-}
-
-func (iterator *ObjectIterator) init() {
-	iterator.keys = make([]string, len(iterator.data))
+	iter := &ObjectIterator{data: obj.data, keys: make([]string, len(obj.data))}
 
 	i := 0
 
-	for key := range iterator.data {
-		iterator.keys[i] = key
+	for key := range iter.data {
+		iter.keys[i] = key
 		i++
 	}
+
+	return iter
 }
 
 func (iterator *ObjectIterator) HasNext(_ context.Context) (bool, error) {
 	return len(iterator.keys) > iterator.pos, nil
 }
 
-func (iterator *ObjectIterator) Next(ctx context.Context) (core.Value, core.Value, error) {
-	if iterator.keys == nil {
-		iterator.init()
-	}
-
+func (iterator *ObjectIterator) Next(_ context.Context) (core.Value, core.Value, error) {
 	key := iterator.keys[iterator.pos]
 	val := iterator.data[key]
 
