@@ -33,8 +33,8 @@ func TestFor(t *testing.T) {
 		},
 		{
 			`FOR val, counter IN 1..5
-		                        LET x = val
-		                        PRINT(counter)
+		                      LET x = val
+		                      PRINT(counter)
 									LET y = counter
 									RETURN [x, y]
 		`,
@@ -80,8 +80,27 @@ func TestFor(t *testing.T) {
 			ShouldHaveSameItems,
 		},
 		{
-			`FOR prop IN ["a"] FOR val IN [1, 2, 3] RETURN {[prop]: val}`,
+			`FOR prop IN ["a"]
+							FOR val IN [1, 2, 3]
+								RETURN {[prop]: val}`,
 			[]any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
+			ShouldEqualJSON,
+		},
+		{
+			`FOR prop IN ["a"]
+							FOR val IN [1, 2, 3]
+								FOR val2 IN [1, 2, 3]
+									RETURN { [prop]: [val, val2] }`,
+			[]any{map[string]any{"a": []int{1, 1}}, map[string]any{"a": []int{1, 2}}, map[string]any{"a": []int{1, 3}}, map[string]any{"a": []int{2, 1}}, map[string]any{"a": []int{2, 2}}, map[string]any{"a": []int{2, 3}}, map[string]any{"a": []int{3, 1}}, map[string]any{"a": []int{3, 2}}, map[string]any{"a": []int{3, 3}}},
+			ShouldEqualJSON,
+		},
+		{
+			`FOR val IN [1, 2, 3]
+							RETURN (
+								FOR prop IN ["a", "b", "c"]
+									RETURN { [prop]: val }
+							)`,
+			[]any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
 			ShouldEqualJSON,
 		},
 	})

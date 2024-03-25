@@ -445,7 +445,8 @@ loop:
 		case OpLoopReturn:
 			// pop the return value from the stack
 			res := stack.Pop()
-			arr := stack.Get(arg).(*values.Array)
+			pos := stack.Len() - arg
+			arr := stack.Get(pos).(*values.Array)
 			arr.Push(res)
 
 		case OpReturn:

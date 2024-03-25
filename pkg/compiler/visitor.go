@@ -19,7 +19,7 @@ type (
 	}
 
 	loopScope struct {
-		arg         int
+		lookBack    int
 		passThrough bool
 	}
 
@@ -773,34 +773,31 @@ func (v *visitor) beginLoop(passThrough bool) {
 		allocate = true
 	} else if !passThrough {
 		// nested with explicit RETURN expression
-
 		prev := v.loops[len(v.loops)-1]
 		// if the loop above does not do pass through
 		// we allocate a new array for this loop
 		allocate = !prev.passThrough
 	}
 
-	idx := -1
+	// we know that during execution of RETURN expression, the top item in the stack is Iterator
+	// and the allocated array is below it
+	// thus, the default lookBack is 2 (len - 1 - 1)
+	offset := 2
 
 	if allocate {
-		idx = len(v.bytecode)
 		v.emit(runtime.OpArray)
+	} else {
+		offset = offset + len(v.loops)
 	}
 
 	v.loops = append(v.loops, &loopScope{
 		passThrough: passThrough,
-		arg:         idx,
+		lookBack:    offset,
 	})
 }
 
 func (v *visitor) resolveLoopResult() int {
-	for i := len(v.loops) - 1; i >= 0; i-- {
-		if v.loops[i].arg > -1 {
-			return v.loops[i].arg
-		}
-	}
-
-	panic("Invalid loop")
+	return v.loops[len(v.loops)-1].lookBack
 }
 
 func (v *visitor) endLoop() {
@@ -901,14 +898,14 @@ func (v *visitor) emitLoop(loopStart int) {
 	v.arguments[pos-1] = jump
 }
 
-// emitJump emits an opcode with a jump offset argument.
+// emitJump emits an opcode with a jump lookBack argument.
 func (v *visitor) emitJump(op runtime.Opcode) int {
 	v.emit(op, jumpPlaceholder)
 
 	return len(v.bytecode)
 }
 
-// patchJump patches a jump offset argument.
+// patchJump patches a jump lookBack argument.
 func (v *visitor) patchJump(offset int) {
 	jump := len(v.bytecode) - offset
 	v.arguments[offset-1] = jump
