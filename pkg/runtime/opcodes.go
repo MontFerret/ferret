@@ -53,7 +53,7 @@ const (
 	OpJumpIfTrue
 	OpJump
 	OpJumpBackward
-	OpLoopInit
+	OpLoopSourceInit
 	OpLoopHasNext
 	OpLoopNext
 	OpLoopNextValue

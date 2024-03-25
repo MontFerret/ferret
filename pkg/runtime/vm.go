@@ -368,14 +368,10 @@ loop:
 				return nil, err
 			}
 
-		case OpLoopInit:
+		case OpLoopSourceInit:
 			// start a new iteration
-
 			// get the data source
 			src := stack.Pop()
-			// create new data destination
-			dst := values.NewArray(0)
-			stack.Push(dst)
 
 			switch src := src.(type) {
 			case core.Iterable:

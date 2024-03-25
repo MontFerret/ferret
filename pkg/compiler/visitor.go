@@ -18,6 +18,11 @@ type (
 		depth int
 	}
 
+	loopScope struct {
+		arg         int
+		passThrough bool
+	}
+
 	visitor struct {
 		*fql.BaseFqlParserVisitor
 		err error
@@ -29,6 +34,7 @@ type (
 		arguments      []int
 		constants      []core.Value
 		scope          int
+		loops          []*loopScope
 		globals        map[string]int
 		locals         []variable
 	}
@@ -54,6 +60,7 @@ func newVisitor(src string) *visitor {
 	v.arguments = make([]int, 0)
 	v.constants = make([]core.Value, 0)
 	v.scope = 0
+	v.loops = make([]*loopScope, 0)
 	v.globals = make(map[string]int)
 	v.locals = make([]variable, 0)
 
@@ -111,9 +118,21 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
 	v.beginScope()
 
+	var passThrough = false
+	var returnRuleCtx antlr.RuleContext
 	var loopJump, exitJump int
 	// identify whether it's WHILE or FOR loop
 	isForInLoop := ctx.While() == nil
+	returnCtx := ctx.ForExpressionReturn()
+
+	if c := returnCtx.ReturnExpression(); c != nil {
+		returnRuleCtx = c
+	} else if c := returnCtx.ForExpression(); c != nil {
+		returnRuleCtx = c
+		passThrough = true
+	}
+
+	v.beginLoop(passThrough)
 
 	if isForInLoop {
 		// Loop data source to iterate over
@@ -121,7 +140,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 			c.Accept(v)
 		}
 
-		v.emit(runtime.OpLoopInit)
+		v.emit(runtime.OpLoopSourceInit)
 		loopJump = len(v.bytecode)
 		v.emit(runtime.OpLoopHasNext)
 		exitJump = v.emitJump(runtime.OpJumpIfFalse)
@@ -203,13 +222,12 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	}
 
 	// return
-	if c := ctx.ForExpressionReturn(); c != nil {
-		c.Accept(v)
-	}
+	returnRuleCtx.Accept(v)
 
 	v.emitLoop(loopJump)
 	v.patchJump(exitJump)
 	v.endScope()
+	v.endLoop()
 	// pop the boolean value from the stack
 	v.emitPop()
 
@@ -256,16 +274,6 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 		c.Accept(v)
 		// remove un-used return value
 		v.emitPop()
-	}
-
-	return nil
-}
-
-func (v *visitor) VisitForExpressionReturn(ctx *fql.ForExpressionReturnContext) interface{} {
-	if c := ctx.ReturnExpression(); c != nil {
-		c.Accept(v)
-	} else if c := ctx.ForExpression(); c != nil {
-		c.Accept(v)
 	}
 
 	return nil
@@ -580,10 +588,10 @@ func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
 	ctx.Expression().Accept(v)
 
-	if v.scope == 0 {
+	if len(v.loops) == 0 {
 		v.emit(runtime.OpReturn)
 	} else {
-		v.emit(runtime.OpLoopReturn)
+		v.emit(runtime.OpLoopReturn, v.resolveLoopResult())
 	}
 
 	return nil
@@ -755,6 +763,48 @@ func (v *visitor) endScope() {
 		v.emit(runtime.OpPopLocal)
 		v.locals = v.locals[:len(v.locals)-1]
 	}
+}
+
+func (v *visitor) beginLoop(passThrough bool) {
+	var allocate bool
+
+	// top loop
+	if len(v.loops) == 0 {
+		allocate = true
+	} else if !passThrough {
+		// nested with explicit RETURN expression
+
+		prev := v.loops[len(v.loops)-1]
+		// if the loop above does not do pass through
+		// we allocate a new array for this loop
+		allocate = !prev.passThrough
+	}
+
+	idx := -1
+
+	if allocate {
+		idx = len(v.bytecode)
+		v.emit(runtime.OpArray)
+	}
+
+	v.loops = append(v.loops, &loopScope{
+		passThrough: passThrough,
+		arg:         idx,
+	})
+}
+
+func (v *visitor) resolveLoopResult() int {
+	for i := len(v.loops) - 1; i >= 0; i-- {
+		if v.loops[i].arg > -1 {
+			return v.loops[i].arg
+		}
+	}
+
+	panic("Invalid loop")
+}
+
+func (v *visitor) endLoop() {
+	v.loops = v.loops[:len(v.loops)-1]
 }
 
 func (v *visitor) resolveLocalVariable(name string) int {

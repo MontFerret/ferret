@@ -33,8 +33,8 @@ func TestFor(t *testing.T) {
 		},
 		{
 			`FOR val, counter IN 1..5
-		                         LET x = val
-		                         PRINT(counter)
+		                        LET x = val
+		                        PRINT(counter)
 									LET y = counter
 									RETURN [x, y]
 		`,
@@ -78,6 +78,11 @@ func TestFor(t *testing.T) {
 			`FOR i IN [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] RETURN i.name`,
 			[]any{"foo", "bar", "qaz"},
 			ShouldHaveSameItems,
+		},
+		{
+			`FOR prop IN ["a"] FOR val IN [1, 2, 3] RETURN {[prop]: val}`,
+			[]any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
+			ShouldEqualJSON,
 		},
 	})
 }
