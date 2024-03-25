@@ -7,6 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"io"
 )
 
 type VM struct {
@@ -57,6 +58,13 @@ loop:
 
 		case OpPop:
 			stack.Pop()
+
+		case OpPopClose:
+			closable, ok := stack.Pop().(io.Closer)
+
+			if ok {
+				closable.Close()
+			}
 
 		case OpStoreGlobal:
 			vm.globals[program.Constants[arg].String()] = stack.Pop()

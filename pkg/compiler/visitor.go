@@ -233,7 +233,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	if isForInLoop {
 		// pop the iterator
-		v.emitPop()
+		v.emitPopAndClose()
 	}
 
 	return nil
@@ -916,6 +916,10 @@ func (v *visitor) patchJump(offset int) {
 
 func (v *visitor) emitPop() {
 	v.emit(runtime.OpPop)
+}
+
+func (v *visitor) emitPopAndClose() {
+	v.emit(runtime.OpPopClose)
 }
 
 func (v *visitor) emit(op runtime.Opcode, args ...int) {

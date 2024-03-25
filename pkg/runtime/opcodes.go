@@ -47,8 +47,9 @@ const (
 	OpCall3
 	OpCall4
 	OpCallN
-	OpPop
 	OpPush
+	OpPop
+	OpPopClose
 	OpJumpIfFalse
 	OpJumpIfTrue
 	OpJump
