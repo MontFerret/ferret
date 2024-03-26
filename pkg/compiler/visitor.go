@@ -389,10 +389,9 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		name = reserved.GetText()
 	}
 
-	index := v.declareVariable(name)
-
 	ctx.Expression().Accept(v)
-
+	// we do not have custom functions, thus this feature is not needed at this moment
+	index := v.declareVariable(name)
 	v.defineVariable(index)
 
 	return nil
