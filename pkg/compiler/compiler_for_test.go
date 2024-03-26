@@ -87,6 +87,20 @@ func TestFor(t *testing.T) {
 			ShouldEqualJSON,
 		},
 		{
+			`FOR val IN 1..3
+							FOR prop IN ["a"]
+								RETURN {[prop]: val}`,
+			[]any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
+			ShouldEqualJSON,
+		},
+		{
+			`FOR prop IN ["a"]
+							FOR val IN 1..3
+								RETURN {[prop]: val}`,
+			[]any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
+			ShouldEqualJSON,
+		},
+		{
 			`FOR prop IN ["a"]
 							FOR val IN [1, 2, 3]
 								FOR val2 IN [1, 2, 3]
