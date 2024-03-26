@@ -33,8 +33,8 @@ func TestFor(t *testing.T) {
 		},
 		{
 			`FOR val, counter IN 1..5
-		                     LET x = val
-		                     PRINT(counter)
+		                    LET x = val
+		                    PRINT(counter)
 									LET y = counter
 									RETURN [x, y]
 		`,
@@ -109,9 +109,16 @@ func TestFor(t *testing.T) {
 								FOR prop IN ["a", "b", "c"]
 									RETURN { [prop]: val }
 							)
-			
+		
 							RETURN sub`,
 			[]any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
+			ShouldEqualJSON,
+		},
+		{
+			`FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+							RETURN DISTINCT i
+		`,
+			[]any{1, 2, 3, 4},
 			ShouldEqualJSON,
 		},
 	})

@@ -118,7 +118,8 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
 	v.beginScope()
 
-	var passThrough = false
+	var passThrough bool
+	var distinct bool
 	var returnRuleCtx antlr.RuleContext
 	var loopJump, exitJump int
 	// identify whether it's WHILE or FOR loop
@@ -127,12 +128,13 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	if c := returnCtx.ReturnExpression(); c != nil {
 		returnRuleCtx = c
+		distinct = c.Distinct() != nil
 	} else if c := returnCtx.ForExpression(); c != nil {
 		returnRuleCtx = c
 		passThrough = true
 	}
 
-	v.beginLoop(passThrough)
+	v.beginLoop(passThrough, distinct)
 
 	if isForInLoop {
 		// Loop data source to iterate over
@@ -764,7 +766,7 @@ func (v *visitor) endScope() {
 	}
 }
 
-func (v *visitor) beginLoop(passThrough bool) {
+func (v *visitor) beginLoop(passThrough, distinct bool) {
 	var allocate bool
 
 	// top loop
@@ -784,7 +786,13 @@ func (v *visitor) beginLoop(passThrough bool) {
 	offset := 2
 
 	if allocate {
-		v.emit(runtime.OpArray)
+		var arg int
+
+		if distinct {
+			arg = 1
+		}
+
+		v.emit(runtime.OpLoopDestinationInit, arg)
 	} else {
 		offset = offset + len(v.loops)
 	}

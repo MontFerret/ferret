@@ -375,6 +375,10 @@ loop:
 			} else {
 				return nil, err
 			}
+		case OpLoopDestinationInit:
+			ds := NewDataSet(arg == 1)
+
+			stack.Push(values.NewBoxedValue(ds))
 
 		case OpLoopSourceInit:
 			// start a new iteration
@@ -446,8 +450,8 @@ loop:
 			// pop the return value from the stack
 			res := stack.Pop()
 			pos := stack.Len() - arg
-			arr := stack.Get(pos).(*values.Array)
-			arr.Push(res)
+			ds := stack.Get(pos).(*values.Boxed).Unwrap().(*DataSet)
+			ds.Push(res)
 
 		case OpReturn:
 			break loop
