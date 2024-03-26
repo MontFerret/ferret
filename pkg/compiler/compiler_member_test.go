@@ -16,7 +16,7 @@ import (
 )
 
 func TestMember(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{
 			"LET arr = [1,2,3,4] RETURN arr[10]",
 			nil,

@@ -2,12 +2,10 @@ package compiler_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestFunctionCall(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{
 			"RETURN TYPENAME(1)",
 			"int",

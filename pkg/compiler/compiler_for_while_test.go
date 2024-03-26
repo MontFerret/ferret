@@ -9,13 +9,11 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestForWhile(t *testing.T) {
 	var counter int64
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		//{
 		//	"FOR i WHILE false RETURN i",
 		//	[]any{},

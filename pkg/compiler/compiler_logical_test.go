@@ -2,12 +2,10 @@ package compiler_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestLogicalOperators(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{"RETURN 1 AND 0", 0, nil},
 		{"RETURN 1 AND 1", 1, nil},
 		{"RETURN 2 > 1 AND 1 > 0", true, nil},

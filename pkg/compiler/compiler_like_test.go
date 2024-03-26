@@ -2,12 +2,10 @@ package compiler_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestLikeOperator(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{`RETURN "foo" LIKE "f*"`, true, nil},
 		{`RETURN "foo" LIKE "b*"`, false, nil},
 		{`RETURN "foo" NOT LIKE "f*"`, false, nil},

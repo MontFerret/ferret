@@ -2,12 +2,10 @@ package compiler_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestUnaryOperator(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{"RETURN !TRUE", false, nil},
 		{"RETURN !FALSE", true, nil},
 		{"RETURN -1", -1, nil},

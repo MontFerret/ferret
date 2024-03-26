@@ -9,7 +9,7 @@ import (
 )
 
 func TestLet(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{
 			`LET i = NONE RETURN i`,
 			nil,

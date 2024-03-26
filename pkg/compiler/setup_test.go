@@ -18,10 +18,14 @@ type UseCase struct {
 	Assertion  Assertion
 }
 
-func Exec(p *runtime.Program, raw bool, opts ...runtime.EnvironmentOption) (any, error) {
+func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) {
 	vm := runtime.NewVM(opts...)
 
-	out, err := vm.Run(context.Background(), p)
+	return vm.Run(context.Background(), p)
+}
+
+func Exec(p *runtime.Program, raw bool, opts ...runtime.EnvironmentOption) (any, error) {
+	out, err := Run(p, opts...)
 
 	if err != nil {
 		return 0, err
@@ -65,7 +69,7 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 	return ""
 }
 
-func RunUseCases(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
+func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
 	for _, useCase := range useCases {
 		Convey(useCase.Expression, t, func() {
 			prog, err := c.Compile(useCase.Expression)
@@ -100,4 +104,33 @@ func RunUseCases(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ..
 			}
 		})
 	}
+}
+
+func RunUseCases(t *testing.T, useCases []UseCase, opts ...runtime.EnvironmentOption) {
+	RunUseCasesWith(t, compiler.New(), useCases, opts...)
+}
+
+func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...runtime.EnvironmentOption) {
+	prog, err := c.Compile(expression)
+
+	if err != nil {
+		panic(err)
+	}
+
+	options := []runtime.EnvironmentOption{
+		runtime.WithFunctions(c.Functions().Unwrap()),
+	}
+	options = append(options, opts...)
+
+	for n := 0; n < b.N; n++ {
+		_, e := Run(prog, opts...)
+
+		if e != nil {
+			panic(e)
+		}
+	}
+}
+
+func RunBenchmark(b *testing.B, expression string, opts ...runtime.EnvironmentOption) {
+	RunBenchmarkWith(b, compiler.New(), expression, opts...)
 }

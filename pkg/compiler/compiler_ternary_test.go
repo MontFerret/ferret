@@ -2,12 +2,10 @@ package compiler_test
 
 import (
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/compiler"
 )
 
 func TestTernaryOperator(t *testing.T) {
-	RunUseCases(t, compiler.New(), []UseCase{
+	RunUseCases(t, []UseCase{
 		{"RETURN 1 < 2 ? 3 : 4", 3, nil},
 		{"RETURN 1 > 2 ? 3 : 4", 4, nil},
 		{"RETURN 2 ? : 4", 2, nil},

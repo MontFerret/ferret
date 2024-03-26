@@ -6,16 +6,17 @@ import (
 )
 
 type ArrayIterator struct {
-	pos    int
 	values *Array
+	length int
+	pos    int
 }
 
 func NewArrayIterator(values *Array) core.Iterator {
-	return &ArrayIterator{values: values, pos: 0}
+	return &ArrayIterator{values: values, length: int(values.Length()), pos: 0}
 }
 
 func (iterator *ArrayIterator) HasNext(_ context.Context) (bool, error) {
-	return int(iterator.values.Length()) > iterator.pos, nil
+	return iterator.length > iterator.pos, nil
 }
 
 func (iterator *ArrayIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
