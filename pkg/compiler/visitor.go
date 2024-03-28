@@ -142,9 +142,9 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 			c.Accept(v)
 		}
 
-		v.emit(runtime.OpLoopSourceInit)
+		v.emit(runtime.OpForLoopInitInput)
 		loopJump = len(v.bytecode)
-		v.emit(runtime.OpLoopHasNext)
+		v.emit(runtime.OpForLoopHasNext)
 		exitJump = v.emitJump(runtime.OpJumpIfFalse)
 		// pop the boolean value from the stack
 		v.emitPop()
@@ -177,11 +177,11 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 		if hasValVar && hasCounterVar {
 			// we will calculate the index of the counter variable
-			v.emit(runtime.OpLoopNext)
+			v.emit(runtime.OpForLoopNext)
 		} else if hasValVar {
-			v.emit(runtime.OpLoopNextValue)
+			v.emit(runtime.OpForLoopNextValue)
 		} else if hasCounterVar {
-			v.emit(runtime.OpLoopNextCounter)
+			v.emit(runtime.OpForLoopNextCounter)
 		} else {
 			panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 		}
@@ -195,7 +195,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	} else {
 		// Create initial value for the loop counter
-		v.emitConstant(runtime.OpPush, values.NewInt(0))
+		v.emit(runtime.OpWhileLoopInitCounter)
 
 		loopJump = len(v.bytecode)
 
@@ -212,7 +212,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		// declare counter variable
 		// and increment it by 1
 		index := v.declareVariable(counterVar)
-		v.emit(runtime.OpIncr)
+		v.emit(runtime.OpWhileLoopNext)
 		v.defineVariable(index)
 	}
 
@@ -236,6 +236,9 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	if isForInLoop {
 		// pop the iterator
 		v.emitPopAndClose()
+	} else {
+		// pop the counter
+		v.emitPop()
 	}
 
 	return nil
@@ -392,9 +395,15 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 	}
 
 	ctx.Expression().Accept(v)
-	// we do not have custom functions, thus this feature is not needed at this moment
-	index := v.declareVariable(name)
-	v.defineVariable(index)
+
+	if name != ignorePseudoVariable {
+		// we do not have custom functions, thus this feature is not needed at this moment
+		index := v.declareVariable(name)
+		v.defineVariable(index)
+	} else {
+		// if we ignore the result of the execution, we pop it from the stack
+		v.emitPop()
+	}
 
 	return nil
 }
@@ -792,7 +801,7 @@ func (v *visitor) beginLoop(passThrough, distinct bool) {
 			arg = 1
 		}
 
-		v.emit(runtime.OpLoopDestinationInit, arg)
+		v.emit(runtime.OpLoopInitOutput, arg)
 	} else {
 		offset = offset + len(v.loops)
 	}

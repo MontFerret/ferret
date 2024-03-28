@@ -54,12 +54,14 @@ const (
 	OpJumpIfTrue
 	OpJump
 	OpJumpBackward
-	OpLoopDestinationInit
-	OpLoopSourceInit
-	OpLoopHasNext
-	OpLoopNext
-	OpLoopNextValue
-	OpLoopNextCounter
+	OpLoopInitOutput
+	OpForLoopInitInput
+	OpForLoopHasNext
+	OpForLoopNext
+	OpForLoopNextValue
+	OpForLoopNextCounter
+	OpWhileLoopInitCounter
+	OpWhileLoopNext
 	OpLoopReturn
 	OpReturn
 )

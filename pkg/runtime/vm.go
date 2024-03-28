@@ -375,17 +375,17 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopDestinationInit:
-			ds := NewDataSet(arg == 1)
+		case OpLoopInitOutput:
+			output := NewDataSet(arg == 1)
 
-			stack.Push(values.NewBoxedValue(ds))
+			stack.Push(values.NewBoxedValue(output))
 
-		case OpLoopSourceInit:
+		case OpForLoopInitInput:
 			// start a new iteration
 			// get the data source
-			src := stack.Pop()
+			input := stack.Pop()
 
-			switch src := src.(type) {
+			switch src := input.(type) {
 			case core.Iterable:
 				iterator, err := src.Iterate(ctx)
 
@@ -398,7 +398,7 @@ loop:
 				return nil, core.TypeError(src, types.Iterable)
 			}
 
-		case OpLoopHasNext:
+		case OpForLoopHasNext:
 			boxed := stack.Peek()
 			iterator := boxed.Unwrap().(core.Iterator)
 			hasNext, err := iterator.HasNext(ctx)
@@ -409,7 +409,7 @@ loop:
 
 			stack.Push(values.NewBoolean(hasNext))
 
-		case OpLoopNext, OpLoopNextValue, OpLoopNextCounter:
+		case OpForLoopNext, OpForLoopNextValue, OpForLoopNextCounter:
 			boxed := stack.Peek()
 			iterator := boxed.Unwrap().(core.Iterator)
 
@@ -421,14 +421,24 @@ loop:
 			}
 
 			switch op {
-			case OpLoopNextValue:
+			case OpForLoopNextValue:
 				stack.Push(val)
-			case OpLoopNextCounter:
+			case OpForLoopNextCounter:
 				stack.Push(key)
 			default:
 				stack.Push(key)
 				stack.Push(val)
 			}
+
+		case OpWhileLoopInitCounter:
+			stack.Push(values.ZeroInt)
+
+		case OpWhileLoopNext:
+			counter := stack.Pop().(values.Int)
+			// increment the counter for the next iteration
+			stack.Push(counter + 1)
+			// put the current counter value
+			stack.Push(counter)
 
 		case OpJump:
 			vm.ip += arg

@@ -78,6 +78,11 @@ func TestFor(t *testing.T) {
 			ShouldHaveSameItems,
 		},
 		{
+			`FOR i IN { items: [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] }.items RETURN i.name`,
+			[]any{"foo", "bar", "qaz"},
+			ShouldHaveSameItems,
+		},
+		{
 			`FOR prop IN ["a"]
 							FOR val IN [1, 2, 3]
 								RETURN {[prop]: val}`,
