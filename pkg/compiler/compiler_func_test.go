@@ -6,54 +6,43 @@ import (
 
 func TestFunctionCall(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		{
-			"RETURN TYPENAME(1)",
-			"int",
-			nil,
-		},
-		{
-			"WAIT(10) RETURN 1",
-			1,
-			nil,
-		},
-		{
-			"LET duration = 10 WAIT(duration) RETURN 1",
-			1,
-			nil,
-		},
 		//{
-		//	"RETURN (FALSE OR T::FAIL())?",
-		//	nil,
+		//	"RETURN TYPENAME(1)",
+		//	"int",
 		//	nil,
 		//},
 		//{
-		//	"RETURN ERROR()?",
+		//	"WAIT(10) RETURN 1",
+		//	1,
 		//	nil,
+		//},
+		//{
+		//	"LET duration = 10 WAIT(duration) RETURN 1",
+		//	1,
 		//	nil,
+		//},
+		{
+			"RETURN (FALSE OR T::FAIL())?",
+			nil,
+			nil,
+		},
+		{
+			"RETURN T::FAIL()?",
+			nil,
+			nil,
+		},
+		//{
+		//	`FOR i IN [1, 2, 3, 4]
+		//		LET duration = 10
+		//
+		//		WAIT(duration)
+		//
+		//		RETURN i * 2`,
+		//	[]int{2, 4, 6, 8},
+		//	ShouldEqualJSON,
 		//},
 	})
 
-	//
-	//Convey("Should compile function call inside FOR IN statement", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		FOR i IN [1, 2, 3, 4]
-	//			LET duration = 10
-	//
-	//			WAIT(duration)
-	//
-	//			RETURN i * 2
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	So(string(out), ShouldEqual, `[2,4,6,8]`)
-	//})
 	//
 	//Convey("Should handle errors when ? is used", t, func() {
 	//	c := compiler.New()

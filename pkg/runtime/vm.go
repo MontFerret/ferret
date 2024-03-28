@@ -283,28 +283,32 @@ loop:
 			reg := program.Constants[arg].(*values.Regexp)
 			stack.Push(!reg.Match(stack.Pop()))
 
-		case OpCall:
+		case OpCall, OpCallOptional:
 			fnName := stack.Pop().String()
 			res, err := vm.env.GetFunction(fnName)(ctx)
 
 			if err == nil {
 				stack.Push(res)
+			} else if op == OpCallOptional {
+				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall1:
+		case OpCall1, OpCall1Optional:
 			arg := stack.Pop()
 			fnName := stack.Pop().String()
 			res, err := vm.env.GetFunction(fnName)(ctx, arg)
 
 			if err == nil {
 				stack.Push(res)
+			} else if op == OpCall1Optional {
+				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall2:
+		case OpCall2, OpCall2Optional:
 			arg2 := stack.Pop()
 			arg1 := stack.Pop()
 			fnName := stack.Pop().String()
@@ -312,11 +316,13 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
+			} else if op == OpCall2Optional {
+				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall3:
+		case OpCall3, OpCall3Optional:
 			arg3 := stack.Pop()
 			arg2 := stack.Pop()
 			arg1 := stack.Pop()
@@ -325,11 +331,13 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
+			} else if op == OpCall3Optional {
+				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall4:
+		case OpCall4, OpCall4Optional:
 			arg4 := stack.Pop()
 			arg3 := stack.Pop()
 			arg2 := stack.Pop()
@@ -339,10 +347,12 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
+			} else if op == OpCall4Optional {
+				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
-		case OpCallN:
+		case OpCallN, OpCallNOptional:
 			// pop arguments from the stack
 			// and push them to the arguments array
 			// in reverse order because stack is LIFO and arguments array is FIFO
@@ -361,6 +371,8 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
+			} else if op == OpCallNOptional {
+				stack.Push(values.None)
 			} else {
 				return nil, err
 			}

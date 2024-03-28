@@ -297,7 +297,7 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 
 	name += call.FunctionName().GetText()
 
-	//regularCall := ctx.ErrorOperator() == nil
+	isNonOptional := ctx.ErrorOperator() == nil
 
 	v.emit(runtime.OpConstant, v.addConstant(values.String(name)))
 
@@ -310,17 +310,41 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 
 	switch size {
 	case 0:
-		v.emit(runtime.OpCall, 0)
+		if isNonOptional {
+			v.emit(runtime.OpCall, 0)
+		} else {
+			v.emit(runtime.OpCallOptional, 0)
+		}
 	case 1:
-		v.emit(runtime.OpCall1, 1)
+		if isNonOptional {
+			v.emit(runtime.OpCall1, 1)
+		} else {
+			v.emit(runtime.OpCall1Optional, 1)
+		}
 	case 2:
-		v.emit(runtime.OpCall2, 2)
+		if isNonOptional {
+			v.emit(runtime.OpCall2, 2)
+		} else {
+			v.emit(runtime.OpCall2Optional, 2)
+		}
 	case 3:
-		v.emit(runtime.OpCall3, 3)
+		if isNonOptional {
+			v.emit(runtime.OpCall3, 3)
+		} else {
+			v.emit(runtime.OpCall3Optional, 3)
+		}
 	case 4:
-		v.emit(runtime.OpCall4, 4)
+		if isNonOptional {
+			v.emit(runtime.OpCall4, 4)
+		} else {
+			v.emit(runtime.OpCall4Optional, 4)
+		}
 	default:
-		v.emit(runtime.OpCallN, size)
+		if isNonOptional {
+			v.emit(runtime.OpCallN, size)
+		} else {
+			v.emit(runtime.OpCallNOptional, size)
+		}
 	}
 
 	return nil
