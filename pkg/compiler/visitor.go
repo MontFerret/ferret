@@ -37,6 +37,7 @@ type (
 		loops          []*loopScope
 		globals        map[string]int
 		locals         []variable
+		catchTable     [][2]int
 	}
 )
 
@@ -63,6 +64,7 @@ func newVisitor(src string) *visitor {
 	v.loops = make([]*loopScope, 0)
 	v.globals = make(map[string]int)
 	v.locals = make([]variable, 0)
+	v.catchTable = make([][2]int, 0)
 
 	return v
 }
@@ -721,7 +723,13 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 			v.emit(runtime.OpLike)
 		}
 	} else if c := ctx.ExpressionAtom(); c != nil {
+		startCatch := len(v.bytecode)
 		c.Accept(v)
+
+		if c.ErrorOperator() != nil {
+			endCatch := len(v.bytecode)
+			v.catchTable = append(v.catchTable, [2]int{startCatch, endCatch})
+		}
 	}
 
 	return nil

@@ -9,11 +9,12 @@ import (
 )
 
 type Program struct {
-	Source    *core.Source
-	Locations []core.Location
-	Bytecode  []Opcode
-	Arguments []int
-	Constants []core.Value
+	Source     *core.Source
+	Locations  []core.Location
+	Bytecode   []Opcode
+	Arguments  []int
+	Constants  []core.Value
+	CatchTable [][2]int
 }
 
 func (program *Program) Disassemble() string {

@@ -68,6 +68,7 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	program.Arguments = l.arguments
 	program.Constants = l.constants
 	program.Locations = l.locations
+	program.CatchTable = l.catchTable
 
 	return program, err
 }

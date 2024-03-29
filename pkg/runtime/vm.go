@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"errors"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -24,21 +23,16 @@ func NewVM(opts ...EnvironmentOption) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, program *Program) (res []byte, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			switch x := r.(type) {
-			case string:
-				err = errors.New(x)
-			case error:
-				err = x
-			default:
-				err = errors.New("unknown panic")
+func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
+	tryCatch := func(pos int) bool {
+		for _, pair := range program.CatchTable {
+			if pos >= pair[0] && pos <= pair[1] {
+				return true
 			}
-
-			program = nil
 		}
-	}()
+
+		return false
+	}
 
 	// TODO: Add code analysis to calculate the number of operands and variables
 	stack := NewStack(len(program.Bytecode), 8)
@@ -289,7 +283,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCallOptional {
+			} else if op == OpCallOptional || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -302,7 +296,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall1Optional {
+			} else if op == OpCall1Optional || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -316,7 +310,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall2Optional {
+			} else if op == OpCall2Optional || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -331,7 +325,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall3Optional {
+			} else if op == OpCall3Optional || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -347,7 +341,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall4Optional {
+			} else if op == OpCall4Optional || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -371,7 +365,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCallNOptional {
+			} else if op == OpCallNOptional || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
