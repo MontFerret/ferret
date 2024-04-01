@@ -42,27 +42,15 @@ func TestFunctionCall(t *testing.T) {
 			[]int{2, 4, 6, 8},
 			ShouldEqualJSON,
 		},
-		//{
-		//	`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`,
-		//	2,
-		//	nil,
-		//},
+		{
+			`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`,
+			2,
+			nil,
+		},
+		{
+			`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`,
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			ShouldEqualJSON,
+		},
 	})
-
-	//
-	//Convey("Should be able to use FOR as arguments", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	So(string(out), ShouldEqual, `[0,1,2,3,4,5,6,7,8,9,10]`)
-	//})
 }

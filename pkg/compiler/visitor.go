@@ -231,7 +231,6 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	v.emitLoop(loopJump)
 	v.patchJump(exitJump)
 	v.endScope()
-	v.endLoop()
 	// pop the boolean value from the stack
 	v.emitPop()
 
@@ -242,6 +241,8 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		// pop the counter
 		v.emitPop()
 	}
+
+	v.endLoop()
 
 	return nil
 }
@@ -850,6 +851,18 @@ func (v *visitor) resolveLoopResult() int {
 
 func (v *visitor) endLoop() {
 	v.loops = v.loops[:len(v.loops)-1]
+
+	var unwrap bool
+
+	if len(v.loops) == 0 {
+		unwrap = true
+	} else if !v.loops[len(v.loops)-1].passThrough {
+		unwrap = true
+	}
+
+	if unwrap {
+		v.emit(runtime.OpLoopUnwrapOutput)
+	}
 }
 
 func (v *visitor) resolveLocalVariable(name string) int {

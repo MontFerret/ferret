@@ -23,6 +23,26 @@ func NewDataSet(distinct bool) *DataSet {
 	}
 }
 
+func (ds *DataSet) String() string {
+	return ds.values.String()
+}
+
+func (ds *DataSet) Unwrap() interface{} {
+	return ds.values
+}
+
+func (ds *DataSet) Hash() uint64 {
+	return ds.values.Hash()
+}
+
+func (ds *DataSet) Copy() core.Value {
+	return ds.values.Copy()
+}
+
+func (ds *DataSet) MarshalJSON() ([]byte, error) {
+	return ds.values.MarshalJSON()
+}
+
 func (ds *DataSet) Push(item core.Value) {
 	if ds.hashmap != nil {
 		hash := item.Hash()
@@ -37,10 +57,6 @@ func (ds *DataSet) Push(item core.Value) {
 	}
 
 	ds.values.Push(item)
-}
-
-func (ds *DataSet) MarshalJSON() ([]byte, error) {
-	return ds.values.MarshalJSON()
 }
 
 func (ds *DataSet) ToArray() *values.Array {

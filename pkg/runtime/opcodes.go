@@ -61,6 +61,7 @@ const (
 	OpJump
 	OpJumpBackward
 	OpLoopInitOutput
+	OpLoopUnwrapOutput
 	OpForLoopInitInput
 	OpForLoopHasNext
 	OpForLoopNext
