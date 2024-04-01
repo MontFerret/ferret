@@ -19,8 +19,9 @@ type (
 	}
 
 	loopScope struct {
-		lookBack    int
-		passThrough bool
+		resultOffset int
+		passThrough  bool
+		position     int
 	}
 
 	visitor struct {
@@ -136,7 +137,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		passThrough = true
 	}
 
-	v.beginLoop(passThrough, distinct)
+	v.beginLoopScope(passThrough, distinct)
 
 	if isForInLoop {
 		// Loop data source to iterate over
@@ -218,6 +219,8 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		v.defineVariable(index)
 	}
 
+	v.patchLoopScope(loopJump)
+
 	// body
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
 		for _, b := range body {
@@ -242,7 +245,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		v.emitPop()
 	}
 
-	v.endLoop()
+	v.endLoopScope()
 
 	return nil
 }
@@ -268,9 +271,52 @@ func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) 
 }
 
 func (v *visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) interface{} {
+	if c := ctx.ForExpressionClause(); c != nil {
+		c.Accept(v)
+	}
+
 	if c := ctx.ForExpressionStatement(); c != nil {
 		c.Accept(v)
 	}
+
+	return nil
+}
+
+func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) interface{} {
+	if c := ctx.LimitClause(); c != nil {
+		// TODO: Implement
+		c.Accept(v)
+	}
+
+	if c := ctx.FilterClause(); c != nil {
+		c.Accept(v)
+	}
+
+	if c := ctx.SortClause(); c != nil {
+		// TODO: Implement
+		c.Accept(v)
+	}
+
+	if c := ctx.CollectClause(); c != nil {
+		// TODO: Implement
+		c.Accept(v)
+	}
+
+	return nil
+}
+
+func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
+	ctx.Expression().Accept(v)
+	fwd := v.emitJump(runtime.OpJumpIfTrue)
+	// Pop on false
+	v.emitPop()
+	// And jump back to the beginning of the loop
+	bwd := v.emitJump(runtime.OpJumpBackward)
+	v.patchJumpWith(bwd, len(v.bytecode)-v.resolveLoopPosition())
+
+	// Otherwise, pop on true
+	v.patchJump(fwd)
+	v.emitPop()
 
 	return nil
 }
@@ -316,37 +362,37 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 		if isNonOptional {
 			v.emit(runtime.OpCall, 0)
 		} else {
-			v.emit(runtime.OpCallOptional, 0)
+			v.emit(runtime.OpCallSafe, 0)
 		}
 	case 1:
 		if isNonOptional {
 			v.emit(runtime.OpCall1, 1)
 		} else {
-			v.emit(runtime.OpCall1Optional, 1)
+			v.emit(runtime.OpCall1Safe, 1)
 		}
 	case 2:
 		if isNonOptional {
 			v.emit(runtime.OpCall2, 2)
 		} else {
-			v.emit(runtime.OpCall2Optional, 2)
+			v.emit(runtime.OpCall2Safe, 2)
 		}
 	case 3:
 		if isNonOptional {
 			v.emit(runtime.OpCall3, 3)
 		} else {
-			v.emit(runtime.OpCall3Optional, 3)
+			v.emit(runtime.OpCall3Safe, 3)
 		}
 	case 4:
 		if isNonOptional {
 			v.emit(runtime.OpCall4, 4)
 		} else {
-			v.emit(runtime.OpCall4Optional, 4)
+			v.emit(runtime.OpCall4Safe, 4)
 		}
 	default:
 		if isNonOptional {
 			v.emit(runtime.OpCallN, size)
 		} else {
-			v.emit(runtime.OpCallNOptional, size)
+			v.emit(runtime.OpCallNSafe, size)
 		}
 	}
 
@@ -628,7 +674,7 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 	if len(v.loops) == 0 {
 		v.emit(runtime.OpReturn)
 	} else {
-		v.emit(runtime.OpLoopReturn, v.resolveLoopResult())
+		v.emit(runtime.OpLoopReturn, v.resolveLoopResultOffset())
 	}
 
 	return nil
@@ -808,7 +854,7 @@ func (v *visitor) endScope() {
 	}
 }
 
-func (v *visitor) beginLoop(passThrough, distinct bool) {
+func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 	var allocate bool
 
 	// top loop
@@ -824,7 +870,7 @@ func (v *visitor) beginLoop(passThrough, distinct bool) {
 
 	// we know that during execution of RETURN expression, the top item in the stack is Iterator
 	// and the allocated array is below it
-	// thus, the default lookBack is 2 (len - 1 - 1)
+	// thus, the default resultOffset is 2 (len - 1 - 1)
 	offset := 2
 
 	if allocate {
@@ -840,16 +886,24 @@ func (v *visitor) beginLoop(passThrough, distinct bool) {
 	}
 
 	v.loops = append(v.loops, &loopScope{
-		passThrough: passThrough,
-		lookBack:    offset,
+		passThrough:  passThrough,
+		resultOffset: offset,
 	})
 }
 
-func (v *visitor) resolveLoopResult() int {
-	return v.loops[len(v.loops)-1].lookBack
+func (v *visitor) patchLoopScope(jump int) {
+	v.loops[len(v.loops)-1].position = jump
 }
 
-func (v *visitor) endLoop() {
+func (v *visitor) resolveLoopResultOffset() int {
+	return v.loops[len(v.loops)-1].resultOffset
+}
+
+func (v *visitor) resolveLoopPosition() int {
+	return v.loops[len(v.loops)-1].position
+}
+
+func (v *visitor) endLoopScope() {
 	v.loops = v.loops[:len(v.loops)-1]
 
 	var unwrap bool
@@ -959,16 +1013,20 @@ func (v *visitor) emitLoop(loopStart int) {
 	v.arguments[pos-1] = jump
 }
 
-// emitJump emits an opcode with a jump lookBack argument.
+// emitJump emits an opcode with a jump resultOffset argument.
 func (v *visitor) emitJump(op runtime.Opcode) int {
 	v.emit(op, jumpPlaceholder)
 
 	return len(v.bytecode)
 }
 
-// patchJump patches a jump lookBack argument.
+// patchJump patches a jump resultOffset argument.
 func (v *visitor) patchJump(offset int) {
 	jump := len(v.bytecode) - offset
+	v.arguments[offset-1] = jump
+}
+
+func (v *visitor) patchJumpWith(offset, jump int) {
 	v.arguments[offset-1] = jump
 }
 

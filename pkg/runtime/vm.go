@@ -277,32 +277,32 @@ loop:
 			reg := program.Constants[arg].(*values.Regexp)
 			stack.Push(!reg.Match(stack.Pop()))
 
-		case OpCall, OpCallOptional:
+		case OpCall, OpCallSafe:
 			fnName := stack.Pop().String()
 			res, err := vm.env.GetFunction(fnName)(ctx)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCallOptional || tryCatch(vm.ip) {
+			} else if op == OpCallSafe || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall1, OpCall1Optional:
+		case OpCall1, OpCall1Safe:
 			arg := stack.Pop()
 			fnName := stack.Pop().String()
 			res, err := vm.env.GetFunction(fnName)(ctx, arg)
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall1Optional || tryCatch(vm.ip) {
+			} else if op == OpCall1Safe || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall2, OpCall2Optional:
+		case OpCall2, OpCall2Safe:
 			arg2 := stack.Pop()
 			arg1 := stack.Pop()
 			fnName := stack.Pop().String()
@@ -310,13 +310,13 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall2Optional || tryCatch(vm.ip) {
+			} else if op == OpCall2Safe || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall3, OpCall3Optional:
+		case OpCall3, OpCall3Safe:
 			arg3 := stack.Pop()
 			arg2 := stack.Pop()
 			arg1 := stack.Pop()
@@ -325,13 +325,13 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall3Optional || tryCatch(vm.ip) {
+			} else if op == OpCall3Safe || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
 
-		case OpCall4, OpCall4Optional:
+		case OpCall4, OpCall4Safe:
 			arg4 := stack.Pop()
 			arg3 := stack.Pop()
 			arg2 := stack.Pop()
@@ -341,12 +341,12 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall4Optional || tryCatch(vm.ip) {
+			} else if op == OpCall4Safe || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
 			}
-		case OpCallN, OpCallNOptional:
+		case OpCallN, OpCallNSafe:
 			// pop arguments from the stack
 			// and push them to the arguments array
 			// in reverse order because stack is LIFO and arguments array is FIFO
@@ -365,7 +365,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCallNOptional || tryCatch(vm.ip) {
+			} else if op == OpCallNSafe || tryCatch(vm.ip) {
 				stack.Push(values.None)
 			} else {
 				return nil, err

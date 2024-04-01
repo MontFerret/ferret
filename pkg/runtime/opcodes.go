@@ -42,17 +42,17 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 	OpCall
-	OpCallOptional
+	OpCallSafe
 	OpCall1
-	OpCall1Optional
+	OpCall1Safe
 	OpCall2
-	OpCall2Optional
+	OpCall2Safe
 	OpCall3
-	OpCall3Optional
+	OpCall3Safe
 	OpCall4
-	OpCall4Optional
+	OpCall4Safe
 	OpCallN
-	OpCallNOptional
+	OpCallNSafe
 	OpPush
 	OpPop
 	OpPopClose
