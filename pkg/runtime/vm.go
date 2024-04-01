@@ -270,12 +270,26 @@ loop:
 			stack.Push(operators.Decrement(stack.Pop()))
 
 		case OpRegexpPositive:
-			reg := program.Constants[arg].(*values.Regexp)
-			stack.Push(reg.Match(stack.Pop()))
+			reg, err := values.ToRegexp(stack.Pop())
+
+			if err == nil {
+				stack.Push(reg.Match(stack.Pop()))
+			} else if tryCatch(vm.ip) {
+				stack.Push(values.False)
+			} else {
+				return nil, err
+			}
 
 		case OpRegexpNegative:
-			reg := program.Constants[arg].(*values.Regexp)
-			stack.Push(!reg.Match(stack.Pop()))
+			reg, err := values.ToRegexp(stack.Pop())
+
+			if err == nil {
+				stack.Push(!reg.Match(stack.Pop()))
+			} else if tryCatch(vm.ip) {
+				stack.Push(values.True)
+			} else {
+				return nil, err
+			}
 
 		case OpCall, OpCallSafe:
 			fnName := stack.Pop().String()

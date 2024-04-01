@@ -13,8 +13,8 @@ import (
 
 type Regexp regexp.Regexp
 
-func NewRegexp(pattern string) (*Regexp, error) {
-	r, err := regexp.Compile(pattern)
+func NewRegexp(pattern String) (*Regexp, error) {
+	r, err := regexp.Compile(string(pattern))
 
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (r *Regexp) Hash() uint64 {
 }
 
 func (r *Regexp) Copy() core.Value {
-	copied, err := NewRegexp(r.String())
+	copied, err := NewRegexp(String(r.String()))
 
 	// it should never happen
 	if err != nil {

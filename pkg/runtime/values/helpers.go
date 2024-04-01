@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"reflect"
 	"sort"
@@ -410,6 +411,17 @@ func ToBinary(input core.Value) Binary {
 	}
 
 	return NewBinary([]byte(input.String()))
+}
+
+func ToRegexp(input core.Value) (*Regexp, error) {
+	switch r := input.(type) {
+	case *Regexp:
+		return r, nil
+	case String:
+		return NewRegexp(r)
+	default:
+		return nil, core.TypeError(input, types.String, types.Regexp)
+	}
 }
 
 func Hash(typename string, content []byte) uint64 {
