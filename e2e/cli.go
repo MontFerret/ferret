@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -337,7 +336,7 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 		if info.IsDir() {
 			log.Debug().Msg("path points to a directory. retrieving list of files...")
 
-			fileInfos, err := ioutil.ReadDir(path)
+			fileInfos, err := os.ReadDir(path)
 
 			if err != nil {
 				log.Debug().Err(err).Msg("failed to retrieve list of files")
@@ -373,7 +372,7 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime.Opti
 
 		log.Debug().Msg("path points to a file. starting to read content")
 
-		out, err := ioutil.ReadFile(path)
+		out, err := os.ReadFile(path)
 
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to read content")
