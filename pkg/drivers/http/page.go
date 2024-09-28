@@ -15,6 +15,7 @@ import (
 )
 
 type HTMLPage struct {
+	driver   *Driver
 	document *HTMLDocument
 	cookies  *drivers.HTTPCookies
 	frames   *values.Array
@@ -26,6 +27,7 @@ func NewHTMLPage(
 	url string,
 	response drivers.HTTPResponse,
 	cookies *drivers.HTTPCookies,
+	driver *Driver,
 ) (*HTMLPage, error) {
 	doc, err := NewRootHTMLDocument(qdoc, url)
 
@@ -38,6 +40,7 @@ func NewHTMLPage(
 	p.cookies = cookies
 	p.frames = nil
 	p.response = response
+	p.driver = driver
 
 	return p, nil
 }
@@ -97,6 +100,7 @@ func (p *HTMLPage) Copy() core.Value {
 		p.document.GetURL().String(),
 		p.response,
 		cookies,
+		p.driver,
 	)
 
 	if err != nil {
@@ -212,8 +216,22 @@ func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocum
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) Navigate(_ context.Context, _ values.String) error {
-	return core.ErrNotSupported
+func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
+	page, err := p.driver.Open(ctx, drivers.Params{
+		URL: url.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	pp := page.(*HTMLPage)
+
+	p.document = pp.document
+	p.cookies = pp.cookies
+	p.frames = pp.frames
+	p.response = pp.response
+
+	return nil
 }
 
 func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
