@@ -481,8 +481,7 @@ loop:
 		case OpLoopReturn:
 			// pop the return value from the stack
 			res := stack.Pop()
-			pos := stack.Len() - arg
-			ds := stack.Get(pos).(*DataSet)
+			ds := stack.Get(arg).(*DataSet)
 			ds.Push(res)
 
 		case OpReturn:

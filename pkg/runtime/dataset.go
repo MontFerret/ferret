@@ -11,14 +11,14 @@ type DataSet struct {
 }
 
 func NewDataSet(distinct bool) *DataSet {
-	var hasmap map[uint64]bool
+	var hashmap map[uint64]bool
 
 	if distinct {
-		hasmap = make(map[uint64]bool)
+		hashmap = make(map[uint64]bool)
 	}
 
 	return &DataSet{
-		hashmap: hasmap,
+		hashmap: hashmap,
 		values:  values.NewArray(16),
 	}
 }

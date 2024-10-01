@@ -72,6 +72,13 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
 	for _, useCase := range useCases {
 		Convey(useCase.Expression, t, func() {
+			// catch panic
+			//defer func() {
+			//	if r := recover(); r != nil {
+			//		panic(fmt.Sprintf("%v,\nUse Case %d: - %s", r, idx+1, useCase.Expression))
+			//	}
+			//}()
+
 			prog, err := c.Compile(useCase.Expression)
 
 			So(err, ShouldBeNil)

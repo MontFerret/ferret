@@ -19,9 +19,9 @@ type (
 	}
 
 	loopScope struct {
-		resultOffset int
-		passThrough  bool
-		position     int
+		result      int
+		passThrough bool
+		position    int
 	}
 
 	visitor struct {
@@ -29,16 +29,18 @@ type (
 		err error
 		src string
 		//funcs          core.Functions
-		constantsIndex map[uint64]int
-		locations      []core.Location
-		bytecode       []runtime.Opcode
-		arguments      []int
-		constants      []core.Value
-		scope          int
-		loops          []*loopScope
-		globals        map[string]int
-		locals         []variable
-		catchTable     [][2]int
+		constantsIndex        map[uint64]int
+		locations             []core.Location
+		bytecode              []runtime.Opcode
+		arguments             []int
+		constants             []core.Value
+		scope                 int
+		loops                 []*loopScope
+		globals               map[string]int
+		locals                []variable
+		catchTable            [][2]int
+		operandsStackTracker  int
+		variablesStackTracker int
 	}
 )
 
@@ -674,7 +676,7 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 	if len(v.loops) == 0 {
 		v.emit(runtime.OpReturn)
 	} else {
-		v.emit(runtime.OpLoopReturn, v.resolveLoopResultOffset())
+		v.emit(runtime.OpLoopReturn, v.resolveLoopResultPosition())
 	}
 
 	return nil
@@ -856,6 +858,7 @@ func (v *visitor) endScope() {
 
 func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 	var allocate bool
+	var prevResult int
 
 	// top loop
 	if len(v.loops) == 0 {
@@ -866,12 +869,10 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 		// if the loop above does not do pass through
 		// we allocate a new array for this loop
 		allocate = !prev.passThrough
+		prevResult = prev.result
 	}
 
-	// we know that during execution of RETURN expression, the top item in the stack is Iterator
-	// and the allocated array is below it
-	// thus, the default resultOffset is 2 (len - 1 - 1)
-	offset := 2
+	var resultPos int
 
 	if allocate {
 		var arg int
@@ -880,14 +881,15 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 			arg = 1
 		}
 
+		resultPos = v.operandsStackTracker
 		v.emit(runtime.OpLoopInitOutput, arg)
 	} else {
-		offset = offset + len(v.loops)
+		resultPos = prevResult
 	}
 
 	v.loops = append(v.loops, &loopScope{
-		passThrough:  passThrough,
-		resultOffset: offset,
+		result:      resultPos,
+		passThrough: passThrough,
 	})
 }
 
@@ -895,8 +897,8 @@ func (v *visitor) patchLoopScope(jump int) {
 	v.loops[len(v.loops)-1].position = jump
 }
 
-func (v *visitor) resolveLoopResultOffset() int {
-	return v.loops[len(v.loops)-1].resultOffset
+func (v *visitor) resolveLoopResultPosition() int {
+	return v.loops[len(v.loops)-1].result
 }
 
 func (v *visitor) resolveLoopPosition() int {
@@ -1013,14 +1015,14 @@ func (v *visitor) emitLoop(loopStart int) {
 	v.arguments[pos-1] = jump
 }
 
-// emitJump emits an opcode with a jump resultOffset argument.
+// emitJump emits an opcode with a jump result argument.
 func (v *visitor) emitJump(op runtime.Opcode) int {
 	v.emit(op, jumpPlaceholder)
 
 	return len(v.bytecode)
 }
 
-// patchJump patches a jump resultOffset argument.
+// patchJump patches a jump result argument.
 func (v *visitor) patchJump(offset int) {
 	jump := len(v.bytecode) - offset
 	v.arguments[offset-1] = jump
@@ -1048,6 +1050,134 @@ func (v *visitor) emit(op runtime.Opcode, args ...int) {
 	}
 
 	v.arguments = append(v.arguments, arg)
+	v.updateStackTracker(op, arg)
+}
+
+func (v *visitor) updateStackTracker(op runtime.Opcode, arg int) {
+	switch op {
+	case runtime.OpPush:
+		v.operandsStackTracker++
+
+	case runtime.OpPop:
+		v.operandsStackTracker--
+
+	case runtime.OpPopClose:
+		v.operandsStackTracker--
+
+	case runtime.OpStoreGlobal:
+		v.operandsStackTracker--
+
+	case runtime.OpLoadGlobal:
+		v.operandsStackTracker++
+
+	case runtime.OpStoreLocal:
+		v.operandsStackTracker--
+		v.variablesStackTracker++
+
+	case runtime.OpPopLocal:
+		v.variablesStackTracker--
+
+	case runtime.OpLoadLocal:
+		v.operandsStackTracker++
+
+	case runtime.OpNone:
+		v.operandsStackTracker++
+
+	case runtime.OpConstant:
+		v.operandsStackTracker++
+
+	case runtime.OpCastBool:
+		break
+
+	case runtime.OpTrue:
+		v.operandsStackTracker++
+
+	case runtime.OpFalse:
+		v.operandsStackTracker++
+
+	case runtime.OpArray:
+		v.operandsStackTracker++
+		v.operandsStackTracker -= arg
+
+	case runtime.OpObject:
+		v.operandsStackTracker++
+		v.operandsStackTracker -= arg * 2
+
+	case runtime.OpLoadProperty, runtime.OpLoadPropertyOptional:
+		v.operandsStackTracker--
+
+	case runtime.OpNegate, runtime.OpFlipPositive, runtime.OpFlipNegative, runtime.OpNot:
+		break
+
+	case runtime.OpEq, runtime.OpNeq:
+		v.operandsStackTracker--
+
+	case runtime.OpGt, runtime.OpLt, runtime.OpGte, runtime.OpLte:
+		v.operandsStackTracker--
+
+	case runtime.OpIn, runtime.OpNotIn:
+		v.operandsStackTracker--
+
+	case runtime.OpLike, runtime.OpNotLike:
+		v.operandsStackTracker--
+
+	case runtime.OpAdd, runtime.OpSub, runtime.OpMulti, runtime.OpDiv, runtime.OpMod:
+		v.operandsStackTracker--
+
+	case runtime.OpIncr, runtime.OpDecr:
+		break
+
+	case runtime.OpRegexpPositive, runtime.OpRegexpNegative:
+		break
+
+	case runtime.OpCall, runtime.OpCallSafe:
+		break
+
+	case runtime.OpCall1, runtime.OpCall1Safe:
+		v.operandsStackTracker--
+
+	case runtime.OpCall2, runtime.OpCall2Safe:
+		v.operandsStackTracker -= 2
+
+	case runtime.OpCall3, runtime.OpCall3Safe:
+		v.operandsStackTracker -= 3
+
+	case runtime.OpCall4, runtime.OpCall4Safe:
+		v.operandsStackTracker -= 4
+
+	case runtime.OpCallN, runtime.OpCallNSafe:
+		v.operandsStackTracker -= arg
+
+	case runtime.OpRange:
+		v.operandsStackTracker--
+
+	case runtime.OpLoopInitOutput:
+		v.operandsStackTracker++
+
+	case runtime.OpLoopUnwrapOutput, runtime.OpForLoopInitInput:
+		break
+
+	case runtime.OpForLoopHasNext:
+		v.operandsStackTracker++
+
+	case runtime.OpForLoopNext:
+		v.operandsStackTracker += 2
+
+	case runtime.OpForLoopNextValue, runtime.OpForLoopNextCounter:
+		v.operandsStackTracker++
+
+	case runtime.OpWhileLoopInitCounter:
+		v.operandsStackTracker++
+
+	case runtime.OpWhileLoopNext:
+		v.operandsStackTracker += 2
+
+	case runtime.OpJump, runtime.OpJumpBackward, runtime.OpJumpIfFalse, runtime.OpJumpIfTrue:
+		break
+
+	case runtime.OpLoopReturn, runtime.OpReturn:
+		break
+	}
 }
 
 // addConstant adds a constant to the constants pool and returns its index.
