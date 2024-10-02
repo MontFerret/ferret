@@ -78,9 +78,6 @@ loop:
 		case OpNone:
 			stack.Push(values.None)
 
-		case OpConstant:
-			stack.Push(program.Constants[arg])
-
 		case OpCastBool:
 			stack.Push(values.ToBoolean(stack.Pop()))
 

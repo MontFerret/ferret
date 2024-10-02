@@ -4,7 +4,6 @@ type Opcode byte
 
 const (
 	OpNone Opcode = iota
-	OpConstant
 	OpCastBool
 	OpTrue
 	OpFalse

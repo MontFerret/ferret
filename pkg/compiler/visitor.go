@@ -350,7 +350,7 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 
 	isNonOptional := ctx.ErrorOperator() == nil
 
-	v.emit(runtime.OpConstant, v.addConstant(values.String(name)))
+	v.emitConstant(values.String(name))
 
 	var size int
 
@@ -526,7 +526,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 			comProp.Accept(v)
 			pac.Expression().Accept(v)
 		} else if variable := pac.Variable(); variable != nil {
-			v.emitConstant(runtime.OpConstant, values.NewString(variable.GetText()))
+			v.emitConstant(values.NewString(variable.GetText()))
 			variable.Accept(v)
 		}
 	}
@@ -538,13 +538,13 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 
 func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
 	if id := ctx.Identifier(); id != nil {
-		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+		v.emitConstant(values.NewString(ctx.GetText()))
 	} else if str := ctx.StringLiteral(); str != nil {
 		str.Accept(v)
 	} else if word := ctx.SafeReservedWord(); word != nil {
-		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+		v.emitConstant(values.NewString(ctx.GetText()))
 	} else if word := ctx.UnsafeReservedWord(); word != nil {
-		v.emitConstant(runtime.OpConstant, values.NewString(ctx.GetText()))
+		v.emitConstant(values.NewString(ctx.GetText()))
 	}
 
 	return nil
@@ -602,7 +602,7 @@ func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} 
 		}
 	}
 
-	v.emitConstant(runtime.OpConstant, values.NewString(b.String()))
+	v.emitConstant(values.NewString(b.String()))
 
 	return nil
 }
@@ -614,7 +614,7 @@ func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{
 		panic(err)
 	}
 
-	v.emitConstant(runtime.OpConstant, values.NewInt(val))
+	v.emitConstant(values.NewInt(val))
 
 	return nil
 }
@@ -626,7 +626,7 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 		panic(err)
 	}
 
-	v.emitConstant(runtime.OpConstant, values.NewFloat(val))
+	v.emitConstant(values.NewFloat(val))
 
 	return nil
 }
@@ -1004,8 +1004,8 @@ func (v *visitor) defineVariable(index int) {
 }
 
 // emitConstant emits an opcode with a constant argument.
-func (v *visitor) emitConstant(op runtime.Opcode, constant core.Value) {
-	v.emit(op, v.addConstant(constant))
+func (v *visitor) emitConstant(constant core.Value) {
+	v.emit(runtime.OpPush, v.addConstant(constant))
 }
 
 // emitLoop emits a loop instruction.
@@ -1081,9 +1081,6 @@ func (v *visitor) updateStackTracker(op runtime.Opcode, arg int) {
 		v.operandsStackTracker++
 
 	case runtime.OpNone:
-		v.operandsStackTracker++
-
-	case runtime.OpConstant:
 		v.operandsStackTracker++
 
 	case runtime.OpCastBool:
