@@ -6,6 +6,8 @@ import (
 	"crypto/tls"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"unsafe"
@@ -15,6 +17,11 @@ import (
 	"golang.org/x/text/encoding/charmap"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
+)
+
+const (
+	testInnerText    = `феррет`
+	testHTMLDocument = `<!DOCTYPE html><html><head><meta charset="windows-1251"/></head><body>феррет</body></html>`
 )
 
 func Test_newHTTPClientWithTransport(t *testing.T) {
@@ -87,6 +94,33 @@ func Test_newHTTPClient(t *testing.T) {
 	})
 }
 
+func TestDriver_readFromFile(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	localFile := filepath.Join(dir, "test.html")
+	if err := os.WriteFile(localFile, []byte(testHTMLDocument), 0644); err != nil {
+		t.Fatal(err)
+	}
+	localFileURL := "file://" + localFile
+	drv := &Driver{}
+	page, err := drv.Open(context.Background(), drivers.Params{
+		URL: localFileURL,
+	})
+	if err != nil {
+		t.Error("cannot read local file, %w", err)
+	}
+	if localFileURL != string(page.GetURL()) {
+		t.Errorf("got: '%s', want: '%s'", page.GetURL(), localFileURL)
+	}
+	doc := page.GetMainFrame()
+	gotInnerText, err := doc.GetElement().GetInnerText(ctx)
+	if err != nil {
+		t.Errorf("cannot get inner text of document, %s", err)
+	} else if testInnerText != gotInnerText {
+		t.Errorf("got: '%s', want: '%s'", gotInnerText, testInnerText)
+	}
+}
+
 func TestDriver_convertToUTF8(t *testing.T) {
 	type args struct {
 		inputData  string
@@ -102,11 +136,11 @@ func TestDriver_convertToUTF8(t *testing.T) {
 		{
 			name: "should convert to expected state",
 			args: args{
-				inputData:  `<!DOCTYPE html><html><head><meta charset="windows-1251"/></head><body>феррет</body></html>`,
+				inputData:  testHTMLDocument,
 				srcCharset: "windows-1251",
 			},
 			wantErr:  false,
-			expected: `<!DOCTYPE html><html><head><meta charset="windows-1251"/></head><body>феррет</body></html>`,
+			expected: testHTMLDocument,
 		},
 	}
 	for _, tt := range tests {

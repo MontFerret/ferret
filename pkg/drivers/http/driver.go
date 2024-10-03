@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/gobwas/glob"
 
@@ -88,17 +89,51 @@ func (drv *Driver) Name() string {
 	return drv.options.Name
 }
 
-func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
+func (drv *Driver) readLocalFile(u *url.URL, params drivers.Params) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, params.URL, nil)
 	if err != nil {
 		return nil, err
 	}
+	f, err := os.Open(u.Path)
+	if err != nil {
+		return nil, err
+	}
+	stat, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	return &http.Response{
+		Status:        "200 OK",
+		StatusCode:    http.StatusOK,
+		Proto:         "HTTP/1.1",
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		Header:        map[string][]string{},
+		Body:          f,
+		ContentLength: stat.Size(),
+		Trailer:       map[string][]string{},
+		Request:       req,
+	}, nil
+}
 
-	params = drivers.SetDefaultParams(drv.options.Options, params)
+func (drv *Driver) Open(ctx context.Context, params drivers.Params) (drivers.HTMLPage, error) {
+	var resp *http.Response
+	var err error
+	u, err := url.Parse(params.URL)
+	if err == nil && u.Scheme == "file" {
+		resp, err = drv.readLocalFile(u, params)
+	} else {
+		req, reqErr := http.NewRequest(http.MethodGet, params.URL, nil)
+		if reqErr != nil {
+			return nil, reqErr
+		}
 
-	drv.makeRequest(ctx, req, params)
+		params = drivers.SetDefaultParams(drv.options.Options, params)
+		drv.makeRequest(ctx, req, params)
+		resp, err = drv.client.Do(req)
+	}
 
-	resp, err := drv.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to retrieve a document %s", params.URL)
 	}
