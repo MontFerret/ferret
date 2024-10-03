@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr"
 	"github.com/pkg/errors"
 )
 
