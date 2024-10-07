@@ -10,7 +10,7 @@ import (
 )
 
 type VM struct {
-	ip      int
+	pc      int
 	stack   *Stack
 	globals map[string]core.Value
 	env     *Environment
@@ -38,13 +38,13 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 	stack := NewStack(len(program.Bytecode), 8)
 	vm.stack = stack
 	vm.globals = make(map[string]core.Value)
-	vm.ip = 0
+	vm.pc = 0
 
 loop:
-	for vm.ip < len(program.Bytecode) {
-		op := program.Bytecode[vm.ip]
-		arg := program.Arguments[vm.ip]
-		vm.ip++
+	for vm.pc < len(program.Bytecode) {
+		op := program.Bytecode[vm.pc]
+		arg := program.Arguments[vm.pc]
+		vm.pc++
 
 		switch op {
 		case OpPush:
@@ -271,7 +271,7 @@ loop:
 
 			if err == nil {
 				stack.Push(reg.Match(stack.Pop()))
-			} else if tryCatch(vm.ip) {
+			} else if tryCatch(vm.pc) {
 				stack.Push(values.False)
 			} else {
 				return nil, err
@@ -282,7 +282,7 @@ loop:
 
 			if err == nil {
 				stack.Push(!reg.Match(stack.Pop()))
-			} else if tryCatch(vm.ip) {
+			} else if tryCatch(vm.pc) {
 				stack.Push(values.True)
 			} else {
 				return nil, err
@@ -294,7 +294,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCallSafe || tryCatch(vm.ip) {
+			} else if op == OpCallSafe || tryCatch(vm.pc) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -307,7 +307,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall1Safe || tryCatch(vm.ip) {
+			} else if op == OpCall1Safe || tryCatch(vm.pc) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -321,7 +321,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall2Safe || tryCatch(vm.ip) {
+			} else if op == OpCall2Safe || tryCatch(vm.pc) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -336,7 +336,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall3Safe || tryCatch(vm.ip) {
+			} else if op == OpCall3Safe || tryCatch(vm.pc) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -352,7 +352,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCall4Safe || tryCatch(vm.ip) {
+			} else if op == OpCall4Safe || tryCatch(vm.pc) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -376,7 +376,7 @@ loop:
 
 			if err == nil {
 				stack.Push(res)
-			} else if op == OpCallNSafe || tryCatch(vm.ip) {
+			} else if op == OpCallNSafe || tryCatch(vm.pc) {
 				stack.Push(values.None)
 			} else {
 				return nil, err
@@ -460,19 +460,19 @@ loop:
 			stack.Push(counter)
 
 		case OpJump:
-			vm.ip += arg
+			vm.pc += arg
 
 		case OpJumpBackward:
-			vm.ip -= arg
+			vm.pc -= arg
 
 		case OpJumpIfFalse:
 			if !values.ToBoolean(stack.Peek()) {
-				vm.ip += arg
+				vm.pc += arg
 			}
 
 		case OpJumpIfTrue:
 			if values.ToBoolean(stack.Peek()) {
-				vm.ip += arg
+				vm.pc += arg
 			}
 
 		case OpLoopReturn:
