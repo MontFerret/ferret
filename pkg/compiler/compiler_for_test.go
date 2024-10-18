@@ -282,7 +282,18 @@ func BenchmarkForEmpty(b *testing.B) {
 
 func BenchmarkForArray(b *testing.B) {
 	p := compiler.New().MustCompile(`
-			FOR i IN [1,2,3]
+			FOR i IN [1,2,3,4,5,6,7,8,9,10]
+				RETURN i
+		`)
+
+	for n := 0; n < b.N; n++ {
+		p.Run(context.Background())
+	}
+}
+
+func BenchmarkForRange(b *testing.B) {
+	p := compiler.New().MustCompile(`
+			FOR i IN 1..10
 				RETURN i
 		`)
 
@@ -293,7 +304,7 @@ func BenchmarkForArray(b *testing.B) {
 
 func BenchmarkForObject(b *testing.B) {
 	p := compiler.New().MustCompile(`
-			FOR i IN {a: 'bar', b: 'foo', c: 'qaz'}
+			FOR i IN {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9":9, "10":10}
 				RETURN i
 		`)
 
