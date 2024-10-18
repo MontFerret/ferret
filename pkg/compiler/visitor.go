@@ -882,7 +882,7 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 		}
 
 		resultPos = v.operandsStackTracker
-		v.emit(runtime.OpLoopInitOutput, arg)
+		v.emit(runtime.OpLoopInit, arg)
 	} else {
 		resultPos = prevResult
 	}
@@ -917,7 +917,7 @@ func (v *visitor) endLoopScope() {
 	}
 
 	if unwrap {
-		v.emit(runtime.OpLoopUnwrapOutput)
+		v.emit(runtime.OpLoopFin)
 	}
 }
 
@@ -1148,10 +1148,10 @@ func (v *visitor) updateStackTracker(op runtime.Opcode, arg int) {
 	case runtime.OpRange:
 		v.operandsStackTracker--
 
-	case runtime.OpLoopInitOutput:
+	case runtime.OpLoopInit:
 		v.operandsStackTracker++
 
-	case runtime.OpLoopUnwrapOutput, runtime.OpForLoopInitInput:
+	case runtime.OpLoopFin, runtime.OpForLoopInitInput:
 		break
 
 	case runtime.OpForLoopHasNext:

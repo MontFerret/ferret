@@ -11,7 +11,7 @@ import (
 
 type VM struct {
 	pc      int
-	stack   *Stack
+	frames  []*Frame
 	globals map[string]core.Value
 	env     *Environment
 }
@@ -35,13 +35,16 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 	}
 
 	// TODO: Add code analysis to calculate the number of operands and variables
-	stack := NewStack(len(program.Bytecode), 8)
-	vm.stack = stack
+	frame := NewFrame(32)
+	vm.frames = []*Frame{frame}
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
 
 loop:
 	for vm.pc < len(program.Bytecode) {
+		stack := frame.Operands
+		variables := frame.Variables
+		state := frame.State
 		op := program.Bytecode[vm.pc]
 		arg := program.Arguments[vm.pc]
 		vm.pc++
@@ -67,13 +70,16 @@ loop:
 			stack.Push(vm.globals[program.Constants[arg].String()])
 
 		case OpStoreLocal:
-			stack.SetVariable(arg, stack.Pop())
+			variables.Set(arg, stack.Pop())
 
 		case OpPopLocal:
-			stack.PopVariable()
+			// TODO: Figure out how to remove the check. Added to handle variable cleanup after an empty iteration
+			if variables.Len() > 0 {
+				variables.Pop()
+			}
 
 		case OpLoadLocal:
-			stack.Push(stack.GetVariable(arg))
+			stack.Push(variables.Get(arg))
 
 		case OpNone:
 			stack.Push(values.None)
@@ -92,7 +98,7 @@ loop:
 			arr := values.NewSizedArray(size)
 
 			// iterate from the end to the beginning
-			// because stack is LIFO
+			// because frame is LIFO
 			for i := size - 1; i >= 0; i-- {
 				arr.MustSet(values.Int(i), stack.Pop())
 			}
@@ -358,9 +364,9 @@ loop:
 				return nil, err
 			}
 		case OpCallN, OpCallNSafe:
-			// pop arguments from the stack
+			// pop arguments from the frame
 			// and push them to the arguments array
-			// in reverse order because stack is LIFO and arguments array is FIFO
+			// in reverse order because frame is LIFO and arguments array is FIFO
 			argCount := arg
 			args := make([]core.Value, argCount)
 
@@ -368,7 +374,7 @@ loop:
 				args[i] = stack.Pop()
 			}
 
-			// pop the function name from the stack
+			// pop the function name from the frame
 			fnName := stack.Pop().String()
 
 			// call the function
@@ -392,11 +398,11 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopInitOutput:
-			stack.Push(NewDataSet(arg == 1))
+		case OpLoopInit:
+			state.Push(NewDataSet(arg == 1))
 
-		case OpLoopUnwrapOutput:
-			ds := stack.Pop().(*DataSet)
+		case OpLoopFin:
+			ds := state.Pop().(*DataSet)
 			stack.Push(ds.ToArray())
 
 		case OpForLoopInitInput:
@@ -476,9 +482,9 @@ loop:
 			}
 
 		case OpLoopReturn:
-			// pop the return value from the stack
+			// pop the return value from the frame
 			res := stack.Pop()
-			ds := stack.Get(arg).(*DataSet)
+			ds := state.Peek().(*DataSet)
 			ds.Push(res)
 
 		case OpReturn:
@@ -486,5 +492,5 @@ loop:
 		}
 	}
 
-	return stack.Pop().MarshalJSON()
+	return frame.Operands.Pop().MarshalJSON()
 }

@@ -3,7 +3,14 @@ package runtime
 type Opcode byte
 
 const (
-	OpNone Opcode = iota
+	OpPush Opcode = iota
+	OpPop
+	OpPopClose
+	OpJumpIfFalse
+	OpJumpIfTrue
+	OpJump
+	OpJumpBackward
+	OpNone
 	OpCastBool
 	OpTrue
 	OpFalse
@@ -52,15 +59,8 @@ const (
 	OpCall4Safe
 	OpCallN
 	OpCallNSafe
-	OpPush
-	OpPop
-	OpPopClose
-	OpJumpIfFalse
-	OpJumpIfTrue
-	OpJump
-	OpJumpBackward
-	OpLoopInitOutput
-	OpLoopUnwrapOutput
+	OpLoopInit
+	OpLoopFin
 	OpForLoopInitInput
 	OpForLoopHasNext
 	OpForLoopNext

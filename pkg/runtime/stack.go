@@ -5,61 +5,41 @@ import (
 )
 
 type Stack struct {
-	operands  []core.Value
-	variables []core.Value
+	values []core.Value
 }
 
-func NewStack(operands, variables int) *Stack {
+func NewStack(size int) *Stack {
 	return &Stack{
-		make([]core.Value, 0, operands),
-		make([]core.Value, 0, variables),
+		values: make([]core.Value, 0, size),
 	}
 }
 
 func (s *Stack) Len() int {
-	return len(s.operands)
+	return len(s.values)
 }
 
 func (s *Stack) Peek() core.Value {
-	return s.operands[len(s.operands)-1]
+	return s.values[len(s.values)-1]
 }
 
 func (s *Stack) Push(value core.Value) {
-	s.operands = append(s.operands, value)
+	s.values = append(s.values, value)
 }
 
 func (s *Stack) Pop() core.Value {
-	value := s.operands[len(s.operands)-1]
-	s.operands = s.operands[:len(s.operands)-1]
+	value := s.values[len(s.values)-1]
+	s.values = s.values[:len(s.values)-1]
 	return value
 }
 
 func (s *Stack) Get(index int) core.Value {
-	return s.operands[index]
+	return s.values[index]
 }
 
 func (s *Stack) Set(index int, value core.Value) {
-	s.operands[index] = value
-}
-
-func (s *Stack) GetVariable(index int) core.Value {
-	return s.variables[index]
-}
-
-func (s *Stack) SetVariable(index int, value core.Value) {
-	// TODO: Calculate in advance the number of variables
-	if index >= len(s.variables) {
-		s.variables = append(s.variables, value)
-		return
+	if index < len(s.values) {
+		s.values[index] = value
+	} else {
+		s.values = append(s.values, value)
 	}
-
-	s.variables[index] = value
-}
-
-func (s *Stack) PopVariable() {
-	if len(s.variables) == 0 {
-		return
-	}
-
-	s.variables = s.variables[:len(s.variables)-1]
 }
