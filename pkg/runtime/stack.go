@@ -32,6 +32,16 @@ func (s *Stack) Pop() core.Value {
 	return value
 }
 
+func (s *Stack) Swap() {
+	l := len(s.values)
+
+	if l < 2 {
+		return
+	}
+
+	s.values[l-1], s.values[l-2] = s.values[l-2], s.values[l-1]
+}
+
 func (s *Stack) Get(index int) core.Value {
 	return s.values[index]
 }

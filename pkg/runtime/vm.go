@@ -62,6 +62,8 @@ loop:
 			if ok {
 				closable.Close()
 			}
+		case OpSwap:
+			stack.Swap()
 
 		case OpStoreGlobal:
 			vm.globals[program.Constants[arg].String()] = stack.Pop()
@@ -81,19 +83,20 @@ loop:
 		case OpLoadLocal:
 			stack.Push(variables.Get(arg))
 
-		case OpNone:
+		case OpConstNone:
 			stack.Push(values.None)
 
 		case OpCastBool:
 			stack.Push(values.ToBoolean(stack.Pop()))
 
-		case OpTrue:
-			stack.Push(values.True)
+		case OpConstBool:
+			if arg > 0 {
+				stack.Push(values.True)
+			} else {
+				stack.Push(values.False)
+			}
 
-		case OpFalse:
-			stack.Push(values.False)
-
-		case OpArray:
+		case OpConstArray:
 			size := arg
 			arr := values.NewSizedArray(size)
 
@@ -105,7 +108,7 @@ loop:
 
 			stack.Push(arr)
 
-		case OpObject:
+		case OpConstObject:
 			obj := values.NewObject()
 			propertyCount := arg
 
@@ -398,14 +401,14 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopInit:
+		case OpLoopBegin:
 			state.Push(NewDataSet(arg == 1))
 
-		case OpLoopFin:
+		case OpLoopEnd:
 			ds := state.Pop().(*DataSet)
 			stack.Push(ds.ToArray())
 
-		case OpForLoopInitInput:
+		case OpForLoopInit:
 			// start a new iteration
 			// get the data source
 			input := stack.Pop()
@@ -455,13 +458,13 @@ loop:
 				stack.Push(val)
 			}
 
-		case OpWhileLoopInitCounter:
-			stack.Push(values.ZeroInt)
+		case OpWhileLoopInit:
+			state.Push(values.ZeroInt)
 
 		case OpWhileLoopNext:
-			counter := stack.Pop().(values.Int)
+			counter := state.Pop().(values.Int)
 			// increment the counter for the next iteration
-			stack.Push(counter + 1)
+			state.Push(counter + 1)
 			// put the current counter value
 			stack.Push(counter)
 

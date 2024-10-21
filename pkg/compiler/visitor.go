@@ -29,18 +29,16 @@ type (
 		err error
 		src string
 		//funcs          core.Functions
-		constantsIndex        map[uint64]int
-		locations             []core.Location
-		bytecode              []runtime.Opcode
-		arguments             []int
-		constants             []core.Value
-		scope                 int
-		loops                 []*loopScope
-		globals               map[string]int
-		locals                []variable
-		catchTable            [][2]int
-		operandsStackTracker  int
-		variablesStackTracker int
+		constantsIndex map[uint64]int
+		locations      []core.Location
+		bytecode       []runtime.Opcode
+		arguments      []int
+		constants      []core.Value
+		scope          int
+		loops          []*loopScope
+		globals        map[string]int
+		locals         []variable
+		catchTable     [][2]int
 	}
 )
 
@@ -147,7 +145,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 			c.Accept(v)
 		}
 
-		v.emit(runtime.OpForLoopInitInput)
+		v.emit(runtime.OpForLoopInit)
 		loopJump = len(v.bytecode)
 		v.emit(runtime.OpForLoopHasNext)
 		exitJump = v.emitJump(runtime.OpJumpIfFalse)
@@ -200,7 +198,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	} else {
 		// Create initial value for the loop counter
-		v.emit(runtime.OpWhileLoopInitCounter)
+		v.emit(runtime.OpWhileLoopInit)
 
 		loopJump = len(v.bytecode)
 
@@ -497,7 +495,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 		size = out.(int)
 	}
 
-	v.emit(runtime.OpArray, size)
+	v.emit(runtime.OpConstArray, size)
 
 	return nil
 }
@@ -531,7 +529,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 		}
 	}
 
-	v.emit(runtime.OpObject, len(assignments))
+	v.emit(runtime.OpConstObject, len(assignments))
 
 	return nil
 }
@@ -634,9 +632,9 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		v.emit(runtime.OpTrue)
+		v.emit(runtime.OpConstBool, 1)
 	case "false":
-		v.emit(runtime.OpFalse)
+		v.emit(runtime.OpConstBool, 0)
 	default:
 		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
@@ -645,7 +643,7 @@ func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{
 }
 
 func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
-	v.emit(runtime.OpNone)
+	v.emit(runtime.OpConstNone)
 
 	return nil
 }
@@ -881,8 +879,7 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 			arg = 1
 		}
 
-		resultPos = v.operandsStackTracker
-		v.emit(runtime.OpLoopInit, arg)
+		v.emit(runtime.OpLoopBegin, arg)
 	} else {
 		resultPos = prevResult
 	}
@@ -917,7 +914,7 @@ func (v *visitor) endLoopScope() {
 	}
 
 	if unwrap {
-		v.emit(runtime.OpLoopFin)
+		v.emit(runtime.OpLoopEnd)
 	}
 }
 
@@ -1050,131 +1047,6 @@ func (v *visitor) emit(op runtime.Opcode, args ...int) {
 	}
 
 	v.arguments = append(v.arguments, arg)
-	v.updateStackTracker(op, arg)
-}
-
-func (v *visitor) updateStackTracker(op runtime.Opcode, arg int) {
-	switch op {
-	case runtime.OpPush:
-		v.operandsStackTracker++
-
-	case runtime.OpPop:
-		v.operandsStackTracker--
-
-	case runtime.OpPopClose:
-		v.operandsStackTracker--
-
-	case runtime.OpStoreGlobal:
-		v.operandsStackTracker--
-
-	case runtime.OpLoadGlobal:
-		v.operandsStackTracker++
-
-	case runtime.OpStoreLocal:
-		v.operandsStackTracker--
-		v.variablesStackTracker++
-
-	case runtime.OpPopLocal:
-		v.variablesStackTracker--
-
-	case runtime.OpLoadLocal:
-		v.operandsStackTracker++
-
-	case runtime.OpNone:
-		v.operandsStackTracker++
-
-	case runtime.OpCastBool:
-		break
-
-	case runtime.OpTrue:
-		v.operandsStackTracker++
-
-	case runtime.OpFalse:
-		v.operandsStackTracker++
-
-	case runtime.OpArray:
-		v.operandsStackTracker++
-		v.operandsStackTracker -= arg
-
-	case runtime.OpObject:
-		v.operandsStackTracker++
-		v.operandsStackTracker -= arg * 2
-
-	case runtime.OpLoadProperty, runtime.OpLoadPropertyOptional:
-		v.operandsStackTracker--
-
-	case runtime.OpNegate, runtime.OpFlipPositive, runtime.OpFlipNegative, runtime.OpNot:
-		break
-
-	case runtime.OpEq, runtime.OpNeq:
-		v.operandsStackTracker--
-
-	case runtime.OpGt, runtime.OpLt, runtime.OpGte, runtime.OpLte:
-		v.operandsStackTracker--
-
-	case runtime.OpIn, runtime.OpNotIn:
-		v.operandsStackTracker--
-
-	case runtime.OpLike, runtime.OpNotLike:
-		v.operandsStackTracker--
-
-	case runtime.OpAdd, runtime.OpSub, runtime.OpMulti, runtime.OpDiv, runtime.OpMod:
-		v.operandsStackTracker--
-
-	case runtime.OpIncr, runtime.OpDecr:
-		break
-
-	case runtime.OpRegexpPositive, runtime.OpRegexpNegative:
-		break
-
-	case runtime.OpCall, runtime.OpCallSafe:
-		break
-
-	case runtime.OpCall1, runtime.OpCall1Safe:
-		v.operandsStackTracker--
-
-	case runtime.OpCall2, runtime.OpCall2Safe:
-		v.operandsStackTracker -= 2
-
-	case runtime.OpCall3, runtime.OpCall3Safe:
-		v.operandsStackTracker -= 3
-
-	case runtime.OpCall4, runtime.OpCall4Safe:
-		v.operandsStackTracker -= 4
-
-	case runtime.OpCallN, runtime.OpCallNSafe:
-		v.operandsStackTracker -= arg
-
-	case runtime.OpRange:
-		v.operandsStackTracker--
-
-	case runtime.OpLoopInit:
-		v.operandsStackTracker++
-
-	case runtime.OpLoopFin, runtime.OpForLoopInitInput:
-		break
-
-	case runtime.OpForLoopHasNext:
-		v.operandsStackTracker++
-
-	case runtime.OpForLoopNext:
-		v.operandsStackTracker += 2
-
-	case runtime.OpForLoopNextValue, runtime.OpForLoopNextCounter:
-		v.operandsStackTracker++
-
-	case runtime.OpWhileLoopInitCounter:
-		v.operandsStackTracker++
-
-	case runtime.OpWhileLoopNext:
-		v.operandsStackTracker += 2
-
-	case runtime.OpJump, runtime.OpJumpBackward, runtime.OpJumpIfFalse, runtime.OpJumpIfTrue:
-		break
-
-	case runtime.OpLoopReturn, runtime.OpReturn:
-		break
-	}
 }
 
 // addConstant adds a constant to the constants pool and returns its index.

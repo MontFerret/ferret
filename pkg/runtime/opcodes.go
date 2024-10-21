@@ -6,23 +6,23 @@ const (
 	OpPush Opcode = iota
 	OpPop
 	OpPopClose
-	OpJumpIfFalse
-	OpJumpIfTrue
-	OpJump
-	OpJumpBackward
-	OpNone
-	OpCastBool
-	OpTrue
-	OpFalse
-	OpArray
-	OpObject
+	OpSwap
 	OpLoadGlobal
 	OpStoreGlobal
 	OpLoadLocal
 	OpStoreLocal
 	OpPopLocal
+	OpJumpIfFalse
+	OpJumpIfTrue
+	OpJump
+	OpJumpBackward
+	OpConstNone
+	OpConstBool
+	OpConstArray
+	OpConstObject
 	OpLoadProperty
 	OpLoadPropertyOptional
+	OpCastBool
 	OpNegate
 	OpFlipPositive
 	OpFlipNegative
@@ -59,14 +59,14 @@ const (
 	OpCall4Safe
 	OpCallN
 	OpCallNSafe
-	OpLoopInit
-	OpLoopFin
-	OpForLoopInitInput
+	OpLoopBegin
+	OpLoopEnd
+	OpForLoopInit
 	OpForLoopHasNext
 	OpForLoopNext
 	OpForLoopNextValue
 	OpForLoopNextCounter
-	OpWhileLoopInitCounter
+	OpWhileLoopInit
 	OpWhileLoopNext
 	OpLoopReturn
 	OpReturn
