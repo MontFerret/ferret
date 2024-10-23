@@ -12,10 +12,34 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
+const (
+	VarTemporary VarType = iota // Short-lived intermediate results
+	VarIterator                 // FOR loop iterators
+	VarResult                   // Final result variables
+)
+
 type (
-	variable struct {
-		name  string
-		depth int
+	Register int
+
+	VarType int
+
+	Variable struct {
+		Name     string
+		FirstUse int // Instruction number of first use
+		LastUse  int // Instruction number of last use
+		Register Register
+		IsLive   bool
+		Type     VarType
+		Depth    int
+	}
+
+	Instruction struct {
+		OpCode     runtime.OpCode
+		Operands   [3]Register
+		VarRefs    []string    // Referenced variable names
+		Immediate  interface{} // Immediate value if any
+		Label      string      // For jumps and labels
+		SourceLine int
 	}
 
 	loopScope struct {
@@ -28,19 +52,16 @@ type (
 		*fql.BaseFqlParserVisitor
 		err error
 		src string
-		//funcs          core.Functions
-		constantsIndex        map[uint64]int
-		locations             []core.Location
-		bytecode              []runtime.Opcode
-		arguments             []int
-		constants             []core.Value
-		scope                 int
-		loops                 []*loopScope
-		globals               map[string]int
-		locals                []variable
-		catchTable            [][2]int
-		operandsStackTracker  int
-		variablesStackTracker int
+		//locations      []core.Location
+		instructions   []Instruction
+		registers      *RegisterAllocator
+		scope          int
+		constantsIndex map[uint64]int
+		constants      []core.Value
+		//loops          []*loopScope
+		globals    map[string]Register
+		locals     []Variable
+		catchTable [][2]int
 	}
 )
 
@@ -57,16 +78,16 @@ func newVisitor(src string) *visitor {
 	v := new(visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.src = src
+	v.registers = NewRegisterAllocator(1024)
 	//v.funcs = funcs
 	v.constantsIndex = make(map[uint64]int)
-	v.locations = make([]core.Location, 0)
-	v.bytecode = make([]runtime.Opcode, 0)
-	v.arguments = make([]int, 0)
+	//v.locations = make([]core.Location, 0)
+	v.instructions = make([]Instruction, 0, 32)
 	v.constants = make([]core.Value, 0)
 	v.scope = 0
-	v.loops = make([]*loopScope, 0)
-	v.globals = make(map[string]int)
-	v.locals = make([]variable, 0)
+	//v.loops = make([]*loopScope, 0)
+	v.globals = make(map[string]Register)
+	v.locals = make([]Variable, 0)
 	v.catchTable = make([][2]int, 0)
 
 	return v
@@ -98,7 +119,7 @@ func (v *visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} 
 	} else if c := ctx.FunctionCallExpression(); c != nil {
 		c.Accept(v)
 		// remove un-used return value
-		v.emitPop()
+		//v.emitPop()
 	} else if c := ctx.WaitForExpression(); c != nil {
 		c.Accept(v)
 	}
@@ -123,131 +144,131 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
 	v.beginScope()
 
-	var passThrough bool
-	var distinct bool
-	var returnRuleCtx antlr.RuleContext
-	var loopJump, exitJump int
-	// identify whether it's WHILE or FOR loop
-	isForInLoop := ctx.While() == nil
-	returnCtx := ctx.ForExpressionReturn()
-
-	if c := returnCtx.ReturnExpression(); c != nil {
-		returnRuleCtx = c
-		distinct = c.Distinct() != nil
-	} else if c := returnCtx.ForExpression(); c != nil {
-		returnRuleCtx = c
-		passThrough = true
-	}
-
-	v.beginLoopScope(passThrough, distinct)
-
-	if isForInLoop {
-		// Loop data source to iterate over
-		if c := ctx.ForExpressionSource(); c != nil {
-			c.Accept(v)
-		}
-
-		v.emit(runtime.OpForLoopInitInput)
-		loopJump = len(v.bytecode)
-		v.emit(runtime.OpForLoopHasNext)
-		exitJump = v.emitJump(runtime.OpJumpIfFalse)
-		// pop the boolean value from the stack
-		v.emitPop()
-
-		valVar := ctx.GetValueVariable().GetText()
-		counterVarCtx := ctx.GetCounterVariable()
-
-		hasValVar := valVar != ignorePseudoVariable
-		var hasCounterVar bool
-		var counterVar string
-
-		if counterVarCtx != nil {
-			counterVar = counterVarCtx.GetText()
-			hasCounterVar = true
-		}
-
-		var valVarIndex int
-
-		// declare value variable
-		if hasValVar {
-			valVarIndex = v.declareVariable(valVar)
-		}
-
-		var counterVarIndex int
-
-		if hasCounterVar {
-			// declare counter variable
-			counterVarIndex = v.declareVariable(counterVar)
-		}
-
-		if hasValVar && hasCounterVar {
-			// we will calculate the index of the counter variable
-			v.emit(runtime.OpForLoopNext)
-		} else if hasValVar {
-			v.emit(runtime.OpForLoopNextValue)
-		} else if hasCounterVar {
-			v.emit(runtime.OpForLoopNextCounter)
-		} else {
-			panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
-		}
-
-		if hasValVar {
-			v.defineVariable(valVarIndex)
-		}
-
-		if hasCounterVar {
-			v.defineVariable(counterVarIndex)
-		}
-	} else {
-		// Create initial value for the loop counter
-		v.emit(runtime.OpWhileLoopInitCounter)
-
-		loopJump = len(v.bytecode)
-
-		// Condition expression
-		ctx.Expression().Accept(v)
-
-		// Condition check
-		exitJump = v.emitJump(runtime.OpJumpIfFalse)
-		// pop the boolean value from the stack
-		v.emitPop()
-
-		counterVar := ctx.GetCounterVariable().GetText()
-
-		// declare counter variable
-		// and increment it by 1
-		index := v.declareVariable(counterVar)
-		v.emit(runtime.OpWhileLoopNext)
-		v.defineVariable(index)
-	}
-
-	v.patchLoopScope(loopJump)
-
-	// body
-	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
-		for _, b := range body {
-			b.Accept(v)
-		}
-	}
-
-	// return
-	returnRuleCtx.Accept(v)
-
-	v.emitLoop(loopJump)
-	v.patchJump(exitJump)
+	//var passThrough bool
+	//var distinct bool
+	//var returnRuleCtx antlr.RuleContext
+	//var loopJump, exitJump int
+	//// identify whether it's WHILE or FOR loop
+	//isForInLoop := ctx.While() == nil
+	//returnCtx := ctx.ForExpressionReturn()
+	//
+	//if c := returnCtx.ReturnExpression(); c != nil {
+	//	returnRuleCtx = c
+	//	distinct = c.Distinct() != nil
+	//} else if c := returnCtx.ForExpression(); c != nil {
+	//	returnRuleCtx = c
+	//	passThrough = true
+	//}
+	//
+	//v.beginLoopScope(passThrough, distinct)
+	//
+	//if isForInLoop {
+	//	// Loop data source to iterate over
+	//	if c := ctx.ForExpressionSource(); c != nil {
+	//		c.Accept(v)
+	//	}
+	//
+	//	v.emit(runtime.OpForLoopInitInput)
+	//	loopJump = len(v.instructions)
+	//	v.emit(runtime.OpForLoopHasNext)
+	//	exitJump = v.emitJump(runtime.OpJumpIfFalse)
+	//	// pop the boolean value from the stack
+	//	v.emitPop()
+	//
+	//	valVar := ctx.GetValueVariable().GetText()
+	//	counterVarCtx := ctx.GetCounterVariable()
+	//
+	//	hasValVar := valVar != ignorePseudoVariable
+	//	var hasCounterVar bool
+	//	var counterVar string
+	//
+	//	if counterVarCtx != nil {
+	//		counterVar = counterVarCtx.GetText()
+	//		hasCounterVar = true
+	//	}
+	//
+	//	var valVarIndex int
+	//
+	//	// declare value variable
+	//	if hasValVar {
+	//		valVarIndex = v.declareVariable(valVar)
+	//	}
+	//
+	//	var counterVarIndex int
+	//
+	//	if hasCounterVar {
+	//		// declare counter variable
+	//		counterVarIndex = v.declareVariable(counterVar)
+	//	}
+	//
+	//	if hasValVar && hasCounterVar {
+	//		// we will calculate the index of the counter variable
+	//		v.emit(runtime.OpForLoopNext)
+	//	} else if hasValVar {
+	//		v.emit(runtime.OpForLoopNextValue)
+	//	} else if hasCounterVar {
+	//		v.emit(runtime.OpForLoopNextCounter)
+	//	} else {
+	//		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+	//	}
+	//
+	//	if hasValVar {
+	//		v.defineVariable(valVarIndex)
+	//	}
+	//
+	//	if hasCounterVar {
+	//		v.defineVariable(counterVarIndex)
+	//	}
+	//} else {
+	//	// Create initial value for the loop counter
+	//	v.emit(runtime.OpWhileLoopInitCounter)
+	//
+	//	loopJump = len(v.instructions)
+	//
+	//	// Condition expression
+	//	ctx.Expression().Accept(v)
+	//
+	//	// Condition check
+	//	exitJump = v.emitJump(runtime.OpJumpIfFalse)
+	//	// pop the boolean value from the stack
+	//	v.emitPop()
+	//
+	//	counterVar := ctx.GetCounterVariable().GetText()
+	//
+	//	// declare counter variable
+	//	// and increment it by 1
+	//	index := v.declareVariable(counterVar)
+	//	v.emit(runtime.OpWhileLoopNext)
+	//	v.defineVariable(index)
+	//}
+	//
+	//v.patchLoopScope(loopJump)
+	//
+	//// body
+	//if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+	//	for _, b := range body {
+	//		b.Accept(v)
+	//	}
+	//}
+	//
+	//// return
+	//returnRuleCtx.Accept(v)
+	//
+	//v.emitLoop(loopJump)
+	//v.patchJump(exitJump)
 	v.endScope()
-	// pop the boolean value from the stack
-	v.emitPop()
-
-	if isForInLoop {
-		// pop the iterator
-		v.emitPopAndClose()
-	} else {
-		// pop the counter
-		v.emitPop()
-	}
-
-	v.endLoopScope()
+	//// pop the boolean value from the stack
+	//v.emitPop()
+	//
+	//if isForInLoop {
+	//	// pop the iterator
+	//	v.emitPopAndClose()
+	//} else {
+	//	// pop the counter
+	//	v.emitPop()
+	//}
+	//
+	//v.endLoopScope()
 
 	return nil
 }
@@ -308,140 +329,140 @@ func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 }
 
 func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
-	ctx.Expression().Accept(v)
-	fwd := v.emitJump(runtime.OpJumpIfTrue)
-	// Pop on false
-	v.emitPop()
-	// And jump back to the beginning of the loop
-	bwd := v.emitJump(runtime.OpJumpBackward)
-	v.patchJumpWith(bwd, len(v.bytecode)-v.resolveLoopPosition())
-
-	// Otherwise, pop on true
-	v.patchJump(fwd)
-	v.emitPop()
+	//ctx.Expression().Accept(v)
+	//fwd := v.emitJump(runtime.OpJumpIfTrue)
+	//// Pop on false
+	//v.emitPop()
+	//// And jump back to the beginning of the loop
+	//bwd := v.emitJump(runtime.OpJumpBackward)
+	//v.patchJumpWith(bwd, len(v.instructions)-v.resolveLoopPosition())
+	//
+	//// Otherwise, pop on true
+	//v.patchJump(fwd)
+	//v.emitPop()
 
 	return nil
 }
 
 func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
-	if c := ctx.VariableDeclaration(); c != nil {
-		c.Accept(v)
-	} else if c := ctx.FunctionCallExpression(); c != nil {
-		c.Accept(v)
-		// remove un-used return value
-		v.emitPop()
-	}
+	//if c := ctx.VariableDeclaration(); c != nil {
+	//	c.Accept(v)
+	//} else if c := ctx.FunctionCallExpression(); c != nil {
+	//	c.Accept(v)
+	//	// remove un-used return value
+	//	v.emitPop()
+	//}
 
 	return nil
 }
 
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
-	call := ctx.FunctionCall().(*fql.FunctionCallContext)
-
-	var name string
-
-	funcNS := call.Namespace()
-
-	if funcNS != nil {
-		name += funcNS.GetText()
-	}
-
-	name += call.FunctionName().GetText()
-
-	isNonOptional := ctx.ErrorOperator() == nil
-
-	v.emitConstant(values.String(name))
-
-	var size int
-
-	if args := call.ArgumentList(); args != nil {
-		out := v.VisitArgumentList(args.(*fql.ArgumentListContext))
-		size = out.(int)
-	}
-
-	switch size {
-	case 0:
-		if isNonOptional {
-			v.emit(runtime.OpCall, 0)
-		} else {
-			v.emit(runtime.OpCallSafe, 0)
-		}
-	case 1:
-		if isNonOptional {
-			v.emit(runtime.OpCall1, 1)
-		} else {
-			v.emit(runtime.OpCall1Safe, 1)
-		}
-	case 2:
-		if isNonOptional {
-			v.emit(runtime.OpCall2, 2)
-		} else {
-			v.emit(runtime.OpCall2Safe, 2)
-		}
-	case 3:
-		if isNonOptional {
-			v.emit(runtime.OpCall3, 3)
-		} else {
-			v.emit(runtime.OpCall3Safe, 3)
-		}
-	case 4:
-		if isNonOptional {
-			v.emit(runtime.OpCall4, 4)
-		} else {
-			v.emit(runtime.OpCall4Safe, 4)
-		}
-	default:
-		if isNonOptional {
-			v.emit(runtime.OpCallN, size)
-		} else {
-			v.emit(runtime.OpCallNSafe, size)
-		}
-	}
+	//call := ctx.FunctionCall().(*fql.FunctionCallContext)
+	//
+	//var name string
+	//
+	//funcNS := call.Namespace()
+	//
+	//if funcNS != nil {
+	//	name += funcNS.GetText()
+	//}
+	//
+	//name += call.FunctionName().GetText()
+	//
+	//isNonOptional := ctx.ErrorOperator() == nil
+	//
+	//v.emitConstant(values.String(name))
+	//
+	//var size int
+	//
+	//if args := call.ArgumentList(); args != nil {
+	//	out := v.VisitArgumentList(args.(*fql.ArgumentListContext))
+	//	size = out.(int)
+	//}
+	//
+	//switch size {
+	//case 0:
+	//	if isNonOptional {
+	//		v.emit(runtime.OpCall, 0)
+	//	} else {
+	//		v.emit(runtime.OpCallSafe, 0)
+	//	}
+	//case 1:
+	//	if isNonOptional {
+	//		v.emit(runtime.OpCall1, 1)
+	//	} else {
+	//		v.emit(runtime.OpCall1Safe, 1)
+	//	}
+	//case 2:
+	//	if isNonOptional {
+	//		v.emit(runtime.OpCall2, 2)
+	//	} else {
+	//		v.emit(runtime.OpCall2Safe, 2)
+	//	}
+	//case 3:
+	//	if isNonOptional {
+	//		v.emit(runtime.OpCall3, 3)
+	//	} else {
+	//		v.emit(runtime.OpCall3Safe, 3)
+	//	}
+	//case 4:
+	//	if isNonOptional {
+	//		v.emit(runtime.OpCall4, 4)
+	//	} else {
+	//		v.emit(runtime.OpCall4Safe, 4)
+	//	}
+	//default:
+	//	if isNonOptional {
+	//		v.emit(runtime.OpCallN, size)
+	//	} else {
+	//		v.emit(runtime.OpCallNSafe, size)
+	//	}
+	//}
 
 	return nil
 }
 
 func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
-	src := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
-
-	if c := src.Variable(); c != nil {
-		c.Accept(v)
-	} else if c := src.Param(); c != nil {
-		c.Accept(v)
-	} else if c := src.ObjectLiteral(); c != nil {
-		c.Accept(v)
-	} else if c := src.ArrayLiteral(); c != nil {
-		c.Accept(v)
-	} else if c := src.FunctionCall(); c != nil {
-		c.Accept(v)
-	}
-
-	segments := ctx.AllMemberExpressionPath()
-
-	for _, segment := range segments {
-		p := segment.(*fql.MemberExpressionPathContext)
-
-		if c := p.PropertyName(); c != nil {
-			c.Accept(v)
-		} else if c := p.ComputedPropertyName(); c != nil {
-			c.Accept(v)
-		}
-
-		if p.ErrorOperator() != nil {
-			v.emit(runtime.OpLoadPropertyOptional)
-		} else {
-			v.emit(runtime.OpLoadProperty)
-		}
-	}
+	//src := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
+	//
+	//if c := src.Variable(); c != nil {
+	//	c.Accept(v)
+	//} else if c := src.Param(); c != nil {
+	//	c.Accept(v)
+	//} else if c := src.ObjectLiteral(); c != nil {
+	//	c.Accept(v)
+	//} else if c := src.ArrayLiteral(); c != nil {
+	//	c.Accept(v)
+	//} else if c := src.FunctionCall(); c != nil {
+	//	c.Accept(v)
+	//}
+	//
+	//segments := ctx.AllMemberExpressionPath()
+	//
+	//for _, segment := range segments {
+	//	p := segment.(*fql.MemberExpressionPathContext)
+	//
+	//	if c := p.PropertyName(); c != nil {
+	//		c.Accept(v)
+	//	} else if c := p.ComputedPropertyName(); c != nil {
+	//		c.Accept(v)
+	//	}
+	//
+	//	if p.ErrorOperator() != nil {
+	//		v.emit(runtime.OpLoadPropertyOptional)
+	//	} else {
+	//		v.emit(runtime.OpLoadProperty)
+	//	}
+	//}
 
 	return nil
 }
 
 func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
-	ctx.GetLeft().Accept(v)
-	ctx.GetRight().Accept(v)
-
-	v.emit(runtime.OpRange)
+	//ctx.GetLeft().Accept(v)
+	//ctx.GetRight().Accept(v)
+	//
+	//v.emit(runtime.OpRange)
 
 	return nil
 }
@@ -475,9 +496,6 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		// we do not have custom functions, thus this feature is not needed at this moment
 		index := v.declareVariable(name)
 		v.defineVariable(index)
-	} else {
-		// if we ignore the result of the execution, we pop it from the stack
-		v.emitPop()
 	}
 
 	return nil
@@ -490,14 +508,14 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 }
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
-	var size int
-
-	if args := ctx.ArgumentList(); args != nil {
-		out := v.VisitArgumentList(args.(*fql.ArgumentListContext))
-		size = out.(int)
-	}
-
-	v.emit(runtime.OpArray, size)
+	//var size int
+	//
+	//if args := ctx.ArgumentList(); args != nil {
+	//	out := v.VisitArgumentList(args.(*fql.ArgumentListContext))
+	//	size = out.(int)
+	//}
+	//
+	//v.emit(runtime.OpArray, size)
 
 	return nil
 }
@@ -514,24 +532,24 @@ func (v *visitor) VisitArgumentList(ctx *fql.ArgumentListContext) interface{} {
 }
 
 func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
-	assignments := ctx.AllPropertyAssignment()
-
-	for _, pa := range assignments {
-		pac := pa.(*fql.PropertyAssignmentContext)
-
-		if prop, ok := pac.PropertyName().(*fql.PropertyNameContext); ok {
-			prop.Accept(v)
-			pac.Expression().Accept(v)
-		} else if comProp, ok := pac.ComputedPropertyName().(*fql.ComputedPropertyNameContext); ok {
-			comProp.Accept(v)
-			pac.Expression().Accept(v)
-		} else if variable := pac.Variable(); variable != nil {
-			v.emitConstant(values.NewString(variable.GetText()))
-			variable.Accept(v)
-		}
-	}
-
-	v.emit(runtime.OpObject, len(assignments))
+	//assignments := ctx.AllPropertyAssignment()
+	//
+	//for _, pa := range assignments {
+	//	pac := pa.(*fql.PropertyAssignmentContext)
+	//
+	//	if prop, ok := pac.PropertyName().(*fql.PropertyNameContext); ok {
+	//		prop.Accept(v)
+	//		pac.Expression().Accept(v)
+	//	} else if comProp, ok := pac.ComputedPropertyName().(*fql.ComputedPropertyNameContext); ok {
+	//		comProp.Accept(v)
+	//		pac.Expression().Accept(v)
+	//	} else if variable := pac.Variable(); variable != nil {
+	//		v.emitConstant(values.NewString(variable.GetText()))
+	//		variable.Accept(v)
+	//	}
+	//}
+	//
+	//v.emit(runtime.OpObject, len(assignments))
 
 	return nil
 }
@@ -632,20 +650,20 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 }
 
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
-	switch strings.ToLower(ctx.GetText()) {
-	case "true":
-		v.emit(runtime.OpTrue)
-	case "false":
-		v.emit(runtime.OpFalse)
-	default:
-		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
-	}
+	//switch strings.ToLower(ctx.GetText()) {
+	//case "true":
+	//	v.emit(runtime.OpTrue)
+	//case "false":
+	//	v.emit(runtime.OpFalse)
+	//default:
+	//	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+	//}
 
 	return nil
 }
 
 func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
-	v.emit(runtime.OpNone)
+	//v.emit(runtime.OpLoadNone)
 
 	return nil
 }
@@ -671,13 +689,13 @@ func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 }
 
 func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
-	ctx.Expression().Accept(v)
-
-	if len(v.loops) == 0 {
-		v.emit(runtime.OpReturn)
-	} else {
-		v.emit(runtime.OpLoopReturn, v.resolveLoopResultPosition())
-	}
+	//ctx.Expression().Accept(v)
+	//
+	//if len(v.loops) == 0 {
+	//	v.emit(runtime.OpReturn)
+	//} else {
+	//	v.emit(runtime.OpLoopReturn, v.resolveLoopResultPosition())
+	//}
 
 	return nil
 }
@@ -689,24 +707,22 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		op := op.(*fql.UnaryOperatorContext)
 
 		if op.Not() != nil {
-			v.emit(runtime.OpNot)
+			//v.emit(runtime.OpNot)
 		} else if op.Minus() != nil {
-			v.emit(runtime.OpFlipNegative)
+			// v.emit(runtime.OpFlipNegative)
 		} else if op.Plus() != nil {
-			v.emit(runtime.OpFlipPositive)
+			//v.emit(runtime.OpFlipPositive)
 		} else {
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
 	} else if op := ctx.LogicalAndOperator(); op != nil {
 		ctx.GetLeft().Accept(v)
 		end := v.emitJump(runtime.OpJumpIfFalse)
-		v.emitPop()
 		ctx.GetRight().Accept(v)
 		v.patchJump(end)
 	} else if op := ctx.LogicalOrOperator(); op != nil {
 		ctx.GetLeft().Accept(v)
 		end := v.emitJump(runtime.OpJumpIfTrue)
-		v.emitPop()
 		ctx.GetRight().Accept(v)
 		v.patchJump(end)
 	} else if op := ctx.GetTernaryOperator(); op != nil {
@@ -715,16 +731,12 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		otherwise := v.emitJump(runtime.OpJumpIfFalse)
 
 		if onTrue := ctx.GetOnTrue(); onTrue != nil {
-			// Remove the top value from the stack (the condition)
-			v.emitPop()
 			onTrue.Accept(v)
 		}
 
 		end := v.emitJump(runtime.OpJump)
 		v.patchJump(otherwise)
 
-		// Remove the top value from the stack (the condition)
-		v.emitPop()
 		ctx.GetOnFalse().Accept(v)
 		v.patchJump(end)
 	} else if c := ctx.Predicate(); c != nil {
@@ -735,51 +747,51 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 }
 
 func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
-	if op := ctx.EqualityOperator(); op != nil {
-		ctx.Predicate(0).Accept(v)
-		ctx.Predicate(1).Accept(v)
-
-		switch op.GetText() {
-		case "==":
-			v.emit(runtime.OpEq)
-		case "!=":
-			v.emit(runtime.OpNeq)
-		case ">":
-			v.emit(runtime.OpGt)
-		case ">=":
-			v.emit(runtime.OpGte)
-		case "<":
-			v.emit(runtime.OpLt)
-		case "<=":
-			v.emit(runtime.OpLte)
-		default:
-			panic(core.Error(ErrUnexpectedToken, op.GetText()))
-		}
-	} else if op := ctx.ArrayOperator(); op != nil {
-		// TODO: Implement me
-	} else if op := ctx.InOperator(); op != nil {
-		ctx.Predicate(0).Accept(v)
-		ctx.Predicate(1).Accept(v)
-
-		v.emit(runtime.OpIn)
-	} else if op := ctx.LikeOperator(); op != nil {
-		ctx.Predicate(0).Accept(v)
-		ctx.Predicate(1).Accept(v)
-
-		if op.(*fql.LikeOperatorContext).Not() != nil {
-			v.emit(runtime.OpNotLike)
-		} else {
-			v.emit(runtime.OpLike)
-		}
-	} else if c := ctx.ExpressionAtom(); c != nil {
-		startCatch := len(v.bytecode)
-		c.Accept(v)
-
-		if c.ErrorOperator() != nil {
-			endCatch := len(v.bytecode)
-			v.catchTable = append(v.catchTable, [2]int{startCatch, endCatch})
-		}
-	}
+	//if op := ctx.EqualityOperator(); op != nil {
+	//	ctx.Predicate(0).Accept(v)
+	//	ctx.Predicate(1).Accept(v)
+	//
+	//	switch op.GetText() {
+	//	case "==":
+	//		v.emit(runtime.OpEq)
+	//	case "!=":
+	//		v.emit(runtime.OpNeq)
+	//	case ">":
+	//		v.emit(runtime.OpGt)
+	//	case ">=":
+	//		v.emit(runtime.OpGte)
+	//	case "<":
+	//		v.emit(runtime.OpLt)
+	//	case "<=":
+	//		v.emit(runtime.OpLte)
+	//	default:
+	//		panic(core.Error(ErrUnexpectedToken, op.GetText()))
+	//	}
+	//} else if op := ctx.ArrayOperator(); op != nil {
+	//	// TODO: Implement me
+	//} else if op := ctx.InOperator(); op != nil {
+	//	ctx.Predicate(0).Accept(v)
+	//	ctx.Predicate(1).Accept(v)
+	//
+	//	v.emit(runtime.OpIn)
+	//} else if op := ctx.LikeOperator(); op != nil {
+	//	ctx.Predicate(0).Accept(v)
+	//	ctx.Predicate(1).Accept(v)
+	//
+	//	if op.(*fql.LikeOperatorContext).Not() != nil {
+	//		v.emit(runtime.OpNotLike)
+	//	} else {
+	//		v.emit(runtime.OpLike)
+	//	}
+	//} else if c := ctx.ExpressionAtom(); c != nil {
+	//	startCatch := len(v.instructions)
+	//	c.Accept(v)
+	//
+	//	if c.ErrorOperator() != nil {
+	//		endCatch := len(v.instructions)
+	//		v.catchTable = append(v.catchTable, [2]int{startCatch, endCatch})
+	//	}
+	//}
 
 	return nil
 }
@@ -791,11 +803,11 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "*":
-			v.emit(runtime.OpMulti)
+			v.emitTemp(runtime.OpMulti)
 		case "/":
-			v.emit(runtime.OpDiv)
+			v.emitTemp(runtime.OpDiv)
 		case "%":
-			v.emit(runtime.OpMod)
+			v.emitTemp(runtime.OpMod)
 		}
 	} else if op := ctx.AdditiveOperator(); op != nil {
 		ctx.ExpressionAtom(0).Accept(v)
@@ -803,9 +815,9 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "+":
-			v.emit(runtime.OpAdd)
+			v.emitTemp(runtime.OpAdd)
 		case "-":
-			v.emit(runtime.OpSub)
+			v.emitTemp(runtime.OpSub)
 		}
 	} else if op := ctx.RegexpOperator(); op != nil {
 		ctx.ExpressionAtom(0).Accept(v)
@@ -813,9 +825,9 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "=~":
-			v.emit(runtime.OpRegexpPositive)
+			v.emitTemp(runtime.OpRegexpPositive)
 		case "!~":
-			v.emit(runtime.OpRegexpNegative)
+			v.emitTemp(runtime.OpRegexpNegative)
 		default:
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
@@ -850,47 +862,48 @@ func (v *visitor) endScope() {
 	v.scope--
 
 	// Pop all local variables from the stack within the closed scope.
-	for len(v.locals) > 0 && v.locals[len(v.locals)-1].depth > v.scope {
+	for len(v.locals) > 0 && v.locals[len(v.locals)-1].Depth > v.scope {
+		v.registers.LivenessAnalysis()
 		v.emit(runtime.OpPopLocal)
 		v.locals = v.locals[:len(v.locals)-1]
 	}
 }
 
 func (v *visitor) beginLoopScope(passThrough, distinct bool) {
-	var allocate bool
-	var prevResult int
-
-	// top loop
-	if len(v.loops) == 0 {
-		allocate = true
-	} else if !passThrough {
-		// nested with explicit RETURN expression
-		prev := v.loops[len(v.loops)-1]
-		// if the loop above does not do pass through
-		// we allocate a new array for this loop
-		allocate = !prev.passThrough
-		prevResult = prev.result
-	}
-
-	var resultPos int
-
-	if allocate {
-		var arg int
-
-		if distinct {
-			arg = 1
-		}
-
-		resultPos = v.operandsStackTracker
-		v.emit(runtime.OpLoopInitOutput, arg)
-	} else {
-		resultPos = prevResult
-	}
-
-	v.loops = append(v.loops, &loopScope{
-		result:      resultPos,
-		passThrough: passThrough,
-	})
+	//var allocate bool
+	//var prevResult int
+	//
+	//// top loop
+	//if len(v.loops) == 0 {
+	//	allocate = true
+	//} else if !passThrough {
+	//	// nested with explicit RETURN expression
+	//	prev := v.loops[len(v.loops)-1]
+	//	// if the loop above does not do pass through
+	//	// we allocate a new array for this loop
+	//	allocate = !prev.passThrough
+	//	prevResult = prev.result
+	//}
+	//
+	//var resultPos int
+	//
+	//if allocate {
+	//	var arg int
+	//
+	//	if distinct {
+	//		arg = 1
+	//	}
+	//
+	//	resultPos = v.operandsStackTracker
+	//	v.emit(runtime.OpLoopInitOutput, arg)
+	//} else {
+	//	resultPos = prevResult
+	//}
+	//
+	//v.loops = append(v.loops, &loopScope{
+	//	result:      resultPos,
+	//	passThrough: passThrough,
+	//})
 }
 
 func (v *visitor) patchLoopScope(jump int) {
@@ -906,19 +919,19 @@ func (v *visitor) resolveLoopPosition() int {
 }
 
 func (v *visitor) endLoopScope() {
-	v.loops = v.loops[:len(v.loops)-1]
-
-	var unwrap bool
-
-	if len(v.loops) == 0 {
-		unwrap = true
-	} else if !v.loops[len(v.loops)-1].passThrough {
-		unwrap = true
-	}
-
-	if unwrap {
-		v.emit(runtime.OpLoopUnwrapOutput)
-	}
+	//v.loops = v.loops[:len(v.loops)-1]
+	//
+	//var unwrap bool
+	//
+	//if len(v.loops) == 0 {
+	//	unwrap = true
+	//} else if !v.loops[len(v.loops)-1].passThrough {
+	//	unwrap = true
+	//}
+	//
+	//if unwrap {
+	//	v.emit(runtime.OpLoopUnwrapOutput)
+	//}
 }
 
 func (v *visitor) resolveLocalVariable(name string) int {
@@ -936,22 +949,22 @@ func (v *visitor) readVariable(name string) {
 		return
 	}
 
-	// Resolve the variable name to an index.
-	arg := v.resolveLocalVariable(name)
-
-	if arg > -1 {
-		v.emit(runtime.OpLoadLocal, arg)
-
-		return
-	}
-
-	index, ok := v.globals[name]
-
-	if !ok {
-		panic(core.Error(ErrVariableNotFound, name))
-	}
-
-	v.emit(runtime.OpLoadGlobal, index)
+	//// Resolve the variable name to an index.
+	//arg := v.resolveLocalVariable(name)
+	//
+	//if arg > -1 {
+	//	v.emit(runtime.OpLoadLocal, arg)
+	//
+	//	return
+	//}
+	//
+	//index, ok := v.globals[name]
+	//
+	//if !ok {
+	//	panic(core.Error(ErrVariableNotFound, name))
+	//}
+	//
+	//v.emit(runtime.OpLoadGlobal, index)
 }
 
 func (v *visitor) declareVariable(name string) int {
@@ -1005,176 +1018,63 @@ func (v *visitor) defineVariable(index int) {
 
 // emitConstant emits an opcode with a constant argument.
 func (v *visitor) emitConstant(constant core.Value) {
-	v.emit(runtime.OpPush, v.addConstant(constant))
+	//v.emit(runtime.OpPush, v.addConstant(constant))
 }
 
 // emitLoop emits a loop instruction.
 func (v *visitor) emitLoop(loopStart int) {
 	pos := v.emitJump(runtime.OpJumpBackward)
 	jump := pos - loopStart
-	v.arguments[pos-1] = jump
+	//v.arguments[pos-1] = jump
 }
 
 // emitJump emits an opcode with a jump result argument.
-func (v *visitor) emitJump(op runtime.Opcode) int {
-	v.emit(op, jumpPlaceholder)
+func (v *visitor) emitJump(op runtime.OpCode) int {
+	//v.emit(op, jumpPlaceholder)
+	//
+	//return len(v.instructions)
 
-	return len(v.bytecode)
+	return 0
 }
 
 // patchJump patches a jump result argument.
 func (v *visitor) patchJump(offset int) {
-	jump := len(v.bytecode) - offset
-	v.arguments[offset-1] = jump
+	//jump := len(v.instructions) - offset
+	//v.arguments[offset-1] = jump
 }
 
 func (v *visitor) patchJumpWith(offset, jump int) {
-	v.arguments[offset-1] = jump
-}
-
-func (v *visitor) emitPop() {
-	v.emit(runtime.OpPop)
+	//v.arguments[offset-1] = jump
 }
 
 func (v *visitor) emitPopAndClose() {
-	v.emit(runtime.OpPopClose)
+	//v.emit(runtime.OpPopClose)
 }
 
-func (v *visitor) emit(op runtime.Opcode, args ...int) {
-	v.bytecode = append(v.bytecode, op)
+func (v visitor) emitTemp(op runtime.OpCode) {
+	// Allocate result register
+	resultReg, err := v.registers.AllocateRegister(VarTemporary)
 
-	var arg int
-
-	if len(args) > 0 {
-		arg = args[0]
+	if err != nil {
+		panic(err)
 	}
 
-	v.arguments = append(v.arguments, arg)
-	v.updateStackTracker(op, arg)
+	v.emit(op, resultReg, 0, 0)
 }
 
-func (v *visitor) updateStackTracker(op runtime.Opcode, arg int) {
-	switch op {
-	case runtime.OpPush:
-		v.operandsStackTracker++
+func (v *visitor) emitDS(op runtime.OpCode, dest, src1 Register) {
+	v.emit(op, dest, src1, 0)
+}
 
-	case runtime.OpPop:
-		v.operandsStackTracker--
+func (v *visitor) emitD(op runtime.OpCode, dest Register) {
+	v.emit(op, dest, 0, 0)
+}
 
-	case runtime.OpPopClose:
-		v.operandsStackTracker--
-
-	case runtime.OpStoreGlobal:
-		v.operandsStackTracker--
-
-	case runtime.OpLoadGlobal:
-		v.operandsStackTracker++
-
-	case runtime.OpStoreLocal:
-		v.operandsStackTracker--
-		v.variablesStackTracker++
-
-	case runtime.OpPopLocal:
-		v.variablesStackTracker--
-
-	case runtime.OpLoadLocal:
-		v.operandsStackTracker++
-
-	case runtime.OpNone:
-		v.operandsStackTracker++
-
-	case runtime.OpCastBool:
-		break
-
-	case runtime.OpTrue:
-		v.operandsStackTracker++
-
-	case runtime.OpFalse:
-		v.operandsStackTracker++
-
-	case runtime.OpArray:
-		v.operandsStackTracker++
-		v.operandsStackTracker -= arg
-
-	case runtime.OpObject:
-		v.operandsStackTracker++
-		v.operandsStackTracker -= arg * 2
-
-	case runtime.OpLoadProperty, runtime.OpLoadPropertyOptional:
-		v.operandsStackTracker--
-
-	case runtime.OpNegate, runtime.OpFlipPositive, runtime.OpFlipNegative, runtime.OpNot:
-		break
-
-	case runtime.OpEq, runtime.OpNeq:
-		v.operandsStackTracker--
-
-	case runtime.OpGt, runtime.OpLt, runtime.OpGte, runtime.OpLte:
-		v.operandsStackTracker--
-
-	case runtime.OpIn, runtime.OpNotIn:
-		v.operandsStackTracker--
-
-	case runtime.OpLike, runtime.OpNotLike:
-		v.operandsStackTracker--
-
-	case runtime.OpAdd, runtime.OpSub, runtime.OpMulti, runtime.OpDiv, runtime.OpMod:
-		v.operandsStackTracker--
-
-	case runtime.OpIncr, runtime.OpDecr:
-		break
-
-	case runtime.OpRegexpPositive, runtime.OpRegexpNegative:
-		break
-
-	case runtime.OpCall, runtime.OpCallSafe:
-		break
-
-	case runtime.OpCall1, runtime.OpCall1Safe:
-		v.operandsStackTracker--
-
-	case runtime.OpCall2, runtime.OpCall2Safe:
-		v.operandsStackTracker -= 2
-
-	case runtime.OpCall3, runtime.OpCall3Safe:
-		v.operandsStackTracker -= 3
-
-	case runtime.OpCall4, runtime.OpCall4Safe:
-		v.operandsStackTracker -= 4
-
-	case runtime.OpCallN, runtime.OpCallNSafe:
-		v.operandsStackTracker -= arg
-
-	case runtime.OpRange:
-		v.operandsStackTracker--
-
-	case runtime.OpLoopInitOutput:
-		v.operandsStackTracker++
-
-	case runtime.OpLoopUnwrapOutput, runtime.OpForLoopInitInput:
-		break
-
-	case runtime.OpForLoopHasNext:
-		v.operandsStackTracker++
-
-	case runtime.OpForLoopNext:
-		v.operandsStackTracker += 2
-
-	case runtime.OpForLoopNextValue, runtime.OpForLoopNextCounter:
-		v.operandsStackTracker++
-
-	case runtime.OpWhileLoopInitCounter:
-		v.operandsStackTracker++
-
-	case runtime.OpWhileLoopNext:
-		v.operandsStackTracker += 2
-
-	case runtime.OpJump, runtime.OpJumpBackward, runtime.OpJumpIfFalse, runtime.OpJumpIfTrue:
-		break
-
-	case runtime.OpLoopReturn, runtime.OpReturn:
-		break
-	}
+func (v *visitor) emit(op runtime.OpCode, dest, src1, src2 Register) {
+	v.instructions = append(v.instructions, Instruction{
+		OpCode:   op,
+		Operands: [3]Register{dest, src1, src2},
+	})
 }
 
 // addConstant adds a constant to the constants pool and returns its index.

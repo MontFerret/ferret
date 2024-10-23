@@ -21,7 +21,7 @@ func TestLogicalOperators(t *testing.T) {
 	//
 	//Convey("ERROR()? || 'boo'  should return 'boo'", t, func() {
 	//	c := compiler.New()
-	//	c.RegisterFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+	//	c.RegisterFunction("ERROR", func(ctx context.visitor, args ...core.Value) (core.Value, error) {
 	//		return nil, errors.New("test")
 	//	})
 	//
@@ -39,7 +39,7 @@ func TestLogicalOperators(t *testing.T) {
 	//
 	//Convey("!ERROR()? && TRUE should return false", t, func() {
 	//	c := compiler.New()
-	//	c.RegisterFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+	//	c.RegisterFunction("ERROR", func(ctx context.visitor, args ...core.Value) (core.Value, error) {
 	//		return nil, errors.New("test")
 	//	})
 	//

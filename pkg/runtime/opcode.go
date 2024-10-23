@@ -1,19 +1,26 @@
 package runtime
 
-type Opcode byte
+type OpCode byte
 
 const (
-	OpNone Opcode = iota
-	OpCastBool
-	OpTrue
-	OpFalse
+	OpMove        OpCode = iota
+	OpLoadConst          // Load a constant to a register A
+	OpLoadNone           // Load None to a register A
+	OpLoadTrue           // Load True to a register A
+	OpLoadFalse          // Load False to a register A
+	OpLoadGlobal         // Load a global variable to a register A
+	OpStoreGlobal        // Store a value from register A to a global variable
+
+	OpAdd
+	OpSub
+	OpMulti
+	OpDiv
+	OpMod
+	OpIncr
+	OpDecr
+
 	OpArray
 	OpObject
-	OpLoadGlobal
-	OpStoreGlobal
-	OpLoadLocal
-	OpStoreLocal
-	OpPopLocal
 	OpLoadProperty
 	OpLoadPropertyOptional
 	OpNegate
@@ -30,13 +37,7 @@ const (
 	OpLte
 	OpLike
 	OpNotLike
-	OpAdd
-	OpSub
-	OpMulti
-	OpDiv
-	OpMod
-	OpIncr
-	OpDecr
+
 	OpRange
 	OpRegexpPositive
 	OpRegexpNegative
@@ -52,9 +53,6 @@ const (
 	OpCall4Safe
 	OpCallN
 	OpCallNSafe
-	OpPush
-	OpPop
-	OpPopClose
 	OpJumpIfFalse
 	OpJumpIfTrue
 	OpJump
@@ -70,4 +68,6 @@ const (
 	OpWhileLoopNext
 	OpLoopReturn
 	OpReturn
+
+	OpCastBool
 )

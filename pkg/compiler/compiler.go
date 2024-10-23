@@ -64,10 +64,9 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	}
 
 	program = &runtime.Program{}
-	program.Bytecode = l.bytecode
-	program.Arguments = l.arguments
+	program.Bytecode = l.instructions
 	program.Constants = l.constants
-	program.Locations = l.locations
+	//program.Locations = l.locations
 	program.CatchTable = l.catchTable
 
 	return program, err

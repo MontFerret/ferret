@@ -382,7 +382,7 @@ func TestMember(t *testing.T) {
 	//
 	//			Convey("When function returns error", func() {
 	//				c := compiler.New()
-	//				c.RegisterFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+	//				c.RegisterFunction("ERROR", func(ctx context.visitor, args ...core.Value) (core.Value, error) {
 	//					return nil, core.ErrNotImplemented
 	//				})
 	//
