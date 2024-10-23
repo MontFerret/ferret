@@ -4,7 +4,8 @@ type Frame struct {
 	Operands  *Stack
 	Variables *Stack
 	State     *Stack
-	ReturnPC  int
+	Parent    *Frame
+	PC        int
 }
 
 func NewFrame(size int) *Frame {

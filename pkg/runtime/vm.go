@@ -10,10 +10,11 @@ import (
 )
 
 type VM struct {
-	pc      int
-	frames  []*Frame
-	globals map[string]core.Value
-	env     *Environment
+	env          *Environment
+	globals      map[string]core.Value
+	frames       []*Frame
+	currentFrame *Frame
+	pc           int
 }
 
 func NewVM(opts ...EnvironmentOption) *VM {
@@ -36,15 +37,16 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 
 	// TODO: Add code analysis to calculate the number of operands and variables
 	frame := NewFrame(32)
+	vm.currentFrame = frame
 	vm.frames = []*Frame{frame}
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
 
 loop:
 	for vm.pc < len(program.Bytecode) {
-		stack := frame.Operands
-		variables := frame.Variables
-		state := frame.State
+		stack := vm.currentFrame.Operands
+		variables := vm.currentFrame.Variables
+		state := vm.currentFrame.State
 		op := program.Bytecode[vm.pc]
 		arg := program.Arguments[vm.pc]
 		vm.pc++
