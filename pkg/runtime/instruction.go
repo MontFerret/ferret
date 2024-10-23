@@ -1,6 +1,6 @@
 package runtime
 
 type Instruction struct {
-	Opcode   OpCode
+	Opcode   Opcode
 	Operands [3]int
 }

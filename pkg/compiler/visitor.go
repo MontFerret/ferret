@@ -14,12 +14,16 @@ import (
 
 const (
 	VarTemporary VarType = iota // Short-lived intermediate results
+	VarLocal                    // Local variables
 	VarIterator                 // FOR loop iterators
 	VarResult                   // Final result variables
 )
 
 type (
+	// Register represents a virtual register number
 	Register int
+
+	Constant int
 
 	VarType int
 
@@ -34,11 +38,10 @@ type (
 	}
 
 	Instruction struct {
-		OpCode     runtime.OpCode
-		Operands   [3]Register
-		VarRefs    []string    // Referenced variable names
-		Immediate  interface{} // Immediate value if any
-		Label      string      // For jumps and labels
+		OpCode     runtime.Opcode
+		Operands   [3]int
+		VarRefs    []string // Referenced variable names
+		Label      string   // For jumps and labels
 		SourceLine int
 	}
 
@@ -59,7 +62,7 @@ type (
 		constantsIndex map[uint64]int
 		constants      []core.Value
 		//loops          []*loopScope
-		globals    map[string]Register
+		globals    map[string]int
 		locals     []Variable
 		catchTable [][2]int
 	}
@@ -78,7 +81,7 @@ func newVisitor(src string) *visitor {
 	v := new(visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.src = src
-	v.registers = NewRegisterAllocator(1024)
+	v.registers = NewRegisterAllocator()
 	//v.funcs = funcs
 	v.constantsIndex = make(map[uint64]int)
 	//v.locations = make([]core.Location, 0)
@@ -86,7 +89,7 @@ func newVisitor(src string) *visitor {
 	v.constants = make([]core.Value, 0)
 	v.scope = 0
 	//v.loops = make([]*loopScope, 0)
-	v.globals = make(map[string]Register)
+	v.globals = make(map[string]int)
 	v.locals = make([]Variable, 0)
 	v.catchTable = make([][2]int, 0)
 
@@ -168,9 +171,9 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//		c.Accept(v)
 	//	}
 	//
-	//	v.emit(runtime.OpForLoopInitInput)
+	//	v.emitABC(runtime.OpForLoopInitInput)
 	//	loopJump = len(v.instructions)
-	//	v.emit(runtime.OpForLoopHasNext)
+	//	v.emitABC(runtime.OpForLoopHasNext)
 	//	exitJump = v.emitJump(runtime.OpJumpIfFalse)
 	//	// pop the boolean value from the stack
 	//	v.emitPop()
@@ -203,11 +206,11 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//
 	//	if hasValVar && hasCounterVar {
 	//		// we will calculate the index of the counter variable
-	//		v.emit(runtime.OpForLoopNext)
+	//		v.emitABC(runtime.OpForLoopNext)
 	//	} else if hasValVar {
-	//		v.emit(runtime.OpForLoopNextValue)
+	//		v.emitABC(runtime.OpForLoopNextValue)
 	//	} else if hasCounterVar {
-	//		v.emit(runtime.OpForLoopNextCounter)
+	//		v.emitABC(runtime.OpForLoopNextCounter)
 	//	} else {
 	//		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	//	}
@@ -221,7 +224,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//	}
 	//} else {
 	//	// Create initial value for the loop counter
-	//	v.emit(runtime.OpWhileLoopInitCounter)
+	//	v.emitABC(runtime.OpWhileLoopInitCounter)
 	//
 	//	loopJump = len(v.instructions)
 	//
@@ -238,7 +241,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//	// declare counter variable
 	//	// and increment it by 1
 	//	index := v.declareVariable(counterVar)
-	//	v.emit(runtime.OpWhileLoopNext)
+	//	v.emitABC(runtime.OpWhileLoopNext)
 	//	v.defineVariable(index)
 	//}
 	//
@@ -383,39 +386,39 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 	//switch size {
 	//case 0:
 	//	if isNonOptional {
-	//		v.emit(runtime.OpCall, 0)
+	//		v.emitABC(runtime.OpCall, 0)
 	//	} else {
-	//		v.emit(runtime.OpCallSafe, 0)
+	//		v.emitABC(runtime.OpCallSafe, 0)
 	//	}
 	//case 1:
 	//	if isNonOptional {
-	//		v.emit(runtime.OpCall1, 1)
+	//		v.emitABC(runtime.OpCall1, 1)
 	//	} else {
-	//		v.emit(runtime.OpCall1Safe, 1)
+	//		v.emitABC(runtime.OpCall1Safe, 1)
 	//	}
 	//case 2:
 	//	if isNonOptional {
-	//		v.emit(runtime.OpCall2, 2)
+	//		v.emitABC(runtime.OpCall2, 2)
 	//	} else {
-	//		v.emit(runtime.OpCall2Safe, 2)
+	//		v.emitABC(runtime.OpCall2Safe, 2)
 	//	}
 	//case 3:
 	//	if isNonOptional {
-	//		v.emit(runtime.OpCall3, 3)
+	//		v.emitABC(runtime.OpCall3, 3)
 	//	} else {
-	//		v.emit(runtime.OpCall3Safe, 3)
+	//		v.emitABC(runtime.OpCall3Safe, 3)
 	//	}
 	//case 4:
 	//	if isNonOptional {
-	//		v.emit(runtime.OpCall4, 4)
+	//		v.emitABC(runtime.OpCall4, 4)
 	//	} else {
-	//		v.emit(runtime.OpCall4Safe, 4)
+	//		v.emitABC(runtime.OpCall4Safe, 4)
 	//	}
 	//default:
 	//	if isNonOptional {
-	//		v.emit(runtime.OpCallN, size)
+	//		v.emitABC(runtime.OpCallN, size)
 	//	} else {
-	//		v.emit(runtime.OpCallNSafe, size)
+	//		v.emitABC(runtime.OpCallNSafe, size)
 	//	}
 	//}
 
@@ -449,9 +452,9 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 	//	}
 	//
 	//	if p.ErrorOperator() != nil {
-	//		v.emit(runtime.OpLoadPropertyOptional)
+	//		v.emitABC(runtime.OpLoadPropertyOptional)
 	//	} else {
-	//		v.emit(runtime.OpLoadProperty)
+	//		v.emitABC(runtime.OpLoadProperty)
 	//	}
 	//}
 
@@ -462,7 +465,7 @@ func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} 
 	//ctx.GetLeft().Accept(v)
 	//ctx.GetRight().Accept(v)
 	//
-	//v.emit(runtime.OpRange)
+	//v.emitABC(runtime.OpRange)
 
 	return nil
 }
@@ -490,11 +493,13 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		name = reserved.GetText()
 	}
 
+	reg := v.declareVariable(name)
+
 	ctx.Expression().Accept(v)
 
 	if name != ignorePseudoVariable {
 		// we do not have custom functions, thus this feature is not needed at this moment
-		index := v.declareVariable(name)
+
 		v.defineVariable(index)
 	}
 
@@ -515,7 +520,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	//	size = out.(int)
 	//}
 	//
-	//v.emit(runtime.OpArray, size)
+	//v.emitABC(runtime.OpArray, size)
 
 	return nil
 }
@@ -549,7 +554,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 	//	}
 	//}
 	//
-	//v.emit(runtime.OpObject, len(assignments))
+	//v.emitABC(runtime.OpObject, len(assignments))
 
 	return nil
 }
@@ -652,9 +657,9 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
 	//switch strings.ToLower(ctx.GetText()) {
 	//case "true":
-	//	v.emit(runtime.OpTrue)
+	//	v.emitABC(runtime.OpTrue)
 	//case "false":
-	//	v.emit(runtime.OpFalse)
+	//	v.emitABC(runtime.OpFalse)
 	//default:
 	//	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	//}
@@ -663,7 +668,7 @@ func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{
 }
 
 func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
-	//v.emit(runtime.OpLoadNone)
+	//v.emitABC(runtime.OpLoadNone)
 
 	return nil
 }
@@ -692,9 +697,9 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 	//ctx.Expression().Accept(v)
 	//
 	//if len(v.loops) == 0 {
-	//	v.emit(runtime.OpReturn)
+	//	v.emitABC(runtime.OpReturn)
 	//} else {
-	//	v.emit(runtime.OpLoopReturn, v.resolveLoopResultPosition())
+	//	v.emitABC(runtime.OpLoopReturn, v.resolveLoopResultPosition())
 	//}
 
 	return nil
@@ -707,11 +712,11 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		op := op.(*fql.UnaryOperatorContext)
 
 		if op.Not() != nil {
-			//v.emit(runtime.OpNot)
+			//v.emitABC(runtime.OpNot)
 		} else if op.Minus() != nil {
-			// v.emit(runtime.OpFlipNegative)
+			// v.emitABC(runtime.OpFlipNegative)
 		} else if op.Plus() != nil {
-			//v.emit(runtime.OpFlipPositive)
+			//v.emitABC(runtime.OpFlipPositive)
 		} else {
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
@@ -753,17 +758,17 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 	//
 	//	switch op.GetText() {
 	//	case "==":
-	//		v.emit(runtime.OpEq)
+	//		v.emitABC(runtime.OpEq)
 	//	case "!=":
-	//		v.emit(runtime.OpNeq)
+	//		v.emitABC(runtime.OpNeq)
 	//	case ">":
-	//		v.emit(runtime.OpGt)
+	//		v.emitABC(runtime.OpGt)
 	//	case ">=":
-	//		v.emit(runtime.OpGte)
+	//		v.emitABC(runtime.OpGte)
 	//	case "<":
-	//		v.emit(runtime.OpLt)
+	//		v.emitABC(runtime.OpLt)
 	//	case "<=":
-	//		v.emit(runtime.OpLte)
+	//		v.emitABC(runtime.OpLte)
 	//	default:
 	//		panic(core.Error(ErrUnexpectedToken, op.GetText()))
 	//	}
@@ -773,15 +778,15 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 	//	ctx.Predicate(0).Accept(v)
 	//	ctx.Predicate(1).Accept(v)
 	//
-	//	v.emit(runtime.OpIn)
+	//	v.emitABC(runtime.OpIn)
 	//} else if op := ctx.LikeOperator(); op != nil {
 	//	ctx.Predicate(0).Accept(v)
 	//	ctx.Predicate(1).Accept(v)
 	//
 	//	if op.(*fql.LikeOperatorContext).Not() != nil {
-	//		v.emit(runtime.OpNotLike)
+	//		v.emitABC(runtime.OpNotLike)
 	//	} else {
-	//		v.emit(runtime.OpLike)
+	//		v.emitABC(runtime.OpLike)
 	//	}
 	//} else if c := ctx.ExpressionAtom(); c != nil {
 	//	startCatch := len(v.instructions)
@@ -803,11 +808,11 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "*":
-			v.emitTemp(runtime.OpMulti)
+			v.emit(runtime.OpMulti)
 		case "/":
-			v.emitTemp(runtime.OpDiv)
+			v.emit(runtime.OpDiv)
 		case "%":
-			v.emitTemp(runtime.OpMod)
+			v.emit(runtime.OpMod)
 		}
 	} else if op := ctx.AdditiveOperator(); op != nil {
 		ctx.ExpressionAtom(0).Accept(v)
@@ -815,9 +820,9 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "+":
-			v.emitTemp(runtime.OpAdd)
+			v.emit(runtime.OpAdd)
 		case "-":
-			v.emitTemp(runtime.OpSub)
+			v.emit(runtime.OpSub)
 		}
 	} else if op := ctx.RegexpOperator(); op != nil {
 		ctx.ExpressionAtom(0).Accept(v)
@@ -825,9 +830,9 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 
 		switch op.GetText() {
 		case "=~":
-			v.emitTemp(runtime.OpRegexpPositive)
+			v.emit(runtime.OpRegexpPositive)
 		case "!~":
-			v.emitTemp(runtime.OpRegexpNegative)
+			v.emit(runtime.OpRegexpNegative)
 		default:
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
@@ -863,8 +868,8 @@ func (v *visitor) endScope() {
 
 	// Pop all local variables from the stack within the closed scope.
 	for len(v.locals) > 0 && v.locals[len(v.locals)-1].Depth > v.scope {
-		v.registers.LivenessAnalysis()
-		v.emit(runtime.OpPopLocal)
+		// TODO: Free registers
+
 		v.locals = v.locals[:len(v.locals)-1]
 	}
 }
@@ -895,7 +900,7 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 	//	}
 	//
 	//	resultPos = v.operandsStackTracker
-	//	v.emit(runtime.OpLoopInitOutput, arg)
+	//	v.emitABC(runtime.OpLoopInitOutput, arg)
 	//} else {
 	//	resultPos = prevResult
 	//}
@@ -907,15 +912,17 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 }
 
 func (v *visitor) patchLoopScope(jump int) {
-	v.loops[len(v.loops)-1].position = jump
+	//v.loops[len(v.loops)-1].position = jump
 }
 
 func (v *visitor) resolveLoopResultPosition() int {
-	return v.loops[len(v.loops)-1].result
+	//return v.loops[len(v.loops)-1].result
+	return 0
 }
 
 func (v *visitor) resolveLoopPosition() int {
-	return v.loops[len(v.loops)-1].position
+	//return v.loops[len(v.loops)-1].position
+	return 0
 }
 
 func (v *visitor) endLoopScope() {
@@ -930,13 +937,13 @@ func (v *visitor) endLoopScope() {
 	//}
 	//
 	//if unwrap {
-	//	v.emit(runtime.OpLoopUnwrapOutput)
+	//	v.emitABC(runtime.OpLoopUnwrapOutput)
 	//}
 }
 
 func (v *visitor) resolveLocalVariable(name string) int {
 	for i := len(v.locals) - 1; i >= 0; i-- {
-		if v.locals[i].name == name {
+		if v.locals[i].Name == name {
 			return i
 		}
 	}
@@ -949,14 +956,14 @@ func (v *visitor) readVariable(name string) {
 		return
 	}
 
-	//// Resolve the variable name to an index.
-	//arg := v.resolveLocalVariable(name)
-	//
-	//if arg > -1 {
-	//	v.emit(runtime.OpLoadLocal, arg)
-	//
-	//	return
-	//}
+	// Resolve the variable name to an index.
+	arg := v.resolveLocalVariable(name)
+
+	if arg > -1 {
+		v.emitABC(runtime.OpLoadLocal, arg)
+
+		return
+	}
 	//
 	//index, ok := v.globals[name]
 	//
@@ -964,10 +971,10 @@ func (v *visitor) readVariable(name string) {
 	//	panic(core.Error(ErrVariableNotFound, name))
 	//}
 	//
-	//v.emit(runtime.OpLoadGlobal, index)
+	//v.emitABC(runtime.OpLoadGlobal, index)
 }
 
-func (v *visitor) declareVariable(name string) int {
+func (v *visitor) declareVariable(name string) Register {
 	if name == ignorePseudoVariable {
 		return -1
 	}
@@ -980,7 +987,7 @@ func (v *visitor) declareVariable(name string) int {
 			panic(core.Error(ErrVariableNotUnique, name))
 		}
 
-		index := v.addConstant(values.String(name))
+		index := int(v.addConstant(values.String(name)))
 		v.globals[name] = index
 
 		return index
@@ -990,16 +997,18 @@ func (v *visitor) declareVariable(name string) int {
 	for i := len(v.locals) - 1; i >= 0; i-- {
 		local := v.locals[i]
 
-		if local.depth > -1 && local.depth < v.scope {
+		if local.Depth > -1 && local.Depth < v.scope {
 			break
 		}
 
-		if local.name == name {
+		if local.Name == name {
 			panic(core.Error(ErrVariableNotUnique, name))
 		}
 	}
 
-	v.locals = append(v.locals, variable{name, undefinedVariable})
+	register := v.registers.AllocateLocalVarRegister(name)
+
+	v.locals = append(v.locals, Variable{Name: name, Register: register, Depth: v.scope})
 
 	return len(v.locals) - 1
 }
@@ -1007,18 +1016,18 @@ func (v *visitor) declareVariable(name string) int {
 // defineVariable defines a variable in the current scope.
 func (v *visitor) defineVariable(index int) {
 	if v.scope == 0 {
-		v.emit(runtime.OpStoreGlobal, index)
+		v.emitAB(runtime.OpStoreGlobal, index)
 
 		return
 	}
 
-	v.emit(runtime.OpStoreLocal, index)
+	v.emitABC(runtime.OpStoreLocal, index)
 	v.locals[index].depth = v.scope
 }
 
 // emitConstant emits an opcode with a constant argument.
 func (v *visitor) emitConstant(constant core.Value) {
-	//v.emit(runtime.OpPush, v.addConstant(constant))
+	//v.emitABC(runtime.OpPush, v.addConstant(constant))
 }
 
 // emitLoop emits a loop instruction.
@@ -1029,8 +1038,8 @@ func (v *visitor) emitLoop(loopStart int) {
 }
 
 // emitJump emits an opcode with a jump result argument.
-func (v *visitor) emitJump(op runtime.OpCode) int {
-	//v.emit(op, jumpPlaceholder)
+func (v *visitor) emitJump(op runtime.Opcode) int {
+	//v.emitABC(op, jumpPlaceholder)
 	//
 	//return len(v.instructions)
 
@@ -1048,39 +1057,35 @@ func (v *visitor) patchJumpWith(offset, jump int) {
 }
 
 func (v *visitor) emitPopAndClose() {
-	//v.emit(runtime.OpPopClose)
+	//v.emitABC(runtime.OpPopClose)
 }
 
-func (v visitor) emitTemp(op runtime.OpCode) {
-	// Allocate result register
-	resultReg, err := v.registers.AllocateRegister(VarTemporary)
+//func (v visitor) emit(op runtime.Opcode) {
+//	// Allocate result register
+//	resultReg := v.registers.AllocateRegister(VarTemporary)
+//
+//	v.emitABC(op, resultReg, 0, 0)
+//}
 
-	if err != nil {
-		panic(err)
-	}
-
-	v.emit(op, resultReg, 0, 0)
+func (v *visitor) emitA(op runtime.Opcode, dest int) {
+	v.emitABC(op, dest, 0, 0)
 }
 
-func (v *visitor) emitDS(op runtime.OpCode, dest, src1 Register) {
-	v.emit(op, dest, src1, 0)
+func (v *visitor) emitAB(op runtime.Opcode, dest, src1 int) {
+	v.emitABC(op, dest, src1, 0)
 }
 
-func (v *visitor) emitD(op runtime.OpCode, dest Register) {
-	v.emit(op, dest, 0, 0)
-}
-
-func (v *visitor) emit(op runtime.OpCode, dest, src1, src2 Register) {
+func (v *visitor) emitABC(op runtime.Opcode, dest, src1, src2 int) {
 	v.instructions = append(v.instructions, Instruction{
 		OpCode:   op,
-		Operands: [3]Register{dest, src1, src2},
+		Operands: [3]int{dest, src1, src2},
 	})
 }
 
 // addConstant adds a constant to the constants pool and returns its index.
 // If the constant is a scalar, it will be deduplicated.
 // If the constant is not a scalar, it will be added to the pool without deduplication.
-func (v *visitor) addConstant(constant core.Value) int {
+func (v *visitor) addConstant(constant core.Value) Constant {
 	var hash uint64
 
 	if values.IsScalar(constant) {
@@ -1094,7 +1099,7 @@ func (v *visitor) addConstant(constant core.Value) int {
 	}
 
 	v.constants = append(v.constants, constant)
-	p := len(v.constants) - 1
+	p := Constant(len(v.constants) - 1)
 
 	if hash > 0 {
 		v.constantsIndex[hash] = p

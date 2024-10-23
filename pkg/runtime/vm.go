@@ -22,6 +22,8 @@ func NewVM(opts ...EnvironmentOption) *VM {
 	return vm
 }
 
+// TODO: Move program to the constructor. No need to pass it as an argument since the VM is stateful.
+// But the environment can be passed as an argument.
 func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 	//tryCatch := func(pos int) bool {
 	//	for _, pair := range program.CatchTable {

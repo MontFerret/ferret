@@ -29,7 +29,7 @@ func (program *Program) Disassemble() string {
 	return buf.String()
 }
 
-func (program *Program) disassembleInstruction(out io.Writer, opcode OpCode, offset int) {
+func (program *Program) disassembleInstruction(out io.Writer, opcode Opcode, offset int) {
 	switch opcode {
 	default:
 		return
