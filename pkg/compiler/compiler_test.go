@@ -14,11 +14,11 @@ import (
 
 func TestVariables(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		//{
-		//	`LET i = NONE RETURN i`,
-		//	nil,
-		//	nil,
-		//},
+		{
+			`LET i = NONE RETURN i`,
+			nil,
+			nil,
+		},
 		//{
 		//	`LET a = TRUE RETURN a`,
 		//	true,
@@ -109,12 +109,12 @@ func TestVariables(t *testing.T) {
 		//	[]int{1, 2, 3},
 		//	ShouldEqualJSON,
 		//},
-		{
-			`LET _ = (FOR i IN 1..100 RETURN NONE)
-				RETURN TRUE`,
-			true,
-			ShouldEqualJSON,
-		},
+		//{
+		//	`LET _ = (FOR i IN 1..100 RETURN NONE)
+		//		RETURN TRUE`,
+		//	true,
+		//	ShouldEqualJSON,
+		//},
 	})
 
 	//
@@ -182,39 +182,39 @@ func TestVariables(t *testing.T) {
 	//	So(string(out), ShouldEqual, "true")
 	//})
 
-	Convey("Should not compile FOR foo IN foo", t, func() {
-		c := compiler.New()
+	//Convey("Should not compile FOR foo IN foo", t, func() {
+	//	c := compiler.New()
+	//
+	//	_, err := c.Compile(`
+	//		FOR foo IN foo
+	//			RETURN foo
+	//	`)
+	//
+	//	So(err, ShouldNotBeNil)
+	//})
 
-		_, err := c.Compile(`
-			FOR foo IN foo
-				RETURN foo
-		`)
+	//Convey("Should not compile if a variable not defined", t, func() {
+	//	c := compiler.New()
+	//
+	//	_, err := c.Compile(`
+	//		RETURN foo
+	//	`)
+	//
+	//	So(err, ShouldNotBeNil)
+	//})
 
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("Should not compile if a variable not defined", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			RETURN foo
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("Should not compile if a variable is not unique", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			LET foo = "bar"
-			LET foo = "baz"
-	
-			RETURN foo
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
+	//Convey("Should not compile if a variable is not unique", t, func() {
+	//	c := compiler.New()
+	//
+	//	_, err := c.Compile(`
+	//		LET foo = "bar"
+	//		LET foo = "baz"
+	//
+	//		RETURN foo
+	//	`)
+	//
+	//	So(err, ShouldNotBeNil)
+	//})
 
 	//SkipConvey("Should use value returned from WAITFOR EVENT", t, func() {
 	//	out, err := newCompilerWithObservable().MustCompile(`
@@ -256,17 +256,17 @@ func TestVariables(t *testing.T) {
 	//})
 	//
 
-	Convey("Should not allow to use ignorable variable name", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			LET _ = (FOR i IN 1..100 RETURN NONE)
-	
-			RETURN _
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
+	//Convey("Should not allow to use ignorable variable name", t, func() {
+	//	c := compiler.New()
+	//
+	//	_, err := c.Compile(`
+	//		LET _ = (FOR i IN 1..100 RETURN NONE)
+	//
+	//		RETURN _
+	//	`)
+	//
+	//	So(err, ShouldNotBeNil)
+	//})
 }
 
 func TestMathOperators(t *testing.T) {

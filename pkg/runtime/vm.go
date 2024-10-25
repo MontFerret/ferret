@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type VM struct {
@@ -35,6 +34,14 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 	//	return false
 	//}
 
+	loadData := func(op Operand) core.Value {
+		if op.IsRegister() {
+			return vm.currentFrame.registers[op.Register()]
+		}
+
+		return program.Constants[op.Constant()]
+	}
+
 	vm.currentFrame = newFrame(64, 0, nil)
 	vm.frames = make([]*Frame, 4)
 	vm.globals = make(map[string]core.Value)
@@ -49,29 +56,23 @@ loop:
 
 		switch inst.Opcode {
 		case OpMove:
-			reg[dst] = reg[src1]
+			reg[dst] = loadData(src1)
 		case OpLoadConst:
-			reg[dst] = program.Constants[src1]
-		case OpLoadNone:
-			reg[dst] = values.None
-		case OpLoadTrue:
-			reg[dst] = values.True
-		case OpLoadFalse:
-			reg[dst] = values.False
+			reg[dst] = program.Constants[src1.Constant()]
 		case OpStoreGlobal:
-			vm.globals[program.Constants[dst].String()] = reg[src1]
+			vm.globals[program.Constants[dst.Constant()].String()] = loadData(src1)
 		case OpLoadGlobal:
 			reg[dst] = vm.globals[program.Constants[src1].String()]
 		case OpAdd:
-			reg[dst] = operators.Add(reg[src1], reg[src2])
+			reg[dst] = operators.Add(loadData(src1), loadData(src2))
 		case OpSub:
-			reg[dst] = operators.Subtract(reg[src1], reg[src2])
+			reg[dst] = operators.Subtract(loadData(src1), loadData(src2))
 		case OpMulti:
-			reg[dst] = operators.Multiply(reg[src1], reg[src2])
+			reg[dst] = operators.Multiply(loadData(src1), loadData(src2))
 		case OpDiv:
-			reg[dst] = operators.Divide(reg[src1], reg[src2])
+			reg[dst] = operators.Divide(loadData(src1), loadData(src2))
 		case OpMod:
-			reg[dst] = operators.Modulus(reg[src1], reg[src2])
+			reg[dst] = operators.Modulus(loadData(src1), loadData(src2))
 		case OpIncr:
 			reg[dst] = operators.Increment(reg[dst])
 		case OpDecr:
@@ -448,6 +449,5 @@ loop:
 		}
 	}
 
-	//return stack.Pop().MarshalJSON()
-	return nil, nil
+	return vm.currentFrame.registers[ResultOperand].MarshalJSON()
 }

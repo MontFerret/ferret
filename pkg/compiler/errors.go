@@ -10,4 +10,5 @@ var (
 	ErrInvalidToken      = errors.New("invalid token")
 	ErrUnexpectedToken   = errors.New("unexpected token")
 	ErrInvalidDataSource = errors.New("invalid data source")
+	ErrUnknownOpcode     = errors.New("unknown opcode")
 )

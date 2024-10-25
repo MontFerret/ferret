@@ -1,5 +1,7 @@
 package compiler
 
+import "github.com/MontFerret/ferret/pkg/runtime"
+
 type (
 	// RegisterStatus tracks register usage
 	RegisterStatus struct {
@@ -18,26 +20,26 @@ type (
 
 	// RegisterAllocator manages register allocation
 	RegisterAllocator struct {
-		registers    map[Register]*RegisterStatus
-		nextRegister Register
+		registers    map[runtime.Operand]*RegisterStatus
+		nextRegister runtime.Operand
 		currentInstr int
 		lifetimes    map[string]*RegisterLifetime
-		usageGraph   map[Register]map[Register]bool
+		usageGraph   map[runtime.Operand]map[runtime.Operand]bool
 	}
 )
 
 func NewRegisterAllocator() *RegisterAllocator {
 	return &RegisterAllocator{
-		registers:    make(map[Register]*RegisterStatus),
+		registers:    make(map[runtime.Operand]*RegisterStatus),
 		nextRegister: 0,
 		lifetimes:    make(map[string]*RegisterLifetime),
-		usageGraph:   make(map[Register]map[Register]bool),
+		usageGraph:   make(map[runtime.Operand]map[runtime.Operand]bool),
 	}
 }
 
-func (ra *RegisterAllocator) AllocateLocalVarRegister(name string) Register {
+func (ra *RegisterAllocator) AllocateLocalVar(name string) runtime.Operand {
 	// Allocate register
-	reg := ra.AllocateRegister(VarLocal)
+	reg := ra.Allocate(VarLocal)
 
 	// Update register status
 	ra.registers[reg].VarName = name
@@ -45,8 +47,12 @@ func (ra *RegisterAllocator) AllocateLocalVarRegister(name string) Register {
 	return reg
 }
 
-// AllocateRegister assigns a register based on variable type
-func (ra *RegisterAllocator) AllocateRegister(varType VarType) Register {
+func (ra *RegisterAllocator) AllocateTempVar() runtime.Operand {
+	return ra.Allocate(VarTemporary)
+}
+
+// Allocate assigns a register based on variable type
+func (ra *RegisterAllocator) Allocate(varType VarType) runtime.Operand {
 	// Try to find a free register first
 	reg, found := ra.findFreeRegister()
 
@@ -70,8 +76,8 @@ func (ra *RegisterAllocator) AllocateRegister(varType VarType) Register {
 	return newReg
 }
 
-// FreeRegister marks a register as available
-func (ra *RegisterAllocator) FreeRegister(reg Register) {
+// Free marks a register as available
+func (ra *RegisterAllocator) Free(reg runtime.Operand) {
 	if status, exists := ra.registers[reg]; exists {
 		status.IsAllocated = false
 		status.Lifetime.End = ra.currentInstr
@@ -86,7 +92,7 @@ func (ra *RegisterAllocator) FreeRegister(reg Register) {
 }
 
 // findFreeRegister looks for an unused register
-func (ra *RegisterAllocator) findFreeRegister() (Register, bool) {
+func (ra *RegisterAllocator) findFreeRegister() (runtime.Operand, bool) {
 	// First, try to find a completely free register
 	for reg, status := range ra.registers {
 		if !status.IsAllocated {
@@ -95,7 +101,7 @@ func (ra *RegisterAllocator) findFreeRegister() (Register, bool) {
 	}
 
 	// If no free registers, try to find one that's no longer needed
-	var candidate Register
+	var candidate runtime.Operand
 	var found bool
 	maxLastUse := -1
 
@@ -109,7 +115,7 @@ func (ra *RegisterAllocator) findFreeRegister() (Register, bool) {
 
 	if found {
 		// Free the candidate register
-		ra.FreeRegister(candidate)
+		ra.Free(candidate)
 
 		return candidate, true
 	}
@@ -117,8 +123,8 @@ func (ra *RegisterAllocator) findFreeRegister() (Register, bool) {
 	return 0, false
 }
 
-// UpdateRegisterUse updates the usage information for a register
-func (ra *RegisterAllocator) UpdateRegisterUse(reg Register) {
+// UpdateUse updates the usage information for a register
+func (ra *RegisterAllocator) UpdateUse(reg runtime.Operand) {
 	status := ra.registers[reg]
 
 	if status == nil {
@@ -139,7 +145,7 @@ func (ra *RegisterAllocator) UpdateRegisterUse(reg Register) {
 }
 
 // registersInterfere checks if two registers have overlapping lifetimes
-func (ra *RegisterAllocator) registersInterfere(reg1, reg2 Register) bool {
+func (ra *RegisterAllocator) registersInterfere(reg1, reg2 runtime.Operand) bool {
 	status1 := ra.registers[reg1]
 	status2 := ra.registers[reg2]
 
@@ -153,12 +159,12 @@ func (ra *RegisterAllocator) registersInterfere(reg1, reg2 Register) bool {
 }
 
 // addInterference records that two registers interfere
-func (ra *RegisterAllocator) addInterference(reg1, reg2 Register) {
+func (ra *RegisterAllocator) addInterference(reg1, reg2 runtime.Operand) {
 	if ra.usageGraph[reg1] == nil {
-		ra.usageGraph[reg1] = make(map[Register]bool)
+		ra.usageGraph[reg1] = make(map[runtime.Operand]bool)
 	}
 	if ra.usageGraph[reg2] == nil {
-		ra.usageGraph[reg2] = make(map[Register]bool)
+		ra.usageGraph[reg2] = make(map[runtime.Operand]bool)
 	}
 
 	ra.usageGraph[reg1][reg2] = true

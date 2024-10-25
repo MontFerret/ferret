@@ -20,29 +20,16 @@ const (
 )
 
 type (
-	// Register represents a virtual register number
-	Register int
-
-	Constant int
-
 	VarType int
 
 	Variable struct {
 		Name     string
 		FirstUse int // Instruction number of first use
 		LastUse  int // Instruction number of last use
-		Register Register
+		Register runtime.Operand
 		IsLive   bool
 		Type     VarType
 		Depth    int
-	}
-
-	Instruction struct {
-		OpCode     runtime.Opcode
-		Operands   [3]int
-		VarRefs    []string // Referenced variable names
-		Label      string   // For jumps and labels
-		SourceLine int
 	}
 
 	loopScope struct {
@@ -53,17 +40,11 @@ type (
 
 	visitor struct {
 		*fql.BaseFqlParserVisitor
-		err error
-		src string
-		//locations      []core.Location
-		instructions   []Instruction
-		registers      *RegisterAllocator
-		scope          int
-		constantsIndex map[uint64]int
-		constants      []core.Value
-		//loops          []*loopScope
-		globals    map[string]int
-		locals     []Variable
+		err        error
+		src        string
+		emitter    *Emitter
+		registers  *RegisterAllocator
+		symbols    *SymbolTable
 		catchTable [][2]int
 	}
 )
@@ -82,15 +63,8 @@ func newVisitor(src string) *visitor {
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.src = src
 	v.registers = NewRegisterAllocator()
-	//v.funcs = funcs
-	v.constantsIndex = make(map[uint64]int)
-	//v.locations = make([]core.Location, 0)
-	v.instructions = make([]Instruction, 0, 32)
-	v.constants = make([]core.Value, 0)
-	v.scope = 0
-	//v.loops = make([]*loopScope, 0)
-	v.globals = make(map[string]int)
-	v.locals = make([]Variable, 0)
+	v.symbols = NewSymbolTable(v.registers)
+	v.emitter = NewEmitter()
 	v.catchTable = make([][2]int, 0)
 
 	return v
@@ -118,26 +92,26 @@ func (v *visitor) VisitBody(ctx *fql.BodyContext) interface{} {
 
 func (v *visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} {
 	if c := ctx.VariableDeclaration(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.FunctionCallExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 		// remove un-used return value
 		//v.emitPop()
 	} else if c := ctx.WaitForExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	}
 
-	return nil
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{} {
 	if c := ctx.ForExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.ReturnExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	}
 
-	return nil
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
@@ -171,9 +145,9 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//		c.Accept(v)
 	//	}
 	//
-	//	v.emitABC(runtime.OpForLoopInitInput)
+	//	v.emitter.EmitABC(runtime.OpForLoopInitInput)
 	//	loopJump = len(v.instructions)
-	//	v.emitABC(runtime.OpForLoopHasNext)
+	//	v.emitter.EmitABC(runtime.OpForLoopHasNext)
 	//	exitJump = v.emitJump(runtime.OpJumpIfFalse)
 	//	// pop the boolean value from the stack
 	//	v.emitPop()
@@ -206,11 +180,11 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//
 	//	if hasValVar && hasCounterVar {
 	//		// we will calculate the index of the counter variable
-	//		v.emitABC(runtime.OpForLoopNext)
+	//		v.emitter.EmitABC(runtime.OpForLoopNext)
 	//	} else if hasValVar {
-	//		v.emitABC(runtime.OpForLoopNextValue)
+	//		v.emitter.EmitABC(runtime.OpForLoopNextValue)
 	//	} else if hasCounterVar {
-	//		v.emitABC(runtime.OpForLoopNextCounter)
+	//		v.emitter.EmitABC(runtime.OpForLoopNextCounter)
 	//	} else {
 	//		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	//	}
@@ -224,7 +198,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//	}
 	//} else {
 	//	// Create initial value for the loop counter
-	//	v.emitABC(runtime.OpWhileLoopInitCounter)
+	//	v.emitter.EmitABC(runtime.OpWhileLoopInitCounter)
 	//
 	//	loopJump = len(v.instructions)
 	//
@@ -241,7 +215,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	//	// declare counter variable
 	//	// and increment it by 1
 	//	index := v.declareVariable(counterVar)
-	//	v.emitABC(runtime.OpWhileLoopNext)
+	//	v.emitter.EmitABC(runtime.OpWhileLoopNext)
 	//	v.defineVariable(index)
 	//}
 	//
@@ -386,39 +360,39 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 	//switch size {
 	//case 0:
 	//	if isNonOptional {
-	//		v.emitABC(runtime.OpCall, 0)
+	//		v.emitter.EmitABC(runtime.OpCall, 0)
 	//	} else {
-	//		v.emitABC(runtime.OpCallSafe, 0)
+	//		v.emitter.EmitABC(runtime.OpCallSafe, 0)
 	//	}
 	//case 1:
 	//	if isNonOptional {
-	//		v.emitABC(runtime.OpCall1, 1)
+	//		v.emitter.EmitABC(runtime.OpCall1, 1)
 	//	} else {
-	//		v.emitABC(runtime.OpCall1Safe, 1)
+	//		v.emitter.EmitABC(runtime.OpCall1Safe, 1)
 	//	}
 	//case 2:
 	//	if isNonOptional {
-	//		v.emitABC(runtime.OpCall2, 2)
+	//		v.emitter.EmitABC(runtime.OpCall2, 2)
 	//	} else {
-	//		v.emitABC(runtime.OpCall2Safe, 2)
+	//		v.emitter.EmitABC(runtime.OpCall2Safe, 2)
 	//	}
 	//case 3:
 	//	if isNonOptional {
-	//		v.emitABC(runtime.OpCall3, 3)
+	//		v.emitter.EmitABC(runtime.OpCall3, 3)
 	//	} else {
-	//		v.emitABC(runtime.OpCall3Safe, 3)
+	//		v.emitter.EmitABC(runtime.OpCall3Safe, 3)
 	//	}
 	//case 4:
 	//	if isNonOptional {
-	//		v.emitABC(runtime.OpCall4, 4)
+	//		v.emitter.EmitABC(runtime.OpCall4, 4)
 	//	} else {
-	//		v.emitABC(runtime.OpCall4Safe, 4)
+	//		v.emitter.EmitABC(runtime.OpCall4Safe, 4)
 	//	}
 	//default:
 	//	if isNonOptional {
-	//		v.emitABC(runtime.OpCallN, size)
+	//		v.emitter.EmitABC(runtime.OpCallN, size)
 	//	} else {
-	//		v.emitABC(runtime.OpCallNSafe, size)
+	//		v.emitter.EmitABC(runtime.OpCallNSafe, size)
 	//	}
 	//}
 
@@ -452,9 +426,9 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 	//	}
 	//
 	//	if p.ErrorOperator() != nil {
-	//		v.emitABC(runtime.OpLoadPropertyOptional)
+	//		v.emitter.EmitABC(runtime.OpLoadPropertyOptional)
 	//	} else {
-	//		v.emitABC(runtime.OpLoadProperty)
+	//		v.emitter.EmitABC(runtime.OpLoadProperty)
 	//	}
 	//}
 
@@ -465,7 +439,7 @@ func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} 
 	//ctx.GetLeft().Accept(v)
 	//ctx.GetRight().Accept(v)
 	//
-	//v.emitABC(runtime.OpRange)
+	//v.emitter.EmitABC(runtime.OpRange)
 
 	return nil
 }
@@ -493,23 +467,27 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		name = reserved.GetText()
 	}
 
-	reg := v.declareVariable(name)
-
-	ctx.Expression().Accept(v)
+	valReg := ctx.Expression().Accept(v).(runtime.Operand)
 
 	if name != ignorePseudoVariable {
-		// we do not have custom functions, thus this feature is not needed at this moment
+		varReg := v.symbols.DefineVariable(name)
 
-		v.defineVariable(index)
+		// Global variable
+		if v.symbols.Scope() == 0 {
+			v.emitter.EmitAB(runtime.OpStoreGlobal, varReg, valReg)
+		} else {
+			v.emitter.EmitAB(runtime.OpMove, varReg, valReg)
+		}
+
+		return varReg
 	}
 
 	return nil
 }
 
 func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
-	v.readVariable(ctx.GetText())
-
-	return nil
+	// Just return the register / constant index
+	return v.symbols.LookupVariable(ctx.GetText())
 }
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
@@ -520,20 +498,20 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	//	size = out.(int)
 	//}
 	//
-	//v.emitABC(runtime.OpArray, size)
+	//v.emitter.EmitABC(runtime.OpArray, size)
 
 	return nil
 }
 
 func (v *visitor) VisitArgumentList(ctx *fql.ArgumentListContext) interface{} {
-	exps := ctx.AllExpression()
-	size := len(exps)
+	//exps := ctx.AllExpression()
+	//size := len(exps)
+	//
+	//for _, arg := range exps {
+	//	arg.Accept(v)
+	//}
 
-	for _, arg := range exps {
-		arg.Accept(v)
-	}
-
-	return size
+	return nil
 }
 
 func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
@@ -554,21 +532,21 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 	//	}
 	//}
 	//
-	//v.emitABC(runtime.OpObject, len(assignments))
+	//v.emitter.EmitABC(runtime.OpObject, len(assignments))
 
 	return nil
 }
 
 func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
-	if id := ctx.Identifier(); id != nil {
-		v.emitConstant(values.NewString(ctx.GetText()))
-	} else if str := ctx.StringLiteral(); str != nil {
-		str.Accept(v)
-	} else if word := ctx.SafeReservedWord(); word != nil {
-		v.emitConstant(values.NewString(ctx.GetText()))
-	} else if word := ctx.UnsafeReservedWord(); word != nil {
-		v.emitConstant(values.NewString(ctx.GetText()))
-	}
+	//if id := ctx.Identifier(); id != nil {
+	//	v.emitConstant(values.NewString(ctx.GetText()))
+	//} else if str := ctx.StringLiteral(); str != nil {
+	//	str.Accept(v)
+	//} else if word := ctx.SafeReservedWord(); word != nil {
+	//	v.emitConstant(values.NewString(ctx.GetText()))
+	//} else if word := ctx.UnsafeReservedWord(); word != nil {
+	//	v.emitConstant(values.NewString(ctx.GetText()))
+	//}
 
 	return nil
 }
@@ -625,9 +603,7 @@ func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} 
 		}
 	}
 
-	v.emitConstant(values.NewString(b.String()))
-
-	return nil
+	return v.symbols.AddConstant(values.NewString(b.String()))
 }
 
 func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{} {
@@ -637,9 +613,7 @@ func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{
 		panic(err)
 	}
 
-	v.emitConstant(values.NewInt(val))
-
-	return nil
+	return v.symbols.AddConstant(values.NewInt(val))
 }
 
 func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
@@ -649,60 +623,57 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 		panic(err)
 	}
 
-	v.emitConstant(values.NewFloat(val))
-
-	return nil
+	return v.symbols.AddConstant(values.NewFloat(val))
 }
 
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
-	//switch strings.ToLower(ctx.GetText()) {
-	//case "true":
-	//	v.emitABC(runtime.OpTrue)
-	//case "false":
-	//	v.emitABC(runtime.OpFalse)
-	//default:
-	//	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
-	//}
-
-	return nil
+	switch strings.ToLower(ctx.GetText()) {
+	case "true":
+		return v.symbols.AddConstant(values.True)
+	case "false":
+		return v.symbols.AddConstant(values.False)
+	default:
+		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+	}
 }
 
-func (v *visitor) VisitNoneLiteral(ctx *fql.NoneLiteralContext) interface{} {
-	//v.emitABC(runtime.OpLoadNone)
-
-	return nil
+func (v *visitor) VisitNoneLiteral(_ *fql.NoneLiteralContext) interface{} {
+	return v.symbols.AddConstant(values.None)
 }
 
 func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 	if c := ctx.ArrayLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.ObjectLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.StringLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.IntegerLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.FloatLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.BooleanLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.NoneLiteral(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	}
 
-	return nil
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
-	//ctx.Expression().Accept(v)
-	//
+	valReg := ctx.Expression().Accept(v).(runtime.Operand)
+
+	v.emitter.EmitAB(runtime.OpMove, runtime.ResultOperand, valReg)
+	v.emitter.Emit(runtime.OpReturn)
+
 	//if len(v.loops) == 0 {
-	//	v.emitABC(runtime.OpReturn)
+	//	v.emitter.EmitABC(runtime.OpReturn)
 	//} else {
-	//	v.emitABC(runtime.OpLoopReturn, v.resolveLoopResultPosition())
+	//	v.emitter.EmitABC(runtime.OpLoopReturn, v.resolveLoopResultPosition())
 	//}
 
-	return nil
+	return runtime.ResultOperand
 }
 
 func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
@@ -712,11 +683,11 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		op := op.(*fql.UnaryOperatorContext)
 
 		if op.Not() != nil {
-			//v.emitABC(runtime.OpNot)
+			//v.emitter.EmitABC(runtime.OpNot)
 		} else if op.Minus() != nil {
-			// v.emitABC(runtime.OpFlipNegative)
+			// v.emitter.EmitABC(runtime.OpFlipNegative)
 		} else if op.Plus() != nil {
-			//v.emitABC(runtime.OpFlipPositive)
+			//v.emitter.EmitABC(runtime.OpFlipPositive)
 		} else {
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
@@ -745,133 +716,156 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		ctx.GetOnFalse().Accept(v)
 		v.patchJump(end)
 	} else if c := ctx.Predicate(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	}
 
 	return nil
 }
 
 func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
-	//if op := ctx.EqualityOperator(); op != nil {
-	//	ctx.Predicate(0).Accept(v)
-	//	ctx.Predicate(1).Accept(v)
-	//
-	//	switch op.GetText() {
-	//	case "==":
-	//		v.emitABC(runtime.OpEq)
-	//	case "!=":
-	//		v.emitABC(runtime.OpNeq)
-	//	case ">":
-	//		v.emitABC(runtime.OpGt)
-	//	case ">=":
-	//		v.emitABC(runtime.OpGte)
-	//	case "<":
-	//		v.emitABC(runtime.OpLt)
-	//	case "<=":
-	//		v.emitABC(runtime.OpLte)
-	//	default:
-	//		panic(core.Error(ErrUnexpectedToken, op.GetText()))
-	//	}
-	//} else if op := ctx.ArrayOperator(); op != nil {
-	//	// TODO: Implement me
-	//} else if op := ctx.InOperator(); op != nil {
-	//	ctx.Predicate(0).Accept(v)
-	//	ctx.Predicate(1).Accept(v)
-	//
-	//	v.emitABC(runtime.OpIn)
-	//} else if op := ctx.LikeOperator(); op != nil {
-	//	ctx.Predicate(0).Accept(v)
-	//	ctx.Predicate(1).Accept(v)
-	//
-	//	if op.(*fql.LikeOperatorContext).Not() != nil {
-	//		v.emitABC(runtime.OpNotLike)
-	//	} else {
-	//		v.emitABC(runtime.OpLike)
-	//	}
-	//} else if c := ctx.ExpressionAtom(); c != nil {
-	//	startCatch := len(v.instructions)
-	//	c.Accept(v)
-	//
-	//	if c.ErrorOperator() != nil {
-	//		endCatch := len(v.instructions)
-	//		v.catchTable = append(v.catchTable, [2]int{startCatch, endCatch})
-	//	}
-	//}
+	if c := ctx.ExpressionAtom(); c != nil {
+		startCatch := v.emitter.Size()
+		reg := c.Accept(v)
 
-	return nil
-}
-
-func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{} {
-	if op := ctx.MultiplicativeOperator(); op != nil {
-		ctx.ExpressionAtom(0).Accept(v)
-		ctx.ExpressionAtom(1).Accept(v)
-
-		switch op.GetText() {
-		case "*":
-			v.emit(runtime.OpMulti)
-		case "/":
-			v.emit(runtime.OpDiv)
-		case "%":
-			v.emit(runtime.OpMod)
+		if c.ErrorOperator() != nil {
+			endCatch := v.emitter.Size()
+			v.catchTable = append(v.catchTable, [2]int{startCatch, endCatch})
 		}
-	} else if op := ctx.AdditiveOperator(); op != nil {
-		ctx.ExpressionAtom(0).Accept(v)
-		ctx.ExpressionAtom(1).Accept(v)
+
+		return reg
+	}
+
+	var opcode runtime.Opcode
+	dest := v.registers.Allocate(VarTemporary)
+
+	if op := ctx.EqualityOperator(); op != nil {
+		src1 := ctx.Predicate(0).Accept(v).(runtime.Operand)
+		src2 := ctx.Predicate(1).Accept(v).(runtime.Operand)
 
 		switch op.GetText() {
-		case "+":
-			v.emit(runtime.OpAdd)
-		case "-":
-			v.emit(runtime.OpSub)
-		}
-	} else if op := ctx.RegexpOperator(); op != nil {
-		ctx.ExpressionAtom(0).Accept(v)
-		ctx.ExpressionAtom(1).Accept(v)
-
-		switch op.GetText() {
-		case "=~":
-			v.emit(runtime.OpRegexpPositive)
-		case "!~":
-			v.emit(runtime.OpRegexpNegative)
+		case "==":
+			opcode = runtime.OpEq
+		case "!=":
+			opcode = runtime.OpNeq
+		case ">":
+			opcode = runtime.OpGt
+		case ">=":
+			opcode = runtime.OpGte
+		case "<":
+			opcode = runtime.OpLt
+		case "<=":
+			opcode = runtime.OpLte
 		default:
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
-	} else if c := ctx.FunctionCallExpression(); c != nil {
-		c.Accept(v)
+
+		v.emitter.EmitABC(opcode, dest, src1, src2)
+	} else if op := ctx.ArrayOperator(); op != nil {
+		// TODO: Implement me
+		panic(core.Error(core.ErrNotImplemented, "array operator"))
+	} else if op := ctx.InOperator(); op != nil {
+		src1 := ctx.Predicate(0).Accept(v).(runtime.Operand)
+		src2 := ctx.Predicate(1).Accept(v).(runtime.Operand)
+		opcode = runtime.OpIn
+
+		v.emitter.EmitABC(opcode, dest, src1, src2)
+	} else if op := ctx.LikeOperator(); op != nil {
+		src1 := ctx.Predicate(0).Accept(v).(runtime.Operand)
+		src2 := ctx.Predicate(1).Accept(v).(runtime.Operand)
+
+		if op.(*fql.LikeOperatorContext).Not() != nil {
+			opcode = runtime.OpNotLike
+		} else {
+			opcode = runtime.OpLike
+		}
+
+		v.emitter.EmitABC(opcode, dest, src1, src2)
+	}
+
+	return dest
+}
+
+func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{} {
+	var opcode runtime.Opcode
+	var isSet bool
+
+	if op := ctx.MultiplicativeOperator(); op != nil {
+		isSet = true
+
+		switch op.GetText() {
+		case "*":
+			opcode = runtime.OpMulti
+		case "/":
+			opcode = runtime.OpDiv
+		case "%":
+			opcode = runtime.OpMod
+		default:
+			panic(core.Error(ErrUnexpectedToken, op.GetText()))
+		}
+	} else if op := ctx.AdditiveOperator(); op != nil {
+		isSet = true
+
+		switch op.GetText() {
+		case "+":
+			opcode = runtime.OpAdd
+		case "-":
+			opcode = runtime.OpSub
+		default:
+			panic(core.Error(ErrUnexpectedToken, op.GetText()))
+		}
+
+	} else if op := ctx.RegexpOperator(); op != nil {
+		isSet = true
+
+		switch op.GetText() {
+		case "=~":
+			opcode = runtime.OpRegexpPositive
+		case "!~":
+			opcode = runtime.OpRegexpNegative
+		default:
+			panic(core.Error(ErrUnexpectedToken, op.GetText()))
+		}
+	}
+
+	if isSet {
+		regLeft := ctx.ExpressionAtom(0).Accept(v).(runtime.Operand)
+		regRight := ctx.ExpressionAtom(1).Accept(v).(runtime.Operand)
+		dst := v.registers.Allocate(VarTemporary)
+
+		v.emitter.EmitABC(opcode, dst, regLeft, regRight)
+
+		return dst
+	}
+
+	if c := ctx.FunctionCallExpression(); c != nil {
+		return c.Accept(v)
 	} else if c := ctx.RangeOperator(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.Literal(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.Variable(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.MemberExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.Param(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.ForExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.WaitForExpression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	} else if c := ctx.Expression(); c != nil {
-		c.Accept(v)
+		return c.Accept(v)
 	}
 
 	return nil
 }
 
 func (v *visitor) beginScope() {
-	v.scope++
+	v.symbols.EnterScope()
 }
 
 func (v *visitor) endScope() {
-	v.scope--
-
-	// Pop all local variables from the stack within the closed scope.
-	for len(v.locals) > 0 && v.locals[len(v.locals)-1].Depth > v.scope {
-		// TODO: Free registers
-
-		v.locals = v.locals[:len(v.locals)-1]
-	}
+	v.symbols.ExitScope()
 }
 
 func (v *visitor) beginLoopScope(passThrough, distinct bool) {
@@ -900,7 +894,7 @@ func (v *visitor) beginLoopScope(passThrough, distinct bool) {
 	//	}
 	//
 	//	resultPos = v.operandsStackTracker
-	//	v.emitABC(runtime.OpLoopInitOutput, arg)
+	//	v.emitter.EmitABC(runtime.OpLoopInitOutput, arg)
 	//} else {
 	//	resultPos = prevResult
 	//}
@@ -937,109 +931,20 @@ func (v *visitor) endLoopScope() {
 	//}
 	//
 	//if unwrap {
-	//	v.emitABC(runtime.OpLoopUnwrapOutput)
+	//	v.emitter.EmitABC(runtime.OpLoopUnwrapOutput)
 	//}
-}
-
-func (v *visitor) resolveLocalVariable(name string) int {
-	for i := len(v.locals) - 1; i >= 0; i-- {
-		if v.locals[i].Name == name {
-			return i
-		}
-	}
-
-	return -1
-}
-
-func (v *visitor) readVariable(name string) {
-	if name == pseudoVariable {
-		return
-	}
-
-	// Resolve the variable name to an index.
-	arg := v.resolveLocalVariable(name)
-
-	if arg > -1 {
-		v.emitABC(runtime.OpLoadLocal, arg)
-
-		return
-	}
-	//
-	//index, ok := v.globals[name]
-	//
-	//if !ok {
-	//	panic(core.Error(ErrVariableNotFound, name))
-	//}
-	//
-	//v.emitABC(runtime.OpLoadGlobal, index)
-}
-
-func (v *visitor) declareVariable(name string) Register {
-	if name == ignorePseudoVariable {
-		return -1
-	}
-
-	if v.scope == 0 {
-		// Check for duplicate global variable names.
-		_, ok := v.globals[name]
-
-		if ok {
-			panic(core.Error(ErrVariableNotUnique, name))
-		}
-
-		index := int(v.addConstant(values.String(name)))
-		v.globals[name] = index
-
-		return index
-	}
-
-	// Check for duplicate variable names in the current scope.
-	for i := len(v.locals) - 1; i >= 0; i-- {
-		local := v.locals[i]
-
-		if local.Depth > -1 && local.Depth < v.scope {
-			break
-		}
-
-		if local.Name == name {
-			panic(core.Error(ErrVariableNotUnique, name))
-		}
-	}
-
-	register := v.registers.AllocateLocalVarRegister(name)
-
-	v.locals = append(v.locals, Variable{Name: name, Register: register, Depth: v.scope})
-
-	return len(v.locals) - 1
-}
-
-// defineVariable defines a variable in the current scope.
-func (v *visitor) defineVariable(index int) {
-	if v.scope == 0 {
-		v.emitAB(runtime.OpStoreGlobal, index)
-
-		return
-	}
-
-	v.emitABC(runtime.OpStoreLocal, index)
-	v.locals[index].depth = v.scope
-}
-
-// emitConstant emits an opcode with a constant argument.
-func (v *visitor) emitConstant(constant core.Value) {
-	//v.emitABC(runtime.OpPush, v.addConstant(constant))
 }
 
 // emitLoop emits a loop instruction.
 func (v *visitor) emitLoop(loopStart int) {
-	pos := v.emitJump(runtime.OpJumpBackward)
-	jump := pos - loopStart
+	//pos := v.emitJump(runtime.OpJumpBackward)
+	//jump := pos - loopStart
 	//v.arguments[pos-1] = jump
 }
 
 // emitJump emits an opcode with a jump result argument.
 func (v *visitor) emitJump(op runtime.Opcode) int {
-	//v.emitABC(op, jumpPlaceholder)
+	//v.emitter.EmitABC(op, jumpPlaceholder)
 	//
 	//return len(v.instructions)
 
@@ -1057,53 +962,5 @@ func (v *visitor) patchJumpWith(offset, jump int) {
 }
 
 func (v *visitor) emitPopAndClose() {
-	//v.emitABC(runtime.OpPopClose)
-}
-
-//func (v visitor) emit(op runtime.Opcode) {
-//	// Allocate result register
-//	resultReg := v.registers.AllocateRegister(VarTemporary)
-//
-//	v.emitABC(op, resultReg, 0, 0)
-//}
-
-func (v *visitor) emitA(op runtime.Opcode, dest int) {
-	v.emitABC(op, dest, 0, 0)
-}
-
-func (v *visitor) emitAB(op runtime.Opcode, dest, src1 int) {
-	v.emitABC(op, dest, src1, 0)
-}
-
-func (v *visitor) emitABC(op runtime.Opcode, dest, src1, src2 int) {
-	v.instructions = append(v.instructions, Instruction{
-		OpCode:   op,
-		Operands: [3]int{dest, src1, src2},
-	})
-}
-
-// addConstant adds a constant to the constants pool and returns its index.
-// If the constant is a scalar, it will be deduplicated.
-// If the constant is not a scalar, it will be added to the pool without deduplication.
-func (v *visitor) addConstant(constant core.Value) Constant {
-	var hash uint64
-
-	if values.IsScalar(constant) {
-		hash = constant.Hash()
-	}
-
-	if hash > 0 {
-		if p, ok := v.constantsIndex[hash]; ok {
-			return p
-		}
-	}
-
-	v.constants = append(v.constants, constant)
-	p := Constant(len(v.constants) - 1)
-
-	if hash > 0 {
-		v.constantsIndex[hash] = p
-	}
-
-	return p
+	//v.emitter.EmitABC(runtime.OpPopClose)
 }
