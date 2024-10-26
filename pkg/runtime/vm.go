@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type VM struct {
@@ -55,7 +56,7 @@ loop:
 		case OpStoreGlobal:
 			vm.globals[program.Constants[dst.Constant()].String()] = vm.load(src1)
 		case OpLoadGlobal:
-			reg[dst] = vm.globals[program.Constants[src1].String()]
+			reg[dst] = vm.globals[program.Constants[src1.Constant()].String()]
 		case OpAdd:
 			reg[dst] = operators.Add(vm.load(src1), vm.load(src2))
 		case OpSub:
@@ -75,8 +76,7 @@ loop:
 			//stack.Push(values.ToBoolean(stack.Pop()))
 
 		case OpArray:
-			//size := arg
-			//arr := values.NewSizedArray(size)
+			arr := values.NewSizedArray(int(src1))
 			//
 			//// iterate from the end to the beginning
 			//// because stack is LIFO
@@ -85,6 +85,7 @@ loop:
 			//}
 			//
 			//stack.Push(arr)
+			reg[dst] = arr
 
 		case OpObject:
 			//obj := values.NewObject()

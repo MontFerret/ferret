@@ -9,7 +9,7 @@ import (
 type SymbolTable struct {
 	constants      []core.Value
 	constantsIndex map[uint64]int
-	globals        map[string]int
+	globals        map[string]runtime.Operand
 	scope          int
 	locals         []Variable
 	registers      *RegisterAllocator
@@ -19,7 +19,7 @@ func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 	return &SymbolTable{
 		constants:      make([]core.Value, 0),
 		constantsIndex: make(map[uint64]int),
-		globals:        make(map[string]int),
+		globals:        make(map[string]runtime.Operand),
 		locals:         make([]Variable, 0),
 		registers:      registers,
 	}
@@ -62,8 +62,6 @@ func (st *SymbolTable) AddConstant(constant core.Value) runtime.Operand {
 }
 
 func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
-	var index int
-
 	if st.scope == 0 {
 		// Check for duplicate global variable names.
 		_, ok := st.globals[name]
@@ -72,12 +70,11 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 			panic(core.Error(ErrVariableNotUnique, name))
 		}
 
-		index = len(st.globals)
+		op := st.AddConstant(values.NewString(name))
 		// Define global variable.
-		st.globals[name] = index
+		st.globals[name] = op
 
-		// Return a constant operand to indicate that this is a global variable and use its index.
-		return st.AddConstant(values.NewString(name))
+		return op
 	}
 
 	register := st.registers.AllocateLocalVar(name)
@@ -88,7 +85,7 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 		Register: register,
 	})
 
-	return runtime.NewRegisterOperand(index)
+	return register
 }
 
 func (st *SymbolTable) LookupVariable(name string) runtime.Operand {
@@ -99,13 +96,13 @@ func (st *SymbolTable) LookupVariable(name string) runtime.Operand {
 		}
 	}
 
-	index, ok := st.globals[name]
+	op, ok := st.globals[name]
 
 	if !ok {
 		panic(core.Error(ErrVariableNotFound, name))
 	}
 
-	return runtime.NewConstantOperand(index)
+	return op
 }
 
 func (st *SymbolTable) ExitScope() {

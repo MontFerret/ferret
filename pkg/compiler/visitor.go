@@ -491,16 +491,21 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 }
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
-	//var size int
-	//
-	//if args := ctx.ArgumentList(); args != nil {
-	//	out := v.VisitArgumentList(args.(*fql.ArgumentListContext))
-	//	size = out.(int)
-	//}
-	//
-	//v.emitter.EmitABC(runtime.OpArray, size)
+	dest := v.registers.Allocate(VarTemporary)
+	var size int
 
-	return nil
+	if args := ctx.ArgumentList(); args != nil {
+		exps := args.AllExpression()
+		size = len(exps)
+
+		//for _, arg := range exps {
+		//	arg.Accept(v)
+		//}
+	}
+
+	v.emitter.EmitABx(runtime.OpArray, dest, size)
+
+	return dest
 }
 
 func (v *visitor) VisitArgumentList(ctx *fql.ArgumentListContext) interface{} {
@@ -664,7 +669,12 @@ func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
 	valReg := ctx.Expression().Accept(v).(runtime.Operand)
 
-	v.emitter.EmitAB(runtime.OpMove, runtime.ResultOperand, valReg)
+	if valReg.IsConstant() {
+		v.emitter.EmitAB(runtime.OpLoadGlobal, runtime.ResultOperand, valReg)
+	} else {
+		v.emitter.EmitAB(runtime.OpMove, runtime.ResultOperand, valReg)
+	}
+
 	v.emitter.Emit(runtime.OpReturn)
 
 	//if len(v.loops) == 0 {

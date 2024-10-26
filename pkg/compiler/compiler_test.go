@@ -19,31 +19,31 @@ func TestVariables(t *testing.T) {
 			nil,
 			nil,
 		},
-		//{
-		//	`LET a = TRUE RETURN a`,
-		//	true,
-		//	nil,
-		//},
-		//{
-		//	`LET a = 1 RETURN a`,
-		//	1,
-		//	nil,
-		//},
-		//{
-		//	`LET a = 1.1 RETURN a`,
-		//	1.1,
-		//	nil,
-		//},
-		//{
-		//	`LET i = 'foo' RETURN i`,
-		//	"foo",
-		//	nil,
-		//},
-		//{
-		//	`LET i = [] RETURN i`,
-		//	[]any{},
-		//	ShouldEqualJSON,
-		//},
+		{
+			`LET a = TRUE RETURN a`,
+			true,
+			nil,
+		},
+		{
+			`LET a = 1 RETURN a`,
+			1,
+			nil,
+		},
+		{
+			`LET a = 1.1 RETURN a`,
+			1.1,
+			nil,
+		},
+		{
+			`LET i = 'foo' RETURN i`,
+			"foo",
+			nil,
+		},
+		{
+			`LET i = [] RETURN i`,
+			[]any{},
+			ShouldEqualJSON,
+		},
 		//{
 		//	`LET i = [1, 2, 3] RETURN i`,
 		//	[]any{1, 2, 3},

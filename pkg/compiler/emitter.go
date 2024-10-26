@@ -31,6 +31,11 @@ func (e *Emitter) EmitAB(op runtime.Opcode, dest, src1 runtime.Operand) {
 	e.EmitABC(op, dest, src1, 0)
 }
 
+// EmitABx emits an opcode with a destination register and a custom argument.
+func (e *Emitter) EmitABx(op runtime.Opcode, dest runtime.Operand, arg int) {
+	e.EmitABC(op, dest, runtime.Operand(arg), 0)
+}
+
 // EmitABC emits an opcode with a destination register and two source register arguments.
 func (e *Emitter) EmitABC(op runtime.Opcode, dest, src1, src2 runtime.Operand) {
 	e.instructions = append(e.instructions, runtime.Instruction{
