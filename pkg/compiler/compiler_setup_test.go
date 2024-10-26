@@ -19,9 +19,9 @@ type UseCase struct {
 }
 
 func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) {
-	vm := runtime.NewVM(opts...)
+	vm := runtime.NewVM(p)
 
-	return vm.Run(context.Background(), p)
+	return vm.Run(context.Background(), opts...)
 }
 
 func Exec(p *runtime.Program, raw bool, opts ...runtime.EnvironmentOption) (any, error) {

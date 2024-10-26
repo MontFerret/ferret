@@ -320,9 +320,9 @@ func TestUnaryOperators(t *testing.T) {
 func TestEqualityOperators(t *testing.T) {
 	Convey("Equality operators", t, func() {
 		run := func(p *runtime.Program) (string, error) {
-			vm := runtime.NewVM()
+			vm := runtime.NewVM(p)
 
-			out, err := vm.Run(context.Background(), p)
+			out, err := vm.Run(context.Background())
 
 			return string(out), err
 		}

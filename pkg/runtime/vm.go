@@ -8,22 +8,21 @@ import (
 
 type VM struct {
 	env          *Environment
+	program      *Program
 	globals      map[string]core.Value
 	frames       []*Frame
 	currentFrame *Frame
 	pc           int
 }
 
-func NewVM(opts ...EnvironmentOption) *VM {
+func NewVM(program *Program) *VM {
 	vm := new(VM)
-	vm.env = newEnvironment(opts)
+	vm.program = program
 
 	return vm
 }
 
-// TODO: Move program to the constructor. No need to pass it as an argument since the VM is stateful.
-// But the environment can be passed as an argument.
-func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
+func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) ([]byte, error) {
 	//tryCatch := func(pos int) bool {
 	//	for _, pair := range program.CatchTable {
 	//		if pos >= pair[0] && pos <= pair[1] {
@@ -34,18 +33,12 @@ func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
 	//	return false
 	//}
 
-	loadData := func(op Operand) core.Value {
-		if op.IsRegister() {
-			return vm.currentFrame.registers[op.Register()]
-		}
-
-		return program.Constants[op.Constant()]
-	}
-
+	vm.env = newEnvironment(opts)
 	vm.currentFrame = newFrame(64, 0, nil)
 	vm.frames = make([]*Frame, 4)
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
+	program := vm.program
 
 loop:
 	for vm.pc < len(program.Bytecode) {
@@ -56,23 +49,23 @@ loop:
 
 		switch inst.Opcode {
 		case OpMove:
-			reg[dst] = loadData(src1)
+			reg[dst] = vm.load(src1)
 		case OpLoadConst:
 			reg[dst] = program.Constants[src1.Constant()]
 		case OpStoreGlobal:
-			vm.globals[program.Constants[dst.Constant()].String()] = loadData(src1)
+			vm.globals[program.Constants[dst.Constant()].String()] = vm.load(src1)
 		case OpLoadGlobal:
 			reg[dst] = vm.globals[program.Constants[src1].String()]
 		case OpAdd:
-			reg[dst] = operators.Add(loadData(src1), loadData(src2))
+			reg[dst] = operators.Add(vm.load(src1), vm.load(src2))
 		case OpSub:
-			reg[dst] = operators.Subtract(loadData(src1), loadData(src2))
+			reg[dst] = operators.Subtract(vm.load(src1), vm.load(src2))
 		case OpMulti:
-			reg[dst] = operators.Multiply(loadData(src1), loadData(src2))
+			reg[dst] = operators.Multiply(vm.load(src1), vm.load(src2))
 		case OpDiv:
-			reg[dst] = operators.Divide(loadData(src1), loadData(src2))
+			reg[dst] = operators.Divide(vm.load(src1), vm.load(src2))
 		case OpMod:
-			reg[dst] = operators.Modulus(loadData(src1), loadData(src2))
+			reg[dst] = operators.Modulus(vm.load(src1), vm.load(src2))
 		case OpIncr:
 			reg[dst] = operators.Increment(reg[dst])
 		case OpDecr:
@@ -450,4 +443,13 @@ loop:
 	}
 
 	return vm.currentFrame.registers[ResultOperand].MarshalJSON()
+}
+
+//go:inline
+func (vm *VM) load(op Operand) core.Value {
+	if op.IsRegister() {
+		return vm.currentFrame.registers[op.Register()]
+	}
+
+	return vm.program.Constants[op.Constant()]
 }
