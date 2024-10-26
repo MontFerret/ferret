@@ -44,21 +44,21 @@ func TestVariables(t *testing.T) {
 			[]any{},
 			ShouldEqualJSON,
 		},
-		//{
-		//	`LET i = [1, 2, 3] RETURN i`,
-		//	[]any{1, 2, 3},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`LET i = [None, FALSE, "foo", 1, 1.1] RETURN i`,
-		//	[]any{nil, false, "foo", 1, 1.1},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`LET i = {} RETURN i`,
-		//	map[string]any{},
-		//	ShouldEqualJSON,
-		//},
+		{
+			`LET i = [1, 2, 3] RETURN i`,
+			[]any{1, 2, 3},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = [None, FALSE, "foo", 1, 1.1] RETURN i`,
+			[]any{nil, false, "foo", 1, 1.1},
+			ShouldEqualJSON,
+		},
+		{
+			`LET i = {} RETURN i`,
+			map[string]any{},
+			ShouldEqualJSON,
+		},
 		//{
 		//	`LET i = {a: 1, b: 2} RETURN i`,
 		//	map[string]any{"a": 1, "b": 2},

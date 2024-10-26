@@ -76,16 +76,10 @@ loop:
 			//stack.Push(values.ToBoolean(stack.Pop()))
 
 		case OpArray:
-			arr := values.NewSizedArray(int(src1))
-			//
-			//// iterate from the end to the beginning
-			//// because stack is LIFO
-			//for i := size - 1; i >= 0; i-- {
-			//	arr.MustSet(values.Int(i), stack.Pop())
-			//}
-			//
-			//stack.Push(arr)
-			reg[dst] = arr
+			reg[dst] = values.NewArray(int(src1))
+
+		case OpArrayPush:
+			reg[dst].(*values.Array).Push(vm.load(src1))
 
 		case OpObject:
 			//obj := values.NewObject()

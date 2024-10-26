@@ -17,8 +17,8 @@ const (
 	OpDecr
 
 	OpArray
-	OpStoreIndex
-	
+	OpArrayPush
+
 	OpObject
 	OpLoadProperty
 	OpLoadPropertyOptional

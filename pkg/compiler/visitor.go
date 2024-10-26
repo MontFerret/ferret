@@ -492,18 +492,24 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	dest := v.registers.Allocate(VarTemporary)
-	var size int
+	var args []runtime.Operand
 
-	if args := ctx.ArgumentList(); args != nil {
-		exps := args.AllExpression()
-		size = len(exps)
+	if list := ctx.ArgumentList(); list != nil {
+		exps := list.AllExpression()
+		size := len(exps)
+		args = make([]runtime.Operand, size)
 
-		//for _, arg := range exps {
-		//	arg.Accept(v)
-		//}
+		for i, arg := range exps {
+			args[i] = arg.Accept(v).(runtime.Operand)
+		}
 	}
 
-	v.emitter.EmitABx(runtime.OpArray, dest, size)
+	v.emitter.EmitABx(runtime.OpArray, dest, len(args))
+
+	for _, arg := range args {
+		v.emitter.EmitAB(runtime.OpArrayPush, dest, arg)
+		v.registers.Free(arg)
+	}
 
 	return dest
 }
