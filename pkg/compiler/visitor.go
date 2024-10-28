@@ -510,18 +510,18 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 		size := len(exps)
 
 		if size > 0 {
-			// Allocate sequence for array elements
-			sequence := v.registers.AllocateSequence(size, VarTemporary)
+			// Allocate seq for array elements
+			seq := v.registers.AllocateSequence(size, VarTemporary)
 
-			// Evaluate each element into sequence registers
+			// Evaluate each element into seq registers
 			for i, exp := range exps {
-				// Compile expression and move to sequence register
+				// Compile expression and move to seq register
 				srcReg := exp.Accept(v).(runtime.Operand)
 
 				if srcReg.IsConstant() {
-					v.emitter.EmitAB(runtime.OpLoadConst, sequence.Registers[i], srcReg)
+					v.emitter.EmitAB(runtime.OpLoadConst, seq.Registers[i], srcReg)
 				} else {
-					v.emitter.EmitAB(runtime.OpMove, sequence.Registers[i], srcReg)
+					v.emitter.EmitAB(runtime.OpMove, seq.Registers[i], srcReg)
 				}
 
 				// Free source register if temporary
@@ -531,10 +531,10 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 			}
 
 			// Initialize an array
-			v.emitter.EmitAs(runtime.OpArray, destReg, sequence)
+			v.emitter.EmitAs(runtime.OpArray, destReg, seq)
 
-			// Free sequence registers
-			v.registers.FreeSequence(sequence)
+			// Free seq registers
+			v.registers.FreeSequence(seq)
 
 			return destReg
 		}
@@ -546,58 +546,82 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	return destReg
 }
 
-func (v *visitor) VisitArgumentList(ctx *fql.ArgumentListContext) interface{} {
-	//exps := ctx.AllExpression()
-	//size := len(exps)
-	//
-	//for _, arg := range exps {
-	//	arg.Accept(v)
-	//}
-
-	return nil
-}
-
 func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
-	//assignments := ctx.AllPropertyAssignment()
-	//
-	//for _, pa := range assignments {
-	//	pac := pa.(*fql.PropertyAssignmentContext)
-	//
-	//	if prop, ok := pac.PropertyName().(*fql.PropertyNameContext); ok {
-	//		prop.Accept(v)
-	//		pac.Expression().Accept(v)
-	//	} else if comProp, ok := pac.ComputedPropertyName().(*fql.ComputedPropertyNameContext); ok {
-	//		comProp.Accept(v)
-	//		pac.Expression().Accept(v)
-	//	} else if variable := pac.Variable(); variable != nil {
-	//		v.emitConstant(values.NewString(variable.GetText()))
-	//		variable.Accept(v)
-	//	}
-	//}
-	//
-	//v.emitter.EmitABC(runtime.OpObject, len(assignments))
+	dst := v.registers.Allocate(VarTemporary)
+	assignments := ctx.AllPropertyAssignment()
+	size := len(assignments)
 
-	return nil
+	if size == 0 {
+		v.emitter.EmitA(runtime.OpObject, dst)
+
+		return dst
+	}
+
+	seq := v.registers.AllocateSequence(len(assignments)*2, VarTemporary)
+
+	for i := 0; i < size; i++ {
+		var propOp runtime.Operand
+		var valOp runtime.Operand
+		pac := assignments[i].(*fql.PropertyAssignmentContext)
+
+		if prop, ok := pac.PropertyName().(*fql.PropertyNameContext); ok {
+			propOp = prop.Accept(v).(runtime.Operand)
+			valOp = pac.Expression().Accept(v).(runtime.Operand)
+		} else if comProp, ok := pac.ComputedPropertyName().(*fql.ComputedPropertyNameContext); ok {
+			propOp = comProp.Accept(v).(runtime.Operand)
+			valOp = pac.Expression().Accept(v).(runtime.Operand)
+		} else if variable := pac.Variable(); variable != nil {
+			propOp = v.symbols.AddConstant(values.NewString(variable.GetText()))
+			valOp = variable.Accept(v).(runtime.Operand)
+		}
+
+		regIndex := i * 2
+
+		if propOp.IsConstant() {
+			v.emitter.EmitAB(runtime.OpLoadConst, seq.Registers[regIndex], propOp)
+		} else {
+			v.emitter.EmitAB(runtime.OpMove, seq.Registers[regIndex], propOp)
+		}
+
+		if valOp.IsConstant() {
+			v.emitter.EmitAB(runtime.OpLoadConst, seq.Registers[regIndex+1], valOp)
+		} else {
+			v.emitter.EmitAB(runtime.OpMove, seq.Registers[regIndex+1], valOp)
+		}
+
+		// Free source register if temporary
+		if propOp.IsRegister() {
+			v.registers.Free(propOp)
+		}
+	}
+
+	v.emitter.EmitAs(runtime.OpObject, dst, seq)
+
+	return dst
 }
 
 func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
-	//if id := ctx.Identifier(); id != nil {
-	//	v.emitConstant(values.NewString(ctx.GetText()))
-	//} else if str := ctx.StringLiteral(); str != nil {
-	//	str.Accept(v)
-	//} else if word := ctx.SafeReservedWord(); word != nil {
-	//	v.emitConstant(values.NewString(ctx.GetText()))
-	//} else if word := ctx.UnsafeReservedWord(); word != nil {
-	//	v.emitConstant(values.NewString(ctx.GetText()))
-	//}
+	if id := ctx.Identifier(); id != nil {
+		return v.symbols.AddConstant(values.NewString(ctx.GetText()))
+	}
 
-	return nil
+	if str := ctx.StringLiteral(); str != nil {
+		return str.Accept(v)
+	}
+
+	if word := ctx.SafeReservedWord(); word != nil {
+		return v.symbols.AddConstant(values.NewString(ctx.GetText()))
+	}
+
+	if word := ctx.UnsafeReservedWord(); word != nil {
+		return v.symbols.AddConstant(values.NewString(ctx.GetText()))
+	}
+
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
-	ctx.Expression().Accept(v)
-
-	return nil
+	return ctx.Expression().Accept(v)
 }
 
 func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} {

@@ -16,9 +16,9 @@ const (
 	OpIncr
 	OpDecr
 
-	OpArray // Create an array from a list of registers (ARR R2, R3 5 - creates an array in R2 with elements from R3 to R5)
+	OpArray  // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
+	OpObject // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
 
-	OpObject
 	OpLoadProperty
 	OpLoadPropertyOptional
 	OpNegate

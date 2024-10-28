@@ -105,25 +105,26 @@ func (ra *RegisterAllocator) findFreeRegister() (runtime.Operand, bool) {
 		}
 	}
 
+	// TODO: Implement register reuse
 	// If no free registers, try to find one that's no longer needed
-	var candidate runtime.Operand
-	var found bool
-	maxLastUse := -1
-
-	for reg, status := range ra.registers {
-		if status.NextUse == -1 && status.LastUse > maxLastUse {
-			maxLastUse = status.LastUse
-			candidate = reg
-			found = true
-		}
-	}
-
-	if found {
-		// Free the candidate register
-		ra.Free(candidate)
-
-		return candidate, true
-	}
+	//var candidate runtime.Operand
+	//var found bool
+	//maxLastUse := -1
+	//
+	//for reg, status := range ra.registers {
+	//	if status.NextUse == -1 && status.LastUse > maxLastUse {
+	//		maxLastUse = status.LastUse
+	//		candidate = reg
+	//		found = true
+	//	}
+	//}
+	//
+	//if found {
+	//	// Free the candidate register
+	//	ra.Free(candidate)
+	//
+	//	return candidate, true
+	//}
 
 	return 0, false
 }

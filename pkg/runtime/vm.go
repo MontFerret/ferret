@@ -23,7 +23,7 @@ func NewVM(program *Program) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) ([]byte, error) {
+func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) (core.Value, error) {
 	//tryCatch := func(pos int) bool {
 	//	for _, pair := range program.CatchTable {
 	//		if pos >= pair[0] && pos <= pair[1] {
@@ -98,16 +98,24 @@ loop:
 			reg[dst] = arr
 
 		case OpObject:
-			//obj := values.NewObject()
-			//propertyCount := arg
-			//
-			//for i := 0; i < propertyCount; i++ {
-			//	value := stack.Pop()
-			//	key := stack.Pop()
-			//	obj.Set(values.ToString(key), value)
-			//}
-			//
-			//stack.Push(obj)
+			obj := values.NewObject()
+			var args int
+
+			if src1 > 0 {
+				args = src2.Register() - src1.Register() + 1
+			}
+
+			start := int(src1)
+			end := int(src1) + args
+
+			for i := start; i < end; i += 2 {
+				key := reg[i]
+				value := reg[i+1]
+
+				obj.Set(values.ToString(key), value)
+			}
+
+			reg[dst] = obj
 
 		case OpLoadProperty, OpLoadPropertyOptional:
 			//prop := stack.Pop()
@@ -453,16 +461,5 @@ loop:
 		}
 	}
 
-	return vm.currentFrame.registers[ResultOperand].MarshalJSON()
+	return vm.currentFrame.registers[ResultOperand], nil
 }
-
-//// load loads a value from a register or a global variable.
-////
-////go:inline
-//func (vm *VM) load(op Operand) core.Value {
-//	if op.IsRegister() {
-//		return vm.currentFrame.registers[op.Register()]
-//	}
-//
-//	return vm.globals[vm.program.Constants[op.Constant()].String()]
-//}

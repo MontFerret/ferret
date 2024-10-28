@@ -2,6 +2,18 @@ package compiler_test
 
 import "testing"
 
+func BenchmarkEmptyArray(b *testing.B) {
+	RunBenchmark(b, `RETURN []`)
+}
+
+func BenchmarkStaticArray(b *testing.B) {
+	RunBenchmark(b, `RETURN [1,2,3,4,5,6,7,8,9,10]`)
+}
+
+func BenchmarkEmptyObject(b *testing.B) {
+	RunBenchmark(b, `RETURN {}`)
+}
+
 func BenchmarkForEmpty(b *testing.B) {
 	RunBenchmark(b, `
 			FOR i IN []

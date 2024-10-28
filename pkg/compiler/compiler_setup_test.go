@@ -21,7 +21,13 @@ type UseCase struct {
 func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) {
 	vm := runtime.NewVM(p)
 
-	return vm.Run(context.Background(), opts...)
+	out, err := vm.Run(context.Background(), opts...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return out.MarshalJSON()
 }
 
 func Exec(p *runtime.Program, raw bool, opts ...runtime.EnvironmentOption) (any, error) {
@@ -130,10 +136,12 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	options = append(options, opts...)
 
 	for n := 0; n < b.N; n++ {
-		_, e := Run(prog, opts...)
+		vm := runtime.NewVM(prog)
 
-		if e != nil {
-			panic(e)
+		_, err := vm.Run(context.Background(), opts...)
+
+		if err != nil {
+			panic(err)
 		}
 	}
 }
