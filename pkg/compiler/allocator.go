@@ -18,6 +18,11 @@ type (
 		End   int // Instruction number where register dies
 	}
 
+	RegisterSequence struct {
+		Registers []runtime.Operand
+		Lifetime  *RegisterLifetime
+	}
+
 	// RegisterAllocator manages register allocation
 	RegisterAllocator struct {
 		registers    map[runtime.Operand]*RegisterStatus
@@ -142,6 +147,126 @@ func (ra *RegisterAllocator) UpdateUse(reg runtime.Operand) {
 	}
 
 	ra.currentInstr++
+}
+
+// AllocateSequence allocates a sequence of registers for function arguments or similar uses
+func (ra *RegisterAllocator) AllocateSequence(count int, varType VarType) *RegisterSequence {
+	sequence := &RegisterSequence{
+		Registers: make([]runtime.Operand, count),
+		Lifetime: &RegisterLifetime{
+			Start: ra.currentInstr,
+		},
+	}
+
+	// First pass: try to find contiguous free registers
+	startReg, found := ra.findContiguousRegisters(count)
+
+	if found {
+		// Use contiguous block
+		for i := 0; i < count; i++ {
+			reg := startReg + runtime.Operand(i)
+			sequence.Registers[i] = reg
+
+			// Initialize or update register status
+			ra.registers[reg] = &RegisterStatus{
+				IsAllocated: true,
+				LastUse:     ra.currentInstr,
+				NextUse:     -1,
+				VarType:     varType,
+				Lifetime: &RegisterLifetime{
+					Start: ra.currentInstr,
+				},
+			}
+		}
+	} else {
+		// Allocate registers individually if contiguous block not available
+		for i := 0; i < count; i++ {
+			reg := ra.Allocate(varType)
+			sequence.Registers[i] = reg
+		}
+	}
+
+	// Update interference graph for the sequence
+	ra.updateSequenceInterference(sequence)
+
+	return sequence
+}
+
+// findContiguousRegisters attempts to find a block of consecutive free registers
+func (ra *RegisterAllocator) findContiguousRegisters(count int) (runtime.Operand, bool) {
+	if count <= 0 {
+		return 0, false
+	}
+
+	// First, try to find a contiguous block in existing registers
+	maxReg := ra.nextRegister
+	for start := runtime.ResultOperand + 1; start < maxReg; start++ {
+		if ra.isContiguousBlockFree(start, count) {
+			return start, true
+		}
+	}
+
+	// If no existing contiguous block found, allocate new block
+	startReg := ra.nextRegister
+	ra.nextRegister += runtime.Operand(count)
+
+	return startReg, true
+}
+
+// isContiguousBlockFree checks if a block of registers is available
+func (ra *RegisterAllocator) isContiguousBlockFree(start runtime.Operand, count int) bool {
+	for i := 0; i < count; i++ {
+		reg := start + runtime.Operand(i)
+
+		if status := ra.registers[reg]; status != nil && status.IsAllocated {
+			return false
+		}
+	}
+	return true
+}
+
+// updateSequenceInterference updates interference information for sequence registers
+func (ra *RegisterAllocator) updateSequenceInterference(seq *RegisterSequence) {
+	// Add interference between sequence registers
+	for i := 0; i < len(seq.Registers); i++ {
+		for j := i + 1; j < len(seq.Registers); j++ {
+			ra.addInterference(seq.Registers[i], seq.Registers[j])
+		}
+	}
+
+	// Add interference with other live registers
+	for _, seqReg := range seq.Registers {
+		for otherReg, otherStatus := range ra.registers {
+			if otherStatus.IsAllocated {
+				found := false
+				for _, r := range seq.Registers {
+					if r == otherReg {
+						found = true
+						break
+					}
+				}
+				if !found {
+					ra.addInterference(seqReg, otherReg)
+				}
+			}
+		}
+	}
+}
+
+// FreeSequence frees all registers in a sequence
+func (ra *RegisterAllocator) FreeSequence(seq *RegisterSequence) {
+	seq.Lifetime.End = ra.currentInstr
+
+	for _, reg := range seq.Registers {
+		ra.Free(reg)
+	}
+}
+
+// UpdateSequenceUse updates usage information for all registers in a sequence
+func (ra *RegisterAllocator) UpdateSequenceUse(seq *RegisterSequence) {
+	for _, reg := range seq.Registers {
+		ra.UpdateUse(reg)
+	}
 }
 
 // registersInterfere checks if two registers have overlapping lifetimes

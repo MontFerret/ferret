@@ -472,8 +472,9 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 	if name != ignorePseudoVariable {
 		varReg := v.symbols.DefineVariable(name)
 
-		// Global variable
-		if v.symbols.Scope() == 0 {
+		if valReg.IsConstant() {
+			v.emitter.EmitAB(runtime.OpLoadConst, varReg, valReg)
+		} else if v.symbols.Scope() == 0 {
 			v.emitter.EmitAB(runtime.OpStoreGlobal, varReg, valReg)
 		} else {
 			v.emitter.EmitAB(runtime.OpMove, varReg, valReg)
@@ -487,31 +488,62 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 
 func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 	// Just return the register / constant index
-	return v.symbols.LookupVariable(ctx.GetText())
+	op := v.symbols.LookupVariable(ctx.GetText())
+
+	if op.IsRegister() {
+		return op
+	}
+
+	reg := v.registers.Allocate(VarTemporary)
+	v.emitter.EmitAB(runtime.OpLoadGlobal, reg, op)
+
+	return reg
 }
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
-	dest := v.registers.Allocate(VarTemporary)
-	var args []runtime.Operand
+	// Allocate destination register for the array
+	destReg := v.registers.Allocate(VarTemporary)
 
 	if list := ctx.ArgumentList(); list != nil {
-		exps := list.AllExpression()
+		// Get all array element expressions
+		exps := list.(*fql.ArgumentListContext).AllExpression()
 		size := len(exps)
-		args = make([]runtime.Operand, size)
 
-		for i, arg := range exps {
-			args[i] = arg.Accept(v).(runtime.Operand)
+		if size > 0 {
+			// Allocate sequence for array elements
+			sequence := v.registers.AllocateSequence(size, VarTemporary)
+
+			// Evaluate each element into sequence registers
+			for i, exp := range exps {
+				// Compile expression and move to sequence register
+				srcReg := exp.Accept(v).(runtime.Operand)
+
+				if srcReg.IsConstant() {
+					v.emitter.EmitAB(runtime.OpLoadConst, sequence.Registers[i], srcReg)
+				} else {
+					v.emitter.EmitAB(runtime.OpMove, sequence.Registers[i], srcReg)
+				}
+
+				// Free source register if temporary
+				if srcReg.IsRegister() {
+					v.registers.Free(srcReg)
+				}
+			}
+
+			// Initialize an array
+			v.emitter.EmitAs(runtime.OpArray, destReg, sequence)
+
+			// Free sequence registers
+			v.registers.FreeSequence(sequence)
+
+			return destReg
 		}
 	}
 
-	v.emitter.EmitABx(runtime.OpArray, dest, len(args))
+	// Empty array
+	v.emitter.EmitA(runtime.OpArray, destReg)
 
-	for _, arg := range args {
-		v.emitter.EmitAB(runtime.OpArrayPush, dest, arg)
-		v.registers.Free(arg)
-	}
-
-	return dest
+	return destReg
 }
 
 func (v *visitor) VisitArgumentList(ctx *fql.ArgumentListContext) interface{} {

@@ -31,9 +31,21 @@ func (e *Emitter) EmitAB(op runtime.Opcode, dest, src1 runtime.Operand) {
 	e.EmitABC(op, dest, src1, 0)
 }
 
-// EmitABx emits an opcode with a destination register and a custom argument.
-func (e *Emitter) EmitABx(op runtime.Opcode, dest runtime.Operand, arg int) {
+// EmitAx emits an opcode with a destination register and a custom argument.
+func (e *Emitter) EmitAx(op runtime.Opcode, dest runtime.Operand, arg int) {
 	e.EmitABC(op, dest, runtime.Operand(arg), 0)
+}
+
+// EmitAs emits an opcode with a destination register and a sequence of registers.
+func (e *Emitter) EmitAs(op runtime.Opcode, dest runtime.Operand, seq *RegisterSequence) {
+	src1 := seq.Registers[0]
+	src2 := seq.Registers[len(seq.Registers)-1]
+	e.EmitABC(op, dest, src1, src2)
+}
+
+// EmitABx emits an opcode with a destination and source register and a custom argument.
+func (e *Emitter) EmitABx(op runtime.Opcode, dest runtime.Operand, src runtime.Operand, arg int) {
+	e.EmitABC(op, dest, src, runtime.Operand(arg))
 }
 
 // EmitABC emits an opcode with a destination register and two source register arguments.

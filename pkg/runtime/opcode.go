@@ -4,7 +4,7 @@ type Opcode byte
 
 const (
 	OpMove        Opcode = iota
-	OpLoadConst          // Load a constant to a register A
+	OpLoadConst          // Load a constant to a register or a global variable
 	OpLoadGlobal         // Load a global variable to a register A
 	OpStoreGlobal        // Store a value from register A to a global variable
 
@@ -16,8 +16,7 @@ const (
 	OpIncr
 	OpDecr
 
-	OpArray
-	OpArrayPush
+	OpArray // Create an array from a list of registers (ARR R2, R3 5 - creates an array in R2 with elements from R3 to R5)
 
 	OpObject
 	OpLoadProperty

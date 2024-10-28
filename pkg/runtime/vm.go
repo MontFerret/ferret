@@ -35,7 +35,7 @@ func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) ([]byte, error
 	//}
 
 	vm.env = newEnvironment(opts)
-	vm.currentFrame = newFrame(64, 0, nil)
+	vm.currentFrame = newFrame(32, 0, nil)
 	vm.frames = make([]*Frame, 4)
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
@@ -50,23 +50,27 @@ loop:
 
 		switch inst.Opcode {
 		case OpMove:
-			reg[dst] = vm.load(src1)
+			reg[dst] = reg[src1]
 		case OpLoadConst:
-			reg[dst] = program.Constants[src1.Constant()]
+			if dst.IsRegister() {
+				reg[dst] = program.Constants[src1.Constant()]
+			} else {
+				vm.globals[program.Constants[dst.Constant()].String()] = program.Constants[src1.Constant()]
+			}
 		case OpStoreGlobal:
-			vm.globals[program.Constants[dst.Constant()].String()] = vm.load(src1)
+			vm.globals[program.Constants[dst.Constant()].String()] = reg[src1]
 		case OpLoadGlobal:
 			reg[dst] = vm.globals[program.Constants[src1.Constant()].String()]
 		case OpAdd:
-			reg[dst] = operators.Add(vm.load(src1), vm.load(src2))
+			reg[dst] = operators.Add(reg[src1], reg[src2])
 		case OpSub:
-			reg[dst] = operators.Subtract(vm.load(src1), vm.load(src2))
+			reg[dst] = operators.Subtract(reg[src1], reg[src2])
 		case OpMulti:
-			reg[dst] = operators.Multiply(vm.load(src1), vm.load(src2))
+			reg[dst] = operators.Multiply(reg[src1], reg[src2])
 		case OpDiv:
-			reg[dst] = operators.Divide(vm.load(src1), vm.load(src2))
+			reg[dst] = operators.Divide(reg[src1], reg[src2])
 		case OpMod:
-			reg[dst] = operators.Modulus(vm.load(src1), vm.load(src2))
+			reg[dst] = operators.Modulus(reg[src1], reg[src2])
 		case OpIncr:
 			reg[dst] = operators.Increment(reg[dst])
 		case OpDecr:
@@ -76,10 +80,22 @@ loop:
 			//stack.Push(values.ToBoolean(stack.Pop()))
 
 		case OpArray:
-			reg[dst] = values.NewArray(int(src1))
+			var size int
 
-		case OpArrayPush:
-			reg[dst].(*values.Array).Push(vm.load(src1))
+			if src1 > 0 {
+				size = src2.Register() - src1.Register() + 1
+			}
+
+			arr := values.NewArray(size)
+			start := int(src1)
+			end := int(src1) + size
+
+			// Iterate over registers starting from src1 and up to the src2
+			for i := start; i < end; i++ {
+				arr.Push(reg[i])
+			}
+
+			reg[dst] = arr
 
 		case OpObject:
 			//obj := values.NewObject()
@@ -440,11 +456,13 @@ loop:
 	return vm.currentFrame.registers[ResultOperand].MarshalJSON()
 }
 
-//go:inline
-func (vm *VM) load(op Operand) core.Value {
-	if op.IsRegister() {
-		return vm.currentFrame.registers[op.Register()]
-	}
-
-	return vm.program.Constants[op.Constant()]
-}
+//// load loads a value from a register or a global variable.
+////
+////go:inline
+//func (vm *VM) load(op Operand) core.Value {
+//	if op.IsRegister() {
+//		return vm.currentFrame.registers[op.Register()]
+//	}
+//
+//	return vm.globals[vm.program.Constants[op.Constant()].String()]
+//}
