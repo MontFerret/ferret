@@ -16,6 +16,16 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
+func (e *Emitter) EmitJump(op runtime.Opcode, reg runtime.Operand) int {
+	e.EmitA(op, reg)
+
+	return len(e.instructions) - 1
+}
+
+func (e *Emitter) PatchJump(dest int) {
+	e.instructions[dest].Operands[1] = runtime.Operand(len(e.instructions) - dest - 1)
+}
+
 // Emit emits an opcode with no arguments.
 func (e *Emitter) Emit(op runtime.Opcode) {
 	e.EmitABC(op, 0, 0, 0)

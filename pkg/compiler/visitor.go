@@ -749,49 +749,90 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 }
 
 func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
-	if op := ctx.UnaryOperator(); op != nil {
-		ctx.GetRight().Accept(v)
+	if uo := ctx.UnaryOperator(); uo != nil {
+		src := v.asRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+		dst := v.registers.Allocate(VarTemporary)
 
-		op := op.(*fql.UnaryOperatorContext)
+		uoc := uo.(*fql.UnaryOperatorContext)
+		var op runtime.Opcode
 
-		if op.Not() != nil {
-			//v.emitter.EmitABC(runtime.OpNot)
-		} else if op.Minus() != nil {
-			// v.emitter.EmitABC(runtime.OpFlipNegative)
-		} else if op.Plus() != nil {
-			//v.emitter.EmitABC(runtime.OpFlipPositive)
+		if uoc.Not() != nil {
+			op = runtime.OpNot
+		} else if uoc.Minus() != nil {
+			op = runtime.OpFlipNegative
+		} else if uoc.Plus() != nil {
+			op = runtime.OpFlipPositive
 		} else {
-			panic(core.Error(ErrUnexpectedToken, op.GetText()))
+			panic(core.Error(ErrUnexpectedToken, uoc.GetText()))
 		}
-	} else if op := ctx.LogicalAndOperator(); op != nil {
-		ctx.GetLeft().Accept(v)
-		end := v.emitJump(runtime.OpJumpIfFalse)
-		ctx.GetRight().Accept(v)
-		v.patchJump(end)
-	} else if op := ctx.LogicalOrOperator(); op != nil {
-		ctx.GetLeft().Accept(v)
-		end := v.emitJump(runtime.OpJumpIfTrue)
-		ctx.GetRight().Accept(v)
-		v.patchJump(end)
-	} else if op := ctx.GetTernaryOperator(); op != nil {
-		ctx.GetCondition().Accept(v)
 
-		otherwise := v.emitJump(runtime.OpJumpIfFalse)
+		// We do not overwrite the source register
+		v.emitter.EmitAB(op, dst, src)
+
+		return dst
+	}
+
+	if op := ctx.LogicalAndOperator(); op != nil {
+		dst := v.registers.Allocate(VarTemporary)
+		// Execute left expression
+		left := v.asRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
+		v.emitter.EmitAB(runtime.OpMove, dst, left)
+		// Test if left is false and jump to the end
+		end := v.emitter.EmitJump(runtime.OpJumpIfFalse, dst)
+		// If left is true, execute right expression
+		right := v.asRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+		// And move the result to the destination register
+		v.emitter.EmitAB(runtime.OpMove, dst, right)
+		v.emitter.PatchJump(end)
+
+		return dst
+	}
+
+	if op := ctx.LogicalOrOperator(); op != nil {
+		dst := v.registers.Allocate(VarTemporary)
+		// Execute left expression
+		left := v.asRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
+		// Move the result to the destination register
+		v.emitter.EmitAB(runtime.OpMove, dst, left)
+		// Test if left is true and jump to the end
+		end := v.emitter.EmitJump(runtime.OpJumpIfTrue, dst)
+		// If left is false, execute right expression
+		right := v.asRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+		// And move the result to the destination register
+		v.emitter.EmitAB(runtime.OpMove, dst, right)
+		v.emitter.PatchJump(end)
+
+		return dst
+	}
+
+	if op := ctx.GetTernaryOperator(); op != nil {
+		dst := v.registers.Allocate(VarTemporary)
+		res := v.asRegister(ctx.GetCondition().Accept(v).(runtime.Operand))
+		// Move the result to the destination register
+		v.emitter.EmitAB(runtime.OpMove, dst, res)
+
+		otherwise := v.emitter.EmitJump(runtime.OpJumpIfFalse, dst)
 
 		if onTrue := ctx.GetOnTrue(); onTrue != nil {
-			onTrue.Accept(v)
+			src1 := v.asRegister(onTrue.Accept(v).(runtime.Operand))
+			v.emitter.EmitAB(runtime.OpMove, dst, src1)
 		}
 
-		end := v.emitJump(runtime.OpJump)
-		v.patchJump(otherwise)
+		end := v.emitter.EmitJump(runtime.OpJump, dst)
+		v.emitter.PatchJump(otherwise)
 
-		ctx.GetOnFalse().Accept(v)
-		v.patchJump(end)
-	} else if c := ctx.Predicate(); c != nil {
+		src2 := v.asRegister(ctx.GetOnFalse().Accept(v).(runtime.Operand))
+		v.emitter.EmitAB(runtime.OpMove, dst, src2)
+		v.emitter.PatchJump(end)
+
+		return dst
+	}
+
+	if c := ctx.Predicate(); c != nil {
 		return c.Accept(v)
 	}
 
-	return nil
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
@@ -809,11 +850,10 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 
 	var opcode runtime.Opcode
 	dest := v.registers.Allocate(VarTemporary)
+	left := v.asRegister(ctx.Predicate(0).Accept(v).(runtime.Operand))
+	right := v.asRegister(ctx.Predicate(1).Accept(v).(runtime.Operand))
 
 	if op := ctx.EqualityOperator(); op != nil {
-		src1 := ctx.Predicate(0).Accept(v).(runtime.Operand)
-		src2 := ctx.Predicate(1).Accept(v).(runtime.Operand)
-
 		switch op.GetText() {
 		case "==":
 			opcode = runtime.OpEq
@@ -830,29 +870,20 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 		default:
 			panic(core.Error(ErrUnexpectedToken, op.GetText()))
 		}
-
-		v.emitter.EmitABC(opcode, dest, src1, src2)
 	} else if op := ctx.ArrayOperator(); op != nil {
 		// TODO: Implement me
 		panic(core.Error(core.ErrNotImplemented, "array operator"))
 	} else if op := ctx.InOperator(); op != nil {
-		src1 := ctx.Predicate(0).Accept(v).(runtime.Operand)
-		src2 := ctx.Predicate(1).Accept(v).(runtime.Operand)
 		opcode = runtime.OpIn
-
-		v.emitter.EmitABC(opcode, dest, src1, src2)
 	} else if op := ctx.LikeOperator(); op != nil {
-		src1 := ctx.Predicate(0).Accept(v).(runtime.Operand)
-		src2 := ctx.Predicate(1).Accept(v).(runtime.Operand)
-
 		if op.(*fql.LikeOperatorContext).Not() != nil {
 			opcode = runtime.OpNotLike
 		} else {
 			opcode = runtime.OpLike
 		}
-
-		v.emitter.EmitABC(opcode, dest, src1, src2)
 	}
+
+	v.emitter.EmitABC(opcode, dest, left, right)
 
 	return dest
 }
@@ -900,8 +931,8 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	}
 
 	if isSet {
-		regLeft := ctx.ExpressionAtom(0).Accept(v).(runtime.Operand)
-		regRight := ctx.ExpressionAtom(1).Accept(v).(runtime.Operand)
+		regLeft := v.asRegister(ctx.ExpressionAtom(0).Accept(v).(runtime.Operand))
+		regRight := v.asRegister(ctx.ExpressionAtom(1).Accept(v).(runtime.Operand))
 		dst := v.registers.Allocate(VarTemporary)
 
 		v.emitter.EmitABC(opcode, dst, regLeft, regRight)
@@ -929,7 +960,18 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 		return c.Accept(v)
 	}
 
-	return nil
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) asRegister(op runtime.Operand) runtime.Operand {
+	if op.IsRegister() {
+		return op
+	}
+
+	reg := v.registers.Allocate(VarTemporary)
+	v.emitter.EmitAB(runtime.OpLoadConst, reg, op)
+
+	return reg
 }
 
 func (v *visitor) beginScope() {
@@ -1012,27 +1054,4 @@ func (v *visitor) emitLoop(loopStart int) {
 	//pos := v.emitJump(runtime.OpJumpBackward)
 	//jump := pos - loopStart
 	//v.arguments[pos-1] = jump
-}
-
-// emitJump emits an opcode with a jump result argument.
-func (v *visitor) emitJump(op runtime.Opcode) int {
-	//v.emitter.EmitABC(op, jumpPlaceholder)
-	//
-	//return len(v.instructions)
-
-	return 0
-}
-
-// patchJump patches a jump result argument.
-func (v *visitor) patchJump(offset int) {
-	//jump := len(v.instructions) - offset
-	//v.arguments[offset-1] = jump
-}
-
-func (v *visitor) patchJumpWith(offset, jump int) {
-	//v.arguments[offset-1] = jump
-}
-
-func (v *visitor) emitPopAndClose() {
-	//v.emitter.EmitABC(runtime.OpPopClose)
 }

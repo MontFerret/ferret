@@ -21,6 +21,7 @@ const (
 
 	OpLoadProperty
 	OpLoadPropertyOptional
+
 	OpNegate
 	OpFlipPositive
 	OpFlipNegative

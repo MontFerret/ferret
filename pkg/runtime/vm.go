@@ -24,15 +24,15 @@ func NewVM(program *Program) *VM {
 }
 
 func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) (core.Value, error) {
-	//tryCatch := func(pos int) bool {
-	//	for _, pair := range program.CatchTable {
-	//		if pos >= pair[0] && pos <= pair[1] {
-	//			return true
-	//		}
-	//	}
-	//
-	//	return false
-	//}
+	tryCatch := func(pos int) bool {
+		for _, pair := range vm.program.CatchTable {
+			if pos >= pair[0] && pos <= pair[1] {
+				return true
+			}
+		}
+
+		return false
+	}
 
 	vm.env = newEnvironment(opts)
 	vm.currentFrame = newFrame(32, 0, nil)
@@ -61,6 +61,18 @@ loop:
 			vm.globals[program.Constants[dst.Constant()].String()] = reg[src1]
 		case OpLoadGlobal:
 			reg[dst] = vm.globals[program.Constants[src1.Constant()].String()]
+		case OpJump:
+			vm.pc += int(dst)
+		case OpJumpBackward:
+			vm.pc -= int(dst)
+		case OpJumpIfFalse:
+			if !values.ToBoolean(reg[dst]) {
+				vm.pc += int(src1)
+			}
+		case OpJumpIfTrue:
+			if values.ToBoolean(reg[dst]) {
+				vm.pc += int(src1)
+			}
 		case OpAdd:
 			reg[dst] = operators.Add(reg[src1], reg[src2])
 		case OpSub:
@@ -75,10 +87,8 @@ loop:
 			reg[dst] = operators.Increment(reg[dst])
 		case OpDecr:
 			reg[dst] = operators.Decrement(reg[dst])
-
 		case OpCastBool:
-			//stack.Push(values.ToBoolean(stack.Pop()))
-
+			reg[dst] = values.ToBoolean(reg[src1])
 		case OpArray:
 			var size int
 
@@ -96,7 +106,6 @@ loop:
 			}
 
 			reg[dst] = arr
-
 		case OpObject:
 			obj := values.NewObject()
 			var args int
@@ -116,7 +125,6 @@ loop:
 			}
 
 			reg[dst] = obj
-
 		case OpLoadProperty, OpLoadPropertyOptional:
 			//prop := stack.Pop()
 			//val := stack.Pop()
@@ -168,101 +176,65 @@ loop:
 			//	}
 			//}
 		case OpNegate:
-			//stack.Push(values.Negate(stack.Pop()))
-
+			reg[dst] = values.Negate(reg[src1])
 		case OpFlipPositive:
-			//stack.Push(values.Positive(stack.Pop()))
-
+			reg[dst] = values.Positive(reg[src1])
 		case OpFlipNegative:
-			//stack.Push(values.Negative(stack.Pop()))
-
+			reg[dst] = values.Negative(reg[src1])
 		case OpNot:
-			//stack.Push(!values.ToBoolean(stack.Pop()))
-
+			reg[dst] = !values.ToBoolean(reg[src1])
 		case OpEq:
-			//left := stack.Pop()
-			//right := stack.Pop()
-			//stack.Push(values.NewBoolean(values.Compare(left, right) == 0))
-
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) == 0)
 		case OpNeq:
-			//left := stack.Pop()
-			//right := stack.Pop()
-			//stack.Push(values.NewBoolean(values.Compare(left, right) != 0))
-
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) != 0)
 		case OpGt:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//stack.Push(values.NewBoolean(values.Compare(left, right) > 0))
-
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) > 0)
 		case OpLt:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//stack.Push(values.NewBoolean(values.Compare(left, right) < 0))
-
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) < 0)
 		case OpGte:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//stack.Push(values.NewBoolean(values.Compare(left, right) >= 0))
-
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) >= 0)
 		case OpLte:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//stack.Push(values.NewBoolean(values.Compare(left, right) <= 0))
-
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) <= 0)
 		case OpIn:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//stack.Push(values.Contains(right, left))
-
+			reg[dst] = values.Contains(reg[src2], reg[src1])
 		case OpNotIn:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//stack.Push(!values.Contains(right, left))
-
+			reg[dst] = !values.Contains(reg[src2], reg[src1])
 		case OpLike:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//res, err := operators.Like(left, right)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else {
-			//	return nil, err
-			//}
+			res, err := operators.Like(reg[src1], reg[src2])
 
+			if err == nil {
+				reg[dst] = res
+			} else {
+				return nil, err
+			}
 		case OpNotLike:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//res, err := operators.Like(left, right)
-			//
-			//if err == nil {
-			//	stack.Push(!res)
-			//} else {
-			//	return nil, err
-			//}
+			res, err := operators.Like(reg[src1], reg[src2])
 
+			if err == nil {
+				reg[dst] = !res
+			} else {
+				return nil, err
+			}
 		case OpRegexpPositive:
-			//reg, err := values.ToRegexp(stack.Pop())
-			//
-			//if err == nil {
-			//	stack.Push(reg.Match(stack.Pop()))
-			//} else if tryCatch(vm.pc) {
-			//	stack.Push(values.False)
-			//} else {
-			//	return nil, err
-			//}
+			r, err := values.ToRegexp(reg[src1])
 
+			if err == nil {
+				reg[dst] = r.Match(reg[src2])
+			} else if tryCatch(vm.pc) {
+				reg[dst] = values.False
+			} else {
+				return nil, err
+			}
 		case OpRegexpNegative:
-			//reg, err := values.ToRegexp(stack.Pop())
-			//
-			//if err == nil {
-			//	stack.Push(!reg.Match(stack.Pop()))
-			//} else if tryCatch(vm.pc) {
-			//	stack.Push(values.True)
-			//} else {
-			//	return nil, err
-			//}
+			r, err := values.ToRegexp(reg[src1])
 
+			if err == nil {
+				reg[dst] = !r.Match(reg[src2])
+			} else if tryCatch(vm.pc) {
+				reg[dst] = values.False
+			} else {
+				return nil, err
+			}
 		case OpCall, OpCallSafe:
 			//fnName := stack.Pop().String()
 			//res, err := vm.env.GetFunction(fnName)(ctx)
@@ -274,7 +246,6 @@ loop:
 			//} else {
 			//	return nil, err
 			//}
-
 		case OpCall1, OpCall1Safe:
 			//arg := stack.Pop()
 			//fnName := stack.Pop().String()
@@ -287,7 +258,6 @@ loop:
 			//} else {
 			//	return nil, err
 			//}
-
 		case OpCall2, OpCall2Safe:
 			//arg2 := stack.Pop()
 			//arg1 := stack.Pop()
@@ -301,7 +271,6 @@ loop:
 			//} else {
 			//	return nil, err
 			//}
-
 		case OpCall3, OpCall3Safe:
 			//arg3 := stack.Pop()
 			//arg2 := stack.Pop()
@@ -316,7 +285,6 @@ loop:
 			//} else {
 			//	return nil, err
 			//}
-
 		case OpCall4, OpCall4Safe:
 			//arg4 := stack.Pop()
 			//arg3 := stack.Pop()
@@ -356,7 +324,6 @@ loop:
 			//} else {
 			//	return nil, err
 			//}
-
 		case OpRange:
 			//right := stack.Pop()
 			//left := stack.Pop()
@@ -433,23 +400,6 @@ loop:
 			//stack.Push(counter + 1)
 			//// put the current counter value
 			//stack.Push(counter)
-
-		case OpJump:
-			//vm.pc += arg
-
-		case OpJumpBackward:
-			//vm.pc -= arg
-
-		case OpJumpIfFalse:
-			//if !values.ToBoolean(stack.Peek()) {
-			//	vm.pc += arg
-			//}
-
-		case OpJumpIfTrue:
-			//if values.ToBoolean(stack.Peek()) {
-			//	vm.pc += arg
-			//}
-
 		case OpLoopReturn:
 			// pop the return value from the stack
 			//res := stack.Pop()
