@@ -4,6 +4,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"strconv"
 )
 
 type SymbolTable struct {
@@ -61,6 +62,21 @@ func (st *SymbolTable) AddConstant(constant core.Value) runtime.Operand {
 	return runtime.NewConstantOperand(p)
 }
 
+// LookupConstant returns a constant by its index.
+func (st *SymbolTable) LookupConstant(addr runtime.Operand) core.Value {
+	if !addr.IsConstant() {
+		panic(core.Error(ErrInvalidOperandType, strconv.Itoa(int(addr))))
+	}
+
+	index := addr.Constant()
+
+	if index < 0 || index >= len(st.constants) {
+		panic(core.Error(ErrConstantNotFound, strconv.Itoa(index)))
+	}
+
+	return st.constants[index]
+}
+
 func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 	if st.scope == 0 {
 		// Check for duplicate global variable names.
@@ -103,6 +119,13 @@ func (st *SymbolTable) LookupVariable(name string) runtime.Operand {
 	}
 
 	return op
+}
+
+// LookupGlobalVariable returns a global variable by its name.
+func (st *SymbolTable) LookupGlobalVariable(name string) (runtime.Operand, bool) {
+	op, ok := st.globals[name]
+
+	return op, ok
 }
 
 func (st *SymbolTable) ExitScope() {

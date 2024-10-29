@@ -440,16 +440,16 @@ func TestLogicalOperators(t *testing.T) {
 func TestTernaryOperator(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		{"RETURN 1 < 2 ? 3 : 4", 3, nil},
-		//		{"RETURN 1 > 2 ? 3 : 4", 4, nil},
-		//		{"RETURN 2 ? : 4", 2, nil},
-		//		{`
-		//LET foo = TRUE
-		//RETURN foo ? TRUE : FALSE
-		//`, true, nil},
-		//		{`
-		//LET foo = FALSE
-		//RETURN foo ? TRUE : FALSE
-		//`, false, nil},
+		{"RETURN 1 > 2 ? 3 : 4", 4, nil},
+		{"RETURN 2 ? : 4", 2, nil},
+		{`
+		LET foo = TRUE
+		RETURN foo ? TRUE : FALSE
+		`, true, nil},
+		{`
+		LET foo = FALSE
+		RETURN foo ? TRUE : FALSE
+		`, false, nil},
 	})
 
 	//Convey("Should compile ternary operator", t, func() {
