@@ -67,6 +67,7 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	program.Bytecode = l.emitter.instructions
 	program.Constants = l.symbols.constants
 	program.CatchTable = l.catchTable
+	program.Registers = int(l.registers.nextRegister)
 
 	return program, err
 }

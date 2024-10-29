@@ -400,39 +400,49 @@ func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionCon
 }
 
 func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
-	//src := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
-	//
-	//if c := src.Variable(); c != nil {
-	//	c.Accept(v)
-	//} else if c := src.Param(); c != nil {
-	//	c.Accept(v)
-	//} else if c := src.ObjectLiteral(); c != nil {
-	//	c.Accept(v)
-	//} else if c := src.ArrayLiteral(); c != nil {
-	//	c.Accept(v)
-	//} else if c := src.FunctionCall(); c != nil {
-	//	c.Accept(v)
-	//}
-	//
-	//segments := ctx.AllMemberExpressionPath()
-	//
-	//for _, segment := range segments {
-	//	p := segment.(*fql.MemberExpressionPathContext)
-	//
-	//	if c := p.PropertyName(); c != nil {
-	//		c.Accept(v)
-	//	} else if c := p.ComputedPropertyName(); c != nil {
-	//		c.Accept(v)
-	//	}
-	//
-	//	if p.ErrorOperator() != nil {
-	//		v.emitter.EmitABC(runtime.OpLoadPropertyOptional)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpLoadProperty)
-	//	}
-	//}
+	mes := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
 
-	return nil
+	var mesOut interface{}
+
+	if c := mes.Variable(); c != nil {
+		mesOut = c.Accept(v)
+	} else if c := mes.Param(); c != nil {
+		mesOut = c.Accept(v)
+	} else if c := mes.ObjectLiteral(); c != nil {
+		mesOut = c.Accept(v)
+	} else if c := mes.ArrayLiteral(); c != nil {
+		mesOut = c.Accept(v)
+	} else if c := mes.FunctionCall(); c != nil {
+		mesOut = c.Accept(v)
+	}
+
+	var dst runtime.Operand
+	src1 := v.toRegister(mesOut.(runtime.Operand))
+	segments := ctx.AllMemberExpressionPath()
+
+	for _, segment := range segments {
+		var out2 interface{}
+		p := segment.(*fql.MemberExpressionPathContext)
+
+		if c := p.PropertyName(); c != nil {
+			out2 = c.Accept(v)
+		} else if c := p.ComputedPropertyName(); c != nil {
+			out2 = c.Accept(v)
+		}
+
+		src2 := v.toRegister(out2.(runtime.Operand))
+		dst = v.registers.Allocate(VarTemporary)
+
+		if p.ErrorOperator() != nil {
+			v.emitter.EmitABC(runtime.OpLoadPropertyOptional, dst, src1, src2)
+		} else {
+			v.emitter.EmitABC(runtime.OpLoadProperty, dst, src1, src2)
+		}
+
+		src1 = dst
+	}
+
+	return dst
 }
 
 func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
@@ -529,7 +539,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 
 				// Free source register if temporary
 				if srcReg.IsRegister() {
-					v.registers.Free(srcReg)
+					//v.registers.Free(srcReg)
 				}
 			}
 
@@ -537,7 +547,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 			v.emitter.EmitAs(runtime.OpArray, destReg, seq)
 
 			// Free seq registers
-			v.registers.FreeSequence(seq)
+			//v.registers.FreeSequence(seq)
 
 			return destReg
 		}
@@ -594,7 +604,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 
 		// Free source register if temporary
 		if propOp.IsRegister() {
-			v.registers.Free(propOp)
+			//v.registers.Free(propOp)
 		}
 	}
 
@@ -817,7 +827,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 
 		// If condition was temporary, free it
 		if condReg.IsRegister() {
-			v.registers.Free(condReg)
+			//v.registers.Free(condReg)
 		}
 
 		// Jump to 'false' branch if condition is false
@@ -830,7 +840,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 
 			// Free temporary register if needed
 			if trueReg.IsRegister() {
-				v.registers.Free(trueReg)
+				//v.registers.Free(trueReg)
 			}
 		}
 
@@ -845,7 +855,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 
 			// Free temporary register if needed
 			if falseReg.IsRegister() {
-				v.registers.Free(falseReg)
+				//v.registers.Free(falseReg)
 			}
 		}
 
@@ -998,27 +1008,4 @@ func (v *visitor) toRegister(op runtime.Operand) runtime.Operand {
 	v.emitter.EmitAB(runtime.OpLoadConst, reg, op)
 
 	return reg
-}
-
-func (v *visitor) endLoopScope() {
-	//v.loops = v.loops[:len(v.loops)-1]
-	//
-	//var unwrap bool
-	//
-	//if len(v.loops) == 0 {
-	//	unwrap = true
-	//} else if !v.loops[len(v.loops)-1].passThrough {
-	//	unwrap = true
-	//}
-	//
-	//if unwrap {
-	//	v.emitter.EmitABC(runtime.OpLoopUnwrapOutput)
-	//}
-}
-
-// emitLoop emits a loop instruction.
-func (v *visitor) emitLoop(loopStart int) {
-	//pos := v.emitJump(runtime.OpJumpBackward)
-	//jump := pos - loopStart
-	//v.arguments[pos-1] = jump
 }

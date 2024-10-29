@@ -758,17 +758,17 @@ func TestMember(t *testing.T) {
 		},
 		{
 			`LET o1 = {
-		  first: {
-		      second: {
-		          ["third"]: {
-		              fourth: {
-		                  fifth: {
-		                      bottom: true
-		                  }
-		              }
-		          }
-		      }
-		  }
+		 first: {
+		     second: {
+		         ["third"]: {
+		             fourth: {
+		                 fifth: {
+		                     bottom: true
+		                 }
+		             }
+		         }
+		     }
+		 }
 		}
 		
 		LET o2 = { prop: "third" }
@@ -780,17 +780,17 @@ func TestMember(t *testing.T) {
 		},
 		{
 			`LET o1 = {
-		  first: {
-		      second: {
-		          third: {
-		              fourth: {
-		                  fifth: {
-		                      bottom: true
-		                  }
-		              }
-		          }
-		      }
-		  }
+		first: {
+		    second: {
+		        third: {
+		            fourth: {
+		                fifth: {
+		                    bottom: true
+		                }
+		            }
+		        }
+		    }
+		}
 		}
 		
 		LET o2 = { prop: "third" }

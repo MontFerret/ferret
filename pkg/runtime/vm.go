@@ -5,6 +5,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type VM struct {
@@ -35,7 +36,7 @@ func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) (core.Value, e
 	}
 
 	vm.env = newEnvironment(opts)
-	vm.currentFrame = newFrame(32, 0, nil)
+	vm.currentFrame = newFrame(vm.program.Registers, 0, nil)
 	vm.frames = make([]*Frame, 4)
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
@@ -44,11 +45,12 @@ func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) (core.Value, e
 loop:
 	for vm.pc < len(program.Bytecode) {
 		inst := program.Bytecode[vm.pc]
+		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 		reg := vm.currentFrame.registers
 		vm.pc++
 
-		switch inst.Opcode {
+		switch op {
 		case OpMove:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
@@ -126,55 +128,55 @@ loop:
 
 			reg[dst] = obj
 		case OpLoadProperty, OpLoadPropertyOptional:
-			//prop := stack.Pop()
-			//val := stack.Pop()
-			//
-			//switch getter := prop.(type) {
-			//case values.String:
-			//	switch src := val.(type) {
-			//	case *values.Object:
-			//		stack.Push(src.MustGetOr(getter, values.None))
-			//	case core.Keyed:
-			//		out, err := src.GetByKey(ctx, getter.String())
-			//
-			//		if err == nil {
-			//			stack.Push(out)
-			//		} else if op == OpLoadPropertyOptional {
-			//			stack.Push(values.None)
-			//		} else {
-			//			return nil, err
-			//		}
-			//	default:
-			//		if op != OpLoadPropertyOptional {
-			//			return nil, core.TypeError(src, types.Object, types.Keyed)
-			//		}
-			//
-			//		stack.Push(values.None)
-			//	}
-			//case values.Float, values.Int:
-			//	switch src := val.(type) {
-			//	case *values.Array:
-			//		idx := values.ToInt(getter)
-			//
-			//		stack.Push(src.Get(idx))
-			//	case core.Indexed:
-			//		out, err := src.GetByIndex(ctx, int(values.ToInt(getter)))
-			//
-			//		if err == nil {
-			//			stack.Push(out)
-			//		} else if op == OpLoadPropertyOptional {
-			//			stack.Push(values.None)
-			//		} else {
-			//			return nil, err
-			//		}
-			//	default:
-			//		if op != OpLoadPropertyOptional {
-			//			return nil, core.TypeError(src, types.Array, types.Indexed)
-			//		}
-			//
-			//		stack.Push(values.None)
-			//	}
-			//}
+			val := reg[src1]
+			prop := reg[src2]
+
+			switch getter := prop.(type) {
+			case values.String:
+				switch src := val.(type) {
+				case *values.Object:
+					reg[dst] = src.MustGetOr(getter, values.None)
+				case core.Keyed:
+					out, err := src.GetByKey(ctx, getter.String())
+
+					if err == nil {
+						reg[dst] = out
+					} else if op == OpLoadPropertyOptional {
+						reg[dst] = values.None
+					} else {
+						return nil, err
+					}
+				default:
+					if op != OpLoadPropertyOptional {
+						return nil, core.TypeError(src, types.Object, types.Keyed)
+					}
+
+					reg[dst] = values.None
+				}
+			case values.Float, values.Int:
+				switch src := val.(type) {
+				case *values.Array:
+					idx := values.ToInt(getter)
+
+					reg[dst] = src.Get(idx)
+				case core.Indexed:
+					out, err := src.GetByIndex(ctx, int(values.ToInt(getter)))
+
+					if err == nil {
+						reg[dst] = out
+					} else if op == OpLoadPropertyOptional {
+						reg[dst] = values.None
+					} else {
+						return nil, err
+					}
+				default:
+					if op != OpLoadPropertyOptional {
+						return nil, core.TypeError(src, types.Array, types.Indexed)
+					}
+
+					reg[dst] = values.None
+				}
+			}
 		case OpNegate:
 			reg[dst] = values.Negate(reg[src1])
 		case OpFlipPositive:

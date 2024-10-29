@@ -77,44 +77,46 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
 	for _, useCase := range useCases {
-		Convey(useCase.Expression, t, func() {
-			// catch panic
-			//defer func() {
-			//	if r := recover(); r != nil {
-			//		panic(fmt.Sprintf("%v,\nUse Case %d: - %s", r, idx+1, useCase.Expression))
-			//	}
-			//}()
+		t.Run(useCase.Expression, func(t *testing.T) {
+			Convey(useCase.Expression, t, func() {
+				// catch panic
+				//defer func() {
+				//	if r := recover(); r != nil {
+				//		panic(fmt.Sprintf("%v,\nUse Case %d: - %s", r, idx+1, useCase.Expression))
+				//	}
+				//}()
 
-			prog, err := c.Compile(useCase.Expression)
+				prog, err := c.Compile(useCase.Expression)
 
-			So(err, ShouldBeNil)
-
-			options := []runtime.EnvironmentOption{
-				runtime.WithFunctions(c.Functions().Unwrap()),
-			}
-			options = append(options, opts...)
-
-			out, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), options...)
-
-			if !ArePtrsEqual(useCase.Assertion, ShouldBeError) {
 				So(err, ShouldBeNil)
-			}
 
-			if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
-				expected, err := j.Marshal(useCase.Expected)
-				So(err, ShouldBeNil)
-				So(out, ShouldEqualJSON, string(expected))
-			} else if ArePtrsEqual(useCase.Assertion, ShouldBeError) {
-				if useCase.Expected != nil {
-					So(err, ShouldBeError, useCase.Expected)
-				} else {
-					So(err, ShouldBeError)
+				options := []runtime.EnvironmentOption{
+					runtime.WithFunctions(c.Functions().Unwrap()),
 				}
-			} else if ArePtrsEqual(useCase.Assertion, ShouldHaveSameItems) {
-				So(out, ShouldHaveSameItems, useCase.Expected)
-			} else {
-				So(out, ShouldEqual, useCase.Expected)
-			}
+				options = append(options, opts...)
+
+				out, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), options...)
+
+				if !ArePtrsEqual(useCase.Assertion, ShouldBeError) {
+					So(err, ShouldBeNil)
+				}
+
+				if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
+					expected, err := j.Marshal(useCase.Expected)
+					So(err, ShouldBeNil)
+					So(out, ShouldEqualJSON, string(expected))
+				} else if ArePtrsEqual(useCase.Assertion, ShouldBeError) {
+					if useCase.Expected != nil {
+						So(err, ShouldBeError, useCase.Expected)
+					} else {
+						So(err, ShouldBeError)
+					}
+				} else if ArePtrsEqual(useCase.Assertion, ShouldHaveSameItems) {
+					So(out, ShouldHaveSameItems, useCase.Expected)
+				} else {
+					So(out, ShouldEqual, useCase.Expected)
+				}
+			})
 		})
 	}
 }

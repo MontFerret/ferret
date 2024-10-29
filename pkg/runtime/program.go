@@ -12,6 +12,7 @@ type Program struct {
 	Bytecode   []Instruction
 	Constants  []core.Value
 	CatchTable [][2]int
+	Registers  int
 }
 
 func (program *Program) Disassemble() string {
