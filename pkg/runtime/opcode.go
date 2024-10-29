@@ -8,6 +8,11 @@ const (
 	OpLoadGlobal         // Load a global variable to a register A
 	OpStoreGlobal        // Store a value from register A to a global variable
 
+	OpJump
+	OpJumpIfFalse
+	OpJumpIfTrue
+	OpJumpBackward
+
 	OpAdd
 	OpSub
 	OpMulti
@@ -15,12 +20,6 @@ const (
 	OpMod
 	OpIncr
 	OpDecr
-
-	OpArray  // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
-	OpObject // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
-
-	OpLoadProperty
-	OpLoadPropertyOptional
 
 	OpNegate
 	OpFlipPositive
@@ -37,7 +36,13 @@ const (
 	OpLike
 	OpNotLike
 
+	OpArray  // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
+	OpObject // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
 	OpRange
+
+	OpLoadProperty
+	OpLoadPropertyOptional
+
 	OpRegexpPositive
 	OpRegexpNegative
 	OpCall
@@ -52,10 +57,7 @@ const (
 	OpCall4Safe
 	OpCallN
 	OpCallNSafe
-	OpJumpIfFalse
-	OpJumpIfTrue
-	OpJump
-	OpJumpBackward
+
 	OpLoopInitOutput
 	OpLoopUnwrapOutput
 	OpForLoopInitInput

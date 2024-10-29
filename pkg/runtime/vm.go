@@ -325,15 +325,13 @@ loop:
 			//	return nil, err
 			//}
 		case OpRange:
-			//right := stack.Pop()
-			//left := stack.Pop()
-			//res, err := operators.Range(left, right)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else {
-			//	return nil, err
-			//}
+			res, err := operators.Range(reg[src1], reg[src2])
+
+			if err == nil {
+				reg[dst] = res
+			} else {
+				return nil, err
+			}
 		case OpLoopInitOutput:
 			//stack.Push(NewDataSet(arg == 1))
 

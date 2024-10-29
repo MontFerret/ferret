@@ -436,26 +436,29 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 }
 
 func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
-	//ctx.GetLeft().Accept(v)
-	//ctx.GetRight().Accept(v)
-	//
-	//v.emitter.EmitABC(runtime.OpRange)
+	dst := v.registers.AllocateTempVar()
+	start := v.toRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
+	end := v.toRegister(ctx.GetRight().Accept(v).(runtime.Operand))
 
-	return nil
+	v.emitter.EmitABC(runtime.OpRange, dst, start, end)
+
+	return dst
 }
 
 func (v *visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
 	if c := ctx.IntegerLiteral(); c != nil {
-		c.Accept(v)
-	} else if c := ctx.Variable(); c != nil {
-		c.Accept(v)
-	} else if c := ctx.Param(); c != nil {
-		c.Accept(v)
-	} else {
-		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+		return c.Accept(v)
 	}
 
-	return nil
+	if c := ctx.Variable(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Param(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {
