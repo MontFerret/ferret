@@ -7,22 +7,30 @@ import (
 	"strconv"
 )
 
-type SymbolTable struct {
-	constants      []core.Value
-	constantsIndex map[uint64]int
-	globals        map[string]runtime.Operand
-	scope          int
-	locals         []Variable
-	registers      *RegisterAllocator
-}
+type (
+	Variable struct {
+		Name     string
+		Register runtime.Operand
+		Depth    int
+	}
+
+	SymbolTable struct {
+		registers      *RegisterAllocator
+		constants      []core.Value
+		constantsIndex map[uint64]int
+		globals        map[string]runtime.Operand
+		locals         []*Variable
+		scope          int
+	}
+)
 
 func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 	return &SymbolTable{
+		registers:      registers,
 		constants:      make([]core.Value, 0),
 		constantsIndex: make(map[uint64]int),
 		globals:        make(map[string]runtime.Operand),
-		locals:         make([]Variable, 0),
-		registers:      registers,
+		locals:         make([]*Variable, 0),
 	}
 }
 
@@ -95,7 +103,7 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 
 	register := st.registers.AllocateVar(name)
 
-	st.locals = append(st.locals, Variable{
+	st.locals = append(st.locals, &Variable{
 		Name:     name,
 		Depth:    st.scope,
 		Register: register,

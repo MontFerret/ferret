@@ -12,29 +12,16 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-type (
-	Variable struct {
-		Name     string
-		Register runtime.Operand
-		Depth    int
-	}
-
-	loopScope struct {
-		result      int
-		passThrough bool
-		position    int
-	}
-
-	visitor struct {
-		*fql.BaseFqlParserVisitor
-		err        error
-		src        string
-		emitter    *Emitter
-		registers  *RegisterAllocator
-		symbols    *SymbolTable
-		catchTable [][2]int
-	}
-)
+type visitor struct {
+	*fql.BaseFqlParserVisitor
+	err        error
+	src        string
+	emitter    *Emitter
+	registers  *RegisterAllocator
+	symbols    *SymbolTable
+	loops      *LoopTable
+	catchTable [][2]int
+}
 
 const (
 	jumpPlaceholder      = -1
@@ -51,6 +38,7 @@ func newVisitor(src string) *visitor {
 	v.src = src
 	v.registers = NewRegisterAllocator()
 	v.symbols = NewSymbolTable(v.registers)
+	v.loops = NewLoopTable(v.symbols)
 	v.emitter = NewEmitter()
 	v.catchTable = make([][2]int, 0)
 
@@ -104,133 +92,133 @@ func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 }
 
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
-	//v.beginScope()
+	v.symbols.EnterScope()
 
-	//var passThrough bool
-	//var distinct bool
-	//var returnRuleCtx antlr.RuleContext
+	var passThrough bool
+	var distinct bool
+	var returnRuleCtx antlr.RuleContext
 	//var loopJump, exitJump int
 	//// identify whether it's WHILE or FOR loop
-	//isForInLoop := ctx.While() == nil
-	//returnCtx := ctx.ForExpressionReturn()
-	//
-	//if c := returnCtx.ReturnExpression(); c != nil {
-	//	returnRuleCtx = c
-	//	distinct = c.Distinct() != nil
-	//} else if c := returnCtx.ForExpression(); c != nil {
-	//	returnRuleCtx = c
-	//	passThrough = true
-	//}
-	//
-	//v.beginLoopScope(passThrough, distinct)
-	//
-	//if isForInLoop {
-	//	// Loop data source to iterate over
-	//	if c := ctx.ForExpressionSource(); c != nil {
-	//		c.Accept(v)
-	//	}
-	//
-	//	v.emitter.EmitABC(runtime.OpForLoopInitInput)
-	//	loopJump = len(v.instructions)
-	//	v.emitter.EmitABC(runtime.OpForLoopHasNext)
-	//	exitJump = v.emitJump(runtime.OpJumpIfFalse)
-	//	// pop the boolean value from the stack
-	//	v.emitPop()
-	//
-	//	valVar := ctx.GetValueVariable().GetText()
-	//	counterVarCtx := ctx.GetCounterVariable()
-	//
-	//	hasValVar := valVar != ignorePseudoVariable
-	//	var hasCounterVar bool
-	//	var counterVar string
-	//
-	//	if counterVarCtx != nil {
-	//		counterVar = counterVarCtx.GetText()
-	//		hasCounterVar = true
-	//	}
-	//
-	//	var valVarIndex int
-	//
-	//	// declare value variable
-	//	if hasValVar {
-	//		valVarIndex = v.declareVariable(valVar)
-	//	}
-	//
-	//	var counterVarIndex int
-	//
-	//	if hasCounterVar {
-	//		// declare counter variable
-	//		counterVarIndex = v.declareVariable(counterVar)
-	//	}
-	//
-	//	if hasValVar && hasCounterVar {
-	//		// we will calculate the index of the counter variable
-	//		v.emitter.EmitABC(runtime.OpForLoopNext)
-	//	} else if hasValVar {
-	//		v.emitter.EmitABC(runtime.OpForLoopNextValue)
-	//	} else if hasCounterVar {
-	//		v.emitter.EmitABC(runtime.OpForLoopNextCounter)
-	//	} else {
-	//		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
-	//	}
-	//
-	//	if hasValVar {
-	//		v.defineVariable(valVarIndex)
-	//	}
-	//
-	//	if hasCounterVar {
-	//		v.defineVariable(counterVarIndex)
-	//	}
-	//} else {
-	//	// Create initial value for the loop counter
-	//	v.emitter.EmitABC(runtime.OpWhileLoopInitCounter)
-	//
-	//	loopJump = len(v.instructions)
-	//
-	//	// Condition expression
-	//	ctx.Expression().Accept(v)
-	//
-	//	// Condition check
-	//	exitJump = v.emitJump(runtime.OpJumpIfFalse)
-	//	// pop the boolean value from the stack
-	//	v.emitPop()
-	//
-	//	counterVar := ctx.GetCounterVariable().GetText()
-	//
-	//	// declare counter variable
-	//	// and increment it by 1
-	//	index := v.declareVariable(counterVar)
-	//	v.emitter.EmitABC(runtime.OpWhileLoopNext)
-	//	v.defineVariable(index)
-	//}
-	//
-	//v.patchLoopScope(loopJump)
-	//
-	//// body
-	//if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
-	//	for _, b := range body {
-	//		b.Accept(v)
-	//	}
-	//}
-	//
-	//// return
-	//returnRuleCtx.Accept(v)
-	//
-	//v.emitLoop(loopJump)
-	//v.patchJump(exitJump)
-	//v.endScope()
-	//// pop the boolean value from the stack
-	//v.emitPop()
-	//
-	//if isForInLoop {
-	//	// pop the iterator
-	//	v.emitPopAndClose()
-	//} else {
-	//	// pop the counter
-	//	v.emitPop()
-	//}
-	//
-	//v.endLoopScope()
+	isForInLoop := ctx.While() == nil
+	returnCtx := ctx.ForExpressionReturn()
+
+	if c := returnCtx.ReturnExpression(); c != nil {
+		returnRuleCtx = c
+		distinct = c.Distinct() != nil
+	} else if c := returnCtx.ForExpression(); c != nil {
+		returnRuleCtx = c
+		passThrough = true
+	}
+
+	v.beginLoopScope(passThrough, distinct)
+
+	if isForInLoop {
+		//// Loop data source to iterate over
+		//if c := ctx.ForExpressionSource(); c != nil {
+		//	c.Accept(v)
+		//}
+		//
+		//v.emitter.EmitABC(runtime.OpForLoopInitInput)
+		//loopJump = len(v.instructions)
+		//v.emitter.EmitABC(runtime.OpForLoopHasNext)
+		//exitJump = v.emitJump(runtime.OpJumpIfFalse)
+		//// pop the boolean value from the stack
+		//v.emitPop()
+		//
+		//valVar := ctx.GetValueVariable().GetText()
+		//counterVarCtx := ctx.GetCounterVariable()
+		//
+		//hasValVar := valVar != ignorePseudoVariable
+		//var hasCounterVar bool
+		//var counterVar string
+		//
+		//if counterVarCtx != nil {
+		//	counterVar = counterVarCtx.GetText()
+		//	hasCounterVar = true
+		//}
+		//
+		//var valVarIndex int
+		//
+		//// declare value variable
+		//if hasValVar {
+		//	valVarIndex = v.declareVariable(valVar)
+		//}
+		//
+		//var counterVarIndex int
+		//
+		//if hasCounterVar {
+		//	// declare counter variable
+		//	counterVarIndex = v.declareVariable(counterVar)
+		//}
+		//
+		//if hasValVar && hasCounterVar {
+		//	// we will calculate the index of the counter variable
+		//	v.emitter.EmitABC(runtime.OpForLoopNext)
+		//} else if hasValVar {
+		//	v.emitter.EmitABC(runtime.OpForLoopNextValue)
+		//} else if hasCounterVar {
+		//	v.emitter.EmitABC(runtime.OpForLoopNextCounter)
+		//} else {
+		//	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+		//}
+		//
+		//if hasValVar {
+		//	v.defineVariable(valVarIndex)
+		//}
+		//
+		//if hasCounterVar {
+		//	v.defineVariable(counterVarIndex)
+		//}
+	} else {
+		//// Create initial value for the loop counter
+		//v.emitter.EmitABC(runtime.OpWhileLoopInitCounter)
+		//
+		//loopJump = len(v.instructions)
+		//
+		//// Condition expression
+		//ctx.Expression().Accept(v)
+		//
+		//// Condition check
+		//exitJump = v.emitJump(runtime.OpJumpIfFalse)
+		//// pop the boolean value from the stack
+		//v.emitPop()
+		//
+		//counterVar := ctx.GetCounterVariable().GetText()
+		//
+		//// declare counter variable
+		//// and increment it by 1
+		//index := v.declareVariable(counterVar)
+		//v.emitter.EmitABC(runtime.OpWhileLoopNext)
+		//v.defineVariable(index)
+	}
+
+	v.patchLoopScope(loopJump)
+
+	// body
+	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+		for _, b := range body {
+			b.Accept(v)
+		}
+	}
+
+	// return
+	returnRuleCtx.Accept(v)
+
+	v.emitLoop(loopJump)
+	v.patchJump(exitJump)
+	v.symbols.EnterScope()
+	// pop the boolean value from the stack
+	v.emitPop()
+
+	if isForInLoop {
+		// pop the iterator
+		v.emitPopAndClose()
+	} else {
+		// pop the counter
+		v.emitPop()
+	}
+
+	v.endLoopScope()
 
 	return nil
 }
