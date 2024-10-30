@@ -161,8 +161,10 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 					}
 				} else if ArePtrsEqual(useCase.Assertion, ShouldHaveSameItems) {
 					So(out, ShouldHaveSameItems, useCase.Expected)
-				} else {
+				} else if useCase.Assertion == nil {
 					So(out, ShouldEqual, useCase.Expected)
+				} else {
+					So(out, useCase.Assertion, useCase.Expected)
 				}
 			})
 		})

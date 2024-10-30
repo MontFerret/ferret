@@ -31,14 +31,14 @@ func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	arr := args[0].(*values.Array)
-	start := args[1].(values.Int)
-	length := values.NewInt(int(arr.Length()))
+	start := int(args[1].(values.Int))
+	length := arr.Length()
 
 	if len(args) > 2 {
 		lengthArg, ok := args[2].(values.Int)
 
 		if ok && lengthArg > 0 {
-			length = start + lengthArg
+			length = start + int(lengthArg)
 		}
 	}
 

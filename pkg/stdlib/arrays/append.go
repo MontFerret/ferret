@@ -10,6 +10,7 @@ import (
 // If “uniqueOnly“ is set to true, then will add the item only if it's unique.
 // @param {Any[]} arr - Target array.
 // @param {Any} item - Target value to add.
+// @param {Boolean} [unique=false] - If set to true, will add the item only if it's unique.
 // @return {Any[]} - New array.
 func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

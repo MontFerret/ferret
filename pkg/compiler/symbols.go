@@ -93,7 +93,7 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 		return op
 	}
 
-	register := st.registers.AllocateLocalVar(name)
+	register := st.registers.AllocateVar(name)
 
 	st.locals = append(st.locals, Variable{
 		Name:     name,

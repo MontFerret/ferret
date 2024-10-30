@@ -15,10 +15,7 @@ import (
 type (
 	Variable struct {
 		Name     string
-		FirstUse int // Instruction number of first use
-		LastUse  int // Instruction number of last use
 		Register runtime.Operand
-		IsLive   bool
 		Depth    int
 	}
 
@@ -322,69 +319,54 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 }
 
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
-	//call := ctx.FunctionCall().(*fql.FunctionCallContext)
-	//
-	//var name string
-	//
-	//funcNS := call.Namespace()
-	//
-	//if funcNS != nil {
-	//	name += funcNS.GetText()
-	//}
-	//
-	//name += call.FunctionName().GetText()
-	//
-	//isNonOptional := ctx.ErrorOperator() == nil
-	//
-	//v.emitConstant(values.String(name))
-	//
-	//var size int
-	//
-	//if args := call.ArgumentList(); args != nil {
-	//	out := v.VisitArgumentList(args.(*fql.ArgumentListContext))
-	//	size = out.(int)
-	//}
-	//
-	//switch size {
-	//case 0:
-	//	if isNonOptional {
-	//		v.emitter.EmitABC(runtime.OpCall, 0)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpCallSafe, 0)
-	//	}
-	//case 1:
-	//	if isNonOptional {
-	//		v.emitter.EmitABC(runtime.OpCall1, 1)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpCall1Safe, 1)
-	//	}
-	//case 2:
-	//	if isNonOptional {
-	//		v.emitter.EmitABC(runtime.OpCall2, 2)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpCall2Safe, 2)
-	//	}
-	//case 3:
-	//	if isNonOptional {
-	//		v.emitter.EmitABC(runtime.OpCall3, 3)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpCall3Safe, 3)
-	//	}
-	//case 4:
-	//	if isNonOptional {
-	//		v.emitter.EmitABC(runtime.OpCall4, 4)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpCall4Safe, 4)
-	//	}
-	//default:
-	//	if isNonOptional {
-	//		v.emitter.EmitABC(runtime.OpCallN, size)
-	//	} else {
-	//		v.emitter.EmitABC(runtime.OpCallNSafe, size)
-	//	}
-	//}
+	call := ctx.FunctionCall().(*fql.FunctionCallContext)
 
-	return nil
+	var name string
+	funcNS := call.Namespace()
+
+	if funcNS != nil {
+		name += funcNS.GetText()
+	}
+
+	name += call.FunctionName().GetText()
+
+	var size int
+	var seq *RegisterSequence
+
+	if list := call.ArgumentList(); list != nil {
+		// Get all array element expressions
+		exps := list.(*fql.ArgumentListContext).AllExpression()
+		size = len(exps)
+
+		if size > 0 {
+			// Allocate seq for function arguments
+			seq = v.registers.AllocateSequence(size)
+
+			// Evaluate each element into seq registers
+			for i, exp := range exps {
+				// Compile expression and move to seq register
+				srcReg := exp.Accept(v).(runtime.Operand)
+
+				// TODO: Figure out how to remove OpMove and use registers returned from each expression
+				v.emitter.EmitAB(runtime.OpMove, seq.Registers[i], srcReg)
+
+				// Free source register if temporary
+				if srcReg.IsRegister() {
+					//v.registers.Free(srcReg)
+				}
+			}
+		}
+	}
+
+	nameAndDest := v.loadConstant(values.NewString(name))
+
+	if ctx.ErrorOperator() == nil {
+		v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
+	} else {
+		v.emitter.EmitAs(runtime.OpCallSafe, nameAndDest, seq)
+	}
+
+	return nameAndDest
 }
 
 func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
@@ -405,7 +387,7 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 	}
 
 	var dst runtime.Operand
-	src1 := v.toRegister(mesOut.(runtime.Operand))
+	src1 := mesOut.(runtime.Operand)
 	segments := ctx.AllMemberExpressionPath()
 
 	for _, segment := range segments {
@@ -418,7 +400,7 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 			out2 = c.Accept(v)
 		}
 
-		src2 := v.toRegister(out2.(runtime.Operand))
+		src2 := out2.(runtime.Operand)
 		dst = v.registers.Allocate(Temp)
 
 		if p.ErrorOperator() != nil {
@@ -434,9 +416,9 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 }
 
 func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
-	dst := v.registers.AllocateTempVar()
-	start := v.toRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
-	end := v.toRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+	dst := v.registers.AllocateTemp()
+	start := ctx.GetLeft().Accept(v).(runtime.Operand)
+	end := ctx.GetRight().Accept(v).(runtime.Operand)
 
 	v.emitter.EmitABC(runtime.OpRange, dst, start, end)
 
@@ -474,7 +456,7 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		dest := v.symbols.DefineVariable(name)
 
 		if src.IsConstant() {
-			tmp := v.registers.Allocate(Temp)
+			tmp := v.registers.AllocateTemp()
 			v.emitter.EmitAB(runtime.OpLoadConst, tmp, src)
 			v.emitter.EmitAB(runtime.OpStoreGlobal, dest, tmp)
 		} else if v.symbols.Scope() == 0 {
@@ -497,7 +479,7 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 		return op
 	}
 
-	reg := v.registers.Allocate(Temp)
+	reg := v.registers.AllocateTemp()
 	v.emitter.EmitAB(runtime.OpLoadGlobal, reg, op)
 
 	return reg
@@ -505,7 +487,7 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	// Allocate destination register for the array
-	destReg := v.registers.Allocate(Temp)
+	destReg := v.registers.AllocateTemp()
 
 	if list := ctx.ArgumentList(); list != nil {
 		// Get all array element expressions
@@ -514,18 +496,15 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 
 		if size > 0 {
 			// Allocate seq for array elements
-			seq := v.registers.AllocateSequence(size, Temp)
+			seq := v.registers.AllocateSequence(size)
 
 			// Evaluate each element into seq registers
 			for i, exp := range exps {
 				// Compile expression and move to seq register
 				srcReg := exp.Accept(v).(runtime.Operand)
 
-				if srcReg.IsConstant() {
-					v.emitter.EmitAB(runtime.OpLoadConst, seq.Registers[i], srcReg)
-				} else {
-					v.emitter.EmitAB(runtime.OpMove, seq.Registers[i], srcReg)
-				}
+				// TODO: Figure out how to remove OpMove and use registers returned from each expression
+				v.emitter.EmitAB(runtime.OpMove, seq.Registers[i], srcReg)
 
 				// Free source register if temporary
 				if srcReg.IsRegister() {
@@ -560,7 +539,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 		return dst
 	}
 
-	seq := v.registers.AllocateSequence(len(assignments)*2, Temp)
+	seq := v.registers.AllocateSequence(len(assignments) * 2)
 
 	for i := 0; i < size; i++ {
 		var propOp runtime.Operand
@@ -574,23 +553,14 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 			propOp = comProp.Accept(v).(runtime.Operand)
 			valOp = pac.Expression().Accept(v).(runtime.Operand)
 		} else if variable := pac.Variable(); variable != nil {
-			propOp = v.symbols.AddConstant(values.NewString(variable.GetText()))
+			propOp = v.loadConstant(values.NewString(variable.GetText()))
 			valOp = variable.Accept(v).(runtime.Operand)
 		}
 
 		regIndex := i * 2
 
-		if propOp.IsConstant() {
-			v.emitter.EmitAB(runtime.OpLoadConst, seq.Registers[regIndex], propOp)
-		} else {
-			v.emitter.EmitAB(runtime.OpMove, seq.Registers[regIndex], propOp)
-		}
-
-		if valOp.IsConstant() {
-			v.emitter.EmitAB(runtime.OpLoadConst, seq.Registers[regIndex+1], valOp)
-		} else {
-			v.emitter.EmitAB(runtime.OpMove, seq.Registers[regIndex+1], valOp)
-		}
+		v.emitter.EmitAB(runtime.OpMove, seq.Registers[regIndex], propOp)
+		v.emitter.EmitAB(runtime.OpMove, seq.Registers[regIndex+1], valOp)
 
 		// Free source register if temporary
 		if propOp.IsRegister() {
@@ -604,23 +574,23 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 }
 
 func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
-	if id := ctx.Identifier(); id != nil {
-		return v.symbols.AddConstant(values.NewString(ctx.GetText()))
-	}
-
 	if str := ctx.StringLiteral(); str != nil {
 		return str.Accept(v)
 	}
 
-	if word := ctx.SafeReservedWord(); word != nil {
-		return v.symbols.AddConstant(values.NewString(ctx.GetText()))
+	var name string
+
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if word := ctx.SafeReservedWord(); word != nil {
+		name = word.GetText()
+	} else if word := ctx.UnsafeReservedWord(); word != nil {
+		name = word.GetText()
+	} else {
+		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
 
-	if word := ctx.UnsafeReservedWord(); word != nil {
-		return v.symbols.AddConstant(values.NewString(ctx.GetText()))
-	}
-
-	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+	return v.loadConstant(values.NewString(name))
 }
 
 func (v *visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
@@ -673,7 +643,7 @@ func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} 
 		}
 	}
 
-	return v.symbols.AddConstant(values.NewString(b.String()))
+	return v.loadConstant(values.NewString(b.String()))
 }
 
 func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{} {
@@ -683,7 +653,10 @@ func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{
 		panic(err)
 	}
 
-	return v.symbols.AddConstant(values.NewInt(val))
+	reg := v.registers.AllocateTemp()
+	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(values.NewInt(val)))
+
+	return reg
 }
 
 func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
@@ -693,22 +666,32 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 		panic(err)
 	}
 
-	return v.symbols.AddConstant(values.NewFloat(val))
+	reg := v.registers.AllocateTemp()
+	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(values.NewFloat(val)))
+
+	return reg
 }
 
 func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
+	reg := v.registers.AllocateTemp()
+
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		return v.symbols.AddConstant(values.True)
+		v.emitter.EmitAB(runtime.OpLoadBool, reg, 1)
 	case "false":
-		return v.symbols.AddConstant(values.False)
+		v.emitter.EmitAB(runtime.OpLoadBool, reg, 0)
 	default:
 		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
+
+	return reg
 }
 
 func (v *visitor) VisitNoneLiteral(_ *fql.NoneLiteralContext) interface{} {
-	return v.symbols.AddConstant(values.None)
+	reg := v.registers.AllocateTemp()
+	v.emitter.EmitA(runtime.OpLoadNone, reg)
+
+	return reg
 }
 
 func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
@@ -753,7 +736,7 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 
 func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if uo := ctx.UnaryOperator(); uo != nil {
-		src := v.toRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+		src := ctx.GetRight().Accept(v).(runtime.Operand)
 		dst := v.registers.Allocate(Temp)
 
 		uoc := uo.(*fql.UnaryOperatorContext)
@@ -778,12 +761,12 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if op := ctx.LogicalAndOperator(); op != nil {
 		dst := v.registers.Allocate(Temp)
 		// Execute left expression
-		left := v.toRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
+		left := ctx.GetLeft().Accept(v).(runtime.Operand)
 		v.emitter.EmitAB(runtime.OpMove, dst, left)
 		// Test if left is false and jump to the end
 		end := v.emitter.EmitJump(runtime.OpJumpIfFalse, dst)
 		// If left is true, execute right expression
-		right := v.toRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+		right := ctx.GetRight().Accept(v).(runtime.Operand)
 		// And move the result to the destination register
 		v.emitter.EmitAB(runtime.OpMove, dst, right)
 		v.emitter.PatchJump(end)
@@ -794,13 +777,13 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if op := ctx.LogicalOrOperator(); op != nil {
 		dst := v.registers.Allocate(Temp)
 		// Execute left expression
-		left := v.toRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
+		left := ctx.GetLeft().Accept(v).(runtime.Operand)
 		// Move the result to the destination register
 		v.emitter.EmitAB(runtime.OpMove, dst, left)
 		// Test if left is true and jump to the end
 		end := v.emitter.EmitJump(runtime.OpJumpIfTrue, dst)
 		// If left is false, execute right expression
-		right := v.toRegister(ctx.GetRight().Accept(v).(runtime.Operand))
+		right := ctx.GetRight().Accept(v).(runtime.Operand)
 		// And move the result to the destination register
 		v.emitter.EmitAB(runtime.OpMove, dst, right)
 		v.emitter.PatchJump(end)
@@ -812,7 +795,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		dst := v.registers.Allocate(Temp)
 
 		// Compile condition and put result in dst
-		condReg := v.toRegister(ctx.GetCondition().Accept(v).(runtime.Operand))
+		condReg := ctx.GetCondition().Accept(v).(runtime.Operand)
 		v.emitter.EmitAB(runtime.OpMove, dst, condReg)
 
 		// If condition was temporary, free it
@@ -825,7 +808,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 
 		// True branch
 		if onTrue := ctx.GetOnTrue(); onTrue != nil {
-			trueReg := v.toRegister(onTrue.Accept(v).(runtime.Operand))
+			trueReg := onTrue.Accept(v).(runtime.Operand)
 			v.emitter.EmitAB(runtime.OpMove, dst, trueReg)
 
 			// Free temporary register if needed
@@ -840,7 +823,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 
 		// False branch
 		if onFalse := ctx.GetOnFalse(); onFalse != nil {
-			falseReg := v.toRegister(onFalse.Accept(v).(runtime.Operand))
+			falseReg := onFalse.Accept(v).(runtime.Operand)
 			v.emitter.EmitAB(runtime.OpMove, dst, falseReg)
 
 			// Free temporary register if needed
@@ -876,8 +859,8 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 
 	var opcode runtime.Opcode
 	dest := v.registers.Allocate(Temp)
-	left := v.toRegister(ctx.Predicate(0).Accept(v).(runtime.Operand))
-	right := v.toRegister(ctx.Predicate(1).Accept(v).(runtime.Operand))
+	left := ctx.Predicate(0).Accept(v).(runtime.Operand)
+	right := ctx.Predicate(1).Accept(v).(runtime.Operand)
 
 	if op := ctx.EqualityOperator(); op != nil {
 		switch op.GetText() {
@@ -957,8 +940,8 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	}
 
 	if isSet {
-		regLeft := v.toRegister(ctx.ExpressionAtom(0).Accept(v).(runtime.Operand))
-		regRight := v.toRegister(ctx.ExpressionAtom(1).Accept(v).(runtime.Operand))
+		regLeft := ctx.ExpressionAtom(0).Accept(v).(runtime.Operand)
+		regRight := ctx.ExpressionAtom(1).Accept(v).(runtime.Operand)
 		dst := v.registers.Allocate(Temp)
 
 		v.emitter.EmitABC(opcode, dst, regLeft, regRight)
@@ -989,13 +972,8 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) toRegister(op runtime.Operand) runtime.Operand {
-	if op.IsRegister() {
-		return op
-	}
-
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(runtime.OpLoadConst, reg, op)
-
+func (v *visitor) loadConstant(constant core.Value) runtime.Operand {
+	reg := v.registers.AllocateTemp()
+	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(constant))
 	return reg
 }

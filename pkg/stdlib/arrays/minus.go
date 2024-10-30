@@ -18,7 +18,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	intersections := make(map[uint64]core.Value)
-	capacity := values.NewInt(0)
+	capacity := 0
 
 	for idx, i := range args {
 		idx := idx
@@ -52,7 +52,7 @@ func Minus(_ context.Context, args ...core.Value) (core.Value, error) {
 		})
 	}
 
-	result := values.NewArray(int(capacity))
+	result := values.NewArray(capacity)
 
 	for _, item := range intersections {
 		result.Push(item)

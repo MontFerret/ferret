@@ -60,7 +60,7 @@ func mergeArray(arr *values.Array) *values.Object {
 }
 
 func validateArrayOf(typ core.Type, arr *values.Array) (err error) {
-	for idx := values.NewInt(0); idx < arr.Length(); idx++ {
+	for idx := 0; idx < arr.Length(); idx++ {
 		if err != nil {
 			break
 		}

@@ -73,11 +73,11 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	// Check if the index is a whole number
 	switch {
 	case index == even:
-		i := values.Int(index)
+		i := int(index)
 		percentile = sorted.Get(i - 1)
 	case index > 1:
 		// Convert float to int via truncation
-		i := values.Int(index)
+		i := int(index)
 		// Find the average of the index and following values
 		percentile, _ = mean(values.NewArrayWith(sorted.Get(i-1), sorted.Get(i)))
 	default:

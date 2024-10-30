@@ -20,10 +20,10 @@ func (iterator *ArrayIterator) HasNext(_ context.Context) (bool, error) {
 }
 
 func (iterator *ArrayIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
-	idx := NewInt(iterator.pos)
-	val := iterator.values.Get(idx)
+	idx := iterator.pos
+	val := iterator.values.Get(iterator.pos)
 
 	iterator.pos++
 
-	return val, idx, nil
+	return val, NewInt(idx), nil
 }

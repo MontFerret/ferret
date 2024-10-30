@@ -48,9 +48,13 @@ func (e *Emitter) EmitAx(op runtime.Opcode, dest runtime.Operand, arg int) {
 
 // EmitAs emits an opcode with a destination register and a sequence of registers.
 func (e *Emitter) EmitAs(op runtime.Opcode, dest runtime.Operand, seq *RegisterSequence) {
-	src1 := seq.Registers[0]
-	src2 := seq.Registers[len(seq.Registers)-1]
-	e.EmitABC(op, dest, src1, src2)
+	if seq != nil {
+		src1 := seq.Registers[0]
+		src2 := seq.Registers[len(seq.Registers)-1]
+		e.EmitABC(op, dest, src1, src2)
+	} else {
+		e.EmitA(op, dest)
+	}
 }
 
 // EmitABx emits an opcode with a destination and source register and a custom argument.

@@ -34,5 +34,5 @@ func Nth(_ context.Context, args ...core.Value) (core.Value, error) {
 	arr := args[0].(*values.Array)
 	idx := args[1].(values.Int)
 
-	return arr.Get(idx), nil
+	return arr.Get(int(idx)), nil
 }

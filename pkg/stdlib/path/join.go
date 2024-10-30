@@ -30,7 +30,7 @@ func Join(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	elems := make([]string, arr.Length())
 
-	for idx := values.NewInt(0); idx < arr.Length(); idx++ {
+	for idx := 0; idx < arr.Length(); idx++ {
 		arrElem := arr.Get(idx)
 		err := core.ValidateType(arrElem, types.String)
 

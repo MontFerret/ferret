@@ -51,6 +51,10 @@ loop:
 		vm.pc++
 
 		switch op {
+		case OpLoadNone:
+			reg[dst] = values.None
+		case OpLoadBool:
+			reg[dst] = values.NewBoolean(src1 == 1)
 		case OpMove:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
@@ -87,6 +91,66 @@ loop:
 			reg[dst] = operators.Decrement(reg[dst])
 		case OpCastBool:
 			reg[dst] = values.ToBoolean(reg[src1])
+		case OpNegate:
+			reg[dst] = values.Negate(reg[src1])
+		case OpFlipPositive:
+			reg[dst] = values.Positive(reg[src1])
+		case OpFlipNegative:
+			reg[dst] = values.Negative(reg[src1])
+		case OpNot:
+			reg[dst] = !values.ToBoolean(reg[src1])
+		case OpEq:
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) == 0)
+		case OpNeq:
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) != 0)
+		case OpGt:
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) > 0)
+		case OpLt:
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) < 0)
+		case OpGte:
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) >= 0)
+		case OpLte:
+			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) <= 0)
+		case OpIn:
+			reg[dst] = values.Contains(reg[src2], reg[src1])
+		case OpNotIn:
+			reg[dst] = !values.Contains(reg[src2], reg[src1])
+		case OpLike:
+			res, err := operators.Like(reg[src1], reg[src2])
+
+			if err == nil {
+				reg[dst] = res
+			} else {
+				return nil, err
+			}
+		case OpNotLike:
+			res, err := operators.Like(reg[src1], reg[src2])
+
+			if err == nil {
+				reg[dst] = !res
+			} else {
+				return nil, err
+			}
+		case OpRegexpPositive:
+			r, err := values.ToRegexp(reg[src1])
+
+			if err == nil {
+				reg[dst] = r.Match(reg[src2])
+			} else if tryCatch(vm.pc) {
+				reg[dst] = values.False
+			} else {
+				return nil, err
+			}
+		case OpRegexpNegative:
+			r, err := values.ToRegexp(reg[src1])
+
+			if err == nil {
+				reg[dst] = !r.Match(reg[src2])
+			} else if tryCatch(vm.pc) {
+				reg[dst] = values.False
+			} else {
+				return nil, err
+			}
 		case OpArray:
 			var size int
 
@@ -154,7 +218,7 @@ loop:
 				case *values.Array:
 					idx := values.ToInt(getter)
 
-					reg[dst] = src.Get(idx)
+					reg[dst] = src.Get(int(idx))
 				case core.Indexed:
 					out, err := src.GetByIndex(ctx, int(values.ToInt(getter)))
 
@@ -173,155 +237,34 @@ loop:
 					reg[dst] = values.None
 				}
 			}
-		case OpNegate:
-			reg[dst] = values.Negate(reg[src1])
-		case OpFlipPositive:
-			reg[dst] = values.Positive(reg[src1])
-		case OpFlipNegative:
-			reg[dst] = values.Negative(reg[src1])
-		case OpNot:
-			reg[dst] = !values.ToBoolean(reg[src1])
-		case OpEq:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) == 0)
-		case OpNeq:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) != 0)
-		case OpGt:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) > 0)
-		case OpLt:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) < 0)
-		case OpGte:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) >= 0)
-		case OpLte:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) <= 0)
-		case OpIn:
-			reg[dst] = values.Contains(reg[src2], reg[src1])
-		case OpNotIn:
-			reg[dst] = !values.Contains(reg[src2], reg[src1])
-		case OpLike:
-			res, err := operators.Like(reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = res
-			} else {
-				return nil, err
-			}
-		case OpNotLike:
-			res, err := operators.Like(reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = !res
-			} else {
-				return nil, err
-			}
-		case OpRegexpPositive:
-			r, err := values.ToRegexp(reg[src1])
-
-			if err == nil {
-				reg[dst] = r.Match(reg[src2])
-			} else if tryCatch(vm.pc) {
-				reg[dst] = values.False
-			} else {
-				return nil, err
-			}
-		case OpRegexpNegative:
-			r, err := values.ToRegexp(reg[src1])
-
-			if err == nil {
-				reg[dst] = !r.Match(reg[src2])
-			} else if tryCatch(vm.pc) {
-				reg[dst] = values.False
-			} else {
-				return nil, err
-			}
 		case OpCall, OpCallSafe:
-			//fnName := stack.Pop().String()
-			//res, err := vm.env.GetFunction(fnName)(ctx)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else if op == OpCallSafe || tryCatch(vm.pc) {
-			//	stack.Push(values.None)
-			//} else {
-			//	return nil, err
-			//}
-		case OpCall1, OpCall1Safe:
-			//arg := stack.Pop()
-			//fnName := stack.Pop().String()
-			//res, err := vm.env.GetFunction(fnName)(ctx, arg)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else if op == OpCall1Safe || tryCatch(vm.pc) {
-			//	stack.Push(values.None)
-			//} else {
-			//	return nil, err
-			//}
-		case OpCall2, OpCall2Safe:
-			//arg2 := stack.Pop()
-			//arg1 := stack.Pop()
-			//fnName := stack.Pop().String()
-			//res, err := vm.env.GetFunction(fnName)(ctx, arg1, arg2)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else if op == OpCall2Safe || tryCatch(vm.pc) {
-			//	stack.Push(values.None)
-			//} else {
-			//	return nil, err
-			//}
-		case OpCall3, OpCall3Safe:
-			//arg3 := stack.Pop()
-			//arg2 := stack.Pop()
-			//arg1 := stack.Pop()
-			//fnName := stack.Pop().String()
-			//res, err := vm.env.GetFunction(fnName)(ctx, arg1, arg2, arg3)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else if op == OpCall3Safe || tryCatch(vm.pc) {
-			//	stack.Push(values.None)
-			//} else {
-			//	return nil, err
-			//}
-		case OpCall4, OpCall4Safe:
-			//arg4 := stack.Pop()
-			//arg3 := stack.Pop()
-			//arg2 := stack.Pop()
-			//arg1 := stack.Pop()
-			//fnName := stack.Pop().String()
-			//res, err := vm.env.GetFunction(fnName)(ctx, arg1, arg2, arg3, arg4)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else if op == OpCall4Safe || tryCatch(vm.pc) {
-			//	stack.Push(values.None)
-			//} else {
-			//	return nil, err
-			//}
-		case OpCallN, OpCallNSafe:
-			//// pop arguments from the stack
-			//// and push them to the arguments array
-			//// in reverse order because stack is LIFO and arguments array is FIFO
-			//argCount := arg
-			//args := make([]core.Value, argCount)
-			//
-			//for i := argCount - 1; i >= 0; i-- {
-			//	args[i] = stack.Pop()
-			//}
-			//
-			//// pop the function name from the stack
-			//fnName := stack.Pop().String()
-			//
-			//// call the function
-			//res, err := vm.env.GetFunction(fnName)(ctx, args...)
-			//
-			//if err == nil {
-			//	stack.Push(res)
-			//} else if op == OpCallNSafe || tryCatch(vm.pc) {
-			//	stack.Push(values.None)
-			//} else {
-			//	return nil, err
-			//}
+			var size int
+
+			if src1 > 0 {
+				size = src2.Register() - src1.Register() + 1
+			}
+
+			start := int(src1)
+			end := int(src1) + size
+			args := make([]core.Value, size)
+
+			// Iterate over registers starting from src1 and up to the src2
+			for i := start; i < end; i++ {
+				args[i-start] = reg[i]
+			}
+
+			fnName := reg[dst].String()
+			fn := vm.env.GetFunction(fnName)
+
+			out, err := fn(ctx, args...)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpCallSafe || tryCatch(vm.pc) {
+				reg[dst] = values.None
+			} else {
+				return nil, err
+			}
 		case OpRange:
 			res, err := operators.Range(reg[src1], reg[src2])
 

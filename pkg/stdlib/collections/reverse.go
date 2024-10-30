@@ -34,7 +34,7 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 		result := values.NewArray(size)
 
 		for i := size - 1; i >= 0; i-- {
-			result.Push(col.Get(values.NewInt(i)))
+			result.Push(col.Get(i))
 		}
 
 		return result, nil

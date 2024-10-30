@@ -2,7 +2,7 @@ package types
 
 import "github.com/MontFerret/ferret/pkg/runtime/core"
 
-const coreNamespace = "runtime"
+const coreNamespace = "builtin"
 
 func newCoreType(name string) core.Type {
 	return core.NewType(coreNamespace, name)

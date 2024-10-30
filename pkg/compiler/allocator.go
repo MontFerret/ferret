@@ -52,7 +52,7 @@ func NewRegisterAllocator() *RegisterAllocator {
 	}
 }
 
-func (ra *RegisterAllocator) AllocateLocalVar(name string) runtime.Operand {
+func (ra *RegisterAllocator) AllocateVar(name string) runtime.Operand {
 	// Allocate register
 	reg := ra.Allocate(Var)
 
@@ -62,7 +62,7 @@ func (ra *RegisterAllocator) AllocateLocalVar(name string) runtime.Operand {
 	return reg
 }
 
-func (ra *RegisterAllocator) AllocateTempVar() runtime.Operand {
+func (ra *RegisterAllocator) AllocateTemp() runtime.Operand {
 	return ra.Allocate(Temp)
 }
 
@@ -161,7 +161,7 @@ func (ra *RegisterAllocator) UpdateUse(reg runtime.Operand) {
 }
 
 // AllocateSequence allocates a sequence of registers for function arguments or similar uses
-func (ra *RegisterAllocator) AllocateSequence(count int, regType RegisterType) *RegisterSequence {
+func (ra *RegisterAllocator) AllocateSequence(count int) *RegisterSequence {
 	sequence := &RegisterSequence{
 		Registers: make([]runtime.Operand, count),
 		Lifetime: &RegisterLifetime{
@@ -183,7 +183,7 @@ func (ra *RegisterAllocator) AllocateSequence(count int, regType RegisterType) *
 				IsAllocated: true,
 				LastUse:     ra.currentInstr,
 				NextUse:     -1,
-				Type:        regType,
+				Type:        Temp,
 				Lifetime: &RegisterLifetime{
 					Start: ra.currentInstr,
 				},
@@ -192,7 +192,7 @@ func (ra *RegisterAllocator) AllocateSequence(count int, regType RegisterType) *
 	} else {
 		// Allocate registers individually if contiguous block not available
 		for i := 0; i < count; i++ {
-			reg := ra.Allocate(regType)
+			reg := ra.Allocate(Temp)
 			sequence.Registers[i] = reg
 		}
 	}

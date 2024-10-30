@@ -224,7 +224,7 @@ func ToFloat(input core.Value) Float {
 
 		res := ZeroFloat
 
-		for i := Int(0); i < length; i++ {
+		for i := 0; i < length; i++ {
 			res += ToFloat(val.Get(i))
 		}
 
@@ -280,7 +280,7 @@ func ToInt(input core.Value) Int {
 
 		res := ZeroInt
 
-		for i := Int(0); i < length; i++ {
+		for i := 0; i < length; i++ {
 			res += ToInt(val.Get(i))
 		}
 
@@ -558,7 +558,7 @@ func ToNumberOnly(input core.Value) core.Value {
 		i := ZeroInt
 		f := ZeroFloat
 
-		for y := Int(0); y < length; y++ {
+		for y := 0; y < length; y++ {
 			out := ToNumberOnly(value.Get(y))
 
 			switch item := out.(type) {

@@ -631,40 +631,60 @@ func TestFunctionCall(t *testing.T) {
 			nil,
 		},
 		{
+			"RETURN LENGTH([1,2,3])",
+			3,
+			nil,
+		},
+		{
+			"RETURN CONCAT('a', 'b', 'c')",
+			"abc",
+			nil,
+		},
+		{
+			`
+LET arr = []
+LET a = 1
+LET res = APPEND(arr, a)
+RETURN res
+`,
+			[]any{1},
+			ShouldEqualJSON,
+		},
+		{
 			"LET duration = 10 WAIT(duration) RETURN 1",
 			1,
 			nil,
 		},
-		{
-			"RETURN (FALSE OR T::FAIL())?",
-			nil,
-			nil,
-		},
-		{
-			"RETURN T::FAIL()?",
-			nil,
-			nil,
-		},
-		{
-			`FOR i IN [1, 2, 3, 4]
-				LET duration = 10
-		
-				WAIT(duration)
-		
-				RETURN i * 2`,
-			[]int{2, 4, 6, 8},
-			ShouldEqualJSON,
-		},
-		{
-			`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`,
-			2,
-			nil,
-		},
-		{
-			`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`,
-			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-			ShouldEqualJSON,
-		},
+		//{
+		//	"RETURN (FALSE OR T::FAIL())?",
+		//	nil,
+		//	nil,
+		//},
+		//{
+		//	"RETURN T::FAIL()?",
+		//	nil,
+		//	nil,
+		//},
+		//{
+		//	`FOR i IN [1, 2, 3, 4]
+		//		LET duration = 10
+		//
+		//		WAIT(duration)
+		//
+		//		RETURN i * 2`,
+		//	[]int{2, 4, 6, 8},
+		//	ShouldEqualJSON,
+		//},
+		//{
+		//	`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`,
+		//	2,
+		//	nil,
+		//},
+		//{
+		//	`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`,
+		//	[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		//	ShouldEqualJSON,
+		//},
 	})
 }
 

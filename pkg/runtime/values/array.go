@@ -83,7 +83,7 @@ func (t *Array) Compare(other core.Value) int64 {
 	var val core.Value
 
 	otherArr.ForEach(func(otherVal core.Value, idx int) bool {
-		val = t.Get(NewInt(idx))
+		val = t.Get(idx)
 		res = Compare(val, otherVal)
 
 		return res == 0
@@ -137,8 +137,8 @@ func (t *Array) Copy() core.Value {
 	return c
 }
 
-func (t *Array) Length() Int {
-	return Int(len(t.data))
+func (t *Array) Length() int {
+	return len(t.data)
 }
 
 func (t *Array) ForEach(predicate ArrayPredicate) {
@@ -191,7 +191,7 @@ func (t *Array) FindOne(predicate ArrayPredicate) (core.Value, Boolean) {
 	return None, False
 }
 
-func (t *Array) Get(idx Int) core.Value {
+func (t *Array) Get(idx int) core.Value {
 	l := len(t.data) - 1
 
 	if l < 0 {
@@ -225,7 +225,7 @@ func (t *Array) Push(item core.Value) {
 	t.data = append(t.data, item)
 }
 
-func (t *Array) Slice(from, to Int) *Array {
+func (t *Array) Slice(from, to int) *Array {
 	length := t.Length()
 
 	if from >= length {
@@ -278,7 +278,7 @@ func (t *Array) Clone() core.Cloneable {
 	cloned := NewArray(0)
 
 	var value core.Value
-	for idx := NewInt(0); idx < t.Length(); idx++ {
+	for idx := 0; idx < t.Length(); idx++ {
 		value = t.Get(idx)
 
 		cloneable, ok := value.(core.Cloneable)
