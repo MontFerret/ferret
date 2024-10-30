@@ -5,8 +5,8 @@ type Opcode byte
 const (
 	OpMove        Opcode = iota
 	OpLoadConst          // Load a constant to a register or a global variable
-	OpLoadGlobal         // Load a global variable to a register A
 	OpStoreGlobal        // Store a value from register A to a global variable
+	OpLoadGlobal         // Load a global variable to a register A
 
 	OpJump
 	OpJumpIfFalse

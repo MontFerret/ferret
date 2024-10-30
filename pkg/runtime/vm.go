@@ -54,11 +54,7 @@ loop:
 		case OpMove:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
-			if dst.IsRegister() {
-				reg[dst] = program.Constants[src1.Constant()]
-			} else {
-				vm.globals[program.Constants[dst.Constant()].String()] = program.Constants[src1.Constant()]
-			}
+			reg[dst] = program.Constants[src1.Constant()]
 		case OpStoreGlobal:
 			vm.globals[program.Constants[dst.Constant()].String()] = reg[src1]
 		case OpLoadGlobal:

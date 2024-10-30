@@ -95,8 +95,6 @@ func (v *visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} 
 		return c.Accept(v)
 	} else if c := ctx.FunctionCallExpression(); c != nil {
 		return c.Accept(v)
-		// remove un-used return value
-		//v.emitPop()
 	} else if c := ctx.WaitForExpression(); c != nil {
 		return c.Accept(v)
 	}
@@ -480,20 +478,22 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		name = reserved.GetText()
 	}
 
-	valReg := ctx.Expression().Accept(v).(runtime.Operand)
+	src := ctx.Expression().Accept(v).(runtime.Operand)
 
 	if name != ignorePseudoVariable {
-		varReg := v.symbols.DefineVariable(name)
+		dest := v.symbols.DefineVariable(name)
 
-		if valReg.IsConstant() {
-			v.emitter.EmitAB(runtime.OpLoadConst, varReg, valReg)
+		if src.IsConstant() {
+			tmp := v.registers.Allocate(VarTemporary)
+			v.emitter.EmitAB(runtime.OpLoadConst, tmp, src)
+			v.emitter.EmitAB(runtime.OpStoreGlobal, dest, tmp)
 		} else if v.symbols.Scope() == 0 {
-			v.emitter.EmitAB(runtime.OpStoreGlobal, varReg, valReg)
+			v.emitter.EmitAB(runtime.OpStoreGlobal, dest, src)
 		} else {
-			v.emitter.EmitAB(runtime.OpMove, varReg, valReg)
+			v.emitter.EmitAB(runtime.OpMove, dest, src)
 		}
 
-		return varReg
+		return dest
 	}
 
 	return nil

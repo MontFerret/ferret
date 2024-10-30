@@ -4,6 +4,8 @@ import (
 	"context"
 	j "encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,6 +18,23 @@ type UseCase struct {
 	Expression string
 	Expected   any
 	Assertion  Assertion
+}
+
+type ExpectedProgram struct {
+	Disassembly string
+	Constants   []core.Value
+	Registers   int
+}
+
+type ByteCodeUseCase struct {
+	Expression string
+	Expected   ExpectedProgram
+}
+
+func Compile(expression string) (*runtime.Program, error) {
+	c := compiler.New()
+
+	return c.Compile(expression)
 }
 
 func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) {
@@ -73,6 +92,35 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 	}
 
 	return ""
+}
+
+func RunAsmUseCases(t *testing.T, useCases []ByteCodeUseCase) {
+	c := compiler.New()
+	for _, useCase := range useCases {
+		t.Run(fmt.Sprintf("Bytecode: %s", useCase.Expression), func(t *testing.T) {
+			Convey(useCase.Expression, t, func() {
+				assertJSON := func(actual, expected interface{}) {
+					actualJ, err := j.Marshal(actual)
+					So(err, ShouldBeNil)
+
+					expectedJ, err := j.Marshal(expected)
+					So(err, ShouldBeNil)
+
+					So(string(actualJ), ShouldEqualJSON, string(expectedJ))
+				}
+
+				prog, err := c.Compile(useCase.Expression)
+
+				So(err, ShouldBeNil)
+
+				So(strings.TrimSpace(prog.Disassemble()), ShouldEqual, strings.TrimSpace(useCase.Expected.Disassembly))
+
+				assertJSON(prog.Constants, useCase.Expected.Constants)
+				//assertJSON(prog.CatchTable, useCase.Expected.CatchTable)
+				//So(prog.Registers, ShouldEqual, useCase.Expected.Registers)
+			})
+		})
+	}
 }
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
