@@ -3,13 +3,16 @@ package compiler
 import "github.com/MontFerret/ferret/pkg/runtime"
 
 type (
+	// RegisterType represents the type of a register
+	RegisterType int
+
 	// RegisterStatus tracks register usage
 	RegisterStatus struct {
 		IsAllocated bool
 		LastUse     int               // Instruction number of last use
 		NextUse     int               // Instruction number of next use
 		VarName     string            // Associated variable name, if any
-		VarType     VarType           // Type of variable stored
+		Type        RegisterType      // Type of variable stored
 		Lifetime    *RegisterLifetime // Lifetime information
 	}
 
@@ -33,6 +36,13 @@ type (
 	}
 )
 
+const (
+	Temp   RegisterType = iota // Short-lived intermediate results
+	Var                        // Local variables
+	Iter                       // FOR loop iterators
+	Result                     // Final result variables
+)
+
 func NewRegisterAllocator() *RegisterAllocator {
 	return &RegisterAllocator{
 		registers:    make(map[runtime.Operand]*RegisterStatus),
@@ -44,7 +54,7 @@ func NewRegisterAllocator() *RegisterAllocator {
 
 func (ra *RegisterAllocator) AllocateLocalVar(name string) runtime.Operand {
 	// Allocate register
-	reg := ra.Allocate(VarLocal)
+	reg := ra.Allocate(Var)
 
 	// Update register status
 	ra.registers[reg].VarName = name
@@ -53,11 +63,11 @@ func (ra *RegisterAllocator) AllocateLocalVar(name string) runtime.Operand {
 }
 
 func (ra *RegisterAllocator) AllocateTempVar() runtime.Operand {
-	return ra.Allocate(VarTemporary)
+	return ra.Allocate(Temp)
 }
 
 // Allocate assigns a register based on variable type
-func (ra *RegisterAllocator) Allocate(varType VarType) runtime.Operand {
+func (ra *RegisterAllocator) Allocate(regType RegisterType) runtime.Operand {
 	// Try to find a free register first
 	reg, found := ra.findFreeRegister()
 
@@ -74,7 +84,7 @@ func (ra *RegisterAllocator) Allocate(varType VarType) runtime.Operand {
 		IsAllocated: true,
 		LastUse:     ra.currentInstr,
 		NextUse:     -1,
-		VarType:     varType,
+		Type:        regType,
 		Lifetime:    &RegisterLifetime{Start: ra.currentInstr},
 	}
 
@@ -151,7 +161,7 @@ func (ra *RegisterAllocator) UpdateUse(reg runtime.Operand) {
 }
 
 // AllocateSequence allocates a sequence of registers for function arguments or similar uses
-func (ra *RegisterAllocator) AllocateSequence(count int, varType VarType) *RegisterSequence {
+func (ra *RegisterAllocator) AllocateSequence(count int, regType RegisterType) *RegisterSequence {
 	sequence := &RegisterSequence{
 		Registers: make([]runtime.Operand, count),
 		Lifetime: &RegisterLifetime{
@@ -173,7 +183,7 @@ func (ra *RegisterAllocator) AllocateSequence(count int, varType VarType) *Regis
 				IsAllocated: true,
 				LastUse:     ra.currentInstr,
 				NextUse:     -1,
-				VarType:     varType,
+				Type:        regType,
 				Lifetime: &RegisterLifetime{
 					Start: ra.currentInstr,
 				},
@@ -182,7 +192,7 @@ func (ra *RegisterAllocator) AllocateSequence(count int, varType VarType) *Regis
 	} else {
 		// Allocate registers individually if contiguous block not available
 		for i := 0; i < count; i++ {
-			reg := ra.Allocate(varType)
+			reg := ra.Allocate(regType)
 			sequence.Registers[i] = reg
 		}
 	}

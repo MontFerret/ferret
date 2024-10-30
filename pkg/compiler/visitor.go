@@ -12,23 +12,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-const (
-	VarTemporary VarType = iota // Short-lived intermediate results
-	VarLocal                    // Local variables
-	VarIterator                 // FOR loop iterators
-	VarResult                   // Final result variables
-)
-
 type (
-	VarType int
-
 	Variable struct {
 		Name     string
 		FirstUse int // Instruction number of first use
 		LastUse  int // Instruction number of last use
 		Register runtime.Operand
 		IsLive   bool
-		Type     VarType
 		Depth    int
 	}
 
@@ -429,7 +419,7 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 		}
 
 		src2 := v.toRegister(out2.(runtime.Operand))
-		dst = v.registers.Allocate(VarTemporary)
+		dst = v.registers.Allocate(Temp)
 
 		if p.ErrorOperator() != nil {
 			v.emitter.EmitABC(runtime.OpLoadPropertyOptional, dst, src1, src2)
@@ -484,7 +474,7 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		dest := v.symbols.DefineVariable(name)
 
 		if src.IsConstant() {
-			tmp := v.registers.Allocate(VarTemporary)
+			tmp := v.registers.Allocate(Temp)
 			v.emitter.EmitAB(runtime.OpLoadConst, tmp, src)
 			v.emitter.EmitAB(runtime.OpStoreGlobal, dest, tmp)
 		} else if v.symbols.Scope() == 0 {
@@ -507,7 +497,7 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 		return op
 	}
 
-	reg := v.registers.Allocate(VarTemporary)
+	reg := v.registers.Allocate(Temp)
 	v.emitter.EmitAB(runtime.OpLoadGlobal, reg, op)
 
 	return reg
@@ -515,7 +505,7 @@ func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 
 func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	// Allocate destination register for the array
-	destReg := v.registers.Allocate(VarTemporary)
+	destReg := v.registers.Allocate(Temp)
 
 	if list := ctx.ArgumentList(); list != nil {
 		// Get all array element expressions
@@ -524,7 +514,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 
 		if size > 0 {
 			// Allocate seq for array elements
-			seq := v.registers.AllocateSequence(size, VarTemporary)
+			seq := v.registers.AllocateSequence(size, Temp)
 
 			// Evaluate each element into seq registers
 			for i, exp := range exps {
@@ -560,7 +550,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 }
 
 func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
-	dst := v.registers.Allocate(VarTemporary)
+	dst := v.registers.Allocate(Temp)
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
@@ -570,7 +560,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 		return dst
 	}
 
-	seq := v.registers.AllocateSequence(len(assignments)*2, VarTemporary)
+	seq := v.registers.AllocateSequence(len(assignments)*2, Temp)
 
 	for i := 0; i < size; i++ {
 		var propOp runtime.Operand
@@ -764,7 +754,7 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if uo := ctx.UnaryOperator(); uo != nil {
 		src := v.toRegister(ctx.GetRight().Accept(v).(runtime.Operand))
-		dst := v.registers.Allocate(VarTemporary)
+		dst := v.registers.Allocate(Temp)
 
 		uoc := uo.(*fql.UnaryOperatorContext)
 		var op runtime.Opcode
@@ -786,7 +776,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	}
 
 	if op := ctx.LogicalAndOperator(); op != nil {
-		dst := v.registers.Allocate(VarTemporary)
+		dst := v.registers.Allocate(Temp)
 		// Execute left expression
 		left := v.toRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
 		v.emitter.EmitAB(runtime.OpMove, dst, left)
@@ -802,7 +792,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	}
 
 	if op := ctx.LogicalOrOperator(); op != nil {
-		dst := v.registers.Allocate(VarTemporary)
+		dst := v.registers.Allocate(Temp)
 		// Execute left expression
 		left := v.toRegister(ctx.GetLeft().Accept(v).(runtime.Operand))
 		// Move the result to the destination register
@@ -819,7 +809,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	}
 
 	if op := ctx.GetTernaryOperator(); op != nil {
-		dst := v.registers.Allocate(VarTemporary)
+		dst := v.registers.Allocate(Temp)
 
 		// Compile condition and put result in dst
 		condReg := v.toRegister(ctx.GetCondition().Accept(v).(runtime.Operand))
@@ -885,7 +875,7 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 	}
 
 	var opcode runtime.Opcode
-	dest := v.registers.Allocate(VarTemporary)
+	dest := v.registers.Allocate(Temp)
 	left := v.toRegister(ctx.Predicate(0).Accept(v).(runtime.Operand))
 	right := v.toRegister(ctx.Predicate(1).Accept(v).(runtime.Operand))
 
@@ -969,7 +959,7 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	if isSet {
 		regLeft := v.toRegister(ctx.ExpressionAtom(0).Accept(v).(runtime.Operand))
 		regRight := v.toRegister(ctx.ExpressionAtom(1).Accept(v).(runtime.Operand))
-		dst := v.registers.Allocate(VarTemporary)
+		dst := v.registers.Allocate(Temp)
 
 		v.emitter.EmitABC(opcode, dst, regLeft, regRight)
 
@@ -1004,7 +994,7 @@ func (v *visitor) toRegister(op runtime.Operand) runtime.Operand {
 		return op
 	}
 
-	reg := v.registers.Allocate(VarTemporary)
+	reg := v.registers.Allocate(Temp)
 	v.emitter.EmitAB(runtime.OpLoadConst, reg, op)
 
 	return reg
