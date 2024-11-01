@@ -2,7 +2,7 @@ package compiler_test
 
 import (
 	"context"
-	j "encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"testing"
 
 	runtime2 "github.com/MontFerret/ferret/pkg/runtime"
@@ -23,15 +23,7 @@ func TestMathOperators(t *testing.T) {
 				return 0, err
 			}
 
-			var res int
-
-			err = j.Unmarshal(out, &res)
-
-			if err != nil {
-				return 0, err
-			}
-
-			return res, err
+			return int(values.ToInt(out)), nil
 		}
 
 		type UseCase struct {

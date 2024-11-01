@@ -24,7 +24,7 @@ func NewVM(opts ...EnvironmentOption) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, program *Program) ([]byte, error) {
+func (vm *VM) Run(ctx context.Context, program *Program) (core.Value, error) {
 	tryCatch := func(pos int) bool {
 		for _, pair := range program.CatchTable {
 			if pos >= pair[0] && pos <= pair[1] {
@@ -497,5 +497,5 @@ loop:
 		}
 	}
 
-	return frame.Operands.Pop().MarshalJSON()
+	return frame.Operands.Pop(), nil
 }

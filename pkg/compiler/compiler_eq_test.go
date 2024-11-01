@@ -18,7 +18,17 @@ func TestEqualityOperators(t *testing.T) {
 
 			out, err := vm.Run(context.Background(), p)
 
-			return string(out), err
+			if err != nil {
+				return "", err
+			}
+
+			j, err := out.MarshalJSON()
+
+			if err != nil {
+				return "", err
+			}
+
+			return string(j), err
 		}
 
 		type UseCase struct {
