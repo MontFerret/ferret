@@ -311,15 +311,15 @@ func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
 }
 
 func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
-	//if c := ctx.VariableDeclaration(); c != nil {
-	//	c.Accept(v)
-	//} else if c := ctx.FunctionCallExpression(); c != nil {
-	//	c.Accept(v)
-	//	// remove un-used return value
-	//	v.emitPop()
-	//}
+	if c := ctx.VariableDeclaration(); c != nil {
+		return c.Accept(v)
+	}
 
-	return nil
+	if c := ctx.FunctionCallExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {

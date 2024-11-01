@@ -41,7 +41,7 @@ func Compile(expression string) (*runtime.Program, error) {
 func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) {
 	vm := runtime.NewVM(p)
 
-	out, err := vm.Run(context.Background(), opts...)
+	out, err := vm.Run(context.Background(), opts)
 
 	if err != nil {
 		return nil, err
@@ -126,7 +126,12 @@ func RunAsmUseCases(t *testing.T, useCases []ByteCodeUseCase) {
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
 	for _, useCase := range useCases {
-		t.Run(useCase.Expression, func(t *testing.T) {
+		name := strings.TrimSpace(useCase.Expression)
+		name = strings.Replace(name, "\n", " ", -1)
+		name = strings.Replace(name, "\t", " ", -1)
+		// Replace multiple spaces with a single space
+		name = strings.Join(strings.Fields(name), " ")
+		t.Run(name, func(t *testing.T) {
 			Convey(useCase.Expression, t, func() {
 				// catch panic
 				//defer func() {
@@ -188,10 +193,13 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	}
 	options = append(options, opts...)
 
-	for n := 0; n < b.N; n++ {
-		vm := runtime.NewVM(prog)
+	ctx := context.Background()
+	vm := runtime.NewVM(prog)
 
-		_, err := vm.Run(context.Background(), opts...)
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		_, err := vm.Run(ctx, opts)
 
 		if err != nil {
 			panic(err)

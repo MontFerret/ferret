@@ -25,7 +25,7 @@ func NewVM(program *Program) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, opts ...EnvironmentOption) (core.Value, error) {
+func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, error) {
 	tryCatch := func(pos int) bool {
 		for _, pair := range vm.program.CatchTable {
 			if pos >= pair[0] && pos <= pair[1] {

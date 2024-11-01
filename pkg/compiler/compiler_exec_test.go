@@ -325,7 +325,7 @@ func TestUnaryOperators(t *testing.T) {
 			RETURN { enabled: !val }
 		`)
 
-		v1, err := runtime.NewVM(p1).Run(context.Background())
+		v1, err := runtime.NewVM(p1).Run(context.Background(), nil)
 
 		So(err, ShouldBeNil)
 
@@ -339,7 +339,7 @@ func TestUnaryOperators(t *testing.T) {
 			RETURN { enabled: !!val }
 		`)
 
-		v2, err := runtime.NewVM(p2).Run(context.Background())
+		v2, err := runtime.NewVM(p2).Run(context.Background(), nil)
 
 		So(err, ShouldBeNil)
 
@@ -1121,20 +1121,19 @@ func TestFor(t *testing.T) {
 	//	ShouldEqualJSON,
 	//},
 	RunUseCases(t, []UseCase{
-		{
-			"FOR i IN 1..5 RETURN i",
-			[]any{1, 2, 3, 4, 5},
-			ShouldEqualJSON,
-		},
 		//{
-		//	`FOR i IN 1..5
-		//		                           LET x = i
-		//		                           PRINT(x)
-		//									RETURN i
-		//		`,
+		//	"FOR i IN 1..5 RETURN i",
 		//	[]any{1, 2, 3, 4, 5},
 		//	ShouldEqualJSON,
 		//},
+		{
+			`FOR i IN 1..5
+				                           LET x = i * 2
+											RETURN x
+				`,
+			[]any{2, 4, 6, 8, 10},
+			ShouldEqualJSON,
+		},
 		//{
 		//	`FOR val, counter IN 1..5
 		//                    LET x = val
