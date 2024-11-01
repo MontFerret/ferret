@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -9,7 +10,7 @@ import (
 )
 
 // BINARY asserts that value is a binary type.
-// @param {Any} actual - Value to test.
+// @param {Any} actual - Second to test.
 // @param {String} [message] - Message to display on error.
 var Binary = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

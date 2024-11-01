@@ -11,7 +11,6 @@ type (
 		IsAllocated bool
 		LastUse     int               // Instruction number of last use
 		NextUse     int               // Instruction number of next use
-		VarName     string            // Associated variable name, if any
 		Type        RegisterType      // Type of variable stored
 		Lifetime    *RegisterLifetime // Lifetime information
 	}
@@ -50,20 +49,6 @@ func NewRegisterAllocator() *RegisterAllocator {
 		lifetimes:    make(map[string]*RegisterLifetime),
 		usageGraph:   make(map[runtime.Operand]map[runtime.Operand]bool),
 	}
-}
-
-func (ra *RegisterAllocator) AllocateVar(name string) runtime.Operand {
-	// Allocate register
-	reg := ra.Allocate(Var)
-
-	// Update register status
-	ra.registers[reg].VarName = name
-
-	return reg
-}
-
-func (ra *RegisterAllocator) AllocateTemp() runtime.Operand {
-	return ra.Allocate(Temp)
 }
 
 // Allocate assigns a register based on variable type

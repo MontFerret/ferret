@@ -17,13 +17,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MontFerret/ferret/pkg/logging"
+
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 type (

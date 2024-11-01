@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/wI2L/jettison"
 
@@ -329,11 +330,11 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 		arr := NewArray(10)
 
 		for {
-			val, _, err := iterator.Next(ctx)
-
-			if err != nil {
+			if err := iterator.Next(ctx); err != nil {
 				return NewArray(0)
 			}
+
+			val := iterator.Value()
 
 			if val == None {
 				break
@@ -372,15 +373,17 @@ func ToObject(ctx context.Context, input core.Value) *Object {
 		obj := NewObject()
 
 		for {
-			val, key, err := iterator.Next(ctx)
-
-			if err != nil {
+			if err := iterator.Next(ctx); err != nil {
 				return obj
 			}
+
+			val := iterator.Value()
 
 			if val == None {
 				break
 			}
+
+			key := iterator.Key()
 
 			obj.Set(String(key.String()), val)
 		}

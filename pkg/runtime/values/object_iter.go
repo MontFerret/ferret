@@ -2,6 +2,7 @@ package values
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -24,15 +25,20 @@ func NewObjectIterator(obj *Object) core.Iterator {
 	return iter
 }
 
-func (iterator *ObjectIterator) HasNext(_ context.Context) (bool, error) {
-	return len(iterator.keys) > iterator.pos, nil
+func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
+	return len(iter.keys) > iter.pos, nil
 }
 
-func (iterator *ObjectIterator) Next(_ context.Context) (core.Value, core.Value, error) {
-	key := iterator.keys[iterator.pos]
-	val := iterator.data[key]
+func (iter *ObjectIterator) Next(ctx context.Context) error {
+	iter.pos++
 
-	iterator.pos++
+	return nil
+}
 
-	return val, String(key), nil
+func (iter *ObjectIterator) Value() core.Value {
+	return iter.data[iter.keys[iter.pos-1]]
+}
+
+func (iter *ObjectIterator) Key() core.Value {
+	return String(iter.keys[iter.pos-1])
 }

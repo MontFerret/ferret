@@ -31,14 +31,22 @@ func (e *Iterator) HasNext(ctx context.Context) (bool, error) {
 	}
 }
 
-func (e *Iterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
+func (e *Iterator) Next(_ context.Context) error {
 	if e.message != nil {
 		if err := e.message.Err(); err != nil {
-			return values.None, values.None, err
+			return err
 		}
 
-		return e.message.Value(), values.None, nil
+		return nil
 	}
 
-	return values.None, values.None, core.ErrNoMoreData
+	return core.ErrNoMoreData
+}
+
+func (e *Iterator) Value() core.Value {
+	return e.message.Value()
+}
+
+func (e *Iterator) Key() core.Value {
+	return values.None
 }

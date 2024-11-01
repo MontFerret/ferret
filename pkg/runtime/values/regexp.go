@@ -1,10 +1,11 @@
 package values
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"regexp"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/wI2L/jettison"
 

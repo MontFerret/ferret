@@ -3,6 +3,8 @@ package eval
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/logging"
+
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
@@ -50,8 +51,7 @@ func New(
 	contextID runtime.ExecutionContextID,
 ) *Runtime {
 	rt := new(Runtime)
-	rt.logger = logging.
-		WithName(logger.With(), "js-eval").
+	rt.logger = logging.WithName(logger.With(), "js-eval").
 		Str("frame_id", string(frameID)).
 		Int("context_id", int(contextID)).
 		Logger()

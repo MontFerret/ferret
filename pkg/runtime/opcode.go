@@ -14,7 +14,6 @@ const (
 	OpJump
 	OpJumpIfFalse
 	OpJumpIfTrue
-	OpJumpBackward
 
 	OpAdd
 	OpSub
@@ -24,6 +23,7 @@ const (
 	OpIncr
 	OpDecr
 
+	OpCastBool
 	OpNegate
 	OpFlipPositive
 	OpFlipNegative
@@ -51,16 +51,12 @@ const (
 	OpCall
 	OpCallSafe
 
-	OpLoopInitOutput
-	OpLoopUnwrapOutput
-	OpForLoopInitInput
-	OpForLoopHasNext
-	OpForLoopNext
-	OpForLoopNextValue
-	OpForLoopNextCounter
-	OpWhileLoopInitCounter
-	OpWhileLoopNext
+	OpLoopInit // Creates a loop result dataset
 	OpLoopReturn
+	OpLoopFinalize
 
-	OpCastBool
+	OpForLoopCall // Creates an iterator for a loop
+	OpForLoopNext
+	OpForLoopValue
+	OpForLoopKey
 )

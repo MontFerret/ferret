@@ -2,6 +2,7 @@ package values
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -12,18 +13,23 @@ type ArrayIterator struct {
 }
 
 func NewArrayIterator(values *Array) core.Iterator {
-	return &ArrayIterator{values: values, length: int(values.Length()), pos: 0}
+	return &ArrayIterator{values: values, length: values.Length(), pos: 0}
 }
 
-func (iterator *ArrayIterator) HasNext(_ context.Context) (bool, error) {
-	return iterator.length > iterator.pos, nil
+func (iter *ArrayIterator) HasNext(_ context.Context) (bool, error) {
+	return iter.length > iter.pos, nil
 }
 
-func (iterator *ArrayIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
-	idx := iterator.pos
-	val := iterator.values.Get(iterator.pos)
+func (iter *ArrayIterator) Next(_ context.Context) error {
+	iter.pos++
 
-	iterator.pos++
+	return nil
+}
 
-	return val, NewInt(idx), nil
+func (iter *ArrayIterator) Value() core.Value {
+	return iter.values.data[iter.pos-1]
+}
+
+func (iter *ArrayIterator) Key() core.Value {
+	return NewInt(iter.pos - 1)
 }

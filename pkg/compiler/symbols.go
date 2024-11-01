@@ -1,10 +1,11 @@
 package compiler
 
 import (
+	"strconv"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"strconv"
 )
 
 type (
@@ -101,7 +102,7 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 		return op
 	}
 
-	register := st.registers.AllocateVar(name)
+	register := st.registers.Allocate(Var)
 
 	st.locals = append(st.locals, &Variable{
 		Name:     name,

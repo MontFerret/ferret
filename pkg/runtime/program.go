@@ -3,9 +3,10 @@ package runtime
 import (
 	"bytes"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
 	"text/tabwriter"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Program struct {

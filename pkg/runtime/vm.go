@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
@@ -64,16 +65,14 @@ loop:
 		case OpLoadGlobal:
 			reg[dst] = vm.globals[program.Constants[src1.Constant()].String()]
 		case OpJump:
-			vm.pc += int(dst)
-		case OpJumpBackward:
-			vm.pc -= int(dst)
+			vm.pc = int(dst)
 		case OpJumpIfFalse:
-			if !values.ToBoolean(reg[dst]) {
-				vm.pc += int(src1)
+			if !values.ToBoolean(reg[src1]) {
+				vm.pc = int(dst)
 			}
 		case OpJumpIfTrue:
-			if values.ToBoolean(reg[dst]) {
-				vm.pc += int(src1)
+			if values.ToBoolean(reg[src1]) {
+				vm.pc = int(dst)
 			}
 		case OpAdd:
 			reg[dst] = operators.Add(reg[src1], reg[src2])
@@ -273,78 +272,54 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopInitOutput:
-			//stack.Push(NewDataSet(arg == 1))
+		case OpLoopInit:
+			reg[dst] = NewDataSet(src1 == 1)
+		case OpLoopFinalize:
+			ds := reg[src1].(*DataSet)
+			reg[dst] = ds.ToArray()
+		case OpForLoopCall:
+			input := reg[src1]
 
-		case OpLoopUnwrapOutput:
-			//ds := stack.Pop().(*DataSet)
-			//stack.Push(ds.ToArray())
+			switch src := input.(type) {
+			case core.Iterable:
+				iterator, err := src.Iterate(ctx)
 
-		case OpForLoopInitInput:
-			//// start a new iteration
-			//// get the data source
-			//input := stack.Pop()
-			//
-			//switch src := input.(type) {
-			//case core.Iterable:
-			//	iterator, err := src.Iterate(ctx)
-			//
-			//	if err != nil {
-			//		return nil, err
-			//	}
-			//
-			//	stack.Push(values.NewBoxedValue(iterator))
-			//default:
-			//	return nil, core.TypeError(src, types.Iterable)
-			//}
+				if err != nil {
+					return nil, err
+				}
 
-		case OpForLoopHasNext:
-			//boxed := stack.Peek()
-			//iterator := boxed.Unwrap().(core.Iterator)
-			//hasNext, err := iterator.HasNext(ctx)
-			//
-			//if err != nil {
-			//	return nil, err
-			//}
-			//
-			//stack.Push(values.NewBoolean(hasNext))
+				reg[dst] = values.NewBoxedValue(iterator)
+			default:
+				return nil, core.TypeError(src, types.Iterable)
+			}
+		case OpForLoopNext:
+			boxed := reg[src1]
+			// TODO: Remove boxed value
+			iterator := boxed.Unwrap().(core.Iterator)
+			hasNext, err := iterator.HasNext(ctx)
 
-		case OpForLoopNext, OpForLoopNextValue, OpForLoopNextCounter:
-			//boxed := stack.Peek()
-			//iterator := boxed.Unwrap().(core.Iterator)
-			//
-			//// get the next value from the iterator
-			//val, key, err := iterator.Next(ctx)
-			//
-			//if err != nil {
-			//	return nil, err
-			//}
-			//
-			//switch op {
-			//case OpForLoopNextValue:
-			//	stack.Push(val)
-			//case OpForLoopNextCounter:
-			//	stack.Push(key)
-			//default:
-			//	stack.Push(key)
-			//	stack.Push(val)
-			//}
+			if err != nil {
+				return nil, err
+			}
 
-		case OpWhileLoopInitCounter:
-			//stack.Push(values.ZeroInt)
-
-		case OpWhileLoopNext:
-			//counter := stack.Pop().(values.Int)
-			//// increment the counter for the next iteration
-			//stack.Push(counter + 1)
-			//// put the current counter value
-			//stack.Push(counter)
+			if hasNext {
+				if err := iterator.Next(ctx); err != nil {
+					return nil, err
+				}
+			} else {
+				vm.pc = int(dst)
+			}
+		case OpForLoopValue:
+			// TODO: Remove boxed value!!!
+			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
+			reg[dst] = iter.Value()
+		case OpForLoopKey:
+			// TODO: Remove boxed value!!!
+			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
+			reg[dst] = iter.Key()
 		case OpLoopReturn:
-			// pop the return value from the stack
-			//res := stack.Pop()
-			//ds := stack.Get(arg).(*DataSet)
-			//ds.Push(res)
-
+			ds := reg[dst].(*DataSet)
+			ds.Push(reg[src1])
 		case OpReturn:
 			break loop
 		}

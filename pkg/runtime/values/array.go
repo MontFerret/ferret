@@ -3,9 +3,10 @@ package values
 import (
 	"context"
 	"encoding/binary"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"sort"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/wI2L/jettison"
 

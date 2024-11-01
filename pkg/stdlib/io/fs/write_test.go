@@ -65,7 +65,7 @@ func TestWrite(t *testing.T) {
 
 		Convey("Argument `params`", func() {
 
-			Convey("Key `mode`", func() {
+			Convey("First `mode`", func() {
 
 				testCases := []core.Value{
 					// empty mode string

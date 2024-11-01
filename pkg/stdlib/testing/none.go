@@ -10,7 +10,7 @@ import (
 )
 
 // NONE asserts that value is none.
-// @param {Any} actual - Value to test.
+// @param {Any} actual - Second to test.
 // @param {String} [message] - Message to display on error.
 var None = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

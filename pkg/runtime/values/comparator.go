@@ -20,4 +20,3 @@ func Compare(a, b core.Value) int64 {
 
 	return types.Compare(core.Reflect(a), core.Reflect(b))
 }
-

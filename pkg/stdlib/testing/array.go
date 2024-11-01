@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -9,7 +10,7 @@ import (
 )
 
 // ARRAY asserts that value is a array type.
-// @param {Any} actual - Value to test.
+// @param {Any} actual - Second to test.
 // @param {String} [message] - Message to display on error.
 var Array = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {

@@ -1,10 +1,11 @@
 package operators
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func Like(left, right core.Value) (values.Boolean, error) {

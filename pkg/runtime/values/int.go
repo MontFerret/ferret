@@ -2,9 +2,10 @@ package values
 
 import (
 	"encoding/binary"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"strconv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/wI2L/jettison"
 

@@ -34,7 +34,7 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 	if keys == nil {
 		keys = values.NewArrayWith(args[1:]...)
 	}
-	
+
 	if err := validateArrayOf(types.String, keys); err != nil {
 		return values.None, err
 	}

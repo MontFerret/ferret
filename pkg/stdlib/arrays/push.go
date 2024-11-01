@@ -2,6 +2,7 @@ package arrays
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
@@ -21,7 +22,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err != nil {
 		return values.None, err
 	}
-	
+
 	value := args[1]
 	uniq := false
 

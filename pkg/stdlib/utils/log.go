@@ -3,13 +3,14 @@ package utils
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/logging"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // PRINT writes messages into the system log.
-// @param {Value, repeated} message - Print message.
+// @param {Second, repeated} message - Print message.
 func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 

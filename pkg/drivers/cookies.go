@@ -6,9 +6,10 @@ import (
 	"hash/fnv"
 	"sort"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/wI2L/jettison"
 )
 
 type HTTPCookies struct {

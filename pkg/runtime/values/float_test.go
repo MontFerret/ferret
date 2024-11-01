@@ -31,7 +31,7 @@ func TestFloat(t *testing.T) {
 	})
 
 	Convey(".MarshalJSON", t, func() {
-		Convey("It should correctly serialize value", func() {
+		Convey("It should correctly serialize Second", func() {
 			value := float64(10)
 
 			json1, err := json.Marshal(value)

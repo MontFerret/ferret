@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MontFerret/ferret/pkg/logging"
+
 	"github.com/gobwas/glob"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/fetch"
@@ -12,7 +14,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
-	"github.com/MontFerret/ferret/pkg/runtime/logging"
 )
 
 type (

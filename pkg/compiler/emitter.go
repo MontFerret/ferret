@@ -16,14 +16,23 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
-func (e *Emitter) EmitJump(op runtime.Opcode, reg runtime.Operand) int {
-	e.EmitA(op, reg)
+// EmitJump emits a jump opcode.
+func (e *Emitter) EmitJump(op runtime.Opcode, pos int) int {
+	e.EmitA(op, runtime.Operand(pos))
 
 	return len(e.instructions) - 1
 }
 
+// EmitJumpc emits a conditional jump opcode.
+func (e *Emitter) EmitJumpc(op runtime.Opcode, pos int, reg runtime.Operand) int {
+	e.EmitAB(op, runtime.Operand(pos), reg)
+
+	return len(e.instructions) - 1
+}
+
+// PatchJump patches a jump opcode with a new destination.
 func (e *Emitter) PatchJump(dest int) {
-	e.instructions[dest].Operands[1] = runtime.Operand(len(e.instructions) - dest - 1)
+	e.instructions[dest].Operands[0] = runtime.Operand(len(e.instructions) - 1)
 }
 
 // Emit emits an opcode with no arguments.
@@ -38,6 +47,17 @@ func (e *Emitter) EmitA(op runtime.Opcode, dest runtime.Operand) {
 
 // EmitAB emits an opcode with a destination register and a single source register argument.
 func (e *Emitter) EmitAB(op runtime.Opcode, dest, src1 runtime.Operand) {
+	e.EmitABC(op, dest, src1, 0)
+}
+
+// EmitAb emits an opcode with a destination register and a boolean argument.
+func (e *Emitter) EmitAb(op runtime.Opcode, dest runtime.Operand, arg bool) {
+	var src1 runtime.Operand
+
+	if arg {
+		src1 = 1
+	}
+
 	e.EmitABC(op, dest, src1, 0)
 }
 

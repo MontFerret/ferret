@@ -2,15 +2,17 @@ package values
 
 import (
 	"fmt"
+	"hash/fnv"
+
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-	"github.com/wI2L/jettison"
-	"hash/fnv"
 )
 
-// Boxed represents an arbitrary value that can be boxed as a runtime Value.
+// Boxed represents an arbitrary Value that can be boxed as a runtime Value.
 type Boxed struct {
-	value any
+	Value any
 }
 
 func NewBoxedValue(value any) *Boxed {
@@ -18,15 +20,15 @@ func NewBoxedValue(value any) *Boxed {
 }
 
 func (b *Boxed) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(b.value, jettison.NoHTMLEscaping())
+	return jettison.MarshalOpts(b.Value, jettison.NoHTMLEscaping())
 }
 
 func (b *Boxed) String() string {
-	return fmt.Sprintf("%v", b.value)
+	return fmt.Sprintf("%v", b.Value)
 }
 
-func (b *Boxed) Unwrap() interface{} {
-	return b.value
+func (b *Boxed) Unwrap() any {
+	return b.Value
 }
 
 func (b *Boxed) Hash() uint64 {
@@ -34,11 +36,11 @@ func (b *Boxed) Hash() uint64 {
 
 	h.Write([]byte(types.Boxed.String()))
 	h.Write([]byte(":"))
-	h.Write([]byte(fmt.Sprintf("%v", b.value)))
+	h.Write([]byte(fmt.Sprintf("%v", b.Value)))
 
 	return h.Sum64()
 }
 
 func (b *Boxed) Copy() core.Value {
-	return NewBoxedValue(b.value)
+	return NewBoxedValue(b.Value)
 }

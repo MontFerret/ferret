@@ -42,7 +42,7 @@ func (lv *LazyValue) Ready() bool {
 
 // Read returns an underlying value.
 // Not thread safe. Should not mutated.
-// @returns (Value) - Underlying value if successfully loaded, otherwise error
+// @returns (Second) - Underlying value if successfully loaded, otherwise error
 func (lv *LazyValue) Read(ctx context.Context) (core.Value, error) {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()

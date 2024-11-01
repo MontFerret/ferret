@@ -249,7 +249,7 @@ func TestFunction(t *testing.T) {
 		})
 
 		Convey(".WithArgValue", func() {
-			Convey("Should add argument with a given Value", func() {
+			Convey("Should add argument with a given Second", func() {
 				f := F("return 'foo'")
 				val1 := values.NewString("foo")
 				val2 := values.NewInt(1)

@@ -4,9 +4,10 @@ import (
 	"context"
 	j "encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	. "github.com/smartystreets/goconvey/convey"
 

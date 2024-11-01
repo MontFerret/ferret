@@ -2,10 +2,11 @@ package compiler_test
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"testing"
 )
 
 func Disassembly(instr []string, opcodes ...runtime.Opcode) string {

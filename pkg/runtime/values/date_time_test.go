@@ -28,7 +28,7 @@ func TestDateTime(t *testing.T) {
 	})
 
 	Convey(".MarshalJSON", t, func() {
-		Convey("It should correctly serialize value", func() {
+		Convey("It should correctly serialize Second", func() {
 			value := time.Now()
 
 			json1, err := json.Marshal(value)

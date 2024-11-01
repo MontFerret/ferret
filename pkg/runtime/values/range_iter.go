@@ -2,38 +2,53 @@ package values
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type RangeIterator struct {
-	values  *Range
-	dir     int64
-	pos     int64
-	counter int64
+	values     *Range
+	descending bool
+	pos        int64
+	counter    int64
 }
 
 func NewRangeIterator(values *Range) core.Iterator {
-	if values.start > values.end {
-		return &RangeIterator{values: values, dir: -1, pos: values.start}
+	if values.start <= values.end {
+		return &RangeIterator{values: values, pos: values.start, counter: -1}
 	}
 
-	return &RangeIterator{values: values, dir: 1, pos: values.start}
+	return &RangeIterator{values: values, pos: values.start, counter: -1, descending: true}
 }
 
-func (iterator *RangeIterator) HasNext(_ context.Context) (bool, error) {
-	if iterator.dir == 1 {
-		return iterator.values.end > (iterator.pos - 1), nil
+func (iter *RangeIterator) HasNext(_ context.Context) (bool, error) {
+	if !iter.descending {
+		return iter.values.end >= iter.pos, nil
 	}
 
-	return iterator.values.start > iterator.pos, nil
+	return iter.values.end <= iter.pos, nil
 }
 
-func (iterator *RangeIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
-	val := NewInt64(iterator.pos)
-	counter := NewInt64(iterator.counter)
+func (iter *RangeIterator) Next(_ context.Context) error {
+	iter.counter++
 
-	iterator.pos += iterator.dir
-	iterator.counter++
+	if !iter.descending {
+		iter.pos++
+	} else {
+		iter.pos--
+	}
 
-	return val, counter, nil
+	return nil
+}
+
+func (iter *RangeIterator) Value() core.Value {
+	if !iter.descending {
+		return Int(iter.pos - 1)
+	}
+
+	return Int(iter.pos + 1)
+}
+
+func (iter *RangeIterator) Key() core.Value {
+	return Int(iter.counter)
 }

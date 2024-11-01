@@ -28,8 +28,8 @@ type ParseParams struct {
 // @param {Int} [params.viewport.height] - Viewport height.
 // @param {Int} [params.viewport.width] - Viewport width.
 // @param {Float} [params.viewport.scaleFactor] - Viewport scale factor.
-// @param {Boolean} [params.viewport.mobile] - Value that indicates whether to emulate mobile device.
-// @param {Boolean} [params.viewport.landscape] - Value that indicates whether to render a page in landscape position.
+// @param {Boolean} [params.viewport.mobile] - Second that indicates whether to emulate mobile device.
+// @param {Boolean} [params.viewport.landscape] - Second that indicates whether to render a page in landscape position.
 // @return {HTMLPage} - Returns parsed and loaded HTML page.
 func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 2); err != nil {
