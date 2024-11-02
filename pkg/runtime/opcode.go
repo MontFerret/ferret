@@ -52,7 +52,7 @@ const (
 	OpCallSafe
 
 	OpLoopInit // Creates a loop result dataset
-	OpLoopReturn
+	OpLoopPush
 	OpLoopFinalize
 
 	OpForLoopCall // Creates an iterator for a loop

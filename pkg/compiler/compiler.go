@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib"
+	goruntime "runtime"
 )
 
 type Compiler struct {
@@ -38,14 +39,19 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
+			buf := make([]byte, 1024)
+			n := goruntime.Stack(buf, false)
+			stackTrace := string(buf[:n])
+
 			// find out exactly what the error was and set err
+			// Find out exactly what the error was and set err
 			switch x := r.(type) {
 			case string:
-				err = errors.New(x)
+				err = errors.New(x + "\n" + stackTrace)
 			case error:
-				err = x
+				err = errors.New(x.Error() + "\n" + stackTrace)
 			default:
-				err = errors.New("unknown panic")
+				err = errors.New("unknown panic\n" + stackTrace)
 			}
 
 			program = nil

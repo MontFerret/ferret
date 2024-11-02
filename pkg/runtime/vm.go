@@ -317,7 +317,7 @@ loop:
 			// TODO: Remove boxed value!!!
 			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
 			reg[dst] = iter.Key()
-		case OpLoopReturn:
+		case OpLoopPush:
 			ds := reg[dst].(*DataSet)
 			ds.Push(reg[src1])
 		case OpReturn:
@@ -325,5 +325,5 @@ loop:
 		}
 	}
 
-	return vm.currentFrame.registers[ResultOperand], nil
+	return vm.currentFrame.registers[NoopOperand], nil
 }

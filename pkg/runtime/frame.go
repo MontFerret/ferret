@@ -13,7 +13,7 @@ type Frame struct {
 
 func newFrame(size, pc int, parent *Frame) *Frame {
 	registers := make([]core.Value, size)
-	registers[ResultOperand] = values.None
+	registers[NoopOperand] = values.None
 
 	return &Frame{
 		registers: registers,

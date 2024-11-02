@@ -3,6 +3,10 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/parser"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -779,17 +783,17 @@ func TestMember(t *testing.T) {
 		},
 		{
 			`LET o1 = {
-		 first: {
-		     second: {
-		         ["third"]: {
-		             fourth: {
-		                 fifth: {
-		                     bottom: true
-		                 }
-		             }
-		         }
-		     }
-		 }
+		first: {
+		  second: {
+		      ["third"]: {
+		          fourth: {
+		              fifth: {
+		                  bottom: true
+		              }
+		          }
+		      }
+		  }
+		}
 		}
 		
 		LET o2 = { prop: "third" }
@@ -802,15 +806,15 @@ func TestMember(t *testing.T) {
 		{
 			`LET o1 = {
 		first: {
-		    second: {
-		        third: {
-		            fourth: {
-		                fifth: {
-		                    bottom: true
-		                }
-		            }
-		        }
-		    }
+		 second: {
+		     third: {
+		         fourth: {
+		             fifth: {
+		                 bottom: true
+		             }
+		         }
+		     }
+		 }
 		}
 		}
 		
@@ -842,274 +846,174 @@ func TestMember(t *testing.T) {
 			nil,
 			nil,
 		},
+		{
+			`RETURN {first: {second: "third"}}.first`,
+			map[string]any{
+				"second": "third",
+			},
+			nil,
+		},
+		{
+			`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
+			map[string]any{
+				"second": "third",
+			},
+			nil,
+		},
+		{
+			`
+					FOR v, k IN {f: {foo: "bar"}}.f
+						RETURN [k, v]
+				`,
+			[]any{
+				[]any{"foo", "bar"},
+			},
+			nil,
+		},
+		{
+			`RETURN FIRST([[1, 2]][0])`,
+			1,
+			nil,
+		},
+		{
+			`RETURN [[1, 2]][0]`,
+			[]any{1, 2},
+			ShouldEqualJSON,
+		},
+		{
+			`
+					FOR i IN [[1, 2]][0]
+						RETURN i
+				`,
+			[]any{1, 2},
+			ShouldEqualJSON,
+		},
+		{
+			`
+					LET arr = [{ name: "Bob" }]
+		
+					RETURN FIRST(arr).name
+				`,
+			"Bob",
+			nil,
+		},
+		{
+			`
+					LET arr = [{ name: { first: "Bob" } }]
+	
+					RETURN FIRST(arr)['name'].first
+				`,
+			"Bob",
+			nil,
+		},
+		{
+			`
+					LET obj = { foo: None }
+	
+					RETURN obj.foo?.bar
+				`,
+			nil,
+			nil,
+		},
+	})
+}
+
+func TestMemberReservedWords(t *testing.T) {
+	RunUseCases(t, []UseCase{})
+
+	Convey("Reserved words as property name", t, func() {
+		p := parser.New("RETURN TRUE")
+
+		r := regexp.MustCompile(`\w+`)
+
+		for idx, l := range p.GetLiteralNames() {
+			if r.MatchString(l) {
+				query := strings.Builder{}
+				query.WriteString("LET o = {\n")
+				query.WriteString(l[1 : len(l)-1])
+				query.WriteString(":")
+				query.WriteString(strconv.Itoa(idx))
+				query.WriteString(",\n")
+				query.WriteString("}\n")
+				query.WriteString("RETURN o")
+
+				expected := strings.Builder{}
+				expected.WriteString("{")
+				expected.WriteString(strings.ReplaceAll(l, "'", "\""))
+				expected.WriteString(":")
+				expected.WriteString(strconv.Itoa(idx))
+				expected.WriteString("}")
+
+				c := compiler.New()
+				prog, err := c.Compile(query.String())
+
+				So(err, ShouldBeNil)
+
+				out, err := Exec(prog, true, runtime.WithFunctions(c.Functions().Unwrap()))
+
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, expected.String())
+			}
+		}
+	})
+}
+
+func TestOptionalChaining(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		{
+			`
+					LET obj = { foo: { bar: "bar" } }
+	
+					RETURN obj.foo?.bar
+				`,
+			"bar",
+			nil,
+		},
+		{
+			`
+					LET obj = { foo: None }
+	
+					RETURN obj.foo?.bar?.[0]
+				`,
+			nil,
+			nil,
+		},
+		{
+			`
+					LET obj = { foo: { bar: ["bar"] } }
+	
+					RETURN obj.foo?.bar?.[0]
+				`,
+			"bar",
+			nil,
+		},
+		{
+			`
+					RETURN FIRST([])?.foo
+				`,
+			nil,
+			nil,
+		},
+		{
+			`
+					RETURN FIRST([{ foo: "bar" }])?.foo
+				`,
+			"bar",
+			nil,
+		},
 	})
 
-	//		Convey("ObjectDecl by literal passed to func call", func() {
-	//			c := compiler.New()
-	//
-	//			p, err := c.Compile(`
-	//				RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")
-	//			`)
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := p.Run(context.Background())
-	//			So(err, ShouldBeNil)
-	//
-	//			So(string(out), ShouldEqual, `{"second":"third"}`)
-	//		})
-	//
-	//		Convey("ObjectDecl by literal as forSource", func() {
-	//			c := compiler.New()
-	//
-	//			p, err := c.Compile(`
-	//				FOR v, k IN {f: {foo: "bar"}}.f
-	//					RETURN [k, v]
-	//			`)
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := p.Run(context.Background())
-	//			So(err, ShouldBeNil)
-	//
-	//			So(string(out), ShouldEqual, `[["foo","bar"]]`)
-	//		})
-	//
-
-	//
-	//		Convey("ArrayDecl by literal passed to func call", func() {
-	//			c := compiler.New()
-	//
-	//			p, err := c.Compile(`
-	//				RETURN FIRST([[1, 2]][0])
-	//			`)
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := p.Run(context.Background())
-	//			So(err, ShouldBeNil)
-	//
-	//			So(string(out), ShouldEqual, `1`)
-	//		})
-	//
-	//		Convey("ArrayDecl by literal as forSource", func() {
-	//			c := compiler.New()
-	//
-	//			p, err := c.Compile(`
-	//				FOR i IN [[1, 2]][0]
-	//					RETURN i
-	//			`)
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := p.Run(context.Background())
-	//			So(err, ShouldBeNil)
-	//
-	//			So(string(out), ShouldEqual, `[1,2]`)
-	//		})
-	//
-
-	//
-	//		Convey("Prop after a func call", func() {
-	//			c := compiler.New()
-	//
-	//			p, err := c.Compile(`
-	//				LET arr = [{ name: "Bob" }]
-	//
-	//				RETURN FIRST(arr).name
-	//			`)
-	//
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := p.Run(context.Background())
-	//
-	//			So(err, ShouldBeNil)
-	//
-	//			So(string(out), ShouldEqual, `"Bob"`)
-	//		})
-	//
-	//		Convey("Computed prop after a func call", func() {
-	//			c := compiler.New()
-	//
-	//			p, err := c.Compile(`
-	//				LET arr = [{ name: { first: "Bob" } }]
-	//
-	//				RETURN FIRST(arr)['name'].first
-	//			`)
-	//
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := p.Run(context.Background())
-	//
-	//			So(err, ShouldBeNil)
-	//
-	//			So(string(out), ShouldEqual, `"Bob"`)
-	//		})
-	//
-
-	//
-	//	Convey("Optional chaining", t, func() {
-	//		Convey("Object", func() {
-	//			Convey("When value does not exist", func() {
-	//				c := compiler.New()
-	//
-	//				p, err := c.Compile(`
-	//				LET obj = { foo: None }
-	//
-	//				RETURN obj.foo?.bar
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `null`)
-	//			})
-	//
-	//			Convey("When value does exists", func() {
-	//				c := compiler.New()
-	//
-	//				p, err := c.Compile(`
-	//				LET obj = { foo: { bar: "bar" } }
-	//
-	//				RETURN obj.foo?.bar
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `"bar"`)
-	//			})
-	//		})
-	//
-	//		Convey("Array", func() {
-	//			Convey("When value does not exist", func() {
-	//				c := compiler.New()
-	//
-	//				p, err := c.Compile(`
-	//				LET obj = { foo: None }
-	//
-	//				RETURN obj.foo?.bar?.[0]
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `null`)
-	//			})
-	//
-	//			Convey("When value does exists", func() {
-	//				c := compiler.New()
-	//
-	//				p, err := c.Compile(`
-	//				LET obj = { foo: { bar: ["bar"] } }
-	//
-	//				RETURN obj.foo?.bar?.[0]
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `"bar"`)
-	//			})
-	//		})
-	//
-	//		Convey("Function", func() {
-	//			Convey("When value does not exist", func() {
-	//				c := compiler.New()
-	//
-	//				p, err := c.Compile(`
-	//				RETURN FIRST([])?.foo
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `null`)
-	//			})
-	//
-	//			Convey("When value does exists", func() {
-	//				c := compiler.New()
-	//
-	//				p, err := c.Compile(`
-	//				RETURN FIRST([{ foo: "bar" }])?.foo
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `"bar"`)
-	//			})
-	//
-	//			Convey("When function returns error", func() {
-	//				c := compiler.New()
-	//				c.RegisterFunction("ERROR", func(ctx context.visitor, args ...core.Second) (core.Second, error) {
-	//					return nil, core.ErrNotImplemented
-	//				})
-	//
-	//				p, err := c.Compile(`
-	//				RETURN ERROR()?.foo
-	//			`)
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				out, err := p.Run(context.Background())
-	//
-	//				So(err, ShouldBeNil)
-	//
-	//				So(string(out), ShouldEqual, `null`)
-	//			})
-	//		})
-	//	})
-	//
-	//Convey("Reserved words as property name", t, func() {
-	//	p := parser.New("RETURN TRUE")
-	//
-	//	r := regexp.MustCompile(`\w+`)
-	//
-	//	for idx, l := range p.GetLiteralNames() {
-	//		if r.MatchString(l) {
-	//			query := strings.Builder{}
-	//			query.WriteString("LET o = {\n")
-	//			query.WriteString(l[1 : len(l)-1])
-	//			query.WriteString(":")
-	//			query.WriteString(strconv.Itoa(idx))
-	//			query.WriteString(",\n")
-	//			query.WriteString("}\n")
-	//			query.WriteString("RETURN o")
-	//
-	//			expected := strings.Builder{}
-	//			expected.WriteString("{")
-	//			expected.WriteString(strings.ReplaceAll(l, "'", "\""))
-	//			expected.WriteString(":")
-	//			expected.WriteString(strconv.Itoa(idx))
-	//			expected.WriteString("}")
-	//
-	//			c := compiler.New()
-	//			prog, err := c.Compile(query.String())
-	//
-	//			So(err, ShouldBeNil)
-	//
-	//			out, err := Exec(prog, true, runtime.WithFunctions(c.Functions().Unwrap()))
-	//
-	//			So(err, ShouldBeNil)
-	//			So(out, ShouldEqual, expected.String())
-	//		}
-	//	}
-	//})
+	RunUseCases(t, []UseCase{
+		{
+			`
+					RETURN ERROR()?.foo
+				`,
+			nil,
+			nil,
+		},
+	}, runtime.WithFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+		return nil, core.ErrNotImplemented
+	}))
 }
 
 func TestFor(t *testing.T) {
@@ -1121,79 +1025,81 @@ func TestFor(t *testing.T) {
 	//	ShouldEqualJSON,
 	//},
 	RunUseCases(t, []UseCase{
-		//{
-		//	"FOR i IN 1..5 RETURN i",
-		//	[]any{1, 2, 3, 4, 5},
-		//	ShouldEqualJSON,
-		//},
+		//		{
+		//			"FOR i IN 1..5 RETURN i",
+		//			[]any{1, 2, 3, 4, 5},
+		//			ShouldEqualJSON,
+		//		},
+		//		{
+		//			`
+		//FOR i IN 1..5
+		//	LET x = i * 2
+		//	RETURN x
+		//`,
+		//			[]any{2, 4, 6, 8, 10},
+		//			ShouldEqualJSON,
+		//		},
+		//		{
+		//			`
+		//FOR val, counter IN 1..5
+		//	LET x = val
+		//	PRINT(counter)
+		//	LET y = counter
+		//	RETURN [x, y]
+		//		`,
+		//			[]any{[]any{1, 0}, []any{2, 1}, []any{3, 2}, []any{4, 3}, []any{5, 4}},
+		//			ShouldEqualJSON,
+		//		},
+		//		{
+		//			`FOR i IN [] RETURN i
+		//		`,
+		//			[]any{},
+		//			ShouldEqualJSON,
+		//		},
+		//		{
+		//			`FOR i IN [1, 2, 3] RETURN i
+		//		`,
+		//			[]any{1, 2, 3},
+		//			ShouldEqualJSON,
+		//		},
+		//
+		//		{
+		//			`FOR i, k IN [1, 2, 3] RETURN k`,
+		//			[]any{0, 1, 2},
+		//			ShouldEqualJSON,
+		//		},
+		//		{
+		//			`FOR i IN ['foo', 'bar', 'qaz'] RETURN i`,
+		//			[]any{"foo", "bar", "qaz"},
+		//			ShouldEqualJSON,
+		//		},
+		//		{
+		//			`FOR i IN {a: 'bar', b: 'foo', c: 'qaz'} RETURN i`,
+		//			[]any{"foo", "bar", "qaz"},
+		//			ShouldHaveSameItems,
+		//		},
+		//		{
+		//			`FOR i, k IN {a: 'foo', b: 'bar', c: 'qaz'} RETURN k`,
+		//			[]any{"a", "b", "c"},
+		//			ShouldHaveSameItems,
+		//		},
+		//		{
+		//			`FOR i IN [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] RETURN i.name`,
+		//			[]any{"foo", "bar", "qaz"},
+		//			ShouldHaveSameItems,
+		//		},
+		//		{
+		//			`FOR i IN { items: [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] }.items RETURN i.name`,
+		//			[]any{"foo", "bar", "qaz"},
+		//			ShouldHaveSameItems,
+		//		},
 		{
-			`FOR i IN 1..5
-				                           LET x = i * 2
-											RETURN x
-				`,
-			[]any{2, 4, 6, 8, 10},
+			`FOR prop IN ["a"]
+							FOR val IN [1, 2, 3]
+								RETURN {[prop]: val}`,
+			[]any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 			ShouldEqualJSON,
 		},
-		//{
-		//	`FOR val, counter IN 1..5
-		//                    LET x = val
-		//                    PRINT(counter)
-		//							LET y = counter
-		//							RETURN [x, y]
-		//`,
-		//	[]any{[]any{1, 0}, []any{2, 1}, []any{3, 2}, []any{4, 3}, []any{5, 4}},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`FOR i IN [] RETURN i
-		//`,
-		//	[]any{},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`FOR i IN [1, 2, 3] RETURN i
-		//`,
-		//	[]any{1, 2, 3},
-		//	ShouldEqualJSON,
-		//},
-		//
-		//{
-		//	`FOR i, k IN [1, 2, 3] RETURN k`,
-		//	[]any{0, 1, 2},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`FOR i IN ['foo', 'bar', 'qaz'] RETURN i`,
-		//	[]any{"foo", "bar", "qaz"},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`FOR i IN {a: 'bar', b: 'foo', c: 'qaz'} RETURN i`,
-		//	[]any{"foo", "bar", "qaz"},
-		//	ShouldHaveSameItems,
-		//},
-		//{
-		//	`FOR i, k IN {a: 'foo', b: 'bar', c: 'qaz'} RETURN k`,
-		//	[]any{"a", "b", "c"},
-		//	ShouldHaveSameItems,
-		//},
-		//{
-		//	`FOR i IN [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] RETURN i.name`,
-		//	[]any{"foo", "bar", "qaz"},
-		//	ShouldHaveSameItems,
-		//},
-		//{
-		//	`FOR i IN { items: [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] }.items RETURN i.name`,
-		//	[]any{"foo", "bar", "qaz"},
-		//	ShouldHaveSameItems,
-		//},
-		//{
-		//	`FOR prop IN ["a"]
-		//					FOR val IN [1, 2, 3]
-		//						RETURN {[prop]: val}`,
-		//	[]any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
-		//	ShouldEqualJSON,
-		//},
 		//{
 		//	`FOR val IN 1..3
 		//					FOR prop IN ["a"]

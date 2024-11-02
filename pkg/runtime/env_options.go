@@ -13,3 +13,13 @@ func WithFunctions(functions map[string]core.Function) EnvironmentOption {
 		env.functions = functions
 	}
 }
+
+func WithFunction(name string, function core.Function) EnvironmentOption {
+	return func(env *Environment) {
+		if env.functions == nil {
+			env.functions = make(map[string]core.Function)
+		}
+
+		env.functions[name] = function
+	}
+}

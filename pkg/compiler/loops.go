@@ -8,8 +8,8 @@ type (
 		Distinct    bool
 		Result      runtime.Operand
 		Iterator    runtime.Operand
-		Allocated   bool
-		Position    int
+		Allocate    bool
+		Jump        int
 	}
 
 	LoopTable struct {
@@ -25,14 +25,13 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 	}
 }
 
-func (lt *LoopTable) EnterLoop(position int, passThrough, distinct bool) {
+func (lt *LoopTable) EnterLoop(passThrough, distinct bool) *Loop {
 	var allocate bool
 	var state runtime.Operand
 
 	// top loop
 	if len(lt.loops) == 0 {
 		allocate = true
-		state = lt.registers.Allocate(Result)
 	} else if !passThrough {
 		// nested with explicit RETURN expression
 		prev := lt.loops[len(lt.loops)-1]
@@ -42,13 +41,18 @@ func (lt *LoopTable) EnterLoop(position int, passThrough, distinct bool) {
 		state = prev.Result
 	}
 
+	if allocate {
+		state = lt.registers.Allocate(Result)
+	}
+
 	lt.loops = append(lt.loops, &Loop{
 		PassThrough: passThrough,
 		Distinct:    distinct,
 		Result:      state,
-		Allocated:   allocate,
-		Position:    position,
+		Allocate:    allocate,
 	})
+
+	return lt.loops[len(lt.loops)-1]
 }
 
 func (lt *LoopTable) Loop() *Loop {

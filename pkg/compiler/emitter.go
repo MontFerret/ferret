@@ -35,6 +35,11 @@ func (e *Emitter) PatchJump(dest int) {
 	e.instructions[dest].Operands[0] = runtime.Operand(len(e.instructions) - 1)
 }
 
+// PatchJumpx patches a jump opcode with a new destination and position offset.
+func (e *Emitter) PatchJumpx(dest int, offset int) {
+	e.instructions[dest].Operands[0] = runtime.Operand(len(e.instructions) - 1 + offset)
+}
+
 // Emit emits an opcode with no arguments.
 func (e *Emitter) Emit(op runtime.Opcode) {
 	e.EmitABC(op, 0, 0, 0)

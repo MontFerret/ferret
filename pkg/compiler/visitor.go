@@ -81,9 +81,11 @@ func (v *visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{
 	if c := ctx.ForExpression(); c != nil {
 		out, ok := c.Accept(v).(runtime.Operand)
 
-		if ok && out != runtime.ResultOperand {
-			v.emitter.EmitAB(runtime.OpMove, runtime.ResultOperand, out)
+		if ok && out != runtime.NoopOperand {
+			v.emitter.EmitAB(runtime.OpMove, runtime.NoopOperand, out)
 		}
+
+		v.emitter.Emit(runtime.OpReturn)
 
 		return out
 	} else if c := ctx.ReturnExpression(); c != nil {
@@ -103,7 +105,6 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	var passThrough bool
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
-	var loopJump int
 	// identify whether it's WHILE or FOR loop
 	isForInLoop := ctx.While() == nil
 	returnCtx := ctx.ForExpressionReturn()
@@ -116,11 +117,10 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		passThrough = true
 	}
 
-	v.loops.EnterLoop(v.emitter.Size(), passThrough, distinct)
+	loop := v.loops.EnterLoop(passThrough, distinct)
+	dsReg := loop.Result
 
-	dsReg := v.loops.Loop().Result
-
-	if !passThrough {
+	if loop.Allocate {
 		v.emitter.EmitAb(runtime.OpLoopInit, dsReg, distinct)
 	}
 
@@ -131,7 +131,8 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		iterReg := v.registers.Allocate(Iter)
 
 		v.emitter.EmitAB(runtime.OpForLoopCall, iterReg, src1)
-		loopJump = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, iterReg)
+		// jumpPlaceholder is a placeholder for the exit jump position
+		loop.Jump = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, iterReg)
 
 		valVar := ctx.GetValueVariable().GetText()
 		counterVarCtx := ctx.GetCounterVariable()
@@ -190,39 +191,30 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	}
 
-	// return
-	if returnRuleCtx != nil {
+	// RETURN
+	if !passThrough {
 		c := returnRuleCtx.(*fql.ReturnExpressionContext)
 		expReg := c.Expression().Accept(v).(runtime.Operand)
 
-		v.emitter.EmitAB(runtime.OpLoopReturn, dsReg, expReg)
+		v.emitter.EmitAB(runtime.OpLoopPush, dsReg, expReg)
+	} else if returnRuleCtx != nil {
+		returnRuleCtx.Accept(v)
 	}
 
-	v.emitter.EmitJump(runtime.OpJump, loopJump)
+	v.emitter.EmitJump(runtime.OpJump, loop.Jump)
 
 	// TODO: Do not allocate for pass-through loops
 	dst := v.registers.Allocate(Temp)
 
-	if !passThrough {
+	if loop.Allocate {
 		v.emitter.EmitAB(runtime.OpLoopFinalize, dst, dsReg)
-	}
-
-	v.emitter.PatchJump(loopJump)
-
-	if isForInLoop {
-		// pop the iterator
-		//v.emitPopAndClose()
+		v.emitter.PatchJump(loop.Jump)
 	} else {
-		// pop the counter
-		//v.emitPop()
+		v.emitter.PatchJumpx(loop.Jump, 1)
 	}
 
 	v.loops.ExitLoop()
 	v.symbols.ExitScope()
-
-	//if !passThrough {
-	//	return dsReg
-	//}
 
 	return dst
 }
@@ -323,58 +315,16 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 }
 
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
-	call := ctx.FunctionCall().(*fql.FunctionCallContext)
+	return v.visitFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext), ctx.ErrorOperator() != nil)
+}
 
-	var name string
-	funcNS := call.Namespace()
-
-	if funcNS != nil {
-		name += funcNS.GetText()
-	}
-
-	name += call.FunctionName().GetText()
-
-	var size int
-	var seq *RegisterSequence
-
-	if list := call.ArgumentList(); list != nil {
-		// Get all array element expressions
-		exps := list.(*fql.ArgumentListContext).AllExpression()
-		size = len(exps)
-
-		if size > 0 {
-			// Allocate seq for function arguments
-			seq = v.registers.AllocateSequence(size)
-
-			// Evaluate each element into seq registers
-			for i, exp := range exps {
-				// Compile expression and move to seq register
-				srcReg := exp.Accept(v).(runtime.Operand)
-
-				// TODO: Figure out how to remove OpMove and use registers returned from each expression
-				v.emitter.EmitAB(runtime.OpMove, seq.Registers[i], srcReg)
-
-				// Free source register if temporary
-				if srcReg.IsRegister() {
-					//v.registers.Free(srcReg)
-				}
-			}
-		}
-	}
-
-	nameAndDest := v.loadConstant(values.NewString(name))
-
-	if ctx.ErrorOperator() == nil {
-		v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
-	} else {
-		v.emitter.EmitAs(runtime.OpCallSafe, nameAndDest, seq)
-	}
-
-	return nameAndDest
+func (v *visitor) VisitFunctionCall(ctx *fql.FunctionCallContext) interface{} {
+	return v.visitFunctionCall(ctx, false)
 }
 
 func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
 	mes := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
+	segments := ctx.AllMemberExpressionPath()
 
 	var mesOut interface{}
 
@@ -387,12 +337,13 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 	} else if c := mes.ArrayLiteral(); c != nil {
 		mesOut = c.Accept(v)
 	} else if c := mes.FunctionCall(); c != nil {
-		mesOut = c.Accept(v)
+		// FOO()?.bar
+		segment := segments[0].(*fql.MemberExpressionPathContext)
+		mesOut = v.visitFunctionCall(c.(*fql.FunctionCallContext), segment.ErrorOperator() != nil)
 	}
 
 	var dst runtime.Operand
 	src1 := mesOut.(runtime.Operand)
-	segments := ctx.AllMemberExpressionPath()
 
 	for _, segment := range segments {
 		var out2 interface{}
@@ -472,7 +423,7 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 		return dest
 	}
 
-	return nil
+	return runtime.NoopOperand
 }
 
 func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
@@ -722,20 +673,14 @@ func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interf
 	valReg := ctx.Expression().Accept(v).(runtime.Operand)
 
 	if valReg.IsConstant() {
-		v.emitter.EmitAB(runtime.OpLoadGlobal, runtime.ResultOperand, valReg)
+		v.emitter.EmitAB(runtime.OpLoadGlobal, runtime.NoopOperand, valReg)
 	} else {
-		v.emitter.EmitAB(runtime.OpMove, runtime.ResultOperand, valReg)
+		v.emitter.EmitAB(runtime.OpMove, runtime.NoopOperand, valReg)
 	}
 
 	v.emitter.Emit(runtime.OpReturn)
 
-	//if len(v.loops) == 0 {
-	//	v.emitter.EmitABC(runtime.OpReturn)
-	//} else {
-	//	v.emitter.EmitABC(runtime.OpLoopReturn, v.resolveLoopResultPosition())
-	//}
-
-	return runtime.ResultOperand
+	return runtime.NoopOperand
 }
 
 func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
@@ -974,6 +919,55 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	}
 
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool) interface{} {
+	var name string
+	funcNS := ctx.Namespace()
+
+	if funcNS != nil {
+		name += funcNS.GetText()
+	}
+
+	name += ctx.FunctionName().GetText()
+
+	var size int
+	var seq *RegisterSequence
+
+	if list := ctx.ArgumentList(); list != nil {
+		// Get all array element expressions
+		exps := list.(*fql.ArgumentListContext).AllExpression()
+		size = len(exps)
+
+		if size > 0 {
+			// Allocate seq for function arguments
+			seq = v.registers.AllocateSequence(size)
+
+			// Evaluate each element into seq registers
+			for i, exp := range exps {
+				// Compile expression and move to seq register
+				srcReg := exp.Accept(v).(runtime.Operand)
+
+				// TODO: Figure out how to remove OpMove and use registers returned from each expression
+				v.emitter.EmitAB(runtime.OpMove, seq.Registers[i], srcReg)
+
+				// Free source register if temporary
+				if srcReg.IsRegister() {
+					//v.registers.Free(srcReg)
+				}
+			}
+		}
+	}
+
+	nameAndDest := v.loadConstant(values.NewString(name))
+
+	if !safeCall {
+		v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
+	} else {
+		v.emitter.EmitAs(runtime.OpCallSafe, nameAndDest, seq)
+	}
+
+	return nameAndDest
 }
 
 func (v *visitor) loadConstant(constant core.Value) runtime.Operand {

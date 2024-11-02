@@ -45,7 +45,7 @@ const (
 func NewRegisterAllocator() *RegisterAllocator {
 	return &RegisterAllocator{
 		registers:    make(map[runtime.Operand]*RegisterStatus),
-		nextRegister: runtime.ResultOperand + 1, // we start at 1 to avoid ResultOperand
+		nextRegister: runtime.NoopOperand + 1, // we start at 1 to avoid NoopOperand
 		lifetimes:    make(map[string]*RegisterLifetime),
 		usageGraph:   make(map[runtime.Operand]map[runtime.Operand]bool),
 	}
@@ -196,7 +196,7 @@ func (ra *RegisterAllocator) findContiguousRegisters(count int) (runtime.Operand
 
 	// First, try to find a contiguous block in existing registers
 	maxReg := ra.nextRegister
-	for start := runtime.ResultOperand + 1; start < maxReg; start++ {
+	for start := runtime.NoopOperand + 1; start < maxReg; start++ {
 		if ra.isContiguousBlockFree(start, count) {
 			return start, true
 		}

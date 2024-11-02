@@ -4,7 +4,8 @@ import "fmt"
 
 type Operand int
 
-const ResultOperand = Operand(0)
+// NoopOperand is a reserved operand for no operation and final results.
+const NoopOperand = Operand(0)
 
 func NewConstantOperand(idx int) Operand {
 	return Operand(-idx - 1)
