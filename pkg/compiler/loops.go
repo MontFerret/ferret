@@ -39,6 +39,10 @@ func (lt *LoopTable) EnterLoop(passThrough, distinct bool) *Loop {
 		// we allocate a new state for this loop
 		allocate = !prev.PassThrough
 		state = prev.Result
+	} else {
+		// nested with implicit RETURN expression
+		// we reuse the state of the loop above
+		state = lt.loops[len(lt.loops)-1].Result
 	}
 
 	if allocate {
