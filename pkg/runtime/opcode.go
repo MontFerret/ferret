@@ -51,12 +51,16 @@ const (
 	OpCall
 	OpCallSafe
 
-	OpLoopInit // Creates a loop result dataset
+	OpLoopBegin // Creates a loop result dataset
 	OpLoopPush
-	OpLoopFinalize
+	OpLoopEnd
 
-	OpForLoopCall // Creates an iterator for a loop
+	OpForLoopInit // Creates an iterator for a loop
 	OpForLoopNext
 	OpForLoopValue
 	OpForLoopKey
+
+	OpWhileLoopInit
+	OpWhileLoopNext
+	OpWhileLoopValue
 )

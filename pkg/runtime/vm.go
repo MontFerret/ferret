@@ -272,12 +272,12 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopInit:
+		case OpLoopBegin:
 			reg[dst] = NewDataSet(src1 == 1)
-		case OpLoopFinalize:
+		case OpLoopEnd:
 			ds := reg[src1].(*DataSet)
 			reg[dst] = ds.ToArray()
-		case OpForLoopCall:
+		case OpForLoopInit:
 			input := reg[src1]
 
 			switch src := input.(type) {
@@ -290,7 +290,12 @@ loop:
 
 				reg[dst] = values.NewBoxedValue(iterator)
 			default:
-				return nil, core.TypeError(src, types.Iterable)
+				if tryCatch(vm.pc) {
+					// Fall back to an empty iterator
+					reg[dst] = values.NewBoxedValue(values.NoopIter)
+				} else {
+					return nil, core.TypeError(src, types.Iterable)
+				}
 			}
 		case OpForLoopNext:
 			boxed := reg[src1]
@@ -317,6 +322,18 @@ loop:
 			// TODO: Remove boxed value!!!
 			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
 			reg[dst] = iter.Key()
+		case OpWhileLoopInit:
+			reg[dst] = values.ZeroInt
+		case OpWhileLoopNext:
+			cond := values.ToBoolean(reg[src1])
+
+			if cond {
+				reg[dst] = operators.Increment(reg[dst])
+			} else {
+				vm.pc = int(src2)
+			}
+		case OpWhileLoopValue:
+			reg[dst] = reg[src1]
 		case OpLoopPush:
 			ds := reg[dst].(*DataSet)
 			ds.Push(reg[src1])

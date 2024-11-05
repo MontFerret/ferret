@@ -23,6 +23,13 @@ func (e *Emitter) EmitJump(op runtime.Opcode, pos int) int {
 	return len(e.instructions) - 1
 }
 
+// EmitJumpAB emits a jump opcode with a state and an argument.
+func (e *Emitter) EmitJumpAB(op runtime.Opcode, state, cond runtime.Operand, pos int) int {
+	e.EmitABC(op, state, cond, runtime.Operand(pos))
+
+	return len(e.instructions) - 1
+}
+
 // EmitJumpc emits a conditional jump opcode.
 func (e *Emitter) EmitJumpc(op runtime.Opcode, pos int, reg runtime.Operand) int {
 	e.EmitAB(op, runtime.Operand(pos), reg)
@@ -30,14 +37,24 @@ func (e *Emitter) EmitJumpc(op runtime.Opcode, pos int, reg runtime.Operand) int
 	return len(e.instructions) - 1
 }
 
-// PatchJump patches a jump opcode with a new destination.
-func (e *Emitter) PatchJump(dest int) {
-	e.instructions[dest].Operands[0] = runtime.Operand(len(e.instructions) - 1)
+// PatchJump patches a jump opcode.
+func (e *Emitter) PatchJump(instr int) {
+	e.instructions[instr].Operands[0] = runtime.Operand(len(e.instructions) - 1)
 }
 
-// PatchJumpx patches a jump opcode with a new destination and position offset.
-func (e *Emitter) PatchJumpx(dest int, offset int) {
-	e.instructions[dest].Operands[0] = runtime.Operand(len(e.instructions) - 1 + offset)
+// PatchJumpAB patches a jump opcode with a new destination.
+func (e *Emitter) PatchJumpAB(inst int) {
+	e.instructions[inst].Operands[2] = runtime.Operand(len(e.instructions) - 1)
+}
+
+// PatchJumpNextAB patches a jump instruction to jump over a current position.
+func (e *Emitter) PatchJumpNextAB(instr int) {
+	e.instructions[instr].Operands[2] = runtime.Operand(len(e.instructions))
+}
+
+// PatchJumpNext patches a jump instruction to jump over a current position.
+func (e *Emitter) PatchJumpNext(instr int) {
+	e.instructions[instr].Operands[0] = runtime.Operand(len(e.instructions))
 }
 
 // Emit emits an opcode with no arguments.

@@ -106,7 +106,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
 	// identify whether it's WHILE or FOR loop
-	isForInLoop := ctx.While() == nil
+	isForLoop := ctx.While() == nil
 	returnCtx := ctx.ForExpressionReturn()
 
 	if c := returnCtx.ReturnExpression(); c != nil {
@@ -121,16 +121,16 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	dsReg := loop.Result
 
 	if loop.Allocate {
-		v.emitter.EmitAb(runtime.OpLoopInit, dsReg, distinct)
+		v.emitter.EmitAb(runtime.OpLoopBegin, dsReg, distinct)
 	}
 
-	if isForInLoop {
+	if isForLoop {
 		// Loop data source to iterate over
 		src1 := ctx.ForExpressionSource().Accept(v).(runtime.Operand)
 
-		iterReg := v.registers.Allocate(Iter)
+		iterReg := v.registers.Allocate(State)
 
-		v.emitter.EmitAB(runtime.OpForLoopCall, iterReg, src1)
+		v.emitter.EmitAB(runtime.OpForLoopInit, iterReg, src1)
 		// jumpPlaceholder is a placeholder for the exit jump position
 		loop.Jump = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, iterReg)
 
@@ -162,26 +162,21 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 			v.emitter.EmitAB(runtime.OpForLoopKey, keyReg, iterReg)
 		}
 	} else {
-		//// Create initial value for the loop counter
-		//v.emitter.EmitABC(runtime.OpWhileLoopInitCounter)
-		//
-		//loopJump = len(v.instructions)
-		//
-		//// Condition expression
-		//ctx.Expression().Accept(v)
-		//
-		//// Condition check
-		//exitJump = v.emitJump(runtime.OpJumpIfFalse)
-		//// pop the boolean value from the stack
-		//v.emitPop()
-		//
-		//counterVar := ctx.GetCounterVariable().GetText()
-		//
-		//// declare counter variable
-		//// and increment it by 1
-		//index := v.declareVariable(counterVar)
-		//v.emitter.EmitABC(runtime.OpWhileLoopNext)
-		//v.defineVariable(index)
+		counterReg := v.registers.Allocate(State)
+
+		// Create initial value for the loop counter
+		v.emitter.EmitA(runtime.OpWhileLoopInit, counterReg)
+		// Loop data source to iterate over
+		cond := ctx.Expression().Accept(v).(runtime.Operand)
+
+		// jumpPlaceholder is a placeholder for the exit jump position
+		loop.Jump = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
+
+		counterVar := ctx.GetCounterVariable().GetText()
+
+		// declare counter variable
+		valReg := v.symbols.DefineVariable(counterVar)
+		v.emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
 	}
 
 	// body
@@ -201,16 +196,30 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		returnRuleCtx.Accept(v)
 	}
 
-	v.emitter.EmitJump(runtime.OpJump, loop.Jump)
+	if isForLoop {
+		v.emitter.EmitJump(runtime.OpJump, loop.Jump)
+	} else {
+		v.emitter.EmitJump(runtime.OpJump, loop.Jump-1)
+	}
 
 	// TODO: Do not allocate for pass-through loops
 	dst := v.registers.Allocate(Temp)
 
 	if loop.Allocate {
-		v.emitter.EmitAB(runtime.OpLoopFinalize, dst, dsReg)
-		v.emitter.PatchJump(loop.Jump)
+		// TODO: Reuse the dsReg register
+		v.emitter.EmitAB(runtime.OpLoopEnd, dst, dsReg)
+
+		if isForLoop {
+			v.emitter.PatchJump(loop.Jump)
+		} else {
+			v.emitter.PatchJumpAB(loop.Jump)
+		}
 	} else {
-		v.emitter.PatchJumpx(loop.Jump, 1)
+		if isForLoop {
+			v.emitter.PatchJumpNext(loop.Jump)
+		} else {
+			v.emitter.PatchJumpNextAB(loop.Jump)
+		}
 	}
 
 	v.loops.ExitLoop()
@@ -718,7 +727,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		right := ctx.GetRight().Accept(v).(runtime.Operand)
 		// And move the result to the destination register
 		v.emitter.EmitAB(runtime.OpMove, dst, right)
-		v.emitter.PatchJump(end)
+		v.emitter.PatchJumpNext(end)
 
 		return dst
 	}
@@ -735,7 +744,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		right := ctx.GetRight().Accept(v).(runtime.Operand)
 		// And move the result to the destination register
 		v.emitter.EmitAB(runtime.OpMove, dst, right)
-		v.emitter.PatchJump(end)
+		v.emitter.PatchJumpNext(end)
 
 		return dst
 	}
@@ -767,8 +776,8 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		}
 
 		// Jump over false branch
-		end := v.emitter.EmitJumpc(runtime.OpJump, jumpPlaceholder, dst)
-		v.emitter.PatchJump(otherwise)
+		end := v.emitter.EmitJump(runtime.OpJump, jumpPlaceholder)
+		v.emitter.PatchJumpNext(otherwise)
 
 		// False branch
 		if onFalse := ctx.GetOnFalse(); onFalse != nil {
@@ -781,7 +790,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 			}
 		}
 
-		v.emitter.PatchJump(end)
+		v.emitter.PatchJumpNext(end)
 
 		return dst
 	}
@@ -959,7 +968,7 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool)
 		}
 	}
 
-	nameAndDest := v.loadConstant(values.NewString(name))
+	nameAndDest := v.loadConstant(values.NewString(strings.ToUpper(name)))
 
 	if !safeCall {
 		v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)

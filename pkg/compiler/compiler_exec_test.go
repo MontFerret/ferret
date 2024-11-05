@@ -124,43 +124,33 @@ func TestVariables(t *testing.T) {
 			"a",
 			ShouldEqual,
 		},
-		//{
-		//	"LET i = (FOR i IN [1,2,3] RETURN i) RETURN i",
-		//	[]int{1, 2, 3},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	" LET i = { items: [1,2,3]}  FOR el IN i.items RETURN el",
-		//	[]int{1, 2, 3},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`LET _ = (FOR i IN 1..100 RETURN NONE)
-		//		RETURN TRUE`,
-		//	true,
-		//	ShouldEqualJSON,
-		//},
+		{
+			"LET i = (FOR i IN [1,2,3] RETURN i) RETURN i",
+			[]int{1, 2, 3},
+			ShouldEqualJSON,
+		},
+		{
+			" LET i = { items: [1,2,3]}  FOR el IN i.items RETURN el",
+			[]int{1, 2, 3},
+			ShouldEqualJSON,
+		},
+		{
+			`LET _ = (FOR i IN 1..100 RETURN NONE)
+				RETURN TRUE`,
+			true,
+			ShouldEqualJSON,
+		},
+		{
+			`
+			LET src = NONE
+			LET i = (FOR i IN src RETURN i)?
+			RETURN i
+		`,
+			[]any{},
+			nil,
+		},
 	})
 
-	//
-	//Convey("Should compile LET src = NONE LET i = (FOR i IN NONE RETURN i)? RETURN i == NONE", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET src = NONE
-	//		LET i = (FOR i IN src RETURN i)?
-	//		RETURN i == NONE
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "true")
-	//})
-	//
 	//Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
 	//	c := compiler.New()
 	//	counter := -1
@@ -207,16 +197,16 @@ func TestVariables(t *testing.T) {
 	//	So(string(out), ShouldEqual, "true")
 	//})
 
-	//Convey("Should not compile FOR foo IN foo", t, func() {
-	//	c := compiler.New()
-	//
-	//	_, err := c.Compile(`
-	//		FOR foo IN foo
-	//			RETURN foo
-	//	`)
-	//
-	//	So(err, ShouldNotBeNil)
-	//})
+	Convey("Should not compile FOR foo IN foo", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			FOR foo IN foo
+				RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 
 	Convey("Should not compile if a variable not defined", t, func() {
 		c := compiler.New()
@@ -228,18 +218,18 @@ func TestVariables(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	//Convey("Should not compile if a variable is not unique", t, func() {
-	//	c := compiler.New()
-	//
-	//	_, err := c.Compile(`
-	//		LET foo = "bar"
-	//		LET foo = "baz"
-	//
-	//		RETURN foo
-	//	`)
-	//
-	//	So(err, ShouldNotBeNil)
-	//})
+	Convey("Should not compile if a variable is not unique", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET foo = "bar"
+			LET foo = "baz"
+	
+			RETURN foo
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 
 	//SkipConvey("Should use value returned from WAITFOR EVENT", t, func() {
 	//	out, err := newCompilerWithObservable().MustCompile(`
@@ -281,17 +271,17 @@ func TestVariables(t *testing.T) {
 	//})
 	//
 
-	//Convey("Should not allow to use ignorable variable name", t, func() {
-	//	c := compiler.New()
-	//
-	//	_, err := c.Compile(`
-	//		LET _ = (FOR i IN 1..100 RETURN NONE)
-	//
-	//		RETURN _
-	//	`)
-	//
-	//	So(err, ShouldNotBeNil)
-	//})
+	Convey("Should not allow to use ignorable variable name", t, func() {
+		c := compiler.New()
+
+		_, err := c.Compile(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+	
+			RETURN _
+		`)
+
+		So(err, ShouldNotBeNil)
+	})
 }
 
 func TestMathOperators(t *testing.T) {
@@ -382,64 +372,30 @@ func TestLogicalOperators(t *testing.T) {
 		{"RETURN 1 || 7", 1, nil},
 		{"RETURN 0 || 7", 7, nil},
 		{"RETURN NONE || 'foo'", "foo", nil},
-	})
-
-	//
-	//Convey("ERROR()? || 'boo'  should return 'boo'", t, func() {
-	//	c := compiler.New()
-	//	c.RegisterFunction("ERROR", func(ctx context.visitor, args ...core.Second) (core.Second, error) {
-	//		return nil, errors.New("test")
-	//	})
-	//
-	//	p, err := c.Compile(`
-	//		RETURN ERROR()? || 'boo'
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, `"boo"`)
-	//})
-	//
-	//Convey("!ERROR()? && TRUE should return false", t, func() {
-	//	c := compiler.New()
-	//	c.RegisterFunction("ERROR", func(ctx context.visitor, args ...core.Second) (core.Second, error) {
-	//		return nil, errors.New("test")
-	//	})
-	//
-	//	p, err := c.Compile(`
-	//		RETURN !ERROR()? && TRUE
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, `true`)
-	//})
-	//
-	//
-
-	//
-	//Convey("NOT u.valid should return true", t, func() {
-	//	c := compiler.New()
-	//
-	//	p, err := c.Compile(`
-	//		LET u = { valid: false }
-	//
-	//		RETURN NOT u.valid
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, `true`)
-	//})
+		{
+			`
+			RETURN ERROR()? || 'boo'
+		`,
+			"boo",
+			nil,
+		},
+		{
+			`
+			RETURN !ERROR()? && TRUE
+		`,
+			true,
+			nil,
+		},
+		{
+			`			LET u = { valid: false }
+	
+			RETURN NOT u.valid`,
+			true,
+			nil,
+		},
+	}, runtime.WithFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+		return values.None, fmt.Errorf("test")
+	}))
 }
 
 func TestTernaryOperator(t *testing.T) {
@@ -448,103 +404,75 @@ func TestTernaryOperator(t *testing.T) {
 		{"RETURN 1 > 2 ? 3 : 4", 4, nil},
 		{"RETURN 2 ? : 4", 2, nil},
 		{`
-		LET foo = TRUE
-		RETURN foo ? TRUE : FALSE
-		`, true, nil},
+				LET foo = TRUE
+				RETURN foo ? TRUE : FALSE
+				`, true, nil},
 		{`
-		LET foo = FALSE
-		RETURN foo ? TRUE : FALSE
-		`, false, nil},
+				LET foo = FALSE
+				RETURN foo ? TRUE : FALSE
+				`, false, nil},
+		{
+			`
+					FOR i IN [1, 2, 3, 4, 5, 6]
+						RETURN i < 3 ? i * 3 : i * 2
+				`,
+			[]int{3, 6, 6, 8, 10, 12},
+			ShouldEqualJSON,
+		},
+		{
+			`
+					FOR i IN [1, 2, 3, 4, 5, 6]
+						RETURN i < 3 ? : i * 2
+				`,
+			[]any{true, true, 6, 8, 10, 12},
+			ShouldEqualJSON,
+		},
+		{
+			`
+					FOR i IN [NONE, 2, 3, 4, 5, 6]
+						RETURN i ? : i
+		`,
+			[]any{nil, 2, 3, 4, 5, 6},
+			ShouldEqualJSON,
+		},
+		{
+			`RETURN 0 && true ? "1" : "some"`,
+			"some",
+			nil,
+		},
+		{
+			`RETURN length([]) > 0 && true ? "1" : "some"`,
+			"some",
+			nil,
+		},
 	})
 
-	//Convey("Should compile ternary operator", t, func() {
-	//	c := compiler.New()
-	//	p, err := c.Compile(`
-	//		FOR i IN [1, 2, 3, 4, 5, 6]
-	//			RETURN i < 3 ? i * 3 : i * 2
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	So(string(out), ShouldEqual, `[3,6,6,8,10,12]`)
-	//})
-	//
-	//Convey("Should compile ternary operator with shortcut", t, func() {
-	//	c := compiler.New()
-	//	p, err := c.Compile(`
-	//		FOR i IN [1, 2, 3, 4, 5, 6]
-	//			RETURN i < 3 ? : i * 2
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	So(string(out), ShouldEqual, `[true,true,6,8,10,12]`)
-	//})
-	//
-	//Convey("Should compile ternary operator with shortcut with nones", t, func() {
-	//	c := compiler.New()
-	//	p, err := c.Compile(`
-	//		FOR i IN [NONE, 2, 3, 4, 5, 6]
-	//			RETURN i ? : i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//
-	//	So(string(out), ShouldEqual, `[null,2,3,4,5,6]`)
-	//})
-	//
-	//Convey("Should compile ternary operator with default values", t, func() {
-	//	vals := []string{
-	//		"0",
-	//		"0.0",
-	//		"''",
-	//		"NONE",
-	//		"FALSE",
-	//	}
-	//
-	//	c := compiler.New()
-	//
-	//	for _, val := range vals {
-	//		p, err := c.Compile(fmt.Sprintf(`
-	//		FOR i IN [%s, 1, 2, 3]
-	//			RETURN i ? i * 2 : 'no value'
-	//	`, val))
-	//
-	//		So(err, ShouldBeNil)
-	//
-	//		out, err := p.Run(context.Background())
-	//
-	//		So(err, ShouldBeNil)
-	//
-	//		So(string(out), ShouldEqual, `["no value",2,4,6]`)
-	//	}
-	//})
-	//
-	//Convey("Multi expression", t, func() {
-	//	out := compiler.New().MustCompile(`
-	//		RETURN 0 && true ? "1" : "some"
-	//	`).MustRun(context.Background())
-	//
-	//	So(string(out), ShouldEqual, `"some"`)
-	//
-	//	out = compiler.New().MustCompile(`
-	//		RETURN length([]) > 0 && true ? "1" : "some"
-	//	`).MustRun(context.Background())
-	//
-	//	So(string(out), ShouldEqual, `"some"`)
-	//})
+	Convey("Should compile ternary operator with default values", t, func() {
+		vals := []string{
+			"0",
+			"0.0",
+			"''",
+			"NONE",
+			"FALSE",
+		}
+
+		c := compiler.New()
+
+		for _, val := range vals {
+			p, err := c.Compile(fmt.Sprintf(`
+			FOR i IN [%s, 1, 2, 3]
+				RETURN i ? i * 2 : 'no value'
+		`, val))
+
+			So(err, ShouldBeNil)
+
+			out, err := Run(p)
+
+			So(err, ShouldBeNil)
+
+			So(string(out), ShouldEqual, `["no value",2,4,6]`)
+		}
+	})
 }
 
 func TestLikeOperator(t *testing.T) {
@@ -646,12 +574,17 @@ func TestFunctionCall(t *testing.T) {
 			nil,
 		},
 		{
+			"RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))",
+			"abcde",
+			nil,
+		},
+		{
 			`
-LET arr = []
-LET a = 1
-LET res = APPEND(arr, a)
-RETURN res
-`,
+		LET arr = []
+		LET a = 1
+		LET res = APPEND(arr, a)
+		RETURN res
+		`,
 			[]any{1},
 			ShouldEqualJSON,
 		},
@@ -660,36 +593,36 @@ RETURN res
 			1,
 			nil,
 		},
-		//{
-		//	"RETURN (FALSE OR T::FAIL())?",
-		//	nil,
-		//	nil,
-		//},
-		//{
-		//	"RETURN T::FAIL()?",
-		//	nil,
-		//	nil,
-		//},
-		//{
-		//	`FOR i IN [1, 2, 3, 4]
-		//		LET duration = 10
-		//
-		//		WAIT(duration)
-		//
-		//		RETURN i * 2`,
-		//	[]int{2, 4, 6, 8},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`,
-		//	2,
-		//	nil,
-		//},
-		//{
-		//	`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`,
-		//	[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		//	ShouldEqualJSON,
-		//},
+		{
+			"RETURN (FALSE OR T::FAIL())?",
+			nil,
+			nil,
+		},
+		{
+			"RETURN T::FAIL()?",
+			nil,
+			nil,
+		},
+		{
+			`FOR i IN [1, 2, 3, 4]
+				LET duration = 10
+		
+				WAIT(duration)
+		
+				RETURN i * 2`,
+			[]int{2, 4, 6, 8},
+			ShouldEqualJSON,
+		},
+		{
+			`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`,
+			2,
+			nil,
+		},
+		{
+			`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`,
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			ShouldEqualJSON,
+		},
 	})
 }
 
