@@ -323,7 +323,7 @@ loop:
 			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
 			reg[dst] = iter.Key()
 		case OpWhileLoopInit:
-			reg[dst] = values.ZeroInt
+			reg[dst] = values.Int(-1)
 		case OpWhileLoopNext:
 			cond := values.ToBoolean(reg[src1])
 

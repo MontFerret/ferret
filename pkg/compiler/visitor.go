@@ -107,6 +107,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	var returnRuleCtx antlr.RuleContext
 	// identify whether it's WHILE or FOR loop
 	isForLoop := ctx.While() == nil
+	var isWhileFn bool
 	returnCtx := ctx.ForExpressionReturn()
 
 	if c := returnCtx.ReturnExpression(); c != nil {
@@ -132,7 +133,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 		v.emitter.EmitAB(runtime.OpForLoopInit, iterReg, src1)
 		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, iterReg)
+		loop.Next = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, iterReg)
 
 		valVar := ctx.GetValueVariable().GetText()
 		counterVarCtx := ctx.GetCounterVariable()
@@ -163,14 +164,24 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	} else {
 		counterReg := v.registers.Allocate(State)
+		srcExpr := ctx.Expression()
 
 		// Create initial value for the loop counter
 		v.emitter.EmitA(runtime.OpWhileLoopInit, counterReg)
 		// Loop data source to iterate over
-		cond := ctx.Expression().Accept(v).(runtime.Operand)
+		cond := srcExpr.Accept(v).(runtime.Operand)
 
 		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
+		loop.Next = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
+
+		// Fix jump for function calls
+		if predicate := srcExpr.Predicate(); predicate != nil {
+			if atom := predicate.ExpressionAtom(); atom != nil {
+				if fcExpr := atom.FunctionCallExpression(); fcExpr != nil {
+					isWhileFn = true
+				}
+			}
+		}
 
 		counterVar := ctx.GetCounterVariable().GetText()
 
@@ -197,9 +208,15 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	}
 
 	if isForLoop {
-		v.emitter.EmitJump(runtime.OpJump, loop.Jump)
+		v.emitter.EmitJump(runtime.OpJump, loop.Next)
 	} else {
-		v.emitter.EmitJump(runtime.OpJump, loop.Jump-1)
+
+		if !isWhileFn {
+			v.emitter.EmitJump(runtime.OpJump, loop.Next-1)
+		} else {
+			v.emitter.EmitJump(runtime.OpJump, loop.Next-2)
+		}
+
 	}
 
 	// TODO: Do not allocate for pass-through loops
@@ -210,15 +227,15 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		v.emitter.EmitAB(runtime.OpLoopEnd, dst, dsReg)
 
 		if isForLoop {
-			v.emitter.PatchJump(loop.Jump)
+			v.emitter.PatchJump(loop.Next)
 		} else {
-			v.emitter.PatchJumpAB(loop.Jump)
+			v.emitter.PatchJumpAB(loop.Next)
 		}
 	} else {
 		if isForLoop {
-			v.emitter.PatchJumpNext(loop.Jump)
+			v.emitter.PatchJumpNext(loop.Next)
 		} else {
-			v.emitter.PatchJumpNextAB(loop.Jump)
+			v.emitter.PatchJumpNextAB(loop.Next)
 		}
 	}
 
@@ -761,7 +778,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 			//v.registers.Free(condReg)
 		}
 
-		// Jump to 'false' branch if condition is false
+		// Next to 'false' branch if condition is false
 		otherwise := v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, dst)
 
 		// True branch
@@ -775,7 +792,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 			}
 		}
 
-		// Jump over false branch
+		// Next over false branch
 		end := v.emitter.EmitJump(runtime.OpJump, jumpPlaceholder)
 		v.emitter.PatchJumpNext(otherwise)
 
@@ -931,15 +948,6 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 }
 
 func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool) interface{} {
-	var name string
-	funcNS := ctx.Namespace()
-
-	if funcNS != nil {
-		name += funcNS.GetText()
-	}
-
-	name += ctx.FunctionName().GetText()
-
 	var size int
 	var seq *RegisterSequence
 
@@ -968,7 +976,7 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool)
 		}
 	}
 
-	nameAndDest := v.loadConstant(values.NewString(strings.ToUpper(name)))
+	nameAndDest := v.loadConstant(v.functionName(ctx))
 
 	if !safeCall {
 		v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
@@ -977,6 +985,19 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool)
 	}
 
 	return nameAndDest
+}
+
+func (v *visitor) functionName(ctx *fql.FunctionCallContext) values.String {
+	var name string
+	funcNS := ctx.Namespace()
+
+	if funcNS != nil {
+		name += funcNS.GetText()
+	}
+
+	name += ctx.FunctionName().GetText()
+
+	return values.NewString(strings.ToUpper(name))
 }
 
 func (v *visitor) loadConstant(constant core.Value) runtime.Operand {
