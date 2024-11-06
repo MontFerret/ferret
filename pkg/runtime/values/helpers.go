@@ -585,3 +585,19 @@ func ToNumberOnly(input core.Value) core.Value {
 func CompareStrings(a, b String) Int {
 	return Int(strings.Compare(a.String(), b.String()))
 }
+
+func Length(value core.Value) (Int, error) {
+	c, ok := value.(core.Measurable)
+
+	if !ok {
+		return 0, core.TypeError(value,
+			types.String,
+			types.Array,
+			types.Object,
+			types.Binary,
+			types.Measurable,
+		)
+	}
+
+	return Int(c.Length()), nil
+}

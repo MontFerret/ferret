@@ -26,6 +26,7 @@ func NewVM(program *Program) *VM {
 }
 
 func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, error) {
+	// TODO: Return jump position if an error occurred within a wrapped loop
 	tryCatch := func(pos int) bool {
 		for _, pair := range vm.program.CatchTable {
 			if pos >= pair[0] && pos <= pair[1] {
@@ -43,6 +44,7 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, er
 	vm.pc = 0
 	program := vm.program
 
+	// TODO: Add panic handling and snapshot the last instruction and frame that caused it
 loop:
 	for vm.pc < len(program.Bytecode) {
 		inst := program.Bytecode[vm.pc]
@@ -263,6 +265,22 @@ loop:
 				reg[dst] = values.None
 			} else {
 				return nil, err
+			}
+		case OpLength:
+			val, ok := reg[src1].(core.Measurable)
+
+			if ok {
+				reg[dst] = values.NewInt(val.Length())
+			} else if tryCatch(vm.pc) {
+				reg[dst] = values.ZeroInt
+			} else {
+				return values.None, core.TypeError(reg[src1],
+					types.String,
+					types.Array,
+					types.Object,
+					types.Binary,
+					types.Measurable,
+				)
 			}
 		case OpRange:
 			res, err := operators.Range(reg[src1], reg[src2])

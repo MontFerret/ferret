@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -19,7 +18,7 @@ var Empty = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
-		size, err := collections.Length(ctx, args[0])
+		size, err := values.Length(args[0])
 
 		if err != nil {
 			return false, err

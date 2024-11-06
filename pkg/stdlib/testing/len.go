@@ -7,7 +7,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -25,7 +24,7 @@ var Len = base.Assertion{
 		col := args[0]
 		size := args[1]
 
-		out, err := collections.Length(ctx, col)
+		out, err := values.Length(col)
 
 		if err != nil {
 			return false, err

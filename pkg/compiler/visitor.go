@@ -105,9 +105,9 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	var passThrough bool
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
+	var jumpOffset int
 	// identify whether it's WHILE or FOR loop
 	isForLoop := ctx.While() == nil
-	var isWhileFn bool
 	returnCtx := ctx.ForExpressionReturn()
 
 	if c := returnCtx.ReturnExpression(); c != nil {
@@ -168,20 +168,13 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 		// Create initial value for the loop counter
 		v.emitter.EmitA(runtime.OpWhileLoopInit, counterReg)
+		beforeExp := v.emitter.Size()
 		// Loop data source to iterate over
 		cond := srcExpr.Accept(v).(runtime.Operand)
+		jumpOffset = v.emitter.Size() - beforeExp
 
 		// jumpPlaceholder is a placeholder for the exit jump position
 		loop.Next = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
-
-		// Fix jump for function calls
-		if predicate := srcExpr.Predicate(); predicate != nil {
-			if atom := predicate.ExpressionAtom(); atom != nil {
-				if fcExpr := atom.FunctionCallExpression(); fcExpr != nil {
-					isWhileFn = true
-				}
-			}
-		}
 
 		counterVar := ctx.GetCounterVariable().GetText()
 
@@ -207,17 +200,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		returnRuleCtx.Accept(v)
 	}
 
-	if isForLoop {
-		v.emitter.EmitJump(runtime.OpJump, loop.Next)
-	} else {
-
-		if !isWhileFn {
-			v.emitter.EmitJump(runtime.OpJump, loop.Next-1)
-		} else {
-			v.emitter.EmitJump(runtime.OpJump, loop.Next-2)
-		}
-
-	}
+	v.emitter.EmitJump(runtime.OpJump, loop.Next-jumpOffset)
 
 	// TODO: Do not allocate for pass-through loops
 	dst := v.registers.Allocate(Temp)
@@ -976,15 +959,30 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool)
 		}
 	}
 
-	nameAndDest := v.loadConstant(v.functionName(ctx))
+	name := v.functionName(ctx)
 
-	if !safeCall {
-		v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
-	} else {
-		v.emitter.EmitAs(runtime.OpCallSafe, nameAndDest, seq)
+	switch name {
+	case "LENGTH":
+		dst := v.registers.Allocate(Temp)
+
+		if seq == nil || len(seq.Registers) > 1 {
+			panic(core.Error(core.ErrInvalidArgument, "LENGTH: expected 1 argument"))
+		}
+
+		v.emitter.EmitAB(runtime.OpLength, dst, seq.Registers[0])
+
+		return dst
+	default:
+		nameAndDest := v.loadConstant(v.functionName(ctx))
+
+		if !safeCall {
+			v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
+		} else {
+			v.emitter.EmitAs(runtime.OpCallSafe, nameAndDest, seq)
+		}
+
+		return nameAndDest
 	}
-
-	return nameAndDest
 }
 
 func (v *visitor) functionName(ctx *fql.FunctionCallContext) values.String {

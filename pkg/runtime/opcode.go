@@ -48,6 +48,8 @@ const (
 	OpLoadProperty
 	OpLoadPropertyOptional
 
+	OpLength
+
 	OpCall
 	OpCallSafe
 

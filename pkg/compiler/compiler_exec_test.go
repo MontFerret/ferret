@@ -151,51 +151,51 @@ func TestVariables(t *testing.T) {
 		},
 	})
 
-	//Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
-	//	c := compiler.New()
-	//	counter := -1
-	//	c.RegisterFunction("COUNTER", func(ctx context.visitor, args ...core.Second) (core.Second, error) {
-	//		counter++
-	//
-	//		return values.NewInt(counter), nil
-	//	})
-	//
-	//	p, err := c.Compile(`
-	//		LET i = (FOR i WHILE COUNTER() < 5 RETURN i)
-	//		RETURN i
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "[0,1,2,3,4]")
-	//})
-	//
-	//Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)? RETURN i == NONE", t, func() {
-	//	c := compiler.New()
-	//	counter := -1
-	//	c.RegisterFunction("COUNTER", func(ctx context.visitor, args ...core.Second) (core.Second, error) {
-	//		counter++
-	//
-	//		return values.NewInt(counter), nil
-	//	})
-	//
-	//	p, err := c.Compile(`
-	//		LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)?
-	//		RETURN i == NONE
-	//	`)
-	//
-	//	So(err, ShouldBeNil)
-	//	So(p, ShouldHaveSameTypeAs, &runtime.Program{})
-	//
-	//	out, err := p.Run(context.Background())
-	//
-	//	So(err, ShouldBeNil)
-	//	So(string(out), ShouldEqual, "true")
-	//})
+	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE COUNTER() < 5 RETURN i)
+			RETURN i
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		counter := -1
+		out, err := Run(p, runtime.WithFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+
+			return values.NewInt(counter), nil
+		}))
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "[0,1,2,3,4]")
+	})
+
+	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)? RETURN i == NONE", t, func() {
+		c := compiler.New()
+
+		p, err := c.Compile(`
+			LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)?
+			RETURN length(i) == 0
+		`)
+
+		So(err, ShouldBeNil)
+		So(p, ShouldHaveSameTypeAs, &runtime.Program{})
+
+		counter := -1
+		out, err := Run(p, runtime.WithFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+
+			return values.NewInt(counter), nil
+		}), runtime.WithFunction("T::FAIL", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			return values.None, fmt.Errorf("test")
+		}))
+
+		So(err, ShouldBeNil)
+		So(string(out), ShouldEqual, "true")
+	})
 
 	Convey("Should not compile FOR foo IN foo", t, func() {
 		c := compiler.New()
@@ -1088,11 +1088,11 @@ func TestFor(t *testing.T) {
 func TestForWhile(t *testing.T) {
 	var counter int64
 	RunUseCases(t, []UseCase{
-		//{
-		//	"FOR i WHILE false RETURN i",
-		//	[]any{},
-		//	ShouldEqualJSON,
-		//},
+		{
+			"FOR i WHILE false RETURN i",
+			[]any{},
+			ShouldEqualJSON,
+		},
 		{
 			"FOR i WHILE UNTIL(5) RETURN i",
 			[]any{0, 1, 2, 3, 4},
