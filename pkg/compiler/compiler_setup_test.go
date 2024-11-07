@@ -16,65 +16,73 @@ import (
 )
 
 type UseCase struct {
-	Expression string
-	Expected   any
-	Assertion  Assertion
+	Expression  string
+	Expected    any
+	Assertion   Assertion
+	Description string
+	Skip        bool
 }
 
-func Case(expression string, expected any) UseCase {
+func NewCase(expression string, expected any, assertion Assertion, desc ...string) UseCase {
 	return UseCase{
-		Expression: expression,
-		Expected:   expected,
-		Assertion:  ShouldEqual,
+		Expression:  expression,
+		Expected:    expected,
+		Assertion:   assertion,
+		Description: strings.TrimSpace(strings.Join(desc, " ")),
 	}
 }
 
-func CaseNil(expression string) UseCase {
-	return UseCase{
-		Expression: expression,
-		Expected:   nil,
-		Assertion:  ShouldBeNil,
-	}
+func Skip(uc UseCase) UseCase {
+	uc.Skip = true
+	return uc
 }
 
-func CaseTrue(expression string) UseCase {
-	return UseCase{
-		Expression: expression,
-		Expected:   true,
-		Assertion:  ShouldEqual,
-	}
+func Case(expression string, expected any, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldEqual, desc...)
 }
 
-func CaseFalse(expression string) UseCase {
-	return UseCase{
-		Expression: expression,
-		Expected:   false,
-		Assertion:  ShouldEqual,
-	}
+func SkipCase(expression string, expected any, desc ...string) UseCase {
+	return Skip(Case(expression, expected, desc...))
 }
 
-func CaseError(expression string, expected error) UseCase {
-	return UseCase{
-		Expression: expression,
-		Expected:   expected,
-		Assertion:  ShouldBeError,
-	}
+func CaseNil(expression string, desc ...string) UseCase {
+	return NewCase(expression, nil, ShouldBeNil, desc...)
 }
 
-func CaseJSON(expression string, expected any) UseCase {
-	return UseCase{
-		Expression: expression,
-		Expected:   expected,
-		Assertion:  ShouldEqualJSON,
-	}
+func SkipCaseNil(expression string, desc ...string) UseCase {
+	return Skip(CaseNil(expression, desc...))
+}
+
+func CaseError(expression string, desc ...string) UseCase {
+	return NewCase(expression, nil, ShouldBeError, desc...)
+}
+
+func SkipCaseError(expression string, desc ...string) UseCase {
+	return Skip(CaseError(expression, desc...))
+}
+
+func CaseObject(expression string, expected map[string]any, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldEqualJSON, desc...)
+}
+
+func SkipCaseObject(expression string, expected map[string]any, desc ...string) UseCase {
+	return Skip(CaseObject(expression, expected, desc...))
+}
+
+func CaseArray(expression string, expected []any, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldEqualJSON, desc...)
+}
+
+func SkipCaseArray(expression string, expected []any, desc ...string) UseCase {
+	return Skip(CaseArray(expression, expected, desc...))
 }
 
 func CaseItems(expression string, expected ...any) UseCase {
-	return UseCase{
-		Expression: expression,
-		Expected:   expected,
-		Assertion:  ShouldHaveSameItems,
-	}
+	return NewCase(expression, expected, ShouldHaveSameItems)
+}
+
+func SkipCaseItems(expression string, expected ...any) UseCase {
+	return Skip(CaseItems(expression, expected...))
 }
 
 type ExpectedProgram struct {
@@ -140,7 +148,8 @@ func ArePtrsEqual(expected, actual any) bool {
 }
 
 func ShouldHaveSameItems(actual any, expected ...any) string {
-	expectedArr := expected[0].([]any)
+	wapper := expected[0].([]any)
+	expectedArr := wapper[0].([]any)
 
 	for _, item := range expectedArr {
 		if err := ShouldContain(actual, item); err != "" {
@@ -182,11 +191,23 @@ func RunAsmUseCases(t *testing.T, useCases []ByteCodeUseCase) {
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
 	for _, useCase := range useCases {
-		name := strings.TrimSpace(useCase.Expression)
+		name := useCase.Description
+
+		if useCase.Description == "" {
+			name = strings.TrimSpace(useCase.Expression)
+		}
+
 		name = strings.Replace(name, "\n", " ", -1)
 		name = strings.Replace(name, "\t", " ", -1)
 		// Replace multiple spaces with a single space
 		name = strings.Join(strings.Fields(name), " ")
+
+		if useCase.Skip {
+			t.Skip(name)
+
+			continue
+		}
+
 		t.Run(name, func(t *testing.T) {
 			Convey(useCase.Expression, t, func() {
 				// catch panic
@@ -205,28 +226,31 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}
 				options = append(options, opts...)
 
-				out, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), options...)
+				expected := useCase.Expected
+				actual, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), options...)
 
 				if !ArePtrsEqual(useCase.Assertion, ShouldBeError) {
 					So(err, ShouldBeNil)
 				}
 
 				if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
-					expected, err := j.Marshal(useCase.Expected)
+					expectedJ, err := j.Marshal(expected)
 					So(err, ShouldBeNil)
-					So(out, ShouldEqualJSON, string(expected))
+					So(actual, ShouldEqualJSON, string(expectedJ))
 				} else if ArePtrsEqual(useCase.Assertion, ShouldBeError) {
-					if useCase.Expected != nil {
-						So(err, ShouldBeError, useCase.Expected)
+					if expected != nil {
+						So(err, ShouldBeError, expected)
 					} else {
 						So(err, ShouldBeError)
 					}
 				} else if ArePtrsEqual(useCase.Assertion, ShouldHaveSameItems) {
-					So(out, ShouldHaveSameItems, useCase.Expected)
+					So(actual, ShouldHaveSameItems, expected)
+				} else if ArePtrsEqual(useCase.Assertion, ShouldBeNil) {
+					So(actual, ShouldBeNil)
 				} else if useCase.Assertion == nil {
-					So(out, ShouldEqual, useCase.Expected)
+					So(actual, ShouldEqual, expected)
 				} else {
-					So(out, useCase.Assertion, useCase.Expected)
+					So(actual, useCase.Assertion, expected)
 				}
 			})
 		})
