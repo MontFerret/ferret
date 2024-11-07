@@ -21,6 +21,62 @@ type UseCase struct {
 	Assertion  Assertion
 }
 
+func Case(expression string, expected any) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   expected,
+		Assertion:  ShouldEqual,
+	}
+}
+
+func CaseNil(expression string) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   nil,
+		Assertion:  ShouldBeNil,
+	}
+}
+
+func CaseTrue(expression string) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   true,
+		Assertion:  ShouldEqual,
+	}
+}
+
+func CaseFalse(expression string) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   false,
+		Assertion:  ShouldEqual,
+	}
+}
+
+func CaseError(expression string, expected error) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   expected,
+		Assertion:  ShouldBeError,
+	}
+}
+
+func CaseJSON(expression string, expected any) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   expected,
+		Assertion:  ShouldEqualJSON,
+	}
+}
+
+func CaseItems(expression string, expected ...any) UseCase {
+	return UseCase{
+		Expression: expression,
+		Expected:   expected,
+		Assertion:  ShouldHaveSameItems,
+	}
+}
+
 type ExpectedProgram struct {
 	Disassembly string
 	Constants   []core.Value

@@ -71,8 +71,8 @@ func (st *SymbolTable) AddConstant(constant core.Value) runtime.Operand {
 	return runtime.NewConstantOperand(p)
 }
 
-// LookupConstant returns a constant by its index.
-func (st *SymbolTable) LookupConstant(addr runtime.Operand) core.Value {
+// Constant returns a constant by its index.
+func (st *SymbolTable) Constant(addr runtime.Operand) core.Value {
 	if !addr.IsConstant() {
 		panic(core.Error(ErrInvalidOperandType, strconv.Itoa(int(addr))))
 	}
@@ -113,7 +113,7 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 	return register
 }
 
-func (st *SymbolTable) LookupVariable(name string) runtime.Operand {
+func (st *SymbolTable) Variable(name string) runtime.Operand {
 	for i := len(st.locals) - 1; i >= 0; i-- {
 		variable := st.locals[i]
 		if variable.Name == name {
@@ -130,8 +130,8 @@ func (st *SymbolTable) LookupVariable(name string) runtime.Operand {
 	return op
 }
 
-// LookupGlobalVariable returns a global variable by its name.
-func (st *SymbolTable) LookupGlobalVariable(name string) (runtime.Operand, bool) {
+// GlobalVariable returns a global variable by its name.
+func (st *SymbolTable) GlobalVariable(name string) (runtime.Operand, bool) {
 	op, ok := st.globals[name]
 
 	return op, ok

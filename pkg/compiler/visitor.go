@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -183,6 +184,9 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		v.emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
 	}
 
+	jumpIndex := loop.Next
+	loop.Next -= jumpOffset
+
 	// body
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
 		for _, b := range body {
@@ -200,7 +204,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		returnRuleCtx.Accept(v)
 	}
 
-	v.emitter.EmitJump(runtime.OpJump, loop.Next-jumpOffset)
+	v.emitter.EmitJump(runtime.OpJump, loop.Next)
 
 	// TODO: Do not allocate for pass-through loops
 	dst := v.registers.Allocate(Temp)
@@ -210,15 +214,15 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		v.emitter.EmitAB(runtime.OpLoopEnd, dst, dsReg)
 
 		if isForLoop {
-			v.emitter.PatchJump(loop.Next)
+			v.emitter.PatchJump(jumpIndex)
 		} else {
-			v.emitter.PatchJumpAB(loop.Next)
+			v.emitter.PatchJumpAB(jumpIndex)
 		}
 	} else {
 		if isForLoop {
-			v.emitter.PatchJumpNext(loop.Next)
+			v.emitter.PatchJumpNext(jumpIndex)
 		} else {
-			v.emitter.PatchJumpNextAB(loop.Next)
+			v.emitter.PatchJumpNextAB(jumpIndex)
 		}
 	}
 
@@ -296,17 +300,8 @@ func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 }
 
 func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
-	//ctx.Expression().Accept(v)
-	//fwd := v.emitJump(runtime.OpJumpIfTrue)
-	//// Pop on false
-	//v.emitPop()
-	//// And jump back to the beginning of the loop
-	//bwd := v.emitJump(runtime.OpJumpBackward)
-	//v.patchJumpWith(bwd, len(v.instructions)-v.resolveLoopPosition())
-	//
-	//// Otherwise, pop on true
-	//v.patchJump(fwd)
-	//v.emitPop()
+	src1 := ctx.Expression().Accept(v).(runtime.Operand)
+	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, v.loops.Loop().Next, src1)
 
 	return nil
 }
@@ -437,7 +432,7 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 
 func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 	// Just return the register / constant index
-	op := v.symbols.LookupVariable(ctx.GetText())
+	op := v.symbols.Variable(ctx.GetText())
 
 	if op.IsRegister() {
 		return op
@@ -812,6 +807,7 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 			endCatch := v.emitter.Size()
 
 			if c.ForExpression() != nil {
+				// We jump back to finalize the loop before exiting
 				jump = endCatch - 1
 			}
 
@@ -907,6 +903,15 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 		regLeft := ctx.ExpressionAtom(0).Accept(v).(runtime.Operand)
 		regRight := ctx.ExpressionAtom(1).Accept(v).(runtime.Operand)
 		dst := v.registers.Allocate(Temp)
+
+		if opcode == runtime.OpRegexpPositive || opcode == runtime.OpRegexpNegative {
+			if regRight.IsConstant() {
+				val := v.symbols.Constant(regRight)
+
+				// Verify that the expression is a valid regular expression
+				regexp.MustCompile(val.String())
+			}
+		}
 
 		v.emitter.EmitABC(opcode, dst, regLeft, regRight)
 

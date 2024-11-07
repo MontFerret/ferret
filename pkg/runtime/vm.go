@@ -130,20 +130,22 @@ loop:
 				return nil, err
 			}
 		case OpRegexpPositive:
-			r, err := values.ToRegexp(reg[src1])
+			// TODO: Add caching to avoid recompilation
+			r, err := values.ToRegexp(reg[src2])
 
 			if err == nil {
-				reg[dst] = r.Match(reg[src2])
+				reg[dst] = r.Match(reg[src1])
 			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = values.False
 			} else {
 				return nil, err
 			}
 		case OpRegexpNegative:
-			r, err := values.ToRegexp(reg[src1])
+			// TODO: Add caching to avoid recompilation
+			r, err := values.ToRegexp(reg[src2])
 
 			if err == nil {
-				reg[dst] = !r.Match(reg[src2])
+				reg[dst] = !r.Match(reg[src1])
 			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = values.False
 			} else {
