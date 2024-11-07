@@ -10,12 +10,11 @@ import (
 )
 
 type VM struct {
-	env          *Environment
-	program      *Program
-	globals      map[string]core.Value
-	frames       []*Frame
-	currentFrame *Frame
-	pc           int
+	env       *Environment
+	program   *Program
+	globals   map[string]core.Value
+	registers []core.Value
+	pc        int
 }
 
 func NewVM(program *Program) *VM {
@@ -38,8 +37,7 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, er
 	}
 
 	vm.env = newEnvironment(opts)
-	vm.currentFrame = newFrame(vm.program.Registers, 0, nil)
-	vm.frames = make([]*Frame, 4)
+	vm.registers = make([]core.Value, vm.program.Registers)
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
 	program := vm.program
@@ -50,7 +48,7 @@ loop:
 		inst := program.Bytecode[vm.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
-		reg := vm.currentFrame.registers
+		reg := vm.registers
 		vm.pc++
 
 		switch op {
@@ -360,5 +358,5 @@ loop:
 		}
 	}
 
-	return vm.currentFrame.registers[NoopOperand], nil
+	return vm.registers[NoopOperand], nil
 }

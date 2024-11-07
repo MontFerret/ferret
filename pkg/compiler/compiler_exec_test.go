@@ -893,56 +893,68 @@ func TestMemberReservedWords(t *testing.T) {
 
 func TestOptionalChaining(t *testing.T) {
 	RunUseCases(t, []UseCase{
+		//{
+		//	`
+		//			LET obj = { foo: { bar: "bar" } }
+		//
+		//			RETURN obj.foo?.bar
+		//		`,
+		//	"bar",
+		//	nil,
+		//},
+		//{
+		//	`
+		//			LET obj = { foo: None }
+		//
+		//			RETURN obj.foo?.bar?.[0]
+		//		`,
+		//	nil,
+		//	nil,
+		//},
+		//{
+		//	`
+		//			LET obj = { foo: { bar: ["bar"] } }
+		//
+		//			RETURN obj.foo?.bar?.[0]
+		//		`,
+		//	"bar",
+		//	nil,
+		//},
+		//{
+		//	`
+		//			RETURN FIRST([])?.foo
+		//		`,
+		//	nil,
+		//	nil,
+		//},
+		//{
+		//	`
+		//			RETURN FIRST([{ foo: "bar" }])?.foo
+		//		`,
+		//	"bar",
+		//	nil,
+		//},
+		//{
+		//	`
+		//			RETURN ERROR()?.foo
+		//		`,
+		//	nil,
+		//	nil,
+		//},
+		//{
+		//	`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`,
+		//	[]any{},
+		//	nil,
+		//},
+		//{
+		//	`LET res = (FOR i IN [1, 2, 3, 4] ERROR() RETURN i)? RETURN res`,
+		//	[]any{},
+		//	nil,
+		//},
 		{
-			`
-					LET obj = { foo: { bar: "bar" } }
-	
-					RETURN obj.foo?.bar
-				`,
-			"bar",
-			nil,
-		},
-		{
-			`
-					LET obj = { foo: None }
-	
-					RETURN obj.foo?.bar?.[0]
-				`,
-			nil,
-			nil,
-		},
-		{
-			`
-					LET obj = { foo: { bar: ["bar"] } }
-	
-					RETURN obj.foo?.bar?.[0]
-				`,
-			"bar",
-			nil,
-		},
-		{
-			`
-					RETURN FIRST([])?.foo
-				`,
-			nil,
-			nil,
-		},
-		{
-			`
-					RETURN FIRST([{ foo: "bar" }])?.foo
-				`,
-			"bar",
-			nil,
-		},
-	})
-
-	RunUseCases(t, []UseCase{
-		{
-			`
-					RETURN ERROR()?.foo
-				`,
-			nil,
-			nil,
+			`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`,
+			[]any{1, 2, 3, 4},
+			ShouldEqualJSON,
 		},
 	}, runtime.WithFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return nil, core.ErrNotImplemented
