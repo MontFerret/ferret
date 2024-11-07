@@ -20,7 +20,7 @@ type visitor struct {
 	registers  *RegisterAllocator
 	symbols    *SymbolTable
 	loops      *LoopTable
-	catchTable [][2]int
+	catchTable []runtime.Catch
 }
 
 const (
@@ -40,7 +40,7 @@ func newVisitor(src string) *visitor {
 	v.symbols = NewSymbolTable(v.registers)
 	v.loops = NewLoopTable(v.registers)
 	v.emitter = NewEmitter()
-	v.catchTable = make([][2]int, 0)
+	v.catchTable = make([]runtime.Catch, 0)
 
 	return v
 }
@@ -808,8 +808,14 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 		reg := c.Accept(v)
 
 		if c.ErrorOperator() != nil {
+			jump := -1
 			endCatch := v.emitter.Size()
-			v.catchTable = append(v.catchTable, [2]int{startCatch, endCatch})
+
+			if c.ForExpression() != nil {
+				jump = endCatch - 1
+			}
+
+			v.catchTable = append(v.catchTable, [3]int{startCatch, endCatch, jump})
 		}
 
 		return reg
@@ -930,7 +936,7 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool) interface{} {
+func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool) interface{} {
 	var size int
 	var seq *RegisterSequence
 
@@ -975,10 +981,10 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, safeCall bool)
 	default:
 		nameAndDest := v.loadConstant(v.functionName(ctx))
 
-		if !safeCall {
+		if !protected {
 			v.emitter.EmitAs(runtime.OpCall, nameAndDest, seq)
 		} else {
-			v.emitter.EmitAs(runtime.OpCallSafe, nameAndDest, seq)
+			v.emitter.EmitAs(runtime.OpProtectedCall, nameAndDest, seq)
 		}
 
 		return nameAndDest

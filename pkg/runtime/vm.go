@@ -25,15 +25,14 @@ func NewVM(program *Program) *VM {
 }
 
 func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, error) {
-	// TODO: Return jump position if an error occurred within a wrapped loop
-	tryCatch := func(pos int) bool {
+	tryCatch := func(pos int) (Catch, bool) {
 		for _, pair := range vm.program.CatchTable {
 			if pos >= pair[0] && pos <= pair[1] {
-				return true
+				return pair, true
 			}
 		}
 
-		return false
+		return Catch{}, false
 	}
 
 	vm.env = newEnvironment(opts)
@@ -135,7 +134,7 @@ loop:
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src2])
-			} else if tryCatch(vm.pc) {
+			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = values.False
 			} else {
 				return nil, err
@@ -145,7 +144,7 @@ loop:
 
 			if err == nil {
 				reg[dst] = !r.Match(reg[src2])
-			} else if tryCatch(vm.pc) {
+			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = values.False
 			} else {
 				return nil, err
@@ -236,7 +235,7 @@ loop:
 					reg[dst] = values.None
 				}
 			}
-		case OpCall, OpCallSafe:
+		case OpCall, OpProtectedCall:
 			var size int
 
 			if src1 > 0 {
@@ -259,8 +258,14 @@ loop:
 
 			if err == nil {
 				reg[dst] = out
-			} else if op == OpCallSafe || tryCatch(vm.pc) {
+			} else if op == OpProtectedCall {
 				reg[dst] = values.None
+			} else if catch, ok := tryCatch(vm.pc); ok {
+				reg[dst] = values.None
+
+				if catch[2] > 0 {
+					vm.pc = catch[2]
+				}
 			} else {
 				return nil, err
 			}
@@ -269,7 +274,7 @@ loop:
 
 			if ok {
 				reg[dst] = values.NewInt(val.Length())
-			} else if tryCatch(vm.pc) {
+			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = values.ZeroInt
 			} else {
 				return values.None, core.TypeError(reg[src1],
@@ -306,7 +311,7 @@ loop:
 
 				reg[dst] = values.NewBoxedValue(iterator)
 			default:
-				if tryCatch(vm.pc) {
+				if _, catch := tryCatch(vm.pc); catch {
 					// Fall back to an empty iterator
 					reg[dst] = values.NewBoxedValue(values.NoopIter)
 				} else {

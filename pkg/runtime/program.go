@@ -9,14 +9,18 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-type Program struct {
-	Source     *core.Source
-	Locations  []core.Location
-	Bytecode   []Instruction
-	Constants  []core.Value
-	CatchTable [][2]int
-	Registers  int
-}
+type (
+	Catch [3]int
+
+	Program struct {
+		Source     *core.Source
+		Locations  []core.Location
+		Bytecode   []Instruction
+		Constants  []core.Value
+		CatchTable []Catch
+		Registers  int
+	}
+)
 
 func (program *Program) Disassemble() string {
 	var buf bytes.Buffer

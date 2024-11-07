@@ -51,7 +51,7 @@ const (
 	OpLength
 
 	OpCall
-	OpCallSafe
+	OpProtectedCall
 
 	OpLoopBegin // Creates a loop result dataset
 	OpLoopPush
