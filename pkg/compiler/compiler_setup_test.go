@@ -53,12 +53,20 @@ func SkipCaseNil(expression string, desc ...string) UseCase {
 	return Skip(CaseNil(expression, desc...))
 }
 
-func CaseError(expression string, desc ...string) UseCase {
+func CaseRuntimeError(expression string, desc ...string) UseCase {
 	return NewCase(expression, nil, ShouldBeError, desc...)
 }
 
-func SkipCaseError(expression string, desc ...string) UseCase {
-	return Skip(CaseError(expression, desc...))
+func SkipCaseRuntimeError(expression string, desc ...string) UseCase {
+	return Skip(CaseRuntimeError(expression, desc...))
+}
+
+func CaseCompilationError(expression string, desc ...string) UseCase {
+	return NewCase(expression, nil, ShouldBeCompilationError, desc...)
+}
+
+func SkipCompilationRuntimeError(expression string, desc ...string) UseCase {
+	return Skip(CaseRuntimeError(expression, desc...))
 }
 
 func CaseObject(expression string, expected map[string]any, desc ...string) UseCase {
@@ -168,6 +176,14 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 	return ""
 }
 
+func ShouldBeCompilationError(actual any, _ ...any) string {
+	// TODO: Expect a particular error message
+
+	So(actual, ShouldBeError)
+
+	return ""
+}
+
 func RunAsmUseCases(t *testing.T, useCases []ByteCodeUseCase) {
 	c := compiler.New()
 	for _, useCase := range useCases {
@@ -218,16 +234,15 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 		t.Run(name, func(t *testing.T) {
 			Convey(useCase.Expression, t, func() {
-				// catch panic
-				//defer func() {
-				//	if r := recover(); r != nil {
-				//		panic(fmt.Sprintf("%v,\nUse Case %d: - %s", r, idx+1, useCase.Expression))
-				//	}
-				//}()
-
 				prog, err := c.Compile(useCase.Expression)
 
-				So(err, ShouldBeNil)
+				if !ArePtrsEqual(useCase.Assertion, ShouldBeCompilationError) {
+					So(err, ShouldBeNil)
+				} else {
+					So(err, ShouldBeError)
+
+					return
+				}
 
 				options := []runtime.EnvironmentOption{
 					runtime.WithFunctions(c.Functions().Unwrap()),

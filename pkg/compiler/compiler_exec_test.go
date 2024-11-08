@@ -78,6 +78,13 @@ RETURN %s<!DOCTYPE html>
 
 func TestVariables(t *testing.T) {
 	RunUseCases(t, []UseCase{
+		CaseCompilationError(`RETURN foo`, "Should not compile if a variable not defined"),
+		CaseCompilationError(`
+			LET foo = "bar"
+			LET foo = "baz"
+
+			RETURN foo
+		`, "Should not compile if a variable is not unique"),
 		CaseNil(`LET i = NONE RETURN i`),
 		Case(`LET a = TRUE RETURN a`, true),
 		Case(`LET a = 1 RETURN a`, 1),
@@ -127,6 +134,15 @@ func TestVariables(t *testing.T) {
 			RETURN i
 		`,
 			[]any{}, "Error handling in array comprehension"),
+		CaseCompilationError(`			LET _ = (FOR i IN 1..100 RETURN NONE)
+	
+			RETURN _`, "Should not allow to use ignorable variable name"),
+		Case(`
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+			LET _ = (FOR i IN 1..100 RETURN NONE)
+
+			RETURN TRUE
+		`, true),
 	})
 
 	Convey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
@@ -175,40 +191,6 @@ func TestVariables(t *testing.T) {
 		So(string(out), ShouldEqual, "true")
 	})
 
-	Convey("Should not compile FOR foo IN foo", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			FOR foo IN foo
-				RETURN foo
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("Should not compile if a variable not defined", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			RETURN foo
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("Should not compile if a variable is not unique", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			LET foo = "bar"
-			LET foo = "baz"
-	
-			RETURN foo
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
-
 	//SkipConvey("Should use value returned from WAITFOR EVENT", t, func() {
 	//	out, err := newCompilerWithObservable().MustCompile(`
 	//		LET obj = X::VAL("event", ["data"])
@@ -248,18 +230,6 @@ func TestVariables(t *testing.T) {
 	//	So(string(out), ShouldEqual, `false`)
 	//})
 	//
-
-	Convey("Should not allow to use ignorable variable name", t, func() {
-		c := compiler.New()
-
-		_, err := c.Compile(`
-			LET _ = (FOR i IN 1..100 RETURN NONE)
-	
-			RETURN _
-		`)
-
-		So(err, ShouldNotBeNil)
-	})
 }
 
 func TestMathOperators(t *testing.T) {
@@ -618,7 +588,7 @@ func TestMember(t *testing.T) {
 		
 						RETURN obj.attributes['data-index']`,
 			1),
-		CaseError(`LET obj = NONE RETURN obj.foo`),
+		CaseRuntimeError(`LET obj = NONE RETURN obj.foo`),
 		CaseNil(`LET obj = NONE RETURN obj?.foo`),
 		CaseObject(`RETURN {first: {second: "third"}}.first`,
 			map[string]any{
@@ -750,6 +720,10 @@ func TestFor(t *testing.T) {
 	//	ShouldEqualJSON,
 	//},
 	RunUseCases(t, []UseCase{
+		CaseCompilationError(`
+			FOR foo IN foo
+				RETURN foo
+		`, "Should not compile FOR foo IN foo"),
 		CaseArray("FOR i IN 1..5 RETURN i", []any{1, 2, 3, 4, 5}),
 		CaseArray(
 			`
