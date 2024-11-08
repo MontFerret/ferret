@@ -98,3 +98,10 @@ func BenchmarkForNested(b *testing.B) {
 					RETURN {[prop]: val}
 		`)
 }
+
+func BenchmarkForTernary(b *testing.B) {
+	RunBenchmark(b, `
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
+		`)
+}

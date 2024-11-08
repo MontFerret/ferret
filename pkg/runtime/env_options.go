@@ -10,7 +10,13 @@ func WithParams(params []core.Value) EnvironmentOption {
 
 func WithFunctions(functions map[string]core.Function) EnvironmentOption {
 	return func(env *Environment) {
-		env.functions = functions
+		if env.functions == nil {
+			env.functions = make(map[string]core.Function)
+		}
+
+		for name, function := range functions {
+			env.functions[name] = function
+		}
 	}
 }
 

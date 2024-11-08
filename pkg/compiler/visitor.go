@@ -278,7 +278,6 @@ func (v *visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) inte
 
 func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) interface{} {
 	if c := ctx.LimitClause(); c != nil {
-		// TODO: Implement
 		return c.Accept(v)
 	}
 
@@ -902,12 +901,16 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 		// TODO: Implement me
 		panic(core.Error(core.ErrNotImplemented, "array operator"))
 	} else if op := ctx.InOperator(); op != nil {
-		opcode = runtime.OpIn
-	} else if op := ctx.LikeOperator(); op != nil {
-		if op.(*fql.LikeOperatorContext).Not() != nil {
-			opcode = runtime.OpNotLike
+		if op.Not() == nil {
+			opcode = runtime.OpIn
 		} else {
+			opcode = runtime.OpNotIn
+		}
+	} else if op := ctx.LikeOperator(); op != nil {
+		if op.(*fql.LikeOperatorContext).Not() == nil {
 			opcode = runtime.OpLike
+		} else {
+			opcode = runtime.OpNotLike
 		}
 	}
 

@@ -430,7 +430,15 @@ func TestRegexpOperator(t *testing.T) {
 	})
 }
 
-func TestAllArrayOperator(t *testing.T) {
+func TestInOperator(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		Case("RETURN 1 IN [1,2,3]", true),
+		Case("RETURN 4 IN [1,2,3]", false),
+		Case("RETURN 1 NOT IN [1,2,3]", false),
+	})
+}
+
+func TestArrayAllOperator(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case("RETURN [1,2,3] ALL IN [1,2,3]", true, "All elements are in"),
 	})
@@ -829,20 +837,143 @@ func TestFor(t *testing.T) {
 	})
 }
 
+func TestForTernaryExpression(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)`,
+			[]any{2, 4, 6, 8, 10}),
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i IN 1..5 T::FAIL() RETURN i*2)?`,
+			[]any{}),
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)`,
+			[]any{2, 4, 6, 8, 10}),
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL()) : (FOR i IN 1..5 RETURN T::FAIL())?`,
+			[]any{}),
+		CaseArray(`
+			LET foo = TRUE
+			RETURN foo ? (FOR i IN 1..5 RETURN T::FAIL())? : (FOR i IN 1..5 RETURN T::FAIL())`,
+			[]any{}),
+		CaseArray(`
+			LET foo = FALSE
+			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2) 
+			RETURN res`,
+			[]any{2, 4, 6, 8, 10}),
+		Case(`
+			LET foo = TRUE
+			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
+			RETURN res`,
+			true),
+		CaseArray(`
+			LET foo = FALSE
+			LET res = foo ? TRUE : (FOR i IN 1..5 RETURN i*2) 
+			RETURN res`,
+			[]any{2, 4, 6, 8, 10}),
+		CaseArray(`
+			LET foo = FALSE
+			LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
+			RETURN res`,
+			[]any{2, 4, 6, 8, 10}),
+		CaseArray(`
+			LET foo = TRUE
+			LET res = foo ? (FOR i IN 1..5 RETURN i) : (FOR i IN 1..5 RETURN i*2)
+			RETURN res`,
+			[]any{1, 2, 3, 4, 5}),
+		Case(`
+			LET res = LENGTH((FOR i IN 1..5 RETURN T::FAIL())?) ? TRUE : FALSE
+			RETURN res`,
+			false),
+		Case(`
+			LET res = (FOR i IN 1..5 RETURN i)? ? TRUE : FALSE
+			RETURN res
+`,
+			true),
+	})
+}
+
 func TestForWhile(t *testing.T) {
-	var counter int64
+	var untilCounter int
+	counter := -1
 	RunUseCases(t, []UseCase{
 		CaseArray("FOR i WHILE false RETURN i", []any{}),
 		CaseArray("FOR i WHILE UNTIL(5) RETURN i", []any{0, 1, 2, 3, 4}),
+		CaseArray(`
+			FOR i WHILE COUNTER() < 5
+				LET y = i + 1
+				FOR x IN 1..y
+					RETURN i * x
+		`, []any{0, 1, 2, 2, 4, 6, 3, 6, 9, 12, 4, 8, 12, 16, 20}),
 	}, runtime.WithFunctions(map[string]core.Function{
 		"UNTIL": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-			if counter < int64(values.ToInt(args[0])) {
-				counter++
+			if untilCounter < int(values.ToInt(args[0])) {
+				untilCounter++
 
 				return values.True, nil
 			}
 
 			return values.False, nil
+		},
+		"COUNTER": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+			return values.NewInt(counter), nil
+		},
+	}))
+}
+
+func TestForTernaryWhileExpression(t *testing.T) {
+	counter := -1
+	RunUseCases(t, []UseCase{
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i WHILE false RETURN i*2)
+		`, []any{}),
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i WHILE T::FAIL() RETURN i*2)?
+		`, []any{}),
+		CaseArray(`
+			LET foo = FALSE
+			RETURN foo ? TRUE : (FOR i WHILE COUNTER() < 10 RETURN i*2)`,
+			[]any{0, 2, 4, 6, 8, 10, 12, 14, 16, 18}),
+	}, runtime.WithFunctions(map[string]core.Function{
+		"COUNTER": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+			return values.NewInt(counter), nil
+		},
+	}))
+}
+
+func TestForDoWhile(t *testing.T) {
+	counter := -1
+	counter2 := -1
+
+	RunUseCases(t, []UseCase{
+		CaseArray(`
+			FOR i DO WHILE false
+				RETURN i
+		`, []any{0}),
+		CaseArray(`
+		FOR i DO WHILE COUNTER() < 10
+				RETURN i`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		CaseArray(`
+			FOR i WHILE COUNTER2() < 5
+				LET y = i + 1
+				FOR x IN 1..y
+					RETURN i * x
+		`, []any{0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 0, 2, 4, 6, 8, 0, 3, 6, 9, 12, 0, 4, 8, 12, 16}),
+	}, runtime.WithFunctions(map[string]core.Function{
+		"COUNTER": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter++
+			return values.NewInt(counter), nil
+		},
+		"COUNTER2": func(ctx context.Context, args ...core.Value) (core.Value, error) {
+			counter2++
+			return values.NewInt(counter), nil
 		},
 	}))
 }
