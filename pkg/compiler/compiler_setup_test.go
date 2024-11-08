@@ -85,6 +85,14 @@ func SkipCaseItems(expression string, expected ...any) UseCase {
 	return Skip(CaseItems(expression, expected...))
 }
 
+func CaseJSON(expression string, expected string, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldEqualJSON, desc...)
+}
+
+func SkipCaseJSON(expression string, expected string, desc ...string) UseCase {
+	return Skip(CaseJSON(expression, expected, desc...))
+}
+
 type ExpectedProgram struct {
 	Disassembly string
 	Constants   []core.Value

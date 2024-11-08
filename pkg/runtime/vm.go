@@ -41,7 +41,6 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, er
 	vm.pc = 0
 	program := vm.program
 
-	// TODO: Add panic handling and snapshot the last instruction and frame that caused it
 loop:
 	for vm.pc < len(program.Bytecode) {
 		inst := program.Bytecode[vm.pc]
@@ -287,6 +286,8 @@ loop:
 					types.Measurable,
 				)
 			}
+		case OpType:
+			reg[dst] = values.String(core.Reflect(reg[src1]).Name())
 		case OpRange:
 			res, err := operators.Range(reg[src1], reg[src2])
 

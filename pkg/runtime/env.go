@@ -13,7 +13,16 @@ type (
 	}
 )
 
+var noopEnv = &Environment{
+	functions: make(map[string]core.Function),
+	params:    make([]core.Value, 0),
+}
+
 func newEnvironment(opts []EnvironmentOption) *Environment {
+	if len(opts) == 0 {
+		return noopEnv
+	}
+
 	env := &Environment{
 		functions: make(map[string]core.Function),
 		params:    make([]core.Value, 0),

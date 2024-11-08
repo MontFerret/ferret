@@ -49,6 +49,7 @@ const (
 	OpLoadPropertyOptional
 
 	OpLength
+	OpType
 
 	OpCall
 	OpProtectedCall

@@ -1,6 +1,17 @@
 package compiler_test
 
-import "testing"
+import (
+	"testing"
+)
+
+func BenchmarkStringLiteral(b *testing.B) {
+	RunBenchmark(b, `
+			RETURN "
+FOO
+BAR
+"
+		`)
+}
 
 func BenchmarkEmptyArray(b *testing.B) {
 	RunBenchmark(b, `RETURN []`)
@@ -12,6 +23,44 @@ func BenchmarkStaticArray(b *testing.B) {
 
 func BenchmarkEmptyObject(b *testing.B) {
 	RunBenchmark(b, `RETURN {}`)
+}
+
+func BenchmarkUnaryOperatorExcl(b *testing.B) {
+	RunBenchmark(b, `RETURN !TRUE`)
+}
+
+func BenchmarkUnaryOperatorQ(b *testing.B) {
+	RunBenchmark(b, `
+			LET foo = TRUE
+			RETURN !foo ? TRUE : FALSE
+		`)
+}
+
+func BenchmarkUnaryOperatorN(b *testing.B) {
+	RunBenchmark(b, `
+			LET v = 1
+			RETURN -v
+		`)
+}
+
+func BenchmarkTernaryOperator(b *testing.B) {
+	RunBenchmark(b, `
+			LET a = "a"
+			LET b = "b"
+			LET c = FALSE
+			RETURN c ? a : b;
+				
+		`)
+}
+
+func BenchmarkTernaryOperatorDef(b *testing.B) {
+	RunBenchmark(b, `
+			LET a = "a"
+			LET b = "b"
+			LET c = FALSE
+			RETURN c ? : a;
+				
+		`)
 }
 
 func BenchmarkForEmpty(b *testing.B) {

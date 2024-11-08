@@ -17,6 +17,65 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func TestString(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		Case(
+			`
+			RETURN "
+FOO
+BAR
+"
+		`, "\nFOO\nBAR\n", "Should be possible to use multi line string"),
+
+		CaseJSON(
+			fmt.Sprintf(`
+RETURN %s<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>GetTitle</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>%s
+`, "`", "`"), `<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>GetTitle</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>`, "Should be possible to use multi line string with nested strings using backtick"),
+
+		CaseJSON(
+			fmt.Sprintf(`
+RETURN %s<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>GetTitle</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>%s
+`, "´", "´"),
+			`<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<title>GetTitle</title>
+		</head>
+		<body>
+			Hello world
+		</body>
+		</html>`, "Should be possible to use multi line string with nested strings using tick"),
+	})
+}
+
 func TestVariables(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseNil(`LET i = NONE RETURN i`),
@@ -401,6 +460,12 @@ func TestRegexpOperator(t *testing.T) {
 	})
 }
 
+func TestAllArrayOperator(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		Case("RETURN [1,2,3] ALL IN [1,2,3]", true, "All elements are in"),
+	})
+}
+
 func TestRange(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseArray("RETURN 1..10", []any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
@@ -453,6 +518,13 @@ func TestFunctionCall(t *testing.T) {
 
 		Case(`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`, 2),
 		CaseArray(`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+	})
+}
+
+func TestBuiltinFunctions(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		Case("RETURN LENGTH([1,2,3])", 3),
+		Case("RETURN TYPENAME([1,2,3])", "array"),
 	})
 }
 
@@ -844,110 +916,146 @@ func TestForFilter(t *testing.T) {
 		`,
 			[]any{map[string]any{"age": 29, "gender": "f", "name": "Mary"}, map[string]any{"age": 36, "gender": "m", "name": "Peter"}},
 		),
-		//{
-		//	`
-		//			LET users = [
-		//				{
-		//					active: true,
-		//					age: 31,
-		//					gender: "m"
-		//				},
-		//				{
-		//					active: true,
-		//					age: 29,
-		//					gender: "f"
-		//				},
-		//				{
-		//					active: true,
-		//					age: 36,
-		//					gender: "m"
-		//				}
-		//			]
-		//			FOR u IN users
-		//				FILTER u.active == true
-		//				FILTER u.age < 35
-		//				RETURN u
-		//		`,
-		//	[]any{map[string]any{"active": true, "gender": "m", "age": 31}, map[string]any{"active": true, "gender": "f", "age": 29}},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`
-		//	LET users = [
-		//		{
-		//			active: true,
-		//			age: 31,
-		//			gender: "m"
-		//		},
-		//		{
-		//			active: true,
-		//			age: 29,
-		//			gender: "f"
-		//		},
-		//		{
-		//			active: true,
-		//			age: 36,
-		//			gender: "m"
-		//		},
-		//		{
-		//			active: false,
-		//			age: 69,
-		//			gender: "m"
-		//		}
-		//	]
-		//	FOR u IN users
-		//		FILTER u.active
-		//		RETURN u
-		//		`,
-		//	[]any{map[string]any{"active": true, "gender": "m", "age": 31}, map[string]any{"active": true, "gender": "f", "age": 29}, map[string]any{"active": true, "gender": "m", "age": 36}},
-		//	ShouldEqualJSON,
-		//},
-		//{
-		//	`
-		//	LET users = [
-		//		{
-		//			active: true,
-		//			age: 31,
-		//			gender: "m"
-		//		},
-		//		{
-		//			active: true,
-		//			age: 29,
-		//			gender: "f"
-		//		},
-		//		{
-		//			active: true,
-		//			age: 36,
-		//			gender: "m"
-		//		},
-		//		{
-		//			active: false,
-		//			age: 69,
-		//			gender: "m"
-		//		}
-		//	]
-		//	FOR u IN users
-		//		FILTER u.active == true
-		//		LIMIT 2
-		//		FILTER u.gender == "m"
-		//		RETURN u
-		//`,
-		//	[]any{map[string]any{"active": true, "gender": "m", "age": 31}},
-		//	ShouldEqualJSON,
-		//},
+		CaseArray(
+			`
+					LET users = [
+						{
+							active: true,
+							age: 31,
+							gender: "m"
+						},
+						{
+							active: true,
+							age: 29,
+							gender: "f"
+						},
+						{
+							active: true,
+							age: 36,
+							gender: "m"
+						}
+					]
+					FOR u IN users
+						FILTER u.active == true
+						FILTER u.age < 35
+						RETURN u
+				`,
+			[]any{map[string]any{"active": true, "gender": "m", "age": 31}, map[string]any{"active": true, "gender": "f", "age": 29}},
+		),
+		CaseArray(
+			`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				FILTER u.active
+				RETURN u
+				`,
+			[]any{map[string]any{"active": true, "gender": "m", "age": 31}, map[string]any{"active": true, "gender": "f", "age": 29}, map[string]any{"active": true, "gender": "m", "age": 36}},
+		),
+		CaseArray(
+			`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				FILTER u.active == true
+				LIMIT 2
+				FILTER u.gender == "m"
+				RETURN u
+		`,
+			[]any{map[string]any{"active": true, "gender": "m", "age": 31}},
+		),
 	})
 }
 
 func TestForLimit(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		//{
-		//	`
-		//	FOR i IN [ 1, 2, 3, 4, 1, 3 ]
-		//		LIMIT 2
-		//		RETURN i
-		//`,
-		//	[]any{1, 2},
-		//	ShouldEqualJSON,
-		//},
-	})
+		CaseArray(
+			`
+			FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+				LIMIT 2
+				RETURN i
+		`,
+			[]any{1, 2}),
+		CaseArray(`
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LIMIT 4, 2
+				RETURN i
+			`, []any{5, 6}),
+		CaseArray(`
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LET x = i
+				LIMIT 2
+				RETURN i*x
+			`, []any{1, 4},
+			"Should be able to reuse values from a source"),
+		CaseArray(`
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LET x = "foo"
+				TYPENAME(x)
+				LIMIT 2
+				RETURN i
+		`, []any{1, 2}, "Should define variables and call functions"),
+		CaseArray(`
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LIMIT LIMIT_VALUE()
+				RETURN i
+		`, []any{1, 2}, "Should be able to use function call"),
+		CaseArray(`
+			LET o = {
+				limit: 2
+			}
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LIMIT o.limit
+				RETURN i
+		`, []any{1, 2}, "Should be able to use object property"),
+		CaseArray(`
+			LET o = [1,2]
+
+			FOR i IN [ 1,2,3,4,5,6,7,8 ]
+				LIMIT o[1]
+				RETURN i
+		`, []any{1, 2}, "Should be able to use array element"),
+	}, runtime.WithFunction("LIMIT_VALUE", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+		return values.NewInt(2), nil
+	}))
 }

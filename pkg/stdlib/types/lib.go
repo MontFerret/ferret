@@ -27,7 +27,6 @@ func RegisterLib(ns core.Namespace) error {
 			"IS_HTML_DOCUMENT": IsHTMLDocument,
 			"IS_BINARY":        IsBinary,
 			"IS_NAN":           IsNaN,
-			"TYPENAME":         TypeName,
 		}))
 }
 

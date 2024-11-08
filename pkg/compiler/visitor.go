@@ -306,6 +306,65 @@ func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
 	return nil
 }
 
+func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
+	clauses := ctx.AllLimitClauseValue()
+
+	if len(clauses) == 1 {
+		return v.visitLimit(clauses[0].Accept(v).(runtime.Operand))
+	} else {
+		v.visitOffset(clauses[0].Accept(v).(runtime.Operand))
+		v.visitLimit(clauses[1].Accept(v).(runtime.Operand))
+	}
+
+	return nil
+}
+
+func (v *visitor) visitOffset(src1 runtime.Operand) interface{} {
+	state := v.registers.Allocate(State)
+	v.emitter.EmitA(runtime.OpIncr, state)
+
+	comp := v.registers.Allocate(Temp)
+	v.emitter.EmitABC(runtime.OpGt, comp, state, src1)
+	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, v.loops.Loop().Next, comp)
+
+	return state
+}
+
+func (v *visitor) visitLimit(src1 runtime.Operand) interface{} {
+	state := v.registers.Allocate(State)
+	v.emitter.EmitA(runtime.OpIncr, state)
+
+	comp := v.registers.Allocate(Temp)
+	v.emitter.EmitABC(runtime.OpGt, comp, state, src1)
+	v.emitter.EmitJumpc(runtime.OpJumpIfTrue, v.loops.Loop().Next, comp)
+
+	return state
+}
+
+func (v *visitor) VisitLimitClauseValue(ctx *fql.LimitClauseValueContext) interface{} {
+	if c := ctx.IntegerLiteral(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Param(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Variable(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.FunctionCallExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.MemberExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
 func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
 	if c := ctx.VariableDeclaration(); c != nil {
 		return c.Accept(v)
@@ -976,11 +1035,21 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 	case "LENGTH":
 		dst := v.registers.Allocate(Temp)
 
-		if seq == nil || len(seq.Registers) > 1 {
+		if seq == nil || len(seq.Registers) != 1 {
 			panic(core.Error(core.ErrInvalidArgument, "LENGTH: expected 1 argument"))
 		}
 
 		v.emitter.EmitAB(runtime.OpLength, dst, seq.Registers[0])
+
+		return dst
+	case "TYPENAME":
+		dst := v.registers.Allocate(Temp)
+
+		if seq == nil || len(seq.Registers) != 1 {
+			panic(core.Error(core.ErrInvalidArgument, "TYPENAME: expected 1 argument"))
+		}
+
+		v.emitter.EmitAB(runtime.OpType, dst, seq.Registers[0])
 
 		return dst
 	default:
