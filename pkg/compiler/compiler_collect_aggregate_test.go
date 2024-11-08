@@ -212,8 +212,11 @@ func BenchmarkAggregate(b *testing.B) {
   				}
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -256,8 +259,11 @@ func BenchmarkAggregate2(b *testing.B) {
   				RETURN ages
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -305,7 +311,10 @@ func BenchmarkAggregate3(b *testing.B) {
   				}
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }

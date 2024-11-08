@@ -153,6 +153,8 @@ func BenchmarkForTernary(b *testing.B) {
 			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
 		`)
 
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
 		p.Run(context.Background())
 	}

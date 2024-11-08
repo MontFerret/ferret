@@ -101,7 +101,10 @@ func BenchmarkCollectCount(b *testing.B) {
 				RETURN c
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }

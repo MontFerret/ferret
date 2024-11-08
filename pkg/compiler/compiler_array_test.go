@@ -337,8 +337,11 @@ func BenchmarkArrayOperatorALL(b *testing.B) {
 RETURN [1,2,3] ALL IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -347,8 +350,11 @@ func BenchmarkArrayOperatorALL2(b *testing.B) {
 RETURN [1,2,4] ALL IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -357,8 +363,11 @@ func BenchmarkArrayOperatorANY(b *testing.B) {
 RETURN [1,2,3] ANY IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -367,8 +376,11 @@ func BenchmarkArrayOperatorANY2(b *testing.B) {
 RETURN [4,5,6] ANY IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -377,8 +389,11 @@ func BenchmarkArrayOperatorANY3(b *testing.B) {
 RETURN [4,5,6] ANY NOT IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -387,8 +402,11 @@ func BenchmarkArrayOperatorANY4(b *testing.B) {
 RETURN [1,2,3 ] ANY == 2
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -397,8 +415,11 @@ func BenchmarkArrayOperatorNONE(b *testing.B) {
 RETURN [1,2,3] NONE IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -407,8 +428,11 @@ func BenchmarkArrayOperatorNONE2(b *testing.B) {
 RETURN [4,5,6] NONE IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -417,8 +441,11 @@ func BenchmarkArrayOperatorNONE3(b *testing.B) {
 RETURN [4,5,6] NONE NOT IN [1,2,3]
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
 
@@ -427,7 +454,10 @@ func BenchmarkArrayOperatorNONE4(b *testing.B) {
 RETURN [1,2,3] NONE < 99
 		`)
 
+	ctx := context.Background()
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
-		p.Run(context.Background())
+		p.Run(ctx)
 	}
 }
