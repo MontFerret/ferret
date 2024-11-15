@@ -1,14 +1,13 @@
 package fs_test
 
 import (
-	"io/ioutil"
 	"os"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func tempFile() (*os.File, func()) {
-	file, err := ioutil.TempFile("", "fstest")
+	file, err := os.CreateTemp("", "fstest")
 	So(err, ShouldBeNil)
 
 	fn := func() {
