@@ -46,9 +46,6 @@ type FqlParserListener interface {
 	// EnterForExpressionStatement is called when entering the forExpressionStatement production.
 	EnterForExpressionStatement(c *ForExpressionStatementContext)
 
-	// EnterForExpressionBody is called when entering the forExpressionBody production.
-	EnterForExpressionBody(c *ForExpressionBodyContext)
-
 	// EnterForExpressionReturn is called when entering the forExpressionReturn production.
 	EnterForExpressionReturn(c *ForExpressionReturnContext)
 
@@ -261,9 +258,6 @@ type FqlParserListener interface {
 
 	// ExitForExpressionStatement is called when exiting the forExpressionStatement production.
 	ExitForExpressionStatement(c *ForExpressionStatementContext)
-
-	// ExitForExpressionBody is called when exiting the forExpressionBody production.
-	ExitForExpressionBody(c *ForExpressionBodyContext)
 
 	// ExitForExpressionReturn is called when exiting the forExpressionReturn production.
 	ExitForExpressionReturn(c *ForExpressionReturnContext)

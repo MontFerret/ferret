@@ -54,16 +54,18 @@ const (
 	OpCall
 	OpProtectedCall
 
-	OpLoopBegin // Creates a loop result dataset
-	OpLoopPush
-	OpLoopEnd
+	OpSort
 
-	OpForLoopInit // Creates an iterator for a loop
+	OpLoopInit // Creates a loop result dataset
+	OpLoopPush
+	OpLoopFin
+
+	OpForLoopStart // Creates an iterator for a loop
 	OpForLoopNext
 	OpForLoopValue
 	OpForLoopKey
 
-	OpWhileLoopInit
+	OpWhileLoopStart
 	OpWhileLoopNext
 	OpWhileLoopValue
 )
