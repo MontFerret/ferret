@@ -3,19 +3,39 @@ package compiler
 import "github.com/MontFerret/ferret/pkg/runtime"
 
 type (
+	LoopType int
+
+	LoopKind int
+
 	Loop struct {
-		PassThrough bool
-		Distinct    bool
-		Result      runtime.Operand
-		Iterator    runtime.Operand
+		Type     LoopType
+		Kind     LoopKind
+		Distinct bool
 		Allocate bool
 		Next     int
+		Src      runtime.Operand
+		Iterator runtime.Operand
+		Value    runtime.Operand
+		Key      runtime.Operand
+		Result   runtime.Operand
 	}
 
 	LoopTable struct {
 		loops     []*Loop
 		registers *RegisterAllocator
 	}
+)
+
+const (
+	NormalLoop LoopType = iota
+	PassThroughLoop
+	TemporalLoop
+)
+
+const (
+	ForLoop LoopKind = iota
+	WhileLoop
+	DoWhileLoop
 )
 
 func NewLoopTable(registers *RegisterAllocator) *LoopTable {
@@ -25,19 +45,19 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 	}
 }
 
-func (lt *LoopTable) EnterLoop(passThrough, distinct bool) *Loop {
+func (lt *LoopTable) EnterLoop(loopType LoopType, kind LoopKind, distinct bool) *Loop {
 	var allocate bool
 	var state runtime.Operand
 
 	// top loop
 	if len(lt.loops) == 0 {
 		allocate = true
-	} else if !passThrough {
+	} else if loopType != PassThroughLoop {
 		// nested with explicit RETURN expression
 		prev := lt.loops[len(lt.loops)-1]
 		// if the loop above does not do pass through
 		// we allocate a new state for this loop
-		allocate = !prev.PassThrough
+		allocate = prev.Type != PassThroughLoop
 		state = prev.Result
 	} else {
 		// nested with implicit RETURN expression
@@ -50,10 +70,11 @@ func (lt *LoopTable) EnterLoop(passThrough, distinct bool) *Loop {
 	}
 
 	lt.loops = append(lt.loops, &Loop{
-		PassThrough: passThrough,
-		Distinct:    distinct,
-		Result:      state,
-		Allocate:    allocate,
+		Type:     loopType,
+		Kind:     kind,
+		Distinct: distinct,
+		Result:   state,
+		Allocate: allocate,
 	})
 
 	return lt.loops[len(lt.loops)-1]
