@@ -3,11 +3,10 @@ package compiler
 import (
 	"errors"
 
-	goruntime "runtime"
-
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib"
+	goruntime "runtime"
 )
 
 type Compiler struct {

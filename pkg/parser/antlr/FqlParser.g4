@@ -46,12 +46,10 @@ returnExpression
 
 forExpression
     : For valueVariable=(Identifier | IgnoreIdentifier) (Comma counterVariable=Identifier)? In forExpressionSource
-     forExpressionClause*
-     forExpressionStatement*
+     forExpressionBody*
       forExpressionReturn
     | For counterVariable=(Identifier | IgnoreIdentifier) Do? While expression
-     forExpressionClause*
-     forExpressionStatement*
+     forExpressionBody*
       forExpressionReturn
     ;
 
@@ -75,6 +73,11 @@ forExpressionClause
 forExpressionStatement
     : variableDeclaration
     | functionCallExpression
+    ;
+
+forExpressionBody
+    : forExpressionStatement
+    | forExpressionClause
     ;
 
 forExpressionReturn

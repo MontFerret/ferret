@@ -59,6 +59,10 @@ func (v *BaseFqlParserVisitor) VisitForExpressionStatement(ctx *ForExpressionSta
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitForExpressionBody(ctx *ForExpressionBodyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitForExpressionReturn(ctx *ForExpressionReturnContext) interface{} {
 	return v.VisitChildren(ctx)
 }

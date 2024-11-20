@@ -8,8 +8,8 @@ type (
 		Distinct    bool
 		Result      runtime.Operand
 		Iterator    runtime.Operand
-		Allocate    bool
-		Next        int
+		Allocate bool
+		Next     int
 	}
 
 	LoopTable struct {

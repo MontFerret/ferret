@@ -123,7 +123,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	dsReg := loop.Result
 
 	if loop.Allocate {
-		v.emitter.EmitAb(runtime.OpLoopInit, dsReg, distinct)
+		v.emitter.EmitAb(runtime.OpLoopBegin, dsReg, distinct)
 	}
 
 	if isForLoop {
@@ -132,7 +132,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 		iterReg := v.registers.Allocate(State)
 
-		v.emitter.EmitAB(runtime.OpForLoopStart, iterReg, src1)
+		v.emitter.EmitAB(runtime.OpForLoopInit, iterReg, src1)
 		// jumpPlaceholder is a placeholder for the exit jump position
 		loop.Next = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, iterReg)
 
@@ -168,7 +168,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		srcExpr := ctx.Expression()
 
 		// Create initial value for the loop counter
-		v.emitter.EmitA(runtime.OpWhileLoopStart, counterReg)
+		v.emitter.EmitA(runtime.OpWhileLoopInit, counterReg)
 		beforeExp := v.emitter.Size()
 		// Loop data source to iterate over
 		cond := srcExpr.Accept(v).(runtime.Operand)
@@ -187,15 +187,8 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	jumpIndex := loop.Next
 	loop.Next -= jumpOffset
 
-	// Clauses
-	if clauses := ctx.AllForExpressionClause(); clauses != nil && len(clauses) > 0 {
-		for _, clause := range clauses {
-			clause.Accept(v)
-		}
-	}
-
 	// body
-	if body := ctx.AllForExpressionStatement(); body != nil && len(body) > 0 {
+	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
 		for _, b := range body {
 			b.Accept(v)
 		}
@@ -218,7 +211,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	if loop.Allocate {
 		// TODO: Reuse the dsReg register
-		v.emitter.EmitAB(runtime.OpLoopFin, dst, dsReg)
+		v.emitter.EmitAB(runtime.OpLoopEnd, dst, dsReg)
 
 		if isForLoop {
 			v.emitter.PatchJump(jumpIndex)
@@ -271,12 +264,12 @@ func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) 
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
-	if c := ctx.VariableDeclaration(); c != nil {
+func (v *visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) interface{} {
+	if c := ctx.ForExpressionClause(); c != nil {
 		return c.Accept(v)
 	}
 
-	if c := ctx.FunctionCallExpression(); c != nil {
+	if c := ctx.ForExpressionStatement(); c != nil {
 		return c.Accept(v)
 	}
 
@@ -303,10 +296,6 @@ func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 	}
 
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
-	return nil
 }
 
 func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
@@ -369,6 +358,18 @@ func (v *visitor) VisitLimitClauseValue(ctx *fql.LimitClauseValueContext) interf
 	}
 
 	if c := ctx.MemberExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
+	if c := ctx.VariableDeclaration(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.FunctionCallExpression(); c != nil {
 		return c.Accept(v)
 	}
 

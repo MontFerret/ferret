@@ -296,13 +296,12 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopInit:
+		case OpLoopBegin:
 			reg[dst] = NewDataSet(src1 == 1)
-		case OpLoopFin:
-			// TODO: Close iterator if it's closeable
+		case OpLoopEnd:
 			ds := reg[src1].(*DataSet)
 			reg[dst] = ds.ToArray()
-		case OpForLoopStart:
+		case OpForLoopInit:
 			input := reg[src1]
 
 			switch src := input.(type) {
@@ -347,7 +346,7 @@ loop:
 			// TODO: Remove boxed value!!!
 			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
 			reg[dst] = iter.Key()
-		case OpWhileLoopStart:
+		case OpWhileLoopInit:
 			reg[dst] = values.Int(-1)
 		case OpWhileLoopNext:
 			cond := values.ToBoolean(reg[src1])
