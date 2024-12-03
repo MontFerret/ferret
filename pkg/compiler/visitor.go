@@ -372,8 +372,15 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 
 		currentReg := exp.Accept(v).(runtime.Operand)
 
-		// comp = current <= pivot
-		v.emitter.EmitABC(runtime.OpLte, comp, currentReg, pivotReg)
+		comparator := runtime.OpLte
+		direction := clause.SortDirection()
+
+		if direction != nil && strings.ToLower(direction.GetText()) == "desc" {
+			comparator = runtime.OpGte
+		}
+
+		// comp = current <= pivot or current >= pivot
+		v.emitter.EmitABC(comparator, comp, currentReg, pivotReg)
 		// If comp is false, jump to loop end
 		skipSwapJumps[i] = v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
 	}
@@ -422,6 +429,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	v.emitter.EmitAB(runtime.OpSortCollect, loop.Src, loop.Result)
 
 	// Create new for loop
+	// TODO: Reuse existing DataSet instance
 	v.emitLoopBegin(loop)
 
 	return nil

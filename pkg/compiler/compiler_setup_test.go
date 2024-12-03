@@ -225,14 +225,15 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 		name = strings.Replace(name, "\t", " ", -1)
 		// Replace multiple spaces with a single space
 		name = strings.Join(strings.Fields(name), " ")
-
-		if useCase.Skip {
-			t.Skip(name)
-
-			continue
-		}
+		skip := useCase.Skip
 
 		t.Run(name, func(t *testing.T) {
+			if skip {
+				t.Skip()
+
+				return
+			}
+
 			Convey(useCase.Expression, t, func() {
 				prog, err := c.Compile(useCase.Expression)
 

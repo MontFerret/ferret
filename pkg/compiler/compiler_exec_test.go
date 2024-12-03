@@ -1336,5 +1336,31 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}, "Should compile query with SORT statement"),
+		CaseArray(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age DESC
+				RETURN u
+		`, []any{
+			map[string]any{"active": true, "age": 36, "gender": "m"},
+			map[string]any{"active": true, "age": 31, "gender": "m"},
+			map[string]any{"active": true, "age": 29, "gender": "f"},
+		}, "Should compile query with DESC SORT statement"),
 	})
 }
