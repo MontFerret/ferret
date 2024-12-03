@@ -284,7 +284,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	low := v.registers.Allocate(Temp)
 	high := v.registers.Allocate(Temp)
 	pivot := v.registers.Allocate(Temp)
-	tmp := v.registers.Allocate(Temp)
+	n := v.registers.Allocate(Temp)
 	i := v.registers.Allocate(Temp)
 	j := v.registers.Allocate(Temp)
 	comp := v.registers.Allocate(Temp)
@@ -292,56 +292,54 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	// Init sort
 	// Create a new stack
 	v.emitter.EmitA(runtime.OpSortPrep, stack)
+
 	// low = 0
 	v.emitter.EmitA(runtime.OpLoadZero, low)
-	// high = len(arr)
+
+	// high = len(arr) - 1
 	v.emitter.EmitAB(runtime.OpLength, high, loop.Result)
-	// high--
 	v.emitter.EmitA(runtime.OpDecr, high)
-	// stack = append(stack, high)
+
+	// Push initial range: stack = append(stack, high, low)
 	v.emitter.EmitAB(runtime.OpSortPush, stack, high)
-	// stack = append(stack, low)
 	v.emitter.EmitAB(runtime.OpSortPush, stack, low)
 
-	// for stack.length > 0 else jump to loop end
+	// Main stack loop
+	// while len(stack) > 0
+	stackLoopStart := v.emitter.Size()
 	stackLoopExitJmp := v.emitter.EmitJumpc(runtime.OpJumpIfEmpty, jumpPlaceholder, stack)
-	stackLoopPos := v.emitter.Size()
 
-	// Pop the range
+	// Pop the range: low = stack.pop(), high = stack.pop()
 	v.emitter.EmitAB(runtime.OpSortPop, low, stack)
 	v.emitter.EmitAB(runtime.OpSortPop, high, stack)
 
 	// comp = low < high
 	v.emitter.EmitABC(runtime.OpLt, comp, low, high)
-	// If comp is false, jump to stack loop beginning
-	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, stackLoopPos, comp)
+	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, stackLoopStart, comp)
 
 	// Otherwise start the partition
 	// pivot := arr[high]
 	v.emitter.EmitABC(runtime.OpLoadProperty, pivot, loop.Result, high)
 
-	// i = low
+	// i = low - 1
 	v.emitter.EmitAB(runtime.OpMove, i, low)
-	// i--
 	v.emitter.EmitA(runtime.OpDecr, i)
 
-	// for j = low; j < high; j++
 	// j = low
 	v.emitter.EmitAB(runtime.OpMove, j, low)
-	loopPos := v.emitter.Size()
 
-	// comp = j < high
+	// for j < high
+	partitionLoopStart := v.emitter.Size()
 	v.emitter.EmitABC(runtime.OpLt, comp, j, high)
-	// If comp is false, jump to loop end
-	loopExit := v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
+	partitionLoopEnd := v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
 
-	// Load current value into tmp
-	// tmp = arr[j]
-	v.emitter.EmitABC(runtime.OpLoadProperty, tmp, loop.Result, j)
+	// Load current value into n
+	// n = arr[j]
+	v.emitter.EmitABC(runtime.OpLoadProperty, n, loop.Result, j)
 
 	// Collect all sort clauses (mostly one or two)
 	clauses := ctx.AllSortClauseExpression()
-	jumps := make([]int, len(clauses))
+	skipSwapJumps := make([]int, len(clauses))
 
 	// Compare pivot with each clause
 	for i, clause := range clauses {
@@ -361,15 +359,15 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 
 		pivotReg := exp.Accept(v).(runtime.Operand)
 
-		// And now override the loop variables with the tmp value
+		// And now override the loop variables with the n value
 		if loop.ValueName != "" {
 			varReg := v.symbols.Variable(loop.ValueName)
-			v.emitter.EmitAB(runtime.OpSortValue, varReg, tmp)
+			v.emitter.EmitAB(runtime.OpSortValue, varReg, n)
 		}
 
 		if loop.KeyName != "" {
 			varReg := v.symbols.Variable(loop.KeyName)
-			v.emitter.EmitAB(runtime.OpSortKey, varReg, tmp)
+			v.emitter.EmitAB(runtime.OpSortKey, varReg, n)
 		}
 
 		currentReg := exp.Accept(v).(runtime.Operand)
@@ -377,51 +375,45 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		// comp = current <= pivot
 		v.emitter.EmitABC(runtime.OpLte, comp, currentReg, pivotReg)
 		// If comp is false, jump to loop end
-		jumps[i] = v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
+		skipSwapJumps[i] = v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
 	}
 
 	// i++
 	v.emitter.EmitA(runtime.OpIncr, i)
-	// arr[i], arr[j] = arr[j], arr[i]
+	// swap arr[i], arr[j]
 	v.emitter.EmitABC(runtime.OpSortSwap, loop.Result, i, j)
-	// And increase j
+
+	// Patch all clause skip swap jumps
+	for _, jmp := range skipSwapJumps {
+		v.emitter.PatchJumpNext(jmp)
+	}
+
 	// j++
 	v.emitter.EmitA(runtime.OpIncr, j)
-	// Patch all clause jumps
-	for _, jmp := range jumps {
-		v.emitter.PatchJump(jmp)
-	}
+	v.emitter.EmitJump(runtime.OpJump, partitionLoopStart)
 
-	// jump to loop beginning
-	v.emitter.EmitJump(runtime.OpJump, loopPos)
+	// End of partition loop
+	v.emitter.PatchJumpNext(partitionLoopEnd)
 
-	// Patch the exit jump
-	v.emitter.PatchJumpNext(loopExit)
 	// i++
 	v.emitter.EmitA(runtime.OpIncr, i)
-	// 	arr[i], arr[high] = arr[high], arr[i]
+	// swap arr[i], arr[high]
 	v.emitter.EmitABC(runtime.OpSortSwap, loop.Result, i, high)
 
-	// tmp = i
-	v.emitter.EmitAB(runtime.OpMove, tmp, i)
-	// tmp--
-	v.emitter.EmitA(runtime.OpDecr, tmp)
-	// stack = append(stack, tmp/high)
-	v.emitter.EmitAB(runtime.OpSortPush, stack, tmp)
-	// stack = append(stack, low)
+	// Push left subarray: stack = append(stack, low, i-1)
+	v.emitter.EmitAB(runtime.OpMove, n, i)
+	v.emitter.EmitA(runtime.OpDecr, n)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, n)
 	v.emitter.EmitAB(runtime.OpSortPush, stack, low)
 
-	// stack = append(stack, high)
+	// Push right subarray: stack = append(stack, {i+1, high})
+	v.emitter.EmitAB(runtime.OpMove, n, i)
+	v.emitter.EmitA(runtime.OpIncr, n)
 	v.emitter.EmitAB(runtime.OpSortPush, stack, high)
-	// tmp = i
-	v.emitter.EmitAB(runtime.OpMove, tmp, i)
-	// tmp++
-	v.emitter.EmitA(runtime.OpIncr, tmp)
-	// stack = append(stack, tmp)
-	v.emitter.EmitAB(runtime.OpSortPush, stack, tmp)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, n)
 
 	// Jump to stack loop beginning
-	v.emitter.EmitJump(runtime.OpJump, stackLoopPos)
+	v.emitter.EmitJump(runtime.OpJump, stackLoopStart)
 
 	// Patch the stack loop exit jump
 	v.emitter.PatchJumpNext(stackLoopExitJmp)

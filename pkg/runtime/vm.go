@@ -41,6 +41,7 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, er
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
 	bytecode := vm.program.Bytecode
+	constants := vm.program.Constants
 	reg := vm.registers
 
 loop:
@@ -60,11 +61,11 @@ loop:
 		case OpMove:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
-			reg[dst] = program.Constants[src1.Constant()]
+			reg[dst] = constants[src1.Constant()]
 		case OpStoreGlobal:
-			vm.globals[program.Constants[dst.Constant()].String()] = reg[src1]
+			vm.globals[constants[dst.Constant()].String()] = reg[src1]
 		case OpLoadGlobal:
-			reg[dst] = vm.globals[program.Constants[src1.Constant()].String()]
+			reg[dst] = vm.globals[constants[src1.Constant()].String()]
 		case OpJump:
 			vm.pc = int(dst)
 		case OpJumpIfFalse:
@@ -413,7 +414,7 @@ loop:
 			ds.Swap(int(i), int(j))
 		case OpSortCollect:
 			ds := reg[src1].(*internal.DataSet)
-			reg[dst] = ds.ToArray()
+			reg[dst] = internal.NewSorter(ds.ToArray())
 		case OpReturn:
 			break loop
 		}
