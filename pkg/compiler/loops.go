@@ -8,16 +8,19 @@ type (
 	LoopKind int
 
 	Loop struct {
-		Type     LoopType
-		Kind     LoopKind
-		Distinct bool
-		Allocate bool
-		Next     int
-		Src      runtime.Operand
-		Iterator runtime.Operand
-		Value    runtime.Operand
-		Key      runtime.Operand
-		Result   runtime.Operand
+		Type       LoopType
+		Kind       LoopKind
+		Distinct   bool
+		Allocate   bool
+		Jump       int
+		JumpOffset int
+		Src        runtime.Operand
+		Iterator   runtime.Operand
+		ValueName  string
+		Value      runtime.Operand
+		KeyName    string
+		Key        runtime.Operand
+		Result     runtime.Operand
 	}
 
 	LoopTable struct {
@@ -79,6 +82,8 @@ func (lt *LoopTable) EnterLoop(loopType LoopType, kind LoopKind, distinct bool) 
 
 	return lt.loops[len(lt.loops)-1]
 }
+
+//func (lt *LoopTable) Fork() *Loop {}
 
 func (lt *LoopTable) Loop() *Loop {
 	if len(lt.loops) == 0 {

@@ -105,7 +105,6 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
-	var jumpOffset int
 	returnCtx := ctx.ForExpressionReturn()
 
 	if c := returnCtx.ReturnExpression(); c != nil {
@@ -116,67 +115,44 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 	}
 
 	loop := v.loops.EnterLoop(v.loopType(ctx), v.loopKind(ctx), distinct)
-	dsReg := loop.Result
-
-	if loop.Allocate {
-		v.emitter.EmitAb(runtime.OpLoopBegin, dsReg, distinct)
-	}
 
 	if loop.Kind == ForLoop {
-		// Loop data source to iterate over
 		loop.Src = ctx.ForExpressionSource().Accept(v).(runtime.Operand)
-		loop.Iterator = v.registers.Allocate(State)
 
-		v.emitter.EmitAB(runtime.OpForLoopInit, loop.Iterator, loop.Src)
-		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Next = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, loop.Iterator)
-
-		valVar := ctx.GetValueVariable().GetText()
-		counterVarCtx := ctx.GetCounterVariable()
-
-		hasValVar := valVar != ignorePseudoVariable
-		var hasCounterVar bool
-		var counterVar string
-
-		if counterVarCtx != nil {
-			counterVar = counterVarCtx.GetText()
-			hasCounterVar = true
+		if val := ctx.GetValueVariable(); val != nil {
+			if txt := val.GetText(); txt != "" && txt != ignorePseudoVariable {
+				loop.ValueName = txt
+				loop.Value = v.symbols.DefineVariable(txt)
+			}
 		}
 
-		// declare value variable
-		if hasValVar {
-			loop.Value = v.symbols.DefineVariable(valVar)
-			v.emitter.EmitAB(runtime.OpForLoopValue, loop.Value, loop.Iterator)
-		}
-
-		if hasCounterVar {
-			// declare counter variable
-			loop.Key = v.symbols.DefineVariable(counterVar)
-			v.emitter.EmitAB(runtime.OpForLoopKey, loop.Key, loop.Iterator)
+		if ctr := ctx.GetCounterVariable(); ctr != nil {
+			if txt := ctr.GetText(); txt != "" && txt != ignorePseudoVariable {
+				loop.KeyName = txt
+				loop.Key = v.symbols.DefineVariable(txt)
+			}
 		}
 	} else {
-		counterReg := v.registers.Allocate(State)
-		srcExpr := ctx.Expression()
-
-		// Create initial value for the loop counter
-		v.emitter.EmitA(runtime.OpWhileLoopInit, counterReg)
-		beforeExp := v.emitter.Size()
-		// Loop data source to iterate over
-		cond := srcExpr.Accept(v).(runtime.Operand)
-		jumpOffset = v.emitter.Size() - beforeExp
-
-		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Next = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
-
-		counterVar := ctx.GetCounterVariable().GetText()
-
-		// declare counter variable
-		valReg := v.symbols.DefineVariable(counterVar)
-		v.emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
+		//srcExpr := ctx.Expression()
+		//
+		//// Create initial value for the loop counter
+		//v.emitter.EmitA(runtime.OpWhileLoopPrep, counterReg)
+		//beforeExp := v.emitter.Size()
+		//// Loop data source to iterate over
+		//cond := srcExpr.Accept(v).(runtime.Operand)
+		//jumpOffset = v.emitter.Size() - beforeExp
+		//
+		//// jumpPlaceholder is a placeholder for the exit jump position
+		//loop.Jump = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
+		//
+		//counterVar := ctx.GetCounterVariable().GetText()
+		//
+		//// declare counter variable
+		//valReg := v.symbols.DefineVariable(counterVar)
+		//v.emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
 	}
 
-	jumpIndex := loop.Next
-	loop.Next -= jumpOffset
+	v.emitLoopBegin(loop)
 
 	// body
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
@@ -185,42 +161,24 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	}
 
+	loop = v.loops.Loop()
+
 	// RETURN
 	if loop.Type != PassThroughLoop {
 		c := returnRuleCtx.(*fql.ReturnExpressionContext)
 		expReg := c.Expression().Accept(v).(runtime.Operand)
 
-		v.emitter.EmitAB(runtime.OpLoopPush, dsReg, expReg)
+		v.emitter.EmitAB(runtime.OpLoopPush, loop.Result, expReg)
 	} else if returnRuleCtx != nil {
 		returnRuleCtx.Accept(v)
 	}
 
-	v.emitter.EmitJump(runtime.OpJump, loop.Next)
-
-	// TODO: Do not allocate for pass-through loops
-	dst := v.registers.Allocate(Temp)
-
-	if loop.Allocate {
-		// TODO: Reuse the dsReg register
-		v.emitter.EmitAB(runtime.OpLoopEnd, dst, dsReg)
-
-		if loop.Kind == ForLoop {
-			v.emitter.PatchJump(jumpIndex)
-		} else {
-			v.emitter.PatchJumpAB(jumpIndex)
-		}
-	} else {
-		if loop.Kind == ForLoop {
-			v.emitter.PatchJumpNext(jumpIndex)
-		} else {
-			v.emitter.PatchJumpNextAB(jumpIndex)
-		}
-	}
+	res := v.emitLoopEnd(loop)
 
 	v.loops.ExitLoop()
 	v.symbols.ExitScope()
 
-	return dst
+	return res
 }
 
 func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) interface{} {
@@ -291,7 +249,7 @@ func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 
 func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
 	src1 := ctx.Expression().Accept(v).(runtime.Operand)
-	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, v.loops.Loop().Next, src1)
+	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, v.loops.Loop().Jump, src1)
 
 	return nil
 }
@@ -309,13 +267,181 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 	return nil
 }
 
+func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
+	loop := v.loops.Loop()
+	v.emitter.EmitAB(runtime.OpLoopCopy, loop.Result, loop.Iterator)
+	v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
+	v.emitter.EmitA(runtime.OpClose, loop.Iterator)
+
+	if loop.Kind == ForLoop {
+		v.emitter.PatchJump(loop.Jump)
+	} else {
+		v.emitter.PatchJumpAB(loop.Jump)
+	}
+
+	// Allocate registers
+	stack := loop.Iterator
+	low := v.registers.Allocate(Temp)
+	high := v.registers.Allocate(Temp)
+	pivot := v.registers.Allocate(Temp)
+	tmp := v.registers.Allocate(Temp)
+	i := v.registers.Allocate(Temp)
+	j := v.registers.Allocate(Temp)
+	comp := v.registers.Allocate(Temp)
+
+	// Init sort
+	// Create a new stack
+	v.emitter.EmitA(runtime.OpSortPrep, stack)
+	// low = 0
+	v.emitter.EmitA(runtime.OpLoadZero, low)
+	// high = len(arr)
+	v.emitter.EmitAB(runtime.OpLength, high, loop.Result)
+	// high--
+	v.emitter.EmitA(runtime.OpDecr, high)
+	// stack = append(stack, high)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, high)
+	// stack = append(stack, low)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, low)
+
+	// for stack.length > 0 else jump to loop end
+	stackLoopExitJmp := v.emitter.EmitJumpc(runtime.OpJumpIfEmpty, jumpPlaceholder, stack)
+	stackLoopPos := v.emitter.Size()
+
+	// Pop the range
+	v.emitter.EmitAB(runtime.OpSortPop, low, stack)
+	v.emitter.EmitAB(runtime.OpSortPop, high, stack)
+
+	// comp = low < high
+	v.emitter.EmitABC(runtime.OpLt, comp, low, high)
+	// If comp is false, jump to stack loop beginning
+	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, stackLoopPos, comp)
+
+	// Otherwise start the partition
+	// pivot := arr[high]
+	v.emitter.EmitABC(runtime.OpLoadProperty, pivot, loop.Result, high)
+
+	// i = low
+	v.emitter.EmitAB(runtime.OpMove, i, low)
+	// i--
+	v.emitter.EmitA(runtime.OpDecr, i)
+
+	// for j = low; j < high; j++
+	// j = low
+	v.emitter.EmitAB(runtime.OpMove, j, low)
+	loopPos := v.emitter.Size()
+
+	// comp = j < high
+	v.emitter.EmitABC(runtime.OpLt, comp, j, high)
+	// If comp is false, jump to loop end
+	loopExit := v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
+
+	// Load current value into tmp
+	// tmp = arr[j]
+	v.emitter.EmitABC(runtime.OpLoadProperty, tmp, loop.Result, j)
+
+	// Collect all sort clauses (mostly one or two)
+	clauses := ctx.AllSortClauseExpression()
+	jumps := make([]int, len(clauses))
+
+	// Compare pivot with each clause
+	for i, clause := range clauses {
+		sort := clause.(*fql.SortClauseExpressionContext)
+		exp := sort.Expression()
+
+		// We override the loop variables with the pivot value
+		if loop.ValueName != "" {
+			varReg := v.symbols.Variable(loop.ValueName)
+			v.emitter.EmitAB(runtime.OpSortValue, varReg, pivot)
+		}
+
+		if loop.KeyName != "" {
+			varReg := v.symbols.Variable(loop.KeyName)
+			v.emitter.EmitAB(runtime.OpSortKey, varReg, pivot)
+		}
+
+		pivotReg := exp.Accept(v).(runtime.Operand)
+
+		// And now override the loop variables with the tmp value
+		if loop.ValueName != "" {
+			varReg := v.symbols.Variable(loop.ValueName)
+			v.emitter.EmitAB(runtime.OpSortValue, varReg, tmp)
+		}
+
+		if loop.KeyName != "" {
+			varReg := v.symbols.Variable(loop.KeyName)
+			v.emitter.EmitAB(runtime.OpSortKey, varReg, tmp)
+		}
+
+		currentReg := exp.Accept(v).(runtime.Operand)
+
+		// comp = current <= pivot
+		v.emitter.EmitABC(runtime.OpLte, comp, currentReg, pivotReg)
+		// If comp is false, jump to loop end
+		jumps[i] = v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
+	}
+
+	// i++
+	v.emitter.EmitA(runtime.OpIncr, i)
+	// arr[i], arr[j] = arr[j], arr[i]
+	v.emitter.EmitABC(runtime.OpSortSwap, loop.Result, i, j)
+	// And increase j
+	// j++
+	v.emitter.EmitA(runtime.OpIncr, j)
+	// Patch all clause jumps
+	for _, jmp := range jumps {
+		v.emitter.PatchJump(jmp)
+	}
+
+	// jump to loop beginning
+	v.emitter.EmitJump(runtime.OpJump, loopPos)
+
+	// Patch the exit jump
+	v.emitter.PatchJumpNext(loopExit)
+	// i++
+	v.emitter.EmitA(runtime.OpIncr, i)
+	// 	arr[i], arr[high] = arr[high], arr[i]
+	v.emitter.EmitABC(runtime.OpSortSwap, loop.Result, i, high)
+
+	// tmp = i
+	v.emitter.EmitAB(runtime.OpMove, tmp, i)
+	// tmp--
+	v.emitter.EmitA(runtime.OpDecr, tmp)
+	// stack = append(stack, tmp/high)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, tmp)
+	// stack = append(stack, low)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, low)
+
+	// stack = append(stack, high)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, high)
+	// tmp = i
+	v.emitter.EmitAB(runtime.OpMove, tmp, i)
+	// tmp++
+	v.emitter.EmitA(runtime.OpIncr, tmp)
+	// stack = append(stack, tmp)
+	v.emitter.EmitAB(runtime.OpSortPush, stack, tmp)
+
+	// Jump to stack loop beginning
+	v.emitter.EmitJump(runtime.OpJump, stackLoopPos)
+
+	// Patch the stack loop exit jump
+	v.emitter.PatchJumpNext(stackLoopExitJmp)
+
+	// Replace source with sorted array
+	v.emitter.EmitAB(runtime.OpSortCollect, loop.Src, loop.Result)
+
+	// Create new for loop
+	v.emitLoopBegin(loop)
+
+	return nil
+}
+
 func (v *visitor) visitOffset(src1 runtime.Operand) interface{} {
 	state := v.registers.Allocate(State)
 	v.emitter.EmitA(runtime.OpIncr, state)
 
 	comp := v.registers.Allocate(Temp)
 	v.emitter.EmitABC(runtime.OpGt, comp, state, src1)
-	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, v.loops.Loop().Next, comp)
+	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, v.loops.Loop().Jump, comp)
 
 	return state
 }
@@ -326,7 +452,7 @@ func (v *visitor) visitLimit(src1 runtime.Operand) interface{} {
 
 	comp := v.registers.Allocate(Temp)
 	v.emitter.EmitABC(runtime.OpGt, comp, state, src1)
-	v.emitter.EmitJumpc(runtime.OpJumpIfTrue, v.loops.Loop().Next, comp)
+	v.emitter.EmitJumpc(runtime.OpJumpIfTrue, v.loops.Loop().Jump, comp)
 
 	return state
 }
@@ -805,7 +931,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 			//v.registers.Free(condReg)
 		}
 
-		// Next to 'false' branch if condition is false
+		// Jump to 'false' branch if condition is false
 		otherwise := v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, dst)
 
 		// True branch
@@ -819,7 +945,7 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 			}
 		}
 
-		// Next over false branch
+		// Jump over false branch
 		end := v.emitter.EmitJump(runtime.OpJump, jumpPlaceholder)
 		v.emitter.PatchJumpNext(otherwise)
 
@@ -1070,6 +1196,58 @@ func (v *visitor) functionName(ctx *fql.FunctionCallContext) values.String {
 	name += ctx.FunctionName().GetText()
 
 	return values.NewString(strings.ToUpper(name))
+}
+
+func (v *visitor) emitLoopBegin(loop *Loop) {
+	if loop.Allocate {
+		v.emitter.EmitAb(runtime.OpLoopBegin, loop.Result, loop.Distinct)
+	}
+
+	loop.Iterator = v.registers.Allocate(State)
+
+	if loop.Kind == ForLoop {
+		v.emitter.EmitAB(runtime.OpForLoopPrep, loop.Iterator, loop.Src)
+		// jumpPlaceholder is a placeholder for the exit jump position
+		loop.Jump = v.emitter.EmitJumpc(runtime.OpForLoopNext, jumpPlaceholder, loop.Iterator)
+
+		if loop.Value != runtime.NoopOperand {
+			v.emitter.EmitAB(runtime.OpForLoopValue, loop.Value, loop.Iterator)
+		}
+
+		if loop.Key != runtime.NoopOperand {
+			v.emitter.EmitAB(runtime.OpForLoopKey, loop.Key, loop.Iterator)
+		}
+	} else {
+		//counterReg := v.registers.Allocate(State)
+		// TODO: Set JumpOffset here
+	}
+}
+
+func (v *visitor) emitLoopEnd(loop *Loop) runtime.Operand {
+	v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
+
+	// TODO: Do not allocate for pass-through loops
+	dst := v.registers.Allocate(Temp)
+
+	if loop.Allocate {
+		// TODO: Reuse the dsReg register
+		v.emitter.EmitA(runtime.OpClose, loop.Iterator)
+		v.emitter.EmitAB(runtime.OpLoopEnd, dst, loop.Result)
+
+		if loop.Kind == ForLoop {
+			v.emitter.PatchJump(loop.Jump)
+		} else {
+			v.emitter.PatchJumpAB(loop.Jump)
+		}
+	} else {
+		if loop.Kind == ForLoop {
+			v.emitter.PatchJumpNext(loop.Jump)
+		} else {
+			v.emitter.PatchJumpNextAB(loop.Jump)
+		}
+	}
+
+	return dst
 }
 
 func (v *visitor) loopType(ctx *fql.ForExpressionContext) LoopType {

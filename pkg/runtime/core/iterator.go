@@ -11,8 +11,6 @@ type (
 	// Iterator represents an interface of an iterator.
 	Iterator interface {
 		HasNext(ctx context.Context) (bool, error)
-		Next(ctx context.Context) error
-		Value() Value
-		Key() Value
+		Next(ctx context.Context) (value Value, key Value, err error)
 	}
 )

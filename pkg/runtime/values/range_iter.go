@@ -21,7 +21,7 @@ func NewRangeIterator(values *Range) core.Iterator {
 	return &RangeIterator{values: values, pos: values.start, counter: -1, descending: true}
 }
 
-func (iter *RangeIterator) HasNext(_ context.Context) (bool, error) {
+func (iter *RangeIterator) HasNext(ctx context.Context) (bool, error) {
 	if !iter.descending {
 		return iter.values.end >= iter.pos, nil
 	}
@@ -29,7 +29,7 @@ func (iter *RangeIterator) HasNext(_ context.Context) (bool, error) {
 	return iter.values.end <= iter.pos, nil
 }
 
-func (iter *RangeIterator) Next(_ context.Context) error {
+func (iter *RangeIterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
 	iter.counter++
 
 	if !iter.descending {
@@ -38,17 +38,9 @@ func (iter *RangeIterator) Next(_ context.Context) error {
 		iter.pos--
 	}
 
-	return nil
-}
-
-func (iter *RangeIterator) Value() core.Value {
 	if !iter.descending {
-		return Int(iter.pos - 1)
+		return Int(iter.pos - 1), Int(iter.counter), nil
 	}
 
-	return Int(iter.pos + 1)
-}
-
-func (iter *RangeIterator) Key() core.Value {
-	return Int(iter.counter)
+	return Int(iter.pos + 1), Int(iter.counter), nil
 }

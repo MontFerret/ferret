@@ -88,7 +88,7 @@ func (lv *LazyValue) Reload(ctx context.Context) {
 }
 
 // Reset resets the storage.
-// Next call of Read will trigger the factory function again.
+// Jump call of Read will trigger the factory function again.
 func (lv *LazyValue) Reset() {
 	lv.mu.Lock()
 	defer lv.mu.Unlock()

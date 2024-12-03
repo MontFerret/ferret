@@ -7,6 +7,7 @@ const (
 	OpMove               // Move a value from register A to register B
 	OpLoadNone           // Set None value to a register
 	OpLoadBool           // Set a boolean value to a register
+	OpLoadZero           // Set a zero value to a register
 	OpLoadConst          // Load a constant to a register or a global variable
 	OpStoreGlobal        // Store a value from register A to a global variable
 	OpLoadGlobal         // Load a global variable to a register A
@@ -14,6 +15,7 @@ const (
 	OpJump
 	OpJumpIfFalse
 	OpJumpIfTrue
+	OpJumpIfEmpty
 
 	OpAdd
 	OpSub
@@ -27,6 +29,8 @@ const (
 	OpNegate
 	OpFlipPositive
 	OpFlipNegative
+
+	OpComp
 	OpNot
 	OpEq
 	OpNeq
@@ -50,20 +54,30 @@ const (
 
 	OpLength
 	OpType
+	OpClose
 
 	OpCall
 	OpProtectedCall
 
+	OpSortPrep
+	OpSortPush
+	OpSortPop
+	OpSortSwap
+	OpSortValue
+	OpSortKey
+	OpSortCollect
+
 	OpLoopBegin // Creates a loop result dataset
 	OpLoopPush
+	OpLoopCopy
 	OpLoopEnd
 
-	OpForLoopInit // Creates an iterator for a loop
+	OpForLoopPrep // Creates an iterator for a loop
 	OpForLoopNext
 	OpForLoopValue
 	OpForLoopKey
 
-	OpWhileLoopInit
+	OpWhileLoopPrep
 	OpWhileLoopNext
 	OpWhileLoopValue
 )

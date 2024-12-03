@@ -19,9 +19,11 @@ func TestRangeIterator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hasNext, ShouldBeTrue)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(0))
-		So(iter.Key(), ShouldEqual, values.NewInt(0))
+		val, key, err := iter.Next(ctx)
+
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(0))
+		So(key, ShouldEqual, values.NewInt(0))
 
 		hasNext, err = iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -37,13 +39,17 @@ func TestRangeIterator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hasNext, ShouldBeTrue)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(0))
-		So(iter.Key(), ShouldEqual, values.NewInt(0))
+		val, key, err := iter.Next(ctx)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(1))
-		So(iter.Key(), ShouldEqual, values.NewInt(1))
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(0))
+		So(key, ShouldEqual, values.NewInt(0))
+
+		val, key, err = iter.Next(ctx)
+
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(1))
+		So(key, ShouldEqual, values.NewInt(1))
 
 		hasNext, err = iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -59,13 +65,17 @@ func TestRangeIterator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hasNext, ShouldBeTrue)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(1))
-		So(iter.Key(), ShouldEqual, values.NewInt(0))
+		val, key, err := iter.Next(ctx)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(2))
-		So(iter.Key(), ShouldEqual, values.NewInt(1))
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(1))
+		So(key, ShouldEqual, values.NewInt(0))
+
+		val, key, err = iter.Next(ctx)
+
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(2))
+		So(key, ShouldEqual, values.NewInt(1))
 
 		hasNext, err = iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -84,8 +94,9 @@ func TestRangeIterator(t *testing.T) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			actual = append(actual, iter.Value().(values.Int))
+
+			val, _, err := iter.Next(ctx)
+			actual = append(actual, val.(values.Int))
 		}
 
 		So(actual, ShouldResemble, []values.Int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
@@ -103,8 +114,9 @@ func TestRangeIterator(t *testing.T) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			actual = append(actual, iter.Value().(values.Int))
+
+			val, _, err := iter.Next(ctx)
+			actual = append(actual, val.(values.Int))
 		}
 
 		So(actual, ShouldResemble, []values.Int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0})
@@ -125,8 +137,7 @@ func BenchmarkRangeIterator(b *testing.B) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			iter.Value()
+			iter.Next(ctx)
 		}
 	}
 }

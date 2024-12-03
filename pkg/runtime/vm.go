@@ -2,9 +2,10 @@ package runtime
 
 import (
 	"context"
+	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/operators"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
@@ -39,21 +40,23 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, er
 	vm.registers = make([]core.Value, vm.program.Registers)
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
-	program := vm.program
+	bytecode := vm.program.Bytecode
+	reg := vm.registers
 
 loop:
-	for vm.pc < len(program.Bytecode) {
-		inst := program.Bytecode[vm.pc]
+	for vm.pc < len(bytecode) {
+		inst := bytecode[vm.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
-		reg := vm.registers
 		vm.pc++
 
 		switch op {
 		case OpLoadNone:
 			reg[dst] = values.None
+		case OpLoadZero:
+			reg[dst] = values.ZeroInt
 		case OpLoadBool:
-			reg[dst] = values.NewBoolean(src1 == 1)
+			reg[dst] = values.Boolean(src1 == 1)
 		case OpMove:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
@@ -72,20 +75,26 @@ loop:
 			if values.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
+		case OpJumpIfEmpty:
+			val, ok := reg[src1].(core.Measurable)
+
+			if ok && val.Length() == 0 {
+				vm.pc = int(dst)
+			}
 		case OpAdd:
-			reg[dst] = operators.Add(reg[src1], reg[src2])
+			reg[dst] = internal.Add(reg[src1], reg[src2])
 		case OpSub:
-			reg[dst] = operators.Subtract(reg[src1], reg[src2])
+			reg[dst] = internal.Subtract(reg[src1], reg[src2])
 		case OpMulti:
-			reg[dst] = operators.Multiply(reg[src1], reg[src2])
+			reg[dst] = internal.Multiply(reg[src1], reg[src2])
 		case OpDiv:
-			reg[dst] = operators.Divide(reg[src1], reg[src2])
+			reg[dst] = internal.Divide(reg[src1], reg[src2])
 		case OpMod:
-			reg[dst] = operators.Modulus(reg[src1], reg[src2])
+			reg[dst] = internal.Modulus(reg[src1], reg[src2])
 		case OpIncr:
-			reg[dst] = operators.Increment(reg[dst])
+			reg[dst] = internal.Increment(reg[dst])
 		case OpDecr:
-			reg[dst] = operators.Decrement(reg[dst])
+			reg[dst] = internal.Decrement(reg[dst])
 		case OpCastBool:
 			reg[dst] = values.ToBoolean(reg[src1])
 		case OpNegate:
@@ -94,26 +103,28 @@ loop:
 			reg[dst] = values.Positive(reg[src1])
 		case OpFlipNegative:
 			reg[dst] = values.Negative(reg[src1])
+		case OpComp:
+			reg[dst] = values.Int(values.Compare(reg[src1], reg[src2]))
 		case OpNot:
 			reg[dst] = !values.ToBoolean(reg[src1])
 		case OpEq:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) == 0)
+			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) == 0)
 		case OpNeq:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) != 0)
+			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) != 0)
 		case OpGt:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) > 0)
+			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) > 0)
 		case OpLt:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) < 0)
+			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) < 0)
 		case OpGte:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) >= 0)
+			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) >= 0)
 		case OpLte:
-			reg[dst] = values.NewBoolean(values.Compare(reg[src1], reg[src2]) <= 0)
+			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) <= 0)
 		case OpIn:
 			reg[dst] = values.Contains(reg[src2], reg[src1])
 		case OpNotIn:
 			reg[dst] = !values.Contains(reg[src2], reg[src1])
 		case OpLike:
-			res, err := operators.Like(reg[src1], reg[src2])
+			res, err := internal.Like(reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
@@ -121,7 +132,7 @@ loop:
 				return nil, err
 			}
 		case OpNotLike:
-			res, err := operators.Like(reg[src1], reg[src2])
+			res, err := internal.Like(reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = !res
@@ -228,6 +239,10 @@ loop:
 					} else {
 						return nil, err
 					}
+				case *internal.DataSet:
+					idx := values.ToInt(getter)
+
+					reg[dst] = src.Get(int(idx))
 				default:
 					if op != OpLoadPropertyOptional {
 						return nil, core.TypeError(src, types.Array, types.Indexed)
@@ -288,8 +303,21 @@ loop:
 			}
 		case OpType:
 			reg[dst] = values.String(core.Reflect(reg[src1]).Name())
+		case OpClose:
+			val, ok := reg[dst].(io.Closer)
+			reg[dst] = values.None
+
+			if ok {
+				err := val.Close()
+
+				if err != nil {
+					if _, catch := tryCatch(vm.pc); !catch {
+						return nil, err
+					}
+				}
+			}
 		case OpRange:
-			res, err := operators.Range(reg[src1], reg[src2])
+			res, err := internal.Range(reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
@@ -297,11 +325,11 @@ loop:
 				return nil, err
 			}
 		case OpLoopBegin:
-			reg[dst] = NewDataSet(src1 == 1)
+			reg[dst] = internal.NewDataSet(src1 == 1)
 		case OpLoopEnd:
-			ds := reg[src1].(*DataSet)
+			ds := reg[src1].(*internal.DataSet)
 			reg[dst] = ds.ToArray()
-		case OpForLoopInit:
+		case OpForLoopPrep:
 			input := reg[src1]
 
 			switch src := input.(type) {
@@ -312,7 +340,7 @@ loop:
 					return nil, err
 				}
 
-				reg[dst] = values.NewBoxedValue(iterator)
+				reg[dst] = internal.NewIterator(iterator)
 			default:
 				if _, catch := tryCatch(vm.pc); catch {
 					// Fall back to an empty iterator
@@ -322,9 +350,7 @@ loop:
 				}
 			}
 		case OpForLoopNext:
-			boxed := reg[src1]
-			// TODO: Remove boxed value
-			iterator := boxed.Unwrap().(core.Iterator)
+			iterator := reg[src1].(*internal.Iterator)
 			hasNext, err := iterator.HasNext(ctx)
 
 			if err != nil {
@@ -339,28 +365,55 @@ loop:
 				vm.pc = int(dst)
 			}
 		case OpForLoopValue:
-			// TODO: Remove boxed value!!!
-			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
-			reg[dst] = iter.Value()
+			iterator := reg[src1].(*internal.Iterator)
+			reg[dst] = iterator.Value()
 		case OpForLoopKey:
-			// TODO: Remove boxed value!!!
-			iter := reg[src1].(*values.Boxed).Unwrap().(core.Iterator)
-			reg[dst] = iter.Key()
-		case OpWhileLoopInit:
+			iterator := reg[src1].(*internal.Iterator)
+			reg[dst] = iterator.Key()
+		case OpWhileLoopPrep:
 			reg[dst] = values.Int(-1)
 		case OpWhileLoopNext:
 			cond := values.ToBoolean(reg[src1])
 
 			if cond {
-				reg[dst] = operators.Increment(reg[dst])
+				reg[dst] = internal.Increment(reg[dst])
 			} else {
 				vm.pc = int(src2)
 			}
 		case OpWhileLoopValue:
 			reg[dst] = reg[src1]
 		case OpLoopPush:
-			ds := reg[dst].(*DataSet)
+			ds := reg[dst].(*internal.DataSet)
 			ds.Push(reg[src1])
+		case OpLoopCopy:
+			ds := reg[dst].(*internal.DataSet)
+			iterator := reg[src1].(*internal.Iterator)
+			ds.Push(&internal.Tuple{
+				First:  iterator.Value(),
+				Second: iterator.Key(),
+			})
+		case OpSortPrep:
+			reg[dst] = internal.NewStack(3)
+		case OpSortPush:
+			stack := reg[dst].(*internal.Stack)
+			stack.Push(reg[src1])
+		case OpSortPop:
+			stack := reg[src1].(*internal.Stack)
+			reg[dst] = stack.Pop()
+		case OpSortValue:
+			pair := reg[src1].(*internal.Tuple)
+			reg[dst] = pair.First
+		case OpSortKey:
+			pair := reg[src1].(*internal.Tuple)
+			reg[dst] = pair.Second
+		case OpSortSwap:
+			ds := reg[dst].(*internal.DataSet)
+			i := values.ToInt(reg[src1])
+			j := values.ToInt(reg[src2])
+			ds.Swap(int(i), int(j))
+		case OpSortCollect:
+			ds := reg[src1].(*internal.DataSet)
+			reg[dst] = ds.ToArray()
 		case OpReturn:
 			break loop
 		}

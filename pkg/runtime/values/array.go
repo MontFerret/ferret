@@ -313,3 +313,7 @@ func (t *Array) SortWith(sorter ArraySorter) *Array {
 
 	return res
 }
+
+func (t *Array) Swap(i, j int) {
+	t.data[i], t.data[j] = t.data[j], t.data[i]
+}

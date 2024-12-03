@@ -20,16 +20,8 @@ func (iter *ArrayIterator) HasNext(_ context.Context) (bool, error) {
 	return iter.length > iter.pos, nil
 }
 
-func (iter *ArrayIterator) Next(_ context.Context) error {
+func (iter *ArrayIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
 	iter.pos++
 
-	return nil
-}
-
-func (iter *ArrayIterator) Value() core.Value {
-	return iter.values.data[iter.pos-1]
-}
-
-func (iter *ArrayIterator) Key() core.Value {
-	return NewInt(iter.pos - 1)
+	return iter.values.data[iter.pos-1], NewInt(iter.pos - 1), nil
 }

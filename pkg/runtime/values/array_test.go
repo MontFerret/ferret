@@ -314,7 +314,7 @@ func TestArray(t *testing.T) {
 		//	threshold := 3
 		//	counter := 0
 		//
-		//	arr.ForEach(func(value core.Value, idx int) bool {
+		//	arr.ForEach(func(value core.Second, idx int) bool {
 		//		counter++
 		//
 		//		return value.Compare(values.NewInt(threshold)) == -1

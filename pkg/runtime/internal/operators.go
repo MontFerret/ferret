@@ -1,8 +1,10 @@
-package operators
+package internal
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/gobwas/glob"
+	"github.com/pkg/errors"
 )
 
 func Add(inputL, inputR core.Value) core.Value {
@@ -198,4 +200,33 @@ func Decrement(input core.Value) core.Value {
 	default:
 		return values.None
 	}
+}
+
+func Range(left, right core.Value) (core.Value, error) {
+	start := values.ToInt(left)
+	end := values.ToInt(right)
+
+	return values.NewRange(int64(start), int64(end)), nil
+}
+
+func Like(left, right core.Value) (values.Boolean, error) {
+	if err := values.AssertString(left); err != nil {
+		// TODO: Return the error? AQL just returns false
+		return values.False, nil
+	}
+
+	if err := values.AssertString(right); err != nil {
+		// TODO: Return the error? AQL just returns false
+		return values.False, nil
+	}
+
+	r, err := glob.Compile(right.String())
+
+	if err != nil {
+		return values.False, errors.Wrap(err, "invalid glob pattern")
+	}
+
+	result := r.Match(left.String())
+
+	return values.NewBoolean(result), nil
 }

@@ -2,9 +2,9 @@ package events
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type Iterator struct {
@@ -16,14 +16,14 @@ func NewIterator(ch <-chan Message) core.Iterator {
 	return &Iterator{ch, nil}
 }
 
-func (e *Iterator) HasNext(ctx context.Context) (bool, error) {
+func (iter *Iterator) HasNext(ctx context.Context) (bool, error) {
 	select {
-	case evt, ok := <-e.messages:
+	case evt, ok := <-iter.messages:
 		if !ok {
 			return false, nil
 		}
 
-		e.message = evt
+		iter.message = evt
 
 		return true, nil
 	case <-ctx.Done():
@@ -31,22 +31,14 @@ func (e *Iterator) HasNext(ctx context.Context) (bool, error) {
 	}
 }
 
-func (e *Iterator) Next(_ context.Context) error {
-	if e.message != nil {
-		if err := e.message.Err(); err != nil {
-			return err
+func (iter *Iterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
+	if iter.message != nil {
+		if err := iter.message.Err(); err != nil {
+			return values.None, values.None, err
 		}
 
-		return nil
+		return iter.message.Value(), values.None, nil
 	}
 
-	return core.ErrNoMoreData
-}
-
-func (e *Iterator) Value() core.Value {
-	return e.message.Value()
-}
-
-func (e *Iterator) Key() core.Value {
-	return values.None
+	return values.None, values.None, core.ErrNoMoreData
 }

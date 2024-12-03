@@ -329,15 +329,11 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 
 		arr := NewArray(10)
 
-		for {
-			if err := iterator.Next(ctx); err != nil {
-				return NewArray(0)
-			}
+		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+			val, _, err := iterator.Next(ctx)
 
-			val := iterator.Value()
-
-			if val == None {
-				break
+			if err != nil {
+				return arr
 			}
 
 			arr.Push(val)
@@ -372,20 +368,14 @@ func ToObject(ctx context.Context, input core.Value) *Object {
 
 		obj := NewObject()
 
-		for {
-			if err := iterator.Next(ctx); err != nil {
+		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+			val, key, err := iterator.Next(ctx)
+
+			if err != nil {
 				return obj
 			}
 
-			val := iterator.Value()
-
-			if val == None {
-				break
-			}
-
-			key := iterator.Key()
-
-			obj.Set(String(key.String()), val)
+			obj.Set(ToString(key), val)
 		}
 
 		return obj

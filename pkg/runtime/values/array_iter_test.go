@@ -32,9 +32,11 @@ func TestArrayIterator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hasNext, ShouldBeTrue)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(1))
-		So(iter.Key(), ShouldEqual, values.NewInt(0))
+		val, key, err := iter.Next(ctx)
+
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(1))
+		So(key, ShouldEqual, values.NewInt(0))
 
 		hasNext, err = iter.HasNext(ctx)
 
@@ -59,8 +61,8 @@ func TestArrayIterator(t *testing.T) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			actual = append(actual, iter.Value().(values.Int))
+			val, _, err := iter.Next(ctx)
+			actual = append(actual, val.(values.Int))
 		}
 
 		So(actual, ShouldResemble, []values.Int{1, 2, 3, 4, 5})
@@ -87,8 +89,8 @@ func BenchmarkArrayIterator(b *testing.B) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			iter.Value()
+
+			iter.Next(ctx)
 		}
 	}
 }

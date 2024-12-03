@@ -77,11 +77,13 @@ func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key
 			return nil
 		}
 
-		if err := iter.Next(ctx); err != nil {
+		val, key, err := iter.Next(ctx)
+
+		if err != nil {
 			return err
 		}
 
-		if !predicate(iter.Value(), iter.Key()) {
+		if !predicate(val, key) {
 			return nil
 		}
 	}

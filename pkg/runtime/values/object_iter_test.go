@@ -34,9 +34,11 @@ func TestObjectIterator(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hasNext, ShouldBeTrue)
 
-		So(iter.Next(ctx), ShouldBeNil)
-		So(iter.Value(), ShouldEqual, values.NewInt(1))
-		So(iter.Key(), ShouldEqual, values.NewString("key"))
+		val, key, err := iter.Next(ctx)
+
+		So(err, ShouldBeNil)
+		So(val, ShouldEqual, values.NewInt(1))
+		So(key, ShouldEqual, values.NewString("key"))
 
 		hasNext, err = iter.HasNext(ctx)
 
@@ -61,8 +63,10 @@ func TestObjectIterator(t *testing.T) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			actual = append(actual, [2]core.Value{iter.Key(), iter.Value()})
+
+			val, key, err := iter.Next(ctx)
+
+			actual = append(actual, [2]core.Value{key, val})
 		}
 
 		slices.SortStableFunc(actual, func(a, b [2]core.Value) int {
@@ -98,8 +102,7 @@ func BenchmarkObjectIterator(b *testing.B) {
 			if !hasNext || err != nil {
 				break
 			}
-			err = iter.Next(ctx)
-			iter.Value()
+			iter.Next(ctx)
 		}
 	}
 }
