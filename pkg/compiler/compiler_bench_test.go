@@ -130,3 +130,53 @@ LET users = [
 				RETURN u
 		`)
 }
+
+func BenchmarkForSort2(b *testing.B) {
+	RunBenchmark(b, `
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age, u.gender
+				RETURN u
+		`)
+}
+
+func BenchmarkForSortDesc(b *testing.B) {
+	RunBenchmark(b, `
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age DESC
+				RETURN u
+		`)
+}
