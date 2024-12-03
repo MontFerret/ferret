@@ -105,3 +105,28 @@ func BenchmarkForTernary(b *testing.B) {
 			RETURN foo ? TRUE : (FOR i IN 1..5 RETURN i*2)
 		`)
 }
+
+func BenchmarkForSort(b *testing.B) {
+	RunBenchmark(b, `
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age
+				RETURN u
+		`)
+}

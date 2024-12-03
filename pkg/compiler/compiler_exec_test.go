@@ -1362,5 +1362,72 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 29, "gender": "f"},
 		}, "Should compile query with DESC SORT statement"),
-	})
+		CaseArray(`			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 31,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age, u.gender
+				RETURN u`,
+			[]any{
+				map[string]any{"active": true, "age": 29, "gender": "f"},
+				map[string]any{"active": true, "age": 31, "gender": "f"},
+				map[string]any{"active": true, "age": 31, "gender": "m"},
+				map[string]any{"active": true, "age": 36, "gender": "m"},
+			}, "Should compile query with SORT statement with multiple expressions"),
+		CaseArray(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 31,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				LET x = "foo"
+				TEST(x)
+				SORT u.age, u.gender
+				RETURN u
+		`, []any{
+			map[string]any{"active": true, "age": 29, "gender": "f"},
+			map[string]any{"active": true, "age": 31, "gender": "f"},
+			map[string]any{"active": true, "age": 31, "gender": "m"},
+			map[string]any{"active": true, "age": 36, "gender": "m"},
+		}, "Should define variables and call functions"),
+	}, runtime.WithFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
+		return values.None, nil
+	}))
 }
