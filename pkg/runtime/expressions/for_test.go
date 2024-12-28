@@ -53,6 +53,9 @@ func (iterable *testIterable) Iterate(ctx context.Context, scope *core.Scope) (c
 }
 
 func (expression *testExpression) Exec(ctx context.Context, scope *core.Scope) (core.Value, error) {
+	if expression.causeErrorInExec {
+		return nil, testError{}
+	}
 	return nil, nil
 }
 
@@ -303,7 +306,7 @@ func TestExec(t *testing.T) {
 		Convey("Should return an error when a dataSource expression is invalid.", func() {
 			forExpression, _ := NewForExpression(
 				core.SourceMap{},
-				testInitTestIterable([]*core.Scope{}, true, false),
+				testInitTestIterable([]*core.Scope{{}, {}, {}}, true, false),
 				&testExpression{},
 				false,
 				false,
@@ -315,10 +318,10 @@ func TestExec(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Should return an error when element expressions of dataSource is invalidated.", func() {
+		Convey("Should return an error when element expressions of dataSource is invalid.", func() {
 			forExpression, _ := NewForExpression(
 				core.SourceMap{},
-				testInitTestIterable([]*core.Scope{}, false, true),
+				testInitTestIterable([]*core.Scope{{}, {}, {}}, false, true),
 				&testExpression{},
 				false,
 				false,
@@ -333,7 +336,7 @@ func TestExec(t *testing.T) {
 		Convey("Should return an error when an predicate expression is invalidated.", func() {
 			forExpression, _ := NewForExpression(
 				core.SourceMap{},
-				testInitTestIterable([]*core.Scope{}, false, true),
+				testInitTestIterable([]*core.Scope{{}, {}, {}}, false, false),
 				&testExpression{true},
 				false,
 				false,
