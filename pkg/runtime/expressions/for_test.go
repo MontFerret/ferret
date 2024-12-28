@@ -19,14 +19,14 @@ type (
 		causeErrorInNext bool
 	}
 	testIterable struct {
-		values               []*core.Scope
+		values              []*core.Scope
 		causeErrorInIterate bool
-		causeErrorInNext     bool
+		causeErrorInNext    bool
 	}
-	testExpression struct{
+	testExpression struct {
 		causeErrorInExec bool
 	}
-	testError      struct{}
+	testError struct{}
 )
 
 func (iterator *testIterator) Next(ctx context.Context, scope *core.Scope) (*core.Scope, error) {
@@ -269,11 +269,7 @@ func TestExec(t *testing.T) {
 		Convey("Should success.", func() {
 			forExpression, _ := NewForExpression(
 				core.SourceMap{},
-				testInitTestIterable([]*core.Scope{
-					&core.Scope{},
-					&core.Scope{},
-					&core.Scope{},
-				}, false, false),
+				testInitTestIterable([]*core.Scope{{}, {}, {}}, false, false),
 				&testExpression{},
 				false,
 				false,
@@ -288,11 +284,7 @@ func TestExec(t *testing.T) {
 		Convey("Should stop an execution when context is cancelled.", func() {
 			forExpression, _ := NewForExpression(
 				core.SourceMap{},
-				testInitTestIterable([]*core.Scope{
-					&core.Scope{},
-					&core.Scope{},
-					&core.Scope{},
-				}, false, false),
+				testInitTestIterable([]*core.Scope{{}, {}, {}}, false, false),
 				&testExpression{},
 				false,
 				false,
