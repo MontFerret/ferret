@@ -787,7 +787,7 @@ func TestFor(t *testing.T) {
 		),
 		CaseItems(
 			`FOR i IN {a: 'bar', b: 'foo', c: 'qaz'} RETURN i`,
-			[]any{"foo", "bar", "qaz"},
+			[]any{"bar", "foo", "qaz"},
 		),
 		CaseArray(
 			`FOR i, k IN {a: 'foo', b: 'bar', c: 'qaz'} RETURN k`,

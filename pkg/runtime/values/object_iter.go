@@ -29,11 +29,11 @@ func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
 	return len(iter.keys) > iter.pos, nil
 }
 
-func (iter *ObjectIterator) Next(ctx context.Context) (core.Value, core.Value, error) {
+func (iter *ObjectIterator) Next(_ context.Context) (core.Value, core.Value, error) {
 	iter.pos++
 
-	key := String(iter.keys[iter.pos-1])
 	value := iter.data[iter.keys[iter.pos-1]]
+	key := String(iter.keys[iter.pos-1])
 
-	return key, value, nil
+	return value, key, nil
 }
