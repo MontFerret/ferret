@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"

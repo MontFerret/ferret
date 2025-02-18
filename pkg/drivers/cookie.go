@@ -162,7 +162,7 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
-func (c HTTPCookie) GetByKey(_ context.Context, key string) (core.Value, error) {
+func (c HTTPCookie) Get(_ context.Context, key string) (core.Value, error) {
 	if key == "" {
 		return values.None, nil
 	}

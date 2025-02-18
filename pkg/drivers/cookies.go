@@ -54,13 +54,13 @@ func (c *HTTPCookies) Compare(other core.Value) int64 {
 	}
 
 	for name := range c.values {
-		cEl, cExists := c.Get(values.NewString(name))
+		cEl, cExists := c.GetCookie(values.NewString(name))
 
 		if !cExists {
 			return -1
 		}
 
-		ocEl, ocExists := oc.Get(values.NewString(name))
+		ocEl, ocExists := oc.GetCookie(values.NewString(name))
 
 		if !ocExists {
 			return 1
@@ -157,7 +157,7 @@ func (c *HTTPCookies) Values() []HTTPCookie {
 	return result
 }
 
-func (c *HTTPCookies) Get(key values.String) (HTTPCookie, values.Boolean) {
+func (c *HTTPCookies) GetCookie(key values.String) (HTTPCookie, values.Boolean) {
 	value, found := c.values[key.String()]
 
 	if found {
@@ -167,11 +167,11 @@ func (c *HTTPCookies) Get(key values.String) (HTTPCookie, values.Boolean) {
 	return HTTPCookie{}, values.False
 }
 
-func (c *HTTPCookies) Set(cookie HTTPCookie) {
+func (c *HTTPCookies) SetCookie(cookie HTTPCookie) {
 	c.values[cookie.Name] = cookie
 }
 
-func (c *HTTPCookies) GetByKey(ctx context.Context, key string) (core.Value, error) {
+func (c *HTTPCookies) Get(ctx context.Context, key string) (core.Value, error) {
 	// TODO: Implement
 	return values.None, nil
 }

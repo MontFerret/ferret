@@ -1,6 +1,10 @@
 package runtime
 
 import (
+	"context"
+	"os"
+
+	"github.com/MontFerret/ferret/pkg/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -9,13 +13,14 @@ type (
 
 	Environment struct {
 		functions map[string]core.Function
-		params    []core.Value
+		params    map[string]core.Value
+		logging   logging.Options
 	}
 )
 
 var noopEnv = &Environment{
 	functions: make(map[string]core.Function),
-	params:    make([]core.Value, 0),
+	params:    make(map[string]core.Value),
 }
 
 func newEnvironment(opts []EnvironmentOption) *Environment {
@@ -25,7 +30,11 @@ func newEnvironment(opts []EnvironmentOption) *Environment {
 
 	env := &Environment{
 		functions: make(map[string]core.Function),
-		params:    make([]core.Value, 0),
+		params:    make(map[string]core.Value),
+		logging: logging.Options{
+			Writer: os.Stdout,
+			Level:  logging.ErrorLevel,
+		},
 	}
 
 	for _, opt := range opts {
@@ -37,4 +46,27 @@ func newEnvironment(opts []EnvironmentOption) *Environment {
 
 func (env *Environment) GetFunction(name string) core.Function {
 	return env.functions[name]
+}
+
+func (env *Environment) HasFunction(name string) bool {
+	_, exists := env.functions[name]
+
+	return exists
+}
+
+func (env *Environment) GetParam(name string) core.Value {
+	return env.params[name]
+}
+
+func (env *Environment) HasParam(name string) bool {
+	_, exists := env.params[name]
+
+	return exists
+}
+
+func (env *Environment) WithContext(parent context.Context) context.Context {
+	ctx := core.ParamsWith(parent, env.params)
+	ctx = logging.WithContext(ctx, env.logging)
+
+	return ctx
 }

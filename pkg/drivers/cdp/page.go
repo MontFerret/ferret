@@ -246,7 +246,7 @@ func (p *HTMLPage) Copy() core.Value {
 	return values.None
 }
 
-func (p *HTMLPage) GetByKey(ctx context.Context, key string) (core.Value, error) {
+func (p *HTMLPage) Get(ctx context.Context, key string) (core.Value, error) {
 	return common.GetInPage(ctx, path, p)
 }
 

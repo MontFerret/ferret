@@ -57,8 +57,16 @@ func CaseRuntimeError(expression string, desc ...string) UseCase {
 	return NewCase(expression, nil, ShouldBeError, desc...)
 }
 
+func CaseRuntimeErrorAs(expression string, expected error, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldBeError, desc...)
+}
+
 func SkipCaseRuntimeError(expression string, desc ...string) UseCase {
 	return Skip(CaseRuntimeError(expression, desc...))
+}
+
+func SkipCaseRuntimeErrorAs(expression string, expected error, desc ...string) UseCase {
+	return Skip(CaseRuntimeErrorAs(expression, expected, desc...))
 }
 
 func CaseCompilationError(expression string, desc ...string) UseCase {
@@ -66,7 +74,7 @@ func CaseCompilationError(expression string, desc ...string) UseCase {
 }
 
 func SkipCompilationRuntimeError(expression string, desc ...string) UseCase {
-	return Skip(CaseRuntimeError(expression, desc...))
+	return Skip(CaseCompilationError(expression, desc...))
 }
 
 func CaseObject(expression string, expected map[string]any, desc ...string) UseCase {
@@ -253,20 +261,24 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				expected := useCase.Expected
 				actual, err := Exec(prog, ArePtrsEqual(useCase.Assertion, ShouldEqualJSON), options...)
 
-				if !ArePtrsEqual(useCase.Assertion, ShouldBeError) {
-					So(err, ShouldBeNil)
-				}
+				if ArePtrsEqual(useCase.Assertion, ShouldBeError) {
+					So(err, ShouldBeError)
 
-				if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
-					expectedJ, err := j.Marshal(expected)
-					So(err, ShouldBeNil)
-					So(actual, ShouldEqualJSON, string(expectedJ))
-				} else if ArePtrsEqual(useCase.Assertion, ShouldBeError) {
 					if expected != nil {
 						So(err, ShouldBeError, expected)
 					} else {
 						So(err, ShouldBeError)
 					}
+
+					return
+				}
+
+				So(err, ShouldBeNil)
+
+				if ArePtrsEqual(useCase.Assertion, ShouldEqualJSON) {
+					expectedJ, err := j.Marshal(expected)
+					So(err, ShouldBeNil)
+					So(actual, ShouldEqualJSON, string(expectedJ))
 				} else if ArePtrsEqual(useCase.Assertion, ShouldHaveSameItems) {
 					So(actual, ShouldHaveSameItems, expected)
 				} else if ArePtrsEqual(useCase.Assertion, ShouldBeNil) {

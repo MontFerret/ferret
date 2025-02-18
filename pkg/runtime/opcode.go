@@ -11,6 +11,7 @@ const (
 	OpLoadConst          // Load a constant to a register or a global variable
 	OpStoreGlobal        // Store a value from register A to a global variable
 	OpLoadGlobal         // Load a global variable to a register A
+	OpLoadParam          // Load a parameter to a register A
 
 	OpJump
 	OpJumpIfFalse

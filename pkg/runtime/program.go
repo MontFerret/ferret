@@ -18,6 +18,7 @@ type (
 		Bytecode   []Instruction
 		Constants  []core.Value
 		CatchTable []Catch
+		Params     []string
 		Registers  int
 	}
 )

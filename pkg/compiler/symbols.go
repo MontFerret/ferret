@@ -19,6 +19,7 @@ type (
 		registers      *RegisterAllocator
 		constants      []core.Value
 		constantsIndex map[uint64]int
+		params         map[string]string
 		globals        map[string]runtime.Operand
 		locals         []*Variable
 		scope          int
@@ -30,6 +31,7 @@ func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 		registers:      registers,
 		constants:      make([]core.Value, 0),
 		constantsIndex: make(map[uint64]int),
+		params:         make(map[string]string),
 		globals:        make(map[string]runtime.Operand),
 		locals:         make([]*Variable, 0),
 	}
@@ -41,6 +43,12 @@ func (st *SymbolTable) Scope() int {
 
 func (st *SymbolTable) EnterScope() {
 	st.scope++
+}
+
+func (st *SymbolTable) AddParam(name string) runtime.Operand {
+	st.params[name] = name
+
+	return st.AddConstant(values.NewString(name))
 }
 
 // AddConstant adds a constant to the constants pool and returns its index.

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"io"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/internal"
@@ -36,7 +37,13 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (core.Value, er
 		return Catch{}, false
 	}
 
-	vm.env = newEnvironment(opts)
+	env := newEnvironment(opts)
+
+	if err := vm.validateParams(env); err != nil {
+		return nil, err
+	}
+
+	vm.env = env
 	vm.registers = make([]core.Value, vm.program.Registers)
 	vm.globals = make(map[string]core.Value)
 	vm.pc = 0
@@ -66,6 +73,9 @@ loop:
 			vm.globals[constants[dst.Constant()].String()] = reg[src1]
 		case OpLoadGlobal:
 			reg[dst] = vm.globals[constants[src1.Constant()].String()]
+		case OpLoadParam:
+			name := constants[src1.Constant()]
+			reg[dst] = vm.env.params[name.String()]
 		case OpJump:
 			vm.pc = int(dst)
 		case OpJumpIfFalse:
@@ -208,7 +218,7 @@ loop:
 				case *values.Object:
 					reg[dst] = src.MustGetOr(getter, values.None)
 				case core.Keyed:
-					out, err := src.GetByKey(ctx, getter.String())
+					out, err := src.Get(ctx, getter.String())
 
 					if err == nil {
 						reg[dst] = out
@@ -231,7 +241,7 @@ loop:
 
 					reg[dst] = src.Get(int(idx))
 				case core.Indexed:
-					out, err := src.GetByIndex(ctx, int(values.ToInt(getter)))
+					out, err := src.Get(ctx, int(values.ToInt(getter)))
 
 					if err == nil {
 						reg[dst] = out
@@ -421,4 +431,32 @@ loop:
 	}
 
 	return vm.registers[NoopOperand], nil
+}
+
+func (vm *VM) validateParams(env *Environment) error {
+	if len(vm.program.Params) == 0 {
+		return nil
+	}
+
+	// There might be no errors.
+	// Thus, we allocate this slice lazily, on a first error.
+	var missedParams []string
+
+	for _, n := range vm.program.Params {
+		_, exists := env.params[n]
+
+		if !exists {
+			if missedParams == nil {
+				missedParams = make([]string, 0, len(vm.program.Params))
+			}
+
+			missedParams = append(missedParams, "@"+n)
+		}
+	}
+
+	if len(missedParams) > 0 {
+		return core.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	}
+
+	return nil
 }

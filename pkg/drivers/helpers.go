@@ -86,11 +86,11 @@ func SetDefaultParams(opts *Options, params Params) Params {
 	// set default cookies
 	if opts.Cookies != nil {
 		opts.Cookies.ForEach(func(value HTTPCookie, key values.String) bool {
-			_, exists := params.Cookies.Get(key)
+			_, exists := params.Cookies.GetCookie(key)
 
 			// do not override user's set values
 			if !exists {
-				params.Cookies.Set(value)
+				params.Cookies.SetCookie(value)
 			}
 
 			return true

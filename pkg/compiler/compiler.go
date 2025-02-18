@@ -3,10 +3,11 @@ package compiler
 import (
 	"errors"
 
+	goruntime "runtime"
+
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib"
-	goruntime "runtime"
 )
 
 type Compiler struct {
@@ -74,6 +75,11 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	program.Constants = l.symbols.constants
 	program.CatchTable = l.catchTable
 	program.Registers = int(l.registers.nextRegister)
+	program.Params = make([]string, 0, len(l.symbols.params))
+
+	for _, param := range l.symbols.params {
+		program.Params = append(program.Params, param)
+	}
 
 	return program, err
 }

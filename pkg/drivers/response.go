@@ -80,7 +80,7 @@ func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(responseMarshal(*resp), jettison.NoHTMLEscaping())
 }
 
-func (resp *HTTPResponse) GetByKey(_ context.Context, key string) (core.Value, error) {
+func (resp *HTTPResponse) Get(_ context.Context, key string) (core.Value, error) {
 	if len(key) == 0 {
 		return resp, nil
 	}

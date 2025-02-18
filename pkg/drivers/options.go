@@ -72,7 +72,7 @@ func WithCookie(cookie HTTPCookie) Option {
 			opts.Cookies = NewHTTPCookies()
 		}
 
-		opts.Cookies.Set(cookie)
+		opts.Cookies.SetCookie(cookie)
 	}
 }
 
@@ -83,7 +83,7 @@ func WithCookies(cookies []HTTPCookie) Option {
 		}
 
 		for _, c := range cookies {
-			opts.Cookies.Set(c)
+			opts.Cookies.SetCookie(c)
 		}
 	}
 }

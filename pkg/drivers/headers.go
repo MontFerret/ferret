@@ -158,7 +158,7 @@ func (h *HTTPHeaders) Get(key string) string {
 	return textproto.MIMEHeader(h.values).Get(key)
 }
 
-func (h *HTTPHeaders) GetByKey(_ context.Context, key string) (core.Value, error) {
+func (h *HTTPHeaders) GetHeader(_ context.Context, key string) (core.Value, error) {
 	if key == "" {
 		return values.None, nil
 	}

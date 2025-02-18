@@ -125,7 +125,7 @@ func (el *HTMLElement) Iterate(_ context.Context) (core.Iterator, error) {
 	return common.NewIterator(el)
 }
 
-func (el *HTMLElement) GetByKey(ctx context.Context, key string) (core.Value, error) {
+func (el *HTMLElement) Get(ctx context.Context, key string) (core.Value, error) {
 	return common.GetInElement(ctx, key, el)
 }
 

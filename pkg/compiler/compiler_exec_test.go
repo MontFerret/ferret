@@ -3,11 +3,12 @@ package compiler_test
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/parser"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/parser"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -230,6 +231,21 @@ func TestVariables(t *testing.T) {
 	//	So(string(out), ShouldEqual, `false`)
 	//})
 	//
+}
+
+func TestParam(t *testing.T) {
+	RunUseCases(t,
+		[]UseCase{
+			CaseRuntimeErrorAs(`RETURN @foo`, core.Error(runtime.ErrMissedParam, "@foo")),
+			Case(`RETURN @str`, "bar", "Should return a value of a parameter"),
+			Case(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
+			Case(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),
+		},
+		runtime.WithParam("str", "bar"),
+		runtime.WithParam("int", 1),
+		runtime.WithParam("bool", true),
+		runtime.WithParam("obj", map[string]interface{}{"str1": "foo", "str2": "bar"}),
+	)
 }
 
 func TestMathOperators(t *testing.T) {
@@ -1362,6 +1378,32 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 29, "gender": "f"},
 		}, "Should compile query with DESC SORT statement"),
+		CaseArray(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age ASC
+				RETURN u
+		`, []any{
+			map[string]any{"active": true, "age": 29, "gender": "f"},
+			map[string]any{"active": true, "age": 31, "gender": "m"},
+			map[string]any{"active": true, "age": 36, "gender": "m"},
+		}, "Should compile query with ASC SORT statement"),
 		CaseArray(`			LET users = [
 				{
 					active: true,
@@ -1430,4 +1472,122 @@ LET users = [
 	}, runtime.WithFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}))
+}
+
+func TestCollect(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		CaseCompilationError(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender
+				RETURN {
+					user: i,
+					gender: gender
+				}
+		`, "Should not have access to initial variables"),
+		CaseCompilationError(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				LET x = "foo"
+				COLLECT gender = i.gender
+				RETURN {x, gender}
+		`, "Should not have access to variables defined before COLLECT"),
+		CaseArray(`LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender
+				RETURN gender`, []any{"f", "m"}, "Should group result by a single key"),
+	})
 }

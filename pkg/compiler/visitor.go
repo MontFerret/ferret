@@ -235,12 +235,10 @@ func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 	}
 
 	if c := ctx.SortClause(); c != nil {
-		// TODO: Implement
 		return c.Accept(v)
 	}
 
 	if c := ctx.CollectClause(); c != nil {
-		// TODO: Implement
 		return c.Accept(v)
 	}
 
@@ -493,6 +491,16 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
+func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
+	//loop := v.loops.Loop()
+
+	// if ctx.CollectGrouping()
+
+	// Create new iterator
+
+	return nil
+}
+
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
 	return v.visitFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext), ctx.ErrorOperator() != nil)
 }
@@ -573,6 +581,14 @@ func (v *visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
 	}
 
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) VisitParam(ctx *fql.ParamContext) interface{} {
+	name := ctx.Identifier().GetText()
+	reg := v.registers.Allocate(Temp)
+	v.emitter.EmitAB(runtime.OpLoadParam, reg, v.symbols.AddParam(name))
+
+	return reg
 }
 
 func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {

@@ -79,7 +79,7 @@ func (req *HTTPRequest) Copy() core.Value {
 	return &cop
 }
 
-func (req *HTTPRequest) GetByKey(ctx context.Context, key string) (core.Value, error) {
+func (req *HTTPRequest) Get(ctx context.Context, key string) (core.Value, error) {
 	if len(key) == 0 {
 		return req, nil
 	}
