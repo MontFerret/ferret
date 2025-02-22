@@ -287,7 +287,7 @@ func TestHelpers(t *testing.T) {
 			})
 
 			//Convey("Should create a copy of a given array", func() {
-			//	vals := []core.Second{
+			//	vals := []core.Value{
 			//		values.NewInt(1),
 			//		values.NewInt(2),
 			//		values.NewInt(3),

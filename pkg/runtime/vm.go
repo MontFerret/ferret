@@ -399,9 +399,9 @@ loop:
 		case OpLoopCopy:
 			ds := reg[dst].(*internal.DataSet)
 			iterator := reg[src1].(*internal.Iterator)
-			ds.Push(&internal.Tuple{
-				First:  iterator.Value(),
-				Second: iterator.Key(),
+			ds.Push(&internal.KeyValuePair{
+				Key:   iterator.Key(),
+				Value: iterator.Value(),
 			})
 		case OpSortPrep:
 			reg[dst] = internal.NewStack(3)
@@ -412,11 +412,11 @@ loop:
 			stack := reg[src1].(*internal.Stack)
 			reg[dst] = stack.Pop()
 		case OpSortValue:
-			pair := reg[src1].(*internal.Tuple)
-			reg[dst] = pair.First
+			pair := reg[src1].(*internal.KeyValuePair)
+			reg[dst] = pair.Value
 		case OpSortKey:
-			pair := reg[src1].(*internal.Tuple)
-			reg[dst] = pair.Second
+			pair := reg[src1].(*internal.KeyValuePair)
+			reg[dst] = pair.Key
 		case OpSortSwap:
 			ds := reg[dst].(*internal.DataSet)
 			i := values.ToInt(reg[src1])

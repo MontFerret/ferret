@@ -240,11 +240,18 @@ func TestParam(t *testing.T) {
 			Case(`RETURN @str`, "bar", "Should return a value of a parameter"),
 			Case(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
 			Case(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),
+			CaseArray(`FOR i IN @values1
+			RETURN i`, []any{1, 2, 3, 4}, "Should iterate over an array parameter"),
+			CaseArray(`FOR i IN @values2
+			SORT i
+			RETURN i`, []any{"a", "b", "c", "d"}, "Should iterate over an object parameter"),
 		},
 		runtime.WithParam("str", "bar"),
 		runtime.WithParam("int", 1),
 		runtime.WithParam("bool", true),
 		runtime.WithParam("obj", map[string]interface{}{"str1": "foo", "str2": "bar"}),
+		runtime.WithParam("values1", []int{1, 2, 3, 4}),
+		runtime.WithParam("values2", map[string]interface{}{"a": "a", "b": "b", "c": "c", "d": "d"}),
 	)
 }
 
@@ -1327,6 +1334,39 @@ func TestForLimit(t *testing.T) {
 func TestForSort(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseArray(`
+LET strs = ["foo", "bar", "qaz", "abc"]
+
+FOR s IN strs
+	SORT s
+	RETURN s
+`, []any{"abc", "bar", "foo", "qaz"}, "Should sort strings"),
+		CaseArray(`
+LET users = [
+				{
+					name: "Ron",
+					age: 31,
+					gender: "m"
+				},
+				{
+					name: "Angela",
+					age: 29,
+					gender: "f"
+				},
+				{
+					name: "Bob",
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.name
+				RETURN u
+`, []any{
+			map[string]any{"name": "Angela", "age": 29, "gender": "f"},
+			map[string]any{"name": "Bob", "age": 36, "gender": "m"},
+			map[string]any{"name": "Ron", "age": 31, "gender": "m"},
+		}, "Should sort objects by name (string)"),
+		CaseArray(`
 LET users = [
 				{
 					active: true,
@@ -1351,7 +1391,7 @@ LET users = [
 			map[string]any{"active": true, "age": 29, "gender": "f"},
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
-		}, "Should compile query with SORT statement"),
+		}, "Should sort objects by age (int)"),
 		CaseArray(`
 			LET users = [
 				{
@@ -1377,7 +1417,7 @@ LET users = [
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 29, "gender": "f"},
-		}, "Should compile query with DESC SORT statement"),
+		}, "Should execute query with DESC SORT statement"),
 		CaseArray(`
 			LET users = [
 				{

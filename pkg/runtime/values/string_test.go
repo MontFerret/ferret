@@ -40,7 +40,7 @@ func TestString(t *testing.T) {
 	})
 
 	Convey(".MarshalJSON", t, func() {
-		Convey("It should correctly serialize Second", func() {
+		Convey("It should correctly serialize Value", func() {
 			value := "foobar"
 
 			json1, err := json.Marshal(value)

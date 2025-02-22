@@ -265,6 +265,43 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 	return nil
 }
 
+// VisitSortClause / VisitSortClause implements the following quick sort algorithm:
+//
+// // Create a stack for storing subarray indices
+// stack := []struct{ low, high int }{}
+//
+// // Push the initial range of the array
+// stack = append(stack, struct{ low, high int }{low: 0, high: len(arr) - 1})
+//
+// // Process the stack until empty
+//
+//	for len(stack) > 0 {
+//		// Pop the range
+//		n := len(stack) - 1
+//		low, high := stack[n].low, stack[n].high
+//		stack = stack[:n]
+//
+//		// Partition the current subarray
+//		if low < high {
+//			pivot := arr[high] // Choosing the last element as the pivot
+//			i := low - 1       // Index for elements smaller than the pivot
+//
+//			for j := low; j < high; j++ {
+//				if arr[j] <= pivot {
+//					i++
+//					arr[i], arr[j] = arr[j], arr[i] // Swap
+//				}
+//			}
+//
+//			i++
+//
+//			arr[i], arr[high] = arr[high], arr[i] // Place pivot in its correct position
+//
+//			// Push the indices of the left and right subarrays onto the stack
+//			stack = append(stack, struct{ low, high int }{low: low, high: i - 1})
+//			stack = append(stack, struct{ low, high int }{low: i + 1, high: high})
+//		}
+//	}
 func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	loop := v.loops.Loop()
 	v.emitter.EmitAB(runtime.OpLoopCopy, loop.Result, loop.Iterator)
@@ -311,6 +348,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	v.emitter.EmitAB(runtime.OpSortPop, low, stack)
 	v.emitter.EmitAB(runtime.OpSortPop, high, stack)
 
+	// if low < high
 	// comp = low < high
 	v.emitter.EmitABC(runtime.OpLt, comp, low, high)
 	v.emitter.EmitJumpc(runtime.OpJumpIfFalse, stackLoopStart, comp)
@@ -342,33 +380,9 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	// Compare pivot with each clause
 	for i, clause := range clauses {
 		sort := clause.(*fql.SortClauseExpressionContext)
-		exp := sort.Expression()
 
-		// We override the loop variables with the pivot value
-		if loop.ValueName != "" {
-			varReg := v.symbols.Variable(loop.ValueName)
-			v.emitter.EmitAB(runtime.OpSortValue, varReg, pivot)
-		}
-
-		if loop.KeyName != "" {
-			varReg := v.symbols.Variable(loop.KeyName)
-			v.emitter.EmitAB(runtime.OpSortKey, varReg, pivot)
-		}
-
-		pivotReg := exp.Accept(v).(runtime.Operand)
-
-		// And now override the loop variables with the n value
-		if loop.ValueName != "" {
-			varReg := v.symbols.Variable(loop.ValueName)
-			v.emitter.EmitAB(runtime.OpSortValue, varReg, n)
-		}
-
-		if loop.KeyName != "" {
-			varReg := v.symbols.Variable(loop.KeyName)
-			v.emitter.EmitAB(runtime.OpSortKey, varReg, n)
-		}
-
-		currentReg := exp.Accept(v).(runtime.Operand)
+		pivotProp := v.visitSortClauseExpression(sort, loop, pivot)
+		currentProp := v.visitSortClauseExpression(sort, loop, n)
 
 		comparator := runtime.OpLte
 		direction := clause.SortDirection()
@@ -378,7 +392,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		}
 
 		// comp = current <= pivot or current >= pivot
-		v.emitter.EmitABC(comparator, comp, currentReg, pivotReg)
+		v.emitter.EmitABC(comparator, comp, currentProp, pivotProp)
 		// If comp is false, jump to loop end
 		skipSwapJumps[i] = v.emitter.EmitJumpc(runtime.OpJumpIfFalse, jumpPlaceholder, comp)
 	}
@@ -431,6 +445,44 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	v.emitLoopBegin(loop)
 
 	return nil
+}
+
+func (v *visitor) visitSortClauseExpression(ctx *fql.SortClauseExpressionContext, loop *Loop, src runtime.Operand) runtime.Operand {
+	var isVar bool
+
+	if e := ctx.Expression(); e != nil {
+		if p := e.Predicate(); p != nil {
+			if a := p.ExpressionAtom(); a != nil {
+				isVar = a.Variable() != nil
+			}
+		}
+	}
+
+	var dst runtime.Operand
+
+	// if the clause uses plain variable that means we need to use value as is
+	if isVar {
+		dst = v.registers.Allocate(Temp)
+	} else if loop.ValueName != "" {
+		dst = v.symbols.Variable(loop.ValueName)
+	} else {
+		dst = v.symbols.Variable(loop.KeyName)
+	}
+
+	// We override the loop variables with the pivot value
+	if loop.ValueName != "" {
+		v.emitter.EmitAB(runtime.OpSortValue, dst, src)
+	}
+
+	if loop.KeyName != "" {
+		v.emitter.EmitAB(runtime.OpSortKey, dst, src)
+	}
+
+	if !isVar {
+		return ctx.Expression().Accept(v).(runtime.Operand)
+	}
+
+	return dst
 }
 
 func (v *visitor) visitOffset(src1 runtime.Operand) interface{} {

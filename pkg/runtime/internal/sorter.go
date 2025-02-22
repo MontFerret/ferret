@@ -31,7 +31,7 @@ func (iter *sorterIterator) Next(_ context.Context) (value core.Value, key core.
 	iter.pos++
 
 	// TODO: Make it less ugly
-	return iter.data.Get(iter.pos - 1).(*Tuple).First, values.NewInt(iter.pos - 1), nil
+	return iter.data.Get(iter.pos - 1).(*KeyValuePair).Value, values.NewInt(iter.pos - 1), nil
 }
 
 func (s *Sorter) Iterate(_ context.Context) (core.Iterator, error) {
