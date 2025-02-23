@@ -381,6 +381,13 @@ loop:
 		case OpForLoopKey:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Key()
+		case OpLoopKeyValue:
+			ds := reg[dst].(*internal.DataSet)
+			iterator := reg[src1].(*internal.Iterator)
+			ds.Push(&internal.KeyValuePair{
+				Key:   iterator.Key(),
+				Value: iterator.Value(),
+			})
 		case OpWhileLoopPrep:
 			reg[dst] = values.Int(-1)
 		case OpWhileLoopNext:
@@ -396,13 +403,9 @@ loop:
 		case OpLoopPush:
 			ds := reg[dst].(*internal.DataSet)
 			ds.Push(reg[src1])
-		case OpLoopCopy:
-			ds := reg[dst].(*internal.DataSet)
-			iterator := reg[src1].(*internal.Iterator)
-			ds.Push(&internal.KeyValuePair{
-				Key:   iterator.Key(),
-				Value: iterator.Value(),
-			})
+		case OpLoopSequence:
+			ds := reg[src1].(*internal.DataSet)
+			reg[dst] = internal.NewSequence(ds.ToArray())
 		case OpSortPrep:
 			reg[dst] = internal.NewStack(3)
 		case OpSortPush:
@@ -422,9 +425,6 @@ loop:
 			i := values.ToInt(reg[src1])
 			j := values.ToInt(reg[src2])
 			ds.Swap(int(i), int(j))
-		case OpSortCollect:
-			ds := reg[src1].(*internal.DataSet)
-			reg[dst] = internal.NewSorter(ds.ToArray())
 		case OpReturn:
 			break loop
 		}

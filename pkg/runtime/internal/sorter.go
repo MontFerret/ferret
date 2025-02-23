@@ -8,56 +8,56 @@ import (
 )
 
 type (
-	Sorter struct {
+	Sequence struct {
 		data *values.Array
 	}
 
-	sorterIterator struct {
+	sequenceIterator struct {
 		data   *values.Array
 		length int
 		pos    int
 	}
 )
 
-func NewSorter(data *values.Array) *Sorter {
-	return &Sorter{data}
+func NewSequence(data *values.Array) *Sequence {
+	return &Sequence{data}
 }
 
-func (iter *sorterIterator) HasNext(_ context.Context) (bool, error) {
+func (iter *sequenceIterator) HasNext(_ context.Context) (bool, error) {
 	return iter.length > iter.pos, nil
 }
 
-func (iter *sorterIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
+func (iter *sequenceIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
 	iter.pos++
 
 	// TODO: Make it less ugly
 	return iter.data.Get(iter.pos - 1).(*KeyValuePair).Value, values.NewInt(iter.pos - 1), nil
 }
 
-func (s *Sorter) Iterate(_ context.Context) (core.Iterator, error) {
-	return &sorterIterator{data: s.data, length: s.data.Length(), pos: 0}, nil
+func (s *Sequence) Iterate(_ context.Context) (core.Iterator, error) {
+	return &sequenceIterator{data: s.data, length: s.data.Length(), pos: 0}, nil
 }
 
-func (s *Sorter) MarshalJSON() ([]byte, error) {
+func (s *Sequence) MarshalJSON() ([]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Sorter) String() string {
-	return "[Sorter]"
+func (s *Sequence) String() string {
+	return "[Sequence]"
 }
 
-func (s *Sorter) Unwrap() interface{} {
+func (s *Sequence) Unwrap() interface{} {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Sorter) Hash() uint64 {
+func (s *Sequence) Hash() uint64 {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Sorter) Copy() core.Value {
+func (s *Sequence) Copy() core.Value {
 	//TODO implement me
 	panic("implement me")
 }

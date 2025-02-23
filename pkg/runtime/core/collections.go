@@ -14,6 +14,7 @@ type (
 	// Collection represents a collection of values.
 	// Generic interface for all collection-like structures.
 	Collection interface {
+		Value
 		Comparable
 		Measurable
 		Iterable

@@ -265,6 +265,19 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 	return nil
 }
 
+func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
+	//loop := v.loops.Loop()
+	//v.emitter.EmitAB(runtime.OpLoopKeyValue, loop.Result, loop.Iterator)
+	//v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
+	//v.emitter.EmitA(runtime.OpClose, loop.Iterator)
+
+	// if ctx.CollectGrouping()
+
+	// Create new iterator
+
+	return nil
+}
+
 // VisitSortClause / VisitSortClause implements the following quick sort algorithm:
 //
 // // Create a stack for storing subarray indices
@@ -304,7 +317,7 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 //	}
 func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	loop := v.loops.Loop()
-	v.emitter.EmitAB(runtime.OpLoopCopy, loop.Result, loop.Iterator)
+	v.emitter.EmitAB(runtime.OpLoopKeyValue, loop.Result, loop.Iterator)
 	v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
 	v.emitter.EmitA(runtime.OpClose, loop.Iterator)
 
@@ -438,7 +451,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	v.emitter.PatchJumpNext(stackLoopExitJmp)
 
 	// Replace source with sorted array
-	v.emitter.EmitAB(runtime.OpSortCollect, loop.Src, loop.Result)
+	v.emitter.EmitAB(runtime.OpLoopSequence, loop.Src, loop.Result)
 
 	// Create new for loop
 	// TODO: Reuse existing DataSet instance
@@ -541,16 +554,6 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 	}
 
 	panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
-	//loop := v.loops.Loop()
-
-	// if ctx.CollectGrouping()
-
-	// Create new iterator
-
-	return nil
 }
 
 func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {

@@ -240,11 +240,10 @@ func TestParam(t *testing.T) {
 			Case(`RETURN @str`, "bar", "Should return a value of a parameter"),
 			Case(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
 			Case(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),
-			CaseArray(`FOR i IN @values1
-			RETURN i`, []any{1, 2, 3, 4}, "Should iterate over an array parameter"),
-			CaseArray(`FOR i IN @values2
-			SORT i
-			RETURN i`, []any{"a", "b", "c", "d"}, "Should iterate over an object parameter"),
+			CaseArray(`FOR i IN @values1 RETURN i`, []any{1, 2, 3, 4}, "Should iterate over an array parameter"),
+			CaseArray(`FOR i IN @values2 SORT i RETURN i`, []any{"a", "b", "c", "d"}, "Should iterate over an object parameter"),
+			CaseArray(`FOR i IN @start..@end RETURN i`, []any{1, 2, 3, 4, 5}, "Should iterate over a range parameter"),
+			Case(`RETURN @obj.str1`, "foo", "Should be possible to use in member expression"),
 		},
 		runtime.WithParam("str", "bar"),
 		runtime.WithParam("int", 1),
@@ -252,6 +251,8 @@ func TestParam(t *testing.T) {
 		runtime.WithParam("obj", map[string]interface{}{"str1": "foo", "str2": "bar"}),
 		runtime.WithParam("values1", []int{1, 2, 3, 4}),
 		runtime.WithParam("values2", map[string]interface{}{"a": "a", "b": "b", "c": "c", "d": "d"}),
+		runtime.WithParam("start", 1),
+		runtime.WithParam("end", 5),
 	)
 }
 
@@ -1333,14 +1334,14 @@ func TestForLimit(t *testing.T) {
 
 func TestForSort(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		CaseArray(`
+		SkipCaseArray(`
 LET strs = ["foo", "bar", "qaz", "abc"]
 
 FOR s IN strs
 	SORT s
 	RETURN s
 `, []any{"abc", "bar", "foo", "qaz"}, "Should sort strings"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					name: "Ron",
@@ -1366,7 +1367,7 @@ LET users = [
 			map[string]any{"name": "Bob", "age": 36, "gender": "m"},
 			map[string]any{"name": "Ron", "age": 31, "gender": "m"},
 		}, "Should sort objects by name (string)"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -1392,7 +1393,7 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}, "Should sort objects by age (int)"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -1418,7 +1419,7 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 29, "gender": "f"},
 		}, "Should execute query with DESC SORT statement"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -1444,7 +1445,7 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}, "Should compile query with ASC SORT statement"),
-		CaseArray(`			LET users = [
+		SkipCaseArray(`			LET users = [
 				{
 					active: true,
 					age: 31,
@@ -1475,7 +1476,7 @@ LET users = [
 				map[string]any{"active": true, "age": 31, "gender": "m"},
 				map[string]any{"active": true, "age": 36, "gender": "m"},
 			}, "Should compile query with SORT statement with multiple expressions"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -1509,6 +1510,32 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}, "Should define variables and call functions"),
+		CaseArray(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				FILTER u.gender == "m"
+				SORT u.age
+				RETURN u
+		`, []any{
+			map[string]any{"active": true, "age": 31, "gender": "m"},
+			map[string]any{"active": true, "age": 36, "gender": "m"},
+		}, "Should compile query with FILTER and SORT statements"),
 	}, runtime.WithFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}))

@@ -66,11 +66,11 @@ const (
 	OpSortSwap
 	OpSortValue
 	OpSortKey
-	OpSortCollect
 
 	OpLoopBegin // Creates a loop result dataset
 	OpLoopPush
-	OpLoopCopy
+	OpLoopKeyValue
+	OpLoopSequence
 	OpLoopEnd
 
 	OpForLoopPrep // Creates an iterator for a loop
