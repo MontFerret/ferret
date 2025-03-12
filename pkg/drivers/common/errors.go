@@ -1,11 +1,10 @@
 package common
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
 
 	"github.com/rs/zerolog"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 var (

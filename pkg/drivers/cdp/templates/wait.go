@@ -8,7 +8,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const (
@@ -287,28 +286,28 @@ func WaitForElementAll(id runtime.RemoteObjectID, selector drivers.QuerySelector
 		tmpl = waitForElementAllByXPathFragment
 	}
 
-	return partialWaitEquality(id, values.ZeroInt, when, tmpl).WithArgSelector(selector)
+	return partialWaitEquality(id, core.ZeroInt, when, tmpl).WithArgSelector(selector)
 }
 
 const waitForClassFragment = `el.className.split(' ').find(i => i === args[0]);`
 
-func WaitForClass(id runtime.RemoteObjectID, class values.String, when drivers.WaitEvent) *eval.Function {
+func WaitForClass(id runtime.RemoteObjectID, class core.String, when drivers.WaitEvent) *eval.Function {
 	return partialWaitExistence(id, when, waitForClassFragment).WithArgValue(class)
 }
 
 const waitForClassBySelectorFragment = `found.className.split(' ').find(i => i === args[0]);`
 
-func WaitForClassBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) *eval.Function {
+func WaitForClassBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, class core.String, when drivers.WaitEvent) *eval.Function {
 	return partialWaitExistenceBySelector(id, selector, when, waitForClassBySelectorFragment).WithArgValue(class)
 }
 
-func WaitForClassBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) *eval.Function {
+func WaitForClassBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, class core.String, when drivers.WaitEvent) *eval.Function {
 	return partialWaitExistenceBySelectorAll(id, selector, when, waitForClassFragment).WithArgValue(class)
 }
 
 const waitForAttributeFragment = `el.getAttribute(args[0])`
 
-func WaitForAttribute(id runtime.RemoteObjectID, name values.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
+func WaitForAttribute(id runtime.RemoteObjectID, name core.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
 	return partialWaitEquality(id, expected, when, waitForAttributeFragment).WithArgValue(name)
 }
 
@@ -318,7 +317,7 @@ func WaitForAttributeBySelector(id runtime.RemoteObjectID, selector drivers.Quer
 	return partialWaitEqualityBySelector(id, selector, expected, when, waitForAttributeBySelectorFragment).WithArgValue(name)
 }
 
-func WaitForAttributeBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, name values.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
+func WaitForAttributeBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, name core.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
 	return partialWaitEqualityBySelectorAll(id, selector, expected, when, waitForAttributeFragment).WithArgValue(name)
 }
 
@@ -327,7 +326,7 @@ const waitForStyleFragment = `(function getStyles() {
 	return styles[args[0]];
 })()`
 
-func WaitForStyle(id runtime.RemoteObjectID, name values.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
+func WaitForStyle(id runtime.RemoteObjectID, name core.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
 	return partialWaitEquality(id, expected, when, waitForStyleFragment).WithArgValue(name)
 }
 
@@ -336,10 +335,10 @@ const waitForStyleBySelectorFragment = `(function getStyles() {
 	return styles[args[0]];
 })()`
 
-func WaitForStyleBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, name values.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
+func WaitForStyleBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, name core.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
 	return partialWaitEqualityBySelector(id, selector, expected, when, waitForStyleBySelectorFragment).WithArgValue(name)
 }
 
-func WaitForStyleBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, name values.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
+func WaitForStyleBySelectorAll(id runtime.RemoteObjectID, selector drivers.QuerySelector, name core.String, expected core.Value, when drivers.WaitEvent) *eval.Function {
 	return partialWaitEqualityBySelectorAll(id, selector, expected, when, waitForStyleFragment).WithArgValue(name)
 }

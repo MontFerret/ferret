@@ -1,13 +1,13 @@
 package dom
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strings"
 
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 var FrameIDType = core.NewType("ferret.drivers.cdp.dom.FrameID")
@@ -41,7 +41,7 @@ func (f FrameID) Compare(other core.Value) int64 {
 		s2 = string(v)
 	case *HTMLDocument:
 		s2 = string(v.Frame().Frame.ID)
-	case values.String:
+	case core.String:
 		s2 = v.String()
 	default:
 		return -1
@@ -55,7 +55,7 @@ func (f FrameID) Unwrap() interface{} {
 }
 
 func (f FrameID) Hash() uint64 {
-	return values.Hash(FrameIDType, []byte(f))
+	return internal.Hash(FrameIDType, []byte(f))
 }
 
 func (f FrameID) Copy() core.Value {

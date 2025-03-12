@@ -2,14 +2,12 @@ package internal
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type DataSet struct {
 	hashmap map[uint64]bool
-	values  *values.Array
+	values  *Array
 }
 
 func NewDataSet(distinct bool) *DataSet {
@@ -21,7 +19,7 @@ func NewDataSet(distinct bool) *DataSet {
 
 	return &DataSet{
 		hashmap: hashmap,
-		values:  values.NewArray(16),
+		values:  NewArray(16),
 	}
 }
 
@@ -57,7 +55,7 @@ func (ds *DataSet) Length() int {
 	return ds.values.Length()
 }
 
-func (ds *DataSet) ToArray() *values.Array {
+func (ds *DataSet) ToArray() *Array {
 	return ds.values
 }
 

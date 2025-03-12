@@ -3,6 +3,7 @@ package compiler_test
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,8 +14,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -161,7 +160,7 @@ func TestVariables(t *testing.T) {
 		out, err := Run(p, runtime.WithFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter++
 
-			return values.NewInt(counter), nil
+			return core.NewInt(counter), nil
 		}))
 
 		So(err, ShouldBeNil)
@@ -183,9 +182,9 @@ func TestVariables(t *testing.T) {
 		out, err := Run(p, runtime.WithFunction("COUNTER", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter++
 
-			return values.NewInt(counter), nil
+			return core.NewInt(counter), nil
 		}), runtime.WithFunction("T::FAIL", func(ctx context.Context, args ...core.Value) (core.Value, error) {
-			return values.None, fmt.Errorf("test")
+			return core.None, fmt.Errorf("test")
 		}))
 
 		So(err, ShouldBeNil)
@@ -350,7 +349,7 @@ func TestLogicalOperators(t *testing.T) {
 		Case(`RETURN !ERROR()? && TRUE`, true),
 		Case(`LET u = { valid: false } RETURN u.valid || TRUE`, true),
 	}, runtime.WithFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		return values.None, fmt.Errorf("test")
+		return core.None, fmt.Errorf("test")
 	}))
 }
 
@@ -420,7 +419,7 @@ func TestRegexpOperator(t *testing.T) {
 		Case(`RETURN "foo" !~ "[a-z]+bar$"`, true),
 		Case(`RETURN "foo" !~ T::REGEXP()`, true),
 	}, runtime.WithFunction("T::REGEXP", func(_ context.Context, _ ...core.Value) (value core.Value, e error) {
-		return values.NewString("[a-z]+bar$"), nil
+		return core.NewString("[a-z]+bar$"), nil
 	}))
 
 	// TODO: Fix
@@ -934,17 +933,17 @@ func TestForWhile(t *testing.T) {
 		`, []any{0, 1, 2, 2, 4, 6, 3, 6, 9, 12, 4, 8, 12, 16, 20}),
 	}, runtime.WithFunctions(map[string]core.Function{
 		"UNTIL": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-			if untilCounter < int(values.ToInt(args[0])) {
+			if untilCounter < int(internal.ToInt(args[0])) {
 				untilCounter++
 
-				return values.True, nil
+				return core.True, nil
 			}
 
-			return values.False, nil
+			return core.False, nil
 		},
 		"COUNTER": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter++
-			return values.NewInt(counter), nil
+			return core.NewInt(counter), nil
 		},
 	}))
 }
@@ -967,7 +966,7 @@ func TestForTernaryWhileExpression(t *testing.T) {
 	}, runtime.WithFunctions(map[string]core.Function{
 		"COUNTER": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter++
-			return values.NewInt(counter), nil
+			return core.NewInt(counter), nil
 		},
 	}))
 }
@@ -993,11 +992,11 @@ func TestForDoWhile(t *testing.T) {
 	}, runtime.WithFunctions(map[string]core.Function{
 		"COUNTER": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter++
-			return values.NewInt(counter), nil
+			return core.NewInt(counter), nil
 		},
 		"COUNTER2": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter2++
-			return values.NewInt(counter), nil
+			return core.NewInt(counter), nil
 		},
 	}))
 }
@@ -1269,12 +1268,12 @@ LET users = [
 		"COUNT_A": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counterA++
 
-			return values.None, nil
+			return core.None, nil
 		},
 		"COUNT_B": func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counterB++
 
-			return values.None, nil
+			return core.None, nil
 		},
 	}))
 }
@@ -1328,7 +1327,7 @@ func TestForLimit(t *testing.T) {
 				RETURN i
 		`, []any{1, 2}, "Should be able to use array element"),
 	}, runtime.WithFunction("LIMIT_VALUE", func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		return values.NewInt(2), nil
+		return core.NewInt(2), nil
 	}))
 }
 
@@ -1537,7 +1536,7 @@ LET users = [
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}, "Should compile query with FILTER and SORT statements"),
 	}, runtime.WithFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		return values.None, nil
+		return core.None, nil
 	}))
 }
 
@@ -1653,8 +1652,6 @@ func TestCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i IN users
-				COLLECT gender = i.gender
-				RETURN gender`, []any{"f", "m"}, "Should group result by a single key"),
+			g`, []any{"f", "m"}, "Should group result by a single key"),
 	})
 }

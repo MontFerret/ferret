@@ -2,7 +2,6 @@ package base
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type CompareOperator int
@@ -47,18 +46,18 @@ func (op CompareOperator) Compare(args []core.Value) (bool, error) {
 
 	switch op {
 	case NotEqualOp:
-		result = values.Compare(actual, expected) != 0
+		result = core.CompareValues(actual, expected) != 0
 	case EqualOp:
-		result = values.Compare(actual, expected) == 0
+		result = core.CompareValues(actual, expected) == 0
 	case LessOp:
-		result = values.Compare(actual, expected) == -1
+		result = core.CompareValues(actual, expected) == -1
 	case LessOrEqualOp:
-		c := values.Compare(actual, expected)
+		c := core.CompareValues(actual, expected)
 		result = c == -1 || c == 0
 	case GreaterOp:
-		result = values.Compare(actual, expected) == 1
+		result = core.CompareValues(actual, expected) == 1
 	default:
-		c := values.Compare(actual, expected)
+		c := core.CompareValues(actual, expected)
 		result = c == 1 || c == 0
 	}
 

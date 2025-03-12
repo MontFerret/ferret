@@ -2,8 +2,8 @@ package eval
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/logging"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const (
@@ -92,7 +91,7 @@ func (rt *Runtime) EvalValue(ctx context.Context, fn *Function) (core.Value, err
 	out, err := rt.evalInternal(ctx, fn.returnValue())
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return rt.resolver.ToValue(ctx, out)
@@ -106,13 +105,13 @@ func (rt *Runtime) EvalElement(ctx context.Context, fn *Function) (core.Value, e
 	}
 
 	if ref.ObjectID == nil {
-		return values.None, nil
+		return core.None, nil
 	}
 
 	return rt.resolver.ToElement(ctx, ref)
 }
 
-func (rt *Runtime) EvalElements(ctx context.Context, fn *Function) (*values.Array, error) {
+func (rt *Runtime) EvalElements(ctx context.Context, fn *Function) (*internal.Array, error) {
 	ref, err := rt.EvalRef(ctx, fn)
 
 	if err != nil {
@@ -125,13 +124,13 @@ func (rt *Runtime) EvalElements(ctx context.Context, fn *Function) (*values.Arra
 		return nil, err
 	}
 
-	arr, ok := val.(*values.Array)
+	arr, ok := val.(*internal.Array)
 
 	if ok {
 		return arr, nil
 	}
 
-	return values.NewArrayWith(val), nil
+	return internal.NewArrayWith(val), nil
 }
 
 func (rt *Runtime) Compile(ctx context.Context, fn *Function) (*CompiledFunction, error) {
@@ -193,7 +192,7 @@ func (rt *Runtime) CallValue(ctx context.Context, fn *CompiledFunction) (core.Va
 	out, err := rt.callInternal(ctx, fn.returnValue())
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return rt.resolver.ToValue(ctx, out)
@@ -209,7 +208,7 @@ func (rt *Runtime) CallElement(ctx context.Context, fn *CompiledFunction) (drive
 	return rt.resolver.ToElement(ctx, ref)
 }
 
-func (rt *Runtime) CallElements(ctx context.Context, fn *CompiledFunction) (*values.Array, error) {
+func (rt *Runtime) CallElements(ctx context.Context, fn *CompiledFunction) (*internal.Array, error) {
 	ref, err := rt.CallRef(ctx, fn)
 
 	if err != nil {
@@ -222,13 +221,13 @@ func (rt *Runtime) CallElements(ctx context.Context, fn *CompiledFunction) (*val
 		return nil, err
 	}
 
-	arr, ok := val.(*values.Array)
+	arr, ok := val.(*internal.Array)
 
 	if ok {
 		return arr, nil
 	}
 
-	return values.NewArrayWith(val), nil
+	return internal.NewArrayWith(val), nil
 }
 
 func (rt *Runtime) evalInternal(ctx context.Context, fn *Function) (runtime.RemoteObject, error) {

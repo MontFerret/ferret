@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const (
@@ -55,9 +54,9 @@ func RegisterLib(ns core.Namespace) error {
 
 func toFloat(arg core.Value) float64 {
 	switch v := arg.(type) {
-	case values.Float:
+	case core.Float:
 		return float64(v)
-	case values.Int:
+	case core.Int:
 		return float64(v)
 	default:
 		return 0

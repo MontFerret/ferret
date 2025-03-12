@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -62,5 +61,5 @@ func WithValue(val core.Value) Message {
 }
 
 func WithErr(err error) Message {
-	return &msg{err: err, value: values.None}
+	return &msg{err: err, value: core.None}
 }

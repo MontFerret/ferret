@@ -6,7 +6,6 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -15,7 +14,7 @@ type (
 	QuerySelector struct {
 		core.Value
 		kind  QuerySelectorKind
-		value values.String
+		value core.String
 	}
 )
 
@@ -43,14 +42,14 @@ func (v QuerySelectorKind) String() string {
 	return qsvStr[UnknownSelector]
 }
 
-func NewCSSSelector(value values.String) QuerySelector {
+func NewCSSSelector(value core.String) QuerySelector {
 	return QuerySelector{
 		kind:  CSSSelector,
 		value: value,
 	}
 }
 
-func NewXPathSelector(value values.String) QuerySelector {
+func NewXPathSelector(value core.String) QuerySelector {
 	return QuerySelector{
 		kind:  XPathSelector,
 		value: value,
@@ -84,7 +83,7 @@ func (q QuerySelector) Compare(other core.Value) int64 {
 	}
 
 	if q.kind == otherSelector.Kind() {
-		return q.value.Compare(values.NewString(otherSelector.String()))
+		return q.value.Compare(core.NewString(otherSelector.String()))
 	}
 
 	if q.kind == CSSSelector {

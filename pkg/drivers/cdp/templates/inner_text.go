@@ -2,19 +2,19 @@ package templates
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const setInnerText = `(el, value) => {
 	el.innerText = value;
 }`
 
-func SetInnerText(id runtime.RemoteObjectID, value values.String) *eval.Function {
+func SetInnerText(id runtime.RemoteObjectID, value core.String) *eval.Function {
 	return eval.F(setInnerText).WithArgRef(id).WithArgValue(value)
 }
 
@@ -50,7 +50,7 @@ var (
 }`, xpathAsElementFragment, notFoundErrorFragment)
 )
 
-func SetInnerTextBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, value values.String) *eval.Function {
+func SetInnerTextBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, value core.String) *eval.Function {
 	return toFunction(selector, setInnerTextByCSSSelector, setInnerTextByXPathSelector).
 		WithArgRef(id).
 		WithArgSelector(selector).

@@ -7,7 +7,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -21,7 +20,7 @@ func TestLte(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = Lte(context.Background(), values.NewInt(1))
+			_, err = Lte(context.Background(), core.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -30,7 +29,7 @@ func TestLte(t *t.T) {
 	Convey("When args are numbers", t, func() {
 		Convey("When 2 and 1", func() {
 			Convey("It should return an error", func() {
-				_, err := Lte(context.Background(), values.NewInt(2), values.NewInt(1))
+				_, err := Lte(context.Background(), core.NewInt(2), core.NewInt(1))
 
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '2' to be less than or equal to [int] '1'").Error())
@@ -39,7 +38,7 @@ func TestLte(t *t.T) {
 
 		Convey("When 1 and 1", func() {
 			Convey("It should not return an error", func() {
-				_, err := Lte(context.Background(), values.NewInt(1), values.NewInt(1))
+				_, err := Lte(context.Background(), core.NewInt(1), core.NewInt(1))
 
 				So(err, ShouldBeNil)
 			})
@@ -47,7 +46,7 @@ func TestLte(t *t.T) {
 
 		Convey("When 1 and 2", func() {
 			Convey("It should not return an error", func() {
-				_, err := Lte(context.Background(), values.NewInt(1), values.NewInt(2))
+				_, err := Lte(context.Background(), core.NewInt(1), core.NewInt(2))
 
 				So(err, ShouldBeNil)
 			})
@@ -64,7 +63,7 @@ func TestNotLte(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = NotLte(context.Background(), values.NewInt(1))
+			_, err = NotLte(context.Background(), core.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -73,7 +72,7 @@ func TestNotLte(t *t.T) {
 	Convey("When args are numbers", t, func() {
 		Convey("When 1 and 2", func() {
 			Convey("It should return an error", func() {
-				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(2))
+				_, err := NotLte(context.Background(), core.NewInt(1), core.NewInt(2))
 
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '2'").Error())
@@ -82,7 +81,7 @@ func TestNotLte(t *t.T) {
 
 		Convey("When 1 and 1", func() {
 			Convey("It should return an error", func() {
-				_, err := NotLte(context.Background(), values.NewInt(1), values.NewInt(1))
+				_, err := NotLte(context.Background(), core.NewInt(1), core.NewInt(1))
 
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be less than or equal to [int] '1'").Error())
@@ -91,7 +90,7 @@ func TestNotLte(t *t.T) {
 
 		Convey("When 2 and 1", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotLte(context.Background(), values.NewInt(2), values.NewInt(1))
+				_, err := NotLte(context.Background(), core.NewInt(2), core.NewInt(1))
 
 				So(err, ShouldBeNil)
 			})

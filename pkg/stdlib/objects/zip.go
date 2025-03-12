@@ -3,9 +3,8 @@ package objects
 import (
 	"context"
 	"fmt"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -18,22 +17,22 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	for _, arg := range args {
 		err = core.ValidateType(arg, types.Array)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 	}
 
-	keys := args[0].(*values.Array)
-	vals := args[1].(*values.Array)
+	keys := args[0].(*internal.Array)
+	vals := args[1].(*internal.Array)
 
 	if keys.Length() != vals.Length() {
-		return values.None, core.Error(
+		return core.None, core.Error(
 			core.ErrInvalidArgument,
 			fmt.Sprintf("keys and values must have the same length. got keys: %d, values: %d",
 				keys.Length(), vals.Length(),
@@ -44,18 +43,18 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 	err = validateArrayOf(types.String, keys)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	zipped := values.NewObject()
+	zipped := internal.NewObject()
 
-	var k values.String
+	var k core.String
 	var val core.Value
 	var exists bool
-	keyExists := map[values.String]bool{}
+	keyExists := map[core.String]bool{}
 
 	keys.ForEach(func(key core.Value, idx int) bool {
-		k = key.(values.String)
+		k = key.(core.String)
 
 		// this is necessary to implement ArangoDB's behavior.
 		// in ArangoDB the first value in values is

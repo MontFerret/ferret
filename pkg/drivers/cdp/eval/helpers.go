@@ -1,12 +1,12 @@
 package eval
 
 import (
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/core"
 	"strings"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 func parseRuntimeException(details *runtime.ExceptionDetails) error {
@@ -20,8 +20,8 @@ func parseRuntimeException(details *runtime.ExceptionDetails) error {
 		return drivers.ErrNotFound
 	}
 
-	return core.Error(
-		core.ErrUnexpected,
+	return runtime2.Error(
+		runtime2.ErrUnexpected,
 		desc,
 	)
 }

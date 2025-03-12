@@ -2,13 +2,13 @@ package strings
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
 	"strings"
 
 	"github.com/gobwas/glob"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 var (
@@ -24,14 +24,14 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	str := args[0].String()
 	pattern := args[1].String()
 
 	if len(pattern) == 0 {
-		return values.NewBoolean(len(str) == 0), nil
+		return core.NewBoolean(len(str) == 0), nil
 	}
 
 	// TODO: Remove me in next releases
@@ -51,7 +51,7 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 	pattern = string(replaced)
 
 	if len(args) > 2 {
-		if values.ToBoolean(args[2]) {
+		if internal.ToBoolean(args[2]) {
 			str = strings.ToLower(str)
 			pattern = strings.ToLower(pattern)
 		}
@@ -63,5 +63,5 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 		return nil, err
 	}
 
-	return values.NewBoolean(g.Match(str)), nil
+	return core.NewBoolean(g.Match(str)), nil
 }

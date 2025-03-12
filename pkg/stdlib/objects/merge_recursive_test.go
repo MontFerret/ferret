@@ -2,9 +2,10 @@ package objects_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,30 +17,30 @@ func TestMergeRecursive(t *testing.T) {
 			actual, err := objects.MergeRecursive(context.Background())
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 		})
 
 		Convey("It should error when there is not object arguments", func() {
-			actual, err := objects.MergeRecursive(context.Background(), values.NewInt(0))
+			actual, err := objects.MergeRecursive(context.Background(), core.NewInt(0))
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 
 			actual, err = objects.MergeRecursive(context.Background(),
-				values.NewInt(0), values.NewObject(),
+				core.NewInt(0), internal.NewObject(),
 			)
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 		})
 	})
 
 	Convey("Merge single object", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(0)),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(0)),
 		)
-		expected := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(0)),
+		expected := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(0)),
 		)
 
 		actual, err := objects.MergeRecursive(context.Background(), obj)
@@ -50,15 +51,15 @@ func TestMergeRecursive(t *testing.T) {
 
 	Convey("Merge two objects", t, func() {
 		Convey("When there are no common keys", func() {
-			obj1 := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(0)),
+			obj1 := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(0)),
 			)
-			obj2 := values.NewObjectWith(
-				values.NewObjectProperty("b", values.NewInt(1)),
+			obj2 := internal.NewObjectWith(
+				internal.NewObjectProperty("b", core.NewInt(1)),
 			)
-			expected := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(0)),
-				values.NewObjectProperty("b", values.NewInt(1)),
+			expected := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(0)),
+				internal.NewObjectProperty("b", core.NewInt(1)),
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -68,18 +69,18 @@ func TestMergeRecursive(t *testing.T) {
 		})
 
 		Convey("When objects with the same key", func() {
-			obj1 := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(0)),
-				values.NewObjectProperty("b", values.NewInt(10)),
+			obj1 := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(0)),
+				internal.NewObjectProperty("b", core.NewInt(10)),
 			)
-			obj2 := values.NewObjectWith(
-				values.NewObjectProperty("c", values.NewInt(1)),
-				values.NewObjectProperty("b", values.NewInt(20)),
+			obj2 := internal.NewObjectWith(
+				internal.NewObjectProperty("c", core.NewInt(1)),
+				internal.NewObjectProperty("b", core.NewInt(20)),
 			)
-			expected := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(0)),
-				values.NewObjectProperty("b", values.NewInt(20)),
-				values.NewObjectProperty("c", values.NewInt(1)),
+			expected := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(0)),
+				internal.NewObjectProperty("b", core.NewInt(20)),
+				internal.NewObjectProperty("c", core.NewInt(1)),
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -89,17 +90,17 @@ func TestMergeRecursive(t *testing.T) {
 		})
 
 		Convey("Merge two objects with the same keys", func() {
-			obj1 := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(0)),
-				values.NewObjectProperty("b", values.NewInt(10)),
+			obj1 := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(0)),
+				internal.NewObjectProperty("b", core.NewInt(10)),
 			)
-			obj2 := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(1)),
-				values.NewObjectProperty("b", values.NewInt(20)),
+			obj2 := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(1)),
+				internal.NewObjectProperty("b", core.NewInt(20)),
 			)
-			expected := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewInt(1)),
-				values.NewObjectProperty("b", values.NewInt(20)),
+			expected := internal.NewObjectWith(
+				internal.NewObjectProperty("a", core.NewInt(1)),
+				internal.NewObjectProperty("b", core.NewInt(20)),
 			)
 
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
@@ -109,22 +110,22 @@ func TestMergeRecursive(t *testing.T) {
 		})
 
 		Convey("When there are nested arrays", func() {
-			obj1 := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewArrayWith(
-					values.NewInt(1), values.NewInt(2),
+			obj1 := internal.NewObjectWith(
+				internal.NewObjectProperty("a", internal.NewArrayWith(
+					core.NewInt(1), core.NewInt(2),
 				)),
 			)
-			obj2 := values.NewObjectWith(
-				values.NewObjectProperty("b", values.NewArrayWith(
-					values.NewInt(1), values.NewInt(2),
+			obj2 := internal.NewObjectWith(
+				internal.NewObjectProperty("b", internal.NewArrayWith(
+					core.NewInt(1), core.NewInt(2),
 				)),
 			)
-			expected := values.NewObjectWith(
-				values.NewObjectProperty("a", values.NewArrayWith(
-					values.NewInt(1), values.NewInt(2),
+			expected := internal.NewObjectWith(
+				internal.NewObjectProperty("a", internal.NewArrayWith(
+					core.NewInt(1), core.NewInt(2),
 				)),
-				values.NewObjectProperty("b", values.NewArrayWith(
-					values.NewInt(1), values.NewInt(2),
+				internal.NewObjectProperty("b", internal.NewArrayWith(
+					core.NewInt(1), core.NewInt(2),
 				)),
 			)
 
@@ -136,16 +137,16 @@ func TestMergeRecursive(t *testing.T) {
 
 		Convey("When there are nested objects (example from ArangoDB doc)", func() {
 			// { "user-1": { "name": "Jane", "livesIn": { "city": "LA" } } }
-			obj1 := values.NewObjectWith(
-				values.NewObjectProperty(
-					"user-1", values.NewObjectWith(
-						values.NewObjectProperty(
-							"name", values.NewString("Jane"),
+			obj1 := internal.NewObjectWith(
+				internal.NewObjectProperty(
+					"user-1", internal.NewObjectWith(
+						internal.NewObjectProperty(
+							"name", core.NewString("Jane"),
 						),
-						values.NewObjectProperty(
-							"livesIn", values.NewObjectWith(
-								values.NewObjectProperty(
-									"city", values.NewString("LA"),
+						internal.NewObjectProperty(
+							"livesIn", internal.NewObjectWith(
+								internal.NewObjectProperty(
+									"city", core.NewString("LA"),
 								),
 							),
 						),
@@ -153,16 +154,16 @@ func TestMergeRecursive(t *testing.T) {
 				),
 			)
 			// { "user-1": { "age": 42, "livesIn": { "state": "CA" } } }
-			obj2 := values.NewObjectWith(
-				values.NewObjectProperty(
-					"user-1", values.NewObjectWith(
-						values.NewObjectProperty(
-							"age", values.NewInt(42),
+			obj2 := internal.NewObjectWith(
+				internal.NewObjectProperty(
+					"user-1", internal.NewObjectWith(
+						internal.NewObjectProperty(
+							"age", core.NewInt(42),
 						),
-						values.NewObjectProperty(
-							"livesIn", values.NewObjectWith(
-								values.NewObjectProperty(
-									"state", values.NewString("CA"),
+						internal.NewObjectProperty(
+							"livesIn", internal.NewObjectWith(
+								internal.NewObjectProperty(
+									"state", core.NewString("CA"),
 								),
 							),
 						),
@@ -170,22 +171,22 @@ func TestMergeRecursive(t *testing.T) {
 				),
 			)
 			// { "user-1": { "age": 42, "livesIn": { "city": "LA", "state": "CA" }, "name": "Jane" } }
-			expected := values.NewObjectWith(
-				values.NewObjectProperty(
-					"user-1", values.NewObjectWith(
-						values.NewObjectProperty(
-							"age", values.NewInt(42),
+			expected := internal.NewObjectWith(
+				internal.NewObjectProperty(
+					"user-1", internal.NewObjectWith(
+						internal.NewObjectProperty(
+							"age", core.NewInt(42),
 						),
-						values.NewObjectProperty(
-							"name", values.NewString("Jane"),
+						internal.NewObjectProperty(
+							"name", core.NewString("Jane"),
 						),
-						values.NewObjectProperty(
-							"livesIn", values.NewObjectWith(
-								values.NewObjectProperty(
-									"state", values.NewString("CA"),
+						internal.NewObjectProperty(
+							"livesIn", internal.NewObjectWith(
+								internal.NewObjectProperty(
+									"state", core.NewString("CA"),
 								),
-								values.NewObjectProperty(
-									"city", values.NewString("LA"),
+								internal.NewObjectProperty(
+									"city", core.NewString("LA"),
 								),
 							),
 						),
@@ -202,31 +203,31 @@ func TestMergeRecursive(t *testing.T) {
 
 	Convey("Merged object should be independent of source objects", t, func() {
 		Convey("When array", func() {
-			arr := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
-			obj := values.NewObjectWith(values.NewObjectProperty("arr", arr))
+			arr := internal.NewArrayWith(core.NewInt(1), core.NewInt(2))
+			obj := internal.NewObjectWith(internal.NewObjectProperty("arr", arr))
 
 			actual, err := objects.MergeRecursive(context.Background(), obj)
 
 			So(err, ShouldBeNil)
 			So(actual.Compare(obj), ShouldEqual, 0)
 
-			arr.Push(values.NewInt(0))
+			arr.Push(core.NewInt(0))
 
 			So(actual.Compare(obj), ShouldNotEqual, 0)
 		})
 
 		Convey("When object", func() {
-			nested := values.NewObjectWith(
-				values.NewObjectProperty("nested", values.NewInt(0)),
+			nested := internal.NewObjectWith(
+				internal.NewObjectProperty("nested", core.NewInt(0)),
 			)
-			obj := values.NewObjectWith(values.NewObjectProperty("obj", nested))
+			obj := internal.NewObjectWith(internal.NewObjectProperty("obj", nested))
 
 			actual, err := objects.MergeRecursive(context.Background(), obj)
 
 			So(err, ShouldBeNil)
 			So(actual.Compare(obj), ShouldEqual, 0)
 
-			nested.Set(values.NewString("str"), values.NewInt(0))
+			nested.Set(core.NewString("str"), core.NewInt(0))
 
 			So(actual.Compare(obj), ShouldNotEqual, 0)
 		})

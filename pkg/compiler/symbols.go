@@ -1,11 +1,11 @@
 package compiler
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -48,7 +48,7 @@ func (st *SymbolTable) EnterScope() {
 func (st *SymbolTable) AddParam(name string) runtime.Operand {
 	st.params[name] = name
 
-	return st.AddConstant(values.NewString(name))
+	return st.AddConstant(core.NewString(name))
 }
 
 // AddConstant adds a constant to the constants pool and returns its index.
@@ -56,9 +56,9 @@ func (st *SymbolTable) AddParam(name string) runtime.Operand {
 // If the constant is not a scalar, it will be added to the pool without deduplication.
 func (st *SymbolTable) AddConstant(constant core.Value) runtime.Operand {
 	var hash uint64
-	isNone := constant == values.None
+	isNone := constant == core.None
 
-	if values.IsScalar(constant) {
+	if internal.IsScalar(constant) {
 		hash = constant.Hash()
 	}
 
@@ -103,7 +103,7 @@ func (st *SymbolTable) DefineVariable(name string) runtime.Operand {
 			panic(core.Error(ErrVariableNotUnique, name))
 		}
 
-		op := st.AddConstant(values.NewString(name))
+		op := st.AddConstant(core.NewString(name))
 		// Define global variable.
 		st.globals[name] = op
 

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/io/fs"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -17,12 +17,12 @@ func TestWrite(t *testing.T) {
 
 	Convey("Invalid arguments", t, func() {
 
-		path := values.NewString("path.txt")
-		data := values.NewBinary([]byte("3timeslazy"))
-		params := values.NewObjectWith(
-			values.NewObjectProperty("mode", values.NewString("w")),
+		path := core.NewString("path.txt")
+		data := core.NewBinary([]byte("3timeslazy"))
+		params := internal.NewObjectWith(
+			internal.NewObjectProperty("mode", core.NewString("w")),
 		)
-		someInt := values.NewInt(0)
+		someInt := core.NewInt(0)
 
 		Convey("All arguments", func() {
 
@@ -58,7 +58,7 @@ func TestWrite(t *testing.T) {
 				Convey(tC.Name, func() {
 					none, err := fs.Write(context.Background(), tC.Args...)
 					So(err, ShouldBeError)
-					So(none, ShouldResemble, values.None)
+					So(none, ShouldResemble, core.None)
 				})
 			}
 		})
@@ -69,22 +69,22 @@ func TestWrite(t *testing.T) {
 
 				testCases := []core.Value{
 					// empty mode string
-					values.NewString(""),
+					core.NewString(""),
 
 					// `a` and `w` cannot be used together
-					values.NewString("aw"),
+					core.NewString("aw"),
 
 					// two equal letters
-					values.NewString("ww"),
+					core.NewString("ww"),
 
 					// mode string is too long
-					values.NewString("awx"),
+					core.NewString("awx"),
 
 					// the `x` mode only
-					values.NewString("x"),
+					core.NewString("x"),
 
 					// mode is not a string
-					values.NewInt(1),
+					core.NewInt(1),
 				}
 
 				for _, mode := range testCases {
@@ -92,13 +92,13 @@ func TestWrite(t *testing.T) {
 					name := fmt.Sprintf("mode `%s`", mode)
 
 					Convey(name, func() {
-						params := values.NewObjectWith(
-							values.NewObjectProperty("mode", mode),
+						params := internal.NewObjectWith(
+							internal.NewObjectProperty("mode", mode),
 						)
 
 						none, err := fs.Write(context.Background(), path, data, params)
 						So(err, ShouldBeError)
-						So(none, ShouldResemble, values.None)
+						So(none, ShouldResemble, core.None)
 					})
 				}
 			})
@@ -113,23 +113,23 @@ func TestWrite(t *testing.T) {
 
 			none, err := fs.Write(
 				context.Background(),
-				values.NewString(file.Name()),
-				values.NewBinary([]byte("3timeslazy")),
-				values.NewObjectWith(
-					values.NewObjectProperty("mode", values.NewString("wx")),
+				core.NewString(file.Name()),
+				core.NewBinary([]byte("3timeslazy")),
+				internal.NewObjectWith(
+					internal.NewObjectProperty("mode", core.NewString("wx")),
 				),
 			)
-			So(none, ShouldResemble, values.None)
+			So(none, ShouldResemble, core.None)
 			So(err, ShouldBeError)
 		})
 
 		Convey("Filepath is empty", func() {
 			none, err := fs.Write(
 				context.Background(),
-				values.NewString(""),
-				values.NewBinary([]byte("3timeslazy")),
+				core.NewString(""),
+				core.NewBinary([]byte("3timeslazy")),
 			)
-			So(none, ShouldResemble, values.None)
+			So(none, ShouldResemble, core.None)
 			So(err, ShouldBeError)
 		})
 	})
@@ -140,10 +140,10 @@ func TestWrite(t *testing.T) {
 			file, delFile := tempFile()
 			defer delFile()
 
-			data := values.NewBinary([]byte("3timeslazy"))
-			fpath := values.NewString(file.Name())
-			params := values.NewObjectWith(
-				values.NewObjectProperty("mode", values.NewString("w")),
+			data := core.NewBinary([]byte("3timeslazy"))
+			fpath := core.NewString(file.Name())
+			params := internal.NewObjectWith(
+				internal.NewObjectProperty("mode", core.NewString("w")),
 			)
 
 			for _ = range [2]struct{}{} {
@@ -164,10 +164,10 @@ func TestWrite(t *testing.T) {
 			file, delFile := tempFile()
 			defer delFile()
 
-			data := values.NewBinary([]byte("3timeslazy"))
-			fpath := values.NewString(file.Name())
-			params := values.NewObjectWith(
-				values.NewObjectProperty("mode", values.NewString("a")),
+			data := core.NewBinary([]byte("3timeslazy"))
+			fpath := core.NewString(file.Name())
+			params := internal.NewObjectWith(
+				internal.NewObjectProperty("mode", core.NewString("a")),
 			)
 
 			for i := range [2]struct{}{} {

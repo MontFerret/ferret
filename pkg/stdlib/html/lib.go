@@ -2,11 +2,11 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -90,7 +90,7 @@ func OpenOrCastPage(ctx context.Context, value core.Value) (drivers.HTMLPage, bo
 	var closeAfter bool
 
 	if value.Type() == types.String {
-		buf, err := Open(ctx, value, values.NewBoolean(true))
+		buf, err := Open(ctx, value, core.NewBoolean(true))
 
 		if err != nil {
 			return nil, false, err
@@ -105,7 +105,7 @@ func OpenOrCastPage(ctx context.Context, value core.Value) (drivers.HTMLPage, bo
 	return page, closeAfter, nil
 }
 
-func waitTimeout(ctx context.Context, value values.Int) (context.Context, context.CancelFunc) {
+func waitTimeout(ctx context.Context, value core.Int) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(
 		ctx,
 		time.Duration(value)*time.Millisecond,
@@ -121,7 +121,7 @@ func toScrollOptions(value core.Value) (drivers.ScrollOptions, error) {
 		return result, err
 	}
 
-	obj := value.(*values.Object)
+	obj := value.(*internal.Object)
 
 	behavior, exists := obj.Get("behavior")
 

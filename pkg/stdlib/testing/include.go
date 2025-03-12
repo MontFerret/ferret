@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -30,6 +29,6 @@ var Include = base.Assertion{
 			return false, err
 		}
 
-		return values.Compare(out, values.True) == 0, nil
+		return core.CompareValues(out, core.True) == 0, nil
 	},
 }

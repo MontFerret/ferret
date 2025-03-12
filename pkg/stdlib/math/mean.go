@@ -1,16 +1,16 @@
 package math
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
-func mean(input *values.Array) (values.Float, error) {
+func mean(input *internal.Array) (core.Float, error) {
 	if input.Length() == 0 {
-		return values.NewFloat(math.NaN()), nil
+		return core.NewFloat(math.NaN()), nil
 	}
 
 	var err error
@@ -32,5 +32,5 @@ func mean(input *values.Array) (values.Float, error) {
 		return 0, err
 	}
 
-	return values.NewFloat(sum / float64(input.Length())), nil
+	return core.NewFloat(sum / float64(input.Length())), nil
 }

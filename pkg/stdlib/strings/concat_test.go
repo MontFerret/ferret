@@ -2,11 +2,12 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -23,9 +24,9 @@ func TestConcat(t *testing.T) {
 		Convey("Concat('foo', 'bar', 'qaz') should return 'foobarqaz'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				values.NewString("foo"),
-				values.NewString("bar"),
-				values.NewString("qaz"),
+				core.NewString("foo"),
+				core.NewString("bar"),
+				core.NewString("qaz"),
 			)
 
 			So(out, ShouldEqual, "foobarqaz")
@@ -36,9 +37,9 @@ func TestConcat(t *testing.T) {
 		Convey("Concat('foo', None, 'bar') should return 'foobar'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				values.NewString("foo"),
-				values.None,
-				values.NewString("bar"),
+				core.NewString("foo"),
+				core.None,
+				core.NewString("bar"),
 			)
 
 			So(out, ShouldEqual, "foobar")
@@ -46,9 +47,9 @@ func TestConcat(t *testing.T) {
 		Convey("Concat('foo', 1, false) should return 'foo1false'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				values.NewString("foo"),
-				values.NewInt(1),
-				values.False,
+				core.NewString("foo"),
+				core.NewInt(1),
+				core.False,
 			)
 
 			So(out, ShouldEqual, "foo1false")
@@ -57,7 +58,7 @@ func TestConcat(t *testing.T) {
 		Convey("Concat(['foo', 'bar']) should return 'foobar'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				values.NewArrayWith(values.NewString("foo"), values.NewString("bar")),
+				internal.NewArrayWith(core.NewString("foo"), core.NewString("bar")),
 			)
 
 			So(out, ShouldEqual, "foobar")
@@ -66,10 +67,10 @@ func TestConcat(t *testing.T) {
 		Convey("Concat([1,2,3]) should return '123'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				values.NewArrayWith(
-					values.NewInt(1),
-					values.NewInt(2),
-					values.NewInt(3),
+				internal.NewArrayWith(
+					core.NewInt(1),
+					core.NewInt(2),
+					core.NewInt(3),
 				),
 			)
 
@@ -91,10 +92,10 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' 'foo', 'bar', 'qaz') should return 'foo,bar,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				values.NewString(","),
-				values.NewString("foo"),
-				values.NewString("bar"),
-				values.NewString("qaz"),
+				core.NewString(","),
+				core.NewString("foo"),
+				core.NewString("bar"),
+				core.NewString("qaz"),
 			)
 
 			So(out, ShouldEqual, "foo,bar,qaz")
@@ -105,11 +106,11 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' ['foo', 'bar', 'qaz']) should return 'foo,bar,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				values.NewString(","),
-				values.NewArrayWith(
-					values.NewString("foo"),
-					values.NewString("bar"),
-					values.NewString("qaz"),
+				core.NewString(","),
+				internal.NewArrayWith(
+					core.NewString("foo"),
+					core.NewString("bar"),
+					core.NewString("qaz"),
 				),
 			)
 
@@ -119,11 +120,11 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' ['foo', None, 'qaz']) should return 'foo,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				values.NewString(","),
-				values.NewArrayWith(
-					values.NewString("foo"),
-					values.None,
-					values.NewString("qaz"),
+				core.NewString(","),
+				internal.NewArrayWith(
+					core.NewString("foo"),
+					core.None,
+					core.NewString("qaz"),
 				),
 			)
 
@@ -133,11 +134,11 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' 'foo', None, 'qaz') should return 'foo,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				values.NewString(","),
-				values.NewArrayWith(
-					values.NewString("foo"),
-					values.None,
-					values.NewString("qaz"),
+				core.NewString(","),
+				internal.NewArrayWith(
+					core.NewString("foo"),
+					core.None,
+					core.NewString("qaz"),
 				),
 			)
 

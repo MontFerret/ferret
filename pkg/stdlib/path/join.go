@@ -2,10 +2,10 @@ package path
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -16,16 +16,16 @@ func Join(_ context.Context, args ...core.Value) (core.Value, error) {
 	argsCount := len(args)
 
 	if argsCount == 0 {
-		return values.EmptyString, nil
+		return core.EmptyString, nil
 	}
 
-	var arr *values.Array
+	var arr *internal.Array
 
 	switch arg := args[0].(type) {
-	case *values.Array:
+	case *internal.Array:
 		arr = arg
 	default:
-		arr = values.NewArrayWith(args...)
+		arr = internal.NewArrayWith(args...)
 	}
 
 	elems := make([]string, arr.Length())
@@ -35,11 +35,11 @@ func Join(_ context.Context, args ...core.Value) (core.Value, error) {
 		err := core.ValidateType(arrElem, types.String)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		elems[idx] = arrElem.String()
 	}
 
-	return values.NewString(path.Join(elems...)), nil
+	return core.NewString(path.Join(elems...)), nil
 }

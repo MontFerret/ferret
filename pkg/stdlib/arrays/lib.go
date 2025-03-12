@@ -2,7 +2,7 @@ package arrays
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 )
 
 func RegisterLib(ns core.Namespace) error {
@@ -33,9 +33,9 @@ func RegisterLib(ns core.Namespace) error {
 		}))
 }
 
-func ToUniqueArray(arr *values.Array) *values.Array {
+func ToUniqueArray(arr *internal.Array) *internal.Array {
 	hashTable := make(map[uint64]bool)
-	result := values.NewArray(int(arr.Length()))
+	result := internal.NewArray(int(arr.Length()))
 
 	arr.ForEach(func(item core.Value, _ int) bool {
 		h := item.Hash()

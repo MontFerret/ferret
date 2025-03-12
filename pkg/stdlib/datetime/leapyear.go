@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // DATE_LEAPYEAR returns true if date is in a leap year else false.
@@ -12,16 +11,16 @@ import (
 // @return {Boolean} - Date is in a leap year.
 func DateLeapYear(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	if err := values.AssertDateTime(args[0]); err != nil {
-		return values.None, err
+	if err := core.AssertDateTime(args[0]); err != nil {
+		return core.None, err
 	}
 
-	year := args[0].(values.DateTime).Year()
+	year := args[0].(core.DateTime).Year()
 
-	return values.NewBoolean(isLeap(year)), nil
+	return core.NewBoolean(isLeap(year)), nil
 }
 
 func isLeap(year int) bool {

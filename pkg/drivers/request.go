@@ -2,11 +2,10 @@ package drivers
 
 import (
 	"context"
-
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // HTTPRequest HTTP request object.
@@ -29,7 +28,7 @@ type (
 
 func (req *HTTPRequest) MarshalJSON() ([]byte, error) {
 	if req == nil {
-		return values.None.MarshalJSON()
+		return core.None.MarshalJSON()
 	}
 
 	return jettison.MarshalOpts(requestMarshal(*req), jettison.NoHTMLEscaping())
@@ -56,14 +55,14 @@ func (req *HTTPRequest) Compare(other core.Value) int64 {
 		return comp
 	}
 
-	comp = values.NewString(req.Method).Compare(values.NewString(otherReq.Method))
+	comp = core.NewString(req.Method).Compare(core.NewString(otherReq.Method))
 
 	if comp != 0 {
 		return comp
 	}
 
-	return values.NewString(req.URL).
-		Compare(values.NewString(otherReq.URL))
+	return core.NewString(req.URL).
+		Compare(core.NewString(otherReq.URL))
 }
 
 func (req *HTTPRequest) Unwrap() interface{} {
@@ -71,7 +70,7 @@ func (req *HTTPRequest) Unwrap() interface{} {
 }
 
 func (req *HTTPRequest) Hash() uint64 {
-	return values.Parse(req).Hash()
+	return internal.Parse(req).Hash()
 }
 
 func (req *HTTPRequest) Copy() core.Value {
@@ -86,14 +85,14 @@ func (req *HTTPRequest) Get(ctx context.Context, key string) (core.Value, error)
 
 	switch key {
 	case "url", "URL":
-		return values.NewString(req.URL), nil
+		return core.NewString(req.URL), nil
 	case "method":
-		return values.NewString(req.Method), nil
+		return core.NewString(req.Method), nil
 	case "headers":
 		return req.Headers, nil
 	case "body":
-		return values.NewBinary(req.Body), nil
+		return core.NewBinary(req.Body), nil
 	}
 
-	return values.None, nil
+	return core.None, nil
 }

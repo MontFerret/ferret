@@ -6,16 +6,15 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestNow(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When too many arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
 			},
 			ShouldErr: true,
 		},

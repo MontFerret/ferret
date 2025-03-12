@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // INPUT_CLEAR clears a value from an underlying input element.
@@ -15,25 +14,25 @@ func InputClear(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// CLEAR(el)
 	if len(args) == 1 {
-		return values.None, el.Clear(ctx)
+		return core.None, el.Clear(ctx)
 	}
 
 	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.True, el.ClearBySelector(ctx, selector)
+	return core.True, el.ClearBySelector(ctx, selector)
 }

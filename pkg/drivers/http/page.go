@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/runtime/events"
@@ -11,13 +12,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type HTMLPage struct {
 	document *HTMLDocument
 	cookies  *drivers.HTTPCookies
-	frames   *values.Array
+	frames   *internal.Array
 	response drivers.HTTPResponse
 }
 
@@ -100,7 +100,7 @@ func (p *HTMLPage) Copy() core.Value {
 	)
 
 	if err != nil {
-		return values.None
+		return core.None
 	}
 
 	return page
@@ -118,7 +118,7 @@ func (p *HTMLPage) SetIn(ctx context.Context, path []core.Value, value core.Valu
 	return common.SetInPage(ctx, path, p, value)
 }
 
-func (p *HTMLPage) Length() values.Int {
+func (p *HTMLPage) Length() core.Int {
 	return p.document.Length()
 }
 
@@ -126,11 +126,11 @@ func (p *HTMLPage) Close() error {
 	return nil
 }
 
-func (p *HTMLPage) IsClosed() values.Boolean {
-	return values.True
+func (p *HTMLPage) IsClosed() core.Boolean {
+	return core.True
 }
 
-func (p *HTMLPage) GetURL() values.String {
+func (p *HTMLPage) GetURL() core.String {
 	return p.document.GetURL()
 }
 
@@ -138,14 +138,14 @@ func (p *HTMLPage) GetMainFrame() drivers.HTMLDocument {
 	return p.document
 }
 
-func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
+func (p *HTMLPage) GetFrames(ctx context.Context) (*internal.Array, error) {
 	if p.frames == nil {
-		arr := values.NewArray(10)
+		arr := internal.NewArray(10)
 
 		err := common.CollectFrames(ctx, arr, p.document)
 
 		if err != nil {
-			return values.NewArray(0), err
+			return internal.NewArray(0), err
 		}
 
 		p.frames = arr
@@ -154,14 +154,14 @@ func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
 	return p.frames, nil
 }
 
-func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, error) {
+func (p *HTMLPage) GetFrame(ctx context.Context, idx core.Int) (core.Value, error) {
 	if p.frames == nil {
-		arr := values.NewArray(10)
+		arr := internal.NewArray(10)
 
 		err := common.CollectFrames(ctx, arr, p.document)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		p.frames = arr
@@ -174,7 +174,7 @@ func (p *HTMLPage) GetCookies(_ context.Context) (*drivers.HTTPCookies, error) {
 	res := drivers.NewHTTPCookies()
 
 	if p.cookies != nil {
-		p.cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+		p.cookies.ForEach(func(value drivers.HTTPCookie, _ core.String) bool {
 			res.Set(value)
 
 			return true
@@ -196,31 +196,31 @@ func (p *HTMLPage) DeleteCookies(_ context.Context, _ *drivers.HTTPCookies) erro
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) PrintToPDF(_ context.Context, _ drivers.PDFParams) (values.Binary, error) {
+func (p *HTMLPage) PrintToPDF(_ context.Context, _ drivers.PDFParams) (core.Binary, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (p *HTMLPage) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotParams) (values.Binary, error) {
+func (p *HTMLPage) CaptureScreenshot(_ context.Context, _ drivers.ScreenshotParams) (core.Binary, error) {
 	return nil, core.ErrNotSupported
 }
 
-func (p *HTMLPage) WaitForNavigation(_ context.Context, _ values.String) error {
+func (p *HTMLPage) WaitForNavigation(_ context.Context, _ core.String) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocument, _ values.String) error {
+func (p *HTMLPage) WaitForFrameNavigation(_ context.Context, _ drivers.HTMLDocument, _ core.String) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) Navigate(_ context.Context, _ values.String) error {
+func (p *HTMLPage) Navigate(_ context.Context, _ core.String) error {
 	return core.ErrNotSupported
 }
 
-func (p *HTMLPage) NavigateBack(_ context.Context, _ values.Int) (values.Boolean, error) {
+func (p *HTMLPage) NavigateBack(_ context.Context, _ core.Int) (core.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 
-func (p *HTMLPage) NavigateForward(_ context.Context, _ values.Int) (values.Boolean, error) {
+func (p *HTMLPage) NavigateForward(_ context.Context, _ core.Int) (core.Boolean, error) {
 	return false, core.ErrNotSupported
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -17,23 +16,23 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	err = core.ValidateType(args[1], types.Int)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
 	runes := []rune(text)
 	size := len(runes)
-	offset := int(args[1].(values.Int))
+	offset := int(args[1].(core.Int))
 	length := size
 
 	if len(args) > 2 {
-		arg2, ok := args[2].(values.Int)
+		arg2, ok := args[2].(core.Int)
 
 		if ok {
 			length = int(arg2)
@@ -54,7 +53,7 @@ func Substring(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	return values.NewStringFromRunes(substr), nil
+	return core.NewStringFromRunes(substr), nil
 }
 
 // LEFT returns the leftmost characters of the string value by index.
@@ -65,24 +64,24 @@ func Left(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
 	runes := []rune(text)
 
 	var pos int
-	arg1, ok := args[1].(values.Int)
+	arg1, ok := args[1].(core.Int)
 
 	if ok {
 		pos = int(arg1)
 	}
 
 	if len(text) < pos {
-		return values.NewString(text), nil
+		return core.NewString(text), nil
 	}
 
-	return values.NewStringFromRunes(runes[0:pos]), nil
+	return core.NewStringFromRunes(runes[0:pos]), nil
 }
 
 // RIGHT returns the rightmost characters of the string value.
@@ -93,7 +92,7 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
@@ -101,15 +100,15 @@ func Right(_ context.Context, args ...core.Value) (core.Value, error) {
 	size := len(runes)
 	pos := size
 
-	arg1, ok := args[1].(values.Int)
+	arg1, ok := args[1].(core.Int)
 
 	if ok {
 		pos = int(arg1)
 	}
 
 	if len(text) < pos {
-		return values.NewString(text), nil
+		return core.NewString(text), nil
 	}
 
-	return values.NewStringFromRunes(runes[size-pos : size]), nil
+	return core.NewStringFromRunes(runes[size-pos : size]), nil
 }

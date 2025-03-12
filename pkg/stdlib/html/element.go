@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // ELEMENT finds an element by a given CSS selector.
@@ -17,7 +16,7 @@ func Element(ctx context.Context, args ...core.Value) (core.Value, error) {
 	el, selector, err := queryArgs(args)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return el.QuerySelector(ctx, selector)

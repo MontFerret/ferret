@@ -11,7 +11,6 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -164,29 +163,29 @@ func (c HTTPCookie) MarshalJSON() ([]byte, error) {
 
 func (c HTTPCookie) Get(_ context.Context, key string) (core.Value, error) {
 	if key == "" {
-		return values.None, nil
+		return core.None, nil
 	}
 
 	switch key {
 	case "name":
-		return values.NewString(c.Name), nil
+		return core.NewString(c.Name), nil
 	case "value":
-		return values.NewString(c.Value), nil
+		return core.NewString(c.Value), nil
 	case "path":
-		return values.NewString(c.Path), nil
+		return core.NewString(c.Path), nil
 	case "domain":
-		return values.NewString(c.Domain), nil
+		return core.NewString(c.Domain), nil
 	case "expires":
-		return values.NewDateTime(c.Expires), nil
+		return core.NewDateTime(c.Expires), nil
 	case "maxAge":
-		return values.NewInt(c.MaxAge), nil
+		return core.NewInt(c.MaxAge), nil
 	case "secure":
-		return values.NewBoolean(c.Secure), nil
+		return core.NewBoolean(c.Secure), nil
 	case "httpOnly":
-		return values.NewBoolean(c.HTTPOnly), nil
+		return core.NewBoolean(c.HTTPOnly), nil
 	case "sameSite":
-		return values.NewString(c.SameSite.String()), nil
+		return core.NewString(c.SameSite.String()), nil
 	default:
-		return values.None, nil
+		return core.None, nil
 	}
 }

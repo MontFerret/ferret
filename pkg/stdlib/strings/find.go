@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.
@@ -18,7 +17,7 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return values.NewInt(-1), err
+		return core.NewInt(-1), err
 	}
 
 	argsCount := len(args)
@@ -26,11 +25,11 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	text := args[0].String()
 	runes := []rune(text)
 	search := args[1].String()
-	start := values.NewInt(0)
-	end := values.NewInt(len(text))
+	start := core.NewInt(0)
+	end := core.NewInt(len(text))
 
 	if argsCount == 3 {
-		arg3, ok := args[2].(values.Int)
+		arg3, ok := args[2].(core.Int)
 
 		if ok {
 			start = arg3
@@ -38,7 +37,7 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if argsCount == 4 {
-		arg4, ok := args[3].(values.Int)
+		arg4, ok := args[3].(core.Int)
 
 		if ok {
 			end = arg4
@@ -48,10 +47,10 @@ func FindFirst(_ context.Context, args ...core.Value) (core.Value, error) {
 	found := strings.Index(string(runes[start:end]), search)
 
 	if found > -1 {
-		return values.NewInt(found + int(start)), nil
+		return core.NewInt(found + int(start)), nil
 	}
 
-	return values.NewInt(found), nil
+	return core.NewInt(found), nil
 }
 
 // FIND_LAST returns the position of the last occurrence of the string search inside the string text. Positions start at 0.
@@ -64,7 +63,7 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return values.NewInt(-1), err
+		return core.NewInt(-1), err
 	}
 
 	argsCount := len(args)
@@ -72,11 +71,11 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	text := args[0].String()
 	runes := []rune(text)
 	search := args[1].String()
-	start := values.NewInt(0)
-	end := values.NewInt(len(text))
+	start := core.NewInt(0)
+	end := core.NewInt(len(text))
 
 	if argsCount == 3 {
-		arg3, ok := args[2].(values.Int)
+		arg3, ok := args[2].(core.Int)
 
 		if ok {
 			start = arg3
@@ -84,7 +83,7 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if argsCount == 4 {
-		arg4, ok := args[3].(values.Int)
+		arg4, ok := args[3].(core.Int)
 
 		if ok {
 			end = arg4
@@ -94,8 +93,8 @@ func FindLast(_ context.Context, args ...core.Value) (core.Value, error) {
 	found := strings.LastIndex(string(runes[start:end]), search)
 
 	if found > -1 {
-		return values.NewInt(found + int(start)), nil
+		return core.NewInt(found + int(start)), nil
 	}
 
-	return values.NewInt(found), nil
+	return core.NewInt(found), nil
 }

@@ -2,11 +2,11 @@ package fs
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"os"
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -22,18 +22,18 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := validateRequiredWriteArgs(args)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	fpath := values.ToString(args[0])
-	data := values.ToBinary(args[1])
+	fpath := internal.ToString(args[0])
+	data := internal.ToBinary(args[1])
 	params := defaultParams
 
 	if len(args) == 3 {
 		params, err = parseParams(args[2])
 
 		if err != nil {
-			return values.None, core.Error(
+			return core.None, core.Error(
 				err,
 				"parse `params` argument",
 			)
@@ -44,7 +44,7 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	file, err := os.OpenFile(string(fpath), params.ModeFlag, 0666)
 
 	if err != nil {
-		return values.None, core.Error(err, "open file")
+		return core.None, core.Error(err, "open file")
 	}
 
 	defer file.Close()
@@ -52,10 +52,10 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	_, err = file.Write(data)
 
 	if err != nil {
-		return values.None, core.Error(err, "write file")
+		return core.None, core.Error(err, "write file")
 	}
 
-	return values.None, nil
+	return core.None, nil
 }
 
 func validateRequiredWriteArgs(args []core.Value) error {
@@ -91,11 +91,11 @@ func parseParams(value core.Value) (parsedParams, error) {
 		return parsedParams{}, err
 	}
 
-	obj := value.(*values.Object)
+	obj := value.(*internal.Object)
 
 	params := defaultParams
 
-	modestr, exists := obj.Get(values.NewString("mode"))
+	modestr, exists := obj.Get(core.NewString("mode"))
 
 	if exists {
 		flag, err := parseWriteMode(modestr.String())

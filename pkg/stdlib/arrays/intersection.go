@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // INTERSECTION return the intersection of all arrays specified.
@@ -20,20 +20,20 @@ func sections(args []core.Value, count int) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	intersections := make(map[uint64][]core.Value)
 	capacity := len(args)
 
 	for _, i := range args {
-		err := values.AssertArray(i)
+		err := core.AssertList(i)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		arr := i.(*values.Array)
+		arr := i.(*internal.Array)
 
 		arr.ForEach(func(value core.Value, idx int) bool {
 			h := value.Hash()
@@ -56,7 +56,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 		})
 	}
 
-	result := values.NewArray(capacity)
+	result := internal.NewArray(capacity)
 	required := count
 
 	for _, bucket := range intersections {

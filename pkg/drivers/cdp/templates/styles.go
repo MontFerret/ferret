@@ -1,10 +1,11 @@
 package templates
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const getStyles = `(el) => {
@@ -32,7 +33,7 @@ const getStyle = `(el, name) => {
 	return styles[name];
 }`
 
-func GetStyle(id runtime.RemoteObjectID, name values.String) *eval.Function {
+func GetStyle(id runtime.RemoteObjectID, name core.String) *eval.Function {
 	return eval.F(getStyle).WithArgRef(id).WithArgValue(name)
 }
 
@@ -40,7 +41,7 @@ const setStyle = `(el, name, value) => {
 	el.style[name] = value;
 }`
 
-func SetStyle(id runtime.RemoteObjectID, name, value values.String) *eval.Function {
+func SetStyle(id runtime.RemoteObjectID, name, value core.String) *eval.Function {
 	return eval.F(setStyle).WithArgRef(id).WithArgValue(name).WithArgValue(value)
 }
 
@@ -50,7 +51,7 @@ const setStyles = `(el, values) => {
 	});
 }`
 
-func SetStyles(id runtime.RemoteObjectID, values *values.Object) *eval.Function {
+func SetStyles(id runtime.RemoteObjectID, values *internal.Object) *eval.Function {
 	return eval.F(setStyles).WithArgRef(id).WithArgValue(values)
 }
 
@@ -59,7 +60,7 @@ const removeStyles = `(el, names) => {
 	names.forEach((name) => { style[name] = "" })
 }`
 
-func RemoveStyles(id runtime.RemoteObjectID, names []values.String) *eval.Function {
+func RemoveStyles(id runtime.RemoteObjectID, names []core.String) *eval.Function {
 	return eval.F(removeStyles).WithArgRef(id).WithArg(names)
 }
 

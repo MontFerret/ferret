@@ -2,10 +2,9 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 )
 
 // XPATH evaluates the XPath expression.
@@ -16,16 +15,16 @@ func XPath(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	element, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	expr := values.ToString(args[1])
+	expr := internal.ToString(args[1])
 
 	return element.XPath(ctx, expr)
 }

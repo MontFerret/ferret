@@ -5,7 +5,6 @@ import (
 	"html"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // ESCAPE_HTML escapes special characters like "<" to become "&lt;". It
@@ -18,8 +17,8 @@ func EscapeHTML(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.NewString(html.EscapeString(args[0].String())), nil
+	return core.NewString(html.EscapeString(args[0].String())), nil
 }

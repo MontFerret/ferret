@@ -2,59 +2,60 @@ package arrays_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 )
 
 func TestPosition(t *testing.T) {
 	Convey("Should return TRUE when a value exists in a given array", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
 		)
 
-		out, err := arrays.Position(context.Background(), arr, values.NewInt(3))
+		out, err := arrays.Position(context.Background(), arr, core.NewInt(3))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "true")
 	})
 
 	Convey("Should return FALSE when a value does not exist in a given array", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
 		)
 
-		out, err := arrays.Position(context.Background(), arr, values.NewInt(6))
+		out, err := arrays.Position(context.Background(), arr, core.NewInt(6))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "false")
 	})
 
 	Convey("Should return index when a value exists in a given array", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
 		)
 
 		out, err := arrays.Position(
 			context.Background(),
 			arr,
-			values.NewInt(3),
-			values.NewBoolean(true),
+			core.NewInt(3),
+			core.NewBoolean(true),
 		)
 
 		So(err, ShouldBeNil)
@@ -62,19 +63,19 @@ func TestPosition(t *testing.T) {
 	})
 
 	Convey("Should return -1 when a value does not exist in a given array", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
 		)
 
 		out, err := arrays.Position(
 			context.Background(),
 			arr,
-			values.NewInt(6),
-			values.NewBoolean(true),
+			core.NewInt(6),
+			core.NewBoolean(true),
 		)
 
 		So(err, ShouldBeNil)

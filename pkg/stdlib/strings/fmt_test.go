@@ -2,12 +2,12 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -26,7 +26,7 @@ func TestFmt(t *testing.T) {
 			Expected: "1",
 			Format:   "{}",
 			Args: []core.Value{
-				values.NewInt(1),
+				core.NewInt(1),
 			},
 		},
 		&testCase{
@@ -34,8 +34,8 @@ func TestFmt(t *testing.T) {
 			Expected: "2 1 1 2",
 			Format:   "{1} {} {0} {}",
 			Args: []core.Value{
-				values.NewInt(1),
-				values.NewInt(2),
+				core.NewInt(1),
+				core.NewInt(2),
 			},
 		},
 		&testCase{
@@ -43,9 +43,9 @@ func TestFmt(t *testing.T) {
 			Expected: "2 1 1 2 3",
 			Format:   "{1} {} {0} {} {}",
 			Args: []core.Value{
-				values.NewInt(1),
-				values.NewInt(2),
-				values.NewInt(3),
+				core.NewInt(1),
+				core.NewInt(2),
+				core.NewInt(3),
 			},
 		},
 		&testCase{
@@ -53,9 +53,9 @@ func TestFmt(t *testing.T) {
 			Expected: "Hello, World!",
 			Format:   "{2}{1} {0}",
 			Args: []core.Value{
-				values.NewString("World!"),
-				values.NewString(","),
-				values.NewString("Hello"),
+				core.NewString("World!"),
+				core.NewString(","),
+				core.NewString("Hello"),
 			},
 		},
 		&testCase{
@@ -63,9 +63,9 @@ func TestFmt(t *testing.T) {
 			Expected: `{"key":"value"}`,
 			Format:   "{}",
 			Args: []core.Value{
-				values.NewObjectWith(
-					values.NewObjectProperty(
-						"key", values.NewString("value"),
+				internal.NewObjectWith(
+					internal.NewObjectProperty(
+						"key", core.NewString("value"),
 					),
 				),
 			},
@@ -75,12 +75,12 @@ func TestFmt(t *testing.T) {
 			Expected: `{"key":"value","yek":"eulav"}`,
 			Format:   "{}",
 			Args: []core.Value{
-				values.NewObjectWith(
-					values.NewObjectProperty(
-						"key", values.NewString("value"),
+				internal.NewObjectWith(
+					internal.NewObjectProperty(
+						"key", core.NewString("value"),
 					),
-					values.NewObjectProperty(
-						"yek", values.NewString("eulav"),
+					internal.NewObjectProperty(
+						"yek", core.NewString("eulav"),
 					),
 				),
 			},
@@ -95,7 +95,7 @@ func TestFmt(t *testing.T) {
 			Expected: "string",
 			Format:   "string",
 			Args: []core.Value{
-				values.NewInt(1),
+				core.NewInt(1),
 			},
 		},
 		&testCase{
@@ -108,7 +108,7 @@ func TestFmt(t *testing.T) {
 			Name:   `FMT("{1}", 10) return error`,
 			Format: "{1}",
 			Args: []core.Value{
-				values.NewInt(10),
+				core.NewInt(10),
 			},
 			ShouldErr: true,
 		},
@@ -116,9 +116,9 @@ func TestFmt(t *testing.T) {
 			Name:   `FMT("{1} {} {0} {}", 1, 2, 3) return error`,
 			Format: "{1} {} {0} {}",
 			Args: []core.Value{
-				values.NewInt(1),
-				values.NewInt(2),
-				values.NewInt(3),
+				core.NewInt(1),
+				core.NewInt(2),
+				core.NewInt(3),
 			},
 			ShouldErr: true,
 		},
@@ -131,16 +131,16 @@ func TestFmt(t *testing.T) {
 
 func (tc *testCase) Do(t *testing.T) {
 	Convey(tc.Name, t, func() {
-		var expected core.Value = values.NewString(tc.Expected)
+		var expected core.Value = core.NewString(tc.Expected)
 
-		args := []core.Value{values.NewString(tc.Format)}
+		args := []core.Value{core.NewString(tc.Format)}
 		args = append(args, tc.Args...)
 
 		formatted, err := strings.Fmt(context.Background(), args...)
 
 		if tc.ShouldErr {
 			So(err, ShouldBeError)
-			expected = values.None
+			expected = core.None
 		} else {
 			So(err, ShouldBeNil)
 		}

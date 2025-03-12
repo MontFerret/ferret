@@ -3,11 +3,10 @@ package strings
 import (
 	"context"
 	"encoding/json"
-
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // JSON_PARSE returns a value described by the JSON-encoded input string.
@@ -17,7 +16,7 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	var val interface{}
@@ -25,10 +24,10 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err = json.Unmarshal([]byte(args[0].String()), &val)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
-	return values.Parse(val), nil
+	return internal.Parse(val), nil
 }
 
 // JSON_STRINGIFY returns a JSON string representation of the input value.
@@ -38,14 +37,14 @@ func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	out, err := jettison.MarshalOpts(args[0])
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
-	return values.NewString(string(out)), nil
+	return core.NewString(string(out)), nil
 }

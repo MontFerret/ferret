@@ -2,18 +2,18 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type WaitNavigationParams struct {
-	TargetURL values.String
-	Timeout   values.Int
+	TargetURL core.String
+	Timeout   core.Int
 	Frame     drivers.HTMLDocument
 }
 
@@ -29,13 +29,13 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	doc, err := drivers.ToPage(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	var params WaitNavigationParams
@@ -44,7 +44,7 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 		p, err := parseWaitNavigationParams(args[1])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		params = p
@@ -56,10 +56,10 @@ func WaitNavigation(ctx context.Context, args ...core.Value) (core.Value, error)
 	defer fn()
 
 	if params.Frame == nil {
-		return values.True, doc.WaitForNavigation(ctx, params.TargetURL)
+		return core.True, doc.WaitForNavigation(ctx, params.TargetURL)
 	}
 
-	return values.True, doc.WaitForFrameNavigation(ctx, params.Frame, params.TargetURL)
+	return core.True, doc.WaitForFrameNavigation(ctx, params.Frame, params.TargetURL)
 }
 
 func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
@@ -71,9 +71,9 @@ func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
 	}
 
 	if arg.Type() == types.Int {
-		params.Timeout = arg.(values.Int)
+		params.Timeout = arg.(core.Int)
 	} else {
-		obj := arg.(*values.Object)
+		obj := arg.(*internal.Object)
 
 		if v, exists := obj.Get("timeout"); exists {
 			err := core.ValidateType(v, types.Int)
@@ -82,7 +82,7 @@ func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
 				return params, errors.Wrap(err, "navigation parameters: timeout")
 			}
 
-			params.Timeout = v.(values.Int)
+			params.Timeout = v.(core.Int)
 		}
 
 		if v, exists := obj.Get("target"); exists {
@@ -92,7 +92,7 @@ func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
 				return params, errors.Wrap(err, "navigation parameters: url")
 			}
 
-			params.TargetURL = v.(values.String)
+			params.TargetURL = v.(core.String)
 		}
 
 		if v, exists := obj.Get("frame"); exists {
@@ -112,6 +112,6 @@ func parseWaitNavigationParams(arg core.Value) (WaitNavigationParams, error) {
 func defaultWaitNavigationParams() WaitNavigationParams {
 	return WaitNavigationParams{
 		TargetURL: "",
-		Timeout:   values.NewInt(drivers.DefaultWaitTimeout),
+		Timeout:   core.NewInt(drivers.DefaultWaitTimeout),
 	}
 }

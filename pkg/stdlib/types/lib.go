@@ -2,7 +2,6 @@ package types
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func RegisterLib(ns core.Namespace) error {
@@ -31,5 +30,5 @@ func RegisterLib(ns core.Namespace) error {
 }
 
 func isTypeof(value core.Value, ctype core.Type) core.Value {
-	return values.NewBoolean(core.IsTypeOf(value, ctype))
+	return core.NewBoolean(core.IsTypeOf(value, ctype))
 }

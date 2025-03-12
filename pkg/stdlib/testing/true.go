@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -14,11 +13,11 @@ import (
 // @param {String} [message] - Message to display on error.
 var True = base.Assertion{
 	DefaultMessage: func(args []core.Value) string {
-		return fmt.Sprintf("be %s", base.FormatValue(values.True))
+		return fmt.Sprintf("be %s", base.FormatValue(core.True))
 	},
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
-		return args[0] == values.True, nil
+		return args[0] == core.True, nil
 	},
 }

@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // POP returns a new array without last element.
@@ -14,19 +14,19 @@ func Pop(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 
 	length := int(arr.Length())
-	result := values.NewArray(length)
+	result := internal.NewArray(length)
 	lastIdx := length - 1
 
 	arr.ForEach(func(value core.Value, idx int) bool {

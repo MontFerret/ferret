@@ -2,9 +2,9 @@ package testing_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	t "testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -25,7 +25,7 @@ func TestNone(t *t.T) {
 
 	Convey("When arg is not none", t, func() {
 		Convey("It should return an error", func() {
-			_, err := None(context.Background(), values.NewString("true"))
+			_, err := None(context.Background(), core.NewString("true"))
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'true' to be [none] 'none'")
@@ -34,7 +34,7 @@ func TestNone(t *t.T) {
 
 	Convey("When arg is none", t, func() {
 		Convey("It should not return an error", func() {
-			_, err := None(context.Background(), values.None)
+			_, err := None(context.Background(), core.None)
 
 			So(err, ShouldBeNil)
 		})
@@ -54,7 +54,7 @@ func TestNotNone(t *t.T) {
 
 	Convey("When arg is none", t, func() {
 		Convey("It should return an error", func() {
-			_, err := NotNone(context.Background(), values.None)
+			_, err := NotNone(context.Background(), core.None)
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [none] 'none' not to be [none] 'none'")
@@ -63,7 +63,7 @@ func TestNotNone(t *t.T) {
 
 	Convey("When arg is not none", t, func() {
 		Convey("It should return an error", func() {
-			_, err := NotNone(context.Background(), values.False)
+			_, err := NotNone(context.Background(), core.False)
 
 			So(err, ShouldBeNil)
 		})

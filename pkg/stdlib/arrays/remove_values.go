@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // REMOVE_VALUES returns a new array with removed all occurrences of values in a given array.
@@ -15,25 +15,25 @@ func RemoveValues(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[1])
+	err = core.AssertList(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
-	vals := args[1].(*values.Array)
+	arr := args[0].(*internal.Array)
+	vals := args[1].(*internal.Array)
 
-	result := values.NewArray(int(arr.Length()))
+	result := internal.NewArray(int(arr.Length()))
 	lookupTable := make(map[uint64]bool)
 
 	vals.ForEach(func(value core.Value, idx int) bool {

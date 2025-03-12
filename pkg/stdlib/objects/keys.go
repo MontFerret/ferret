@@ -2,10 +2,10 @@ package objects
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -16,24 +16,24 @@ import (
 func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.Object)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	obj := args[0].(*values.Object)
+	obj := args[0].(*internal.Object)
 	needSort := false
 
 	if len(args) == 2 {
 		err = core.ValidateType(args[1], types.Boolean)
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		needSort = bool(args[1].(values.Boolean))
+		needSort = bool(args[1].(core.Boolean))
 	}
 
 	oKeys := make([]string, 0, obj.Length())
@@ -45,14 +45,14 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	})
 
 	keys := sort.StringSlice(oKeys)
-	keysArray := values.NewArray(len(keys))
+	keysArray := internal.NewArray(len(keys))
 
 	if needSort {
 		keys.Sort()
 	}
 
 	for _, key := range keys {
-		keysArray.Push(values.NewString(key))
+		keysArray.Push(core.NewString(key))
 	}
 
 	return keysArray, nil

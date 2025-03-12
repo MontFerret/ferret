@@ -2,11 +2,11 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -20,7 +20,7 @@ func TestFindFirst(t *testing.T) {
 
 			_, err = strings.FindFirst(
 				context.Background(),
-				values.NewString("foo"),
+				core.NewString("foo"),
 			)
 
 			So(err, ShouldBeError)
@@ -31,8 +31,8 @@ func TestFindFirst(t *testing.T) {
 		Convey("FindFirst('foobarbaz', 'ba') should return 3", func() {
 			out, _ := strings.FindFirst(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
 			)
 
 			So(out, ShouldEqual, 3)
@@ -41,9 +41,9 @@ func TestFindFirst(t *testing.T) {
 		Convey("FindFirst('foobarbaz', 'ba', 4) should return 6", func() {
 			out, _ := strings.FindFirst(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
-				values.NewInt(4),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
+				core.NewInt(4),
 			)
 
 			So(out, ShouldEqual, 6)
@@ -52,9 +52,9 @@ func TestFindFirst(t *testing.T) {
 		Convey("FindFirst('foobarbaz', 'ba', 4) should return -1", func() {
 			out, _ := strings.FindFirst(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
-				values.NewInt(7),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
+				core.NewInt(7),
 			)
 
 			So(out, ShouldEqual, -1)
@@ -63,10 +63,10 @@ func TestFindFirst(t *testing.T) {
 		Convey("FindFirst('foobarbaz', 'ba', 0, 3) should return -1", func() {
 			out, _ := strings.FindFirst(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
-				values.NewInt(0),
-				values.NewInt(3),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
+				core.NewInt(0),
+				core.NewInt(3),
 			)
 
 			So(out, ShouldEqual, -1)
@@ -84,7 +84,7 @@ func TestFindLast(t *testing.T) {
 
 			_, err = strings.FindLast(
 				context.Background(),
-				values.NewString("foo"),
+				core.NewString("foo"),
 			)
 
 			So(err, ShouldBeError)
@@ -95,8 +95,8 @@ func TestFindLast(t *testing.T) {
 		Convey("FindLast('foobarbaz', 'ba') should return 6", func() {
 			out, _ := strings.FindLast(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
 			)
 
 			So(out, ShouldEqual, 6)
@@ -105,9 +105,9 @@ func TestFindLast(t *testing.T) {
 		Convey("FindLast('foobarbaz', 'ba', 7) should return -1", func() {
 			out, _ := strings.FindLast(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
-				values.NewInt(7),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
+				core.NewInt(7),
 			)
 
 			So(out, ShouldEqual, -1)
@@ -116,10 +116,10 @@ func TestFindLast(t *testing.T) {
 		Convey("FindLast('foobarbaz', 'ba', 0, 5) should return 3", func() {
 			out, _ := strings.FindLast(
 				context.Background(),
-				values.NewString("foobarbaz"),
-				values.NewString("ba"),
-				values.NewInt(0),
-				values.NewInt(5),
+				core.NewString("foobarbaz"),
+				core.NewString("ba"),
+				core.NewInt(0),
+				core.NewInt(5),
 			)
 
 			So(out, ShouldEqual, 3)

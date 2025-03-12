@@ -8,12 +8,11 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestValidateArgs(t *testing.T) {
 	Convey("Should match", t, func() {
-		a := []core.Value{values.NewInt(1), values.NewInt(2)}
+		a := []core.Value{core.NewInt(1), core.NewInt(2)}
 
 		e := core.ValidateArgs(a, 1, 2)
 		So(e, ShouldBeNil)
@@ -26,7 +25,7 @@ func TestValidateArgs(t *testing.T) {
 func TestFunctions(t *testing.T) {
 
 	fnTrue := func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		return values.True, nil
+		return core.True, nil
 	}
 
 	Convey(".Set", t, func() {

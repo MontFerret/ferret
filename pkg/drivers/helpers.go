@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -53,7 +52,7 @@ func ToQuerySelector(value core.Value) (QuerySelector, error) {
 	switch v := value.(type) {
 	case QuerySelector:
 		return v, nil
-	case values.String:
+	case core.String:
 		return NewCSSSelector(v), nil
 	default:
 		return QuerySelector{}, core.TypeError(value, types.String, QuerySelectorType)
@@ -85,7 +84,7 @@ func SetDefaultParams(opts *Options, params Params) Params {
 
 	// set default cookies
 	if opts.Cookies != nil {
-		opts.Cookies.ForEach(func(value HTTPCookie, key values.String) bool {
+		opts.Cookies.ForEach(func(value HTTPCookie, key core.String) bool {
 			_, exists := params.Cookies.GetCookie(key)
 
 			// do not override user's set values

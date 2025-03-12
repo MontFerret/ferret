@@ -1,5 +1,7 @@
 package core
 
+import "context"
+
 type Measurable interface {
-	Length() int
+	Length(ctx context.Context) (Int, error)
 }

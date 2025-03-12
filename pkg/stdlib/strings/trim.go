@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // TRIM returns the string value with whitespace stripped from the start and/or end.
@@ -16,16 +15,16 @@ func Trim(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
 
 	if len(args) > 1 {
-		return values.NewString(strings.Trim(text, args[1].String())), nil
+		return core.NewString(strings.Trim(text, args[1].String())), nil
 	}
 
-	return values.NewString(strings.TrimSpace(text)), nil
+	return core.NewString(strings.TrimSpace(text)), nil
 }
 
 // LTRIM returns the string value with whitespace stripped from the start only.
@@ -36,7 +35,7 @@ func LTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
@@ -46,7 +45,7 @@ func LTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 		chars = args[1].String()
 	}
 
-	return values.NewString(strings.TrimLeft(text, chars)), nil
+	return core.NewString(strings.TrimLeft(text, chars)), nil
 }
 
 // RTRIM returns the string value with whitespace stripped from the end only.
@@ -57,7 +56,7 @@ func RTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
@@ -67,5 +66,5 @@ func RTrim(_ context.Context, args ...core.Value) (core.Value, error) {
 		chars = args[1].String()
 	}
 
-	return values.NewString(strings.TrimRight(text, chars)), nil
+	return core.NewString(strings.TrimRight(text, chars)), nil
 }

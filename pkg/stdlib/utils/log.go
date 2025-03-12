@@ -6,7 +6,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/logging"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // PRINT writes messages into the system log.
@@ -15,7 +14,7 @@ func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	messages := make([]interface{}, 0, len(args))
@@ -32,5 +31,5 @@ func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	logger.Print(messages...)
 
-	return values.None, nil
+	return core.None, nil
 }

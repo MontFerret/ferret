@@ -1,6 +1,8 @@
 package drivers
 
-import "github.com/MontFerret/ferret/pkg/runtime/values"
+import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+)
 
 const (
 	ScreenshotFormatPNG  ScreenshotFormat = "png"
@@ -11,12 +13,12 @@ type (
 	ScreenshotFormat string
 
 	ScreenshotParams struct {
-		X       values.Float
-		Y       values.Float
-		Width   values.Float
-		Height  values.Float
+		X      core.Float
+		Y      core.Float
+		Width  core.Float
+		Height core.Float
 		Format  ScreenshotFormat
-		Quality values.Int
+		Quality core.Int
 	}
 )
 
@@ -28,19 +30,19 @@ func IsScreenshotFormatValid(format string) bool {
 
 func NewDefaultHTMLPDFParams() PDFParams {
 	return PDFParams{
-		Landscape:           values.False,
-		DisplayHeaderFooter: values.False,
-		PrintBackground:     values.False,
-		Scale:               values.Float(1),
-		PaperWidth:          values.Float(8.5),
-		PaperHeight:         values.Float(11),
-		MarginTop:           values.Float(0.4),
-		MarginBottom:        values.Float(0.4),
-		MarginLeft:          values.Float(0.4),
-		MarginRight:         values.Float(0.4),
-		PageRanges:          values.EmptyString,
-		HeaderTemplate:      values.EmptyString,
-		FooterTemplate:      values.EmptyString,
-		PreferCSSPageSize:   values.False,
+		Landscape:           core.False,
+		DisplayHeaderFooter: core.False,
+		PrintBackground:     core.False,
+		Scale:               core.Float(1),
+		PaperWidth:          core.Float(8.5),
+		PaperHeight:         core.Float(11),
+		MarginTop:           core.Float(0.4),
+		MarginBottom:        core.Float(0.4),
+		MarginLeft:          core.Float(0.4),
+		MarginRight:         core.Float(0.4),
+		PageRanges:          core.EmptyString,
+		HeaderTemplate:      core.EmptyString,
+		FooterTemplate:      core.EmptyString,
+		PreferCSSPageSize:   core.False,
 	}
 }

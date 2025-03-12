@@ -3,8 +3,6 @@ package datetime
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -13,8 +11,8 @@ import (
 func Now(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 0, 0)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.NewCurrentDateTime(), nil
+	return core.NewCurrentDateTime(), nil
 }

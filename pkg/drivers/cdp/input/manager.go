@@ -2,6 +2,7 @@ package input
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/logging"
@@ -15,7 +16,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -351,7 +351,7 @@ func (m *Manager) MoveMouseBySelector(ctx context.Context, id runtime.RemoteObje
 	return nil
 }
 
-func (m *Manager) MoveMouseByXY(ctx context.Context, xv, yv values.Float) error {
+func (m *Manager) MoveMouseByXY(ctx context.Context, xv, yv core.Float) error {
 	x := float64(xv)
 	y := float64(yv)
 
@@ -420,7 +420,7 @@ func (m *Manager) Click(ctx context.Context, objectID runtime.RemoteObjectID, co
 	return nil
 }
 
-func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, count values.Int) error {
+func (m *Manager) ClickBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, count core.Int) error {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
@@ -806,13 +806,13 @@ func (m *Manager) PressBySelector(ctx context.Context, id runtime.RemoteObjectID
 	return m.Press(ctx, keys, count)
 }
 
-func (m *Manager) Select(ctx context.Context, id runtime.RemoteObjectID, value *values.Array) (*values.Array, error) {
+func (m *Manager) Select(ctx context.Context, id runtime.RemoteObjectID, value *internal.Array) (*internal.Array, error) {
 	m.logger.Trace().
 		Str("object_id", string(id)).
 		Msg("starting to select values")
 
 	if err := m.Focus(ctx, id); err != nil {
-		return values.NewArray(0), err
+		return internal.NewArray(0), err
 	}
 
 	m.logger.Trace().Msg("selecting values")
@@ -828,12 +828,12 @@ func (m *Manager) Select(ctx context.Context, id runtime.RemoteObjectID, value *
 
 	m.logger.Trace().Msg("validating JS result")
 
-	arr, ok := val.(*values.Array)
+	arr, ok := val.(*internal.Array)
 
 	if !ok {
 		m.logger.Trace().Err(err).Msg("JS result validation failed")
 
-		return values.NewArray(0), core.ErrUnexpected
+		return internal.NewArray(0), core.ErrUnexpected
 	}
 
 	m.logger.Trace().Msg("selected values")
@@ -841,14 +841,14 @@ func (m *Manager) Select(ctx context.Context, id runtime.RemoteObjectID, value *
 	return arr, nil
 }
 
-func (m *Manager) SelectBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, value *values.Array) (*values.Array, error) {
+func (m *Manager) SelectBySelector(ctx context.Context, id runtime.RemoteObjectID, selector drivers.QuerySelector, value *internal.Array) (*internal.Array, error) {
 	m.logger.Trace().
 		Str("parent_object_id", string(id)).
 		Str("selector", selector.String()).
 		Msg("starting to select values by selector")
 
 	if err := m.FocusBySelector(ctx, id, selector); err != nil {
-		return values.NewArray(0), err
+		return internal.NewArray(0), err
 	}
 
 	m.logger.Trace().Msg("selecting values")
@@ -859,17 +859,17 @@ func (m *Manager) SelectBySelector(ctx context.Context, id runtime.RemoteObjectI
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to evaluate a JS function")
 
-		return values.NewArray(0), err
+		return internal.NewArray(0), err
 	}
 
 	m.logger.Trace().Msg("validating JS result")
 
-	arr, ok := res.(*values.Array)
+	arr, ok := res.(*internal.Array)
 
 	if !ok {
 		m.logger.Trace().Err(err).Msg("JS result validation failed")
 
-		return values.NewArray(0), core.ErrUnexpected
+		return internal.NewArray(0), core.ErrUnexpected
 	}
 
 	m.logger.Trace().Msg("selected values")

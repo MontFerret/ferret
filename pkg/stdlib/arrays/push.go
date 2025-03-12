@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // PUSH create a new array with appended value.
@@ -14,34 +14,34 @@ import (
 // @return {Any[]} - A new array with appended value.
 func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 2, 3); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr, err := values.CastArray(args[0])
+	arr, err := core.CastList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	value := args[1]
 	uniq := false
 
 	if len(args) > 2 {
-		err = values.AssertBoolean(args[2])
+		err = core.AssertBoolean(args[2])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		uniq = values.Compare(args[2], values.True) == 0
+		uniq = core.CompareValues(args[2], core.True) == 0
 	}
 
-	result := values.NewArray(int(arr.Length() + 1))
+	result := internal.NewArray(int(arr.Length() + 1))
 	push := true
 
 	arr.ForEach(func(item core.Value, idx int) bool {
 		if uniq && push {
-			push = values.Compare(item, value) != 0
+			push = core.CompareValues(item, value) != 0
 		}
 
 		result.Push(item)

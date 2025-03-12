@@ -9,7 +9,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -34,20 +33,20 @@ func getStrings() ([]string, error) {
 
 		if err != nil {
 			// it's recommended to return built-in None type, instead of nil
-			return values.None, err
+			return core.None, err
 		}
 
 		// this is another helper functions allowing to do type validation
 		err = core.ValidateType(args[0], types.String)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		// cast to built-in string type
-		str := args[0].(values.String)
+		str := args[0].(core.String)
 
-		return values.NewString(strings.ToUpper(str.String() + "_ferret")), nil
+		return core.NewString(strings.ToUpper(str.String() + "_ferret")), nil
 	}
 
 	query := `

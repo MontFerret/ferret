@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"os"
 
 	"github.com/MontFerret/ferret/pkg/logging"
@@ -62,11 +61,4 @@ func (env *Environment) HasParam(name string) bool {
 	_, exists := env.params[name]
 
 	return exists
-}
-
-func (env *Environment) WithContext(parent context.Context) context.Context {
-	ctx := core.ParamsWith(parent, env.params)
-	ctx = logging.WithContext(ctx, env.logging)
-
-	return ctx
 }

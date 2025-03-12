@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -33,44 +32,44 @@ func waitClassAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	err := core.ValidateArgs(args, 3, 4)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// selector
 	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// class
 	err = core.ValidateType(args[2], types.String)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	class := args[2].(values.String)
-	timeout := values.NewInt(drivers.DefaultWaitTimeout)
+	class := args[2].(core.String)
+	timeout := core.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 4 {
 		err = core.ValidateType(args[3], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		timeout = args[3].(values.Int)
+		timeout = args[3].(core.Int)
 	}
 
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.True, el.WaitForClassBySelectorAll(ctx, selector, class, when)
+	return core.True, el.WaitForClassBySelectorAll(ctx, selector, class, when)
 }

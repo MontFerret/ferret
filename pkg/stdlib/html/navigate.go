@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -19,35 +18,35 @@ func Navigate(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	timeout := values.NewInt(drivers.DefaultWaitTimeout)
+	timeout := core.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 2 {
 		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		timeout = args[2].(values.Int)
+		timeout = args[2].(core.Int)
 	}
 
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.True, page.Navigate(ctx, args[1].(values.String))
+	return core.True, page.Navigate(ctx, args[1].(core.String))
 }

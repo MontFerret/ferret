@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -26,7 +24,7 @@ func (tc *testCase) Do(t *testing.T, fn core.Function) {
 
 		if tc.ShouldErr {
 			So(err, ShouldBeError)
-			expected = values.None
+			expected = core.None
 		} else {
 			So(err, ShouldBeNil)
 		}
@@ -36,7 +34,7 @@ func (tc *testCase) Do(t *testing.T, fn core.Function) {
 	})
 }
 
-func mustDefaultLayoutDt(timeString string) values.DateTime {
+func mustDefaultLayoutDt(timeString string) core.DateTime {
 	dt, err := defaultLayoutDt(timeString)
 
 	if err != nil {
@@ -46,7 +44,7 @@ func mustDefaultLayoutDt(timeString string) values.DateTime {
 	return dt
 }
 
-func mustLayoutDt(layout, value string) values.DateTime {
+func mustLayoutDt(layout, value string) core.DateTime {
 	dt, err := layoutDt(layout, value)
 
 	if err != nil {
@@ -56,16 +54,16 @@ func mustLayoutDt(layout, value string) values.DateTime {
 	return dt
 }
 
-func defaultLayoutDt(timeString string) (values.DateTime, error) {
-	return layoutDt(values.DefaultTimeLayout, timeString)
+func defaultLayoutDt(timeString string) (core.DateTime, error) {
+	return layoutDt(core.DefaultTimeLayout, timeString)
 }
 
-func layoutDt(layout, value string) (values.DateTime, error) {
+func layoutDt(layout, value string) (core.DateTime, error) {
 	t, err := time.Parse(layout, value)
 
 	if err != nil {
-		return values.DateTime{}, err
+		return core.DateTime{}, err
 	}
 
-	return values.NewDateTime(t), nil
+	return core.NewDateTime(t), nil
 }

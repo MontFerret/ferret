@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // FLATTEN turns an array of arrays into a flat array.
@@ -19,37 +19,37 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 	level := 1
 
 	if len(args) > 1 {
-		err = values.AssertInt(args[1])
+		err = core.AssertInt(args[1])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		level = int(args[1].(values.Int))
+		level = int(args[1].(core.Int))
 	}
 
 	currentLevel := 0
-	result := values.NewArray(int(arr.Length()) * 2)
-	var unwrap func(input *values.Array)
+	result := internal.NewArray(int(arr.Length()) * 2)
+	var unwrap func(input *internal.Array)
 
-	unwrap = func(input *values.Array) {
+	unwrap = func(input *internal.Array) {
 		currentLevel++
 
 		input.ForEach(func(value core.Value, idx int) bool {
-			valueArr, ok := value.(*values.Array)
+			valueArr, ok := value.(*internal.Array)
 
 			if !ok || currentLevel > level {
 				result.Push(value)

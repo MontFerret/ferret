@@ -2,12 +2,12 @@ package math
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"math"
 
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -20,19 +20,19 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[1], types.Int)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// TODO: Implement different methods
@@ -50,23 +50,23 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	//	}
 	//}
 
-	arr := args[0].(*values.Array)
-	percent := values.Float(args[1].(values.Int))
+	arr := args[0].(*internal.Array)
+	percent := core.Float(args[1].(core.Int))
 
 	if arr.Length() == 0 {
-		return values.NewFloat(math.NaN()), nil
+		return core.NewFloat(math.NaN()), nil
 	}
 
 	if percent <= 0 || percent > 100 {
-		return values.NewFloat(math.NaN()), errors.New("input is outside of range")
+		return core.NewFloat(math.NaN()), errors.New("input is outside of range")
 	}
 
 	sorted := arr.Sort()
 
 	// Multiply percent by length of input
-	l := values.Float(sorted.Length())
+	l := core.Float(sorted.Length())
 	index := (percent / 100) * l
-	even := values.Float(values.Int(index))
+	even := core.Float(core.Int(index))
 
 	var percentile core.Value
 
@@ -79,9 +79,9 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 		// Convert float to int via truncation
 		i := int(index)
 		// Find the average of the index and following values
-		percentile, _ = mean(values.NewArrayWith(sorted.Get(i-1), sorted.Get(i)))
+		percentile, _ = mean(internal.NewArrayWith(sorted.Get(i-1), sorted.Get(i)))
 	default:
-		return values.NewFloat(math.NaN()), errors.New("input is outside of range")
+		return core.NewFloat(math.NaN()), errors.New("input is outside of range")
 	}
 
 	return percentile, nil

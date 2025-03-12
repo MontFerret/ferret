@@ -2,11 +2,11 @@ package path_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
 
@@ -22,7 +22,7 @@ func TestDir(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Dir(context.Background(), values.NewInt(0))
+		_, err = path.Dir(context.Background(), core.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -30,7 +30,7 @@ func TestDir(t *testing.T) {
 	Convey("Dir('pkg/path/dir.go') should return 'pkg/path'", t, func() {
 		out, _ := path.Dir(
 			context.Background(),
-			values.NewString("pkg/path/dir.go"),
+			core.NewString("pkg/path/dir.go"),
 		)
 
 		So(out, ShouldEqual, "pkg/path")

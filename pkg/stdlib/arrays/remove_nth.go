@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // REMOVE_NTH returns a new array without an element by a given position.
@@ -15,24 +15,24 @@ func RemoveNth(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertInt(args[1])
+	err = core.AssertInt(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
-	index := int(args[1].(values.Int))
-	result := values.NewArray(int(arr.Length() - 1))
+	arr := args[0].(*internal.Array)
+	index := int(args[1].(core.Int))
+	result := internal.NewArray(int(arr.Length() - 1))
 
 	arr.ForEach(func(value core.Value, idx int) bool {
 		if idx != index {

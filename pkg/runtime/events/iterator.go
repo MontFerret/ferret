@@ -2,9 +2,6 @@ package events
 
 import (
 	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -35,11 +32,11 @@ func (iter *Iterator) HasNext(ctx context.Context) (bool, error) {
 func (iter *Iterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
 	if iter.message != nil {
 		if err := iter.message.Err(); err != nil {
-			return values.None, values.None, err
+			return core.None, core.None, err
 		}
 
-		return iter.message.Value(), values.None, nil
+		return iter.message.Value(), core.None, nil
 	}
 
-	return values.None, values.None, core.ErrNoMoreData
+	return core.None, core.None, core.ErrNoMoreData
 }

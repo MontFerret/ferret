@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -33,7 +32,7 @@ func NewWaitTask(
 func (task *WaitTask) Run(ctx context.Context) (core.Value, error) {
 	for {
 		if ctx.Err() != nil {
-			return values.None, ctx.Err()
+			return core.None, ctx.Err()
 		}
 
 		out, err := task.fun(ctx)
@@ -41,12 +40,12 @@ func (task *WaitTask) Run(ctx context.Context) (core.Value, error) {
 		// expression failed
 		// terminating
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		// output is not empty
 		// terminating
-		if out != values.None {
+		if out != core.None {
 			return out, nil
 		}
 

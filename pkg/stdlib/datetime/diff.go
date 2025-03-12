@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // DATE_DIFF returns the difference between two dates in given time unit.
@@ -15,39 +14,39 @@ import (
 // @return {Int | Float} - Difference between date1 and date2.
 func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 3, 4); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	if err := values.AssertDateTime(args[0]); err != nil {
-		return values.None, err
+	if err := core.AssertDateTime(args[0]); err != nil {
+		return core.None, err
 	}
 
-	if err := values.AssertDateTime(args[1]); err != nil {
-		return values.None, err
+	if err := core.AssertDateTime(args[1]); err != nil {
+		return core.None, err
 	}
 
-	if err := values.AssertString(args[2]); err != nil {
-		return values.None, err
+	if err := core.AssertString(args[2]); err != nil {
+		return core.None, err
 	}
 
-	date1 := args[0].(values.DateTime)
-	date2 := args[1].(values.DateTime)
-	unit := args[2].(values.String)
-	isFloat := values.NewBoolean(false)
+	date1 := args[0].(core.DateTime)
+	date2 := args[1].(core.DateTime)
+	unit := args[2].(core.String)
+	isFloat := core.NewBoolean(false)
 
 	if len(args) == 4 {
-		if err := values.AssertBoolean(args[3]); err != nil {
-			return values.None, err
+		if err := core.AssertBoolean(args[3]); err != nil {
+			return core.None, err
 		}
 
-		isFloat = args[3].(values.Boolean)
+		isFloat = args[3].(core.Boolean)
 	}
 
 	if date1.Equal(date2.Time) {
 		if isFloat {
-			return values.NewFloat(0), nil
+			return core.NewFloat(0), nil
 		}
-		return values.NewInt(0), nil
+		return core.NewInt(0), nil
 	}
 
 	var nsecDiff int64
@@ -60,14 +59,14 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	unitDiff, err := nsecToUnit(float64(nsecDiff), unit.String())
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	if !isFloat {
-		return values.NewInt(int(unitDiff)), nil
+		return core.NewInt(int(unitDiff)), nil
 	}
 
-	return values.NewFloat(unitDiff), nil
+	return core.NewFloat(unitDiff), nil
 }
 
 func nsecToUnit(nsec float64, unit string) (float64, error) {

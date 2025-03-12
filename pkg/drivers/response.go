@@ -2,11 +2,10 @@ package drivers
 
 import (
 	"context"
-
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // HTTPResponse HTTP response object.
@@ -55,8 +54,8 @@ func (resp *HTTPResponse) Compare(other core.Value) int64 {
 
 	// it makes no sense to compare Status strings
 	// because they are always equal if StatusCode's are equal
-	return values.NewInt(resp.StatusCode).
-		Compare(values.NewInt(resp.StatusCode))
+	return core.NewInt(resp.StatusCode).
+		Compare(core.NewInt(resp.StatusCode))
 }
 
 func (resp *HTTPResponse) Unwrap() interface{} {
@@ -69,12 +68,12 @@ func (resp *HTTPResponse) Copy() core.Value {
 }
 
 func (resp *HTTPResponse) Hash() uint64 {
-	return values.Parse(resp).Hash()
+	return internal.Parse(resp).Hash()
 }
 
 func (resp *HTTPResponse) MarshalJSON() ([]byte, error) {
 	if resp == nil {
-		return values.None.MarshalJSON()
+		return core.None.MarshalJSON()
 	}
 
 	return jettison.MarshalOpts(responseMarshal(*resp), jettison.NoHTMLEscaping())
@@ -87,18 +86,18 @@ func (resp *HTTPResponse) Get(_ context.Context, key string) (core.Value, error)
 
 	switch key {
 	case "url", "URL":
-		return values.NewString(resp.URL), nil
+		return core.NewString(resp.URL), nil
 	case "status":
-		return values.NewString(resp.Status), nil
+		return core.NewString(resp.Status), nil
 	case "statusCode":
-		return values.NewInt(resp.StatusCode), nil
+		return core.NewInt(resp.StatusCode), nil
 	case "headers":
 		return resp.Headers, nil
 	case "body":
-		return values.NewBinary(resp.Body), nil
+		return core.NewBinary(resp.Body), nil
 	case "responseTime":
-		return values.NewFloat(resp.ResponseTime), nil
+		return core.NewFloat(resp.ResponseTime), nil
 	}
 
-	return values.None, nil
+	return core.None, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // DATE_MONTH returns the month of date as a number.
@@ -12,14 +11,14 @@ import (
 // @return {Int} - A month number.
 func DateMonth(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	if err := values.AssertDateTime(args[0]); err != nil {
-		return values.None, err
+	if err := core.AssertDateTime(args[0]); err != nil {
+		return core.None, err
 	}
 
-	month := args[0].(values.DateTime).Month()
+	month := args[0].(core.DateTime).Month()
 
-	return values.NewInt(int(month)), nil
+	return core.NewInt(int(month)), nil
 }

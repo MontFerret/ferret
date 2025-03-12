@@ -2,10 +2,10 @@ package strings
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // REGEX_MATCH returns the matches in the given string text, using the regex.
@@ -17,14 +17,14 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	text := args[0].String()
 	exp := args[1].String()
 
 	if len(args) > 2 {
-		if args[2] == values.True {
+		if args[2] == core.True {
 			exp = "(?i)" + exp
 		}
 	}
@@ -32,18 +32,18 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	matches := reg.FindAllStringSubmatch(text, -1)
-	res := values.NewArray(10)
+	res := internal.NewArray(10)
 
 	if len(matches) == 0 {
 		return res, nil
 	}
 
 	for _, m := range matches[0] {
-		res.Push(values.NewString(m))
+		res.Push(core.NewString(m))
 	}
 
 	return res, nil
@@ -59,7 +59,7 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	text := args[0].String()
@@ -67,7 +67,7 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	limit := -1
 
 	if len(args) > 2 {
-		arg2, ok := args[2].(values.Int)
+		arg2, ok := args[2].(core.Int)
 
 		if ok {
 			limit = int(arg2)
@@ -77,18 +77,18 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	matches := reg.Split(text, limit)
-	res := values.NewArray(10)
+	res := internal.NewArray(10)
 
 	if len(matches) == 0 {
 		return res, nil
 	}
 
 	for _, m := range matches {
-		res.Push(values.NewString(m))
+		res.Push(core.NewString(m))
 	}
 
 	return res, nil
@@ -103,14 +103,14 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	text := args[0].String()
 	exp := args[1].String()
 
 	if len(args) > 2 {
-		if args[2] == values.True {
+		if args[2] == core.True {
 			exp = "(?i)" + exp
 		}
 	}
@@ -118,12 +118,12 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	matches := reg.MatchString(text)
 
-	return values.NewBoolean(matches), nil
+	return core.NewBoolean(matches), nil
 }
 
 // REGEX_REPLACE replace every substring matched with the regexp with a given string.
@@ -136,7 +136,7 @@ func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 3, 4)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
@@ -144,7 +144,7 @@ func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	repl := args[2].String()
 
 	if len(args) > 3 {
-		if args[3] == values.True {
+		if args[3] == core.True {
 			exp = "(?i)" + exp
 		}
 	}
@@ -152,10 +152,10 @@ func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	out := reg.ReplaceAllString(text, repl)
 
-	return values.NewString(out), nil
+	return core.NewString(out), nil
 }

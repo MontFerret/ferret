@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/pkg/errors"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type ParseParams struct {
@@ -33,34 +33,34 @@ type ParseParams struct {
 // @return {HTMLPage} - Returns parsed and loaded HTML page.
 func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 2); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	arg1 := args[0]
 
 	if err := core.ValidateType(arg1, types.String, types.Binary); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	var content []byte
 
 	if arg1.Type() == types.String {
-		content = []byte(arg1.(values.String))
+		content = []byte(arg1.(core.String))
 	} else {
-		content = []byte(arg1.(values.Binary))
+		content = []byte(arg1.(core.Binary))
 	}
 
 	var params ParseParams
 
 	if len(args) > 1 {
 		if err := core.ValidateType(args[1], types.Object); err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		p, err := parseParseParams(content, args[1].(*values.Object))
+		p, err := parseParseParams(content, args[1].(*internal.Object))
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		params = p
@@ -71,7 +71,7 @@ func Parse(ctx context.Context, args ...core.Value) (core.Value, error) {
 	drv, err := drivers.FromContext(ctx, params.Driver)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return drv.Parse(ctx, params.ParseParams)
@@ -86,7 +86,7 @@ func defaultParseParams(content []byte) ParseParams {
 	}
 }
 
-func parseParseParams(content []byte, arg *values.Object) (ParseParams, error) {
+func parseParseParams(content []byte, arg *internal.Object) (ParseParams, error) {
 	res := defaultParseParams(content)
 
 	if arg.Has("driver") {
@@ -106,7 +106,7 @@ func parseParseParams(content []byte, arg *values.Object) (ParseParams, error) {
 			return ParseParams{}, errors.Wrap(err, ".keepCookies")
 		}
 
-		res.KeepCookies = bool(keepCookies.(values.Boolean))
+		res.KeepCookies = bool(keepCookies.(core.Boolean))
 	}
 
 	if arg.Has("cookies") {
@@ -117,7 +117,7 @@ func parseParseParams(content []byte, arg *values.Object) (ParseParams, error) {
 		}
 
 		switch c := cookies.(type) {
-		case *values.Array:
+		case *internal.Array:
 			cookies, err := parseCookieArray(c)
 
 			if err != nil {
@@ -125,7 +125,7 @@ func parseParseParams(content []byte, arg *values.Object) (ParseParams, error) {
 			}
 
 			res.Cookies = cookies
-		case *values.Object:
+		case *internal.Object:
 			cookies, err := parseCookieObject(c)
 
 			if err != nil {
@@ -145,7 +145,7 @@ func parseParseParams(content []byte, arg *values.Object) (ParseParams, error) {
 			return ParseParams{}, errors.Wrap(err, ".headers")
 		}
 
-		res.Headers = parseHeader(headers.(*values.Object))
+		res.Headers = parseHeader(headers.(*internal.Object))
 	}
 
 	if arg.Has("viewport") {

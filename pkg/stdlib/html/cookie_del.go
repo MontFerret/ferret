@@ -2,10 +2,8 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -16,13 +14,13 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	inputs := args[1:]
@@ -31,12 +29,12 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 	for _, c := range inputs {
 		switch cookie := c.(type) {
-		case values.String:
+		case core.String:
 			if currentCookies == nil {
 				current, err := page.GetCookies(ctx)
 
 				if err != nil {
-					return values.None, err
+					return core.None, err
 				}
 
 				currentCookies = current
@@ -51,9 +49,9 @@ func CookieDel(ctx context.Context, args ...core.Value) (core.Value, error) {
 		case drivers.HTTPCookie:
 			cookies.Set(cookie)
 		default:
-			return values.None, core.TypeError(c.Type(), types.String, drivers.HTTPCookieType)
+			return core.None, core.TypeError(c.Type(), types.String, drivers.HTTPCookieType)
 		}
 	}
 
-	return values.None, page.DeleteCookies(ctx, cookies)
+	return core.None, page.DeleteCookies(ctx, cookies)
 }

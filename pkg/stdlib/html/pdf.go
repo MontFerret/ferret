@@ -3,11 +3,11 @@ package html
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -43,14 +43,14 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	arg1 := args[0]
 	page, closeAfter, err := OpenOrCastPage(ctx, arg1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	defer func() {
@@ -66,13 +66,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 		err = core.ValidateType(arg2, types.Object)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		params, ok := arg2.(*values.Object)
+		params, ok := arg2.(*internal.Object)
 
 		if !ok {
-			return values.None, core.Error(core.ErrInvalidType, "expected object")
+			return core.None, core.Error(core.ErrInvalidType, "expected object")
 		}
 
 		landscape, found := params.Get("landscape")
@@ -81,10 +81,10 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(landscape, types.Boolean)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			pdfParams.Landscape = landscape.(values.Boolean)
+			pdfParams.Landscape = landscape.(core.Boolean)
 		}
 
 		displayHeaderFooter, found := params.Get("displayHeaderFooter")
@@ -93,10 +93,10 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(displayHeaderFooter, types.Boolean)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			pdfParams.DisplayHeaderFooter = displayHeaderFooter.(values.Boolean)
+			pdfParams.DisplayHeaderFooter = displayHeaderFooter.(core.Boolean)
 		}
 
 		printBackground, found := params.Get("printBackground")
@@ -105,10 +105,10 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(printBackground, types.Boolean)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			pdfParams.PrintBackground = printBackground.(values.Boolean)
+			pdfParams.PrintBackground = printBackground.(core.Boolean)
 		}
 
 		scale, found := params.Get("scale")
@@ -117,13 +117,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(scale, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if scale.Type() == types.Int {
-				pdfParams.Scale = values.Float(scale.(values.Int))
+				pdfParams.Scale = core.Float(scale.(core.Int))
 			} else {
-				pdfParams.Scale = scale.(values.Float)
+				pdfParams.Scale = scale.(core.Float)
 			}
 		}
 
@@ -133,13 +133,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(paperWidth, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if paperWidth.Type() == types.Int {
-				pdfParams.PaperWidth = values.Float(paperWidth.(values.Int))
+				pdfParams.PaperWidth = core.Float(paperWidth.(core.Int))
 			} else {
-				pdfParams.PaperWidth = paperWidth.(values.Float)
+				pdfParams.PaperWidth = paperWidth.(core.Float)
 			}
 		}
 
@@ -149,13 +149,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(paperHeight, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if paperHeight.Type() == types.Int {
-				pdfParams.PaperHeight = values.Float(paperHeight.(values.Int))
+				pdfParams.PaperHeight = core.Float(paperHeight.(core.Int))
 			} else {
-				pdfParams.PaperHeight = paperHeight.(values.Float)
+				pdfParams.PaperHeight = paperHeight.(core.Float)
 			}
 		}
 
@@ -165,13 +165,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(marginTop, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if marginTop.Type() == types.Int {
-				pdfParams.MarginTop = values.Float(marginTop.(values.Int))
+				pdfParams.MarginTop = core.Float(marginTop.(core.Int))
 			} else {
-				pdfParams.MarginTop = marginTop.(values.Float)
+				pdfParams.MarginTop = marginTop.(core.Float)
 			}
 		}
 
@@ -181,13 +181,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(marginBottom, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if marginBottom.Type() == types.Int {
-				pdfParams.MarginBottom = values.Float(marginBottom.(values.Int))
+				pdfParams.MarginBottom = core.Float(marginBottom.(core.Int))
 			} else {
-				pdfParams.MarginBottom = marginBottom.(values.Float)
+				pdfParams.MarginBottom = marginBottom.(core.Float)
 			}
 		}
 
@@ -197,13 +197,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(marginLeft, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if marginLeft.Type() == types.Int {
-				pdfParams.MarginLeft = values.Float(marginLeft.(values.Int))
+				pdfParams.MarginLeft = core.Float(marginLeft.(core.Int))
 			} else {
-				pdfParams.MarginLeft = marginLeft.(values.Float)
+				pdfParams.MarginLeft = marginLeft.(core.Float)
 			}
 		}
 
@@ -213,13 +213,13 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(marginRight, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if marginRight.Type() == types.Int {
-				pdfParams.MarginRight = values.Float(marginRight.(values.Int))
+				pdfParams.MarginRight = core.Float(marginRight.(core.Int))
 			} else {
-				pdfParams.MarginRight = marginRight.(values.Float)
+				pdfParams.MarginRight = marginRight.(core.Float)
 			}
 		}
 
@@ -229,20 +229,20 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(pageRanges, types.String)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			validate, err := ValidatePageRanges(pageRanges.String())
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if !validate {
-				return values.None, core.Error(core.ErrInvalidArgument, fmt.Sprintf(`page ranges "%s", not valid`, pageRanges.String()))
+				return core.None, core.Error(core.ErrInvalidArgument, fmt.Sprintf(`page ranges "%s", not valid`, pageRanges.String()))
 			}
 
-			pdfParams.PageRanges = pageRanges.(values.String)
+			pdfParams.PageRanges = pageRanges.(core.String)
 		}
 
 		headerTemplate, found := params.Get("headerTemplate")
@@ -251,10 +251,10 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(headerTemplate, types.String)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			pdfParams.HeaderTemplate = headerTemplate.(values.String)
+			pdfParams.HeaderTemplate = headerTemplate.(core.String)
 		}
 
 		footerTemplate, found := params.Get("footerTemplate")
@@ -263,10 +263,10 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(footerTemplate, types.String)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			pdfParams.FooterTemplate = footerTemplate.(values.String)
+			pdfParams.FooterTemplate = footerTemplate.(core.String)
 		}
 
 		preferCSSPageSize, found := params.Get("preferCSSPageSize")
@@ -275,17 +275,17 @@ func PDF(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(preferCSSPageSize, types.Boolean)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			pdfParams.PreferCSSPageSize = preferCSSPageSize.(values.Boolean)
+			pdfParams.PreferCSSPageSize = preferCSSPageSize.(core.Boolean)
 		}
 	}
 
 	pdf, err := page.PrintToPDF(ctx, pdfParams)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return pdf, nil

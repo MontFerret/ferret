@@ -2,12 +2,12 @@ package objects_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 )
 
@@ -17,50 +17,50 @@ func TestKeepKeys(t *testing.T) {
 		obj, err := objects.KeepKeys(context.Background())
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, values.None)
+		So(obj, ShouldEqual, core.None)
 
 		// there are no keys
-		obj, err = objects.KeepKeys(context.Background(), values.NewObject())
+		obj, err = objects.KeepKeys(context.Background(), internal.NewObject())
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, values.None)
+		So(obj, ShouldEqual, core.None)
 	})
 
 	Convey("When first argument isn't object", t, func() {
-		obj, err := objects.KeepKeys(context.Background(), values.NewInt(0))
+		obj, err := objects.KeepKeys(context.Background(), core.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, values.None)
+		So(obj, ShouldEqual, core.None)
 	})
 
 	Convey("When wrong keys arguments", t, func() {
-		obj, err := objects.KeepKeys(context.Background(), values.NewObject(), values.NewInt(0))
+		obj, err := objects.KeepKeys(context.Background(), internal.NewObject(), core.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, values.None)
+		So(obj, ShouldEqual, core.None)
 
 		// looks like a valid case
 		// but there is another argument besides an array
-		obj, err = objects.KeepKeys(context.Background(), values.NewObject(), values.NewArray(0), values.NewInt(0))
+		obj, err = objects.KeepKeys(context.Background(), internal.NewObject(), internal.NewArray(0), core.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, values.None)
+		So(obj, ShouldEqual, core.None)
 	})
 
 	Convey("Result object is independent of the source object", t, func() {
-		arr := values.NewArrayWith(values.Int(0))
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", arr),
+		arr := internal.NewArrayWith(core.Int(0))
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", arr),
 		)
-		resultObj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewArrayWith(values.Int(0))),
+		resultObj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", internal.NewArrayWith(core.Int(0))),
 		)
 
-		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, values.NewString("a"))
+		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, core.NewString("a"))
 
 		So(err, ShouldBeNil)
 
-		arr.Push(values.NewInt(1))
+		arr.Push(core.NewInt(1))
 
 		So(afterKeepKeys.Compare(resultObj), ShouldEqual, 0)
 	})
@@ -68,120 +68,120 @@ func TestKeepKeys(t *testing.T) {
 
 func TestKeepKeysStrings(t *testing.T) {
 	Convey("KeepKeys key 'a'", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		resultObj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
+		resultObj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
 		)
 
-		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, values.NewString("a"))
+		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, core.NewString("a"))
 
 		So(err, ShouldEqual, nil)
 		So(afterKeepKeys.Compare(resultObj), ShouldEqual, 0)
 	})
 
 	Convey("KeepKeys key doesn't exists", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		resultObj := values.NewObject()
+		resultObj := internal.NewObject()
 
-		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, values.NewString("c"))
+		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, core.NewString("c"))
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*values.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(*internal.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("KeepKeys when there are more keys than object properties", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		resultObj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		resultObj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj,
-			values.NewString("a"), values.NewString("b"), values.NewString("c"),
+			core.NewString("a"), core.NewString("b"), core.NewString("c"),
 		)
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*values.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(*internal.Object), resultObj), ShouldEqual, true)
 	})
 }
 
 func TestKeepKeysArray(t *testing.T) {
 	Convey("KeepKeys array", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		keys := values.NewArrayWith(values.NewString("a"))
-		resultObj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
+		keys := internal.NewArrayWith(core.NewString("a"))
+		resultObj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*values.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(*internal.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("KeepKeys empty array", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		keys := values.NewArray(0)
-		resultObj := values.NewObject()
+		keys := internal.NewArray(0)
+		resultObj := internal.NewObject()
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*values.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(*internal.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("KeepKeys when there are more keys than object properties", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		keys := values.NewArrayWith(
-			values.NewString("a"), values.NewString("b"), values.NewString("c"),
+		keys := internal.NewArrayWith(
+			core.NewString("a"), core.NewString("b"), core.NewString("c"),
 		)
-		resultObj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		resultObj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
 
 		So(err, ShouldEqual, nil)
-		So(isEqualObjects(afterKeepKeys.(*values.Object), resultObj), ShouldEqual, true)
+		So(isEqualObjects(afterKeepKeys.(*internal.Object), resultObj), ShouldEqual, true)
 	})
 
 	Convey("When there is not string key", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("a", values.NewInt(1)),
-			values.NewObjectProperty("b", values.NewString("string")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("a", core.NewInt(1)),
+			internal.NewObjectProperty("b", core.NewString("string")),
 		)
-		keys := values.NewArrayWith(
-			values.NewString("a"),
-			values.NewInt(0),
+		keys := internal.NewArrayWith(
+			core.NewString("a"),
+			core.NewInt(0),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
 
 		So(err, ShouldBeError)
-		So(afterKeepKeys, ShouldEqual, values.None)
+		So(afterKeepKeys, ShouldEqual, core.None)
 	})
 }
 
-func isEqualObjects(obj1 *values.Object, obj2 *values.Object) bool {
+func isEqualObjects(obj1 *internal.Object, obj2 *internal.Object) bool {
 	var val1 core.Value
 	var val2 core.Value
 

@@ -2,7 +2,7 @@ package common
 
 import (
 	"context"
-
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -21,7 +21,7 @@ func GetInPage(ctx context.Context, key string, page drivers.HTMLPage) (core.Val
 		resp, err := page.GetResponse(ctx)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		return resp, nil
@@ -44,17 +44,17 @@ func GetInPage(ctx context.Context, key string, page drivers.HTMLPage) (core.Val
 		segmentIdx = +1
 		idx := path[segmentIdx]
 
-		if !values.IsNumber(idx) {
-			return values.None, core.NewPathError(
+		if !internal.IsNumber(idx) {
+			return core.None, core.NewPathError(
 				core.TypeError(idx.Type(), types.Int, types.Float),
 				segmentIdx,
 			)
 		}
 
-		value, err := page.GetFrame(ctx, values.ToInt(idx))
+		value, err := page.GetFrame(ctx, internal.ToInt(idx))
 
 		if err != nil {
-			return values.None, core.NewPathError(err, segmentIdx)
+			return core.None, core.NewPathError(err, segmentIdx)
 		}
 
 		if len(path) == 2 {
@@ -64,13 +64,13 @@ func GetInPage(ctx context.Context, key string, page drivers.HTMLPage) (core.Val
 		frame, err := drivers.ToDocument(value)
 
 		if err != nil {
-			return values.None, core.NewPathError(err, segmentIdx)
+			return core.None, core.NewPathError(err, segmentIdx)
 		}
 
 		out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], frame)
 
 		if err != nil {
-			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			return core.None, core.NewPathErrorFrom(pathErr, segmentIdx)
 		}
 
 		return out, nil
@@ -80,7 +80,7 @@ func GetInPage(ctx context.Context, key string, page drivers.HTMLPage) (core.Val
 		cookies, err := page.GetCookies(ctx)
 
 		if err != nil {
-			return values.None, core.NewPathError(err, segmentIdx)
+			return core.None, core.NewPathError(err, segmentIdx)
 		}
 
 		if len(path) == 1 {
@@ -90,7 +90,7 @@ func GetInPage(ctx context.Context, key string, page drivers.HTMLPage) (core.Val
 		out, pathErr := cookies.GetIn(ctx, path[segmentIdx+1:])
 
 		if err != nil {
-			return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+			return core.None, core.NewPathErrorFrom(pathErr, segmentIdx)
 		}
 
 		return out, nil
@@ -114,7 +114,7 @@ func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocum
 	segment := path[segmentIdx]
 
 	if segment.Type() == types.String {
-		segment := segment.(values.String)
+		segment := segment.(core.String)
 
 		switch segment {
 		case "url", "URL":
@@ -127,11 +127,11 @@ func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocum
 			parent, err := doc.GetParentDocument(ctx)
 
 			if err != nil {
-				return values.None, core.NewPathError(err, segmentIdx)
+				return core.None, core.NewPathError(err, segmentIdx)
 			}
 
 			if parent == nil {
-				return values.None, nil
+				return core.None, nil
 			}
 
 			if len(path) == 1 {
@@ -141,7 +141,7 @@ func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocum
 			out, pathErr := GetInDocument(ctx, path[segmentIdx+1:], parent)
 
 			if pathErr != nil {
-				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+				return core.None, core.NewPathErrorFrom(pathErr, segmentIdx)
 			}
 
 			return out, nil
@@ -149,10 +149,10 @@ func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocum
 			out, err := doc.QuerySelector(ctx, drivers.NewCSSSelector(segment))
 
 			if err != nil {
-				return values.None, core.NewPathError(err, segmentIdx)
+				return core.None, core.NewPathError(err, segmentIdx)
 			}
 
-			if out == values.None {
+			if out == core.None {
 				return out, nil
 			}
 
@@ -163,13 +163,13 @@ func GetInDocument(ctx context.Context, path []core.Value, doc drivers.HTMLDocum
 			el, err := drivers.ToElement(out)
 
 			if err != nil {
-				return values.None, core.NewPathError(err, segmentIdx)
+				return core.None, core.NewPathError(err, segmentIdx)
 			}
 
 			out, pathErr := GetInElement(ctx, path[segmentIdx+1:], el)
 
 			if pathErr != nil {
-				return values.None, core.NewPathErrorFrom(pathErr, segmentIdx)
+				return core.None, core.NewPathErrorFrom(pathErr, segmentIdx)
 			}
 
 			return out, nil
@@ -199,7 +199,7 @@ func GetInElement(ctx context.Context, path []core.Value, el drivers.HTMLElement
 		var out core.Value
 		var err error
 
-		segment := segment.(values.String)
+		segment := segment.(core.String)
 
 		switch segment {
 		case "innerText":
@@ -216,7 +216,7 @@ func GetInElement(ctx context.Context, path []core.Value, el drivers.HTMLElement
 				segmentIdx++
 				attrName := path[segmentIdx]
 
-				out, err = el.GetAttribute(ctx, values.ToString(attrName))
+				out, err = el.GetAttribute(ctx, internal.ToString(attrName))
 			}
 		case "style":
 			if len(path) == 1 {
@@ -226,7 +226,7 @@ func GetInElement(ctx context.Context, path []core.Value, el drivers.HTMLElement
 				segmentIdx++
 				styleName := path[segmentIdx]
 
-				out, err = el.GetStyle(ctx, values.ToString(styleName))
+				out, err = el.GetStyle(ctx, internal.ToString(styleName))
 			}
 		case "previousElementSibling":
 			out, err = el.GetPreviousElementSibling(ctx)
@@ -257,9 +257,9 @@ func GetInNode(ctx context.Context, path []core.Value, node drivers.HTMLNode) (c
 
 	switch segment.Type() {
 	case types.Int:
-		out, err = node.GetChildNode(ctx, values.ToInt(segment))
+		out, err = node.GetChildNode(ctx, internal.ToInt(segment))
 	case types.String:
-		segment := segment.(values.String)
+		segment := segment.(core.String)
 
 		switch segment {
 		case "nodeType":
@@ -271,15 +271,15 @@ func GetInNode(ctx context.Context, path []core.Value, node drivers.HTMLNode) (c
 				out, err = node.GetChildNodes(ctx)
 			} else {
 				segmentIdx++
-				out, err = node.GetChildNode(ctx, values.ToInt(path[segmentIdx]))
+				out, err = node.GetChildNode(ctx, internal.ToInt(path[segmentIdx]))
 			}
 		case "length":
 			return node.Length(), nil
 		default:
-			return values.None, nil
+			return core.None, nil
 		}
 	default:
-		return values.None, core.NewPathError(
+		return core.None, core.NewPathError(
 			core.TypeError(segment.Type(), types.Int, types.String),
 			segmentIdx,
 		)

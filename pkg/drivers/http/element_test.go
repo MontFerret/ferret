@@ -3,6 +3,8 @@ package http_test
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -406,7 +407,7 @@ func TestElement(t *testing.T) {
 		found, err := el.QuerySelector(context.Background(), drivers.NewCSSSelector("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
-		So(found, ShouldNotEqual, values.None)
+		So(found, ShouldNotEqual, core.None)
 
 		v, err := found.(drivers.HTMLNode).GetNodeName(context.Background())
 
@@ -445,7 +446,7 @@ func TestElement(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			nt, err := el.XPath(context.Background(), values.NewString("/head/title/text()"))
+			nt, err := el.XPath(context.Background(), core.NewString("/head/title/text()"))
 
 			So(err, ShouldBeNil)
 			So(nt.String(), ShouldEqual, "[\"Album example for Bootstrap\"]")
@@ -464,7 +465,7 @@ func TestElement(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			nt, err := el.XPath(context.Background(), values.NewString("count(//div)"))
+			nt, err := el.XPath(context.Background(), core.NewString("count(//div)"))
 
 			So(err, ShouldBeNil)
 			So(nt.Type().String(), ShouldEqual, types.Float.String())
@@ -478,12 +479,12 @@ func TestElement(t *testing.T) {
 			doc, err := http.NewRootHTMLDocument(godoc, "localhost:9090")
 			So(err, ShouldBeNil)
 
-			nt, err := doc.XPath(context.Background(), values.NewString("//a/@title"))
+			nt, err := doc.XPath(context.Background(), core.NewString("//a/@title"))
 
 			So(err, ShouldBeNil)
 			So(nt.Type().String(), ShouldEqual, types.Array.String())
-			So(nt.(*values.Array).First().Type().String(), ShouldEqual, types.String.String())
-			So(nt.(*values.Array).First().String(), ShouldEqual, "30")
+			So(nt.(*internal.Array).First().Type().String(), ShouldEqual, types.String.String())
+			So(nt.(*internal.Array).First().String(), ShouldEqual, "30")
 		})
 
 		Convey("Element node", func() {
@@ -494,11 +495,11 @@ func TestElement(t *testing.T) {
 			doc, err := http.NewRootHTMLDocument(godoc, "localhost:9090")
 			So(err, ShouldBeNil)
 
-			nt, err := doc.XPath(context.Background(), values.NewString("//div"))
+			nt, err := doc.XPath(context.Background(), core.NewString("//div"))
 
 			So(err, ShouldBeNil)
 			So(nt.Type().String(), ShouldEqual, types.Array.String())
-			So(nt.(*values.Array).First().Type().String(), ShouldEqual, drivers.HTMLElementType.String())
+			So(nt.(*internal.Array).First().Type().String(), ShouldEqual, drivers.HTMLElementType.String())
 		})
 	})
 }

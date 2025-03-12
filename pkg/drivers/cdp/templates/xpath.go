@@ -2,11 +2,11 @@ package templates
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const xpath = `(el, expression, resType) => {
@@ -89,6 +89,6 @@ const found = xpath(el, selector, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
 `, xpath)
 )
 
-func XPath(id runtime.RemoteObjectID, expression values.String) *eval.Function {
+func XPath(id runtime.RemoteObjectID, expression core.String) *eval.Function {
 	return eval.F(xpath).WithArgRef(id).WithArgValue(expression)
 }

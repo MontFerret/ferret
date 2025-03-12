@@ -2,6 +2,8 @@ package dom
 
 import (
 	"context"
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/logging"
@@ -15,8 +17,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/input"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type Manager struct {
@@ -62,7 +62,7 @@ func (m *Manager) Close() error {
 	})
 
 	if len(errs) > 0 {
-		return core.Errors(errs...)
+		return runtime2.Errors(errs...)
 	}
 
 	return nil
@@ -219,17 +219,17 @@ func (m *Manager) GetFrameTree(_ context.Context, frameID page.FrameID) (page.Fr
 	frame, found := m.frames.Get(frameID)
 
 	if !found {
-		return page.FrameTree{}, core.ErrNotFound
+		return page.FrameTree{}, runtime2.ErrNotFound
 	}
 
 	return frame.tree, nil
 }
 
-func (m *Manager) GetFrameNodes(ctx context.Context) (*values.Array, error) {
+func (m *Manager) GetFrameNodes(ctx context.Context) (*internal.Array, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	arr := values.NewArray(m.frames.Length())
+	arr := internal.NewArray(m.frames.Length())
 
 	for _, f := range m.frames.ToSlice() {
 		doc, err := m.getFrameInternal(ctx, f.tree.Frame.ID)
@@ -270,7 +270,7 @@ func (m *Manager) getFrameInternal(ctx context.Context, frameID page.FrameID) (*
 	frame, found := m.frames.Get(frameID)
 
 	if !found {
-		return nil, core.ErrNotFound
+		return nil, runtime2.ErrNotFound
 	}
 
 	// frame is initialized
@@ -294,7 +294,7 @@ func (m *Manager) removeFrameInternal(frameID page.FrameID) error {
 	current, exists := m.frames.Get(frameID)
 
 	if !exists {
-		return core.Error(core.ErrNotFound, "frame")
+		return runtime2.Error(runtime2.ErrNotFound, "frame")
 	}
 
 	m.frames.Remove(frameID)
@@ -316,7 +316,7 @@ func (m *Manager) removeFrameRecursivelyInternal(frameID page.FrameID) error {
 	parent, exists := m.frames.Get(frameID)
 
 	if !exists {
-		return core.Error(core.ErrNotFound, "frame")
+		return runtime2.Error(runtime2.ErrNotFound, "frame")
 	}
 
 	for _, child := range parent.tree.ChildFrames {

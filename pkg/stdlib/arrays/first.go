@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // FIRST returns a first element from a given array.
@@ -14,16 +14,16 @@ func First(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, nil
+		return core.None, nil
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 
 	return arr.Get(0), nil
 }

@@ -3,19 +3,19 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"io"
 	h "net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Params struct {
-	Method  values.String
-	URL     values.String
-	Headers *values.Object
-	Body    values.Binary
+	Method  core.String
+	URL     core.String
+	Headers *internal.Object
+	Body    core.Binary
 }
 
 // REQUEST makes a HTTP request.
@@ -29,21 +29,21 @@ func REQUEST(ctx context.Context, args ...core.Value) (core.Value, error) {
 	return execMethod(ctx, "", args)
 }
 
-func execMethod(ctx context.Context, method values.String, args []core.Value) (core.Value, error) {
+func execMethod(ctx context.Context, method core.String, args []core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	params, err := values.CastObject(args[0])
+	params, err := core.CastMap(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	p, err := newParamsFrom(params)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	if method != "" {
@@ -58,7 +58,7 @@ func makeRequest(ctx context.Context, params Params) (core.Value, error) {
 	req, err := h.NewRequest(params.Method.String(), params.URL.String(), bytes.NewBuffer(params.Body))
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	req.Header = h.Header{}
@@ -74,27 +74,27 @@ func makeRequest(ctx context.Context, params Params) (core.Value, error) {
 	resp, err := client.Do(req.WithContext(ctx))
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	data, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	defer resp.Body.Close()
 
-	return values.NewBinary(data), nil
+	return core.NewBinary(data), nil
 }
 
-func newParamsFrom(obj *values.Object) (Params, error) {
+func newParamsFrom(obj *internal.Object) (Params, error) {
 	p := Params{}
 
 	method, exists := obj.Get("method")
 
 	if exists {
-		p.Method = values.ToString(method)
+		p.Method = internal.ToString(method)
 	}
 
 	url, exists := obj.Get("url")
@@ -103,7 +103,7 @@ func newParamsFrom(obj *values.Object) (Params, error) {
 		return Params{}, core.Error(core.ErrMissedArgument, ".url")
 	}
 
-	p.URL = values.NewString(url.String())
+	p.URL = core.NewString(url.String())
 
 	headers, exists := obj.Get("headers")
 
@@ -112,13 +112,13 @@ func newParamsFrom(obj *values.Object) (Params, error) {
 			return Params{}, core.Error(err, ".headers")
 		}
 
-		p.Headers = headers.(*values.Object)
+		p.Headers = headers.(*internal.Object)
 	}
 
 	body, exists := obj.Get("body")
 
 	if exists {
-		bin, ok := body.(values.Binary)
+		bin, ok := body.(core.Binary)
 
 		if ok {
 			p.Body = bin
@@ -129,13 +129,13 @@ func newParamsFrom(obj *values.Object) (Params, error) {
 				return Params{}, core.Error(err, ".body")
 			}
 
-			p.Body = values.NewBinary(j)
+			p.Body = core.NewBinary(j)
 
 			if p.Headers == nil {
-				p.Headers = values.NewObject()
+				p.Headers = internal.NewObject()
 			}
 
-			p.Headers.Set("Content-Type", values.NewString("application/json"))
+			p.Headers.Set("Content-Type", core.NewString("application/json"))
 		}
 	}
 

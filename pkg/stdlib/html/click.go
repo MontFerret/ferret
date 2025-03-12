@@ -2,10 +2,9 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -17,38 +16,38 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 3)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	// CLICK(elOrDoc)
 	if len(args) == 1 {
-		return values.True, el.Click(ctx, 1)
+		return core.True, el.Click(ctx, 1)
 	}
 
 	if len(args) == 2 {
 		err := core.ValidateType(args[1], types.String, types.Int, drivers.QuerySelectorType)
 
 		if err != nil {
-			return values.False, err
+			return core.False, err
 		}
 
 		if args[1].Type() == types.String || args[1].Type() == drivers.QuerySelectorType {
 			selector, err := drivers.ToQuerySelector(args[1])
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			exists, err := el.ExistsBySelector(ctx, selector)
 
 			if err != nil {
-				return values.False, err
+				return core.False, err
 			}
 
 			if !exists {
@@ -58,33 +57,33 @@ func Click(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return exists, el.ClickBySelector(ctx, selector, 1)
 		}
 
-		return values.True, el.Click(ctx, values.ToInt(args[1]))
+		return core.True, el.Click(ctx, internal.ToInt(args[1]))
 	}
 
 	err = core.ValidateType(args[2], types.Int)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	// CLICK(doc, selector)
 	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	exists, err := el.ExistsBySelector(ctx, selector)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	if !exists {
 		return exists, nil
 	}
 
-	count := values.ToInt(args[2])
+	count := internal.ToInt(args[2])
 
 	return exists, el.ClickBySelector(ctx, selector, count)
 }

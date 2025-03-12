@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // DATE_MINUTE returns the minute of date as a number.
@@ -12,14 +11,14 @@ import (
 // @return {Int} - A minute number.
 func DateMinute(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	if err := values.AssertDateTime(args[0]); err != nil {
-		return values.None, err
+	if err := core.AssertDateTime(args[0]); err != nil {
+		return core.None, err
 	}
 
-	min := args[0].(values.DateTime).Minute()
+	min := args[0].(core.DateTime).Minute()
 
-	return values.NewInt(min), nil
+	return core.NewInt(min), nil
 }

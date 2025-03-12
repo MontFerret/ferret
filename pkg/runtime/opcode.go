@@ -67,9 +67,12 @@ const (
 	OpSortValue
 	OpSortKey
 
+	OpGroupPrep
+	OpGroupAdd
+
 	OpLoopBegin // Creates a loop result dataset
 	OpLoopPush
-	OpLoopKeyValue
+	OpLoopPushIter
 	OpLoopSequence
 	OpLoopEnd
 

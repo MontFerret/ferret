@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -33,45 +32,45 @@ func waitStyleAllWhen(ctx context.Context, args []core.Value, when drivers.WaitE
 	err := core.ValidateArgs(args, 4, 5)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// selector
 	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// attr name
 	err = core.ValidateType(args[2], types.String)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	name := args[2].(values.String)
+	name := args[2].(core.String)
 	value := args[3]
-	timeout := values.NewInt(drivers.DefaultWaitTimeout)
+	timeout := core.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) == 5 {
 		err = core.ValidateType(args[4], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		timeout = args[4].(values.Int)
+		timeout = args[4].(core.Int)
 	}
 
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.True, el.WaitForStyleBySelectorAll(ctx, selector, name, value, when)
+	return core.True, el.WaitForStyleBySelectorAll(ctx, selector, name, value, when)
 }

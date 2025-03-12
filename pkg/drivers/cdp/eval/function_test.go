@@ -1,13 +1,14 @@
 package eval
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestFunction(t *testing.T) {
@@ -251,9 +252,9 @@ func TestFunction(t *testing.T) {
 		Convey(".WithArgValue", func() {
 			Convey("Should add argument with a given Second", func() {
 				f := F("return 'foo'")
-				val1 := values.NewString("foo")
-				val2 := values.NewInt(1)
-				val3 := values.NewBoolean(true)
+				val1 := core.NewString("foo")
+				val2 := core.NewInt(1)
+				val3 := core.NewBoolean(true)
 
 				f.WithArgValue(val1).WithArgValue(val2).WithArgValue(val3)
 
@@ -264,15 +265,15 @@ func TestFunction(t *testing.T) {
 				arg3 := f.args[2]
 
 				So(arg1.ObjectID, ShouldBeNil)
-				So(arg1.Value, ShouldResemble, values.MustMarshal(val1))
+				So(arg1.Value, ShouldResemble, internal.MustMarshal(val1))
 				So(arg1.UnserializableValue, ShouldBeNil)
 
 				So(arg2.ObjectID, ShouldBeNil)
-				So(arg2.Value, ShouldResemble, values.MustMarshal(val2))
+				So(arg2.Value, ShouldResemble, internal.MustMarshal(val2))
 				So(arg2.UnserializableValue, ShouldBeNil)
 
 				So(arg3.ObjectID, ShouldBeNil)
-				So(arg3.Value, ShouldResemble, values.MustMarshal(val3))
+				So(arg3.Value, ShouldResemble, internal.MustMarshal(val3))
 				So(arg3.UnserializableValue, ShouldBeNil)
 			})
 		})
@@ -293,15 +294,15 @@ func TestFunction(t *testing.T) {
 				arg3 := f.args[2]
 
 				So(arg1.ObjectID, ShouldBeNil)
-				So(arg1.Value, ShouldResemble, values.MustMarshalAny(val1))
+				So(arg1.Value, ShouldResemble, internal.MustMarshalAny(val1))
 				So(arg1.UnserializableValue, ShouldBeNil)
 
 				So(arg2.ObjectID, ShouldBeNil)
-				So(arg2.Value, ShouldResemble, values.MustMarshalAny(val2))
+				So(arg2.Value, ShouldResemble, internal.MustMarshalAny(val2))
 				So(arg2.UnserializableValue, ShouldBeNil)
 
 				So(arg3.ObjectID, ShouldBeNil)
-				So(arg3.Value, ShouldResemble, values.MustMarshalAny(val3))
+				So(arg3.Value, ShouldResemble, internal.MustMarshalAny(val3))
 				So(arg3.UnserializableValue, ShouldBeNil)
 			})
 		})
@@ -322,15 +323,15 @@ func TestFunction(t *testing.T) {
 				arg3 := f.args[2]
 
 				So(arg1.ObjectID, ShouldBeNil)
-				So(arg1.Value, ShouldResemble, values.MustMarshalAny(val1.String()))
+				So(arg1.Value, ShouldResemble, internal.MustMarshalAny(val1.String()))
 				So(arg1.UnserializableValue, ShouldBeNil)
 
 				So(arg2.ObjectID, ShouldBeNil)
-				So(arg2.Value, ShouldResemble, values.MustMarshalAny(val2.String()))
+				So(arg2.Value, ShouldResemble, internal.MustMarshalAny(val2.String()))
 				So(arg2.UnserializableValue, ShouldBeNil)
 
 				So(arg3.ObjectID, ShouldBeNil)
-				So(arg3.Value, ShouldResemble, values.MustMarshalAny(val3.String()))
+				So(arg3.Value, ShouldResemble, internal.MustMarshalAny(val3.String()))
 				So(arg3.UnserializableValue, ShouldBeNil)
 			})
 		})

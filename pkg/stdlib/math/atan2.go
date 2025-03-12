@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -17,23 +16,23 @@ func Atan2(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.Int, types.Float)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[1], types.Int, types.Float)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	arg1 := toFloat(args[0])
 	arg2 := toFloat(args[1])
 
-	return values.NewFloat(math.Atan2(arg1, arg2)), nil
+	return core.NewFloat(math.Atan2(arg1, arg2)), nil
 }

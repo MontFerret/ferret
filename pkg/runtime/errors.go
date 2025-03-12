@@ -1,11 +1,22 @@
 package runtime
 
-import (
-	"github.com/pkg/errors"
+import "github.com/pkg/errors"
+
+type (
+	SourceErrorDetail struct {
+		error
+		BaseError    error
+		ComputeError error
+	}
 )
 
-var (
-	ErrMissedParam      = errors.New("missed value for parameter(s)")
-	ErrValueUndefined   = errors.New("value is undefined")
-	ErrFunctionNotFound = errors.New("function not found")
-)
+func (e *SourceErrorDetail) Error() string {
+	return e.ComputeError.Error()
+}
+
+func SourceError(src SourceMap, err error) error {
+	return &SourceErrorDetail{
+		BaseError:    err,
+		ComputeError: errors.Errorf("%s: %s", err.Error(), src.String()),
+	}
+}

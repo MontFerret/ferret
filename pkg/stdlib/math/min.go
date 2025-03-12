@@ -2,9 +2,9 @@ package math
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -15,19 +15,19 @@ func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 
 	if arr.Length() == 0 {
-		return values.None, nil
+		return core.None, nil
 	}
 
 	var min float64
@@ -49,8 +49,8 @@ func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 	})
 
 	if err != nil {
-		return values.None, nil
+		return core.None, nil
 	}
 
-	return values.NewFloat(min), nil
+	return core.NewFloat(min), nil
 }

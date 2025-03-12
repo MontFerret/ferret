@@ -2,11 +2,12 @@ package collections_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	collections2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 )
 
@@ -23,20 +24,20 @@ func TestReverse(t *testing.T) {
 	Convey("Should reverse a text with right encoding", t, func() {
 		out, _ := collections.Reverse(
 			context.Background(),
-			values.NewString("The quick brown 狐 jumped over the lazy 犬"),
+			core.NewString("The quick brown 狐 jumped over the lazy 犬"),
 		)
 
 		So(out, ShouldEqual, "犬 yzal eht revo depmuj 狐 nworb kciuq ehT")
 	})
 
 	Convey("Should return a copy of an array with reversed elements", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
-			values.NewInt(6),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
+			core.NewInt(6),
 		)
 
 		out, err := collections.Reverse(
@@ -49,7 +50,7 @@ func TestReverse(t *testing.T) {
 	})
 
 	Convey("Should return an empty array when there no elements in a source one", t, func() {
-		arr := values.NewArray(0)
+		arr := internal.NewArray(0)
 
 		out, err := collections.Reverse(
 			context.Background(),

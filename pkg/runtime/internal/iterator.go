@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type Iterator struct {
@@ -15,7 +14,7 @@ type Iterator struct {
 }
 
 func NewIterator(src core.Iterator) *Iterator {
-	return &Iterator{src, values.None, values.None}
+	return &Iterator{src, core.None, core.None}
 }
 
 func (it *Iterator) HasNext(ctx context.Context) (bool, error) {

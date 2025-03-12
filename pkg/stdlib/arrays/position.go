@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
@@ -16,33 +16,33 @@ func Position(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 	el := args[1]
 	retIdx := false
 
 	if len(args) > 2 {
-		err = values.AssertBoolean(args[2])
+		err = core.AssertBoolean(args[2])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		retIdx = values.Compare(args[2], values.True) == 0
+		retIdx = core.CompareValues(args[2], core.True) == 0
 	}
 
 	position := arr.IndexOf(el)
 
 	if !retIdx {
-		return values.NewBoolean(position > -1), nil
+		return core.NewBoolean(position > -1), nil
 	}
 
 	return position, nil

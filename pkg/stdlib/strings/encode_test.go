@@ -2,11 +2,11 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -19,8 +19,8 @@ func TestEncodedURIComponent(t *testing.T) {
 
 			_, err = strings.EncodeURIComponent(
 				context.Background(),
-				values.NewString("https://github.com/MontFerret/ferret"),
-				values.NewString("https://github.com/MontFerret/ferret"),
+				core.NewString("https://github.com/MontFerret/ferret"),
+				core.NewString("https://github.com/MontFerret/ferret"),
 			)
 
 			So(err, ShouldBeError)
@@ -31,7 +31,7 @@ func TestEncodedURIComponent(t *testing.T) {
 		Convey("EncodeURIComponent('https://github.com/MontFerret/ferret') should return encoded uri", func() {
 			out, _ := strings.EncodeURIComponent(
 				context.Background(),
-				values.NewString("https://github.com/MontFerret/ferret"),
+				core.NewString("https://github.com/MontFerret/ferret"),
 			)
 
 			So(out, ShouldEqual, "https%3A%2F%2Fgithub.com%2FMontFerret%2Fferret")
@@ -50,7 +50,7 @@ func TestMd5(t *testing.T) {
 	})
 
 	Convey("Should return hash sum of a string", t, func() {
-		str := values.NewString("foobar")
+		str := core.NewString("foobar")
 		out, _ := strings.Md5(
 			context.Background(),
 			str,
@@ -71,7 +71,7 @@ func TestSha1(t *testing.T) {
 	})
 
 	Convey("Should return hash sum of a string", t, func() {
-		str := values.NewString("foobar")
+		str := core.NewString("foobar")
 		out, _ := strings.Sha1(
 			context.Background(),
 			str,
@@ -92,7 +92,7 @@ func TestSha512(t *testing.T) {
 	})
 
 	Convey("Should return hash sum of a string", t, func() {
-		str := values.NewString("foobar")
+		str := core.NewString("foobar")
 		out, _ := strings.Sha512(
 			context.Background(),
 			str,
@@ -115,7 +115,7 @@ func TestToBase64(t *testing.T) {
 	Convey("Should encode a given value", t, func() {
 		out, err := strings.ToBase64(
 			context.Background(),
-			values.NewString("foobar"),
+			core.NewString("foobar"),
 		)
 
 		So(err, ShouldBeNil)

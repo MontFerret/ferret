@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
 	"io/ioutil"
 	"os"
@@ -24,7 +25,6 @@ import (
 	"github.com/MontFerret/ferret"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (

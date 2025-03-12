@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/antchfx/htmlquery"
 	"github.com/antchfx/xpath"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func EvalXPathToNode(selection *goquery.Selection, expression string) (drivers.HTMLNode, error) {
@@ -35,13 +35,13 @@ func EvalXPathToElement(selection *goquery.Selection, expression string) (driver
 	return drivers.ToElement(node)
 }
 
-func EvalXPathToNodes(selection *goquery.Selection, expression string) (*values.Array, error) {
+func EvalXPathToNodes(selection *goquery.Selection, expression string) (*internal.Array, error) {
 	return EvalXPathToNodesWith(selection, expression, func(node *html.Node) (core.Value, error) {
 		return parseXPathNode(node)
 	})
 }
 
-func EvalXPathToNodesWith(selection *goquery.Selection, expression string, mapper func(node *html.Node) (core.Value, error)) (*values.Array, error) {
+func EvalXPathToNodesWith(selection *goquery.Selection, expression string, mapper func(node *html.Node) (core.Value, error)) (*internal.Array, error) {
 	out, err := evalXPathToInternal(selection, expression)
 
 	if err != nil {
@@ -50,7 +50,7 @@ func EvalXPathToNodesWith(selection *goquery.Selection, expression string, mappe
 
 	switch res := out.(type) {
 	case *xpath.NodeIterator:
-		items := values.NewArray(10)
+		items := internal.NewArray(10)
 
 		for res.MoveNext() {
 			item, err := mapper(res.Current().(*htmlquery.NodeNavigator).Current())
@@ -66,7 +66,7 @@ func EvalXPathToNodesWith(selection *goquery.Selection, expression string, mappe
 
 		return items, nil
 	default:
-		return values.EmptyArray(), nil
+		return internal.EmptyArray(), nil
 	}
 }
 
@@ -79,7 +79,7 @@ func EvalXPathTo(selection *goquery.Selection, expression string) (core.Value, e
 
 	switch res := out.(type) {
 	case *xpath.NodeIterator:
-		items := values.NewArray(10)
+		items := internal.NewArray(10)
 
 		for res.MoveNext() {
 			var item core.Value
@@ -88,9 +88,9 @@ func EvalXPathTo(selection *goquery.Selection, expression string) (core.Value, e
 
 			switch node.NodeType() {
 			case xpath.TextNode:
-				item = values.NewString(node.Value())
+				item = core.NewString(node.Value())
 			case xpath.AttributeNode:
-				item = values.NewString(node.Value())
+				item = core.NewString(node.Value())
 			default:
 				i, err := parseXPathNode(node.(*htmlquery.NodeNavigator).Current())
 
@@ -108,7 +108,7 @@ func EvalXPathTo(selection *goquery.Selection, expression string) (core.Value, e
 
 		return items, nil
 	default:
-		return values.Parse(res), nil
+		return internal.Parse(res), nil
 	}
 }
 

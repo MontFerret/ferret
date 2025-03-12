@@ -2,9 +2,8 @@ package events
 
 import (
 	"context"
-	"sync"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"sync"
 )
 
 type mrger struct {

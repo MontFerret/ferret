@@ -2,9 +2,10 @@ package objects_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,188 +17,188 @@ func TestValues(t *testing.T) {
 			actual, err := objects.Values(context.Background())
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 		})
 
 		Convey("When 2 arguments", func() {
-			obj := values.NewObjectWith(
-				values.NewObjectProperty("k1", values.NewInt(0)),
-				values.NewObjectProperty("k2", values.NewInt(1)),
+			obj := internal.NewObjectWith(
+				internal.NewObjectProperty("k1", core.NewInt(0)),
+				internal.NewObjectProperty("k2", core.NewInt(1)),
 			)
 
 			actual, err := objects.Values(context.Background(), obj, obj)
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 
-			actual, err = objects.Values(context.Background(), obj, values.NewInt(0))
+			actual, err = objects.Values(context.Background(), obj, core.NewInt(0))
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 		})
 
 		Convey("When there is not object argument", func() {
-			actual, err := objects.Values(context.Background(), values.NewInt(0))
+			actual, err := objects.Values(context.Background(), core.NewInt(0))
 
 			So(err, ShouldBeError)
-			So(actual.Compare(values.None), ShouldEqual, 0)
+			So(actual.Compare(core.None), ShouldEqual, 0)
 		})
 	})
 
 	Convey("When simple type attributes (same type)", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("k1", values.NewInt(0)),
-			values.NewObjectProperty("k2", values.NewInt(1)),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("k1", core.NewInt(0)),
+			internal.NewObjectProperty("k2", core.NewInt(1)),
 		)
-		expected := values.NewArrayWith(
-			values.NewInt(0), values.NewInt(1),
+		expected := internal.NewArrayWith(
+			core.NewInt(0), core.NewInt(1),
 		).Sort()
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("When simple type attributes (different types)", t, func() {
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("k1", values.NewInt(0)),
-			values.NewObjectProperty("k2", values.NewString("v2")),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("k1", core.NewInt(0)),
+			internal.NewObjectProperty("k2", core.NewString("v2")),
 		)
-		expected := values.NewArrayWith(
-			values.NewInt(0), values.NewString("v2"),
+		expected := internal.NewArrayWith(
+			core.NewInt(0), core.NewString("v2"),
 		).Sort()
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("When complex type attributes (array)", t, func() {
-		arr1 := values.NewArrayWith(
-			values.NewInt(0), values.NewInt(1),
+		arr1 := internal.NewArrayWith(
+			core.NewInt(0), core.NewInt(1),
 		)
-		arr2 := values.NewArrayWith(
-			values.NewInt(2), values.NewInt(3),
+		arr2 := internal.NewArrayWith(
+			core.NewInt(2), core.NewInt(3),
 		)
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("k1", arr1),
-			values.NewObjectProperty("k2", arr2),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("k1", arr1),
+			internal.NewObjectProperty("k2", arr2),
 		)
-		expected := values.NewArrayWith(arr1, arr2).Sort()
+		expected := internal.NewArrayWith(arr1, arr2).Sort()
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("When complex type attributes (object)", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("int0", values.NewInt(0)),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("int0", core.NewInt(0)),
 		)
-		obj2 := values.NewObjectWith(
-			values.NewObjectProperty("int1", values.NewInt(1)),
+		obj2 := internal.NewObjectWith(
+			internal.NewObjectProperty("int1", core.NewInt(1)),
 		)
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("k1", obj1),
-			values.NewObjectProperty("k2", obj2),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("k1", obj1),
+			internal.NewObjectProperty("k2", obj2),
 		)
-		expected := values.NewArrayWith(obj1, obj2).Sort()
+		expected := internal.NewArrayWith(obj1, obj2).Sort()
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("When complex type attributes (object and array)", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("k1", values.NewInt(0)),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("k1", core.NewInt(0)),
 		)
-		arr1 := values.NewArrayWith(
-			values.NewInt(0), values.NewInt(1),
+		arr1 := internal.NewArrayWith(
+			core.NewInt(0), core.NewInt(1),
 		)
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("obj", obj1),
-			values.NewObjectProperty("arr", arr1),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("obj", obj1),
+			internal.NewObjectProperty("arr", arr1),
 		)
-		expected := values.NewArrayWith(obj1, arr1).Sort()
+		expected := internal.NewArrayWith(obj1, arr1).Sort()
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("When both type attributes", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("k1", values.NewInt(0)),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("k1", core.NewInt(0)),
 		)
-		arr1 := values.NewArrayWith(
-			values.NewInt(0), values.NewInt(1),
+		arr1 := internal.NewArrayWith(
+			core.NewInt(0), core.NewInt(1),
 		)
-		int1 := values.NewInt(0)
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("obj", obj1),
-			values.NewObjectProperty("arr", arr1),
-			values.NewObjectProperty("int", int1),
+		int1 := core.NewInt(0)
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("obj", obj1),
+			internal.NewObjectProperty("arr", arr1),
+			internal.NewObjectProperty("int", int1),
 		)
-		expected := values.NewArrayWith(obj1, arr1, int1).Sort()
+		expected := internal.NewArrayWith(obj1, arr1, int1).Sort()
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("Result is independent on the source object (array)", t, func() {
-		arr := values.NewArrayWith(values.NewInt(0))
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("arr", arr),
+		arr := internal.NewArrayWith(core.NewInt(0))
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("arr", arr),
 		)
-		expected := values.NewArrayWith(
-			values.NewArrayWith(
-				values.NewInt(0),
+		expected := internal.NewArrayWith(
+			internal.NewArrayWith(
+				core.NewInt(0),
 			),
 		)
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 
-		arr.Push(values.NewInt(1))
+		arr.Push(core.NewInt(1))
 
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
 
 	Convey("Result is independent on the source object (object)", t, func() {
-		nested := values.NewObjectWith(
-			values.NewObjectProperty("int", values.NewInt(0)),
+		nested := internal.NewObjectWith(
+			internal.NewObjectProperty("int", core.NewInt(0)),
 		)
-		obj := values.NewObjectWith(
-			values.NewObjectProperty("nested", nested),
+		obj := internal.NewObjectWith(
+			internal.NewObjectProperty("nested", nested),
 		)
-		expected := values.NewArrayWith(
-			values.NewObjectWith(
-				values.NewObjectProperty("int", values.NewInt(0)),
+		expected := internal.NewArrayWith(
+			internal.NewObjectWith(
+				internal.NewObjectProperty("int", core.NewInt(0)),
 			),
 		)
 
 		actual, err := objects.Values(context.Background(), obj)
-		actualSorted := actual.(*values.Array).Sort()
+		actualSorted := actual.(*internal.Array).Sort()
 
 		So(err, ShouldBeNil)
 
-		nested.Set("new", values.NewInt(1))
+		nested.Set("new", core.NewInt(1))
 
 		So(actualSorted.Compare(expected), ShouldEqual, 0)
 	})
@@ -206,20 +207,20 @@ func TestValues(t *testing.T) {
 func TestValuesStress(t *testing.T) {
 	Convey("Stress", t, func() {
 		for i := 0; i < 100; i++ {
-			obj1 := values.NewObjectWith(
-				values.NewObjectProperty("int0", values.NewInt(0)),
+			obj1 := internal.NewObjectWith(
+				internal.NewObjectProperty("int0", core.NewInt(0)),
 			)
-			obj2 := values.NewObjectWith(
-				values.NewObjectProperty("int1", values.NewInt(1)),
+			obj2 := internal.NewObjectWith(
+				internal.NewObjectProperty("int1", core.NewInt(1)),
 			)
-			obj := values.NewObjectWith(
-				values.NewObjectProperty("k1", obj1),
-				values.NewObjectProperty("k2", obj2),
+			obj := internal.NewObjectWith(
+				internal.NewObjectProperty("k1", obj1),
+				internal.NewObjectProperty("k2", obj2),
 			)
-			expected := values.NewArrayWith(obj2, obj1).Sort()
+			expected := internal.NewArrayWith(obj2, obj1).Sort()
 
 			actual, err := objects.Values(context.Background(), obj)
-			actualSorted := actual.(*values.Array).Sort()
+			actualSorted := actual.(*internal.Array).Sort()
 
 			So(err, ShouldBeNil)
 			So(actualSorted.Length(), ShouldEqual, expected.Length())

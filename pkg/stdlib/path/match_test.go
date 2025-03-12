@@ -2,11 +2,11 @@ package path_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
 
@@ -21,14 +21,14 @@ func TestMatch(t *testing.T) {
 
 	Convey("First argument is wrong", t, func() {
 		var err error
-		_, err = path.Match(context.Background(), values.NewInt(0), values.NewString("/"))
+		_, err = path.Match(context.Background(), core.NewInt(0), core.NewString("/"))
 
 		So(err, ShouldBeError)
 	})
 
 	Convey("Second argument is wrong", t, func() {
 		var err error
-		_, err = path.Match(context.Background(), values.NewString("/"), values.NewInt(0))
+		_, err = path.Match(context.Background(), core.NewString("/"), core.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -36,25 +36,25 @@ func TestMatch(t *testing.T) {
 	Convey("Match('http://site.com/*.csv', 'http://site.com/goods.csv') should return true", t, func() {
 		out, _ := path.Match(
 			context.Background(),
-			values.NewString("http://site.com/*.csv"), values.NewString("http://site.com/goods.csv"),
+			core.NewString("http://site.com/*.csv"), core.NewString("http://site.com/goods.csv"),
 		)
 
-		So(out, ShouldEqual, values.True)
+		So(out, ShouldEqual, core.True)
 	})
 
 	Convey("Match('ferret*/ferret', 'ferret/bin/ferret') should return false", t, func() {
 		out, _ := path.Match(
 			context.Background(),
-			values.NewString("ferret*/ferret"), values.NewString("ferret/bin/ferret"),
+			core.NewString("ferret*/ferret"), core.NewString("ferret/bin/ferret"),
 		)
 
-		So(out, ShouldEqual, values.False)
+		So(out, ShouldEqual, core.False)
 	})
 
 	Convey("Match('[x-]', 'x') should return ad error", t, func() {
 		_, err := path.Match(
 			context.Background(),
-			values.NewString("[x-]"), values.NewString("x"),
+			core.NewString("[x-]"), core.NewString("x"),
 		)
 
 		So(err, ShouldBeError)

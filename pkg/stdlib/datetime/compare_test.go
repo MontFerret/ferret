@@ -4,59 +4,58 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 )
 
 func TestDateCompare(t *testing.T) {
-	expectedTrue := values.NewBoolean(true)
-	expectedFalse := values.NewBoolean(false)
+	expectedTrue := core.NewBoolean(true)
+	expectedFalse := core.NewBoolean(false)
 
 	tcs := []*testCase{
 		&testCase{
 			Name:      "When less than 3 arguments",
-			Expected:  values.None,
-			Args:      []core.Value{values.NewInt(0), values.NewInt(0)},
+			Expected:  core.None,
+			Args:      []core.Value{core.NewInt(0), core.NewInt(0)},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When more than 4 arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewInt(0), values.NewInt(0), values.NewInt(0),
-				values.NewInt(0), values.NewInt(0),
+				core.NewInt(0), core.NewInt(0), core.NewInt(0),
+				core.NewInt(0), core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "when wrong type of arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewCurrentDateTime(),
-				values.NewCurrentDateTime(),
-				values.NewInt(0),
+				core.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "when wrong type of optional argument",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewCurrentDateTime(),
-				values.NewCurrentDateTime(),
-				values.NewString("year"),
-				values.NewInt(0),
+				core.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
+				core.NewString("year"),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "when start unit less that end unit",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewCurrentDateTime(),
-				values.NewCurrentDateTime(),
-				values.NewString("day"),
-				values.NewString("year"),
+				core.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
+				core.NewString("day"),
+				core.NewString("year"),
 			},
 			ShouldErr: true,
 		},
@@ -64,9 +63,9 @@ func TestDateCompare(t *testing.T) {
 			Name:     "when years are equal",
 			Expected: expectedTrue,
 			Args: []core.Value{
-				values.NewCurrentDateTime(),
-				values.NewCurrentDateTime(),
-				values.NewString("year"),
+				core.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
+				core.NewString("year"),
 			},
 		},
 		&testCase{
@@ -75,8 +74,8 @@ func TestDateCompare(t *testing.T) {
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
 				mustLayoutDt("2006-01-02", "2000-02-07"),
-				values.NewString("year"),
-				values.NewString("year"),
+				core.NewString("year"),
+				core.NewString("year"),
 			},
 		},
 		&testCase{
@@ -85,18 +84,18 @@ func TestDateCompare(t *testing.T) {
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
 				mustLayoutDt("2006-01-02", "2000-02-09"),
-				values.NewString("year"),
-				values.NewString("days"),
+				core.NewString("year"),
+				core.NewString("days"),
 			},
 		},
 		&testCase{
 			Name:     "when days are equal",
 			Expected: expectedTrue,
 			Args: []core.Value{
-				values.NewCurrentDateTime(),
-				values.NewCurrentDateTime(),
-				values.NewString("days"),
-				values.NewString("days"),
+				core.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
+				core.NewString("days"),
+				core.NewString("days"),
 			},
 		},
 	}

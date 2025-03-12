@@ -2,11 +2,12 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -23,29 +24,29 @@ func TestContains(t *testing.T) {
 		Convey("Contains('foobar', 'foo') should return 'true'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewString("foobar"),
-				values.NewString("bar"),
+				core.NewString("foobar"),
+				core.NewString("bar"),
 			)
 
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("Contains('foobar', 'qaz') should return 'false'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewString("foobar"),
-				values.NewString("qaz"),
+				core.NewString("foobar"),
+				core.NewString("qaz"),
 			)
 
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 
 		Convey("Contains('foobar', 'foo', true) should return '3'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewString("foobar"),
-				values.NewString("bar"),
-				values.True,
+				core.NewString("foobar"),
+				core.NewString("bar"),
+				core.True,
 			)
 
 			So(out, ShouldEqual, 3)
@@ -54,9 +55,9 @@ func TestContains(t *testing.T) {
 		Convey("Contains('foobar', 'qaz', true) should return '-1'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewString("foobar"),
-				values.NewString("bar"),
-				values.True,
+				core.NewString("foobar"),
+				core.NewString("bar"),
+				core.True,
 			)
 
 			So(out, ShouldEqual, 3)
@@ -67,31 +68,31 @@ func TestContains(t *testing.T) {
 		Convey("Contains('foo123', 1) should return 'true'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewString("foo123"),
-				values.NewInt(1),
+				core.NewString("foo123"),
+				core.NewInt(1),
 			)
 
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("Contains(123, 1) should return 'true'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewInt(123),
-				values.NewInt(1),
+				core.NewInt(123),
+				core.NewInt(1),
 			)
 
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("Contains([1,2,3], 1) should return 'true'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				values.NewArrayWith(values.NewInt(1), values.NewInt(2), values.NewInt(3)),
-				values.NewInt(1),
+				internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+				core.NewInt(1),
 			)
 
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 	})
 }

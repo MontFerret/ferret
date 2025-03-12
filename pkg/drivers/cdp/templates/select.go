@@ -2,12 +2,12 @@ package templates
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const selectFragment = `
@@ -39,7 +39,7 @@ const found = el;
 %s
 }`, selectFragment)
 
-func Select(id runtime.RemoteObjectID, inputs *values.Array) *eval.Function {
+func Select(id runtime.RemoteObjectID, inputs *internal.Array) *eval.Function {
 	return eval.F(selekt).WithArgRef(id).WithArgValue(inputs)
 }
 
@@ -61,7 +61,7 @@ var (
 }`, xpathAsElementFragment, notFoundErrorFragment, selectFragment)
 )
 
-func SelectBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, inputs *values.Array) *eval.Function {
+func SelectBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, inputs *internal.Array) *eval.Function {
 	return toFunction(selector, selectByCSSSelector, selectByXPathSelector).
 		WithArgRef(id).
 		WithArgSelector(selector).

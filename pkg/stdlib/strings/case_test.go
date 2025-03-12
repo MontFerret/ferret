@@ -2,11 +2,11 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -24,7 +24,7 @@ func TestLower(t *testing.T) {
 	Convey("Lower('FOOBAR') should return 'foobar'", t, func() {
 		out, _ := strings.Lower(
 			context.Background(),
-			values.NewString("FOOBAR"),
+			core.NewString("FOOBAR"),
 		)
 
 		So(out, ShouldEqual, "foobar")
@@ -45,7 +45,7 @@ func TestUpper(t *testing.T) {
 	Convey("Lower('foobar') should return 'FOOBAR'", t, func() {
 		out, _ := strings.Upper(
 			context.Background(),
-			values.NewString("foobar"),
+			core.NewString("foobar"),
 		)
 
 		So(out, ShouldEqual, "FOOBAR")

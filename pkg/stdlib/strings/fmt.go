@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -20,20 +19,20 @@ import (
 func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.String)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	formatted, err := format(args[0].String(), args[1:])
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.NewString(formatted), nil
+	return core.NewString(formatted), nil
 }
 
 func format(template string, args []core.Value) (string, error) {

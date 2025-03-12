@@ -2,7 +2,6 @@ package internal
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type Stack struct {
@@ -23,7 +22,7 @@ func (s *Stack) Push(value core.Value) {
 
 func (s *Stack) Pop() core.Value {
 	if len(s.data) == 0 {
-		return values.None
+		return core.None
 	}
 
 	last := len(s.data) - 1

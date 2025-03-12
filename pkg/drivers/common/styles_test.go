@@ -6,14 +6,12 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 type style struct {
 	raw   string
-	name  values.String
+	name  core.String
 	value core.Value
 }
 
@@ -23,48 +21,48 @@ func TestDeserializeStyles(t *testing.T) {
 			{
 				raw:   "min-height: 1.15",
 				name:  "min-height",
-				value: values.NewFloat(1.15),
+				value: core.NewFloat(1.15),
 			},
 			{
 				raw:   "background-color: #4A154B",
 				name:  "background-color",
-				value: values.NewString("#4A154B"),
+				value: core.NewString("#4A154B"),
 			},
 			{
 				raw:   "font-size:26pt",
 				name:  "font-size",
-				value: values.NewString("26pt"),
+				value: core.NewString("26pt"),
 			},
 			{
 				raw:   "page-break-after:avoid",
 				name:  "page-break-after",
-				value: values.NewString("avoid"),
+				value: core.NewString("avoid"),
 			},
 			{
 				raw:   `font-family: Arial,"Helvetica Neue",Helvetica,sans-serif`,
 				name:  "font-family",
-				value: values.NewString(`Arial,"Helvetica Neue",Helvetica,sans-serif`),
+				value: core.NewString(`Arial,"Helvetica Neue",Helvetica,sans-serif`),
 			},
 			{
 				raw:   "color: black",
 				name:  "color",
-				value: values.NewString("black"),
+				value: core.NewString("black"),
 			},
 			{
 				raw:   "display: inline-block",
 				name:  "display",
-				value: values.NewString("inline-block"),
+				value: core.NewString("inline-block"),
 			},
 			{
 				raw:   "min-width: 50",
 				name:  "min-width",
-				value: values.NewFloat(50),
+				value: core.NewFloat(50),
 			},
 		}
 
 		Convey("Should parse a single style", func() {
 			for _, s := range styles {
-				out, err := common.DeserializeStyles(values.NewString(s.raw))
+				out, err := common.DeserializeStyles(core.NewString(s.raw))
 
 				So(err, ShouldBeNil)
 				So(out, ShouldNotBeNil)
@@ -85,7 +83,7 @@ func TestDeserializeStyles(t *testing.T) {
 				buff.WriteString("; ")
 			}
 
-			out, err := common.DeserializeStyles(values.NewString(buff.String()))
+			out, err := common.DeserializeStyles(core.NewString(buff.String()))
 
 			So(err, ShouldBeNil)
 			So(out, ShouldNotBeNil)

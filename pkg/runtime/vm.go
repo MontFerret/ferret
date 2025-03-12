@@ -2,13 +2,12 @@ package runtime
 
 import (
 	"context"
+	"go/types"
 	"io"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/internal"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type VM struct {
@@ -60,11 +59,11 @@ loop:
 
 		switch op {
 		case OpLoadNone:
-			reg[dst] = values.None
+			reg[dst] = core.None
 		case OpLoadZero:
-			reg[dst] = values.ZeroInt
+			reg[dst] = core.ZeroInt
 		case OpLoadBool:
-			reg[dst] = values.Boolean(src1 == 1)
+			reg[dst] = core.Boolean(src1 == 1)
 		case OpMove:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
@@ -79,17 +78,28 @@ loop:
 		case OpJump:
 			vm.pc = int(dst)
 		case OpJumpIfFalse:
-			if !values.ToBoolean(reg[src1]) {
+			if !internal.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
 		case OpJumpIfTrue:
-			if values.ToBoolean(reg[src1]) {
+			if internal.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
 		case OpJumpIfEmpty:
 			val, ok := reg[src1].(core.Measurable)
 
-			if ok && val.Length() == 0 {
+			if ok {
+				size, err := val.Length(ctx)
+
+				if err != nil {
+					return nil, err
+				}
+
+				if size == 0 {
+					vm.pc = int(dst)
+				}
+			} else {
+				// If the value is not measurable, we consider it empty
 				vm.pc = int(dst)
 			}
 		case OpAdd:
@@ -107,33 +117,33 @@ loop:
 		case OpDecr:
 			reg[dst] = internal.Decrement(reg[dst])
 		case OpCastBool:
-			reg[dst] = values.ToBoolean(reg[src1])
+			reg[dst] = internal.ToBoolean(reg[src1])
 		case OpNegate:
-			reg[dst] = values.Negate(reg[src1])
+			reg[dst] = internal.Negate(reg[src1])
 		case OpFlipPositive:
-			reg[dst] = values.Positive(reg[src1])
+			reg[dst] = internal.Positive(reg[src1])
 		case OpFlipNegative:
-			reg[dst] = values.Negative(reg[src1])
+			reg[dst] = internal.Negative(reg[src1])
 		case OpComp:
-			reg[dst] = values.Int(values.Compare(reg[src1], reg[src2]))
+			reg[dst] = core.Int(core.CompareValues(reg[src1], reg[src2]))
 		case OpNot:
-			reg[dst] = !values.ToBoolean(reg[src1])
+			reg[dst] = !internal.ToBoolean(reg[src1])
 		case OpEq:
-			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) == 0)
+			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) == 0)
 		case OpNeq:
-			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) != 0)
+			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) != 0)
 		case OpGt:
-			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) > 0)
+			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) > 0)
 		case OpLt:
-			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) < 0)
+			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) < 0)
 		case OpGte:
-			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) >= 0)
+			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) >= 0)
 		case OpLte:
-			reg[dst] = values.Boolean(values.Compare(reg[src1], reg[src2]) <= 0)
+			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) <= 0)
 		case OpIn:
-			reg[dst] = values.Contains(reg[src2], reg[src1])
+			reg[dst] = internal.Contains(reg[src2], reg[src1])
 		case OpNotIn:
-			reg[dst] = !values.Contains(reg[src2], reg[src1])
+			reg[dst] = !internal.Contains(reg[src2], reg[src1])
 		case OpLike:
 			res, err := internal.Like(reg[src1], reg[src2])
 
@@ -152,23 +162,23 @@ loop:
 			}
 		case OpRegexpPositive:
 			// TODO: Add caching to avoid recompilation
-			r, err := values.ToRegexp(reg[src2])
+			r, err := internal.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
 			} else if _, catch := tryCatch(vm.pc); catch {
-				reg[dst] = values.False
+				reg[dst] = core.False
 			} else {
 				return nil, err
 			}
 		case OpRegexpNegative:
 			// TODO: Add caching to avoid recompilation
-			r, err := values.ToRegexp(reg[src2])
+			r, err := internal.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = !r.Match(reg[src1])
 			} else if _, catch := tryCatch(vm.pc); catch {
-				reg[dst] = values.False
+				reg[dst] = core.False
 			} else {
 				return nil, err
 			}
@@ -179,18 +189,18 @@ loop:
 				size = src2.Register() - src1.Register() + 1
 			}
 
-			arr := values.NewArray(size)
+			arr := internal.NewArray(size)
 			start := int(src1)
 			end := int(src1) + size
 
 			// Iterate over registers starting from src1 and up to the src2
 			for i := start; i < end; i++ {
-				arr.Push(reg[i])
+				_ = arr.Add(ctx, reg[i])
 			}
 
 			reg[dst] = arr
 		case OpObject:
-			obj := values.NewObject()
+			obj := internal.NewObject()
 			var args int
 
 			if src1 > 0 {
@@ -204,7 +214,7 @@ loop:
 				key := reg[i]
 				value := reg[i+1]
 
-				obj.Set(values.ToString(key), value)
+				_ = obj.Set(ctx, internal.ToString(key), value)
 			}
 
 			reg[dst] = obj
@@ -213,17 +223,15 @@ loop:
 			prop := reg[src2]
 
 			switch getter := prop.(type) {
-			case values.String:
+			case core.String:
 				switch src := val.(type) {
-				case *values.Object:
-					reg[dst] = src.MustGetOr(getter, values.None)
 				case core.Keyed:
-					out, err := src.Get(ctx, getter.String())
+					out, err := src.Get(ctx, getter)
 
 					if err == nil {
 						reg[dst] = out
 					} else if op == OpLoadPropertyOptional {
-						reg[dst] = values.None
+						reg[dst] = core.None
 					} else {
 						return nil, err
 					}
@@ -232,26 +240,22 @@ loop:
 						return nil, core.TypeError(src, types.Object, types.Keyed)
 					}
 
-					reg[dst] = values.None
+					reg[dst] = core.None
 				}
-			case values.Float, values.Int:
+			case core.Float, core.Int:
 				switch src := val.(type) {
-				case *values.Array:
-					idx := values.ToInt(getter)
-
-					reg[dst] = src.Get(int(idx))
 				case core.Indexed:
-					out, err := src.Get(ctx, int(values.ToInt(getter)))
+					out, err := src.Get(ctx, int(internal.ToInt(getter)))
 
 					if err == nil {
 						reg[dst] = out
 					} else if op == OpLoadPropertyOptional {
-						reg[dst] = values.None
+						reg[dst] = core.None
 					} else {
 						return nil, err
 					}
 				case *internal.DataSet:
-					idx := values.ToInt(getter)
+					idx := internal.ToInt(getter)
 
 					reg[dst] = src.Get(int(idx))
 				default:
@@ -259,7 +263,7 @@ loop:
 						return nil, core.TypeError(src, types.Array, types.Indexed)
 					}
 
-					reg[dst] = values.None
+					reg[dst] = core.None
 				}
 			}
 		case OpCall, OpProtectedCall:
@@ -286,9 +290,9 @@ loop:
 			if err == nil {
 				reg[dst] = out
 			} else if op == OpProtectedCall {
-				reg[dst] = values.None
+				reg[dst] = core.None
 			} else if catch, ok := tryCatch(vm.pc); ok {
-				reg[dst] = values.None
+				reg[dst] = core.None
 
 				if catch[2] > 0 {
 					vm.pc = catch[2]
@@ -300,11 +304,21 @@ loop:
 			val, ok := reg[src1].(core.Measurable)
 
 			if ok {
-				reg[dst] = values.NewInt(val.Length())
+				length, err := val.Length(ctx)
+
+				if err != nil {
+					if _, catch := tryCatch(vm.pc); catch {
+						length = 0
+					} else {
+						return nil, err
+					}
+				}
+
+				reg[dst] = core.NewInt(length)
 			} else if _, catch := tryCatch(vm.pc); catch {
-				reg[dst] = values.ZeroInt
+				reg[dst] = core.ZeroInt
 			} else {
-				return values.None, core.TypeError(reg[src1],
+				return core.None, core.TypeError(reg[src1],
 					types.String,
 					types.Array,
 					types.Object,
@@ -313,10 +327,10 @@ loop:
 				)
 			}
 		case OpType:
-			reg[dst] = values.String(core.Reflect(reg[src1]).Name())
+			reg[dst] = core.String(core.Reflect(reg[src1]).Name())
 		case OpClose:
 			val, ok := reg[dst].(io.Closer)
-			reg[dst] = values.None
+			reg[dst] = core.None
 
 			if ok {
 				err := val.Close()
@@ -355,7 +369,7 @@ loop:
 			default:
 				if _, catch := tryCatch(vm.pc); catch {
 					// Fall back to an empty iterator
-					reg[dst] = values.NewBoxedValue(values.NoopIter)
+					reg[dst] = internal.NewBoxedValue(internal.NoopIter)
 				} else {
 					return nil, core.TypeError(src, types.Iterable)
 				}
@@ -381,17 +395,10 @@ loop:
 		case OpForLoopKey:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Key()
-		case OpLoopKeyValue:
-			ds := reg[dst].(*internal.DataSet)
-			iterator := reg[src1].(*internal.Iterator)
-			ds.Push(&internal.KeyValuePair{
-				Key:   iterator.Key(),
-				Value: iterator.Value(),
-			})
 		case OpWhileLoopPrep:
-			reg[dst] = values.Int(-1)
+			reg[dst] = core.Int(-1)
 		case OpWhileLoopNext:
-			cond := values.ToBoolean(reg[src1])
+			cond := internal.ToBoolean(reg[src1])
 
 			if cond {
 				reg[dst] = internal.Increment(reg[dst])
@@ -403,6 +410,13 @@ loop:
 		case OpLoopPush:
 			ds := reg[dst].(*internal.DataSet)
 			ds.Push(reg[src1])
+		case OpLoopPushIter:
+			ds := reg[dst].(*internal.DataSet)
+			iterator := reg[src1].(*internal.Iterator)
+			ds.Push(&internal.KeyValuePair{
+				Key:   iterator.Key(),
+				Value: iterator.Value(),
+			})
 		case OpLoopSequence:
 			ds := reg[src1].(*internal.DataSet)
 			reg[dst] = internal.NewSequence(ds.ToArray())
@@ -422,9 +436,16 @@ loop:
 			reg[dst] = pair.Key
 		case OpSortSwap:
 			ds := reg[dst].(*internal.DataSet)
-			i := values.ToInt(reg[src1])
-			j := values.ToInt(reg[src2])
+			i := internal.ToInt(reg[src1])
+			j := internal.ToInt(reg[src2])
 			ds.Swap(int(i), int(j))
+		case OpGroupPrep:
+			reg[dst] = internal.NewCollector()
+		case OpGroupAdd:
+			collector := reg[dst].(*internal.Collector)
+			key := reg[src1]
+			value := reg[src2]
+			collector.Add(key, value)
 		case OpReturn:
 			break loop
 		}

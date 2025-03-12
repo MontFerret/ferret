@@ -2,10 +2,9 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -33,7 +32,7 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 	err := core.ValidateArgs(args, 3, 5)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// document or element
@@ -41,10 +40,10 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	timeout := values.NewInt(drivers.DefaultWaitTimeout)
+	timeout := core.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	// WAIT_ATTR(doc, selector, attrName, attrValue, timeout)
@@ -53,63 +52,63 @@ func waitAttributeWhen(ctx context.Context, args []core.Value, when drivers.Wait
 		err := core.ValidateArgs(args, 4, 5)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		// attr name
 		err = core.ValidateType(args[2], types.String)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		selector, err := drivers.ToQuerySelector(args[1])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		name := args[2].(values.String)
-		value := values.ToString(args[3])
+		name := args[2].(core.String)
+		value := internal.ToString(args[3])
 
 		if len(args) == 5 {
 			err = core.ValidateType(args[4], types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			timeout = args[4].(values.Int)
+			timeout = args[4].(core.Int)
 		}
 
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.True, el.WaitForAttributeBySelector(ctx, selector, name, value, when)
+		return core.True, el.WaitForAttributeBySelector(ctx, selector, name, value, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
-	name := args[1].(values.String)
+	name := args[1].(core.String)
 	value := args[2]
 
 	if len(args) == 4 {
 		err = core.ValidateType(args[3], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		timeout = args[3].(values.Int)
+		timeout = args[3].(core.Int)
 	}
 
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.True, el.WaitForAttribute(ctx, name, value, when)
+	return core.True, el.WaitForAttribute(ctx, name, value, when)
 }

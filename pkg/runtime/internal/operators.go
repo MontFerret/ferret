@@ -5,229 +5,228 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func Add(inputL, inputR core.Value) core.Value {
-	left := values.ToNumberOrString(inputL)
+	left := ToNumberOrString(inputL)
 
 	switch leftVal := left.(type) {
-	case values.Int:
+	case core.Int:
 		return addLeftInt(leftVal, inputR)
-	case values.Float:
+	case core.Float:
 		return addLeftFloat(leftVal, inputR)
-	case values.String:
+	case core.String:
 		return addLeftString(leftVal, inputR)
 	default:
-		return values.String(leftVal.String() + inputR.String())
+		return core.String(leftVal.String() + inputR.String())
 	}
 }
 
-func addLeftInt(integer values.Int, input core.Value) core.Value {
-	right := values.ToNumberOrString(input)
+func addLeftInt(integer core.Int, input core.Value) core.Value {
+	right := ToNumberOrString(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
+	case core.Int:
 		return integer + rightVal
-	case values.Float:
-		return values.Float(integer) + rightVal
+	case core.Float:
+		return core.Float(integer) + rightVal
 	default:
-		return values.String(integer.String() + rightVal.String())
+		return core.String(integer.String() + rightVal.String())
 	}
 }
 
-func addLeftFloat(float values.Float, input core.Value) core.Value {
-	right := values.ToNumberOrString(input)
+func addLeftFloat(float core.Float, input core.Value) core.Value {
+	right := ToNumberOrString(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
-		return float + values.Float(rightVal)
-	case values.Float:
+	case core.Int:
+		return float + core.Float(rightVal)
+	case core.Float:
 		return float + rightVal
 	default:
-		return values.String(float.String() + rightVal.String())
+		return core.String(float.String() + rightVal.String())
 	}
 }
 
-func addLeftString(str values.String, input core.Value) core.Value {
-	return values.String(str.String() + input.String())
+func addLeftString(str core.String, input core.Value) core.Value {
+	return core.String(str.String() + input.String())
 }
 
 func Subtract(inputL, inputR core.Value) core.Value {
-	left := values.ToNumberOnly(inputL)
+	left := ToNumberOnly(inputL)
 
 	switch leftVal := left.(type) {
-	case values.Int:
+	case core.Int:
 		return subtractLeftInt(leftVal, inputR)
-	case values.Float:
+	case core.Float:
 		return subtractLeftFloat(leftVal, inputR)
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
-func subtractLeftInt(integer values.Int, input core.Value) core.Value {
-	right := values.ToNumberOnly(input)
+func subtractLeftInt(integer core.Int, input core.Value) core.Value {
+	right := ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
+	case core.Int:
 		return integer - rightVal
-	case values.Float:
-		return values.Float(integer) - rightVal
+	case core.Float:
+		return core.Float(integer) - rightVal
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
-func subtractLeftFloat(float values.Float, input core.Value) core.Value {
-	right := values.ToNumberOnly(input)
+func subtractLeftFloat(float core.Float, input core.Value) core.Value {
+	right := ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
-		return float - values.Float(rightVal)
-	case values.Float:
+	case core.Int:
+		return float - core.Float(rightVal)
+	case core.Float:
 		return float - rightVal
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
 func Multiply(inputL, inputR core.Value) core.Value {
-	left := values.ToNumberOnly(inputL)
+	left := ToNumberOnly(inputL)
 
 	switch leftVal := left.(type) {
-	case values.Int:
+	case core.Int:
 		return multiplyLeftInt(leftVal, inputR)
-	case values.Float:
+	case core.Float:
 		return multiplyLeftFloat(leftVal, inputR)
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
-func multiplyLeftInt(integer values.Int, input core.Value) core.Value {
-	right := values.ToNumberOnly(input)
+func multiplyLeftInt(integer core.Int, input core.Value) core.Value {
+	right := ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
+	case core.Int:
 		return integer * rightVal
-	case values.Float:
-		return values.Float(integer) * rightVal
+	case core.Float:
+		return core.Float(integer) * rightVal
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
-func multiplyLeftFloat(float values.Float, input core.Value) core.Value {
-	right := values.ToNumberOnly(input)
+func multiplyLeftFloat(float core.Float, input core.Value) core.Value {
+	right := ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
-		return float * values.Float(rightVal)
-	case values.Float:
+	case core.Int:
+		return float * core.Float(rightVal)
+	case core.Float:
 		return float * rightVal
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
 func Divide(inputL, inputR core.Value) core.Value {
-	left := values.ToNumberOnly(inputL)
+	left := ToNumberOnly(inputL)
 
 	switch leftVal := left.(type) {
-	case values.Int:
+	case core.Int:
 		return divideLeftInt(leftVal, inputR)
-	case values.Float:
+	case core.Float:
 		return divideLeftFloat(leftVal, inputR)
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
-func divideLeftInt(integer values.Int, input core.Value) core.Value {
-	right := values.ToNumberOnly(input)
+func divideLeftInt(integer core.Int, input core.Value) core.Value {
+	right := ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
+	case core.Int:
 		return integer / rightVal
-	case values.Float:
-		return values.Float(integer) / rightVal
+	case core.Float:
+		return core.Float(integer) / rightVal
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
-func divideLeftFloat(float values.Float, input core.Value) core.Value {
-	right := values.ToNumberOnly(input)
+func divideLeftFloat(float core.Float, input core.Value) core.Value {
+	right := ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
-	case values.Int:
-		return float / values.Float(rightVal)
-	case values.Float:
+	case core.Int:
+		return float / core.Float(rightVal)
+	case core.Float:
 		return float / rightVal
 	default:
-		return values.ZeroInt
+		return core.ZeroInt
 	}
 }
 
 func Modulus(inputL, inputR core.Value) core.Value {
-	left := values.ToInt(inputL)
-	right := values.ToInt(inputR)
+	left := ToInt(inputL)
+	right := ToInt(inputR)
 
 	return left % right
 }
 
 func Increment(input core.Value) core.Value {
-	left := values.ToNumberOnly(input)
+	left := ToNumberOnly(input)
 
 	switch value := left.(type) {
-	case values.Int:
+	case core.Int:
 		return value + 1
-	case values.Float:
+	case core.Float:
 		return value + 1
 	default:
-		return values.None
+		return core.None
 	}
 }
 
 func Decrement(input core.Value) core.Value {
-	left := values.ToNumberOnly(input)
+	left := ToNumberOnly(input)
 
 	switch value := left.(type) {
-	case values.Int:
+	case core.Int:
 		return value - 1
-	case values.Float:
+	case core.Float:
 		return value - 1
 	default:
-		return values.None
+		return core.None
 	}
 }
 
 func Range(left, right core.Value) (core.Value, error) {
-	start := values.ToInt(left)
-	end := values.ToInt(right)
+	start := ToInt(left)
+	end := ToInt(right)
 
-	return values.NewRange(int64(start), int64(end)), nil
+	return NewRange(int64(start), int64(end)), nil
 }
 
-func Like(left, right core.Value) (values.Boolean, error) {
-	if err := values.AssertString(left); err != nil {
+func Like(left, right core.Value) (core.Boolean, error) {
+	if err := core.AssertString(left); err != nil {
 		// TODO: Return the error? AQL just returns false
-		return values.False, nil
+		return core.False, nil
 	}
 
-	if err := values.AssertString(right); err != nil {
+	if err := core.AssertString(right); err != nil {
 		// TODO: Return the error? AQL just returns false
-		return values.False, nil
+		return core.False, nil
 	}
 
 	r, err := glob.Compile(right.String())
 
 	if err != nil {
-		return values.False, errors.Wrap(err, "invalid glob pattern")
+		return core.False, errors.Wrap(err, "invalid glob pattern")
 	}
 
 	result := r.Match(left.String())
 
-	return values.NewBoolean(result), nil
+	return core.NewBoolean(result), nil
 }

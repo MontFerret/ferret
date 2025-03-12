@@ -2,10 +2,9 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -19,20 +18,20 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
-	delay := values.NewInt(drivers.DefaultKeyboardDelay)
+	delay := core.NewInt(drivers.DefaultKeyboardDelay)
 
 	// INPUT(el, value)
 	if len(args) == 2 {
-		return values.True, el.Input(ctx, args[1], delay)
+		return core.True, el.Input(ctx, args[1], delay)
 	}
 
 	var selector drivers.QuerySelector
@@ -42,17 +41,17 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if len(args) == 3 {
 		switch v := args[2].(type) {
 		// INPUT(el, value, delay)
-		case values.Int, values.Float:
+		case core.Int, core.Float:
 			value = args[1]
-			delay = values.ToInt(v)
+			delay = internal.ToInt(v)
 
-			return values.True, el.Input(ctx, value, delay)
+			return core.True, el.Input(ctx, value, delay)
 		default:
 			// INPUT(el, selector, value)
 			selector, err = drivers.ToQuerySelector(args[1])
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			value = args[2]
@@ -60,28 +59,28 @@ func Input(ctx context.Context, args ...core.Value) (core.Value, error) {
 	} else {
 		// INPUT(el, selector, value, delay)
 		if err := core.ValidateType(args[3], types.Int); err != nil {
-			return values.False, err
+			return core.False, err
 		}
 
 		selector, err = drivers.ToQuerySelector(args[1])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		value = args[2]
-		delay = values.ToInt(args[3])
+		delay = internal.ToInt(args[3])
 	}
 
 	exists, err := el.ExistsBySelector(ctx, selector)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	if !exists {
-		return values.False, nil
+		return core.False, nil
 	}
 
-	return values.True, el.InputBySelector(ctx, selector, value, delay)
+	return core.True, el.InputBySelector(ctx, selector, value, delay)
 }

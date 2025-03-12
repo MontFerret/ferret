@@ -2,6 +2,7 @@ package events_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 	"time"
 
@@ -12,8 +13,6 @@ import (
 	events2 "github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -76,9 +75,9 @@ func TestStreamReader(t *testing.T) {
 			stream.On("Close", mock.Anything).Maybe().Return(nil)
 
 			go func() {
-				stream.Emit(values.NewString("foo"))
-				stream.Emit(values.NewString("bar"))
-				stream.Emit(values.NewString("baz"))
+				stream.Emit(core.NewString("foo"))
+				stream.Emit(core.NewString("bar"))
+				stream.Emit(core.NewString("baz"))
 				cancel()
 			}()
 
@@ -130,7 +129,7 @@ func TestStreamReader(t *testing.T) {
 			stream.On("Close", mock.Anything).Maybe().Return(nil)
 
 			reader := events2.NewEventStream(stream, func(_ context.Context, stream rpcc.Stream) (core.Value, error) {
-				return values.EmptyArray(), nil
+				return internal.EmptyArray(), nil
 			})
 
 			ctx, cancel := context.WithCancel(context.Background())

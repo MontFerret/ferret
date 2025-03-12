@@ -2,9 +2,8 @@ package types
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 )
 
 // TO_FLOAT takes an input value of any type and convert it into a float value.
@@ -22,8 +21,8 @@ func ToFloat(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.ToFloat(args[0]), nil
+	return internal.ToFloat(args[0]), nil
 }

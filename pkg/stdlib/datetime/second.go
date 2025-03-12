@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // DATE_SECOND returns the second of date as a number.
@@ -12,14 +11,14 @@ import (
 // @return {Int} - A second number.
 func DateSecond(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	if err := values.AssertDateTime(args[0]); err != nil {
-		return values.None, err
+	if err := core.AssertDateTime(args[0]); err != nil {
+		return core.None, err
 	}
 
-	sec := args[0].(values.DateTime).Second()
+	sec := args[0].(core.DateTime).Second()
 
-	return values.NewInt(sec), nil
+	return core.NewInt(sec), nil
 }

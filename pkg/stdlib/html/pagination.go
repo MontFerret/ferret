@@ -2,14 +2,12 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/logging"
 
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // PAGINATION creates an iterator that goes through pages using CSS selector.
@@ -21,19 +19,19 @@ func Pagination(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	logger := logging.WithName(logging.FromContext(ctx).With(), "stdlib_html_pagination").
@@ -56,7 +54,7 @@ type (
 		logger   zerolog.Logger
 		page     drivers.HTMLPage
 		selector drivers.QuerySelector
-		pos      values.Int
+		pos      core.Int
 	}
 )
 
@@ -85,7 +83,7 @@ func (p *Paging) Hash() uint64 {
 }
 
 func (p *Paging) Copy() core.Value {
-	return values.None
+	return core.None
 }
 
 func (p *Paging) Iterate(_ context.Context) (core.Iterator, error) {
@@ -99,7 +97,7 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 
 	if i.pos == 0 {
 		i.logger.Trace().Msg("starting point of pagination. nothing to do. exit")
-		return values.ZeroInt, values.ZeroInt, nil
+		return core.ZeroInt, core.ZeroInt, nil
 	}
 
 	i.logger.Trace().Msg("checking if an element exists...")
@@ -108,13 +106,13 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 	if err != nil {
 		i.logger.Trace().Err(err).Msg("failed to check")
 
-		return values.None, values.None, err
+		return core.None, core.None, err
 	}
 
 	if !exists {
 		i.logger.Trace().Bool("exists", bool(exists)).Msg("element does not exist. exit")
 
-		return values.None, values.None, core.ErrNoMoreData
+		return core.None, core.None, core.ErrNoMoreData
 	}
 
 	i.logger.Trace().Bool("exists", bool(exists)).Msg("element exists. clicking...")
@@ -124,7 +122,7 @@ func (i *PagingIterator) Next(ctx context.Context) (core.Value, core.Value, erro
 	if err != nil {
 		i.logger.Trace().Err(err).Msg("failed to click. exit")
 
-		return values.None, values.None, err
+		return core.None, core.None, err
 	}
 
 	i.logger.Trace().Msg("successfully clicked on element. iteration has succeeded")

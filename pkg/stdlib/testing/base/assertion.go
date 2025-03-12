@@ -3,9 +3,7 @@ package base
 import (
 	"context"
 	"fmt"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type AssertionFn func(ctx context.Context, args []core.Value) (bool, error)
@@ -32,20 +30,20 @@ func newInternal(assertion Assertion, connotation bool) core.Function {
 		err := core.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		res, err := assertion.Fn(ctx, args)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		if res == connotation {
-			return values.None, nil
+			return core.None, nil
 		}
 
-		return values.None, toError(assertion, args, connotation)
+		return core.None, toError(assertion, args, connotation)
 	}
 }
 

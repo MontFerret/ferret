@@ -2,11 +2,11 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -18,7 +18,7 @@ func TestSubstring(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Substring(context.Background(), values.NewString("foo"))
+			_, err = strings.Substring(context.Background(), core.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -27,8 +27,8 @@ func TestSubstring(t *testing.T) {
 	Convey("Substring('foobar', 3) should return 'bar'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
-			values.NewString("foobar"),
-			values.NewInt(3),
+			core.NewString("foobar"),
+			core.NewInt(3),
 		)
 
 		So(err, ShouldBeNil)
@@ -38,9 +38,9 @@ func TestSubstring(t *testing.T) {
 	Convey("Substring('foobar', 3, 2) should return 'ba'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
-			values.NewString("foobar"),
-			values.NewInt(3),
-			values.NewInt(2),
+			core.NewString("foobar"),
+			core.NewInt(3),
+			core.NewInt(2),
 		)
 
 		So(err, ShouldBeNil)
@@ -50,9 +50,9 @@ func TestSubstring(t *testing.T) {
 	Convey("Substring('foobar', 3, 5) should return 'bar'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
-			values.NewString("foobar"),
-			values.NewInt(3),
-			values.NewInt(5),
+			core.NewString("foobar"),
+			core.NewInt(3),
+			core.NewInt(5),
 		)
 
 		So(err, ShouldBeNil)
@@ -68,7 +68,7 @@ func TestLeft(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Left(context.Background(), values.NewString("foo"))
+			_, err = strings.Left(context.Background(), core.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -77,8 +77,8 @@ func TestLeft(t *testing.T) {
 	Convey("Left('foobarfoobar', 3) should return 'foo'", t, func() {
 		out, _ := strings.Left(
 			context.Background(),
-			values.NewString("foobarfoobar"),
-			values.NewInt(3),
+			core.NewString("foobarfoobar"),
+			core.NewInt(3),
 		)
 
 		So(out, ShouldEqual, "foo")
@@ -87,8 +87,8 @@ func TestLeft(t *testing.T) {
 	Convey("Left('foobar', 10) should return 'foobar'", t, func() {
 		out, _ := strings.Left(
 			context.Background(),
-			values.NewString("foobar"),
-			values.NewInt(10),
+			core.NewString("foobar"),
+			core.NewInt(10),
 		)
 
 		So(out, ShouldEqual, "foobar")
@@ -103,7 +103,7 @@ func TestRight(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Right(context.Background(), values.NewString("foo"))
+			_, err = strings.Right(context.Background(), core.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -112,8 +112,8 @@ func TestRight(t *testing.T) {
 	Convey("Right('foobarfoobar', 3) should return 'bar'", t, func() {
 		out, _ := strings.Right(
 			context.Background(),
-			values.NewString("foobarfoobar"),
-			values.NewInt(3),
+			core.NewString("foobarfoobar"),
+			core.NewInt(3),
 		)
 
 		So(out, ShouldEqual, "bar")
@@ -122,8 +122,8 @@ func TestRight(t *testing.T) {
 	Convey("Right('foobar', 10) should return 'foobar'", t, func() {
 		out, _ := strings.Right(
 			context.Background(),
-			values.NewString("foobar"),
-			values.NewInt(10),
+			core.NewString("foobar"),
+			core.NewInt(10),
 		)
 
 		So(out, ShouldEqual, "foobar")

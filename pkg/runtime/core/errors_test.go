@@ -1,17 +1,16 @@
 package core_test
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 func TestSourceError(t *testing.T) {
 	Convey("Should match", t, func() {
-		sm := core.NewSourceMap("test", 1, 1)
+		sm := NewSourceMap("test", 1, 1)
 
 		msg := "test at 1:1"
 		cause := errors.New("cause")

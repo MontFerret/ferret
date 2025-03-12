@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 )
 
@@ -19,40 +17,40 @@ func TestDateAdd(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 3 arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewInt(0),
-				values.NewInt(0),
-				values.NewInt(0),
-				values.NewInt(0),
+				core.NewInt(0),
+				core.NewInt(0),
+				core.NewInt(0),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When less than 3 arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewInt(0),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When incorrect arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewString("bla-bla"),
-				values.NewInt(0),
-				values.NewString("be-be"),
+				core.NewString("bla-bla"),
+				core.NewInt(0),
+				core.NewString("be-be"),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When wrong unit given",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
-				values.NewInt(5),
-				values.NewString("not_exist"),
+				core.NewInt(5),
+				core.NewString("not_exist"),
 			},
 			ShouldErr: true,
 		},
@@ -62,15 +60,15 @@ func TestDateAdd(t *testing.T) {
 				expected, _ := datetime.DateAdd(
 					context.Background(),
 					mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-					values.NewInt(1),
-					values.NewString("day"),
+					core.NewInt(1),
+					core.NewString("day"),
 				)
 				return expected
 			}(),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(1),
-				values.NewString("day"),
+				core.NewInt(1),
+				core.NewString("day"),
 			},
 		},
 		&testCase{
@@ -78,8 +76,8 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-06T15:04:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(-1),
-				values.NewString("day"),
+				core.NewInt(-1),
+				core.NewString("day"),
 			},
 		},
 		&testCase{
@@ -87,8 +85,8 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-05-07T15:04:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(3),
-				values.NewString("months"),
+				core.NewInt(3),
+				core.NewString("months"),
 			},
 		},
 		&testCase{
@@ -96,19 +94,19 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustLayoutDt("2006-01-02", "2004-02-07"),
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
-				values.NewInt(5),
-				values.NewString("y"),
+				core.NewInt(5),
+				core.NewString("y"),
 			},
 		},
 		&testCase{
 			Name: "1999 minus 2000 years",
-			Expected: values.NewDateTime(
+			Expected: core.NewDateTime(
 				time.Date(-1, 2, 7, 0, 0, 0, 0, utcLoc),
 			),
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
-				values.NewInt(-2000),
-				values.NewString("year"),
+				core.NewInt(-2000),
+				core.NewString("year"),
 			},
 		},
 		&testCase{
@@ -116,8 +114,8 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T17:04:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(2),
-				values.NewString("h"),
+				core.NewInt(2),
+				core.NewString("h"),
 			},
 		},
 		&testCase{
@@ -125,8 +123,8 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T15:24:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(20),
-				values.NewString("i"),
+				core.NewInt(20),
+				core.NewString("i"),
 			},
 		},
 		&testCase{
@@ -134,8 +132,8 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T15:04:35Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(30),
-				values.NewString("s"),
+				core.NewInt(30),
+				core.NewString("s"),
 			},
 		},
 		&testCase{
@@ -143,8 +141,8 @@ func TestDateAdd(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T15:04:06Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(1000),
-				values.NewString("f"),
+				core.NewInt(1000),
+				core.NewString("f"),
 			},
 		},
 	}
@@ -158,40 +156,40 @@ func TestDateSubtract(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 3 arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewInt(0),
-				values.NewInt(0),
-				values.NewInt(0),
-				values.NewInt(0),
+				core.NewInt(0),
+				core.NewInt(0),
+				core.NewInt(0),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When less than 3 arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewInt(0),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When incorrect arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewString("bla-bla"),
-				values.NewInt(0),
-				values.NewString("be-be"),
+				core.NewString("bla-bla"),
+				core.NewInt(0),
+				core.NewString("be-be"),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:     "When wrong unit given",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
-				values.NewInt(5),
-				values.NewString("not_exist"),
+				core.NewInt(5),
+				core.NewString("not_exist"),
 			},
 			ShouldErr: true,
 		},
@@ -201,15 +199,15 @@ func TestDateSubtract(t *testing.T) {
 				expected, _ := datetime.DateSubtract(
 					context.Background(),
 					mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-					values.NewInt(1),
-					values.NewString("day"),
+					core.NewInt(1),
+					core.NewString("day"),
 				)
 				return expected
 			}(),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(1),
-				values.NewString("day"),
+				core.NewInt(1),
+				core.NewString("day"),
 			},
 		},
 		&testCase{
@@ -217,8 +215,8 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-08T15:04:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(-1),
-				values.NewString("day"),
+				core.NewInt(-1),
+				core.NewString("day"),
 			},
 		},
 		&testCase{
@@ -226,8 +224,8 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-05-07T15:04:05Z"),
-				values.NewInt(3),
-				values.NewString("months"),
+				core.NewInt(3),
+				core.NewString("months"),
 			},
 		},
 		&testCase{
@@ -235,19 +233,19 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustLayoutDt("2006-01-02", "1994-02-07"),
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
-				values.NewInt(5),
-				values.NewString("y"),
+				core.NewInt(5),
+				core.NewString("y"),
 			},
 		},
 		&testCase{
 			Name: "1999 minus 2000 years",
-			Expected: values.NewDateTime(
+			Expected: core.NewDateTime(
 				time.Date(-1, 2, 7, 0, 0, 0, 0, utcLoc),
 			),
 			Args: []core.Value{
 				mustLayoutDt("2006-01-02", "1999-02-07"),
-				values.NewInt(2000),
-				values.NewString("year"),
+				core.NewInt(2000),
+				core.NewString("year"),
 			},
 		},
 		&testCase{
@@ -255,8 +253,8 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T13:04:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(2),
-				values.NewString("h"),
+				core.NewInt(2),
+				core.NewString("h"),
 			},
 		},
 		&testCase{
@@ -264,8 +262,8 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T14:44:05Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(20),
-				values.NewString("i"),
+				core.NewInt(20),
+				core.NewString("i"),
 			},
 		},
 		&testCase{
@@ -273,8 +271,8 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T15:03:35Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(30),
-				values.NewString("s"),
+				core.NewInt(30),
+				core.NewString("s"),
 			},
 		},
 		&testCase{
@@ -282,8 +280,8 @@ func TestDateSubtract(t *testing.T) {
 			Expected: mustDefaultLayoutDt("1999-02-07T15:04:04Z"),
 			Args: []core.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-				values.NewInt(1000),
-				values.NewString("f"),
+				core.NewInt(1000),
+				core.NewString("f"),
 			},
 		},
 	}

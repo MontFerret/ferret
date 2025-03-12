@@ -3,6 +3,8 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"io"
 	h "net/http"
 	"testing"
@@ -12,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
 )
@@ -65,9 +66,9 @@ func TestPOST(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := http.POST(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString(url)),
-			values.NewObjectProperty("body", values.NewBinary(b)),
+		out, err := http.POST(ctx, internal.NewObjectWith(
+			internal.NewObjectProperty("url", core.NewString(url)),
+			internal.NewObjectProperty("body", core.NewBinary(b)),
 		))
 
 		So(err, ShouldBeNil)
@@ -108,14 +109,14 @@ func TestPOST(t *testing.T) {
 
 		ctx := context.Background()
 
-		j := values.NewObjectWith(
-			values.NewObjectProperty("first_name", values.NewString("Rob")),
-			values.NewObjectProperty("last_name", values.NewString("Pike")),
+		j := internal.NewObjectWith(
+			internal.NewObjectProperty("first_name", core.NewString("Rob")),
+			internal.NewObjectProperty("last_name", core.NewString("Pike")),
 		)
 
-		out, err := http.POST(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString(url)),
-			values.NewObjectProperty("body", j),
+		out, err := http.POST(ctx, internal.NewObjectWith(
+			internal.NewObjectProperty("url", core.NewString(url)),
+			internal.NewObjectProperty("body", j),
 		))
 
 		So(err, ShouldBeNil)

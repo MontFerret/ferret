@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // UNION_DISTINCT returns the union of all passed arrays with unique values.
@@ -14,27 +14,27 @@ func UnionDistinct(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	firstArrLen := args[0].(*values.Array).Length()
-	result := values.NewArray(len(args) * int(firstArrLen))
+	firstArrLen := args[0].(*internal.Array).Length()
+	result := internal.NewArray(len(args) * int(firstArrLen))
 	hashes := make(map[uint64]bool)
 
 	for _, arg := range args {
-		err := values.AssertArray(arg)
+		err := core.AssertList(arg)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		arr := arg.(*values.Array)
+		arr := arg.(*internal.Array)
 
 		arr.ForEach(func(value core.Value, _ int) bool {
 			h := value.Hash()

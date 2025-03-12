@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func Disassembly(instr []string, opcodes ...runtime.Opcode) string {
@@ -38,7 +37,7 @@ func TestCompiler_Variables(t *testing.T) {
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewString("i"),
+					core.NewString("i"),
 				},
 			},
 		},
@@ -59,7 +58,7 @@ func TestCompiler_Variables(t *testing.T) {
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewString("a"),
+					core.NewString("a"),
 				},
 			},
 		},
@@ -80,7 +79,7 @@ func TestCompiler_Variables(t *testing.T) {
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewString("a"),
+					core.NewString("a"),
 				},
 			},
 		},
@@ -101,8 +100,8 @@ func TestCompiler_Variables(t *testing.T) {
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewFloat(1.1),
-					values.NewString("a"),
+					core.NewFloat(1.1),
+					core.NewString("a"),
 				},
 			},
 		},
@@ -131,9 +130,9 @@ RETURN a
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewString("foo"),
-					values.NewString("a"),
-					values.NewString("b"),
+					core.NewString("foo"),
+					core.NewString("a"),
+					core.NewString("b"),
 				},
 			},
 		},
@@ -157,7 +156,7 @@ func TestCompiler_FuncCall(t *testing.T) {
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewString("FOO"),
+					core.NewString("FOO"),
 				},
 			},
 		},
@@ -180,7 +179,7 @@ func TestCompiler_FuncCall(t *testing.T) {
 					runtime.OpReturn,
 				),
 				Constants: []core.Value{
-					values.NewString("FOO"),
+					core.NewString("FOO"),
 				},
 			},
 		},

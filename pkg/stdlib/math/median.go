@@ -2,10 +2,10 @@ package math
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -16,16 +16,16 @@ func Median(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.Array)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 	sorted := arr.Sort()
 
 	l := sorted.Length()
@@ -34,12 +34,12 @@ func Median(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	switch {
 	case l == 0:
-		return values.NewFloat(math.NaN()), nil
+		return core.NewFloat(math.NaN()), nil
 	case l%2 == 0:
 		median, err = mean(sorted.Slice(l/2-1, l/2+1))
 
 		if err != nil {
-			return values.None, nil
+			return core.None, nil
 		}
 	default:
 		median = sorted.Get(l / 2)

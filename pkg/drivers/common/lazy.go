@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -26,7 +25,7 @@ func NewLazyValue(factory LazyValueFactory) *LazyValue {
 	lz := new(LazyValue)
 	lz.ready = false
 	lz.factory = factory
-	lz.value = values.None
+	lz.value = core.None
 
 	return lz
 }
@@ -98,7 +97,7 @@ func (lv *LazyValue) Reset() {
 
 func (lv *LazyValue) resetInternal() {
 	lv.ready = false
-	lv.value = values.None
+	lv.value = core.None
 	lv.err = nil
 }
 
@@ -109,7 +108,7 @@ func (lv *LazyValue) load(ctx context.Context) {
 		lv.value = val
 		lv.err = nil
 	} else {
-		lv.value = values.None
+		lv.value = core.None
 		lv.err = err
 	}
 

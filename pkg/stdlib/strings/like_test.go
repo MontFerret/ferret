@@ -2,11 +2,11 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -18,7 +18,7 @@ func TestLike(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Like(context.Background(), values.NewString(""))
+			_, err = strings.Like(context.Background(), core.NewString(""))
 
 			So(err, ShouldBeError)
 		})
@@ -27,8 +27,8 @@ func TestLike(t *testing.T) {
 	Convey("Should return true when matches with _ pattern", t, func() {
 		out, _ := strings.Like(
 			context.Background(),
-			values.NewString("cart"),
-			values.NewString("ca_t"),
+			core.NewString("cart"),
+			core.NewString("ca_t"),
 		)
 
 		So(out, ShouldEqual, true)
@@ -37,8 +37,8 @@ func TestLike(t *testing.T) {
 	Convey("Should return true when matches with % pattern", t, func() {
 		out, _ := strings.Like(
 			context.Background(),
-			values.NewString("foo bar baz"),
-			values.NewString("%bar%"),
+			core.NewString("foo bar baz"),
+			core.NewString("%bar%"),
 		)
 
 		So(out, ShouldEqual, true)
@@ -47,8 +47,8 @@ func TestLike(t *testing.T) {
 	Convey("Should return false when matches with no caseInsensitive parameter", t, func() {
 		out, _ := strings.Like(
 			context.Background(),
-			values.NewString("FoO bAr BaZ"),
-			values.NewString("fOo%bAz"),
+			core.NewString("FoO bAr BaZ"),
+			core.NewString("fOo%bAz"),
 		)
 
 		So(out, ShouldEqual, false)
@@ -57,9 +57,9 @@ func TestLike(t *testing.T) {
 	Convey("Should return true when matches with caseInsensitive parameter", t, func() {
 		out, _ := strings.Like(
 			context.Background(),
-			values.NewString("FoO bAr BaZ"),
-			values.NewString("fOo%bAz"),
-			values.True,
+			core.NewString("FoO bAr BaZ"),
+			core.NewString("fOo%bAz"),
+			core.True,
 		)
 
 		So(out, ShouldEqual, true)

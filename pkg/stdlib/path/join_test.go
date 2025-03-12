@@ -2,11 +2,12 @@ package path_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
 
@@ -22,7 +23,7 @@ func TestJoin(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Join(context.Background(), values.NewString("/"), values.NewInt(0))
+		_, err = path.Join(context.Background(), core.NewString("/"), core.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -31,7 +32,7 @@ func TestJoin(t *testing.T) {
 		var err error
 		_, err = path.Join(
 			context.Background(),
-			values.NewArrayWith(values.NewString("/"), values.NewInt(0)),
+			internal.NewArrayWith(core.NewString("/"), core.NewInt(0)),
 		)
 
 		So(err, ShouldBeError)
@@ -40,7 +41,7 @@ func TestJoin(t *testing.T) {
 	Convey("Join(['pkg', 'path']) should return 'pkg/path'", t, func() {
 		out, _ := path.Join(
 			context.Background(),
-			values.NewArrayWith(values.NewString("pkg"), values.NewString("path")),
+			internal.NewArrayWith(core.NewString("pkg"), core.NewString("path")),
 		)
 
 		So(out, ShouldEqual, "pkg/path")
@@ -49,7 +50,7 @@ func TestJoin(t *testing.T) {
 	Convey("Join('pkg', 'path') should return 'pkg/path'", t, func() {
 		out, _ := path.Join(
 			context.Background(),
-			values.NewString("pkg"), values.NewString("path"),
+			core.NewString("pkg"), core.NewString("path"),
 		)
 
 		So(out, ShouldEqual, "pkg/path")

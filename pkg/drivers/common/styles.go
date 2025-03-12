@@ -3,19 +3,19 @@ package common
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strconv"
 	"strings"
 
 	"github.com/gorilla/css/scanner"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
-func DeserializeStyles(input values.String) (*values.Object, error) {
-	styles := values.NewObject()
+func DeserializeStyles(input core.String) (*internal.Object, error) {
+	styles := internal.NewObject()
 
-	if input == values.EmptyString {
+	if input == core.EmptyString {
 		return styles, nil
 	}
 
@@ -24,7 +24,7 @@ func DeserializeStyles(input values.String) (*values.Object, error) {
 	var name string
 	var value bytes.Buffer
 	var setValue = func() {
-		styles.Set(values.NewString(strings.TrimSpace(name)), values.NewString(strings.TrimSpace(value.String())))
+		styles.Set(core.NewString(strings.TrimSpace(name)), core.NewString(strings.TrimSpace(value.String())))
 		name = ""
 		value.Reset()
 	}
@@ -67,7 +67,7 @@ func DeserializeStyles(input values.String) (*values.Object, error) {
 			num, err := strconv.ParseFloat(token.Value, 64)
 
 			if err == nil {
-				styles.Set(values.NewString(name), values.NewFloat(num))
+				styles.Set(core.NewString(name), core.NewFloat(num))
 				// reset prop
 				name = ""
 				value.Reset()
@@ -84,9 +84,9 @@ func DeserializeStyles(input values.String) (*values.Object, error) {
 	return styles, nil
 }
 
-func SerializeStyles(_ context.Context, styles *values.Object) values.String {
+func SerializeStyles(_ context.Context, styles *internal.Object) core.String {
 	if styles == nil {
-		return values.EmptyString
+		return core.EmptyString
 	}
 
 	var b bytes.Buffer
@@ -100,5 +100,5 @@ func SerializeStyles(_ context.Context, styles *values.Object) values.String {
 		return true
 	})
 
-	return values.NewString(b.String())
+	return core.NewString(b.String())
 }

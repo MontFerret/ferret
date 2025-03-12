@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -20,36 +19,36 @@ func NavigateForward(ctx context.Context, args ...core.Value) (core.Value, error
 	err := core.ValidateArgs(args, 1, 3)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	page, err := drivers.ToPage(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	skip := values.NewInt(1)
-	timeout := values.NewInt(drivers.DefaultWaitTimeout)
+	skip := core.NewInt(1)
+	timeout := core.NewInt(drivers.DefaultWaitTimeout)
 
 	if len(args) > 1 {
 		err = core.ValidateType(args[1], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		skip = args[1].(values.Int)
+		skip = args[1].(core.Int)
 	}
 
 	if len(args) > 2 {
 		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		timeout = args[2].(values.Int)
+		timeout = args[2].(core.Int)
 	}
 
 	ctx, fn := waitTimeout(ctx, timeout)

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 )
 
@@ -13,23 +12,23 @@ func TestDateQuarter(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 1 arguments",
-			Expected: values.None,
+			Expected: core.None,
 			Args: []core.Value{
-				values.NewString("string"),
-				values.NewInt(0),
+				core.NewString("string"),
+				core.NewInt(0),
 			},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:      "When 0 arguments",
-			Expected:  values.None,
+			Expected:  core.None,
 			Args:      []core.Value{},
 			ShouldErr: true,
 		},
 		&testCase{
 			Name:      "When argument isn't DateTime",
-			Expected:  values.None,
-			Args:      []core.Value{values.NewInt(0)},
+			Expected:  core.None,
+			Args:      []core.Value{core.NewInt(0)},
 			ShouldErr: true,
 		},
 	}
@@ -37,9 +36,9 @@ func TestDateQuarter(t *testing.T) {
 	for month := time.January; month <= time.December; month++ {
 		tcs = append(tcs, &testCase{
 			Name:     "When " + month.String(),
-			Expected: values.NewInt(((int(month) - 1) / 3) + 1),
+			Expected: core.NewInt(((int(month) - 1) / 3) + 1),
 			Args: []core.Value{
-				values.NewDateTime(time.Date(1999, month, 1, 1, 1, 1, 1, time.Local)),
+				core.NewDateTime(time.Date(1999, month, 1, 1, 1, 1, 1, time.Local)),
 			},
 		})
 	}

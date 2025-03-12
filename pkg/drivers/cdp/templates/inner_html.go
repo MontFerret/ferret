@@ -2,19 +2,19 @@ package templates
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const setInnerHTML = `(el, value) => {
 	el.innerHTML = value;
 }`
 
-func SetInnerHTML(id runtime.RemoteObjectID, value values.String) *eval.Function {
+func SetInnerHTML(id runtime.RemoteObjectID, value core.String) *eval.Function {
 	return eval.F(setInnerHTML).WithArgRef(id).WithArgValue(value)
 }
 
@@ -48,7 +48,7 @@ var (
 }`, xpathAsElementFragment, notFoundErrorFragment)
 )
 
-func SetInnerHTMLBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, value values.String) *eval.Function {
+func SetInnerHTMLBySelector(id runtime.RemoteObjectID, selector drivers.QuerySelector, value core.String) *eval.Function {
 	return toFunction(selector, setInnerHTMLByCSSSelector, setInnerHTMLByXPathSelector).
 		WithArgRef(id).
 		WithArgSelector(selector).

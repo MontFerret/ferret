@@ -2,11 +2,11 @@ package testing_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	t "testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -23,7 +23,7 @@ func TestFail(t *t.T) {
 	})
 
 	Convey("It should return an error", t, func() {
-		_, err := Fail(context.Background(), values.False)
+		_, err := Fail(context.Background(), core.False)
 
 		So(err, ShouldBeError)
 	})

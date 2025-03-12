@@ -2,10 +2,10 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -29,7 +29,7 @@ func DocumentExists(ctx context.Context, args ...core.Value) (core.Value, error)
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	if len(args) > 1 {
@@ -37,7 +37,7 @@ func DocumentExists(ctx context.Context, args ...core.Value) (core.Value, error)
 			return nil, err
 		}
 
-		options := args[1].(*values.Object)
+		options := args[1].(*internal.Object)
 
 		if options.Has("headers") {
 			headersOpt := options.MustGet("headers")
@@ -46,7 +46,7 @@ func DocumentExists(ctx context.Context, args ...core.Value) (core.Value, error)
 				return nil, err
 			}
 
-			headers := headersOpt.(*values.Object)
+			headers := headersOpt.(*internal.Object)
 
 			req.Header = http.Header{}
 
@@ -61,13 +61,13 @@ func DocumentExists(ctx context.Context, args ...core.Value) (core.Value, error)
 	resp, err := client.Do(req.WithContext(ctx))
 
 	if err != nil {
-		return values.False, nil
+		return core.False, nil
 	}
 
-	var exists values.Boolean
+	var exists core.Boolean
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-		exists = values.True
+		exists = core.True
 	}
 
 	return exists, nil

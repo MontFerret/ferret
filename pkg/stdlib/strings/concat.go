@@ -2,9 +2,9 @@ package strings
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // CONCAT concatenates one or more instances of String, or an Array.
@@ -12,15 +12,15 @@ import (
 // @return {String} - A string value.
 func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	argsCount := len(args)
 
-	res := values.EmptyString
+	res := core.EmptyString
 
 	if argsCount == 1 {
-		argv, ok := args[0].(*values.Array)
+		argv, ok := args[0].(*internal.Array)
 
 		if ok {
 			argv.ForEach(func(value core.Value, _ int) bool {
@@ -48,24 +48,24 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	separator := args[0]
 
-	separator, ok := args[0].(values.String)
+	separator, ok := args[0].(core.String)
 
 	if !ok {
-		separator = values.NewString(separator.String())
+		separator = core.NewString(separator.String())
 	}
 
-	res := values.EmptyString
+	res := core.EmptyString
 
 	for idx, arg := range args[1:] {
 		switch argv := arg.(type) {
-		case *values.Array:
+		case *internal.Array:
 			argv.ForEach(func(value core.Value, idx int) bool {
-				if value != values.None {
+				if value != core.None {
 					if idx > 0 {
 						res = res.Concat(separator)
 					}
@@ -76,7 +76,7 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 				return true
 			})
 		default:
-			if argv != values.None {
+			if argv != core.None {
 				if idx > 0 {
 					res = res.Concat(separator)
 				}

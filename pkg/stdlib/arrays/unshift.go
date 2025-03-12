@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // UNSHIFT prepends value to a given array.
@@ -14,22 +14,22 @@ import (
 // @return {Any[]} - New array with prepended value.
 func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 2, 3); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr, err := values.CastArray(args[0])
+	arr, err := core.CastList(args[0])
 	value := args[1]
-	uniq := values.False
+	uniq := core.False
 
 	if len(args) > 2 {
-		uniq, err = values.CastBoolean(args[2])
+		uniq, err = core.CastBoolean(args[2])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 	}
 
-	result := values.NewArray(int(arr.Length() + 1))
+	result := internal.NewArray(int(arr.Length() + 1))
 
 	if !uniq {
 		result.Push(value)
@@ -47,7 +47,7 @@ func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 		result.Push(value)
 
 		arr.ForEach(func(el core.Value, idx int) bool {
-			if values.Compare(el, value) != 0 {
+			if core.CompareValues(el, value) != 0 {
 				result.Push(el)
 
 				return true

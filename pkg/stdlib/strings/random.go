@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -28,16 +27,16 @@ func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	err = core.ValidateType(args[0], types.Int)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
-	size := args[0].(values.Int)
+	size := args[0].(core.Int)
 	b := make([]byte, size)
 
 	for i, cache, remain := size-1, randSrc.Int63(), letterIdxMax; i >= 0; {
@@ -54,5 +53,5 @@ func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
 		remain--
 	}
 
-	return values.NewString(string(b)), nil
+	return core.NewString(string(b)), nil
 }

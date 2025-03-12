@@ -2,6 +2,8 @@ package http_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	h "net/http"
 	"testing"
 
@@ -9,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -31,7 +32,7 @@ func TestGET(t *testing.T) {
 
 		ctx := context.Background()
 
-		out, err := http.GET(ctx, values.NewString(url))
+		out, err := http.GET(ctx, core.NewString(url))
 
 		So(err, ShouldBeNil)
 		So(out.Type().ID(), ShouldEqual, types.Binary.ID())
@@ -57,11 +58,11 @@ func TestGET(t *testing.T) {
 
 		ctx := context.Background()
 
-		out, err := http.GET(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString(url)),
-			values.NewObjectProperty("headers", values.NewObjectWith(
-				values.NewObjectProperty("X-Token", values.NewString("Ferret")),
-				values.NewObjectProperty("X-From", values.NewString("localhost")),
+		out, err := http.GET(ctx, internal.NewObjectWith(
+			internal.NewObjectProperty("url", core.NewString(url)),
+			internal.NewObjectProperty("headers", internal.NewObjectWith(
+				internal.NewObjectProperty("X-Token", core.NewString("Ferret")),
+				internal.NewObjectProperty("X-From", core.NewString("localhost")),
 			)),
 		))
 

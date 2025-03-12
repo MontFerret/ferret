@@ -10,7 +10,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type visitor struct {
@@ -266,14 +265,30 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 }
 
 func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
-	//loop := v.loops.Loop()
-	//v.emitter.EmitAB(runtime.OpLoopKeyValue, loop.Result, loop.Iterator)
+	// TODO: Undefine original loop variables
+	loop := v.loops.Loop()
+	//v.emitter.EmitAB(runtime.OpLoopPushIter, loop.Result, loop.Iterator)
 	//v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
 	//v.emitter.EmitA(runtime.OpClose, loop.Iterator)
 
-	// if ctx.CollectGrouping()
+	// Allocate registers
+	collector := v.registers.Allocate(Temp)
+	collectorKey := v.registers.Allocate(Temp)
+	collectorVal := v.registers.Allocate(Temp)
 
-	// Create new iterator
+	// Init Grouping
+	// Create a new collector
+	v.emitter.EmitA(runtime.OpGroupPrep, collector)
+
+	// TODO: patch jump
+
+	if agr := ctx.CollectGrouping(); agr != nil {
+		selectors := agr.AllCollectSelector()
+
+		for _, selector := range selectors {
+			reg := selector.Expression().Accept(v).(runtime.Operand)
+		}
+	}
 
 	return nil
 }
@@ -317,7 +332,7 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 //	}
 func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	loop := v.loops.Loop()
-	v.emitter.EmitAB(runtime.OpLoopKeyValue, loop.Result, loop.Iterator)
+	v.emitter.EmitAB(runtime.OpLoopPushIter, loop.Result, loop.Iterator)
 	v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
 	v.emitter.EmitA(runtime.OpClose, loop.Iterator)
 
@@ -390,7 +405,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	clauses := ctx.AllSortClauseExpression()
 	skipSwapJumps := make([]int, len(clauses))
 
-	// Compare pivot with each clause
+	// CompareValues pivot with each clause
 	for i, clause := range clauses {
 		sort := clause.(*fql.SortClauseExpressionContext)
 
@@ -758,7 +773,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 			propOp = comProp.Accept(v).(runtime.Operand)
 			valOp = pac.Expression().Accept(v).(runtime.Operand)
 		} else if variable := pac.Variable(); variable != nil {
-			propOp = v.loadConstant(values.NewString(variable.GetText()))
+			propOp = v.loadConstant(core.NewString(variable.GetText()))
 			valOp = variable.Accept(v).(runtime.Operand)
 		}
 
@@ -795,7 +810,7 @@ func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
 		panic(core.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
 
-	return v.loadConstant(values.NewString(name))
+	return v.loadConstant(core.NewString(name))
 }
 
 func (v *visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
@@ -848,7 +863,7 @@ func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} 
 		}
 	}
 
-	return v.loadConstant(values.NewString(b.String()))
+	return v.loadConstant(core.NewString(b.String()))
 }
 
 func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{} {
@@ -859,7 +874,7 @@ func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{
 	}
 
 	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(values.NewInt(val)))
+	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(core.NewInt(val)))
 
 	return reg
 }
@@ -872,7 +887,7 @@ func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 	}
 
 	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(values.NewFloat(val)))
+	v.emitter.EmitAB(runtime.OpLoadConst, reg, v.symbols.AddConstant(core.NewFloat(val)))
 
 	return reg
 }
@@ -1256,7 +1271,7 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 	}
 }
 
-func (v *visitor) functionName(ctx *fql.FunctionCallContext) values.String {
+func (v *visitor) functionName(ctx *fql.FunctionCallContext) core.String {
 	var name string
 	funcNS := ctx.Namespace()
 
@@ -1266,7 +1281,7 @@ func (v *visitor) functionName(ctx *fql.FunctionCallContext) values.String {
 
 	name += ctx.FunctionName().GetText()
 
-	return values.NewString(strings.ToUpper(name))
+	return core.NewString(strings.ToUpper(name))
 }
 
 func (v *visitor) emitLoopBegin(loop *Loop) {

@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,8 +11,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/logging"
 
 	"github.com/gobwas/glob"
-
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"golang.org/x/net/html/charset"
 
@@ -235,7 +234,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 	}
 
 	if params.Cookies != nil {
-		params.Cookies.ForEach(func(value drivers.HTTPCookie, key values.String) bool {
+		params.Cookies.ForEach(func(value drivers.HTTPCookie, key core.String) bool {
 			v, exist := params.Cookies.Get(key)
 			if !exist {
 				return false

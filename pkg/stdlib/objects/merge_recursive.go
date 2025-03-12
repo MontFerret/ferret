@@ -2,9 +2,9 @@ package objects
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -14,19 +14,19 @@ import (
 func MergeRecursive(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, core.MaxArgs)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	for _, arg := range args {
 		if err = core.ValidateType(arg, types.Object); err != nil {
-			return values.None, err
+			return core.None, err
 		}
 	}
 
-	merged := values.NewObject()
+	merged := internal.NewObject()
 
 	for _, arg := range args {
-		merged = merge(merged, arg).(*values.Object)
+		merged = merge(merged, arg).(*internal.Object)
 	}
 
 	return merged.Clone(), nil
@@ -37,13 +37,13 @@ func merge(src, dst core.Value) core.Value {
 		return src
 	}
 
-	srcObj, ok := src.(*values.Object)
+	srcObj, ok := src.(*internal.Object)
 
 	if !ok {
 		return dst
 	}
 
-	dstObj, ok := dst.(*values.Object)
+	dstObj, ok := dst.(*internal.Object)
 
 	if !ok {
 		return src
@@ -53,12 +53,12 @@ func merge(src, dst core.Value) core.Value {
 		return src
 	}
 
-	keyObj := values.NewString("")
-	exists := values.NewBoolean(false)
+	keyObj := core.NewString("")
+	exists := core.NewBoolean(false)
 	var srcVal core.Value
 
 	dstObj.ForEach(func(val core.Value, key string) bool {
-		keyObj = values.NewString(key)
+		keyObj = core.NewString(key)
 
 		if srcVal, exists = srcObj.Get(keyObj); exists {
 			val = merge(srcVal, val)

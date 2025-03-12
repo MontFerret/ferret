@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -33,7 +32,7 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	// document or element
@@ -41,10 +40,10 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 	err = core.ValidateType(arg1, drivers.HTMLPageType, drivers.HTMLDocumentType, drivers.HTMLElementType)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	timeout := values.NewInt(drivers.DefaultWaitTimeout)
+	timeout := core.NewInt(drivers.DefaultWaitTimeout)
 
 	// if a document is passed
 	if arg1.Type() == drivers.HTMLPageType || arg1.Type() == drivers.HTMLDocumentType {
@@ -52,61 +51,61 @@ func waitClassWhen(ctx context.Context, args []core.Value, when drivers.WaitEven
 		err := core.ValidateArgs(args, 3, 4)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		selector, err := drivers.ToQuerySelector(args[1])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		// class
 		err = core.ValidateType(args[2], types.String)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		el, err := drivers.ToElement(arg1)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		class := args[2].(values.String)
+		class := args[2].(core.String)
 
 		if len(args) == 4 {
 			err = core.ValidateType(args[3], types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			timeout = args[3].(values.Int)
+			timeout = args[3].(core.Int)
 		}
 
 		ctx, fn := waitTimeout(ctx, timeout)
 		defer fn()
 
-		return values.True, el.WaitForClassBySelector(ctx, selector, class, when)
+		return core.True, el.WaitForClassBySelector(ctx, selector, class, when)
 	}
 
 	el := arg1.(drivers.HTMLElement)
-	class := args[1].(values.String)
+	class := args[1].(core.String)
 
 	if len(args) == 3 {
 		err = core.ValidateType(args[2], types.Int)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		timeout = args[2].(values.Int)
+		timeout = args[2].(core.Int)
 	}
 
 	ctx, fn := waitTimeout(ctx, timeout)
 	defer fn()
 
-	return values.True, el.WaitForClass(ctx, class, when)
+	return core.True, el.WaitForClass(ctx, class, when)
 }

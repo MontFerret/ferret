@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 
 	"github.com/PuerkitoBio/goquery"
@@ -9,15 +10,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type HTMLDocument struct {
 	doc      *goquery.Document
 	element  drivers.HTMLElement
-	url      values.String
+	url      core.String
 	parent   drivers.HTMLDocument
-	children *values.Array
+	children *internal.Array
 }
 
 func NewRootHTMLDocument(
@@ -50,8 +50,8 @@ func NewHTMLDocument(
 	doc.doc = node
 	doc.element = el
 	doc.parent = parent
-	doc.url = values.NewString(url)
-	doc.children = values.NewArray(10)
+	doc.url = core.NewString(url)
+	doc.children = internal.NewArray(10)
 
 	frames := node.Find("iframe")
 	frames.Each(func(i int, selection *goquery.Selection) {
@@ -110,7 +110,7 @@ func (doc *HTMLDocument) Copy() core.Value {
 	cp, err := NewHTMLDocument(doc.doc, string(doc.url), doc.parent)
 
 	if err != nil {
-		return values.None
+		return core.None
 	}
 
 	return cp
@@ -120,14 +120,14 @@ func (doc *HTMLDocument) Clone() core.Cloneable {
 	cloned, err := NewHTMLDocument(doc.doc, doc.url.String(), doc.parent)
 
 	if err != nil {
-		return values.None
+		return core.None
 	}
 
 	return cloned
 }
 
-func (doc *HTMLDocument) Length() values.Int {
-	return values.NewInt(doc.doc.Length())
+func (doc *HTMLDocument) Length() core.Int {
+	return core.NewInt(doc.doc.Length())
 }
 
 func (doc *HTMLDocument) Iterate(_ context.Context) (core.Iterator, error) {
@@ -142,19 +142,19 @@ func (doc *HTMLDocument) SetIn(ctx context.Context, path []core.Value, value cor
 	return common.SetInDocument(ctx, path, doc, value)
 }
 
-func (doc *HTMLDocument) GetNodeType(_ context.Context) (values.Int, error) {
+func (doc *HTMLDocument) GetNodeType(_ context.Context) (core.Int, error) {
 	return 9, nil
 }
 
-func (doc *HTMLDocument) GetNodeName(_ context.Context) (values.String, error) {
+func (doc *HTMLDocument) GetNodeName(_ context.Context) (core.String, error) {
 	return "#document", nil
 }
 
-func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {
+func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*internal.Array, error) {
 	return doc.element.GetChildNodes(ctx)
 }
 
-func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
+func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx core.Int) (core.Value, error) {
 	return doc.element.GetChildNode(ctx, idx)
 }
 
@@ -162,33 +162,33 @@ func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector drivers.Que
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*internal.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (core.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (core.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+func (doc *HTMLDocument) XPath(ctx context.Context, expression core.String) (core.Value, error) {
 	return doc.element.XPath(ctx, expression)
 }
 
-func (doc *HTMLDocument) GetTitle() values.String {
+func (doc *HTMLDocument) GetTitle() core.String {
 	title := doc.doc.Find("head > title")
 
-	return values.NewString(title.Text())
+	return core.NewString(title.Text())
 }
 
-func (doc *HTMLDocument) GetChildDocuments(_ context.Context) (*values.Array, error) {
-	return doc.children.Clone().(*values.Array), nil
+func (doc *HTMLDocument) GetChildDocuments(_ context.Context) (*internal.Array, error) {
+	return doc.children.Clone().(*internal.Array), nil
 }
 
-func (doc *HTMLDocument) GetURL() values.String {
+func (doc *HTMLDocument) GetURL() core.String {
 	return doc.url
 }
 
@@ -196,7 +196,7 @@ func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
 	return doc.element
 }
 
-func (doc *HTMLDocument) GetName() values.String {
+func (doc *HTMLDocument) GetName() core.String {
 	return ""
 }
 
@@ -220,7 +220,7 @@ func (doc *HTMLDocument) Scroll(_ context.Context, _ drivers.ScrollOptions) erro
 	return core.ErrNotSupported
 }
 
-func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ values.Float) error {
+func (doc *HTMLDocument) MoveMouseByXY(_ context.Context, _, _ core.Float) error {
 	return core.ErrNotSupported
 }
 

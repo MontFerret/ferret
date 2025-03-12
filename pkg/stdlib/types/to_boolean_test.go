@@ -2,11 +2,12 @@ package types_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/types"
 )
 
@@ -15,21 +16,21 @@ func TestToBool(t *testing.T) {
 		Convey("When true should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.True,
+				core.True,
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When false should return false", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.False,
+				core.False,
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 	})
 
@@ -37,31 +38,31 @@ func TestToBool(t *testing.T) {
 		Convey("When > 0 should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewInt(1),
+				core.NewInt(1),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When < 0 should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewInt(-1),
+				core.NewInt(-1),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When 0 should return false", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.ZeroInt,
+				core.ZeroInt,
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 	})
 
@@ -69,31 +70,31 @@ func TestToBool(t *testing.T) {
 		Convey("When > 0 should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewFloat(1.1),
+				core.NewFloat(1.1),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When < 0 should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewFloat(-1.1),
+				core.NewFloat(-1.1),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When 0 should return false", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.ZeroFloat,
+				core.ZeroFloat,
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 	})
 
@@ -101,21 +102,21 @@ func TestToBool(t *testing.T) {
 		Convey("When != '' should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewString("foobar"),
+				core.NewString("foobar"),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When == '' should return false", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewString(""),
+				core.NewString(""),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 	})
 
@@ -123,21 +124,21 @@ func TestToBool(t *testing.T) {
 		Convey("When > 0  should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewCurrentDateTime(),
+				core.NewCurrentDateTime(),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 
 		Convey("When == 0 should return false", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.ZeroDateTime,
+				core.ZeroDateTime,
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 	})
 
@@ -145,11 +146,11 @@ func TestToBool(t *testing.T) {
 		Convey("Should return false", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.None,
+				core.None,
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.False)
+			So(out, ShouldEqual, core.False)
 		})
 	})
 
@@ -157,11 +158,11 @@ func TestToBool(t *testing.T) {
 		Convey("Should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewArray(0),
+				internal.NewArray(0),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 	})
 
@@ -169,11 +170,11 @@ func TestToBool(t *testing.T) {
 		Convey("Should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
-				values.NewObject(),
+				internal.NewObject(),
 			)
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.True)
+			So(out, ShouldEqual, core.True)
 		})
 	})
 }

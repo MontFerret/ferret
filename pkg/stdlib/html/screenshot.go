@@ -3,10 +3,9 @@ package html
 import (
 	"context"
 	"fmt"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -24,7 +23,7 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	arg1 := args[0]
@@ -32,13 +31,13 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err = core.ValidateType(arg1, drivers.HTMLPageType, types.String)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	page, closeAfter, err := OpenOrCastPage(ctx, arg1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	defer func() {
@@ -61,13 +60,13 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 		err = core.ValidateType(arg2, types.Object)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		params, ok := arg2.(*values.Object)
+		params, ok := arg2.(*internal.Object)
 
 		if !ok {
-			return values.None, core.Error(core.ErrInvalidType, "expected object")
+			return core.None, core.Error(core.ErrInvalidType, "expected object")
 		}
 
 		format, found := params.Get("format")
@@ -76,11 +75,11 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(format, types.String)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if !drivers.IsScreenshotFormatValid(format.String()) {
-				return values.None, core.Error(
+				return core.None, core.Error(
 					core.ErrInvalidArgument,
 					fmt.Sprintf("format is not valid, expected jpeg or png, but got %s", format.String()))
 			}
@@ -94,11 +93,11 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(x, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if x.Type() == types.Int {
-				screenshotParams.X = values.Float(x.(values.Int))
+				screenshotParams.X = core.Float(x.(core.Int))
 			}
 		}
 
@@ -108,11 +107,11 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(y, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if y.Type() == types.Int {
-				screenshotParams.Y = values.Float(y.(values.Int))
+				screenshotParams.Y = core.Float(y.(core.Int))
 			}
 		}
 
@@ -122,11 +121,11 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(width, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if width.Type() == types.Int {
-				screenshotParams.Width = values.Float(width.(values.Int))
+				screenshotParams.Width = core.Float(width.(core.Int))
 			}
 		}
 
@@ -136,11 +135,11 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(height, types.Float, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			if height.Type() == types.Int {
-				screenshotParams.Height = values.Float(height.(values.Int))
+				screenshotParams.Height = core.Float(height.(core.Int))
 			}
 		}
 
@@ -150,17 +149,17 @@ func Screenshot(ctx context.Context, args ...core.Value) (core.Value, error) {
 			err = core.ValidateType(quality, types.Int)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			screenshotParams.Quality = quality.(values.Int)
+			screenshotParams.Quality = quality.(core.Int)
 		}
 	}
 
 	scr, err := page.CaptureScreenshot(ctx, screenshotParams)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return scr, nil

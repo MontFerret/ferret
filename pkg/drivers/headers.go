@@ -12,7 +12,6 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // HTTPHeaders HTTP header object
@@ -28,8 +27,8 @@ func NewHTTPHeadersWith(values map[string][]string) *HTTPHeaders {
 	return &HTTPHeaders{values}
 }
 
-func (h *HTTPHeaders) Length() values.Int {
-	return values.NewInt(len(h.values))
+func (h *HTTPHeaders) Length() core.Int {
+	return core.NewInt(len(h.values))
 }
 
 func (h *HTTPHeaders) Type() core.Type {
@@ -160,10 +159,10 @@ func (h *HTTPHeaders) Get(key string) string {
 
 func (h *HTTPHeaders) GetHeader(_ context.Context, key string) (core.Value, error) {
 	if key == "" {
-		return values.None, nil
+		return core.None, nil
 	}
 
-	return values.NewString(h.Get(key)), nil
+	return core.NewString(h.Get(key)), nil
 }
 
 func (h *HTTPHeaders) ForEach(predicate func(value []string, key string) bool) {

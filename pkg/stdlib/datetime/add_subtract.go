@@ -4,13 +4,12 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 var (
-	emptyDateTime values.DateTime
-	emptyInt      values.Int
-	emptyString   values.String
+	emptyDateTime core.DateTime
+	emptyInt      core.Int
+	emptyString   core.String
 )
 
 // DATE_ADD adds amount given in unit to date.
@@ -30,17 +29,17 @@ var (
 func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 	date, amount, unit, err := getArgs(args)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	u, err := UnitFromString(unit.String())
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	tm := AddUnit(date.Time, int(amount), u)
 
-	return values.NewDateTime(tm), nil
+	return core.NewDateTime(tm), nil
 }
 
 // DATE_SUBTRACT subtract amount given in unit to date.
@@ -60,39 +59,39 @@ func DateAdd(_ context.Context, args ...core.Value) (core.Value, error) {
 func DateSubtract(_ context.Context, args ...core.Value) (core.Value, error) {
 	date, amount, unit, err := getArgs(args)
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	u, err := UnitFromString(unit.String())
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	tm := AddUnit(date.Time, -1*int(amount), u)
 
-	return values.NewDateTime(tm), nil
+	return core.NewDateTime(tm), nil
 }
 
-func getArgs(args []core.Value) (values.DateTime, values.Int, values.String, error) {
+func getArgs(args []core.Value) (core.DateTime, core.Int, core.String, error) {
 	if err := core.ValidateArgs(args, 3, 3); err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
 	}
 
-	if err := values.AssertDateTime(args[0]); err != nil {
+	if err := core.AssertDateTime(args[0]); err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
 	}
 
-	if err := values.AssertInt(args[1]); err != nil {
+	if err := core.AssertInt(args[1]); err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
 	}
 
-	if err := values.AssertString(args[2]); err != nil {
+	if err := core.AssertString(args[2]); err != nil {
 		return emptyDateTime, emptyInt, emptyString, err
 	}
 
-	date := args[0].(values.DateTime)
-	amount := args[1].(values.Int)
-	unit := args[2].(values.String)
+	date := args[0].(core.DateTime)
+	amount := args[1].(core.Int)
+	unit := args[2].(core.String)
 
 	return date, amount, unit, nil
 }

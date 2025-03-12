@@ -9,7 +9,6 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type HTTPCookies struct {
@@ -54,13 +53,13 @@ func (c *HTTPCookies) Compare(other core.Value) int64 {
 	}
 
 	for name := range c.values {
-		cEl, cExists := c.GetCookie(values.NewString(name))
+		cEl, cExists := c.GetCookie(core.NewString(name))
 
 		if !cExists {
 			return -1
 		}
 
-		ocEl, ocExists := oc.GetCookie(values.NewString(name))
+		ocEl, ocExists := oc.GetCookie(core.NewString(name))
 
 		if !ocExists {
 			return 1
@@ -133,15 +132,15 @@ func (c *HTTPCookies) Clone() core.Cloneable {
 	return NewHTTPCookiesWith(clone)
 }
 
-func (c *HTTPCookies) Length() values.Int {
-	return values.NewInt(len(c.values))
+func (c *HTTPCookies) Length() core.Int {
+	return core.NewInt(len(c.values))
 }
 
-func (c *HTTPCookies) Keys() []values.String {
-	result := make([]values.String, 0, len(c.values))
+func (c *HTTPCookies) Keys() []core.String {
+	result := make([]core.String, 0, len(c.values))
 
 	for k := range c.values {
-		result = append(result, values.NewString(k))
+		result = append(result, core.NewString(k))
 	}
 
 	return result
@@ -157,14 +156,14 @@ func (c *HTTPCookies) Values() []HTTPCookie {
 	return result
 }
 
-func (c *HTTPCookies) GetCookie(key values.String) (HTTPCookie, values.Boolean) {
+func (c *HTTPCookies) GetCookie(key core.String) (HTTPCookie, core.Boolean) {
 	value, found := c.values[key.String()]
 
 	if found {
-		return value, values.True
+		return value, core.True
 	}
 
-	return HTTPCookie{}, values.False
+	return HTTPCookie{}, core.False
 }
 
 func (c *HTTPCookies) SetCookie(cookie HTTPCookie) {
@@ -173,12 +172,12 @@ func (c *HTTPCookies) SetCookie(cookie HTTPCookie) {
 
 func (c *HTTPCookies) Get(ctx context.Context, key string) (core.Value, error) {
 	// TODO: Implement
-	return values.None, nil
+	return core.None, nil
 }
 
-func (c *HTTPCookies) ForEach(predicate func(value HTTPCookie, key values.String) bool) {
+func (c *HTTPCookies) ForEach(predicate func(value HTTPCookie, key core.String) bool) {
 	for key, val := range c.values {
-		if !predicate(val, values.NewString(key)) {
+		if !predicate(val, core.NewString(key)) {
 			break
 		}
 	}

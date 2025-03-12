@@ -1,13 +1,13 @@
 package http
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	HTTP "net/http"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 func fromSelectionToNode(selection *goquery.Selection) *html.Node {

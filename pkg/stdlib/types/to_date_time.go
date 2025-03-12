@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // TO_DATETIME takes an input value of any type and converts it into the appropriate date time value.
@@ -14,8 +13,8 @@ func ToDateTime(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.ParseDateTime(args[0].String())
+	return core.ParseDateTime(args[0].String())
 }

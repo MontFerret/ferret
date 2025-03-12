@@ -2,9 +2,8 @@ package types
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 )
 
 // TO_ARRAY takes an input value of any type and convert it into an array value.
@@ -18,8 +17,8 @@ func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	return values.ToArray(ctx, args[0]), nil
+	return internal.ToArray(ctx, args[0]), nil
 }

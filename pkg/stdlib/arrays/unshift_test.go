@@ -2,25 +2,26 @@ package arrays_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 )
 
 func TestUnshift(t *testing.T) {
 	Convey("Should return a copy of an array", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
 		)
 
-		out, err := arrays.Unshift(context.Background(), arr, values.NewInt(0))
+		out, err := arrays.Unshift(context.Background(), arr, core.NewInt(0))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, arr)
@@ -28,19 +29,19 @@ func TestUnshift(t *testing.T) {
 	})
 
 	Convey("Should ignore non-unique items", t, func() {
-		arr := values.NewArrayWith(
-			values.NewInt(1),
-			values.NewInt(2),
-			values.NewInt(3),
-			values.NewInt(4),
-			values.NewInt(5),
+		arr := internal.NewArrayWith(
+			core.NewInt(1),
+			core.NewInt(2),
+			core.NewInt(3),
+			core.NewInt(4),
+			core.NewInt(5),
 		)
 
 		out, err := arrays.Unshift(
 			context.Background(),
 			arr,
-			values.NewInt(0),
-			values.True,
+			core.NewInt(0),
+			core.True,
 		)
 
 		So(err, ShouldBeNil)
@@ -50,8 +51,8 @@ func TestUnshift(t *testing.T) {
 		out2, err := arrays.Unshift(
 			context.Background(),
 			arr,
-			values.NewInt(0),
-			values.True,
+			core.NewInt(0),
+			core.True,
 		)
 
 		So(err, ShouldBeNil)

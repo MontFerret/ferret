@@ -2,6 +2,7 @@ package eval
 
 import (
 	"context"
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strconv"
 
 	"github.com/mafredri/cdp"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -64,31 +64,31 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 	// It's not an actual ref but rather a plain value
 	if ref.ObjectID == nil {
 		if ref.Value != nil {
-			return values.Unmarshal(ref.Value)
+			return internal.Unmarshal(ref.Value)
 		}
 
-		return values.None, nil
+		return core.None, nil
 	}
 
 	subtype := ToRemoteObjectType(ref)
 
 	switch subtype {
 	case NullObjectType, UndefinedObjectType:
-		return values.None, nil
+		return core.None, nil
 	case ArrayObjectType:
 		props, err := r.runtime.GetProperties(ctx, runtime.NewGetPropertiesArgs(*ref.ObjectID).SetOwnProperties(true))
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		if props.ExceptionDetails != nil {
 			exception := *props.ExceptionDetails
 
-			return values.None, errors.New(exception.Text)
+			return core.None, errors.New(exception.Text)
 		}
 
-		result := values.NewArray(len(props.Result))
+		result := runtime2.NewArray(len(props.Result))
 
 		for _, descr := range props.Result {
 			if !descr.Enumerable {
@@ -102,7 +102,7 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 			el, err := r.ToValue(ctx, *descr.Value)
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
 			result.Push(el)
@@ -112,7 +112,7 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 	case NodeObjectType:
 		// is it even possible?
 		if ref.ObjectID == nil {
-			return values.Unmarshal(ref.Value)
+			return internal.Unmarshal(ref.Value)
 		}
 
 		return r.loadValue(ctx, NodeObjectType, ToRemoteClassName(ref), *ref.ObjectID)
@@ -122,18 +122,18 @@ func (r *Resolver) ToValue(ctx context.Context, ref runtime.RemoteObject) (core.
 			str, err := strconv.Unquote(string(ref.Value))
 
 			if err != nil {
-				return values.None, err
+				return core.None, err
 			}
 
-			return values.NewString(str), nil
+			return core.NewString(str), nil
 		case ObjectType:
 			if subtype == NullObjectType || subtype == UnknownObjectType {
-				return values.None, nil
+				return core.None, nil
 			}
 
-			return values.Unmarshal(ref.Value)
+			return internal.Unmarshal(ref.Value)
 		default:
-			return values.Unmarshal(ref.Value)
+			return internal.Unmarshal(ref.Value)
 		}
 	}
 }
@@ -163,11 +163,11 @@ func (r *Resolver) ToProperty(
 	)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	if err := parseRuntimeException(res.ExceptionDetails); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	for _, prop := range res.Result {
@@ -176,38 +176,38 @@ func (r *Resolver) ToProperty(
 				return r.ToValue(ctx, *prop.Value)
 			}
 
-			return values.None, nil
+			return core.None, nil
 		}
 	}
 
-	return values.None, nil
+	return core.None, nil
 }
 
 func (r *Resolver) ToProperties(
 	ctx context.Context,
 	id runtime.RemoteObjectID,
-) (*values.Array, error) {
+) (*runtime2.Array, error) {
 	res, err := r.runtime.GetProperties(
 		ctx,
 		runtime.NewGetPropertiesArgs(id),
 	)
 
 	if err != nil {
-		return values.EmptyArray(), err
+		return runtime2.EmptyArray(), err
 	}
 
 	if err := parseRuntimeException(res.ExceptionDetails); err != nil {
-		return values.EmptyArray(), err
+		return runtime2.EmptyArray(), err
 	}
 
-	arr := values.NewArray(len(res.Result))
+	arr := runtime2.NewArray(len(res.Result))
 
 	for _, prop := range res.Result {
 		if prop.Value != nil {
 			val, err := r.ToValue(ctx, *prop.Value)
 
 			if err != nil {
-				return values.EmptyArray(), err
+				return runtime2.EmptyArray(), err
 			}
 
 			arr.Push(val)
@@ -219,7 +219,7 @@ func (r *Resolver) ToProperties(
 
 func (r *Resolver) loadValue(ctx context.Context, remoteType RemoteObjectType, remoteClass RemoteClassName, id runtime.RemoteObjectID) (core.Value, error) {
 	if r.loader == nil {
-		return values.None, core.Error(core.ErrNotImplemented, "ValueLoader")
+		return core.None, core.Error(core.ErrNotImplemented, "ValueLoader")
 	}
 
 	return r.loader.Load(ctx, r.frameID, remoteType, remoteClass, id)

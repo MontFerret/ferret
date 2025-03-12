@@ -16,7 +16,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	rtEvents "github.com/MontFerret/ferret/pkg/runtime/events"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type NavigationEventStream struct {
@@ -182,7 +181,7 @@ func newRequestWillBeSentStream(logger zerolog.Logger, input network.RequestWill
 		if err != nil {
 			logger.Trace().Err(err).Msg("failed to read data from request event stream")
 
-			return values.None, nil
+			return core.None, nil
 		}
 
 		var frameID string
@@ -209,7 +208,7 @@ func newResponseReceivedReader(logger zerolog.Logger, client *cdp.Client, input 
 		if err != nil {
 			logger.Trace().Err(err).Msg("failed to read data from request event stream")
 
-			return values.None, nil
+			return core.None, nil
 		}
 
 		var frameID string

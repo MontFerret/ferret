@@ -2,10 +2,8 @@ package html
 
 import (
 	"context"
-
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // ATTR_REMOVE removes single or more attribute(s) of a given element.
@@ -13,27 +11,27 @@ import (
 // @param {String, repeated} attrNames - Attribute name(s).
 func AttributeRemove(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 2, core.MaxArgs); err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	attrs := args[1:]
-	attrsStr := make([]values.String, 0, len(attrs))
+	attrsStr := make([]core.String, 0, len(attrs))
 
 	for _, attr := range attrs {
-		str, err := values.CastString(attr)
+		str, err := core.CastString(attr)
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		attrsStr = append(attrsStr, str)
 	}
 
-	return values.None, el.RemoveAttribute(ctx, attrsStr...)
+	return core.None, el.RemoveAttribute(ctx, attrsStr...)
 }

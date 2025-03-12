@@ -3,6 +3,8 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"io"
 	h "net/http"
 	"testing"
@@ -12,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
 )
@@ -65,9 +66,9 @@ func TestPUT(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		out, err := http.PUT(ctx, values.NewObjectWith(
-			values.NewObjectProperty("url", values.NewString(url)),
-			values.NewObjectProperty("body", values.NewBinary(b)),
+		out, err := http.PUT(ctx, internal.NewObjectWith(
+			internal.NewObjectProperty("url", core.NewString(url)),
+			internal.NewObjectProperty("body", core.NewBinary(b)),
 		))
 
 		So(err, ShouldBeNil)

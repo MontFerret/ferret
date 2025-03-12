@@ -17,7 +17,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/events"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	rtEvents "github.com/MontFerret/ferret/pkg/runtime/events"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 const BlankPageURL = "about:blank"
@@ -168,7 +167,7 @@ func (m *Manager) setCookiesInternal(ctx context.Context, url string, cookies *d
 
 	params := make([]network.CookieParam, 0, cookies.Length())
 
-	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+	cookies.ForEach(func(value drivers.HTTPCookie, _ core.String) bool {
 		params = append(params, fromDriverCookie(url, value))
 
 		return true
@@ -207,7 +206,7 @@ func (m *Manager) DeleteCookies(ctx context.Context, url string, cookies *driver
 
 	var err error
 
-	cookies.ForEach(func(value drivers.HTTPCookie, _ values.String) bool {
+	cookies.ForEach(func(value drivers.HTTPCookie, _ core.String) bool {
 		m.logger.Trace().Str("name", value.Name).Msg("deleting a cookie")
 
 		err = m.client.Network.DeleteCookies(ctx, fromDriverCookieDelete(url, value))
@@ -298,7 +297,7 @@ func (m *Manager) GetResponse(_ context.Context, frameID page.FrameID) (drivers.
 	return *(value.(*drivers.HTTPResponse)), nil
 }
 
-func (m *Manager) Navigate(ctx context.Context, url values.String) error {
+func (m *Manager) Navigate(ctx context.Context, url core.String) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -326,7 +325,7 @@ func (m *Manager) Navigate(ctx context.Context, url values.String) error {
 	return m.WaitForNavigation(ctx, WaitEventOptions{})
 }
 
-func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+func (m *Manager) NavigateForward(ctx context.Context, skip core.Int) (core.Boolean, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -341,7 +340,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 			Err(err).
 			Msg("failed to get navigation history")
 
-		return values.False, err
+		return core.False, err
 	}
 
 	length := len(history.Entries)
@@ -355,7 +354,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 			Int("history_last_index", lastIndex).
 			Msg("no forward history. nowhere to navigate. done.")
 
-		return values.False, nil
+		return core.False, nil
 	}
 
 	if skip < 1 {
@@ -387,7 +386,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 			Err(err).
 			Msg("failed to get navigation history entry")
 
-		return values.False, err
+		return core.False, err
 	}
 
 	err = m.WaitForNavigation(ctx, WaitEventOptions{})
@@ -401,7 +400,7 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 			Err(err).
 			Msg("failed to wait for navigation completion")
 
-		return values.False, err
+		return core.False, err
 	}
 
 	m.logger.Trace().
@@ -411,10 +410,10 @@ func (m *Manager) NavigateForward(ctx context.Context, skip values.Int) (values.
 		Int("history_target_index", to).
 		Msg("succeeded to wait for navigation completion")
 
-	return values.True, nil
+	return core.True, nil
 }
 
-func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+func (m *Manager) NavigateBack(ctx context.Context, skip core.Int) (core.Boolean, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -427,7 +426,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 	if err != nil {
 		m.logger.Trace().Err(err).Msg("failed to get navigation history")
 
-		return values.False, err
+		return core.False, err
 	}
 
 	length := len(history.Entries)
@@ -439,7 +438,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 			Int("history_current_index", history.CurrentIndex).
 			Msg("no backward history. nowhere to navigate. done.")
 
-		return values.False, nil
+		return core.False, nil
 	}
 
 	if skip < 1 {
@@ -469,7 +468,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 			Err(err).
 			Msg("failed to get navigation history entry")
 
-		return values.False, err
+		return core.False, err
 	}
 
 	err = m.WaitForNavigation(ctx, WaitEventOptions{})
@@ -482,7 +481,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 			Err(err).
 			Msg("failed to wait for navigation completion")
 
-		return values.False, err
+		return core.False, err
 	}
 
 	m.logger.Trace().
@@ -491,7 +490,7 @@ func (m *Manager) NavigateBack(ctx context.Context, skip values.Int) (values.Boo
 		Int("history_target_index", to).
 		Msg("succeeded to wait for navigation completion")
 
-	return values.True, nil
+	return core.True, nil
 }
 
 func (m *Manager) WaitForNavigation(ctx context.Context, opts WaitEventOptions) error {

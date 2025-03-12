@@ -2,11 +2,11 @@ package path_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
 
@@ -22,7 +22,7 @@ func TestClean(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Clean(context.Background(), values.NewInt(0))
+		_, err = path.Clean(context.Background(), core.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -30,7 +30,7 @@ func TestClean(t *testing.T) {
 	Convey("Clean('pkg//path//clean.go') should return 'pkg/path/clean.go'", t, func() {
 		out, _ := path.Clean(
 			context.Background(),
-			values.NewString("pkg//path//clean.go"),
+			core.NewString("pkg//path//clean.go"),
 		)
 
 		So(out, ShouldEqual, "pkg/path/clean.go")
@@ -39,7 +39,7 @@ func TestClean(t *testing.T) {
 	Convey("Clean('/cmd/main/../../..') should return '/'", t, func() {
 		out, _ := path.Clean(
 			context.Background(),
-			values.NewString("/cmd/main/../../.."),
+			core.NewString("/cmd/main/../../.."),
 		)
 
 		So(out, ShouldEqual, "/")

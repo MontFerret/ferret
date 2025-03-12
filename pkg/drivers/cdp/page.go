@@ -2,6 +2,7 @@ package cdp
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 	"io"
 	"regexp"
@@ -24,7 +25,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -32,7 +32,7 @@ type (
 
 	HTMLPage struct {
 		mu      sync.Mutex
-		closed  values.Boolean
+		closed  core.Boolean
 		logger  zerolog.Logger
 		conn    *rpcc.Conn
 		client  *cdp.Client
@@ -121,7 +121,7 @@ func LoadHTMLPage(
 	)
 
 	if params.URL != BlankPageURL && params.URL != "" {
-		err = p.Navigate(ctx, values.NewString(params.URL))
+		err = p.Navigate(ctx, core.NewString(params.URL))
 	} else {
 		err = p.loadMainFrame(ctx)
 	}
@@ -186,7 +186,7 @@ func NewHTMLPage(
 	domManager *dom.Manager,
 ) *HTMLPage {
 	p := new(HTMLPage)
-	p.closed = values.False
+	p.closed = core.False
 	p.logger = logging.WithName(logger.With(), "cdp_page").Logger()
 	p.conn = conn
 	p.client = client
@@ -243,7 +243,7 @@ func (p *HTMLPage) Hash() uint64 {
 }
 
 func (p *HTMLPage) Copy() core.Value {
-	return values.None
+	return core.None
 }
 
 func (p *HTMLPage) Get(ctx context.Context, key string) (core.Value, error) {
@@ -258,7 +258,7 @@ func (p *HTMLPage) Iterate(ctx context.Context) (core.Iterator, error) {
 	return p.getCurrentDocument().Iterate(ctx)
 }
 
-func (p *HTMLPage) Length() values.Int {
+func (p *HTMLPage) Length() core.Int {
 	return p.getCurrentDocument().Length()
 }
 
@@ -273,7 +273,7 @@ func (p *HTMLPage) Close() error {
 		url = frame.GetURL().String()
 	}
 
-	p.closed = values.True
+	p.closed = core.True
 
 	err := p.dom.Close()
 
@@ -308,18 +308,18 @@ func (p *HTMLPage) Close() error {
 	return nil
 }
 
-func (p *HTMLPage) IsClosed() values.Boolean {
+func (p *HTMLPage) IsClosed() core.Boolean {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.closed
 }
 
-func (p *HTMLPage) GetURL() values.String {
+func (p *HTMLPage) GetURL() core.String {
 	res, err := p.getCurrentDocument().Eval().EvalValue(context.Background(), templates.GetURL())
 
 	if err == nil {
-		return values.ToString(res)
+		return internal.ToString(res)
 	}
 
 	p.logger.Warn().
@@ -333,21 +333,21 @@ func (p *HTMLPage) GetMainFrame() drivers.HTMLDocument {
 	return p.getCurrentDocument()
 }
 
-func (p *HTMLPage) GetFrames(ctx context.Context) (*values.Array, error) {
+func (p *HTMLPage) GetFrames(ctx context.Context) (*internal.Array, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.dom.GetFrameNodes(ctx)
 }
 
-func (p *HTMLPage) GetFrame(ctx context.Context, idx values.Int) (core.Value, error) {
+func (p *HTMLPage) GetFrame(ctx context.Context, idx core.Int) (core.Value, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	frames, err := p.dom.GetFrameNodes(ctx)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return frames.Get(idx), nil
@@ -384,7 +384,7 @@ func (p *HTMLPage) GetResponse(ctx context.Context) (drivers.HTTPResponse, error
 	return p.network.GetResponse(ctx, doc.Frame().Frame.ID)
 }
 
-func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (values.Binary, error) {
+func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (core.Binary, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -423,35 +423,35 @@ func (p *HTMLPage) PrintToPDF(ctx context.Context, params drivers.PDFParams) (va
 		args.SetMarginLeft(float64(params.MarginLeft))
 	}
 
-	if params.PageRanges != values.EmptyString {
+	if params.PageRanges != core.EmptyString {
 		args.SetPageRanges(string(params.PageRanges))
 	}
 
-	if params.HeaderTemplate != values.EmptyString {
+	if params.HeaderTemplate != core.EmptyString {
 		args.SetHeaderTemplate(string(params.HeaderTemplate))
 	}
 
-	if params.FooterTemplate != values.EmptyString {
+	if params.FooterTemplate != core.EmptyString {
 		args.SetFooterTemplate(string(params.FooterTemplate))
 	}
 
 	reply, err := p.client.Page.PrintToPDF(ctx, args)
 
 	if err != nil {
-		return values.NewBinary([]byte{}), err
+		return core.NewBinary([]byte{}), err
 	}
 
-	return values.NewBinary(reply.Data), nil
+	return core.NewBinary(reply.Data), nil
 }
 
-func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (values.Binary, error) {
+func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.ScreenshotParams) (core.Binary, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	metrics, err := p.client.Page.GetLayoutMetrics(ctx)
 
 	if err != nil {
-		return values.NewBinary(nil), err
+		return core.NewBinary(nil), err
 	}
 
 	if params.Format == drivers.ScreenshotFormatJPEG && params.Quality < 0 && params.Quality > 100 {
@@ -469,11 +469,11 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 	clientWidth, clientHeight := utils.GetLayoutViewportWH(metrics)
 
 	if params.Width <= 0 {
-		params.Width = values.Float(clientWidth) - params.X
+		params.Width = core.Float(clientWidth) - params.X
 	}
 
 	if params.Height <= 0 {
-		params.Height = values.Float(clientHeight) - params.Y
+		params.Height = core.Float(clientHeight) - params.Y
 	}
 
 	clip := page.Viewport{
@@ -495,13 +495,13 @@ func (p *HTMLPage) CaptureScreenshot(ctx context.Context, params drivers.Screens
 	reply, err := p.client.Page.CaptureScreenshot(ctx, &args)
 
 	if err != nil {
-		return values.NewBinary([]byte{}), err
+		return core.NewBinary([]byte{}), err
 	}
 
-	return values.NewBinary(reply.Data), nil
+	return core.NewBinary(reply.Data), nil
 }
 
-func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
+func (p *HTMLPage) Navigate(ctx context.Context, url core.String) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -512,33 +512,33 @@ func (p *HTMLPage) Navigate(ctx context.Context, url values.String) error {
 	return p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) NavigateBack(ctx context.Context, skip values.Int) (values.Boolean, error) {
+func (p *HTMLPage) NavigateBack(ctx context.Context, skip core.Int) (core.Boolean, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	ret, err := p.network.NavigateBack(ctx, skip)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	return ret, p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) NavigateForward(ctx context.Context, skip values.Int) (values.Boolean, error) {
+func (p *HTMLPage) NavigateForward(ctx context.Context, skip core.Int) (core.Boolean, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	ret, err := p.network.NavigateForward(ctx, skip)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	return ret, p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.String) error {
+func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL core.String) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -555,7 +555,7 @@ func (p *HTMLPage) WaitForNavigation(ctx context.Context, targetURL values.Strin
 	return p.reloadMainFrame(ctx)
 }
 
-func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTMLDocument, targetURL values.String) error {
+func (p *HTMLPage) WaitForFrameNavigation(ctx context.Context, frame drivers.HTMLDocument, targetURL core.String) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -615,7 +615,7 @@ func (p *HTMLPage) Subscribe(ctx context.Context, subscription events.Subscripti
 	}
 }
 
-func (p *HTMLPage) urlToRegexp(targetURL values.String) (*regexp.Regexp, error) {
+func (p *HTMLPage) urlToRegexp(targetURL core.String) (*regexp.Regexp, error) {
 	if targetURL == "" {
 		return nil, nil
 	}

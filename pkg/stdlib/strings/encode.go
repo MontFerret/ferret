@@ -9,7 +9,6 @@ import (
 	"net/url"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // ENCODE_URI_COMPONENT returns the encoded String of uri.
@@ -19,12 +18,12 @@ func EncodeURIComponent(_ context.Context, args ...core.Value) (core.Value, erro
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	str := url.QueryEscape(args[0].String())
 
-	return values.NewString(str), nil
+	return core.NewString(str), nil
 }
 
 // MD5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.
@@ -34,13 +33,13 @@ func Md5(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
 	res := md5.Sum([]byte(text))
 
-	return values.NewString(string(res[:])), nil
+	return core.NewString(string(res[:])), nil
 }
 
 // SHA1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
@@ -50,13 +49,13 @@ func Sha1(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
 	res := sha1.Sum([]byte(text))
 
-	return values.NewString(string(res[:])), nil
+	return core.NewString(string(res[:])), nil
 }
 
 // SHA512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
@@ -66,13 +65,13 @@ func Sha512(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	text := args[0].String()
 	res := sha512.Sum512([]byte(text))
 
-	return values.NewString(string(res[:])), nil
+	return core.NewString(string(res[:])), nil
 }
 
 // TO_BASE64 returns the base64 representation of value.
@@ -82,11 +81,11 @@ func ToBase64(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	value := args[0].String()
 	out := base64.StdEncoding.EncodeToString([]byte(value))
 
-	return values.NewString(out), nil
+	return core.NewString(out), nil
 }

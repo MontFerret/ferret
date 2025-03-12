@@ -2,9 +2,8 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 
@@ -14,10 +13,10 @@ import (
 func TestEscapeHTML(t *testing.T) {
 	Convey("EscapeHTML", t, func() {
 		Convey("Should escape an HTML string", func() {
-			out, err := strings.EscapeHTML(context.Background(), values.NewString(`<body><span>Foobar</span></body>`))
+			out, err := strings.EscapeHTML(context.Background(), core.NewString(`<body><span>Foobar</span></body>`))
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, values.NewString("&lt;body&gt;&lt;span&gt;Foobar&lt;/span&gt;&lt;/body&gt;"))
+			So(out, ShouldEqual, core.NewString("&lt;body&gt;&lt;span&gt;Foobar&lt;/span&gt;&lt;/body&gt;"))
 		})
 	})
 }

@@ -2,9 +2,8 @@ package strings_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 
@@ -26,7 +25,7 @@ func TestFromBase64(t *testing.T) {
 			var err error
 			_, err = strings.FromBase64(
 				context.Background(),
-				values.NewString("foobar"),
+				core.NewString("foobar"),
 			)
 
 			So(err, ShouldBeError)
@@ -36,7 +35,7 @@ func TestFromBase64(t *testing.T) {
 	Convey("Should decode a given hash", t, func() {
 		out, err := strings.FromBase64(
 			context.Background(),
-			values.NewString("Zm9vYmFy"),
+			core.NewString("Zm9vYmFy"),
 		)
 
 		So(err, ShouldBeNil)
@@ -69,7 +68,7 @@ func TestDecodeURIComponent(t *testing.T) {
 			Convey(tC.Name, func() {
 				out, err := strings.DecodeURIComponent(
 					context.Background(),
-					values.NewString(tC.InURI),
+					core.NewString(tC.InURI),
 				)
 				So(err, ShouldBeNil)
 

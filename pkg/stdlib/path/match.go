@@ -5,7 +5,6 @@ import (
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -17,19 +16,19 @@ func Match(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	err = core.ValidateType(args[0], types.String)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	err = core.ValidateType(args[1], types.String)
 
 	if err != nil {
-		return values.False, err
+		return core.False, err
 	}
 
 	pattern := args[0].String()
@@ -38,8 +37,8 @@ func Match(_ context.Context, args ...core.Value) (core.Value, error) {
 	matched, err := path.Match(pattern, name)
 
 	if err != nil {
-		return values.False, core.Error(err, "match")
+		return core.False, core.Error(err, "match")
 	}
 
-	return values.NewBoolean(matched), nil
+	return core.NewBoolean(matched), nil
 }

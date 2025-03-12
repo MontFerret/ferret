@@ -2,9 +2,10 @@ package objects_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -15,48 +16,48 @@ func TestMerge(t *testing.T) {
 		obj, err := objects.Merge(context.Background())
 
 		So(err, ShouldBeError)
-		So(obj.Compare(values.None), ShouldEqual, 0)
+		So(obj.Compare(core.None), ShouldEqual, 0)
 	})
 
 	Convey("When wrong type of arguments", t, func() {
-		obj, err := objects.Merge(context.Background(), values.NewInt(0))
+		obj, err := objects.Merge(context.Background(), core.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj.Compare(values.None), ShouldEqual, 0)
+		So(obj.Compare(core.None), ShouldEqual, 0)
 
-		obj, err = objects.Merge(context.Background(), values.NewObject(), values.NewInt(0))
+		obj, err = objects.Merge(context.Background(), internal.NewObject(), core.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj.Compare(values.None), ShouldEqual, 0)
+		So(obj.Compare(core.None), ShouldEqual, 0)
 	})
 
 	Convey("When too many arrays", t, func() {
-		obj, err := objects.Merge(context.Background(), values.NewArray(0), values.NewArray(0))
+		obj, err := objects.Merge(context.Background(), internal.NewArray(0), internal.NewArray(0))
 
 		So(err, ShouldBeError)
-		So(obj.Compare(values.None), ShouldEqual, 0)
+		So(obj.Compare(core.None), ShouldEqual, 0)
 	})
 
 	Convey("Merged object should be independent of source objects", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
 		)
-		obj2 := values.NewObjectWith(
-			values.NewObjectProperty("prop3", values.NewInt(3)),
+		obj2 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop3", core.NewInt(3)),
 		)
 
-		result := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
-			values.NewObjectProperty("prop3", values.NewInt(3)),
+		result := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
+			internal.NewObjectProperty("prop3", core.NewInt(3)),
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
 
 		So(err, ShouldBeNil)
 
-		obj1.Remove(values.NewString("prop1"))
+		obj1.Remove(core.NewString("prop1"))
 
 		So(merged.Compare(result), ShouldEqual, 0)
 	})
@@ -64,13 +65,13 @@ func TestMerge(t *testing.T) {
 
 func TestMergeObjects(t *testing.T) {
 	Convey("Merge single object", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
 		)
-		result := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
+		result := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1)
@@ -80,18 +81,18 @@ func TestMergeObjects(t *testing.T) {
 	})
 
 	Convey("Merge two objects", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
 		)
-		obj2 := values.NewObjectWith(
-			values.NewObjectProperty("prop3", values.NewInt(3)),
+		obj2 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop3", core.NewInt(3)),
 		)
 
-		result := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
-			values.NewObjectProperty("prop3", values.NewInt(3)),
+		result := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
+			internal.NewObjectProperty("prop3", core.NewInt(3)),
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -101,16 +102,16 @@ func TestMergeObjects(t *testing.T) {
 	})
 
 	Convey("When keys are repeated", t, func() {
-		obj1 := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
+		obj1 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
 		)
-		obj2 := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(3)),
+		obj2 := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(3)),
 		)
-		result := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(3)),
-			values.NewObjectProperty("prop2", values.NewString("str")),
+		result := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(3)),
+			internal.NewObjectProperty("prop2", core.NewString("str")),
 		)
 
 		merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -122,17 +123,17 @@ func TestMergeObjects(t *testing.T) {
 
 func TestMergeArray(t *testing.T) {
 	Convey("Merge array", t, func() {
-		objArr := values.NewArrayWith(
-			values.NewObjectWith(
-				values.NewObjectProperty("prop1", values.NewInt(1)),
+		objArr := internal.NewArrayWith(
+			internal.NewObjectWith(
+				internal.NewObjectProperty("prop1", core.NewInt(1)),
 			),
-			values.NewObjectWith(
-				values.NewObjectProperty("prop2", values.NewInt(2)),
+			internal.NewObjectWith(
+				internal.NewObjectProperty("prop2", core.NewInt(2)),
 			),
 		)
-		result := values.NewObjectWith(
-			values.NewObjectProperty("prop1", values.NewInt(1)),
-			values.NewObjectProperty("prop2", values.NewInt(2)),
+		result := internal.NewObjectWith(
+			internal.NewObjectProperty("prop1", core.NewInt(1)),
+			internal.NewObjectProperty("prop2", core.NewInt(2)),
 		)
 
 		merged, err := objects.Merge(context.Background(), objArr)
@@ -142,8 +143,8 @@ func TestMergeArray(t *testing.T) {
 	})
 
 	Convey("Merge empty array", t, func() {
-		objArr := values.NewArray(0)
-		result := values.NewObject()
+		objArr := internal.NewArray(0)
+		result := internal.NewObject()
 
 		merged, err := objects.Merge(context.Background(), objArr)
 
@@ -152,14 +153,14 @@ func TestMergeArray(t *testing.T) {
 	})
 
 	Convey("When there is not object element inside the array", t, func() {
-		objArr := values.NewArrayWith(
-			values.NewObject(),
-			values.NewInt(0),
+		objArr := internal.NewArrayWith(
+			internal.NewObject(),
+			core.NewInt(0),
 		)
 
 		obj, err := objects.Merge(context.Background(), objArr)
 
 		So(err, ShouldBeError)
-		So(obj.Compare(values.None), ShouldEqual, 0)
+		So(obj.Compare(core.None), ShouldEqual, 0)
 	})
 }

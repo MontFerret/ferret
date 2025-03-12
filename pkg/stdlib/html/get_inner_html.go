@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // INNER_HTML returns inner HTML string of a given or matched by CSS selector element
@@ -16,13 +15,13 @@ func GetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.EmptyString, err
+		return core.EmptyString, err
 	}
 
 	el, err := drivers.ToElement(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	if len(args) == 1 {
@@ -32,7 +31,7 @@ func GetInnerHTML(ctx context.Context, args ...core.Value) (core.Value, error) {
 	selector, err := drivers.ToQuerySelector(args[1])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return el.GetInnerHTMLBySelector(ctx, selector)

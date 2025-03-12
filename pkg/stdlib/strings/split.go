@@ -2,10 +2,10 @@ package strings
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // SPLIT splits the given string value into a list of strings, using the separator.
@@ -17,7 +17,7 @@ func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	text := args[0].String()
@@ -25,7 +25,7 @@ func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 	limit := -1
 
 	if len(args) > 2 {
-		args2, ok := args[2].(values.Int)
+		args2, ok := args[2].(core.Int)
 
 		if ok {
 			limit = int(args2)
@@ -40,10 +40,10 @@ func Split(_ context.Context, args ...core.Value) (core.Value, error) {
 		strs = strings.SplitN(text, separator, limit)
 	}
 
-	arr := values.NewArray(len(strs))
+	arr := internal.NewArray(len(strs))
 
 	for _, str := range strs {
-		arr.Push(values.NewString(str))
+		arr.Push(core.NewString(str))
 	}
 
 	return arr, nil

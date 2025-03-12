@@ -2,6 +2,7 @@ package dom
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 
 	"github.com/MontFerret/ferret/pkg/logging"
@@ -18,7 +19,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/templates"
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type HTMLDocument struct {
@@ -80,7 +80,7 @@ func (doc *HTMLDocument) Hash() uint64 {
 }
 
 func (doc *HTMLDocument) Copy() core.Value {
-	return values.None
+	return core.None
 }
 
 func (doc *HTMLDocument) Compare(other core.Value) int64 {
@@ -89,17 +89,17 @@ func (doc *HTMLDocument) Compare(other core.Value) int64 {
 		cdpDoc, ok := other.(*HTMLDocument)
 
 		if ok {
-			thisID := values.NewString(string(doc.Frame().Frame.ID))
-			otherID := values.NewString(string(cdpDoc.Frame().Frame.ID))
+			thisID := core.NewString(string(doc.Frame().Frame.ID))
+			otherID := core.NewString(string(cdpDoc.Frame().Frame.ID))
 
 			return thisID.Compare(otherID)
 		}
 
 		other := other.(drivers.HTMLDocument)
 
-		return values.NewString(doc.frameTree.Frame.URL).Compare(other.GetURL())
+		return core.NewString(doc.frameTree.Frame.URL).Compare(other.GetURL())
 	case FrameIDType:
-		return values.NewString(string(doc.frameTree.Frame.ID)).Compare(values.NewString(other.String()))
+		return core.NewString(string(doc.frameTree.Frame.ID)).Compare(core.NewString(other.String()))
 	default:
 		return drivers.CompareTypes(doc.Type(), other.Type())
 	}
@@ -125,19 +125,19 @@ func (doc *HTMLDocument) Frame() page.FrameTree {
 	return doc.frameTree
 }
 
-func (doc *HTMLDocument) GetNodeType(_ context.Context) (values.Int, error) {
+func (doc *HTMLDocument) GetNodeType(_ context.Context) (core.Int, error) {
 	return 9, nil
 }
 
-func (doc *HTMLDocument) GetNodeName(_ context.Context) (values.String, error) {
+func (doc *HTMLDocument) GetNodeName(_ context.Context) (core.String, error) {
 	return "#document", nil
 }
 
-func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*values.Array, error) {
+func (doc *HTMLDocument) GetChildNodes(ctx context.Context) (*internal.Array, error) {
 	return doc.element.GetChildNodes(ctx)
 }
 
-func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx values.Int) (core.Value, error) {
+func (doc *HTMLDocument) GetChildNode(ctx context.Context, idx core.Int) (core.Value, error) {
 	return doc.element.GetChildNode(ctx, idx)
 }
 
@@ -145,36 +145,36 @@ func (doc *HTMLDocument) QuerySelector(ctx context.Context, selector drivers.Que
 	return doc.element.QuerySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*values.Array, error) {
+func (doc *HTMLDocument) QuerySelectorAll(ctx context.Context, selector drivers.QuerySelector) (*internal.Array, error) {
 	return doc.element.QuerySelectorAll(ctx, selector)
 }
 
-func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Int, error) {
+func (doc *HTMLDocument) CountBySelector(ctx context.Context, selector drivers.QuerySelector) (core.Int, error) {
 	return doc.element.CountBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (values.Boolean, error) {
+func (doc *HTMLDocument) ExistsBySelector(ctx context.Context, selector drivers.QuerySelector) (core.Boolean, error) {
 	return doc.element.ExistsBySelector(ctx, selector)
 }
 
-func (doc *HTMLDocument) GetTitle() values.String {
+func (doc *HTMLDocument) GetTitle() core.String {
 	value, err := doc.eval.EvalValue(context.Background(), templates.GetTitle())
 
 	if err != nil {
 		doc.logError(errors.Wrap(err, "failed to read document title"))
 
-		return values.EmptyString
+		return core.EmptyString
 	}
 
-	return values.NewString(value.String())
+	return core.NewString(value.String())
 }
 
-func (doc *HTMLDocument) GetName() values.String {
+func (doc *HTMLDocument) GetName() core.String {
 	if doc.frameTree.Frame.Name != nil {
-		return values.NewString(*doc.frameTree.Frame.Name)
+		return core.NewString(*doc.frameTree.Frame.Name)
 	}
 
-	return values.EmptyString
+	return core.EmptyString
 }
 
 func (doc *HTMLDocument) GetParentDocument(ctx context.Context) (drivers.HTMLDocument, error) {
@@ -185,8 +185,8 @@ func (doc *HTMLDocument) GetParentDocument(ctx context.Context) (drivers.HTMLDoc
 	return doc.dom.GetFrameNode(ctx, *doc.frameTree.Frame.ParentID)
 }
 
-func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, error) {
-	arr := values.NewArray(len(doc.frameTree.ChildFrames))
+func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*internal.Array, error) {
+	arr := internal.NewArray(len(doc.frameTree.ChildFrames))
 
 	for _, childFrame := range doc.frameTree.ChildFrames {
 		frame, err := doc.dom.GetFrameNode(ctx, childFrame.Frame.ID)
@@ -203,11 +203,11 @@ func (doc *HTMLDocument) GetChildDocuments(ctx context.Context) (*values.Array, 
 	return arr, nil
 }
 
-func (doc *HTMLDocument) XPath(ctx context.Context, expression values.String) (core.Value, error) {
+func (doc *HTMLDocument) XPath(ctx context.Context, expression core.String) (core.Value, error) {
 	return doc.element.XPath(ctx, expression)
 }
 
-func (doc *HTMLDocument) Length() values.Int {
+func (doc *HTMLDocument) Length() core.Int {
 	return doc.element.Length()
 }
 
@@ -215,11 +215,11 @@ func (doc *HTMLDocument) GetElement() drivers.HTMLElement {
 	return doc.element
 }
 
-func (doc *HTMLDocument) GetURL() values.String {
-	return values.NewString(doc.frameTree.Frame.URL)
+func (doc *HTMLDocument) GetURL() core.String {
+	return core.NewString(doc.frameTree.Frame.URL)
 }
 
-func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y values.Float) error {
+func (doc *HTMLDocument) MoveMouseByXY(ctx context.Context, x, y core.Float) error {
 	return doc.input.MoveMouseByXY(ctx, x, y)
 }
 
@@ -235,7 +235,7 @@ func (doc *HTMLDocument) WaitForElement(ctx context.Context, selector drivers.Qu
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector drivers.QuerySelector, class core.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.eval,
 		templates.WaitForClassBySelector(doc.element.id, selector, class, when),
@@ -247,7 +247,7 @@ func (doc *HTMLDocument) WaitForClassBySelector(ctx context.Context, selector dr
 	return err
 }
 
-func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector drivers.QuerySelector, class values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForClassBySelectorAll(ctx context.Context, selector drivers.QuerySelector, class core.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.eval,
 		templates.WaitForClassBySelectorAll(doc.element.id, selector, class, when),
@@ -263,7 +263,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelector(
 	ctx context.Context,
 	selector drivers.QuerySelector,
 	name,
-	value values.String,
+	value core.String,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
@@ -281,7 +281,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	ctx context.Context,
 	selector drivers.QuerySelector,
 	name,
-	value values.String,
+	value core.String,
 	when drivers.WaitEvent,
 ) error {
 	task := events.NewEvalWaitTask(
@@ -295,7 +295,7 @@ func (doc *HTMLDocument) WaitForAttributeBySelectorAll(
 	return err
 }
 
-func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector drivers.QuerySelector, name, value values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector drivers.QuerySelector, name, value core.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.eval,
 		templates.WaitForStyleBySelector(doc.element.id, selector, name, value, when),
@@ -307,7 +307,7 @@ func (doc *HTMLDocument) WaitForStyleBySelector(ctx context.Context, selector dr
 	return err
 }
 
-func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector drivers.QuerySelector, name, value values.String, when drivers.WaitEvent) error {
+func (doc *HTMLDocument) WaitForStyleBySelectorAll(ctx context.Context, selector drivers.QuerySelector, name, value core.String, when drivers.WaitEvent) error {
 	task := events.NewEvalWaitTask(
 		doc.eval,
 		templates.WaitForStyleBySelectorAll(doc.element.id, selector, name, value, when),

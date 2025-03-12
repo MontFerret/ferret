@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"github.com/MontFerret/ferret/pkg/stdlib/io/fs"
 
@@ -19,26 +18,26 @@ func TestRead(t *testing.T) {
 		Convey("No arguments passed", func() {
 			out, err := fs.Read(context.Background())
 
-			So(out, ShouldEqual, values.None)
+			So(out, ShouldEqual, core.None)
 			So(err, ShouldBeError)
 		})
 
 		Convey("Passed not a string", func() {
-			args := []core.Value{values.NewInt(0)}
+			args := []core.Value{core.NewInt(0)}
 			out, err := fs.Read(context.Background(), args...)
 
-			So(out, ShouldEqual, values.None)
+			So(out, ShouldEqual, core.None)
 			So(err, ShouldBeError)
 		})
 
 		Convey("Passed more that one argument", func() {
 			args := []core.Value{
-				values.NewString("filepath"),
-				values.NewInt(0),
+				core.NewString("filepath"),
+				core.NewInt(0),
 			}
 			out, err := fs.Read(context.Background(), args...)
 
-			So(out, ShouldEqual, values.None)
+			So(out, ShouldEqual, core.None)
 			So(err, ShouldBeError)
 		})
 	})
@@ -52,7 +51,7 @@ func TestRead(t *testing.T) {
 			text := "s string"
 			file.WriteString(text)
 
-			fname := values.NewString(file.Name())
+			fname := core.NewString(file.Name())
 
 			out, err := fs.Read(context.Background(), fname)
 			So(err, ShouldBeNil)
@@ -62,10 +61,10 @@ func TestRead(t *testing.T) {
 		})
 
 		Convey("File does not exist", func() {
-			fname := values.NewString("not_exist.file")
+			fname := core.NewString("not_exist.file")
 
 			out, err := fs.Read(context.Background(), fname)
-			So(out, ShouldEqual, values.None)
+			So(out, ShouldEqual, core.None)
 			So(err, ShouldBeError)
 		})
 	})

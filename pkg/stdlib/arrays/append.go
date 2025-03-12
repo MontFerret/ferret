@@ -2,9 +2,9 @@ package arrays
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 // APPEND appends a new item to an array and returns a new array with a given element.
@@ -17,30 +17,30 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	err = values.AssertArray(args[0])
+	err = core.AssertList(args[0])
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	arr := args[0].(*values.Array)
+	arr := args[0].(*internal.Array)
 	arg := args[1]
-	unique := values.False
+	unique := core.False
 
 	if len(args) > 2 {
-		err = values.AssertBoolean(args[2])
+		err = core.AssertBoolean(args[2])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
-		unique = args[2].(values.Boolean)
+		unique = args[2].(core.Boolean)
 	}
 
-	next := values.NewArray(int(arr.Length()) + 1)
+	next := internal.NewArray(int(arr.Length()) + 1)
 
 	if !unique {
 		arr.ForEach(func(item core.Value, idx int) bool {
@@ -60,7 +60,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 		next.Push(item)
 
 		if !hasDuplicate {
-			hasDuplicate = values.Compare(item, arg) == 0
+			hasDuplicate = core.CompareValues(item, arg) == 0
 		}
 
 		return true

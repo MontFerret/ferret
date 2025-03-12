@@ -7,7 +7,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/events"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 type (
@@ -48,7 +47,7 @@ func (e *EventStream) Read(ctx context.Context) <-chan events.Message {
 					return
 				}
 
-				if val != nil && val != values.None {
+				if val != nil && val != core.None {
 					ch <- events.WithValue(val)
 				}
 			}

@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strings"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/cdp"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -57,16 +57,16 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	err = core.ValidateType(args[0], types.String)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
-	url := args[0].(values.String)
+	url := args[0].(core.String)
 
 	var params PageLoadParams
 
@@ -76,7 +76,7 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 		p, err := newPageLoadParams(url, args[1])
 
 		if err != nil {
-			return values.None, err
+			return core.None, err
 		}
 
 		params = p
@@ -88,13 +88,13 @@ func Open(ctx context.Context, args ...core.Value) (core.Value, error) {
 	drv, err := drivers.FromContext(ctx, params.Driver)
 
 	if err != nil {
-		return values.None, err
+		return core.None, err
 	}
 
 	return drv.Open(ctx, params.Params)
 }
 
-func newDefaultDocLoadParams(url values.String) PageLoadParams {
+func newDefaultDocLoadParams(url core.String) PageLoadParams {
 	return PageLoadParams{
 		Params: drivers.Params{
 			URL: url.String(),
@@ -103,7 +103,7 @@ func newDefaultDocLoadParams(url values.String) PageLoadParams {
 	}
 }
 
-func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error) {
+func newPageLoadParams(url core.String, arg core.Value) (PageLoadParams, error) {
 	res := newDefaultDocLoadParams(url)
 
 	if err := core.ValidateType(arg, types.Boolean, types.String, types.Object); err != nil {
@@ -112,29 +112,29 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 
 	switch arg.Type() {
 	case types.Object:
-		obj := arg.(*values.Object)
+		obj := arg.(*internal.Object)
 
-		driver, exists := obj.Get(values.NewString("driver"))
+		driver, exists := obj.Get(core.NewString("driver"))
 
 		if exists {
 			if err := core.ValidateType(driver, types.String); err != nil {
 				return res, err
 			}
 
-			res.Driver = driver.(values.String).String()
+			res.Driver = driver.(core.String).String()
 		}
 
-		timeout, exists := obj.Get(values.NewString("timeout"))
+		timeout, exists := obj.Get(core.NewString("timeout"))
 
 		if exists {
 			if err := core.ValidateType(timeout, types.Int); err != nil {
 				return res, err
 			}
 
-			res.Timeout = time.Duration(timeout.(values.Int)) * time.Millisecond
+			res.Timeout = time.Duration(timeout.(core.Int)) * time.Millisecond
 		}
 
-		userAgent, exists := obj.Get(values.NewString("userAgent"))
+		userAgent, exists := obj.Get(core.NewString("userAgent"))
 
 		if exists {
 			if err := core.ValidateType(userAgent, types.String); err != nil {
@@ -144,17 +144,17 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.UserAgent = userAgent.String()
 		}
 
-		keepCookies, exists := obj.Get(values.NewString("keepCookies"))
+		keepCookies, exists := obj.Get(core.NewString("keepCookies"))
 
 		if exists {
 			if err := core.ValidateType(keepCookies, types.Boolean); err != nil {
 				return res, err
 			}
 
-			res.KeepCookies = bool(keepCookies.(values.Boolean))
+			res.KeepCookies = bool(keepCookies.(core.Boolean))
 		}
 
-		cookies, exists := obj.Get(values.NewString("cookies"))
+		cookies, exists := obj.Get(core.NewString("cookies"))
 
 		if exists {
 			if err := core.ValidateType(cookies, types.Array, types.Object); err != nil {
@@ -162,7 +162,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			}
 
 			switch c := cookies.(type) {
-			case *values.Array:
+			case *internal.Array:
 				cookies, err := parseCookieArray(c)
 
 				if err != nil {
@@ -170,7 +170,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 				}
 
 				res.Cookies = cookies
-			case *values.Object:
+			case *internal.Object:
 				cookies, err := parseCookieObject(c)
 
 				if err != nil {
@@ -183,18 +183,18 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			}
 		}
 
-		headers, exists := obj.Get(values.NewString("headers"))
+		headers, exists := obj.Get(core.NewString("headers"))
 
 		if exists {
 			if err := core.ValidateType(headers, types.Object); err != nil {
 				return res, err
 			}
 
-			header := parseHeader(headers.(*values.Object))
+			header := parseHeader(headers.(*internal.Object))
 			res.Headers = header
 		}
 
-		viewport, exists := obj.Get(values.NewString("viewport"))
+		viewport, exists := obj.Get(core.NewString("viewport"))
 
 		if exists {
 			viewport, err := parseViewport(viewport)
@@ -206,7 +206,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.Viewport = viewport
 		}
 
-		ignore, exists := obj.Get(values.NewString("ignore"))
+		ignore, exists := obj.Get(core.NewString("ignore"))
 
 		if exists {
 			ignore, err := parseIgnore(ignore)
@@ -218,7 +218,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.Ignore = ignore
 		}
 
-		charset, exists := obj.Get(values.NewString("charset"))
+		charset, exists := obj.Get(core.NewString("charset"))
 
 		if exists {
 			if err := core.ValidateType(charset, types.String); err != nil {
@@ -228,9 +228,9 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 			res.Charset = charset.String()
 		}
 	case types.String:
-		res.Driver = arg.(values.String).String()
+		res.Driver = arg.(core.String).String()
 	case types.Boolean:
-		b := arg.(values.Boolean)
+		b := arg.(core.Boolean)
 
 		// fallback
 		if b {
@@ -241,7 +241,7 @@ func newPageLoadParams(url values.String, arg core.Value) (PageLoadParams, error
 	return res, nil
 }
 
-func parseCookieObject(obj *values.Object) (*drivers.HTTPCookies, error) {
+func parseCookieObject(obj *internal.Object) (*drivers.HTTPCookies, error) {
 	if obj == nil {
 		return nil, errors.Wrap(core.ErrMissedArgument, "cookies")
 	}
@@ -266,7 +266,7 @@ func parseCookieObject(obj *values.Object) (*drivers.HTTPCookies, error) {
 	return res, err
 }
 
-func parseCookieArray(arr *values.Array) (*drivers.HTTPCookies, error) {
+func parseCookieArray(arr *internal.Array) (*drivers.HTTPCookies, error) {
 	if arr == nil {
 		return nil, errors.Wrap(core.ErrMissedArgument, "cookies")
 	}
@@ -302,7 +302,7 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 		return value.(drivers.HTTPCookie), nil
 	}
 
-	co := value.(*values.Object)
+	co := value.(*internal.Object)
 
 	cookie := drivers.HTTPCookie{
 		Name:   co.MustGet("name").String(),
@@ -318,7 +318,7 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 			return drivers.HTTPCookie{}, err
 		}
 
-		cookie.MaxAge = int(maxAge.(values.Int))
+		cookie.MaxAge = int(maxAge.(core.Int))
 	}
 
 	expires, exists := co.Get("expires")
@@ -329,9 +329,9 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 		}
 
 		if expires.Type() == types.DateTime {
-			cookie.Expires = expires.(values.DateTime).Unwrap().(time.Time)
+			cookie.Expires = expires.(core.DateTime).Unwrap().(time.Time)
 		} else {
-			t, err := time.Parse(values.DefaultTimeLayout, expires.String())
+			t, err := time.Parse(core.DefaultTimeLayout, expires.String())
 
 			if err != nil {
 				return drivers.HTTPCookie{}, err
@@ -363,7 +363,7 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 			return drivers.HTTPCookie{}, err
 		}
 
-		cookie.HTTPOnly = bool(httpOnly.(values.Boolean))
+		cookie.HTTPOnly = bool(httpOnly.(core.Boolean))
 	}
 
 	secure, exists := co.Get("secure")
@@ -373,18 +373,18 @@ func parseCookie(value core.Value) (drivers.HTTPCookie, error) {
 			return drivers.HTTPCookie{}, err
 		}
 
-		cookie.Secure = bool(secure.(values.Boolean))
+		cookie.Secure = bool(secure.(core.Boolean))
 	}
 
 	return cookie, err
 }
 
-func parseHeader(headers *values.Object) *drivers.HTTPHeaders {
+func parseHeader(headers *internal.Object) *drivers.HTTPHeaders {
 	res := drivers.NewHTTPHeaders()
 
 	headers.ForEach(func(value core.Value, key string) bool {
 		if value.Type() == types.Array {
-			value := value.(*values.Array)
+			value := value.(*internal.Array)
 
 			keyValues := make([]string, 0, value.Length())
 
@@ -412,44 +412,44 @@ func parseViewport(value core.Value) (*drivers.Viewport, error) {
 
 	res := &drivers.Viewport{}
 
-	viewport := value.(*values.Object)
+	viewport := value.(*internal.Object)
 
-	width, exists := viewport.Get(values.NewString("width"))
+	width, exists := viewport.Get(core.NewString("width"))
 
 	if exists {
 		if err := core.ValidateType(width, types.Int); err != nil {
 			return nil, err
 		}
 
-		res.Width = int(values.ToInt(width))
+		res.Width = int(internal.ToInt(width))
 	}
 
-	height, exists := viewport.Get(values.NewString("height"))
+	height, exists := viewport.Get(core.NewString("height"))
 
 	if exists {
 		if err := core.ValidateType(height, types.Int); err != nil {
 			return nil, err
 		}
 
-		res.Height = int(values.ToInt(height))
+		res.Height = int(internal.ToInt(height))
 	}
 
-	mobile, exists := viewport.Get(values.NewString("mobile"))
+	mobile, exists := viewport.Get(core.NewString("mobile"))
 
 	if exists {
-		res.Mobile = bool(values.ToBoolean(mobile))
+		res.Mobile = bool(internal.ToBoolean(mobile))
 	}
 
-	landscape, exists := viewport.Get(values.NewString("landscape"))
+	landscape, exists := viewport.Get(core.NewString("landscape"))
 
 	if exists {
-		res.Landscape = bool(values.ToBoolean(landscape))
+		res.Landscape = bool(internal.ToBoolean(landscape))
 	}
 
-	scaleFactor, exists := viewport.Get(values.NewString("scaleFactor"))
+	scaleFactor, exists := viewport.Get(core.NewString("scaleFactor"))
 
 	if exists {
-		res.ScaleFactor = float64(values.ToFloat(scaleFactor))
+		res.ScaleFactor = float64(internal.ToFloat(scaleFactor))
 	}
 
 	return res, nil
@@ -462,7 +462,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 
 	res := &drivers.Ignore{}
 
-	ignore := value.(*values.Object)
+	ignore := value.(*internal.Object)
 
 	resources, exists := ignore.Get("resources")
 
@@ -471,7 +471,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 			return nil, err
 		}
 
-		resources := resources.(*values.Array)
+		resources := resources.(*internal.Array)
 
 		res.Resources = make([]drivers.ResourceFilter, 0, resources.Length())
 
@@ -482,7 +482,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 				return false
 			}
 
-			pattern := el.(*values.Object)
+			pattern := el.(*internal.Object)
 
 			url, urlExists := pattern.Get("url")
 			resType, resTypeExists := pattern.Get("type")
@@ -512,7 +512,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 			return nil, err
 		}
 
-		statusCodes := statusCodes.(*values.Array)
+		statusCodes := statusCodes.(*internal.Array)
 
 		res.StatusCodes = make([]drivers.StatusCodeFilter, 0, statusCodes.Length())
 
@@ -523,9 +523,9 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 				return false
 			}
 
-			pattern := el.(*values.Object)
+			pattern := el.(*internal.Object)
 
-			url := pattern.MustGetOr("url", values.NewString(""))
+			url := pattern.MustGetOr("url", core.NewString(""))
 			code, codeExists := pattern.Get("code")
 
 			// ignore element
@@ -536,7 +536,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 
 			res.StatusCodes = append(res.StatusCodes, drivers.StatusCodeFilter{
 				URL:  url.String(),
-				Code: int(values.ToInt(code)),
+				Code: int(internal.ToInt(code)),
 			})
 
 			return true

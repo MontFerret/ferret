@@ -8,7 +8,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values"
 )
 
 func TestNamespaceBuilder(t *testing.T) {
@@ -16,7 +15,7 @@ func TestNamespaceBuilder(t *testing.T) {
 		Convey("Should return an error when a function name contains NS separator", func() {
 			c := compiler.New()
 			err := c.RegisterFunction("FOO::SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
-				return values.None, nil
+				return core.None, nil
 			})
 
 			So(err, ShouldNotBeNil)
@@ -25,7 +24,7 @@ func TestNamespaceBuilder(t *testing.T) {
 		Convey("Should successfully register a name within a namespace", func() {
 			c := compiler.New()
 			err := c.Namespace("FOO").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
-				return values.None, nil
+				return core.None, nil
 			})
 
 			So(err, ShouldBeNil)
@@ -48,7 +47,7 @@ func TestNamespaceBuilder(t *testing.T) {
 		Convey("Root namespace should return all registered functions", func() {
 			c := compiler.New()
 			err := c.Namespace("FOO").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
-				return values.None, nil
+				return core.None, nil
 			})
 
 			So(err, ShouldBeNil)
@@ -61,13 +60,13 @@ func TestNamespaceBuilder(t *testing.T) {
 		Convey("Namespace should return all registered functions", func() {
 			c := compiler.New()
 			err := c.Namespace("FOO").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
-				return values.None, nil
+				return core.None, nil
 			})
 
 			So(err, ShouldBeNil)
 
 			err = c.Namespace("FOO").Namespace("UTILS").RegisterFunction("SPY", func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
-				return values.None, nil
+				return core.None, nil
 			})
 
 			So(err, ShouldBeNil)
@@ -84,7 +83,7 @@ func TestNamespaceBuilder(t *testing.T) {
 		Convey("Namespace should return an error if namespace name is incorrect", func() {
 			c := compiler.New()
 			noop := func(ctx context.Context, args ...core.Value) (value core.Value, e error) {
-				return values.None, nil
+				return core.None, nil
 			}
 			err := c.Namespace("FOO::").RegisterFunction("SPY", noop)
 
