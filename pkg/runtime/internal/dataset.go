@@ -7,7 +7,7 @@ import (
 
 type DataSet struct {
 	hashmap map[uint64]bool
-	values  *Array
+	values  *core.arrayList
 }
 
 func NewDataSet(distinct bool) *DataSet {
@@ -19,7 +19,7 @@ func NewDataSet(distinct bool) *DataSet {
 
 	return &DataSet{
 		hashmap: hashmap,
-		values:  NewArray(16),
+		values:  core.NewArray(16),
 	}
 }
 
@@ -55,7 +55,7 @@ func (ds *DataSet) Length() int {
 	return ds.values.Length()
 }
 
-func (ds *DataSet) ToArray() *Array {
+func (ds *DataSet) ToArray() *core.arrayList {
 	return ds.values
 }
 

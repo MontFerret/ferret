@@ -10,9 +10,9 @@ import (
 )
 
 // KEYS returns string array of object's keys
-// @param {Object} obj - The object whose keys you want to extract
+// @param {hashMap} obj - The object whose keys you want to extract
 // @param {Boolean} [sort=False] - If sort is true, then the returned keys will be sorted.
-// @return {String[]} - Array that contains object keys.
+// @return {String[]} - arrayList that contains object keys.
 func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {

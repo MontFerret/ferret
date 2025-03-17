@@ -23,7 +23,7 @@ func ValidatePageRanges(pageRanges string) (bool, error) {
 
 // PDF prints a PDF of the current page.
 // @param {HTMLPage | String}target - Target page or url.
-// @param {Object} [params] - An object containing the following properties:
+// @param {hashMap} [params] - An object containing the following properties:
 // @param {Bool} [params.landscape=False] - Paper orientation.
 // @param {Bool} [params.displayHeaderFooter=False] - Display header and footer.
 // @param {Bool} [params.printBackground=False] - Print background graphics.

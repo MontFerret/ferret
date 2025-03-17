@@ -8,7 +8,6 @@ import (
 // any type that needs to be used during runtime
 type Value interface {
 	json.Marshaler
-	Type() string
 	String() string
 	Unwrap() interface{}
 	Hash() uint64

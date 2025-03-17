@@ -2,7 +2,6 @@ package core_test
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -42,8 +41,8 @@ func TestBoolean(t *testing.T) {
 				NewString("foo"),
 				NewInt(1),
 				NewFloat(1.1),
-				internal.NewArray(10),
-				internal.NewObject(),
+				core.NewArray(10),
+				core.NewObject(),
 			}
 
 			for _, v := range vals {

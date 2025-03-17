@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/logging"
@@ -16,7 +15,7 @@ func WithParams(params map[string]core.Value) EnvironmentOption {
 
 func WithParam(name string, value interface{}) EnvironmentOption {
 	return func(options *Environment) {
-		options.params[name] = internal.Parse(value)
+		options.params[name] = core.Parse(value)
 	}
 }
 

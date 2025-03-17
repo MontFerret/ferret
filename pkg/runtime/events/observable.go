@@ -2,8 +2,6 @@ package events
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -12,7 +10,7 @@ type (
 	// and optional event options.
 	Subscription struct {
 		EventName string
-		Options   *internal.Object
+		Options   *core.hashMap
 	}
 
 	// Message represents an event message that an Observable can emit.

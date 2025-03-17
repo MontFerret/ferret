@@ -11,7 +11,7 @@ import (
 
 // SCREENSHOT takes a screenshot of a given page.
 // @param {HTMLPage|String} target - Target page or url.
-// @param {Object} [params] - An object containing the following properties :
+// @param {hashMap} [params] - An object containing the following properties :
 // @param {Float | Int} [params.x=0] - X position of the viewport.
 // @param {Float | Int} [params.y=0] - Y position of the viewport.
 // @param {Float | Int} [params.width] - Width of the viewport.

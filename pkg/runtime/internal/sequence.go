@@ -7,17 +7,17 @@ import (
 
 type (
 	Sequence struct {
-		data *Array
+		data *core.arrayList
 	}
 
 	sequenceIterator struct {
-		data   *Array
+		data   *core.arrayList
 		length int
 		pos    int
 	}
 )
 
-func NewSequence(data *Array) *Sequence {
+func NewSequence(data *core.arrayList) *Sequence {
 	return &Sequence{data}
 }
 

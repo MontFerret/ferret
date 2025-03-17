@@ -7,13 +7,13 @@ type (
 		Get(ctx context.Context, idx Int) (Value, error)
 	}
 
-	IndexedPredicate = func(ctx context.Context, value Value, idx Int) (bool, error)
+	IndexedPredicate = func(ctx context.Context, value Value, idx Int) (Boolean, error)
 
 	Keyed interface {
 		Get(ctx context.Context, key Value) (Value, error)
 	}
 
-	KeyedPredicate = func(ctx context.Context, value, key Value) (bool, error)
+	KeyedPredicate = func(ctx context.Context, value, key Value) (Boolean, error)
 
 	// Collection represents a collection of values.
 	// Generic interface for all collection-like structures.
@@ -24,7 +24,7 @@ type (
 		Cloneable
 		Iterable
 
-		IsEmpty(ctx context.Context) (bool, error)
+		IsEmpty(ctx context.Context) (Boolean, error)
 		Clear(ctx context.Context) error
 	}
 

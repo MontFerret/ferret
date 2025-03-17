@@ -82,7 +82,7 @@ func GetInnerHTMLBySelector(id runtime.RemoteObjectID, selector drivers.QuerySel
 const getInnerHTMLByCSSSelectorAll = `(el, selector) => {
 	const found = el.querySelectorAll(selector);
 
-	return Array.from(found).map(i => i.innerHTML);
+	return arrayList.from(found).map(i => i.innerHTML);
 }`
 
 var getInnerHTMLByXPathSelectorAll = fmt.Sprintf(`(el, selector) => {

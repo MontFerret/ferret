@@ -10,7 +10,7 @@ import (
 
 // STYLE_SET sets or updates a single or more style attribute value of a given element.
 // @param {HTMLElement} element - Target html element.
-// @param {String | Object} nameOrObj - Style name or an object representing a key-value pair of attributes.
+// @param {String | hashMap} nameOrObj - Style name or an object representing a key-value pair of attributes.
 // @param {String} value - If a second parameter is a string value, this parameter represent a style value.
 func StyleSet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)

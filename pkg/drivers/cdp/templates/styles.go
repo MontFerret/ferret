@@ -12,7 +12,7 @@ const getStyles = `(el) => {
 	const out = {};
 	const styles = window.getComputedStyle(el);
 
-	Object.keys(styles).forEach((key) => {
+	hashMap.keys(styles).forEach((key) => {
 		if (!isNaN(parseFloat(key))) {
 			const name = styles[key];
 			const value = styles.getPropertyValue(name);
@@ -46,7 +46,7 @@ func SetStyle(id runtime.RemoteObjectID, name, value core.String) *eval.Function
 }
 
 const setStyles = `(el, values) => {
-	Object.keys(values).forEach((key) => {
+	hashMap.keys(values).forEach((key) => {
 		el.style[key] = values[key]
 	});
 }`

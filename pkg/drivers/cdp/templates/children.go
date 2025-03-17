@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 )
 
-const getChildren = "(el) => Array.from(el.children)"
+const getChildren = "(el) => arrayList.from(el.children)"
 
 func GetChildren(id runtime.RemoteObjectID) *eval.Function {
 	return eval.F(getChildren).WithArgRef(id)

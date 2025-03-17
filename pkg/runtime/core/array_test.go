@@ -1,28 +1,26 @@
-package internal_test
+package core_test
 
 import (
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 func TestArray(t *testing.T) {
 	Convey("#constructor", t, func() {
 		Convey("Should create an empty array", func() {
-			arr := internal.NewArray(10)
+			arr := core.NewArray(10)
 
 			So(arr.Length(), ShouldEqual, 0)
 		})
 
 		Convey("Should create an array, from passed values", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
+			arr := core.NewArrayWith(
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
 			)
 
 			So(arr.Length(), ShouldEqual, 3)
@@ -31,7 +29,7 @@ func TestArray(t *testing.T) {
 
 	Convey(".MarshalJSON", t, func() {
 		Convey("Should serialize empty array", func() {
-			arr := internal.NewArray(10)
+			arr := core.NewArray(10)
 			marshaled, err := arr.MarshalJSON()
 
 			So(err, ShouldBeNil)
@@ -40,10 +38,10 @@ func TestArray(t *testing.T) {
 		})
 
 		Convey("Should serialize full array", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
+			arr := core.NewArrayWith(
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
 			)
 			marshaled, err := json.Marshal(arr)
 
@@ -55,9 +53,9 @@ func TestArray(t *testing.T) {
 
 	Convey(".Unwrap", t, func() {
 		Convey("Should return a an array of unwrapped values", func() {
-			arr := internal.NewArrayWith(
-				core.ZeroInt,
-				core.ZeroInt,
+			arr := core.NewArrayWith(
+				ZeroInt,
+				ZeroInt,
 			)
 
 			for _, val := range arr.Unwrap().([]interface{}) {
@@ -68,7 +66,7 @@ func TestArray(t *testing.T) {
 
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
-			arr := internal.NewArrayWith(core.ZeroInt, core.ZeroInt)
+			arr := core.NewArrayWith(ZeroInt, ZeroInt)
 
 			So(arr.String(), ShouldEqual, "[0,0]")
 		})
@@ -76,69 +74,69 @@ func TestArray(t *testing.T) {
 
 	Convey(".CompareValues", t, func() {
 		Convey("It should return 1 for all non-array and non-object values", func() {
-			arr := internal.NewArrayWith(core.ZeroInt, core.ZeroInt)
+			arr := core.NewArrayWith(ZeroInt, ZeroInt)
 
-			So(arr.Compare(core.None), ShouldEqual, 1)
-			So(arr.Compare(core.ZeroInt), ShouldEqual, 1)
-			So(arr.Compare(core.ZeroFloat), ShouldEqual, 1)
-			So(arr.Compare(core.EmptyString), ShouldEqual, 1)
+			So(arr.Compare(None), ShouldEqual, 1)
+			So(arr.Compare(ZeroInt), ShouldEqual, 1)
+			So(arr.Compare(ZeroFloat), ShouldEqual, 1)
+			So(arr.Compare(EmptyString), ShouldEqual, 1)
 		})
 
 		Convey("It should return -1 for all object values", func() {
-			arr := internal.NewArrayWith(core.ZeroInt, core.ZeroInt)
-			obj := internal.NewObject()
+			arr := core.NewArrayWith(ZeroInt, ZeroInt)
+			obj := core.NewObject()
 
 			So(arr.Compare(obj), ShouldEqual, -1)
 		})
 
 		Convey("It should return 0 when both arrays are empty", func() {
-			arr1 := internal.NewArray(1)
-			arr2 := internal.NewArray(1)
+			arr1 := core.NewArray(1)
+			arr2 := core.NewArray(1)
 
 			So(arr1.Compare(arr2), ShouldEqual, 0)
 		})
 
 		Convey("It should return 1 when other array is empty", func() {
-			arr1 := internal.NewArrayWith(core.ZeroFloat)
-			arr2 := internal.NewArray(1)
+			arr1 := core.NewArrayWith(ZeroFloat)
+			arr2 := core.NewArray(1)
 
 			So(arr1.Compare(arr2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 1 when values are bigger", func() {
-			arr1 := internal.NewArrayWith(core.NewInt(1))
-			arr2 := internal.NewArrayWith(core.ZeroInt)
+			arr1 := core.NewArrayWith(NewInt(1))
+			arr2 := core.NewArrayWith(ZeroInt)
 
 			So(arr1.Compare(arr2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 0 when arrays are equal", func() {
 			Convey("When only simple types are nested", func() {
-				arr1 := internal.NewArrayWith(
-					core.NewInt(0), core.NewString("str"),
+				arr1 := core.NewArrayWith(
+					NewInt(0), NewString("str"),
 				)
-				arr2 := internal.NewArrayWith(
-					core.NewInt(0), core.NewString("str"),
+				arr2 := core.NewArrayWith(
+					NewInt(0), NewString("str"),
 				)
 
 				So(arr1.Compare(arr2), ShouldEqual, 0)
 			})
 
 			Convey("When object and array are nested at the same time", func() {
-				arr1 := internal.NewArrayWith(
-					internal.NewObjectWith(
-						internal.NewObjectProperty("one", core.NewInt(1)),
+				arr1 := core.NewArrayWith(
+					core.NewObjectWith(
+						core.NewObjectProperty("one", NewInt(1)),
 					),
-					internal.NewArrayWith(
-						core.NewInt(2),
+					core.NewArrayWith(
+						NewInt(2),
 					),
 				)
-				arr2 := internal.NewArrayWith(
-					internal.NewObjectWith(
-						internal.NewObjectProperty("one", core.NewInt(1)),
+				arr2 := core.NewArrayWith(
+					core.NewObjectWith(
+						core.NewObjectProperty("one", NewInt(1)),
 					),
-					internal.NewArrayWith(
-						core.NewInt(2),
+					core.NewArrayWith(
+						NewInt(2),
 					),
 				)
 
@@ -146,14 +144,14 @@ func TestArray(t *testing.T) {
 			})
 
 			Convey("When only objects are nested", func() {
-				arr1 := internal.NewArrayWith(
-					internal.NewObjectWith(
-						internal.NewObjectProperty("one", core.NewInt(1)),
+				arr1 := core.NewArrayWith(
+					core.NewObjectWith(
+						core.NewObjectProperty("one", NewInt(1)),
 					),
 				)
-				arr2 := internal.NewArrayWith(
-					internal.NewObjectWith(
-						internal.NewObjectProperty("one", core.NewInt(1)),
+				arr2 := core.NewArrayWith(
+					core.NewObjectWith(
+						core.NewObjectProperty("one", NewInt(1)),
 					),
 				)
 
@@ -161,14 +159,14 @@ func TestArray(t *testing.T) {
 			})
 
 			Convey("When only arrays are nested", func() {
-				arr1 := internal.NewArrayWith(
-					internal.NewArrayWith(
-						core.NewInt(2),
+				arr1 := core.NewArrayWith(
+					core.NewArrayWith(
+						NewInt(2),
 					),
 				)
-				arr2 := internal.NewArrayWith(
-					internal.NewArrayWith(
-						core.NewInt(2),
+				arr2 := core.NewArrayWith(
+					core.NewArrayWith(
+						NewInt(2),
 					),
 				)
 
@@ -176,22 +174,22 @@ func TestArray(t *testing.T) {
 			})
 
 			Convey("When simple and complex types at the same time", func() {
-				arr1 := internal.NewArrayWith(
-					core.NewInt(0),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("one", core.NewInt(1)),
+				arr1 := core.NewArrayWith(
+					NewInt(0),
+					core.NewObjectWith(
+						core.NewObjectProperty("one", NewInt(1)),
 					),
-					internal.NewArrayWith(
-						core.NewInt(2),
+					core.NewArrayWith(
+						NewInt(2),
 					),
 				)
-				arr2 := internal.NewArrayWith(
-					core.NewInt(0),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("one", core.NewInt(1)),
+				arr2 := core.NewArrayWith(
+					NewInt(0),
+					core.NewObjectWith(
+						core.NewObjectProperty("one", NewInt(1)),
 					),
-					internal.NewArrayWith(
-						core.NewInt(2),
+					core.NewArrayWith(
+						NewInt(2),
 					),
 				)
 
@@ -199,17 +197,17 @@ func TestArray(t *testing.T) {
 			})
 
 			Convey("When custom complex type", func() {
-				arr1 := internal.NewArrayWith(
-					internal.NewObjectWith(
-						internal.NewObjectProperty(
-							"arr", internal.NewArrayWith(internal.NewObject()),
+				arr1 := core.NewArrayWith(
+					core.NewObjectWith(
+						core.NewObjectProperty(
+							"arr", core.NewArrayWith(core.NewObject()),
 						),
 					),
 				)
-				arr2 := internal.NewArrayWith(
-					internal.NewObjectWith(
-						internal.NewObjectProperty(
-							"arr", internal.NewArrayWith(internal.NewObject()),
+				arr2 := core.NewArrayWith(
+					core.NewObjectWith(
+						core.NewObjectProperty(
+							"arr", core.NewArrayWith(core.NewObject()),
 						),
 					),
 				)
@@ -221,10 +219,10 @@ func TestArray(t *testing.T) {
 
 	Convey(".Hash", t, func() {
 		Convey("It should calculate hash of non-empty array", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
+			arr := core.NewArrayWith(
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
 			)
 
 			h := arr.Hash()
@@ -233,7 +231,7 @@ func TestArray(t *testing.T) {
 		})
 
 		Convey("It should calculate hash of empty array", func() {
-			arr := internal.NewArrayWith()
+			arr := core.NewArrayWith()
 
 			h := arr.Hash()
 
@@ -241,14 +239,14 @@ func TestArray(t *testing.T) {
 		})
 
 		Convey("Hash sum should be consistent", func() {
-			arr := internal.NewArrayWith(
-				core.True,
-				core.NewInt(1),
-				core.NewFloat(1.1),
-				core.NewString("foobar"),
-				core.NewCurrentDateTime(),
-				internal.NewArrayWith(core.NewInt(1), core.True),
-				internal.NewObjectWith(internal.NewObjectProperty("foo", core.NewString("bar"))),
+			arr := core.NewArrayWith(
+				True,
+				NewInt(1),
+				NewFloat(1.1),
+				NewString("foobar"),
+				NewCurrentDateTime(),
+				core.NewArrayWith(NewInt(1), True),
+				core.NewObjectWith(core.NewObjectProperty("foo", NewString("bar"))),
 			)
 
 			h1 := arr.Hash()
@@ -260,13 +258,13 @@ func TestArray(t *testing.T) {
 
 	Convey(".Length", t, func() {
 		Convey("Should return 0 when empty", func() {
-			arr := internal.NewArray(1)
+			arr := core.NewArray(1)
 
 			So(arr.Length(), ShouldEqual, 0)
 		})
 
 		Convey("Should return greater than 0 when not empty", func() {
-			arr := internal.NewArrayWith(core.ZeroInt, core.ZeroInt)
+			arr := core.NewArrayWith(ZeroInt, ZeroInt)
 
 			So(arr.Length(), ShouldEqual, 2)
 		})
@@ -274,14 +272,14 @@ func TestArray(t *testing.T) {
 
 	Convey(".ForEach", t, func() {
 		Convey("Should iterate over elements", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
+			arr := core.NewArrayWith(
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
 			)
 			counter := 0
 
-			arr.ForEach(func(value core.Value, idx int) bool {
+			arr.ForEach(func(value Value, idx int) bool {
 				counter++
 
 				return true
@@ -291,10 +289,10 @@ func TestArray(t *testing.T) {
 		})
 
 		Convey("Should not iterate when empty", func() {
-			arr := internal.NewArrayWith()
+			arr := core.NewArrayWith()
 			counter := 0
 
-			arr.ForEach(func(value core.Value, idx int) bool {
+			arr.ForEach(func(value Value, idx int) bool {
 				counter++
 
 				return true
@@ -360,9 +358,9 @@ func TestArray(t *testing.T) {
 		//})
 
 		Convey("Should return an error when index is out of bounds", func() {
-			arr := internal.NewArray(10)
+			arr := core.NewArray(10)
 
-			err := arr.Set(0, core.NewInt(1))
+			err := arr.Set(0, NewInt(1))
 
 			So(err, ShouldNotBeNil)
 			So(arr.Length(), ShouldEqual, 0)
@@ -371,14 +369,14 @@ func TestArray(t *testing.T) {
 
 	Convey(".Push", t, func() {
 		Convey("Should add an item", func() {
-			arr := internal.NewArray(10)
+			arr := core.NewArray(10)
 
-			src := []core.Value{
-				core.ZeroInt,
-				core.ZeroInt,
-				core.ZeroInt,
-				core.ZeroInt,
-				core.ZeroInt,
+			src := []Value{
+				ZeroInt,
+				ZeroInt,
+				ZeroInt,
+				ZeroInt,
+				ZeroInt,
 			}
 
 			for _, val := range src {
@@ -413,18 +411,18 @@ func TestArray(t *testing.T) {
 
 	Convey(".Insert", t, func() {
 		Convey("Should insert an item in the middle of an array", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(0),
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
-				core.NewInt(4),
-				core.NewInt(5),
+			arr := core.NewArrayWith(
+				NewInt(0),
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
+				NewInt(4),
+				NewInt(5),
 			)
 
 			lenBefore := arr.Length()
 
-			arr.Insert(3, core.NewInt(100))
+			arr.Insert(3, NewInt(100))
 
 			lenAfter := arr.Length()
 
@@ -435,13 +433,13 @@ func TestArray(t *testing.T) {
 
 	Convey(".RemoveAt", t, func() {
 		Convey("Should remove an item from the middle", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(0),
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
-				core.NewInt(4),
-				core.NewInt(5),
+			arr := core.NewArrayWith(
+				NewInt(0),
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
+				NewInt(4),
+				NewInt(5),
 			)
 
 			lenBefore := arr.Length()
@@ -455,13 +453,13 @@ func TestArray(t *testing.T) {
 		})
 
 		Convey("Should remove an item from the end", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(0),
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
-				core.NewInt(4),
-				core.NewInt(5),
+			arr := core.NewArrayWith(
+				NewInt(0),
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
+				NewInt(4),
+				NewInt(5),
 			)
 
 			lenBefore := arr.Length()
@@ -476,13 +474,13 @@ func TestArray(t *testing.T) {
 		})
 
 		Convey("Should remove an item from the beginning", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(0),
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
-				core.NewInt(4),
-				core.NewInt(5),
+			arr := core.NewArrayWith(
+				NewInt(0),
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
+				NewInt(4),
+				NewInt(5),
 			)
 
 			lenBefore := arr.Length()
@@ -498,35 +496,35 @@ func TestArray(t *testing.T) {
 
 	Convey(".Clone", t, func() {
 		Convey("Cloned array should be equal to source array", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(0),
-				internal.NewObjectWith(
-					internal.NewObjectProperty("one", core.NewInt(1)),
+			arr := core.NewArrayWith(
+				NewInt(0),
+				core.NewObjectWith(
+					core.NewObjectProperty("one", NewInt(1)),
 				),
-				internal.NewArrayWith(
-					core.NewInt(2),
+				core.NewArrayWith(
+					NewInt(2),
 				),
 			)
 
-			clone := arr.Clone().(*internal.Array)
+			clone := arr.Clone().(*core.arrayList)
 
 			So(arr.Length(), ShouldEqual, clone.Length())
 			So(arr.Compare(clone), ShouldEqual, 0)
 		})
 
 		Convey("Cloned array should be independent of the source array", func() {
-			arr := internal.NewArrayWith(
-				core.NewInt(0),
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
-				core.NewInt(4),
-				core.NewInt(5),
+			arr := core.NewArrayWith(
+				NewInt(0),
+				NewInt(1),
+				NewInt(2),
+				NewInt(3),
+				NewInt(4),
+				NewInt(5),
 			)
 
-			clone := arr.Clone().(*internal.Array)
+			clone := arr.Clone().(*core.arrayList)
 
-			arr.Push(core.NewInt(6))
+			arr.Push(NewInt(6))
 
 			So(arr.Length(), ShouldNotEqual, clone.Length())
 			So(arr.Compare(clone), ShouldNotEqual, 0)
@@ -543,12 +541,12 @@ func TestArray(t *testing.T) {
 		//		),
 		//	)
 		//
-		//	clone := arr.Clone().(*values.Array)
+		//	clone := arr.Clone().(*values.arrayList)
 		//
-		//	nestedInArr := arr.Get(values.NewInt(0)).(*values.Array)
+		//	nestedInArr := arr.Get(values.NewInt(0)).(*values.arrayList)
 		//	nestedInArr.Push(values.NewInt(5))
 		//
-		//	nestedInClone := clone.Get(values.NewInt(0)).(*values.Array)
+		//	nestedInClone := clone.Get(values.NewInt(0)).(*values.arrayList)
 		//
 		//	So(nestedInArr.CompareValues(nestedInClone), ShouldNotEqual, 0)
 		//})

@@ -78,11 +78,11 @@ loop:
 		case OpJump:
 			vm.pc = int(dst)
 		case OpJumpIfFalse:
-			if !internal.ToBoolean(reg[src1]) {
+			if !core.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
 		case OpJumpIfTrue:
-			if internal.ToBoolean(reg[src1]) {
+			if core.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
 		case OpJumpIfEmpty:
@@ -117,17 +117,17 @@ loop:
 		case OpDecr:
 			reg[dst] = internal.Decrement(reg[dst])
 		case OpCastBool:
-			reg[dst] = internal.ToBoolean(reg[src1])
+			reg[dst] = core.ToBoolean(reg[src1])
 		case OpNegate:
-			reg[dst] = internal.Negate(reg[src1])
+			reg[dst] = core.Negate(reg[src1])
 		case OpFlipPositive:
-			reg[dst] = internal.Positive(reg[src1])
+			reg[dst] = core.Positive(reg[src1])
 		case OpFlipNegative:
-			reg[dst] = internal.Negative(reg[src1])
+			reg[dst] = core.Negative(reg[src1])
 		case OpComp:
 			reg[dst] = core.Int(core.CompareValues(reg[src1], reg[src2]))
 		case OpNot:
-			reg[dst] = !internal.ToBoolean(reg[src1])
+			reg[dst] = !core.ToBoolean(reg[src1])
 		case OpEq:
 			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) == 0)
 		case OpNeq:
@@ -141,9 +141,9 @@ loop:
 		case OpLte:
 			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) <= 0)
 		case OpIn:
-			reg[dst] = internal.Contains(reg[src2], reg[src1])
+			reg[dst] = core.Contains(reg[src2], reg[src1])
 		case OpNotIn:
-			reg[dst] = !internal.Contains(reg[src2], reg[src1])
+			reg[dst] = !core.Contains(reg[src2], reg[src1])
 		case OpLike:
 			res, err := internal.Like(reg[src1], reg[src2])
 
@@ -162,7 +162,7 @@ loop:
 			}
 		case OpRegexpPositive:
 			// TODO: Add caching to avoid recompilation
-			r, err := internal.ToRegexp(reg[src2])
+			r, err := core.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
@@ -173,7 +173,7 @@ loop:
 			}
 		case OpRegexpNegative:
 			// TODO: Add caching to avoid recompilation
-			r, err := internal.ToRegexp(reg[src2])
+			r, err := core.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = !r.Match(reg[src1])
@@ -189,7 +189,7 @@ loop:
 				size = src2.Register() - src1.Register() + 1
 			}
 
-			arr := internal.NewArray(size)
+			arr := core.NewArray(size)
 			start := int(src1)
 			end := int(src1) + size
 
@@ -200,7 +200,7 @@ loop:
 
 			reg[dst] = arr
 		case OpObject:
-			obj := internal.NewObject()
+			obj := core.NewObject()
 			var args int
 
 			if src1 > 0 {
@@ -214,7 +214,7 @@ loop:
 				key := reg[i]
 				value := reg[i+1]
 
-				_ = obj.Set(ctx, internal.ToString(key), value)
+				_ = obj.Set(ctx, core.ToString(key), value)
 			}
 
 			reg[dst] = obj
@@ -245,7 +245,7 @@ loop:
 			case core.Float, core.Int:
 				switch src := val.(type) {
 				case core.Indexed:
-					out, err := src.Get(ctx, int(internal.ToInt(getter)))
+					out, err := src.Get(ctx, int(core.ToInt(getter)))
 
 					if err == nil {
 						reg[dst] = out
@@ -255,7 +255,7 @@ loop:
 						return nil, err
 					}
 				case *internal.DataSet:
-					idx := internal.ToInt(getter)
+					idx := core.ToInt(getter)
 
 					reg[dst] = src.Get(int(idx))
 				default:
@@ -398,7 +398,7 @@ loop:
 		case OpWhileLoopPrep:
 			reg[dst] = core.Int(-1)
 		case OpWhileLoopNext:
-			cond := internal.ToBoolean(reg[src1])
+			cond := core.ToBoolean(reg[src1])
 
 			if cond {
 				reg[dst] = internal.Increment(reg[dst])
@@ -436,8 +436,8 @@ loop:
 			reg[dst] = pair.Key
 		case OpSortSwap:
 			ds := reg[dst].(*internal.DataSet)
-			i := internal.ToInt(reg[src1])
-			j := internal.ToInt(reg[src2])
+			i := core.ToInt(reg[src1])
+			j := core.ToInt(reg[src2])
 			ds.Swap(int(i), int(j))
 		case OpGroupPrep:
 			reg[dst] = internal.NewCollector()

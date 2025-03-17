@@ -8,7 +8,7 @@ import (
 )
 
 func Add(inputL, inputR core.Value) core.Value {
-	left := ToNumberOrString(inputL)
+	left := core.ToNumberOrString(inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
@@ -23,7 +23,7 @@ func Add(inputL, inputR core.Value) core.Value {
 }
 
 func addLeftInt(integer core.Int, input core.Value) core.Value {
-	right := ToNumberOrString(input)
+	right := core.ToNumberOrString(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -36,7 +36,7 @@ func addLeftInt(integer core.Int, input core.Value) core.Value {
 }
 
 func addLeftFloat(float core.Float, input core.Value) core.Value {
-	right := ToNumberOrString(input)
+	right := core.ToNumberOrString(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -53,7 +53,7 @@ func addLeftString(str core.String, input core.Value) core.Value {
 }
 
 func Subtract(inputL, inputR core.Value) core.Value {
-	left := ToNumberOnly(inputL)
+	left := core.ToNumberOnly(inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
@@ -66,7 +66,7 @@ func Subtract(inputL, inputR core.Value) core.Value {
 }
 
 func subtractLeftInt(integer core.Int, input core.Value) core.Value {
-	right := ToNumberOnly(input)
+	right := core.ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -79,7 +79,7 @@ func subtractLeftInt(integer core.Int, input core.Value) core.Value {
 }
 
 func subtractLeftFloat(float core.Float, input core.Value) core.Value {
-	right := ToNumberOnly(input)
+	right := core.ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -92,7 +92,7 @@ func subtractLeftFloat(float core.Float, input core.Value) core.Value {
 }
 
 func Multiply(inputL, inputR core.Value) core.Value {
-	left := ToNumberOnly(inputL)
+	left := core.ToNumberOnly(inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
@@ -105,7 +105,7 @@ func Multiply(inputL, inputR core.Value) core.Value {
 }
 
 func multiplyLeftInt(integer core.Int, input core.Value) core.Value {
-	right := ToNumberOnly(input)
+	right := core.ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -118,7 +118,7 @@ func multiplyLeftInt(integer core.Int, input core.Value) core.Value {
 }
 
 func multiplyLeftFloat(float core.Float, input core.Value) core.Value {
-	right := ToNumberOnly(input)
+	right := core.ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -131,7 +131,7 @@ func multiplyLeftFloat(float core.Float, input core.Value) core.Value {
 }
 
 func Divide(inputL, inputR core.Value) core.Value {
-	left := ToNumberOnly(inputL)
+	left := core.ToNumberOnly(inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
@@ -144,7 +144,7 @@ func Divide(inputL, inputR core.Value) core.Value {
 }
 
 func divideLeftInt(integer core.Int, input core.Value) core.Value {
-	right := ToNumberOnly(input)
+	right := core.ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -157,7 +157,7 @@ func divideLeftInt(integer core.Int, input core.Value) core.Value {
 }
 
 func divideLeftFloat(float core.Float, input core.Value) core.Value {
-	right := ToNumberOnly(input)
+	right := core.ToNumberOnly(input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -170,14 +170,14 @@ func divideLeftFloat(float core.Float, input core.Value) core.Value {
 }
 
 func Modulus(inputL, inputR core.Value) core.Value {
-	left := ToInt(inputL)
-	right := ToInt(inputR)
+	left := core.ToInt(inputL)
+	right := core.ToInt(inputR)
 
 	return left % right
 }
 
 func Increment(input core.Value) core.Value {
-	left := ToNumberOnly(input)
+	left := core.ToNumberOnly(input)
 
 	switch value := left.(type) {
 	case core.Int:
@@ -190,7 +190,7 @@ func Increment(input core.Value) core.Value {
 }
 
 func Decrement(input core.Value) core.Value {
-	left := ToNumberOnly(input)
+	left := core.ToNumberOnly(input)
 
 	switch value := left.(type) {
 	case core.Int:
@@ -203,8 +203,8 @@ func Decrement(input core.Value) core.Value {
 }
 
 func Range(left, right core.Value) (core.Value, error) {
-	start := ToInt(left)
-	end := ToInt(right)
+	start := core.ToInt(left)
+	end := core.ToInt(right)
 
 	return NewRange(int64(start), int64(end)), nil
 }

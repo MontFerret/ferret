@@ -9,7 +9,7 @@ import (
 )
 
 // AVERAGE Returns the average (arithmetic mean) of the values in array.
-// @param {Int[] | Float[]} array - Array of numbers.
+// @param {Int[] | Float[]} array - arrayList of numbers.
 // @return {Float} - The average of the values in array.
 func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

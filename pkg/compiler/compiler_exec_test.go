@@ -124,9 +124,9 @@ func TestVariables(t *testing.T) {
 		Case("LET a = 'a' LET b = a LET c = 'c' RETURN b",
 			"a", "Variable reference"),
 		CaseArray("LET i = (FOR i IN [1,2,3] RETURN i) RETURN i",
-			[]any{1, 2, 3}, "Array comprehension"),
+			[]any{1, 2, 3}, "arrayList comprehension"),
 		CaseArray(" LET i = { items: [1,2,3]}  FOR el IN i.items RETURN el",
-			[]any{1, 2, 3}, "Object property access for a loop source"),
+			[]any{1, 2, 3}, "hashMap property access for a loop source"),
 		Case(`LET _ = (FOR i IN 1..100 RETURN NONE) RETURN TRUE`, true),
 		CaseArray(`
 			LET src = NONE
@@ -735,7 +735,7 @@ func TestOptionalChaining(t *testing.T) {
 		CaseNil("RETURN ERROR()?.foo"),
 		CaseArray(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`, []any{}),
 
-		CaseArray(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in Array comprehension"),
+		CaseArray(`LET res = (FOR i IN [1, 2, 3, 4] LET y = ERROR() RETURN y+i)? RETURN res`, []any{}, "Error in arrayList comprehension"),
 		CaseArray(`FOR i IN [1, 2, 3, 4] ERROR()? RETURN i`, []any{1, 2, 3, 4}, "Error in FOR loop"),
 	}, runtime.WithFunction("ERROR", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return nil, core.ErrNotImplemented

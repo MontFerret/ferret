@@ -11,8 +11,8 @@ import (
 
 // DOCUMENT_EXISTS returns a boolean value indicating whether a web page exists by a given url.
 // @param {String} url - Target url.
-// @param {Object} [options] - Request options.
-// @param {Object} [options.headers] - Request headers.
+// @param {hashMap} [options] - Request options.
+// @param {hashMap} [options.headers] - Request headers.
 // @return {Boolean} - A boolean value indicating whether a web page exists by a given url.
 func DocumentExists(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, 2); err != nil {

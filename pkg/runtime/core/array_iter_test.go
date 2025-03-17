@@ -1,9 +1,8 @@
-package internal_test
+package core_test
 
 import (
 	"context"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -12,8 +11,8 @@ import (
 func TestArrayIterator(t *testing.T) {
 	Convey("No values", t, func() {
 		ctx := context.Background()
-		arr := internal.NewArray(0)
-		iter := internal.NewArrayIterator(arr)
+		arr := core.NewArray(0)
+		iter := core.NewArrayIterator(arr)
 
 		hasNext, err := iter.HasNext(ctx)
 
@@ -23,9 +22,9 @@ func TestArrayIterator(t *testing.T) {
 
 	Convey("One value", t, func() {
 		ctx := context.Background()
-		arr := internal.NewArray(1)
-		arr.Add(ctx, core.NewInt(1))
-		iter := internal.NewArrayIterator(arr)
+		arr := core.NewArray(1)
+		arr.Add(ctx, NewInt(1))
+		iter := core.NewArrayIterator(arr)
 
 		hasNext, err := iter.HasNext(ctx)
 
@@ -35,8 +34,8 @@ func TestArrayIterator(t *testing.T) {
 		val, key, err := iter.Next(ctx)
 
 		So(err, ShouldBeNil)
-		So(val, ShouldEqual, core.NewInt(1))
-		So(key, ShouldEqual, core.NewInt(0))
+		So(val, ShouldEqual, NewInt(1))
+		So(key, ShouldEqual, NewInt(0))
 
 		hasNext, err = iter.HasNext(ctx)
 
@@ -46,15 +45,15 @@ func TestArrayIterator(t *testing.T) {
 
 	Convey("Multiple values", t, func() {
 		ctx := context.Background()
-		arr := internal.NewArray(5)
-		arr.Push(core.NewInt(1))
-		arr.Push(core.NewInt(2))
-		arr.Push(core.NewInt(3))
-		arr.Push(core.NewInt(4))
-		arr.Push(core.NewInt(5))
-		iter := internal.NewArrayIterator(arr)
+		arr := core.NewArray(5)
+		arr.Push(NewInt(1))
+		arr.Push(NewInt(2))
+		arr.Push(NewInt(3))
+		arr.Push(NewInt(4))
+		arr.Push(NewInt(5))
+		iter := core.NewArrayIterator(arr)
 
-		actual := make([]core.Int, 0, 5)
+		actual := make([]Int, 0, 5)
 
 		for {
 			hasNext, err := iter.HasNext(ctx)
@@ -62,19 +61,19 @@ func TestArrayIterator(t *testing.T) {
 				break
 			}
 			val, _, err := iter.Next(ctx)
-			actual = append(actual, val.(core.Int))
+			actual = append(actual, val.(Int))
 		}
 
-		So(actual, ShouldResemble, []core.Int{1, 2, 3, 4, 5})
+		So(actual, ShouldResemble, []Int{1, 2, 3, 4, 5})
 	})
 }
 
 func BenchmarkArrayIterator(b *testing.B) {
 	size := 100
-	arr := internal.NewArray(size)
+	arr := core.NewArray(size)
 
 	for i := 0; i < size; i++ {
-		arr.Push(core.NewInt(i))
+		arr.Push(NewInt(i))
 	}
 
 	ctx := context.Background()
@@ -82,7 +81,7 @@ func BenchmarkArrayIterator(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		iter := internal.NewArrayIterator(arr)
+		iter := core.NewArrayIterator(arr)
 
 		for {
 			hasNext, err := iter.HasNext(ctx)

@@ -10,7 +10,7 @@ import (
 )
 
 // STDDEV_SAMPLE returns the sample standard deviation of the values in a given array.
-// @param {Int[] | Float[]} numbers - Array of numbers.
+// @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sample standard deviation.
 func StandardDeviationSample(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

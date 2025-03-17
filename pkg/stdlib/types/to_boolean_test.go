@@ -154,7 +154,7 @@ func TestToBool(t *testing.T) {
 		})
 	})
 
-	Convey("Array", t, func() {
+	Convey("arrayList", t, func() {
 		Convey("Should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),
@@ -166,7 +166,7 @@ func TestToBool(t *testing.T) {
 		})
 	})
 
-	Convey("Object", t, func() {
+	Convey("hashMap", t, func() {
 		Convey("Should return true", func() {
 			out, err := types.ToBool(
 				context.Background(),

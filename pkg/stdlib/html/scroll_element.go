@@ -12,7 +12,7 @@ import (
 // SCROLL_ELEMENT scrolls an element on.
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target html node.
 // @param {String} selector - If document is passed, this param must represent an element selector.
-// @param {Object} [params] - Scroll params.
+// @param {hashMap} [params] - Scroll params.
 // @param {String} [params.behavior="instant"] - Scroll behavior
 // @param {String} [params.block="center"] - Scroll vertical alignment.
 // @param {String} [params.inline="center"] - Scroll horizontal alignment.

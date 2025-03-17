@@ -9,9 +9,9 @@ import (
 )
 
 // KEEP_KEYS returns a new object with only given keys.
-// @param {Object} obj - Source object.
+// @param {hashMap} obj - Source object.
 // @param {String, repeated} keys - Keys that need to be kept.
-// @return {Object} - New Object with only given keys.
+// @return {hashMap} - New hashMap with only given keys.
 func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 2, core.MaxArgs); err != nil {
 		return core.None, err

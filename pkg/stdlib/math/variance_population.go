@@ -10,7 +10,7 @@ import (
 )
 
 // VARIANCE_POPULATION returns the population variance of the values in a given array.
-// @param {Int[] | Float[]} numbers - Array of numbers.
+// @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The population variance.
 func PopulationVariance(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

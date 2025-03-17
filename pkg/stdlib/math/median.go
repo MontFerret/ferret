@@ -10,7 +10,7 @@ import (
 )
 
 // MEDIAN returns the median of the values in array.
-// @param {Int[] | Float[]} array - Array of numbers.
+// @param {Int[] | Float[]} array - arrayList of numbers.
 // @return {Float} - The median of the values in array.
 func Median(_ context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)

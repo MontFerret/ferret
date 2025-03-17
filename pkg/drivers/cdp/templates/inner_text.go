@@ -90,7 +90,7 @@ var (
 
 	%s
 
-	return Array.from(found).map(i => i.innerText);
+	return arrayList.from(found).map(i => i.innerText);
 }`, notFoundErrorFragment)
 
 	getInnerTextByXPathSelectorAll = fmt.Sprintf(`

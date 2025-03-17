@@ -19,12 +19,12 @@ type ParseParams struct {
 
 // PARSE loads an HTML page from a given string or byte array
 // @param {String} html - HTML string to parse.
-// @param {Object} [params] - An object containing the following properties:
+// @param {hashMap} [params] - An object containing the following properties:
 // @param {String} [params.driver] - Name of a driver to parse with.
 // @param {Boolean} [params.keepCookies=False] - Boolean value indicating whether to use cookies from previous sessions i.e. not to open a page in the Incognito mode.
 // @param {HTTPCookies} [params.cookies] - Set of HTTP cookies to use during page loading.
 // @param {HTTPHeaders} [params.headers] - Set of HTTP headers to use during page loading.
-// @param {Object} [params.viewport] - Viewport params.
+// @param {hashMap} [params.viewport] - Viewport params.
 // @param {Int} [params.viewport.height] - Viewport height.
 // @param {Int} [params.viewport.width] - Viewport width.
 // @param {Float} [params.viewport.scaleFactor] - Viewport scale factor.

@@ -1,18 +1,16 @@
-package internal
+package core
 
 import (
 	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type ObjectIterator struct {
 	keys []string
-	data map[string]core.Value
+	data map[string]Value
 	pos  int
 }
 
-func NewObjectIterator(obj *Object) core.Iterator {
+func NewObjectIterator(obj *hashMap) Iterator {
 	iter := &ObjectIterator{data: obj.data, keys: make([]string, len(obj.data))}
 
 	i := 0
@@ -29,11 +27,11 @@ func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
 	return len(iter.keys) > iter.pos, nil
 }
 
-func (iter *ObjectIterator) Next(_ context.Context) (core.Value, core.Value, error) {
+func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
 	iter.pos++
 
 	value := iter.data[iter.keys[iter.pos-1]]
-	key := core.String(iter.keys[iter.pos-1])
+	key := String(iter.keys[iter.pos-1])
 
 	return value, key, nil
 }

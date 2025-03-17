@@ -12,7 +12,7 @@ import (
 // @param {HTMLPage | HTMLDocument | HTMLElement} node - Target node.
 // @param {String} selector - Query selector.
 // @param {String, repeated} attrName - Attr name(s).
-// @return {Object} - First-value pairs of attribute values.
+// @return {hashMap} - First-value pairs of attribute values.
 func AttributeQuery(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

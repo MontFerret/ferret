@@ -1,33 +1,27 @@
 package core
 
-import "context"
-
 type (
 	Comparable interface {
-		Compare(ctx context.Context, other Value) (int64, error)
+		Compare(other Value) int64
 	}
 
-	Comparator = func(ctx context.Context, first, second Value) (int64, error)
+	Comparator = func(first, second Value) int64
 )
 
-func CompareValues(ctx context.Context, a, b Value) (int64, error) {
+func CompareValues(a, b Value) int64 {
 	aComparable, ok := a.(Comparable)
 
 	if ok {
-		return aComparable.Compare(ctx, b)
+		return aComparable.Compare(b)
 	}
 
 	bComparable, ok := b.(Comparable)
 
 	if ok {
-		res, err := bComparable.Compare(ctx, a)
+		res := bComparable.Compare(a)
 
-		if err != nil {
-			return 0, err
-		}
-
-		return -res, nil
+		return -res
 	}
 
-	return CompareTypes(a, b), nil
+	return CompareTypes(a, b)
 }

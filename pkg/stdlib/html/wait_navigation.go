@@ -21,7 +21,7 @@ type WaitNavigationParams struct {
 // Stops the execution until the navigation ends or operation times out.
 // @param {HTMLPage} page - Target page.
 // @param {Int} [timeout=5000] - Navigation timeout.
-// @param {Object} [params=None] - Navigation parameters.
+// @param {hashMap} [params=None] - Navigation parameters.
 // @param {Int} [params.timeout=5000] - Navigation timeout.
 // @param {String} [params.target] - Navigation target url.
 // @param {HTMLDocument} [params.frame] - Navigation frame.

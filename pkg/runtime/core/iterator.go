@@ -13,11 +13,37 @@ type (
 		HasNext(ctx context.Context) (bool, error)
 		Next(ctx context.Context) (value Value, key Value, err error)
 	}
+
+	listIterator struct {
+		items List
+		pos   Int
+	}
+
+	mapIterator struct{}
 )
 
-type listIterator struct {
-	items List
-	pos   Int
+func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key Value) bool) error {
+	for {
+		hasNext, err := iter.HasNext(ctx)
+
+		if err != nil {
+			return err
+		}
+
+		if !hasNext {
+			return nil
+		}
+
+		val, key, err := iter.Next(ctx)
+
+		if err != nil {
+			return err
+		}
+
+		if !predicate(val, key) {
+			return nil
+		}
+	}
 }
 
 func NewListIterator(list List) Iterator {
@@ -45,8 +71,4 @@ func (l *listIterator) Next(ctx context.Context) (value Value, key Value, err er
 	}
 
 	return value, idx, nil
-}
-
-type mapIterator struct {
-	items Map
 }

@@ -21,3 +21,12 @@ func SafeClone(ctx context.Context, origin Cloneable) Cloneable {
 
 	return cloned
 }
+
+func CloneOrCopy(ctx context.Context, val Value) (Value, error) {
+	switch v := val.(type) {
+	case Cloneable:
+		return v.Clone(ctx)
+	default:
+		return v.Copy(), nil
+	}
+}

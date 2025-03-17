@@ -11,7 +11,7 @@ import (
 // STYLE_GET gets single or more style attribute value(s) of a given element.
 // @param {HTMLElement} element - Target html element.
 // @param {String, repeated} names - Style name(s).
-// @return {Object} - Collection of key-value pairs of style values.
+// @return {hashMap} - Collection of key-value pairs of style values.
 func StyleGet(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, core.MaxArgs)
 

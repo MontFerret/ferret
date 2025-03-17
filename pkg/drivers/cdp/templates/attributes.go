@@ -53,7 +53,7 @@ func SetAttribute(id runtime.RemoteObjectID, name, value core.String) *eval.Func
 }
 
 const setAttributes = `(el, values) => {
-	Object.keys(values).forEach((name) => {
+	hashMap.keys(values).forEach((name) => {
 		const value = values[name];
 		el.setAttribute(name, value)
 	});
