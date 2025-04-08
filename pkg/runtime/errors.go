@@ -2,6 +2,10 @@ package runtime
 
 import "github.com/pkg/errors"
 
+var (
+	ErrMissedParam = errors.New("missed parameter")
+)
+
 type (
 	SourceErrorDetail struct {
 		error

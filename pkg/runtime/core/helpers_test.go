@@ -12,7 +12,7 @@ import (
 )
 
 type CustomValue struct {
-	properties map[Value]Value
+	properties map[core.Value]core.Value
 }
 
 type DummyStruct struct{}
@@ -213,11 +213,11 @@ func TestHelpers(t *testing.T) {
 				So(core.ToFloat(False), ShouldEqual, NewFloat(0))
 			})
 
-			Convey("Should convert arrayList with single item", func() {
+			Convey("Should convert Array with single item", func() {
 				So(core.ToFloat(NewArrayWith(NewFloat(1))), ShouldEqual, NewFloat(1))
 			})
 
-			Convey("Should convert arrayList with multiple items", func() {
+			Convey("Should convert Array with multiple items", func() {
 				arg := NewArrayWith(NewFloat(1), NewFloat(1))
 
 				So(core.ToFloat(arg), ShouldEqual, NewFloat(2))
@@ -272,11 +272,11 @@ func TestHelpers(t *testing.T) {
 				So(core.ToInt(False), ShouldEqual, NewInt(0))
 			})
 
-			Convey("Should convert arrayList with single item", func() {
+			Convey("Should convert Array with single item", func() {
 				So(core.ToInt(NewArrayWith(NewFloat(1))), ShouldEqual, NewInt(1))
 			})
 
-			Convey("Should convert arrayList with multiple items", func() {
+			Convey("Should convert Array with multiple items", func() {
 				arg := NewArrayWith(NewFloat(1), NewFloat(1))
 
 				So(core.ToInt(arg), ShouldEqual, NewFloat(2))

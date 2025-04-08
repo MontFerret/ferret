@@ -5,12 +5,12 @@ import (
 )
 
 type ArrayIterator struct {
-	values *arrayList
+	values *Array
 	length int
 	pos    int
 }
 
-func NewArrayIterator(values *arrayList) Iterator {
+func NewArrayIterator(values *Array) Iterator {
 	return &ArrayIterator{values: values, length: len(values.data), pos: 0}
 }
 

@@ -2,12 +2,11 @@ package compiler
 
 import (
 	"errors"
-
 	goruntime "runtime"
 
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/stdlib"
+	//"github.com/MontFerret/ferret/pkg/stdlib"
 )
 
 type Compiler struct {
@@ -25,9 +24,9 @@ func New(setters ...Option) *Compiler {
 	}
 
 	if !opts.noStdlib {
-		if err := stdlib.RegisterLib(c.NamespaceContainer); err != nil {
-			panic(err)
-		}
+		//if err := stdlib.RegisterLib(c.NamespaceContainer); err != nil {
+		//	panic(err)
+		//}
 	}
 
 	return c

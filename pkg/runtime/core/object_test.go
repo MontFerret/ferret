@@ -361,7 +361,7 @@ func TestObject(t *testing.T) {
 				core.NewObjectProperty("two", NewInt(2)),
 			)
 
-			clone := obj.Clone().(*core.hashMap)
+			clone := obj.Clone().(*core.Object)
 
 			So(obj.Compare(clone), ShouldEqual, 0)
 		})
@@ -372,7 +372,7 @@ func TestObject(t *testing.T) {
 				core.NewObjectProperty("two", NewInt(2)),
 			)
 
-			clone := obj.Clone().(*core.hashMap)
+			clone := obj.Clone().(*core.Object)
 
 			obj.Remove(NewString("one"))
 
@@ -386,7 +386,7 @@ func TestObject(t *testing.T) {
 				),
 			)
 
-			clone := obj.Clone().(*core.hashMap)
+			clone := obj.Clone().(*core.Object)
 
 			nestedInObj, _ := obj.Get(NewString("arr"))
 			nestedInObjArr := nestedInObj.(*Array)

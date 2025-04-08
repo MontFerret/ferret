@@ -80,7 +80,7 @@ func AssertMap(input Value) error {
 	if !ok {
 		return TypeError(
 			input,
-			"map",
+			TypeMap,
 		)
 	}
 

@@ -1,13 +1,39 @@
 package internal
 
 import (
+	"context"
 	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-func Add(inputL, inputR core.Value) core.Value {
+func Contains(ctx context.Context, input core.Value, value core.Value) core.Boolean {
+	switch val := input.(type) {
+	case core.List:
+		contains, err := val.Contains(ctx, value)
+		if err != nil {
+			return core.False
+		}
+
+		return contains
+	case core.Map:
+		containsValue, err := val.ContainsValue(ctx, value)
+
+		if err != nil {
+			return core.False
+		}
+
+		return containsValue
+	case core.String:
+		return core.Boolean(strings.Contains(val.String(), value.String()))
+	default:
+		return false
+	}
+}
+
+func Add(ctx context.Context, inputL, inputR core.Value) core.Value {
 	left := core.ToNumberOrString(inputL)
 
 	switch leftVal := left.(type) {
@@ -52,21 +78,21 @@ func addLeftString(str core.String, input core.Value) core.Value {
 	return core.String(str.String() + input.String())
 }
 
-func Subtract(inputL, inputR core.Value) core.Value {
-	left := core.ToNumberOnly(inputL)
+func Subtract(ctx context.Context, inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
-		return subtractLeftInt(leftVal, inputR)
+		return subtractLeftInt(ctx, leftVal, inputR)
 	case core.Float:
-		return subtractLeftFloat(leftVal, inputR)
+		return subtractLeftFloat(ctx, leftVal, inputR)
 	default:
 		return core.ZeroInt
 	}
 }
 
-func subtractLeftInt(integer core.Int, input core.Value) core.Value {
-	right := core.ToNumberOnly(input)
+func subtractLeftInt(ctx context.Context, integer core.Int, input core.Value) core.Value {
+	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -78,8 +104,8 @@ func subtractLeftInt(integer core.Int, input core.Value) core.Value {
 	}
 }
 
-func subtractLeftFloat(float core.Float, input core.Value) core.Value {
-	right := core.ToNumberOnly(input)
+func subtractLeftFloat(ctx context.Context, float core.Float, input core.Value) core.Value {
+	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -91,21 +117,21 @@ func subtractLeftFloat(float core.Float, input core.Value) core.Value {
 	}
 }
 
-func Multiply(inputL, inputR core.Value) core.Value {
-	left := core.ToNumberOnly(inputL)
+func Multiply(ctx context.Context, inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
-		return multiplyLeftInt(leftVal, inputR)
+		return multiplyLeftInt(ctx, leftVal, inputR)
 	case core.Float:
-		return multiplyLeftFloat(leftVal, inputR)
+		return multiplyLeftFloat(ctx, leftVal, inputR)
 	default:
 		return core.ZeroInt
 	}
 }
 
-func multiplyLeftInt(integer core.Int, input core.Value) core.Value {
-	right := core.ToNumberOnly(input)
+func multiplyLeftInt(ctx context.Context, integer core.Int, input core.Value) core.Value {
+	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -117,8 +143,8 @@ func multiplyLeftInt(integer core.Int, input core.Value) core.Value {
 	}
 }
 
-func multiplyLeftFloat(float core.Float, input core.Value) core.Value {
-	right := core.ToNumberOnly(input)
+func multiplyLeftFloat(ctx context.Context, float core.Float, input core.Value) core.Value {
+	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -130,21 +156,21 @@ func multiplyLeftFloat(float core.Float, input core.Value) core.Value {
 	}
 }
 
-func Divide(inputL, inputR core.Value) core.Value {
-	left := core.ToNumberOnly(inputL)
+func Divide(ctx context.Context, inputL, inputR core.Value) core.Value {
+	left := ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
 	case core.Int:
-		return divideLeftInt(leftVal, inputR)
+		return divideLeftInt(ctx, leftVal, inputR)
 	case core.Float:
-		return divideLeftFloat(leftVal, inputR)
+		return divideLeftFloat(ctx, leftVal, inputR)
 	default:
 		return core.ZeroInt
 	}
 }
 
-func divideLeftInt(integer core.Int, input core.Value) core.Value {
-	right := core.ToNumberOnly(input)
+func divideLeftInt(ctx context.Context, integer core.Int, input core.Value) core.Value {
+	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -156,8 +182,8 @@ func divideLeftInt(integer core.Int, input core.Value) core.Value {
 	}
 }
 
-func divideLeftFloat(float core.Float, input core.Value) core.Value {
-	right := core.ToNumberOnly(input)
+func divideLeftFloat(ctx context.Context, float core.Float, input core.Value) core.Value {
+	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case core.Int:
@@ -169,15 +195,15 @@ func divideLeftFloat(float core.Float, input core.Value) core.Value {
 	}
 }
 
-func Modulus(inputL, inputR core.Value) core.Value {
-	left := core.ToInt(inputL)
-	right := core.ToInt(inputR)
+func Modulus(ctx context.Context, inputL, inputR core.Value) core.Value {
+	left, _ := core.ToInt(ctx, inputL)
+	right, _ := core.ToInt(ctx, inputR)
 
 	return left % right
 }
 
-func Increment(input core.Value) core.Value {
-	left := core.ToNumberOnly(input)
+func Increment(ctx context.Context, input core.Value) core.Value {
+	left := ToNumberOnly(ctx, input)
 
 	switch value := left.(type) {
 	case core.Int:
@@ -189,8 +215,8 @@ func Increment(input core.Value) core.Value {
 	}
 }
 
-func Decrement(input core.Value) core.Value {
-	left := core.ToNumberOnly(input)
+func Decrement(ctx context.Context, input core.Value) core.Value {
+	left := ToNumberOnly(ctx, input)
 
 	switch value := left.(type) {
 	case core.Int:
@@ -202,9 +228,18 @@ func Decrement(input core.Value) core.Value {
 	}
 }
 
-func Range(left, right core.Value) (core.Value, error) {
-	start := core.ToInt(left)
-	end := core.ToInt(right)
+func ToRange(ctx context.Context, left, right core.Value) (core.Value, error) {
+	start, err := core.ToInt(ctx, left)
+
+	if err != nil {
+		return core.ZeroInt, err
+	}
+
+	end, err := core.ToInt(ctx, right)
+
+	if err != nil {
+		return core.ZeroInt, err
+	}
 
 	return NewRange(int64(start), int64(end)), nil
 }

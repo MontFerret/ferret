@@ -95,18 +95,18 @@ func (s String) Copy() Value {
 	return s
 }
 
-func (s String) Compare(_ context.Context, other Value) (int64, error) {
+func (s String) Compare(other Value) int64 {
 	otherString, ok := other.(String)
 
 	if !ok {
-		return CompareTypes(s, other), nil
+		return CompareTypes(s, other)
 	}
 
-	return int64(strings.Compare(string(s), otherString.Unwrap().(string))), nil
+	return int64(strings.Compare(string(s), otherString.Unwrap().(string)))
 }
 
-func (s String) Length(_ context.Context) (int, error) {
-	return len([]rune(s)), nil
+func (s String) Length(_ context.Context) (Int, error) {
+	return Int(len([]rune(s))), nil
 }
 
 func (s String) Contains(other String) Boolean {

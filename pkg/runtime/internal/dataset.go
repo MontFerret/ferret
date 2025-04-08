@@ -7,7 +7,7 @@ import (
 
 type DataSet struct {
 	hashmap map[uint64]bool
-	values  *core.arrayList
+	values  core.List
 }
 
 func NewDataSet(distinct bool) *DataSet {
@@ -23,15 +23,17 @@ func NewDataSet(distinct bool) *DataSet {
 	}
 }
 
-func (ds *DataSet) Swap(i, j int) {
-	ds.values.Swap(i, j)
+func (ds *DataSet) Swap(ctx context.Context, i, j core.Int) {
+	ds.values.Swap(ctx, i, j)
 }
 
-func (ds *DataSet) Get(idx int) core.Value {
-	return ds.values.Get(idx)
+func (ds *DataSet) Get(ctx context.Context, idx core.Int) core.Value {
+	val, _ := ds.values.Get(ctx, idx)
+
+	return val
 }
 
-func (ds *DataSet) Push(item core.Value) {
+func (ds *DataSet) Push(ctx context.Context, item core.Value) {
 	if ds.hashmap != nil {
 		hash := item.Hash()
 
@@ -44,23 +46,23 @@ func (ds *DataSet) Push(item core.Value) {
 		ds.hashmap[hash] = true
 	}
 
-	ds.values.Push(item)
+	_ = ds.values.Add(ctx, item)
 }
 
 func (ds *DataSet) Iterate(ctx context.Context) (core.Iterator, error) {
 	return ds.values.Iterate(ctx)
 }
 
-func (ds *DataSet) Length() int {
-	return ds.values.Length()
+func (ds *DataSet) Length(ctx context.Context) (core.Int, error) {
+	return ds.values.Length(ctx)
 }
 
-func (ds *DataSet) ToArray() *core.arrayList {
+func (ds *DataSet) ToList() core.List {
 	return ds.values
 }
 
 func (ds *DataSet) String() string {
-	return "[DataSet]"
+	return "DataSet"
 }
 
 func (ds *DataSet) Unwrap() interface{} {

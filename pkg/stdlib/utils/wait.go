@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -17,7 +16,7 @@ func Wait(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, nil
 	}
 
-	arg := internal.ToInt(args[0])
+	arg := core.ToIntSafe(ctx, args[0])
 
 	timer := time.NewTimer(time.Millisecond * time.Duration(arg))
 	select {

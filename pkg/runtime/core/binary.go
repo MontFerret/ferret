@@ -31,10 +31,6 @@ func (b Binary) MarshalJSON() ([]byte, error) {
 	)
 }
 
-func (b Binary) Type() string {
-	return TypeBinary
-}
-
 func (b Binary) String() string {
 	return string(b)
 }
@@ -61,33 +57,33 @@ func (b Binary) Copy() Value {
 	return NewBinary(c)
 }
 
-func (b Binary) Length(_ context.Context) (int, error) {
-	return len(b), nil
+func (b Binary) Length(_ context.Context) (Int, error) {
+	return Int(len(b)), nil
 }
 
-func (b Binary) Compare(_ context.Context, other Value) (int64, error) {
+func (b Binary) Compare(other Value) int64 {
 	otherBin, ok := other.(Binary)
 
 	if !ok {
-		return CompareTypes(b, other), nil
+		return CompareTypes(b, other)
 	}
 
 	size := len(b)
 	otherSize := len(otherBin)
 
 	if size > otherSize {
-		return 1, nil
+		return 1
 	} else if size < otherSize {
-		return -1, nil
+		return -1
 	}
 
 	for i := 0; i < size; i++ {
 		if b[i] > otherBin[i] {
-			return 1, nil
+			return 1
 		} else if b[i] < otherBin[i] {
-			return -1, nil
+			return -1
 		}
 	}
 
-	return 0, nil
+	return 0
 }

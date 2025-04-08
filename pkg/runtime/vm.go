@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"go/types"
 	"io"
 	"strings"
 
@@ -103,19 +102,19 @@ loop:
 				vm.pc = int(dst)
 			}
 		case OpAdd:
-			reg[dst] = internal.Add(reg[src1], reg[src2])
+			reg[dst] = internal.Add(ctx, reg[src1], reg[src2])
 		case OpSub:
-			reg[dst] = internal.Subtract(reg[src1], reg[src2])
+			reg[dst] = internal.Subtract(ctx, reg[src1], reg[src2])
 		case OpMulti:
-			reg[dst] = internal.Multiply(reg[src1], reg[src2])
+			reg[dst] = internal.Multiply(ctx, reg[src1], reg[src2])
 		case OpDiv:
-			reg[dst] = internal.Divide(reg[src1], reg[src2])
+			reg[dst] = internal.Divide(ctx, reg[src1], reg[src2])
 		case OpMod:
-			reg[dst] = internal.Modulus(reg[src1], reg[src2])
+			reg[dst] = internal.Modulus(ctx, reg[src1], reg[src2])
 		case OpIncr:
-			reg[dst] = internal.Increment(reg[dst])
+			reg[dst] = internal.Increment(ctx, reg[dst])
 		case OpDecr:
-			reg[dst] = internal.Decrement(reg[dst])
+			reg[dst] = internal.Decrement(ctx, reg[dst])
 		case OpCastBool:
 			reg[dst] = core.ToBoolean(reg[src1])
 		case OpNegate:
@@ -141,9 +140,9 @@ loop:
 		case OpLte:
 			reg[dst] = core.Boolean(core.CompareValues(reg[src1], reg[src2]) <= 0)
 		case OpIn:
-			reg[dst] = core.Contains(reg[src2], reg[src1])
+			reg[dst] = internal.Contains(ctx, reg[src2], reg[src1])
 		case OpNotIn:
-			reg[dst] = !core.Contains(reg[src2], reg[src1])
+			reg[dst] = !internal.Contains(ctx, reg[src2], reg[src1])
 		case OpLike:
 			res, err := internal.Like(reg[src1], reg[src2])
 
@@ -162,7 +161,7 @@ loop:
 			}
 		case OpRegexpPositive:
 			// TODO: Add caching to avoid recompilation
-			r, err := core.ToRegexp(reg[src2])
+			r, err := internal.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
@@ -173,7 +172,7 @@ loop:
 			}
 		case OpRegexpNegative:
 			// TODO: Add caching to avoid recompilation
-			r, err := core.ToRegexp(reg[src2])
+			r, err := internal.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = !r.Match(reg[src1])
@@ -237,15 +236,17 @@ loop:
 					}
 				default:
 					if op != OpLoadPropertyOptional {
-						return nil, core.TypeError(src, types.Object, types.Keyed)
+						return nil, core.TypeError(src, core.TypeMap)
 					}
 
 					reg[dst] = core.None
 				}
 			case core.Float, core.Int:
+				// TODO: Optimize this. Avoid extra type conversion
+				idx, _ := core.ToInt(ctx, getter)
 				switch src := val.(type) {
 				case core.Indexed:
-					out, err := src.Get(ctx, int(core.ToInt(getter)))
+					out, err := src.Get(ctx, idx)
 
 					if err == nil {
 						reg[dst] = out
@@ -255,12 +256,10 @@ loop:
 						return nil, err
 					}
 				case *internal.DataSet:
-					idx := core.ToInt(getter)
-
-					reg[dst] = src.Get(int(idx))
+					reg[dst] = src.Get(ctx, idx)
 				default:
 					if op != OpLoadPropertyOptional {
-						return nil, core.TypeError(src, types.Array, types.Indexed)
+						return nil, core.TypeError(src, core.TypeList)
 					}
 
 					reg[dst] = core.None
@@ -314,20 +313,20 @@ loop:
 					}
 				}
 
-				reg[dst] = core.NewInt(length)
+				reg[dst] = length
 			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = core.ZeroInt
 			} else {
 				return core.None, core.TypeError(reg[src1],
-					types.String,
-					types.Array,
-					types.Object,
-					types.Binary,
-					types.Measurable,
+					core.TypeString,
+					core.TypeList,
+					core.TypeMap,
+					core.TypeBinary,
+					core.TypeMeasurable,
 				)
 			}
 		case OpType:
-			reg[dst] = core.String(core.Reflect(reg[src1]).Name())
+			reg[dst] = core.String(core.Reflect(reg[src1]))
 		case OpClose:
 			val, ok := reg[dst].(io.Closer)
 			reg[dst] = core.None
@@ -342,7 +341,7 @@ loop:
 				}
 			}
 		case OpRange:
-			res, err := internal.Range(reg[src1], reg[src2])
+			res, err := internal.ToRange(ctx, reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
@@ -353,7 +352,7 @@ loop:
 			reg[dst] = internal.NewDataSet(src1 == 1)
 		case OpLoopEnd:
 			ds := reg[src1].(*internal.DataSet)
-			reg[dst] = ds.ToArray()
+			reg[dst] = ds.ToList()
 		case OpForLoopPrep:
 			input := reg[src1]
 
@@ -369,9 +368,9 @@ loop:
 			default:
 				if _, catch := tryCatch(vm.pc); catch {
 					// Fall back to an empty iterator
-					reg[dst] = internal.NewBoxedValue(internal.NoopIter)
+					reg[dst] = internal.NoopIter
 				} else {
-					return nil, core.TypeError(src, types.Iterable)
+					return nil, core.TypeError(src, core.TypeIterable)
 				}
 			}
 		case OpForLoopNext:
@@ -401,7 +400,7 @@ loop:
 			cond := core.ToBoolean(reg[src1])
 
 			if cond {
-				reg[dst] = internal.Increment(reg[dst])
+				reg[dst] = internal.Increment(ctx, reg[dst])
 			} else {
 				vm.pc = int(src2)
 			}
@@ -409,17 +408,17 @@ loop:
 			reg[dst] = reg[src1]
 		case OpLoopPush:
 			ds := reg[dst].(*internal.DataSet)
-			ds.Push(reg[src1])
+			ds.Push(ctx, reg[src1])
 		case OpLoopPushIter:
 			ds := reg[dst].(*internal.DataSet)
 			iterator := reg[src1].(*internal.Iterator)
-			ds.Push(&internal.KeyValuePair{
+			ds.Push(ctx, &internal.KeyValuePair{
 				Key:   iterator.Key(),
 				Value: iterator.Value(),
 			})
 		case OpLoopSequence:
 			ds := reg[src1].(*internal.DataSet)
-			reg[dst] = internal.NewSequence(ds.ToArray())
+			reg[dst] = internal.NewSequence(ds.ToList())
 		case OpSortPrep:
 			reg[dst] = internal.NewStack(3)
 		case OpSortPush:
@@ -436,9 +435,9 @@ loop:
 			reg[dst] = pair.Key
 		case OpSortSwap:
 			ds := reg[dst].(*internal.DataSet)
-			i := core.ToInt(reg[src1])
-			j := core.ToInt(reg[src2])
-			ds.Swap(int(i), int(j))
+			i, _ := core.ToInt(ctx, reg[src1])
+			j, _ := core.ToInt(ctx, reg[src2])
+			ds.Swap(ctx, i, j)
 		case OpGroupPrep:
 			reg[dst] = internal.NewCollector()
 		case OpGroupAdd:

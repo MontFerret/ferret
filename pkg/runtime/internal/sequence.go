@@ -7,17 +7,17 @@ import (
 
 type (
 	Sequence struct {
-		data *core.arrayList
+		data core.List
 	}
 
 	sequenceIterator struct {
-		data   *core.arrayList
-		length int
-		pos    int
+		data   core.List
+		length core.Int
+		pos    core.Int
 	}
 )
 
-func NewSequence(data *core.arrayList) *Sequence {
+func NewSequence(data core.List) *Sequence {
 	return &Sequence{data}
 }
 
@@ -25,15 +25,28 @@ func (iter *sequenceIterator) HasNext(_ context.Context) (bool, error) {
 	return iter.length > iter.pos, nil
 }
 
-func (iter *sequenceIterator) Next(_ context.Context) (value core.Value, key core.Value, err error) {
+func (iter *sequenceIterator) Next(ctx context.Context) (value core.Value, key core.Value, err error) {
 	iter.pos++
 
-	// TODO: Make it less ugly
-	return iter.data.Get(iter.pos - 1).(*KeyValuePair).Value, core.NewInt(iter.pos - 1), nil
+	val, err := iter.data.Get(ctx, iter.pos-1)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	kv := val.(*KeyValuePair)
+
+	return kv.Value, iter.pos - 1, nil
 }
 
-func (s *Sequence) Iterate(_ context.Context) (core.Iterator, error) {
-	return &sequenceIterator{data: s.data, length: s.data.Length(), pos: 0}, nil
+func (s *Sequence) Iterate(ctx context.Context) (core.Iterator, error) {
+	length, err := s.data.Length(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sequenceIterator{data: s.data, length: length, pos: 0}, nil
 }
 
 func (s *Sequence) MarshalJSON() ([]byte, error) {

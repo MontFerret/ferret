@@ -506,7 +506,7 @@ func TestArray(t *testing.T) {
 				),
 			)
 
-			clone := arr.Clone().(*core.arrayList)
+			clone := arr.Clone().(*core.Array)
 
 			So(arr.Length(), ShouldEqual, clone.Length())
 			So(arr.Compare(clone), ShouldEqual, 0)
@@ -522,7 +522,7 @@ func TestArray(t *testing.T) {
 				NewInt(5),
 			)
 
-			clone := arr.Clone().(*core.arrayList)
+			clone := arr.Clone().(*core.Array)
 
 			arr.Push(NewInt(6))
 
@@ -541,12 +541,12 @@ func TestArray(t *testing.T) {
 		//		),
 		//	)
 		//
-		//	clone := arr.Clone().(*values.arrayList)
+		//	clone := arr.Clone().(*values.Array)
 		//
-		//	nestedInArr := arr.Get(values.NewInt(0)).(*values.arrayList)
+		//	nestedInArr := arr.Get(values.NewInt(0)).(*values.Array)
 		//	nestedInArr.Push(values.NewInt(5))
 		//
-		//	nestedInClone := clone.Get(values.NewInt(0)).(*values.arrayList)
+		//	nestedInClone := clone.Get(values.NewInt(0)).(*values.Array)
 		//
 		//	So(nestedInArr.CompareValues(nestedInClone), ShouldNotEqual, 0)
 		//})

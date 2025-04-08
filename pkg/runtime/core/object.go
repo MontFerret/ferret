@@ -15,7 +15,7 @@ type (
 		value Value
 	}
 
-	hashMap struct {
+	Object struct {
 		data map[string]Value
 	}
 )
@@ -25,11 +25,11 @@ func NewObjectProperty(name string, value Value) *ObjectProperty {
 }
 
 func NewObject() Map {
-	return &hashMap{make(map[string]Value)}
+	return &Object{make(map[string]Value)}
 }
 
 func NewObjectWith(props ...*ObjectProperty) Map {
-	obj := &hashMap{make(map[string]Value)}
+	obj := &Object{make(map[string]Value)}
 
 	for _, prop := range props {
 		obj.data[prop.key] = prop.value
@@ -38,15 +38,15 @@ func NewObjectWith(props ...*ObjectProperty) Map {
 	return obj
 }
 
-func (t *hashMap) Type() string {
+func (t *Object) Type() string {
 	return "object"
 }
 
-func (t *hashMap) MarshalJSON() ([]byte, error) {
+func (t *Object) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }
 
-func (t *hashMap) String() string {
+func (t *Object) String() string {
 	marshaled, err := t.MarshalJSON()
 
 	if err != nil {
@@ -59,27 +59,26 @@ func (t *hashMap) String() string {
 // Compare compares the source object with other core.Value
 // The behavior of the Compare is similar
 // to the comparison of objects in ArangoDB
-func (t *hashMap) Compare(ctx context.Context, other Value) (int64, error) {
-	otherObject, ok := other.(*hashMap)
+func (t *Object) Compare(other Value) int64 {
+	otherObject, ok := other.(*Object)
 
 	if !ok {
-		// TODO: Maybe we should return an error here
-		return CompareTypes(t, other), nil
+		return CompareTypes(t, other)
 	}
 
 	size := len(t.data)
 	otherSize := len(otherObject.data)
 
 	if size == 0 && otherSize == 0 {
-		return 0, nil
+		return 0
 	}
 
 	if size < otherSize {
-		return -1, nil
+		return -1
 	}
 
 	if size > otherSize {
-		return 1, nil
+		return 1
 	}
 
 	var res int64
@@ -95,10 +94,9 @@ func (t *hashMap) Compare(ctx context.Context, other Value) (int64, error) {
 
 	otherKeys := make([]string, 0, otherSize)
 
-	_ = otherObject.ForEach(ctx, func(_ context.Context, value, k Value) (Boolean, error) {
-		otherKeys = append(otherKeys, k.String())
-		return true, nil
-	})
+	for k := range otherObject.data {
+		otherKeys = append(otherKeys, k)
+	}
 
 	sortedOther := sort.StringSlice(otherKeys)
 	sortedOther.Sort()
@@ -110,15 +108,9 @@ func (t *hashMap) Compare(ctx context.Context, other Value) (int64, error) {
 		tKey, otherKey = sortedT[i], sortedOther[i]
 
 		if tKey == otherKey {
-			tVal, _ = t.Get(ctx, NewString(tKey))
-			otherVal, _ = otherObject.Get(ctx, NewString(tKey))
-			comp, err := CompareValues(ctx, tVal, otherVal)
-
-			if err != nil {
-				return 0, err
-			}
-
-			res = comp
+			tVal, _ = t.data[tKey]
+			otherVal, _ = otherObject.data[tKey]
+			res = CompareValues(tVal, otherVal)
 
 			continue
 		}
@@ -132,10 +124,10 @@ func (t *hashMap) Compare(ctx context.Context, other Value) (int64, error) {
 		break
 	}
 
-	return res, nil
+	return res
 }
 
-func (t *hashMap) Unwrap() interface{} {
+func (t *Object) Unwrap() interface{} {
 	obj := make(map[string]interface{})
 
 	for key, val := range t.data {
@@ -145,7 +137,7 @@ func (t *hashMap) Unwrap() interface{} {
 	return obj
 }
 
-func (t *hashMap) Hash() uint64 {
+func (t *Object) Hash() uint64 {
 	h := fnv.New64a()
 
 	h.Write([]byte("object:"))
@@ -183,8 +175,8 @@ func (t *hashMap) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *hashMap) Copy() Value {
-	c := &hashMap{make(map[string]Value)}
+func (t *Object) Copy() Value {
+	c := &Object{make(map[string]Value)}
 
 	for k, v := range t.data {
 		c.data[k] = v
@@ -193,8 +185,8 @@ func (t *hashMap) Copy() Value {
 	return c
 }
 
-func (t *hashMap) Clone(ctx context.Context) (Cloneable, error) {
-	cloned := &hashMap{make(map[string]Value)}
+func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
+	cloned := &Object{make(map[string]Value)}
 
 	var value Value
 
@@ -221,15 +213,15 @@ func (t *hashMap) Clone(ctx context.Context) (Cloneable, error) {
 	return cloned, nil
 }
 
-func (t *hashMap) Length(_ context.Context) (Int, error) {
+func (t *Object) Length(_ context.Context) (Int, error) {
 	return Int(len(t.data)), nil
 }
 
-func (t *hashMap) IsEmpty(_ context.Context) (Boolean, error) {
+func (t *Object) IsEmpty(_ context.Context) (Boolean, error) {
 	return len(t.data) == 0, nil
 }
 
-func (t *hashMap) Keys(_ context.Context) ([]Value, error) {
+func (t *Object) Keys(_ context.Context) ([]Value, error) {
 	keys := make([]Value, 0, len(t.data))
 
 	for k := range t.data {
@@ -239,7 +231,7 @@ func (t *hashMap) Keys(_ context.Context) ([]Value, error) {
 	return keys, nil
 }
 
-func (t *hashMap) Values(_ context.Context) ([]Value, error) {
+func (t *Object) Values(_ context.Context) ([]Value, error) {
 	keys := make([]Value, 0, len(t.data))
 
 	for _, v := range t.data {
@@ -249,7 +241,7 @@ func (t *hashMap) Values(_ context.Context) ([]Value, error) {
 	return keys, nil
 }
 
-func (t *hashMap) ForEach(ctx context.Context, predicate KeyedPredicate) error {
+func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
 	for key, val := range t.data {
 		doContinue, err := predicate(ctx, val, String(key))
 
@@ -265,7 +257,7 @@ func (t *hashMap) ForEach(ctx context.Context, predicate KeyedPredicate) error {
 	return nil
 }
 
-func (t *hashMap) Find(ctx context.Context, predicate KeyedPredicate) (List, error) {
+func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, error) {
 	res := NewArray(len(t.data))
 
 	for key, val := range t.data {
@@ -283,7 +275,7 @@ func (t *hashMap) Find(ctx context.Context, predicate KeyedPredicate) (List, err
 	return res, nil
 }
 
-func (t *hashMap) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, Boolean, error) {
+func (t *Object) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, Boolean, error) {
 	for key, val := range t.data {
 		res, err := predicate(ctx, val, String(key))
 
@@ -299,19 +291,15 @@ func (t *hashMap) FindOne(ctx context.Context, predicate KeyedPredicate) (Value,
 	return None, false, nil
 }
 
-func (t *hashMap) ContainsKey(_ context.Context, key Value) (Boolean, error) {
+func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
 	_, exists := t.data[key.String()]
 
 	return Boolean(exists), nil
 }
 
-func (t *hashMap) ContainsValue(ctx context.Context, target Value) (Boolean, error) {
+func (t *Object) ContainsValue(_ context.Context, target Value) (Boolean, error) {
 	for _, val := range t.data {
-		res, err := CompareValues(ctx, target, val)
-
-		if err != nil {
-			return false, err
-		}
+		res := CompareValues(target, val)
 
 		if res == 0 {
 			return true, nil
@@ -321,7 +309,7 @@ func (t *hashMap) ContainsValue(ctx context.Context, target Value) (Boolean, err
 	return false, nil
 }
 
-func (t *hashMap) Get(_ context.Context, key Value) (Value, error) {
+func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 	val, found := t.data[key.String()]
 
 	if found {
@@ -331,8 +319,8 @@ func (t *hashMap) Get(_ context.Context, key Value) (Value, error) {
 	return None, nil
 }
 
-func (t *hashMap) Set(_ context.Context, key Value, value Value) error {
-	if value != nil {
+func (t *Object) Set(_ context.Context, key Value, value Value) error {
+	if value == nil {
 		value = None
 	}
 
@@ -341,19 +329,19 @@ func (t *hashMap) Set(_ context.Context, key Value, value Value) error {
 	return nil
 }
 
-func (t *hashMap) Remove(_ context.Context, key Value) error {
+func (t *Object) Remove(_ context.Context, key Value) error {
 	delete(t.data, key.String())
 
 	return nil
 }
 
-func (t *hashMap) Clear(_ context.Context) error {
+func (t *Object) Clear(_ context.Context) error {
 	t.data = make(map[string]Value)
 
 	return nil
 }
 
-func (t *hashMap) Iterate(_ context.Context) (Iterator, error) {
+func (t *Object) Iterate(_ context.Context) (Iterator, error) {
 	// TODO: implement channel based iterator
 	return NewObjectIterator(t), nil
 }

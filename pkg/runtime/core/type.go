@@ -1,5 +1,7 @@
 package core
 
+import "reflect"
+
 const (
 	TypeNone     = "none"
 	TypeBoolean  = "boolean"
@@ -11,6 +13,10 @@ const (
 	TypeSet      = "set"
 	TypeMap      = "map"
 	TypeBinary   = "binary"
+	// Create subtypes for less specific types like interfaces
+	TypeIterable   = "iterable"
+	TypeIterator   = "iterator"
+	TypeMeasurable = "measurable"
 )
 
 func typeRank(value Value) int64 {
@@ -39,6 +45,41 @@ func typeRank(value Value) int64 {
 		return 9
 	default:
 		return -1
+	}
+}
+
+func Reflect(input Value) string {
+	if input == None || input == nil {
+		return TypeNone
+	}
+
+	switch input.(type) {
+	case Boolean:
+		return TypeBoolean
+	case Int:
+		return TypeInt
+	case Float:
+		return TypeFloat
+	case String:
+		return TypeString
+	case DateTime:
+		return TypeDateTime
+	case List:
+		return TypeList
+	case Map:
+		return TypeMap
+	case Set:
+		return TypeSet
+	case Binary:
+		return TypeBinary
+	case Iterable:
+		return TypeIterable
+	case Iterator:
+		return TypeIterator
+	case Measurable:
+		return TypeMeasurable
+	default:
+		return reflect.TypeOf(input).String()
 	}
 }
 

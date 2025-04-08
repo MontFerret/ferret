@@ -13,6 +13,8 @@ type Iterator struct {
 	key   core.Value
 }
 
+var NoopIter = NewIterator(&noopIter{})
+
 func NewIterator(src core.Iterator) *Iterator {
 	return &Iterator{src, core.None, core.None}
 }

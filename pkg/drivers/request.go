@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -32,10 +31,6 @@ func (req *HTTPRequest) MarshalJSON() ([]byte, error) {
 	}
 
 	return jettison.MarshalOpts(requestMarshal(*req), jettison.NoHTMLEscaping())
-}
-
-func (req *HTTPRequest) Type() core.Type {
-	return HTTPRequestType
 }
 
 func (req *HTTPRequest) String() string {

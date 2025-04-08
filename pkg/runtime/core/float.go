@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
@@ -108,31 +107,31 @@ func (f Float) Copy() Value {
 	return f
 }
 
-func (f Float) Compare(_ context.Context, other Value) (int64, error) {
+func (f Float) Compare(other Value) int64 {
 	switch otherVal := other.(type) {
 	case Float:
 		if f == otherVal {
-			return 0, nil
+			return 0
 		}
 
 		if f < otherVal {
-			return -1, nil
+			return -1
 		}
 
-		return +1, nil
+		return +1
 	case Int:
 		f := Float(otherVal)
 
 		if f == f {
-			return 0, nil
+			return 0
 		}
 
 		if f < f {
-			return -1, nil
+			return -1
 		}
 
-		return +1, nil
+		return +1
 	default:
-		return CompareTypes(f, other), nil
+		return CompareTypes(f, other)
 	}
 }

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"hash/fnv"
 	"strings"
 
@@ -63,10 +62,6 @@ func MustParseBoolean(input interface{}) Boolean {
 	return res
 }
 
-func (t Boolean) Type() string {
-	return TypeBoolean
-}
-
 func (t Boolean) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(bool(t), jettison.NoHTMLEscaping())
 }
@@ -95,20 +90,20 @@ func (t Boolean) Copy() Value {
 	return t
 }
 
-func (t Boolean) Compare(_ context.Context, other Value) (int64, error) {
+func (t Boolean) Compare(other Value) int64 {
 	otherBool, ok := other.(Boolean)
 
 	if !ok {
-		return CompareTypes(t, other), nil
+		return CompareTypes(t, other)
 	}
 
 	if t == otherBool {
-		return 0, nil
+		return 0
 	}
 
 	if !t && otherBool {
-		return -1, nil
+		return -1
 	}
 
-	return +1, nil
+	return +1
 }

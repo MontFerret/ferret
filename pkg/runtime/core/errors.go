@@ -20,15 +20,12 @@ var (
 	ErrTimeout               = errors.New("operation timed out")
 	ErrNotImplemented        = errors.New("not implemented")
 	ErrNotSupported          = errors.New("not supported")
-	ErrNoMoreData            = errors.New("no more data")
-	ErrInvalidPath           = errors.New("cannot read property")
-	ErrDone                  = errors.New("operation done")
 )
 
 const typeErrorTemplate = "expected %s, but got %s"
 
 func TypeError(value Value, expected ...string) error {
-	actual := value.Type()
+	actual := Reflect(value)
 
 	if len(expected) == 0 {
 		return Error(ErrInvalidType, actual)
@@ -67,8 +64,4 @@ func Errors(err ...error) error {
 	}
 
 	return errors.New(message)
-}
-
-func IsDone(err error) bool {
-	return err == ErrDone
 }

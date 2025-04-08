@@ -10,7 +10,7 @@ type ObjectIterator struct {
 	pos  int
 }
 
-func NewObjectIterator(obj *hashMap) Iterator {
+func NewObjectIterator(obj *Object) Iterator {
 	iter := &ObjectIterator{data: obj.data, keys: make([]string, len(obj.data))}
 
 	i := 0

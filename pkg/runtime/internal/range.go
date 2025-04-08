@@ -9,7 +9,6 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 type Range struct {
@@ -40,7 +39,7 @@ func (r *Range) Unwrap() interface{} {
 func (r *Range) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(types.Range.String()))
+	h.Write([]byte("range"))
 	h.Write([]byte(":"))
 
 	startMultiplier := 1
@@ -93,7 +92,7 @@ func (r *Range) Compare(_ context.Context, other core.Value) (int64, error) {
 	otherRange, ok := other.(*Range)
 
 	if !ok {
-		return types.Compare(types.Range, core.Reflect(other)), nil
+		return core.CompareTypes(r, other), nil
 	}
 
 	if r.start == otherRange.start && r.end == otherRange.end {

@@ -7,7 +7,6 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // Boxed represents an arbitrary Value that can be boxed as a runtime Value.
@@ -34,7 +33,7 @@ func (b *Boxed) Unwrap() any {
 func (b *Boxed) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(types.Boxed.String()))
+	h.Write([]byte("boxed"))
 	h.Write([]byte(":"))
 	h.Write([]byte(fmt.Sprintf("%v", b.Value)))
 

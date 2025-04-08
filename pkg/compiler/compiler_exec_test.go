@@ -3,7 +3,6 @@ package compiler_test
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
 	"strconv"
 	"strings"
@@ -933,7 +932,7 @@ func TestForWhile(t *testing.T) {
 		`, []any{0, 1, 2, 2, 4, 6, 3, 6, 9, 12, 4, 8, 12, 16, 20}),
 	}, runtime.WithFunctions(map[string]core.Function{
 		"UNTIL": func(ctx context.Context, args ...core.Value) (core.Value, error) {
-			if untilCounter < int(internal.ToInt(args[0])) {
+			if untilCounter < int(core.ToIntSafe(ctx, args[0])) {
 				untilCounter++
 
 				return core.True, nil

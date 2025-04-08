@@ -18,8 +18,6 @@ type (
 		items List
 		pos   Int
 	}
-
-	mapIterator struct{}
 )
 
 func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key Value) bool) error {

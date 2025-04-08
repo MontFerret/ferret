@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strconv"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -58,7 +57,7 @@ func (st *SymbolTable) AddConstant(constant core.Value) runtime.Operand {
 	var hash uint64
 	isNone := constant == core.None
 
-	if internal.IsScalar(constant) {
+	if core.IsScalar(constant) {
 		hash = constant.Hash()
 	}
 

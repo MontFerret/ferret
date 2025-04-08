@@ -9,31 +9,31 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-type arrayList struct {
+type Array struct {
 	data []Value
 }
 
 func EmptyArray() List {
-	return &arrayList{data: make([]Value, 0)}
+	return &Array{data: make([]Value, 0)}
 }
 
 func NewArray(cap int) List {
-	return &arrayList{data: make([]Value, 0, cap)}
+	return &Array{data: make([]Value, 0, cap)}
 }
 
 func NewSizedArray(size int) List {
-	return &arrayList{data: make([]Value, size)}
+	return &Array{data: make([]Value, size)}
 }
 
 func NewArrayWith(values ...Value) List {
-	return &arrayList{data: values}
+	return &Array{data: values}
 }
 
-func (t *arrayList) MarshalJSON() ([]byte, error) {
+func (t *Array) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }
 
-func (t *arrayList) String() string {
+func (t *Array) String() string {
 	marshaled, err := t.MarshalJSON()
 
 	if err != nil {
@@ -43,26 +43,26 @@ func (t *arrayList) String() string {
 	return string(marshaled)
 }
 
-func (t *arrayList) Compare(ctx context.Context, other Value) (int64, error) {
-	otherArr, ok := other.(*arrayList)
+func (t *Array) Compare(other Value) int64 {
+	otherArr, ok := other.(*Array)
 
 	if !ok {
-		return CompareTypes(t, other), nil
+		return CompareTypes(t, other)
 	}
 
 	size := len(t.data)
 	otherArrSize := len(otherArr.data)
 
 	if size == 0 && otherArrSize == 0 {
-		return 0, nil
+		return 0
 	}
 
 	if size < otherArrSize {
-		return -1, nil
+		return -1
 	}
 
 	if size > otherArrSize {
-		return 1, nil
+		return 1
 	}
 
 	var res int64
@@ -71,23 +71,19 @@ func (t *arrayList) Compare(ctx context.Context, other Value) (int64, error) {
 		thisVal := t.data[i]
 		otherVal := otherArr.data[i]
 
-		comp, err := CompareValues(ctx, thisVal, otherVal)
-
-		if err != nil {
-			return 0, err
-		}
+		comp := CompareValues(thisVal, otherVal)
 
 		if comp != 0 {
-			return comp, nil
+			return comp
 		}
 
 		res = comp
 	}
 
-	return res, nil
+	return res
 }
 
-func (t *arrayList) Unwrap() interface{} {
+func (t *Array) Unwrap() interface{} {
 	arr := make([]interface{}, len(t.data))
 
 	for idx, val := range t.data {
@@ -97,7 +93,7 @@ func (t *arrayList) Unwrap() interface{} {
 	return arr
 }
 
-func (t *arrayList) Hash() uint64 {
+func (t *Array) Hash() uint64 {
 	h := fnv.New64a()
 
 	h.Write([]byte("array:"))
@@ -121,7 +117,7 @@ func (t *arrayList) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *arrayList) Copy() Value {
+func (t *Array) Copy() Value {
 	ctx := context.Background()
 	c := NewArray(len(t.data))
 
@@ -132,9 +128,9 @@ func (t *arrayList) Copy() Value {
 	return c
 }
 
-func (t *arrayList) Clone(ctx context.Context) (Cloneable, error) {
+func (t *Array) Clone(ctx context.Context) (Cloneable, error) {
 	size := len(t.data)
-	res := &arrayList{data: make([]Value, size)}
+	res := &Array{data: make([]Value, size)}
 
 	var value Value
 
@@ -152,19 +148,19 @@ func (t *arrayList) Clone(ctx context.Context) (Cloneable, error) {
 	return res, nil
 }
 
-func (t *arrayList) Iterate(_ context.Context) (Iterator, error) {
+func (t *Array) Iterate(_ context.Context) (Iterator, error) {
 	return NewArrayIterator(t), nil
 }
 
-func (t *arrayList) Length(_ context.Context) (Int, error) {
+func (t *Array) Length(_ context.Context) (Int, error) {
 	return Int(len(t.data)), nil
 }
 
-func (t *arrayList) IsEmpty(_ context.Context) (Boolean, error) {
+func (t *Array) IsEmpty(_ context.Context) (Boolean, error) {
 	return len(t.data) == 0, nil
 }
 
-func (t *arrayList) Contains(ctx context.Context, value Value) (Boolean, error) {
+func (t *Array) Contains(ctx context.Context, value Value) (Boolean, error) {
 	idx, err := t.IndexOf(ctx, value)
 
 	if err != nil {
@@ -174,13 +170,9 @@ func (t *arrayList) Contains(ctx context.Context, value Value) (Boolean, error) 
 	return idx >= 0, nil
 }
 
-func (t *arrayList) IndexOf(ctx context.Context, item Value) (Int, error) {
+func (t *Array) IndexOf(_ context.Context, item Value) (Int, error) {
 	for idx, el := range t.data {
-		comp, err := CompareValues(ctx, item, el)
-
-		if err != nil {
-			return -1, err
-		}
+		comp := CompareValues(item, el)
 
 		if comp == 0 {
 			return Int(idx), nil
@@ -190,7 +182,7 @@ func (t *arrayList) IndexOf(ctx context.Context, item Value) (Int, error) {
 	return -1, nil
 }
 
-func (t *arrayList) Get(_ context.Context, idx Int) (Value, error) {
+func (t *Array) Get(_ context.Context, idx Int) (Value, error) {
 	l := Int(len(t.data) - 1)
 
 	if l < 0 {
@@ -204,7 +196,7 @@ func (t *arrayList) Get(_ context.Context, idx Int) (Value, error) {
 	return t.data[idx], nil
 }
 
-func (t *arrayList) First(_ context.Context) (Value, error) {
+func (t *Array) First(_ context.Context) (Value, error) {
 	if len(t.data) > 0 {
 		return t.data[0], nil
 	}
@@ -212,7 +204,7 @@ func (t *arrayList) First(_ context.Context) (Value, error) {
 	return None, nil
 }
 
-func (t *arrayList) Last(_ context.Context) (Value, error) {
+func (t *Array) Last(_ context.Context) (Value, error) {
 	size := len(t.data)
 
 	if size > 1 {
@@ -224,7 +216,7 @@ func (t *arrayList) Last(_ context.Context) (Value, error) {
 	return None, nil
 }
 
-func (t *arrayList) Find(ctx context.Context, predicate IndexedPredicate) (List, error) {
+func (t *Array) Find(ctx context.Context, predicate IndexedPredicate) (List, error) {
 	result := NewArray(len(t.data))
 	size := Int(len(t.data))
 
@@ -244,7 +236,7 @@ func (t *arrayList) Find(ctx context.Context, predicate IndexedPredicate) (List,
 	return result, nil
 }
 
-func (t *arrayList) FindOne(ctx context.Context, predicate IndexedPredicate) (Value, Boolean, error) {
+func (t *Array) FindOne(ctx context.Context, predicate IndexedPredicate) (Value, Boolean, error) {
 	size := Int(len(t.data))
 
 	for idx := Int(0); idx < size; idx++ {
@@ -263,7 +255,7 @@ func (t *arrayList) FindOne(ctx context.Context, predicate IndexedPredicate) (Va
 	return None, false, nil
 }
 
-func (t *arrayList) Slice(_ context.Context, start, end Int) (List, error) {
+func (t *Array) Slice(_ context.Context, start, end Int) (List, error) {
 	length := Int(len(t.data))
 
 	if start >= length {
@@ -274,59 +266,45 @@ func (t *arrayList) Slice(_ context.Context, start, end Int) (List, error) {
 		end = length
 	}
 
-	result := new(arrayList)
+	result := new(Array)
 	result.data = t.data[start:end]
 
 	return result, nil
 }
 
-func (t *arrayList) Sort(ctx context.Context, ascending Boolean) (List, error) {
+func (t *Array) Sort(ctx context.Context, ascending Boolean) (List, error) {
 	var pivot int64 = -1
 
 	if ascending {
 		pivot = 1
 	}
 
-	return t.SortWith(ctx, func(c context.Context, first, second Value) (int64, error) {
-		comp, err := CompareValues(c, first, second)
+	res, _ := t.SortWith(ctx, func(first, second Value) int64 {
+		comp := CompareValues(first, second)
 
-		if err != nil {
-			return 0, err
-		}
-
-		return pivot * comp, nil
+		return pivot * comp
 	})
+
+	return res, nil
 }
 
-func (t *arrayList) SortWith(ctx context.Context, comparator Comparator) (List, error) {
+func (t *Array) SortWith(_ context.Context, comparator Comparator) (List, error) {
 	c := make([]Value, len(t.data))
 	copy(c, t.data)
 
-	var err error
-
 	sort.SliceStable(c, func(i, j int) bool {
-		comp, e := comparator(ctx, c[i], c[j])
-
-		if e != nil {
-			err = e
-
-			return true
-		}
+		comp := comparator(c[i], c[j])
 
 		return comp == 0
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	res := new(arrayList)
+	res := new(Array)
 	res.data = c
 
 	return res, nil
 }
 
-func (t *arrayList) ForEach(ctx context.Context, predicate IndexedPredicate) error {
+func (t *Array) ForEach(ctx context.Context, predicate IndexedPredicate) error {
 	size := Int(len(t.data))
 
 	for idx := Int(0); idx < size; idx++ {
@@ -345,13 +323,13 @@ func (t *arrayList) ForEach(ctx context.Context, predicate IndexedPredicate) err
 	return nil
 }
 
-func (t *arrayList) Add(_ context.Context, value Value) error {
+func (t *Array) Add(_ context.Context, value Value) error {
 	t.data = append(t.data, value)
 
 	return nil
 }
 
-func (t *arrayList) Set(_ context.Context, idx Int, value Value) error {
+func (t *Array) Set(_ context.Context, idx Int, value Value) error {
 	last := Int(len(t.data) - 1)
 
 	if last >= idx {
@@ -363,19 +341,19 @@ func (t *arrayList) Set(_ context.Context, idx Int, value Value) error {
 	return Error(ErrInvalidOperation, "out of bounds")
 }
 
-func (t *arrayList) Insert(_ context.Context, idx Int, value Value) error {
+func (t *Array) Insert(_ context.Context, idx Int, value Value) error {
 	t.data = append(t.data[:idx], append([]Value{value}, t.data[idx:]...)...)
 
 	return nil
 }
 
-func (t *arrayList) Clear(_ context.Context) error {
+func (t *Array) Clear(_ context.Context) error {
 	t.data = make([]Value, 0)
 
 	return nil
 }
 
-func (t *arrayList) Remove(ctx context.Context, value Value) error {
+func (t *Array) Remove(ctx context.Context, value Value) error {
 	idx, err := t.IndexOf(ctx, value)
 
 	if err != nil {
@@ -391,7 +369,7 @@ func (t *arrayList) Remove(ctx context.Context, value Value) error {
 	return err
 }
 
-func (t *arrayList) RemoveAt(_ context.Context, idx Int) (Value, error) {
+func (t *Array) RemoveAt(_ context.Context, idx Int) (Value, error) {
 	edge := Int(len(t.data) - 1)
 
 	if idx > edge {
@@ -405,7 +383,7 @@ func (t *arrayList) RemoveAt(_ context.Context, idx Int) (Value, error) {
 	return item, nil
 }
 
-func (t *arrayList) Swap(_ context.Context, i, j Int) error {
+func (t *Array) Swap(_ context.Context, i, j Int) error {
 	t.data[i], t.data[j] = t.data[j], t.data[i]
 
 	return nil

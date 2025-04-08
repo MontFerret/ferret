@@ -270,7 +270,7 @@ func ToMap(ctx context.Context, input Value) Map {
 	switch value := input.(type) {
 	case Map:
 		return value
-	case *arrayList:
+	case *Array:
 		obj := NewObject()
 
 		for i, v := range value.data {
@@ -433,13 +433,13 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 			item, _, err := iterator.Next(ctx)
 
 			if err != nil {
-				continue
+				return ZeroInt, err
 			}
 
 			i, err := ToInt(ctx, item)
 
 			if err != nil {
-				continue
+				return ZeroInt, err
 			}
 
 			res += i
@@ -449,6 +449,20 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 	default:
 		return ZeroInt, nil
 	}
+}
+
+func ToIntSafe(ctx context.Context, input Value) Int {
+	result, err := ToInt(ctx, input)
+
+	if err != nil {
+		return ZeroInt
+	}
+
+	if result > 0 {
+		return result
+	}
+
+	return ZeroInt
 }
 
 func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, error) {
@@ -604,87 +618,12 @@ func Positive(input Value) Value {
 	}
 }
 
-func Contains(ctx context.Context, input Value, value Value) Boolean {
-	switch val := input.(type) {
-	case List:
-		contains, err := val.Contains(ctx, value)
-		if err != nil {
-			return False
-		}
-
-		return contains
-	case Map:
-		containsValue, err := val.ContainsValue(ctx, value)
-
-		if err != nil {
-			return False
-		}
-
-		return containsValue
-	case String:
-		return Boolean(strings.Contains(val.String(), value.String()))
-	default:
-		return false
-	}
-}
-
 func ToNumberOrString(input Value) Value {
 	switch value := input.(type) {
 	case Int, Float, String:
 		return value
 	default:
 		return ToString(value)
-	}
-}
-
-func ToNumberOnly(ctx context.Context, input Value) (Value, error) {
-	switch value := input.(type) {
-	case Int, Float:
-		return value, nil
-	case String:
-		if strings.Contains(value.String(), ".") {
-			return ToFloat(ctx, input)
-		}
-
-		return ToInt(ctx, input)
-	case Iterable:
-		iterator, err := value.Iterate(ctx)
-
-		if err != nil {
-			return ZeroInt, err
-		}
-
-		i := ZeroInt
-		f := ZeroFloat
-
-		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
-			val, _, err := iterator.Next(ctx)
-
-			if err != nil {
-				continue
-			}
-
-			out, err := ToNumberOnly(ctx, val)
-
-			if err != nil {
-				return ZeroInt, err
-			}
-
-			switch item := out.(type) {
-			case Int:
-				i += item
-			case Float:
-				f += item
-			}
-		}
-
-		if f == 0 {
-			return i, nil
-		}
-
-		return Float(i) + f, nil
-	default:
-		return ToInt(ctx, input)
 	}
 }
 

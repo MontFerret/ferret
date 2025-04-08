@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"hash/fnv"
 	"time"
 
@@ -92,20 +91,20 @@ func (dt DateTime) Copy() Value {
 	return NewDateTime(dt.Time)
 }
 
-func (dt DateTime) Compare(_ context.Context, other Value) (int64, error) {
+func (dt DateTime) Compare(other Value) int64 {
 	otherDt, ok := other.(DateTime)
 
 	if !ok {
-		return CompareTypes(dt, other), nil
+		return CompareTypes(dt, other)
 	}
 
 	if dt.After(otherDt.Time) {
-		return 1, nil
+		return 1
 	}
 
 	if dt.Before(otherDt.Time) {
-		return -1, nil
+		return -1
 	}
 
-	return 0, nil
+	return 0
 }

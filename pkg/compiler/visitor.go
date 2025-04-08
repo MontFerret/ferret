@@ -266,29 +266,29 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 
 func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
 	// TODO: Undefine original loop variables
-	loop := v.loops.Loop()
-	//v.emitter.EmitAB(runtime.OpLoopPushIter, loop.Result, loop.Iterator)
-	//v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
-	//v.emitter.EmitA(runtime.OpClose, loop.Iterator)
-
-	// Allocate registers
-	collector := v.registers.Allocate(Temp)
-	collectorKey := v.registers.Allocate(Temp)
-	collectorVal := v.registers.Allocate(Temp)
-
-	// Init Grouping
-	// Create a new collector
-	v.emitter.EmitA(runtime.OpGroupPrep, collector)
-
-	// TODO: patch jump
-
-	if agr := ctx.CollectGrouping(); agr != nil {
-		selectors := agr.AllCollectSelector()
-
-		for _, selector := range selectors {
-			reg := selector.Expression().Accept(v).(runtime.Operand)
-		}
-	}
+	//loop := v.loops.Loop()
+	////v.emitter.EmitAB(runtime.OpLoopPushIter, loop.Result, loop.Iterator)
+	////v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
+	////v.emitter.EmitA(runtime.OpClose, loop.Iterator)
+	//
+	//// Allocate registers
+	//collector := v.registers.Allocate(Temp)
+	//collectorKey := v.registers.Allocate(Temp)
+	//collectorVal := v.registers.Allocate(Temp)
+	//
+	//// Init Grouping
+	//// Create a new collector
+	//v.emitter.EmitA(runtime.OpGroupPrep, collector)
+	//
+	//// TODO: patch jump
+	//
+	//if agr := ctx.CollectGrouping(); agr != nil {
+	//	selectors := agr.AllCollectSelector()
+	//
+	//	for _, selector := range selectors {
+	//		reg := selector.Expression().Accept(v).(runtime.Operand)
+	//	}
+	//}
 
 	return nil
 }

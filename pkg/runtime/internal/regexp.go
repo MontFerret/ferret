@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 	"hash/fnv"
 	"regexp"
 	"strings"
@@ -24,10 +23,6 @@ func NewRegexp(pattern core.String) (*Regexp, error) {
 	return (*Regexp)(r), nil
 }
 
-func (r *Regexp) Type() core.Type {
-	return types.Regexp
-}
-
 func (r *Regexp) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(r.String(), jettison.NoHTMLEscaping())
 }
@@ -43,7 +38,7 @@ func (r *Regexp) Unwrap() interface{} {
 func (r *Regexp) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte(types.Regexp.String()))
+	h.Write([]byte("regexp"))
 	h.Write([]byte(":"))
 	h.Write([]byte(r.String()))
 
@@ -65,7 +60,7 @@ func (r *Regexp) Compare(_ context.Context, other core.Value) (int64, error) {
 	otherRegexp, ok := other.(*Regexp)
 
 	if !ok {
-		return types.Compare(types.Regexp, core.Reflect(other)), nil
+		return core.CompareTypes(r, other), nil
 	}
 
 	return int64(strings.Compare(r.String(), otherRegexp.String())), nil
