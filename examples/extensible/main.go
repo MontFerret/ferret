@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"os"
 	"strings"
 
@@ -27,26 +28,26 @@ func main() {
 
 func getStrings() ([]string, error) {
 	// function implements is a type of a function that ferret supports as a runtime function
-	transform := func(ctx context.Context, args ...core.Value) (core.Value, error) {
+	transform := func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		// it's just a helper function which helps to validate a number of passed args
-		err := core.ValidateArgs(args, 1, 1)
+		err := runtime.ValidateArgs(args, 1, 1)
 
 		if err != nil {
 			// it's recommended to return built-in None type, instead of nil
-			return core.None, err
+			return runtime.None, err
 		}
 
 		// this is another helper functions allowing to do type validation
 		err = core.ValidateType(args[0], types.String)
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
 		// cast to built-in string type
-		str := args[0].(core.String)
+		str := args[0].(runtime.String)
 
-		return core.NewString(strings.ToUpper(str.String() + "_ferret")), nil
+		return runtime.NewString(strings.ToUpper(str.String() + "_ferret")), nil
 	}
 
 	query := `

@@ -1,14 +1,13 @@
 package compiler
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-func copyFromNamespace(fns *core.Functions, namespace string) error {
+func copyFromNamespace(fns *runtime.Functions, namespace string) error {
 	// In the name of the function "A::B::C", the namespace is "A::B",
 	// not "A::B::".
 	//

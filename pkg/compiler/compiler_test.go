@@ -2,13 +2,12 @@ package compiler_test
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/vm"
+	"testing"
 )
 
-func Disassembly(instr []string, opcodes ...runtime.Opcode) string {
+func Disassembly(instr []string, opcodes ...vm.Opcode) string {
 	var disassembly string
 
 	for i := 0; i < len(instr); i++ {
@@ -30,14 +29,14 @@ func TestCompiler_Variables(t *testing.T) {
 3: [%d] MOVE R0 R2
 4: [%d] RET
 `,
-					runtime.OpLoadNone,
-					runtime.OpStoreGlobal,
-					runtime.OpLoadGlobal,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadNone,
+					vm.OpStoreGlobal,
+					vm.OpLoadGlobal,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewString("i"),
+				Constants: []runtime.Value{
+					runtime.NewString("i"),
 				},
 			},
 		},
@@ -51,14 +50,14 @@ func TestCompiler_Variables(t *testing.T) {
 3: [%d] MOVE R0 R2
 4: [%d] RET
 `,
-					runtime.OpLoadBool,
-					runtime.OpStoreGlobal,
-					runtime.OpLoadGlobal,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadBool,
+					vm.OpStoreGlobal,
+					vm.OpLoadGlobal,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewString("a"),
+				Constants: []runtime.Value{
+					runtime.NewString("a"),
 				},
 			},
 		},
@@ -72,14 +71,14 @@ func TestCompiler_Variables(t *testing.T) {
 3: [%d] MOVE R0 R2
 4: [%d] RET
 `,
-					runtime.OpLoadBool,
-					runtime.OpStoreGlobal,
-					runtime.OpLoadGlobal,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadBool,
+					vm.OpStoreGlobal,
+					vm.OpLoadGlobal,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewString("a"),
+				Constants: []runtime.Value{
+					runtime.NewString("a"),
 				},
 			},
 		},
@@ -93,15 +92,15 @@ func TestCompiler_Variables(t *testing.T) {
 3: [%d] MOVE R0 R2
 4: [%d] RET
 `,
-					runtime.OpLoadConst,
-					runtime.OpStoreGlobal,
-					runtime.OpLoadGlobal,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadConst,
+					vm.OpStoreGlobal,
+					vm.OpLoadGlobal,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewFloat(1.1),
-					core.NewString("a"),
+				Constants: []runtime.Value{
+					runtime.NewFloat(1.1),
+					runtime.NewString("a"),
 				},
 			},
 		},
@@ -121,18 +120,18 @@ RETURN a
 5: [%d] MOVE R0 R3
 6: [%d] RET
 `,
-					runtime.OpLoadConst,
-					runtime.OpStoreGlobal,
-					runtime.OpLoadGlobal,
-					runtime.OpStoreGlobal,
-					runtime.OpLoadGlobal,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadConst,
+					vm.OpStoreGlobal,
+					vm.OpLoadGlobal,
+					vm.OpStoreGlobal,
+					vm.OpLoadGlobal,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewString("foo"),
-					core.NewString("a"),
-					core.NewString("b"),
+				Constants: []runtime.Value{
+					runtime.NewString("foo"),
+					runtime.NewString("a"),
+					runtime.NewString("b"),
 				},
 			},
 		},
@@ -150,13 +149,13 @@ func TestCompiler_FuncCall(t *testing.T) {
 2: [%d] MOVE R0 R1
 3: [%d] RET
 `,
-					runtime.OpLoadConst,
-					runtime.OpCall,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadConst,
+					vm.OpCall,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewString("FOO"),
+				Constants: []runtime.Value{
+					runtime.NewString("FOO"),
 				},
 			},
 		},
@@ -171,15 +170,15 @@ func TestCompiler_FuncCall(t *testing.T) {
 					"MOVE R0 R1",
 					"RET",
 				},
-					runtime.OpLoadConst,
-					runtime.OpLoadConst,
-					runtime.OpLoadBool,
-					runtime.OpCall,
-					runtime.OpMove,
-					runtime.OpReturn,
+					vm.OpLoadConst,
+					vm.OpLoadConst,
+					vm.OpLoadBool,
+					vm.OpCall,
+					vm.OpMove,
+					vm.OpReturn,
 				),
-				Constants: []core.Value{
-					core.NewString("FOO"),
+				Constants: []runtime.Value{
+					runtime.NewString("FOO"),
 				},
 			},
 		},

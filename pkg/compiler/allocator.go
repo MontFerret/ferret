@@ -1,6 +1,8 @@
 package compiler
 
-import "github.com/MontFerret/ferret/pkg/runtime"
+import (
+	"github.com/MontFerret/ferret/pkg/vm"
+)
 
 type (
 	// RegisterType represents the type of a register
@@ -18,13 +20,13 @@ type (
 	}
 
 	RegisterSequence struct {
-		Registers []runtime.Operand
+		Registers []vm.Operand
 	}
 
 	// RegisterAllocator manages register allocation
 	RegisterAllocator struct {
-		registers    map[runtime.Operand]*RegisterStatus
-		nextRegister runtime.Operand
+		registers    map[vm.Operand]*RegisterStatus
+		nextRegister vm.Operand
 		currentInstr int
 	}
 )
@@ -38,13 +40,13 @@ const (
 
 func NewRegisterAllocator() *RegisterAllocator {
 	return &RegisterAllocator{
-		registers:    make(map[runtime.Operand]*RegisterStatus),
-		nextRegister: runtime.NoopOperand + 1, // we start at 1 to avoid NoopOperand
+		registers:    make(map[vm.Operand]*RegisterStatus),
+		nextRegister: vm.NoopOperand + 1, // we start at 1 to avoid NoopOperand
 	}
 }
 
 // Allocate assigns a register based on variable type
-func (ra *RegisterAllocator) Allocate(regType RegisterType) runtime.Operand {
+func (ra *RegisterAllocator) Allocate(regType RegisterType) vm.Operand {
 	// Try to find a free register first
 	reg, found := ra.findFreeRegister()
 
@@ -66,7 +68,7 @@ func (ra *RegisterAllocator) Allocate(regType RegisterType) runtime.Operand {
 }
 
 // Free marks a register as available
-func (ra *RegisterAllocator) Free(reg runtime.Operand) {
+func (ra *RegisterAllocator) Free(reg vm.Operand) {
 	//if status, exists := ra.registers[reg]; exists {
 	//status.IsAllocated = false
 	//status.Lifetime.End = ra.currentInstr
@@ -81,7 +83,7 @@ func (ra *RegisterAllocator) Free(reg runtime.Operand) {
 }
 
 // findFreeRegister looks for an unused register
-func (ra *RegisterAllocator) findFreeRegister() (runtime.Operand, bool) {
+func (ra *RegisterAllocator) findFreeRegister() (vm.Operand, bool) {
 	// First, try to find a completely free register
 	for reg, status := range ra.registers {
 		if !status.IsAllocated {
@@ -95,7 +97,7 @@ func (ra *RegisterAllocator) findFreeRegister() (runtime.Operand, bool) {
 // AllocateSequence allocates a sequence of registers for function arguments or similar uses
 func (ra *RegisterAllocator) AllocateSequence(count int) *RegisterSequence {
 	sequence := &RegisterSequence{
-		Registers: make([]runtime.Operand, count),
+		Registers: make([]vm.Operand, count),
 	}
 
 	// First pass: try to find contiguous free registers
@@ -104,7 +106,7 @@ func (ra *RegisterAllocator) AllocateSequence(count int) *RegisterSequence {
 	if found {
 		// Use contiguous block
 		for i := 0; i < count; i++ {
-			reg := startReg + runtime.Operand(i)
+			reg := startReg + vm.Operand(i)
 			sequence.Registers[i] = reg
 
 			// Initialize or update register status
@@ -125,14 +127,14 @@ func (ra *RegisterAllocator) AllocateSequence(count int) *RegisterSequence {
 }
 
 // findContiguousRegisters attempts to find a block of consecutive free registers
-func (ra *RegisterAllocator) findContiguousRegisters(count int) (runtime.Operand, bool) {
+func (ra *RegisterAllocator) findContiguousRegisters(count int) (vm.Operand, bool) {
 	if count <= 0 {
 		return 0, false
 	}
 
 	// First, try to find a contiguous block in existing registers
 	maxReg := ra.nextRegister
-	for start := runtime.NoopOperand + 1; start < maxReg; start++ {
+	for start := vm.NoopOperand + 1; start < maxReg; start++ {
 		if ra.isContiguousBlockFree(start, count) {
 			return start, true
 		}
@@ -140,15 +142,15 @@ func (ra *RegisterAllocator) findContiguousRegisters(count int) (runtime.Operand
 
 	// If no existing contiguous block found, allocate new block
 	startReg := ra.nextRegister
-	ra.nextRegister += runtime.Operand(count)
+	ra.nextRegister += vm.Operand(count)
 
 	return startReg, true
 }
 
 // isContiguousBlockFree checks if a block of registers is available
-func (ra *RegisterAllocator) isContiguousBlockFree(start runtime.Operand, count int) bool {
+func (ra *RegisterAllocator) isContiguousBlockFree(start vm.Operand, count int) bool {
 	for i := 0; i < count; i++ {
-		reg := start + runtime.Operand(i)
+		reg := start + vm.Operand(i)
 
 		if status := ra.registers[reg]; status != nil && status.IsAllocated {
 			return false

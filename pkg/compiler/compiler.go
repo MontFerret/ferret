@@ -2,11 +2,11 @@ package compiler
 
 import (
 	"errors"
+	//"github.com/MontFerret/ferret/pkg/stdlib"
+	"github.com/MontFerret/ferret/pkg/vm"
 	goruntime "runtime"
 
 	"github.com/MontFerret/ferret/pkg/parser"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	//"github.com/MontFerret/ferret/pkg/stdlib"
 )
 
 type Compiler struct {
@@ -32,7 +32,7 @@ func New(setters ...Option) *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
+func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	if query == "" {
 		return nil, ErrEmptyQuery
 	}
@@ -69,7 +69,7 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 		return nil, l.err
 	}
 
-	program = &runtime.Program{}
+	program = &vm.Program{}
 	program.Bytecode = l.emitter.instructions
 	program.Constants = l.symbols.constants
 	program.CatchTable = l.catchTable
@@ -83,7 +83,7 @@ func (c *Compiler) Compile(query string) (program *runtime.Program, err error) {
 	return program, err
 }
 
-func (c *Compiler) MustCompile(query string) *runtime.Program {
+func (c *Compiler) MustCompile(query string) *vm.Program {
 	program, err := c.Compile(query)
 
 	if err != nil {

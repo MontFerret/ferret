@@ -1,6 +1,8 @@
 package compiler
 
-import "github.com/MontFerret/ferret/pkg/runtime"
+import (
+	"github.com/MontFerret/ferret/pkg/vm"
+)
 
 type (
 	LoopType int
@@ -14,13 +16,13 @@ type (
 		Allocate   bool
 		Jump       int
 		JumpOffset int
-		Src        runtime.Operand
-		Iterator   runtime.Operand
+		Src        vm.Operand
+		Iterator   vm.Operand
 		ValueName  string
-		Value      runtime.Operand
+		Value      vm.Operand
 		KeyName    string
-		Key        runtime.Operand
-		Result     runtime.Operand
+		Key        vm.Operand
+		Result     vm.Operand
 	}
 
 	LoopTable struct {
@@ -50,7 +52,7 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 
 func (lt *LoopTable) EnterLoop(loopType LoopType, kind LoopKind, distinct bool) *Loop {
 	var allocate bool
-	var state runtime.Operand
+	var state vm.Operand
 
 	// top loop
 	if len(lt.loops) == 0 {

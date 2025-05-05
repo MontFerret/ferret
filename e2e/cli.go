@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"io"
 	"io/ioutil"
 	"os"
@@ -183,7 +183,7 @@ func (p *Params) ToMap() (map[string]interface{}, error) {
 		pair := strings.SplitN(entry, ":", 2)
 
 		if len(pair) < 2 {
-			return nil, core.Error(core.ErrInvalidArgument, entry)
+			return nil, runtime.Error(runtime.ErrInvalidArgument, entry)
 		}
 
 		var value interface{}
@@ -403,7 +403,7 @@ func execFiles(ctx context.Context, engine *ferret.Instance, opts []runtime_old.
 			logger.Debug().Errs("errors", errList).Msg("executed with errors")
 		}
 
-		return core.Errors(errList...)
+		return runtime.Errors(errList...)
 	}
 
 	return nil

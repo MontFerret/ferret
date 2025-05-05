@@ -4,15 +4,14 @@ import (
 	"context"
 	j "encoding/json"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm"
 	"strings"
 	"testing"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type UseCase struct {
@@ -73,7 +72,7 @@ func CaseCompilationError(expression string, desc ...string) UseCase {
 	return NewCase(expression, nil, ShouldBeCompilationError, desc...)
 }
 
-func SkipCompilationRuntimeError(expression string, desc ...string) UseCase {
+func SkipCaseCompilationError(expression string, desc ...string) UseCase {
 	return Skip(CaseCompilationError(expression, desc...))
 }
 
@@ -111,7 +110,7 @@ func SkipCaseJSON(expression string, expected string, desc ...string) UseCase {
 
 type ExpectedProgram struct {
 	Disassembly string
-	Constants   []core.Value
+	Constants   []runtime.Value
 	Registers   int
 }
 
@@ -120,14 +119,14 @@ type ByteCodeUseCase struct {
 	Expected   ExpectedProgram
 }
 
-func Compile(expression string) (*runtime.Program, error) {
+func Compile(expression string) (*vm.Program, error) {
 	c := compiler.New()
 
 	return c.Compile(expression)
 }
 
-func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) {
-	vm := runtime.NewVM(p)
+func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
+	vm := vm.NewVM(p)
 
 	out, err := vm.Run(context.Background(), opts)
 
@@ -138,7 +137,7 @@ func Run(p *runtime.Program, opts ...runtime.EnvironmentOption) ([]byte, error) 
 	return out.MarshalJSON()
 }
 
-func Exec(p *runtime.Program, raw bool, opts ...runtime.EnvironmentOption) (any, error) {
+func Exec(p *vm.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {
 	out, err := Run(p, opts...)
 
 	if err != nil {
@@ -221,7 +220,7 @@ func RunAsmUseCases(t *testing.T, useCases []ByteCodeUseCase) {
 	}
 }
 
-func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...runtime.EnvironmentOption) {
+func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...vm.EnvironmentOption) {
 	for _, useCase := range useCases {
 		name := useCase.Description
 
@@ -253,8 +252,8 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 					return
 				}
 
-				options := []runtime.EnvironmentOption{
-					runtime.WithFunctions(c.Functions().Unwrap()),
+				options := []vm.EnvironmentOption{
+					vm.WithFunctions(c.Functions().Unwrap()),
 				}
 				options = append(options, opts...)
 
@@ -293,24 +292,24 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 	}
 }
 
-func RunUseCases(t *testing.T, useCases []UseCase, opts ...runtime.EnvironmentOption) {
+func RunUseCases(t *testing.T, useCases []UseCase, opts ...vm.EnvironmentOption) {
 	RunUseCasesWith(t, compiler.New(), useCases, opts...)
 }
 
-func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...runtime.EnvironmentOption) {
+func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
 	prog, err := c.Compile(expression)
 
 	if err != nil {
 		panic(err)
 	}
 
-	options := []runtime.EnvironmentOption{
-		runtime.WithFunctions(c.Functions().Unwrap()),
+	options := []vm.EnvironmentOption{
+		vm.WithFunctions(c.Functions().Unwrap()),
 	}
 	options = append(options, opts...)
 
 	ctx := context.Background()
-	vm := runtime.NewVM(prog)
+	vm := vm.NewVM(prog)
 
 	b.ResetTimer()
 
@@ -323,6 +322,6 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	}
 }
 
-func RunBenchmark(b *testing.B, expression string, opts ...runtime.EnvironmentOption) {
+func RunBenchmark(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
 	RunBenchmarkWith(b, compiler.New(), expression, opts...)
 }

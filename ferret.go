@@ -2,11 +2,11 @@ package ferret
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/vm"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type Instance struct {
@@ -23,7 +23,7 @@ func New(setters ...Option) *Instance {
 	}
 }
 
-func (i *Instance) Functions() core.Namespace {
+func (i *Instance) Functions() runtime.Namespace {
 	return i.compiler
 }
 
@@ -31,11 +31,11 @@ func (i *Instance) Drivers() *drivers.Container {
 	return i.drivers
 }
 
-func (i *Instance) Compile(query string) (*runtime.Program, error) {
+func (i *Instance) Compile(query string) (*vm.Program, error) {
 	return i.compiler.Compile(query)
 }
 
-func (i *Instance) MustCompile(query string) *runtime.Program {
+func (i *Instance) MustCompile(query string) *vm.Program {
 	return i.compiler.MustCompile(query)
 }
 
@@ -61,9 +61,9 @@ func (i *Instance) MustExec(ctx context.Context, query string, opts ...runtime.O
 	return out
 }
 
-func (i *Instance) Run(ctx context.Context, program *runtime.Program, opts ...runtime.Option) ([]byte, error) {
+func (i *Instance) Run(ctx context.Context, program *vm.Program, opts ...runtime.Option) ([]byte, error) {
 	if program == nil {
-		return nil, core.Error(core.ErrInvalidArgument, "program")
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "program")
 	}
 
 	ctx = i.drivers.WithContext(ctx)
@@ -71,7 +71,7 @@ func (i *Instance) Run(ctx context.Context, program *runtime.Program, opts ...ru
 	return program.Run(ctx, opts...)
 }
 
-func (i *Instance) MustRun(ctx context.Context, program *runtime.Program, opts ...runtime.Option) []byte {
+func (i *Instance) MustRun(ctx context.Context, program *vm.Program, opts ...runtime.Option) []byte {
 	out, err := i.Run(ctx, program, opts...)
 
 	if err != nil {

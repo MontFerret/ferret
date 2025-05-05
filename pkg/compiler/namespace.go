@@ -1,12 +1,11 @@
 package compiler
 
 import (
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
@@ -15,32 +14,32 @@ const emptyNS = ""
 const separator = "::"
 
 type NamespaceContainer struct {
-	funcs core.Functions
+	funcs runtime.Functions
 	name  string
 }
 
 func NewRootNamespace() *NamespaceContainer {
 	ns := new(NamespaceContainer)
-	ns.funcs = core.NewFunctions()
+	ns.funcs = runtime.NewFunctions()
 
 	return ns
 }
 
-func NewNamespace(funcs core.Functions, name string) *NamespaceContainer {
+func NewNamespace(funcs runtime.Functions, name string) *NamespaceContainer {
 	return &NamespaceContainer{funcs, strings.ToUpper(name)}
 }
 
-func (nc *NamespaceContainer) Namespace(name string) core.Namespace {
+func (nc *NamespaceContainer) Namespace(name string) runtime.Namespace {
 	return NewNamespace(nc.funcs, nc.makeFullName(name))
 }
 
-func (nc *NamespaceContainer) MustRegisterFunction(name string, fun core.Function) {
+func (nc *NamespaceContainer) MustRegisterFunction(name string, fun runtime.Function) {
 	if err := nc.RegisterFunction(name, fun); err != nil {
 		panic(err)
 	}
 }
 
-func (nc *NamespaceContainer) RegisterFunction(name string, fun core.Function) error {
+func (nc *NamespaceContainer) RegisterFunction(name string, fun runtime.Function) error {
 	nsName := nc.makeFullName(name)
 
 	_, exists := nc.funcs.Get(nsName)
@@ -67,13 +66,13 @@ func (nc *NamespaceContainer) RemoveFunction(name string) {
 	nc.funcs.Unset(nc.makeFullName(name))
 }
 
-func (nc *NamespaceContainer) MustRegisterFunctions(funcs core.Functions) {
+func (nc *NamespaceContainer) MustRegisterFunctions(funcs runtime.Functions) {
 	if err := nc.RegisterFunctions(funcs); err != nil {
 		panic(err)
 	}
 }
 
-func (nc *NamespaceContainer) RegisterFunctions(funcs core.Functions) error {
+func (nc *NamespaceContainer) RegisterFunctions(funcs runtime.Functions) error {
 	for _, name := range funcs.Names() {
 		fun, _ := funcs.Get(name)
 
@@ -104,7 +103,7 @@ func (nc *NamespaceContainer) RegisteredFunctions() []string {
 	return res
 }
 
-func (nc *NamespaceContainer) Functions() core.Functions {
+func (nc *NamespaceContainer) Functions() runtime.Functions {
 	return nc.funcs
 }
 
