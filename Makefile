@@ -55,4 +55,4 @@ lint:
 # http://godoc.org/code.google.com/p/go.tools/cmd/vet
 # go get code.google.com/p/go.tools/cmd/vet
 vet:
-	go vet ${DIR_PKG}/...
+	go vet $(go list ./... | grep -v "pkg/parser")

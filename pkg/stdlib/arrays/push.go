@@ -43,7 +43,7 @@ func Push(_ context.Context, args ...core.Value) (core.Value, error) {
 	result := values.NewArray(int(arr.Length() + 1))
 	push := true
 
-	arr.ForEach(func(item core.Value, idx int) bool {
+	arr.ForEach(func(item core.Value, _ int) bool {
 		if uniq && push {
 			push = item.Compare(value) != 0
 		}

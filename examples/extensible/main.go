@@ -28,7 +28,7 @@ func main() {
 
 func getStrings() ([]string, error) {
 	// function implements is a type of a function that ferret supports as a runtime function
-	transform := func(ctx context.Context, args ...core.Value) (core.Value, error) {
+	transform := func(_ context.Context, args ...core.Value) (core.Value, error) {
 		// it's just a helper function which helps to validate a number of passed args
 		err := core.ValidateArgs(args, 1, 1)
 

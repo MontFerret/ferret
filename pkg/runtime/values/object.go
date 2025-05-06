@@ -93,7 +93,7 @@ func (t *Object) Compare(other core.Value) int64 {
 
 		otherKeys := make([]string, 0, other.Length())
 
-		other.ForEach(func(value core.Value, k string) bool {
+		other.ForEach(func(_ core.Value, k string) bool {
 			otherKeys = append(otherKeys, k)
 			return true
 		})

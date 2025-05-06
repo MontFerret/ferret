@@ -41,7 +41,7 @@ func Frames(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	result, _ := frames.Find(func(value core.Value, idx int) bool {
+	result, _ := frames.Find(func(value core.Value, _ int) bool {
 		doc, e := drivers.ToDocument(value)
 
 		if e != nil {

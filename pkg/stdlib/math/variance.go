@@ -18,7 +18,7 @@ func variance(input *values.Array, sample values.Int) values.Float {
 	var err error
 	var variance values.Float
 
-	input.ForEach(func(value core.Value, idx int) bool {
+	input.ForEach(func(value core.Value, _ int) bool {
 		err = core.ValidateType(value, types.Int, types.Float)
 
 		if err != nil {

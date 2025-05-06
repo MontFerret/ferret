@@ -253,9 +253,9 @@ func (t *Array) Insert(idx Int, value core.Value) {
 
 func (t *Array) RemoveAt(idx Int) {
 	i := int(idx)
-	max := len(t.items) - 1
+	maxIndex := len(t.items) - 1
 
-	if i > max {
+	if i > maxIndex {
 		return
 	}
 

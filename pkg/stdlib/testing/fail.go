@@ -15,7 +15,7 @@ var Fail = base.Assertion{
 	},
 	MinArgs: 0,
 	MaxArgs: 1,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+	Fn: func(_ context.Context, _ []core.Value) (bool, error) {
 		return false, nil
 	},
 }

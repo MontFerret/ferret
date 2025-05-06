@@ -54,7 +54,7 @@ func NewHTMLDocument(
 	doc.children = values.NewArray(10)
 
 	frames := node.Find("iframe")
-	frames.Each(func(i int, selection *goquery.Selection) {
+	frames.Each(func(_ int, selection *goquery.Selection) {
 		child, _ := NewHTMLDocument(goquery.NewDocumentFromNode(selection.Nodes[0]), selection.AttrOr("src", url), doc)
 
 		doc.children.Push(child)

@@ -36,7 +36,7 @@ func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 func mergeArray(arr *values.Array) *values.Object {
 	merged, obj := values.NewObject(), values.NewObject()
 
-	arr.ForEach(func(arrValue core.Value, arrIdx int) bool {
+	arr.ForEach(func(arrValue core.Value, _ int) bool {
 		obj = arrValue.(*values.Object)
 		obj.ForEach(func(objValue core.Value, objKey string) bool {
 			cloneable, ok := objValue.(core.Cloneable)

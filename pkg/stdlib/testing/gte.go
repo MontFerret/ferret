@@ -18,7 +18,7 @@ var Gte = base.Assertion{
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+	Fn: func(_ context.Context, args []core.Value) (bool, error) {
 		return base.GreaterOrEqualOp.Compare(args)
 	},
 }

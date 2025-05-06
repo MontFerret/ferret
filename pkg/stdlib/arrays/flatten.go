@@ -49,7 +49,7 @@ func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
 	unwrap = func(input *values.Array) {
 		currentLevel++
 
-		input.ForEach(func(value core.Value, idx int) bool {
+		input.ForEach(func(value core.Value, _ int) bool {
 			if value.Type() != types.Array || currentLevel > level {
 				result.Push(value)
 			} else {

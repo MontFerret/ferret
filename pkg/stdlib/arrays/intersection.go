@@ -36,7 +36,7 @@ func sections(args []core.Value, count int) (core.Value, error) {
 
 		arr := i.(*values.Array)
 
-		arr.ForEach(func(value core.Value, idx int) bool {
+		arr.ForEach(func(value core.Value, _ int) bool {
 			h := value.Hash()
 
 			bucket, exists := intersections[h]

@@ -8,6 +8,7 @@ warningCode = 0
 [rule.context-as-argument]
 [rule.context-keys-type]
 [rule.dot-imports]
+    Disabled = true
 [rule.error-return]
 [rule.error-strings]
 [rule.error-naming]
@@ -24,5 +25,6 @@ warningCode = 0
 [rule.empty-block]
 [rule.superfluous-else]
 [rule.unused-parameter]
+    severity = "warning"
 [rule.unreachable-code]
 [rule.redefines-builtin-id]

@@ -388,7 +388,7 @@ func parseHeader(headers *values.Object) *drivers.HTTPHeaders {
 
 			keyValues := make([]string, 0, value.Length())
 
-			value.ForEach(func(v core.Value, idx int) bool {
+			value.ForEach(func(v core.Value, _ int) bool {
 				keyValues = append(keyValues, v.String())
 
 				return true
@@ -477,7 +477,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 
 		var e error
 
-		resources.ForEach(func(el core.Value, idx int) bool {
+		resources.ForEach(func(el core.Value, _ int) bool {
 			if e = core.ValidateType(el, types.Object); e != nil {
 				return false
 			}
@@ -518,7 +518,7 @@ func parseIgnore(value core.Value) (*drivers.Ignore, error) {
 
 		var e error
 
-		statusCodes.ForEach(func(el core.Value, idx int) bool {
+		statusCodes.ForEach(func(el core.Value, _ int) bool {
 			if e = core.ValidateType(el, types.Object); e != nil {
 				return false
 			}

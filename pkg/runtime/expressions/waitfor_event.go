@@ -171,7 +171,7 @@ func (e *WaitForEventExpression) consumeFiltered(ctx context.Context, scope *cor
 
 	iterable, err := clauses.NewFilterClause(
 		e.filterSrc,
-		collections.AsIterable(func(c context.Context, scope *core.Scope) (collections.Iterator, error) {
+		collections.AsIterable(func(c context.Context, _ *core.Scope) (collections.Iterator, error) {
 			return collections.FromCoreIterator(e.filterVariable, "", events.NewIterator(stream.Read(c)))
 		}),
 		e.filter,

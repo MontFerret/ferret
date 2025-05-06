@@ -14,7 +14,7 @@ import (
 // @param {String} expression - Regular expression.
 // @param {String} [message] - Message to display on error.
 var Match = base.Assertion{
-	DefaultMessage: func(args []core.Value) string {
+	DefaultMessage: func(_ []core.Value) string {
 		return "match regular expression"
 	},
 	MinArgs: 2,
