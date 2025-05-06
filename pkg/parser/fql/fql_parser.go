@@ -1,4 +1,4 @@
-// Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
+// Code generated from antlr/FqlParser.g4 by ANTLR 4.13.2. DO NOT EDIT.
 
 package fql // FqlParser
 import (
@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 // Suppress unused import errors
@@ -18,20 +18,20 @@ type FqlParser struct {
 	*antlr.BaseParser
 }
 
-var fqlparserParserStaticData struct {
+var FqlParserParserStaticData struct {
 	once                   sync.Once
 	serializedATN          []int32
-	literalNames           []string
-	symbolicNames          []string
-	ruleNames              []string
-	predictionContextCache *antlr.PredictionContextCache
+	LiteralNames           []string
+	SymbolicNames          []string
+	RuleNames              []string
+	PredictionContextCache *antlr.PredictionContextCache
 	atn                    *antlr.ATN
 	decisionToDFA          []*antlr.DFA
 }
 
 func fqlparserParserInit() {
-	staticData := &fqlparserParserStaticData
-	staticData.literalNames = []string{
+	staticData := &FqlParserParserStaticData
+	staticData.LiteralNames = []string{
 		"", "", "", "", "", "':'", "';'", "'.'", "','", "'['", "']'", "'('",
 		"')'", "'{'", "'}'", "'>'", "'<'", "'=='", "'>='", "'<='", "'!='", "'*'",
 		"'/'", "'%'", "'+'", "'-'", "'--'", "'++'", "", "", "", "'='", "'?'",
@@ -41,7 +41,7 @@ func fqlparserParserInit() {
 		"'WITH'", "'COUNT'", "'ALL'", "'ANY'", "'AGGREGATE'", "'EVENT'", "'LIKE'",
 		"", "'IN'", "'DO'", "'WHILE'", "'@'",
 	}
-	staticData.symbolicNames = []string{
+	staticData.SymbolicNames = []string{
 		"", "MultiLineComment", "SingleLineComment", "WhiteSpaces", "LineTerminator",
 		"Colon", "SemiColon", "Dot", "Comma", "OpenBracket", "CloseBracket",
 		"OpenParen", "CloseParen", "OpenBrace", "CloseBrace", "Gt", "Lt", "Eq",
@@ -54,7 +54,7 @@ func fqlparserParserInit() {
 		"Param", "Identifier", "IgnoreIdentifier", "StringLiteral", "IntegerLiteral",
 		"FloatLiteral", "NamespaceSegment", "UnknownIdentifier",
 	}
-	staticData.ruleNames = []string{
+	staticData.RuleNames = []string{
 		"program", "head", "useExpression", "use", "body", "bodyStatement",
 		"bodyExpression", "variableDeclaration", "returnExpression", "forExpression",
 		"forExpressionSource", "forExpressionClause", "forExpressionStatement",
@@ -73,7 +73,7 @@ func fqlparserParserInit() {
 		"inOperator", "likeOperator", "unaryOperator", "regexpOperator", "logicalAndOperator",
 		"logicalOrOperator", "multiplicativeOperator", "additiveOperator", "errorOperator",
 	}
-	staticData.predictionContextCache = antlr.NewPredictionContextCache()
+	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
 		4, 1, 72, 647, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
 		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 7,
@@ -384,7 +384,7 @@ func fqlparserParserInit() {
 // NewFqlParser(). You can call this function if you wish to initialize the static state ahead
 // of time.
 func FqlParserInit() {
-	staticData := &fqlparserParserStaticData
+	staticData := &FqlParserParserStaticData
 	staticData.once.Do(fqlparserParserInit)
 }
 
@@ -393,12 +393,12 @@ func NewFqlParser(input antlr.TokenStream) *FqlParser {
 	FqlParserInit()
 	this := new(FqlParser)
 	this.BaseParser = antlr.NewBaseParser(input)
-	staticData := &fqlparserParserStaticData
-	this.Interpreter = antlr.NewParserATNSimulator(this, staticData.atn, staticData.decisionToDFA, staticData.predictionContextCache)
-	this.RuleNames = staticData.ruleNames
-	this.LiteralNames = staticData.literalNames
-	this.SymbolicNames = staticData.symbolicNames
-	this.GrammarFileName = "java-escape"
+	staticData := &FqlParserParserStaticData
+	this.Interpreter = antlr.NewParserATNSimulator(this, staticData.atn, staticData.decisionToDFA, staticData.PredictionContextCache)
+	this.RuleNames = staticData.RuleNames
+	this.LiteralNames = staticData.LiteralNames
+	this.SymbolicNames = staticData.SymbolicNames
+	this.GrammarFileName = "FqlParser.g4"
 
 	return this
 }
@@ -563,20 +563,30 @@ type IProgramContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Body() IBodyContext
+	AllHead() []IHeadContext
+	Head(i int) IHeadContext
+
 	// IsProgramContext differentiates from other interfaces.
 	IsProgramContext()
 }
 
 type ProgramContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyProgramContext() *ProgramContext {
 	var p = new(ProgramContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_program
 	return p
+}
+
+func InitEmptyProgramContext(p *ProgramContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_program
 }
 
 func (*ProgramContext) IsProgramContext() {}
@@ -584,7 +594,7 @@ func (*ProgramContext) IsProgramContext() {}
 func NewProgramContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ProgramContext {
 	var p = new(ProgramContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_program
@@ -682,35 +692,20 @@ func (s *ProgramContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Program() (localctx IProgramContext) {
-	this := p
-	_ = this
-
 	localctx = NewProgramContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 0, FqlParserRULE_program)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	var _alt int
 
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(147)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 0, p.GetParserRuleContext())
-
+	if p.HasError() {
+		goto errorExit
+	}
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 0, p.GetParserRuleContext())
+	if p.HasError() {
+		goto errorExit
+	}
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			{
@@ -721,14 +716,30 @@ func (p *FqlParser) Program() (localctx IProgramContext) {
 		}
 		p.SetState(149)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 0, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 0, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(150)
 		p.Body()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IHeadContext is an interface to support dynamic dispatch.
@@ -738,20 +749,28 @@ type IHeadContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	UseExpression() IUseExpressionContext
+
 	// IsHeadContext differentiates from other interfaces.
 	IsHeadContext()
 }
 
 type HeadContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyHeadContext() *HeadContext {
 	var p = new(HeadContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_head
 	return p
+}
+
+func InitEmptyHeadContext(p *HeadContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_head
 }
 
 func (*HeadContext) IsHeadContext() {}
@@ -759,7 +778,7 @@ func (*HeadContext) IsHeadContext() {}
 func NewHeadContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *HeadContext {
 	var p = new(HeadContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_head
@@ -816,35 +835,25 @@ func (s *HeadContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Head() (localctx IHeadContext) {
-	this := p
-	_ = this
-
 	localctx = NewHeadContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 2, FqlParserRULE_head)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(152)
 		p.UseExpression()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IUseExpressionContext is an interface to support dynamic dispatch.
@@ -854,20 +863,28 @@ type IUseExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Use() IUseContext
+
 	// IsUseExpressionContext differentiates from other interfaces.
 	IsUseExpressionContext()
 }
 
 type UseExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyUseExpressionContext() *UseExpressionContext {
 	var p = new(UseExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_useExpression
 	return p
+}
+
+func InitEmptyUseExpressionContext(p *UseExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_useExpression
 }
 
 func (*UseExpressionContext) IsUseExpressionContext() {}
@@ -875,7 +892,7 @@ func (*UseExpressionContext) IsUseExpressionContext() {}
 func NewUseExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *UseExpressionContext {
 	var p = new(UseExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_useExpression
@@ -932,35 +949,25 @@ func (s *UseExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) UseExpression() (localctx IUseExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewUseExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 4, FqlParserRULE_useExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(154)
 		p.Use()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IUseContext is an interface to support dynamic dispatch.
@@ -970,20 +977,29 @@ type IUseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Use() antlr.TerminalNode
+	NamespaceIdentifier() INamespaceIdentifierContext
+
 	// IsUseContext differentiates from other interfaces.
 	IsUseContext()
 }
 
 type UseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyUseContext() *UseContext {
 	var p = new(UseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_use
 	return p
+}
+
+func InitEmptyUseContext(p *UseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_use
 }
 
 func (*UseContext) IsUseContext() {}
@@ -991,7 +1007,7 @@ func (*UseContext) IsUseContext() {}
 func NewUseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *UseContext {
 	var p = new(UseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_use
@@ -1052,39 +1068,33 @@ func (s *UseContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Use() (localctx IUseContext) {
-	this := p
-	_ = this
-
 	localctx = NewUseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 6, FqlParserRULE_use)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(156)
 		p.Match(FqlParserUse)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(157)
 		p.NamespaceIdentifier()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IBodyContext is an interface to support dynamic dispatch.
@@ -1094,20 +1104,30 @@ type IBodyContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	BodyExpression() IBodyExpressionContext
+	AllBodyStatement() []IBodyStatementContext
+	BodyStatement(i int) IBodyStatementContext
+
 	// IsBodyContext differentiates from other interfaces.
 	IsBodyContext()
 }
 
 type BodyContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyBodyContext() *BodyContext {
 	var p = new(BodyContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_body
 	return p
+}
+
+func InitEmptyBodyContext(p *BodyContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_body
 }
 
 func (*BodyContext) IsBodyContext() {}
@@ -1115,7 +1135,7 @@ func (*BodyContext) IsBodyContext() {}
 func NewBodyContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *BodyContext {
 	var p = new(BodyContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_body
@@ -1213,35 +1233,20 @@ func (s *BodyContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Body() (localctx IBodyContext) {
-	this := p
-	_ = this
-
 	localctx = NewBodyContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 8, FqlParserRULE_body)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	var _alt int
 
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(162)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 1, p.GetParserRuleContext())
-
+	if p.HasError() {
+		goto errorExit
+	}
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 1, p.GetParserRuleContext())
+	if p.HasError() {
+		goto errorExit
+	}
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			{
@@ -1252,14 +1257,30 @@ func (p *FqlParser) Body() (localctx IBodyContext) {
 		}
 		p.SetState(164)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 1, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 1, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(165)
 		p.BodyExpression()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IBodyStatementContext is an interface to support dynamic dispatch.
@@ -1269,20 +1290,30 @@ type IBodyStatementContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	VariableDeclaration() IVariableDeclarationContext
+	FunctionCallExpression() IFunctionCallExpressionContext
+	WaitForExpression() IWaitForExpressionContext
+
 	// IsBodyStatementContext differentiates from other interfaces.
 	IsBodyStatementContext()
 }
 
 type BodyStatementContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyBodyStatementContext() *BodyStatementContext {
 	var p = new(BodyStatementContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_bodyStatement
 	return p
+}
+
+func InitEmptyBodyStatementContext(p *BodyStatementContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_bodyStatement
 }
 
 func (*BodyStatementContext) IsBodyStatementContext() {}
@@ -1290,7 +1321,7 @@ func (*BodyStatementContext) IsBodyStatementContext() {}
 func NewBodyStatementContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *BodyStatementContext {
 	var p = new(BodyStatementContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_bodyStatement
@@ -1379,31 +1410,15 @@ func (s *BodyStatementContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) BodyStatement() (localctx IBodyStatementContext) {
-	this := p
-	_ = this
-
 	localctx = NewBodyStatementContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 10, FqlParserRULE_bodyStatement)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(170)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 2, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 2, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -1425,9 +1440,21 @@ func (p *FqlParser) BodyStatement() (localctx IBodyStatementContext) {
 			p.WaitForExpression()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IBodyExpressionContext is an interface to support dynamic dispatch.
@@ -1437,20 +1464,29 @@ type IBodyExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	ReturnExpression() IReturnExpressionContext
+	ForExpression() IForExpressionContext
+
 	// IsBodyExpressionContext differentiates from other interfaces.
 	IsBodyExpressionContext()
 }
 
 type BodyExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyBodyExpressionContext() *BodyExpressionContext {
 	var p = new(BodyExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_bodyExpression
 	return p
+}
+
+func InitEmptyBodyExpressionContext(p *BodyExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_bodyExpression
 }
 
 func (*BodyExpressionContext) IsBodyExpressionContext() {}
@@ -1458,7 +1494,7 @@ func (*BodyExpressionContext) IsBodyExpressionContext() {}
 func NewBodyExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *BodyExpressionContext {
 	var p = new(BodyExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_bodyExpression
@@ -1531,30 +1567,13 @@ func (s *BodyExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interface
 }
 
 func (p *FqlParser) BodyExpression() (localctx IBodyExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewBodyExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 12, FqlParserRULE_bodyExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(174)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserReturn:
@@ -1572,10 +1591,21 @@ func (p *FqlParser) BodyExpression() (localctx IBodyExpressionContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IVariableDeclarationContext is an interface to support dynamic dispatch.
@@ -1591,21 +1621,34 @@ type IVariableDeclarationContext interface {
 	// SetId sets the id token.
 	SetId(antlr.Token)
 
+	// Getter signatures
+	Let() antlr.TerminalNode
+	Assign() antlr.TerminalNode
+	Expression() IExpressionContext
+	Identifier() antlr.TerminalNode
+	IgnoreIdentifier() antlr.TerminalNode
+	SafeReservedWord() ISafeReservedWordContext
+
 	// IsVariableDeclarationContext differentiates from other interfaces.
 	IsVariableDeclarationContext()
 }
 
 type VariableDeclarationContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 	id     antlr.Token
 }
 
 func NewEmptyVariableDeclarationContext() *VariableDeclarationContext {
 	var p = new(VariableDeclarationContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_variableDeclaration
 	return p
+}
+
+func InitEmptyVariableDeclarationContext(p *VariableDeclarationContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_variableDeclaration
 }
 
 func (*VariableDeclarationContext) IsVariableDeclarationContext() {}
@@ -1613,7 +1656,7 @@ func (*VariableDeclarationContext) IsVariableDeclarationContext() {}
 func NewVariableDeclarationContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *VariableDeclarationContext {
 	var p = new(VariableDeclarationContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_variableDeclaration
@@ -1706,37 +1749,26 @@ func (s *VariableDeclarationContext) Accept(visitor antlr.ParseTreeVisitor) inte
 }
 
 func (p *FqlParser) VariableDeclaration() (localctx IVariableDeclarationContext) {
-	this := p
-	_ = this
-
 	localctx = NewVariableDeclarationContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 14, FqlParserRULE_variableDeclaration)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(185)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 4, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 4, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(176)
 			p.Match(FqlParserLet)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(177)
@@ -1759,6 +1791,10 @@ func (p *FqlParser) VariableDeclaration() (localctx IVariableDeclarationContext)
 		{
 			p.SetState(178)
 			p.Match(FqlParserAssign)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(179)
@@ -1770,6 +1806,10 @@ func (p *FqlParser) VariableDeclaration() (localctx IVariableDeclarationContext)
 		{
 			p.SetState(180)
 			p.Match(FqlParserLet)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(181)
@@ -1778,15 +1818,31 @@ func (p *FqlParser) VariableDeclaration() (localctx IVariableDeclarationContext)
 		{
 			p.SetState(182)
 			p.Match(FqlParserAssign)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(183)
 			p.expression(0)
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IReturnExpressionContext is an interface to support dynamic dispatch.
@@ -1796,20 +1852,30 @@ type IReturnExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Return() antlr.TerminalNode
+	Expression() IExpressionContext
+	Distinct() antlr.TerminalNode
+
 	// IsReturnExpressionContext differentiates from other interfaces.
 	IsReturnExpressionContext()
 }
 
 type ReturnExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyReturnExpressionContext() *ReturnExpressionContext {
 	var p = new(ReturnExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_returnExpression
 	return p
+}
+
+func InitEmptyReturnExpressionContext(p *ReturnExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_returnExpression
 }
 
 func (*ReturnExpressionContext) IsReturnExpressionContext() {}
@@ -1817,7 +1883,7 @@ func (*ReturnExpressionContext) IsReturnExpressionContext() {}
 func NewReturnExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ReturnExpressionContext {
 	var p = new(ReturnExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_returnExpression
@@ -1882,49 +1948,49 @@ func (s *ReturnExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) ReturnExpression() (localctx IReturnExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewReturnExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 16, FqlParserRULE_returnExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(187)
 		p.Match(FqlParserReturn)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(189)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 5, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 5, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(188)
 			p.Match(FqlParserDistinct)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
+	} else if p.HasError() { // JIM
+		goto errorExit
 	}
 	{
 		p.SetState(191)
 		p.expression(0)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IForExpressionContext is an interface to support dynamic dispatch.
@@ -1946,12 +2012,27 @@ type IForExpressionContext interface {
 	// SetCounterVariable sets the counterVariable token.
 	SetCounterVariable(antlr.Token)
 
+	// Getter signatures
+	For() antlr.TerminalNode
+	In() antlr.TerminalNode
+	ForExpressionSource() IForExpressionSourceContext
+	ForExpressionReturn() IForExpressionReturnContext
+	AllIdentifier() []antlr.TerminalNode
+	Identifier(i int) antlr.TerminalNode
+	IgnoreIdentifier() antlr.TerminalNode
+	Comma() antlr.TerminalNode
+	AllForExpressionBody() []IForExpressionBodyContext
+	ForExpressionBody(i int) IForExpressionBodyContext
+	While() antlr.TerminalNode
+	Expression() IExpressionContext
+	Do() antlr.TerminalNode
+
 	// IsForExpressionContext differentiates from other interfaces.
 	IsForExpressionContext()
 }
 
 type ForExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser          antlr.Parser
 	valueVariable   antlr.Token
 	counterVariable antlr.Token
@@ -1959,9 +2040,14 @@ type ForExpressionContext struct {
 
 func NewEmptyForExpressionContext() *ForExpressionContext {
 	var p = new(ForExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_forExpression
 	return p
+}
+
+func InitEmptyForExpressionContext(p *ForExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_forExpression
 }
 
 func (*ForExpressionContext) IsForExpressionContext() {}
@@ -1969,7 +2055,7 @@ func (*ForExpressionContext) IsForExpressionContext() {}
 func NewForExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ForExpressionContext {
 	var p = new(ForExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_forExpression
@@ -2139,39 +2225,28 @@ func (s *ForExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewForExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 18, FqlParserRULE_forExpression)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	var _alt int
 
 	p.SetState(224)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 10, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 10, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(193)
 			p.Match(FqlParserFor)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(194)
@@ -2193,12 +2268,19 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 		}
 		p.SetState(197)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == FqlParserComma {
 			{
 				p.SetState(195)
 				p.Match(FqlParserComma)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(196)
@@ -2206,12 +2288,20 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 				var _m = p.Match(FqlParserIdentifier)
 
 				localctx.(*ForExpressionContext).counterVariable = _m
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 
 		}
 		{
 			p.SetState(199)
 			p.Match(FqlParserIn)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(200)
@@ -2219,8 +2309,13 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 		}
 		p.SetState(204)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 7, p.GetParserRuleContext())
-
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 7, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 		for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 			if _alt == 1 {
 				{
@@ -2231,7 +2326,13 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 			}
 			p.SetState(206)
 			p.GetErrorHandler().Sync(p)
-			_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 7, p.GetParserRuleContext())
+			if p.HasError() {
+				goto errorExit
+			}
+			_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 7, p.GetParserRuleContext())
+			if p.HasError() {
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(207)
@@ -2243,6 +2344,10 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 		{
 			p.SetState(209)
 			p.Match(FqlParserFor)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(210)
@@ -2264,18 +2369,29 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 		}
 		p.SetState(212)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == FqlParserDo {
 			{
 				p.SetState(211)
 				p.Match(FqlParserDo)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 
 		}
 		{
 			p.SetState(214)
 			p.Match(FqlParserWhile)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(215)
@@ -2283,8 +2399,13 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 		}
 		p.SetState(219)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 9, p.GetParserRuleContext())
-
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 9, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 		for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 			if _alt == 1 {
 				{
@@ -2295,16 +2416,34 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 			}
 			p.SetState(221)
 			p.GetErrorHandler().Sync(p)
-			_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 9, p.GetParserRuleContext())
+			if p.HasError() {
+				goto errorExit
+			}
+			_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 9, p.GetParserRuleContext())
+			if p.HasError() {
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(222)
 			p.ForExpressionReturn()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IForExpressionSourceContext is an interface to support dynamic dispatch.
@@ -2314,20 +2453,34 @@ type IForExpressionSourceContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	FunctionCallExpression() IFunctionCallExpressionContext
+	ArrayLiteral() IArrayLiteralContext
+	ObjectLiteral() IObjectLiteralContext
+	Variable() IVariableContext
+	MemberExpression() IMemberExpressionContext
+	RangeOperator() IRangeOperatorContext
+	Param() IParamContext
+
 	// IsForExpressionSourceContext differentiates from other interfaces.
 	IsForExpressionSourceContext()
 }
 
 type ForExpressionSourceContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyForExpressionSourceContext() *ForExpressionSourceContext {
 	var p = new(ForExpressionSourceContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_forExpressionSource
 	return p
+}
+
+func InitEmptyForExpressionSourceContext(p *ForExpressionSourceContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_forExpressionSource
 }
 
 func (*ForExpressionSourceContext) IsForExpressionSourceContext() {}
@@ -2335,7 +2488,7 @@ func (*ForExpressionSourceContext) IsForExpressionSourceContext() {}
 func NewForExpressionSourceContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ForExpressionSourceContext {
 	var p = new(ForExpressionSourceContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_forExpressionSource
@@ -2488,31 +2641,15 @@ func (s *ForExpressionSourceContext) Accept(visitor antlr.ParseTreeVisitor) inte
 }
 
 func (p *FqlParser) ForExpressionSource() (localctx IForExpressionSourceContext) {
-	this := p
-	_ = this
-
 	localctx = NewForExpressionSourceContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 20, FqlParserRULE_forExpressionSource)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(233)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 11, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 11, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -2562,9 +2699,21 @@ func (p *FqlParser) ForExpressionSource() (localctx IForExpressionSourceContext)
 			p.Param()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IForExpressionClauseContext is an interface to support dynamic dispatch.
@@ -2574,20 +2723,31 @@ type IForExpressionClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	LimitClause() ILimitClauseContext
+	SortClause() ISortClauseContext
+	FilterClause() IFilterClauseContext
+	CollectClause() ICollectClauseContext
+
 	// IsForExpressionClauseContext differentiates from other interfaces.
 	IsForExpressionClauseContext()
 }
 
 type ForExpressionClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyForExpressionClauseContext() *ForExpressionClauseContext {
 	var p = new(ForExpressionClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_forExpressionClause
 	return p
+}
+
+func InitEmptyForExpressionClauseContext(p *ForExpressionClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_forExpressionClause
 }
 
 func (*ForExpressionClauseContext) IsForExpressionClauseContext() {}
@@ -2595,7 +2755,7 @@ func (*ForExpressionClauseContext) IsForExpressionClauseContext() {}
 func NewForExpressionClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ForExpressionClauseContext {
 	var p = new(ForExpressionClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_forExpressionClause
@@ -2700,30 +2860,13 @@ func (s *ForExpressionClauseContext) Accept(visitor antlr.ParseTreeVisitor) inte
 }
 
 func (p *FqlParser) ForExpressionClause() (localctx IForExpressionClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewForExpressionClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 22, FqlParserRULE_forExpressionClause)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(239)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserLimit:
@@ -2755,10 +2898,21 @@ func (p *FqlParser) ForExpressionClause() (localctx IForExpressionClauseContext)
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IForExpressionStatementContext is an interface to support dynamic dispatch.
@@ -2768,20 +2922,29 @@ type IForExpressionStatementContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	VariableDeclaration() IVariableDeclarationContext
+	FunctionCallExpression() IFunctionCallExpressionContext
+
 	// IsForExpressionStatementContext differentiates from other interfaces.
 	IsForExpressionStatementContext()
 }
 
 type ForExpressionStatementContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyForExpressionStatementContext() *ForExpressionStatementContext {
 	var p = new(ForExpressionStatementContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_forExpressionStatement
 	return p
+}
+
+func InitEmptyForExpressionStatementContext(p *ForExpressionStatementContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_forExpressionStatement
 }
 
 func (*ForExpressionStatementContext) IsForExpressionStatementContext() {}
@@ -2789,7 +2952,7 @@ func (*ForExpressionStatementContext) IsForExpressionStatementContext() {}
 func NewForExpressionStatementContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ForExpressionStatementContext {
 	var p = new(ForExpressionStatementContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_forExpressionStatement
@@ -2862,31 +3025,15 @@ func (s *ForExpressionStatementContext) Accept(visitor antlr.ParseTreeVisitor) i
 }
 
 func (p *FqlParser) ForExpressionStatement() (localctx IForExpressionStatementContext) {
-	this := p
-	_ = this
-
 	localctx = NewForExpressionStatementContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 24, FqlParserRULE_forExpressionStatement)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(243)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 13, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 13, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -2901,9 +3048,21 @@ func (p *FqlParser) ForExpressionStatement() (localctx IForExpressionStatementCo
 			p.FunctionCallExpression()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IForExpressionBodyContext is an interface to support dynamic dispatch.
@@ -2913,20 +3072,29 @@ type IForExpressionBodyContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	ForExpressionStatement() IForExpressionStatementContext
+	ForExpressionClause() IForExpressionClauseContext
+
 	// IsForExpressionBodyContext differentiates from other interfaces.
 	IsForExpressionBodyContext()
 }
 
 type ForExpressionBodyContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyForExpressionBodyContext() *ForExpressionBodyContext {
 	var p = new(ForExpressionBodyContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_forExpressionBody
 	return p
+}
+
+func InitEmptyForExpressionBodyContext(p *ForExpressionBodyContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_forExpressionBody
 }
 
 func (*ForExpressionBodyContext) IsForExpressionBodyContext() {}
@@ -2934,7 +3102,7 @@ func (*ForExpressionBodyContext) IsForExpressionBodyContext() {}
 func NewForExpressionBodyContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ForExpressionBodyContext {
 	var p = new(ForExpressionBodyContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_forExpressionBody
@@ -3007,31 +3175,15 @@ func (s *ForExpressionBodyContext) Accept(visitor antlr.ParseTreeVisitor) interf
 }
 
 func (p *FqlParser) ForExpressionBody() (localctx IForExpressionBodyContext) {
-	this := p
-	_ = this
-
 	localctx = NewForExpressionBodyContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 26, FqlParserRULE_forExpressionBody)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(247)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 14, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 14, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -3046,9 +3198,21 @@ func (p *FqlParser) ForExpressionBody() (localctx IForExpressionBodyContext) {
 			p.ForExpressionClause()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IForExpressionReturnContext is an interface to support dynamic dispatch.
@@ -3058,20 +3222,29 @@ type IForExpressionReturnContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	ReturnExpression() IReturnExpressionContext
+	ForExpression() IForExpressionContext
+
 	// IsForExpressionReturnContext differentiates from other interfaces.
 	IsForExpressionReturnContext()
 }
 
 type ForExpressionReturnContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyForExpressionReturnContext() *ForExpressionReturnContext {
 	var p = new(ForExpressionReturnContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_forExpressionReturn
 	return p
+}
+
+func InitEmptyForExpressionReturnContext(p *ForExpressionReturnContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_forExpressionReturn
 }
 
 func (*ForExpressionReturnContext) IsForExpressionReturnContext() {}
@@ -3079,7 +3252,7 @@ func (*ForExpressionReturnContext) IsForExpressionReturnContext() {}
 func NewForExpressionReturnContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ForExpressionReturnContext {
 	var p = new(ForExpressionReturnContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_forExpressionReturn
@@ -3152,30 +3325,13 @@ func (s *ForExpressionReturnContext) Accept(visitor antlr.ParseTreeVisitor) inte
 }
 
 func (p *FqlParser) ForExpressionReturn() (localctx IForExpressionReturnContext) {
-	this := p
-	_ = this
-
 	localctx = NewForExpressionReturnContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 28, FqlParserRULE_forExpressionReturn)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(251)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserReturn:
@@ -3193,10 +3349,21 @@ func (p *FqlParser) ForExpressionReturn() (localctx IForExpressionReturnContext)
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IFilterClauseContext is an interface to support dynamic dispatch.
@@ -3206,20 +3373,29 @@ type IFilterClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Filter() antlr.TerminalNode
+	Expression() IExpressionContext
+
 	// IsFilterClauseContext differentiates from other interfaces.
 	IsFilterClauseContext()
 }
 
 type FilterClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyFilterClauseContext() *FilterClauseContext {
 	var p = new(FilterClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_filterClause
 	return p
+}
+
+func InitEmptyFilterClauseContext(p *FilterClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_filterClause
 }
 
 func (*FilterClauseContext) IsFilterClauseContext() {}
@@ -3227,7 +3403,7 @@ func (*FilterClauseContext) IsFilterClauseContext() {}
 func NewFilterClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *FilterClauseContext {
 	var p = new(FilterClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_filterClause
@@ -3288,39 +3464,33 @@ func (s *FilterClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) FilterClause() (localctx IFilterClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewFilterClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 30, FqlParserRULE_filterClause)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(253)
 		p.Match(FqlParserFilter)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(254)
 		p.expression(0)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILimitClauseContext is an interface to support dynamic dispatch.
@@ -3330,20 +3500,31 @@ type ILimitClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Limit() antlr.TerminalNode
+	AllLimitClauseValue() []ILimitClauseValueContext
+	LimitClauseValue(i int) ILimitClauseValueContext
+	Comma() antlr.TerminalNode
+
 	// IsLimitClauseContext differentiates from other interfaces.
 	IsLimitClauseContext()
 }
 
 type LimitClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLimitClauseContext() *LimitClauseContext {
 	var p = new(LimitClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_limitClause
 	return p
+}
+
+func InitEmptyLimitClauseContext(p *LimitClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_limitClause
 }
 
 func (*LimitClauseContext) IsLimitClauseContext() {}
@@ -3351,7 +3532,7 @@ func (*LimitClauseContext) IsLimitClauseContext() {}
 func NewLimitClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LimitClauseContext {
 	var p = new(LimitClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_limitClause
@@ -3441,33 +3622,18 @@ func (s *LimitClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{} 
 }
 
 func (p *FqlParser) LimitClause() (localctx ILimitClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewLimitClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 32, FqlParserRULE_limitClause)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(256)
 		p.Match(FqlParserLimit)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(257)
@@ -3475,12 +3641,19 @@ func (p *FqlParser) LimitClause() (localctx ILimitClauseContext) {
 	}
 	p.SetState(260)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == FqlParserComma {
 		{
 			p.SetState(258)
 			p.Match(FqlParserComma)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(259)
@@ -3489,7 +3662,17 @@ func (p *FqlParser) LimitClause() (localctx ILimitClauseContext) {
 
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILimitClauseValueContext is an interface to support dynamic dispatch.
@@ -3499,20 +3682,32 @@ type ILimitClauseValueContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	IntegerLiteral() IIntegerLiteralContext
+	Param() IParamContext
+	Variable() IVariableContext
+	FunctionCallExpression() IFunctionCallExpressionContext
+	MemberExpression() IMemberExpressionContext
+
 	// IsLimitClauseValueContext differentiates from other interfaces.
 	IsLimitClauseValueContext()
 }
 
 type LimitClauseValueContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLimitClauseValueContext() *LimitClauseValueContext {
 	var p = new(LimitClauseValueContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_limitClauseValue
 	return p
+}
+
+func InitEmptyLimitClauseValueContext(p *LimitClauseValueContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_limitClauseValue
 }
 
 func (*LimitClauseValueContext) IsLimitClauseValueContext() {}
@@ -3520,7 +3715,7 @@ func (*LimitClauseValueContext) IsLimitClauseValueContext() {}
 func NewLimitClauseValueContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LimitClauseValueContext {
 	var p = new(LimitClauseValueContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_limitClauseValue
@@ -3641,31 +3836,15 @@ func (s *LimitClauseValueContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) LimitClauseValue() (localctx ILimitClauseValueContext) {
-	this := p
-	_ = this
-
 	localctx = NewLimitClauseValueContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 34, FqlParserRULE_limitClauseValue)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(267)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 17, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 17, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -3701,9 +3880,21 @@ func (p *FqlParser) LimitClauseValue() (localctx ILimitClauseValueContext) {
 			p.MemberExpression()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ISortClauseContext is an interface to support dynamic dispatch.
@@ -3713,20 +3904,32 @@ type ISortClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Sort() antlr.TerminalNode
+	AllSortClauseExpression() []ISortClauseExpressionContext
+	SortClauseExpression(i int) ISortClauseExpressionContext
+	AllComma() []antlr.TerminalNode
+	Comma(i int) antlr.TerminalNode
+
 	// IsSortClauseContext differentiates from other interfaces.
 	IsSortClauseContext()
 }
 
 type SortClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptySortClauseContext() *SortClauseContext {
 	var p = new(SortClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_sortClause
 	return p
+}
+
+func InitEmptySortClauseContext(p *SortClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_sortClause
 }
 
 func (*SortClauseContext) IsSortClauseContext() {}
@@ -3734,7 +3937,7 @@ func (*SortClauseContext) IsSortClauseContext() {}
 func NewSortClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *SortClauseContext {
 	var p = new(SortClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_sortClause
@@ -3828,33 +4031,18 @@ func (s *SortClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) SortClause() (localctx ISortClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewSortClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 36, FqlParserRULE_sortClause)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(269)
 		p.Match(FqlParserSort)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(270)
@@ -3862,12 +4050,19 @@ func (p *FqlParser) SortClause() (localctx ISortClauseContext) {
 	}
 	p.SetState(275)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	for _la == FqlParserComma {
 		{
 			p.SetState(271)
 			p.Match(FqlParserComma)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(272)
@@ -3876,10 +4071,23 @@ func (p *FqlParser) SortClause() (localctx ISortClauseContext) {
 
 		p.SetState(277)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ISortClauseExpressionContext is an interface to support dynamic dispatch.
@@ -3889,20 +4097,29 @@ type ISortClauseExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Expression() IExpressionContext
+	SortDirection() antlr.TerminalNode
+
 	// IsSortClauseExpressionContext differentiates from other interfaces.
 	IsSortClauseExpressionContext()
 }
 
 type SortClauseExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptySortClauseExpressionContext() *SortClauseExpressionContext {
 	var p = new(SortClauseExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_sortClauseExpression
 	return p
+}
+
+func InitEmptySortClauseExpressionContext(p *SortClauseExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_sortClauseExpression
 }
 
 func (*SortClauseExpressionContext) IsSortClauseExpressionContext() {}
@@ -3910,7 +4127,7 @@ func (*SortClauseExpressionContext) IsSortClauseExpressionContext() {}
 func NewSortClauseExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *SortClauseExpressionContext {
 	var p = new(SortClauseExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_sortClauseExpression
@@ -3971,28 +4188,8 @@ func (s *SortClauseExpressionContext) Accept(visitor antlr.ParseTreeVisitor) int
 }
 
 func (p *FqlParser) SortClauseExpression() (localctx ISortClauseExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewSortClauseExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 38, FqlParserRULE_sortClauseExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(278)
@@ -4001,15 +4198,31 @@ func (p *FqlParser) SortClauseExpression() (localctx ISortClauseExpressionContex
 	p.SetState(280)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 19, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 19, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(279)
 			p.Match(FqlParserSortDirection)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
+	} else if p.HasError() { // JIM
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectClauseContext is an interface to support dynamic dispatch.
@@ -4019,20 +4232,32 @@ type ICollectClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Collect() antlr.TerminalNode
+	CollectCounter() ICollectCounterContext
+	CollectAggregator() ICollectAggregatorContext
+	CollectGrouping() ICollectGroupingContext
+	CollectGroupVariable() ICollectGroupVariableContext
+
 	// IsCollectClauseContext differentiates from other interfaces.
 	IsCollectClauseContext()
 }
 
 type CollectClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectClauseContext() *CollectClauseContext {
 	var p = new(CollectClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectClause
 	return p
+}
+
+func InitEmptyCollectClauseContext(p *CollectClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectClause
 }
 
 func (*CollectClauseContext) IsCollectClauseContext() {}
@@ -4040,7 +4265,7 @@ func (*CollectClauseContext) IsCollectClauseContext() {}
 func NewCollectClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectClauseContext {
 	var p = new(CollectClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectClause
@@ -4149,36 +4374,24 @@ func (s *CollectClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 40, FqlParserRULE_collectClause)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(300)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 20, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 20, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(282)
 			p.Match(FqlParserCollect)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(283)
@@ -4190,6 +4403,10 @@ func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
 		{
 			p.SetState(284)
 			p.Match(FqlParserCollect)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(285)
@@ -4201,6 +4418,10 @@ func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
 		{
 			p.SetState(286)
 			p.Match(FqlParserCollect)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(287)
@@ -4216,6 +4437,10 @@ func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
 		{
 			p.SetState(290)
 			p.Match(FqlParserCollect)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(291)
@@ -4231,6 +4456,10 @@ func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
 		{
 			p.SetState(294)
 			p.Match(FqlParserCollect)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(295)
@@ -4246,15 +4475,31 @@ func (p *FqlParser) CollectClause() (localctx ICollectClauseContext) {
 		{
 			p.SetState(298)
 			p.Match(FqlParserCollect)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(299)
 			p.CollectGrouping()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectSelectorContext is an interface to support dynamic dispatch.
@@ -4264,20 +4509,30 @@ type ICollectSelectorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+	Assign() antlr.TerminalNode
+	Expression() IExpressionContext
+
 	// IsCollectSelectorContext differentiates from other interfaces.
 	IsCollectSelectorContext()
 }
 
 type CollectSelectorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectSelectorContext() *CollectSelectorContext {
 	var p = new(CollectSelectorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectSelector
 	return p
+}
+
+func InitEmptyCollectSelectorContext(p *CollectSelectorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectSelector
 }
 
 func (*CollectSelectorContext) IsCollectSelectorContext() {}
@@ -4285,7 +4540,7 @@ func (*CollectSelectorContext) IsCollectSelectorContext() {}
 func NewCollectSelectorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectSelectorContext {
 	var p = new(CollectSelectorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectSelector
@@ -4350,43 +4605,41 @@ func (s *CollectSelectorContext) Accept(visitor antlr.ParseTreeVisitor) interfac
 }
 
 func (p *FqlParser) CollectSelector() (localctx ICollectSelectorContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectSelectorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 42, FqlParserRULE_collectSelector)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(302)
 		p.Match(FqlParserIdentifier)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(303)
 		p.Match(FqlParserAssign)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(304)
 		p.expression(0)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectGroupingContext is an interface to support dynamic dispatch.
@@ -4396,20 +4649,31 @@ type ICollectGroupingContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	AllCollectSelector() []ICollectSelectorContext
+	CollectSelector(i int) ICollectSelectorContext
+	AllComma() []antlr.TerminalNode
+	Comma(i int) antlr.TerminalNode
+
 	// IsCollectGroupingContext differentiates from other interfaces.
 	IsCollectGroupingContext()
 }
 
 type CollectGroupingContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectGroupingContext() *CollectGroupingContext {
 	var p = new(CollectGroupingContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectGrouping
 	return p
+}
+
+func InitEmptyCollectGroupingContext(p *CollectGroupingContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectGrouping
 }
 
 func (*CollectGroupingContext) IsCollectGroupingContext() {}
@@ -4417,7 +4681,7 @@ func (*CollectGroupingContext) IsCollectGroupingContext() {}
 func NewCollectGroupingContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectGroupingContext {
 	var p = new(CollectGroupingContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectGrouping
@@ -4507,28 +4771,9 @@ func (s *CollectGroupingContext) Accept(visitor antlr.ParseTreeVisitor) interfac
 }
 
 func (p *FqlParser) CollectGrouping() (localctx ICollectGroupingContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectGroupingContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 44, FqlParserRULE_collectGrouping)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -4537,12 +4782,19 @@ func (p *FqlParser) CollectGrouping() (localctx ICollectGroupingContext) {
 	}
 	p.SetState(311)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	for _la == FqlParserComma {
 		{
 			p.SetState(307)
 			p.Match(FqlParserComma)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(308)
@@ -4551,10 +4803,23 @@ func (p *FqlParser) CollectGrouping() (localctx ICollectGroupingContext) {
 
 		p.SetState(313)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectAggregatorContext is an interface to support dynamic dispatch.
@@ -4564,20 +4829,32 @@ type ICollectAggregatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Aggregate() antlr.TerminalNode
+	AllCollectAggregateSelector() []ICollectAggregateSelectorContext
+	CollectAggregateSelector(i int) ICollectAggregateSelectorContext
+	AllComma() []antlr.TerminalNode
+	Comma(i int) antlr.TerminalNode
+
 	// IsCollectAggregatorContext differentiates from other interfaces.
 	IsCollectAggregatorContext()
 }
 
 type CollectAggregatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectAggregatorContext() *CollectAggregatorContext {
 	var p = new(CollectAggregatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectAggregator
 	return p
+}
+
+func InitEmptyCollectAggregatorContext(p *CollectAggregatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectAggregator
 }
 
 func (*CollectAggregatorContext) IsCollectAggregatorContext() {}
@@ -4585,7 +4862,7 @@ func (*CollectAggregatorContext) IsCollectAggregatorContext() {}
 func NewCollectAggregatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectAggregatorContext {
 	var p = new(CollectAggregatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectAggregator
@@ -4679,33 +4956,18 @@ func (s *CollectAggregatorContext) Accept(visitor antlr.ParseTreeVisitor) interf
 }
 
 func (p *FqlParser) CollectAggregator() (localctx ICollectAggregatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectAggregatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 46, FqlParserRULE_collectAggregator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(314)
 		p.Match(FqlParserAggregate)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(315)
@@ -4713,12 +4975,19 @@ func (p *FqlParser) CollectAggregator() (localctx ICollectAggregatorContext) {
 	}
 	p.SetState(320)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	for _la == FqlParserComma {
 		{
 			p.SetState(316)
 			p.Match(FqlParserComma)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(317)
@@ -4727,10 +4996,23 @@ func (p *FqlParser) CollectAggregator() (localctx ICollectAggregatorContext) {
 
 		p.SetState(322)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectAggregateSelectorContext is an interface to support dynamic dispatch.
@@ -4740,20 +5022,30 @@ type ICollectAggregateSelectorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+	Assign() antlr.TerminalNode
+	FunctionCallExpression() IFunctionCallExpressionContext
+
 	// IsCollectAggregateSelectorContext differentiates from other interfaces.
 	IsCollectAggregateSelectorContext()
 }
 
 type CollectAggregateSelectorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectAggregateSelectorContext() *CollectAggregateSelectorContext {
 	var p = new(CollectAggregateSelectorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectAggregateSelector
 	return p
+}
+
+func InitEmptyCollectAggregateSelectorContext(p *CollectAggregateSelectorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectAggregateSelector
 }
 
 func (*CollectAggregateSelectorContext) IsCollectAggregateSelectorContext() {}
@@ -4761,7 +5053,7 @@ func (*CollectAggregateSelectorContext) IsCollectAggregateSelectorContext() {}
 func NewCollectAggregateSelectorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectAggregateSelectorContext {
 	var p = new(CollectAggregateSelectorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectAggregateSelector
@@ -4826,43 +5118,41 @@ func (s *CollectAggregateSelectorContext) Accept(visitor antlr.ParseTreeVisitor)
 }
 
 func (p *FqlParser) CollectAggregateSelector() (localctx ICollectAggregateSelectorContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectAggregateSelectorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 48, FqlParserRULE_collectAggregateSelector)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(323)
 		p.Match(FqlParserIdentifier)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(324)
 		p.Match(FqlParserAssign)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(325)
 		p.FunctionCallExpression()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectGroupVariableContext is an interface to support dynamic dispatch.
@@ -4872,20 +5162,32 @@ type ICollectGroupVariableContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Into() antlr.TerminalNode
+	CollectSelector() ICollectSelectorContext
+	AllIdentifier() []antlr.TerminalNode
+	Identifier(i int) antlr.TerminalNode
+	Keep() antlr.TerminalNode
+
 	// IsCollectGroupVariableContext differentiates from other interfaces.
 	IsCollectGroupVariableContext()
 }
 
 type CollectGroupVariableContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectGroupVariableContext() *CollectGroupVariableContext {
 	var p = new(CollectGroupVariableContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectGroupVariable
 	return p
+}
+
+func InitEmptyCollectGroupVariableContext(p *CollectGroupVariableContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectGroupVariable
 }
 
 func (*CollectGroupVariableContext) IsCollectGroupVariableContext() {}
@@ -4893,7 +5195,7 @@ func (*CollectGroupVariableContext) IsCollectGroupVariableContext() {}
 func NewCollectGroupVariableContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectGroupVariableContext {
 	var p = new(CollectGroupVariableContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectGroupVariable
@@ -4966,36 +5268,24 @@ func (s *CollectGroupVariableContext) Accept(visitor antlr.ParseTreeVisitor) int
 }
 
 func (p *FqlParser) CollectGroupVariable() (localctx ICollectGroupVariableContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectGroupVariableContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 50, FqlParserRULE_collectGroupVariable)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(335)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 24, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 24, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(327)
 			p.Match(FqlParserInto)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(328)
@@ -5007,29 +5297,59 @@ func (p *FqlParser) CollectGroupVariable() (localctx ICollectGroupVariableContex
 		{
 			p.SetState(329)
 			p.Match(FqlParserInto)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(330)
 			p.Match(FqlParserIdentifier)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		p.SetState(333)
 		p.GetErrorHandler().Sync(p)
 
-		if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 23, p.GetParserRuleContext()) == 1 {
+		if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 23, p.GetParserRuleContext()) == 1 {
 			{
 				p.SetState(331)
 				p.Match(FqlParserKeep)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(332)
 				p.Match(FqlParserIdentifier)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 
+		} else if p.HasError() { // JIM
+			goto errorExit
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ICollectCounterContext is an interface to support dynamic dispatch.
@@ -5039,20 +5359,31 @@ type ICollectCounterContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	With() antlr.TerminalNode
+	Count() antlr.TerminalNode
+	Into() antlr.TerminalNode
+	Identifier() antlr.TerminalNode
+
 	// IsCollectCounterContext differentiates from other interfaces.
 	IsCollectCounterContext()
 }
 
 type CollectCounterContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyCollectCounterContext() *CollectCounterContext {
 	var p = new(CollectCounterContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_collectCounter
 	return p
+}
+
+func InitEmptyCollectCounterContext(p *CollectCounterContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_collectCounter
 }
 
 func (*CollectCounterContext) IsCollectCounterContext() {}
@@ -5060,7 +5391,7 @@ func (*CollectCounterContext) IsCollectCounterContext() {}
 func NewCollectCounterContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *CollectCounterContext {
 	var p = new(CollectCounterContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_collectCounter
@@ -5117,47 +5448,53 @@ func (s *CollectCounterContext) Accept(visitor antlr.ParseTreeVisitor) interface
 }
 
 func (p *FqlParser) CollectCounter() (localctx ICollectCounterContext) {
-	this := p
-	_ = this
-
 	localctx = NewCollectCounterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 52, FqlParserRULE_collectCounter)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(337)
 		p.Match(FqlParserWith)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(338)
 		p.Match(FqlParserCount)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(339)
 		p.Match(FqlParserInto)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(340)
 		p.Match(FqlParserIdentifier)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IWaitForExpressionContext is an interface to support dynamic dispatch.
@@ -5167,20 +5504,35 @@ type IWaitForExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Waitfor() antlr.TerminalNode
+	Event() antlr.TerminalNode
+	WaitForEventName() IWaitForEventNameContext
+	In() antlr.TerminalNode
+	WaitForEventSource() IWaitForEventSourceContext
+	OptionsClause() IOptionsClauseContext
+	FilterClause() IFilterClauseContext
+	TimeoutClause() ITimeoutClauseContext
+
 	// IsWaitForExpressionContext differentiates from other interfaces.
 	IsWaitForExpressionContext()
 }
 
 type WaitForExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyWaitForExpressionContext() *WaitForExpressionContext {
 	var p = new(WaitForExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_waitForExpression
 	return p
+}
+
+func InitEmptyWaitForExpressionContext(p *WaitForExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_waitForExpression
 }
 
 func (*WaitForExpressionContext) IsWaitForExpressionContext() {}
@@ -5188,7 +5540,7 @@ func (*WaitForExpressionContext) IsWaitForExpressionContext() {}
 func NewWaitForExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *WaitForExpressionContext {
 	var p = new(WaitForExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_waitForExpression
@@ -5321,36 +5673,24 @@ func (s *WaitForExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interf
 }
 
 func (p *FqlParser) WaitForExpression() (localctx IWaitForExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewWaitForExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 54, FqlParserRULE_waitForExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(342)
 		p.Match(FqlParserWaitfor)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(343)
 		p.Match(FqlParserEvent)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(344)
@@ -5359,6 +5699,10 @@ func (p *FqlParser) WaitForExpression() (localctx IWaitForExpressionContext) {
 	{
 		p.SetState(345)
 		p.Match(FqlParserIn)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(346)
@@ -5367,35 +5711,51 @@ func (p *FqlParser) WaitForExpression() (localctx IWaitForExpressionContext) {
 	p.SetState(348)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 25, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 25, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(347)
 			p.OptionsClause()
 		}
 
+	} else if p.HasError() { // JIM
+		goto errorExit
 	}
 	p.SetState(351)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 26, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 26, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(350)
 			p.FilterClause()
 		}
 
+	} else if p.HasError() { // JIM
+		goto errorExit
 	}
 	p.SetState(354)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 27, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 27, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(353)
 			p.TimeoutClause()
 		}
 
+	} else if p.HasError() { // JIM
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IWaitForEventNameContext is an interface to support dynamic dispatch.
@@ -5405,20 +5765,32 @@ type IWaitForEventNameContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	StringLiteral() IStringLiteralContext
+	Variable() IVariableContext
+	Param() IParamContext
+	FunctionCallExpression() IFunctionCallExpressionContext
+	MemberExpression() IMemberExpressionContext
+
 	// IsWaitForEventNameContext differentiates from other interfaces.
 	IsWaitForEventNameContext()
 }
 
 type WaitForEventNameContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyWaitForEventNameContext() *WaitForEventNameContext {
 	var p = new(WaitForEventNameContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_waitForEventName
 	return p
+}
+
+func InitEmptyWaitForEventNameContext(p *WaitForEventNameContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_waitForEventName
 }
 
 func (*WaitForEventNameContext) IsWaitForEventNameContext() {}
@@ -5426,7 +5798,7 @@ func (*WaitForEventNameContext) IsWaitForEventNameContext() {}
 func NewWaitForEventNameContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *WaitForEventNameContext {
 	var p = new(WaitForEventNameContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_waitForEventName
@@ -5547,31 +5919,15 @@ func (s *WaitForEventNameContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) WaitForEventName() (localctx IWaitForEventNameContext) {
-	this := p
-	_ = this
-
 	localctx = NewWaitForEventNameContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 56, FqlParserRULE_waitForEventName)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(361)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 28, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 28, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -5607,9 +5963,21 @@ func (p *FqlParser) WaitForEventName() (localctx IWaitForEventNameContext) {
 			p.MemberExpression()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IWaitForEventSourceContext is an interface to support dynamic dispatch.
@@ -5619,20 +5987,30 @@ type IWaitForEventSourceContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	FunctionCallExpression() IFunctionCallExpressionContext
+	Variable() IVariableContext
+	MemberExpression() IMemberExpressionContext
+
 	// IsWaitForEventSourceContext differentiates from other interfaces.
 	IsWaitForEventSourceContext()
 }
 
 type WaitForEventSourceContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyWaitForEventSourceContext() *WaitForEventSourceContext {
 	var p = new(WaitForEventSourceContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_waitForEventSource
 	return p
+}
+
+func InitEmptyWaitForEventSourceContext(p *WaitForEventSourceContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_waitForEventSource
 }
 
 func (*WaitForEventSourceContext) IsWaitForEventSourceContext() {}
@@ -5640,7 +6018,7 @@ func (*WaitForEventSourceContext) IsWaitForEventSourceContext() {}
 func NewWaitForEventSourceContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *WaitForEventSourceContext {
 	var p = new(WaitForEventSourceContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_waitForEventSource
@@ -5729,31 +6107,15 @@ func (s *WaitForEventSourceContext) Accept(visitor antlr.ParseTreeVisitor) inter
 }
 
 func (p *FqlParser) WaitForEventSource() (localctx IWaitForEventSourceContext) {
-	this := p
-	_ = this
-
 	localctx = NewWaitForEventSourceContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 58, FqlParserRULE_waitForEventSource)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(366)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 29, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 29, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -5775,9 +6137,21 @@ func (p *FqlParser) WaitForEventSource() (localctx IWaitForEventSourceContext) {
 			p.MemberExpression()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IOptionsClauseContext is an interface to support dynamic dispatch.
@@ -5787,20 +6161,29 @@ type IOptionsClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Options() antlr.TerminalNode
+	ObjectLiteral() IObjectLiteralContext
+
 	// IsOptionsClauseContext differentiates from other interfaces.
 	IsOptionsClauseContext()
 }
 
 type OptionsClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyOptionsClauseContext() *OptionsClauseContext {
 	var p = new(OptionsClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_optionsClause
 	return p
+}
+
+func InitEmptyOptionsClauseContext(p *OptionsClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_optionsClause
 }
 
 func (*OptionsClauseContext) IsOptionsClauseContext() {}
@@ -5808,7 +6191,7 @@ func (*OptionsClauseContext) IsOptionsClauseContext() {}
 func NewOptionsClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *OptionsClauseContext {
 	var p = new(OptionsClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_optionsClause
@@ -5869,39 +6252,33 @@ func (s *OptionsClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) OptionsClause() (localctx IOptionsClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewOptionsClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 60, FqlParserRULE_optionsClause)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(368)
 		p.Match(FqlParserOptions)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(369)
 		p.ObjectLiteral()
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ITimeoutClauseContext is an interface to support dynamic dispatch.
@@ -5911,20 +6288,33 @@ type ITimeoutClauseContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Timeout() antlr.TerminalNode
+	IntegerLiteral() IIntegerLiteralContext
+	Variable() IVariableContext
+	Param() IParamContext
+	MemberExpression() IMemberExpressionContext
+	FunctionCall() IFunctionCallContext
+
 	// IsTimeoutClauseContext differentiates from other interfaces.
 	IsTimeoutClauseContext()
 }
 
 type TimeoutClauseContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyTimeoutClauseContext() *TimeoutClauseContext {
 	var p = new(TimeoutClauseContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_timeoutClause
 	return p
+}
+
+func InitEmptyTimeoutClauseContext(p *TimeoutClauseContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_timeoutClause
 }
 
 func (*TimeoutClauseContext) IsTimeoutClauseContext() {}
@@ -5932,7 +6322,7 @@ func (*TimeoutClauseContext) IsTimeoutClauseContext() {}
 func NewTimeoutClauseContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *TimeoutClauseContext {
 	var p = new(TimeoutClauseContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_timeoutClause
@@ -6057,36 +6447,24 @@ func (s *TimeoutClauseContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) TimeoutClause() (localctx ITimeoutClauseContext) {
-	this := p
-	_ = this
-
 	localctx = NewTimeoutClauseContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 62, FqlParserRULE_timeoutClause)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(371)
 		p.Match(FqlParserTimeout)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(377)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 30, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 30, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(372)
@@ -6117,9 +6495,21 @@ func (p *FqlParser) TimeoutClause() (localctx ITimeoutClauseContext) {
 			p.FunctionCall()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IParamContext is an interface to support dynamic dispatch.
@@ -6129,20 +6519,30 @@ type IParamContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Param() antlr.TerminalNode
+	Identifier() antlr.TerminalNode
+	SafeReservedWord() ISafeReservedWordContext
+
 	// IsParamContext differentiates from other interfaces.
 	IsParamContext()
 }
 
 type ParamContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyParamContext() *ParamContext {
 	var p = new(ParamContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_param
 	return p
+}
+
+func InitEmptyParamContext(p *ParamContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_param
 }
 
 func (*ParamContext) IsParamContext() {}
@@ -6150,7 +6550,7 @@ func (*ParamContext) IsParamContext() {}
 func NewParamContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ParamContext {
 	var p = new(ParamContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_param
@@ -6215,40 +6615,32 @@ func (s *ParamContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Param() (localctx IParamContext) {
-	this := p
-	_ = this
-
 	localctx = NewParamContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 64, FqlParserRULE_param)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(383)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 31, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 31, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
 			p.SetState(379)
 			p.Match(FqlParserParam)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(380)
 			p.Match(FqlParserIdentifier)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	case 2:
@@ -6256,15 +6648,31 @@ func (p *FqlParser) Param() (localctx IParamContext) {
 		{
 			p.SetState(381)
 			p.Match(FqlParserParam)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(382)
 			p.SafeReservedWord()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IVariableContext is an interface to support dynamic dispatch.
@@ -6274,20 +6682,29 @@ type IVariableContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+	SafeReservedWord() ISafeReservedWordContext
+
 	// IsVariableContext differentiates from other interfaces.
 	IsVariableContext()
 }
 
 type VariableContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyVariableContext() *VariableContext {
 	var p = new(VariableContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_variable
 	return p
+}
+
+func InitEmptyVariableContext(p *VariableContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_variable
 }
 
 func (*VariableContext) IsVariableContext() {}
@@ -6295,7 +6712,7 @@ func (*VariableContext) IsVariableContext() {}
 func NewVariableContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *VariableContext {
 	var p = new(VariableContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_variable
@@ -6356,30 +6773,13 @@ func (s *VariableContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Variable() (localctx IVariableContext) {
-	this := p
-	_ = this
-
 	localctx = NewVariableContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 66, FqlParserRULE_variable)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(387)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserIdentifier:
@@ -6387,6 +6787,10 @@ func (p *FqlParser) Variable() (localctx IVariableContext) {
 		{
 			p.SetState(385)
 			p.Match(FqlParserIdentifier)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	case FqlParserAnd, FqlParserOr, FqlParserOptions, FqlParserTimeout, FqlParserDistinct, FqlParserFilter, FqlParserCurrent, FqlParserSort, FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith, FqlParserCount, FqlParserAll, FqlParserAny, FqlParserAggregate, FqlParserEvent:
@@ -6397,10 +6801,21 @@ func (p *FqlParser) Variable() (localctx IVariableContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILiteralContext is an interface to support dynamic dispatch.
@@ -6410,20 +6825,34 @@ type ILiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	ArrayLiteral() IArrayLiteralContext
+	ObjectLiteral() IObjectLiteralContext
+	BooleanLiteral() IBooleanLiteralContext
+	StringLiteral() IStringLiteralContext
+	FloatLiteral() IFloatLiteralContext
+	IntegerLiteral() IIntegerLiteralContext
+	NoneLiteral() INoneLiteralContext
+
 	// IsLiteralContext differentiates from other interfaces.
 	IsLiteralContext()
 }
 
 type LiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLiteralContext() *LiteralContext {
 	var p = new(LiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_literal
 	return p
+}
+
+func InitEmptyLiteralContext(p *LiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_literal
 }
 
 func (*LiteralContext) IsLiteralContext() {}
@@ -6431,7 +6860,7 @@ func (*LiteralContext) IsLiteralContext() {}
 func NewLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LiteralContext {
 	var p = new(LiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_literal
@@ -6584,30 +7013,13 @@ func (s *LiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Literal() (localctx ILiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 68, FqlParserRULE_literal)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(396)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserOpenBracket:
@@ -6660,10 +7072,21 @@ func (p *FqlParser) Literal() (localctx ILiteralContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IArrayLiteralContext is an interface to support dynamic dispatch.
@@ -6673,20 +7096,30 @@ type IArrayLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	OpenBracket() antlr.TerminalNode
+	CloseBracket() antlr.TerminalNode
+	ArgumentList() IArgumentListContext
+
 	// IsArrayLiteralContext differentiates from other interfaces.
 	IsArrayLiteralContext()
 }
 
 type ArrayLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyArrayLiteralContext() *ArrayLiteralContext {
 	var p = new(ArrayLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_arrayLiteral
 	return p
+}
+
+func InitEmptyArrayLiteralContext(p *ArrayLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_arrayLiteral
 }
 
 func (*ArrayLiteralContext) IsArrayLiteralContext() {}
@@ -6694,7 +7127,7 @@ func (*ArrayLiteralContext) IsArrayLiteralContext() {}
 func NewArrayLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ArrayLiteralContext {
 	var p = new(ArrayLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_arrayLiteral
@@ -6759,36 +7192,24 @@ func (s *ArrayLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) ArrayLiteral() (localctx IArrayLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewArrayLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 70, FqlParserRULE_arrayLiteral)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(398)
 		p.Match(FqlParserOpenBracket)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(400)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if (int64((_la-9)) & ^0x3f) == 0 && ((int64(1)<<(_la-9))&8935141660637626389) != 0 {
@@ -6801,9 +7222,23 @@ func (p *FqlParser) ArrayLiteral() (localctx IArrayLiteralContext) {
 	{
 		p.SetState(402)
 		p.Match(FqlParserCloseBracket)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IObjectLiteralContext is an interface to support dynamic dispatch.
@@ -6813,20 +7248,33 @@ type IObjectLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	OpenBrace() antlr.TerminalNode
+	CloseBrace() antlr.TerminalNode
+	AllPropertyAssignment() []IPropertyAssignmentContext
+	PropertyAssignment(i int) IPropertyAssignmentContext
+	AllComma() []antlr.TerminalNode
+	Comma(i int) antlr.TerminalNode
+
 	// IsObjectLiteralContext differentiates from other interfaces.
 	IsObjectLiteralContext()
 }
 
 type ObjectLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyObjectLiteralContext() *ObjectLiteralContext {
 	var p = new(ObjectLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_objectLiteral
 	return p
+}
+
+func InitEmptyObjectLiteralContext(p *ObjectLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_objectLiteral
 }
 
 func (*ObjectLiteralContext) IsObjectLiteralContext() {}
@@ -6834,7 +7282,7 @@ func (*ObjectLiteralContext) IsObjectLiteralContext() {}
 func NewObjectLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ObjectLiteralContext {
 	var p = new(ObjectLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_objectLiteral
@@ -6932,28 +7380,9 @@ func (s *ObjectLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) ObjectLiteral() (localctx IObjectLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewObjectLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 72, FqlParserRULE_objectLiteral)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	var _alt int
 
@@ -6961,9 +7390,16 @@ func (p *FqlParser) ObjectLiteral() (localctx IObjectLiteralContext) {
 	{
 		p.SetState(404)
 		p.Match(FqlParserOpenBrace)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(416)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if (int64((_la-9)) & ^0x3f) == 0 && ((int64(1)<<(_la-9))&864691128389599233) != 0 {
@@ -6973,13 +7409,22 @@ func (p *FqlParser) ObjectLiteral() (localctx IObjectLiteralContext) {
 		}
 		p.SetState(410)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 35, p.GetParserRuleContext())
-
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 35, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 		for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 			if _alt == 1 {
 				{
 					p.SetState(406)
 					p.Match(FqlParserComma)
+					if p.HasError() {
+						// Recognition error - abort rule
+						goto errorExit
+					}
 				}
 				{
 					p.SetState(407)
@@ -6989,16 +7434,29 @@ func (p *FqlParser) ObjectLiteral() (localctx IObjectLiteralContext) {
 			}
 			p.SetState(412)
 			p.GetErrorHandler().Sync(p)
-			_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 35, p.GetParserRuleContext())
+			if p.HasError() {
+				goto errorExit
+			}
+			_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 35, p.GetParserRuleContext())
+			if p.HasError() {
+				goto errorExit
+			}
 		}
 		p.SetState(414)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == FqlParserComma {
 			{
 				p.SetState(413)
 				p.Match(FqlParserComma)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 
 		}
@@ -7007,9 +7465,23 @@ func (p *FqlParser) ObjectLiteral() (localctx IObjectLiteralContext) {
 	{
 		p.SetState(418)
 		p.Match(FqlParserCloseBrace)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IBooleanLiteralContext is an interface to support dynamic dispatch.
@@ -7019,20 +7491,28 @@ type IBooleanLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	BooleanLiteral() antlr.TerminalNode
+
 	// IsBooleanLiteralContext differentiates from other interfaces.
 	IsBooleanLiteralContext()
 }
 
 type BooleanLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyBooleanLiteralContext() *BooleanLiteralContext {
 	var p = new(BooleanLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_booleanLiteral
 	return p
+}
+
+func InitEmptyBooleanLiteralContext(p *BooleanLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_booleanLiteral
 }
 
 func (*BooleanLiteralContext) IsBooleanLiteralContext() {}
@@ -7040,7 +7520,7 @@ func (*BooleanLiteralContext) IsBooleanLiteralContext() {}
 func NewBooleanLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *BooleanLiteralContext {
 	var p = new(BooleanLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_booleanLiteral
@@ -7085,35 +7565,29 @@ func (s *BooleanLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface
 }
 
 func (p *FqlParser) BooleanLiteral() (localctx IBooleanLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewBooleanLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 74, FqlParserRULE_booleanLiteral)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(420)
 		p.Match(FqlParserBooleanLiteral)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IStringLiteralContext is an interface to support dynamic dispatch.
@@ -7123,20 +7597,28 @@ type IStringLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	StringLiteral() antlr.TerminalNode
+
 	// IsStringLiteralContext differentiates from other interfaces.
 	IsStringLiteralContext()
 }
 
 type StringLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyStringLiteralContext() *StringLiteralContext {
 	var p = new(StringLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_stringLiteral
 	return p
+}
+
+func InitEmptyStringLiteralContext(p *StringLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_stringLiteral
 }
 
 func (*StringLiteralContext) IsStringLiteralContext() {}
@@ -7144,7 +7626,7 @@ func (*StringLiteralContext) IsStringLiteralContext() {}
 func NewStringLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *StringLiteralContext {
 	var p = new(StringLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_stringLiteral
@@ -7189,35 +7671,29 @@ func (s *StringLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) StringLiteral() (localctx IStringLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewStringLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 76, FqlParserRULE_stringLiteral)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(422)
 		p.Match(FqlParserStringLiteral)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IFloatLiteralContext is an interface to support dynamic dispatch.
@@ -7227,20 +7703,28 @@ type IFloatLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	FloatLiteral() antlr.TerminalNode
+
 	// IsFloatLiteralContext differentiates from other interfaces.
 	IsFloatLiteralContext()
 }
 
 type FloatLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyFloatLiteralContext() *FloatLiteralContext {
 	var p = new(FloatLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_floatLiteral
 	return p
+}
+
+func InitEmptyFloatLiteralContext(p *FloatLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_floatLiteral
 }
 
 func (*FloatLiteralContext) IsFloatLiteralContext() {}
@@ -7248,7 +7732,7 @@ func (*FloatLiteralContext) IsFloatLiteralContext() {}
 func NewFloatLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *FloatLiteralContext {
 	var p = new(FloatLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_floatLiteral
@@ -7293,35 +7777,29 @@ func (s *FloatLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) FloatLiteral() (localctx IFloatLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewFloatLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 78, FqlParserRULE_floatLiteral)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(424)
 		p.Match(FqlParserFloatLiteral)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IIntegerLiteralContext is an interface to support dynamic dispatch.
@@ -7331,20 +7809,28 @@ type IIntegerLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	IntegerLiteral() antlr.TerminalNode
+
 	// IsIntegerLiteralContext differentiates from other interfaces.
 	IsIntegerLiteralContext()
 }
 
 type IntegerLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyIntegerLiteralContext() *IntegerLiteralContext {
 	var p = new(IntegerLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_integerLiteral
 	return p
+}
+
+func InitEmptyIntegerLiteralContext(p *IntegerLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_integerLiteral
 }
 
 func (*IntegerLiteralContext) IsIntegerLiteralContext() {}
@@ -7352,7 +7838,7 @@ func (*IntegerLiteralContext) IsIntegerLiteralContext() {}
 func NewIntegerLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *IntegerLiteralContext {
 	var p = new(IntegerLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_integerLiteral
@@ -7397,35 +7883,29 @@ func (s *IntegerLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface
 }
 
 func (p *FqlParser) IntegerLiteral() (localctx IIntegerLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewIntegerLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 80, FqlParserRULE_integerLiteral)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(426)
 		p.Match(FqlParserIntegerLiteral)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // INoneLiteralContext is an interface to support dynamic dispatch.
@@ -7435,20 +7915,29 @@ type INoneLiteralContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Null() antlr.TerminalNode
+	None() antlr.TerminalNode
+
 	// IsNoneLiteralContext differentiates from other interfaces.
 	IsNoneLiteralContext()
 }
 
 type NoneLiteralContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyNoneLiteralContext() *NoneLiteralContext {
 	var p = new(NoneLiteralContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_noneLiteral
 	return p
+}
+
+func InitEmptyNoneLiteralContext(p *NoneLiteralContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_noneLiteral
 }
 
 func (*NoneLiteralContext) IsNoneLiteralContext() {}
@@ -7456,7 +7945,7 @@ func (*NoneLiteralContext) IsNoneLiteralContext() {}
 func NewNoneLiteralContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *NoneLiteralContext {
 	var p = new(NoneLiteralContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_noneLiteral
@@ -7505,28 +7994,9 @@ func (s *NoneLiteralContext) Accept(visitor antlr.ParseTreeVisitor) interface{} 
 }
 
 func (p *FqlParser) NoneLiteral() (localctx INoneLiteralContext) {
-	this := p
-	_ = this
-
 	localctx = NewNoneLiteralContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 82, FqlParserRULE_noneLiteral)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -7541,7 +8011,17 @@ func (p *FqlParser) NoneLiteral() (localctx INoneLiteralContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IPropertyAssignmentContext is an interface to support dynamic dispatch.
@@ -7551,20 +8031,32 @@ type IPropertyAssignmentContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	PropertyName() IPropertyNameContext
+	Colon() antlr.TerminalNode
+	Expression() IExpressionContext
+	ComputedPropertyName() IComputedPropertyNameContext
+	Variable() IVariableContext
+
 	// IsPropertyAssignmentContext differentiates from other interfaces.
 	IsPropertyAssignmentContext()
 }
 
 type PropertyAssignmentContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyPropertyAssignmentContext() *PropertyAssignmentContext {
 	var p = new(PropertyAssignmentContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_propertyAssignment
 	return p
+}
+
+func InitEmptyPropertyAssignmentContext(p *PropertyAssignmentContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_propertyAssignment
 }
 
 func (*PropertyAssignmentContext) IsPropertyAssignmentContext() {}
@@ -7572,7 +8064,7 @@ func (*PropertyAssignmentContext) IsPropertyAssignmentContext() {}
 func NewPropertyAssignmentContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *PropertyAssignmentContext {
 	var p = new(PropertyAssignmentContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_propertyAssignment
@@ -7681,31 +8173,15 @@ func (s *PropertyAssignmentContext) Accept(visitor antlr.ParseTreeVisitor) inter
 }
 
 func (p *FqlParser) PropertyAssignment() (localctx IPropertyAssignmentContext) {
-	this := p
-	_ = this
-
 	localctx = NewPropertyAssignmentContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 84, FqlParserRULE_propertyAssignment)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(439)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 38, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 38, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -7715,6 +8191,10 @@ func (p *FqlParser) PropertyAssignment() (localctx IPropertyAssignmentContext) {
 		{
 			p.SetState(431)
 			p.Match(FqlParserColon)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(432)
@@ -7730,6 +8210,10 @@ func (p *FqlParser) PropertyAssignment() (localctx IPropertyAssignmentContext) {
 		{
 			p.SetState(435)
 			p.Match(FqlParserColon)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(436)
@@ -7743,9 +8227,21 @@ func (p *FqlParser) PropertyAssignment() (localctx IPropertyAssignmentContext) {
 			p.Variable()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IComputedPropertyNameContext is an interface to support dynamic dispatch.
@@ -7755,20 +8251,30 @@ type IComputedPropertyNameContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	OpenBracket() antlr.TerminalNode
+	Expression() IExpressionContext
+	CloseBracket() antlr.TerminalNode
+
 	// IsComputedPropertyNameContext differentiates from other interfaces.
 	IsComputedPropertyNameContext()
 }
 
 type ComputedPropertyNameContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyComputedPropertyNameContext() *ComputedPropertyNameContext {
 	var p = new(ComputedPropertyNameContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_computedPropertyName
 	return p
+}
+
+func InitEmptyComputedPropertyNameContext(p *ComputedPropertyNameContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_computedPropertyName
 }
 
 func (*ComputedPropertyNameContext) IsComputedPropertyNameContext() {}
@@ -7776,7 +8282,7 @@ func (*ComputedPropertyNameContext) IsComputedPropertyNameContext() {}
 func NewComputedPropertyNameContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ComputedPropertyNameContext {
 	var p = new(ComputedPropertyNameContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_computedPropertyName
@@ -7841,32 +8347,16 @@ func (s *ComputedPropertyNameContext) Accept(visitor antlr.ParseTreeVisitor) int
 }
 
 func (p *FqlParser) ComputedPropertyName() (localctx IComputedPropertyNameContext) {
-	this := p
-	_ = this
-
 	localctx = NewComputedPropertyNameContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 86, FqlParserRULE_computedPropertyName)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(441)
 		p.Match(FqlParserOpenBracket)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(442)
@@ -7875,9 +8365,23 @@ func (p *FqlParser) ComputedPropertyName() (localctx IComputedPropertyNameContex
 	{
 		p.SetState(443)
 		p.Match(FqlParserCloseBracket)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IPropertyNameContext is an interface to support dynamic dispatch.
@@ -7887,20 +8391,32 @@ type IPropertyNameContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+	StringLiteral() IStringLiteralContext
+	Param() IParamContext
+	SafeReservedWord() ISafeReservedWordContext
+	UnsafeReservedWord() IUnsafeReservedWordContext
+
 	// IsPropertyNameContext differentiates from other interfaces.
 	IsPropertyNameContext()
 }
 
 type PropertyNameContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyPropertyNameContext() *PropertyNameContext {
 	var p = new(PropertyNameContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_propertyName
 	return p
+}
+
+func InitEmptyPropertyNameContext(p *PropertyNameContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_propertyName
 }
 
 func (*PropertyNameContext) IsPropertyNameContext() {}
@@ -7908,7 +8424,7 @@ func (*PropertyNameContext) IsPropertyNameContext() {}
 func NewPropertyNameContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *PropertyNameContext {
 	var p = new(PropertyNameContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_propertyName
@@ -8017,30 +8533,13 @@ func (s *PropertyNameContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) PropertyName() (localctx IPropertyNameContext) {
-	this := p
-	_ = this
-
 	localctx = NewPropertyNameContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 88, FqlParserRULE_propertyName)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(450)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserIdentifier:
@@ -8048,6 +8547,10 @@ func (p *FqlParser) PropertyName() (localctx IPropertyNameContext) {
 		{
 			p.SetState(445)
 			p.Match(FqlParserIdentifier)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	case FqlParserStringLiteral:
@@ -8079,10 +8582,21 @@ func (p *FqlParser) PropertyName() (localctx IPropertyNameContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // INamespaceIdentifierContext is an interface to support dynamic dispatch.
@@ -8092,20 +8606,29 @@ type INamespaceIdentifierContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Namespace() INamespaceContext
+	Identifier() antlr.TerminalNode
+
 	// IsNamespaceIdentifierContext differentiates from other interfaces.
 	IsNamespaceIdentifierContext()
 }
 
 type NamespaceIdentifierContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyNamespaceIdentifierContext() *NamespaceIdentifierContext {
 	var p = new(NamespaceIdentifierContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_namespaceIdentifier
 	return p
+}
+
+func InitEmptyNamespaceIdentifierContext(p *NamespaceIdentifierContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_namespaceIdentifier
 }
 
 func (*NamespaceIdentifierContext) IsNamespaceIdentifierContext() {}
@@ -8113,7 +8636,7 @@ func (*NamespaceIdentifierContext) IsNamespaceIdentifierContext() {}
 func NewNamespaceIdentifierContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *NamespaceIdentifierContext {
 	var p = new(NamespaceIdentifierContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_namespaceIdentifier
@@ -8174,28 +8697,8 @@ func (s *NamespaceIdentifierContext) Accept(visitor antlr.ParseTreeVisitor) inte
 }
 
 func (p *FqlParser) NamespaceIdentifier() (localctx INamespaceIdentifierContext) {
-	this := p
-	_ = this
-
 	localctx = NewNamespaceIdentifierContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 90, FqlParserRULE_namespaceIdentifier)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(452)
@@ -8204,9 +8707,23 @@ func (p *FqlParser) NamespaceIdentifier() (localctx INamespaceIdentifierContext)
 	{
 		p.SetState(453)
 		p.Match(FqlParserIdentifier)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // INamespaceContext is an interface to support dynamic dispatch.
@@ -8216,20 +8733,29 @@ type INamespaceContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	AllNamespaceSegment() []antlr.TerminalNode
+	NamespaceSegment(i int) antlr.TerminalNode
+
 	// IsNamespaceContext differentiates from other interfaces.
 	IsNamespaceContext()
 }
 
 type NamespaceContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyNamespaceContext() *NamespaceContext {
 	var p = new(NamespaceContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_namespace
 	return p
+}
+
+func InitEmptyNamespaceContext(p *NamespaceContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_namespace
 }
 
 func (*NamespaceContext) IsNamespaceContext() {}
@@ -8237,7 +8763,7 @@ func (*NamespaceContext) IsNamespaceContext() {}
 func NewNamespaceContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *NamespaceContext {
 	var p = new(NamespaceContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_namespace
@@ -8286,46 +8812,47 @@ func (s *NamespaceContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) Namespace() (localctx INamespaceContext) {
-	this := p
-	_ = this
-
 	localctx = NewNamespaceContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 92, FqlParserRULE_namespace)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(458)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	for _la == FqlParserNamespaceSegment {
 		{
 			p.SetState(455)
 			p.Match(FqlParserNamespaceSegment)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 		p.SetState(460)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IMemberExpressionContext is an interface to support dynamic dispatch.
@@ -8335,20 +8862,30 @@ type IMemberExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	MemberExpressionSource() IMemberExpressionSourceContext
+	AllMemberExpressionPath() []IMemberExpressionPathContext
+	MemberExpressionPath(i int) IMemberExpressionPathContext
+
 	// IsMemberExpressionContext differentiates from other interfaces.
 	IsMemberExpressionContext()
 }
 
 type MemberExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyMemberExpressionContext() *MemberExpressionContext {
 	var p = new(MemberExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_memberExpression
 	return p
+}
+
+func InitEmptyMemberExpressionContext(p *MemberExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_memberExpression
 }
 
 func (*MemberExpressionContext) IsMemberExpressionContext() {}
@@ -8356,7 +8893,7 @@ func (*MemberExpressionContext) IsMemberExpressionContext() {}
 func NewMemberExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *MemberExpressionContext {
 	var p = new(MemberExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_memberExpression
@@ -8454,28 +8991,8 @@ func (s *MemberExpressionContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) MemberExpression() (localctx IMemberExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewMemberExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 94, FqlParserRULE_memberExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	var _alt int
 
 	p.EnterOuterAlt(localctx, 1)
@@ -8485,6 +9002,9 @@ func (p *FqlParser) MemberExpression() (localctx IMemberExpressionContext) {
 	}
 	p.SetState(463)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_alt = 1
 	for ok := true; ok; ok = _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		switch _alt {
@@ -8495,15 +9015,29 @@ func (p *FqlParser) MemberExpression() (localctx IMemberExpressionContext) {
 			}
 
 		default:
-			panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+			p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+			goto errorExit
 		}
 
 		p.SetState(465)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 41, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 41, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IMemberExpressionSourceContext is an interface to support dynamic dispatch.
@@ -8513,20 +9047,32 @@ type IMemberExpressionSourceContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Variable() IVariableContext
+	Param() IParamContext
+	ArrayLiteral() IArrayLiteralContext
+	ObjectLiteral() IObjectLiteralContext
+	FunctionCall() IFunctionCallContext
+
 	// IsMemberExpressionSourceContext differentiates from other interfaces.
 	IsMemberExpressionSourceContext()
 }
 
 type MemberExpressionSourceContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyMemberExpressionSourceContext() *MemberExpressionSourceContext {
 	var p = new(MemberExpressionSourceContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_memberExpressionSource
 	return p
+}
+
+func InitEmptyMemberExpressionSourceContext(p *MemberExpressionSourceContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_memberExpressionSource
 }
 
 func (*MemberExpressionSourceContext) IsMemberExpressionSourceContext() {}
@@ -8534,7 +9080,7 @@ func (*MemberExpressionSourceContext) IsMemberExpressionSourceContext() {}
 func NewMemberExpressionSourceContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *MemberExpressionSourceContext {
 	var p = new(MemberExpressionSourceContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_memberExpressionSource
@@ -8655,31 +9201,15 @@ func (s *MemberExpressionSourceContext) Accept(visitor antlr.ParseTreeVisitor) i
 }
 
 func (p *FqlParser) MemberExpressionSource() (localctx IMemberExpressionSourceContext) {
-	this := p
-	_ = this
-
 	localctx = NewMemberExpressionSourceContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 96, FqlParserRULE_memberExpressionSource)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(472)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 42, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 42, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -8715,9 +9245,21 @@ func (p *FqlParser) MemberExpressionSource() (localctx IMemberExpressionSourceCo
 			p.FunctionCall()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IFunctionCallExpressionContext is an interface to support dynamic dispatch.
@@ -8727,20 +9269,29 @@ type IFunctionCallExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	FunctionCall() IFunctionCallContext
+	ErrorOperator() IErrorOperatorContext
+
 	// IsFunctionCallExpressionContext differentiates from other interfaces.
 	IsFunctionCallExpressionContext()
 }
 
 type FunctionCallExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyFunctionCallExpressionContext() *FunctionCallExpressionContext {
 	var p = new(FunctionCallExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_functionCallExpression
 	return p
+}
+
+func InitEmptyFunctionCallExpressionContext(p *FunctionCallExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_functionCallExpression
 }
 
 func (*FunctionCallExpressionContext) IsFunctionCallExpressionContext() {}
@@ -8748,7 +9299,7 @@ func (*FunctionCallExpressionContext) IsFunctionCallExpressionContext() {}
 func NewFunctionCallExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *FunctionCallExpressionContext {
 	var p = new(FunctionCallExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_functionCallExpression
@@ -8821,28 +9372,8 @@ func (s *FunctionCallExpressionContext) Accept(visitor antlr.ParseTreeVisitor) i
 }
 
 func (p *FqlParser) FunctionCallExpression() (localctx IFunctionCallExpressionContext) {
-	this := p
-	_ = this
-
 	localctx = NewFunctionCallExpressionContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 98, FqlParserRULE_functionCallExpression)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(474)
@@ -8851,15 +9382,27 @@ func (p *FqlParser) FunctionCallExpression() (localctx IFunctionCallExpressionCo
 	p.SetState(476)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 43, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 43, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(475)
 			p.ErrorOperator()
 		}
 
+	} else if p.HasError() { // JIM
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IFunctionCallContext is an interface to support dynamic dispatch.
@@ -8869,20 +9412,32 @@ type IFunctionCallContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Namespace() INamespaceContext
+	FunctionName() IFunctionNameContext
+	OpenParen() antlr.TerminalNode
+	CloseParen() antlr.TerminalNode
+	ArgumentList() IArgumentListContext
+
 	// IsFunctionCallContext differentiates from other interfaces.
 	IsFunctionCallContext()
 }
 
 type FunctionCallContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyFunctionCallContext() *FunctionCallContext {
 	var p = new(FunctionCallContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_functionCall
 	return p
+}
+
+func InitEmptyFunctionCallContext(p *FunctionCallContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_functionCall
 }
 
 func (*FunctionCallContext) IsFunctionCallContext() {}
@@ -8890,7 +9445,7 @@ func (*FunctionCallContext) IsFunctionCallContext() {}
 func NewFunctionCallContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *FunctionCallContext {
 	var p = new(FunctionCallContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_functionCall
@@ -8987,28 +9542,9 @@ func (s *FunctionCallContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) FunctionCall() (localctx IFunctionCallContext) {
-	this := p
-	_ = this
-
 	localctx = NewFunctionCallContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 100, FqlParserRULE_functionCall)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -9022,9 +9558,16 @@ func (p *FqlParser) FunctionCall() (localctx IFunctionCallContext) {
 	{
 		p.SetState(480)
 		p.Match(FqlParserOpenParen)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(482)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if (int64((_la-9)) & ^0x3f) == 0 && ((int64(1)<<(_la-9))&8935141660637626389) != 0 {
@@ -9037,9 +9580,23 @@ func (p *FqlParser) FunctionCall() (localctx IFunctionCallContext) {
 	{
 		p.SetState(484)
 		p.Match(FqlParserCloseParen)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IFunctionNameContext is an interface to support dynamic dispatch.
@@ -9049,20 +9606,30 @@ type IFunctionNameContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+	SafeReservedWord() ISafeReservedWordContext
+	UnsafeReservedWord() IUnsafeReservedWordContext
+
 	// IsFunctionNameContext differentiates from other interfaces.
 	IsFunctionNameContext()
 }
 
 type FunctionNameContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyFunctionNameContext() *FunctionNameContext {
 	var p = new(FunctionNameContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_functionName
 	return p
+}
+
+func InitEmptyFunctionNameContext(p *FunctionNameContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_functionName
 }
 
 func (*FunctionNameContext) IsFunctionNameContext() {}
@@ -9070,7 +9637,7 @@ func (*FunctionNameContext) IsFunctionNameContext() {}
 func NewFunctionNameContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *FunctionNameContext {
 	var p = new(FunctionNameContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_functionName
@@ -9147,30 +9714,13 @@ func (s *FunctionNameContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) FunctionName() (localctx IFunctionNameContext) {
-	this := p
-	_ = this
-
 	localctx = NewFunctionNameContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 102, FqlParserRULE_functionName)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(489)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserIdentifier:
@@ -9178,6 +9728,10 @@ func (p *FqlParser) FunctionName() (localctx IFunctionNameContext) {
 		{
 			p.SetState(486)
 			p.Match(FqlParserIdentifier)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	case FqlParserAnd, FqlParserOr, FqlParserOptions, FqlParserTimeout, FqlParserDistinct, FqlParserFilter, FqlParserCurrent, FqlParserSort, FqlParserLimit, FqlParserCollect, FqlParserSortDirection, FqlParserInto, FqlParserKeep, FqlParserWith, FqlParserCount, FqlParserAll, FqlParserAny, FqlParserAggregate, FqlParserEvent:
@@ -9195,10 +9749,21 @@ func (p *FqlParser) FunctionName() (localctx IFunctionNameContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IArgumentListContext is an interface to support dynamic dispatch.
@@ -9208,20 +9773,31 @@ type IArgumentListContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	AllExpression() []IExpressionContext
+	Expression(i int) IExpressionContext
+	AllComma() []antlr.TerminalNode
+	Comma(i int) antlr.TerminalNode
+
 	// IsArgumentListContext differentiates from other interfaces.
 	IsArgumentListContext()
 }
 
 type ArgumentListContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyArgumentListContext() *ArgumentListContext {
 	var p = new(ArgumentListContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_argumentList
 	return p
+}
+
+func InitEmptyArgumentListContext(p *ArgumentListContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_argumentList
 }
 
 func (*ArgumentListContext) IsArgumentListContext() {}
@@ -9229,7 +9805,7 @@ func (*ArgumentListContext) IsArgumentListContext() {}
 func NewArgumentListContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ArgumentListContext {
 	var p = new(ArgumentListContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_argumentList
@@ -9319,28 +9895,9 @@ func (s *ArgumentListContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) ArgumentList() (localctx IArgumentListContext) {
-	this := p
-	_ = this
-
 	localctx = NewArgumentListContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 104, FqlParserRULE_argumentList)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	var _alt int
 
@@ -9351,13 +9908,22 @@ func (p *FqlParser) ArgumentList() (localctx IArgumentListContext) {
 	}
 	p.SetState(496)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 46, p.GetParserRuleContext())
-
+	if p.HasError() {
+		goto errorExit
+	}
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 46, p.GetParserRuleContext())
+	if p.HasError() {
+		goto errorExit
+	}
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			{
 				p.SetState(492)
 				p.Match(FqlParserComma)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(493)
@@ -9367,21 +9933,44 @@ func (p *FqlParser) ArgumentList() (localctx IArgumentListContext) {
 		}
 		p.SetState(498)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 46, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 46, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 	p.SetState(500)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == FqlParserComma {
 		{
 			p.SetState(499)
 			p.Match(FqlParserComma)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IMemberExpressionPathContext is an interface to support dynamic dispatch.
@@ -9391,20 +9980,31 @@ type IMemberExpressionPathContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Dot() antlr.TerminalNode
+	PropertyName() IPropertyNameContext
+	ErrorOperator() IErrorOperatorContext
+	ComputedPropertyName() IComputedPropertyNameContext
+
 	// IsMemberExpressionPathContext differentiates from other interfaces.
 	IsMemberExpressionPathContext()
 }
 
 type MemberExpressionPathContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyMemberExpressionPathContext() *MemberExpressionPathContext {
 	var p = new(MemberExpressionPathContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_memberExpressionPath
 	return p
+}
+
+func InitEmptyMemberExpressionPathContext(p *MemberExpressionPathContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_memberExpressionPath
 }
 
 func (*MemberExpressionPathContext) IsMemberExpressionPathContext() {}
@@ -9412,7 +10012,7 @@ func (*MemberExpressionPathContext) IsMemberExpressionPathContext() {}
 func NewMemberExpressionPathContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *MemberExpressionPathContext {
 	var p = new(MemberExpressionPathContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_memberExpressionPath
@@ -9505,36 +10105,24 @@ func (s *MemberExpressionPathContext) Accept(visitor antlr.ParseTreeVisitor) int
 }
 
 func (p *FqlParser) MemberExpressionPath() (localctx IMemberExpressionPathContext) {
-	this := p
-	_ = this
-
 	localctx = NewMemberExpressionPathContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 106, FqlParserRULE_memberExpressionPath)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(513)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 50, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 50, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		p.SetState(503)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == FqlParserQuestionMark {
@@ -9547,6 +10135,10 @@ func (p *FqlParser) MemberExpressionPath() (localctx IMemberExpressionPathContex
 		{
 			p.SetState(505)
 			p.Match(FqlParserDot)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(506)
@@ -9557,6 +10149,9 @@ func (p *FqlParser) MemberExpressionPath() (localctx IMemberExpressionPathContex
 		p.EnterOuterAlt(localctx, 2)
 		p.SetState(510)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		if _la == FqlParserQuestionMark {
@@ -9567,6 +10162,10 @@ func (p *FqlParser) MemberExpressionPath() (localctx IMemberExpressionPathContex
 			{
 				p.SetState(508)
 				p.Match(FqlParserDot)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 
 		}
@@ -9575,9 +10174,21 @@ func (p *FqlParser) MemberExpressionPath() (localctx IMemberExpressionPathContex
 			p.ComputedPropertyName()
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ISafeReservedWordContext is an interface to support dynamic dispatch.
@@ -9587,20 +10198,46 @@ type ISafeReservedWordContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	And() antlr.TerminalNode
+	Or() antlr.TerminalNode
+	Distinct() antlr.TerminalNode
+	Filter() antlr.TerminalNode
+	Sort() antlr.TerminalNode
+	Limit() antlr.TerminalNode
+	Collect() antlr.TerminalNode
+	SortDirection() antlr.TerminalNode
+	Into() antlr.TerminalNode
+	Keep() antlr.TerminalNode
+	With() antlr.TerminalNode
+	Count() antlr.TerminalNode
+	All() antlr.TerminalNode
+	Any() antlr.TerminalNode
+	Aggregate() antlr.TerminalNode
+	Event() antlr.TerminalNode
+	Timeout() antlr.TerminalNode
+	Options() antlr.TerminalNode
+	Current() antlr.TerminalNode
+
 	// IsSafeReservedWordContext differentiates from other interfaces.
 	IsSafeReservedWordContext()
 }
 
 type SafeReservedWordContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptySafeReservedWordContext() *SafeReservedWordContext {
 	var p = new(SafeReservedWordContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_safeReservedWord
 	return p
+}
+
+func InitEmptySafeReservedWordContext(p *SafeReservedWordContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_safeReservedWord
 }
 
 func (*SafeReservedWordContext) IsSafeReservedWordContext() {}
@@ -9608,7 +10245,7 @@ func (*SafeReservedWordContext) IsSafeReservedWordContext() {}
 func NewSafeReservedWordContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *SafeReservedWordContext {
 	var p = new(SafeReservedWordContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_safeReservedWord
@@ -9725,28 +10362,9 @@ func (s *SafeReservedWordContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) SafeReservedWord() (localctx ISafeReservedWordContext) {
-	this := p
-	_ = this
-
 	localctx = NewSafeReservedWordContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 108, FqlParserRULE_safeReservedWord)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -9761,7 +10379,17 @@ func (p *FqlParser) SafeReservedWord() (localctx ISafeReservedWordContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IUnsafeReservedWordContext is an interface to support dynamic dispatch.
@@ -9771,20 +10399,40 @@ type IUnsafeReservedWordContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Return() antlr.TerminalNode
+	None() antlr.TerminalNode
+	Null() antlr.TerminalNode
+	Let() antlr.TerminalNode
+	Use() antlr.TerminalNode
+	Waitfor() antlr.TerminalNode
+	While() antlr.TerminalNode
+	Do() antlr.TerminalNode
+	In() antlr.TerminalNode
+	Like() antlr.TerminalNode
+	Not() antlr.TerminalNode
+	For() antlr.TerminalNode
+	BooleanLiteral() antlr.TerminalNode
+
 	// IsUnsafeReservedWordContext differentiates from other interfaces.
 	IsUnsafeReservedWordContext()
 }
 
 type UnsafeReservedWordContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyUnsafeReservedWordContext() *UnsafeReservedWordContext {
 	var p = new(UnsafeReservedWordContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_unsafeReservedWord
 	return p
+}
+
+func InitEmptyUnsafeReservedWordContext(p *UnsafeReservedWordContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_unsafeReservedWord
 }
 
 func (*UnsafeReservedWordContext) IsUnsafeReservedWordContext() {}
@@ -9792,7 +10440,7 @@ func (*UnsafeReservedWordContext) IsUnsafeReservedWordContext() {}
 func NewUnsafeReservedWordContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *UnsafeReservedWordContext {
 	var p = new(UnsafeReservedWordContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_unsafeReservedWord
@@ -9885,28 +10533,9 @@ func (s *UnsafeReservedWordContext) Accept(visitor antlr.ParseTreeVisitor) inter
 }
 
 func (p *FqlParser) UnsafeReservedWord() (localctx IUnsafeReservedWordContext) {
-	this := p
-	_ = this
-
 	localctx = NewUnsafeReservedWordContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 110, FqlParserRULE_unsafeReservedWord)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -9921,7 +10550,17 @@ func (p *FqlParser) UnsafeReservedWord() (localctx IUnsafeReservedWordContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IRangeOperatorContext is an interface to support dynamic dispatch.
@@ -9943,12 +10582,17 @@ type IRangeOperatorContext interface {
 	// SetRight sets the right rule contexts.
 	SetRight(IRangeOperandContext)
 
+	// Getter signatures
+	Range() antlr.TerminalNode
+	AllRangeOperand() []IRangeOperandContext
+	RangeOperand(i int) IRangeOperandContext
+
 	// IsRangeOperatorContext differentiates from other interfaces.
 	IsRangeOperatorContext()
 }
 
 type RangeOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 	left   IRangeOperandContext
 	right  IRangeOperandContext
@@ -9956,9 +10600,14 @@ type RangeOperatorContext struct {
 
 func NewEmptyRangeOperatorContext() *RangeOperatorContext {
 	var p = new(RangeOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_rangeOperator
 	return p
+}
+
+func InitEmptyRangeOperatorContext(p *RangeOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_rangeOperator
 }
 
 func (*RangeOperatorContext) IsRangeOperatorContext() {}
@@ -9966,7 +10615,7 @@ func (*RangeOperatorContext) IsRangeOperatorContext() {}
 func NewRangeOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *RangeOperatorContext {
 	var p = new(RangeOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_rangeOperator
@@ -10060,28 +10709,8 @@ func (s *RangeOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) RangeOperator() (localctx IRangeOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewRangeOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 112, FqlParserRULE_rangeOperator)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(519)
@@ -10093,6 +10722,10 @@ func (p *FqlParser) RangeOperator() (localctx IRangeOperatorContext) {
 	{
 		p.SetState(520)
 		p.Match(FqlParserRange)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(521)
@@ -10102,7 +10735,17 @@ func (p *FqlParser) RangeOperator() (localctx IRangeOperatorContext) {
 		localctx.(*RangeOperatorContext).right = _x
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IRangeOperandContext is an interface to support dynamic dispatch.
@@ -10112,20 +10755,30 @@ type IRangeOperandContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	IntegerLiteral() IIntegerLiteralContext
+	Variable() IVariableContext
+	Param() IParamContext
+
 	// IsRangeOperandContext differentiates from other interfaces.
 	IsRangeOperandContext()
 }
 
 type RangeOperandContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyRangeOperandContext() *RangeOperandContext {
 	var p = new(RangeOperandContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_rangeOperand
 	return p
+}
+
+func InitEmptyRangeOperandContext(p *RangeOperandContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_rangeOperand
 }
 
 func (*RangeOperandContext) IsRangeOperandContext() {}
@@ -10133,7 +10786,7 @@ func (*RangeOperandContext) IsRangeOperandContext() {}
 func NewRangeOperandContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *RangeOperandContext {
 	var p = new(RangeOperandContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_rangeOperand
@@ -10222,30 +10875,13 @@ func (s *RangeOperandContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) RangeOperand() (localctx IRangeOperandContext) {
-	this := p
-	_ = this
-
 	localctx = NewRangeOperandContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 114, FqlParserRULE_rangeOperand)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(526)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserIntegerLiteral:
@@ -10270,10 +10906,21 @@ func (p *FqlParser) RangeOperand() (localctx IRangeOperandContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IExpressionContext is an interface to support dynamic dispatch.
@@ -10319,12 +10966,22 @@ type IExpressionContext interface {
 	// SetOnFalse sets the onFalse rule contexts.
 	SetOnFalse(IExpressionContext)
 
+	// Getter signatures
+	UnaryOperator() IUnaryOperatorContext
+	AllExpression() []IExpressionContext
+	Expression(i int) IExpressionContext
+	Predicate() IPredicateContext
+	LogicalAndOperator() ILogicalAndOperatorContext
+	LogicalOrOperator() ILogicalOrOperatorContext
+	Colon() antlr.TerminalNode
+	QuestionMark() antlr.TerminalNode
+
 	// IsExpressionContext differentiates from other interfaces.
 	IsExpressionContext()
 }
 
 type ExpressionContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser          antlr.Parser
 	left            IExpressionContext
 	condition       IExpressionContext
@@ -10336,9 +10993,14 @@ type ExpressionContext struct {
 
 func NewEmptyExpressionContext() *ExpressionContext {
 	var p = new(ExpressionContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_expression
 	return p
+}
+
+func InitEmptyExpressionContext(p *ExpressionContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_expression
 }
 
 func (*ExpressionContext) IsExpressionContext() {}
@@ -10346,7 +11008,7 @@ func (*ExpressionContext) IsExpressionContext() {}
 func NewExpressionContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ExpressionContext {
 	var p = new(ExpressionContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_expression
@@ -10528,10 +11190,8 @@ func (p *FqlParser) Expression() (localctx IExpressionContext) {
 }
 
 func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
-	this := p
-	_ = this
-
 	var _parentctx antlr.ParserRuleContext = p.GetParserRuleContext()
+
 	_parentState := p.GetState()
 	localctx = NewExpressionContext(p, p.GetParserRuleContext(), _parentState)
 	var _prevctx IExpressionContext = localctx
@@ -10540,28 +11200,16 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 	p.EnterRecursionRule(localctx, 116, FqlParserRULE_expression, _p)
 	var _la int
 
-	defer func() {
-		p.UnrollRecursionContexts(_parentctx)
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	var _alt int
 
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(533)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 52, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 52, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(529)
@@ -10581,12 +11229,19 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 			p.predicate(0)
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 	p.GetParserRuleContext().SetStop(p.GetTokenStream().LT(-1))
 	p.SetState(552)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 55, p.GetParserRuleContext())
-
+	if p.HasError() {
+		goto errorExit
+	}
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 55, p.GetParserRuleContext())
+	if p.HasError() {
+		goto errorExit
+	}
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			if p.GetParseListeners() != nil {
@@ -10595,7 +11250,11 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 			_prevctx = localctx
 			p.SetState(550)
 			p.GetErrorHandler().Sync(p)
-			switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 54, p.GetParserRuleContext()) {
+			if p.HasError() {
+				goto errorExit
+			}
+
+			switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 54, p.GetParserRuleContext()) {
 			case 1:
 				localctx = NewExpressionContext(p, _parentctx, _parentState)
 				localctx.(*ExpressionContext).left = _prevctx
@@ -10603,7 +11262,8 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 				p.SetState(535)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 4)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 4)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 4)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(536)
@@ -10624,7 +11284,8 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 				p.SetState(539)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 3)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 3)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 3)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(540)
@@ -10645,7 +11306,8 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 				p.SetState(543)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 2)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 2)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 2)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(544)
@@ -10653,9 +11315,16 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 					var _m = p.Match(FqlParserQuestionMark)
 
 					localctx.(*ExpressionContext).ternaryOperator = _m
+					if p.HasError() {
+						// Recognition error - abort rule
+						goto errorExit
+					}
 				}
 				p.SetState(546)
 				p.GetErrorHandler().Sync(p)
+				if p.HasError() {
+					goto errorExit
+				}
 				_la = p.GetTokenStream().LA(1)
 
 				if (int64((_la-9)) & ^0x3f) == 0 && ((int64(1)<<(_la-9))&8935141660637626389) != 0 {
@@ -10671,6 +11340,10 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 				{
 					p.SetState(548)
 					p.Match(FqlParserColon)
+					if p.HasError() {
+						// Recognition error - abort rule
+						goto errorExit
+					}
 				}
 				{
 					p.SetState(549)
@@ -10680,15 +11353,33 @@ func (p *FqlParser) expression(_p int) (localctx IExpressionContext) {
 					localctx.(*ExpressionContext).onFalse = _x
 				}
 
+			case antlr.ATNInvalidAltNumber:
+				goto errorExit
 			}
 
 		}
 		p.SetState(554)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 55, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 55, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.UnrollRecursionContexts(_parentctx)
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IPredicateContext is an interface to support dynamic dispatch.
@@ -10710,12 +11401,21 @@ type IPredicateContext interface {
 	// SetRight sets the right rule contexts.
 	SetRight(IPredicateContext)
 
+	// Getter signatures
+	ExpressionAtom() IExpressionAtomContext
+	EqualityOperator() IEqualityOperatorContext
+	AllPredicate() []IPredicateContext
+	Predicate(i int) IPredicateContext
+	ArrayOperator() IArrayOperatorContext
+	InOperator() IInOperatorContext
+	LikeOperator() ILikeOperatorContext
+
 	// IsPredicateContext differentiates from other interfaces.
 	IsPredicateContext()
 }
 
 type PredicateContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 	left   IPredicateContext
 	right  IPredicateContext
@@ -10723,9 +11423,14 @@ type PredicateContext struct {
 
 func NewEmptyPredicateContext() *PredicateContext {
 	var p = new(PredicateContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_predicate
 	return p
+}
+
+func InitEmptyPredicateContext(p *PredicateContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_predicate
 }
 
 func (*PredicateContext) IsPredicateContext() {}
@@ -10733,7 +11438,7 @@ func (*PredicateContext) IsPredicateContext() {}
 func NewPredicateContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *PredicateContext {
 	var p = new(PredicateContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_predicate
@@ -10907,33 +11612,14 @@ func (p *FqlParser) Predicate() (localctx IPredicateContext) {
 }
 
 func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
-	this := p
-	_ = this
-
 	var _parentctx antlr.ParserRuleContext = p.GetParserRuleContext()
+
 	_parentState := p.GetState()
 	localctx = NewPredicateContext(p, p.GetParserRuleContext(), _parentState)
 	var _prevctx IPredicateContext = localctx
 	var _ antlr.ParserRuleContext = _prevctx // TODO: To prevent unused variable warning.
 	_startState := 118
 	p.EnterRecursionRule(localctx, 118, FqlParserRULE_predicate, _p)
-
-	defer func() {
-		p.UnrollRecursionContexts(_parentctx)
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	var _alt int
 
 	p.EnterOuterAlt(localctx, 1)
@@ -10945,8 +11631,13 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 	p.GetParserRuleContext().SetStop(p.GetTokenStream().LT(-1))
 	p.SetState(576)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 57, p.GetParserRuleContext())
-
+	if p.HasError() {
+		goto errorExit
+	}
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 57, p.GetParserRuleContext())
+	if p.HasError() {
+		goto errorExit
+	}
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			if p.GetParseListeners() != nil {
@@ -10955,7 +11646,11 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 			_prevctx = localctx
 			p.SetState(574)
 			p.GetErrorHandler().Sync(p)
-			switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 56, p.GetParserRuleContext()) {
+			if p.HasError() {
+				goto errorExit
+			}
+
+			switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 56, p.GetParserRuleContext()) {
 			case 1:
 				localctx = NewPredicateContext(p, _parentctx, _parentState)
 				localctx.(*PredicateContext).left = _prevctx
@@ -10963,7 +11658,8 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 				p.SetState(558)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 5)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 5)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 5)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(559)
@@ -10984,7 +11680,8 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 				p.SetState(562)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 4)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 4)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 4)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(563)
@@ -11005,7 +11702,8 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 				p.SetState(566)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 3)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 3)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 3)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(567)
@@ -11026,7 +11724,8 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 				p.SetState(570)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 2)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 2)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 2)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(571)
@@ -11040,15 +11739,33 @@ func (p *FqlParser) predicate(_p int) (localctx IPredicateContext) {
 					localctx.(*PredicateContext).right = _x
 				}
 
+			case antlr.ATNInvalidAltNumber:
+				goto errorExit
 			}
 
 		}
 		p.SetState(578)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 57, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 57, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.UnrollRecursionContexts(_parentctx)
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IExpressionAtomContext is an interface to support dynamic dispatch.
@@ -11070,12 +11787,31 @@ type IExpressionAtomContext interface {
 	// SetRight sets the right rule contexts.
 	SetRight(IExpressionAtomContext)
 
+	// Getter signatures
+	FunctionCallExpression() IFunctionCallExpressionContext
+	RangeOperator() IRangeOperatorContext
+	Literal() ILiteralContext
+	Variable() IVariableContext
+	MemberExpression() IMemberExpressionContext
+	Param() IParamContext
+	OpenParen() antlr.TerminalNode
+	CloseParen() antlr.TerminalNode
+	ForExpression() IForExpressionContext
+	WaitForExpression() IWaitForExpressionContext
+	Expression() IExpressionContext
+	ErrorOperator() IErrorOperatorContext
+	MultiplicativeOperator() IMultiplicativeOperatorContext
+	AllExpressionAtom() []IExpressionAtomContext
+	ExpressionAtom(i int) IExpressionAtomContext
+	AdditiveOperator() IAdditiveOperatorContext
+	RegexpOperator() IRegexpOperatorContext
+
 	// IsExpressionAtomContext differentiates from other interfaces.
 	IsExpressionAtomContext()
 }
 
 type ExpressionAtomContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 	left   IExpressionAtomContext
 	right  IExpressionAtomContext
@@ -11083,9 +11819,14 @@ type ExpressionAtomContext struct {
 
 func NewEmptyExpressionAtomContext() *ExpressionAtomContext {
 	var p = new(ExpressionAtomContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_expressionAtom
 	return p
+}
+
+func InitEmptyExpressionAtomContext(p *ExpressionAtomContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_expressionAtom
 }
 
 func (*ExpressionAtomContext) IsExpressionAtomContext() {}
@@ -11093,7 +11834,7 @@ func (*ExpressionAtomContext) IsExpressionAtomContext() {}
 func NewExpressionAtomContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ExpressionAtomContext {
 	var p = new(ExpressionAtomContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_expressionAtom
@@ -11403,39 +12144,24 @@ func (p *FqlParser) ExpressionAtom() (localctx IExpressionAtomContext) {
 }
 
 func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
-	this := p
-	_ = this
-
 	var _parentctx antlr.ParserRuleContext = p.GetParserRuleContext()
+
 	_parentState := p.GetState()
 	localctx = NewExpressionAtomContext(p, p.GetParserRuleContext(), _parentState)
 	var _prevctx IExpressionAtomContext = localctx
 	var _ antlr.ParserRuleContext = _prevctx // TODO: To prevent unused variable warning.
 	_startState := 120
 	p.EnterRecursionRule(localctx, 120, FqlParserRULE_expressionAtom, _p)
-
-	defer func() {
-		p.UnrollRecursionContexts(_parentctx)
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	var _alt int
 
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(596)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 60, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 60, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(580)
@@ -11476,10 +12202,18 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 		{
 			p.SetState(586)
 			p.Match(FqlParserOpenParen)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		p.SetState(590)
 		p.GetErrorHandler().Sync(p)
-		switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 58, p.GetParserRuleContext()) {
+		if p.HasError() {
+			goto errorExit
+		}
+
+		switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 58, p.GetParserRuleContext()) {
 		case 1:
 			{
 				p.SetState(587)
@@ -11498,28 +12232,43 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 				p.expression(0)
 			}
 
+		case antlr.ATNInvalidAltNumber:
+			goto errorExit
 		}
 		{
 			p.SetState(592)
 			p.Match(FqlParserCloseParen)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		p.SetState(594)
 		p.GetErrorHandler().Sync(p)
 
-		if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 59, p.GetParserRuleContext()) == 1 {
+		if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 59, p.GetParserRuleContext()) == 1 {
 			{
 				p.SetState(593)
 				p.ErrorOperator()
 			}
 
+		} else if p.HasError() { // JIM
+			goto errorExit
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 	p.GetParserRuleContext().SetStop(p.GetTokenStream().LT(-1))
 	p.SetState(612)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 62, p.GetParserRuleContext())
-
+	if p.HasError() {
+		goto errorExit
+	}
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 62, p.GetParserRuleContext())
+	if p.HasError() {
+		goto errorExit
+	}
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			if p.GetParseListeners() != nil {
@@ -11528,7 +12277,11 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 			_prevctx = localctx
 			p.SetState(610)
 			p.GetErrorHandler().Sync(p)
-			switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 61, p.GetParserRuleContext()) {
+			if p.HasError() {
+				goto errorExit
+			}
+
+			switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 61, p.GetParserRuleContext()) {
 			case 1:
 				localctx = NewExpressionAtomContext(p, _parentctx, _parentState)
 				localctx.(*ExpressionAtomContext).left = _prevctx
@@ -11536,7 +12289,8 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 				p.SetState(598)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 10)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 10)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 10)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(599)
@@ -11557,7 +12311,8 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 				p.SetState(602)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 9)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 9)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 9)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(603)
@@ -11578,7 +12333,8 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 				p.SetState(606)
 
 				if !(p.Precpred(p.GetParserRuleContext(), 8)) {
-					panic(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 8)", ""))
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 8)", ""))
+					goto errorExit
 				}
 				{
 					p.SetState(607)
@@ -11592,15 +12348,33 @@ func (p *FqlParser) expressionAtom(_p int) (localctx IExpressionAtomContext) {
 					localctx.(*ExpressionAtomContext).right = _x
 				}
 
+			case antlr.ATNInvalidAltNumber:
+				goto errorExit
 			}
 
 		}
 		p.SetState(614)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 62, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 62, p.GetParserRuleContext())
+		if p.HasError() {
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.UnrollRecursionContexts(_parentctx)
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IArrayOperatorContext is an interface to support dynamic dispatch.
@@ -11616,21 +12390,33 @@ type IArrayOperatorContext interface {
 	// SetOperator sets the operator token.
 	SetOperator(antlr.Token)
 
+	// Getter signatures
+	All() antlr.TerminalNode
+	Any() antlr.TerminalNode
+	None() antlr.TerminalNode
+	InOperator() IInOperatorContext
+	EqualityOperator() IEqualityOperatorContext
+
 	// IsArrayOperatorContext differentiates from other interfaces.
 	IsArrayOperatorContext()
 }
 
 type ArrayOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser   antlr.Parser
 	operator antlr.Token
 }
 
 func NewEmptyArrayOperatorContext() *ArrayOperatorContext {
 	var p = new(ArrayOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_arrayOperator
 	return p
+}
+
+func InitEmptyArrayOperatorContext(p *ArrayOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_arrayOperator
 }
 
 func (*ArrayOperatorContext) IsArrayOperatorContext() {}
@@ -11638,7 +12424,7 @@ func (*ArrayOperatorContext) IsArrayOperatorContext() {}
 func NewArrayOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ArrayOperatorContext {
 	var p = new(ArrayOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_arrayOperator
@@ -11727,28 +12513,9 @@ func (s *ArrayOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewArrayOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 122, FqlParserRULE_arrayOperator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -11771,6 +12538,9 @@ func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
 	}
 	p.SetState(618)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case FqlParserNot, FqlParserIn:
@@ -11786,10 +12556,21 @@ func (p *FqlParser) ArrayOperator() (localctx IArrayOperatorContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IEqualityOperatorContext is an interface to support dynamic dispatch.
@@ -11799,20 +12580,33 @@ type IEqualityOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Gt() antlr.TerminalNode
+	Lt() antlr.TerminalNode
+	Eq() antlr.TerminalNode
+	Gte() antlr.TerminalNode
+	Lte() antlr.TerminalNode
+	Neq() antlr.TerminalNode
+
 	// IsEqualityOperatorContext differentiates from other interfaces.
 	IsEqualityOperatorContext()
 }
 
 type EqualityOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyEqualityOperatorContext() *EqualityOperatorContext {
 	var p = new(EqualityOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_equalityOperator
 	return p
+}
+
+func InitEmptyEqualityOperatorContext(p *EqualityOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_equalityOperator
 }
 
 func (*EqualityOperatorContext) IsEqualityOperatorContext() {}
@@ -11820,7 +12614,7 @@ func (*EqualityOperatorContext) IsEqualityOperatorContext() {}
 func NewEqualityOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *EqualityOperatorContext {
 	var p = new(EqualityOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_equalityOperator
@@ -11885,28 +12679,9 @@ func (s *EqualityOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) EqualityOperator() (localctx IEqualityOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewEqualityOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 124, FqlParserRULE_equalityOperator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -11921,7 +12696,17 @@ func (p *FqlParser) EqualityOperator() (localctx IEqualityOperatorContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IInOperatorContext is an interface to support dynamic dispatch.
@@ -11931,20 +12716,29 @@ type IInOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	In() antlr.TerminalNode
+	Not() antlr.TerminalNode
+
 	// IsInOperatorContext differentiates from other interfaces.
 	IsInOperatorContext()
 }
 
 type InOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyInOperatorContext() *InOperatorContext {
 	var p = new(InOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_inOperator
 	return p
+}
+
+func InitEmptyInOperatorContext(p *InOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_inOperator
 }
 
 func (*InOperatorContext) IsInOperatorContext() {}
@@ -11952,7 +12746,7 @@ func (*InOperatorContext) IsInOperatorContext() {}
 func NewInOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *InOperatorContext {
 	var p = new(InOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_inOperator
@@ -12001,47 +12795,49 @@ func (s *InOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{} {
 }
 
 func (p *FqlParser) InOperator() (localctx IInOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewInOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 126, FqlParserRULE_inOperator)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(623)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == FqlParserNot {
 		{
 			p.SetState(622)
 			p.Match(FqlParserNot)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	}
 	{
 		p.SetState(625)
 		p.Match(FqlParserIn)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILikeOperatorContext is an interface to support dynamic dispatch.
@@ -12051,20 +12847,29 @@ type ILikeOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Like() antlr.TerminalNode
+	Not() antlr.TerminalNode
+
 	// IsLikeOperatorContext differentiates from other interfaces.
 	IsLikeOperatorContext()
 }
 
 type LikeOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLikeOperatorContext() *LikeOperatorContext {
 	var p = new(LikeOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_likeOperator
 	return p
+}
+
+func InitEmptyLikeOperatorContext(p *LikeOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_likeOperator
 }
 
 func (*LikeOperatorContext) IsLikeOperatorContext() {}
@@ -12072,7 +12877,7 @@ func (*LikeOperatorContext) IsLikeOperatorContext() {}
 func NewLikeOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LikeOperatorContext {
 	var p = new(LikeOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_likeOperator
@@ -12121,47 +12926,49 @@ func (s *LikeOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{}
 }
 
 func (p *FqlParser) LikeOperator() (localctx ILikeOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewLikeOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 128, FqlParserRULE_likeOperator)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(628)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == FqlParserNot {
 		{
 			p.SetState(627)
 			p.Match(FqlParserNot)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	}
 	{
 		p.SetState(630)
 		p.Match(FqlParserLike)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IUnaryOperatorContext is an interface to support dynamic dispatch.
@@ -12171,20 +12978,30 @@ type IUnaryOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Not() antlr.TerminalNode
+	Plus() antlr.TerminalNode
+	Minus() antlr.TerminalNode
+
 	// IsUnaryOperatorContext differentiates from other interfaces.
 	IsUnaryOperatorContext()
 }
 
 type UnaryOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyUnaryOperatorContext() *UnaryOperatorContext {
 	var p = new(UnaryOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_unaryOperator
 	return p
+}
+
+func InitEmptyUnaryOperatorContext(p *UnaryOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_unaryOperator
 }
 
 func (*UnaryOperatorContext) IsUnaryOperatorContext() {}
@@ -12192,7 +13009,7 @@ func (*UnaryOperatorContext) IsUnaryOperatorContext() {}
 func NewUnaryOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *UnaryOperatorContext {
 	var p = new(UnaryOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_unaryOperator
@@ -12245,28 +13062,9 @@ func (s *UnaryOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) UnaryOperator() (localctx IUnaryOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewUnaryOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 130, FqlParserRULE_unaryOperator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -12281,7 +13079,17 @@ func (p *FqlParser) UnaryOperator() (localctx IUnaryOperatorContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IRegexpOperatorContext is an interface to support dynamic dispatch.
@@ -12291,20 +13099,29 @@ type IRegexpOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	RegexMatch() antlr.TerminalNode
+	RegexNotMatch() antlr.TerminalNode
+
 	// IsRegexpOperatorContext differentiates from other interfaces.
 	IsRegexpOperatorContext()
 }
 
 type RegexpOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyRegexpOperatorContext() *RegexpOperatorContext {
 	var p = new(RegexpOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_regexpOperator
 	return p
+}
+
+func InitEmptyRegexpOperatorContext(p *RegexpOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_regexpOperator
 }
 
 func (*RegexpOperatorContext) IsRegexpOperatorContext() {}
@@ -12312,7 +13129,7 @@ func (*RegexpOperatorContext) IsRegexpOperatorContext() {}
 func NewRegexpOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *RegexpOperatorContext {
 	var p = new(RegexpOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_regexpOperator
@@ -12361,28 +13178,9 @@ func (s *RegexpOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface
 }
 
 func (p *FqlParser) RegexpOperator() (localctx IRegexpOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewRegexpOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 132, FqlParserRULE_regexpOperator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -12397,7 +13195,17 @@ func (p *FqlParser) RegexpOperator() (localctx IRegexpOperatorContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILogicalAndOperatorContext is an interface to support dynamic dispatch.
@@ -12407,20 +13215,28 @@ type ILogicalAndOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	And() antlr.TerminalNode
+
 	// IsLogicalAndOperatorContext differentiates from other interfaces.
 	IsLogicalAndOperatorContext()
 }
 
 type LogicalAndOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLogicalAndOperatorContext() *LogicalAndOperatorContext {
 	var p = new(LogicalAndOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_logicalAndOperator
 	return p
+}
+
+func InitEmptyLogicalAndOperatorContext(p *LogicalAndOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_logicalAndOperator
 }
 
 func (*LogicalAndOperatorContext) IsLogicalAndOperatorContext() {}
@@ -12428,7 +13244,7 @@ func (*LogicalAndOperatorContext) IsLogicalAndOperatorContext() {}
 func NewLogicalAndOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LogicalAndOperatorContext {
 	var p = new(LogicalAndOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_logicalAndOperator
@@ -12473,35 +13289,29 @@ func (s *LogicalAndOperatorContext) Accept(visitor antlr.ParseTreeVisitor) inter
 }
 
 func (p *FqlParser) LogicalAndOperator() (localctx ILogicalAndOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewLogicalAndOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 134, FqlParserRULE_logicalAndOperator)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(636)
 		p.Match(FqlParserAnd)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILogicalOrOperatorContext is an interface to support dynamic dispatch.
@@ -12511,20 +13321,28 @@ type ILogicalOrOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Or() antlr.TerminalNode
+
 	// IsLogicalOrOperatorContext differentiates from other interfaces.
 	IsLogicalOrOperatorContext()
 }
 
 type LogicalOrOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLogicalOrOperatorContext() *LogicalOrOperatorContext {
 	var p = new(LogicalOrOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_logicalOrOperator
 	return p
+}
+
+func InitEmptyLogicalOrOperatorContext(p *LogicalOrOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_logicalOrOperator
 }
 
 func (*LogicalOrOperatorContext) IsLogicalOrOperatorContext() {}
@@ -12532,7 +13350,7 @@ func (*LogicalOrOperatorContext) IsLogicalOrOperatorContext() {}
 func NewLogicalOrOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LogicalOrOperatorContext {
 	var p = new(LogicalOrOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_logicalOrOperator
@@ -12577,35 +13395,29 @@ func (s *LogicalOrOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interf
 }
 
 func (p *FqlParser) LogicalOrOperator() (localctx ILogicalOrOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewLogicalOrOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 136, FqlParserRULE_logicalOrOperator)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(638)
 		p.Match(FqlParserOr)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IMultiplicativeOperatorContext is an interface to support dynamic dispatch.
@@ -12615,20 +13427,30 @@ type IMultiplicativeOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Multi() antlr.TerminalNode
+	Div() antlr.TerminalNode
+	Mod() antlr.TerminalNode
+
 	// IsMultiplicativeOperatorContext differentiates from other interfaces.
 	IsMultiplicativeOperatorContext()
 }
 
 type MultiplicativeOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyMultiplicativeOperatorContext() *MultiplicativeOperatorContext {
 	var p = new(MultiplicativeOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_multiplicativeOperator
 	return p
+}
+
+func InitEmptyMultiplicativeOperatorContext(p *MultiplicativeOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_multiplicativeOperator
 }
 
 func (*MultiplicativeOperatorContext) IsMultiplicativeOperatorContext() {}
@@ -12636,7 +13458,7 @@ func (*MultiplicativeOperatorContext) IsMultiplicativeOperatorContext() {}
 func NewMultiplicativeOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *MultiplicativeOperatorContext {
 	var p = new(MultiplicativeOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_multiplicativeOperator
@@ -12689,28 +13511,9 @@ func (s *MultiplicativeOperatorContext) Accept(visitor antlr.ParseTreeVisitor) i
 }
 
 func (p *FqlParser) MultiplicativeOperator() (localctx IMultiplicativeOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewMultiplicativeOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 138, FqlParserRULE_multiplicativeOperator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -12725,7 +13528,17 @@ func (p *FqlParser) MultiplicativeOperator() (localctx IMultiplicativeOperatorCo
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IAdditiveOperatorContext is an interface to support dynamic dispatch.
@@ -12735,20 +13548,29 @@ type IAdditiveOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Plus() antlr.TerminalNode
+	Minus() antlr.TerminalNode
+
 	// IsAdditiveOperatorContext differentiates from other interfaces.
 	IsAdditiveOperatorContext()
 }
 
 type AdditiveOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyAdditiveOperatorContext() *AdditiveOperatorContext {
 	var p = new(AdditiveOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_additiveOperator
 	return p
+}
+
+func InitEmptyAdditiveOperatorContext(p *AdditiveOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_additiveOperator
 }
 
 func (*AdditiveOperatorContext) IsAdditiveOperatorContext() {}
@@ -12756,7 +13578,7 @@ func (*AdditiveOperatorContext) IsAdditiveOperatorContext() {}
 func NewAdditiveOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *AdditiveOperatorContext {
 	var p = new(AdditiveOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_additiveOperator
@@ -12805,28 +13627,9 @@ func (s *AdditiveOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interfa
 }
 
 func (p *FqlParser) AdditiveOperator() (localctx IAdditiveOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewAdditiveOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 140, FqlParserRULE_additiveOperator)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -12841,7 +13644,17 @@ func (p *FqlParser) AdditiveOperator() (localctx IAdditiveOperatorContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IErrorOperatorContext is an interface to support dynamic dispatch.
@@ -12851,20 +13664,28 @@ type IErrorOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	QuestionMark() antlr.TerminalNode
+
 	// IsErrorOperatorContext differentiates from other interfaces.
 	IsErrorOperatorContext()
 }
 
 type ErrorOperatorContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyErrorOperatorContext() *ErrorOperatorContext {
 	var p = new(ErrorOperatorContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = FqlParserRULE_errorOperator
 	return p
+}
+
+func InitEmptyErrorOperatorContext(p *ErrorOperatorContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = FqlParserRULE_errorOperator
 }
 
 func (*ErrorOperatorContext) IsErrorOperatorContext() {}
@@ -12872,7 +13693,7 @@ func (*ErrorOperatorContext) IsErrorOperatorContext() {}
 func NewErrorOperatorContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ErrorOperatorContext {
 	var p = new(ErrorOperatorContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = FqlParserRULE_errorOperator
@@ -12917,35 +13738,29 @@ func (s *ErrorOperatorContext) Accept(visitor antlr.ParseTreeVisitor) interface{
 }
 
 func (p *FqlParser) ErrorOperator() (localctx IErrorOperatorContext) {
-	this := p
-	_ = this
-
 	localctx = NewErrorOperatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 142, FqlParserRULE_errorOperator)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(644)
 		p.Match(FqlParserQuestionMark)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 func (p *FqlParser) Sempred(localctx antlr.RuleContext, ruleIndex, predIndex int) bool {
@@ -12977,9 +13792,6 @@ func (p *FqlParser) Sempred(localctx antlr.RuleContext, ruleIndex, predIndex int
 }
 
 func (p *FqlParser) Expression_Sempred(localctx antlr.RuleContext, predIndex int) bool {
-	this := p
-	_ = this
-
 	switch predIndex {
 	case 0:
 		return p.Precpred(p.GetParserRuleContext(), 4)
@@ -12996,9 +13808,6 @@ func (p *FqlParser) Expression_Sempred(localctx antlr.RuleContext, predIndex int
 }
 
 func (p *FqlParser) Predicate_Sempred(localctx antlr.RuleContext, predIndex int) bool {
-	this := p
-	_ = this
-
 	switch predIndex {
 	case 3:
 		return p.Precpred(p.GetParserRuleContext(), 5)
@@ -13018,9 +13827,6 @@ func (p *FqlParser) Predicate_Sempred(localctx antlr.RuleContext, predIndex int)
 }
 
 func (p *FqlParser) ExpressionAtom_Sempred(localctx antlr.RuleContext, predIndex int) bool {
-	this := p
-	_ = this
-
 	switch predIndex {
 	case 7:
 		return p.Precpred(p.GetParserRuleContext(), 10)

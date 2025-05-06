@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: '>=1.19'
+          go-version: '>=1.22'
 
       - name: Set up linters
         run: make install-tools
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goVer: [1.18, 1.19]
+        goVer: [1.22, 1.23, 1.24]
     steps:
       - name: Set up Go ${{ matrix.goVer }}
         uses: actions/setup-go@v2
@@ -45,12 +45,12 @@ jobs:
 
       - name: Set up ANTLR
         env:
-          ANTLR_VERSION: 4.11.1
+          ANTLR_VERSION: 4.13.2
         run: |
           sudo curl -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar
           export CLASSPATH=".:/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH"
           mkdir $HOME/antlr-bin
-          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.11.1-complete.jar "$@"' > $HOME/antlr-bin/antlr
+          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.13.2-complete.jar "$@"' > $HOME/antlr-bin/antlr
           echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/antlr-bin/grun
           chmod +x $HOME/antlr-bin/*
           export PATH=$PATH:$HOME/antlr-bin
