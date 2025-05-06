@@ -30,7 +30,7 @@ cover:
 	curl -s https://codecov.io/bash | bash
 
 e2e:
-	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./e2e/tests --cdn=./e2e/pages/dynamic --cdn=./e2e/pages/static
+	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --cdn=./e2e/pages/dynamic --cdn=./e2e/pages/static --files=./e2e/tests/static --files=./e2e/tests/dynamic
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
