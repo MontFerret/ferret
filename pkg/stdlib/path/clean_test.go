@@ -2,8 +2,9 @@ package path_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	. "github.com/smartystreets/goconvey/convey"
 

@@ -4,14 +4,14 @@ import (
 	"context"
 	j "encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
 	"strings"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 type UseCase struct {

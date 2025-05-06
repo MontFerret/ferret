@@ -3,9 +3,10 @@ package common
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strconv"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/gorilla/css/scanner"
 

@@ -2,6 +2,7 @@ package strings
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"regexp"
 	"strconv"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // FMT formats the template using these arguments.
@@ -17,17 +17,17 @@ import (
 // @param {Any, repeated} args - template arguments.
 // @return {String} - string formed by template using arguments.
 func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, core.MaxArgs)
+	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
+		return core.None, err
+	}
+
+	arg0, err := runtime.CastString(args[0])
+
 	if err != nil {
 		return core.None, err
 	}
 
-	err = core.ValidateType(args[0], types.String)
-	if err != nil {
-		return core.None, err
-	}
-
-	formatted, err := format(args[0].String(), args[1:])
+	formatted, err := format(arg0.String(), args[1:])
 	if err != nil {
 		return core.None, err
 	}

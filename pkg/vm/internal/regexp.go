@@ -2,10 +2,11 @@ package internal
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"hash/fnv"
 	"regexp"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/wI2L/jettison"
 )

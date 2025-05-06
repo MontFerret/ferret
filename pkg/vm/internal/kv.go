@@ -2,8 +2,9 @@ package internal
 
 import (
 	"encoding/binary"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"hash/fnv"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type KeyValuePair struct {

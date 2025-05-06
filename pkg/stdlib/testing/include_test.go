@@ -2,8 +2,9 @@ package testing_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	t "testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -51,7 +52,7 @@ func TestInclude(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := Include(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(4),
 				)
 
@@ -64,7 +65,7 @@ func TestInclude(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := Include(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(2),
 				)
 
@@ -78,10 +79,10 @@ func TestInclude(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := Include(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(4),
 				)
@@ -95,10 +96,10 @@ func TestInclude(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := Include(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(2),
 				)
@@ -148,7 +149,7 @@ func TestNotInclude(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotInclude(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(4),
 				)
 
@@ -160,7 +161,7 @@ func TestNotInclude(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := NotInclude(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(2),
 				)
 
@@ -175,10 +176,10 @@ func TestNotInclude(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotInclude(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(4),
 				)
@@ -191,10 +192,10 @@ func TestNotInclude(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := NotInclude(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(2),
 				)

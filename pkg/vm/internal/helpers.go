@@ -2,9 +2,10 @@ package internal
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"strings"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 func ToNumberOnly(ctx context.Context, input runtime.Value) runtime.Value {

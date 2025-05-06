@@ -2,7 +2,8 @@ package collections
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
@@ -11,7 +12,7 @@ import (
 // REVERSE returns the reverse of a given string or array value.
 // @param {String | Any[]} value - The string or array to reverse.
 // @return {String | Any[]} - A reversed version of a given value.
-func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
+func Reverse(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -29,16 +30,26 @@ func Reverse(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 
 		return core.NewString(string(runes)), nil
-	case *internal.Array:
-		size := int(col.Length())
-		result := internal.NewArray(size)
+	case runtime.List:
+		size, err := col.Length(ctx)
+
+		if err != nil {
+			return core.None, err
+		}
+
+		result := runtime.NewArray(int(size))
 
 		for i := size - 1; i >= 0; i-- {
-			result.Push(col.Get(i))
+			item, err := col.Get(ctx, i)
+
+			if err != nil {
+				return core.None, err
+			}
+
+			_ = result.Add(ctx, item)
 		}
 
 		return result, nil
-
 	default:
 		return core.None, core.TypeError(args[0], types.Array, types.String)
 	}

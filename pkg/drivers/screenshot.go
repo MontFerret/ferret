@@ -13,10 +13,10 @@ type (
 	ScreenshotFormat string
 
 	ScreenshotParams struct {
-		X      core.Float
-		Y      core.Float
-		Width  core.Float
-		Height core.Float
+		X       core.Float
+		Y       core.Float
+		Width   core.Float
+		Height  core.Float
 		Format  ScreenshotFormat
 		Quality core.Int
 	}

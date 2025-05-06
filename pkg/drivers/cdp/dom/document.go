@@ -2,8 +2,9 @@ package dom
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 

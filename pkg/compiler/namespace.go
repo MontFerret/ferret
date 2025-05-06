@@ -1,9 +1,10 @@
 package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"regexp"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/pkg/errors"
 )

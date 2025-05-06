@@ -2,9 +2,10 @@ package collections_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	collections2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -31,7 +32,7 @@ func TestReverse(t *testing.T) {
 	})
 
 	Convey("Should return a copy of an array with reversed elements", t, func() {
-		arr := internal.NewArrayWith(
+		arr := runtime.NewArrayWith(
 			core.NewInt(1),
 			core.NewInt(2),
 			core.NewInt(3),
@@ -50,7 +51,7 @@ func TestReverse(t *testing.T) {
 	})
 
 	Convey("Should return an empty array when there no elements in a source one", t, func() {
-		arr := internal.NewArray(0)
+		arr := runtime.NewArray(0)
 
 		out, err := collections.Reverse(
 			context.Background(),

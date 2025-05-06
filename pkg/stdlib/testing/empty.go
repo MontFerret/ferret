@@ -2,8 +2,9 @@ package testing
 
 import (
 	"context"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -17,12 +18,6 @@ var Empty = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
-		size, err := internal.Length(args[0])
-
-		if err != nil {
-			return false, err
-		}
-
-		return internal.ToInt(size) == 0, nil
+		return runtime.IsEmpty(ctx, args[0])
 	},
 }

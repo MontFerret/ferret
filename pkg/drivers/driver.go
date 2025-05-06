@@ -2,8 +2,9 @@ package drivers
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (

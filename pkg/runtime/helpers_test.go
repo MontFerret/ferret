@@ -3,10 +3,11 @@ package runtime_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"reflect"
 	"testing"
 	"unsafe"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

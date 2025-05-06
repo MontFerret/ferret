@@ -3,8 +3,9 @@ package html
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"

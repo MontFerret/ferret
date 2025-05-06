@@ -2,9 +2,10 @@ package objects_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/internal"
-	"testing"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 

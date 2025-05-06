@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/mafredri/cdp/protocol/runtime"

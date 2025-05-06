@@ -2,10 +2,11 @@ package vm
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm/internal"
 	"io"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm/internal"
 )
 
 type VM struct {

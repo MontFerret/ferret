@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/drivers/common"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type style struct {

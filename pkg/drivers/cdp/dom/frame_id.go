@@ -1,8 +1,9 @@
 package dom
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/wI2L/jettison"

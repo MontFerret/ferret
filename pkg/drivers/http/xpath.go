@@ -1,11 +1,12 @@
 package http
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/antchfx/htmlquery"
 	"github.com/antchfx/xpath"
 	"golang.org/x/net/html"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"

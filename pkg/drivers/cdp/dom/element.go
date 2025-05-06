@@ -2,10 +2,11 @@ package dom
 
 import (
 	"context"
-	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 	"strings"
 	"time"
+
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 

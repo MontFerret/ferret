@@ -1,8 +1,9 @@
 package http
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	HTTP "net/http"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"

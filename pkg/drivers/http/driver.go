@@ -3,10 +3,11 @@ package http
 import (
 	"bytes"
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 

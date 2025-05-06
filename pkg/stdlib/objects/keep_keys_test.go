@@ -2,8 +2,9 @@ package objects_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	. "github.com/smartystreets/goconvey/convey"
 

@@ -3,8 +3,10 @@ package strings
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+
 	"github.com/wI2L/jettison"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
@@ -27,7 +29,7 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.EmptyString, err
 	}
 
-	return internal.Parse(val), nil
+	return runtime.Parse(val), nil
 }
 
 // JSON_STRINGIFY returns a JSON string representation of the input value.

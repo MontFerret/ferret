@@ -2,32 +2,35 @@ package strings
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // CONCAT concatenates one or more instances of String, or an arrayList.
 // @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - A string value.
-func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
-		return core.EmptyString, err
+func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
+		return runtime.EmptyString, err
 	}
 
 	argsCount := len(args)
 
-	res := core.EmptyString
+	res := runtime.EmptyString
 
 	if argsCount == 1 {
-		argv, ok := args[0].(*internal.Array)
+		argv, ok := args[0].(runtime.List)
 
 		if ok {
-			argv.ForEach(func(value core.Value, _ int) bool {
+			err := argv.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 				res = res.Concat(value)
 
-				return true
+				return true, nil
 			})
+
+			if err != nil {
+				return runtime.None, err
+			}
 
 			return res, nil
 		}
@@ -44,28 +47,28 @@ func Concat(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param {String} separator - The separator string.
 // @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - Concatenated string.
-func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, core.MaxArgs)
+func ConcatWithSeparator(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, runtime.MaxArgs)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	separator := args[0]
 
-	separator, ok := args[0].(core.String)
+	separator, ok := args[0].(runtime.String)
 
 	if !ok {
-		separator = core.NewString(separator.String())
+		separator = runtime.NewString(separator.String())
 	}
 
-	res := core.EmptyString
+	res := runtime.EmptyString
 
 	for idx, arg := range args[1:] {
 		switch argv := arg.(type) {
-		case *internal.Array:
-			argv.ForEach(func(value core.Value, idx int) bool {
-				if value != core.None {
+		case runtime.List:
+			err = argv.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+				if value != runtime.None {
 					if idx > 0 {
 						res = res.Concat(separator)
 					}
@@ -73,10 +76,14 @@ func ConcatWithSeparator(_ context.Context, args ...core.Value) (core.Value, err
 					res = res.Concat(value)
 				}
 
-				return true
+				return true, nil
 			})
+
+			if err != nil {
+				return runtime.None, err
+			}
 		default:
-			if argv != core.None {
+			if argv != runtime.None {
 				if idx > 0 {
 					res = res.Concat(separator)
 				}

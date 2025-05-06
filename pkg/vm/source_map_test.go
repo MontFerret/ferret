@@ -2,8 +2,9 @@ package vm_test
 
 import (
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/vm"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/vm"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

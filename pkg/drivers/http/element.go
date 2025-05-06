@@ -2,9 +2,10 @@ package http
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"golang.org/x/net/html"
 

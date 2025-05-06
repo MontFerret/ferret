@@ -2,9 +2,10 @@ package html
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strings"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/pkg/errors"
 

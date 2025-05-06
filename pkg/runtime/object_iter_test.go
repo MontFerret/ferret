@@ -2,9 +2,10 @@ package runtime_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"slices"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

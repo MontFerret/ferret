@@ -3,11 +3,12 @@ package http_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"io"
 	h "net/http"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/jarcoal/httpmock"
 

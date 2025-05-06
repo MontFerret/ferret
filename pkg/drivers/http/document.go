@@ -2,8 +2,9 @@ package http
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/PuerkitoBio/goquery"
 

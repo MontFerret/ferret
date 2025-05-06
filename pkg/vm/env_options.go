@@ -1,8 +1,9 @@
 package vm
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"io"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 )

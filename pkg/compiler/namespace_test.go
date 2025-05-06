@@ -2,12 +2,12 @@ package compiler_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/runtime"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNamespaceBuilder(t *testing.T) {

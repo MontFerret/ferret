@@ -2,8 +2,9 @@ package testing_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	t "testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 
@@ -60,7 +61,7 @@ func TestLen(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := Len(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(1),
 				)
 
@@ -73,7 +74,7 @@ func TestLen(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := Len(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(3),
 				)
 
@@ -87,10 +88,10 @@ func TestLen(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := Len(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(1),
 				)
@@ -104,10 +105,10 @@ func TestLen(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := Len(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(3),
 				)
@@ -165,7 +166,7 @@ func TestNotLen(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotLen(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(1),
 				)
 
@@ -177,7 +178,7 @@ func TestNotLen(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := NotLen(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 					core.NewInt(3),
 				)
 
@@ -192,10 +193,10 @@ func TestNotLen(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotLen(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(1),
 				)
@@ -208,10 +209,10 @@ func TestNotLen(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotLen(
 					context.Background(),
-					internal.NewObjectWith(
-						internal.NewObjectProperty("a", core.NewInt(1)),
-						internal.NewObjectProperty("b", core.NewInt(2)),
-						internal.NewObjectProperty("c", core.NewInt(3)),
+					runtime.NewObjectWith(
+						runtime.NewObjectProperty("a", core.NewInt(1)),
+						runtime.NewObjectProperty("b", core.NewInt(2)),
+						runtime.NewObjectProperty("c", core.NewInt(3)),
 					),
 					core.NewInt(3),
 				)

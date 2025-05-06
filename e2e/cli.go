@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"io"
 	"io/ioutil"
 	"os"
@@ -17,6 +16,8 @@ import (
 	"runtime/pprof"
 	"strings"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 

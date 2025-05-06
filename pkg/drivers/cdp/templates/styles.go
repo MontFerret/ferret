@@ -1,9 +1,10 @@
 package templates
 
 import (
+	"github.com/mafredri/cdp/protocol/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/internal"
-	"github.com/mafredri/cdp/protocol/runtime"
 
 	"github.com/MontFerret/ferret/pkg/drivers/cdp/eval"
 )

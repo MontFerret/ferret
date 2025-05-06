@@ -2,8 +2,9 @@ package eval
 
 import (
 	"context"
-	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"strconv"
+
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/protocol/page"

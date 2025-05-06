@@ -1,9 +1,9 @@
 package eval
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	runtime2 "github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 	. "github.com/smartystreets/goconvey/convey"

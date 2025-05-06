@@ -2,11 +2,12 @@ package cdp
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"hash/fnv"
 	"io"
 	"regexp"
 	"sync"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 

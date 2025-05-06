@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"io"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/rs/zerolog"
 )

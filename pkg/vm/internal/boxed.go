@@ -2,8 +2,9 @@ package internal
 
 import (
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"hash/fnv"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/wI2L/jettison"
 )

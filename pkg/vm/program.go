@@ -3,9 +3,10 @@ package vm
 import (
 	"bytes"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"io"
 	"text/tabwriter"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type (

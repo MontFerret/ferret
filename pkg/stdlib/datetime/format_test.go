@@ -1,9 +1,10 @@
 package datetime_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"testing"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"

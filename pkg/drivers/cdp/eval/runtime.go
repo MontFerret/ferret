@@ -2,6 +2,7 @@ package eval
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/logging"
 	"github.com/MontFerret/ferret/pkg/runtime/internal"
 

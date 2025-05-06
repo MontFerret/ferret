@@ -2,8 +2,9 @@ package strings
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
@@ -13,7 +14,7 @@ import (
 // @param {String} expression - A regular expression to use for matching the text.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @return {Any[]} - An array of strings containing the matches.
-func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
+func RegexMatch(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 3)
 
 	if err != nil {
@@ -36,14 +37,14 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	matches := reg.FindAllStringSubmatch(text, -1)
-	res := internal.NewArray(10)
+	res := runtime.NewArray(10)
 
 	if len(matches) == 0 {
 		return res, nil
 	}
 
 	for _, m := range matches[0] {
-		res.Push(core.NewString(m))
+		_ = res.Add(ctx, core.NewString(m))
 	}
 
 	return res, nil
@@ -55,7 +56,7 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
 // @return {Any[]} - An array of strings splitted by the expression.
-func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
+func RegexSplit(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -81,14 +82,14 @@ func RegexSplit(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	matches := reg.Split(text, limit)
-	res := internal.NewArray(10)
+	res := runtime.NewArray(10)
 
 	if len(matches) == 0 {
 		return res, nil
 	}
 
 	for _, m := range matches {
-		res.Push(core.NewString(m))
+		_ = res.Add(ctx, core.NewString(m))
 	}
 
 	return res, nil

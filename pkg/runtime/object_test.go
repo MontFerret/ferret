@@ -1,8 +1,9 @@
 package runtime_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

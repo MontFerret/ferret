@@ -2,10 +2,12 @@ package internal
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"strings"
+
 	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
-	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 func Contains(ctx context.Context, input runtime.Value, value runtime.Value) runtime.Boolean {

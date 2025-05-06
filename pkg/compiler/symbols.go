@@ -1,9 +1,10 @@
 package compiler
 
 import (
+	"strconv"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"strconv"
 )
 
 type (

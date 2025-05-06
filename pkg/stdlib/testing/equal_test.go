@@ -2,12 +2,12 @@ package testing_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	t "testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -21,7 +21,7 @@ func TestEqual(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = Equal(context.Background(), core.NewInt(1))
+			_, err = Equal(context.Background(), runtime.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -30,16 +30,16 @@ func TestEqual(t *t.T) {
 	Convey("When args are string", t, func() {
 		Convey("When 'Foo' and 'Bar'", func() {
 			Convey("It should return an error", func() {
-				_, err := Equal(context.Background(), core.NewString("Foo"), core.NewString("Bar"))
+				_, err := Equal(context.Background(), runtime.NewString("Foo"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' to be equal to [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' to be equal to [string] 'Bar'").Error())
 			})
 		})
 
 		Convey("When 'Foo' and 'Foo'", func() {
 			Convey("It should not return an error", func() {
-				_, err := Equal(context.Background(), core.NewString("Foo"), core.NewString("Foo"))
+				_, err := Equal(context.Background(), runtime.NewString("Foo"), runtime.NewString("Foo"))
 
 				So(err, ShouldBeNil)
 			})
@@ -49,16 +49,16 @@ func TestEqual(t *t.T) {
 	Convey("When args are numbers", t, func() {
 		Convey("When 1 and 2", func() {
 			Convey("It should return an error", func() {
-				_, err := Equal(context.Background(), core.NewInt(1), core.NewInt(2))
+				_, err := Equal(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' to be equal to [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' to be equal to [int] '2'").Error())
 			})
 		})
 
 		Convey("When 1 and 1", func() {
 			Convey("It should not return an error", func() {
-				_, err := Equal(context.Background(), core.NewInt(1), core.NewInt(1))
+				_, err := Equal(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeNil)
 			})
@@ -68,16 +68,16 @@ func TestEqual(t *t.T) {
 	Convey("When args are boolean", t, func() {
 		Convey("When False and True", func() {
 			Convey("It should return an error", func() {
-				_, err := Equal(context.Background(), core.False, core.True)
+				_, err := Equal(context.Background(), runtime.False, runtime.True)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [boolean] 'false' to be equal to [boolean] 'true'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [boolean] 'false' to be equal to [boolean] 'true'").Error())
 			})
 		})
 
 		Convey("When False and False", func() {
 			Convey("It should not return an error", func() {
-				_, err := Equal(context.Background(), core.False, core.False)
+				_, err := Equal(context.Background(), runtime.False, runtime.False)
 
 				So(err, ShouldBeNil)
 			})
@@ -89,12 +89,12 @@ func TestEqual(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := Equal(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1)),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(1)),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1]' to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1]' to be equal to [array] '[1,2]'").Error())
 			})
 		})
 
@@ -102,8 +102,8 @@ func TestEqual(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := Equal(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2)),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
 				)
 
 				So(err, ShouldBeNil)
@@ -121,7 +121,7 @@ func TestNotEqual(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = NotEqual(context.Background(), core.NewInt(1))
+			_, err = NotEqual(context.Background(), runtime.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -130,7 +130,7 @@ func TestNotEqual(t *t.T) {
 	Convey("When args are string", t, func() {
 		Convey("When 'Foo' and 'Bar'", func() {
 			Convey("It should return an error", func() {
-				_, err := NotEqual(context.Background(), core.NewString("Foo"), core.NewString("Bar"))
+				_, err := NotEqual(context.Background(), runtime.NewString("Foo"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeNil)
 			})
@@ -138,10 +138,10 @@ func TestNotEqual(t *t.T) {
 
 		Convey("When 'Foo' and 'Foo'", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotEqual(context.Background(), core.NewString("Foo"), core.NewString("Foo"))
+				_, err := NotEqual(context.Background(), runtime.NewString("Foo"), runtime.NewString("Foo"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' not to be equal to [string] 'Foo'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' not to be equal to [string] 'Foo'").Error())
 			})
 		})
 	})
@@ -149,7 +149,7 @@ func TestNotEqual(t *t.T) {
 	Convey("When args are numbers", t, func() {
 		Convey("When 1 and 2", func() {
 			Convey("It should return an error", func() {
-				_, err := NotEqual(context.Background(), core.NewInt(1), core.NewInt(2))
+				_, err := NotEqual(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeNil)
 			})
@@ -157,10 +157,10 @@ func TestNotEqual(t *t.T) {
 
 		Convey("When 1 and 1", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotEqual(context.Background(), core.NewInt(1), core.NewInt(1))
+				_, err := NotEqual(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' not to be equal to [int] '1'").Error())
 			})
 		})
 	})
@@ -168,7 +168,7 @@ func TestNotEqual(t *t.T) {
 	Convey("When args are boolean", t, func() {
 		Convey("When False and True", func() {
 			Convey("It should return an error", func() {
-				_, err := NotEqual(context.Background(), core.False, core.True)
+				_, err := NotEqual(context.Background(), runtime.False, runtime.True)
 
 				So(err, ShouldBeNil)
 			})
@@ -176,10 +176,10 @@ func TestNotEqual(t *t.T) {
 
 		Convey("When False and False", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotEqual(context.Background(), core.False, core.False)
+				_, err := NotEqual(context.Background(), runtime.False, runtime.False)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [boolean] 'false' not to be equal to [boolean] 'false'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [boolean] 'false' not to be equal to [boolean] 'false'").Error())
 			})
 		})
 	})
@@ -189,8 +189,8 @@ func TestNotEqual(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := NotEqual(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1)),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(1)),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
 				)
 
 				So(err, ShouldBeNil)
@@ -201,12 +201,12 @@ func TestNotEqual(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotEqual(
 					context.Background(),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2)),
-					internal.NewArrayWith(core.NewInt(1), core.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2]' not to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2]' not to be equal to [array] '[1,2]'").Error())
 			})
 		})
 	})

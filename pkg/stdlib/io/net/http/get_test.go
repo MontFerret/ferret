@@ -2,10 +2,11 @@ package http_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	h "net/http"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/jarcoal/httpmock"
 

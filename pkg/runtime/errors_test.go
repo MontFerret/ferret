@@ -1,9 +1,10 @@
 package runtime_test
 
 import (
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"testing"
 
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"

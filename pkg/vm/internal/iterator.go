@@ -2,8 +2,9 @@ package internal
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"io"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type Iterator struct {

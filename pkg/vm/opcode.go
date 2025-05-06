@@ -3,15 +3,15 @@ package vm
 type Opcode byte
 
 const (
-	OpReturn Opcode = iota
-	OpMove          // Move a value from register A to register B
-	OpLoadNone      // Set None value to a register
-	OpLoadBool      // Set a boolean value to a register
-	OpLoadZero      // Set a zero value to a register
-	OpLoadConst     // Load a constant to a register or a global variable
-	OpStoreGlobal   // Store a value from register A to a global variable
-	OpLoadGlobal    // Load a global variable to a register A
-	OpLoadParam     // Load a parameter to a register A
+	OpReturn      Opcode = iota
+	OpMove               // Move a value from register A to register B
+	OpLoadNone           // Set None value to a register
+	OpLoadBool           // Set a boolean value to a register
+	OpLoadZero           // Set a zero value to a register
+	OpLoadConst          // Load a constant to a register or a global variable
+	OpStoreGlobal        // Store a value from register A to a global variable
+	OpLoadGlobal         // Load a global variable to a register A
+	OpLoadParam          // Load a parameter to a register A
 
 	OpJump
 	OpJumpIfFalse

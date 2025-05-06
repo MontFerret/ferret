@@ -3,8 +3,9 @@ package testing
 import (
 	"context"
 	"fmt"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -22,7 +23,7 @@ var Len = base.Assertion{
 		col := args[0]
 		size := args[1]
 
-		out, err := internal.Length(col)
+		out, err := runtime.Length(ctx, col)
 
 		if err != nil {
 			return false, err

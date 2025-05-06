@@ -2,9 +2,10 @@ package dom
 
 import (
 	"context"
+	"sync"
+
 	runtime2 "github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/internal"
-	"sync"
 
 	"github.com/MontFerret/ferret/pkg/logging"
 

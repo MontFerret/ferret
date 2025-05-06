@@ -1,8 +1,9 @@
 package drivers
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/wI2L/jettison"
 )
@@ -138,9 +139,9 @@ func (a ScrollHorizontalAlignment) String() string {
 
 // ScrollOptions defines how scroll animation should be performed.
 type ScrollOptions struct {
-	Top      core.Float     `json:"top"`
-	Left     core.Float     `json:"left"`
-	Behavior ScrollBehavior `json:"behavior"`
+	Top      core.Float                `json:"top"`
+	Left     core.Float                `json:"left"`
+	Behavior ScrollBehavior            `json:"behavior"`
 	Block    ScrollVerticalAlignment   `json:"block"`
 	Inline   ScrollHorizontalAlignment `json:"inline"`
 }

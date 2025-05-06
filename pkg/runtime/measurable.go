@@ -15,3 +15,19 @@ func Length(ctx context.Context, value Value) (Int, error) {
 
 	return c.Length(ctx)
 }
+
+func IsEmpty(ctx context.Context, value Value) (bool, error) {
+	size, err := Length(ctx, value)
+
+	if err != nil {
+		return false, err
+	}
+
+	intVal, err := ToInt(ctx, size)
+
+	if err != nil {
+		return false, err
+	}
+
+	return intVal == 0, nil
+}

@@ -2,13 +2,12 @@ package strings
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"regexp"
 	"strings"
 
-	"github.com/gobwas/glob"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/gobwas/glob"
 )
 
 var (
@@ -20,18 +19,18 @@ var (
 // @param {String} search - A search pattern that can contain the wildcard characters.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
-func Like(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
+func Like(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return core.False, err
+		return runtime.False, err
 	}
 
 	str := args[0].String()
 	pattern := args[1].String()
 
 	if len(pattern) == 0 {
-		return core.NewBoolean(len(str) == 0), nil
+		return runtime.NewBoolean(len(str) == 0), nil
 	}
 
 	// TODO: Remove me in next releases
@@ -51,7 +50,7 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 	pattern = string(replaced)
 
 	if len(args) > 2 {
-		if internal.ToBoolean(args[2]) {
+		if runtime.ToBoolean(args[2]) {
 			str = strings.ToLower(str)
 			pattern = strings.ToLower(pattern)
 		}
@@ -63,5 +62,5 @@ func Like(_ context.Context, args ...core.Value) (core.Value, error) {
 		return nil, err
 	}
 
-	return core.NewBoolean(g.Match(str)), nil
+	return runtime.NewBoolean(g.Match(str)), nil
 }

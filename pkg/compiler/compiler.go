@@ -2,9 +2,10 @@ package compiler
 
 import (
 	"errors"
-	//"github.com/MontFerret/ferret/pkg/stdlib"
-	"github.com/MontFerret/ferret/pkg/vm"
 	goruntime "runtime"
+
+	"github.com/MontFerret/ferret/pkg/stdlib"
+	"github.com/MontFerret/ferret/pkg/vm"
 
 	"github.com/MontFerret/ferret/pkg/parser"
 )
@@ -24,9 +25,9 @@ func New(setters ...Option) *Compiler {
 	}
 
 	if !opts.noStdlib {
-		//if err := stdlib.RegisterLib(c.NamespaceContainer); err != nil {
-		//	panic(err)
-		//}
+		if err := stdlib.RegisterLib(c.NamespaceContainer); err != nil {
+			panic(err)
+		}
 	}
 
 	return c

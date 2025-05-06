@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+
 	"github.com/MontFerret/ferret/pkg/logging"
 
 	"github.com/rs/zerolog"

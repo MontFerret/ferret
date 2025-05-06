@@ -1,8 +1,9 @@
 package eval
 
 import (
-	runtime2 "github.com/MontFerret/ferret/pkg/runtime/core"
 	"strings"
+
+	runtime2 "github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/mafredri/cdp/protocol/runtime"
 

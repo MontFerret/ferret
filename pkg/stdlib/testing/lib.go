@@ -1,12 +1,12 @@
 package testing
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
 // @namespace T
-func RegisterLib(ns core.Namespace) error {
+func RegisterLib(ns runtime.Namespace) error {
 	t := ns.Namespace("T")
 
 	if err := registerNOT(t); err != nil {
@@ -14,7 +14,7 @@ func RegisterLib(ns core.Namespace) error {
 	}
 
 	return t.RegisterFunctions(
-		core.NewFunctionsFromMap(map[string]core.Function{
+		runtime.NewFunctionsFromMap(map[string]runtime.Function{
 			"EMPTY":    base.NewPositiveAssertion(Empty),
 			"EQ":       base.NewPositiveAssertion(Equal),
 			"FAIL":     base.NewPositiveAssertion(Fail),
@@ -39,11 +39,11 @@ func RegisterLib(ns core.Namespace) error {
 	)
 }
 
-func registerNOT(ns core.Namespace) error {
+func registerNOT(ns runtime.Namespace) error {
 	t := ns.Namespace("NOT")
 
 	return t.RegisterFunctions(
-		core.NewFunctionsFromMap(map[string]core.Function{
+		runtime.NewFunctionsFromMap(map[string]runtime.Function{
 			"EMPTY":    base.NewNegativeAssertion(Empty),
 			"EQ":       base.NewNegativeAssertion(Equal),
 			"FALSE":    base.NewNegativeAssertion(False),

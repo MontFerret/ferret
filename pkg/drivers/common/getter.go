@@ -2,8 +2,10 @@ package common
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+
 	"github.com/pkg/errors"
+
+	"github.com/MontFerret/ferret/pkg/runtime/internal"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/runtime/core"
