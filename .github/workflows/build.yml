@@ -3,6 +3,29 @@ name: build
 on: [push, pull_request]
 
 jobs:
+  analyze:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.24'
+
+      - name: Set up linters
+        run: make install-tools
+
+      - name: Lint
+        run: |
+          make vet
+          make lint
+          make fmt
+          git diff
+          if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -39,20 +62,12 @@ jobs:
           LOCATION=$PWD ./install.sh
 
       - name: Get dependencies
-        run: make install && make install-tools
+        run: make install
 
       - name: Generate
         run: |
           export PATH=$PATH:$HOME/antlr-bin
           make generate
-
-      - name: Lint
-        run: |
-          make vet
-          make lint
-          make fmt
-          git diff
-          if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
 
       - name: Compile
         run: make compile
