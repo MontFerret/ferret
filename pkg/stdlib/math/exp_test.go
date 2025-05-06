@@ -15,7 +15,7 @@ func TestExp(t *testing.T) {
 		out, err := math.Exp(context.Background(), values.NewFloat(1))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2.718281828459045)
+		So(out.Unwrap(), ShouldEqual, 2.718281828459045)
 
 		out, err = math.Exp(context.Background(), values.NewFloat(10))
 
@@ -25,6 +25,6 @@ func TestExp(t *testing.T) {
 		out, err = math.Exp(context.Background(), values.NewFloat(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1)
+		So(out.Unwrap(), ShouldEqual, 1)
 	})
 }

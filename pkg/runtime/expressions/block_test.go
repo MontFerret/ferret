@@ -75,7 +75,7 @@ func TestBlock(t *testing.T) {
 		val, err := scope.GetVariable("test")
 		So(err, ShouldBeNil)
 
-		So(val, ShouldEqual, "value")
+		So(val.Unwrap(), ShouldEqual, "value")
 	})
 
 	Convey("Should not exec a nil block expression", t, func() {

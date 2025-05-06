@@ -15,16 +15,16 @@ func TestPow(t *testing.T) {
 		out, err := math.Pow(context.Background(), values.NewInt(2), values.NewInt(4))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 16)
+		So(out.Unwrap(), ShouldEqual, 16)
 
 		out, err = math.Pow(context.Background(), values.NewInt(5), values.NewInt(-1))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 0.2)
+		So(out.Unwrap(), ShouldEqual, 0.2)
 
 		out, err = math.Pow(context.Background(), values.NewInt(5), values.NewInt(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1)
+		So(out.Unwrap(), ShouldEqual, 1)
 	})
 }

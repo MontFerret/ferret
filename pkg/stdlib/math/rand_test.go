@@ -14,6 +14,6 @@ func TestRand(t *testing.T) {
 		out, err := math.Rand(context.Background())
 
 		So(err, ShouldBeNil)
-		So(out, ShouldBeLessThan, 1)
+		So(out.Unwrap(), ShouldBeLessThan, 1)
 	})
 }

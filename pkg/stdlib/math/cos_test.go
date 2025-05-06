@@ -15,12 +15,12 @@ func TestCos(t *testing.T) {
 		out, err := math.Cos(context.Background(), values.NewFloat(1))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 0.5403023058681398)
+		So(out.Unwrap(), ShouldEqual, 0.5403023058681398)
 
 		out, err = math.Cos(context.Background(), values.NewFloat(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1)
+		So(out.Unwrap(), ShouldEqual, 1)
 
 		out, err = math.Cos(context.Background(), values.NewFloat(-3.141592653589783))
 

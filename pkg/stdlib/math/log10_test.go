@@ -15,12 +15,12 @@ func TestLog10(t *testing.T) {
 		out, err := math.Log10(context.Background(), values.NewFloat(10000))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 4)
+		So(out.Unwrap(), ShouldEqual, 4)
 
 		out, err = math.Log10(context.Background(), values.NewFloat(10))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1)
+		So(out.Unwrap(), ShouldEqual, 1)
 
 		out, err = math.Log10(context.Background(), values.NewFloat(0))
 

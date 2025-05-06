@@ -48,7 +48,7 @@ func TestReturnExpression(t *testing.T) {
 		value, err := exp.Exec(context.Background(), scope)
 		So(err, ShouldBeNil)
 		So(value, ShouldNotBeNil)
-		So(value, ShouldEqual, "value")
+		So(value.Unwrap(), ShouldEqual, "value")
 	})
 
 	Convey("Should not exec a return expression with a missing predicate", t, func() {

@@ -56,7 +56,7 @@ func TestForLimit(t *testing.T) {
 		c.RegisterFunction("TEST", func(ctx context.Context, args ...core.Value) (core.Value, error) {
 			counter++
 
-			So(args[0], ShouldEqual, "foo")
+			So(args[0], ShouldEqual, values.NewString("foo"))
 
 			return values.None, nil
 		})

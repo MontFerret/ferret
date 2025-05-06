@@ -24,6 +24,6 @@ func TestPercentile(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2)
+		So(out.Unwrap(), ShouldEqual, 2)
 	})
 }

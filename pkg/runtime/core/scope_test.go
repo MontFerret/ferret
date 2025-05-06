@@ -46,7 +46,7 @@ func TestScope(t *testing.T) {
 			v, err := rs.GetVariable("foo")
 
 			So(err, ShouldBeNil)
-			So(v, ShouldEqual, "bar")
+			So(v.Unwrap(), ShouldEqual, "bar")
 		})
 
 		Convey("Should return an error when variable is not defined", func() {
@@ -110,7 +110,7 @@ func TestScope(t *testing.T) {
 				v, err := cs.GetVariable("foo")
 
 				So(err, ShouldBeNil)
-				So(v, ShouldEqual, "bar")
+				So(v.Unwrap(), ShouldEqual, "bar")
 			})
 
 			Convey("Should return a variable defined only in a parent scope", func() {
@@ -127,7 +127,7 @@ func TestScope(t *testing.T) {
 				v, err := cs.GetVariable("faz")
 
 				So(err, ShouldBeNil)
-				So(v, ShouldEqual, "qaz")
+				So(v.Unwrap(), ShouldEqual, "qaz")
 			})
 
 			Convey("Should set a new variable with a same name defined in a parent scope", func() {

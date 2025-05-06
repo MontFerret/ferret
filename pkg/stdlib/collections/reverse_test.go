@@ -26,7 +26,7 @@ func TestReverse(t *testing.T) {
 			values.NewString("The quick brown 狐 jumped over the lazy 犬"),
 		)
 
-		So(out, ShouldEqual, "犬 yzal eht revo depmuj 狐 nworb kciuq ehT")
+		So(out.Unwrap(), ShouldEqual, "犬 yzal eht revo depmuj 狐 nworb kciuq ehT")
 	})
 
 	Convey("Should return a copy of an array with reversed elements", t, func() {

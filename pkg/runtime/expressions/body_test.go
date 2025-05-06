@@ -82,7 +82,7 @@ func TestBody(t *testing.T) {
 		value, err := s.Exec(context.Background(), scope)
 		So(err, ShouldBeNil)
 		So(value, ShouldNotBeNil)
-		So(value, ShouldEqual, "value")
+		So(value.Unwrap(), ShouldEqual, "value")
 	})
 
 	Convey("Should not found a missing statement", t, func() {

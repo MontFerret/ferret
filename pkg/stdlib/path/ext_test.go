@@ -33,6 +33,6 @@ func TestExt(t *testing.T) {
 			values.NewString("dir/main.go"),
 		)
 
-		So(out, ShouldEqual, ".go")
+		So(out.Unwrap(), ShouldEqual, ".go")
 	})
 }

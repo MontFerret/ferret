@@ -20,7 +20,7 @@ func TestMin(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2)
+		So(out.Unwrap(), ShouldEqual, 2)
 
 		out, err = math.Min(context.Background(), values.NewArrayWith(
 			values.NewInt(-3),
@@ -29,7 +29,7 @@ func TestMin(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, -5)
+		So(out.Unwrap(), ShouldEqual, -5)
 
 		out, err = math.Min(context.Background(), values.NewArrayWith(
 			values.None,
@@ -38,11 +38,11 @@ func TestMin(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, values.None)
+		So(out.Unwrap(), ShouldBeNil)
 
 		out, err = math.Min(context.Background(), values.NewArray(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, values.None)
+		So(out.Unwrap(), ShouldBeNil)
 	})
 }
