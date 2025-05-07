@@ -43,8 +43,8 @@ func RegexMatch(_ context.Context, args ...core.Value) (core.Value, error) {
 		return res, nil
 	}
 
-	for _, m := range matches[0] {
-		res.Push(values.NewString(m))
+	for _, m := range matches {
+		res.Push(values.NewString(m[0]))
 	}
 
 	return res, nil
