@@ -56,8 +56,11 @@ var (
 	AssertMap      = runtime.AssertMap
 	AssertString   = runtime.AssertString
 
-	Parse     = runtime.Parse
-	ToBoolean = runtime.ToBoolean
+	Parse            = runtime.Parse
+	ToBoolean        = runtime.ToBoolean
+	Random           = runtime.Random
+	RandomDefault    = runtime.RandomDefault
+	NumberBoundaries = runtime.NumberBoundaries
 
 	MaxArgs = runtime.MaxArgs
 )

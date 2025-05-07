@@ -11,6 +11,7 @@ var (
 	ErrMissedArgument        = errors.New("missed argument")
 	ErrInvalidArgument       = errors.New("invalid argument")
 	ErrInvalidArgumentNumber = errors.New("invalid argument number")
+	ErrInvalidArgumentType   = errors.New("invalid argument type")
 	ErrInvalidType           = errors.New("invalid type")
 	ErrInvalidOperation      = errors.New("invalid operation")
 	ErrNotFound              = errors.New("not found")

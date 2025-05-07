@@ -3,6 +3,8 @@ package stdlib
 import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/pkg/stdlib/math"
+	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 )
 
@@ -10,14 +12,14 @@ func RegisterLib(ns runtime.Namespace) error {
 	//if err := types.RegisterLib(ns); err != nil {
 	//	return err
 	//}
-	//
-	//if err := strings.RegisterLib(ns); err != nil {
-	//	return err
-	//}
-	//
-	//if err := math.RegisterLib(ns); err != nil {
-	//	return err
-	//}
+
+	if err := strings.RegisterLib(ns); err != nil {
+		return err
+	}
+
+	if err := math.RegisterLib(ns); err != nil {
+		return err
+	}
 
 	if err := collections.RegisterLib(ns); err != nil {
 		return err

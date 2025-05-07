@@ -2,10 +2,11 @@ package strings
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/pkg/errors"
 

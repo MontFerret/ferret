@@ -4,35 +4,38 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // STDDEV_SAMPLE returns the sample standard deviation of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sample standard deviation.
-func StandardDeviationSample(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func StandardDeviationSample(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
+	}
+
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	size, err := arr.Length(ctx)
 
 	if err != nil {
-		return core.None, err
+		return runtime.NaN(), err
 	}
 
-	arr := args[0].(*internal.Array)
-
-	if arr.Length() == 0 {
-		return core.NewFloat(math.NaN()), nil
+	if size == 0 {
+		return runtime.NaN(), nil
 	}
 
-	vp := variance(arr, core.NewInt(1))
+	vp, err := variance(ctx, arr, runtime.NewInt(1))
 
-	return core.NewFloat(math.Pow(float64(vp), 0.5)), nil
+	if err != nil {
+		return runtime.NaN(), err
+	}
+
+	return runtime.NewFloat(math.Pow(float64(vp), 0.5)), nil
 }

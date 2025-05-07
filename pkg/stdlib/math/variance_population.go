@@ -4,33 +4,32 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // VARIANCE_POPULATION returns the population variance of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The population variance.
-func PopulationVariance(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func PopulationVariance(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
+	}
+
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	size, err := arr.Length(ctx)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-
-	if arr.Length() == 0 {
-		return core.NewFloat(math.NaN()), nil
+	if size == 0 {
+		return runtime.NewFloat(math.NaN()), nil
 	}
 
-	return variance(arr, core.NewInt(0)), nil
+	return variance(ctx, arr, runtime.NewInt(0))
 }

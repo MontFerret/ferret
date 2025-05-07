@@ -241,6 +241,36 @@ func (t *Object) Values(_ context.Context) ([]Value, error) {
 	return keys, nil
 }
 
+func (t *Object) SortAsc(ctx context.Context) (List, error) {
+	return t.sort(ctx, true)
+}
+
+func (t *Object) SortDesc(ctx context.Context) (List, error) {
+	return t.sort(ctx, false)
+}
+
+func (t *Object) sort(ctx context.Context, ascending Boolean) (List, error) {
+	c, _ := t.Values(ctx)
+
+	SortSlice(c, ascending)
+
+	res := new(Array)
+	res.data = c
+
+	return res, nil
+}
+
+func (t *Object) SortWith(ctx context.Context, comparator Comparator) (List, error) {
+	c, _ := t.Values(ctx)
+
+	SortSliceWith(c, comparator)
+
+	res := new(Array)
+	res.data = c
+
+	return res, nil
+}
+
 func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
 	for key, val := range t.data {
 		doContinue, err := predicate(ctx, val, String(key))

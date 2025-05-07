@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/fnv"
-	"sort"
 
 	"github.com/wI2L/jettison"
 )
@@ -272,18 +271,22 @@ func (t *Array) Slice(_ context.Context, start, end Int) (List, error) {
 	return result, nil
 }
 
-func (t *Array) Sort(ctx context.Context, ascending Boolean) (List, error) {
-	var pivot int64 = -1
+func (t *Array) SortAsc(ctx context.Context) (List, error) {
+	return t.sort(ctx, true)
+}
 
-	if ascending {
-		pivot = 1
-	}
+func (t *Array) SortDesc(ctx context.Context) (List, error) {
+	return t.sort(ctx, false)
+}
 
-	res, _ := t.SortWith(ctx, func(first, second Value) int64 {
-		comp := CompareValues(first, second)
+func (t *Array) sort(_ context.Context, ascending Boolean) (List, error) {
+	c := make([]Value, len(t.data))
+	copy(c, t.data)
 
-		return pivot * comp
-	})
+	SortSlice(c, ascending)
+
+	res := new(Array)
+	res.data = c
 
 	return res, nil
 }
@@ -292,11 +295,7 @@ func (t *Array) SortWith(_ context.Context, comparator Comparator) (List, error)
 	c := make([]Value, len(t.data))
 	copy(c, t.data)
 
-	sort.SliceStable(c, func(i, j int) bool {
-		comp := comparator(c[i], c[j])
-
-		return comp == 0
-	})
+	SortSliceWith(c, comparator)
 
 	res := new(Array)
 	res.data = c

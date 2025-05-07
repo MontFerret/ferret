@@ -3,35 +3,44 @@ package math
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // RAND return a pseudo-random number between 0 and 1.
 // @param {Int | Float} [max] - Upper limit.
 // @param {Int | Float} [min] - Lower limit.
 // @return {Float} - A number greater than 0 and less than 1.
-func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 0, 2)
-
-	if err != nil {
-		return core.None, err
+func Rand(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 0, 2); err != nil {
+		return runtime.None, err
 	}
 
 	if len(args) == 0 {
-		return core.NewFloat(core.RandomDefault()), nil
+		return runtime.NewFloat(runtime.RandomDefault()), nil
+	}
+
+	arg1, err := runtime.ToFloat(ctx, args[0])
+
+	if err != nil {
+		return runtime.None, err
 	}
 
 	var max float64
 	var min float64
 
-	max = float64(internal.ToFloat(args[0]))
+	max = float64(arg1)
 
 	if len(args) > 1 {
-		min = float64(internal.ToFloat(args[1]))
+		arg2, err := runtime.ToFloat(ctx, args[1])
+
+		if err != nil {
+			return runtime.None, err
+		}
+
+		min = float64(arg2)
 	} else {
-		max, min = core.NumberBoundaries(max)
+		max, min = runtime.NumberBoundaries(max)
 	}
 
-	return core.NewFloat(core.Random(max, min)), nil
+	return runtime.NewFloat(runtime.Random(max, min)), nil
 }

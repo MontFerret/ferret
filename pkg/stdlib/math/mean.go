@@ -1,37 +1,39 @@
 package math
 
 import (
-	"math"
+	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func mean(input *internal.Array) (core.Float, error) {
-	if input.Length() == 0 {
-		return core.NewFloat(math.NaN()), nil
+func mean(ctx context.Context, input runtime.List) (runtime.Float, error) {
+	size, err := input.Length(ctx)
+
+	if err != nil {
+		return 0, err
 	}
 
-	var err error
+	if size == 0 {
+		return runtime.NaN(), nil
+	}
+
 	var sum float64
 
-	input.ForEach(func(value core.Value, idx int) bool {
-		err = core.ValidateType(value, types.Int, types.Float)
+	err = input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		err = runtime.AssertNumber(value)
 
 		if err != nil {
-			return false
+			return false, nil
 		}
 
 		sum += toFloat(value)
 
-		return true
+		return true, nil
 	})
 
 	if err != nil {
 		return 0, err
 	}
 
-	return core.NewFloat(sum / float64(input.Length())), nil
+	return runtime.NewFloat(sum / float64(size)), nil
 }

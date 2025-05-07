@@ -4,12 +4,9 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/pkg/errors"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // PERCENTILE returns the nth percentile of the values in a given array.
@@ -17,30 +14,40 @@ import (
 // @param {Int} number - A number which must be between 0 (excluded) and 100 (included).
 // @param {String} [method="rank"] - "rank" or "interpolation".
 // @return {Float} - The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
-func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return core.None, err
+func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[1], types.Int)
+	size, err := arr.Length(ctx)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
+
+	if size == 0 {
+		return runtime.NewFloat(math.NaN()), nil
+	}
+
+	num, err := runtime.CastInt(args[1])
+
+	if err != nil {
+		return runtime.None, err
+	}
+
+	percent := runtime.Float(num)
 
 	// TODO: Implement different methods
 	//method := "rank"
 	//
 	//if len(args) > 2 {
-	//	err = core.ValidateType(args[2], core.StringType)
+	//	err = runtime.ValidateType(args[2], runtime.StringType)
 	//
 	//	if err != nil {
 	//		return values.None, err
@@ -51,39 +58,44 @@ func Percentile(_ context.Context, args ...core.Value) (core.Value, error) {
 	//	}
 	//}
 
-	arr := args[0].(*internal.Array)
-	percent := core.Float(args[1].(core.Int))
-
-	if arr.Length() == 0 {
-		return core.NewFloat(math.NaN()), nil
-	}
-
 	if percent <= 0 || percent > 100 {
-		return core.NewFloat(math.NaN()), errors.New("input is outside of range")
+		return runtime.NaN(), errors.New("input is outside of range")
 	}
 
-	sorted := arr.Sort()
+	sorted, err := arr.SortDesc(ctx)
+
+	if err != nil {
+		return runtime.NaN(), err
+	}
 
 	// Multiply percent by length of input
-	l := core.Float(sorted.Length())
+	l := runtime.Float(size)
 	index := (percent / 100) * l
-	even := core.Float(core.Int(index))
-
-	var percentile core.Value
+	even := runtime.Float(runtime.Int(index))
 
 	// Check if the index is a whole number
 	switch {
 	case index == even:
-		i := int(index)
-		percentile = sorted.Get(i - 1)
+		i := runtime.Int(index)
+		return sorted.Get(ctx, i-1)
 	case index > 1:
 		// Convert float to int via truncation
-		i := int(index)
+		i := runtime.Int(index)
 		// Find the average of the index and following values
-		percentile, _ = mean(internal.NewArrayWith(sorted.Get(i-1), sorted.Get(i)))
-	default:
-		return core.NewFloat(math.NaN()), errors.New("input is outside of range")
-	}
+		aVal, err := sorted.Get(ctx, i-1)
 
-	return percentile, nil
+		if err != nil {
+			return runtime.None, err
+		}
+
+		bVal, err := sorted.Get(ctx, i)
+
+		if err != nil {
+			return runtime.None, err
+		}
+
+		return mean(ctx, runtime.NewArrayWith(aVal, bVal))
+	default:
+		return runtime.NaN(), errors.New("input is outside of range")
+	}
 }

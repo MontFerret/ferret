@@ -4,8 +4,9 @@ import (
 	"context"
 	"math"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // ATAN2 returns the arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
@@ -13,21 +14,15 @@ import (
 // @param {Int | Float} number2 - Input number.
 // @return {Float} - The arc tangent of y/x, using the signs of the two to determine the quadrant of the return value.
 func Atan2(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 2)
-
-	if err != nil {
+	if err := core.ValidateArgs(args, 2, 2); err != nil {
 		return core.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Int, types.Float)
-
-	if err != nil {
+	if err := runtime.AssertNumber(args[0]); err != nil {
 		return core.None, err
 	}
 
-	err = core.ValidateType(args[1], types.Int, types.Float)
-
-	if err != nil {
+	if err := runtime.AssertNumber(args[1]); err != nil {
 		return core.None, err
 	}
 

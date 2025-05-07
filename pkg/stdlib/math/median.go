@@ -4,47 +4,47 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // MEDIAN returns the median of the values in array.
 // @param {Int[] | Float[]} array - arrayList of numbers.
 // @return {Float} - The median of the values in array.
-func Median(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return core.None, err
+func Median(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-	sorted := arr.Sort()
+	sorted, err := arr.SortDesc(ctx)
 
-	l := sorted.Length()
+	if err != nil {
+		return runtime.None, err
+	}
 
-	var median core.Value
+	size, err := sorted.Length(ctx)
+
+	if err != nil {
+		return runtime.None, err
+	}
 
 	switch {
-	case l == 0:
-		return core.NewFloat(math.NaN()), nil
-	case l%2 == 0:
-		median, err = mean(sorted.Slice(l/2-1, l/2+1))
+	case size == 0:
+		return runtime.NewFloat(math.NaN()), nil
+	case size%2 == 0:
+		sliced, err := sorted.Slice(ctx, 0, size)
 
 		if err != nil {
-			return core.None, nil
+			return runtime.None, err
 		}
-	default:
-		median = sorted.Get(l / 2)
-	}
 
-	return median, nil
+		return mean(ctx, sliced)
+	default:
+		return sorted.Get(ctx, size/2)
+	}
 }

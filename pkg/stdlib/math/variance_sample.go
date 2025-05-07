@@ -4,33 +4,34 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // VARIANCE_SAMPLE returns the sample variance of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sample variance.
-func SampleVariance(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func SampleVariance(ctx context.Context, args ...core.Value) (core.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
+	}
+
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Array)
+	size, err := arr.Length(ctx)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-
-	if arr.Length() == 0 {
-		return core.NewFloat(math.NaN()), nil
+	if size == 0 {
+		return runtime.NewFloat(math.NaN()), nil
 	}
 
-	return variance(arr, core.NewInt(1)), nil
+	return variance(ctx, arr, core.NewInt(1))
 }

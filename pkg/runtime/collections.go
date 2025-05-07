@@ -25,6 +25,7 @@ type (
 		Measurable
 		Cloneable
 		Iterable
+		Sortable
 
 		IsEmpty(ctx context.Context) (Boolean, error)
 		Clear(ctx context.Context) error
@@ -51,8 +52,6 @@ type (
 		Last(context.Context) (Value, error)
 
 		Slice(ctx context.Context, start, end Int) (List, error)
-		Sort(ctx context.Context, ascending Boolean) (List, error)
-		SortWith(ctx context.Context, comparator Comparator) (List, error)
 
 		ForEach(ctx context.Context, predicate IndexedPredicate) error
 	}

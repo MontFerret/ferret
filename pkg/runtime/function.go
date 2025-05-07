@@ -15,6 +15,14 @@ type (
 	Function = func(ctx context.Context, args ...Value) (Value, error)
 )
 
+func ErrorArg(err error, pos int) error {
+	return Errorf(
+		ErrInvalidArgumentType,
+		"expected argument %d to be: %s",
+		pos+1, err.Error(),
+	)
+}
+
 func ValidateArgs(args []Value, minimum, maximum int) error {
 	count := len(args)
 
@@ -29,6 +37,22 @@ func ValidateArgs(args []Value, minimum, maximum int) error {
 	}
 
 	return nil
+}
+
+func ValidateArgType(args []Value, pos int, assertion TypeAssertion) error {
+	if pos >= len(args) {
+		return nil
+	}
+
+	arg := args[pos]
+
+	err := assertion(arg)
+
+	if err == nil {
+		return nil
+	}
+
+	return ErrorArg(err, pos)
 }
 
 // NewFunctions returns new empty Functions.

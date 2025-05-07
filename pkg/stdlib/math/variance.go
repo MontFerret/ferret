@@ -1,42 +1,50 @@
 package math
 
 import (
-	"math"
+	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func variance(input *internal.Array, sample core.Int) core.Float {
-	if input.Length() == 0 {
-		return core.NewFloat(math.NaN())
+func variance(ctx context.Context, input runtime.List, sample runtime.Int) (runtime.Float, error) {
+	size, err := input.Length(ctx)
+
+	if err != nil {
+		return runtime.NaN(), err
 	}
 
-	m, _ := mean(input)
+	if size == 0 {
+		return runtime.NaN(), nil
+	}
 
-	var err error
-	var variance core.Float
+	m, err := mean(ctx, input)
 
-	input.ForEach(func(value core.Value, idx int) bool {
-		err = core.ValidateType(value, types.Int, types.Float)
+	if err != nil {
+		return runtime.NaN(), err
+	}
 
-		if err != nil {
-			return false
+	var variance runtime.Float
+
+	err = input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		if err = runtime.AssertNumber(value); err != nil {
+			return false, err
 		}
 
-		n := core.Float(toFloat(value))
+		n := runtime.Float(toFloat(value))
 
 		variance += (n - m) * (n - m)
 
-		return true
+		return true, nil
 	})
+
+	if err != nil {
+		return runtime.NaN(), err
+	}
 
 	// When getting the mean of the squared differences
 	// "sample" will allow us to know if it's a sample
 	// or population and whether to subtract by one or not
-	l := core.Float(input.Length() - (1 * int(sample)))
+	l := runtime.Float(size - (1 * sample))
 
-	return variance / l
+	return variance / l, nil
 }
