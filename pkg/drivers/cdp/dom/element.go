@@ -512,7 +512,7 @@ func (el *HTMLElement) ClickBySelectorAll(ctx context.Context, selector drivers.
 		return err
 	}
 
-	elements.ForEach(func(value core.Value, idx int) bool {
+	elements.ForEach(func(value core.Value, _ int) bool {
 		found := value.(*HTMLElement)
 
 		if e := found.Click(ctx, count); e != nil {

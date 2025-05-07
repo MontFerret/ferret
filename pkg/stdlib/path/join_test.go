@@ -15,7 +15,7 @@ func TestJoin(t *testing.T) {
 		Convey("It should return an empty string without error", func() {
 			out, err := path.Join(context.Background())
 
-			So(out, ShouldEqual, "")
+			So(out.Unwrap(), ShouldEqual, "")
 			So(err, ShouldBeNil)
 		})
 	})
@@ -43,7 +43,7 @@ func TestJoin(t *testing.T) {
 			values.NewArrayWith(values.NewString("pkg"), values.NewString("path")),
 		)
 
-		So(out, ShouldEqual, "pkg/path")
+		So(out.Unwrap(), ShouldEqual, "pkg/path")
 	})
 
 	Convey("Join('pkg', 'path') should return 'pkg/path'", t, func() {
@@ -52,6 +52,6 @@ func TestJoin(t *testing.T) {
 			values.NewString("pkg"), values.NewString("path"),
 		)
 
-		So(out, ShouldEqual, "pkg/path")
+		So(out.Unwrap(), ShouldEqual, "pkg/path")
 	})
 }

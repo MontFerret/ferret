@@ -33,6 +33,6 @@ func TestDir(t *testing.T) {
 			values.NewString("pkg/path/dir.go"),
 		)
 
-		So(out, ShouldEqual, "pkg/path")
+		So(out.Unwrap(), ShouldEqual, "pkg/path")
 	})
 }

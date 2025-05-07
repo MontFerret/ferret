@@ -30,9 +30,9 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	var max float64
+	var maxValue float64
 
-	arr.ForEach(func(value core.Value, idx int) bool {
+	arr.ForEach(func(value core.Value, _ int) bool {
 		err = core.ValidateType(value, types.Int, types.Float)
 
 		if err != nil {
@@ -41,8 +41,8 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		fv := toFloat(value)
 
-		if fv > max {
-			max = fv
+		if fv > maxValue {
+			maxValue = fv
 		}
 
 		return true
@@ -52,5 +52,5 @@ func Max(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	return values.NewFloat(max), nil
+	return values.NewFloat(maxValue), nil
 }

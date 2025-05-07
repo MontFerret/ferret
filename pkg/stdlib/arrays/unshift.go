@@ -57,7 +57,7 @@ func Unshift(_ context.Context, args ...core.Value) (core.Value, error) {
 		// if not, we will terminate the loop and return a copy of an array
 		result.Push(value)
 
-		arr.ForEach(func(el core.Value, idx int) bool {
+		arr.ForEach(func(el core.Value, _ int) bool {
 			if el.Compare(value) != 0 {
 				result.Push(el)
 

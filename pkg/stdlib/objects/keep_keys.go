@@ -44,7 +44,7 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 	var val core.Value
 	var exists values.Boolean
 
-	keys.ForEach(func(keyVal core.Value, idx int) bool {
+	keys.ForEach(func(keyVal core.Value, _ int) bool {
 		key = keyVal.(values.String)
 
 		if val, exists = obj.Get(key); exists {

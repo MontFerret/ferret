@@ -44,7 +44,7 @@ func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
 	result := values.NewArray(int(arr.Length()))
 
 	counter := 0
-	arr.ForEach(func(item core.Value, idx int) bool {
+	arr.ForEach(func(item core.Value, _ int) bool {
 		remove := item.Compare(value) == 0
 
 		if remove {

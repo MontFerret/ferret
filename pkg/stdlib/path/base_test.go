@@ -33,7 +33,7 @@ func TestBase(t *testing.T) {
 			values.NewString(""),
 		)
 
-		So(out, ShouldEqual, ".")
+		So(out.Unwrap(), ShouldEqual, ".")
 	})
 
 	Convey("Base('.') should return '.'", t, func() {
@@ -42,7 +42,7 @@ func TestBase(t *testing.T) {
 			values.NewString("."),
 		)
 
-		So(out, ShouldEqual, ".")
+		So(out.Unwrap(), ShouldEqual, ".")
 	})
 
 	Convey("Base('pkg/path/base.go') should return 'base.go'", t, func() {
@@ -51,6 +51,6 @@ func TestBase(t *testing.T) {
 			values.NewString("pkg/path/base.go"),
 		)
 
-		So(out, ShouldEqual, "base.go")
+		So(out.Unwrap(), ShouldEqual, "base.go")
 	})
 }

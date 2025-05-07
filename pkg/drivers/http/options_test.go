@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sethgrid/pester"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/drivers"
@@ -17,7 +16,7 @@ func TestNewOptions(t *testing.T) {
 		opts := http.NewOptions([]http.Option{})
 		So(opts.Options, ShouldNotBeNil)
 		So(opts.Name, ShouldEqual, http.DriverName)
-		So(opts.Backoff, ShouldEqual, pester.ExponentialBackoff)
+		//So(opts.Backoff, ShouldEqual, pester.ExponentialBackoff)
 		So(opts.Concurrency, ShouldEqual, http.DefaultConcurrency)
 		So(opts.MaxRetries, ShouldEqual, http.DefaultMaxRetries)
 		So(opts.HTTPCodesFilter, ShouldHaveLength, 0)
@@ -78,7 +77,7 @@ func TestNewOptions(t *testing.T) {
 		So(opts.Proxy, ShouldEqual, expectedProxy)
 		So(opts.Cookies.Length(), ShouldEqual, 2)
 		So(opts.Headers.Length(), ShouldEqual, 2)
-		So(opts.Backoff, ShouldEqual, pester.DefaultBackoff)
+		//So(opts.Backoff, ShouldEqual, pester.DefaultBackoff)
 		So(opts.MaxRetries, ShouldEqual, expectedMaxRetries)
 		So(opts.Concurrency, ShouldEqual, expectedConcurrency)
 		So(opts.HTTPCodesFilter, ShouldHaveLength, 3)

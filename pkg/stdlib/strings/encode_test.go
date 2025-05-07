@@ -34,7 +34,7 @@ func TestEncodedURIComponent(t *testing.T) {
 				values.NewString("https://github.com/MontFerret/ferret"),
 			)
 
-			So(out, ShouldEqual, "https%3A%2F%2Fgithub.com%2FMontFerret%2Fferret")
+			So(out.Unwrap(), ShouldEqual, "https%3A%2F%2Fgithub.com%2FMontFerret%2Fferret")
 		})
 	})
 }
@@ -119,6 +119,6 @@ func TestToBase64(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldNotEqual, "foobar")
+		So(out.Unwrap(), ShouldNotEqual, "foobar")
 	})
 }

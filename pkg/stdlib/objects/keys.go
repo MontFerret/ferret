@@ -38,7 +38,7 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	oKeys := make([]string, 0, obj.Length())
 
-	obj.ForEach(func(value core.Value, key string) bool {
+	obj.ForEach(func(_ core.Value, key string) bool {
 		oKeys = append(oKeys, key)
 
 		return true

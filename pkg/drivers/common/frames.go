@@ -17,7 +17,7 @@ func CollectFrames(ctx context.Context, receiver *values.Array, doc drivers.HTML
 		return err
 	}
 
-	children.ForEach(func(value core.Value, idx int) bool {
+	children.ForEach(func(value core.Value, _ int) bool {
 		childDoc, ok := value.(drivers.HTMLDocument)
 
 		if !ok {

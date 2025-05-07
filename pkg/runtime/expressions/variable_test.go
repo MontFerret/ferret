@@ -34,7 +34,7 @@ func TestNewVariableExpression(t *testing.T) {
 		ret, _ := expressions.NewVariableExpression(sourceMap, "key")
 		value, err := ret.Exec(context.TODO(), rootScope)
 
-		So(value, ShouldEqual, "value")
+		So(value.Unwrap(), ShouldEqual, "value")
 		So(err, ShouldBeNil)
 	})
 }
@@ -64,7 +64,7 @@ func TestNewVariableDeclarationExpression(t *testing.T) {
 		value, _ := rootScope.GetVariable("key")
 		value2, _ := rootScope.GetVariable("keyTwo")
 
-		So(value, ShouldEqual, "value")
-		So(value2, ShouldEqual, "value")
+		So(value.Unwrap(), ShouldEqual, "value")
+		So(value2.Unwrap(), ShouldEqual, "value")
 	})
 }

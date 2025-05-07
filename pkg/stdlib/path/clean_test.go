@@ -33,7 +33,7 @@ func TestClean(t *testing.T) {
 			values.NewString("pkg//path//clean.go"),
 		)
 
-		So(out, ShouldEqual, "pkg/path/clean.go")
+		So(out.Unwrap(), ShouldEqual, "pkg/path/clean.go")
 	})
 
 	Convey("Clean('/cmd/main/../../..') should return '/'", t, func() {
@@ -42,6 +42,6 @@ func TestClean(t *testing.T) {
 			values.NewString("/cmd/main/../../.."),
 		)
 
-		So(out, ShouldEqual, "/")
+		So(out.Unwrap(), ShouldEqual, "/")
 	})
 }

@@ -218,7 +218,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 	req.Header.Set("Pragma", "no-cache")
 
 	if params.Headers != nil {
-		params.Headers.ForEach(func(value []string, key string) bool {
+		params.Headers.ForEach(func(_ []string, key string) bool {
 			v := params.Headers.Get(key)
 
 			req.Header.Set(key, v)
@@ -234,7 +234,7 @@ func (drv *Driver) makeRequest(ctx context.Context, req *http.Request, params dr
 	}
 
 	if params.Cookies != nil {
-		params.Cookies.ForEach(func(value drivers.HTTPCookie, key values.String) bool {
+		params.Cookies.ForEach(func(_ drivers.HTTPCookie, key values.String) bool {
 			v, exist := params.Cookies.Get(key)
 			if !exist {
 				return false

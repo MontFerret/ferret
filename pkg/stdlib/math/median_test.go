@@ -19,7 +19,7 @@ func TestMedian(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2)
+		So(out.Unwrap(), ShouldEqual, 2)
 
 		out, err = math.Average(context.Background(), values.NewArrayWith(
 			values.NewInt(1),
@@ -29,7 +29,7 @@ func TestMedian(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2.5)
+		So(out.Unwrap(), ShouldEqual, 2.5)
 
 		out, err = math.Average(context.Background(), values.NewArrayWith(
 			values.NewInt(2),
@@ -39,7 +39,7 @@ func TestMedian(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2.5)
+		So(out.Unwrap(), ShouldEqual, 2.5)
 
 		out, err = math.Average(context.Background(), values.NewArrayWith(
 			values.None,
@@ -48,6 +48,6 @@ func TestMedian(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, values.None)
+		So(out.Unwrap(), ShouldBeNil)
 	})
 }

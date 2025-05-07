@@ -15,11 +15,11 @@ func TestDegrees(t *testing.T) {
 		out, err := math.Degrees(context.Background(), values.NewFloat(0.7853981633974483))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 45)
+		So(out.Unwrap(), ShouldEqual, 45)
 
 		out, err = math.Degrees(context.Background(), values.NewFloat(3.141592653589793))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 180)
+		So(out.Unwrap(), ShouldEqual, 180)
 	})
 }

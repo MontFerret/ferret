@@ -16,7 +16,7 @@ func mean(input *values.Array) (values.Float, error) {
 	var err error
 	var sum float64
 
-	input.ForEach(func(value core.Value, idx int) bool {
+	input.ForEach(func(value core.Value, _ int) bool {
 		err = core.ValidateType(value, types.Int, types.Float)
 
 		if err != nil {

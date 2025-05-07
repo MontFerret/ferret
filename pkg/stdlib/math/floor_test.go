@@ -15,12 +15,12 @@ func TestFloor(t *testing.T) {
 		out, err := math.Floor(context.Background(), values.NewFloat(2.49))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2)
+		So(out.Unwrap(), ShouldEqual, 2)
 
 		out, err = math.Floor(context.Background(), values.NewFloat(2.50))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2)
+		So(out.Unwrap(), ShouldEqual, 2)
 
 		out, err = math.Floor(context.Background(), values.NewFloat(-2.50))
 

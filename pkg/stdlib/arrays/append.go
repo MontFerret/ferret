@@ -43,7 +43,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 	next := values.NewArray(int(arr.Length()) + 1)
 
 	if !unique {
-		arr.ForEach(func(item core.Value, idx int) bool {
+		arr.ForEach(func(item core.Value, _ int) bool {
 			next.Push(item)
 
 			return true
@@ -56,7 +56,7 @@ func Append(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	hasDuplicate := false
 
-	arr.ForEach(func(item core.Value, idx int) bool {
+	arr.ForEach(func(item core.Value, _ int) bool {
 		next.Push(item)
 
 		if !hasDuplicate {

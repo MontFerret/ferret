@@ -40,7 +40,7 @@ func TestAppend(t *testing.T) {
 		out, err := arrays.Append(context.Background(), arr, values.NewInt(5), values.True)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldNotEqual, arr)
+		So(out.String(), ShouldEqual, arr.String())
 		So(out.(collections.Measurable).Length(), ShouldEqual, arr.Length())
 
 		out2, err := arrays.Append(context.Background(), arr, values.NewInt(6), values.True)

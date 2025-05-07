@@ -458,7 +458,7 @@ func ToArray(ctx context.Context, input core.Value) *Array {
 	case *Object:
 		arr := NewArray(int(value.Length()))
 
-		value.ForEach(func(value core.Value, key string) bool {
+		value.ForEach(func(value core.Value, _ string) bool {
 			arr.Push(value)
 
 			return true

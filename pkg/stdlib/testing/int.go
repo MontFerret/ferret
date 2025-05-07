@@ -12,12 +12,12 @@ import (
 // @param {Any} actual - Actual value.
 // @param {String} [message] - Message to display on error.
 var Int = base.Assertion{
-	DefaultMessage: func(args []core.Value) string {
+	DefaultMessage: func(_ []core.Value) string {
 		return "be int"
 	},
 	MinArgs: 1,
 	MaxArgs: 2,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+	Fn: func(_ context.Context, args []core.Value) (bool, error) {
 		return args[0].Type() == types.Int, nil
 	},
 }

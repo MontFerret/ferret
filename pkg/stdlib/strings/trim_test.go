@@ -27,7 +27,7 @@ func TestLTrim(t *testing.T) {
 			values.NewString("  foo bar  "),
 		)
 
-		So(out, ShouldEqual, "foo bar  ")
+		So(out.Unwrap(), ShouldEqual, "foo bar  ")
 	})
 
 	Convey("LTrim('--==[foo-bar]==--', '-=[]') should return 'foo-bar]==--'", t, func() {
@@ -37,7 +37,7 @@ func TestLTrim(t *testing.T) {
 			values.NewString("-=[]"),
 		)
 
-		So(out, ShouldEqual, "foo-bar]==--")
+		So(out.Unwrap(), ShouldEqual, "foo-bar]==--")
 	})
 }
 
@@ -58,7 +58,7 @@ func TestRTrim(t *testing.T) {
 			values.NewString("  foo bar  "),
 		)
 
-		So(out, ShouldEqual, "  foo bar")
+		So(out.Unwrap(), ShouldEqual, "  foo bar")
 	})
 
 	Convey("LTrim('--==[foo-bar]==--', '-=[]') should return '--==[foo-bar'", t, func() {
@@ -68,7 +68,7 @@ func TestRTrim(t *testing.T) {
 			values.NewString("-=[]"),
 		)
 
-		So(out, ShouldEqual, "--==[foo-bar")
+		So(out.Unwrap(), ShouldEqual, "--==[foo-bar")
 	})
 }
 
@@ -89,7 +89,7 @@ func TestTrim(t *testing.T) {
 			values.NewString("  foo bar  "),
 		)
 
-		So(out, ShouldEqual, "foo bar")
+		So(out.Unwrap(), ShouldEqual, "foo bar")
 	})
 
 	Convey("Trim('--==[foo-bar]==--', '-=[]') should return 'foo-bar'", t, func() {
@@ -99,6 +99,6 @@ func TestTrim(t *testing.T) {
 			values.NewString("-=[]"),
 		)
 
-		So(out, ShouldEqual, "foo-bar")
+		So(out.Unwrap(), ShouldEqual, "foo-bar")
 	})
 }

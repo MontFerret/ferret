@@ -15,16 +15,16 @@ func TestRadians(t *testing.T) {
 		out, err := math.Radians(context.Background(), values.NewInt(180))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 3.141592653589793)
+		So(out.Unwrap(), ShouldEqual, 3.141592653589793)
 
 		out, err = math.Radians(context.Background(), values.NewFloat(90))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1.5707963267948966)
+		So(out.Unwrap(), ShouldEqual, 1.5707963267948966)
 
 		out, err = math.Radians(context.Background(), values.NewFloat(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 0)
+		So(out.Unwrap(), ShouldEqual, 0)
 	})
 }

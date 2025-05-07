@@ -15,12 +15,12 @@ func TestLog2(t *testing.T) {
 		out, err := math.Log2(context.Background(), values.NewFloat(1024))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 10)
+		So(out.Unwrap(), ShouldEqual, 10)
 
 		out, err = math.Log2(context.Background(), values.NewFloat(8))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 3)
+		So(out.Unwrap(), ShouldEqual, 3)
 
 		out, err = math.Log2(context.Background(), values.NewFloat(0))
 

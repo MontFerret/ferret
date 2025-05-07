@@ -40,8 +40,8 @@ func TestFromBase64(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldNotEqual, "Zm9vYmFy")
-		So(out, ShouldEqual, "foobar")
+		So(out.Unwrap(), ShouldNotEqual, "Zm9vYmFy")
+		So(out.Unwrap(), ShouldEqual, "foobar")
 	})
 }
 

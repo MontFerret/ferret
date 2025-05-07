@@ -22,7 +22,7 @@ func DateMinute(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, err
 	}
 
-	min := args[0].(values.DateTime).Minute()
+	minValue := args[0].(values.DateTime).Minute()
 
-	return values.NewInt(min), nil
+	return values.NewInt(minValue), nil
 }

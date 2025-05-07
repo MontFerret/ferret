@@ -18,8 +18,8 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewInt(1)
 				arg2 := values.NewInt(2)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(3))
-				So(operators.Add(arg2, arg1), ShouldEqual, values.NewInt(3))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, 3)
+				So(operators.Add(arg2, arg1).Unwrap(), ShouldEqual, 3)
 			})
 		})
 
@@ -28,8 +28,8 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewFloat(1.1)
 				arg2 := values.NewFloat(2.1)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(3.2))
-				So(operators.Add(arg2, arg1), ShouldEqual, values.NewFloat(3.2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, 3.2)
+				So(operators.Add(arg2, arg1).Unwrap(), ShouldEqual, 3.2)
 			})
 		})
 
@@ -38,14 +38,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewInt(1)
 				arg2 := values.NewFloat(2.1)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(3.1))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, 3.1)
 			})
 
 			Convey("1.1 + 2 = 3.1", func() {
 				arg1 := values.NewFloat(1.1)
 				arg2 := values.NewInt(2)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(3.1))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, 3.1)
 			})
 		})
 
@@ -54,14 +54,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewInt(1)
 				arg2 := values.NewString("a")
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewString("1a"))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, "1a")
 			})
 
 			Convey("'a' + 1 = 'a1'", func() {
 				arg1 := values.NewString("a")
 				arg2 := values.NewInt(1)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewString("a1"))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, "a1")
 			})
 		})
 
@@ -70,14 +70,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewFloat(1.1)
 				arg2 := values.NewString("a")
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewString("1.1a"))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, "1.1a")
 			})
 
 			Convey("'a' + 1.1 = 'a1.1'", func() {
 				arg1 := values.NewString("a")
 				arg2 := values.NewFloat(1.1)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewString("a1.1"))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, "a1.1")
 			})
 		})
 
@@ -86,14 +86,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewString("1")
 				arg2 := values.NewString("2")
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewString("12"))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, "12")
 			})
 
 			Convey("'a' + 'b' = 'ab'", func() {
 				arg1 := values.NewString("a")
 				arg2 := values.NewString("b")
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewString("ab"))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, "ab")
 			})
 		})
 
@@ -102,14 +102,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.True
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(2))
 			})
 
 			Convey("TRUE + FALSE = 1", func() {
 				arg1 := values.True
 				arg2 := values.False
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 		})
 
@@ -118,14 +118,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.NewInt(1)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(2))
 			})
 
 			Convey("1 + FALSE = 1", func() {
 				arg1 := values.NewInt(1)
 				arg2 := values.False
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 		})
 
@@ -134,14 +134,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.NewFloat(1.2)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(2.2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(2.2))
 			})
 
 			Convey("1.2 + FALSE = 1.2", func() {
 				arg1 := values.NewFloat(1.2)
 				arg2 := values.False
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(1.2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1.2))
 			})
 		})
 
@@ -150,7 +150,7 @@ func TestAdd(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.None
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -159,14 +159,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.NewInt(1)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("1 + NONE = 1", func() {
 				arg1 := values.NewInt(1)
 				arg2 := values.None
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 		})
 
@@ -175,14 +175,14 @@ func TestAdd(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.NewFloat(1.2)
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(1.2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1.2))
 			})
 
 			Convey("1.2 + NONE = 1.2", func() {
 				arg1 := values.NewFloat(1.2)
 				arg2 := values.None
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewFloat(1.2))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1.2))
 			})
 		})
 
@@ -191,21 +191,21 @@ func TestAdd(t *testing.T) {
 				arg1 := values.NewArrayWith(values.NewInt(1))
 				arg2 := values.NewArrayWith(values.NewInt(2))
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(3))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(3))
 			})
 
 			Convey("[1] + [1, 1] = 3", func() {
 				arg1 := values.NewArrayWith(values.NewInt(1))
 				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(3))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(3))
 			})
 
 			Convey("[1, 2] + [1, 1] = 5", func() {
 				arg1 := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(5))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(5))
 			})
 		})
 
@@ -216,7 +216,7 @@ func TestAdd(t *testing.T) {
 
 				expected := arg1.Time.Unix() + arg2.Time.Unix()
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 		})
 
@@ -227,7 +227,7 @@ func TestAdd(t *testing.T) {
 
 				expected := arg1.Time.Unix() + 1
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 
 			Convey("1 + NOW() = 1+unix", func() {
@@ -236,7 +236,7 @@ func TestAdd(t *testing.T) {
 
 				expected := arg2.Time.Unix() + 1
 
-				So(operators.Add(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Add(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 		})
 
@@ -250,7 +250,7 @@ func TestAdd(t *testing.T) {
 			for _, argN := range args {
 				argN := argN
 				Convey(argN.Type().String(), func() {
-					So(operators.Add(arg1, argN), ShouldEqual, values.NewInt(1))
+					So(operators.Add(arg1, argN).Unwrap(), ShouldEqual, values.NewInt(1))
 				})
 			}
 		})
@@ -264,7 +264,7 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewInt(3)
 				arg2 := values.NewInt(2)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 		})
 
@@ -273,7 +273,7 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewFloat(3.40)
 				arg2 := values.NewFloat(2.20)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, arg1-arg2)
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, arg1-arg2)
 			})
 		})
 
@@ -282,14 +282,14 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewFloat(3.1)
 				arg2 := values.NewInt(2)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, 1.1)
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, 1.1)
 			})
 
 			Convey("3 - 2.1 = 0.9", func() {
 				arg1 := values.NewInt(3)
 				arg2 := values.NewFloat(2.1)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.Float(arg1)-arg2)
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.Float(arg1)-arg2)
 			})
 		})
 
@@ -374,14 +374,14 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.True
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(0))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(0))
 			})
 
 			Convey("TRUE - FALSE = 1", func() {
 				arg1 := values.True
 				arg2 := values.False
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1))
 			})
 		})
 
@@ -390,14 +390,14 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewInt(2)
 				arg2 := values.True
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1))
 			})
 
 			Convey("1 - FALSE = 1", func() {
 				arg1 := values.NewInt(1)
 				arg2 := values.False
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1))
 			})
 		})
 
@@ -406,7 +406,7 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewString("2")
 				arg2 := values.True
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewFloat(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1))
 			})
 
 			Convey("a - FALSE = 1", func() {
@@ -422,14 +422,14 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewArrayWith(values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(1))
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("[2] - [1, 1]", func() {
 				arg1 := values.NewArrayWith(values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -438,14 +438,14 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewInt(2)
 				arg2 := values.NewArrayWith(values.NewInt(1))
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("[1, '1'] - 2", func() {
 				arg1 := values.NewArrayWith(values.NewInt(1), values.NewString("1"))
 				arg2 := values.NewInt(2)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -476,14 +476,14 @@ func TestSubtract(t *testing.T) {
 				arg1 := values.NewInt(2)
 				arg2 := values.NewArrayWith(values.NewInt(1))
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("[1, '1'] - 2", func() {
 				arg1 := values.NewArrayWith(values.NewInt(1), values.NewString("1"))
 				arg2 := values.NewInt(2)
 
-				So(operators.Subtract(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Subtract(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -491,7 +491,7 @@ func TestSubtract(t *testing.T) {
 			Convey("NOW() - NOW() = 0", func() {
 				arg1 := values.NewCurrentDateTime()
 
-				So(operators.Subtract(arg1, arg1), ShouldEqual, values.NewInt(0))
+				So(operators.Subtract(arg1, arg1).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -503,7 +503,7 @@ func TestSubtract(t *testing.T) {
 			}
 
 			for _, argN := range args {
-				So(operators.Subtract(arg1, argN), ShouldEqual, values.NewInt(3))
+				So(operators.Subtract(arg1, argN).Unwrap(), ShouldEqual, values.NewInt(3))
 			}
 		})
 	})
@@ -516,8 +516,8 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewInt(2)
 				arg2 := values.NewInt(2)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(4))
-				So(operators.Multiply(arg2, arg1), ShouldEqual, values.NewInt(4))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(4))
+				So(operators.Multiply(arg2, arg1).Unwrap(), ShouldEqual, values.NewInt(4))
 			})
 		})
 
@@ -526,8 +526,8 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewFloat(2.0)
 				arg2 := values.NewFloat(2.1)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(4.2))
-				So(operators.Multiply(arg2, arg1), ShouldEqual, values.NewFloat(4.2))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(4.2))
+				So(operators.Multiply(arg2, arg1).Unwrap(), ShouldEqual, values.NewFloat(4.2))
 			})
 		})
 
@@ -536,14 +536,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewInt(2)
 				arg2 := values.NewFloat(2.2)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(4.4))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(4.4))
 			})
 
 			Convey("2.2 * 2 = 4.4", func() {
 				arg1 := values.NewFloat(2.2)
 				arg2 := values.NewInt(2)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(4.4))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(4.4))
 			})
 		})
 
@@ -552,14 +552,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewInt(1)
 				arg2 := values.NewString("a")
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 
 			Convey("'a' * 1 = 0", func() {
 				arg1 := values.NewString("a")
 				arg2 := values.NewInt(1)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -568,14 +568,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewFloat(1.1)
 				arg2 := values.NewString("a")
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 
 			Convey("'a' * 1.1 = 0", func() {
 				arg1 := values.NewString("a")
 				arg2 := values.NewFloat(1.1)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -584,14 +584,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewString("2")
 				arg2 := values.NewString("2")
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(4))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(4))
 			})
 
 			Convey("'a' * 'b' = 0", func() {
 				arg1 := values.NewString("a")
 				arg2 := values.NewString("b")
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -600,14 +600,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.True
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("TRUE * FALSE = 0", func() {
 				arg1 := values.True
 				arg2 := values.False
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -616,14 +616,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.NewInt(2)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(2))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(2))
 			})
 
 			Convey("1 * FALSE = 0", func() {
 				arg1 := values.NewInt(1)
 				arg2 := values.False
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -632,14 +632,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.NewFloat(1.2)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(1.2))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(1.2))
 			})
 
 			Convey("1.2 + FALSE = 0", func() {
 				arg1 := values.NewFloat(1.2)
 				arg2 := values.False
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -648,7 +648,7 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.None
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -657,14 +657,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.NewInt(1)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 
 			Convey("1 * NONE = 0", func() {
 				arg1 := values.NewInt(1)
 				arg2 := values.None
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -673,14 +673,14 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.NewFloat(1.2)
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(0))
 			})
 
 			Convey("1.2 + NONE = 0", func() {
 				arg1 := values.NewFloat(1.2)
 				arg2 := values.None
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewFloat(0))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(0))
 			})
 		})
 
@@ -689,21 +689,21 @@ func TestMultiply(t *testing.T) {
 				arg1 := values.NewArrayWith(values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(2))
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(4))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(4))
 			})
 
 			Convey("[2] * [2, 3] = 10", func() {
 				arg1 := values.NewArrayWith(values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(2), values.NewInt(3))
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(10))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(10))
 			})
 
 			Convey("[1, 2] * [1, 1] = 6", func() {
 				arg1 := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(6))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(6))
 			})
 		})
 
@@ -714,7 +714,7 @@ func TestMultiply(t *testing.T) {
 
 				expected := arg1.Time.Unix() * arg2.Time.Unix()
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 		})
 
@@ -725,7 +725,7 @@ func TestMultiply(t *testing.T) {
 
 				expected := arg1.Time.Unix() * 1
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 
 			Convey("1 * NOW() = unix", func() {
@@ -734,7 +734,7 @@ func TestMultiply(t *testing.T) {
 
 				expected := arg2.Time.Unix() * 1
 
-				So(operators.Multiply(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Multiply(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 		})
 
@@ -748,7 +748,7 @@ func TestMultiply(t *testing.T) {
 			for _, argN := range args {
 				argN := argN
 				Convey(argN.Type().String(), func() {
-					So(operators.Multiply(arg1, argN), ShouldEqual, values.NewInt(0))
+					So(operators.Multiply(arg1, argN).Unwrap(), ShouldEqual, values.NewInt(0))
 				})
 			}
 		})
@@ -762,14 +762,14 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewInt(4)
 				arg2 := values.NewInt(2)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(2))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(2))
 			})
 
 			Convey("5 / 2 = 2.5", func() {
 				arg1 := values.NewInt(5)
 				arg2 := values.NewInt(2)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2.5))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(2.5))
 			})
 		})
 
@@ -778,7 +778,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewFloat(4.4)
 				arg2 := values.NewFloat(2.2)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(2))
 			})
 		})
 
@@ -787,14 +787,14 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewInt(5)
 				arg2 := values.NewFloat(2.5)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(2))
 			})
 
 			Convey("4.4 / 2 = 2.2", func() {
 				arg1 := values.NewFloat(4.4)
 				arg2 := values.NewInt(2)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2.2))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(2.2))
 			})
 		})
 
@@ -812,7 +812,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewString("a")
 				arg2 := values.NewInt(1)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -830,7 +830,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewString("a")
 				arg2 := values.NewFloat(1.1)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 		})
 
@@ -839,7 +839,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewString("2")
 				arg2 := values.NewString("2")
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("'a' / 'b' = PANIC", func() {
@@ -857,7 +857,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.True
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("TRUE / FALSE = PANIC", func() {
@@ -875,7 +875,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.NewInt(2)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(0.5))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(0.5))
 			})
 
 			Convey("1 / FALSE = PANIC", func() {
@@ -893,7 +893,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.True
 				arg2 := values.NewFloat(0.5)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(2))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(2))
 			})
 
 			Convey("1.2 / FALSE = PANIC", func() {
@@ -922,7 +922,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.NewInt(1)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(0))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(0))
 			})
 
 			Convey("1 / NONE = PANIC", func() {
@@ -940,7 +940,7 @@ func TestDivide(t *testing.T) {
 				arg1 := values.None
 				arg2 := values.NewFloat(1.2)
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewFloat(0))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewFloat(0))
 			})
 
 			Convey("1.2 / NONE = PANIC", func() {
@@ -958,21 +958,21 @@ func TestDivide(t *testing.T) {
 				arg1 := values.NewArrayWith(values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(2))
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(1))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(1))
 			})
 
 			Convey("[4, 2] / [2] = 3", func() {
 				arg1 := values.NewArrayWith(values.NewInt(4), values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(2))
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(3))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(3))
 			})
 
 			Convey("[4, 2] / [1, 1] = 3", func() {
 				arg1 := values.NewArrayWith(values.NewInt(4), values.NewInt(2))
 				arg2 := values.NewArrayWith(values.NewInt(1), values.NewInt(1))
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(3))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(3))
 			})
 		})
 
@@ -983,7 +983,7 @@ func TestDivide(t *testing.T) {
 
 				expected := arg1.Time.Unix() / arg2.Time.Unix()
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 		})
 
@@ -994,7 +994,7 @@ func TestDivide(t *testing.T) {
 
 				expected := arg1.Time.Unix() / 1
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, values.NewInt(int(expected)))
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, values.NewInt(int(expected)))
 			})
 
 			SkipConvey("1 / NOW() = unix", func() {
@@ -1003,7 +1003,7 @@ func TestDivide(t *testing.T) {
 
 				expected := arg2.Time.Unix() / 1
 
-				So(operators.Divide(arg1, arg2), ShouldEqual, expected)
+				So(operators.Divide(arg1, arg2).Unwrap(), ShouldEqual, expected)
 			})
 		})
 
@@ -1030,25 +1030,25 @@ func TestPositive(t *testing.T) {
 	Convey("converts value to positive", t, func() {
 		Convey("when int", func() {
 			Convey("postive", func() {
-				So(operators.Positive(values.NewInt(1), nil), ShouldEqual, 1)
+				So(operators.Positive(values.NewInt(1), nil).Unwrap(), ShouldEqual, 1)
 			})
 			Convey("negative", func() {
-				So(operators.Positive(values.NewInt(-1), nil), ShouldEqual, -1)
+				So(operators.Positive(values.NewInt(-1), nil).Unwrap(), ShouldEqual, -1)
 			})
 		})
 
 		Convey("when float", func() {
 			Convey("postive", func() {
-				So(operators.Positive(values.NewFloat(1.0), nil), ShouldEqual, 1)
+				So(operators.Positive(values.NewFloat(1.0), nil).Unwrap(), ShouldEqual, 1)
 			})
 			Convey("negative", func() {
-				So(operators.Positive(values.NewFloat(-1.0), nil), ShouldEqual, -1.0)
+				So(operators.Positive(values.NewFloat(-1.0), nil).Unwrap(), ShouldEqual, -1.0)
 			})
 		})
 
 		Convey("non numeric", func() {
 			Convey("string", func() {
-				So(operators.Positive(values.String("1"), nil), ShouldEqual, "1")
+				So(operators.Positive(values.String("1"), nil).Unwrap(), ShouldEqual, "1")
 			})
 		})
 	})
@@ -1058,25 +1058,25 @@ func TestNegative(t *testing.T) {
 	Convey("converts value to negative", t, func() {
 		Convey("when int", func() {
 			Convey("postive", func() {
-				So(operators.Negative(values.NewInt(1), nil), ShouldEqual, -1)
+				So(operators.Negative(values.NewInt(1), nil).Unwrap(), ShouldEqual, -1)
 			})
 			Convey("negative", func() {
-				So(operators.Negative(values.NewInt(-1), nil), ShouldEqual, 1)
+				So(operators.Negative(values.NewInt(-1), nil).Unwrap(), ShouldEqual, 1)
 			})
 		})
 
 		Convey("when float", func() {
 			Convey("postive", func() {
-				So(operators.Negative(values.NewFloat(1.0), nil), ShouldEqual, -1.0)
+				So(operators.Negative(values.NewFloat(1.0), nil).Unwrap(), ShouldEqual, -1.0)
 			})
 			Convey("negative", func() {
-				So(operators.Negative(values.NewFloat(-1.0), nil), ShouldEqual, 1.0)
+				So(operators.Negative(values.NewFloat(-1.0), nil).Unwrap(), ShouldEqual, 1.0)
 			})
 		})
 
 		Convey("non numeric", func() {
 			Convey("string", func() {
-				So(operators.Negative(values.String("1"), nil), ShouldEqual, "1")
+				So(operators.Negative(values.String("1"), nil).Unwrap(), ShouldEqual, "1")
 			})
 		})
 	})
@@ -1086,24 +1086,24 @@ func TestDecrement(t *testing.T) {
 	Convey("decrement values", t, func() {
 		Convey("decrement int", func() {
 			Convey("positives", func() {
-				So(operators.Decrement(values.NewInt(1), nil), ShouldEqual, 0)
+				So(operators.Decrement(values.NewInt(1), nil).Unwrap(), ShouldEqual, 0)
 			})
 			Convey("negatives", func() {
-				So(operators.Decrement(values.NewInt(-1), nil), ShouldEqual, -2)
+				So(operators.Decrement(values.NewInt(-1), nil).Unwrap(), ShouldEqual, -2)
 			})
 		})
 
 		Convey("decrement float", func() {
 			Convey("positives", func() {
-				So(operators.Decrement(values.NewFloat(1.1), nil), ShouldEqual, 0.10000000000000009)
+				So(operators.Decrement(values.NewFloat(1.1), nil).Unwrap(), ShouldEqual, 0.10000000000000009)
 			})
 			Convey("negatives", func() {
-				So(operators.Decrement(values.NewFloat(-1.1), nil), ShouldEqual, -2.1)
+				So(operators.Decrement(values.NewFloat(-1.1), nil).Unwrap(), ShouldEqual, -2.1)
 			})
 		})
 
 		Convey("other values", func() {
-			So(operators.Decrement(values.None, nil), ShouldEqual, -1)
+			So(operators.Decrement(values.None, nil).Unwrap(), ShouldEqual, -1)
 		})
 	})
 }
@@ -1112,24 +1112,24 @@ func TestIncrement(t *testing.T) {
 	Convey("increment values", t, func() {
 		Convey("increment int", func() {
 			Convey("positives", func() {
-				So(operators.Increment(values.NewInt(1), nil), ShouldEqual, 2)
+				So(operators.Increment(values.NewInt(1), nil).Unwrap(), ShouldEqual, 2)
 			})
 			Convey("negatives", func() {
-				So(operators.Increment(values.NewInt(-1), nil), ShouldEqual, 0)
+				So(operators.Increment(values.NewInt(-1), nil).Unwrap(), ShouldEqual, 0)
 			})
 		})
 
 		Convey("Increment float", func() {
 			Convey("positives", func() {
-				So(operators.Increment(values.NewFloat(1.1), nil), ShouldEqual, 2.1)
+				So(operators.Increment(values.NewFloat(1.1), nil).Unwrap(), ShouldEqual, 2.1)
 			})
 			Convey("negatives", func() {
-				So(operators.Increment(values.NewFloat(-1.1), nil), ShouldEqual, -0.10000000000000009)
+				So(operators.Increment(values.NewFloat(-1.1), nil).Unwrap(), ShouldEqual, -0.10000000000000009)
 			})
 		})
 
 		Convey("other values", func() {
-			So(operators.Increment(values.None, nil), ShouldEqual, 1)
+			So(operators.Increment(values.None, nil).Unwrap(), ShouldEqual, 1)
 		})
 	})
 }
@@ -1137,19 +1137,19 @@ func TestIncrement(t *testing.T) {
 func TestEqual(t *testing.T) {
 	Convey("Equality in values", t, func() {
 		Convey("1 == 1", func() {
-			So(operators.Equal(values.NewInt(1), values.NewInt(1)), ShouldEqual, values.True)
+			So(operators.Equal(values.NewInt(1), values.NewInt(1)).Unwrap(), ShouldEqual, true)
 		})
 
 		Convey("1 != 2", func() {
-			So(operators.Equal(values.NewInt(1), values.NewInt(2)), ShouldEqual, values.False)
+			So(operators.Equal(values.NewInt(1), values.NewInt(2)).Unwrap(), ShouldEqual, false)
 		})
 
 		Convey("'hello' == 'hello", func() {
-			So(operators.Equal(values.String("hello"), values.String("hello")), ShouldEqual, values.True)
+			So(operators.Equal(values.String("hello"), values.String("hello")).Unwrap(), ShouldEqual, true)
 		})
 
 		Convey("'foo' != 'bar", func() {
-			So(operators.Equal(values.String("foo"), values.String("bar")), ShouldEqual, values.False)
+			So(operators.Equal(values.String("foo"), values.String("bar")).Unwrap(), ShouldEqual, false)
 		})
 	})
 }
@@ -1157,19 +1157,19 @@ func TestEqual(t *testing.T) {
 func TestNotEqual(t *testing.T) {
 	Convey("Inequality in values", t, func() {
 		Convey("1 == 1", func() {
-			So(operators.NotEqual(values.NewInt(1), values.NewInt(1)), ShouldEqual, values.False)
+			So(operators.NotEqual(values.NewInt(1), values.NewInt(1)).Unwrap(), ShouldEqual, false)
 		})
 
 		Convey("1 != 2", func() {
-			So(operators.NotEqual(values.NewInt(1), values.NewInt(2)), ShouldEqual, values.True)
+			So(operators.NotEqual(values.NewInt(1), values.NewInt(2)).Unwrap(), ShouldEqual, true)
 		})
 
 		Convey("'hello' == 'hello", func() {
-			So(operators.NotEqual(values.String("hello"), values.String("hello")), ShouldEqual, values.False)
+			So(operators.NotEqual(values.String("hello"), values.String("hello")).Unwrap(), ShouldEqual, false)
 		})
 
 		Convey("'foo' != 'bar", func() {
-			So(operators.NotEqual(values.String("foo"), values.String("bar")), ShouldEqual, values.True)
+			So(operators.NotEqual(values.String("foo"), values.String("bar")).Unwrap(), ShouldEqual, true)
 		})
 	})
 }
@@ -1177,23 +1177,23 @@ func TestNotEqual(t *testing.T) {
 func TestModulus(t *testing.T) {
 	Convey("Modulus", t, func() {
 		Convey("5 % 2", func() {
-			So(operators.Modulus(values.NewInt(5), values.NewInt(2)), ShouldEqual, 1)
+			So(operators.Modulus(values.NewInt(5), values.NewInt(2)).Unwrap(), ShouldEqual, 1)
 		})
 
 		Convey("5.0 % 2", func() {
-			So(operators.Modulus(values.NewFloat(5.0), values.NewInt(2)), ShouldEqual, 1)
+			So(operators.Modulus(values.NewFloat(5.0), values.NewInt(2)).Unwrap(), ShouldEqual, 1)
 		})
 
 		Convey("5 % 2.0", func() {
-			So(operators.Modulus(values.NewInt(5), values.NewFloat(2.0)), ShouldEqual, 1)
+			So(operators.Modulus(values.NewInt(5), values.NewFloat(2.0)).Unwrap(), ShouldEqual, 1)
 		})
 
 		Convey("5.1 % 3.2", func() {
-			So(operators.Modulus(values.NewFloat(5.1), values.NewFloat(3.2)), ShouldEqual, 2)
+			So(operators.Modulus(values.NewFloat(5.1), values.NewFloat(3.2)).Unwrap(), ShouldEqual, 2)
 		})
 
 		Convey("Non int or float", func() {
-			So(operators.Modulus(values.String("foo"), values.NewFloat(3.2)), ShouldEqual, 0)
+			So(operators.Modulus(values.String("foo"), values.NewFloat(3.2)).Unwrap(), ShouldEqual, 0)
 		})
 	})
 }
@@ -1201,11 +1201,11 @@ func TestModulus(t *testing.T) {
 func TestGreater(t *testing.T) {
 	Convey("Greater than value", t, func() {
 		Convey("5 > 2", func() {
-			So(operators.Greater(values.NewInt(5), values.NewInt(2)), ShouldEqual, values.True)
+			So(operators.Greater(values.NewInt(5), values.NewInt(2)).Unwrap(), ShouldEqual, true)
 		})
 
 		Convey("2 > 5", func() {
-			So(operators.Greater(values.NewInt(2), values.NewInt(5)), ShouldEqual, values.False)
+			So(operators.Greater(values.NewInt(2), values.NewInt(5)).Unwrap(), ShouldEqual, false)
 		})
 	})
 }
@@ -1213,11 +1213,11 @@ func TestGreater(t *testing.T) {
 func TestGreaterOrEqual(t *testing.T) {
 	Convey("Greater or equal than value", t, func() {
 		Convey("5 >= 5", func() {
-			So(operators.GreaterOrEqual(values.NewInt(5), values.NewInt(5)), ShouldEqual, values.True)
+			So(operators.GreaterOrEqual(values.NewInt(5), values.NewInt(5)).Unwrap(), ShouldEqual, true)
 		})
 
 		Convey("2 >= 5", func() {
-			So(operators.GreaterOrEqual(values.NewInt(2), values.NewInt(5)), ShouldEqual, values.False)
+			So(operators.GreaterOrEqual(values.NewInt(2), values.NewInt(5)).Unwrap(), ShouldEqual, false)
 		})
 	})
 }
@@ -1225,10 +1225,10 @@ func TestGreaterOrEqual(t *testing.T) {
 func TestLess(t *testing.T) {
 	Convey("Less than value", t, func() {
 		Convey("1 < 5", func() {
-			So(operators.Less(values.NewInt(1), values.NewInt(5)), ShouldEqual, values.True)
+			So(operators.Less(values.NewInt(1), values.NewInt(5)).Unwrap(), ShouldEqual, true)
 		})
 		Convey("5 < 2", func() {
-			So(operators.Less(values.NewInt(5), values.NewInt(2)), ShouldEqual, values.False)
+			So(operators.Less(values.NewInt(5), values.NewInt(2)).Unwrap(), ShouldEqual, false)
 		})
 	})
 }
@@ -1236,13 +1236,13 @@ func TestLess(t *testing.T) {
 func TestLessOrEqual(t *testing.T) {
 	Convey("Less than value", t, func() {
 		Convey("1 < 5", func() {
-			So(operators.LessOrEqual(values.NewInt(1), values.NewInt(5)), ShouldEqual, values.True)
+			So(operators.LessOrEqual(values.NewInt(1), values.NewInt(5)).Unwrap(), ShouldEqual, true)
 		})
 		Convey("5 < 2", func() {
-			So(operators.LessOrEqual(values.NewInt(5), values.NewInt(2)), ShouldEqual, values.False)
+			So(operators.LessOrEqual(values.NewInt(5), values.NewInt(2)).Unwrap(), ShouldEqual, false)
 		})
 		Convey("5 <= 5", func() {
-			So(operators.LessOrEqual(values.NewInt(5), values.NewInt(5)), ShouldEqual, values.True)
+			So(operators.LessOrEqual(values.NewInt(5), values.NewInt(5)).Unwrap(), ShouldEqual, true)
 		})
 	})
 }
@@ -1250,34 +1250,34 @@ func TestLessOrEqual(t *testing.T) {
 func TestNot(t *testing.T) {
 	Convey("Invert truthiness", t, func() {
 		Convey("true turns false", func() {
-			So(operators.Not(values.NewBoolean(true), nil), ShouldEqual, values.False)
+			So(operators.Not(values.NewBoolean(true), nil).Unwrap(), ShouldEqual, false)
 		})
 		Convey("false turns true", func() {
-			So(operators.Not(values.NewBoolean(false), nil), ShouldEqual, values.True)
+			So(operators.Not(values.NewBoolean(false), nil).Unwrap(), ShouldEqual, true)
 		})
 		Convey("'' turns true", func() {
-			So(operators.Not(values.NewString(""), nil), ShouldEqual, values.True)
+			So(operators.Not(values.NewString(""), nil).Unwrap(), ShouldEqual, true)
 		})
 		Convey("'foo' turns false", func() {
-			So(operators.Not(values.NewString("foo"), nil), ShouldEqual, values.False)
+			So(operators.Not(values.NewString("foo"), nil).Unwrap(), ShouldEqual, false)
 		})
 		Convey("1 turns false", func() {
-			So(operators.Not(values.NewInt(1), nil), ShouldEqual, values.False)
+			So(operators.Not(values.NewInt(1), nil).Unwrap(), ShouldEqual, false)
 		})
 		Convey("0 turns true", func() {
-			So(operators.Not(values.NewInt(0), nil), ShouldEqual, values.True)
+			So(operators.Not(values.NewInt(0), nil).Unwrap(), ShouldEqual, true)
 		})
 		Convey("1.0 turns false", func() {
-			So(operators.Not(values.NewFloat(1), nil), ShouldEqual, values.False)
+			So(operators.Not(values.NewFloat(1), nil).Unwrap(), ShouldEqual, false)
 		})
 		Convey("0.0 turns true", func() {
-			So(operators.Not(values.NewFloat(0.0), nil), ShouldEqual, values.True)
+			So(operators.Not(values.NewFloat(0.0), nil).Unwrap(), ShouldEqual, true)
 		})
 		Convey("current turns false", func() {
-			So(operators.Not(values.NewDateTime(values.NewCurrentDateTime().Time), nil), ShouldEqual, values.False)
+			So(operators.Not(values.NewDateTime(values.NewCurrentDateTime().Time), nil).Unwrap(), ShouldEqual, false)
 		})
 		Convey("zerotime turns true", func() {
-			So(operators.Not(values.NewDateTime(values.ZeroDateTime.Time), nil), ShouldEqual, values.True)
+			So(operators.Not(values.NewDateTime(values.ZeroDateTime.Time), nil).Unwrap(), ShouldEqual, true)
 		})
 	})
 }
@@ -1285,70 +1285,70 @@ func TestNot(t *testing.T) {
 func TestToNumberOrString(t *testing.T) {
 	Convey("Invert to numeric value", t, func() {
 		Convey("0 turns 0", func() {
-			So(operators.ToNumberOrString(values.NewInt(0)), ShouldEqual, 0)
+			So(operators.ToNumberOrString(values.NewInt(0)).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("1 turns 1", func() {
-			So(operators.ToNumberOrString(values.NewInt(1)), ShouldEqual, 1)
+			So(operators.ToNumberOrString(values.NewInt(1)).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("-1 turns -1", func() {
-			So(operators.ToNumberOrString(values.NewInt(-1)), ShouldEqual, -1)
+			So(operators.ToNumberOrString(values.NewInt(-1)).Unwrap(), ShouldEqual, -1)
 		})
 		Convey("0.0 turns 0.0", func() {
-			So(operators.ToNumberOrString(values.NewFloat(0.0)), ShouldEqual, 0.0)
+			So(operators.ToNumberOrString(values.NewFloat(0.0)).Unwrap(), ShouldEqual, 0.0)
 		})
 		Convey("-1.0 turns -1.0", func() {
-			So(operators.ToNumberOrString(values.NewFloat(-1.0)), ShouldEqual, -1.0)
+			So(operators.ToNumberOrString(values.NewFloat(-1.0)).Unwrap(), ShouldEqual, -1.0)
 		})
 		Convey("1.0 turns 1.0", func() {
-			So(operators.ToNumberOrString(values.NewFloat(1.0)), ShouldEqual, 1.0)
+			So(operators.ToNumberOrString(values.NewFloat(1.0)).Unwrap(), ShouldEqual, 1.0)
 		})
 		Convey("string type 0 turns string type 0", func() {
-			So(operators.ToNumberOrString(values.NewString("0")), ShouldEqual, "0")
+			So(operators.ToNumberOrString(values.NewString("0")).Unwrap(), ShouldEqual, "0")
 		})
 		Convey("string type 1 turns string type 1", func() {
-			So(operators.ToNumberOrString(values.NewString("1")), ShouldEqual, "1")
+			So(operators.ToNumberOrString(values.NewString("1")).Unwrap(), ShouldEqual, "1")
 		})
 		Convey("string type -1 turns string type -1", func() {
-			So(operators.ToNumberOrString(values.NewString("-1")), ShouldEqual, "-1")
+			So(operators.ToNumberOrString(values.NewString("-1")).Unwrap(), ShouldEqual, "-1")
 		})
 		Convey("string type 0.0 turns string type 0.0", func() {
-			So(operators.ToNumberOrString(values.NewString("0.0")), ShouldEqual, "0.0")
+			So(operators.ToNumberOrString(values.NewString("0.0")).Unwrap(), ShouldEqual, "0.0")
 		})
 		Convey("a turns a", func() {
-			So(operators.ToNumberOrString(values.NewString("a")), ShouldEqual, "a")
+			So(operators.ToNumberOrString(values.NewString("a")).Unwrap(), ShouldEqual, "a")
 		})
 		Convey("true turns 1", func() {
-			So(operators.ToNumberOrString(values.NewBoolean(true)), ShouldEqual, 1)
+			So(operators.ToNumberOrString(values.NewBoolean(true)).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("false turns 0", func() {
-			So(operators.ToNumberOrString(values.NewBoolean(false)), ShouldEqual, 0)
+			So(operators.ToNumberOrString(values.NewBoolean(false)).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("current DateTime turns unix", func() {
-			So(operators.ToNumberOrString(values.NewDateTime(time.Now())), ShouldEqual, time.Now().Unix())
+			So(operators.ToNumberOrString(values.NewDateTime(time.Now())).Unwrap(), ShouldEqual, time.Now().Unix())
 		})
 		Convey("zero value DateTime turns 0", func() {
 			var zero time.Time
-			So(operators.ToNumberOrString(values.NewDateTime(zero)), ShouldEqual, 0)
+			So(operators.ToNumberOrString(values.NewDateTime(zero)).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("[1] turns 1", func() {
 			arg := values.NewArrayWith(values.NewInt(1))
-			So(operators.ToNumberOrString(arg), ShouldEqual, 1)
+			So(operators.ToNumberOrString(arg).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("[1, 2] turns 3", func() {
 			arg := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
-			So(operators.ToNumberOrString(arg), ShouldEqual, 3)
+			So(operators.ToNumberOrString(arg).Unwrap(), ShouldEqual, 3)
 		})
 		Convey("[a] turns 0", func() {
 			arg := values.NewArrayWith(values.NewString("a"))
-			So(operators.ToNumberOrString(arg), ShouldEqual, 0)
+			So(operators.ToNumberOrString(arg).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("[true] turns 1", func() {
 			arg := values.NewArrayWith(values.NewBoolean(true))
-			So(operators.ToNumberOrString(arg), ShouldEqual, 1)
+			So(operators.ToNumberOrString(arg).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("[false] turns 0", func() {
 			arg := values.NewArrayWith(values.NewBoolean(false))
-			So(operators.ToNumberOrString(arg), ShouldEqual, 0)
+			So(operators.ToNumberOrString(arg).Unwrap(), ShouldEqual, 0)
 		})
 	})
 }
@@ -1356,71 +1356,71 @@ func TestToNumberOrString(t *testing.T) {
 func TestToNumberOnly(t *testing.T) {
 	Convey("Invert to int", t, func() {
 		Convey("0 turns 0", func() {
-			So(operators.ToNumberOnly(values.NewInt(0)), ShouldEqual, 0)
+			So(operators.ToNumberOnly(values.NewInt(0)).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("1 turns 1", func() {
-			So(operators.ToNumberOnly(values.NewInt(1)), ShouldEqual, 1)
+			So(operators.ToNumberOnly(values.NewInt(1)).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("-1 turns -1", func() {
-			So(operators.ToNumberOnly(values.NewInt(-1)), ShouldEqual, -1)
+			So(operators.ToNumberOnly(values.NewInt(-1)).Unwrap(), ShouldEqual, -1)
 		})
 		Convey("0.0 turns 0.0", func() {
-			So(operators.ToNumberOnly(values.NewFloat(0.0)), ShouldEqual, 0.0)
+			So(operators.ToNumberOnly(values.NewFloat(0.0)).Unwrap(), ShouldEqual, 0.0)
 		})
 		Convey("-1.0 turns -1.0", func() {
-			So(operators.ToNumberOnly(values.NewFloat(-1.0)), ShouldEqual, -1.0)
+			So(operators.ToNumberOnly(values.NewFloat(-1.0)).Unwrap(), ShouldEqual, -1.0)
 		})
 		Convey("1.0 turns 1.0", func() {
-			So(operators.ToNumberOnly(values.NewFloat(1.0)), ShouldEqual, 1.0)
+			So(operators.ToNumberOnly(values.NewFloat(1.0)).Unwrap(), ShouldEqual, 1.0)
 		})
 		Convey("string type 0 turns 0", func() {
-			So(operators.ToNumberOnly(values.NewString("0")), ShouldEqual, 0)
+			So(operators.ToNumberOnly(values.NewString("0")).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("string type 1 turns 1", func() {
-			So(operators.ToNumberOnly(values.NewString("1")), ShouldEqual, 1)
+			So(operators.ToNumberOnly(values.NewString("1")).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("string type -1 turns -1", func() {
-			So(operators.ToNumberOnly(values.NewString("-1")), ShouldEqual, -1)
+			So(operators.ToNumberOnly(values.NewString("-1")).Unwrap(), ShouldEqual, -1)
 		})
 		Convey("string type 0.0 turns 0.0", func() {
-			So(operators.ToNumberOnly(values.NewString("0.0")), ShouldEqual, 0.0)
+			So(operators.ToNumberOnly(values.NewString("0.0")).Unwrap(), ShouldEqual, 0.0)
 		})
 
 		Convey("a turns 0", func() {
-			So(operators.ToNumberOnly(values.NewString("a")), ShouldEqual, 0)
+			So(operators.ToNumberOnly(values.NewString("a")).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("true turns 1", func() {
-			So(operators.ToNumberOnly(values.NewBoolean(true)), ShouldEqual, 1)
+			So(operators.ToNumberOnly(values.NewBoolean(true)).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("false turns 0", func() {
-			So(operators.ToNumberOnly(values.NewBoolean(false)), ShouldEqual, 0)
+			So(operators.ToNumberOnly(values.NewBoolean(false)).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("current DateTime turns unix", func() {
-			So(operators.ToNumberOnly(values.NewDateTime(time.Now())), ShouldEqual, time.Now().Unix())
+			So(operators.ToNumberOnly(values.NewDateTime(time.Now())).Unwrap(), ShouldEqual, time.Now().Unix())
 		})
 		Convey("zero value DateTime turns 0", func() {
 			var zero time.Time
-			So(operators.ToNumberOnly(values.NewDateTime(zero)), ShouldEqual, 0)
+			So(operators.ToNumberOnly(values.NewDateTime(zero)).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("[1] turns 1", func() {
 			arg := values.NewArrayWith(values.NewInt(1))
-			So(operators.ToNumberOnly(arg), ShouldEqual, 1)
+			So(operators.ToNumberOnly(arg).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("[1, 2] turns 3", func() {
 			arg := values.NewArrayWith(values.NewInt(1), values.NewInt(2))
-			So(operators.ToNumberOnly(arg), ShouldEqual, 3)
+			So(operators.ToNumberOnly(arg).Unwrap(), ShouldEqual, 3)
 		})
 		Convey("[a] turns 0", func() {
 			arg := values.NewArrayWith(values.NewString("a"))
-			So(operators.ToNumberOnly(arg), ShouldEqual, 0)
+			So(operators.ToNumberOnly(arg).Unwrap(), ShouldEqual, 0)
 		})
 		Convey("[true] turns 1", func() {
 			arg := values.NewArrayWith(values.NewBoolean(true))
-			So(operators.ToNumberOnly(arg), ShouldEqual, 1)
+			So(operators.ToNumberOnly(arg).Unwrap(), ShouldEqual, 1)
 		})
 		Convey("[false] turns 0", func() {
 			arg := values.NewArrayWith(values.NewBoolean(false))
-			So(operators.ToNumberOnly(arg), ShouldEqual, 0)
+			So(operators.ToNumberOnly(arg).Unwrap(), ShouldEqual, 0)
 		})
 	})
 }

@@ -30,7 +30,7 @@ func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	var min float64
+	var minValue float64
 
 	arr.ForEach(func(value core.Value, idx int) bool {
 		err = core.ValidateType(value, types.Int, types.Float)
@@ -41,8 +41,8 @@ func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 
 		fv := toFloat(value)
 
-		if min > fv || idx == 0 {
-			min = fv
+		if minValue > fv || idx == 0 {
+			minValue = fv
 		}
 
 		return true
@@ -52,5 +52,5 @@ func Min(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.None, nil
 	}
 
-	return values.NewFloat(min), nil
+	return values.NewFloat(minValue), nil
 }

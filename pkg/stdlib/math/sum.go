@@ -32,7 +32,7 @@ func Sum(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	var sum float64
 
-	arr.ForEach(func(value core.Value, idx int) bool {
+	arr.ForEach(func(value core.Value, _ int) bool {
 		err = core.ValidateType(value, types.Int, types.Float)
 
 		if err != nil {

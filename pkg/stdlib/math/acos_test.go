@@ -15,11 +15,11 @@ func TestAcos(t *testing.T) {
 		out, err := math.Acos(context.Background(), values.NewInt(-1))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 3.141592653589793)
+		So(out.Unwrap(), ShouldEqual, 3.141592653589793)
 
 		out, err = math.Acos(context.Background(), values.NewInt(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1.5707963267948966)
+		So(out.Unwrap(), ShouldEqual, 1.5707963267948966)
 	})
 }

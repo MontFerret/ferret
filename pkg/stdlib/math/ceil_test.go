@@ -15,12 +15,12 @@ func TestCeil(t *testing.T) {
 		out, err := math.Ceil(context.Background(), values.NewFloat(2.49))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 3)
+		So(out.Unwrap(), ShouldEqual, 3)
 
 		out, err = math.Ceil(context.Background(), values.NewFloat(2.50))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 3)
+		So(out.Unwrap(), ShouldEqual, 3)
 
 		out, err = math.Ceil(context.Background(), values.NewFloat(-2.50))
 

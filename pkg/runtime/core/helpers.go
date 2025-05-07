@@ -31,9 +31,9 @@ func IsNil(input interface{}) bool {
 	}
 }
 
-func NumberBoundaries(input float64) (max float64, min float64) {
-	min = input / 2
-	max = input * 2
+func NumberBoundaries(input float64) (maxVal float64, minVal float64) {
+	minVal = input / 2
+	maxVal = input * 2
 
 	return
 }
@@ -52,18 +52,18 @@ func RandomDefault() float64 {
 	return rand.Float64()
 }
 
-func Random(max float64, min float64) float64 {
+func Random(maxVal float64, minVal float64) float64 {
 	r := RandomDefault()
-	i := r * (max - min + 1)
-	out := math.Floor(i) + min
+	i := r * (maxVal - minVal + 1)
+	out := math.Floor(i) + minVal
 
 	return out
 }
 
 func Random2(mid float64) float64 {
-	max, min := NumberBoundaries(mid)
+	maxVal, minVal := NumberBoundaries(mid)
 
-	return Random(max, min)
+	return Random(maxVal, minVal)
 }
 
 func ForEach(ctx context.Context, iter Iterator, predicate func(value Value, key Value) bool) error {

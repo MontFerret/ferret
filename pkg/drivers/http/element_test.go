@@ -5,13 +5,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/drivers"
+	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/drivers"
 	"github.com/MontFerret/ferret/pkg/drivers/http"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 func TestElement(t *testing.T) {
@@ -263,7 +264,7 @@ func TestElement(t *testing.T) {
 		nt, err := el.GetNodeType(context.Background())
 
 		So(err, ShouldBeNil)
-		So(nt, ShouldEqual, 1)
+		So(nt, ShouldEqual, values.NewInt(1))
 	})
 
 	Convey(".GetNodeName", t, func() {
@@ -282,7 +283,7 @@ func TestElement(t *testing.T) {
 		nn, err := el.GetNodeName(context.Background())
 
 		So(err, ShouldBeNil)
-		So(nn, ShouldEqual, "body")
+		So(nn.Unwrap(), ShouldEqual, "body")
 	})
 
 	Convey(".Length", t, func() {
@@ -306,7 +307,7 @@ func TestElement(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		So(el.Length(), ShouldEqual, 4)
+		So(el.Length().Unwrap(), ShouldEqual, 4)
 	})
 
 	Convey(".Value", t, func() {
@@ -334,7 +335,7 @@ func TestElement(t *testing.T) {
 		v, err := el.GetValue(context.Background())
 
 		So(err, ShouldBeNil)
-		So(v, ShouldEqual, "find")
+		So(v.Unwrap(), ShouldEqual, "find")
 	})
 
 	Convey(".GetInnerText", t, func() {
@@ -361,7 +362,7 @@ func TestElement(t *testing.T) {
 
 		v, _ := el.GetInnerText(context.Background())
 
-		So(v, ShouldEqual, "Ferret")
+		So(v.Unwrap(), ShouldEqual, "Ferret")
 	})
 
 	Convey(".InnerHtml", t, func() {
@@ -389,7 +390,7 @@ func TestElement(t *testing.T) {
 		v, err := el.GetInnerHTML(context.Background())
 
 		So(err, ShouldBeNil)
-		So(v, ShouldEqual, "<h2>Ferret</h2>")
+		So(v.Unwrap(), ShouldEqual, "<h2>Ferret</h2>")
 	})
 
 	Convey(".QuerySelector", t, func() {
@@ -406,12 +407,15 @@ func TestElement(t *testing.T) {
 		found, err := el.QuerySelector(context.Background(), drivers.NewCSSSelector("body .card-img-top:nth-child(1)"))
 
 		So(err, ShouldBeNil)
-		So(found, ShouldNotEqual, values.None)
+
+		if found == values.None {
+			t.Fatalf("expected to find element")
+		}
 
 		v, err := found.(drivers.HTMLNode).GetNodeName(context.Background())
 
 		So(err, ShouldBeNil)
-		So(v, ShouldEqual, "img")
+		So(v.Unwrap(), ShouldEqual, "img")
 	})
 
 	Convey(".CountBySelector", t, func() {
@@ -428,7 +432,7 @@ func TestElement(t *testing.T) {
 		v, err := el.CountBySelector(context.Background(), drivers.NewCSSSelector("head meta"))
 
 		So(err, ShouldBeNil)
-		So(v, ShouldEqual, 4)
+		So(v.Unwrap(), ShouldEqual, 4)
 	})
 
 	Convey(".XPath", t, func() {

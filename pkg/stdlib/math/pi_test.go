@@ -15,6 +15,6 @@ func TestPi(t *testing.T) {
 		out, err := math.Pi(context.Background())
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, m.Pi)
+		So(out.Unwrap(), ShouldEqual, m.Pi)
 	})
 }

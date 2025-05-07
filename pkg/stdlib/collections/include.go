@@ -47,7 +47,7 @@ func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 			return values.False, err
 		}
 
-		err = core.ForEach(ctx, iter, func(value core.Value, key core.Value) bool {
+		err = core.ForEach(ctx, iter, func(value core.Value, _ core.Value) bool {
 			if needle.Compare(value) == 0 {
 				result = values.True
 

@@ -32,7 +32,7 @@ func Average(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	var sum float64
 
-	arr.ForEach(func(value core.Value, idx int) bool {
+	arr.ForEach(func(value core.Value, _ int) bool {
 		err = core.ValidateType(value, types.Float, types.Int)
 
 		if err != nil {

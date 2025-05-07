@@ -33,7 +33,7 @@ func TestSubstitute(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "foo-bor-boz")
+		So(out.Unwrap(), ShouldEqual, "foo-bor-boz")
 	})
 
 	Convey("Substitute('foo-bar-baz', 'a', 'o', 1) should return 'foo-bor-baz'", t, func() {
@@ -46,6 +46,6 @@ func TestSubstitute(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "foo-bor-baz")
+		So(out.Unwrap(), ShouldEqual, "foo-bor-baz")
 	})
 }

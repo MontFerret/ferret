@@ -27,7 +27,7 @@ func Values(_ context.Context, args ...core.Value) (core.Value, error) {
 	obj := args[0].(*values.Object)
 	vals := values.NewArray(0)
 
-	obj.ForEach(func(val core.Value, key string) bool {
+	obj.ForEach(func(val core.Value, _ string) bool {
 		cloneable, ok := val.(core.Cloneable)
 
 		if ok {

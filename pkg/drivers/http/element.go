@@ -334,7 +334,7 @@ func (el *HTMLElement) QuerySelectorAll(_ context.Context, selector drivers.Quer
 
 		arr := values.NewArray(selection.Length())
 
-		selection.Each(func(i int, selection *goquery.Selection) {
+		selection.Each(func(_ int, selection *goquery.Selection) {
 			el, err := NewHTMLElement(selection)
 
 			if err == nil {
@@ -535,7 +535,7 @@ func (el *HTMLElement) CountBySelector(_ context.Context, selector drivers.Query
 		return values.NewInt(selection.Length()), nil
 	}
 
-	arr, err := EvalXPathToNodesWith(el.selection, selector.String(), func(node *html.Node) (core.Value, error) {
+	arr, err := EvalXPathToNodesWith(el.selection, selector.String(), func(_ *html.Node) (core.Value, error) {
 		return values.None, nil
 	})
 
@@ -785,7 +785,7 @@ func (el *HTMLElement) parseChildren() *values.Array {
 
 	arr := values.NewArray(10)
 
-	children.Each(func(i int, selection *goquery.Selection) {
+	children.Each(func(_ int, selection *goquery.Selection) {
 		child, err := NewHTMLElement(selection)
 
 		if err == nil {

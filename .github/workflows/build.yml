@@ -9,12 +9,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: '>=1.19'
+          go-version: '>=1.24'
 
       - name: Set up linters
         run: make install-tools
@@ -26,31 +26,30 @@ jobs:
           make fmt
           git diff
           if [[ $(git diff) != '' ]]; then echo 'Invalid formatting!' >&2; exit 1; fi
-
   build:
     name: Build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goVer: [1.18, 1.19]
+        goVer: [1.22, 1.23, 1.24]
     steps:
       - name: Set up Go ${{ matrix.goVer }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.goVer }}
         id: go
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up ANTLR
         env:
-          ANTLR_VERSION: 4.11.1
+          ANTLR_VERSION: 4.13.2
         run: |
           sudo curl -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar
           export CLASSPATH=".:/usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar:$CLASSPATH"
           mkdir $HOME/antlr-bin
-          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.11.1-complete.jar "$@"' > $HOME/antlr-bin/antlr
+          echo -e '#!/bin/bash\njava -jar /usr/local/lib/antlr-4.13.2-complete.jar "$@"' > $HOME/antlr-bin/antlr
           echo -e '#!/bin/bash\njava org.antlr.v4.gui.TestRig "$@"' > $HOME/antlr-bin/grun
           chmod +x $HOME/antlr-bin/*
           export PATH=$PATH:$HOME/antlr-bin

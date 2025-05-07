@@ -22,16 +22,16 @@ func Rand(_ context.Context, args ...core.Value) (core.Value, error) {
 		return values.NewFloat(core.RandomDefault()), nil
 	}
 
-	var max float64
-	var min float64
+	var maxValue float64
+	var minValue float64
 
-	max = float64(values.ToFloat(args[0]))
+	maxValue = float64(values.ToFloat(args[0]))
 
 	if len(args) > 1 {
-		min = float64(values.ToFloat(args[1]))
+		minValue = float64(values.ToFloat(args[1]))
 	} else {
-		max, min = core.NumberBoundaries(max)
+		maxValue, minValue = core.NumberBoundaries(maxValue)
 	}
 
-	return values.NewFloat(core.Random(max, min)), nil
+	return values.NewFloat(core.Random(maxValue, minValue)), nil
 }

@@ -15,12 +15,12 @@ func TestAtan2(t *testing.T) {
 		out, err := math.Atan2(context.Background(), values.NewInt(0), values.NewInt(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 0)
+		So(out.Unwrap(), ShouldEqual, 0)
 
 		out, err = math.Atan2(context.Background(), values.NewInt(1), values.NewInt(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 1.5707963267948966)
+		So(out.Unwrap(), ShouldEqual, 1.5707963267948966)
 
 		out, err = math.Atan2(context.Background(), values.NewInt(1), values.NewInt(1))
 

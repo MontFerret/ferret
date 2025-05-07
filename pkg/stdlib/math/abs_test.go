@@ -21,19 +21,19 @@ func TestAbs(t *testing.T) {
 			out, err = math.Abs(context.Background(), values.NewInt(3))
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, 3)
+			So(out.Unwrap(), ShouldEqual, 3)
 		})
 
 		Convey("When value is float", func() {
 			out, err := math.Abs(context.Background(), values.NewFloat(-5))
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, 5)
+			So(out.Unwrap(), ShouldEqual, 5)
 
 			out, err = math.Abs(context.Background(), values.NewFloat(5.1))
 
 			So(err, ShouldBeNil)
-			So(out, ShouldEqual, 5.1)
+			So(out.Unwrap(), ShouldEqual, 5.1)
 		})
 	})
 }
