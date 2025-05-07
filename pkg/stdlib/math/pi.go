@@ -4,17 +4,17 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // PI returns Pi value.
 // @return {Float} - Pi value.
-func Pi(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 0, 0)
+func Pi(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 0, 0)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	return core.NewFloat(math.Pi), nil
+	return runtime.NewFloat(math.Pi), nil
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	t "testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -25,7 +25,7 @@ func TestFalse(t *t.T) {
 
 	Convey("When arg is not boolean", t, func() {
 		Convey("It should return an error", func() {
-			_, err := False(context.Background(), core.NewString("false"))
+			_, err := False(context.Background(), runtime.NewString("false"))
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'false' to be [boolean] 'false'")
@@ -34,7 +34,7 @@ func TestFalse(t *t.T) {
 
 	Convey("When arg is true", t, func() {
 		Convey("It should return an error", func() {
-			_, err := False(context.Background(), core.True)
+			_, err := False(context.Background(), runtime.True)
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'true' to be [boolean] 'false'")
@@ -43,7 +43,7 @@ func TestFalse(t *t.T) {
 
 	Convey("When arg is false", t, func() {
 		Convey("It should not return an error", func() {
-			_, err := False(context.Background(), core.False)
+			_, err := False(context.Background(), runtime.False)
 
 			So(err, ShouldBeNil)
 		})
@@ -63,7 +63,7 @@ func TestNotFalse(t *t.T) {
 
 	Convey("When arg is not boolean", t, func() {
 		Convey("It should not return an error", func() {
-			_, err := NotFalse(context.Background(), core.NewString("false"))
+			_, err := NotFalse(context.Background(), runtime.NewString("false"))
 
 			So(err, ShouldBeNil)
 		})
@@ -71,7 +71,7 @@ func TestNotFalse(t *t.T) {
 
 	Convey("When arg is false", t, func() {
 		Convey("It should return an error", func() {
-			_, err := NotFalse(context.Background(), core.False)
+			_, err := NotFalse(context.Background(), runtime.False)
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'false' not to be [boolean] 'false'")
@@ -80,7 +80,7 @@ func TestNotFalse(t *t.T) {
 
 	Convey("When arg is true", t, func() {
 		Convey("It should return an error", func() {
-			_, err := NotFalse(context.Background(), core.True)
+			_, err := NotFalse(context.Background(), runtime.True)
 
 			So(err, ShouldBeNil)
 		})

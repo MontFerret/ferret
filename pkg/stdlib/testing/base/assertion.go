@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-type AssertionFn func(ctx context.Context, args []core.Value) (bool, error)
+type AssertionFn func(ctx context.Context, args []runtime.Value) (bool, error)
 
-type MessageFn func(args []core.Value) string
+type MessageFn func(args []runtime.Value) string
 
 type Assertion struct {
 	DefaultMessage MessageFn
@@ -18,37 +18,37 @@ type Assertion struct {
 	Fn             AssertionFn
 }
 
-func NewPositiveAssertion(assertion Assertion) core.Function {
+func NewPositiveAssertion(assertion Assertion) runtime.Function {
 	return newInternal(assertion, true)
 }
 
-func NewNegativeAssertion(assertion Assertion) core.Function {
+func NewNegativeAssertion(assertion Assertion) runtime.Function {
 	return newInternal(assertion, false)
 }
 
-func newInternal(assertion Assertion, connotation bool) core.Function {
-	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
-		err := core.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
+func newInternal(assertion Assertion, connotation bool) runtime.Function {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		err := runtime.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
 		res, err := assertion.Fn(ctx, args)
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
 		if res == connotation {
-			return core.None, nil
+			return runtime.None, nil
 		}
 
-		return core.None, toError(assertion, args, connotation)
+		return runtime.None, toError(assertion, args, connotation)
 	}
 }
 
-func toError(assertion Assertion, args []core.Value, positive bool) error {
+func toError(assertion Assertion, args []runtime.Value, positive bool) error {
 	if len(args) != assertion.MaxArgs {
 		connotation := ""
 
@@ -71,14 +71,14 @@ func toError(assertion Assertion, args []core.Value, positive bool) error {
 				}
 			}
 
-			return core.Error(ErrAssertion, fmt.Sprintf("expected %s %sto %s", FormatValue(actual), connotation, msg))
+			return runtime.Error(ErrAssertion, fmt.Sprintf("expected %s %sto %s", FormatValue(actual), connotation, msg))
 		}
 
-		return core.Error(ErrAssertion, fmt.Sprintf("expected to %s%s", connotation, assertion.DefaultMessage(args)))
+		return runtime.Error(ErrAssertion, fmt.Sprintf("expected to %s%s", connotation, assertion.DefaultMessage(args)))
 	}
 
 	// Last argument is always is a custom message
 	msg := args[assertion.MaxArgs-1]
 
-	return core.Error(ErrAssertion, msg.String())
+	return runtime.Error(ErrAssertion, msg.String())
 }

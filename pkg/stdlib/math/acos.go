@@ -5,14 +5,12 @@ import (
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // ACOS returns the arccosine, in radians, of a given number.
 // @param {Int | Float} number - Input number.
 // @return {Float} - The arccosine, in radians, of a given number.
-func Acos(_ context.Context, args ...core.Value) (core.Value, error) {
+func Acos(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}
@@ -21,5 +19,5 @@ func Acos(_ context.Context, args ...core.Value) (core.Value, error) {
 		return runtime.None, err
 	}
 
-	return core.NewFloat(math.Acos(toFloat(args[0]))), nil
+	return runtime.NewFloat(math.Acos(toFloat(args[0]))), nil
 }

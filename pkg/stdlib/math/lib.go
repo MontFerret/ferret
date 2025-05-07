@@ -3,7 +3,7 @@ package math
 import (
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 const (
@@ -13,9 +13,9 @@ const (
 	GradToDeg = math.Pi / 200
 )
 
-func RegisterLib(ns core.Namespace) error {
+func RegisterLib(ns runtime.Namespace) error {
 	return ns.RegisterFunctions(
-		core.NewFunctionsFromMap(map[string]core.Function{
+		runtime.NewFunctionsFromMap(map[string]runtime.Function{
 			"ABS":                 Abs,
 			"ACOS":                Acos,
 			"ASIN":                Asin,
@@ -52,11 +52,11 @@ func RegisterLib(ns core.Namespace) error {
 		}))
 }
 
-func toFloat(arg core.Value) float64 {
+func toFloat(arg runtime.Value) float64 {
 	switch v := arg.(type) {
-	case core.Float:
+	case runtime.Float:
 		return float64(v)
-	case core.Int:
+	case runtime.Int:
 		return float64(v)
 	default:
 		return 0

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // SUBSTITUTE replaces search values in the string value.
@@ -13,11 +13,11 @@ import (
 // @param {String} replace - The string representing a replace value
 // @param {Int} limit - The cap the number of replacements to this value.
 // @return {String} - Returns a string with replace substring.
-func Substitute(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 4)
+func Substitute(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	text := args[0].String()
@@ -30,7 +30,7 @@ func Substitute(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if len(args) > 3 {
-		arg3, ok := args[3].(core.Int)
+		arg3, ok := args[3].(runtime.Int)
 
 		if ok {
 			limit = int(arg3)
@@ -39,5 +39,5 @@ func Substitute(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	out := strings.Replace(text, search, replace, limit)
 
-	return core.NewString(out), nil
+	return runtime.NewString(out), nil
 }

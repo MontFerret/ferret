@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -14,12 +15,12 @@ import (
 // @param {Any} expected - Expected value.
 // @param {String} [message] - Message to display on error.
 var Include = base.Assertion{
-	DefaultMessage: func(args []core.Value) string {
+	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("include %s", base.FormatValue(args[1]))
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		haystack := args[0]
 		needle := args[1]
 
@@ -29,6 +30,6 @@ var Include = base.Assertion{
 			return false, err
 		}
 
-		return core.CompareValues(out, core.True) == 0, nil
+		return runtime.CompareValues(out, runtime.True) == 0, nil
 	},
 }

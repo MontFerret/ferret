@@ -5,8 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 const (
@@ -23,20 +22,17 @@ var randSrc = rand.NewSource(time.Now().UnixNano())
 // RANDOM_TOKEN generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
 // @param {Int} len - The desired string length for the token. It must be greater than 0 and at most 65536.
 // @return {String} - A generated token consisting of lowercase letters, uppercase letters and numbers.
-func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return core.EmptyString, err
+func RandomToken(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], types.Int)
+	size, err := runtime.CastInt(args[0])
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
-	size := args[0].(core.Int)
 	b := make([]byte, size)
 
 	for i, cache, remain := size-1, randSrc.Int63(), letterIdxMax; i >= 0; {
@@ -53,5 +49,5 @@ func RandomToken(_ context.Context, args ...core.Value) (core.Value, error) {
 		remain--
 	}
 
-	return core.NewString(string(b)), nil
+	return runtime.NewString(string(b)), nil
 }

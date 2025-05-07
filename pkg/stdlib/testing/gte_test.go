@@ -6,7 +6,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -20,7 +20,7 @@ func TestGte(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = Gte(context.Background(), core.NewInt(1))
+			_, err = Gte(context.Background(), runtime.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -29,16 +29,16 @@ func TestGte(t *t.T) {
 	Convey("When args are numbers", t, func() {
 		Convey("When 1 and 2", func() {
 			Convey("It should return an error", func() {
-				_, err := Gte(context.Background(), core.NewInt(1), core.NewInt(2))
+				_, err := Gte(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' to be greater than or equal to [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' to be greater than or equal to [int] '2'").Error())
 			})
 		})
 
 		Convey("When 1 and 1", func() {
 			Convey("It should not return an error", func() {
-				_, err := Gte(context.Background(), core.NewInt(1), core.NewInt(1))
+				_, err := Gte(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeNil)
 			})
@@ -46,7 +46,7 @@ func TestGte(t *t.T) {
 
 		Convey("When 2 and 1", func() {
 			Convey("It should not return an error", func() {
-				_, err := Gte(context.Background(), core.NewInt(2), core.NewInt(1))
+				_, err := Gte(context.Background(), runtime.NewInt(2), runtime.NewInt(1))
 
 				So(err, ShouldBeNil)
 			})
@@ -63,7 +63,7 @@ func TestNotGte(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = NotGte(context.Background(), core.NewInt(1))
+			_, err = NotGte(context.Background(), runtime.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -72,7 +72,7 @@ func TestNotGte(t *t.T) {
 	Convey("When args are numbers", t, func() {
 		Convey("When 1 and 2", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotGte(context.Background(), core.NewInt(1), core.NewInt(2))
+				_, err := NotGte(context.Background(), runtime.NewInt(1), runtime.NewInt(2))
 
 				So(err, ShouldBeNil)
 			})
@@ -80,19 +80,19 @@ func TestNotGte(t *t.T) {
 
 		Convey("When 1 and 1", func() {
 			Convey("It should return an error", func() {
-				_, err := NotGte(context.Background(), core.NewInt(1), core.NewInt(1))
+				_, err := NotGte(context.Background(), runtime.NewInt(1), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '1' not to be greater than or equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '1' not to be greater than or equal to [int] '1'").Error())
 			})
 		})
 
 		Convey("When 2 and 1", func() {
 			Convey("It should return an error", func() {
-				_, err := NotGte(context.Background(), core.NewInt(2), core.NewInt(1))
+				_, err := NotGte(context.Background(), runtime.NewInt(2), runtime.NewInt(1))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [int] '2' not to be greater than or equal to [int] '1'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [int] '2' not to be greater than or equal to [int] '1'").Error())
 			})
 		})
 	})

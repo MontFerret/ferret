@@ -4,7 +4,7 @@ import (
 	"context"
 	"html"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // UNESCAPE_HTML unescapes entities like "&lt;" to become "<". It unescapes a
@@ -14,12 +14,12 @@ import (
 // always true.
 // @param {String} uri - Uri to escape.
 // @return {String} - Escaped string.
-func UnescapeHTML(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func UnescapeHTML(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	return core.NewString(html.UnescapeString(args[0].String())), nil
+	return runtime.NewString(html.UnescapeString(args[0].String())), nil
 }

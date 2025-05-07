@@ -4,51 +4,50 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // INCLUDES checks whether a container includes a given value.
 // @param {String | Any[] | hashMap | Iterable} haystack - The value container.
 // @param {Any} needle - The target value to assert.
 // @return {Boolean} - A boolean value that indicates whether a container contains a given value.
-func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 2)
+func Includes(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	var result core.Boolean
+	var result runtime.Boolean
 	haystack := args[0]
 	needle := args[1]
 
 	switch v := haystack.(type) {
-	case core.String:
-		result = v.Contains(core.NewString(needle.String()))
+	case runtime.String:
+		result = v.Contains(runtime.NewString(needle.String()))
 
 		break
 	case runtime.List:
-		_, result, err = v.FindOne(ctx, func(c context.Context, value core.Value, _ runtime.Int) (runtime.Boolean, error) {
-			return core.CompareValues(needle, value) == 0, nil
+		_, result, err = v.FindOne(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+			return runtime.CompareValues(needle, value) == 0, nil
 		})
 
 		break
 	case runtime.Map:
 		_, result, err = v.FindOne(ctx, func(c context.Context, value, _ runtime.Value) (runtime.Boolean, error) {
-			return core.CompareValues(needle, value) == 0, nil
+			return runtime.CompareValues(needle, value) == 0, nil
 		})
 
 		break
-	case core.Iterable:
+	case runtime.Iterable:
 		iter, err := v.Iterate(ctx)
 
 		if err != nil {
-			return core.False, err
+			return runtime.False, err
 		}
 
-		err = core.ForEach(ctx, iter, func(c context.Context, value core.Value, key core.Value) (runtime.Boolean, error) {
-			if core.CompareValues(needle, value) == 0 {
-				result = core.True
+		err = runtime.ForEach(ctx, iter, func(c context.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
+			if runtime.CompareValues(needle, value) == 0 {
+				result = runtime.True
 
 				return false, nil
 			}
@@ -57,10 +56,10 @@ func Includes(ctx context.Context, args ...core.Value) (core.Value, error) {
 		})
 
 		if err != nil {
-			return core.False, err
+			return runtime.False, err
 		}
 	default:
-		return core.None, core.TypeError(haystack,
+		return runtime.None, runtime.TypeError(haystack,
 			runtime.TypeString,
 			runtime.TypeList,
 			runtime.TypeMap,

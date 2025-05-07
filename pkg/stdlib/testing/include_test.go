@@ -8,7 +8,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -22,7 +21,7 @@ func TestInclude(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = Include(context.Background(), core.NewInt(1))
+			_, err = Include(context.Background(), runtime.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -31,16 +30,16 @@ func TestInclude(t *t.T) {
 	Convey("When value is a string", t, func() {
 		Convey("When 'Foo' and 'Bar'", func() {
 			Convey("It should return an error", func() {
-				_, err := Include(context.Background(), core.NewString("Foo"), core.NewString("Bar"))
+				_, err := Include(context.Background(), runtime.NewString("Foo"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'Foo' to include [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'Foo' to include [string] 'Bar'").Error())
 			})
 		})
 
 		Convey("When 'FooBar' and 'Bar'", func() {
 			Convey("It should not return an error", func() {
-				_, err := Include(context.Background(), core.NewString("FooBar"), core.NewString("Bar"))
+				_, err := Include(context.Background(), runtime.NewString("FooBar"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeNil)
 			})
@@ -52,12 +51,12 @@ func TestInclude(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := Include(
 					context.Background(),
-					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
-					core.NewInt(4),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)),
+					runtime.NewInt(4),
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to include [int] '4'").Error())
 			})
 		})
 
@@ -65,8 +64,8 @@ func TestInclude(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := Include(
 					context.Background(),
-					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
-					core.NewInt(2),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)),
+					runtime.NewInt(2),
 				)
 
 				So(err, ShouldBeNil)
@@ -80,15 +79,15 @@ func TestInclude(t *t.T) {
 				_, err := Include(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", core.NewInt(1)),
-						runtime.NewObjectProperty("b", core.NewInt(2)),
-						runtime.NewObjectProperty("c", core.NewInt(3)),
+						runtime.NewObjectProperty("a", runtime.NewInt(1)),
+						runtime.NewObjectProperty("b", runtime.NewInt(2)),
+						runtime.NewObjectProperty("c", runtime.NewInt(3)),
 					),
-					core.NewInt(4),
+					runtime.NewInt(4),
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
 			})
 		})
 
@@ -97,11 +96,11 @@ func TestInclude(t *t.T) {
 				_, err := Include(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", core.NewInt(1)),
-						runtime.NewObjectProperty("b", core.NewInt(2)),
-						runtime.NewObjectProperty("c", core.NewInt(3)),
+						runtime.NewObjectProperty("a", runtime.NewInt(1)),
+						runtime.NewObjectProperty("b", runtime.NewInt(2)),
+						runtime.NewObjectProperty("c", runtime.NewInt(3)),
 					),
-					core.NewInt(2),
+					runtime.NewInt(2),
 				)
 
 				So(err, ShouldBeNil)
@@ -119,7 +118,7 @@ func TestNotInclude(t *t.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = NotInclude(context.Background(), core.NewInt(1))
+			_, err = NotInclude(context.Background(), runtime.NewInt(1))
 
 			So(err, ShouldBeError)
 		})
@@ -128,7 +127,7 @@ func TestNotInclude(t *t.T) {
 	Convey("When value is a string", t, func() {
 		Convey("When 'Foo' and 'Bar'", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotInclude(context.Background(), core.NewString("Foo"), core.NewString("Bar"))
+				_, err := NotInclude(context.Background(), runtime.NewString("Foo"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeNil)
 			})
@@ -136,10 +135,10 @@ func TestNotInclude(t *t.T) {
 
 		Convey("When 'FooBar' and 'Bar'", func() {
 			Convey("It should return an error", func() {
-				_, err := NotInclude(context.Background(), core.NewString("FooBar"), core.NewString("Bar"))
+				_, err := NotInclude(context.Background(), runtime.NewString("FooBar"), runtime.NewString("Bar"))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [string] 'FooBar' not to include [string] 'Bar'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [string] 'FooBar' not to include [string] 'Bar'").Error())
 			})
 		})
 	})
@@ -149,8 +148,8 @@ func TestNotInclude(t *t.T) {
 			Convey("It should not return an error", func() {
 				_, err := NotInclude(
 					context.Background(),
-					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
-					core.NewInt(4),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)),
+					runtime.NewInt(4),
 				)
 
 				So(err, ShouldBeNil)
@@ -161,12 +160,12 @@ func TestNotInclude(t *t.T) {
 			Convey("It should return an error", func() {
 				_, err := NotInclude(
 					context.Background(),
-					runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
-					core.NewInt(2),
+					runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3)),
+					runtime.NewInt(2),
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to include [int] '2'").Error())
 			})
 		})
 	})
@@ -177,11 +176,11 @@ func TestNotInclude(t *t.T) {
 				_, err := NotInclude(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", core.NewInt(1)),
-						runtime.NewObjectProperty("b", core.NewInt(2)),
-						runtime.NewObjectProperty("c", core.NewInt(3)),
+						runtime.NewObjectProperty("a", runtime.NewInt(1)),
+						runtime.NewObjectProperty("b", runtime.NewInt(2)),
+						runtime.NewObjectProperty("c", runtime.NewInt(3)),
 					),
-					core.NewInt(4),
+					runtime.NewInt(4),
 				)
 
 				So(err, ShouldBeNil)
@@ -193,15 +192,15 @@ func TestNotInclude(t *t.T) {
 				_, err := NotInclude(
 					context.Background(),
 					runtime.NewObjectWith(
-						runtime.NewObjectProperty("a", core.NewInt(1)),
-						runtime.NewObjectProperty("b", core.NewInt(2)),
-						runtime.NewObjectProperty("c", core.NewInt(3)),
+						runtime.NewObjectProperty("a", runtime.NewInt(1)),
+						runtime.NewObjectProperty("b", runtime.NewInt(2)),
+						runtime.NewObjectProperty("c", runtime.NewInt(3)),
 					),
-					core.NewInt(2),
+					runtime.NewInt(2),
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, core.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
 			})
 		})
 	})

@@ -33,7 +33,6 @@ func Sum(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	var sum float64
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-
 		if err = runtime.AssertNumber(value); err != nil {
 			return false, err
 		}

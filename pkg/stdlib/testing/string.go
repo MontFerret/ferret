@@ -3,7 +3,8 @@ package testing
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -11,13 +12,13 @@ import (
 // @param {Any} actual - Second to test.
 // @param {String} [message] - Message to display on error.
 var String = base.Assertion{
-	DefaultMessage: func(args []core.Value) string {
+	DefaultMessage: func(args []runtime.Value) string {
 		return "be string"
 	},
 	MinArgs: 1,
 	MaxArgs: 2,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
-		if err := core.AssertString(args[0]); err != nil {
+	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
+		if err := runtime.AssertString(args[0]); err != nil {
 			return false, err
 		}
 

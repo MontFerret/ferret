@@ -5,8 +5,6 @@ import (
 	"regexp"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // REGEX_MATCH returns the matches in the given string text, using the regex.
@@ -14,18 +12,16 @@ import (
 // @param {String} expression - A regular expression to use for matching the text.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @return {Any[]} - An array of strings containing the matches.
-func RegexMatch(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return core.None, err
+func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
+		return runtime.None, err
 	}
 
 	text := args[0].String()
 	exp := args[1].String()
 
 	if len(args) > 2 {
-		if args[2] == core.True {
+		if args[2] == runtime.True {
 			exp = "(?i)" + exp
 		}
 	}
@@ -33,7 +29,7 @@ func RegexMatch(ctx context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	matches := reg.FindAllStringSubmatch(text, -1)
@@ -44,7 +40,7 @@ func RegexMatch(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	for _, m := range matches[0] {
-		_ = res.Add(ctx, core.NewString(m))
+		_ = res.Add(ctx, runtime.NewString(m))
 	}
 
 	return res, nil
@@ -56,11 +52,11 @@ func RegexMatch(ctx context.Context, args ...core.Value) (core.Value, error) {
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
 // @return {Any[]} - An array of strings splitted by the expression.
-func RegexSplit(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 4)
+func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	text := args[0].String()
@@ -68,7 +64,7 @@ func RegexSplit(ctx context.Context, args ...core.Value) (core.Value, error) {
 	limit := -1
 
 	if len(args) > 2 {
-		arg2, ok := args[2].(core.Int)
+		arg2, ok := args[2].(runtime.Int)
 
 		if ok {
 			limit = int(arg2)
@@ -78,7 +74,7 @@ func RegexSplit(ctx context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	matches := reg.Split(text, limit)
@@ -89,7 +85,7 @@ func RegexSplit(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	for _, m := range matches {
-		_ = res.Add(ctx, core.NewString(m))
+		_ = res.Add(ctx, runtime.NewString(m))
 	}
 
 	return res, nil
@@ -100,18 +96,18 @@ func RegexSplit(ctx context.Context, args ...core.Value) (core.Value, error) {
 // @param {String} expression - A regular expression to use for splitting the text.
 // @param {Boolean} [caseInsensitive=False] - If set to true, the matching will be case-insensitive.
 // @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
-func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
+func RegexTest(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	text := args[0].String()
 	exp := args[1].String()
 
 	if len(args) > 2 {
-		if args[2] == core.True {
+		if args[2] == runtime.True {
 			exp = "(?i)" + exp
 		}
 	}
@@ -119,12 +115,12 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	matches := reg.MatchString(text)
 
-	return core.NewBoolean(matches), nil
+	return runtime.NewBoolean(matches), nil
 }
 
 // REGEX_REPLACE replace every substring matched with the regexp with a given string.
@@ -133,11 +129,11 @@ func RegexTest(_ context.Context, args ...core.Value) (core.Value, error) {
 // @param {String} replacement - The string to replace the search pattern with
 // @param {Boolean} [caseInsensitive=False] - If set to true, the matching will be case-insensitive.
 // @return {String} - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
-func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 3, 4)
+func RegexReplace(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 3, 4)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	text := args[0].String()
@@ -145,7 +141,7 @@ func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	repl := args[2].String()
 
 	if len(args) > 3 {
-		if args[3] == core.True {
+		if args[3] == runtime.True {
 			exp = "(?i)" + exp
 		}
 	}
@@ -153,10 +149,10 @@ func RegexReplace(_ context.Context, args ...core.Value) (core.Value, error) {
 	reg, err := regexp.Compile(exp)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	out := reg.ReplaceAllString(text, repl)
 
-	return core.NewString(out), nil
+	return runtime.NewString(out), nil
 }

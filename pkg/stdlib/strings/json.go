@@ -7,18 +7,16 @@ import (
 	"github.com/wI2L/jettison"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // JSON_PARSE returns a value described by the JSON-encoded input string.
 // @param {String} str - The string to parse as JSON.
 // @return {Any} - Parsed value.
-func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func JSONParse(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	var val interface{}
@@ -26,7 +24,7 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 	err = json.Unmarshal([]byte(args[0].String()), &val)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	return runtime.Parse(val), nil
@@ -35,18 +33,18 @@ func JSONParse(_ context.Context, args ...core.Value) (core.Value, error) {
 // JSON_STRINGIFY returns a JSON string representation of the input value.
 // @param {Any} str - The input value to serialize.
 // @return {String} - JSON string.
-func JSONStringify(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func JSONStringify(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	out, err := jettison.MarshalOpts(args[0])
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
-	return core.NewString(string(out)), nil
+	return runtime.NewString(string(out)), nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
 
@@ -14,12 +13,12 @@ import (
 // @param {Int} length - Target length.
 // @param {String} [message] - Message to display on error.
 var Len = base.Assertion{
-	DefaultMessage: func(args []core.Value) string {
+	DefaultMessage: func(args []runtime.Value) string {
 		return fmt.Sprintf("has size %s", args[1])
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		col := args[0]
 		size := args[1]
 
@@ -29,6 +28,6 @@ var Len = base.Assertion{
 			return false, err
 		}
 
-		return core.CompareValues(out, size) == 0, nil
+		return runtime.CompareValues(out, size) == 0, nil
 	},
 }

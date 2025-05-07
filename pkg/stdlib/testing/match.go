@@ -3,7 +3,8 @@ package testing
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
 )
@@ -13,12 +14,12 @@ import (
 // @param {String} expression - Regular expression.
 // @param {String} [message] - Message to display on error.
 var Match = base.Assertion{
-	DefaultMessage: func(args []core.Value) string {
+	DefaultMessage: func(args []runtime.Value) string {
 		return "match regular expression"
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
-	Fn: func(ctx context.Context, args []core.Value) (bool, error) {
+	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		value := args[0]
 		regexp := args[1]
 
@@ -28,6 +29,6 @@ var Match = base.Assertion{
 			return false, err
 		}
 
-		return core.CompareValues(out, core.True) == 0, nil
+		return runtime.CompareValues(out, runtime.True) == 0, nil
 	},
 }

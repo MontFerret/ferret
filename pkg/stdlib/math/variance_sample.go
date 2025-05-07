@@ -5,14 +5,12 @@ import (
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // VARIANCE_SAMPLE returns the sample variance of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sample variance.
-func SampleVariance(ctx context.Context, args ...core.Value) (core.Value, error) {
+func SampleVariance(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}
@@ -33,5 +31,5 @@ func SampleVariance(ctx context.Context, args ...core.Value) (core.Value, error)
 		return runtime.NewFloat(math.NaN()), nil
 	}
 
-	return variance(ctx, arr, core.NewInt(1))
+	return variance(ctx, arr, runtime.NewInt(1))
 }

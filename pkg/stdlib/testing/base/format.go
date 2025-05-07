@@ -3,15 +3,15 @@ package base
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func FormatValue(val core.Value) string {
+func FormatValue(val runtime.Value) string {
 	valStr := val.String()
 
-	if val == core.None {
+	if val == runtime.None {
 		valStr = "none"
 	}
 
-	return fmt.Sprintf("[%s] '%s'", core.Reflect(val), valStr)
+	return fmt.Sprintf("[%s] '%s'", runtime.Reflect(val), valStr)
 }

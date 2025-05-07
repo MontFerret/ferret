@@ -9,34 +9,32 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/pkg/errors"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // FMT formats the template using these arguments.
 // @param {String} template - template.
 // @param {Any, repeated} args - template arguments.
 // @return {String} - string formed by template using arguments.
-func Fmt(_ context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
-		return core.None, err
+func Fmt(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
+		return runtime.None, err
 	}
 
 	arg0, err := runtime.CastString(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	formatted, err := format(arg0.String(), args[1:])
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	return core.NewString(formatted), nil
+	return runtime.NewString(formatted), nil
 }
 
-func format(template string, args []core.Value) (string, error) {
+func format(template string, args []runtime.Value) (string, error) {
 	rgx := regexp.MustCompile("{[0-9]*}")
 
 	argsCount := len(args)

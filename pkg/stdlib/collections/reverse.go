@@ -4,23 +4,20 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // REVERSE returns the reverse of a given string or array value.
 // @param {String | Any[]} value - The string or array to reverse.
 // @return {String | Any[]} - A reversed version of a given value.
-func Reverse(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func Reverse(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
 	switch col := args[0].(type) {
-	case core.String:
+	case runtime.String:
 		runes := []rune(string(col))
 		size := len(runes)
 
@@ -29,12 +26,12 @@ func Reverse(ctx context.Context, args ...core.Value) (core.Value, error) {
 			runes[i], runes[size-1-i] = runes[size-1-i], runes[i]
 		}
 
-		return core.NewString(string(runes)), nil
+		return runtime.NewString(string(runes)), nil
 	case runtime.List:
 		size, err := col.Length(ctx)
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
 		result := runtime.NewArray(int(size))
@@ -43,7 +40,7 @@ func Reverse(ctx context.Context, args ...core.Value) (core.Value, error) {
 			item, err := col.Get(ctx, i)
 
 			if err != nil {
-				return core.None, err
+				return runtime.None, err
 			}
 
 			_ = result.Add(ctx, item)
@@ -51,6 +48,6 @@ func Reverse(ctx context.Context, args ...core.Value) (core.Value, error) {
 
 		return result, nil
 	default:
-		return core.None, core.TypeError(args[0], types.Array, types.String)
+		return runtime.None, runtime.TypeError(args[0], runtime.TypeList, runtime.TypeString)
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	t "testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -25,7 +25,7 @@ func TestTrue(t *t.T) {
 
 	Convey("When arg is not boolean", t, func() {
 		Convey("It should return an error", func() {
-			_, err := True(context.Background(), core.NewString("true"))
+			_, err := True(context.Background(), runtime.NewString("true"))
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [string] 'true' to be [boolean] 'true'")
@@ -34,7 +34,7 @@ func TestTrue(t *t.T) {
 
 	Convey("When arg is false", t, func() {
 		Convey("It should return an error", func() {
-			_, err := True(context.Background(), core.False)
+			_, err := True(context.Background(), runtime.False)
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'false' to be [boolean] 'true'")
@@ -43,7 +43,7 @@ func TestTrue(t *t.T) {
 
 	Convey("When arg is true", t, func() {
 		Convey("It should not return an error", func() {
-			_, err := True(context.Background(), core.True)
+			_, err := True(context.Background(), runtime.True)
 
 			So(err, ShouldBeNil)
 		})
@@ -63,7 +63,7 @@ func TestNotTrue(t *t.T) {
 
 	Convey("When arg is not boolean", t, func() {
 		Convey("It should not return an error", func() {
-			_, err := NotTrue(context.Background(), core.NewString("true"))
+			_, err := NotTrue(context.Background(), runtime.NewString("true"))
 
 			So(err, ShouldBeNil)
 		})
@@ -71,7 +71,7 @@ func TestNotTrue(t *t.T) {
 
 	Convey("When arg is true", t, func() {
 		Convey("It should return an error", func() {
-			_, err := NotTrue(context.Background(), core.True)
+			_, err := NotTrue(context.Background(), runtime.True)
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [boolean] 'true' not to be [boolean] 'true'")
@@ -80,7 +80,7 @@ func TestNotTrue(t *t.T) {
 
 	Convey("When arg is false", t, func() {
 		Convey("It should return an error", func() {
-			_, err := NotTrue(context.Background(), core.False)
+			_, err := NotTrue(context.Background(), runtime.False)
 
 			So(err, ShouldBeNil)
 		})
