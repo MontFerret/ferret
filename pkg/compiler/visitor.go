@@ -312,21 +312,29 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	clauses := ctx.AllSortClauseExpression()
 	isSortMany := len(clauses) > 1
 
+	// For multi-sort
+	var directionRegs *RegisterSequence
+
 	if isSortMany {
 		clausesRegs := make([]vm.Operand, len(clauses))
 		// We create a sequence of registers for the clauses
 		// To pack them into an array
-		seq := v.registers.AllocateSequence(len(clauses))
+		keyRegs := v.registers.AllocateSequence(len(clauses))
+
+		// We create a sequence of registers for the directions
+		directionRegs = v.registers.AllocateSequence(len(clauses))
+
 		for i, clause := range clauses {
 			clauseReg := clause.Accept(v).(vm.Operand)
-			v.emitter.EmitAB(vm.OpMove, seq.Registers[i], clauseReg)
-			clausesRegs[i] = seq.Registers[i]
+			v.emitter.EmitAB(vm.OpMove, keyRegs.Registers[i], clauseReg)
+			clausesRegs[i] = keyRegs.Registers[i]
+			v.visitSortDirection(clause.SortDirection(), directionRegs.Registers[i])
 
 			// TODO: Free registers
 		}
 
 		arrReg := v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpArray, arrReg, seq)
+		v.emitter.EmitAs(vm.OpArray, arrReg, keyRegs)
 		v.emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free registers
 	} else {
 		clausesReg := clauses[0].Accept(v).(vm.Operand)
@@ -361,14 +369,6 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	}
 
 	if isSortMany {
-		directionRegs := v.registers.AllocateSequence(len(clauses))
-
-		for i, clause := range clauses {
-			v.visitSortDirection(clause.SortDirection(), directionRegs.Registers[i])
-
-			// TODO: Free registers
-		}
-
 		v.emitter.EmitAs(vm.OpSortMany, loop.Result, directionRegs)
 	} else {
 		directionReg := v.registers.Allocate(Temp)
