@@ -39,7 +39,7 @@ func (r *Range) Unwrap() interface{} {
 func (r *Range) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte("range"))
+	h.Write([]byte("vm.range"))
 	h.Write([]byte(":"))
 
 	startMultiplier := 1

@@ -5,10 +5,16 @@ import (
 	"sort"
 )
 
+// Sortable is an interface that defines methods for sorting a collection of values.
 type Sortable interface {
-	SortAsc(context.Context) (List, error)
-	SortDesc(context.Context) (List, error)
-	SortWith(context.Context, Comparator) (List, error)
+	// SortAsc sorts the collection in ascending order.
+	SortAsc(context.Context) error
+
+	// SortDesc sorts the collection in descending order.
+	SortDesc(context.Context) error
+
+	// SortWith sorts the collection using a custom comparator.
+	SortWith(context.Context, Comparator) error
 }
 
 func SortSlice(values []Value, ascending Boolean) {

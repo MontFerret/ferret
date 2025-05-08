@@ -265,6 +265,13 @@ loop:
 					reg[dst] = runtime.None
 				}
 			}
+		case OpKeyValue:
+			key := reg[src1]
+			value := reg[src2]
+			reg[dst] = &internal.KeyValuePair{
+				Key:   key,
+				Value: value,
+			}
 		case OpCall, OpProtectedCall:
 			fnName := reg[dst].String()
 			fn := vm.env.GetFunction(fnName)
@@ -446,35 +453,41 @@ loop:
 		case OpLoopPush:
 			ds := reg[dst].(*internal.DataSet)
 			ds.Push(ctx, reg[src1])
-		case OpLoopPushIter:
+		case OpSort:
 			ds := reg[dst].(*internal.DataSet)
-			iterator := reg[src1].(*internal.Iterator)
-			ds.Push(ctx, &internal.KeyValuePair{
-				Key:   iterator.Key(),
-				Value: iterator.Value(),
-			})
-		case OpLoopSequence:
-			ds := reg[src1].(*internal.DataSet)
-			reg[dst] = internal.NewSequence(ds.ToList())
-		case OpSortPrep:
-			reg[dst] = internal.NewStack(3)
-		case OpSortPush:
-			stack := reg[dst].(*internal.Stack)
-			stack.Push(reg[src1])
-		case OpSortPop:
-			stack := reg[src1].(*internal.Stack)
-			reg[dst] = stack.Pop()
-		case OpSortValue:
-			pair := reg[src1].(*internal.KeyValuePair)
-			reg[dst] = pair.Value
-		case OpSortKey:
-			pair := reg[src1].(*internal.KeyValuePair)
-			reg[dst] = pair.Key
-		case OpSortSwap:
+			dir := runtime.ToIntSafe(ctx, reg[src1])
+
+			if err := ds.Sort(ctx, dir); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
+		case OpSortMany:
 			ds := reg[dst].(*internal.DataSet)
-			i, _ := runtime.ToInt(ctx, reg[src1])
-			j, _ := runtime.ToInt(ctx, reg[src2])
-			ds.Swap(ctx, i, j)
+			var size int
+
+			if src1 > 0 {
+				size = src2.Register() - src1.Register() + 1
+			}
+
+			directions := make([]runtime.Int, 0, size)
+			start := int(src1)
+			end := int(src1) + size
+
+			// Iterate over registers starting from src1 and up to the src2
+			for i := start; i < end; i++ {
+				directions = append(directions, runtime.ToIntSafe(ctx, reg[i]))
+			}
+
+			if err := ds.SortMany(ctx, directions); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
 		case OpGroupPrep:
 			reg[dst] = internal.NewCollector()
 		case OpGroupAdd:

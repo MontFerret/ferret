@@ -28,6 +28,9 @@ func SortedUnique(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 		return runtime.None, err
 	}
 
-	// TODO: Optimize. Too many copies.
-	return uniq.SortAsc(ctx)
+	if err := uniq.SortAsc(ctx); err != nil {
+		return runtime.None, err
+	}
+
+	return uniq, nil
 }

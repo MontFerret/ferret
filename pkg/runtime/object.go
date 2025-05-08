@@ -38,6 +38,10 @@ func NewObjectWith(props ...*ObjectProperty) Map {
 	return obj
 }
 
+func NewObjectOf(props map[string]Value) Map {
+	return &Object{props}
+}
+
 func (t *Object) Type() string {
 	return "object"
 }
@@ -221,54 +225,24 @@ func (t *Object) IsEmpty(_ context.Context) (Boolean, error) {
 	return len(t.data) == 0, nil
 }
 
-func (t *Object) Keys(_ context.Context) ([]Value, error) {
+func (t *Object) Keys(_ context.Context) (List, error) {
 	keys := make([]Value, 0, len(t.data))
 
 	for k := range t.data {
 		keys = append(keys, NewString(k))
 	}
 
-	return keys, nil
+	return NewArrayOf(keys), nil
 }
 
-func (t *Object) Values(_ context.Context) ([]Value, error) {
+func (t *Object) Values(_ context.Context) (List, error) {
 	keys := make([]Value, 0, len(t.data))
 
 	for _, v := range t.data {
 		keys = append(keys, v)
 	}
 
-	return keys, nil
-}
-
-func (t *Object) SortAsc(ctx context.Context) (List, error) {
-	return t.sort(ctx, true)
-}
-
-func (t *Object) SortDesc(ctx context.Context) (List, error) {
-	return t.sort(ctx, false)
-}
-
-func (t *Object) sort(ctx context.Context, ascending Boolean) (List, error) {
-	c, _ := t.Values(ctx)
-
-	SortSlice(c, ascending)
-
-	res := new(Array)
-	res.data = c
-
-	return res, nil
-}
-
-func (t *Object) SortWith(ctx context.Context, comparator Comparator) (List, error) {
-	c, _ := t.Values(ctx)
-
-	SortSliceWith(c, comparator)
-
-	res := new(Array)
-	res.data = c
-
-	return res, nil
+	return NewArrayOf(keys), nil
 }
 
 func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {

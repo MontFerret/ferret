@@ -21,9 +21,13 @@ func Median(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	sorted, err := arr.SortDesc(ctx)
+	sorted, err := arr.CopyWithCap(ctx, 0)
 
 	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := sorted.SortDesc(ctx); err != nil {
 		return runtime.None, err
 	}
 

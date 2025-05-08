@@ -31,5 +31,15 @@ func Sorted(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.EmptyArray(), nil
 	}
 
-	return list.SortAsc(ctx)
+	copied, err := list.CopyWithCap(ctx, 0)
+
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := copied.SortAsc(ctx); err != nil {
+		return runtime.None, err
+	}
+
+	return copied, nil
 }

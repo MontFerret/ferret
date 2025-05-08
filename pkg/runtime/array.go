@@ -32,6 +32,10 @@ func NewArrayWith(values ...Value) List {
 	return &Array{data: values}
 }
 
+func NewArrayOf(values []Value) List {
+	return &Array{data: values}
+}
+
 func (t *Array) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }
@@ -282,36 +286,30 @@ func (t *Array) Slice(_ context.Context, start, end Int) (List, error) {
 	return result, nil
 }
 
-func (t *Array) SortAsc(ctx context.Context) (List, error) {
+func (t *Array) SortAsc(ctx context.Context) error {
 	return t.sort(ctx, true)
 }
 
-func (t *Array) SortDesc(ctx context.Context) (List, error) {
+func (t *Array) SortDesc(ctx context.Context) error {
 	return t.sort(ctx, false)
 }
 
-func (t *Array) sort(_ context.Context, ascending Boolean) (List, error) {
-	c := make([]Value, len(t.data))
-	copy(c, t.data)
+func (t *Array) sort(_ context.Context, ascending Boolean) error {
+	SortSlice(t.data, ascending)
 
-	SortSlice(c, ascending)
-
-	res := new(Array)
-	res.data = c
-
-	return res, nil
+	return nil
 }
 
-func (t *Array) SortWith(_ context.Context, comparator Comparator) (List, error) {
+func (t *Array) SortWith(_ context.Context, comparator Comparator) error {
 	c := make([]Value, len(t.data))
 	copy(c, t.data)
 
-	SortSliceWith(c, comparator)
+	SortSliceWith(t.data, comparator)
 
 	res := new(Array)
 	res.data = c
 
-	return res, nil
+	return nil
 }
 
 func (t *Array) ForEach(ctx context.Context, predicate IndexedPredicate) error {

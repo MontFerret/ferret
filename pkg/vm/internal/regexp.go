@@ -38,7 +38,7 @@ func (r *Regexp) Unwrap() interface{} {
 func (r *Regexp) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte("regexp"))
+	h.Write([]byte("vm.regexp"))
 	h.Write([]byte(":"))
 	h.Write([]byte(r.String()))
 

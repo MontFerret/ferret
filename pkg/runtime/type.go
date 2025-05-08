@@ -10,7 +10,6 @@ const (
 	TypeString   = "string"
 	TypeDateTime = "date_time"
 	TypeList     = "list"
-	TypeSet      = "set"
 	TypeMap      = "map"
 	TypeBinary   = "binary"
 
@@ -39,12 +38,10 @@ func typeRank(value Value) int64 {
 		return 5
 	case List:
 		return 6
-	case Set:
-		return 7
 	case Map:
-		return 8
+		return 7
 	case Binary:
-		return 9
+		return 8
 	default:
 		return -1
 	}
@@ -70,8 +67,6 @@ func Reflect(input Value) string {
 		return TypeList
 	case Map:
 		return TypeMap
-	case Set:
-		return TypeSet
 	case Binary:
 		return TypeBinary
 	case Iterable:

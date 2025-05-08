@@ -8,7 +8,8 @@ import (
 
 type DataSet struct {
 	hashmap map[uint64]bool
-	values  runtime.List
+	// TODO: Use backend storage to support large datasets
+	values runtime.List
 }
 
 func NewDataSet(distinct bool) *DataSet {
@@ -24,8 +25,45 @@ func NewDataSet(distinct bool) *DataSet {
 	}
 }
 
-func (ds *DataSet) Swap(ctx context.Context, i, j runtime.Int) {
-	ds.values.Swap(ctx, i, j)
+func (ds *DataSet) Sort(ctx context.Context, direction runtime.Int) error {
+	return ds.values.SortWith(ctx, func(first, second runtime.Value) int64 {
+		firstKV := first.(*KeyValuePair)
+		secondKV := second.(*KeyValuePair)
+
+		comp := runtime.CompareValues(firstKV.Key, secondKV.Key)
+
+		if direction == SortAsc {
+			return comp
+		}
+
+		return -comp
+	})
+}
+
+func (ds *DataSet) SortMany(ctx context.Context, directions []runtime.Int) error {
+	return ds.values.SortWith(ctx, func(first, second runtime.Value) int64 {
+		firstKV := first.(*KeyValuePair)
+		secondKV := second.(*KeyValuePair)
+
+		firstKVKey := firstKV.Key.(runtime.List)
+		secondKVKey := secondKV.Key.(runtime.List)
+
+		for idx, direction := range directions {
+			firstKey, _ := firstKVKey.Get(ctx, runtime.NewInt(idx))
+			secondKey, _ := secondKVKey.Get(ctx, runtime.NewInt(idx))
+			comp := runtime.CompareValues(firstKey, secondKey)
+
+			if comp != 0 {
+				if direction == SortAsc {
+					return comp
+				}
+
+				return -comp
+			}
+		}
+
+		return 0
+	})
 }
 
 func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) runtime.Value {

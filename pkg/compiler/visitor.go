@@ -300,46 +300,57 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	return nil
 }
 
-// VisitSortClause / VisitSortClause implements the following quick sort algorithm:
-//
-// // Create a stack for storing subarray indices
-// stack := []struct{ low, high int }{}
-//
-// // Push the initial range of the array
-// stack = append(stack, struct{ low, high int }{low: 0, high: len(arr) - 1})
-//
-// // Process the stack until empty
-//
-//	for len(stack) > 0 {
-//		// Pop the range
-//		n := len(stack) - 1
-//		low, high := stack[n].low, stack[n].high
-//		stack = stack[:n]
-//
-//		// Partition the current subarray
-//		if low < high {
-//			pivot := arr[high] // Choosing the last element as the pivot
-//			i := low - 1       // Index for elements smaller than the pivot
-//
-//			for j := low; j < high; j++ {
-//				if arr[j] <= pivot {
-//					i++
-//					arr[i], arr[j] = arr[j], arr[i] // Swap
-//				}
-//			}
-//
-//			i++
-//
-//			arr[i], arr[high] = arr[high], arr[i] // Place pivot in its correct position
-//
-//			// Push the indices of the left and right subarrays onto the stack
-//			stack = append(stack, struct{ low, high int }{low: low, high: i - 1})
-//			stack = append(stack, struct{ low, high int }{low: i + 1, high: high})
-//		}
-//	}
 func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	loop := v.loops.Loop()
-	v.emitter.EmitAB(vm.OpLoopPushIter, loop.Result, loop.Iterator)
+
+	// We collect the sorting conditions (keys
+	// And wrap each loop element by a KeyValuePair
+	// Where a key is either a single value or a list of values
+	// These KeyValuePairs are then added to the dataset
+	kvReg := v.registers.Allocate(Temp)
+	kvKeyReg := v.registers.Allocate(Temp)
+	clauses := ctx.AllSortClauseExpression()
+	isSortMany := len(clauses) > 1
+
+	if isSortMany {
+		clausesRegs := make([]vm.Operand, len(clauses))
+		// We create a sequence of registers for the clauses
+		// To pack them into an array
+		seq := v.registers.AllocateSequence(len(clauses))
+		for i, clause := range clauses {
+			clauseReg := clause.Accept(v).(vm.Operand)
+			v.emitter.EmitAB(vm.OpMove, seq.Registers[i], clauseReg)
+			clausesRegs[i] = seq.Registers[i]
+
+			// TODO: Free registers
+		}
+
+		arrReg := v.registers.Allocate(Temp)
+		v.emitter.EmitAs(vm.OpArray, arrReg, seq)
+		v.emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free registers
+	} else {
+		clausesReg := clauses[0].Accept(v).(vm.Operand)
+		v.emitter.EmitAB(vm.OpMove, kvKeyReg, clausesReg)
+	}
+
+	var kvValReg vm.Operand
+
+	// In case the value is not used in the loop body, and only key is used
+	if loop.ValueName != "" {
+		kvValReg = loop.Value
+	} else {
+		// If so, we need to load it from the iterator
+		kvValReg = v.registers.Allocate(Temp)
+
+		if loop.Kind == ForLoop {
+			v.emitter.EmitAB(vm.OpForLoopValue, kvValReg, loop.Iterator)
+		} else {
+			v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
+		}
+	}
+
+	v.emitter.EmitABC(vm.OpKeyValue, kvReg, kvKeyReg, kvValReg)
+	v.emitter.EmitAB(vm.OpLoopPush, loop.Result, kvReg)
 	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
 	v.emitter.EmitA(vm.OpClose, loop.Iterator)
 
@@ -349,131 +360,24 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		v.emitter.PatchJumpAB(loop.Jump)
 	}
 
-	// Allocate registers
-	stack := loop.Iterator
-	low := v.registers.Allocate(Temp)
-	high := v.registers.Allocate(Temp)
-	pivot := v.registers.Allocate(Temp)
-	n := v.registers.Allocate(Temp)
-	i := v.registers.Allocate(Temp)
-	j := v.registers.Allocate(Temp)
-	comp := v.registers.Allocate(Temp)
+	if isSortMany {
+		directionRegs := v.registers.AllocateSequence(len(clauses))
 
-	// Init sort
-	// Create a new stack
-	v.emitter.EmitA(vm.OpSortPrep, stack)
+		for i, clause := range clauses {
+			v.visitSortDirection(clause.SortDirection(), directionRegs.Registers[i])
 
-	// low = 0
-	v.emitter.EmitA(vm.OpLoadZero, low)
-
-	// high = len(arr) - 1
-	v.emitter.EmitAB(vm.OpLength, high, loop.Result)
-	v.emitter.EmitA(vm.OpDecr, high)
-
-	// Push initial range: stack = append(stack, high, low)
-	v.emitter.EmitAB(vm.OpSortPush, stack, high)
-	v.emitter.EmitAB(vm.OpSortPush, stack, low)
-
-	// Main stack loop
-	// while len(stack) > 0
-	stackLoopStart := v.emitter.Size()
-	stackLoopExitJmp := v.emitter.EmitJumpc(vm.OpJumpIfEmpty, jumpPlaceholder, stack)
-
-	// Pop the range: low = stack.pop(), high = stack.pop()
-	v.emitter.EmitAB(vm.OpSortPop, low, stack)
-	v.emitter.EmitAB(vm.OpSortPop, high, stack)
-
-	// if low < high
-	// comp = low < high
-	v.emitter.EmitABC(vm.OpLt, comp, low, high)
-	v.emitter.EmitJumpc(vm.OpJumpIfFalse, stackLoopStart, comp)
-
-	// Otherwise start the partition
-	// pivot := arr[high]
-	v.emitter.EmitABC(vm.OpLoadProperty, pivot, loop.Result, high)
-
-	// i = low - 1
-	v.emitter.EmitAB(vm.OpMove, i, low)
-	v.emitter.EmitA(vm.OpDecr, i)
-
-	// j = low
-	v.emitter.EmitAB(vm.OpMove, j, low)
-
-	// for j < high
-	partitionLoopStart := v.emitter.Size()
-	v.emitter.EmitABC(vm.OpLt, comp, j, high)
-	partitionLoopEnd := v.emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, comp)
-
-	// Load current value into n
-	// n = arr[j]
-	v.emitter.EmitABC(vm.OpLoadProperty, n, loop.Result, j)
-
-	// Collect all sort clauses (mostly one or two)
-	clauses := ctx.AllSortClauseExpression()
-	skipSwapJumps := make([]int, len(clauses))
-
-	// CompareValues pivot with each clause
-	for i, clause := range clauses {
-		sort := clause.(*fql.SortClauseExpressionContext)
-
-		pivotProp := v.visitSortClauseExpression(sort, loop, pivot)
-		currentProp := v.visitSortClauseExpression(sort, loop, n)
-
-		comparator := vm.OpLte
-		direction := clause.SortDirection()
-
-		if direction != nil && strings.ToLower(direction.GetText()) == "desc" {
-			comparator = vm.OpGte
+			// TODO: Free registers
 		}
 
-		// comp = current <= pivot or current >= pivot
-		v.emitter.EmitABC(comparator, comp, currentProp, pivotProp)
-		// If comp is false, jump to loop end
-		skipSwapJumps[i] = v.emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, comp)
+		v.emitter.EmitAs(vm.OpSortMany, loop.Result, directionRegs)
+	} else {
+		directionReg := v.registers.Allocate(Temp)
+		v.visitSortDirection(clauses[0].SortDirection(), directionReg)
+		v.emitter.EmitAB(vm.OpSort, loop.Result, directionReg)
 	}
-
-	// i++
-	v.emitter.EmitA(vm.OpIncr, i)
-	// swap arr[i], arr[j]
-	v.emitter.EmitABC(vm.OpSortSwap, loop.Result, i, j)
-
-	// Patch all clause skip swap jumps
-	for _, jmp := range skipSwapJumps {
-		v.emitter.PatchJumpNext(jmp)
-	}
-
-	// j++
-	v.emitter.EmitA(vm.OpIncr, j)
-	v.emitter.EmitJump(vm.OpJump, partitionLoopStart)
-
-	// End of partition loop
-	v.emitter.PatchJumpNext(partitionLoopEnd)
-
-	// i++
-	v.emitter.EmitA(vm.OpIncr, i)
-	// swap arr[i], arr[high]
-	v.emitter.EmitABC(vm.OpSortSwap, loop.Result, i, high)
-
-	// Push left subarray: stack = append(stack, low, i-1)
-	v.emitter.EmitAB(vm.OpMove, n, i)
-	v.emitter.EmitA(vm.OpDecr, n)
-	v.emitter.EmitAB(vm.OpSortPush, stack, n)
-	v.emitter.EmitAB(vm.OpSortPush, stack, low)
-
-	// Push right subarray: stack = append(stack, {i+1, high})
-	v.emitter.EmitAB(vm.OpMove, n, i)
-	v.emitter.EmitA(vm.OpIncr, n)
-	v.emitter.EmitAB(vm.OpSortPush, stack, high)
-	v.emitter.EmitAB(vm.OpSortPush, stack, n)
-
-	// Jump to stack loop beginning
-	v.emitter.EmitJump(vm.OpJump, stackLoopStart)
-
-	// Patch the stack loop exit jump
-	v.emitter.PatchJumpNext(stackLoopExitJmp)
 
 	// Replace source with sorted array
-	v.emitter.EmitAB(vm.OpLoopSequence, loop.Src, loop.Result)
+	v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
 	// Create new for loop
 	// TODO: Reuse existing DataSet instance
@@ -482,42 +386,21 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	return nil
 }
 
-func (v *visitor) visitSortClauseExpression(ctx *fql.SortClauseExpressionContext, loop *Loop, src vm.Operand) vm.Operand {
-	var isVar bool
+func (v *visitor) visitSortDirection(dir antlr.TerminalNode, dest vm.Operand) {
+	var val runtime.Int = vm.SortAsc
 
-	if e := ctx.Expression(); e != nil {
-		if p := e.Predicate(); p != nil {
-			if a := p.ExpressionAtom(); a != nil {
-				isVar = a.Variable() != nil
-			}
+	if dir != nil {
+		if strings.ToLower(dir.GetText()) == "desc" {
+			val = vm.SortDesc
 		}
 	}
 
-	var dst vm.Operand
+	// TODO: Free constant registers
+	v.emitter.EmitAB(vm.OpMove, dest, v.loadConstant(val))
+}
 
-	// if the clause uses plain variable that means we need to use value as is
-	if isVar {
-		dst = v.registers.Allocate(Temp)
-	} else if loop.ValueName != "" {
-		dst = v.symbols.Variable(loop.ValueName)
-	} else {
-		dst = v.symbols.Variable(loop.KeyName)
-	}
-
-	// We override the loop variables with the pivot value
-	if loop.ValueName != "" {
-		v.emitter.EmitAB(vm.OpSortValue, dst, src)
-	}
-
-	if loop.KeyName != "" {
-		v.emitter.EmitAB(vm.OpSortKey, dst, src)
-	}
-
-	if !isVar {
-		return ctx.Expression().Accept(v).(vm.Operand)
-	}
-
-	return dst
+func (v *visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext) interface{} {
+	return ctx.Expression().Accept(v).(vm.Operand)
 }
 
 func (v *visitor) visitOffset(src1 vm.Operand) interface{} {

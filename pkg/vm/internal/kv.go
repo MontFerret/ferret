@@ -13,7 +13,7 @@ type KeyValuePair struct {
 }
 
 func (p *KeyValuePair) MarshalJSON() ([]byte, error) {
-	panic("not supported")
+	return p.Value.MarshalJSON()
 }
 
 func (p *KeyValuePair) String() string {
@@ -27,7 +27,7 @@ func (p *KeyValuePair) Unwrap() interface{} {
 func (p *KeyValuePair) Hash() uint64 {
 	h := fnv.New64a()
 
-	h.Write([]byte("internal.KeyValuePair"))
+	h.Write([]byte("vm.KeyValuePair"))
 	h.Write([]byte(":"))
 	h.Write([]byte("["))
 

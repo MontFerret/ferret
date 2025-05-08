@@ -25,7 +25,6 @@ type (
 		Measurable
 		Cloneable
 		Iterable
-		Sortable
 
 		IsEmpty(ctx context.Context) (Boolean, error)
 		Clear(ctx context.Context) error
@@ -36,6 +35,7 @@ type (
 	List interface {
 		Collection
 		Indexed
+		Sortable
 
 		Add(ctx context.Context, value Value) error
 		Set(ctx context.Context, idx Int, value Value) error
@@ -56,16 +56,6 @@ type (
 		ForEach(ctx context.Context, predicate IndexedPredicate) error
 	}
 
-	// Set represents a set of values.
-	// Generic interface for all set-like structures.
-	Set interface {
-		Collection
-
-		Contains(ctx context.Context, value Value) (Boolean, error)
-		Add(ctx context.Context, value Value) error
-		Remove(ctx context.Context, value Value) error
-	}
-
 	// Map represents a dictionary of values.
 	// Generic interface for all dictionary-like structures.
 	Map interface {
@@ -77,8 +67,8 @@ type (
 
 		ContainsKey(ctx context.Context, key Value) (Boolean, error)
 		ContainsValue(ctx context.Context, value Value) (Boolean, error)
-		Keys(context.Context) ([]Value, error)
-		Values(context.Context) ([]Value, error)
+		Keys(context.Context) (List, error)
+		Values(context.Context) (List, error)
 		Find(ctx context.Context, predicate KeyedPredicate) (List, error)
 		FindOne(ctx context.Context, predicate KeyedPredicate) (Value, Boolean, error)
 
