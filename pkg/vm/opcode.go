@@ -74,6 +74,8 @@ const (
 	OpLoopPush
 	OpLoopPushIter
 	OpLoopSequence
+	OpLoopLimit
+	OpLoopSkip
 	OpLoopEnd
 
 	OpForLoopPrep // Creates an iterator for a loop

@@ -522,22 +522,14 @@ func (v *visitor) visitSortClauseExpression(ctx *fql.SortClauseExpressionContext
 
 func (v *visitor) visitOffset(src1 vm.Operand) interface{} {
 	state := v.registers.Allocate(State)
-	v.emitter.EmitA(vm.OpIncr, state)
-
-	comp := v.registers.Allocate(Temp)
-	v.emitter.EmitABC(vm.OpGt, comp, state, src1)
-	v.emitter.EmitJumpc(vm.OpJumpIfFalse, v.loops.Loop().Jump, comp)
+	v.emitter.EmitABx(vm.OpLoopSkip, state, src1, v.loops.Loop().Jump)
 
 	return state
 }
 
 func (v *visitor) visitLimit(src1 vm.Operand) interface{} {
 	state := v.registers.Allocate(State)
-	v.emitter.EmitA(vm.OpIncr, state)
-
-	comp := v.registers.Allocate(Temp)
-	v.emitter.EmitABC(vm.OpGt, comp, state, src1)
-	v.emitter.EmitJumpc(vm.OpJumpIfTrue, v.loops.Loop().Jump, comp)
+	v.emitter.EmitABx(vm.OpLoopLimit, state, src1, v.loops.Loop().Jump)
 
 	return state
 }

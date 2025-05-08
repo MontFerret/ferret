@@ -369,7 +369,27 @@ loop:
 				// Recover from an error
 				reg[dst] = runtime.None
 			}
+		case OpLoopSkip:
+			state := runtime.ToIntSafe(ctx, reg[dst])
+			threshold := runtime.ToIntSafe(ctx, reg[src1])
+			jump := int(src2)
 
+			if state < threshold {
+				state++
+				reg[dst] = state
+				vm.pc = jump
+			}
+		case OpLoopLimit:
+			state := runtime.ToIntSafe(ctx, reg[dst])
+			threshold := runtime.ToIntSafe(ctx, reg[src1])
+			jump := int(src2)
+
+			if state < threshold {
+				state++
+				reg[dst] = state
+			} else {
+				vm.pc = jump
+			}
 		case OpForLoopPrep:
 			input := reg[src1]
 
