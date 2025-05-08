@@ -159,3 +159,23 @@ func SafeCastBinary(input Value, fallback Binary) Binary {
 
 	return fallback
 }
+
+func CastComparable(input Value) (Comparable, error) {
+	comp, ok := input.(Comparable)
+
+	if ok {
+		return comp, nil
+	}
+
+	return nil, TypeError(input, TypeComparable)
+}
+
+func CastCloneable(input Value) (Cloneable, error) {
+	cloneable, ok := input.(Cloneable)
+
+	if ok {
+		return cloneable, nil
+	}
+
+	return nil, TypeError(input, TypeCloneable)
+}

@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -14,12 +13,12 @@ import (
 
 func TestShift(t *testing.T) {
 	Convey("Should return a copy of an array without the first element", t, func() {
-		arr := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
+		arr := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
 		)
 
 		out, err := arrays.Shift(context.Background(), arr)
@@ -29,7 +28,7 @@ func TestShift(t *testing.T) {
 	})
 
 	Convey("Should return empty array if a given one is empty", t, func() {
-		arr := internal.NewArray(0)
+		arr := runtime.NewArray(0)
 
 		out, err := arrays.Shift(context.Background(), arr)
 

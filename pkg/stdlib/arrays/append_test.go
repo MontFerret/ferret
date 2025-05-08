@@ -4,51 +4,55 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 )
 
 func TestAppend(t *testing.T) {
 	Convey("Should return a copy of an array", t, func() {
-		arr := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
+		arr := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Append(context.Background(), arr, core.NewInt(6))
+		out, err := arrays.Append(context.Background(), arr, runtime.NewInt(6))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, arr)
-		So(out.(collections.Measurable).Length(), ShouldBeGreaterThan, arr.Length())
+		expected, _ := arr.Length(context.Background())
+		actual, _ := out.(runtime.Measurable).Length(context.Background())
+		So(actual, ShouldBeGreaterThan, expected)
 	})
 
 	Convey("Should ignore non-unique items", t, func() {
-		arr := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
+		arr := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Append(context.Background(), arr, core.NewInt(5), core.True)
+		out, err := arrays.Append(context.Background(), arr, runtime.NewInt(5), runtime.True)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldNotEqual, arr)
-		So(out.(collections.Measurable).Length(), ShouldEqual, arr.Length())
+		So(out, ShouldNotPointTo, arr)
+		expected, _ := arr.Length(context.Background())
+		actual, _ := out.(runtime.Measurable).Length(context.Background())
+		So(actual, ShouldEqual, expected)
 
-		out2, err := arrays.Append(context.Background(), arr, core.NewInt(6), core.True)
+		out2, err := arrays.Append(context.Background(), arr, runtime.NewInt(6), runtime.True)
 
 		So(err, ShouldBeNil)
 		So(out2, ShouldNotEqual, arr)
-		So(out2.(collections.Measurable).Length(), ShouldBeGreaterThan, arr.Length())
+		expected, _ = arr.Length(context.Background())
+		actual, _ = out2.(runtime.Measurable).Length(context.Background())
+		So(actual, ShouldBeGreaterThan, expected)
 	})
 }

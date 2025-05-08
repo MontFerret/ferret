@@ -3,42 +3,28 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // POP returns a new array without last element.
 // @param {Any[]} array - Target array.
 // @return {Any[]} - Copy of an array without last element.
-func Pop(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return core.None, err
+func Pop(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
+	size, err := arr.Length(ctx)
 
-	length := int(arr.Length())
-	result := internal.NewArray(length)
-	lastIdx := length - 1
+	if err != nil {
+		return runtime.None, err
+	}
 
-	arr.ForEach(func(value core.Value, idx int) bool {
-		if idx == lastIdx {
-			return false
-		}
-
-		result.Push(value)
-
-		return true
-	})
-
-	return result, nil
+	return arr.Slice(ctx, 0, size-1)
 }

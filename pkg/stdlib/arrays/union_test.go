@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -17,28 +16,28 @@ import (
 // @return {Any[]} - All array elements combined in a single array, without duplicates, in any order.
 func TestUnion(t *testing.T) {
 	Convey("Should union all arrays", t, func() {
-		arr1 := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
+		arr1 := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
 		)
 
-		arr2 := internal.NewArrayWith(
-			core.NewString("a"),
-			core.NewString("b"),
-			core.NewString("c"),
-			core.NewString("d"),
+		arr2 := runtime.NewArrayWith(
+			runtime.NewString("a"),
+			runtime.NewString("b"),
+			runtime.NewString("c"),
+			runtime.NewString("d"),
 		)
 
-		arr3 := internal.NewArrayWith(
-			internal.NewArrayWith(
-				core.NewInt(1),
-				core.NewInt(2),
+		arr3 := runtime.NewArrayWith(
+			runtime.NewArrayWith(
+				runtime.NewInt(1),
+				runtime.NewInt(2),
 			),
-			internal.NewArrayWith(
-				core.NewInt(3),
-				core.NewInt(4),
+			runtime.NewArrayWith(
+				runtime.NewInt(3),
+				runtime.NewInt(4),
 			),
 		)
 

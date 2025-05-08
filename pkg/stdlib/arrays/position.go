@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.
@@ -13,37 +11,38 @@ import (
 // @param {Any} value - The target value.
 // @param {Boolean} [position=False] - Boolean value which indicates whether to return item's position.
 // @return {Boolean | Int} - A value indicating whether an element is contained in array.
-func Position(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return core.None, err
+func Position(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
 	el := args[1]
-	retIdx := false
+	var retIdx runtime.Boolean
 
 	if len(args) > 2 {
-		err = core.AssertBoolean(args[2])
+		arg2, err := runtime.CastBoolean(args[2])
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
-		retIdx = core.CompareValues(args[2], core.True) == 0
+		retIdx = arg2
 	}
 
-	position := arr.IndexOf(el)
+	position, err := arr.IndexOf(ctx, el)
+
+	if err != nil {
+		return runtime.None, err
+	}
 
 	if !retIdx {
-		return core.NewBoolean(position > -1), nil
+		return runtime.NewBoolean(position > -1), nil
 	}
 
 	return position, nil

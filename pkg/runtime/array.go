@@ -20,6 +20,10 @@ func NewArray(cap int) List {
 	return &Array{data: make([]Value, 0, cap)}
 }
 
+func NewArray64(cap Int) List {
+	return &Array{data: make([]Value, 0, cap)}
+}
+
 func NewSizedArray(size int) List {
 	return &Array{data: make([]Value, size)}
 }
@@ -117,11 +121,18 @@ func (t *Array) Hash() uint64 {
 }
 
 func (t *Array) Copy() Value {
-	ctx := context.Background()
-	c := NewArray(len(t.data))
+	return &Array{data: t.copyInternal(0)}
+}
+
+func (t *Array) CopyWithCap(_ context.Context, cap Int) (List, error) {
+	return &Array{data: t.copyInternal(cap)}, nil
+}
+
+func (t *Array) copyInternal(cap Int) []Value {
+	c := make([]Value, 0, len(t.data)+int(cap))
 
 	for _, el := range t.data {
-		_ = c.Add(ctx, el)
+		c = append(c, el)
 	}
 
 	return c

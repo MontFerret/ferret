@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // PUSH create a new array with appended value.
@@ -13,46 +11,7 @@ import (
 // @param {Any} value - Target value.
 // @param {Boolean} [unique=False] - Read indicating whether to do uniqueness check.
 // @return {Any[]} - A new array with appended value.
-func Push(_ context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 2, 3); err != nil {
-		return core.None, err
-	}
-
-	arr, err := core.CastList(args[0])
-
-	if err != nil {
-		return core.None, err
-	}
-
-	value := args[1]
-	uniq := false
-
-	if len(args) > 2 {
-		err = core.AssertBoolean(args[2])
-
-		if err != nil {
-			return core.None, err
-		}
-
-		uniq = core.CompareValues(args[2], core.True) == 0
-	}
-
-	result := internal.NewArray(int(arr.Length() + 1))
-	push := true
-
-	arr.ForEach(func(item core.Value, idx int) bool {
-		if uniq && push {
-			push = core.CompareValues(item, value) != 0
-		}
-
-		result.Push(item)
-
-		return true
-	})
-
-	if push {
-		result.Push(value)
-	}
-
-	return result, nil
+func Push(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	// TODO: Why do we have two functions with the same functionality?
+	return Append(ctx, args...)
 }

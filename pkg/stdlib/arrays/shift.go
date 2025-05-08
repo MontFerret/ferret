@@ -3,39 +3,24 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // SHIFT returns a new array without the first element.
 // @param {Any[]} array - Target array.
 // @return {Any[]} - Copy of an array without the first element.
-func Shift(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return core.None, err
+func Shift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	list, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-
-	length := int(arr.Length())
-	result := internal.NewArray(length)
-
-	arr.ForEach(func(value core.Value, idx int) bool {
-		if idx != 0 {
-			result.Push(value)
-		}
-
-		return true
+	return list.Find(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		return idx != 0, nil
 	})
-
-	return result, nil
 }

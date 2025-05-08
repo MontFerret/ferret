@@ -4,32 +4,31 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 )
 
 func TestIntersection(t *testing.T) {
 	Convey("Should find intersections between 2 arrays", t, func() {
-		arr1 := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
-			core.NewInt(6),
+		arr1 := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
+			runtime.NewInt(6),
 		)
 
-		arr2 := internal.NewArrayWith(
-			core.NewInt(4),
-			core.NewInt(5),
-			core.NewInt(6),
-			core.NewInt(7),
-			core.NewInt(8),
-			core.NewInt(9),
+		arr2 := runtime.NewArrayWith(
+			runtime.NewInt(4),
+			runtime.NewInt(5),
+			runtime.NewInt(6),
+			runtime.NewInt(7),
+			runtime.NewInt(8),
+			runtime.NewInt(9),
 		)
 
 		out, err := arrays.Intersection(context.Background(), arr1, arr2)
@@ -42,42 +41,44 @@ func TestIntersection(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		arr := out.(*internal.Array)
+		arr := out.(*runtime.Array)
 
-		So(arr.Length(), ShouldEqual, 3)
+		size, _ := arr.Length(context.Background())
 
-		arr.ForEach(func(value core.Value, idx int) bool {
-			_, exists := check[int(value.(core.Int))]
+		So(size, ShouldEqual, 3)
+
+		_ = arr.ForEach(context.Background(), func(_ context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			_, exists := check[int(value.(runtime.Int))]
 
 			So(exists, ShouldBeTrue)
 
-			return true
+			return true, nil
 		})
 	})
 
 	Convey("Should find intersections between more than 2 arrays", t, func() {
-		arr1 := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
+		arr1 := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
 		)
 
-		arr2 := internal.NewArrayWith(
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
-			core.NewInt(6),
+		arr2 := runtime.NewArrayWith(
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
+			runtime.NewInt(6),
 		)
 
-		arr3 := internal.NewArrayWith(
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
-			core.NewInt(6),
-			core.NewInt(7),
+		arr3 := runtime.NewArrayWith(
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
+			runtime.NewInt(6),
+			runtime.NewInt(7),
 		)
 
 		out, err := arrays.Intersection(context.Background(), arr1, arr2, arr3)
@@ -90,16 +91,17 @@ func TestIntersection(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		arr := out.(*internal.Array)
+		arr := out.(*runtime.Array)
+		size, _ := arr.Length(context.Background())
 
-		So(arr.Length(), ShouldEqual, 3)
+		So(size, ShouldEqual, 3)
 
-		arr.ForEach(func(value core.Value, idx int) bool {
-			_, exists := check[int(value.(core.Int))]
+		_ = arr.ForEach(context.Background(), func(_ context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			_, exists := check[int(value.(runtime.Int))]
 
 			So(exists, ShouldBeTrue)
 
-			return true
+			return true, nil
 		})
 	})
 }

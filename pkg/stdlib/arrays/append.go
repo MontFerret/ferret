@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // APPEND appends a new item to an array and returns a new array with a given element.
@@ -14,61 +12,52 @@ import (
 // @param {Any} item - Target value to add.
 // @param {Boolean} [unique=false] - If set to true, will add the item only if it's unique.
 // @return {Any[]} - New array.
-func Append(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return core.None, err
+func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	list, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
 	arg := args[1]
-	unique := core.False
+	unique := runtime.False
 
 	if len(args) > 2 {
-		err = core.AssertBoolean(args[2])
+		arg3, err := runtime.CastBoolean(args[2])
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
-		unique = args[2].(core.Boolean)
+		unique = arg3
 	}
 
-	next := internal.NewArray(int(arr.Length()) + 1)
+	// We do not know for sure if the list is an array or custom List implementation.
+	// Hence, we must solely rely on the List interface.
+	next, err := list.CopyWithCap(ctx, 1)
 
-	if !unique {
-		arr.ForEach(func(item core.Value, idx int) bool {
-			next.Push(item)
-
-			return true
-		})
-
-		next.Push(arg)
-
-		return next, nil
+	if err != nil {
+		return runtime.None, err
 	}
 
-	hasDuplicate := false
+	if unique {
+		contains, err := list.Contains(ctx, arg)
 
-	arr.ForEach(func(item core.Value, idx int) bool {
-		next.Push(item)
-
-		if !hasDuplicate {
-			hasDuplicate = core.CompareValues(item, arg) == 0
+		if err != nil {
+			return runtime.None, err
 		}
 
-		return true
-	})
+		if contains {
+			return next, nil
+		}
+	}
 
-	if !hasDuplicate {
-		next.Push(arg)
+	if err := next.Add(ctx, arg); err != nil {
+		return runtime.None, err
 	}
 
 	return next, nil

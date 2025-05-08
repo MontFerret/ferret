@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -14,31 +13,31 @@ import (
 
 func TestUnionDistinct(t *testing.T) {
 	Convey("Should union all arrays with unique values", t, func() {
-		arr1 := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
+		arr1 := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
 		)
-		arr2 := internal.NewArrayWith(
-			core.NewInt(5),
-			core.NewInt(2),
-			core.NewInt(6),
-			core.NewInt(4),
-		)
-
-		arr3 := internal.NewArrayWith(
-			core.NewString("a"),
-			core.NewString("b"),
-			core.NewString("c"),
-			core.NewString("d"),
+		arr2 := runtime.NewArrayWith(
+			runtime.NewInt(5),
+			runtime.NewInt(2),
+			runtime.NewInt(6),
+			runtime.NewInt(4),
 		)
 
-		arr4 := internal.NewArrayWith(
-			core.NewString("e"),
-			core.NewString("b"),
-			core.NewString("f"),
-			core.NewString("d"),
+		arr3 := runtime.NewArrayWith(
+			runtime.NewString("a"),
+			runtime.NewString("b"),
+			runtime.NewString("c"),
+			runtime.NewString("d"),
+		)
+
+		arr4 := runtime.NewArrayWith(
+			runtime.NewString("e"),
+			runtime.NewString("b"),
+			runtime.NewString("f"),
+			runtime.NewString("d"),
 		)
 
 		out, err := arrays.UnionDistinct(

@@ -50,8 +50,8 @@ type (
 		IndexOf(ctx context.Context, value Value) (Int, error)
 		First(context.Context) (Value, error)
 		Last(context.Context) (Value, error)
-
 		Slice(ctx context.Context, start, end Int) (List, error)
+		CopyWithCap(ctx context.Context, cap Int) (List, error)
 
 		ForEach(ctx context.Context, predicate IndexedPredicate) error
 	}

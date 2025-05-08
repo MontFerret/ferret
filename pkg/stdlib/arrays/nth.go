@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // NTH returns the element of an array at a given position.
@@ -14,27 +12,22 @@ import (
 // @param {Any[]} array - An array with elements of arbitrary type.
 // @param {Int} index - Position of desired element in array, positions start at 0.
 // @return {Any} - The array element at the given position.
-func Nth(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 2)
-
-	if err != nil {
-		return core.None, err
+func Nth(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	list, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.AssertInt(args[1])
+	idx, err := runtime.CastInt(args[1])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-	idx := args[1].(core.Int)
-
-	return arr.Get(int(idx)), nil
+	return list.Get(ctx, idx)
 }

@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // REMOVE_VALUE returns a new array with removed all occurrences of value in a given array.
@@ -14,51 +12,44 @@ import (
 // @param {Any} value - Target value.
 // @param {Int} [limit] - A limit to the number of removals.
 // @return {Any[]} - A new array with removed all occurrences of value in a given array.
-func RemoveValue(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return core.None, err
+func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	arr, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
 	value := args[1]
-	limit := -1
+	var limit runtime.Int
+	limit = -1
 
 	if len(args) > 2 {
-		err = core.AssertInt(args[2])
+		arg3, err := runtime.CastInt(args[2])
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
-		limit = int(args[2].(core.Int))
+		limit = arg3
 	}
 
-	result := internal.NewArray(int(arr.Length()))
+	var counter runtime.Int
 
-	counter := 0
-	arr.ForEach(func(item core.Value, idx int) bool {
-		remove := core.CompareValues(item, value) == 0
+	return arr.Find(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		remove := runtime.CompareValues(item, value) == 0
 
 		if remove {
-			if counter == limit {
-				result.Push(item)
-			}
-
 			counter++
-		} else {
-			result.Push(item)
+
+			if limit == -1 || counter <= limit {
+				return false, nil
+			}
 		}
 
-		return true
+		return true, nil
 	})
-
-	return result, nil
 }

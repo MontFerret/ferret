@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // SLICE returns a new sliced array.
@@ -13,36 +11,42 @@ import (
 // @param {Int} start - Start position of extraction.
 // @param {Int} [length] - Read indicating how many elements to extract.
 // @return {Any[]} - Sliced array.
-func Slice(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 3)
-
-	if err != nil {
-		return core.None, err
+func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	list, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.AssertInt(args[1])
+	start, err := runtime.CastInt(args[1])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-	start := int(args[1].(core.Int))
-	length := arr.Length()
+	var end runtime.Int
 
 	if len(args) > 2 {
-		lengthArg, ok := args[2].(core.Int)
+		arg3, err := runtime.CastInt(args[2])
 
-		if ok && lengthArg > 0 {
-			length = start + int(lengthArg)
+		if err != nil {
+			return runtime.None, err
 		}
+
+		end = start + arg3
+	} else {
+		size, err := list.Length(ctx)
+
+		if err != nil {
+			return runtime.None, err
+		}
+
+		end = size
 	}
 
-	return arr.Slice(start, length), nil
+	return list.Slice(ctx, start, end)
 }

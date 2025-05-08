@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // INTERSECTION return the intersection of all arrays specified.
@@ -13,36 +11,32 @@ import (
 // The element order is random. Duplicates are removed.
 // @param {Any[], repeated} arrays - An arbitrary number of arrays as multiple arguments (at least 2).
 // @return {Any[]} - A single array with only the elements, which exist in all provided arrays.
-func Intersection(_ context.Context, args ...core.Value) (core.Value, error) {
-	return sections(args, len(args))
+func Intersection(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	return sections(ctx, args, len(args))
 }
 
-func sections(args []core.Value, count int) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, core.MaxArgs)
-
-	if err != nil {
-		return core.None, err
+func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
+		return runtime.None, err
 	}
 
-	intersections := make(map[uint64][]core.Value)
+	intersections := make(map[uint64][]runtime.Value)
 	capacity := len(args)
 
 	for _, i := range args {
-		err := core.AssertList(i)
+		list, err := runtime.CastList(i)
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
-		arr := i.(*internal.Array)
-
-		arr.ForEach(func(value core.Value, idx int) bool {
+		err = list.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 			h := value.Hash()
 
 			bucket, exists := intersections[h]
 
 			if !exists {
-				bucket = make([]core.Value, 0, 5)
+				bucket = make([]runtime.Value, 0, 5)
 			}
 
 			bucket = append(bucket, value)
@@ -53,16 +47,17 @@ func sections(args []core.Value, count int) (core.Value, error) {
 				capacity = bucketLen
 			}
 
-			return true
+			return true, nil
 		})
 	}
 
-	result := internal.NewArray(capacity)
+	result := runtime.NewArray(capacity)
 	required := count
 
 	for _, bucket := range intersections {
 		if len(bucket) == required {
-			result.Push(bucket[0])
+			// It's safe to ignore the error here because we know that it's runtime.Array
+			_ = result.Add(ctx, bucket[0])
 		}
 	}
 

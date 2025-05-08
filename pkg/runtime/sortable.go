@@ -29,6 +29,6 @@ func SortSliceWith(values []Value, comparator Comparator) {
 	sort.SliceStable(values, func(i, j int) bool {
 		comp := comparator(values[i], values[j])
 
-		return comp == 0
+		return comp == -1
 	})
 }

@@ -3,9 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // FLATTEN turns an array of arrays into a flat array.
@@ -16,54 +14,63 @@ import (
 // @param {Any[]} arr - Target array.
 // @param {Int} [depth] - Depth level.
 // @return {Any[]} - Flat array.
-func Flatten(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 2)
-
-	if err != nil {
-		return core.None, err
+func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
+		return runtime.None, err
 	}
 
-	err = core.AssertList(args[0])
+	list, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	arr := args[0].(*internal.Array)
-	level := 1
+	size, err := list.Length(ctx)
+
+	if err != nil {
+		return runtime.None, err
+	}
+
+	var level runtime.Int
+	level = 1
 
 	if len(args) > 1 {
-		err = core.AssertInt(args[1])
+		arg1, err := runtime.CastInt(args[1])
 
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
-		level = int(args[1].(core.Int))
+		level = arg1
 	}
 
-	currentLevel := 0
-	result := internal.NewArray(int(arr.Length()) * 2)
-	var unwrap func(input *internal.Array)
+	var currentLevel runtime.Int
+	result := runtime.NewArray64(size * 2)
+	var unwrap func(input runtime.List) error
 
-	unwrap = func(input *internal.Array) {
+	unwrap = func(input runtime.List) error {
 		currentLevel++
 
-		input.ForEach(func(value core.Value, idx int) bool {
-			valueArr, ok := value.(*internal.Array)
+		return input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			valueArr, ok := value.(runtime.List)
 
 			if !ok || currentLevel > level {
-				result.Push(value)
+				_ = result.Add(c, value)
 			} else {
-				unwrap(valueArr)
+				if err := unwrap(valueArr); err != nil {
+					return false, err
+				}
+
 				currentLevel--
 			}
 
-			return true
+			return true, nil
 		})
 	}
 
-	unwrap(arr)
+	if err := unwrap(list); err != nil {
+		return runtime.None, err
+	}
 
 	return result, nil
 }

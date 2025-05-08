@@ -1,13 +1,14 @@
 package arrays
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"context"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func RegisterLib(ns core.Namespace) error {
+func RegisterLib(ns runtime.Namespace) error {
 	return ns.RegisterFunctions(
-		core.NewFunctionsFromMap(map[string]core.Function{
+		runtime.NewFunctionsFromMap(map[string]runtime.Function{
 			"APPEND":         Append,
 			"FIRST":          First,
 			"FLATTEN":        Flatten,
@@ -33,22 +34,18 @@ func RegisterLib(ns core.Namespace) error {
 		}))
 }
 
-func ToUniqueArray(arr *internal.Array) *internal.Array {
+func ToUniqueList(ctx context.Context, list runtime.List) (runtime.List, error) {
 	hashTable := make(map[uint64]bool)
-	result := internal.NewArray(int(arr.Length()))
 
-	arr.ForEach(func(item core.Value, _ int) bool {
-		h := item.Hash()
+	return list.Find(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		hash := value.Hash()
 
-		_, exists := hashTable[h]
+		if _, exists := hashTable[hash]; !exists {
+			hashTable[hash] = true
 
-		if !exists {
-			hashTable[h] = true
-			result.Push(item)
+			return true, nil
 		}
 
-		return true
+		return false, nil
 	})
-
-	return result
 }

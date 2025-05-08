@@ -13,10 +13,12 @@ const (
 	TypeSet      = "set"
 	TypeMap      = "map"
 	TypeBinary   = "binary"
-	// Create subtypes for less specific types
+
 	TypeIterable   = "iterable"
 	TypeIterator   = "iterator"
 	TypeMeasurable = "measurable"
+	TypeComparable = "comparable"
+	TypeCloneable  = "cloneable"
 )
 
 func typeRank(value Value) int64 {

@@ -4,26 +4,25 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 )
 
 func TestOutersection(t *testing.T) {
 	Convey("Should find intersections between 2 arrays", t, func() {
-		arr1 := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
+		arr1 := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
 		)
 
-		arr2 := internal.NewArrayWith(
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
+		arr2 := runtime.NewArrayWith(
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
 		)
 
 		out, err := arrays.Outersection(context.Background(), arr1, arr2)
@@ -35,36 +34,37 @@ func TestOutersection(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		arr := out.(*internal.Array)
+		arr := out.(*runtime.Array)
+		size, _ := arr.Length(context.Background())
 
-		So(arr.Length(), ShouldEqual, 2)
+		So(size, ShouldEqual, 2)
 
-		arr.ForEach(func(value core.Value, idx int) bool {
-			_, exists := check[int(value.(core.Int))]
+		_ = arr.ForEach(context.Background(), func(_ context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			_, exists := check[int(value.(runtime.Int))]
 
 			So(exists, ShouldBeTrue)
 
-			return true
+			return true, nil
 		})
 	})
 
 	Convey("Should find intersections between more than 2 arrays", t, func() {
-		arr1 := internal.NewArrayWith(
-			core.NewInt(1),
-			core.NewInt(2),
-			core.NewInt(3),
+		arr1 := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
 		)
 
-		arr2 := internal.NewArrayWith(
-			core.NewInt(2),
-			core.NewInt(3),
-			core.NewInt(4),
+		arr2 := runtime.NewArrayWith(
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+			runtime.NewInt(4),
 		)
 
-		arr3 := internal.NewArrayWith(
-			core.NewInt(3),
-			core.NewInt(4),
-			core.NewInt(5),
+		arr3 := runtime.NewArrayWith(
+			runtime.NewInt(3),
+			runtime.NewInt(4),
+			runtime.NewInt(5),
 		)
 
 		out, err := arrays.Outersection(context.Background(), arr1, arr2, arr3)
@@ -76,16 +76,17 @@ func TestOutersection(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		arr := out.(*internal.Array)
+		arr := out.(*runtime.Array)
+		size, _ := arr.Length(context.Background())
 
-		So(arr.Length(), ShouldEqual, 2)
+		So(size, ShouldEqual, 2)
 
-		arr.ForEach(func(value core.Value, idx int) bool {
-			_, exists := check[int(value.(core.Int))]
+		_ = arr.ForEach(context.Background(), func(_ context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			_, exists := check[int(value.(runtime.Int))]
 
 			So(exists, ShouldBeTrue)
 
-			return true
+			return true, nil
 		})
 	})
 }
