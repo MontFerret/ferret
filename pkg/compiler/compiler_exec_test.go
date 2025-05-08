@@ -507,8 +507,8 @@ func TestFunctionCall(t *testing.T) {
 		`,
 			[]any{1}, "Append to array"),
 		SkipCase("LET duration = 10 WAIT(duration) RETURN 1", 1),
-		SkipCaseNil("RETURN (FALSE OR T::FAIL())?"),
-		SkipCaseNil("RETURN T::FAIL()?"),
+		CaseNil("RETURN (FALSE OR T::FAIL())?"),
+		CaseNil("RETURN T::FAIL()?"),
 		SkipCaseArray(`FOR i IN [1, 2, 3, 4]
 				LET duration = 10
 		
@@ -517,8 +517,8 @@ func TestFunctionCall(t *testing.T) {
 				RETURN i * 2`,
 			[]any{2, 4, 6, 8}),
 
-		SkipCase(`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`, 2),
-		SkipCaseArray(`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		Case(`RETURN FIRST((FOR i IN 1..10 RETURN i * 2))`, 2),
+		CaseArray(`RETURN UNION((FOR i IN 0..5 RETURN i), (FOR i IN 6..10 RETURN i))`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
 	})
 }
 
@@ -727,8 +727,8 @@ func TestOptionalChaining(t *testing.T) {
 					RETURN obj.foo?.bar?.[0]
 				`,
 			"bar"),
-		SkipCaseNil(`RETURN FIRST([])?.foo`),
-		SkipCase(
+		CaseNil(`RETURN FIRST([])?.foo`),
+		Case(
 			`
 					RETURN FIRST([{ foo: "bar" }])?.foo
 				`,
@@ -923,6 +923,7 @@ func TestForTernaryExpression(t *testing.T) {
 	})
 }
 
+// TODO: Implement
 func TestForWhile(t *testing.T) {
 	var untilCounter int
 	counter := -1
@@ -952,6 +953,7 @@ func TestForWhile(t *testing.T) {
 	}))
 }
 
+// TODO: Implement
 func TestForTernaryWhileExpression(t *testing.T) {
 	counter := -1
 	RunUseCases(t, []UseCase{
@@ -975,6 +977,7 @@ func TestForTernaryWhileExpression(t *testing.T) {
 	}))
 }
 
+// TODO: Implement
 func TestForDoWhile(t *testing.T) {
 	counter := -1
 	counter2 := -1

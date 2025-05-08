@@ -2,6 +2,7 @@ package stdlib
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/pkg/stdlib/collections"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
@@ -29,10 +30,10 @@ func RegisterLib(ns runtime.Namespace) error {
 	//	return err
 	//}
 	//
-	//if err := arrays.RegisterLib(ns); err != nil {
-	//	return err
-	//}
-	//
+	if err := arrays.RegisterLib(ns); err != nil {
+		return err
+	}
+
 	//if err := objects.RegisterLib(ns); err != nil {
 	//	return err
 	//}
