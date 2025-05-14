@@ -14,6 +14,7 @@ type (
 	DateTime  = runtime.DateTime
 	Binary    = runtime.Binary
 	Iterable  = runtime.Iterable
+	Iterator  = runtime.Iterator
 	List      = runtime.List
 	Map       = runtime.Map
 	Function  = runtime.Function
@@ -42,8 +43,11 @@ var (
 	NewFunctions        = runtime.NewFunctions
 	NewFunctionsFromMap = runtime.NewFunctionsFromMap
 
+	Error               = runtime.Error
+	Errorf              = runtime.Errorf
+	ErrInvalidOperation = runtime.ErrInvalidOperation
+
 	ValidateArgs  = runtime.ValidateArgs
-	Error         = runtime.Error
 	TypeError     = runtime.TypeError
 	CompareValues = runtime.CompareValues
 	Reflect       = runtime.Reflect

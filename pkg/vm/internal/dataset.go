@@ -10,6 +10,7 @@ type DataSet struct {
 	hashmap map[uint64]bool
 	// TODO: Use backend storage to support large datasets
 	values runtime.List
+	keyed  bool
 }
 
 func NewDataSet(distinct bool) *DataSet {
@@ -27,6 +28,7 @@ func NewDataSet(distinct bool) *DataSet {
 
 func (ds *DataSet) Sort(ctx context.Context, direction runtime.Int) error {
 	return ds.values.SortWith(ctx, func(first, second runtime.Value) int64 {
+		// TODO: Brave assumption that all items are KeyValuePair
 		firstKV := first.(*KeyValuePair)
 		secondKV := second.(*KeyValuePair)
 
@@ -42,6 +44,7 @@ func (ds *DataSet) Sort(ctx context.Context, direction runtime.Int) error {
 
 func (ds *DataSet) SortMany(ctx context.Context, directions []runtime.Int) error {
 	return ds.values.SortWith(ctx, func(first, second runtime.Value) int64 {
+		// TODO: Brave assumption that all items are KeyValuePair and their keys are lists
 		firstKV := first.(*KeyValuePair)
 		secondKV := second.(*KeyValuePair)
 
@@ -101,7 +104,7 @@ func (ds *DataSet) ToList() runtime.List {
 }
 
 func (ds *DataSet) String() string {
-	return "DataSet"
+	return "[DataSet]"
 }
 
 func (ds *DataSet) Unwrap() interface{} {

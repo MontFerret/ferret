@@ -58,9 +58,13 @@ const (
 	OpLength
 	OpType
 	OpClose
+	OpSleep
 
 	OpCall
 	OpProtectedCall
+
+	OpStream     // Subscribes to a stream (SMRCV R2, R3, R4 - subscribes to a stream in R2 with a collection from R3 and optional params from R4)
+	OpStreamIter // Consumes a stream (SMRD R2, R3 - consumes a stream in R2 with a collection from R3)
 
 	OpGroupPrep
 	OpGroupAdd
@@ -71,13 +75,12 @@ const (
 	OpLoopSkip
 	OpLoopEnd
 
-	OpForLoopPrep // Creates an iterator for a loop
-	OpForLoopNext
-	OpForLoopValue
-	OpForLoopKey
+	OpIter      // Creates an iterator (ITER R2, R3 [, R4] - creates an iterator in R2 with a collection from R3 and optional params from R4)
+	OpIterNext  // Moves to the next element in the iterator (ITER R2, R3  - moves to the next element in the iterator in R2 with a collection from R3)
+	OpIterValue // Returns the current value from the iterator (ITER R2, R3  - returns the current value from the iterator in R2 with a collection from R3)
+	OpIterKey   // Returns the current key from the iterator (ITER R2, R3  - returns the current key from the iterator in R2 with a collection from R3)
 
 	OpWhileLoopPrep
 	OpWhileLoopNext
 	OpWhileLoopValue
-	OpSleep
 )

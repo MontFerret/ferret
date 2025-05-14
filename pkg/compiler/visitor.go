@@ -28,7 +28,6 @@ const (
 	undefinedVariable    = -1
 	ignorePseudoVariable = "_"
 	pseudoVariable       = "CURRENT"
-	waitScope            = "waitfor"
 	forScope             = "for"
 )
 
@@ -104,6 +103,135 @@ func (v *visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{
 
 func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
 	return nil
+}
+
+func (v *visitor) VisitWaitForExpression(ctx *fql.WaitForExpressionContext) interface{} {
+	if ctx.Event() != nil {
+		return v.visitWaitForEventExpression(ctx)
+	}
+
+	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) visitWaitForEventExpression(ctx *fql.WaitForExpressionContext) interface{} {
+	v.symbols.EnterScope()
+
+	srcReg := ctx.WaitForEventSource().Accept(v).(vm.Operand)
+	eventReg := ctx.WaitForEventName().Accept(v).(vm.Operand)
+
+	var optsReg vm.Operand
+
+	if opts := ctx.OptionsClause(); opts != nil {
+		optsReg = opts.Accept(v).(vm.Operand)
+	}
+
+	var timeoutReg vm.Operand
+
+	if timeout := ctx.TimeoutClause(); timeout != nil {
+		timeoutReg = timeout.Accept(v).(vm.Operand)
+	}
+
+	streamReg := v.registers.Allocate(Temp)
+
+	// We move the source object to the stream register in order to re-use it in OpStream
+	v.emitter.EmitAB(vm.OpMove, streamReg, srcReg)
+	v.emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
+	v.emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
+
+	var valReg vm.Operand
+
+	// Now we start iterating over the stream
+	jumpToNext := v.emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, streamReg)
+
+	if filter := ctx.FilterClause(); filter != nil {
+		valReg = v.symbols.DefineVariable(pseudoVariable)
+		v.emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
+
+		filter.Expression().Accept(v)
+
+		v.emitter.EmitJumpc(vm.OpJumpIfFalse, jumpToNext, valReg)
+
+		// TODO: Do we need to use timeout here too? We can really get stuck in the loop if no event satisfies the filter
+	}
+
+	// Clean up the stream
+	v.emitter.EmitA(vm.OpClose, streamReg)
+
+	v.symbols.ExitScope()
+
+	return nil
+}
+
+func (v *visitor) VisitWaitForEventName(ctx *fql.WaitForEventNameContext) interface{} {
+	if c := ctx.StringLiteral(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Variable(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Param(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.MemberExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.FunctionCallExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) VisitWaitForEventSource(ctx *fql.WaitForEventSourceContext) interface{} {
+	if c := ctx.Variable(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.MemberExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.FunctionCallExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) VisitTimeoutClauseContext(ctx *fql.TimeoutClauseContext) interface{} {
+	if c := ctx.IntegerLiteral(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Variable(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.Param(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.MemberExpression(); c != nil {
+		return c.Accept(v)
+	}
+
+	if c := ctx.FunctionCall(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+}
+
+func (v *visitor) VisitOptionsClause(ctx *fql.OptionsClauseContext) interface{} {
+	if c := ctx.ObjectLiteral(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
@@ -351,7 +479,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		kvValReg = v.registers.Allocate(Temp)
 
 		if loop.Kind == ForLoop {
-			v.emitter.EmitAB(vm.OpForLoopValue, kvValReg, loop.Iterator)
+			v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
 		} else {
 			v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
 		}
@@ -1182,16 +1310,16 @@ func (v *visitor) emitLoopBegin(loop *Loop) {
 	loop.Iterator = v.registers.Allocate(State)
 
 	if loop.Kind == ForLoop {
-		v.emitter.EmitAB(vm.OpForLoopPrep, loop.Iterator, loop.Src)
+		v.emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
 		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = v.emitter.EmitJumpc(vm.OpForLoopNext, jumpPlaceholder, loop.Iterator)
+		loop.Jump = v.emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
 
 		if loop.Value != vm.NoopOperand {
-			v.emitter.EmitAB(vm.OpForLoopValue, loop.Value, loop.Iterator)
+			v.emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
 		}
 
 		if loop.Key != vm.NoopOperand {
-			v.emitter.EmitAB(vm.OpForLoopKey, loop.Key, loop.Iterator)
+			v.emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
 		}
 	} else {
 		//counterReg := v.registers.Allocate(State)

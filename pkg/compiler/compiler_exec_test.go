@@ -1542,6 +1542,32 @@ LET users = [
 			map[string]any{"active": true, "age": 31, "gender": "m"},
 			map[string]any{"active": true, "age": 36, "gender": "m"},
 		}, "Should compile query with FILTER and SORT statements"),
+		CaseArray(`
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					age: 29,
+					gender: "f"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m"
+				}
+			]
+			FOR u IN users
+				SORT u.age
+				FILTER u.gender == "m"
+				RETURN u
+		`, []any{
+			map[string]any{"active": true, "age": 31, "gender": "m"},
+			map[string]any{"active": true, "age": 36, "gender": "m"},
+		}, "Should compile query with SORT and FILTER statements."),
 	}, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, nil
 	}))
@@ -1660,5 +1686,15 @@ func TestCollect(t *testing.T) {
 				}
 			]
 			g`, []any{"f", "m"}, "Should group result by a single key"),
+	})
+}
+
+func TestWaitforEvent(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		CaseRuntimeError(`LET obj = {}
+
+WAITFOR EVENT "test" IN obj
+
+RETURN NONE`, "Should compile but return an error during execution because the object does not implement the interface"),
 	})
 }

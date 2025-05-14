@@ -18,6 +18,7 @@ const (
 	TypeMeasurable = "measurable"
 	TypeComparable = "comparable"
 	TypeCloneable  = "cloneable"
+	TypeObservable = "observable"
 )
 
 func typeRank(value Value) int64 {
@@ -75,6 +76,8 @@ func Reflect(input Value) string {
 		return TypeIterator
 	case Measurable:
 		return TypeMeasurable
+	case Observable:
+		return TypeObservable
 	default:
 		return reflect.TypeOf(input).String()
 	}

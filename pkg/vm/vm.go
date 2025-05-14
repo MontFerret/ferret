@@ -397,7 +397,7 @@ loop:
 			} else {
 				vm.pc = jump
 			}
-		case OpForLoopPrep:
+		case OpIter:
 			input := reg[src1]
 
 			switch src := input.(type) {
@@ -417,7 +417,7 @@ loop:
 					return nil, runtime.TypeError(src, runtime.TypeIterable)
 				}
 			}
-		case OpForLoopNext:
+		case OpIterNext:
 			iterator := reg[src1].(*internal.Iterator)
 			hasNext, err := iterator.HasNext(ctx)
 
@@ -432,10 +432,10 @@ loop:
 			} else {
 				vm.pc = int(dst)
 			}
-		case OpForLoopValue:
+		case OpIterValue:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Value()
-		case OpForLoopKey:
+		case OpIterKey:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Key()
 		case OpWhileLoopPrep:
@@ -454,6 +454,7 @@ loop:
 			ds := reg[dst].(*internal.DataSet)
 			ds.Push(ctx, reg[src1])
 		case OpSort:
+			// TODO: Handle more than just DataSet
 			ds := reg[dst].(*internal.DataSet)
 			dir := runtime.ToIntSafe(ctx, reg[src1])
 
@@ -495,6 +496,51 @@ loop:
 			key := reg[src1]
 			value := reg[src2]
 			collector.Add(key, value)
+		case OpStream:
+			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
+
+			if err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
+
+			stream, err := observable.Subscribe(ctx, runtime.Subscription{
+				EventName: eventName,
+				Options:   options,
+			})
+
+			if err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
+
+			reg[dst] = internal.NewStreamValue(stream)
+		case OpStreamIter:
+			stream := reg[src1].(*internal.StreamValue)
+
+			var timeout runtime.Int
+
+			if reg[src2] != nil && reg[src2] != runtime.None {
+				t, err := runtime.CastInt(reg[src1])
+
+				if err != nil {
+					if _, catch := tryCatch(vm.pc); catch {
+						continue
+					} else {
+						return nil, err
+					}
+				}
+
+				timeout = t
+			}
+
+			reg[dst] = stream.Iterate(timeout)
 		case OpSleep:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 
@@ -543,4 +589,32 @@ func (vm *VM) validateParams(env *Environment) error {
 	}
 
 	return nil
+}
+
+func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
+	observable, ok := dst.(runtime.Observable)
+
+	if !ok {
+		return nil, "", nil, runtime.TypeError(dst, runtime.TypeObservable)
+	}
+
+	eventNameStr, ok := eventName.(runtime.String)
+
+	if !ok {
+		return nil, "", nil, runtime.TypeError(eventName, runtime.TypeString)
+	}
+
+	var options runtime.Map
+
+	if opts != nil && opts != runtime.None {
+		m, ok := opts.(runtime.Map)
+
+		if !ok {
+			return nil, "", nil, runtime.TypeError(opts, runtime.TypeMap)
+		}
+
+		options = m
+	}
+
+	return observable, eventNameStr, options, nil
 }
