@@ -42,7 +42,6 @@ type (
 		Insert(ctx context.Context, idx Int, value Value) error
 		Remove(ctx context.Context, value Value) error
 		RemoveAt(ctx context.Context, idx Int) (Value, error)
-		Swap(ctx context.Context, i, j Int) error
 
 		Find(ctx context.Context, predicate IndexedPredicate) (List, error)
 		FindOne(ctx context.Context, predicate IndexedPredicate) (Value, Boolean, error)

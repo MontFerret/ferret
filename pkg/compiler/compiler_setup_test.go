@@ -126,9 +126,9 @@ func Compile(expression string) (*vm.Program, error) {
 }
 
 func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
-	vm := vm.NewVM(p)
+	instance := vm.New(p)
 
-	out, err := vm.Run(context.Background(), opts)
+	out, err := instance.Run(context.Background(), opts)
 
 	if err != nil {
 		return nil, err
@@ -309,7 +309,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	options = append(options, opts...)
 
 	ctx := context.Background()
-	vm := vm.NewVM(prog)
+	vm := vm.New(prog)
 
 	b.ResetTimer()
 

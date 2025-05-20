@@ -302,7 +302,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		c := returnRuleCtx.(*fql.ReturnExpressionContext)
 		expReg := c.Expression().Accept(v).(vm.Operand)
 
-		v.emitter.EmitAB(vm.OpLoopPush, loop.Result, expReg)
+		v.emitter.EmitAB(vm.OpDataSetAdd, loop.Result, expReg)
 	} else if returnRuleCtx != nil {
 		returnRuleCtx.Accept(v)
 	}
@@ -413,7 +413,7 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	//
 	//// Init Grouping
 	//// Create a new collector
-	//v.emitter.EmitA(runtime.OpGroupPrep, collector)
+	//v.emitter.EmitA(runtime.OpCollect, collector)
 	//
 	//// TODO: patch jump
 	//
@@ -435,7 +435,6 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	// And wrap each loop element by a KeyValuePair
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
-	kvReg := v.registers.Allocate(Temp)
 	kvKeyReg := v.registers.Allocate(Temp)
 	clauses := ctx.AllSortClauseExpression()
 	isSortMany := len(clauses) > 1
@@ -485,8 +484,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		}
 	}
 
-	v.emitter.EmitABC(vm.OpKeyValue, kvReg, kvKeyReg, kvValReg)
-	v.emitter.EmitAB(vm.OpLoopPush, loop.Result, kvReg)
+	v.emitter.EmitABC(vm.OpDataSetAddKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
 	v.emitter.EmitA(vm.OpClose, loop.Iterator)
 
@@ -533,14 +531,14 @@ func (v *visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext
 
 func (v *visitor) visitOffset(src1 vm.Operand) interface{} {
 	state := v.registers.Allocate(State)
-	v.emitter.EmitABx(vm.OpLoopSkip, state, src1, v.loops.Loop().Jump)
+	v.emitter.EmitABx(vm.OpSkip, state, src1, v.loops.Loop().Jump)
 
 	return state
 }
 
 func (v *visitor) visitLimit(src1 vm.Operand) interface{} {
 	state := v.registers.Allocate(State)
-	v.emitter.EmitABx(vm.OpLoopLimit, state, src1, v.loops.Loop().Jump)
+	v.emitter.EmitABx(vm.OpLimit, state, src1, v.loops.Loop().Jump)
 
 	return state
 }
@@ -1304,7 +1302,7 @@ func (v *visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
 
 func (v *visitor) emitLoopBegin(loop *Loop) {
 	if loop.Allocate {
-		v.emitter.EmitAb(vm.OpLoopBegin, loop.Result, loop.Distinct)
+		v.emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
 	}
 
 	loop.Iterator = v.registers.Allocate(State)
@@ -1322,7 +1320,7 @@ func (v *visitor) emitLoopBegin(loop *Loop) {
 			v.emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
 		}
 	} else {
-		//counterReg := v.registers.Allocate(State)
+		//counterReg := v.registers.Allocate(Storage)
 		// TODO: Set JumpOffset here
 	}
 }
@@ -1336,7 +1334,7 @@ func (v *visitor) emitLoopEnd(loop *Loop) vm.Operand {
 	if loop.Allocate {
 		// TODO: Reuse the dsReg register
 		v.emitter.EmitA(vm.OpClose, loop.Iterator)
-		v.emitter.EmitAB(vm.OpLoopEnd, dst, loop.Result)
+		v.emitter.EmitAB(vm.OpDataSetToList, dst, loop.Result)
 
 		if loop.Kind == ForLoop {
 			v.emitter.PatchJump(loop.Jump)

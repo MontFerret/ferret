@@ -289,7 +289,7 @@ func TestUnaryOperators(t *testing.T) {
 			RETURN { enabled: !val }
 		`)
 
-		v1, err := vm.NewVM(p1).Run(context.Background(), nil)
+		v1, err := vm.New(p1).Run(context.Background(), nil)
 
 		So(err, ShouldBeNil)
 
@@ -303,7 +303,7 @@ func TestUnaryOperators(t *testing.T) {
 			RETURN { enabled: !!val }
 		`)
 
-		v2, err := vm.NewVM(p2).Run(context.Background(), nil)
+		v2, err := vm.New(p2).Run(context.Background(), nil)
 
 		So(err, ShouldBeNil)
 

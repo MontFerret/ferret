@@ -5,11 +5,15 @@ import (
 	"time"
 )
 
-type StreamValue = Box[runtime.Stream]
+type StreamValue struct {
+	*Box[runtime.Stream]
+}
 
 func NewStreamValue(stream runtime.Stream) runtime.Value {
 	return &StreamValue{
-		Value: stream,
+		Box: &Box[runtime.Stream]{
+			Value: stream,
+		},
 	}
 }
 

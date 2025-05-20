@@ -17,7 +17,7 @@ type VM struct {
 	pc        int
 }
 
-func NewVM(program *Program) *VM {
+func New(program *Program) *VM {
 	vm := new(VM)
 	vm.program = program
 
@@ -255,8 +255,6 @@ loop:
 					} else {
 						return nil, err
 					}
-				case *internal.DataSet:
-					reg[dst] = src.Get(ctx, idx)
 				default:
 					if op != OpLoadPropertyOptional {
 						return nil, runtime.TypeError(src, runtime.TypeList)
@@ -264,13 +262,6 @@ loop:
 
 					reg[dst] = runtime.None
 				}
-			}
-		case OpKeyValue:
-			key := reg[src1]
-			value := reg[src2]
-			reg[dst] = &internal.KeyValuePair{
-				Key:   key,
-				Value: value,
 			}
 		case OpCall, OpProtectedCall:
 			fnName := reg[dst].String()
@@ -364,39 +355,20 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoopBegin:
+		case OpDataSet:
 			reg[dst] = internal.NewDataSet(src1 == 1)
-		case OpLoopEnd:
-			// TODO: Optimize this. Avoid extra type conversion
-			ds, ok := reg[src1].(*internal.DataSet)
+		case OpDataSetAdd:
+			ds := reg[dst].(*internal.DataSet)
+			ds.Add(ctx, reg[src1])
+		case OpDataSetAddKV:
+			key := reg[src1]
+			value := reg[src2]
 
-			if ok {
-				reg[dst] = ds.ToList()
-			} else {
-				// Recover from an error
-				reg[dst] = runtime.None
-			}
-		case OpLoopSkip:
-			state := runtime.ToIntSafe(ctx, reg[dst])
-			threshold := runtime.ToIntSafe(ctx, reg[src1])
-			jump := int(src2)
-
-			if state < threshold {
-				state++
-				reg[dst] = state
-				vm.pc = jump
-			}
-		case OpLoopLimit:
-			state := runtime.ToIntSafe(ctx, reg[dst])
-			threshold := runtime.ToIntSafe(ctx, reg[src1])
-			jump := int(src2)
-
-			if state < threshold {
-				state++
-				reg[dst] = state
-			} else {
-				vm.pc = jump
-			}
+			ds := reg[dst].(*internal.DataSet)
+			ds.AddKV(ctx, key, value)
+		case OpDataSetToList:
+			ds := reg[src1].(*internal.DataSet)
+			reg[dst] = ds.ToList()
 		case OpIter:
 			input := reg[src1]
 
@@ -450,9 +422,27 @@ loop:
 			}
 		case OpWhileLoopValue:
 			reg[dst] = reg[src1]
-		case OpLoopPush:
-			ds := reg[dst].(*internal.DataSet)
-			ds.Push(ctx, reg[src1])
+		case OpSkip:
+			state := runtime.ToIntSafe(ctx, reg[dst])
+			threshold := runtime.ToIntSafe(ctx, reg[src1])
+			jump := int(src2)
+
+			if state < threshold {
+				state++
+				reg[dst] = state
+				vm.pc = jump
+			}
+		case OpLimit:
+			state := runtime.ToIntSafe(ctx, reg[dst])
+			threshold := runtime.ToIntSafe(ctx, reg[src1])
+			jump := int(src2)
+
+			if state < threshold {
+				state++
+				reg[dst] = state
+			} else {
+				vm.pc = jump
+			}
 		case OpSort:
 			// TODO: Handle more than just DataSet
 			ds := reg[dst].(*internal.DataSet)
@@ -489,13 +479,20 @@ loop:
 					return nil, err
 				}
 			}
-		case OpGroupPrep:
-			reg[dst] = internal.NewCollector()
-		case OpGroupAdd:
-			collector := reg[dst].(*internal.Collector)
+		case OpCollect:
+			ds := reg[dst].(*internal.DataSet)
 			key := reg[src1]
 			value := reg[src2]
-			collector.Add(key, value)
+
+			if err := ds.Collect(ctx, key, value); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
+		case OpCollectMany:
+			// TODO: Implement this
 		case OpStream:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 

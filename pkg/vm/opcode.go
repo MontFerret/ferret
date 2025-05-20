@@ -51,7 +51,6 @@ const (
 	OpArray  // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
 	OpObject // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
 	OpRange
-	OpKeyValue // Create a key-value pair from a list of registers (KV R2, R3 R4 - creates a key-value pair in R2 with key from R3 and value from R4)
 
 	OpSort     // Sorts a collection of KeyValue pairs. (SORT R2, R3 - sorts a collection in R2 with a sorting direction in R3)
 	OpSortMany // Sorts a collection of KeyValue pairs with compound key and multiple directions. (SORT R2, R3, R4 - sorts a collection in R2 with a sorting direction from R3 to R4)
@@ -59,6 +58,8 @@ const (
 	OpType
 	OpClose
 	OpSleep
+	OpLimit
+	OpSkip
 
 	OpCall
 	OpProtectedCall
@@ -66,14 +67,13 @@ const (
 	OpStream     // Subscribes to a stream (SMRCV R2, R3, R4 - subscribes to a stream in R2 with a collection from R3 and optional params from R4)
 	OpStreamIter // Consumes a stream (SMRD R2, R3 - consumes a stream in R2 with a collection from R3)
 
-	OpGroupPrep
-	OpGroupAdd
+	OpCollect // Groups a collection by a key (COLLECT R1, R2, R3 - groups a collection in R1 with a key from R2 and a value from R3)
+	OpCollectMany
 
-	OpLoopBegin // Creates a loop result dataset
-	OpLoopPush
-	OpLoopLimit
-	OpLoopSkip
-	OpLoopEnd
+	OpDataSet       // Creates a new dataset
+	OpDataSetAdd    // Adds a value to a dataset
+	OpDataSetAddKV  // Adds a key-value pair to a dataset
+	OpDataSetToList // TODO: Temporary. Remove when the final API is ready.
 
 	OpIter      // Creates an iterator (ITER R2, R3 [, R4] - creates an iterator in R2 with a collection from R3 and optional params from R4)
 	OpIterNext  // Moves to the next element in the iterator (ITER R2, R3  - moves to the next element in the iterator in R2 with a collection from R3)
