@@ -36,22 +36,25 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		unique = arg3
 	}
 
+	var next runtime.List
+
 	// We do not know for sure if the list is an array or custom List implementation.
 	// Hence, we must solely rely on the List interface.
-	next, err := list.CopyWithCap(ctx, 1)
-
-	if err != nil {
-		return runtime.None, err
+	switch v := arg.(type) {
+	case *runtime.Array:
+		next = v.CopyWithGrowth(1)
+	case runtime.List:
+		next = v.Copy().(runtime.List)
 	}
 
 	if unique {
-		contains, err := list.Contains(ctx, arg)
+		idx, err := list.IndexOf(ctx, arg)
 
 		if err != nil {
 			return runtime.None, err
 		}
 
-		if contains {
+		if idx > -1 {
 			return next, nil
 		}
 	}

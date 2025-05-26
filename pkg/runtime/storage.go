@@ -23,8 +23,10 @@ type (
 		Iterable
 		Measurable
 		Indexed
+		Sortable
 
 		Add(ctx context.Context, value Value) error
+		AddKV(ctx context.Context, key, value Value) error
 	}
 
 	StorageManager interface {

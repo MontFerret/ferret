@@ -38,7 +38,7 @@ var (
 	NewBinary          = runtime.NewBinary
 	NewBoolean         = runtime.NewBoolean
 
-	ForEach = runtime.ForEach
+	ForEach = runtime.ForEachIter
 
 	NewFunctions        = runtime.NewFunctions
 	NewFunctionsFromMap = runtime.NewFunctionsFromMap

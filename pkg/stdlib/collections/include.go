@@ -45,7 +45,7 @@ func Includes(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 			return runtime.False, err
 		}
 
-		err = runtime.ForEach(ctx, iter, func(c context.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
+		err = runtime.ForEachIter(ctx, iter, func(c context.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
 			if runtime.CompareValues(needle, value) == 0 {
 				result = runtime.True
 

@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-// SORTED sorts all elements in anyArray.
+// SORTED sorts all elements in the given list.
 // The function will use the default comparison order for FQL value types.
 // @param {Any[]} array - Target array.
 // @return {Any[]} - Sorted array.
@@ -31,13 +31,13 @@ func Sorted(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.EmptyArray(), nil
 	}
 
-	copied, err := list.CopyWithCap(ctx, 0)
+	copied := list.Copy()
 
-	if err != nil {
-		return runtime.None, err
-	}
+	//if err != nil {
+	//	return runtime.None, err
+	//}
 
-	if err := copied.SortAsc(ctx); err != nil {
+	if err := runtime.SortAsc(ctx, copied); err != nil {
 		return runtime.None, err
 	}
 

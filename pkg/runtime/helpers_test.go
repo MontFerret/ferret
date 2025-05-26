@@ -72,7 +72,7 @@ func TestIsNil(t *testing.T) {
 }
 
 func (t *CustomValue) MarshalJSON() ([]byte, error) {
-	return nil, ErrNotImplemented
+	return nil, runtime.ErrNotImplemented
 }
 
 func (t *CustomValue) String() string {
@@ -87,8 +87,8 @@ func (t *CustomValue) Hash() uint64 {
 	return 0
 }
 
-func (t *CustomValue) Copy() Value {
-	return None
+func (t *CustomValue) Copy() runtime.Value {
+	return runtime.None
 }
 
 func TestHelpers(t *testing.T) {
@@ -96,14 +96,14 @@ func TestHelpers(t *testing.T) {
 		Convey("Parse", func() {
 			Convey("It should parse values", func() {
 				inputs := []struct {
-					Parsed Value
+					Parsed runtime.Value
 					Raw    interface{}
 				}{
-					{Parsed: NewInt(1), Raw: int(1)},
-					{Parsed: NewInt(1), Raw: int8(1)},
-					{Parsed: NewInt(1), Raw: int16(1)},
-					{Parsed: NewInt(1), Raw: int32(1)},
-					{Parsed: NewInt(1), Raw: int64(1)},
+					{Parsed: runtime.NewInt(1), Raw: int(1)},
+					{Parsed: runtime.NewInt(1), Raw: int8(1)},
+					{Parsed: runtime.NewInt(1), Raw: int16(1)},
+					{Parsed: runtime.NewInt(1), Raw: int32(1)},
+					{Parsed: runtime.NewInt(1), Raw: int64(1)},
 				}
 
 				for _, input := range inputs {
@@ -120,58 +120,58 @@ func TestHelpers(t *testing.T) {
 
 		Convey("ToBoolean", func() {
 			Convey("Should convert values", func() {
-				inputs := [][]Value{
+				inputs := [][]runtime.Value{
 					{
-						None,
-						False,
+						runtime.None,
+						runtime.False,
 					},
 					{
-						True,
-						True,
+						runtime.True,
+						runtime.True,
 					},
 					{
-						False,
-						False,
+						runtime.False,
+						runtime.False,
 					},
 					{
-						NewInt(1),
-						True,
+						runtime.NewInt(1),
+						runtime.True,
 					},
 					{
-						NewInt(0),
-						False,
+						runtime.NewInt(0),
+						runtime.False,
 					},
 					{
-						NewFloat(1),
-						True,
+						runtime.NewFloat(1),
+						runtime.True,
 					},
 					{
-						NewFloat(0),
-						False,
+						runtime.NewFloat(0),
+						runtime.False,
 					},
 					{
-						NewString("Foo"),
-						True,
+						runtime.NewString("Foo"),
+						runtime.True,
 					},
 					{
-						EmptyString,
-						False,
+						runtime.EmptyString,
+						runtime.False,
 					},
 					{
-						NewCurrentDateTime(),
-						True,
+						runtime.NewCurrentDateTime(),
+						runtime.True,
 					},
 					{
-						NewArray(1),
-						True,
+						runtime.NewArray(1),
+						runtime.True,
 					},
 					{
-						NewObject(),
-						True,
+						runtime.NewObject(),
+						runtime.True,
 					},
 					{
-						NewBinary([]byte("")),
-						True,
+						runtime.NewBinary([]byte("")),
+						runtime.True,
 					},
 				}
 
@@ -184,152 +184,187 @@ func TestHelpers(t *testing.T) {
 			})
 		})
 
+		ctx := context.Background()
+
 		Convey("ToFloat", func() {
 			Convey("Should convert Int", func() {
-				input := NewInt(100)
-				output := runtime.ToFloat(input)
+				input := runtime.NewInt(100)
+				output, err := runtime.ToFloat(ctx, input)
 
-				So(output, ShouldEqual, NewFloat(100))
+				So(err, ShouldBeNil)
+				So(output, ShouldEqual, runtime.NewFloat(100))
 			})
 
 			Convey("Should convert Float", func() {
-				input := NewFloat(100)
-				output := runtime.ToFloat(input)
+				input := runtime.NewFloat(100)
+				output, err := runtime.ToFloat(ctx, input)
 
-				So(output, ShouldEqual, NewFloat(100))
+				So(err, ShouldBeNil)
+				So(output, ShouldEqual, runtime.NewFloat(100))
 			})
 
 			Convey("Should convert String", func() {
-				input := NewString("100.1")
-				output := runtime.ToFloat(input)
+				input := runtime.NewString("100.1")
+				output, err := runtime.ToFloat(ctx, input)
 
-				So(output, ShouldEqual, NewFloat(100.1))
+				So(err, ShouldBeNil)
+				So(output, ShouldEqual, runtime.NewFloat(100.1))
 
-				output2 := runtime.ToFloat(NewString("foobar"))
-				So(output2, ShouldEqual, ZeroFloat)
+				output2, err := runtime.ToFloat(ctx, runtime.NewString("foobar"))
+				So(output2, ShouldEqual, runtime.ZeroFloat)
 			})
 
 			Convey("Should convert Boolean", func() {
-				So(runtime.ToFloat(True), ShouldEqual, NewFloat(1))
-				So(runtime.ToFloat(False), ShouldEqual, NewFloat(0))
+				out, err := runtime.ToFloat(ctx, runtime.True)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewFloat(1))
+
+				out, err = runtime.ToFloat(ctx, runtime.False)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewFloat(0))
 			})
 
 			Convey("Should convert Array with single item", func() {
-				So(runtime.ToFloat(NewArrayWith(NewFloat(1))), ShouldEqual, NewFloat(1))
+				out, err := runtime.ToFloat(ctx, runtime.NewArrayWith(runtime.NewFloat(1)))
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewFloat(1))
 			})
 
 			Convey("Should convert Array with multiple items", func() {
-				arg := NewArrayWith(NewFloat(1), NewFloat(1))
+				arg := runtime.NewArrayWith(runtime.NewFloat(1), runtime.NewFloat(1))
 
-				So(runtime.ToFloat(arg), ShouldEqual, NewFloat(2))
+				out, err := runtime.ToFloat(ctx, arg)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewFloat(2))
 			})
 
 			Convey("Should convert DateTime", func() {
-				dt := NewCurrentDateTime()
+				dt := runtime.NewCurrentDateTime()
 				ts := dt.Time.Unix()
 
-				So(runtime.ToFloat(dt), ShouldEqual, NewFloat(float64(ts)))
+				out, err := runtime.ToFloat(ctx, dt)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewFloat(float64(ts)))
 			})
 
 			Convey("Should NOT convert other types", func() {
-				inputs := []Value{
-					NewObject(),
-					NewBinary([]byte("")),
+				inputs := []runtime.Value{
+					runtime.NewObject(),
+					runtime.NewBinary([]byte("")),
 				}
 
 				for _, input := range inputs {
-					So(runtime.ToFloat(input), ShouldEqual, ZeroFloat)
+					out, err := runtime.ToFloat(ctx, input)
+					So(err, ShouldNotBeNil)
+					So(out, ShouldEqual, runtime.ZeroFloat)
 				}
 			})
 		})
 
 		Convey("ToInt", func() {
 			Convey("Should convert Int", func() {
-				input := NewInt(100)
-				output := runtime.ToInt(input)
+				input := runtime.NewInt(100)
+				output, err := runtime.ToInt(ctx, input)
 
-				So(output, ShouldEqual, NewInt(100))
+				So(err, ShouldBeNil)
+				So(output, ShouldEqual, runtime.NewInt(100))
 			})
 
 			Convey("Should convert Float", func() {
-				input := NewFloat(100.1)
-				output := runtime.ToInt(input)
-
-				So(output, ShouldEqual, NewInt(100))
+				input := runtime.NewFloat(100.1)
+				output, err := runtime.ToInt(ctx, input)
+				So(err, ShouldBeNil)
+				So(output, ShouldEqual, runtime.NewInt(100))
 			})
 
 			Convey("Should convert String", func() {
-				input := NewString("100")
-				output := runtime.ToInt(input)
+				input := runtime.NewString("100")
+				output, err := runtime.ToInt(ctx, input)
 
-				So(output, ShouldEqual, NewInt(100))
+				So(err, ShouldBeNil)
+				So(output, ShouldEqual, runtime.NewInt(100))
 
-				output2 := runtime.ToInt(NewString("foobar"))
-				So(output2, ShouldEqual, ZeroInt)
+				output2, err := runtime.ToInt(ctx, runtime.NewString("foobar"))
+				So(err, ShouldNotBeNil)
+				So(output2, ShouldEqual, runtime.ZeroInt)
 			})
 
 			Convey("Should convert Boolean", func() {
-				So(runtime.ToInt(True), ShouldEqual, NewInt(1))
-				So(runtime.ToInt(False), ShouldEqual, NewInt(0))
+				out, err := runtime.ToInt(ctx, runtime.True)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewInt(1))
+
+				out, err = runtime.ToInt(ctx, runtime.False)
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewInt(0))
 			})
 
 			Convey("Should convert Array with single item", func() {
-				So(runtime.ToInt(NewArrayWith(NewFloat(1))), ShouldEqual, NewInt(1))
+				out, err := runtime.ToInt(ctx, runtime.NewArrayWith(runtime.NewInt(1)))
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewInt(1))
 			})
 
 			Convey("Should convert Array with multiple items", func() {
-				arg := NewArrayWith(NewFloat(1), NewFloat(1))
+				arg := runtime.NewArrayWith(runtime.NewFloat(1), runtime.NewFloat(1))
+				out, err := runtime.ToInt(ctx, arg)
 
-				So(runtime.ToInt(arg), ShouldEqual, NewFloat(2))
+				So(err, ShouldBeNil)
+
+				So(out, ShouldEqual, runtime.NewFloat(2))
 			})
 
 			Convey("Should convert DateTime", func() {
-				dt := NewCurrentDateTime()
+				dt := runtime.NewCurrentDateTime()
 				ts := dt.Time.Unix()
+				out, err := runtime.ToInt(ctx, dt)
 
-				So(runtime.ToInt(dt), ShouldEqual, NewInt(int(ts)))
+				So(err, ShouldBeNil)
+				So(out, ShouldEqual, runtime.NewInt(int(ts)))
 			})
 
 			Convey("Should NOT convert other types", func() {
-				inputs := []Value{
-					NewObject(),
-					NewBinary([]byte("")),
+				inputs := []runtime.Value{
+					runtime.NewObject(),
+					runtime.NewBinary([]byte("")),
 				}
 
 				for _, input := range inputs {
-					So(runtime.ToInt(input), ShouldEqual, ZeroInt)
+					out, err := runtime.ToInt(ctx, input)
+					So(err, ShouldNotBeNil)
+					So(out, ShouldEqual, runtime.ZeroInt)
 				}
 			})
 		})
 
 		Convey("ToList", func() {
 			Convey("Should convert primitives", func() {
-				dt := NewCurrentDateTime()
+				dt := runtime.NewCurrentDateTime()
 
-				inputs := [][]Value{
+				inputs := [][]runtime.Value{
 					{
-						None,
-						NewArray(0),
+						runtime.None,
+						runtime.NewArray(0),
 					},
 					{
-						True,
-						NewArrayWith(True),
+						runtime.True,
+						runtime.NewArrayWith(runtime.True),
 					},
 					{
-						NewInt(1),
-						NewArrayWith(NewInt(1)),
+						runtime.NewInt(1),
+						runtime.NewArrayWith(runtime.NewInt(1)),
 					},
 					{
-						NewFloat(1),
-						NewArrayWith(NewFloat(1)),
+						runtime.NewFloat(1),
+						runtime.NewArrayWith(runtime.NewFloat(1)),
 					},
 					{
-						NewString("foo"),
-						NewArrayWith(NewString("foo")),
+						runtime.NewString("foo"),
+						runtime.NewArrayWith(runtime.NewString("foo")),
 					},
 					{
 						dt,
-						NewArrayWith(dt),
+						runtime.NewArrayWith(dt),
 					},
 				}
 
@@ -342,24 +377,24 @@ func TestHelpers(t *testing.T) {
 			})
 
 			//Convey("Should create a copy of a given array", func() {
-			//	vals := []core.Value{
-			//		values.NewInt(1),
-			//		values.NewInt(2),
-			//		values.NewInt(3),
-			//		values.NewInt(4),
-			//		values.NewArray(10),
-			//		values.NewObject(),
+			//	vals := []core.runtime.Value{
+			//		values.runtime.NewInt(1),
+			//		values.runtime.NewInt(2),
+			//		values.runtime.NewInt(3),
+			//		values.runtime.NewInt(4),
+			//		values.runtime.NewArray(10),
+			//		values.runtime.NewObject(),
 			//	}
 			//
-			//	input := values.NewArrayWith(vals...)
+			//	input := values.runtime.NewArrayWith(vals...)
 			//	arr := values.ToList(context.Background(), input)
 			//
 			//	So(input == arr, ShouldBeFalse)
 			//	So(arr.Length() == input.Length(), ShouldBeTrue)
 			//
 			//	for idx := range vals {
-			//		expected := input.Get(values.NewInt(idx))
-			//		actual := arr.Get(values.NewInt(idx))
+			//		expected := input.Get(values.runtime.NewInt(idx))
+			//		actual := arr.Get(values.runtime.NewInt(idx))
 			//
 			//		// same ref
 			//		So(actual == expected, ShouldBeTrue)
@@ -369,15 +404,15 @@ func TestHelpers(t *testing.T) {
 
 			//Convey("Should convert object to an array", func() {
 			//	input := values.NewObjectWith(
-			//		values.NewObjectProperty("foo", values.NewString("bar")),
-			//		values.NewObjectProperty("baz", values.NewInt(1)),
-			//		values.NewObjectProperty("qaz", values.NewObject()),
+			//		values.NewObjectProperty("foo", values.runtime.NewString("bar")),
+			//		values.NewObjectProperty("baz", values.runtime.NewInt(1)),
+			//		values.NewObjectProperty("qaz", values.runtime.NewObject()),
 			//	)
 			//
 			//	arr := values.ToList(context.Background(), input).Sort()
 			//
 			//	So(arr.String(), ShouldEqual, "[1,\"bar\",{}]")
-			//	So(arr.Get(values.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)
+			//	So(arr.Get(values.runtime.NewInt(2)) == input.MustGet("qaz"), ShouldBeTrue)
 			//})
 		})
 

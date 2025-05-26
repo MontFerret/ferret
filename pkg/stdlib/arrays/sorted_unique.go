@@ -28,7 +28,7 @@ func SortedUnique(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 		return runtime.None, err
 	}
 
-	if err := uniq.SortAsc(ctx); err != nil {
+	if err := runtime.SortAsc(ctx, uniq); err != nil {
 		return runtime.None, err
 	}
 

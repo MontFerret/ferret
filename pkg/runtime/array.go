@@ -12,27 +12,27 @@ type Array struct {
 	data []Value
 }
 
-func EmptyArray() List {
+func EmptyArray() *Array {
 	return &Array{data: make([]Value, 0)}
 }
 
-func NewArray(cap int) List {
+func NewArray(cap int) *Array {
 	return &Array{data: make([]Value, 0, cap)}
 }
 
-func NewArray64(cap Int) List {
+func NewArray64(cap Int) *Array {
 	return &Array{data: make([]Value, 0, cap)}
 }
 
-func NewSizedArray(size int) List {
+func NewSizedArray(size int) *Array {
 	return &Array{data: make([]Value, size)}
 }
 
-func NewArrayWith(values ...Value) List {
+func NewArrayWith(values ...Value) *Array {
 	return &Array{data: values}
 }
 
-func NewArrayOf(values []Value) List {
+func NewArrayOf(values []Value) *Array {
 	return &Array{data: values}
 }
 
@@ -128,8 +128,8 @@ func (t *Array) Copy() Value {
 	return &Array{data: t.copyInternal(0)}
 }
 
-func (t *Array) CopyWithCap(_ context.Context, cap Int) (List, error) {
-	return &Array{data: t.copyInternal(cap)}, nil
+func (t *Array) CopyWithGrowth(cap Int) *Array {
+	return &Array{data: t.copyInternal(cap)}
 }
 
 func (t *Array) copyInternal(cap Int) []Value {

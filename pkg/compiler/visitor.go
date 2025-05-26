@@ -1334,7 +1334,7 @@ func (v *visitor) emitLoopEnd(loop *Loop) vm.Operand {
 	if loop.Allocate {
 		// TODO: Reuse the dsReg register
 		v.emitter.EmitA(vm.OpClose, loop.Iterator)
-		v.emitter.EmitAB(vm.OpDataSetToList, dst, loop.Result)
+		v.emitter.EmitAB(vm.OpMove, dst, loop.Result)
 
 		if loop.Kind == ForLoop {
 			v.emitter.PatchJump(loop.Jump)

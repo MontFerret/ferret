@@ -70,10 +70,9 @@ const (
 	OpCollect // Groups a collection by a key (COLLECT R1, R2, R3 - groups a collection in R1 with a key from R2 and a value from R3)
 	OpCollectMany
 
-	OpDataSet       // Creates a new dataset
-	OpDataSetAdd    // Adds a value to a dataset
-	OpDataSetAddKV  // Adds a key-value pair to a dataset
-	OpDataSetToList // TODO: Temporary. Remove when the final API is ready.
+	OpDataSet      // Creates a new dataset
+	OpDataSetAdd   // Adds a value to a dataset
+	OpDataSetAddKV // Adds a key-value pair to a dataset
 
 	OpIter      // Creates an iterator (ITER R2, R3 [, R4] - creates an iterator in R2 with a collection from R3 and optional params from R4)
 	OpIterNext  // Moves to the next element in the iterator (ITER R2, R3  - moves to the next element in the iterator in R2 with a collection from R3)

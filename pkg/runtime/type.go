@@ -13,11 +13,13 @@ const (
 	TypeMap      = "map"
 	TypeBinary   = "binary"
 
+	// Interfaces
 	TypeIterable   = "iterable"
 	TypeIterator   = "iterator"
 	TypeMeasurable = "measurable"
 	TypeComparable = "comparable"
 	TypeCloneable  = "cloneable"
+	TypeSortable   = "sortable"
 	TypeObservable = "observable"
 )
 

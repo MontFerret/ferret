@@ -366,9 +366,6 @@ loop:
 
 			ds := reg[dst].(*internal.DataSet)
 			ds.AddKV(ctx, key, value)
-		case OpDataSetToList:
-			ds := reg[src1].(*internal.DataSet)
-			reg[dst] = ds.ToList()
 		case OpIter:
 			input := reg[src1]
 

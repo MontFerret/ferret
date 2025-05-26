@@ -27,11 +27,11 @@ func RemoveNth(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 		return runtime.None, err
 	}
 
-	next, err := list.CopyWithCap(ctx, 0)
+	next := list.Copy().(runtime.List)
 
-	if err != nil {
-		return runtime.None, err
-	}
+	//if err != nil {
+	//	return runtime.None, err
+	//}
 
 	_, err = next.RemoveAt(ctx, index)
 

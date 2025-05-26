@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/wI2L/jettison"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type Box[T any] struct {

@@ -18,14 +18,14 @@ type (
 	}
 )
 
-func ForEachOf(ctx context.Context, input Iterable, predicate Predicate) error {
+func ForEach(ctx context.Context, input Iterable, predicate Predicate) error {
 	iter, err := input.Iterate(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	err = ForEach(ctx, iter, predicate)
+	err = ForEachIter(ctx, iter, predicate)
 	closable, ok := iter.(io.Closer)
 
 	if ok {
@@ -37,7 +37,7 @@ func ForEachOf(ctx context.Context, input Iterable, predicate Predicate) error {
 	return err
 }
 
-func ForEach(ctx context.Context, iter Iterator, predicate Predicate) error {
+func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error {
 	for {
 		hasNext, err := iter.HasNext(ctx)
 

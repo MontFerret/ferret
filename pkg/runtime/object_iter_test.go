@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	. "github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -13,8 +13,8 @@ import (
 func TestObjectIterator(t *testing.T) {
 	Convey("No values", t, func() {
 		ctx := context.Background()
-		obj := runtime.NewObject()
-		iter := runtime.NewObjectIterator(obj)
+		obj := NewObject()
+		iter := NewObjectIterator(obj)
 
 		hasNext, err := iter.HasNext(ctx)
 
@@ -24,9 +24,9 @@ func TestObjectIterator(t *testing.T) {
 
 	Convey("One value", t, func() {
 		ctx := context.Background()
-		obj := runtime.NewObject()
-		obj.Set(NewString("key"), NewInt(1))
-		iter := runtime.NewObjectIterator(obj)
+		obj := NewObject()
+		obj.Set(ctx, NewString("key"), NewInt(1))
+		iter := NewObjectIterator(obj)
 
 		hasNext, err := iter.HasNext(ctx)
 
@@ -47,13 +47,13 @@ func TestObjectIterator(t *testing.T) {
 
 	Convey("Multiple values", t, func() {
 		ctx := context.Background()
-		obj := runtime.NewObject()
-		obj.Set(NewString("key1"), NewInt(1))
-		obj.Set(NewString("key2"), NewInt(2))
-		obj.Set(NewString("key3"), NewInt(3))
-		obj.Set(NewString("key4"), NewInt(4))
-		obj.Set(NewString("key5"), NewInt(5))
-		iter := runtime.NewObjectIterator(obj)
+		obj := NewObject()
+		obj.Set(ctx, NewString("key1"), NewInt(1))
+		obj.Set(ctx, NewString("key2"), NewInt(2))
+		obj.Set(ctx, NewString("key3"), NewInt(3))
+		obj.Set(ctx, NewString("key4"), NewInt(4))
+		obj.Set(ctx, NewString("key5"), NewInt(5))
+		iter := NewObjectIterator(obj)
 
 		actual := make([][2]Value, 0, 5)
 
@@ -84,14 +84,14 @@ func TestObjectIterator(t *testing.T) {
 
 func BenchmarkObjectIterator(b *testing.B) {
 	size := 100
-	obj := runtime.NewObject()
+	obj := NewObject()
+	ctx := context.Background()
 
 	for i := 0; i < size; i++ {
-		obj.Set(NewString("key"+ToString(NewInt(i)).String()), NewInt(i))
+		obj.Set(ctx, NewString("key"+ToString(NewInt(i)).String()), NewInt(i))
 	}
 
-	ctx := context.Background()
-	iter := runtime.NewObjectIterator(obj)
+	iter := NewObjectIterator(obj)
 
 	b.ResetTimer()
 

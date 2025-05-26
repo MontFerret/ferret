@@ -1,9 +1,10 @@
 package runtime_test
 
 import (
+	c "context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	. "github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -11,29 +12,34 @@ import (
 func TestObject(t *testing.T) {
 	Convey("#constructor", t, func() {
 		Convey("Should create an empty object", func() {
-			obj := runtime.NewObject()
+			obj := NewObject()
+			size, err := obj.Length(c.Background())
 
-			So(obj.Length(), ShouldEqual, 0)
+			So(err, ShouldBeNil)
+			So(size, ShouldEqual, 0)
 		})
 
 		Convey("Should create an object, from passed values", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("none", None),
-				runtime.NewObjectProperty("boolean", False),
-				runtime.NewObjectProperty("int", NewInt(1)),
-				runtime.NewObjectProperty("float", Float(1)),
-				runtime.NewObjectProperty("string", NewString("1")),
-				runtime.NewObjectProperty("array", NewArray(10)),
-				runtime.NewObjectProperty("object", runtime.NewObject()),
+			obj := NewObjectWith(
+				NewObjectProperty("none", None),
+				NewObjectProperty("boolean", False),
+				NewObjectProperty("int", NewInt(1)),
+				NewObjectProperty("float", Float(1)),
+				NewObjectProperty("string", NewString("1")),
+				NewObjectProperty("array", NewArray(10)),
+				NewObjectProperty("object", NewObject()),
 			)
 
-			So(obj.Length(), ShouldEqual, 7)
+			size, err := obj.Length(c.Background())
+
+			So(err, ShouldBeNil)
+			So(size, ShouldEqual, 7)
 		})
 	})
 
 	Convey(".MarshalJSON", t, func() {
 		Convey("Should serialize an empty object", func() {
-			obj := runtime.NewObject()
+			obj := NewObject()
 			marshaled, err := obj.MarshalJSON()
 
 			So(err, ShouldBeNil)
@@ -42,14 +48,14 @@ func TestObject(t *testing.T) {
 		})
 
 		Convey("Should serialize full object", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("none", None),
-				runtime.NewObjectProperty("boolean", False),
-				runtime.NewObjectProperty("int", NewInt(1)),
-				runtime.NewObjectProperty("float", Float(1)),
-				runtime.NewObjectProperty("string", NewString("1")),
-				runtime.NewObjectProperty("array", NewArray(10)),
-				runtime.NewObjectProperty("object", runtime.NewObject()),
+			obj := NewObjectWith(
+				NewObjectProperty("none", None),
+				NewObjectProperty("boolean", False),
+				NewObjectProperty("int", NewInt(1)),
+				NewObjectProperty("float", Float(1)),
+				NewObjectProperty("string", NewString("1")),
+				NewObjectProperty("array", NewArray(10)),
+				NewObjectProperty("object", NewObject()),
 			)
 			marshaled, err := obj.MarshalJSON()
 
@@ -61,9 +67,9 @@ func TestObject(t *testing.T) {
 
 	Convey(".Unwrap", t, func() {
 		Convey("Should return an unwrapped items", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", NewString("foo")),
-				runtime.NewObjectProperty("bar", NewString("bar")),
+			obj := NewObjectWith(
+				NewObjectProperty("foo", NewString("foo")),
+				NewObjectProperty("bar", NewString("bar")),
 			)
 
 			for _, val := range obj.Unwrap().(map[string]interface{}) {
@@ -74,8 +80,8 @@ func TestObject(t *testing.T) {
 
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", NewString("bar")),
+			obj := NewObjectWith(
+				NewObjectProperty("foo", NewString("bar")),
 			)
 
 			So(obj.String(), ShouldEqual, "{\"foo\":\"bar\"}")
@@ -92,7 +98,7 @@ func TestObject(t *testing.T) {
 				NewString("1"),
 				NewArray(10),
 			}
-			obj := runtime.NewObject()
+			obj := NewObject()
 
 			for _, val := range arr {
 				So(obj.Compare(val), ShouldEqual, 1)
@@ -101,26 +107,26 @@ func TestObject(t *testing.T) {
 
 		Convey("It should return -1 for all object values", func() {
 			arr := NewArrayWith(ZeroInt, ZeroInt)
-			obj := runtime.NewObject()
+			obj := NewObject()
 
 			So(arr.Compare(obj), ShouldEqual, -1)
 		})
 
 		Convey("It should return 0 when both objects are empty", func() {
-			obj1 := runtime.NewObject()
-			obj2 := runtime.NewObject()
+			obj1 := NewObject()
+			obj2 := NewObject()
 
 			So(obj1.Compare(obj2), ShouldEqual, 0)
 		})
 
 		Convey("It should return 0 when both objects are equal (independent of key order)", func() {
-			obj1 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", NewString("foo")),
-				runtime.NewObjectProperty("bar", NewString("bar")),
+			obj1 := NewObjectWith(
+				NewObjectProperty("foo", NewString("foo")),
+				NewObjectProperty("bar", NewString("bar")),
 			)
-			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", NewString("foo")),
-				runtime.NewObjectProperty("bar", NewString("bar")),
+			obj2 := NewObjectWith(
+				NewObjectProperty("foo", NewString("foo")),
+				NewObjectProperty("bar", NewString("bar")),
 			)
 
 			So(obj1.Compare(obj1), ShouldEqual, 0)
@@ -130,82 +136,82 @@ func TestObject(t *testing.T) {
 		})
 
 		Convey("It should return 1 when other array is empty", func() {
-			obj1 := runtime.NewObjectWith(runtime.NewObjectProperty("foo", NewString("bar")))
-			obj2 := runtime.NewObject()
+			obj1 := NewObjectWith(NewObjectProperty("foo", NewString("bar")))
+			obj2 := NewObject()
 
 			So(obj1.Compare(obj2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 1 when values are bigger", func() {
-			obj1 := runtime.NewObjectWith(runtime.NewObjectProperty("foo", NewFloat(3)))
-			obj2 := runtime.NewObjectWith(runtime.NewObjectProperty("foo", NewFloat(2)))
+			obj1 := NewObjectWith(NewObjectProperty("foo", NewFloat(3)))
+			obj2 := NewObjectWith(NewObjectProperty("foo", NewFloat(2)))
 
 			So(obj1.Compare(obj2), ShouldEqual, 1)
 		})
 
 		Convey("It should return 1 when values are less", func() {
-			obj1 := runtime.NewObjectWith(runtime.NewObjectProperty("foo", NewFloat(1)))
-			obj2 := runtime.NewObjectWith(runtime.NewObjectProperty("foo", NewFloat(2)))
+			obj1 := NewObjectWith(NewObjectProperty("foo", NewFloat(1)))
+			obj2 := NewObjectWith(NewObjectProperty("foo", NewFloat(2)))
 
 			So(obj1.Compare(obj2), ShouldEqual, -1)
 		})
 
 		Convey("ArangoDB compatibility", func() {
 			Convey("It should return 1 when {a:1} and {b:2}", func() {
-				obj1 := runtime.NewObjectWith(runtime.NewObjectProperty("a", NewInt(1)))
-				obj2 := runtime.NewObjectWith(runtime.NewObjectProperty("b", NewInt(2)))
+				obj1 := NewObjectWith(NewObjectProperty("a", NewInt(1)))
+				obj2 := NewObjectWith(NewObjectProperty("b", NewInt(2)))
 
 				So(obj1.Compare(obj2), ShouldEqual, 1)
 			})
 
 			Convey("It should return 0 when {a:1} and {a:1}", func() {
-				obj1 := runtime.NewObjectWith(runtime.NewObjectProperty("a", NewInt(1)))
-				obj2 := runtime.NewObjectWith(runtime.NewObjectProperty("a", NewInt(1)))
+				obj1 := NewObjectWith(NewObjectProperty("a", NewInt(1)))
+				obj2 := NewObjectWith(NewObjectProperty("a", NewInt(1)))
 
 				So(obj1.Compare(obj2), ShouldEqual, 0)
 			})
 
 			Convey("It should return 0 {a:1, c:2} and {c:2, a:1}", func() {
-				obj1 := runtime.NewObjectWith(
-					runtime.NewObjectProperty("a", NewInt(1)),
-					runtime.NewObjectProperty("c", NewInt(2)),
+				obj1 := NewObjectWith(
+					NewObjectProperty("a", NewInt(1)),
+					NewObjectProperty("c", NewInt(2)),
 				)
-				obj2 := runtime.NewObjectWith(
-					runtime.NewObjectProperty("c", NewInt(2)),
-					runtime.NewObjectProperty("a", NewInt(1)),
+				obj2 := NewObjectWith(
+					NewObjectProperty("c", NewInt(2)),
+					NewObjectProperty("a", NewInt(1)),
 				)
 
 				So(obj1.Compare(obj2), ShouldEqual, 0)
 			})
 
 			Convey("It should return -1 when {a:1} and {a:2}", func() {
-				obj1 := runtime.NewObjectWith(runtime.NewObjectProperty("a", NewInt(1)))
-				obj2 := runtime.NewObjectWith(runtime.NewObjectProperty("a", NewInt(2)))
+				obj1 := NewObjectWith(NewObjectProperty("a", NewInt(1)))
+				obj2 := NewObjectWith(NewObjectProperty("a", NewInt(2)))
 
 				So(obj1.Compare(obj2), ShouldEqual, -1)
 			})
 
 			Convey("It should return 1 when {a:1, c:2} and {c:2, b:2}", func() {
-				obj1 := runtime.NewObjectWith(
-					runtime.NewObjectProperty("a", NewInt(1)),
-					runtime.NewObjectProperty("c", NewInt(2)),
+				obj1 := NewObjectWith(
+					NewObjectProperty("a", NewInt(1)),
+					NewObjectProperty("c", NewInt(2)),
 				)
-				obj2 := runtime.NewObjectWith(
-					runtime.NewObjectProperty("c", NewInt(2)),
-					runtime.NewObjectProperty("b", NewInt(2)),
+				obj2 := NewObjectWith(
+					NewObjectProperty("c", NewInt(2)),
+					NewObjectProperty("b", NewInt(2)),
 				)
 
 				So(obj1.Compare(obj2), ShouldEqual, 1)
 			})
 
 			Convey("It should return 1 {a:1, c:3} and {c:2, a:1}", func() {
-				obj1 := runtime.NewObjectWith(
-					runtime.NewObjectProperty("a", NewInt(1)),
-					runtime.NewObjectProperty("c", NewInt(3)),
+				obj1 := NewObjectWith(
+					NewObjectProperty("a", NewInt(1)),
+					NewObjectProperty("c", NewInt(3)),
 				)
-				obj2 := runtime.NewObjectWith(
-					runtime.NewObjectProperty("c", NewInt(2)),
-					runtime.NewObjectProperty("a", NewInt(1)),
+				obj2 := NewObjectWith(
+					NewObjectProperty("c", NewInt(2)),
+					NewObjectProperty("a", NewInt(1)),
 				)
 
 				So(obj1.Compare(obj2), ShouldEqual, 1)
@@ -215,10 +221,10 @@ func TestObject(t *testing.T) {
 
 	Convey(".Hash", t, func() {
 		Convey("It should calculate hash of non-empty object", func() {
-			v := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", NewString("bar")),
-				runtime.NewObjectProperty("faz", NewInt(1)),
-				runtime.NewObjectProperty("qaz", True),
+			v := NewObjectWith(
+				NewObjectProperty("foo", NewString("bar")),
+				NewObjectProperty("faz", NewInt(1)),
+				NewObjectProperty("qaz", True),
 			)
 
 			h := v.Hash()
@@ -227,7 +233,7 @@ func TestObject(t *testing.T) {
 		})
 
 		Convey("It should calculate hash of empty object", func() {
-			v := runtime.NewObject()
+			v := NewObject()
 
 			h := v.Hash()
 
@@ -235,14 +241,14 @@ func TestObject(t *testing.T) {
 		})
 
 		Convey("Hash sum should be consistent", func() {
-			v := runtime.NewObjectWith(
-				runtime.NewObjectProperty("boolean", True),
-				runtime.NewObjectProperty("int", NewInt(1)),
-				runtime.NewObjectProperty("float", NewFloat(1.1)),
-				runtime.NewObjectProperty("string", NewString("foobar")),
-				runtime.NewObjectProperty("datetime", NewCurrentDateTime()),
-				runtime.NewObjectProperty("array", NewArrayWith(NewInt(1), True)),
-				runtime.NewObjectProperty("object", runtime.NewObjectWith(runtime.NewObjectProperty("foo", NewString("bar")))),
+			v := NewObjectWith(
+				NewObjectProperty("boolean", True),
+				NewObjectProperty("int", NewInt(1)),
+				NewObjectProperty("float", NewFloat(1.1)),
+				NewObjectProperty("string", NewString("foobar")),
+				NewObjectProperty("datetime", NewCurrentDateTime()),
+				NewObjectProperty("array", NewArrayWith(NewInt(1), True)),
+				NewObjectProperty("object", NewObjectWith(NewObjectProperty("foo", NewString("bar")))),
 			)
 
 			h1 := v.Hash()
@@ -254,66 +260,80 @@ func TestObject(t *testing.T) {
 
 	Convey(".Length", t, func() {
 		Convey("Should return 0 when empty", func() {
-			obj := runtime.NewObject()
+			obj := NewObject()
+			size, err := obj.Length(c.Background())
 
-			So(obj.Length(), ShouldEqual, 0)
+			So(err, ShouldBeNil)
+			So(size, ShouldEqual, 0)
 		})
 
 		Convey("Should return greater than 0 when not empty", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", ZeroInt),
-				runtime.NewObjectProperty("bar", ZeroInt),
+			obj := NewObjectWith(
+				NewObjectProperty("foo", ZeroInt),
+				NewObjectProperty("bar", ZeroInt),
 			)
 
-			So(obj.Length(), ShouldEqual, 2)
+			size, err := obj.Length(c.Background())
+			So(err, ShouldBeNil)
+			So(size, ShouldEqual, 2)
 		})
 	})
 
-	Convey(".ForEach", t, func() {
+	Convey(".ForEachIter", t, func() {
 		Convey("Should iterate over elements", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("foo", ZeroInt),
-				runtime.NewObjectProperty("bar", ZeroInt),
+			obj := NewObjectWith(
+				NewObjectProperty("bar", ZeroInt),
+				NewObjectProperty("foo", ZeroInt),
 			)
 			counter := 0
+			ctx := c.Background()
 
-			obj.ForEach(func(value Value, key string) bool {
+			obj.ForEach(ctx, func(_ c.Context, value, key Value) (Boolean, error) {
 				counter++
 
-				return true
+				return true, nil
 			})
 
-			So(counter, ShouldEqual, obj.Length())
+			size, err := obj.Length(ctx)
+
+			So(err, ShouldBeNil)
+			So(counter, ShouldEqual, size)
 		})
 
 		Convey("Should not iterate when empty", func() {
-			obj := runtime.NewObject()
+			obj := NewObject()
 			counter := 0
 
-			obj.ForEach(func(value Value, key string) bool {
+			ctx := c.Background()
+
+			obj.ForEach(ctx, func(_ c.Context, value, key Value) (Boolean, error) {
 				counter++
 
-				return true
+				return true, nil
 			})
 
-			So(counter, ShouldEqual, obj.Length())
+			size, err := obj.Length(ctx)
+
+			So(err, ShouldBeNil)
+			So(counter, ShouldEqual, size)
 		})
 
 		Convey("Should break iteration when false returned", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("1", NewInt(1)),
-				runtime.NewObjectProperty("2", NewInt(2)),
-				runtime.NewObjectProperty("3", NewInt(3)),
-				runtime.NewObjectProperty("4", NewInt(4)),
-				runtime.NewObjectProperty("5", NewInt(5)),
+			obj := NewObjectWith(
+				NewObjectProperty("1", NewInt(1)),
+				NewObjectProperty("2", NewInt(2)),
+				NewObjectProperty("3", NewInt(3)),
+				NewObjectProperty("4", NewInt(4)),
+				NewObjectProperty("5", NewInt(5)),
 			)
 			threshold := 3
 			counter := 0
+			ctx := c.Background()
 
-			obj.ForEach(func(value Value, key string) bool {
+			obj.ForEach(ctx, func(_ c.Context, value, key Value) (Boolean, error) {
 				counter++
 
-				return counter < threshold
+				return counter < threshold, nil
 			})
 
 			So(counter, ShouldEqual, threshold)
@@ -357,43 +377,49 @@ func TestObject(t *testing.T) {
 
 	Convey(".Clone", t, func() {
 		Convey("Cloned object should be equal to source object", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("one", NewInt(1)),
-				runtime.NewObjectProperty("two", NewInt(2)),
+			obj := NewObjectWith(
+				NewObjectProperty("one", NewInt(1)),
+				NewObjectProperty("two", NewInt(2)),
 			)
 
-			clone := obj.Clone().(*runtime.Object)
+			ctx := c.Background()
+			cloned, _ := obj.Clone(ctx)
+			clone := cloned.(*Object)
 
 			So(obj.Compare(clone), ShouldEqual, 0)
 		})
 
 		Convey("Cloned object should be independent of the source object", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("one", NewInt(1)),
-				runtime.NewObjectProperty("two", NewInt(2)),
+			obj := NewObjectWith(
+				NewObjectProperty("one", NewInt(1)),
+				NewObjectProperty("two", NewInt(2)),
 			)
 
-			clone := obj.Clone().(*runtime.Object)
+			ctx := c.Background()
+			cloned, _ := obj.Clone(ctx)
+			clone := cloned.(*Object)
 
-			obj.Remove(NewString("one"))
+			obj.Remove(ctx, NewString("one"))
 
 			So(obj.Compare(clone), ShouldNotEqual, 0)
 		})
 
 		Convey("Cloned object must contain copies of the nested objects", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty(
+			obj := NewObjectWith(
+				NewObjectProperty(
 					"arr", NewArrayWith(NewInt(1)),
 				),
 			)
 
-			clone := obj.Clone().(*runtime.Object)
+			ctx := c.Background()
+			cloned, _ := obj.Clone(ctx)
+			clone := cloned.(*Object)
 
-			nestedInObj, _ := obj.Get(NewString("arr"))
+			nestedInObj, _ := obj.Get(ctx, NewString("arr"))
 			nestedInObjArr := nestedInObj.(*Array)
-			nestedInObjArr.Push(NewInt(2))
+			nestedInObjArr.Add(ctx, NewInt(2))
 
-			nestedInClone, _ := clone.Get(NewString("arr"))
+			nestedInClone, _ := clone.Get(ctx, NewString("arr"))
 			nestedInCloneArr := nestedInClone.(*Array)
 
 			So(nestedInObjArr.Compare(nestedInCloneArr), ShouldNotEqual, 0)

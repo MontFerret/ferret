@@ -13,12 +13,13 @@ import (
 func Contains(ctx context.Context, input runtime.Value, value runtime.Value) runtime.Boolean {
 	switch val := input.(type) {
 	case runtime.List:
-		contains, err := val.Contains(ctx, value)
+		idx, err := val.IndexOf(ctx, value)
+
 		if err != nil {
 			return runtime.False
 		}
 
-		return contains
+		return idx > -1
 	case runtime.Map:
 		containsValue, err := val.ContainsValue(ctx, value)
 
@@ -34,7 +35,7 @@ func Contains(ctx context.Context, input runtime.Value, value runtime.Value) run
 	}
 }
 
-func Add(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
+func Add(_ context.Context, inputL, inputR runtime.Value) runtime.Value {
 	left := runtime.ToNumberOrString(inputL)
 
 	switch leftVal := left.(type) {

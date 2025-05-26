@@ -79,7 +79,7 @@ func AssertList(input Value) error {
 }
 
 func AssertItemsOf(ctx context.Context, input Iterable, assertion TypeAssertion) error {
-	return ForEachOf(ctx, input, func(ctx context.Context, value, _ Value) (Boolean, error) {
+	return ForEach(ctx, input, func(ctx context.Context, value, _ Value) (Boolean, error) {
 		if err := assertion(value); err != nil {
 			return false, err
 		}

@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 
+	"github.com/wI2L/jettison"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -20,7 +22,12 @@ func NewKV(key, value runtime.Value) *KV {
 }
 
 func (p *KV) MarshalJSON() ([]byte, error) {
-	return p.Value.MarshalJSON()
+	pair := [2]runtime.Value{
+		p.Key,
+		p.Value,
+	}
+
+	return jettison.MarshalOpts(pair, jettison.NoHTMLEscaping())
 }
 
 func (p *KV) String() string {

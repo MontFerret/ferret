@@ -24,11 +24,11 @@ func NewObjectProperty(name string, value Value) *ObjectProperty {
 	return &ObjectProperty{name, value}
 }
 
-func NewObject() Map {
+func NewObject() *Object {
 	return &Object{make(map[string]Value)}
 }
 
-func NewObjectWith(props ...*ObjectProperty) Map {
+func NewObjectWith(props ...*ObjectProperty) *Object {
 	obj := &Object{make(map[string]Value)}
 
 	for _, prop := range props {
@@ -38,7 +38,7 @@ func NewObjectWith(props ...*ObjectProperty) Map {
 	return obj
 }
 
-func NewObjectOf(props map[string]Value) Map {
+func NewObjectOf(props map[string]Value) *Object {
 	return &Object{props}
 }
 

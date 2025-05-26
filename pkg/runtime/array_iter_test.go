@@ -24,7 +24,7 @@ func TestArrayIterator(t *testing.T) {
 	Convey("One value", t, func() {
 		ctx := context.Background()
 		arr := runtime.NewArray(1)
-		arr.Add(ctx, NewInt(1))
+		arr.Add(ctx, runtime.NewInt(1))
 		iter := runtime.NewArrayIterator(arr)
 
 		hasNext, err := iter.HasNext(ctx)
@@ -35,8 +35,8 @@ func TestArrayIterator(t *testing.T) {
 		val, key, err := iter.Next(ctx)
 
 		So(err, ShouldBeNil)
-		So(val, ShouldEqual, NewInt(1))
-		So(key, ShouldEqual, NewInt(0))
+		So(val, ShouldEqual, runtime.NewInt(1))
+		So(key, ShouldEqual, runtime.NewInt(0))
 
 		hasNext, err = iter.HasNext(ctx)
 
@@ -47,14 +47,14 @@ func TestArrayIterator(t *testing.T) {
 	Convey("Multiple values", t, func() {
 		ctx := context.Background()
 		arr := runtime.NewArray(5)
-		arr.Push(NewInt(1))
-		arr.Push(NewInt(2))
-		arr.Push(NewInt(3))
-		arr.Push(NewInt(4))
-		arr.Push(NewInt(5))
+		arr.Add(ctx, runtime.NewInt(1))
+		arr.Add(ctx, runtime.NewInt(2))
+		arr.Add(ctx, runtime.NewInt(3))
+		arr.Add(ctx, runtime.NewInt(4))
+		arr.Add(ctx, runtime.NewInt(5))
 		iter := runtime.NewArrayIterator(arr)
 
-		actual := make([]Int, 0, 5)
+		actual := make([]runtime.Int, 0, 5)
 
 		for {
 			hasNext, err := iter.HasNext(ctx)
@@ -62,22 +62,21 @@ func TestArrayIterator(t *testing.T) {
 				break
 			}
 			val, _, err := iter.Next(ctx)
-			actual = append(actual, val.(Int))
+			actual = append(actual, val.(runtime.Int))
 		}
 
-		So(actual, ShouldResemble, []Int{1, 2, 3, 4, 5})
+		So(actual, ShouldResemble, []runtime.Int{1, 2, 3, 4, 5})
 	})
 }
 
 func BenchmarkArrayIterator(b *testing.B) {
 	size := 100
 	arr := runtime.NewArray(size)
+	ctx := context.Background()
 
 	for i := 0; i < size; i++ {
-		arr.Push(NewInt(i))
+		arr.Add(ctx, runtime.NewInt(i))
 	}
-
-	ctx := context.Background()
 
 	b.ResetTimer()
 

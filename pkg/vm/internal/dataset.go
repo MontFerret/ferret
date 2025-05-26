@@ -2,23 +2,22 @@ package internal
 
 import (
 	"context"
-	"errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type DataSet struct {
-	uniqueness runtime.MapStorage
-	groups     runtime.MapStorage
-	values     runtime.ListStorage
+	uniqueness map[uint64]bool
+	groups     map[string]runtime.List
+	values     runtime.List
 	keyed      bool
 }
 
-func NewDataSet(distinct bool) *DataSet {
-	var hashmap runtime.MapStorage
+func NewDataSet(distinct bool) runtime.List {
+	var hashmap map[uint64]bool
 
 	if distinct {
-		hashmap = runtime.NewObject()
+		hashmap = make(map[uint64]bool)
 	}
 
 	return &DataSet{
@@ -28,7 +27,7 @@ func NewDataSet(distinct bool) *DataSet {
 }
 
 func (ds *DataSet) Sort(ctx context.Context, direction runtime.Int) error {
-	return ds.values.SortWith(ctx, func(first, second runtime.Value) int64 {
+	return runtime.SortListWith(ctx, ds.values, func(first, second runtime.Value) int64 {
 		firstKV, firstOk := first.(*KV)
 		secondKV, secondOk := second.(*KV)
 
@@ -49,7 +48,7 @@ func (ds *DataSet) Sort(ctx context.Context, direction runtime.Int) error {
 }
 
 func (ds *DataSet) SortMany(ctx context.Context, directions []runtime.Int) error {
-	return ds.values.SortWith(ctx, func(first, second runtime.Value) int64 {
+	return runtime.SortListWith(ctx, ds.values, func(first, second runtime.Value) int64 {
 		firstKV, firstOk := first.(*KV)
 		secondKV, secondOk := second.(*KV)
 
@@ -120,7 +119,19 @@ func (ds *DataSet) AddKV(ctx context.Context, key, value runtime.Value) error {
 }
 
 func (ds *DataSet) Collect(ctx context.Context, key, value runtime.Value) error {
-	return nil
+	if ds.groups == nil {
+		ds.groups = make(map[string]runtime.List)
+	}
+
+	keyStr := key.String()
+	group, ok := ds.groups[keyStr]
+
+	if !ok {
+		group = runtime.NewArray(8)
+		ds.groups[keyStr] = group
+	}
+
+	return group.Add(ctx, value)
 }
 
 func (ds *DataSet) Iterate(ctx context.Context) (runtime.Iterator, error) {
@@ -158,30 +169,83 @@ func (ds *DataSet) Copy() runtime.Value {
 }
 
 func (ds *DataSet) MarshalJSON() ([]byte, error) {
-	return nil, nil
+	return ds.values.MarshalJSON()
 }
 
-func (ds *DataSet) ToList() runtime.List {
-	return ds.values
+func (ds *DataSet) Compare(other runtime.Value) int64 {
+	return ds.values.Compare(other)
 }
 
-func (ds *DataSet) canAdd(ctx context.Context, value runtime.Value) (bool, error) {
+func (ds *DataSet) Clone(ctx context.Context) (runtime.Cloneable, error) {
+	return ds.values.Clone(ctx)
+}
+
+func (ds *DataSet) Clear(ctx context.Context) error {
+	return ds.values.Clear(ctx)
+}
+
+func (ds *DataSet) Set(ctx context.Context, idx runtime.Int, value runtime.Value) error {
+	return ds.values.Set(ctx, idx, value)
+}
+
+func (ds *DataSet) Remove(ctx context.Context, value runtime.Value) error {
+	return ds.values.Remove(ctx, value)
+}
+
+func (ds *DataSet) RemoveAt(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
+	return ds.values.RemoveAt(ctx, idx)
+}
+
+func (ds *DataSet) Insert(ctx context.Context, idx runtime.Int, value runtime.Value) error {
+	return ds.values.Insert(ctx, idx, value)
+}
+
+func (ds *DataSet) Swap(ctx context.Context, a, b runtime.Int) error {
+	return ds.values.Swap(ctx, a, b)
+}
+
+func (ds *DataSet) Find(ctx context.Context, predicate runtime.IndexedPredicate) (runtime.List, error) {
+	return ds.values.Find(ctx, predicate)
+}
+
+func (ds *DataSet) FindOne(ctx context.Context, predicate runtime.IndexedPredicate) (runtime.Value, runtime.Boolean, error) {
+	return ds.values.FindOne(ctx, predicate)
+}
+
+func (ds *DataSet) IndexOf(ctx context.Context, value runtime.Value) (runtime.Int, error) {
+	return ds.values.IndexOf(ctx, value)
+}
+
+func (ds *DataSet) First(ctx context.Context) (runtime.Value, error) {
+	return ds.values.First(ctx)
+}
+
+func (ds *DataSet) Last(ctx context.Context) (runtime.Value, error) {
+	return ds.values.Last(ctx)
+}
+
+func (ds *DataSet) Slice(ctx context.Context, start, end runtime.Int) (runtime.List, error) {
+	return ds.values.Slice(ctx, start, end)
+}
+
+func (ds *DataSet) ForEach(ctx context.Context, predicate runtime.IndexedPredicate) error {
+	return ds.values.ForEach(ctx, predicate)
+}
+
+func (ds *DataSet) canAdd(_ context.Context, value runtime.Value) (bool, error) {
 	if ds.uniqueness == nil {
 		return true, nil
 	}
 
 	hash := value.Hash()
-	rnHash := runtime.Int(int64(hash))
 
-	_, err := ds.uniqueness.Get(ctx, rnHash)
+	_, exists := ds.uniqueness[hash]
 
-	if err != nil {
-		if errors.Is(err, runtime.ErrNotFound) {
-			return true, ds.uniqueness.Set(ctx, rnHash, value)
-		}
-
-		return false, err
+	if exists {
+		return false, nil
 	}
+
+	ds.uniqueness[hash] = true
 
 	return true, nil
 }

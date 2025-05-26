@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"time"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type StreamValue struct {

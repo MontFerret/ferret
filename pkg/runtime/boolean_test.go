@@ -3,7 +3,7 @@ package runtime_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	. "github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -11,7 +11,7 @@ import (
 func TestBoolean(t *testing.T) {
 	Convey(".MarshalJSON", t, func() {
 		Convey("Should serialize a boolean items", func() {
-			b := runtime.True
+			b := True
 			marshaled, err := b.MarshalJSON()
 
 			So(err, ShouldBeNil)
@@ -22,19 +22,19 @@ func TestBoolean(t *testing.T) {
 
 	Convey(".Unwrap", t, func() {
 		Convey("Should return an unwrapped items", func() {
-			So(runtime.True.Unwrap(), ShouldHaveSameTypeAs, true)
+			So(True.Unwrap(), ShouldHaveSameTypeAs, true)
 		})
 	})
 
 	Convey(".String", t, func() {
 		Convey("Should return a string representation ", func() {
-			So(runtime.True.String(), ShouldEqual, "true")
+			So(True.String(), ShouldEqual, "true")
 		})
 	})
 
 	Convey(".CompareValues", t, func() {
 		Convey("It should return 1 when compared to None", func() {
-			So(runtime.True.Compare(runtime.None), ShouldEqual, 1)
+			So(True.Compare(None), ShouldEqual, 1)
 		})
 
 		Convey("It should return -1 for all non-boolean values", func() {
@@ -42,8 +42,8 @@ func TestBoolean(t *testing.T) {
 				NewString("foo"),
 				NewInt(1),
 				NewFloat(1.1),
-				runtime.NewArray(10),
-				runtime.NewObject(),
+				NewArray(10),
+				NewObject(),
 			}
 
 			for _, v := range vals {

@@ -26,7 +26,6 @@ type (
 		Cloneable
 		Iterable
 
-		IsEmpty(ctx context.Context) (Boolean, error)
 		Clear(ctx context.Context) error
 	}
 
@@ -35,22 +34,20 @@ type (
 	List interface {
 		Collection
 		Indexed
-		Sortable
 
 		Add(ctx context.Context, value Value) error
 		Set(ctx context.Context, idx Int, value Value) error
-		Insert(ctx context.Context, idx Int, value Value) error
 		Remove(ctx context.Context, value Value) error
 		RemoveAt(ctx context.Context, idx Int) (Value, error)
+		Insert(ctx context.Context, idx Int, value Value) error
+		Swap(ctx context.Context, a, b Int) error
 
 		Find(ctx context.Context, predicate IndexedPredicate) (List, error)
 		FindOne(ctx context.Context, predicate IndexedPredicate) (Value, Boolean, error)
-		Contains(ctx context.Context, value Value) (Boolean, error)
 		IndexOf(ctx context.Context, value Value) (Int, error)
 		First(context.Context) (Value, error)
 		Last(context.Context) (Value, error)
 		Slice(ctx context.Context, start, end Int) (List, error)
-		CopyWithCap(ctx context.Context, cap Int) (List, error)
 
 		ForEach(ctx context.Context, predicate IndexedPredicate) error
 	}
