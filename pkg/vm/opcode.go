@@ -18,7 +18,6 @@ const (
 	OpLoadKeyOptional             // Load a value from a map to a register, if it exists
 	OpLoadProperty                // Load a property from an object to a register
 	OpLoadPropertyOptional        // Load a property from an object to a register, if it exists
-	OpUnpackList                  // Unpack a List value from a register to multiple registers (UNPACK R2, R3, R4 - unpacks a value in R2 to R3 and R4)
 
 	OpJump
 	OpJumpIfFalse

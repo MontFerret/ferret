@@ -266,51 +266,6 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpUnpackList:
-			source, err := runtime.CastList(reg[dst])
-
-			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				} else {
-					return nil, err
-				}
-			}
-
-			start := src1.Register()
-			end := src2.Register()
-
-			var pos runtime.Int
-
-			size, err := source.Length(ctx)
-
-			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				} else {
-					return nil, err
-				}
-			}
-
-			for i := start; i <= end; i++ {
-				if pos >= size {
-					reg[i] = runtime.None
-				} else {
-					item, err := source.Get(ctx, pos)
-
-					if err != nil {
-						if _, catch := tryCatch(vm.pc); catch {
-							reg[i] = runtime.None
-						} else {
-							return nil, err
-						}
-					} else {
-						reg[i] = item
-					}
-
-					pos++
-				}
-			}
 
 		case OpCall, OpProtectedCall:
 			fnName := reg[dst].String()
