@@ -118,7 +118,7 @@ func (ds *DataSet) CollectGrouping(ctx context.Context) error {
 	ds.keyed = true
 	ds.values = nextValues
 
-	return ds.Sort(ctx, SortAsc)
+	return nil
 }
 
 func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, error) {

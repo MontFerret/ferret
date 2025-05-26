@@ -458,6 +458,7 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 	}
 
 	v.emitter.EmitA(vm.OpCollectGrouping, loop.Result)
+	v.emitter.EmitAB(vm.OpSort, loop.Result, v.loadConstant(runtime.ZeroInt))
 
 	// Replace source with sorted array
 	v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
