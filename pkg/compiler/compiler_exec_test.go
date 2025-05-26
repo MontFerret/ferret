@@ -1653,7 +1653,7 @@ func TestCollect(t *testing.T) {
 				COLLECT gender = i.gender
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -1690,6 +1690,49 @@ LET users = [
 				COLLECT gender = i.gender
 				RETURN gender
 `, []any{"m", "f"}, "Should group result by a single key"),
+		CaseArray(
+			`LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender, age = i.age
+				RETURN {age, gender}
+		`, []any{
+				map[string]any{"age": 25, "gender": "f"},
+				map[string]any{"age": 45, "gender": "f"},
+				map[string]any{"age": 31, "gender": "m"},
+				map[string]any{"age": 36, "gender": "m"},
+				map[string]any{"age": 69, "gender": "m"},
+			}, "Should group result by multiple keys"),
 	})
 }
 

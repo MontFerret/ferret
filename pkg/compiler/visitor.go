@@ -416,44 +416,35 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 	// And wrap each loop element by a KeyValuePair
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
-
 	var kvKeyReg vm.Operand
 	selectors := ctx.AllCollectSelector()
 	isMultiSelector := len(selectors) > 1
 
 	if isMultiSelector {
-		selectorsRegs := make([]vm.Operand, len(selectors))
 		// We create a sequence of registers for the clauses
 		// To pack them into an array
-		keyRegs := v.registers.AllocateSequence(len(selectors))
+		selectorRegs := v.registers.AllocateSequence(len(selectors))
 
 		for i, selector := range selectors {
-			selectorReg := selector.Accept(v).(vm.Operand)
-			v.emitter.EmitAB(vm.OpMove, keyRegs.Registers[i], selectorReg)
-			selectorsRegs[i] = keyRegs.Registers[i]
-			// TODO: Free registers
+			reg := selector.Accept(v).(vm.Operand)
+			v.emitter.EmitAB(vm.OpMove, selectorRegs.Registers[i], reg)
+			// Free the register after moving its value to the sequence register
+			v.registers.Free(reg)
 		}
 
 		kvKeyReg = v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpArray, kvKeyReg, keyRegs)
+		v.emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
+		v.registers.FreeSequence(selectorRegs)
 	} else {
 		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
 	}
 
-	var kvValReg vm.Operand
+	kvValReg := v.registers.Allocate(Temp)
 
-	// In case the value is not used in the loop body, and only key is used
-	if loop.ValueName != "" {
-		kvValReg = loop.Value
+	if loop.Kind == ForLoop {
+		v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
 	} else {
-		// If so, we need to load it from the iterator
-		kvValReg = v.registers.Allocate(Temp)
-
-		if loop.Kind == ForLoop {
-			v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
-		} else {
-			v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
-		}
+		v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
 	}
 
 	v.emitter.EmitABC(vm.OpDataSetAddKV, loop.Result, kvKeyReg, kvValReg)
@@ -474,31 +465,34 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 	v.symbols.ExitScope()
 	v.symbols.EnterScope()
 
-	// We set to empty string to not use the original loop value
 	loop.ValueName = ""
-	// TODO: Free the register
-	loop.Key = vm.NoopOperand
 	loop.KeyName = ""
+	v.registers.Free(loop.Value)
+	v.registers.Free(loop.Key)
+	loop.Value = vm.NoopOperand
+	loop.Key = vm.NoopOperand
+
 	// Create new for loop
 	v.emitLoopBegin(loop)
 
 	// Now we need to expand group variables from the dataset
-	v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
+	v.emitter.EmitAB(vm.OpIterKey, kvValReg, loop.Iterator)
 
-	for i, selector := range selectors {
+	if isMultiSelector {
+		// Define a variable for each selector
+		for i, selector := range selectors {
+			// Get the variable name
+			name := selector.Identifier().GetText()
+
+			v.emitter.EmitABC(vm.OpLoadIndex, v.symbols.DefineVariable(name), kvValReg, v.loadConstant(runtime.Int(i)))
+		}
+	} else {
 		// Get the variable name
-		name := selector.Identifier().GetText()
+		name := selectors[0].Identifier().GetText()
 		// Define a variable for each selector
 		varReg := v.symbols.DefineVariable(name)
-
-		if isMultiSelector {
-			index := v.loadConstant(runtime.Int(i))
-			// If we have multiple selectors, we need to load the value from the array
-			v.emitter.EmitABC(vm.OpLoadProperty, varReg, kvValReg, index)
-		} else {
-			// If we have a single selector, we can just move the value
-			v.emitter.EmitAB(vm.OpMove, varReg, kvValReg)
-		}
+		// If we have a single selector, we can just move the value
+		v.emitter.EmitAB(vm.OpMove, varReg, kvValReg)
 	}
 
 	return nil
@@ -545,7 +539,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		}
 
 		arrReg := v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpArray, arrReg, keyRegs)
+		v.emitter.EmitAs(vm.OpList, arrReg, keyRegs)
 		v.emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free registers
 	} else {
 		clausesReg := clauses[0].Accept(v).(vm.Operand)
@@ -825,7 +819,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 			}
 
 			// Initialize an array
-			v.emitter.EmitAs(vm.OpArray, destReg, seq)
+			v.emitter.EmitAs(vm.OpList, destReg, seq)
 
 			// Free seq registers
 			//v.registers.FreeSequence(seq)
@@ -835,7 +829,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	}
 
 	// Empty array
-	v.emitter.EmitA(vm.OpArray, destReg)
+	v.emitter.EmitA(vm.OpList, destReg)
 
 	return destReg
 }
@@ -846,7 +840,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 	size := len(assignments)
 
 	if size == 0 {
-		v.emitter.EmitA(vm.OpObject, dst)
+		v.emitter.EmitA(vm.OpMap, dst)
 
 		return dst
 	}
@@ -880,7 +874,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 		}
 	}
 
-	v.emitter.EmitAs(vm.OpObject, dst, seq)
+	v.emitter.EmitAs(vm.OpMap, dst, seq)
 
 	return dst
 }

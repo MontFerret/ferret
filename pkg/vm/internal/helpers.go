@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"strings"
 	"time"
@@ -89,4 +90,43 @@ func Sleep(ctx context.Context, duration runtime.Int) error {
 	}
 
 	return nil
+}
+
+// Stringify converts a Value to a String. If the input is an Iterable, it concatenates
+func Stringify(ctx context.Context, input runtime.Value) (string, error) {
+	switch val := input.(type) {
+	case runtime.Iterable:
+		var b bytes.Buffer
+
+		defer b.Reset()
+
+		err := runtime.ForEach(ctx, val, func(ctx context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+			keyStr, err := Stringify(ctx, key)
+
+			if err != nil {
+				return runtime.False, err
+			}
+
+			valStr, err := Stringify(ctx, value)
+
+			if err != nil {
+				return runtime.False, err
+			}
+
+			b.WriteString(keyStr)
+			b.Write([]byte(":"))
+			b.WriteString(valStr)
+			b.Write([]byte(";"))
+
+			return runtime.True, nil
+		})
+
+		if err != nil {
+			return "", err
+		}
+
+		return b.String(), nil
+	default:
+		return val.String(), nil
+	}
 }

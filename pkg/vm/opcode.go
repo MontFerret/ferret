@@ -9,11 +9,16 @@ const (
 	OpLoadBool                    // Set a boolean value to a register
 	OpLoadZero                    // Set a zero value to a register
 	OpLoadConst                   // Load a constant to a register or a global variable
-	OpStoreGlobal                 // Store a value from register A to a global variable
 	OpLoadGlobal                  // Load a global variable to a register A
+	OpStoreGlobal                 // Store a value from register A to a global variable
 	OpLoadParam                   // Load a parameter to a register A
+	OpLoadIndex                   // Load a value from a list to a register (INDEX R1, R2, R3 - loads a value from a list in R2 to R1)
+	OpLoadIndexOptional           // Load a value from a list to a register, if it exists
+	OpLoadKey                     // Load a value from a map to a register (KEY R1, R2, R3 - loads a value from a map in R2 to R1)
+	OpLoadKeyOptional             // Load a value from a map to a register, if it exists
 	OpLoadProperty                // Load a property from an object to a register
 	OpLoadPropertyOptional        // Load a property from an object to a register, if it exists
+	OpUnpackList                  // Unpack a List value from a register to multiple registers (UNPACK R2, R3, R4 - unpacks a value in R2 to R3 and R4)
 
 	OpJump
 	OpJumpIfFalse
@@ -48,8 +53,8 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 
-	OpArray  // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
-	OpObject // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
+	OpList // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
+	OpMap  // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
 	OpRange
 
 	OpLength

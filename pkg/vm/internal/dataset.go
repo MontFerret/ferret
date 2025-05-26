@@ -12,6 +12,8 @@ type DataSet struct {
 	keyed      bool
 }
 
+// TODO: Remove implementation of runtime.List interface. Add an unwrap opcode in the VM to unwrap the values.
+// Otherwise, when it escapes to the userspace, it might cause issues with the uniqueness map.
 func NewDataSet(distinct bool) runtime.List {
 	var hashmap map[uint64]bool
 
@@ -90,13 +92,18 @@ func (ds *DataSet) CollectGrouping(ctx context.Context) error {
 
 	err := runtime.ForEach(ctx, ds.values, func(c context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
 		kv := value.(*KV)
-		key := kv.Key.String()
+		key, err := Stringify(c, kv.Key)
+
+		if err != nil {
+			return false, err
+		}
+
 		_, exists := groups[key]
 
 		if !exists {
 			groups[key] = true
 
-			if err := nextValues.Add(c, kv.Key); err != nil {
+			if err := nextValues.Add(c, kv); err != nil {
 				return false, err
 			}
 		}
@@ -108,10 +115,10 @@ func (ds *DataSet) CollectGrouping(ctx context.Context) error {
 		return err
 	}
 
-	ds.keyed = false
+	ds.keyed = true
 	ds.values = nextValues
 
-	return nil
+	return ds.Sort(ctx, SortAsc)
 }
 
 func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, error) {

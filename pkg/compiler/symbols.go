@@ -111,13 +111,21 @@ func (st *SymbolTable) DefineVariable(name string) vm.Operand {
 
 	register := st.registers.Allocate(Var)
 
+	st.DefineScopedVariable(name, register)
+
+	return register
+}
+
+func (st *SymbolTable) DefineScopedVariable(name string, register vm.Operand) {
+	if st.scope == 0 {
+		panic("cannot define scoped variable in global scope")
+	}
+
 	st.locals = append(st.locals, &Variable{
 		Name:     name,
 		Depth:    st.scope,
 		Register: register,
 	})
-
-	return register
 }
 
 func (st *SymbolTable) Variable(name string) vm.Operand {

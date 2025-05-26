@@ -181,7 +181,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpArray:
+		case OpList:
 			var size int
 
 			if src1 > 0 {
@@ -198,7 +198,7 @@ loop:
 			}
 
 			reg[dst] = arr
-		case OpObject:
+		case OpMap:
 			obj := runtime.NewObject()
 			var args int
 
@@ -217,52 +217,101 @@ loop:
 			}
 
 			reg[dst] = obj
+		case OpLoadIndex, OpLoadIndexOptional:
+			src := reg[src1]
+			arg := reg[src2]
+			out, err := vm.loadIndex(ctx, src, arg)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpLoadIndexOptional {
+				reg[dst] = runtime.None
+			} else {
+				return nil, err
+			}
+
+		case OpLoadKey, OpLoadKeyOptional:
+			src := reg[src1]
+			arg := reg[src2]
+			out, err := vm.loadKey(ctx, src, arg)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpLoadKeyOptional {
+				reg[dst] = runtime.None
+			} else {
+				return nil, err
+			}
+
 		case OpLoadProperty, OpLoadPropertyOptional:
-			val := reg[src1]
+			src := reg[src1]
 			prop := reg[src2]
+
+			var out runtime.Value
+			var err error
 
 			switch getter := prop.(type) {
 			case runtime.String:
-				switch src := val.(type) {
-				case runtime.Keyed:
-					out, err := src.Get(ctx, getter)
-
-					if err == nil {
-						reg[dst] = out
-					} else if op == OpLoadPropertyOptional {
-						reg[dst] = runtime.None
-					} else {
-						return nil, err
-					}
-				default:
-					if op != OpLoadPropertyOptional {
-						return nil, runtime.TypeError(src, runtime.TypeMap)
-					}
-
-					reg[dst] = runtime.None
-				}
+				out, err = vm.loadKey(ctx, src, getter)
 			case runtime.Float, runtime.Int:
-				// TODO: Optimize this. Avoid extra type conversion
-				idx, _ := runtime.ToInt(ctx, getter)
-				switch src := val.(type) {
-				case runtime.Indexed:
-					out, err := src.Get(ctx, idx)
+				out, err = vm.loadIndex(ctx, src, getter)
+			default:
+				out, err = vm.loadKey(ctx, src, runtime.ToString(prop))
+			}
 
-					if err == nil {
-						reg[dst] = out
-					} else if op == OpLoadPropertyOptional {
-						reg[dst] = runtime.None
-					} else {
-						return nil, err
-					}
-				default:
-					if op != OpLoadPropertyOptional {
-						return nil, runtime.TypeError(src, runtime.TypeList)
-					}
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpLoadPropertyOptional {
+				reg[dst] = runtime.None
+			} else {
+				return nil, err
+			}
+		case OpUnpackList:
+			source, err := runtime.CastList(reg[dst])
 
-					reg[dst] = runtime.None
+			if err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
 				}
 			}
+
+			start := src1.Register()
+			end := src2.Register()
+
+			var pos runtime.Int
+
+			size, err := source.Length(ctx)
+
+			if err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
+
+			for i := start; i <= end; i++ {
+				if pos >= size {
+					reg[i] = runtime.None
+				} else {
+					item, err := source.Get(ctx, pos)
+
+					if err != nil {
+						if _, catch := tryCatch(vm.pc); catch {
+							reg[i] = runtime.None
+						} else {
+							return nil, err
+						}
+					} else {
+						reg[i] = item
+					}
+
+					pos++
+				}
+			}
+
 		case OpCall, OpProtectedCall:
 			fnName := reg[dst].String()
 			fn := vm.env.GetFunction(fnName)
@@ -592,6 +641,49 @@ func (vm *VM) validateParams(env *Environment) error {
 	}
 
 	return nil
+}
+
+func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
+	indexed, ok := src.(runtime.Indexed)
+
+	if !ok {
+		return nil, runtime.TypeError(src, runtime.TypeIndexed)
+	}
+
+	var idx runtime.Int
+	var err error
+
+	switch v := arg.(type) {
+	case runtime.Int:
+		idx = v
+	case runtime.Float:
+		// Convert float to int, rounding down
+		idx = runtime.Int(v)
+	default:
+		err = runtime.TypeError(arg, runtime.TypeInt, runtime.TypeFloat)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return indexed.Get(ctx, idx)
+}
+
+func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
+	keyed, ok := src.(runtime.Keyed)
+
+	if !ok {
+		return nil, runtime.TypeError(src, runtime.TypeKeyed)
+	}
+
+	out, err := keyed.Get(ctx, arg)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {

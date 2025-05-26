@@ -14,6 +14,8 @@ const (
 	TypeBinary   = "binary"
 
 	// Interfaces
+	TypeIndexed    = "indexed"
+	TypeKeyed      = "keyed"
 	TypeIterable   = "iterable"
 	TypeIterator   = "iterator"
 	TypeMeasurable = "measurable"
