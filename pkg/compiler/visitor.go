@@ -479,12 +479,21 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 	v.emitter.EmitAB(vm.OpIterKey, kvValReg, loop.Iterator)
 
 	if isMultiSelector {
-		// Define a variable for each selector
+		variables := make([]vm.Operand, len(selectors))
+
 		for i, selector := range selectors {
-			// Get the variable name
 			name := selector.Identifier().GetText()
 
-			v.emitter.EmitABC(vm.OpLoadIndex, v.symbols.DefineVariable(name), kvValReg, v.loadConstant(runtime.Int(i)))
+			if variables[i] == vm.NoopOperand {
+				variables[i] = v.symbols.DefineVariable(name)
+			}
+
+			v.emitter.EmitABC(vm.OpLoadIndex, variables[i], kvValReg, v.loadConstant(runtime.Int(i)))
+		}
+
+		// Free the register after moving its value to the variable
+		for _, reg := range variables {
+			v.registers.Free(reg)
 		}
 	} else {
 		// Get the variable name
