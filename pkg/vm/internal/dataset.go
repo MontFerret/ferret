@@ -7,9 +7,8 @@ import (
 )
 
 type DataSet struct {
-	uniqueness map[uint64]bool
-	groups     map[string]runtime.List
 	values     runtime.List
+	uniqueness map[uint64]bool
 	keyed      bool
 }
 
@@ -85,6 +84,36 @@ func (ds *DataSet) SortMany(ctx context.Context, directions []runtime.Int) error
 	})
 }
 
+func (ds *DataSet) CollectGrouping(ctx context.Context) error {
+	groups := make(map[string]bool)
+	nextValues := runtime.NewArray(16)
+
+	err := runtime.ForEach(ctx, ds.values, func(c context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
+		kv := value.(*KV)
+		key := kv.Key.String()
+		_, exists := groups[key]
+
+		if !exists {
+			groups[key] = true
+
+			if err := nextValues.Add(c, kv.Key); err != nil {
+				return false, err
+			}
+		}
+
+		return true, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	ds.keyed = false
+	ds.values = nextValues
+
+	return nil
+}
+
 func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
 	return ds.values.Get(ctx, idx)
 }
@@ -116,22 +145,6 @@ func (ds *DataSet) AddKV(ctx context.Context, key, value runtime.Value) error {
 	}
 
 	return nil
-}
-
-func (ds *DataSet) Collect(ctx context.Context, key, value runtime.Value) error {
-	if ds.groups == nil {
-		ds.groups = make(map[string]runtime.List)
-	}
-
-	keyStr := key.String()
-	group, ok := ds.groups[keyStr]
-
-	if !ok {
-		group = runtime.NewArray(8)
-		ds.groups[keyStr] = group
-	}
-
-	return group.Add(ctx, value)
 }
 
 func (ds *DataSet) Iterate(ctx context.Context) (runtime.Iterator, error) {

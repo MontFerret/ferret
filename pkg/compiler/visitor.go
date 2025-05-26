@@ -400,32 +400,116 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 }
 
 func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
-	// TODO: Undefine original loop variables
-	//loop := v.loops.Loop()
-	////v.emitter.EmitAB(runtime.OpLoopPushIter, loop.Result, loop.Iterator)
-	////v.emitter.EmitJump(runtime.OpJump, loop.Jump-loop.JumpOffset)
-	////v.emitter.EmitA(runtime.OpClose, loop.Iterator)
-	//
-	//// Allocate registers
-	//collector := v.registers.Allocate(Temp)
-	//collectorKey := v.registers.Allocate(Temp)
-	//collectorVal := v.registers.Allocate(Temp)
-	//
-	//// Init Grouping
-	//// Create a new collector
-	//v.emitter.EmitA(runtime.OpCollect, collector)
-	//
-	//// TODO: patch jump
-	//
-	//if agr := ctx.CollectGrouping(); agr != nil {
-	//	selectors := agr.AllCollectSelector()
-	//
-	//	for _, selector := range selectors {
-	//		reg := selector.Expression().Accept(v).(runtime.Operand)
-	//	}
-	//}
+	if c := ctx.CollectGrouping(); c != nil {
+		// Collect by grouping
+		return c.Accept(v)
+	}
 
 	return nil
+}
+
+func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interface{} {
+	// TODO: Undefine original loop variables
+	loop := v.loops.Loop()
+
+	// We collect the aggregation keys
+	// And wrap each loop element by a KeyValuePair
+	// Where a key is either a single value or a list of values
+	// These KeyValuePairs are then added to the dataset
+
+	var kvKeyReg vm.Operand
+	selectors := ctx.AllCollectSelector()
+	isMultiSelector := len(selectors) > 1
+
+	if isMultiSelector {
+		selectorsRegs := make([]vm.Operand, len(selectors))
+		// We create a sequence of registers for the clauses
+		// To pack them into an array
+		keyRegs := v.registers.AllocateSequence(len(selectors))
+
+		for i, selector := range selectors {
+			selectorReg := selector.Accept(v).(vm.Operand)
+			v.emitter.EmitAB(vm.OpMove, keyRegs.Registers[i], selectorReg)
+			selectorsRegs[i] = keyRegs.Registers[i]
+			// TODO: Free registers
+		}
+
+		kvKeyReg = v.registers.Allocate(Temp)
+		v.emitter.EmitAs(vm.OpArray, kvKeyReg, keyRegs)
+	} else {
+		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
+	}
+
+	var kvValReg vm.Operand
+
+	// In case the value is not used in the loop body, and only key is used
+	if loop.ValueName != "" {
+		kvValReg = loop.Value
+	} else {
+		// If so, we need to load it from the iterator
+		kvValReg = v.registers.Allocate(Temp)
+
+		if loop.Kind == ForLoop {
+			v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
+		} else {
+			v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
+		}
+	}
+
+	v.emitter.EmitABC(vm.OpDataSetAddKV, loop.Result, kvKeyReg, kvValReg)
+	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
+	v.emitter.EmitA(vm.OpClose, loop.Iterator)
+
+	if loop.Kind == ForLoop {
+		v.emitter.PatchJump(loop.Jump)
+	} else {
+		v.emitter.PatchJumpAB(loop.Jump)
+	}
+
+	v.emitter.EmitA(vm.OpCollectGrouping, loop.Result)
+
+	// Replace source with sorted array
+	v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
+
+	v.symbols.ExitScope()
+	v.symbols.EnterScope()
+
+	// We set to empty string to not use the original loop value
+	loop.ValueName = ""
+	// TODO: Free the register
+	loop.Key = vm.NoopOperand
+	loop.KeyName = ""
+	// Create new for loop
+	v.emitLoopBegin(loop)
+
+	// Now we need to expand group variables from the dataset
+	v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
+
+	for i, selector := range selectors {
+		// Get the variable name
+		name := selector.Identifier().GetText()
+		// Define a variable for each selector
+		varReg := v.symbols.DefineVariable(name)
+
+		if isMultiSelector {
+			index := v.loadConstant(runtime.Int(i))
+			// If we have multiple selectors, we need to load the value from the array
+			v.emitter.EmitABC(vm.OpLoadProperty, varReg, kvValReg, index)
+		} else {
+			// If we have a single selector, we can just move the value
+			v.emitter.EmitAB(vm.OpMove, varReg, kvValReg)
+		}
+	}
+
+	return nil
+}
+
+func (v *visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
+	if c := ctx.Expression(); c != nil {
+		return c.Accept(v)
+	}
+
+	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {

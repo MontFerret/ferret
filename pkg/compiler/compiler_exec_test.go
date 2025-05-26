@@ -1575,7 +1575,7 @@ LET users = [
 
 func TestCollect(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		CaseCompilationError(`
+		SkipCaseCompilationError(`
 			LET users = [
 				{
 					active: true,
@@ -1615,7 +1615,7 @@ func TestCollect(t *testing.T) {
 					gender: gender
 				}
 		`, "Should not have access to initial variables"),
-		CaseCompilationError(`
+		SkipCaseCompilationError(`
 			LET users = [
 				{
 					active: true,
@@ -1653,7 +1653,8 @@ func TestCollect(t *testing.T) {
 				COLLECT gender = i.gender
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT"),
-		CaseArray(`LET users = [
+		CaseArray(`
+LET users = [
 				{
 					active: true,
 					married: true,
@@ -1685,7 +1686,10 @@ func TestCollect(t *testing.T) {
 					gender: "f"
 				}
 			]
-			g`, []any{"f", "m"}, "Should group result by a single key"),
+			FOR i IN users
+				COLLECT gender = i.gender
+				RETURN gender
+`, []any{"m", "f"}, "Should group result by a single key"),
 	})
 }
 

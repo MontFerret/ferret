@@ -359,13 +359,26 @@ loop:
 			reg[dst] = internal.NewDataSet(src1 == 1)
 		case OpDataSetAdd:
 			ds := reg[dst].(*internal.DataSet)
-			ds.Add(ctx, reg[src1])
+
+			if err := ds.Add(ctx, reg[src1]); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
 		case OpDataSetAddKV:
+			ds := reg[dst].(*internal.DataSet)
 			key := reg[src1]
 			value := reg[src2]
 
-			ds := reg[dst].(*internal.DataSet)
-			ds.AddKV(ctx, key, value)
+			if err := ds.AddKV(ctx, key, value); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				} else {
+					return nil, err
+				}
+			}
 		case OpIter:
 			input := reg[src1]
 
@@ -476,20 +489,16 @@ loop:
 					return nil, err
 				}
 			}
-		case OpCollect:
+		case OpCollectGrouping:
 			ds := reg[dst].(*internal.DataSet)
-			key := reg[src1]
-			value := reg[src2]
 
-			if err := ds.Collect(ctx, key, value); err != nil {
+			if err := ds.CollectGrouping(ctx); err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
 				} else {
 					return nil, err
 				}
 			}
-		case OpCollectMany:
-			// TODO: Implement this
 		case OpStream:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
