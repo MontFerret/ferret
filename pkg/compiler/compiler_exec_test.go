@@ -1824,6 +1824,139 @@ LET users = [
 				},
 			},
 		}, "Should create default projection"),
+		CaseArray(
+			`LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender INTO genders = { active: i.active }
+				RETURN {
+					gender,
+					values: genders
+				}
+		`, []any{
+				map[string]any{
+					"gender": "f",
+					"values": []any{
+						map[string]any{"active": true},
+						map[string]any{"active": true},
+					},
+				},
+				map[string]any{
+					"gender": "m",
+					"values": []any{
+						map[string]any{"active": true},
+						map[string]any{"active": true},
+						map[string]any{"active": false},
+					},
+				},
+			}, "Should create custom projection"),
+		CaseArray(
+			`LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender, age = i.age INTO genders = { active: i.active }
+				RETURN {
+					age,
+					gender,
+					values: genders
+				}
+		`, []any{
+				map[string]any{
+					"age":    25,
+					"gender": "f",
+					"values": []any{
+						map[string]any{"active": true},
+					},
+				},
+				map[string]any{
+					"age":    45,
+					"gender": "f",
+					"values": []any{
+						map[string]any{"active": true},
+					},
+				},
+				map[string]any{
+					"age":    31,
+					"gender": "m",
+					"values": []any{
+						map[string]any{"active": true},
+					},
+				},
+				map[string]any{
+					"age":    36,
+					"gender": "m",
+					"values": []any{
+						map[string]any{"active": true},
+					},
+				},
+				map[string]any{
+					"age":    69,
+					"gender": "m",
+					"values": []any{
+						map[string]any{"active": false},
+					},
+				},
+			}, "Should create custom projection grouped by multiple keys"),
 	})
 }
 

@@ -451,22 +451,14 @@ func (v *visitor) visitCollectGrouping(ctx *fql.CollectGroupingContext, cvar *fq
 		v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
 	}
 
-	var projections []antlr.TerminalNode
+	var projectionVariableName string
 
 	if cvar != nil {
-		projections = cvar.AllIdentifier()
-	}
-
-	if len(projections) > 0 {
-		seq := v.registers.AllocateSequence(2) // Key and Value for Map
-
-		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
-		// We will keep it for now for backward compatibility.
-		v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
-		v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
-		v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
-
-		v.registers.FreeSequence(seq)
+		if identifiers := cvar.AllIdentifier(); len(identifiers) > 0 {
+			projectionVariableName = v.emitDefaultCollectProjection(loop, kvValReg, identifiers)
+		} else if selector := cvar.CollectSelector(); selector != nil {
+			projectionVariableName = v.emitCustomCollectProjection(loop, kvValReg, selector)
+		}
 
 		v.emitter.EmitABC(vm.OpCollectKV, loop.Result, kvKeyReg, kvValReg)
 	} else {
@@ -497,8 +489,8 @@ func (v *visitor) visitCollectGrouping(ctx *fql.CollectGroupingContext, cvar *fq
 	v.emitter.EmitAB(vm.OpIterKey, kvValReg, loop.Iterator)
 
 	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-	if len(projections) == 1 {
-		v.emitter.EmitAB(vm.OpIterValue, v.symbols.DefineVariable(projections[0].GetText()), loop.Iterator)
+	if projectionVariableName != "" {
+		v.emitter.EmitAB(vm.OpIterValue, v.symbols.DefineVariable(projectionVariableName), loop.Iterator)
 	}
 
 	//loop.ValueName = ""
@@ -536,6 +528,29 @@ func (v *visitor) visitCollectGrouping(ctx *fql.CollectGroupingContext, cvar *fq
 	}
 
 	return nil
+}
+
+func (v *visitor) emitDefaultCollectProjection(loop *Loop, kvValReg vm.Operand, identifiers []antlr.TerminalNode) string {
+	seq := v.registers.AllocateSequence(2) // Key and Value for Map
+
+	// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
+	// We will keep it for now for backward compatibility.
+	v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
+	v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
+	v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
+
+	v.registers.FreeSequence(seq)
+
+	return identifiers[0].GetText()
+}
+
+func (v *visitor) emitCustomCollectProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
+	selector.Identifier().GetText()
+	selectorReg := selector.Expression().Accept(v).(vm.Operand)
+	v.emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
+	v.registers.Free(selectorReg)
+
+	return selector.Identifier().GetText()
 }
 
 func (v *visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
