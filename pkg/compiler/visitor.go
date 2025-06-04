@@ -302,7 +302,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		c := returnRuleCtx.(*fql.ReturnExpressionContext)
 		expReg := c.Expression().Accept(v).(vm.Operand)
 
-		v.emitter.EmitAB(vm.OpDataSetAdd, loop.Result, expReg)
+		v.emitter.EmitAB(vm.OpPush, loop.Result, expReg)
 	} else if returnRuleCtx != nil {
 		returnRuleCtx.Accept(v)
 	}
@@ -401,14 +401,18 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 
 func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
 	if c := ctx.CollectGrouping(); c != nil {
+
+		if cvar := ctx.CollectGroupVariable(); cvar != nil {
+			return v.visitCollectGrouping(c.(*fql.CollectGroupingContext), cvar.(*fql.CollectGroupVariableContext))
+		}
 		// Collect by grouping
-		return c.Accept(v)
+		return v.visitCollectGrouping(c.(*fql.CollectGroupingContext), nil)
 	}
 
 	return nil
 }
 
-func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interface{} {
+func (v *visitor) visitCollectGrouping(ctx *fql.CollectGroupingContext, cvar *fql.CollectGroupVariableContext) interface{} {
 	// TODO: Undefine original loop variables
 	loop := v.loops.Loop()
 
@@ -433,7 +437,7 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 		}
 
 		kvKeyReg = v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
+		v.emitter.EmitAs(vm.OpLoadList, kvKeyReg, selectorRegs)
 		v.registers.FreeSequence(selectorRegs)
 	} else {
 		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
@@ -447,7 +451,28 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 		v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
 	}
 
-	v.emitter.EmitABC(vm.OpDataSetAddKV, loop.Result, kvKeyReg, kvValReg)
+	var projections []antlr.TerminalNode
+
+	if cvar != nil {
+		projections = cvar.AllIdentifier()
+	}
+
+	if len(projections) > 0 {
+		seq := v.registers.AllocateSequence(2) // Key and Value for Map
+
+		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
+		// We will keep it for now for backward compatibility.
+		v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
+		v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
+		v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
+
+		v.registers.FreeSequence(seq)
+
+		v.emitter.EmitABC(vm.OpCollectKV, loop.Result, kvKeyReg, kvValReg)
+	} else {
+		v.emitter.EmitABC(vm.OpCollectK, loop.Result, kvKeyReg, kvValReg)
+	}
+
 	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
 	v.emitter.EmitA(vm.OpClose, loop.Iterator)
 
@@ -457,7 +482,6 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 		v.emitter.PatchJumpAB(loop.Jump)
 	}
 
-	v.emitter.EmitA(vm.OpCollectGrouping, loop.Result)
 	v.emitter.EmitAB(vm.OpSort, loop.Result, v.loadConstant(runtime.ZeroInt))
 
 	// Replace source with sorted array
@@ -466,18 +490,24 @@ func (v *visitor) VisitCollectGrouping(ctx *fql.CollectGroupingContext) interfac
 	v.symbols.ExitScope()
 	v.symbols.EnterScope()
 
-	loop.ValueName = ""
-	loop.KeyName = ""
-	v.registers.Free(loop.Value)
-	v.registers.Free(loop.Key)
-	loop.Value = vm.NoopOperand
-	loop.Key = vm.NoopOperand
-
 	// Create new for loop
 	v.emitLoopBegin(loop)
 
 	// Now we need to expand group variables from the dataset
 	v.emitter.EmitAB(vm.OpIterKey, kvValReg, loop.Iterator)
+
+	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+	if len(projections) == 1 {
+		v.emitter.EmitAB(vm.OpIterValue, v.symbols.DefineVariable(projections[0].GetText()), loop.Iterator)
+	}
+
+	//loop.ValueName = ""
+	//loop.KeyName = ""
+	// TODO: Reuse the registers
+	v.registers.Free(loop.Value)
+	v.registers.Free(loop.Key)
+	loop.Value = vm.NoopOperand
+	loop.Key = vm.NoopOperand
 
 	if isMultiSelector {
 		variables := make([]vm.Operand, len(selectors))
@@ -549,7 +579,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		}
 
 		arrReg := v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpList, arrReg, keyRegs)
+		v.emitter.EmitAs(vm.OpLoadList, arrReg, keyRegs)
 		v.emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free registers
 	} else {
 		clausesReg := clauses[0].Accept(v).(vm.Operand)
@@ -572,7 +602,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		}
 	}
 
-	v.emitter.EmitABC(vm.OpDataSetAddKV, loop.Result, kvKeyReg, kvValReg)
+	v.emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
 	v.emitter.EmitA(vm.OpClose, loop.Iterator)
 
@@ -728,7 +758,7 @@ func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} 
 	start := ctx.GetLeft().Accept(v).(vm.Operand)
 	end := ctx.GetRight().Accept(v).(vm.Operand)
 
-	v.emitter.EmitABC(vm.OpRange, dst, start, end)
+	v.emitter.EmitABC(vm.OpLoadRange, dst, start, end)
 
 	return dst
 }
@@ -829,7 +859,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 			}
 
 			// Initialize an array
-			v.emitter.EmitAs(vm.OpList, destReg, seq)
+			v.emitter.EmitAs(vm.OpLoadList, destReg, seq)
 
 			// Free seq registers
 			//v.registers.FreeSequence(seq)
@@ -839,7 +869,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	}
 
 	// Empty array
-	v.emitter.EmitA(vm.OpList, destReg)
+	v.emitter.EmitA(vm.OpLoadList, destReg)
 
 	return destReg
 }
@@ -850,7 +880,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 	size := len(assignments)
 
 	if size == 0 {
-		v.emitter.EmitA(vm.OpMap, dst)
+		v.emitter.EmitA(vm.OpLoadMap, dst)
 
 		return dst
 	}
@@ -884,7 +914,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 		}
 	}
 
-	v.emitter.EmitAs(vm.OpMap, dst, seq)
+	v.emitter.EmitAs(vm.OpLoadMap, dst, seq)
 
 	return dst
 }
@@ -1390,7 +1420,7 @@ func (v *visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
 
 func (v *visitor) emitLoopBegin(loop *Loop) {
 	if loop.Allocate {
-		v.emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+		v.emitter.EmitAb(vm.OpLoadDataSet, loop.Result, loop.Distinct)
 	}
 
 	loop.Iterator = v.registers.Allocate(State)
@@ -1464,4 +1494,8 @@ func (v *visitor) loadConstant(constant runtime.Value) vm.Operand {
 	reg := v.registers.Allocate(Temp)
 	v.emitter.EmitAB(vm.OpLoadConst, reg, v.symbols.AddConstant(constant))
 	return reg
+}
+
+func (v *visitor) loadConstantTo(constant runtime.Value, reg vm.Operand) {
+	v.emitter.EmitAB(vm.OpLoadConst, reg, v.symbols.AddConstant(constant))
 }

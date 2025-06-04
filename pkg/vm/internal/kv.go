@@ -9,11 +9,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
+// KV represents a key-value pair where both the key and value are of type runtime.Value.
 type KV struct {
 	Key   runtime.Value
 	Value runtime.Value
 }
 
+// NewKV creates and returns a new KV instance with the provided key and value.
 func NewKV(key, value runtime.Value) *KV {
 	return &KV{
 		Key:   key,

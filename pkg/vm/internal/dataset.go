@@ -9,6 +9,7 @@ import (
 type DataSet struct {
 	values     runtime.List
 	uniqueness map[uint64]bool
+	grouping   map[string]runtime.Value
 	keyed      bool
 }
 
@@ -86,43 +87,70 @@ func (ds *DataSet) SortMany(ctx context.Context, directions []runtime.Int) error
 	})
 }
 
-func (ds *DataSet) CollectGrouping(ctx context.Context) error {
-	groups := make(map[string]bool)
-	nextValues := runtime.NewArray(16)
-
-	err := runtime.ForEach(ctx, ds.values, func(c context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
-		kv := value.(*KV)
-		key, err := Stringify(c, kv.Key)
-
-		if err != nil {
-			return false, err
-		}
-
-		_, exists := groups[key]
-
-		if !exists {
-			groups[key] = true
-
-			if err := nextValues.Add(c, kv); err != nil {
-				return false, err
-			}
-		}
-
-		return true, nil
-	})
+func (ds *DataSet) AddKV(ctx context.Context, key, value runtime.Value) error {
+	can, err := ds.canAdd(ctx, value)
 
 	if err != nil {
 		return err
 	}
 
+	if can {
+		_ = ds.values.Add(ctx, NewKV(key, value))
+	}
+
 	ds.keyed = true
-	ds.values = nextValues
 
 	return nil
 }
 
-func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
-	return ds.values.Get(ctx, idx)
+func (ds *DataSet) CollectKey(ctx context.Context, key runtime.Value) error {
+	k, err := Stringify(ctx, key)
+
+	if err != nil {
+		return err
+	}
+
+	if ds.grouping == nil {
+		ds.grouping = make(map[string]runtime.Value)
+	}
+
+	_, exists := ds.grouping[k]
+
+	if !exists {
+		ds.grouping[k] = runtime.None
+		_ = ds.values.Add(ctx, NewKV(key, runtime.None))
+	}
+
+	ds.keyed = true
+
+	return nil
+}
+
+func (ds *DataSet) CollectKV(ctx context.Context, key, value runtime.Value) error {
+	k, err := Stringify(ctx, key)
+
+	if err != nil {
+		return err
+	}
+
+	if ds.grouping == nil {
+		ds.grouping = make(map[string]runtime.Value)
+	}
+
+	group, exists := ds.grouping[k]
+
+	if !exists {
+		group = runtime.NewArray(4)
+		ds.grouping[k] = group
+		_ = ds.values.Add(ctx, NewKV(key, group))
+	}
+
+	// TODO: Avoid type casting
+	_ = group.(runtime.List).Add(ctx, value)
+
+	ds.keyed = true
+
+	return nil
 }
 
 func (ds *DataSet) Add(ctx context.Context, item runtime.Value) error {
@@ -139,19 +167,8 @@ func (ds *DataSet) Add(ctx context.Context, item runtime.Value) error {
 	return nil
 }
 
-func (ds *DataSet) AddKV(ctx context.Context, key, value runtime.Value) error {
-	can, err := ds.canAdd(ctx, value)
-
-	if err != nil {
-		return err
-	}
-
-	if can {
-		_ = ds.values.Add(ctx, NewKV(key, value))
-		ds.keyed = true
-	}
-
-	return nil
+func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, error) {
+	return ds.values.Get(ctx, idx)
 }
 
 func (ds *DataSet) Iterate(ctx context.Context) (runtime.Iterator, error) {

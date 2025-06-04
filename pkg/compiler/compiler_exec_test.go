@@ -1653,7 +1653,7 @@ func TestCollect(t *testing.T) {
 				COLLECT gender = i.gender
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT"),
-		SkipCaseArray(`
+		CaseArray(`
 LET users = [
 				{
 					active: true,
@@ -1689,7 +1689,7 @@ LET users = [
 			FOR i IN users
 				COLLECT gender = i.gender
 				RETURN gender
-`, []any{"m", "f"}, "Should group result by a single key"),
+`, []any{"f", "m"}, "Should group result by a single key"),
 		CaseArray(
 			`LET users = [
 				{
@@ -1733,6 +1733,97 @@ LET users = [
 				map[string]any{"age": 36, "gender": "m"},
 				map[string]any{"age": 69, "gender": "m"},
 			}, "Should group result by multiple keys"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender INTO genders
+				RETURN {
+					gender,
+					values: genders
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{
+						"i": map[string]any{
+							"active":  true,
+							"age":     25,
+							"gender":  "f",
+							"married": false,
+						},
+					},
+					map[string]any{
+						"i": map[string]any{
+							"active":  true,
+							"age":     45,
+							"gender":  "f",
+							"married": true,
+						},
+					},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{
+						"i": map[string]any{
+							"active":  true,
+							"age":     31,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+					map[string]any{
+						"i": map[string]any{
+							"active":  true,
+							"age":     36,
+							"gender":  "m",
+							"married": false,
+						},
+					},
+					map[string]any{
+						"i": map[string]any{
+							"active":  false,
+							"age":     69,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+				},
+			},
+		}, "Should create default projection"),
 	})
 }
 

@@ -16,8 +16,12 @@ const (
 	OpLoadIndexOptional           // Load a value from a list to a register, if it exists
 	OpLoadKey                     // Load a value from a map to a register (KEY R1, R2, R3 - loads a value from a map in R2 to R1)
 	OpLoadKeyOptional             // Load a value from a map to a register, if it exists
-	OpLoadProperty                // Load a property from an object to a register
-	OpLoadPropertyOptional        // Load a property from an object to a register, if it exists
+	OpLoadProperty                // Load a property (key or index) from an object (map or list) to a register
+	OpLoadPropertyOptional        // Load a property (key or index) from an object (map or list) to a register, if it exists
+	OpLoadDataSet                 // Load a dataset to a register A
+	OpLoadList                    // Load an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
+	OpLoadMap                     // Load an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
+	OpLoadRange
 
 	OpJump
 	OpJumpIfFalse
@@ -52,10 +56,6 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 
-	OpList // Create an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
-	OpMap  // Create an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
-	OpRange
-
 	OpLength
 	OpType
 	OpClose
@@ -67,15 +67,6 @@ const (
 	OpStream     // Subscribes to a stream (SMRCV R2, R3, R4 - subscribes to a stream in R2 with a collection from R3 and optional params from R4)
 	OpStreamIter // Consumes a stream (SMRD R2, R3 - consumes a stream in R2 with a collection from R3)
 
-	OpDataSet      // Creates a new dataset
-	OpDataSetAdd   // Adds a value to a dataset
-	OpDataSetAddKV // Adds a key-value pair to a dataset
-	OpLimit
-	OpSkip
-	OpSort     // Sorts a collection of KeyValue pairs. (SORT R2, R3 - sorts a collection in R2 with a sorting direction in R3)
-	OpSortMany // Sorts a collection of KeyValue pairs with compound key and multiple directions. (SORT R2, R3, R4 - sorts a collection in R2 with a sorting direction from R3 to R4)
-	OpCollectGrouping
-
 	OpIter      // Creates an iterator (ITER R2, R3 [, R4] - creates an iterator in R2 with a collection from R3 and optional params from R4)
 	OpIterNext  // Moves to the next element in the iterator (ITER R2, R3  - moves to the next element in the iterator in R2 with a collection from R3)
 	OpIterValue // Returns the current value from the iterator (ITER R2, R3  - returns the current value from the iterator in R2 with a collection from R3)
@@ -84,4 +75,14 @@ const (
 	OpWhileLoopPrep
 	OpWhileLoopNext
 	OpWhileLoopValue
+
+	OpPush      // Adds a value to a dataset
+	OpPushKV    // Adds a key-value pair to a dataset
+	OpCollectK  // Adds a key to a group
+	OpCollectKV // Adds a value to a group using key
+	OpLimit
+	OpSkip
+
+	OpSort     // Sorts a collection of KeyValue pairs. (SORT R2, R3 - sorts a collection in R2 with a sorting direction in R3)
+	OpSortMany // Sorts a collection of KeyValue pairs with compound key and multiple directions. (SORT R2, R3, R4 - sorts a collection in R2 with a sorting direction from R3 to R4)
 )

@@ -181,7 +181,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpList:
+		case OpLoadList:
 			var size int
 
 			if src1 > 0 {
@@ -198,7 +198,7 @@ loop:
 			}
 
 			reg[dst] = arr
-		case OpMap:
+		case OpLoadMap:
 			obj := runtime.NewObject()
 			var args int
 
@@ -351,7 +351,7 @@ loop:
 					}
 				}
 			}
-		case OpRange:
+		case OpLoadRange:
 			res, err := internal.ToRange(ctx, reg[src1], reg[src2])
 
 			if err == nil {
@@ -359,9 +359,9 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpDataSet:
+		case OpLoadDataSet:
 			reg[dst] = internal.NewDataSet(src1 == 1)
-		case OpDataSetAdd:
+		case OpPush:
 			ds := reg[dst].(*internal.DataSet)
 
 			if err := ds.Add(ctx, reg[src1]); err != nil {
@@ -371,7 +371,7 @@ loop:
 					return nil, err
 				}
 			}
-		case OpDataSetAddKV:
+		case OpPushKV:
 			ds := reg[dst].(*internal.DataSet)
 			key := reg[src1]
 			value := reg[src2]
@@ -379,9 +379,32 @@ loop:
 			if err := ds.AddKV(ctx, key, value); err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
-				} else {
-					return nil, err
 				}
+
+				return nil, err
+			}
+		case OpCollectK:
+			ds := reg[dst].(*internal.DataSet)
+			key := reg[src1]
+
+			if err := ds.CollectKey(ctx, key); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				}
+
+				return nil, err
+			}
+		case OpCollectKV:
+			ds := reg[dst].(*internal.DataSet)
+			key := reg[src1]
+			value := reg[src2]
+
+			if err := ds.CollectKV(ctx, key, value); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				}
+
+				return nil, err
 			}
 		case OpIter:
 			input := reg[src1]
@@ -487,16 +510,6 @@ loop:
 			}
 
 			if err := ds.SortMany(ctx, directions); err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				} else {
-					return nil, err
-				}
-			}
-		case OpCollectGrouping:
-			ds := reg[dst].(*internal.DataSet)
-
-			if err := ds.CollectGrouping(ctx); err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
 				} else {
