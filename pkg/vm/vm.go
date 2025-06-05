@@ -387,7 +387,18 @@ loop:
 			ds := reg[dst].(*internal.DataSet)
 			key := reg[src1]
 
-			if err := ds.CollectKey(ctx, key); err != nil {
+			if err := ds.CollectK(ctx, key); err != nil {
+				if _, catch := tryCatch(vm.pc); catch {
+					continue
+				}
+
+				return nil, err
+			}
+		case OpCollectKc:
+			ds := reg[dst].(*internal.DataSet)
+			key := reg[src1]
+
+			if err := ds.CollectKc(ctx, key); err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
 				}

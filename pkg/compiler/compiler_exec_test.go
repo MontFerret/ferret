@@ -2332,6 +2332,55 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with custom KEEP with multiple custom names"),
+		CaseArray(
+			`LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				COLLECT gender = i.gender WITH COUNT INTO numberOfUsers
+				RETURN {
+					gender,
+					values: numberOfUsers
+				}
+		`, []any{
+				map[string]any{
+					"gender": "f",
+					"values": 2,
+				},
+				map[string]any{
+					"gender": "m",
+					"values": 3,
+				},
+			}, "Should group and count result by a single key"),
 	})
 }
 

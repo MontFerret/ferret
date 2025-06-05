@@ -103,7 +103,7 @@ func (ds *DataSet) AddKV(ctx context.Context, key, value runtime.Value) error {
 	return nil
 }
 
-func (ds *DataSet) CollectKey(ctx context.Context, key runtime.Value) error {
+func (ds *DataSet) CollectK(ctx context.Context, key runtime.Value) error {
 	k, err := Stringify(ctx, key)
 
 	if err != nil {
@@ -119,6 +119,38 @@ func (ds *DataSet) CollectKey(ctx context.Context, key runtime.Value) error {
 	if !exists {
 		ds.grouping[k] = runtime.None
 		_ = ds.values.Add(ctx, NewKV(key, runtime.None))
+	}
+
+	ds.keyed = true
+
+	return nil
+}
+
+func (ds *DataSet) CollectKc(ctx context.Context, key runtime.Value) error {
+	k, err := Stringify(ctx, key)
+
+	if err != nil {
+		return err
+	}
+
+	if ds.grouping == nil {
+		ds.grouping = make(map[string]runtime.Value)
+	}
+
+	group, exists := ds.grouping[k]
+
+	if !exists {
+		group = NewKV(key, runtime.ZeroInt)
+		ds.grouping[k] = group
+		_ = ds.values.Add(ctx, group)
+	}
+
+	kv := group.(*KV)
+	if count, ok := kv.Value.(runtime.Int); ok {
+		sum := count + 1
+		kv.Value = sum
+	} else {
+		kv.Value = runtime.NewInt(1)
 	}
 
 	ds.keyed = true

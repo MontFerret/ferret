@@ -79,6 +79,7 @@ const (
 	OpPush      // Adds a value to a dataset
 	OpPushKV    // Adds a key-value pair to a dataset
 	OpCollectK  // Adds a key to a group
+	OpCollectKc // Adds a key to a group and counts it
 	OpCollectKV // Adds a value to a group using key
 	OpLimit
 	OpSkip
