@@ -1957,6 +1957,381 @@ LET users = [
 					},
 				},
 			}, "Should create custom projection grouped by multiple keys"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				LET married = i.married
+				COLLECT gender = i.gender INTO genders KEEP married
+				RETURN {
+					gender,
+					values: genders
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{"married": false},
+					map[string]any{"married": true},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{"married": true},
+					map[string]any{"married": false},
+					map[string]any{"married": true},
+				},
+			},
+		}, "Should create default projection with default KEEP"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				LET married = i.married
+				LET age = i.age
+				COLLECT gender = i.gender INTO values KEEP married, age
+				RETURN {
+					gender,
+					values
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{
+						"married": false,
+						"age":     25,
+					},
+					map[string]any{
+						"married": true,
+						"age":     45,
+					},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{
+						"married": true,
+						"age":     31,
+					},
+					map[string]any{
+						"married": false,
+						"age":     36,
+					},
+					map[string]any{
+						"married": true,
+						"age":     69,
+					},
+				},
+			},
+		}, "Should create default projection with default KEEP using multiple keys"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				LET married = "foo"
+				COLLECT gender = i.gender INTO values KEEP married
+				RETURN {
+					gender,
+					values
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{"married": "foo"},
+					map[string]any{"married": "foo"},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{"married": "foo"},
+					map[string]any{"married": "foo"},
+					map[string]any{"married": "foo"},
+				},
+			},
+		}, "Should create default projection with custom KEEP"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				LET married = "foo"
+				LET age = "bar"
+				COLLECT gender = i.gender INTO values KEEP married, age
+				RETURN {
+					gender,
+					values
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{
+						"married": "foo",
+						"age":     "bar",
+					},
+					map[string]any{
+						"married": "foo",
+						"age":     "bar",
+					},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{
+						"married": "foo",
+						"age":     "bar",
+					},
+					map[string]any{
+						"married": "foo",
+						"age":     "bar",
+					},
+					map[string]any{
+						"married": "foo",
+						"age":     "bar",
+					},
+				},
+			},
+		}, "Should create default projection with custom KEEP using multiple keys"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				LET bar = "foo"
+				COLLECT gender = i.gender INTO values KEEP bar
+				RETURN {
+					gender,
+					values
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{"bar": "foo"},
+					map[string]any{"bar": "foo"},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{"bar": "foo"},
+					map[string]any{"bar": "foo"},
+					map[string]any{"bar": "foo"},
+				},
+			},
+		}, "Should create default projection with custom KEEP with custom name"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+			FOR i IN users
+				LET bar = "foo"
+				LET baz = "bar"
+				COLLECT gender = i.gender INTO values KEEP bar, baz
+				RETURN {
+					gender,
+					values
+				}
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"values": []any{
+					map[string]any{"bar": "foo", "baz": "bar"},
+					map[string]any{"bar": "foo", "baz": "bar"},
+				},
+			},
+			map[string]any{
+				"gender": "m",
+				"values": []any{
+					map[string]any{"bar": "foo", "baz": "bar"},
+					map[string]any{"bar": "foo", "baz": "bar"},
+					map[string]any{"bar": "foo", "baz": "bar"},
+				},
+			},
+		}, "Should create default projection with custom KEEP with multiple custom names"),
 	})
 }
 

@@ -85,6 +85,9 @@ type FqlParserListener interface {
 	// EnterCollectGroupVariable is called when entering the collectGroupVariable production.
 	EnterCollectGroupVariable(c *CollectGroupVariableContext)
 
+	// EnterCollectGroupVariableKeeper is called when entering the collectGroupVariableKeeper production.
+	EnterCollectGroupVariableKeeper(c *CollectGroupVariableKeeperContext)
+
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
 
@@ -300,6 +303,9 @@ type FqlParserListener interface {
 
 	// ExitCollectGroupVariable is called when exiting the collectGroupVariable production.
 	ExitCollectGroupVariable(c *CollectGroupVariableContext)
+
+	// ExitCollectGroupVariableKeeper is called when exiting the collectGroupVariableKeeper production.
+	ExitCollectGroupVariableKeeper(c *CollectGroupVariableKeeperContext)
 
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)

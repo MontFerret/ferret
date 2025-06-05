@@ -454,8 +454,8 @@ func (v *visitor) visitCollectGrouping(ctx *fql.CollectGroupingContext, cvar *fq
 	var projectionVariableName string
 
 	if cvar != nil {
-		if identifiers := cvar.AllIdentifier(); len(identifiers) > 0 {
-			projectionVariableName = v.emitDefaultCollectProjection(loop, kvValReg, identifiers)
+		if identifier := cvar.Identifier(); identifier != nil {
+			projectionVariableName = v.emitDefaultCollectProjection(loop, kvValReg, identifier, cvar.CollectGroupVariableKeeper())
 		} else if selector := cvar.CollectSelector(); selector != nil {
 			projectionVariableName = v.emitCustomCollectProjection(loop, kvValReg, selector)
 		}
@@ -530,18 +530,32 @@ func (v *visitor) visitCollectGrouping(ctx *fql.CollectGroupingContext, cvar *fq
 	return nil
 }
 
-func (v *visitor) emitDefaultCollectProjection(loop *Loop, kvValReg vm.Operand, identifiers []antlr.TerminalNode) string {
-	seq := v.registers.AllocateSequence(2) // Key and Value for Map
+func (v *visitor) emitDefaultCollectProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+	if keeper == nil {
+		seq := v.registers.AllocateSequence(2) // Key and Value for Map
 
-	// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
-	// We will keep it for now for backward compatibility.
-	v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
-	v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
-	v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
+		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
+		// We will keep it for now for backward compatibility.
+		v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
+		v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
+		v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
 
-	v.registers.FreeSequence(seq)
+		v.registers.FreeSequence(seq)
+	} else {
+		variables := keeper.AllIdentifier()
+		seq := v.registers.AllocateSequence(len(variables) * 2)
 
-	return identifiers[0].GetText()
+		for i, j := 0, 0; i < len(variables); i, j = i+1, j+2 {
+			varName := variables[i].GetText()
+			v.loadConstantTo(runtime.String(varName), seq.Registers[j])
+			v.emitter.EmitAB(vm.OpMove, seq.Registers[j+1], v.symbols.Variable(varName))
+		}
+
+		v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
+		v.registers.FreeSequence(seq)
+	}
+
+	return identifier.GetText()
 }
 
 func (v *visitor) emitCustomCollectProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {

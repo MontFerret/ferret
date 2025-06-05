@@ -176,6 +176,14 @@ func (s *BaseFqlParserListener) EnterCollectGroupVariable(ctx *CollectGroupVaria
 // ExitCollectGroupVariable is called when production collectGroupVariable is exited.
 func (s *BaseFqlParserListener) ExitCollectGroupVariable(ctx *CollectGroupVariableContext) {}
 
+// EnterCollectGroupVariableKeeper is called when production collectGroupVariableKeeper is entered.
+func (s *BaseFqlParserListener) EnterCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) {
+}
+
+// ExitCollectGroupVariableKeeper is called when production collectGroupVariableKeeper is exited.
+func (s *BaseFqlParserListener) ExitCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) {
+}
+
 // EnterCollectCounter is called when production collectCounter is entered.
 func (s *BaseFqlParserListener) EnterCollectCounter(ctx *CollectCounterContext) {}
 

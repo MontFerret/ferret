@@ -136,7 +136,11 @@ collectAggregateSelector
 
 collectGroupVariable
     : Into collectSelector
-    | Into Identifier (Keep Identifier)?
+    | Into Identifier (collectGroupVariableKeeper)?
+    ;
+
+collectGroupVariableKeeper
+    : Keep Identifier (Comma Identifier)*
     ;
 
 collectCounter

@@ -85,6 +85,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#collectGroupVariable.
 	VisitCollectGroupVariable(ctx *CollectGroupVariableContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#collectGroupVariableKeeper.
+	VisitCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#collectCounter.
 	VisitCollectCounter(ctx *CollectCounterContext) interface{}
 

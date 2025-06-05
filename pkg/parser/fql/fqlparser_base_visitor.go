@@ -111,6 +111,10 @@ func (v *BaseFqlParserVisitor) VisitCollectGroupVariable(ctx *CollectGroupVariab
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitCollectCounter(ctx *CollectCounterContext) interface{} {
 	return v.VisitChildren(ctx)
 }
