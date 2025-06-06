@@ -4,6 +4,8 @@ import (
 	"errors"
 	goruntime "runtime"
 
+	"github.com/MontFerret/ferret/pkg/compiler/internal"
+
 	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/MontFerret/ferret/pkg/vm"
 
@@ -35,7 +37,7 @@ func New(setters ...Option) *Compiler {
 
 func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	if query == "" {
-		return nil, ErrEmptyQuery
+		return nil, internal.ErrEmptyQuery
 	}
 
 	defer func() {
@@ -62,24 +64,20 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	p := parser.New(query)
 	p.AddErrorListener(newErrorListener())
 
-	l := newVisitor(query)
+	l := internal.NewVisitor(query)
 
 	p.Visit(l)
 
-	if l.err != nil {
-		return nil, l.err
+	if l.Err != nil {
+		return nil, l.Err
 	}
 
 	program = &vm.Program{}
-	program.Bytecode = l.emitter.instructions
-	program.Constants = l.symbols.constants
-	program.CatchTable = l.catchTable
-	program.Registers = int(l.registers.nextRegister)
-	program.Params = make([]string, 0, len(l.symbols.params))
-
-	for _, param := range l.symbols.params {
-		program.Params = append(program.Params, param)
-	}
+	program.Bytecode = l.Emitter.Bytecode()
+	program.Constants = l.Symbols.Constants()
+	program.CatchTable = l.CatchTable
+	program.Registers = l.Registers.Size()
+	program.Params = l.Symbols.Params()
 
 	return program, err
 }

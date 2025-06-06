@@ -1,4 +1,4 @@
-package compiler
+package internal
 
 import (
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -12,6 +12,10 @@ func NewEmitter() *Emitter {
 	return &Emitter{
 		instructions: make([]vm.Instruction, 0, 8),
 	}
+}
+
+func (e *Emitter) Bytecode() []vm.Instruction {
+	return e.instructions
 }
 
 func (e *Emitter) Size() int {

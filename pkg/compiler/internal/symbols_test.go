@@ -1,4 +1,4 @@
-package compiler_test
+package internal_test
 
 import "testing"
 

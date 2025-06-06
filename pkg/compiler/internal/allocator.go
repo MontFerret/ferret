@@ -1,4 +1,4 @@
-package compiler
+package internal
 
 import (
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -43,6 +43,10 @@ func NewRegisterAllocator() *RegisterAllocator {
 		registers:    make(map[vm.Operand]*RegisterStatus),
 		nextRegister: vm.NoopOperand + 1, // we start at 1 to avoid NoopOperand
 	}
+}
+
+func (ra *RegisterAllocator) Size() int {
+	return int(ra.nextRegister)
 }
 
 // Allocate assigns a register based on variable type

@@ -1,4 +1,4 @@
-package compiler
+package internal
 
 import (
 	"regexp"
@@ -12,15 +12,15 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
-type visitor struct {
+type Visitor struct {
 	*fql.BaseFqlParserVisitor
-	err        error
-	src        string
-	emitter    *Emitter
-	registers  *RegisterAllocator
-	symbols    *SymbolTable
-	loops      *LoopTable
-	catchTable []vm.Catch
+	Err        error
+	Src        string
+	Emitter    *Emitter
+	Registers  *RegisterAllocator
+	Symbols    *SymbolTable
+	Loops      *LoopTable
+	CatchTable []vm.Catch
 }
 
 const (
@@ -38,20 +38,20 @@ const (
 	runtimeWait     = "WAIT"
 )
 
-func newVisitor(src string) *visitor {
-	v := new(visitor)
+func NewVisitor(src string) *Visitor {
+	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
-	v.src = src
-	v.registers = NewRegisterAllocator()
-	v.symbols = NewSymbolTable(v.registers)
-	v.loops = NewLoopTable(v.registers)
-	v.emitter = NewEmitter()
-	v.catchTable = make([]vm.Catch, 0)
+	v.Src = src
+	v.Registers = NewRegisterAllocator()
+	v.Symbols = NewSymbolTable(v.Registers)
+	v.Loops = NewLoopTable(v.Registers)
+	v.Emitter = NewEmitter()
+	v.CatchTable = make([]vm.Catch, 0)
 
 	return v
 }
 
-func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
+func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 	for _, head := range ctx.AllHead() {
 		v.VisitHead(head.(*fql.HeadContext))
 	}
@@ -61,7 +61,7 @@ func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 	return nil
 }
 
-func (v *visitor) VisitBody(ctx *fql.BodyContext) interface{} {
+func (v *Visitor) VisitBody(ctx *fql.BodyContext) interface{} {
 	for _, statement := range ctx.AllBodyStatement() {
 		statement.Accept(v)
 	}
@@ -71,7 +71,7 @@ func (v *visitor) VisitBody(ctx *fql.BodyContext) interface{} {
 	return nil
 }
 
-func (v *visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} {
+func (v *Visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} {
 	if c := ctx.VariableDeclaration(); c != nil {
 		return c.Accept(v)
 	} else if c := ctx.FunctionCallExpression(); c != nil {
@@ -83,15 +83,15 @@ func (v *visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} 
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{} {
+func (v *Visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{} {
 	if c := ctx.ForExpression(); c != nil {
 		out, ok := c.Accept(v).(vm.Operand)
 
 		if ok && out != vm.NoopOperand {
-			v.emitter.EmitAB(vm.OpMove, vm.NoopOperand, out)
+			v.Emitter.EmitAB(vm.OpMove, vm.NoopOperand, out)
 		}
 
-		v.emitter.Emit(vm.OpReturn)
+		v.Emitter.Emit(vm.OpReturn)
 
 		return out
 	} else if c := ctx.ReturnExpression(); c != nil {
@@ -101,11 +101,11 @@ func (v *visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitHead(_ *fql.HeadContext) interface{} {
+func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 	return nil
 }
 
-func (v *visitor) VisitWaitForExpression(ctx *fql.WaitForExpressionContext) interface{} {
+func (v *Visitor) VisitWaitForExpression(ctx *fql.WaitForExpressionContext) interface{} {
 	if ctx.Event() != nil {
 		return v.visitWaitForEventExpression(ctx)
 	}
@@ -113,8 +113,8 @@ func (v *visitor) VisitWaitForExpression(ctx *fql.WaitForExpressionContext) inte
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) visitWaitForEventExpression(ctx *fql.WaitForExpressionContext) interface{} {
-	v.symbols.EnterScope()
+func (v *Visitor) visitWaitForEventExpression(ctx *fql.WaitForExpressionContext) interface{} {
+	v.Symbols.EnterScope()
 
 	srcReg := ctx.WaitForEventSource().Accept(v).(vm.Operand)
 	eventReg := ctx.WaitForEventName().Accept(v).(vm.Operand)
@@ -131,38 +131,38 @@ func (v *visitor) visitWaitForEventExpression(ctx *fql.WaitForExpressionContext)
 		timeoutReg = timeout.Accept(v).(vm.Operand)
 	}
 
-	streamReg := v.registers.Allocate(Temp)
+	streamReg := v.Registers.Allocate(Temp)
 
 	// We move the source object to the stream register in order to re-use it in OpStream
-	v.emitter.EmitAB(vm.OpMove, streamReg, srcReg)
-	v.emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
-	v.emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
+	v.Emitter.EmitAB(vm.OpMove, streamReg, srcReg)
+	v.Emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
+	v.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
 
 	var valReg vm.Operand
 
 	// Now we start iterating over the stream
-	jumpToNext := v.emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, streamReg)
+	jumpToNext := v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, streamReg)
 
 	if filter := ctx.FilterClause(); filter != nil {
-		valReg = v.symbols.DefineVariable(pseudoVariable)
-		v.emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
+		valReg = v.Symbols.DefineVariable(pseudoVariable)
+		v.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
 
 		filter.Expression().Accept(v)
 
-		v.emitter.EmitJumpc(vm.OpJumpIfFalse, jumpToNext, valReg)
+		v.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpToNext, valReg)
 
 		// TODO: Do we need to use timeout here too? We can really get stuck in the loop if no event satisfies the filter
 	}
 
 	// Clean up the stream
-	v.emitter.EmitA(vm.OpClose, streamReg)
+	v.Emitter.EmitA(vm.OpClose, streamReg)
 
-	v.symbols.ExitScope()
+	v.Symbols.ExitScope()
 
 	return nil
 }
 
-func (v *visitor) VisitWaitForEventName(ctx *fql.WaitForEventNameContext) interface{} {
+func (v *Visitor) VisitWaitForEventName(ctx *fql.WaitForEventNameContext) interface{} {
 	if c := ctx.StringLiteral(); c != nil {
 		return c.Accept(v)
 	}
@@ -186,7 +186,7 @@ func (v *visitor) VisitWaitForEventName(ctx *fql.WaitForEventNameContext) interf
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitWaitForEventSource(ctx *fql.WaitForEventSourceContext) interface{} {
+func (v *Visitor) VisitWaitForEventSource(ctx *fql.WaitForEventSourceContext) interface{} {
 	if c := ctx.Variable(); c != nil {
 		return c.Accept(v)
 	}
@@ -202,7 +202,7 @@ func (v *visitor) VisitWaitForEventSource(ctx *fql.WaitForEventSourceContext) in
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitTimeoutClauseContext(ctx *fql.TimeoutClauseContext) interface{} {
+func (v *Visitor) VisitTimeoutClauseContext(ctx *fql.TimeoutClauseContext) interface{} {
 	if c := ctx.IntegerLiteral(); c != nil {
 		return c.Accept(v)
 	}
@@ -226,7 +226,7 @@ func (v *visitor) VisitTimeoutClauseContext(ctx *fql.TimeoutClauseContext) inter
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitOptionsClause(ctx *fql.OptionsClauseContext) interface{} {
+func (v *Visitor) VisitOptionsClause(ctx *fql.OptionsClauseContext) interface{} {
 	if c := ctx.ObjectLiteral(); c != nil {
 		return c.Accept(v)
 	}
@@ -234,8 +234,8 @@ func (v *visitor) VisitOptionsClause(ctx *fql.OptionsClauseContext) interface{} 
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
-	v.symbols.EnterScope()
+func (v *Visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
+	v.Symbols.EnterScope()
 
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
@@ -248,7 +248,7 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		returnRuleCtx = c
 	}
 
-	loop := v.loops.EnterLoop(v.loopType(ctx), v.loopKind(ctx), distinct)
+	loop := v.Loops.EnterLoop(v.loopType(ctx), v.loopKind(ctx), distinct)
 
 	if loop.Kind == ForLoop {
 		loop.Src = ctx.ForExpressionSource().Accept(v).(vm.Operand)
@@ -256,34 +256,34 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		if val := ctx.GetValueVariable(); val != nil {
 			if txt := val.GetText(); txt != "" && txt != ignorePseudoVariable {
 				loop.ValueName = txt
-				loop.Value = v.symbols.DefineVariable(txt)
+				loop.Value = v.Symbols.DefineVariable(txt)
 			}
 		}
 
 		if ctr := ctx.GetCounterVariable(); ctr != nil {
 			if txt := ctr.GetText(); txt != "" && txt != ignorePseudoVariable {
 				loop.KeyName = txt
-				loop.Key = v.symbols.DefineVariable(txt)
+				loop.Key = v.Symbols.DefineVariable(txt)
 			}
 		}
 	} else {
 		//srcExpr := ctx.Expression()
 		//
 		//// Create initial value for the loop counter
-		//v.emitter.EmitA(runtime.OpWhileLoopPrep, counterReg)
-		//beforeExp := v.emitter.Size()
+		//v.Emitter.EmitA(runtime.OpWhileLoopPrep, counterReg)
+		//beforeExp := v.Emitter.Size()
 		//// Loop data source to iterate over
 		//cond := srcExpr.Accept(v).(runtime.Operand)
-		//jumpOffset = v.emitter.Size() - beforeExp
+		//jumpOffset = v.Emitter.Size() - beforeExp
 		//
 		//// jumpPlaceholder is a placeholder for the exit jump position
-		//loop.Jump = v.emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
+		//loop.Jump = v.Emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
 		//
 		//counterVar := ctx.GetCounterVariable().GetText()
 		//
 		//// declare counter variable
-		//valReg := v.symbols.DefineVariable(counterVar)
-		//v.emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
+		//valReg := v.Symbols.DefineVariable(counterVar)
+		//v.Emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
 	}
 
 	v.emitLoopBegin(loop)
@@ -295,27 +295,27 @@ func (v *visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	}
 
-	loop = v.loops.Loop()
+	loop = v.Loops.Loop()
 
 	// RETURN
 	if loop.Type != PassThroughLoop {
 		c := returnRuleCtx.(*fql.ReturnExpressionContext)
 		expReg := c.Expression().Accept(v).(vm.Operand)
 
-		v.emitter.EmitAB(vm.OpPush, loop.Result, expReg)
+		v.Emitter.EmitAB(vm.OpPush, loop.Result, expReg)
 	} else if returnRuleCtx != nil {
 		returnRuleCtx.Accept(v)
 	}
 
 	res := v.emitLoopEnd(loop)
 
-	v.loops.ExitLoop()
-	v.symbols.ExitScope()
+	v.Loops.ExitLoop()
+	v.Symbols.ExitScope()
 
 	return res
 }
 
-func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) interface{} {
+func (v *Visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) interface{} {
 	if c := ctx.FunctionCallExpression(); c != nil {
 		return c.Accept(v)
 	}
@@ -347,7 +347,7 @@ func (v *visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) 
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) interface{} {
+func (v *Visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) interface{} {
 	if c := ctx.ForExpressionClause(); c != nil {
 		return c.Accept(v)
 	}
@@ -359,7 +359,7 @@ func (v *visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) inte
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) interface{} {
+func (v *Visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) interface{} {
 	if c := ctx.LimitClause(); c != nil {
 		return c.Accept(v)
 	}
@@ -379,14 +379,14 @@ func (v *visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
+func (v *Visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
 	src1 := ctx.Expression().Accept(v).(vm.Operand)
-	v.emitter.EmitJumpc(vm.OpJumpIfFalse, v.loops.Loop().Jump, src1)
+	v.Emitter.EmitJumpc(vm.OpJumpIfFalse, v.Loops.Loop().Jump, src1)
 
 	return nil
 }
 
-func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
+func (v *Visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 	clauses := ctx.AllLimitClauseValue()
 
 	if len(clauses) == 1 {
@@ -399,16 +399,16 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 	return nil
 }
 
-func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
+func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
 	// TODO: Undefine original loop variables
-	loop := v.loops.Loop()
+	loop := v.Loops.Loop()
 
 	// We collect the aggregation keys
 	// And wrap each loop element by a KeyValuePair
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
 	var kvKeyReg vm.Operand
-	kvValReg := v.registers.Allocate(Temp)
+	kvValReg := v.Registers.Allocate(Temp)
 	var groupSelectors []fql.ICollectSelectorContext
 	var isGrouping bool
 	var isCounting bool
@@ -449,8 +449,8 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	}
 
 	// We replace DataSet initialization with Collector initialization
-	v.emitter.PatchSwapAx(loop.ResultPos, vm.OpCollector, loop.Result, collectorType)
-	v.emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
+	v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpCollector, loop.Result, collectorType)
+	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitIterJumpOrClose(loop)
 
 	// Replace source with sorted array
@@ -460,7 +460,7 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	if projectionVariableName != "" {
 		// Now we need to expand group variables from the dataset
 		v.emitIterKey(loop, kvValReg)
-		v.emitIterValue(loop, v.symbols.DefineVariable(projectionVariableName))
+		v.emitIterValue(loop, v.Symbols.DefineVariable(projectionVariableName))
 	} else {
 		v.emitIterValue(loop, kvValReg)
 	}
@@ -470,9 +470,9 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 
 	//loop.ValueName = ""
 	//loop.KeyName = ""
-	// TODO: Reuse the registers
-	v.registers.Free(loop.Value)
-	v.registers.Free(loop.Key)
+	// TODO: Reuse the Registers
+	v.Registers.Free(loop.Value)
+	v.Registers.Free(loop.Key)
 	loop.Value = vm.NoopOperand
 	loop.Key = vm.NoopOperand
 
@@ -483,24 +483,24 @@ func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	return nil
 }
 
-func (v *visitor) emitGroupingKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
+func (v *Visitor) emitGroupingKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
 	var kvKeyReg vm.Operand
 
 	if len(selectors) > 1 {
-		// We create a sequence of registers for the clauses
+		// We create a sequence of Registers for the clauses
 		// To pack them into an array
-		selectorRegs := v.registers.AllocateSequence(len(selectors))
+		selectorRegs := v.Registers.AllocateSequence(len(selectors))
 
 		for i, selector := range selectors {
 			reg := selector.Accept(v).(vm.Operand)
-			v.emitter.EmitAB(vm.OpMove, selectorRegs.Registers[i], reg)
+			v.Emitter.EmitAB(vm.OpMove, selectorRegs.Registers[i], reg)
 			// Free the register after moving its value to the sequence register
-			v.registers.Free(reg)
+			v.Registers.Free(reg)
 		}
 
-		kvKeyReg = v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
-		v.registers.FreeSequence(selectorRegs)
+		kvKeyReg = v.Registers.Allocate(Temp)
+		v.Emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
+		v.Registers.FreeSequence(selectorRegs)
 	} else {
 		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
 	}
@@ -508,7 +508,7 @@ func (v *visitor) emitGroupingKeySelectors(selectors []fql.ICollectSelectorConte
 	return kvKeyReg
 }
 
-func (v *visitor) emitGroupingKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvValReg vm.Operand) {
+func (v *Visitor) emitGroupingKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvValReg vm.Operand) {
 	if len(selectors) > 1 {
 		variables := make([]vm.Operand, len(selectors))
 
@@ -516,67 +516,67 @@ func (v *visitor) emitGroupingKeySelectorVariables(selectors []fql.ICollectSelec
 			name := selector.Identifier().GetText()
 
 			if variables[i] == vm.NoopOperand {
-				variables[i] = v.symbols.DefineVariable(name)
+				variables[i] = v.Symbols.DefineVariable(name)
 			}
 
-			v.emitter.EmitABC(vm.OpLoadIndex, variables[i], kvValReg, v.loadConstant(runtime.Int(i)))
+			v.Emitter.EmitABC(vm.OpLoadIndex, variables[i], kvValReg, v.loadConstant(runtime.Int(i)))
 		}
 
 		// Free the register after moving its value to the variable
 		for _, reg := range variables {
-			v.registers.Free(reg)
+			v.Registers.Free(reg)
 		}
 	} else {
 		// Get the variable name
 		name := selectors[0].Identifier().GetText()
 		// Define a variable for each selector
-		varReg := v.symbols.DefineVariable(name)
+		varReg := v.Symbols.DefineVariable(name)
 		// If we have a single selector, we can just move the value
-		v.emitter.EmitAB(vm.OpMove, varReg, kvValReg)
+		v.Emitter.EmitAB(vm.OpMove, varReg, kvValReg)
 	}
 }
 
-func (v *visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+func (v *Visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
 	if keeper == nil {
-		seq := v.registers.AllocateSequence(2) // Key and Value for Map
+		seq := v.Registers.AllocateSequence(2) // Key and Value for Map
 
 		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
 		// We will keep it for now for backward compatibility.
 		v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
-		v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
-		v.emitter.EmitAs(vm.OpMap, kvValReg, seq)
+		v.Emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
+		v.Emitter.EmitAs(vm.OpMap, kvValReg, seq)
 
-		v.registers.FreeSequence(seq)
+		v.Registers.FreeSequence(seq)
 	} else {
 		variables := keeper.AllIdentifier()
-		seq := v.registers.AllocateSequence(len(variables) * 2)
+		seq := v.Registers.AllocateSequence(len(variables) * 2)
 
 		for i, j := 0, 0; i < len(variables); i, j = i+1, j+2 {
 			varName := variables[i].GetText()
 			v.loadConstantTo(runtime.String(varName), seq.Registers[j])
-			v.emitter.EmitAB(vm.OpMove, seq.Registers[j+1], v.symbols.Variable(varName))
+			v.Emitter.EmitAB(vm.OpMove, seq.Registers[j+1], v.Symbols.Variable(varName))
 		}
 
-		v.emitter.EmitAs(vm.OpMap, kvValReg, seq)
-		v.registers.FreeSequence(seq)
+		v.Emitter.EmitAs(vm.OpMap, kvValReg, seq)
+		v.Registers.FreeSequence(seq)
 	}
 
 	return identifier.GetText()
 }
 
-func (v *visitor) emitCustomCollectGroupProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
+func (v *Visitor) emitCustomCollectGroupProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
 	selectorReg := selector.Expression().Accept(v).(vm.Operand)
-	v.emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
-	v.registers.Free(selectorReg)
+	v.Emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
+	v.Registers.Free(selectorReg)
 
 	return selector.Identifier().GetText()
 }
 
-func (v *visitor) emitCollectCountProjection(_ *Loop, _ vm.Operand, selector fql.ICollectCounterContext) string {
+func (v *Visitor) emitCollectCountProjection(_ *Loop, _ vm.Operand, selector fql.ICollectCounterContext) string {
 	return selector.Identifier().GetText()
 }
 
-func (v *visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
+func (v *Visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
 	if c := ctx.Expression(); c != nil {
 		return c.Accept(v)
 	}
@@ -584,14 +584,14 @@ func (v *visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interfac
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
-	loop := v.loops.Loop()
+func (v *Visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
+	loop := v.Loops.Loop()
 
 	// We collect the sorting conditions (keys
 	// And wrap each loop element by a KeyValuePair
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
-	kvKeyReg := v.registers.Allocate(Temp)
+	kvKeyReg := v.Registers.Allocate(Temp)
 	clauses := ctx.AllSortClauseExpression()
 	isSortMany := len(clauses) > 1
 
@@ -600,28 +600,28 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 
 	if isSortMany {
 		clausesRegs := make([]vm.Operand, len(clauses))
-		// We create a sequence of registers for the clauses
+		// We create a sequence of Registers for the clauses
 		// To pack them into an array
-		keyRegs := v.registers.AllocateSequence(len(clauses))
+		keyRegs := v.Registers.AllocateSequence(len(clauses))
 
-		// We create a sequence of registers for the directions
-		directionRegs = v.registers.AllocateSequence(len(clauses))
+		// We create a sequence of Registers for the directions
+		directionRegs = v.Registers.AllocateSequence(len(clauses))
 
 		for i, clause := range clauses {
 			clauseReg := clause.Accept(v).(vm.Operand)
-			v.emitter.EmitAB(vm.OpMove, keyRegs.Registers[i], clauseReg)
+			v.Emitter.EmitAB(vm.OpMove, keyRegs.Registers[i], clauseReg)
 			clausesRegs[i] = keyRegs.Registers[i]
 			v.visitSortDirection(clause.SortDirection(), directionRegs.Registers[i])
 
-			// TODO: Free registers
+			// TODO: Free Registers
 		}
 
-		arrReg := v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpList, arrReg, keyRegs)
-		v.emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free registers
+		arrReg := v.Registers.Allocate(Temp)
+		v.Emitter.EmitAs(vm.OpList, arrReg, keyRegs)
+		v.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free Registers
 	} else {
 		clausesReg := clauses[0].Accept(v).(vm.Operand)
-		v.emitter.EmitAB(vm.OpMove, kvKeyReg, clausesReg)
+		v.Emitter.EmitAB(vm.OpMove, kvKeyReg, clausesReg)
 	}
 
 	var kvValReg vm.Operand
@@ -631,23 +631,23 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		kvValReg = loop.Value
 	} else {
 		// If so, we need to load it from the iterator
-		kvValReg = v.registers.Allocate(Temp)
+		kvValReg = v.Registers.Allocate(Temp)
 		v.emitIterValue(loop, kvValReg)
 	}
 
-	v.emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
+	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitIterJumpOrClose(loop)
 
 	if isSortMany {
-		v.emitter.EmitAs(vm.OpSortMany, loop.Result, directionRegs)
+		v.Emitter.EmitAs(vm.OpSortMany, loop.Result, directionRegs)
 	} else {
-		directionReg := v.registers.Allocate(Temp)
+		directionReg := v.Registers.Allocate(Temp)
 		v.visitSortDirection(clauses[0].SortDirection(), directionReg)
-		v.emitter.EmitAB(vm.OpSort, loop.Result, directionReg)
+		v.Emitter.EmitAB(vm.OpSort, loop.Result, directionReg)
 	}
 
 	// Replace source with sorted array
-	v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
+	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
 	// Create new for loop
 	// TODO: Reuse existing DataSet instance
@@ -656,7 +656,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	return nil
 }
 
-func (v *visitor) visitSortDirection(dir antlr.TerminalNode, dest vm.Operand) {
+func (v *Visitor) visitSortDirection(dir antlr.TerminalNode, dest vm.Operand) {
 	var val runtime.Int = vm.SortAsc
 
 	if dir != nil {
@@ -665,29 +665,29 @@ func (v *visitor) visitSortDirection(dir antlr.TerminalNode, dest vm.Operand) {
 		}
 	}
 
-	// TODO: Free constant registers
-	v.emitter.EmitAB(vm.OpMove, dest, v.loadConstant(val))
+	// TODO: Free constant Registers
+	v.Emitter.EmitAB(vm.OpMove, dest, v.loadConstant(val))
 }
 
-func (v *visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext) interface{} {
+func (v *Visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext) interface{} {
 	return ctx.Expression().Accept(v).(vm.Operand)
 }
 
-func (v *visitor) visitOffset(src1 vm.Operand) interface{} {
-	state := v.registers.Allocate(State)
-	v.emitter.EmitABx(vm.OpSkip, state, src1, v.loops.Loop().Jump)
+func (v *Visitor) visitOffset(src1 vm.Operand) interface{} {
+	state := v.Registers.Allocate(State)
+	v.Emitter.EmitABx(vm.OpSkip, state, src1, v.Loops.Loop().Jump)
 
 	return state
 }
 
-func (v *visitor) visitLimit(src1 vm.Operand) interface{} {
-	state := v.registers.Allocate(State)
-	v.emitter.EmitABx(vm.OpLimit, state, src1, v.loops.Loop().Jump)
+func (v *Visitor) visitLimit(src1 vm.Operand) interface{} {
+	state := v.Registers.Allocate(State)
+	v.Emitter.EmitABx(vm.OpLimit, state, src1, v.Loops.Loop().Jump)
 
 	return state
 }
 
-func (v *visitor) VisitLimitClauseValue(ctx *fql.LimitClauseValueContext) interface{} {
+func (v *Visitor) VisitLimitClauseValue(ctx *fql.LimitClauseValueContext) interface{} {
 	if c := ctx.IntegerLiteral(); c != nil {
 		return c.Accept(v)
 	}
@@ -711,7 +711,7 @@ func (v *visitor) VisitLimitClauseValue(ctx *fql.LimitClauseValueContext) interf
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
+func (v *Visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
 	if c := ctx.VariableDeclaration(); c != nil {
 		return c.Accept(v)
 	}
@@ -723,15 +723,15 @@ func (v *visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementCon
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
+func (v *Visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
 	return v.visitFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext), ctx.ErrorOperator() != nil)
 }
 
-func (v *visitor) VisitFunctionCall(ctx *fql.FunctionCallContext) interface{} {
+func (v *Visitor) VisitFunctionCall(ctx *fql.FunctionCallContext) interface{} {
 	return v.visitFunctionCall(ctx, false)
 }
 
-func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
+func (v *Visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
 	mes := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
 	segments := ctx.AllMemberExpressionPath()
 
@@ -765,12 +765,12 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 		}
 
 		src2 := out2.(vm.Operand)
-		dst = v.registers.Allocate(Temp)
+		dst = v.Registers.Allocate(Temp)
 
 		if p.ErrorOperator() != nil {
-			v.emitter.EmitABC(vm.OpLoadPropertyOptional, dst, src1, src2)
+			v.Emitter.EmitABC(vm.OpLoadPropertyOptional, dst, src1, src2)
 		} else {
-			v.emitter.EmitABC(vm.OpLoadProperty, dst, src1, src2)
+			v.Emitter.EmitABC(vm.OpLoadProperty, dst, src1, src2)
 		}
 
 		src1 = dst
@@ -779,17 +779,17 @@ func (v *visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interf
 	return dst
 }
 
-func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
-	dst := v.registers.Allocate(Temp)
+func (v *Visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
+	dst := v.Registers.Allocate(Temp)
 	start := ctx.GetLeft().Accept(v).(vm.Operand)
 	end := ctx.GetRight().Accept(v).(vm.Operand)
 
-	v.emitter.EmitABC(vm.OpRange, dst, start, end)
+	v.Emitter.EmitABC(vm.OpRange, dst, start, end)
 
 	return dst
 }
 
-func (v *visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
+func (v *Visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
 	if c := ctx.IntegerLiteral(); c != nil {
 		return c.Accept(v)
 	}
@@ -805,15 +805,15 @@ func (v *visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitParam(ctx *fql.ParamContext) interface{} {
+func (v *Visitor) VisitParam(ctx *fql.ParamContext) interface{} {
 	name := ctx.Identifier().GetText()
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(vm.OpLoadParam, reg, v.symbols.AddParam(name))
+	reg := v.Registers.Allocate(Temp)
+	v.Emitter.EmitAB(vm.OpLoadParam, reg, v.Symbols.AddParam(name))
 
 	return reg
 }
 
-func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {
+func (v *Visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {
 	name := ignorePseudoVariable
 
 	if id := ctx.Identifier(); id != nil {
@@ -825,16 +825,16 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 	src := ctx.Expression().Accept(v).(vm.Operand)
 
 	if name != ignorePseudoVariable {
-		dest := v.symbols.DefineVariable(name)
+		dest := v.Symbols.DefineVariable(name)
 
 		if src.IsConstant() {
-			tmp := v.registers.Allocate(Temp)
-			v.emitter.EmitAB(vm.OpLoadConst, tmp, src)
-			v.emitter.EmitAB(vm.OpStoreGlobal, dest, tmp)
-		} else if v.symbols.Scope() == 0 {
-			v.emitter.EmitAB(vm.OpStoreGlobal, dest, src)
+			tmp := v.Registers.Allocate(Temp)
+			v.Emitter.EmitAB(vm.OpLoadConst, tmp, src)
+			v.Emitter.EmitAB(vm.OpStoreGlobal, dest, tmp)
+		} else if v.Symbols.Scope() == 0 {
+			v.Emitter.EmitAB(vm.OpStoreGlobal, dest, src)
 		} else {
-			v.emitter.EmitAB(vm.OpMove, dest, src)
+			v.Emitter.EmitAB(vm.OpMove, dest, src)
 		}
 
 		return dest
@@ -843,23 +843,23 @@ func (v *visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) 
 	return vm.NoopOperand
 }
 
-func (v *visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
+func (v *Visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
 	// Just return the register / constant index
-	op := v.symbols.Variable(ctx.GetText())
+	op := v.Symbols.Variable(ctx.GetText())
 
 	if op.IsRegister() {
 		return op
 	}
 
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(vm.OpLoadGlobal, reg, op)
+	reg := v.Registers.Allocate(Temp)
+	v.Emitter.EmitAB(vm.OpLoadGlobal, reg, op)
 
 	return reg
 }
 
-func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
+func (v *Visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	// Allocate destination register for the array
-	destReg := v.registers.Allocate(Temp)
+	destReg := v.Registers.Allocate(Temp)
 
 	if list := ctx.ArgumentList(); list != nil {
 		// Get all array element expressions
@@ -868,50 +868,50 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 
 		if size > 0 {
 			// Allocate seq for array elements
-			seq := v.registers.AllocateSequence(size)
+			seq := v.Registers.AllocateSequence(size)
 
-			// Evaluate each element into seq registers
+			// Evaluate each element into seq Registers
 			for i, exp := range exps {
 				// Compile expression and move to seq register
 				srcReg := exp.Accept(v).(vm.Operand)
 
-				// TODO: Figure out how to remove OpMove and use registers returned from each expression
-				v.emitter.EmitAB(vm.OpMove, seq.Registers[i], srcReg)
+				// TODO: Figure out how to remove OpMove and use Registers returned from each expression
+				v.Emitter.EmitAB(vm.OpMove, seq.Registers[i], srcReg)
 
 				// Free source register if temporary
 				if srcReg.IsRegister() {
-					//v.registers.Free(srcReg)
+					//v.Registers.Free(srcReg)
 				}
 			}
 
 			// Initialize an array
-			v.emitter.EmitAs(vm.OpList, destReg, seq)
+			v.Emitter.EmitAs(vm.OpList, destReg, seq)
 
-			// Free seq registers
-			//v.registers.FreeSequence(seq)
+			// Free seq Registers
+			//v.Registers.FreeSequence(seq)
 
 			return destReg
 		}
 	}
 
 	// Empty array
-	v.emitter.EmitA(vm.OpList, destReg)
+	v.Emitter.EmitA(vm.OpList, destReg)
 
 	return destReg
 }
 
-func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
-	dst := v.registers.Allocate(Temp)
+func (v *Visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
+	dst := v.Registers.Allocate(Temp)
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
 	if size == 0 {
-		v.emitter.EmitA(vm.OpMap, dst)
+		v.Emitter.EmitA(vm.OpMap, dst)
 
 		return dst
 	}
 
-	seq := v.registers.AllocateSequence(len(assignments) * 2)
+	seq := v.Registers.AllocateSequence(len(assignments) * 2)
 
 	for i := 0; i < size; i++ {
 		var propOp vm.Operand
@@ -931,21 +931,21 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 
 		regIndex := i * 2
 
-		v.emitter.EmitAB(vm.OpMove, seq.Registers[regIndex], propOp)
-		v.emitter.EmitAB(vm.OpMove, seq.Registers[regIndex+1], valOp)
+		v.Emitter.EmitAB(vm.OpMove, seq.Registers[regIndex], propOp)
+		v.Emitter.EmitAB(vm.OpMove, seq.Registers[regIndex+1], valOp)
 
 		// Free source register if temporary
 		if propOp.IsRegister() {
-			//v.registers.Free(propOp)
+			//v.Registers.Free(propOp)
 		}
 	}
 
-	v.emitter.EmitAs(vm.OpMap, dst, seq)
+	v.Emitter.EmitAs(vm.OpMap, dst, seq)
 
 	return dst
 }
 
-func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
+func (v *Visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
 	if str := ctx.StringLiteral(); str != nil {
 		return str.Accept(v)
 	}
@@ -965,11 +965,11 @@ func (v *visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
 	return v.loadConstant(runtime.NewString(name))
 }
 
-func (v *visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
+func (v *Visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
 	return ctx.Expression().Accept(v)
 }
 
-func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} {
+func (v *Visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} {
 	var b strings.Builder
 
 	for _, child := range ctx.GetChildren() {
@@ -1018,40 +1018,40 @@ func (v *visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} 
 	return v.loadConstant(runtime.NewString(b.String()))
 }
 
-func (v *visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{} {
+func (v *Visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{} {
 	val, err := strconv.Atoi(ctx.GetText())
 
 	if err != nil {
 		panic(err)
 	}
 
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(vm.OpLoadConst, reg, v.symbols.AddConstant(runtime.NewInt(val)))
+	reg := v.Registers.Allocate(Temp)
+	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(runtime.NewInt(val)))
 
 	return reg
 }
 
-func (v *visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
+func (v *Visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
 	val, err := strconv.ParseFloat(ctx.GetText(), 64)
 
 	if err != nil {
 		panic(err)
 	}
 
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(vm.OpLoadConst, reg, v.symbols.AddConstant(runtime.NewFloat(val)))
+	reg := v.Registers.Allocate(Temp)
+	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(runtime.NewFloat(val)))
 
 	return reg
 }
 
-func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
-	reg := v.registers.Allocate(Temp)
+func (v *Visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
+	reg := v.Registers.Allocate(Temp)
 
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		v.emitter.EmitAB(vm.OpLoadBool, reg, 1)
+		v.Emitter.EmitAB(vm.OpLoadBool, reg, 1)
 	case "false":
-		v.emitter.EmitAB(vm.OpLoadBool, reg, 0)
+		v.Emitter.EmitAB(vm.OpLoadBool, reg, 0)
 	default:
 		panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 	}
@@ -1059,14 +1059,14 @@ func (v *visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{
 	return reg
 }
 
-func (v *visitor) VisitNoneLiteral(_ *fql.NoneLiteralContext) interface{} {
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitA(vm.OpLoadNone, reg)
+func (v *Visitor) VisitNoneLiteral(_ *fql.NoneLiteralContext) interface{} {
+	reg := v.Registers.Allocate(Temp)
+	v.Emitter.EmitA(vm.OpLoadNone, reg)
 
 	return reg
 }
 
-func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
+func (v *Visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 	if c := ctx.ArrayLiteral(); c != nil {
 		return c.Accept(v)
 	} else if c := ctx.ObjectLiteral(); c != nil {
@@ -1086,24 +1086,24 @@ func (v *visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
+func (v *Visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
 	valReg := ctx.Expression().Accept(v).(vm.Operand)
 
 	if valReg.IsConstant() {
-		v.emitter.EmitAB(vm.OpLoadGlobal, vm.NoopOperand, valReg)
+		v.Emitter.EmitAB(vm.OpLoadGlobal, vm.NoopOperand, valReg)
 	} else {
-		v.emitter.EmitAB(vm.OpMove, vm.NoopOperand, valReg)
+		v.Emitter.EmitAB(vm.OpMove, vm.NoopOperand, valReg)
 	}
 
-	v.emitter.Emit(vm.OpReturn)
+	v.Emitter.Emit(vm.OpReturn)
 
 	return vm.NoopOperand
 }
 
-func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
+func (v *Visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	if uo := ctx.UnaryOperator(); uo != nil {
 		src := ctx.GetRight().Accept(v).(vm.Operand)
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 
 		uoc := uo.(*fql.UnaryOperatorContext)
 		var op vm.Opcode
@@ -1119,86 +1119,86 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 		}
 
 		// We do not overwrite the source register
-		v.emitter.EmitAB(op, dst, src)
+		v.Emitter.EmitAB(op, dst, src)
 
 		return dst
 	}
 
 	if op := ctx.LogicalAndOperator(); op != nil {
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 		// Execute left expression
 		left := ctx.GetLeft().Accept(v).(vm.Operand)
-		v.emitter.EmitAB(vm.OpMove, dst, left)
+		v.Emitter.EmitAB(vm.OpMove, dst, left)
 		// Test if left is false and jump to the end
-		end := v.emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, dst)
+		end := v.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, dst)
 		// If left is true, execute right expression
 		right := ctx.GetRight().Accept(v).(vm.Operand)
 		// And move the result to the destination register
-		v.emitter.EmitAB(vm.OpMove, dst, right)
-		v.emitter.PatchJumpNext(end)
+		v.Emitter.EmitAB(vm.OpMove, dst, right)
+		v.Emitter.PatchJumpNext(end)
 
 		return dst
 	}
 
 	if op := ctx.LogicalOrOperator(); op != nil {
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 		// Execute left expression
 		left := ctx.GetLeft().Accept(v).(vm.Operand)
 		// Move the result to the destination register
-		v.emitter.EmitAB(vm.OpMove, dst, left)
+		v.Emitter.EmitAB(vm.OpMove, dst, left)
 		// Test if left is true and jump to the end
-		end := v.emitter.EmitJumpc(vm.OpJumpIfTrue, jumpPlaceholder, dst)
+		end := v.Emitter.EmitJumpc(vm.OpJumpIfTrue, jumpPlaceholder, dst)
 		// If left is false, execute right expression
 		right := ctx.GetRight().Accept(v).(vm.Operand)
 		// And move the result to the destination register
-		v.emitter.EmitAB(vm.OpMove, dst, right)
-		v.emitter.PatchJumpNext(end)
+		v.Emitter.EmitAB(vm.OpMove, dst, right)
+		v.Emitter.PatchJumpNext(end)
 
 		return dst
 	}
 
 	if op := ctx.GetTernaryOperator(); op != nil {
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 
 		// Compile condition and put result in dst
 		condReg := ctx.GetCondition().Accept(v).(vm.Operand)
-		v.emitter.EmitAB(vm.OpMove, dst, condReg)
+		v.Emitter.EmitAB(vm.OpMove, dst, condReg)
 
 		// If condition was temporary, free it
 		if condReg.IsRegister() {
-			//v.registers.Free(condReg)
+			//v.Registers.Free(condReg)
 		}
 
 		// Jump to 'false' branch if condition is false
-		otherwise := v.emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, dst)
+		otherwise := v.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, dst)
 
 		// True branch
 		if onTrue := ctx.GetOnTrue(); onTrue != nil {
 			trueReg := onTrue.Accept(v).(vm.Operand)
-			v.emitter.EmitAB(vm.OpMove, dst, trueReg)
+			v.Emitter.EmitAB(vm.OpMove, dst, trueReg)
 
 			// Free temporary register if needed
 			if trueReg.IsRegister() {
-				//v.registers.Free(trueReg)
+				//v.Registers.Free(trueReg)
 			}
 		}
 
 		// Jump over false branch
-		end := v.emitter.EmitJump(vm.OpJump, jumpPlaceholder)
-		v.emitter.PatchJumpNext(otherwise)
+		end := v.Emitter.EmitJump(vm.OpJump, jumpPlaceholder)
+		v.Emitter.PatchJumpNext(otherwise)
 
 		// False branch
 		if onFalse := ctx.GetOnFalse(); onFalse != nil {
 			falseReg := onFalse.Accept(v).(vm.Operand)
-			v.emitter.EmitAB(vm.OpMove, dst, falseReg)
+			v.Emitter.EmitAB(vm.OpMove, dst, falseReg)
 
 			// Free temporary register if needed
 			if falseReg.IsRegister() {
-				//v.registers.Free(falseReg)
+				//v.Registers.Free(falseReg)
 			}
 		}
 
-		v.emitter.PatchJumpNext(end)
+		v.Emitter.PatchJumpNext(end)
 
 		return dst
 	}
@@ -1210,28 +1210,28 @@ func (v *visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
+func (v *Visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 	if c := ctx.ExpressionAtom(); c != nil {
-		startCatch := v.emitter.Size()
+		startCatch := v.Emitter.Size()
 		reg := c.Accept(v)
 
 		if c.ErrorOperator() != nil {
 			jump := -1
-			endCatch := v.emitter.Size()
+			endCatch := v.Emitter.Size()
 
 			if c.ForExpression() != nil {
 				// We jump back to finalize the loop before exiting
 				jump = endCatch - 1
 			}
 
-			v.catchTable = append(v.catchTable, [3]int{startCatch, endCatch, jump})
+			v.CatchTable = append(v.CatchTable, [3]int{startCatch, endCatch, jump})
 		}
 
 		return reg
 	}
 
 	var opcode vm.Opcode
-	dest := v.registers.Allocate(Temp)
+	dest := v.Registers.Allocate(Temp)
 	left := ctx.Predicate(0).Accept(v).(vm.Operand)
 	right := ctx.Predicate(1).Accept(v).(vm.Operand)
 
@@ -1269,12 +1269,12 @@ func (v *visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
 		}
 	}
 
-	v.emitter.EmitABC(opcode, dest, left, right)
+	v.Emitter.EmitABC(opcode, dest, left, right)
 
 	return dest
 }
 
-func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{} {
+func (v *Visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{} {
 	var opcode vm.Opcode
 	var isSet bool
 
@@ -1319,18 +1319,18 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	if isSet {
 		regLeft := ctx.ExpressionAtom(0).Accept(v).(vm.Operand)
 		regRight := ctx.ExpressionAtom(1).Accept(v).(vm.Operand)
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 
 		if opcode == vm.OpRegexpPositive || opcode == vm.OpRegexpNegative {
 			if regRight.IsConstant() {
-				val := v.symbols.Constant(regRight)
+				val := v.Symbols.Constant(regRight)
 
 				// Verify that the expression is a valid regular expression
 				regexp.MustCompile(val.String())
 			}
 		}
 
-		v.emitter.EmitABC(opcode, dst, regLeft, regRight)
+		v.Emitter.EmitABC(opcode, dst, regLeft, regRight)
 
 		return dst
 	}
@@ -1358,7 +1358,7 @@ func (v *visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{
 	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool) interface{} {
+func (v *Visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool) interface{} {
 	var size int
 	var seq *RegisterSequence
 
@@ -1369,19 +1369,19 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 
 		if size > 0 {
 			// Allocate seq for function arguments
-			seq = v.registers.AllocateSequence(size)
+			seq = v.Registers.AllocateSequence(size)
 
-			// Evaluate each element into seq registers
+			// Evaluate each element into seq Registers
 			for i, exp := range exps {
 				// Compile expression and move to seq register
 				srcReg := exp.Accept(v).(vm.Operand)
 
-				// TODO: Figure out how to remove OpMove and use registers returned from each expression
-				v.emitter.EmitAB(vm.OpMove, seq.Registers[i], srcReg)
+				// TODO: Figure out how to remove OpMove and use Registers returned from each expression
+				v.Emitter.EmitAB(vm.OpMove, seq.Registers[i], srcReg)
 
 				// Free source register if temporary
 				if srcReg.IsRegister() {
-					//v.registers.Free(srcReg)
+					//v.Registers.Free(srcReg)
 				}
 			}
 		}
@@ -1391,23 +1391,23 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 
 	switch name {
 	case runtimeLength:
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 
 		if seq == nil || len(seq.Registers) != 1 {
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
 		}
 
-		v.emitter.EmitAB(vm.OpLength, dst, seq.Registers[0])
+		v.Emitter.EmitAB(vm.OpLength, dst, seq.Registers[0])
 
 		return dst
 	case runtimeTypename:
-		dst := v.registers.Allocate(Temp)
+		dst := v.Registers.Allocate(Temp)
 
 		if seq == nil || len(seq.Registers) != 1 {
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
 		}
 
-		v.emitter.EmitAB(vm.OpType, dst, seq.Registers[0])
+		v.Emitter.EmitAB(vm.OpType, dst, seq.Registers[0])
 
 		return dst
 	case runtimeWait:
@@ -1415,23 +1415,23 @@ func (v *visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeWait+": expected 1 argument"))
 		}
 
-		v.emitter.EmitA(vm.OpSleep, seq.Registers[0])
+		v.Emitter.EmitA(vm.OpSleep, seq.Registers[0])
 
 		return seq.Registers[0]
 	default:
 		nameAndDest := v.loadConstant(v.functionName(ctx))
 
 		if !protected {
-			v.emitter.EmitAs(vm.OpCall, nameAndDest, seq)
+			v.Emitter.EmitAs(vm.OpCall, nameAndDest, seq)
 		} else {
-			v.emitter.EmitAs(vm.OpProtectedCall, nameAndDest, seq)
+			v.Emitter.EmitAs(vm.OpProtectedCall, nameAndDest, seq)
 		}
 
 		return nameAndDest
 	}
 }
 
-func (v *visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
+func (v *Visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
 	var name string
 	funcNS := ctx.Namespace()
 
@@ -1445,94 +1445,94 @@ func (v *visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
 }
 
 // emitIterValue emits an instruction to get the value from the iterator
-func (v *visitor) emitLoopBegin(loop *Loop) {
+func (v *Visitor) emitLoopBegin(loop *Loop) {
 	if loop.Allocate {
-		v.emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
-		loop.ResultPos = v.emitter.Size() - 1
+		v.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+		loop.ResultPos = v.Emitter.Size() - 1
 	}
 
-	loop.Iterator = v.registers.Allocate(State)
+	loop.Iterator = v.Registers.Allocate(State)
 
 	if loop.Kind == ForLoop {
-		v.emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
+		v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
 		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = v.emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
+		loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
 
 		if loop.Value != vm.NoopOperand {
-			v.emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
+			v.Emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
 		}
 
 		if loop.Key != vm.NoopOperand {
-			v.emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
+			v.Emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
 		}
 	} else {
-		//counterReg := v.registers.Allocate(Storage)
+		//counterReg := v.Registers.Allocate(Storage)
 		// TODO: Set JumpOffset here
 	}
 }
 
 // emitIterValue emits an instruction to get the value from the iterator
-func (v *visitor) emitIterValue(loop *Loop, reg vm.Operand) {
-	v.emitter.EmitAB(vm.OpIterValue, reg, loop.Iterator)
+func (v *Visitor) emitIterValue(loop *Loop, reg vm.Operand) {
+	v.Emitter.EmitAB(vm.OpIterValue, reg, loop.Iterator)
 }
 
 // emitIterKey emits an instruction to get the key from the iterator
-func (v *visitor) emitIterKey(loop *Loop, reg vm.Operand) {
-	v.emitter.EmitAB(vm.OpIterKey, reg, loop.Iterator)
+func (v *Visitor) emitIterKey(loop *Loop, reg vm.Operand) {
+	v.Emitter.EmitAB(vm.OpIterKey, reg, loop.Iterator)
 }
 
 // emitIterJumpOrClose emits an instruction to jump to the end of the loop or close the iterator
-func (v *visitor) emitIterJumpOrClose(loop *Loop) {
-	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
-	v.emitter.EmitA(vm.OpClose, loop.Iterator)
+func (v *Visitor) emitIterJumpOrClose(loop *Loop) {
+	v.Emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
+	v.Emitter.EmitA(vm.OpClose, loop.Iterator)
 
 	if loop.Kind == ForLoop {
-		v.emitter.PatchJump(loop.Jump)
+		v.Emitter.PatchJump(loop.Jump)
 	} else {
-		v.emitter.PatchJumpAB(loop.Jump)
+		v.Emitter.PatchJumpAB(loop.Jump)
 	}
 }
 
 // patchLoop replaces the source of the loop with a modified dataset
-func (v *visitor) patchLoop(loop *Loop) {
+func (v *Visitor) patchLoop(loop *Loop) {
 	// Replace source with sorted array
-	v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
+	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
-	v.symbols.ExitScope()
-	v.symbols.EnterScope()
+	v.Symbols.ExitScope()
+	v.Symbols.EnterScope()
 
 	// Create new for loop
 	v.emitLoopBegin(loop)
 }
 
-func (v *visitor) emitLoopEnd(loop *Loop) vm.Operand {
-	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
+func (v *Visitor) emitLoopEnd(loop *Loop) vm.Operand {
+	v.Emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
 
-	// TODO: Do not allocate for pass-through loops
-	dst := v.registers.Allocate(Temp)
+	// TODO: Do not allocate for pass-through Loops
+	dst := v.Registers.Allocate(Temp)
 
 	if loop.Allocate {
 		// TODO: Reuse the dsReg register
-		v.emitter.EmitA(vm.OpClose, loop.Iterator)
-		v.emitter.EmitAB(vm.OpMove, dst, loop.Result)
+		v.Emitter.EmitA(vm.OpClose, loop.Iterator)
+		v.Emitter.EmitAB(vm.OpMove, dst, loop.Result)
 
 		if loop.Kind == ForLoop {
-			v.emitter.PatchJump(loop.Jump)
+			v.Emitter.PatchJump(loop.Jump)
 		} else {
-			v.emitter.PatchJumpAB(loop.Jump)
+			v.Emitter.PatchJumpAB(loop.Jump)
 		}
 	} else {
 		if loop.Kind == ForLoop {
-			v.emitter.PatchJumpNext(loop.Jump)
+			v.Emitter.PatchJumpNext(loop.Jump)
 		} else {
-			v.emitter.PatchJumpNextAB(loop.Jump)
+			v.Emitter.PatchJumpNextAB(loop.Jump)
 		}
 	}
 
 	return dst
 }
 
-func (v *visitor) loopType(ctx *fql.ForExpressionContext) LoopType {
+func (v *Visitor) loopType(ctx *fql.ForExpressionContext) LoopType {
 	if c := ctx.ForExpressionReturn().ForExpression(); c == nil {
 		return NormalLoop
 	}
@@ -1540,7 +1540,7 @@ func (v *visitor) loopType(ctx *fql.ForExpressionContext) LoopType {
 	return PassThroughLoop
 }
 
-func (v *visitor) loopKind(ctx *fql.ForExpressionContext) LoopKind {
+func (v *Visitor) loopKind(ctx *fql.ForExpressionContext) LoopKind {
 	if ctx.While() == nil {
 		return ForLoop
 	}
@@ -1552,12 +1552,12 @@ func (v *visitor) loopKind(ctx *fql.ForExpressionContext) LoopKind {
 	return DoWhileLoop
 }
 
-func (v *visitor) loadConstant(constant runtime.Value) vm.Operand {
-	reg := v.registers.Allocate(Temp)
-	v.emitter.EmitAB(vm.OpLoadConst, reg, v.symbols.AddConstant(constant))
+func (v *Visitor) loadConstant(constant runtime.Value) vm.Operand {
+	reg := v.Registers.Allocate(Temp)
+	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(constant))
 	return reg
 }
 
-func (v *visitor) loadConstantTo(constant runtime.Value, reg vm.Operand) {
-	v.emitter.EmitAB(vm.OpLoadConst, reg, v.symbols.AddConstant(constant))
+func (v *Visitor) loadConstantTo(constant runtime.Value, reg vm.Operand) {
+	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(constant))
 }

@@ -1,4 +1,4 @@
-package compiler
+package internal
 
 import (
 	"github.com/MontFerret/ferret/pkg/vm"

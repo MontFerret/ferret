@@ -1,4 +1,4 @@
-package compiler
+package internal
 
 import (
 	"strconv"
@@ -34,6 +34,20 @@ func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 		globals:        make(map[string]vm.Operand),
 		locals:         make([]*Variable, 0),
 	}
+}
+
+func (st *SymbolTable) Params() []string {
+	params := make([]string, 0, len(st.params))
+
+	for _, name := range st.params {
+		params = append(params, name)
+	}
+
+	return params
+}
+
+func (st *SymbolTable) Constants() []runtime.Value {
+	return st.constants
 }
 
 func (st *SymbolTable) Scope() int {
