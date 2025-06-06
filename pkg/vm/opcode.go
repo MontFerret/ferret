@@ -12,16 +12,12 @@ const (
 	OpLoadGlobal                  // Load a global variable to a register A
 	OpStoreGlobal                 // Store a value from register A to a global variable
 	OpLoadParam                   // Load a parameter to a register A
-	OpLoadList                    // Load an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
-	OpLoadMap                     // Load an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
-	OpLoadRange                   // Load a range from a list of registers (RNG R2, R3, R4 - creates a range in R2 with start from R3 and end at R4)
 	OpLoadIndex                   // Load a value from a list to a register (INDEX R1, R2, R3 - loads a value from a list in R2 to R1)
 	OpLoadIndexOptional           // Load a value from a list to a register, if it exists
 	OpLoadKey                     // Load a value from a map to a register (KEY R1, R2, R3 - loads a value from a map in R2 to R1)
 	OpLoadKeyOptional             // Load a value from a map to a register, if it exists
 	OpLoadProperty                // Load a property (key or index) from an object (map or list) to a register
 	OpLoadPropertyOptional        // Load a property (key or index) from an object (map or list) to a register, if it exists
-	OpLoadDataSet                 // Load a dataset to a register A
 
 	OpJump
 	OpJumpIfFalse
@@ -56,6 +52,11 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 
+	OpList    // Load an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
+	OpMap     // Load an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
+	OpRange   // Load a range from a list of registers (RNG R2, R3, R4 - creates a range in R2 with start from R3 and end at R4)
+	OpDataSet // Load a dataset to a register A
+
 	OpLength
 	OpType
 	OpClose
@@ -72,15 +73,14 @@ const (
 	OpIterValue // Returns the current value from the iterator (ITER R2, R3  - returns the current value from the iterator in R2 with a collection from R3)
 	OpIterKey   // Returns the current key from the iterator (ITER R2, R3  - returns the current key from the iterator in R2 with a collection from R3)
 
-	OpWhileLoopPrep
-	OpWhileLoopNext
-	OpWhileLoopValue
+	OpPush   // Adds a value to a dataset
+	OpPushKV // Adds a key-value pair to a dataset
 
-	OpPush      // Adds a value to a dataset
-	OpPushKV    // Adds a key-value pair to a dataset
+	OpCollector
 	OpCollectK  // Adds a key to a group
 	OpCollectKc // Adds a key to a group and counts it
 	OpCollectKV // Adds a value to a group using key
+
 	OpLimit
 	OpSkip
 

@@ -400,128 +400,140 @@ func (v *visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 }
 
 func (v *visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
-	if c := ctx.CollectGrouping(); c != nil {
-		// TODO: Undefine original loop variables
-		loop := v.loops.Loop()
+	// TODO: Undefine original loop variables
+	loop := v.loops.Loop()
 
-		// We collect the aggregation keys
-		// And wrap each loop element by a KeyValuePair
-		// Where a key is either a single value or a list of values
-		// These KeyValuePairs are then added to the dataset
-		var kvKeyReg vm.Operand
-		selectors := c.AllCollectSelector()
-		isMultiSelector := len(selectors) > 1
+	// We collect the aggregation keys
+	// And wrap each loop element by a KeyValuePair
+	// Where a key is either a single value or a list of values
+	// These KeyValuePairs are then added to the dataset
+	var kvKeyReg vm.Operand
+	kvValReg := v.registers.Allocate(Temp)
+	var groupSelectors []fql.ICollectSelectorContext
+	var isGrouping bool
+	var isCounting bool
+	grouping := ctx.CollectGrouping()
 
-		if isMultiSelector {
-			// We create a sequence of registers for the clauses
-			// To pack them into an array
-			selectorRegs := v.registers.AllocateSequence(len(selectors))
+	if grouping != nil {
+		isGrouping = true
+		groupSelectors = grouping.AllCollectSelector()
+		kvKeyReg = v.emitGroupingKeySelectors(groupSelectors)
+	}
 
-			for i, selector := range selectors {
-				reg := selector.Accept(v).(vm.Operand)
-				v.emitter.EmitAB(vm.OpMove, selectorRegs.Registers[i], reg)
-				// Free the register after moving its value to the sequence register
-				v.registers.Free(reg)
-			}
+	v.emitIterValue(loop, kvValReg)
 
-			kvKeyReg = v.registers.Allocate(Temp)
-			v.emitter.EmitAs(vm.OpLoadList, kvKeyReg, selectorRegs)
-			v.registers.FreeSequence(selectorRegs)
-		} else {
-			kvKeyReg = selectors[0].Accept(v).(vm.Operand)
+	var projectionVariableName string
+	// TODO: Create enum for better readability
+	collectorType := 1
+
+	// If we have a collect group variable, we need to project it
+	if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
+		// Projection can be either a default projection (identifier) or a custom projection (selector expression)
+		if identifier := groupVar.Identifier(); identifier != nil {
+			projectionVariableName = v.emitDefaultCollectGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
+		} else if selector := groupVar.CollectSelector(); selector != nil {
+			projectionVariableName = v.emitCustomCollectGroupProjection(loop, kvValReg, selector)
 		}
 
-		kvValReg := v.registers.Allocate(Temp)
+		collectorType = 3
+	} else if countVar := ctx.CollectCounter(); countVar != nil {
+		projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, countVar)
 
-		if loop.Kind == ForLoop {
-			v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
+		isCounting = true
+
+		if isGrouping {
+			collectorType = 2
 		} else {
-			v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
+			collectorType = 0
 		}
+	}
 
-		var projectionVariableName string
+	// We replace DataSet initialization with Collector initialization
+	v.emitter.PatchSwapAx(loop.ResultPos, vm.OpCollector, loop.Result, collectorType)
+	v.emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
+	v.emitIterJumpOrClose(loop)
 
-		if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
-			if identifier := groupVar.Identifier(); identifier != nil {
-				projectionVariableName = v.emitDefaultCollectGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
-			} else if selector := groupVar.CollectSelector(); selector != nil {
-				projectionVariableName = v.emitCustomCollectGroupProjection(loop, kvValReg, selector)
-			}
+	// Replace source with sorted array
+	v.patchLoop(loop)
 
-			v.emitter.EmitABC(vm.OpCollectKV, loop.Result, kvKeyReg, kvValReg)
-		} else if countVar := ctx.CollectCounter(); countVar != nil {
-			projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, countVar)
-			v.emitter.EmitABC(vm.OpCollectKc, loop.Result, kvKeyReg, kvValReg)
-		} else {
-			v.emitter.EmitABC(vm.OpCollectK, loop.Result, kvKeyReg, kvValReg)
-		}
-
-		v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
-		v.emitter.EmitA(vm.OpClose, loop.Iterator)
-
-		if loop.Kind == ForLoop {
-			v.emitter.PatchJump(loop.Jump)
-		} else {
-			v.emitter.PatchJumpAB(loop.Jump)
-		}
-
-		v.emitter.EmitAB(vm.OpSort, loop.Result, v.loadConstant(runtime.ZeroInt))
-
-		// Replace source with sorted array
-		v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
-
-		v.symbols.ExitScope()
-		v.symbols.EnterScope()
-
-		// Create new for loop
-		v.emitLoopBegin(loop)
-
+	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+	if projectionVariableName != "" {
 		// Now we need to expand group variables from the dataset
-		v.emitter.EmitAB(vm.OpIterKey, kvValReg, loop.Iterator)
+		v.emitIterKey(loop, kvValReg)
+		v.emitIterValue(loop, v.symbols.DefineVariable(projectionVariableName))
+	} else {
+		v.emitIterValue(loop, kvValReg)
+	}
 
-		// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-		if projectionVariableName != "" {
-			v.emitter.EmitAB(vm.OpIterValue, v.symbols.DefineVariable(projectionVariableName), loop.Iterator)
-		}
+	if isCounting {
+	}
 
-		//loop.ValueName = ""
-		//loop.KeyName = ""
-		// TODO: Reuse the registers
-		v.registers.Free(loop.Value)
-		v.registers.Free(loop.Key)
-		loop.Value = vm.NoopOperand
-		loop.Key = vm.NoopOperand
+	//loop.ValueName = ""
+	//loop.KeyName = ""
+	// TODO: Reuse the registers
+	v.registers.Free(loop.Value)
+	v.registers.Free(loop.Key)
+	loop.Value = vm.NoopOperand
+	loop.Key = vm.NoopOperand
 
-		if isMultiSelector {
-			variables := make([]vm.Operand, len(selectors))
-
-			for i, selector := range selectors {
-				name := selector.Identifier().GetText()
-
-				if variables[i] == vm.NoopOperand {
-					variables[i] = v.symbols.DefineVariable(name)
-				}
-
-				v.emitter.EmitABC(vm.OpLoadIndex, variables[i], kvValReg, v.loadConstant(runtime.Int(i)))
-			}
-
-			// Free the register after moving its value to the variable
-			for _, reg := range variables {
-				v.registers.Free(reg)
-			}
-		} else {
-			// Get the variable name
-			name := selectors[0].Identifier().GetText()
-			// Define a variable for each selector
-			varReg := v.symbols.DefineVariable(name)
-			// If we have a single selector, we can just move the value
-			v.emitter.EmitAB(vm.OpMove, varReg, kvValReg)
-		}
-
-		return nil
+	if isGrouping {
+		v.emitGroupingKeySelectorVariables(groupSelectors, kvValReg)
 	}
 
 	return nil
+}
+
+func (v *visitor) emitGroupingKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
+	var kvKeyReg vm.Operand
+
+	if len(selectors) > 1 {
+		// We create a sequence of registers for the clauses
+		// To pack them into an array
+		selectorRegs := v.registers.AllocateSequence(len(selectors))
+
+		for i, selector := range selectors {
+			reg := selector.Accept(v).(vm.Operand)
+			v.emitter.EmitAB(vm.OpMove, selectorRegs.Registers[i], reg)
+			// Free the register after moving its value to the sequence register
+			v.registers.Free(reg)
+		}
+
+		kvKeyReg = v.registers.Allocate(Temp)
+		v.emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
+		v.registers.FreeSequence(selectorRegs)
+	} else {
+		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
+	}
+
+	return kvKeyReg
+}
+
+func (v *visitor) emitGroupingKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvValReg vm.Operand) {
+	if len(selectors) > 1 {
+		variables := make([]vm.Operand, len(selectors))
+
+		for i, selector := range selectors {
+			name := selector.Identifier().GetText()
+
+			if variables[i] == vm.NoopOperand {
+				variables[i] = v.symbols.DefineVariable(name)
+			}
+
+			v.emitter.EmitABC(vm.OpLoadIndex, variables[i], kvValReg, v.loadConstant(runtime.Int(i)))
+		}
+
+		// Free the register after moving its value to the variable
+		for _, reg := range variables {
+			v.registers.Free(reg)
+		}
+	} else {
+		// Get the variable name
+		name := selectors[0].Identifier().GetText()
+		// Define a variable for each selector
+		varReg := v.symbols.DefineVariable(name)
+		// If we have a single selector, we can just move the value
+		v.emitter.EmitAB(vm.OpMove, varReg, kvValReg)
+	}
 }
 
 func (v *visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
@@ -532,7 +544,7 @@ func (v *visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Oper
 		// We will keep it for now for backward compatibility.
 		v.loadConstantTo(runtime.String(loop.ValueName), seq.Registers[0]) // Map key
 		v.emitter.EmitAB(vm.OpMove, seq.Registers[1], kvValReg)            // Map value
-		v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
+		v.emitter.EmitAs(vm.OpMap, kvValReg, seq)
 
 		v.registers.FreeSequence(seq)
 	} else {
@@ -545,7 +557,7 @@ func (v *visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Oper
 			v.emitter.EmitAB(vm.OpMove, seq.Registers[j+1], v.symbols.Variable(varName))
 		}
 
-		v.emitter.EmitAs(vm.OpLoadMap, kvValReg, seq)
+		v.emitter.EmitAs(vm.OpMap, kvValReg, seq)
 		v.registers.FreeSequence(seq)
 	}
 
@@ -560,11 +572,7 @@ func (v *visitor) emitCustomCollectGroupProjection(_ *Loop, kvValReg vm.Operand,
 	return selector.Identifier().GetText()
 }
 
-func (v *visitor) emitCollectCountProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectCounterContext) string {
-	//selectorReg := selector.Expression().Accept(v).(vm.Operand)
-	//v.emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
-	//v.registers.Free(selectorReg)
-
+func (v *visitor) emitCollectCountProjection(_ *Loop, _ vm.Operand, selector fql.ICollectCounterContext) string {
 	return selector.Identifier().GetText()
 }
 
@@ -609,7 +617,7 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		}
 
 		arrReg := v.registers.Allocate(Temp)
-		v.emitter.EmitAs(vm.OpLoadList, arrReg, keyRegs)
+		v.emitter.EmitAs(vm.OpList, arrReg, keyRegs)
 		v.emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free registers
 	} else {
 		clausesReg := clauses[0].Accept(v).(vm.Operand)
@@ -624,23 +632,11 @@ func (v *visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	} else {
 		// If so, we need to load it from the iterator
 		kvValReg = v.registers.Allocate(Temp)
-
-		if loop.Kind == ForLoop {
-			v.emitter.EmitAB(vm.OpIterValue, kvValReg, loop.Iterator)
-		} else {
-			v.emitter.EmitAB(vm.OpWhileLoopValue, kvValReg, loop.Iterator)
-		}
+		v.emitIterValue(loop, kvValReg)
 	}
 
 	v.emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
-	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
-	v.emitter.EmitA(vm.OpClose, loop.Iterator)
-
-	if loop.Kind == ForLoop {
-		v.emitter.PatchJump(loop.Jump)
-	} else {
-		v.emitter.PatchJumpAB(loop.Jump)
-	}
+	v.emitIterJumpOrClose(loop)
 
 	if isSortMany {
 		v.emitter.EmitAs(vm.OpSortMany, loop.Result, directionRegs)
@@ -788,7 +784,7 @@ func (v *visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} 
 	start := ctx.GetLeft().Accept(v).(vm.Operand)
 	end := ctx.GetRight().Accept(v).(vm.Operand)
 
-	v.emitter.EmitABC(vm.OpLoadRange, dst, start, end)
+	v.emitter.EmitABC(vm.OpRange, dst, start, end)
 
 	return dst
 }
@@ -889,7 +885,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 			}
 
 			// Initialize an array
-			v.emitter.EmitAs(vm.OpLoadList, destReg, seq)
+			v.emitter.EmitAs(vm.OpList, destReg, seq)
 
 			// Free seq registers
 			//v.registers.FreeSequence(seq)
@@ -899,7 +895,7 @@ func (v *visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
 	}
 
 	// Empty array
-	v.emitter.EmitA(vm.OpLoadList, destReg)
+	v.emitter.EmitA(vm.OpList, destReg)
 
 	return destReg
 }
@@ -910,7 +906,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 	size := len(assignments)
 
 	if size == 0 {
-		v.emitter.EmitA(vm.OpLoadMap, dst)
+		v.emitter.EmitA(vm.OpMap, dst)
 
 		return dst
 	}
@@ -944,7 +940,7 @@ func (v *visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} 
 		}
 	}
 
-	v.emitter.EmitAs(vm.OpLoadMap, dst, seq)
+	v.emitter.EmitAs(vm.OpMap, dst, seq)
 
 	return dst
 }
@@ -1448,9 +1444,11 @@ func (v *visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
 	return runtime.NewString(strings.ToUpper(name))
 }
 
+// emitIterValue emits an instruction to get the value from the iterator
 func (v *visitor) emitLoopBegin(loop *Loop) {
 	if loop.Allocate {
-		v.emitter.EmitAb(vm.OpLoadDataSet, loop.Result, loop.Distinct)
+		v.emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+		loop.ResultPos = v.emitter.Size() - 1
 	}
 
 	loop.Iterator = v.registers.Allocate(State)
@@ -1471,6 +1469,40 @@ func (v *visitor) emitLoopBegin(loop *Loop) {
 		//counterReg := v.registers.Allocate(Storage)
 		// TODO: Set JumpOffset here
 	}
+}
+
+// emitIterValue emits an instruction to get the value from the iterator
+func (v *visitor) emitIterValue(loop *Loop, reg vm.Operand) {
+	v.emitter.EmitAB(vm.OpIterValue, reg, loop.Iterator)
+}
+
+// emitIterKey emits an instruction to get the key from the iterator
+func (v *visitor) emitIterKey(loop *Loop, reg vm.Operand) {
+	v.emitter.EmitAB(vm.OpIterKey, reg, loop.Iterator)
+}
+
+// emitIterJumpOrClose emits an instruction to jump to the end of the loop or close the iterator
+func (v *visitor) emitIterJumpOrClose(loop *Loop) {
+	v.emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
+	v.emitter.EmitA(vm.OpClose, loop.Iterator)
+
+	if loop.Kind == ForLoop {
+		v.emitter.PatchJump(loop.Jump)
+	} else {
+		v.emitter.PatchJumpAB(loop.Jump)
+	}
+}
+
+// patchLoop replaces the source of the loop with a modified dataset
+func (v *visitor) patchLoop(loop *Loop) {
+	// Replace source with sorted array
+	v.emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
+
+	v.symbols.ExitScope()
+	v.symbols.EnterScope()
+
+	// Create new for loop
+	v.emitLoopBegin(loop)
 }
 
 func (v *visitor) emitLoopEnd(loop *Loop) vm.Operand {

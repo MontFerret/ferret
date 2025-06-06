@@ -23,6 +23,7 @@ type (
 		KeyName    string
 		Key        vm.Operand
 		Result     vm.Operand
+		ResultPos  int
 	}
 
 	LoopTable struct {

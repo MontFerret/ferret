@@ -181,7 +181,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoadList:
+		case OpList:
 			var size int
 
 			if src1 > 0 {
@@ -198,7 +198,7 @@ loop:
 			}
 
 			reg[dst] = arr
-		case OpLoadMap:
+		case OpMap:
 			obj := runtime.NewObject()
 			var args int
 
@@ -351,7 +351,7 @@ loop:
 					}
 				}
 			}
-		case OpLoadRange:
+		case OpRange:
 			res, err := internal.ToRange(ctx, reg[src1], reg[src2])
 
 			if err == nil {
@@ -359,8 +359,10 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpLoadDataSet:
+		case OpDataSet:
 			reg[dst] = internal.NewDataSet(src1 == 1)
+		case OpCollector:
+			reg[dst] = internal.NewCollector(internal.CollectorType(src1))
 		case OpPush:
 			ds := reg[dst].(*internal.DataSet)
 
@@ -372,11 +374,18 @@ loop:
 				}
 			}
 		case OpPushKV:
-			ds := reg[dst].(*internal.DataSet)
-			key := reg[src1]
-			value := reg[src2]
+			var err error
 
-			if err := ds.AddKV(ctx, key, value); err != nil {
+			switch target := reg[dst].(type) {
+			case *internal.DataSet:
+				err = target.AddKV(ctx, reg[src1], reg[src2])
+			case internal.Collector:
+				err = target.Collect(ctx, reg[src1], reg[src2])
+			default:
+				return nil, runtime.TypeError(target, "vm.Collector")
+			}
+
+			if err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
 				}
@@ -458,18 +467,6 @@ loop:
 		case OpIterKey:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Key()
-		case OpWhileLoopPrep:
-			reg[dst] = runtime.Int(-1)
-		case OpWhileLoopNext:
-			cond := runtime.ToBoolean(reg[src1])
-
-			if cond {
-				reg[dst] = internal.Increment(ctx, reg[dst])
-			} else {
-				vm.pc = int(src2)
-			}
-		case OpWhileLoopValue:
-			reg[dst] = reg[src1]
 		case OpSkip:
 			state := runtime.ToIntSafe(ctx, reg[dst])
 			threshold := runtime.ToIntSafe(ctx, reg[src1])
@@ -492,11 +489,21 @@ loop:
 				vm.pc = jump
 			}
 		case OpSort:
-			// TODO: Handle more than just DataSet
-			ds := reg[dst].(*internal.DataSet)
+			var err error
 			dir := runtime.ToIntSafe(ctx, reg[src1])
 
-			if err := ds.Sort(ctx, dir); err != nil {
+			switch target := reg[dst].(type) {
+			case *internal.DataSet:
+				err = target.Sort(ctx, dir)
+			case runtime.Sortable:
+				if dir == internal.SortAsc {
+					err = target.SortAsc(ctx)
+				} else {
+					err = target.SortDesc(ctx)
+				}
+			}
+
+			if err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
 				} else {

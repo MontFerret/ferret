@@ -39,6 +39,13 @@ func (e *Emitter) EmitJumpc(op vm.Opcode, pos int, reg vm.Operand) int {
 	return len(e.instructions) - 1
 }
 
+func (e *Emitter) PatchSwapAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
+	e.instructions[pos] = vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+	}
+}
+
 // PatchJump patches a jump opcode.
 func (e *Emitter) PatchJump(instr int) {
 	e.instructions[instr].Operands[0] = vm.Operand(len(e.instructions) - 1)
