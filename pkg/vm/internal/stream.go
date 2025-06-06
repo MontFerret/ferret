@@ -7,12 +7,12 @@ import (
 )
 
 type StreamValue struct {
-	*Box[runtime.Stream]
+	*runtime.Box[runtime.Stream]
 }
 
 func NewStreamValue(stream runtime.Stream) runtime.Value {
 	return &StreamValue{
-		Box: &Box[runtime.Stream]{
+		Box: &runtime.Box[runtime.Stream]{
 			Value: stream,
 		},
 	}

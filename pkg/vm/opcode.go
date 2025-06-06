@@ -1,5 +1,6 @@
 package vm
 
+// Opcode represents an operation code used in virtual machine instruction sets.
 type Opcode byte
 
 const (
@@ -52,11 +53,6 @@ const (
 	OpRegexpPositive
 	OpRegexpNegative
 
-	OpList    // Load an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
-	OpMap     // Load an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
-	OpRange   // Load a range from a list of registers (RNG R2, R3, R4 - creates a range in R2 with start from R3 and end at R4)
-	OpDataSet // Load a dataset to a register A
-
 	OpLength
 	OpType
 	OpClose
@@ -65,6 +61,14 @@ const (
 	OpCall
 	OpProtectedCall
 
+	OpList    // Load an array from a list of registers (ARR R2, R3 R5 - creates an array in R2 with elements from R3 to R5)
+	OpMap     // Load an object from a list of registers (OBJ R2, R3 R5 - creates an object in R2 with elements from R3 to R5)
+	OpRange   // Load a range from a list of registers (RNG R2, R3, R4 - creates a range in R2 with start from R3 and end at R4)
+	OpDataSet // Load a dataset to a register A
+	OpDataSetCollector
+	OpDataSetSorter
+	OpDataSetMultiSorter
+
 	OpStream     // Subscribes to a stream (SMRCV R2, R3, R4 - subscribes to a stream in R2 with a collection from R3 and optional params from R4)
 	OpStreamIter // Consumes a stream (SMRD R2, R3 - consumes a stream in R2 with a collection from R3)
 
@@ -72,18 +76,9 @@ const (
 	OpIterNext  // Moves to the next element in the iterator (ITER R2, R3  - moves to the next element in the iterator in R2 with a collection from R3)
 	OpIterValue // Returns the current value from the iterator (ITER R2, R3  - returns the current value from the iterator in R2 with a collection from R3)
 	OpIterKey   // Returns the current key from the iterator (ITER R2, R3  - returns the current key from the iterator in R2 with a collection from R3)
+	OpIterLimit
+	OpIterSkip
 
 	OpPush   // Adds a value to a dataset
 	OpPushKV // Adds a key-value pair to a dataset
-
-	OpCollector
-	OpCollectK  // Adds a key to a group
-	OpCollectKc // Adds a key to a group and counts it
-	OpCollectKV // Adds a value to a group using key
-
-	OpLimit
-	OpSkip
-
-	OpSort     // Sorts a collection of KeyValue pairs. (SORT R2, R3 - sorts a collection in R2 with a sorting direction in R3)
-	OpSortMany // Sorts a collection of KeyValue pairs with compound key and multiple directions. (SORT R2, R3, R4 - sorts a collection in R2 with a sorting direction from R3 to R4)
 )

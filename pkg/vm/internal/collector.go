@@ -1,23 +1,6 @@
 package internal
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
-
-type (
-	CollectorType int
-
-	Collector interface {
-		runtime.Value
-		runtime.Iterable
-
-		Collect(ctx context.Context, key, value runtime.Value) error
-	}
-
-	BaseCollector struct{}
-)
+type CollectorType int
 
 const (
 	CollectorTypeCounter CollectorType = iota
@@ -26,7 +9,7 @@ const (
 	CollectorTypeKeyGroup
 )
 
-func NewCollector(typ CollectorType) Collector {
+func NewCollector(typ CollectorType) Transformer {
 	switch typ {
 	case CollectorTypeCounter:
 		return NewCounterCollector()
@@ -39,24 +22,4 @@ func NewCollector(typ CollectorType) Collector {
 	default:
 		panic("unknown collector type")
 	}
-}
-
-func (*BaseCollector) MarshalJSON() ([]byte, error) {
-	panic("not supported")
-}
-
-func (*BaseCollector) String() string {
-	return "[Collector]"
-}
-
-func (*BaseCollector) Unwrap() interface{} {
-	panic("not supported")
-}
-
-func (*BaseCollector) Hash() uint64 {
-	panic("not supported")
-}
-
-func (*BaseCollector) Copy() runtime.Value {
-	panic("not supported")
 }

@@ -411,13 +411,12 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	kvValReg := v.Registers.Allocate(Temp)
 	var groupSelectors []fql.ICollectSelectorContext
 	var isGrouping bool
-	var isCounting bool
 	grouping := ctx.CollectGrouping()
 
 	if grouping != nil {
 		isGrouping = true
 		groupSelectors = grouping.AllCollectSelector()
-		kvKeyReg = v.emitGroupingKeySelectors(groupSelectors)
+		kvKeyReg = v.emitCollectGroupKeySelectors(groupSelectors)
 	}
 
 	v.emitIterValue(loop, kvValReg)
@@ -430,16 +429,14 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
 		// Projection can be either a default projection (identifier) or a custom projection (selector expression)
 		if identifier := groupVar.Identifier(); identifier != nil {
-			projectionVariableName = v.emitDefaultCollectGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
+			projectionVariableName = v.emitCollectDefaultGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
 		} else if selector := groupVar.CollectSelector(); selector != nil {
-			projectionVariableName = v.emitCustomCollectGroupProjection(loop, kvValReg, selector)
+			projectionVariableName = v.emitCollectCustomGroupProjection(loop, kvValReg, selector)
 		}
 
 		collectorType = 3
 	} else if countVar := ctx.CollectCounter(); countVar != nil {
 		projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, countVar)
-
-		isCounting = true
 
 		if isGrouping {
 			collectorType = 2
@@ -449,12 +446,12 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	}
 
 	// We replace DataSet initialization with Collector initialization
-	v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpCollector, loop.Result, collectorType)
+	v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, collectorType)
 	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitIterJumpOrClose(loop)
 
 	// Replace source with sorted array
-	v.patchLoop(loop)
+	v.patchJoinLoop(loop)
 
 	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
 	if projectionVariableName != "" {
@@ -463,9 +460,6 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 		v.emitIterValue(loop, v.Symbols.DefineVariable(projectionVariableName))
 	} else {
 		v.emitIterValue(loop, kvValReg)
-	}
-
-	if isCounting {
 	}
 
 	//loop.ValueName = ""
@@ -477,13 +471,13 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	loop.Key = vm.NoopOperand
 
 	if isGrouping {
-		v.emitGroupingKeySelectorVariables(groupSelectors, kvValReg)
+		v.emitCollectGroupKeySelectorVariables(groupSelectors, kvValReg)
 	}
 
 	return nil
 }
 
-func (v *Visitor) emitGroupingKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
+func (v *Visitor) emitCollectGroupKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
 	var kvKeyReg vm.Operand
 
 	if len(selectors) > 1 {
@@ -508,7 +502,7 @@ func (v *Visitor) emitGroupingKeySelectors(selectors []fql.ICollectSelectorConte
 	return kvKeyReg
 }
 
-func (v *Visitor) emitGroupingKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvValReg vm.Operand) {
+func (v *Visitor) emitCollectGroupKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvValReg vm.Operand) {
 	if len(selectors) > 1 {
 		variables := make([]vm.Operand, len(selectors))
 
@@ -536,7 +530,7 @@ func (v *Visitor) emitGroupingKeySelectorVariables(selectors []fql.ICollectSelec
 	}
 }
 
-func (v *Visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+func (v *Visitor) emitCollectDefaultGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
 	if keeper == nil {
 		seq := v.Registers.AllocateSequence(2) // Key and Value for Map
 
@@ -564,7 +558,7 @@ func (v *Visitor) emitDefaultCollectGroupProjection(loop *Loop, kvValReg vm.Oper
 	return identifier.GetText()
 }
 
-func (v *Visitor) emitCustomCollectGroupProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
+func (v *Visitor) emitCollectCustomGroupProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
 	selectorReg := selector.Expression().Accept(v).(vm.Operand)
 	v.Emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
 	v.Registers.Free(selectorReg)
@@ -593,26 +587,21 @@ func (v *Visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 	// These KeyValuePairs are then added to the dataset
 	kvKeyReg := v.Registers.Allocate(Temp)
 	clauses := ctx.AllSortClauseExpression()
+	var directions []runtime.SortDirection
 	isSortMany := len(clauses) > 1
-
-	// For multi-sort
-	var directionRegs *RegisterSequence
 
 	if isSortMany {
 		clausesRegs := make([]vm.Operand, len(clauses))
+		directions = make([]runtime.SortDirection, len(clauses))
 		// We create a sequence of Registers for the clauses
 		// To pack them into an array
 		keyRegs := v.Registers.AllocateSequence(len(clauses))
-
-		// We create a sequence of Registers for the directions
-		directionRegs = v.Registers.AllocateSequence(len(clauses))
 
 		for i, clause := range clauses {
 			clauseReg := clause.Accept(v).(vm.Operand)
 			v.Emitter.EmitAB(vm.OpMove, keyRegs.Registers[i], clauseReg)
 			clausesRegs[i] = keyRegs.Registers[i]
-			v.visitSortDirection(clause.SortDirection(), directionRegs.Registers[i])
-
+			directions[i] = v.sortDirection(clause.SortDirection())
 			// TODO: Free Registers
 		}
 
@@ -635,38 +624,38 @@ func (v *Visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
 		v.emitIterValue(loop, kvValReg)
 	}
 
+	if isSortMany {
+		encoded := runtime.EncodeSortDirections(directions)
+		count := len(clauses)
+
+		v.Emitter.PatchSwapAxy(loop.ResultPos, vm.OpDataSetMultiSorter, loop.Result, encoded, count)
+	} else {
+		dir := v.sortDirection(clauses[0].SortDirection())
+		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetSorter, loop.Result, int(dir))
+	}
+
 	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitIterJumpOrClose(loop)
 
-	if isSortMany {
-		v.Emitter.EmitAs(vm.OpSortMany, loop.Result, directionRegs)
-	} else {
-		directionReg := v.Registers.Allocate(Temp)
-		v.visitSortDirection(clauses[0].SortDirection(), directionReg)
-		v.Emitter.EmitAB(vm.OpSort, loop.Result, directionReg)
-	}
-
-	// Replace source with sorted array
+	// Replace source with the Sorter
 	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
-	// Create new for loop
-	// TODO: Reuse existing DataSet instance
+	// Create a new loop
 	v.emitLoopBegin(loop)
 
 	return nil
 }
 
-func (v *Visitor) visitSortDirection(dir antlr.TerminalNode, dest vm.Operand) {
-	var val runtime.Int = vm.SortAsc
-
-	if dir != nil {
-		if strings.ToLower(dir.GetText()) == "desc" {
-			val = vm.SortDesc
-		}
+func (v *Visitor) sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
+	if dir == nil {
+		return runtime.SortDirectionAsc
 	}
 
-	// TODO: Free constant Registers
-	v.Emitter.EmitAB(vm.OpMove, dest, v.loadConstant(val))
+	if strings.ToLower(dir.GetText()) == "desc" {
+		return runtime.SortDirectionDesc
+	}
+
+	return runtime.SortDirectionAsc
 }
 
 func (v *Visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext) interface{} {
@@ -675,14 +664,14 @@ func (v *Visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext
 
 func (v *Visitor) visitOffset(src1 vm.Operand) interface{} {
 	state := v.Registers.Allocate(State)
-	v.Emitter.EmitABx(vm.OpSkip, state, src1, v.Loops.Loop().Jump)
+	v.Emitter.EmitABx(vm.OpIterSkip, state, src1, v.Loops.Loop().Jump)
 
 	return state
 }
 
 func (v *Visitor) visitLimit(src1 vm.Operand) interface{} {
 	state := v.Registers.Allocate(State)
-	v.Emitter.EmitABx(vm.OpLimit, state, src1, v.Loops.Loop().Jump)
+	v.Emitter.EmitABx(vm.OpIterLimit, state, src1, v.Loops.Loop().Jump)
 
 	return state
 }
@@ -1493,8 +1482,8 @@ func (v *Visitor) emitIterJumpOrClose(loop *Loop) {
 	}
 }
 
-// patchLoop replaces the source of the loop with a modified dataset
-func (v *Visitor) patchLoop(loop *Loop) {
+// patchJoinLoop replaces the source of the loop with a modified dataset
+func (v *Visitor) patchJoinLoop(loop *Loop) {
 	// Replace source with sorted array
 	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 

@@ -9,8 +9,6 @@ import (
 type DataSet struct {
 	values     runtime.List
 	uniqueness map[uint64]bool
-	grouping   map[string]runtime.Value
-	keyed      bool
 }
 
 // TODO: Remove implementation of runtime.List interface. Add an unwrap opcode in the VM to unwrap the values.
@@ -26,163 +24,6 @@ func NewDataSet(distinct bool) runtime.List {
 		uniqueness: hashmap,
 		values:     runtime.NewArray(16),
 	}
-}
-
-func (ds *DataSet) Sort(ctx context.Context, direction runtime.Int) error {
-	return runtime.SortListWith(ctx, ds.values, func(first, second runtime.Value) int64 {
-		firstKV, firstOk := first.(*KV)
-		secondKV, secondOk := second.(*KV)
-
-		var comp int64
-
-		if firstOk && secondOk {
-			comp = runtime.CompareValues(firstKV.Key, secondKV.Key)
-		} else {
-			comp = runtime.CompareValues(first, second)
-		}
-
-		if direction == SortAsc {
-			return comp
-		}
-
-		return -comp
-	})
-}
-
-func (ds *DataSet) SortMany(ctx context.Context, directions []runtime.Int) error {
-	return runtime.SortListWith(ctx, ds.values, func(first, second runtime.Value) int64 {
-		firstKV, firstOk := first.(*KV)
-		secondKV, secondOk := second.(*KV)
-
-		if firstOk && secondOk {
-			firstKVKey := firstKV.Key.(runtime.List)
-			secondKVKey := secondKV.Key.(runtime.List)
-
-			for idx, direction := range directions {
-				firstKey, _ := firstKVKey.Get(ctx, runtime.NewInt(idx))
-				secondKey, _ := secondKVKey.Get(ctx, runtime.NewInt(idx))
-				comp := runtime.CompareValues(firstKey, secondKey)
-
-				if comp != 0 {
-					if direction == SortAsc {
-						return comp
-					}
-
-					return -comp
-				}
-			}
-		} else {
-			comp := runtime.CompareValues(first, second)
-
-			if comp != 0 {
-				if directions[0] == SortAsc {
-					return comp
-				}
-
-				return -comp
-			}
-		}
-
-		return 0
-	})
-}
-
-func (ds *DataSet) AddKV(ctx context.Context, key, value runtime.Value) error {
-	can, err := ds.canAdd(ctx, value)
-
-	if err != nil {
-		return err
-	}
-
-	if can {
-		_ = ds.values.Add(ctx, NewKV(key, value))
-	}
-
-	ds.keyed = true
-
-	return nil
-}
-
-func (ds *DataSet) CollectK(ctx context.Context, key runtime.Value) error {
-	k, err := Stringify(ctx, key)
-
-	if err != nil {
-		return err
-	}
-
-	if ds.grouping == nil {
-		ds.grouping = make(map[string]runtime.Value)
-	}
-
-	_, exists := ds.grouping[k]
-
-	if !exists {
-		ds.grouping[k] = runtime.None
-		_ = ds.values.Add(ctx, NewKV(key, runtime.None))
-	}
-
-	ds.keyed = true
-
-	return nil
-}
-
-func (ds *DataSet) CollectKc(ctx context.Context, key runtime.Value) error {
-	k, err := Stringify(ctx, key)
-
-	if err != nil {
-		return err
-	}
-
-	if ds.grouping == nil {
-		ds.grouping = make(map[string]runtime.Value)
-	}
-
-	group, exists := ds.grouping[k]
-
-	if !exists {
-		group = NewKV(key, runtime.ZeroInt)
-		ds.grouping[k] = group
-		_ = ds.values.Add(ctx, group)
-	}
-
-	kv := group.(*KV)
-	if count, ok := kv.Value.(runtime.Int); ok {
-		sum := count + 1
-		kv.Value = sum
-	} else {
-		kv.Value = runtime.NewInt(1)
-	}
-
-	ds.keyed = true
-
-	return nil
-}
-
-func (ds *DataSet) CollectKV(ctx context.Context, key, value runtime.Value) error {
-	k, err := Stringify(ctx, key)
-
-	if err != nil {
-		return err
-	}
-
-	if ds.grouping == nil {
-		ds.grouping = make(map[string]runtime.Value)
-	}
-
-	group, exists := ds.grouping[k]
-
-	if !exists {
-		group = runtime.NewArray(4)
-		ds.grouping[k] = group
-		_ = ds.values.Add(ctx, NewKV(key, group))
-	}
-
-	// TODO: Avoid type casting
-	_ = group.(runtime.List).Add(ctx, value)
-
-	ds.keyed = true
-
-	return nil
 }
 
 func (ds *DataSet) Add(ctx context.Context, item runtime.Value) error {
@@ -204,17 +45,7 @@ func (ds *DataSet) Get(ctx context.Context, idx runtime.Int) (runtime.Value, err
 }
 
 func (ds *DataSet) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	iter, err := ds.values.Iterate(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !ds.keyed {
-		return iter, nil
-	}
-
-	return NewKVIterator(iter), nil
+	return ds.values.Iterate(ctx)
 }
 
 func (ds *DataSet) Length(ctx context.Context) (runtime.Int, error) {

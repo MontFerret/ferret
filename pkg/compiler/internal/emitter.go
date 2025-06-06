@@ -43,10 +43,31 @@ func (e *Emitter) EmitJumpc(op vm.Opcode, pos int, reg vm.Operand) int {
 	return len(e.instructions) - 1
 }
 
+func (e *Emitter) PatchSwapAB(pos int, op vm.Opcode, dst, src1 vm.Operand) {
+	e.instructions[pos] = vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, src1, vm.NoopOperand},
+	}
+}
+
 func (e *Emitter) PatchSwapAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
 	e.instructions[pos] = vm.Instruction{
 		Opcode:   op,
 		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+	}
+}
+
+func (e *Emitter) PatchSwapAxy(pos int, op vm.Opcode, dst vm.Operand, arg1, agr2 int) {
+	e.instructions[pos] = vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(agr2)},
+	}
+}
+
+func (e *Emitter) PatchSwapAs(pos int, op vm.Opcode, dst vm.Operand, seq *RegisterSequence) {
+	e.instructions[pos] = vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, seq.Registers[0], seq.Registers[len(seq.Registers)-1]},
 	}
 }
 

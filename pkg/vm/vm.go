@@ -361,7 +361,14 @@ loop:
 			}
 		case OpDataSet:
 			reg[dst] = internal.NewDataSet(src1 == 1)
-		case OpCollector:
+		case OpDataSetSorter:
+			reg[dst] = internal.NewSorter(runtime.SortDirection(src1))
+		case OpDataSetMultiSorter:
+			encoded := src1.Register()
+			count := src2.Register()
+
+			reg[dst] = internal.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
+		case OpDataSetCollector:
 			reg[dst] = internal.NewCollector(internal.CollectorType(src1))
 		case OpPush:
 			ds := reg[dst].(*internal.DataSet)
@@ -374,52 +381,9 @@ loop:
 				}
 			}
 		case OpPushKV:
-			var err error
+			tr := reg[dst].(internal.Transformer)
 
-			switch target := reg[dst].(type) {
-			case *internal.DataSet:
-				err = target.AddKV(ctx, reg[src1], reg[src2])
-			case internal.Collector:
-				err = target.Collect(ctx, reg[src1], reg[src2])
-			default:
-				return nil, runtime.TypeError(target, "vm.Collector")
-			}
-
-			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				}
-
-				return nil, err
-			}
-		case OpCollectK:
-			ds := reg[dst].(*internal.DataSet)
-			key := reg[src1]
-
-			if err := ds.CollectK(ctx, key); err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				}
-
-				return nil, err
-			}
-		case OpCollectKc:
-			ds := reg[dst].(*internal.DataSet)
-			key := reg[src1]
-
-			if err := ds.CollectKc(ctx, key); err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				}
-
-				return nil, err
-			}
-		case OpCollectKV:
-			ds := reg[dst].(*internal.DataSet)
-			key := reg[src1]
-			value := reg[src2]
-
-			if err := ds.CollectKV(ctx, key, value); err != nil {
+			if err := tr.Add(ctx, reg[src1], reg[src2]); err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
 					continue
 				}
@@ -467,7 +431,7 @@ loop:
 		case OpIterKey:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Key()
-		case OpSkip:
+		case OpIterSkip:
 			state := runtime.ToIntSafe(ctx, reg[dst])
 			threshold := runtime.ToIntSafe(ctx, reg[src1])
 			jump := int(src2)
@@ -477,7 +441,7 @@ loop:
 				reg[dst] = state
 				vm.pc = jump
 			}
-		case OpLimit:
+		case OpIterLimit:
 			state := runtime.ToIntSafe(ctx, reg[dst])
 			threshold := runtime.ToIntSafe(ctx, reg[src1])
 			jump := int(src2)
@@ -487,52 +451,6 @@ loop:
 				reg[dst] = state
 			} else {
 				vm.pc = jump
-			}
-		case OpSort:
-			var err error
-			dir := runtime.ToIntSafe(ctx, reg[src1])
-
-			switch target := reg[dst].(type) {
-			case *internal.DataSet:
-				err = target.Sort(ctx, dir)
-			case runtime.Sortable:
-				if dir == internal.SortAsc {
-					err = target.SortAsc(ctx)
-				} else {
-					err = target.SortDesc(ctx)
-				}
-			}
-
-			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				} else {
-					return nil, err
-				}
-			}
-		case OpSortMany:
-			ds := reg[dst].(*internal.DataSet)
-			var size int
-
-			if src1 > 0 {
-				size = src2.Register() - src1.Register() + 1
-			}
-
-			directions := make([]runtime.Int, 0, size)
-			start := int(src1)
-			end := int(src1) + size
-
-			// Iterate over registers starting from src1 and up to the src2
-			for i := start; i < end; i++ {
-				directions = append(directions, runtime.ToIntSafe(ctx, reg[i]))
-			}
-
-			if err := ds.SortMany(ctx, directions); err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
-					continue
-				} else {
-					return nil, err
-				}
 			}
 		case OpStream:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])

@@ -7,17 +7,17 @@ import (
 )
 
 type KeyGroupCollector struct {
-	*BaseCollector
-	values   runtime.List
+	*runtime.Box[runtime.List]
 	grouping map[string]runtime.List
 	sorted   bool
 }
 
-func NewKeyGroupCollector() Collector {
+func NewKeyGroupCollector() Transformer {
 	return &KeyGroupCollector{
-		BaseCollector: &BaseCollector{},
-		values:        runtime.NewArray(8),
-		grouping:      make(map[string]runtime.List),
+		Box: &runtime.Box[runtime.List]{
+			Value: runtime.NewArray(8),
+		},
+		grouping: make(map[string]runtime.List),
 	}
 }
 
@@ -30,7 +30,7 @@ func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, erro
 		c.sorted = true
 	}
 
-	iter, err := c.values.Iterate(ctx)
+	iter, err := c.Value.Iterate(ctx)
 
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, erro
 }
 
 func (c *KeyGroupCollector) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, c.values, func(first, second runtime.Value) int64 {
+	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int64 {
 		firstKV, firstOk := first.(*KV)
 		secondKV, secondOk := second.(*KV)
 
@@ -56,7 +56,7 @@ func (c *KeyGroupCollector) sort(ctx context.Context) error {
 	})
 }
 
-func (c *KeyGroupCollector) Collect(ctx context.Context, key, value runtime.Value) error {
+func (c *KeyGroupCollector) Add(ctx context.Context, key, value runtime.Value) error {
 	k, err := Stringify(ctx, key)
 
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *KeyGroupCollector) Collect(ctx context.Context, key, value runtime.Valu
 
 		c.grouping[k] = group
 
-		err = c.values.Add(ctx, NewKV(key, group))
+		err = c.Value.Add(ctx, NewKV(key, group))
 
 		if err != nil {
 			return err

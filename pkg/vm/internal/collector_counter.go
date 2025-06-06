@@ -7,24 +7,23 @@ import (
 )
 
 type CounterCollector struct {
-	*BaseCollector
-
-	counter runtime.Int
+	*runtime.Box[runtime.Int]
 }
 
-func NewCounterCollector() Collector {
+func NewCounterCollector() Transformer {
 	return &CounterCollector{
-		BaseCollector: &BaseCollector{},
-		counter:       0,
+		Box: &runtime.Box[runtime.Int]{
+			Value: 0,
+		},
 	}
 }
 
 func (c *CounterCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
-	return runtime.NewArrayWith(c.counter).Iterate(ctx)
+	return runtime.NewArrayWith(c.Value).Iterate(ctx)
 }
 
-func (c *CounterCollector) Collect(ctx context.Context, key, value runtime.Value) error {
-	c.counter++
+func (c *CounterCollector) Add(_ context.Context, _, _ runtime.Value) error {
+	c.Value++
 
 	return nil
 }

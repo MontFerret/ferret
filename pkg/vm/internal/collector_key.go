@@ -7,33 +7,33 @@ import (
 )
 
 type KeyCollector struct {
-	*BaseCollector
-	values   runtime.List
+	*runtime.Box[runtime.List]
 	grouping map[string]runtime.Value
 	sorted   bool
 }
 
-func NewKeyCollector() Collector {
+func NewKeyCollector() Transformer {
 	return &KeyCollector{
-		BaseCollector: &BaseCollector{},
-		values:        runtime.NewArray(16),
-		grouping:      make(map[string]runtime.Value),
+		Box: &runtime.Box[runtime.List]{
+			Value: runtime.NewArray(16),
+		},
+		grouping: make(map[string]runtime.Value),
 	}
 }
 
 func (c *KeyCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	if !c.sorted {
-		if err := runtime.SortAsc(ctx, c.values); err != nil {
+		if err := runtime.SortAsc(ctx, c.Value); err != nil {
 			return nil, err
 		}
 
 		c.sorted = true
 	}
 
-	return c.values.Iterate(ctx)
+	return c.Value.Iterate(ctx)
 }
 
-func (c *KeyCollector) Collect(ctx context.Context, key, _ runtime.Value) error {
+func (c *KeyCollector) Add(ctx context.Context, key, _ runtime.Value) error {
 	k, err := Stringify(ctx, key)
 
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *KeyCollector) Collect(ctx context.Context, key, _ runtime.Value) error 
 	if !exists {
 		c.grouping[k] = runtime.None
 
-		return c.values.Add(ctx, key)
+		return c.Value.Add(ctx, key)
 	}
 
 	return nil
