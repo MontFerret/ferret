@@ -6,6 +6,8 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
+// KeyCollector is a structure used to collect and group unique runtime values by their string keys.
+// It collects only unique keys without values and sorts them in ascending order when iterated.
 type KeyCollector struct {
 	*runtime.Box[runtime.List]
 	grouping map[string]runtime.Value
@@ -15,7 +17,7 @@ type KeyCollector struct {
 func NewKeyCollector() Transformer {
 	return &KeyCollector{
 		Box: &runtime.Box[runtime.List]{
-			Value: runtime.NewArray(16),
+			Value: runtime.NewArray(8),
 		},
 		grouping: make(map[string]runtime.Value),
 	}

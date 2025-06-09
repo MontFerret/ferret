@@ -1,7 +1,8 @@
-package compiler_test
+package bytecode_test
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/test/integration/setup"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -19,10 +20,10 @@ func Disassembly(instr []string, opcodes ...vm.Opcode) string {
 }
 
 func TestCompiler_Variables(t *testing.T) {
-	RunAsmUseCases(t, []ByteCodeUseCase{
+	test.RunAsmUseCases(t, []test.ByteCodeUseCase{
 		{
 			`LET i = NONE RETURN i`,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: fmt.Sprintf(`
 0: [%d] LOADN R1
 1: [%d] STOREG C0 R1
@@ -43,7 +44,7 @@ func TestCompiler_Variables(t *testing.T) {
 		},
 		{
 			`LET a = TRUE RETURN a`,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: fmt.Sprintf(`
 0: [%d] LOADB R1 1
 1: [%d] STOREG C0 R1
@@ -64,7 +65,7 @@ func TestCompiler_Variables(t *testing.T) {
 		},
 		{
 			`LET a = FALSE RETURN a`,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: fmt.Sprintf(`
 0: [%d] LOADB R1 0
 1: [%d] STOREG C0 R1
@@ -85,7 +86,7 @@ func TestCompiler_Variables(t *testing.T) {
 		},
 		{
 			`LET a = 1.1 RETURN a`,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: fmt.Sprintf(`
 0: [%d] LOADC R1 C0
 1: [%d] STOREG C1 R1
@@ -111,7 +112,7 @@ LET a = 'foo'
 LET b = a
 RETURN a
 `,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: fmt.Sprintf(`
 0: [%d] LOADC R1 C0
 1: [%d] STOREG C1 R1
@@ -140,10 +141,10 @@ RETURN a
 }
 
 func TestCompiler_FuncCall(t *testing.T) {
-	RunAsmUseCases(t, []ByteCodeUseCase{
+	test.RunAsmUseCases(t, []test.ByteCodeUseCase{
 		{
 			`RETURN FOO()`,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: fmt.Sprintf(`
 0: [%d] LOADC R1 C0
 1: [%d] CALL R1
@@ -162,7 +163,7 @@ func TestCompiler_FuncCall(t *testing.T) {
 		},
 		{
 			`RETURN FOO("a", 1, TRUE)`,
-			ExpectedProgram{
+			test.ExpectedProgram{
 				Disassembly: Disassembly([]string{
 					"LOADC R1 C0",
 					"LOADC R2 C1",

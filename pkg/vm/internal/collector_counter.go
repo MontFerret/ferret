@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
+// CounterCollector is a Transformer implementation that tracks and increments a counter of processed values.
 type CounterCollector struct {
 	*runtime.Box[runtime.Int]
 }

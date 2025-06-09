@@ -4,7 +4,8 @@ export CGO_ENABLED=0
 LAB_BIN ?= lab
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
-DIR_E2E = ./e2e
+DIR_INTEG = ./test/integration
+DIR_E2E = ./test/e2e
 
 default: build
 
@@ -23,14 +24,14 @@ compile:
 	${DIR_E2E}/cli.go
 
 test:
-	go test ${DIR_PKG}/...
+	go test ${DIR_PKG}/... && go test ${DIR_INTEG}/...
 
 cover:
 	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
 	curl -s https://codecov.io/bash | bash
 
 e2e:
-	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./e2e/tests --cdn=./e2e/pages/dynamic --cdn=./e2e/pages/static
+	${LAB_BIN} --timeout=120 --attempts=5 --concurrency=1 --wait=http://127.0.0.1:9222/json/version --runtime=bin://./bin/ferret --files=./test/e2e/tests --cdn=./test/e2e/pages/dynamic --cdn=./test/e2e/pages/static
 
 bench:
 	go test -run=XXX -bench=. ${DIR_PKG}/...
@@ -44,7 +45,7 @@ doc:
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
 	go fmt ${DIR_PKG}/... && \
-	goimports -w -local github.com/MontFerret ./pkg ./e2e
+	goimports -w -local github.com/MontFerret ./pkg ./test/e2e
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive

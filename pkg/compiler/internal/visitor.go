@@ -408,7 +408,6 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
 	var kvKeyReg vm.Operand
-	kvValReg := v.Registers.Allocate(Temp)
 	var groupSelectors []fql.ICollectSelectorContext
 	var isGrouping bool
 	grouping := ctx.CollectGrouping()
@@ -419,6 +418,7 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 		kvKeyReg = v.emitCollectGroupKeySelectors(groupSelectors)
 	}
 
+	kvValReg := v.Registers.Allocate(Temp)
 	v.emitIterValue(loop, kvValReg)
 
 	var projectionVariableName string
@@ -575,6 +575,10 @@ func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentL
 }
 
 func (v *Visitor) emitCollectGroupKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
+	if len(selectors) == 0 {
+		return vm.NoopOperand
+	}
+
 	var kvKeyReg vm.Operand
 
 	if len(selectors) > 1 {
