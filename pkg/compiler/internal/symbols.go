@@ -125,12 +125,6 @@ func (st *SymbolTable) DefineVariable(name string) vm.Operand {
 
 	register := st.registers.Allocate(Var)
 
-	st.DefineScopedVariable(name, register)
-
-	return register
-}
-
-func (st *SymbolTable) DefineScopedVariable(name string, register vm.Operand) {
 	if st.scope == 0 {
 		panic("cannot define scoped variable in global scope")
 	}
@@ -140,6 +134,28 @@ func (st *SymbolTable) DefineScopedVariable(name string, register vm.Operand) {
 		Depth:    st.scope,
 		Register: register,
 	})
+
+	return register
+}
+
+func (st *SymbolTable) DefineVariableInScope(name string, scope int) vm.Operand {
+	if scope == 0 {
+		panic("cannot define scoped variable in global scope")
+	}
+
+	if scope > st.scope {
+		panic("cannot define variable in a scope that is deeper than the current scope")
+	}
+
+	register := st.registers.Allocate(Var)
+
+	st.locals = append(st.locals, &Variable{
+		Name:     name,
+		Depth:    scope,
+		Register: register,
+	})
+
+	return register
 }
 
 func (st *SymbolTable) Variable(name string) vm.Operand {

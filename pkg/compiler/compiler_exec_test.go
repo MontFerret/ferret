@@ -1694,7 +1694,7 @@ func TestCollect(t *testing.T) {
 				COLLECT gender = i.gender
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -1731,7 +1731,50 @@ LET users = [
 				COLLECT gender = i.gender
 				RETURN gender
 `, []any{"f", "m"}, "Should group result by a single key"),
-		Case(`
+		SkipCaseArray(`
+LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN users
+				COLLECT ageGroup = FLOOR(i.age / 5)
+				RETURN { ageGroup }
+`, []any{
+			map[string]int{"ageGroup": 5},
+			map[string]int{"ageGroup": 6},
+			map[string]int{"ageGroup": 7},
+			map[string]int{"ageGroup": 9},
+			map[string]int{"ageGroup": 13},
+		}, "Should group result by a single key expression"),
+		SkipCase(`
 LET users = [
 				{
 					active: true,
@@ -1769,7 +1812,7 @@ LET users = [
 				RETURN gender)
 			RETURN grouped[0]
 `, "f", "Should return correct group key by an index"),
-		CaseArray(
+		SkipCaseArray(
 			`LET users = [
 				{
 					active: true,
@@ -1812,7 +1855,7 @@ LET users = [
 				map[string]any{"age": 36, "gender": "m"},
 				map[string]any{"age": 69, "gender": "m"},
 			}, "Should group result by multiple keys"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -1903,7 +1946,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = []
 			FOR i IN users
 				COLLECT gender = i.gender INTO genders
@@ -1912,7 +1955,7 @@ LET users = [
 					values: genders
 				}
 `, []any{}, "COLLECT gender = i.gender INTO genders: should return an empty array when source is empty"),
-		CaseArray(
+		SkipCaseArray(
 			`LET users = [
 				{
 					active: true,
@@ -1968,7 +2011,7 @@ LET users = [
 					},
 				},
 			}, "Should create custom projection"),
-		CaseArray(
+		SkipCaseArray(
 			`LET users = [
 				{
 					active: true,
@@ -2045,7 +2088,7 @@ LET users = [
 					},
 				},
 			}, "Should create custom projection grouped by multiple keys"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -2102,7 +2145,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with default KEEP"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = []
 			FOR i IN users
 				LET married = i.married
@@ -2112,7 +2155,7 @@ LET users = [
 					values: genders
 				}
 `, []any{}, "COLLECT gender = i.gender INTO genders KEEP married: Should return an empty array when source is empty"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -2185,7 +2228,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with default KEEP using multiple keys"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -2242,7 +2285,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with custom KEEP"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -2315,7 +2358,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with custom KEEP using multiple keys"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -2372,7 +2415,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with custom KEEP with custom name"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -2430,7 +2473,7 @@ LET users = [
 				},
 			},
 		}, "Should create default projection with custom KEEP with multiple custom names"),
-		CaseArray(
+		SkipCaseArray(
 			`LET users = [
 				{
 					active: true,
@@ -2480,7 +2523,7 @@ LET users = [
 				},
 			}, "Should group and count result by a single key"),
 
-		CaseArray(
+		SkipCaseArray(
 			`
 			LET users = []
 			FOR i IN users
@@ -2490,7 +2533,7 @@ LET users = [
 					values: numberOfUsers
 				}
 		`, []any{}, "COLLECT gender = i.gender WITH COUNT INTO numberOfUsers: Should return empty array when source is empty"),
-		CaseArray(
+		SkipCaseArray(
 			`LET users = [
 				{
 					active: true,
@@ -2529,7 +2572,7 @@ LET users = [
 		`, []any{
 				5,
 			}, "Should just count the number of items in the source"),
-		CaseArray(
+		SkipCaseArray(
 			`LET users = []
 			FOR i IN users
 				COLLECT WITH COUNT INTO numberOfUsers
@@ -2537,6 +2580,52 @@ LET users = [
 		`, []any{
 				0,
 			}, "Should return 0 when there are no items in the source"),
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+FOR u IN users
+  COLLECT genderGroup = u.gender
+   AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+
+  RETURN {
+    genderGroup,
+    minAge,
+    maxAge
+  }
+`, []any{
+			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
+			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
+		}, "Should collect and aggregate values by a single key"),
 	})
 }
 

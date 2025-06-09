@@ -38,6 +38,12 @@ const (
 	Result                     // FOR loop result
 )
 
+func NewRegisterSequence(registers ...vm.Operand) *RegisterSequence {
+	return &RegisterSequence{
+		Registers: registers,
+	}
+}
+
 func NewRegisterAllocator() *RegisterAllocator {
 	return &RegisterAllocator{
 		registers:    make(map[vm.Operand]*RegisterStatus),

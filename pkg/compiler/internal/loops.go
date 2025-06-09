@@ -86,8 +86,6 @@ func (lt *LoopTable) EnterLoop(loopType LoopType, kind LoopKind, distinct bool) 
 	return lt.loops[len(lt.loops)-1]
 }
 
-//func (lt *LoopTable) Fork() *Loop {}
-
 func (lt *LoopTable) Loop() *Loop {
 	if len(lt.loops) == 0 {
 		return nil

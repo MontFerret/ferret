@@ -450,8 +450,8 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 	v.emitIterJumpOrClose(loop)
 
-	// Replace source with sorted array
-	v.patchJoinLoop(loop)
+	// Replace the source with the collector
+	v.patchSwitchLoop(loop)
 
 	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
 	if projectionVariableName != "" {
@@ -462,8 +462,11 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 		v.emitIterValue(loop, kvValReg)
 	}
 
-	//loop.ValueName = ""
-	//loop.KeyName = ""
+	// Aggregation loop
+	if c := ctx.CollectAggregator(); c != nil {
+		v.emitCollectAggregator(c, loop)
+	}
+
 	// TODO: Reuse the Registers
 	v.Registers.Free(loop.Value)
 	v.Registers.Free(loop.Key)
@@ -475,6 +478,89 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	}
 
 	return nil
+}
+
+func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, loop *Loop) {
+	// First of all, we allocate registers for accumulators
+	selectors := c.AllCollectAggregateSelector()
+	accums := make([]vm.Operand, len(selectors))
+
+	// We need to allocate a register for each accumulator
+	for i := 0; i < len(selectors); i++ {
+		reg := v.Registers.Allocate(Temp)
+		accums[i] = reg
+		// TODO: Select persistent List type, we do not know how many items we will have
+		v.Emitter.EmitA(vm.OpList, reg)
+	}
+
+	// Now we iterate over the grouped items
+	aggrIter := v.Registers.Allocate(Temp)
+	v.emitIterValue(loop, aggrIter)
+
+	// We just re-use the same register
+	v.Emitter.EmitAB(vm.OpIter, aggrIter, aggrIter)
+	// jumpPlaceholder is a placeholder for the exit aggrIterJump position
+	aggrIterJump := v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
+
+	// Store upper scope for aggregators
+	mainScope := v.Symbols.Scope()
+	// Nested scope for aggregators
+	v.Symbols.EnterScope()
+	aggrIterVal := v.Symbols.DefineVariable(loop.ValueName)
+	v.Emitter.EmitAB(vm.OpIterValue, aggrIterVal, aggrIter)
+
+	// Now we add value selectors to the accumulators
+	for i := 0; i < len(selectors); i++ {
+		selector := selectors[i]
+		fcx := selector.FunctionCallExpression()
+		args := fcx.FunctionCall().ArgumentList().AllExpression()
+
+		if len(args) == 0 {
+			// TODO: Better error handling
+			panic("No arguments provided for the function call in the aggregate selector")
+		}
+
+		if len(args) > 1 {
+			// TODO: Better error handling
+			panic("Too many arguments")
+		}
+
+		resultReg := args[0].Accept(v).(vm.Operand)
+		v.Emitter.EmitAB(vm.OpPush, accums[i], resultReg)
+		v.Registers.Free(resultReg)
+	}
+
+	// Now we can iterate over the grouped items
+	v.Emitter.EmitJump(vm.OpJump, aggrIterJump)
+	v.Emitter.EmitA(vm.OpClose, aggrIter)
+
+	// Now we can iterate over the selectors and execute the aggregation functions by passing the accumulators
+	// And define variables for each accumulator result
+	for i, selector := range selectors {
+		fcx := selector.FunctionCallExpression()
+		// We won't make any checks here, as we already did it before
+		selectorVarName := selector.Identifier().GetText()
+
+		// We execute the function call with the accumulator as an argument
+		accum := accums[i]
+		result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, NewRegisterSequence(accum))
+
+		// We define the variable for the selector result in the upper scope
+		// Since this temporary scope is only for aggregators and will be closed after the aggregation
+		varReg := v.Symbols.DefineVariableInScope(selectorVarName, mainScope)
+		v.Emitter.EmitAB(vm.OpMove, varReg, result)
+		v.Registers.Free(result)
+	}
+
+	// Now close the aggregators scope
+	v.Symbols.ExitScope()
+	// Free the registers for accumulators
+	for _, reg := range accums {
+		v.Registers.Free(reg)
+	}
+
+	// Free the register for the iterator value
+	v.Registers.Free(aggrIterVal)
 }
 
 func (v *Visitor) emitCollectGroupKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
@@ -1376,6 +1462,10 @@ func (v *Visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 		}
 	}
 
+	return v.emitFunctionCall(ctx, protected, seq)
+}
+
+func (v *Visitor) emitFunctionCall(ctx fql.IFunctionCallContext, protected bool, seq *RegisterSequence) vm.Operand {
 	name := v.functionName(ctx)
 
 	switch name {
@@ -1420,7 +1510,7 @@ func (v *Visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool
 	}
 }
 
-func (v *Visitor) functionName(ctx *fql.FunctionCallContext) runtime.String {
+func (v *Visitor) functionName(ctx fql.IFunctionCallContext) runtime.String {
 	var name string
 	funcNS := ctx.Namespace()
 
@@ -1482,8 +1572,8 @@ func (v *Visitor) emitIterJumpOrClose(loop *Loop) {
 	}
 }
 
-// patchJoinLoop replaces the source of the loop with a modified dataset
-func (v *Visitor) patchJoinLoop(loop *Loop) {
+// patchSwitchLoop replaces the source of the loop with a modified dataset
+func (v *Visitor) patchSwitchLoop(loop *Loop) {
 	// Replace source with sorted array
 	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
