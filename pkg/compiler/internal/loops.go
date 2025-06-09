@@ -9,6 +9,8 @@ type (
 
 	LoopKind int
 
+	CollectorType int
+
 	Loop struct {
 		Type       LoopType
 		Kind       LoopKind
@@ -44,6 +46,13 @@ const (
 	DoWhileLoop
 )
 
+const (
+	CollectorTypeCounter CollectorType = iota
+	CollectorTypeKey
+	CollectorTypeKeyCounter
+	CollectorTypeKeyGroup
+)
+
 func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 	return &LoopTable{
 		loops:     make([]*Loop, 0),
@@ -71,7 +80,7 @@ func (lt *LoopTable) EnterLoop(loopType LoopType, kind LoopKind, distinct bool) 
 		state = lt.loops[len(lt.loops)-1].Result
 	}
 
-	if allocate {
+	if allocate && loopType != TemporalLoop {
 		state = lt.registers.Allocate(Result)
 	}
 

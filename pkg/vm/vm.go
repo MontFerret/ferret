@@ -371,7 +371,7 @@ loop:
 		case OpDataSetCollector:
 			reg[dst] = internal.NewCollector(internal.CollectorType(src1))
 		case OpPush:
-			ds := reg[dst].(*internal.DataSet)
+			ds := reg[dst].(runtime.List)
 
 			if err := ds.Add(ctx, reg[src1]); err != nil {
 				if _, catch := tryCatch(vm.pc); catch {
