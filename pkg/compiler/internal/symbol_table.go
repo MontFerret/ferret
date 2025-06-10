@@ -38,7 +38,7 @@ type Variable struct {
 
 type SymbolTable struct {
 	registers *RegisterAllocator
-	constants *ConstantsPool
+	constants *ConstantPool
 
 	params  map[string]string
 	globals map[string]vm.Operand
@@ -50,7 +50,7 @@ type SymbolTable struct {
 func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 	return &SymbolTable{
 		registers: registers,
-		constants: NewConstantsPool(),
+		constants: NewConstantPool(),
 		params:    make(map[string]string),
 		globals:   make(map[string]vm.Operand),
 		locals:    make([]*Variable, 0),

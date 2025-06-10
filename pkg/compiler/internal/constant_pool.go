@@ -6,20 +6,20 @@ import (
 	"strconv"
 )
 
-// ConstantsPool stores and deduplicates constants
-type ConstantsPool struct {
+// ConstantPool stores and deduplicates constants
+type ConstantPool struct {
 	values []runtime.Value
 	index  map[uint64]int
 }
 
-func NewConstantsPool() *ConstantsPool {
-	return &ConstantsPool{
+func NewConstantPool() *ConstantPool {
+	return &ConstantPool{
 		values: make([]runtime.Value, 0),
 		index:  make(map[uint64]int),
 	}
 }
 
-func (cp *ConstantsPool) Add(val runtime.Value) vm.Operand {
+func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
 	var hash uint64
 	isNone := val == runtime.None
 
@@ -43,7 +43,7 @@ func (cp *ConstantsPool) Add(val runtime.Value) vm.Operand {
 	return vm.NewConstantOperand(idx)
 }
 
-func (cp *ConstantsPool) Get(addr vm.Operand) runtime.Value {
+func (cp *ConstantPool) Get(addr vm.Operand) runtime.Value {
 	if !addr.IsConstant() {
 		panic(runtime.Error(ErrInvalidOperandType, strconv.Itoa(int(addr))))
 	}
@@ -57,6 +57,6 @@ func (cp *ConstantsPool) Get(addr vm.Operand) runtime.Value {
 	return cp.values[idx]
 }
 
-func (cp *ConstantsPool) All() []runtime.Value {
+func (cp *ConstantPool) All() []runtime.Value {
 	return cp.values
 }

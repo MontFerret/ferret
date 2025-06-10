@@ -248,22 +248,20 @@ func (v *Visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		returnRuleCtx = c
 	}
 
-	loop := v.Loops.EnterLoop(v.loopType(ctx), v.loopKind(ctx), distinct)
+	loop := v.Loops.NewLoop(v.loopType(ctx), v.loopKind(ctx), distinct)
 
 	if loop.Kind == ForLoop {
 		loop.Src = ctx.ForExpressionSource().Accept(v).(vm.Operand)
 
 		if val := ctx.GetValueVariable(); val != nil {
 			if txt := val.GetText(); txt != "" && txt != ignorePseudoVariable {
-				loop.ValueName = txt
-				loop.Value = v.Symbols.DeclareLocal(txt)
+				loop.BindValueVar(txt, v.Symbols)
 			}
 		}
 
 		if ctr := ctx.GetCounterVariable(); ctr != nil {
 			if txt := ctr.GetText(); txt != "" && txt != ignorePseudoVariable {
-				loop.KeyName = txt
-				loop.Key = v.Symbols.DeclareLocal(txt)
+				loop.BindKeyVar(txt, v.Symbols)
 			}
 		}
 	} else {
@@ -295,7 +293,7 @@ func (v *Visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 		}
 	}
 
-	loop = v.Loops.Loop()
+	loop = v.Loops.Current()
 
 	// RETURN
 	if loop.Type != PassThroughLoop {
@@ -309,7 +307,7 @@ func (v *Visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} 
 
 	res := v.emitLoopEnd(loop)
 
-	v.Loops.ExitLoop()
+	v.Loops.Pop()
 	v.Symbols.ExitScope()
 
 	return res
@@ -381,7 +379,7 @@ func (v *Visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) 
 
 func (v *Visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
 	src1 := ctx.Expression().Accept(v).(vm.Operand)
-	v.Emitter.EmitJumpc(vm.OpJumpIfFalse, v.Loops.Loop().Jump, src1)
+	v.Emitter.EmitJumpc(vm.OpJumpIfFalse, v.Loops.Current().Jump, src1)
 
 	return nil
 }
@@ -401,7 +399,7 @@ func (v *Visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
 
 func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
 	// TODO: Undefine original loop variables
-	loop := v.Loops.Loop()
+	loop := v.Loops.Current()
 
 	// We collect the aggregation keys
 	// And wrap each loop element by a KeyValuePair
@@ -511,7 +509,7 @@ func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentL
 			v.Emitter.EmitA(vm.OpList, reg)
 		}
 
-		loop = v.Loops.EnterLoop(TemporalLoop, ForLoop, false)
+		loop = v.Loops.NewLoop(TemporalLoop, ForLoop, false)
 
 		// Now we iterate over the grouped items
 		v.emitIterValue(parentLoop, loop.Iterator)
@@ -586,7 +584,7 @@ func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentL
 			v.Registers.Free(result)
 		}
 
-		v.Loops.ExitLoop()
+		v.Loops.Pop()
 		// Now close the aggregators scope
 		v.Symbols.ExitScope()
 	} else {
@@ -772,7 +770,7 @@ func (v *Visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interfac
 }
 
 func (v *Visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
-	loop := v.Loops.Loop()
+	loop := v.Loops.Current()
 
 	// We collect the sorting conditions (keys
 	// And wrap each loop element by a KeyValuePair
@@ -857,14 +855,14 @@ func (v *Visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext
 
 func (v *Visitor) visitOffset(src1 vm.Operand) interface{} {
 	state := v.Registers.Allocate(State)
-	v.Emitter.EmitABx(vm.OpIterSkip, state, src1, v.Loops.Loop().Jump)
+	v.Emitter.EmitABx(vm.OpIterSkip, state, src1, v.Loops.Current().Jump)
 
 	return state
 }
 
 func (v *Visitor) visitLimit(src1 vm.Operand) interface{} {
 	state := v.Registers.Allocate(State)
-	v.Emitter.EmitABx(vm.OpIterLimit, state, src1, v.Loops.Loop().Jump)
+	v.Emitter.EmitABx(vm.OpIterLimit, state, src1, v.Loops.Current().Jump)
 
 	return state
 }
