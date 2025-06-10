@@ -1,53 +1,60 @@
 package internal
 
 import (
-	"strconv"
-
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-type (
-	Variable struct {
-		Name     string
-		Register vm.Operand
-		Depth    int
-	}
+type SymbolKind int
 
-	SymbolTable struct {
-		registers      *RegisterAllocator
-		constants      []runtime.Value
-		constantsIndex map[uint64]int
-		params         map[string]string
-		globals        map[string]vm.Operand
-		locals         []*Variable
-		scope          int
-	}
+const (
+	SymbolVar SymbolKind = iota
+	SymbolConst
+	SymbolParam
+	SymbolGlobal
 )
+
+type ValueType int
+
+const (
+	TypeUnknown ValueType = iota
+	TypeInt
+	TypeFloat
+	TypeString
+	TypeBool
+	TypeList
+	TypeMap
+	TypeAny
+)
+
+type Variable struct {
+	Name     string
+	Kind     SymbolKind
+	Register vm.Operand
+	Depth    int
+	Type     ValueType
+}
+
+type SymbolTable struct {
+	registers *RegisterAllocator
+	constants *ConstantsPool
+
+	params  map[string]string
+	globals map[string]vm.Operand
+	locals  []*Variable
+
+	scope int
+}
 
 func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 	return &SymbolTable{
-		registers:      registers,
-		constants:      make([]runtime.Value, 0),
-		constantsIndex: make(map[uint64]int),
-		params:         make(map[string]string),
-		globals:        make(map[string]vm.Operand),
-		locals:         make([]*Variable, 0),
+		registers: registers,
+		constants: NewConstantsPool(),
+		params:    make(map[string]string),
+		globals:   make(map[string]vm.Operand),
+		locals:    make([]*Variable, 0),
 	}
-}
-
-func (st *SymbolTable) Params() []string {
-	params := make([]string, 0, len(st.params))
-
-	for _, name := range st.params {
-		params = append(params, name)
-	}
-
-	return params
-}
-
-func (st *SymbolTable) Constants() []runtime.Value {
-	return st.constants
 }
 
 func (st *SymbolTable) Scope() int {
@@ -58,142 +65,104 @@ func (st *SymbolTable) EnterScope() {
 	st.scope++
 }
 
-func (st *SymbolTable) AddParam(name string) vm.Operand {
-	st.params[name] = name
-
-	return st.AddConstant(runtime.NewString(name))
-}
-
-// AddConstant adds a constant to the constants pool and returns its index.
-// If the constant is a scalar, it will be deduplicated.
-// If the constant is not a scalar, it will be added to the pool without deduplication.
-func (st *SymbolTable) AddConstant(constant runtime.Value) vm.Operand {
-	var hash uint64
-	isNone := constant == runtime.None
-
-	if runtime.IsScalar(constant) {
-		hash = constant.Hash()
-	}
-
-	if hash > 0 || isNone {
-		if p, ok := st.constantsIndex[hash]; ok {
-			return vm.NewConstantOperand(p)
-		}
-	}
-
-	st.constants = append(st.constants, constant)
-	p := len(st.constants) - 1
-
-	if hash > 0 || isNone {
-		st.constantsIndex[hash] = p
-	}
-
-	// We flip the sign to indicate that this is a constant index, not a register.
-	return vm.NewConstantOperand(p)
-}
-
-// Constant returns a constant by its index.
-func (st *SymbolTable) Constant(addr vm.Operand) runtime.Value {
-	if !addr.IsConstant() {
-		panic(runtime.Error(ErrInvalidOperandType, strconv.Itoa(int(addr))))
-	}
-
-	index := addr.Constant()
-
-	if index < 0 || index >= len(st.constants) {
-		panic(runtime.Error(ErrConstantNotFound, strconv.Itoa(index)))
-	}
-
-	return st.constants[index]
-}
-
-func (st *SymbolTable) DefineVariable(name string) vm.Operand {
-	if st.scope == 0 {
-		// Check for duplicate global variable names.
-		_, ok := st.globals[name]
-
-		if ok {
-			panic(runtime.Error(ErrVariableNotUnique, name))
-		}
-
-		op := st.AddConstant(runtime.NewString(name))
-		// Define global variable.
-		st.globals[name] = op
-
-		return op
-	}
-
-	register := st.registers.Allocate(Var)
-
-	if st.scope == 0 {
-		panic("cannot define scoped variable in global scope")
-	}
-
-	st.locals = append(st.locals, &Variable{
-		Name:     name,
-		Depth:    st.scope,
-		Register: register,
-	})
-
-	return register
-}
-
-func (st *SymbolTable) DefineVariableInScope(name string, scope int) vm.Operand {
-	if scope == 0 {
-		panic("cannot define scoped variable in global scope")
-	}
-
-	if scope > st.scope {
-		panic("cannot define variable in a scope that is deeper than the current scope")
-	}
-
-	register := st.registers.Allocate(Var)
-
-	st.locals = append(st.locals, &Variable{
-		Name:     name,
-		Depth:    scope,
-		Register: register,
-	})
-
-	return register
-}
-
-func (st *SymbolTable) Variable(name string) vm.Operand {
-	for i := len(st.locals) - 1; i >= 0; i-- {
-		variable := st.locals[i]
-		if variable.Name == name {
-			return vm.NewRegisterOperand(int(variable.Register))
-		}
-	}
-
-	op, ok := st.globals[name]
-
-	if !ok {
-		panic(runtime.Error(ErrVariableNotFound, name))
-	}
-
-	return op
-}
-
-// GlobalVariable returns a global variable by its name.
-func (st *SymbolTable) GlobalVariable(name string) (vm.Operand, bool) {
-	op, ok := st.globals[name]
-
-	return op, ok
-}
-
 func (st *SymbolTable) ExitScope() {
 	st.scope--
 
-	// Pop all local variables from the stack within the closed scope.
 	for len(st.locals) > 0 && st.locals[len(st.locals)-1].Depth > st.scope {
-		popped := st.locals[len(st.locals)-1:]
-
-		// Free the register.
-		for _, v := range popped {
-			st.registers.Free(v.Register)
-		}
-
+		popped := st.locals[len(st.locals)-1]
+		st.registers.Free(popped.Register)
 		st.locals = st.locals[:len(st.locals)-1]
 	}
+}
+
+func (st *SymbolTable) DeclareLocal(name string) vm.Operand {
+	return st.DeclareLocalTyped(name, TypeUnknown)
+}
+
+func (st *SymbolTable) DeclareLocalTyped(name string, typ ValueType) vm.Operand {
+	reg := st.registers.Allocate(Var)
+
+	st.locals = append(st.locals, &Variable{
+		Name:     name,
+		Kind:     SymbolVar,
+		Register: reg,
+		Depth:    st.scope,
+		Type:     typ,
+	})
+
+	return reg
+}
+
+func (st *SymbolTable) DeclareGlobal(name string) vm.Operand {
+	if _, exists := st.globals[name]; exists {
+		panic(runtime.Error(ErrVariableNotUnique, name))
+	}
+
+	op := st.constants.Add(runtime.NewString(name))
+	st.globals[name] = op
+	return op
+}
+
+func (st *SymbolTable) BindParam(name string) vm.Operand {
+	st.params[name] = name
+	return st.constants.Add(runtime.NewString(name))
+}
+
+func (st *SymbolTable) Constants() []runtime.Value {
+	return st.constants.All()
+}
+
+func (st *SymbolTable) AddConstant(val runtime.Value) vm.Operand {
+	return st.constants.Add(val)
+}
+
+func (st *SymbolTable) Constant(addr vm.Operand) runtime.Value {
+	return st.constants.Get(addr)
+}
+
+func (st *SymbolTable) Resolve(name string) (vm.Operand, SymbolKind, bool) {
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		v := st.locals[i]
+		if v.Name == name {
+			return vm.NewRegisterOperand(int(v.Register)), v.Kind, true
+		}
+	}
+
+	if reg, ok := st.globals[name]; ok {
+		return reg, SymbolGlobal, true
+	}
+
+	return vm.NoopOperand, SymbolVar, false
+}
+
+func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		if st.locals[i].Name == name {
+			return st.locals[i], true
+		}
+	}
+
+	return nil, false
+}
+
+func (st *SymbolTable) Params() []string {
+	out := make([]string, 0, len(st.params))
+	for k := range st.params {
+		out = append(out, k)
+	}
+	return out
+}
+
+func (st *SymbolTable) DebugSymbols() []string {
+	var out []string
+
+	for _, v := range st.locals {
+		out = append(out, fmt.Sprintf("[local] %s -> R%d (%v)", v.Name, v.Register, v.Type))
+	}
+
+	for k, r := range st.globals {
+		out = append(out, fmt.Sprintf("[global] %s -> R%d", k, r))
+	}
+
+	return out
 }

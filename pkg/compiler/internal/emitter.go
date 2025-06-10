@@ -18,6 +18,7 @@ func (e *Emitter) Bytecode() []vm.Instruction {
 	return e.instructions
 }
 
+// Size returns the number of instructions currently stored in the Emitter.
 func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
@@ -43,6 +44,7 @@ func (e *Emitter) EmitJumpc(op vm.Opcode, pos int, reg vm.Operand) int {
 	return len(e.instructions) - 1
 }
 
+// PatchSwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
 func (e *Emitter) PatchSwapAB(pos int, op vm.Opcode, dst, src1 vm.Operand) {
 	e.instructions[pos] = vm.Instruction{
 		Opcode:   op,
@@ -50,6 +52,7 @@ func (e *Emitter) PatchSwapAB(pos int, op vm.Opcode, dst, src1 vm.Operand) {
 	}
 }
 
+// PatchSwapAx modifies an existing instruction at the specified position with a new opcode, destination, and argument.
 func (e *Emitter) PatchSwapAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
 	e.instructions[pos] = vm.Instruction{
 		Opcode:   op,
@@ -57,6 +60,7 @@ func (e *Emitter) PatchSwapAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
 	}
 }
 
+// PatchSwapAxy replaces an instruction at the specified position with a new one using the provided opcode and operands.
 func (e *Emitter) PatchSwapAxy(pos int, op vm.Opcode, dst vm.Operand, arg1, agr2 int) {
 	e.instructions[pos] = vm.Instruction{
 		Opcode:   op,
@@ -64,10 +68,11 @@ func (e *Emitter) PatchSwapAxy(pos int, op vm.Opcode, dst vm.Operand, arg1, agr2
 	}
 }
 
-func (e *Emitter) PatchSwapAs(pos int, op vm.Opcode, dst vm.Operand, seq *RegisterSequence) {
+// PatchSwapAs replaces an instruction at the specified position with a new instruction using the given opcode and operands.
+func (e *Emitter) PatchSwapAs(pos int, op vm.Opcode, dst vm.Operand, seq RegisterSequence) {
 	e.instructions[pos] = vm.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, seq.Registers[0], seq.Registers[len(seq.Registers)-1]},
+		Operands: [3]vm.Operand{dst, seq[0], seq[len(seq)-1]},
 	}
 }
 
@@ -123,10 +128,10 @@ func (e *Emitter) EmitAx(op vm.Opcode, dest vm.Operand, arg int) {
 }
 
 // EmitAs emits an opcode with a destination register and a sequence of registers.
-func (e *Emitter) EmitAs(op vm.Opcode, dest vm.Operand, seq *RegisterSequence) {
+func (e *Emitter) EmitAs(op vm.Opcode, dest vm.Operand, seq RegisterSequence) {
 	if seq != nil {
-		src1 := seq.Registers[0]
-		src2 := seq.Registers[len(seq.Registers)-1]
+		src1 := seq[0]
+		src2 := seq[len(seq)-1]
 		e.EmitABC(op, dest, src1, src2)
 	} else {
 		e.EmitA(op, dest)

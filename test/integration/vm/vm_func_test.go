@@ -23,7 +23,7 @@ func TestFunctionCall(t *testing.T) {
 		SkipCase("LET duration = 10 WAIT(duration) RETURN 1", 1),
 		CaseNil("RETURN (FALSE OR T::FAIL())?"),
 		CaseNil("RETURN T::FAIL()?"),
-		SkipCaseArray(`FOR i IN [1, 2, 3, 4]
+		CaseArray(`FOR i IN [1, 2, 3, 4]
 				LET duration = 10
 		
 				WAIT(duration)
