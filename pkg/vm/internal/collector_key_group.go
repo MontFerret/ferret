@@ -21,6 +21,10 @@ func NewKeyGroupCollector() Transformer {
 	}
 }
 
+func (c *KeyGroupCollector) Get(_ context.Context, key runtime.Value) (runtime.Value, error) {
+	return c.grouping[key.String()], nil
+}
+
 func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	if !c.sorted {
 		if err := c.sort(ctx); err != nil {
@@ -37,23 +41,6 @@ func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, erro
 	}
 
 	return NewKVIterator(iter), nil
-}
-
-func (c *KeyGroupCollector) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int64 {
-		firstKV, firstOk := first.(*KV)
-		secondKV, secondOk := second.(*KV)
-
-		var comp int64
-
-		if firstOk && secondOk {
-			comp = runtime.CompareValues(firstKV.Key, secondKV.Key)
-		} else {
-			comp = runtime.CompareValues(first, second)
-		}
-
-		return comp
-	})
 }
 
 func (c *KeyGroupCollector) Add(ctx context.Context, key, value runtime.Value) error {
@@ -78,4 +65,21 @@ func (c *KeyGroupCollector) Add(ctx context.Context, key, value runtime.Value) e
 	}
 
 	return group.Add(ctx, value)
+}
+
+func (c *KeyGroupCollector) sort(ctx context.Context) error {
+	return runtime.SortListWith(ctx, c.Value, func(first, second runtime.Value) int64 {
+		firstKV, firstOk := first.(*KV)
+		secondKV, secondOk := second.(*KV)
+
+		var comp int64
+
+		if firstOk && secondOk {
+			comp = runtime.CompareValues(firstKV.Key, secondKV.Key)
+		} else {
+			comp = runtime.CompareValues(first, second)
+		}
+
+		return comp
+	})
 }

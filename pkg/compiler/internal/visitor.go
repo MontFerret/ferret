@@ -407,72 +407,76 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	// And wrap each loop element by a KeyValuePair
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
-	var kvKeyReg vm.Operand
+	var kvKeyReg, kvValReg vm.Operand
 	var groupSelectors []fql.ICollectSelectorContext
 	var isGrouping bool
 	grouping := ctx.CollectGrouping()
+	counter := ctx.CollectCounter()
+	aggregator := ctx.CollectAggregator()
 
-	if grouping != nil {
-		isGrouping = true
-		groupSelectors = grouping.AllCollectSelector()
-		kvKeyReg = v.emitCollectGroupKeySelectors(groupSelectors)
-	}
+	isCollecting := grouping != nil || counter != nil
 
-	kvValReg := v.Registers.Allocate(Temp)
-	v.emitIterValue(loop, kvValReg)
-
-	var projectionVariableName string
-	collectorType := CollectorTypeKey
-
-	// If we have a collect group variable, we need to project it
-	if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
-		// Projection can be either a default projection (identifier) or a custom projection (selector expression)
-		if identifier := groupVar.Identifier(); identifier != nil {
-			projectionVariableName = v.emitCollectDefaultGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
-		} else if selector := groupVar.CollectSelector(); selector != nil {
-			projectionVariableName = v.emitCollectCustomGroupProjection(loop, kvValReg, selector)
+	if isCollecting {
+		if grouping != nil {
+			isGrouping = true
+			groupSelectors = grouping.AllCollectSelector()
+			kvKeyReg = v.emitCollectGroupKeySelectors(groupSelectors)
 		}
 
-		collectorType = CollectorTypeKeyGroup
-	} else if countVar := ctx.CollectCounter(); countVar != nil {
-		projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, countVar)
-
-		if isGrouping {
-			collectorType = CollectorTypeKeyCounter
-		} else {
-			collectorType = CollectorTypeCounter
-		}
-	}
-
-	aggregateCtx := ctx.CollectAggregator()
-
-	// If we use aggregators, we need to collect group items by key
-	if aggregateCtx != nil && collectorType != CollectorTypeKeyGroup {
-		// We need to patch the loop result to be a collector
-		collectorType = CollectorTypeKeyGroup
-	}
-
-	// We replace DataSet initialization with Collector initialization
-	v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(collectorType))
-	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
-	v.emitIterJumpOrClose(loop)
-
-	// Replace the source with the collector
-	v.patchSwitchLoop(loop)
-
-	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-	if projectionVariableName != "" {
-		// Now we need to expand group variables from the dataset
-		v.emitIterKey(loop, kvValReg)
-		v.emitIterValue(loop, v.Symbols.DefineVariable(projectionVariableName))
-	} else {
-		v.emitIterKey(loop, kvKeyReg)
+		kvValReg = v.Registers.Allocate(Temp)
 		v.emitIterValue(loop, kvValReg)
+
+		var projectionVariableName string
+		collectorType := CollectorTypeKey
+
+		// If we have a collect group variable, we need to project it
+		if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
+			// Projection can be either a default projection (identifier) or a custom projection (selector expression)
+			if identifier := groupVar.Identifier(); identifier != nil {
+				projectionVariableName = v.emitCollectDefaultGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
+			} else if selector := groupVar.CollectSelector(); selector != nil {
+				projectionVariableName = v.emitCollectCustomGroupProjection(loop, kvValReg, selector)
+			}
+
+			collectorType = CollectorTypeKeyGroup
+		} else if counter != nil {
+			projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, counter)
+
+			if isGrouping {
+				collectorType = CollectorTypeKeyCounter
+			} else {
+				collectorType = CollectorTypeCounter
+			}
+		}
+
+		// If we use aggregators, we need to collect group items by key
+		if aggregator != nil && collectorType != CollectorTypeKeyGroup {
+			// We need to patch the loop result to be a collector
+			collectorType = CollectorTypeKeyGroup
+		}
+
+		// We replace DataSet initialization with Collector initialization
+		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(collectorType))
+		v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
+		v.emitIterJumpOrClose(loop)
+
+		// Replace the source with the collector
+		v.emitPatchLoop(loop)
+
+		// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+		if projectionVariableName != "" {
+			// Now we need to expand group variables from the dataset
+			v.emitIterKey(loop, kvValReg)
+			v.emitIterValue(loop, v.Symbols.DefineVariable(projectionVariableName))
+		} else {
+			v.emitIterKey(loop, kvKeyReg)
+			v.emitIterValue(loop, kvValReg)
+		}
 	}
 
 	// Aggregation loop
-	if aggregateCtx != nil {
-		v.emitCollectAggregator(aggregateCtx, loop)
+	if aggregator != nil {
+		v.emitCollectAggregator(aggregator, loop, isCollecting)
 	}
 
 	// TODO: Reuse the Registers
@@ -481,42 +485,53 @@ func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} 
 	loop.Value = vm.NoopOperand
 	loop.Key = vm.NoopOperand
 
-	if isGrouping {
+	if isCollecting && isGrouping {
 		// Now we are defining new variables for the group selectors
-		v.emitCollectGroupKeySelectorVariables(groupSelectors, kvKeyReg, kvValReg, aggregateCtx != nil)
+		v.emitCollectGroupKeySelectorVariables(groupSelectors, kvKeyReg, kvValReg, aggregator != nil)
 	}
 
 	return nil
 }
 
-func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentLoop *Loop) {
-	// First of all, we allocate registers for accumulators
+func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentLoop *Loop, isCollected bool) {
+	var accums []vm.Operand
+	var loop *Loop
 	selectors := c.AllCollectAggregateSelector()
-	accums := make([]vm.Operand, len(selectors))
 
-	// We need to allocate a register for each accumulator
-	for i := 0; i < len(selectors); i++ {
-		reg := v.Registers.Allocate(Temp)
-		accums[i] = reg
-		// TODO: Select persistent List type, we do not know how many items we will have
-		v.Emitter.EmitA(vm.OpList, reg)
+	// If data is collected, we need to allocate a temporary accumulators to store aggregation results
+	if isCollected {
+		// First of all, we allocate registers for accumulators
+		accums = make([]vm.Operand, len(selectors))
+
+		// We need to allocate a register for each accumulator
+		for i := 0; i < len(selectors); i++ {
+			reg := v.Registers.Allocate(Temp)
+			accums[i] = reg
+			// TODO: Select persistent List type, we do not know how many items we will have
+			v.Emitter.EmitA(vm.OpList, reg)
+		}
+
+		loop = v.Loops.EnterLoop(TemporalLoop, ForLoop, false)
+
+		// Now we iterate over the grouped items
+		v.emitIterValue(parentLoop, loop.Iterator)
+		// We just re-use the same register
+		v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Iterator)
+		// jumpPlaceholder is a placeholder for the exit aggrIterJump position
+		loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
+		loop.ValueName = parentLoop.ValueName
+	} else {
+		loop = parentLoop
+		// Otherwise, we create a custom collector for aggregators
+		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(CollectorTypeKeyGroup))
 	}
 
 	// Store upper scope for aggregators
 	mainScope := v.Symbols.Scope()
 	// Nested scope for aggregators
 	v.Symbols.EnterScope()
-	loop := v.Loops.EnterLoop(TemporalLoop, ForLoop, false)
 
-	// Now we iterate over the grouped items
-	v.emitIterValue(parentLoop, loop.Iterator)
-
-	// We just re-use the same register
-	v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Iterator)
-	// jumpPlaceholder is a placeholder for the exit aggrIterJump position
-	loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
-
-	aggrIterVal := v.Symbols.DefineVariable(parentLoop.ValueName)
+	aggrIterVal := v.Symbols.DefineVariable(loop.ValueName)
 	v.Emitter.EmitAB(vm.OpIterValue, aggrIterVal, loop.Iterator)
 
 	// Now we add value selectors to the accumulators
@@ -536,7 +551,16 @@ func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentL
 		}
 
 		resultReg := args[0].Accept(v).(vm.Operand)
-		v.Emitter.EmitAB(vm.OpPush, accums[i], resultReg)
+
+		if isCollected {
+			v.Emitter.EmitAB(vm.OpPush, accums[i], resultReg)
+		} else {
+			aggrKeyName := selector.Identifier().GetText()
+			aggrKeyReg := v.loadConstant(runtime.String(aggrKeyName))
+			v.Emitter.EmitABC(vm.OpPushKV, loop.Result, aggrKeyReg, resultReg)
+			v.Registers.Free(aggrKeyReg)
+		}
+
 		v.Registers.Free(resultReg)
 	}
 
@@ -545,25 +569,73 @@ func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentL
 
 	// Now we can iterate over the selectors and execute the aggregation functions by passing the accumulators
 	// And define variables for each accumulator result
-	for i, selector := range selectors {
-		fcx := selector.FunctionCallExpression()
-		// We won't make any checks here, as we already did it before
-		selectorVarName := selector.Identifier().GetText()
+	if isCollected {
+		for i, selector := range selectors {
+			fcx := selector.FunctionCallExpression()
+			// We won't make any checks here, as we already did it before
+			selectorVarName := selector.Identifier().GetText()
 
-		// We execute the function call with the accumulator as an argument
-		accum := accums[i]
-		result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, NewRegisterSequence(accum))
+			// We execute the function call with the accumulator as an argument
+			accum := accums[i]
+			result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, NewRegisterSequence(accum))
 
-		// We define the variable for the selector result in the upper scope
-		// Since this temporary scope is only for aggregators and will be closed after the aggregation
-		varReg := v.Symbols.DefineVariableInScope(selectorVarName, mainScope)
-		v.Emitter.EmitAB(vm.OpMove, varReg, result)
-		v.Registers.Free(result)
+			// We define the variable for the selector result in the upper scope
+			// Since this temporary scope is only for aggregators and will be closed after the aggregation
+			varReg := v.Symbols.DefineVariableInScope(selectorVarName, mainScope)
+			v.Emitter.EmitAB(vm.OpMove, varReg, result)
+			v.Registers.Free(result)
+		}
+
+		v.Loops.ExitLoop()
+		// Now close the aggregators scope
+		v.Symbols.ExitScope()
+	} else {
+		// Now close the aggregators scope
+		v.Symbols.ExitScope()
+
+		parentLoop.ValueName = ""
+		parentLoop.KeyName = ""
+
+		// Since we we in the middle of the loop, we need to patch the loop result
+		// Now we just create a range with 1 item to push the aggregated values to the dataset
+		// Replace source with sorted array
+		zero := v.loadConstant(runtime.Int(0))
+		one := v.loadConstant(runtime.Int(1))
+		aggregator := v.Registers.Allocate(Temp)
+		v.Emitter.EmitAB(vm.OpMove, aggregator, loop.Result)
+		v.Symbols.ExitScope()
+
+		v.Symbols.EnterScope()
+
+		// Create new for loop
+		v.Emitter.EmitABC(vm.OpRange, loop.Src, zero, one)
+		v.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+
+		// In case of non-collected aggregators, we just iterate over the grouped items
+		// Retrieve the grouped values by key, execute aggregation funcs and assign variable names to the results
+		for _, selector := range selectors {
+			fcx := selector.FunctionCallExpression()
+			// We won't make any checks here, as we already did it before
+			selectorVarName := selector.Identifier().GetText()
+
+			// We execute the function call with the accumulator as an argument
+			key := v.loadConstant(runtime.String(selectorVarName))
+			value := v.Registers.Allocate(Temp)
+			v.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
+
+			result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, NewRegisterSequence(value))
+
+			// We define the variable for the selector result in the upper scope
+			// Since this temporary scope is only for aggregators and will be closed after the aggregation
+			varReg := v.Symbols.DefineVariableInScope(selectorVarName, mainScope)
+			v.Emitter.EmitAB(vm.OpMove, varReg, result)
+			v.Registers.Free(result)
+			v.Registers.Free(value)
+			v.Registers.Free(key)
+		}
+
+		v.Registers.Free(aggregator)
 	}
-
-	v.Loops.ExitLoop()
-	// Now close the aggregators scope
-	v.Symbols.ExitScope()
 
 	// Free the registers for accumulators
 	for _, reg := range accums {
@@ -1600,8 +1672,8 @@ func (v *Visitor) emitIterJumpOrClose(loop *Loop) {
 	}
 }
 
-// patchSwitchLoop replaces the source of the loop with a modified dataset
-func (v *Visitor) patchSwitchLoop(loop *Loop) {
+// emitPatchLoop replaces the source of the loop with a modified dataset
+func (v *Visitor) emitPatchLoop(loop *Loop) {
 	// Replace source with sorted array
 	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
