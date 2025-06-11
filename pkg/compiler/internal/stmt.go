@@ -7,10 +7,10 @@ import (
 )
 
 type StmtCompiler struct {
-	ctx *FuncContext
+	ctx *CompilerContext
 }
 
-func NewStmtCompiler(ctx *FuncContext) *StmtCompiler {
+func NewStmtCompiler(ctx *CompilerContext) *StmtCompiler {
 	return &StmtCompiler{
 		ctx: ctx,
 	}

@@ -13,10 +13,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-func loadConstant(ctx *FuncContext, value runtime.Value) vm.Operand {
+func loadConstant(ctx *CompilerContext, value runtime.Value) vm.Operand {
 	reg := ctx.Registers.Allocate(core.Temp)
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
 	return reg
+}
+
+func loadConstantTo(ctx *CompilerContext, constant runtime.Value, reg vm.Operand) {
+	ctx.Emitter.EmitAB(vm.OpLoadConst, reg, ctx.Symbols.AddConstant(constant))
 }
 
 func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {

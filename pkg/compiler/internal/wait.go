@@ -8,10 +8,10 @@ import (
 )
 
 type WaitCompiler struct {
-	ctx *FuncContext
+	ctx *CompilerContext
 }
 
-func NewWaitCompiler(ctx *FuncContext) *WaitCompiler {
+func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
 	return &WaitCompiler{
 		ctx: ctx,
 	}

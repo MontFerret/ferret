@@ -13,10 +13,10 @@ import (
 )
 
 type LiteralCompiler struct {
-	ctx *FuncContext
+	ctx *CompilerContext
 }
 
-func NewLiteralCompiler(ctx *FuncContext) *LiteralCompiler {
+func NewLiteralCompiler(ctx *CompilerContext) *LiteralCompiler {
 	return &LiteralCompiler{
 		ctx: ctx,
 	}

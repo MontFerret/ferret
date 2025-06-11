@@ -18,10 +18,10 @@ const (
 )
 
 type ExprCompiler struct {
-	ctx *FuncContext
+	ctx *CompilerContext
 }
 
-func NewExprCompiler(ctx *FuncContext) *ExprCompiler {
+func NewExprCompiler(ctx *CompilerContext) *ExprCompiler {
 	return &ExprCompiler{ctx: ctx}
 }
 
@@ -385,8 +385,11 @@ func (ec *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpre
 }
 
 func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protected bool) vm.Operand {
+	return ec.CompileFunctionCallWith(ctx, protected, ec.CompileArgumentList(ctx.ArgumentList()))
+}
+
+func (ec *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) vm.Operand {
 	name := ec.functionName(ctx)
-	seq := ec.CompileArgumentList(ctx.ArgumentList())
 
 	switch name {
 	case runtimeLength:

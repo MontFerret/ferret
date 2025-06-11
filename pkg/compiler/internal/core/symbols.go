@@ -7,6 +7,13 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
+const (
+	JumpPlaceholder      = -1
+	UndefinedVariable    = -1
+	IgnorePseudoVariable = "_"
+	PseudoVariable       = "CURRENT"
+)
+
 type SymbolKind int
 
 const (
@@ -154,7 +161,7 @@ func (st *SymbolTable) Params() []string {
 	return out
 }
 
-func (st *SymbolTable) DebugSymbols() []string {
+func (st *SymbolTable) DebugView() []string {
 	var out []string
 
 	for _, v := range st.locals {
@@ -163,6 +170,14 @@ func (st *SymbolTable) DebugSymbols() []string {
 
 	for k, r := range st.globals {
 		out = append(out, fmt.Sprintf("[global] %s -> R%d", k, r))
+	}
+
+	for k, v := range st.params {
+		out = append(out, fmt.Sprintf("[param] %s -> %s", k, v))
+	}
+
+	for _, c := range st.constants.All() {
+		out = append(out, fmt.Sprintf("[constant] %s", c.String()))
 	}
 
 	return out

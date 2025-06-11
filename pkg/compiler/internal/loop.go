@@ -10,10 +10,10 @@ import (
 )
 
 type LoopCompiler struct {
-	ctx *FuncContext
+	ctx *CompilerContext
 }
 
-func NewLoopCompiler(ctx *FuncContext) *LoopCompiler {
+func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 	return &LoopCompiler{ctx: ctx}
 }
 
@@ -49,7 +49,7 @@ func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 	} else {
 	}
 
-	lc.emitLoopBegin(loop)
+	lc.EmitLoopBegin(loop)
 
 	// body
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
@@ -76,7 +76,7 @@ func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 		}
 	}
 
-	res := lc.emitLoopEnd(loop)
+	res := lc.EmitLoopEnd(loop)
 
 	lc.ctx.Symbols.ExitScope()
 	lc.ctx.Loops.Pop()
@@ -252,15 +252,15 @@ func (lc *LoopCompiler) CompileSortClause(ctx fql.ISortClauseContext) {
 	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
 	// Create a new loop
-	lc.emitLoopBegin(loop)
+	lc.EmitLoopBegin(loop)
 }
 
 func (lc *LoopCompiler) CompileCollectClause(ctx fql.ICollectClauseContext) {
 	lc.ctx.CollectCompiler.Compile(ctx)
 }
 
-// emitIterValue emits an instruction to get the value from the iterator
-func (lc *LoopCompiler) emitLoopBegin(loop *core.Loop) {
+// EmitLoopBegin emits an instruction to get the value from the iterator
+func (lc *LoopCompiler) EmitLoopBegin(loop *core.Loop) {
 	if loop.Allocate {
 		lc.ctx.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
 		loop.ResultPos = lc.ctx.Emitter.Size() - 1
@@ -286,8 +286,8 @@ func (lc *LoopCompiler) emitLoopBegin(loop *core.Loop) {
 	}
 }
 
-// emitPatchLoop replaces the source of the loop with a modified dataset
-func (lc *LoopCompiler) emitPatchLoop(loop *core.Loop) {
+// PatchLoop replaces the source of the loop with a modified dataset
+func (lc *LoopCompiler) PatchLoop(loop *core.Loop) {
 	// Replace source with sorted array
 	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
@@ -295,10 +295,10 @@ func (lc *LoopCompiler) emitPatchLoop(loop *core.Loop) {
 	lc.ctx.Symbols.EnterScope()
 
 	// Create new for loop
-	lc.emitLoopBegin(loop)
+	lc.EmitLoopBegin(loop)
 }
 
-func (lc *LoopCompiler) emitLoopEnd(loop *core.Loop) vm.Operand {
+func (lc *LoopCompiler) EmitLoopEnd(loop *core.Loop) vm.Operand {
 	lc.ctx.Emitter.EmitJump(loop.Jump - loop.JumpOffset)
 
 	// TODO: Do not allocate for pass-through Loops
