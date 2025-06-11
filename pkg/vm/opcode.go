@@ -100,3 +100,174 @@ const (
 	OpIterLimit
 	OpIterSkip
 )
+
+func (op Opcode) String() string {
+	switch op {
+	// Control Flow
+	case OpReturn:
+		return "RET"
+	case OpJump:
+		return "JMP"
+	case OpJumpIfFalse:
+		return "JMPF"
+	case OpJumpIfTrue:
+		return "JMPT"
+	case OpJumpIfEmpty:
+		return "JMPE"
+
+	// Register Operations
+	case OpMove:
+		return "MOVE"
+
+	// Loading Operations
+	case OpLoadNone:
+		return "LOADN"
+	case OpLoadBool:
+		return "LOADB"
+	case OpLoadZero:
+		return "LOADZ"
+	case OpLoadConst:
+		return "LOADC"
+	case OpLoadParam:
+		return "LOADP"
+
+	// Global Variable Operations
+	case OpLoadGlobal:
+		return "LOADG"
+	case OpStoreGlobal:
+		return "STOREG"
+
+	// Collection Access Operations
+	case OpLoadIndex:
+		return "LOADI"
+	case OpLoadIndexOptional:
+		return "LOADIO"
+	case OpLoadKey:
+		return "LOADK"
+	case OpLoadKeyOptional:
+		return "LOADKO"
+	case OpLoadProperty:
+		return "LOADPR"
+	case OpLoadPropertyOptional:
+		return "LOADPRO"
+
+	// Arithmetic Operations
+	case OpAdd:
+		return "ADD"
+	case OpSub:
+		return "SUB"
+	case OpMulti:
+		return "MUL"
+	case OpDiv:
+		return "DIV"
+	case OpMod:
+		return "MOD"
+	case OpIncr:
+		return "INCR"
+	case OpDecr:
+		return "DECR"
+
+	// Type Operations
+	case OpCastBool:
+		return "CASTB"
+	case OpNegate:
+		return "NEG"
+	case OpFlipPositive:
+		return "FLIP+"
+	case OpFlipNegative:
+		return "FLIP-"
+
+	// Comparison Operations
+	case OpComp:
+		return "COMP"
+	case OpNot:
+		return "NOT"
+	case OpEq:
+		return "EQ"
+	case OpNeq:
+		return "NEQ"
+	case OpGt:
+		return "GT"
+	case OpLt:
+		return "LT"
+	case OpGte:
+		return "GTE"
+	case OpLte:
+		return "LTE"
+
+	// Membership & Pattern Matching
+	case OpIn:
+		return "IN"
+	case OpNotIn:
+		return "NOTIN"
+	case OpLike:
+		return "LIKE"
+	case OpNotLike:
+		return "NOTLIKE"
+	case OpRegexpPositive:
+		return "REGEX+"
+	case OpRegexpNegative:
+		return "REGEX-"
+
+	// Utility Operations
+	case OpLength:
+		return "LEN"
+	case OpType:
+		return "TYPE"
+	case OpClose:
+		return "CLOSE"
+	case OpSleep:
+		return "SLEEP"
+
+	// Function Operations
+	case OpCall:
+		return "CALL"
+	case OpProtectedCall:
+		return "PCALL"
+
+	// Collection Creation
+	case OpList:
+		return "LIST"
+	case OpMap:
+		return "MAP"
+	case OpRange:
+		return "RANGE"
+
+	// Dataset Operations
+	case OpDataSet:
+		return "DSET"
+	case OpDataSetCollector:
+		return "DSETC"
+	case OpDataSetSorter:
+		return "DSETS"
+	case OpDataSetMultiSorter:
+		return "DSETMS"
+	case OpPush:
+		return "PUSH"
+	case OpPushKV:
+		return "PUSHKV"
+
+	// Stream Operations
+	case OpStream:
+		return "STREAM"
+	case OpStreamIter:
+		return "STRITER"
+
+	// Iterator Operations
+	case OpIter:
+		return "ITER"
+	case OpIterNext:
+		return "ITNEXT"
+	case OpIterValue:
+		return "ITVAL"
+	case OpIterKey:
+		return "ITKEY"
+	case OpIterLimit:
+		return "ITLIMIT"
+	case OpIterSkip:
+		return "ITSKIP"
+
+	default:
+		return "UNKNOWN"
+	}
+}
