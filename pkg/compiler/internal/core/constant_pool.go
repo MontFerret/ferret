@@ -1,9 +1,10 @@
 package core
 
 import (
+	"strconv"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"strconv"
 )
 
 // ConstantPool stores and deduplicates constants

@@ -58,8 +58,8 @@ func (e *Emitter) EmitLoadGlobal(dst, constant vm.Operand) {
 	e.EmitAB(vm.OpLoadGlobal, dst, constant)
 }
 
-func (e *Emitter) EmitLoadParam(constant vm.Operand) {
-	e.EmitA(vm.OpLoadParam, constant)
+func (e *Emitter) EmitLoadParam(dst, constant vm.Operand) {
+	e.EmitAB(vm.OpLoadParam, dst, constant)
 }
 
 func (e *Emitter) EmitBoolean(dst vm.Operand, value bool) {

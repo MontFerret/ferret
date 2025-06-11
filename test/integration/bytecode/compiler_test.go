@@ -2,7 +2,6 @@ package bytecode_test
 
 import (
 	"fmt"
-	"github.com/MontFerret/ferret/test/integration/setup"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime"

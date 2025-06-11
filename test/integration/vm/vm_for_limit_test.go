@@ -2,10 +2,11 @@ package vm_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 	. "github.com/MontFerret/ferret/test/integration/base"
-	"testing"
 )
 
 func TestForLimit(t *testing.T) {

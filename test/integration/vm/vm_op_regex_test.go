@@ -3,8 +3,9 @@ package vm_test
 import (
 	"context"
 	"fmt"
-	. "github.com/MontFerret/ferret/test/integration/base"
 	"testing"
+
+	. "github.com/MontFerret/ferret/test/integration/base"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"

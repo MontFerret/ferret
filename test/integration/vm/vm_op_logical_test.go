@@ -3,10 +3,11 @@ package vm_test
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 	. "github.com/MontFerret/ferret/test/integration/base"
-	"testing"
 )
 
 func TestLogicalOperators(t *testing.T) {

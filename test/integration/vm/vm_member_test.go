@@ -3,15 +3,16 @@ package vm_test
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 	. "github.com/MontFerret/ferret/test/integration/base"
-	"regexp"
-	"strconv"
-	"strings"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

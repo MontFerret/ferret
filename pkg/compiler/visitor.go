@@ -1,34 +1,24 @@
-package internal
+package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/compiler/internal"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 )
 
 type Visitor struct {
 	*fql.BaseFqlParserVisitor
-	ctx *FuncContext
 
-	Err        error
-	Src        string
-	Emitter    *core.Emitter
-	Registers  *core.RegisterAllocator
-	Symbols    *core.SymbolTable
-	Loops      *core.LoopTable
-	CatchTable *core.CatchStack
+	Ctx *internal.FuncContext
+	Err error
+	Src string
 }
 
 func NewVisitor(src string) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
-	v.ctx = NewFuncContext()
+	v.Ctx = internal.NewFuncContext()
 
 	v.Src = src
-	v.Registers = v.ctx.Registers
-	v.Symbols = v.ctx.Symbols
-	v.Loops = v.ctx.Loops
-	v.Emitter = v.ctx.Emitter
-	v.CatchTable = v.ctx.CatchTable
 
 	return v
 }
@@ -38,7 +28,7 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 		v.VisitHead(head.(*fql.HeadContext))
 	}
 
-	v.ctx.StmtCompiler.Compile(ctx.Body())
+	v.Ctx.StmtCompiler.Compile(ctx.Body())
 
 	return nil
 }
@@ -47,7 +37,7 @@ func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 	return nil
 }
 
-//func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
+//func (v *Visitor) VisitCollectClause(Ctx *fql.CollectClauseContext) interface{} {
 //	// TODO: Undefine original loop variables
 //	loop := v.Loops.Current()
 //
@@ -58,9 +48,9 @@ func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 //	var kvKeyReg, kvValReg vm.Operand
 //	var groupSelectors []fql.ICollectSelectorContext
 //	var isGrouping bool
-//	grouping := ctx.CollectGrouping()
-//	counter := ctx.CollectCounter()
-//	aggregator := ctx.CollectAggregator()
+//	grouping := Ctx.CollectGrouping()
+//	counter := Ctx.CollectCounter()
+//	aggregator := Ctx.CollectAggregator()
 //
 //	isCollecting := grouping != nil || counter != nil
 //
@@ -78,7 +68,7 @@ func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 //		collectorType := CollectorTypeKey
 //
 //		// If we have a collect group variable, we need to project it
-//		if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
+//		if groupVar := Ctx.CollectGroupVariable(); groupVar != nil {
 //			// Projection can be either a default projection (identifier) or a custom projection (selector expression)
 //			if identifier := groupVar.Identifier(); identifier != nil {
 //				projectionVariableName = v.emitCollectDefaultGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
@@ -411,28 +401,28 @@ func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 //	return selector.Identifier().GetText()
 //}
 //
-//func (v *Visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
-//	if c := ctx.Expression(); c != nil {
+//func (v *Visitor) VisitCollectSelector(Ctx *fql.CollectSelectorContext) interface{} {
+//	if c := Ctx.Expression(); c != nil {
 //		return c.Accept(v)
 //	}
 //
-//	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+//	panic(runtime.Error(ErrUnexpectedToken, Ctx.GetText()))
 //}
 //
-//func (v *Visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
-//	if c := ctx.VariableDeclaration(); c != nil {
+//func (v *Visitor) VisitForExpressionStatement(Ctx *fql.ForExpressionStatementContext) interface{} {
+//	if c := Ctx.VariableDeclaration(); c != nil {
 //		return c.Accept(v)
 //	}
 //
-//	if c := ctx.FunctionCallExpression(); c != nil {
+//	if c := Ctx.FunctionCallExpression(); c != nil {
 //		return c.Accept(v)
 //	}
 //
-//	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+//	panic(runtime.Error(ErrUnexpectedToken, Ctx.GetText()))
 //}
 //
-//func (v *Visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
-//	return v.ctx.ExprCompiler.Compile(ctx)
+//func (v *Visitor) VisitExpression(Ctx *fql.ExpressionContext) interface{} {
+//	return v.Ctx.ExprCompiler.Compile(Ctx)
 //}
 //
 //// emitIterValue emits an instruction to get the value from the iterator
@@ -524,7 +514,7 @@ func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 //}
 //
 //func (v *Visitor) loadConstant(constant runtime.Value) vm.Operand {
-//	return loadConstant(v.ctx, constant)
+//	return loadConstant(v.Ctx, constant)
 //}
 //
 //func (v *Visitor) loadConstantTo(constant runtime.Value, reg vm.Operand) {

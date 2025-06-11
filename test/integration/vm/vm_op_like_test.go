@@ -1,8 +1,9 @@
 package vm_test
 
 import (
-	. "github.com/MontFerret/ferret/test/integration/base"
 	"testing"
+
+	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestLikeOperator(t *testing.T) {

@@ -2,8 +2,9 @@ package vm_test
 
 import (
 	"fmt"
-	. "github.com/MontFerret/ferret/test/integration/base"
 	"testing"
+
+	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestString(t *testing.T) {

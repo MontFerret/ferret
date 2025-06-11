@@ -2,10 +2,9 @@ package compiler
 
 import (
 	"errors"
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	goruntime "runtime"
 
-	"github.com/MontFerret/ferret/pkg/compiler/internal"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 
 	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -65,7 +64,7 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	p := parser.New(query)
 	p.AddErrorListener(newErrorListener())
 
-	l := internal.NewVisitor(query)
+	l := NewVisitor(query)
 
 	p.Visit(l)
 
@@ -74,11 +73,11 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	}
 
 	program = &vm.Program{}
-	program.Bytecode = l.Emitter.Bytecode()
-	program.Constants = l.Symbols.Constants()
-	program.CatchTable = l.CatchTable.All()
-	program.Registers = l.Registers.Size()
-	program.Params = l.Symbols.Params()
+	program.Bytecode = l.Ctx.Emitter.Bytecode()
+	program.Constants = l.Ctx.Symbols.Constants()
+	program.CatchTable = l.Ctx.CatchTable.All()
+	program.Registers = l.Ctx.Registers.Size()
+	program.Params = l.Ctx.Symbols.Params()
 
 	return program, err
 }

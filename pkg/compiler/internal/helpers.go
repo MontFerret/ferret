@@ -1,10 +1,12 @@
 package internal
 
 import (
+	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/antlr4-go/antlr/v4"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 

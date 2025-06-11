@@ -2,9 +2,11 @@ package vm_test
 
 import (
 	"fmt"
+
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	. "github.com/MontFerret/ferret/test/integration/base"
-	. "github.com/smartystreets/goconvey/convey"
 
 	"testing"
 )

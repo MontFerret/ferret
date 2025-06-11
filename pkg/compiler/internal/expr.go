@@ -1,12 +1,13 @@
 package internal
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"regexp"
-	"strings"
 )
 
 // Runtime functions
@@ -370,8 +371,8 @@ func (ec *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 
 func (ec *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
 	name := ctx.Identifier().GetText()
-	reg := ec.ctx.Symbols.BindParam(name)
-	ec.ctx.Emitter.EmitLoadParam(reg)
+	reg := ec.ctx.Registers.Allocate(core.Temp)
+	ec.ctx.Emitter.EmitLoadParam(reg, ec.ctx.Symbols.BindParam(name))
 
 	return reg
 }

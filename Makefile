@@ -44,8 +44,8 @@ doc:
 
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:
-	go fmt ${DIR_PKG}/... && \
-	goimports -w -local github.com/MontFerret ./pkg ./test/e2e
+	go fmt ${DIR_PKG}/... ${DIR_INTEG}/... ${DIR_E2E}/... && \
+	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_INTEG} ${DIR_E2E}
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive

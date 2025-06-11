@@ -1,12 +1,14 @@
 package vm_test
 
 import (
+	"testing"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/vm"
 	. "github.com/MontFerret/ferret/test/integration/base"
-	"testing"
 
 	gocontext "context"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
