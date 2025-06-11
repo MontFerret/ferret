@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -18,23 +19,23 @@ func NewLoopCompiler(ctx *FuncContext) *LoopCompiler {
 func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
-	var loopType LoopType
+	var loopType core.LoopType
 	returnCtx := ctx.ForExpressionReturn()
 
 	if c := returnCtx.ReturnExpression(); c != nil {
 		returnRuleCtx = c
 		distinct = c.Distinct() != nil
-		loopType = NormalLoop
+		loopType = core.NormalLoop
 	} else if c := returnCtx.ForExpression(); c != nil {
 		returnRuleCtx = c
-		loopType = PassThroughLoop
+		loopType = core.PassThroughLoop
 	}
 
-	loop := lc.ctx.Loops.NewLoop(loopType, ForLoop, distinct)
+	loop := lc.ctx.Loops.NewLoop(loopType, core.ForLoop, distinct)
 	lc.ctx.Symbols.EnterScope()
 	lc.ctx.Loops.Push(loop)
 
-	if loop.Kind == ForLoop {
+	if loop.Kind == core.ForLoop {
 		loop.Src = lc.CompileForExpressionSource(ctx.ForExpressionSource())
 
 		if val := ctx.GetValueVariable(); val != nil {
@@ -63,7 +64,7 @@ func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 	loop = lc.ctx.Loops.Current()
 
 	// RETURN
-	if loop.Type != PassThroughLoop {
+	if loop.Type != core.PassThroughLoop {
 		c := returnRuleCtx.(*fql.ReturnExpressionContext)
 		expReg := lc.ctx.ExprCompiler.Compile(c.Expression())
 
@@ -111,7 +112,7 @@ func (lc *LoopCompiler) CompileForExpressionSource(ctx fql.IForExpressionSourceC
 		return lc.ctx.LiteralCompiler.CompileObjectLiteral(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (lc *LoopCompiler) CompileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
@@ -168,17 +169,17 @@ func (lc *LoopCompiler) CompileLimitClauseValue(ctx fql.ILimitClauseValueContext
 		return lc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 
 }
 
 func (lc *LoopCompiler) CompileLimit(src vm.Operand) {
-	state := lc.ctx.Registers.Allocate(State)
+	state := lc.ctx.Registers.Allocate(core.State)
 	lc.ctx.Emitter.EmitABx(vm.OpIterLimit, state, src, lc.ctx.Loops.Current().Jump)
 }
 
 func (lc *LoopCompiler) CompileOffset(src vm.Operand) {
-	state := lc.ctx.Registers.Allocate(State)
+	state := lc.ctx.Registers.Allocate(core.State)
 	lc.ctx.Emitter.EmitABx(vm.OpIterSkip, state, src, lc.ctx.Loops.Current().Jump)
 }
 
@@ -194,7 +195,7 @@ func (lc *LoopCompiler) CompileSortClause(ctx fql.ISortClauseContext) {
 	// And wrap each loop element by a KeyValuePair
 	// Where a key is either a single value or a list of values
 	// These KeyValuePairs are then added to the dataset
-	kvKeyReg := lc.ctx.Registers.Allocate(Temp)
+	kvKeyReg := lc.ctx.Registers.Allocate(core.Temp)
 	clauses := ctx.AllSortClauseExpression()
 	var directions []runtime.SortDirection
 	isSortMany := len(clauses) > 1
@@ -214,7 +215,7 @@ func (lc *LoopCompiler) CompileSortClause(ctx fql.ISortClauseContext) {
 			// TODO: Free Registers
 		}
 
-		arrReg := lc.ctx.Registers.Allocate(Temp)
+		arrReg := lc.ctx.Registers.Allocate(core.Temp)
 		lc.ctx.Emitter.EmitAs(vm.OpList, arrReg, keyRegs)
 		lc.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free Registers
 	} else {
@@ -229,7 +230,7 @@ func (lc *LoopCompiler) CompileSortClause(ctx fql.ISortClauseContext) {
 		kvValReg = loop.Value
 	} else {
 		// If so, we need to load it from the iterator
-		kvValReg = lc.ctx.Registers.Allocate(Temp)
+		kvValReg = lc.ctx.Registers.Allocate(core.Temp)
 		loop.EmitValue(kvKeyReg, lc.ctx.Emitter)
 	}
 
@@ -258,18 +259,18 @@ func (lc *LoopCompiler) CompileCollectClause(ctx fql.ICollectClauseContext) {
 }
 
 // emitIterValue emits an instruction to get the value from the iterator
-func (lc *LoopCompiler) emitLoopBegin(loop *Loop) {
+func (lc *LoopCompiler) emitLoopBegin(loop *core.Loop) {
 	if loop.Allocate {
 		lc.ctx.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
 		loop.ResultPos = lc.ctx.Emitter.Size() - 1
 	}
 
-	loop.Iterator = lc.ctx.Registers.Allocate(State)
+	loop.Iterator = lc.ctx.Registers.Allocate(core.State)
 
-	if loop.Kind == ForLoop {
+	if loop.Kind == core.ForLoop {
 		lc.ctx.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
-		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = lc.ctx.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
+		// core.JumpPlaceholder is a placeholder for the exit jump position
+		loop.Jump = lc.ctx.Emitter.EmitJumpc(vm.OpIterNext, core.JumpPlaceholder, loop.Iterator)
 
 		if loop.Value != vm.NoopOperand {
 			lc.ctx.Emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
@@ -285,7 +286,7 @@ func (lc *LoopCompiler) emitLoopBegin(loop *Loop) {
 }
 
 // emitPatchLoop replaces the source of the loop with a modified dataset
-func (lc *LoopCompiler) emitPatchLoop(loop *Loop) {
+func (lc *LoopCompiler) emitPatchLoop(loop *core.Loop) {
 	// Replace source with sorted array
 	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
 
@@ -296,24 +297,24 @@ func (lc *LoopCompiler) emitPatchLoop(loop *Loop) {
 	lc.emitLoopBegin(loop)
 }
 
-func (lc *LoopCompiler) emitLoopEnd(loop *Loop) vm.Operand {
+func (lc *LoopCompiler) emitLoopEnd(loop *core.Loop) vm.Operand {
 	lc.ctx.Emitter.EmitJump(loop.Jump - loop.JumpOffset)
 
 	// TODO: Do not allocate for pass-through Loops
-	dst := lc.ctx.Registers.Allocate(Temp)
+	dst := lc.ctx.Registers.Allocate(core.Temp)
 
 	if loop.Allocate {
 		// TODO: Reuse the dsReg register
 		lc.ctx.Emitter.EmitA(vm.OpClose, loop.Iterator)
 		lc.ctx.Emitter.EmitAB(vm.OpMove, dst, loop.Result)
 
-		if loop.Kind == ForLoop {
+		if loop.Kind == core.ForLoop {
 			lc.ctx.Emitter.PatchJump(loop.Jump)
 		} else {
 			lc.ctx.Emitter.PatchJumpAB(loop.Jump)
 		}
 	} else {
-		if loop.Kind == ForLoop {
+		if loop.Kind == core.ForLoop {
 			lc.ctx.Emitter.PatchJumpNext(loop.Jump)
 		} else {
 			lc.ctx.Emitter.PatchJumpNextAB(loop.Jump)
@@ -323,14 +324,14 @@ func (lc *LoopCompiler) emitLoopEnd(loop *Loop) vm.Operand {
 	return dst
 }
 
-func (lc *LoopCompiler) loopKind(ctx *fql.ForExpressionContext) LoopKind {
+func (lc *LoopCompiler) loopKind(ctx *fql.ForExpressionContext) core.LoopKind {
 	if ctx.While() == nil {
-		return ForLoop
+		return core.ForLoop
 	}
 
 	if ctx.Do() == nil {
-		return WhileLoop
+		return core.WhileLoop
 	}
 
-	return DoWhileLoop
+	return core.DoWhileLoop
 }

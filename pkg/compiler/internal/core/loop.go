@@ -1,6 +1,8 @@
-package internal
+package core
 
-import "github.com/MontFerret/ferret/pkg/vm"
+import (
+	"github.com/MontFerret/ferret/pkg/vm"
+)
 
 type LoopType int
 
@@ -76,5 +78,5 @@ func (l *Loop) EmitFinalization(emitter *Emitter) {
 }
 
 func (l *Loop) canBindVar(name string) bool {
-	return name != "" && name != ignorePseudoVariable
+	return name != "" && name != IgnorePseudoVariable
 }

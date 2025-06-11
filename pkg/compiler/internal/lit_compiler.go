@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -36,7 +37,7 @@ func (lc *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
 		return lc.CompileNoneLiteral(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (lc *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
@@ -109,7 +110,7 @@ func (lc *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.
 }
 
 func (lc *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) vm.Operand {
-	reg := lc.ctx.Registers.Allocate(Temp)
+	reg := lc.ctx.Registers.Allocate(core.Temp)
 
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
@@ -117,14 +118,14 @@ func (lc *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext)
 	case "false":
 		lc.ctx.Emitter.EmitBoolean(reg, false)
 	default:
-		panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+		panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 	}
 
 	return reg
 }
 
 func (lc *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Operand {
-	reg := lc.ctx.Registers.Allocate(Temp)
+	reg := lc.ctx.Registers.Allocate(core.Temp)
 	lc.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
 
 	return reg
@@ -132,7 +133,7 @@ func (lc *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Oper
 
 func (lc *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
 	// Allocate destination register for the array
-	destReg := lc.ctx.Registers.Allocate(Temp)
+	destReg := lc.ctx.Registers.Allocate(core.Temp)
 
 	if list := ctx.ArgumentList(); list != nil {
 		// Get all array element expressions
@@ -174,7 +175,7 @@ func (lc *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.
 }
 
 func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
-	dst := lc.ctx.Registers.Allocate(Temp)
+	dst := lc.ctx.Registers.Allocate(core.Temp)
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
@@ -232,7 +233,7 @@ func (lc *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.
 	} else if word := ctx.UnsafeReservedWord(); word != nil {
 		name = word.GetText()
 	} else {
-		panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+		panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 	}
 
 	return loadConstant(lc.ctx, runtime.NewString(name))

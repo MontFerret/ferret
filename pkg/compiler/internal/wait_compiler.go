@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -34,7 +35,7 @@ func (wc *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 		timeoutReg = wc.CompileTimeoutClauseContext(timeout)
 	}
 
-	streamReg := wc.ctx.Registers.Allocate(Temp)
+	streamReg := wc.ctx.Registers.Allocate(core.Temp)
 
 	// We move the source object to the stream register in order to re-use it in OpStream
 	wc.ctx.Emitter.EmitMove(streamReg, srcReg)
@@ -44,10 +45,10 @@ func (wc *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	var valReg vm.Operand
 
 	// Now we start iterating over the stream
-	jumpToNext := wc.ctx.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, streamReg)
+	jumpToNext := wc.ctx.Emitter.EmitJumpc(vm.OpIterNext, core.JumpPlaceholder, streamReg)
 
 	if filter := ctx.FilterClause(); filter != nil {
-		valReg = wc.ctx.Symbols.DeclareLocal(pseudoVariable)
+		valReg = wc.ctx.Symbols.DeclareLocal(core.PseudoVariable)
 		wc.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
 
 		wc.ctx.ExprCompiler.Compile(filter.Expression())
@@ -86,7 +87,7 @@ func (wc *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext
 		return wc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (wc *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceContext) vm.Operand {
@@ -102,7 +103,7 @@ func (wc *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceCon
 		return wc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (wc *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) vm.Operand {
@@ -110,7 +111,7 @@ func (wc *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) vm.O
 		return wc.ctx.LiteralCompiler.CompileObjectLiteral(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (wc *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContext) vm.Operand {
@@ -134,5 +135,5 @@ func (wc *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContex
 		return wc.ctx.ExprCompiler.CompileFunctionCall(c, false)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }

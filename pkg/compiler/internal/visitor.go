@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 )
 
@@ -10,19 +11,12 @@ type Visitor struct {
 
 	Err        error
 	Src        string
-	Emitter    *Emitter
-	Registers  *RegisterAllocator
-	Symbols    *SymbolTable
-	Loops      *LoopTable
-	CatchTable *CatchStack
+	Emitter    *core.Emitter
+	Registers  *core.RegisterAllocator
+	Symbols    *core.SymbolTable
+	Loops      *core.LoopTable
+	CatchTable *core.CatchStack
 }
-
-const (
-	jumpPlaceholder      = -1
-	undefinedVariable    = -1
-	ignorePseudoVariable = "_"
-	pseudoVariable       = "CURRENT"
-)
 
 func NewVisitor(src string) *Visitor {
 	v := new(Visitor)
@@ -44,13 +38,7 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 		v.VisitHead(head.(*fql.HeadContext))
 	}
 
-	ctx.Body().Accept(v)
-
-	return nil
-}
-
-func (v *Visitor) VisitBody(ctx *fql.BodyContext) interface{} {
-	v.ctx.StmtCompiler.Compile(ctx)
+	v.ctx.StmtCompiler.Compile(ctx.Body())
 
 	return nil
 }

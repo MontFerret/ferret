@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -44,13 +45,13 @@ func (ec *ExprCompiler) Compile(ctx fql.IExpressionContext) vm.Operand {
 		return ec.compilePredicate(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 // TODO: Free temporary registers if needed
 func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IExpressionContext) vm.Operand {
 	src := ec.Compile(parent.GetRight())
-	dst := ec.ctx.Registers.Allocate(Temp)
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	var op vm.Opcode
 
@@ -61,7 +62,7 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 	} else if ctx.Plus() != nil {
 		op = vm.OpFlipPositive
 	} else {
-		panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+		panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 	}
 
 	// We do not overwrite the source register
@@ -72,7 +73,7 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 
 // TODO: Free temporary registers if needed
 func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IPredicateContext) vm.Operand {
-	dst := ec.ctx.Registers.Allocate(Temp)
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	// Execute left expression
 	left := ec.compilePredicate(ctx.GetLeft())
@@ -81,7 +82,7 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IPredicateContext) vm.Operand 
 	ec.ctx.Emitter.EmitMove(dst, left)
 
 	// Test if left is false and jump to the end
-	end := ec.ctx.Emitter.EmitJumpIfFalse(dst, jumpPlaceholder)
+	end := ec.ctx.Emitter.EmitJumpIfFalse(dst, core.JumpPlaceholder)
 
 	// If left is true, execute right expression
 	right := ec.compilePredicate(ctx.GetRight())
@@ -96,7 +97,7 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IPredicateContext) vm.Operand 
 
 // TODO: Free temporary registers if needed
 func (ec *ExprCompiler) compileLogicalOr(ctx fql.IPredicateContext) vm.Operand {
-	dst := ec.ctx.Registers.Allocate(Temp)
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	// Execute left expression
 	left := ec.compilePredicate(ctx.GetLeft())
@@ -105,7 +106,7 @@ func (ec *ExprCompiler) compileLogicalOr(ctx fql.IPredicateContext) vm.Operand {
 	ec.ctx.Emitter.EmitMove(dst, left)
 
 	// Test if left is true and jump to the end
-	end := ec.ctx.Emitter.EmitJumpIfTrue(dst, jumpPlaceholder)
+	end := ec.ctx.Emitter.EmitJumpIfTrue(dst, core.JumpPlaceholder)
 
 	// If left is false, execute right expression
 	right := ec.compilePredicate(ctx.GetRight())
@@ -120,14 +121,14 @@ func (ec *ExprCompiler) compileLogicalOr(ctx fql.IPredicateContext) vm.Operand {
 
 // TODO: Free temporary registers if needed
 func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
-	dst := ec.ctx.Registers.Allocate(Temp)
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	// Compile condition and put result in dst
 	condReg := ec.Compile(ctx.GetCondition())
 	ec.ctx.Emitter.EmitMove(dst, condReg)
 
 	// Jump to 'false' branch if condition is false
-	otherwise := ec.ctx.Emitter.EmitJumpIfFalse(dst, jumpPlaceholder)
+	otherwise := ec.ctx.Emitter.EmitJumpIfFalse(dst, core.JumpPlaceholder)
 
 	// True branch
 	if onTrue := ctx.GetOnTrue(); onTrue != nil {
@@ -137,7 +138,7 @@ func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 	}
 
 	// Jump over false branch
-	end := ec.ctx.Emitter.EmitJump(jumpPlaceholder)
+	end := ec.ctx.Emitter.EmitJump(core.JumpPlaceholder)
 	ec.ctx.Emitter.PatchJumpNext(otherwise)
 
 	// False branch
@@ -174,7 +175,7 @@ func (ec *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 	}
 
 	var opcode vm.Opcode
-	dest := ec.ctx.Registers.Allocate(Temp)
+	dest := ec.ctx.Registers.Allocate(core.Temp)
 	left := ec.compilePredicate(ctx.Predicate(0))
 	right := ec.compilePredicate(ctx.Predicate(1))
 
@@ -193,7 +194,7 @@ func (ec *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		case "<=":
 			opcode = vm.OpLte
 		default:
-			panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+			panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 		}
 	} else if op := ctx.ArrayOperator(); op != nil {
 		// TODO: Implement me
@@ -233,7 +234,7 @@ func (ec *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		case "%":
 			opcode = vm.OpMod
 		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
+			panic(runtime.Error(core.ErrUnexpectedToken, op.GetText()))
 		}
 	} else if op := ctx.AdditiveOperator(); op != nil {
 		isSet = true
@@ -244,7 +245,7 @@ func (ec *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		case "-":
 			opcode = vm.OpSub
 		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
+			panic(runtime.Error(core.ErrUnexpectedToken, op.GetText()))
 		}
 
 	} else if op := ctx.RegexpOperator(); op != nil {
@@ -256,14 +257,14 @@ func (ec *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		case "!~":
 			opcode = vm.OpRegexpNegative
 		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
+			panic(runtime.Error(core.ErrUnexpectedToken, op.GetText()))
 		}
 	}
 
 	if isSet {
 		regLeft := ec.compileAtom(ctx.ExpressionAtom(0))
 		regRight := ec.compileAtom(ctx.ExpressionAtom(1))
-		dst := ec.ctx.Registers.Allocate(Temp)
+		dst := ec.ctx.Registers.Allocate(core.Temp)
 
 		if opcode == vm.OpRegexpPositive || opcode == vm.OpRegexpNegative {
 			if regRight.IsConstant() {
@@ -299,7 +300,7 @@ func (ec *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		return ec.Compile(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (ec *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext) vm.Operand {
@@ -334,7 +335,7 @@ func (ec *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext
 			src2 = ec.ctx.LiteralCompiler.CompileComputedPropertyName(c)
 		}
 
-		dst = ec.ctx.Registers.Allocate(Temp)
+		dst = ec.ctx.Registers.Allocate(core.Temp)
 
 		// TODO: Replace with EmitLoadKey
 		if p.ErrorOperator() != nil {
@@ -354,14 +355,14 @@ func (ec *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	op, _, found := ec.ctx.Symbols.Resolve(ctx.GetText())
 
 	if !found {
-		panic(runtime.Error(ErrVariableNotFound, ctx.GetText()))
+		panic(runtime.Error(core.ErrVariableNotFound, ctx.GetText()))
 	}
 
 	if op.IsRegister() {
 		return op
 	}
 
-	reg := ec.ctx.Registers.Allocate(Temp)
+	reg := ec.ctx.Registers.Allocate(core.Temp)
 	ec.ctx.Emitter.EmitLoadGlobal(reg, op)
 
 	return reg
@@ -388,7 +389,7 @@ func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protec
 
 	switch name {
 	case runtimeLength:
-		dst := ec.ctx.Registers.Allocate(Temp)
+		dst := ec.ctx.Registers.Allocate(core.Temp)
 
 		if seq == nil || len(seq) != 1 {
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
@@ -398,7 +399,7 @@ func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protec
 
 		return dst
 	case runtimeTypename:
-		dst := ec.ctx.Registers.Allocate(Temp)
+		dst := ec.ctx.Registers.Allocate(core.Temp)
 
 		if seq == nil || len(seq) != 1 {
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
@@ -416,7 +417,7 @@ func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protec
 
 		return seq[0]
 	default:
-		dest := ec.ctx.Registers.Allocate(Temp)
+		dest := ec.ctx.Registers.Allocate(core.Temp)
 		ec.ctx.Emitter.EmitLoadConst(dest, ec.ctx.Symbols.AddConstant(name))
 
 		if !protected {
@@ -429,8 +430,8 @@ func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protec
 	}
 }
 
-func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) RegisterSequence {
-	var seq RegisterSequence
+func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.RegisterSequence {
+	var seq core.RegisterSequence
 	// Get all array element expressions
 	exps := ctx.AllExpression()
 	size := len(exps)
@@ -458,7 +459,7 @@ func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) Regist
 }
 
 func (ec *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.Operand {
-	dst := ec.ctx.Registers.Allocate(Temp)
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 	start := ec.compileRangeOperand(ctx.GetLeft())
 	end := ec.compileRangeOperand(ctx.GetRight())
 
@@ -480,7 +481,7 @@ func (ec *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) vm.Ope
 		return ec.ctx.LiteralCompiler.CompileIntegerLiteral(c)
 	}
 
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (ec *ExprCompiler) functionName(ctx fql.IFunctionCallContext) runtime.String {

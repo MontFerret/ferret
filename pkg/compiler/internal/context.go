@@ -1,12 +1,14 @@
 package internal
 
+import "github.com/MontFerret/ferret/pkg/compiler/internal/core"
+
 // FuncContext encapsulates the context and state required for compiling and managing functions during code processing.
 type FuncContext struct {
-	Emitter    *Emitter
-	Registers  *RegisterAllocator
-	Symbols    *SymbolTable
-	Loops      *LoopTable
-	CatchTable *CatchStack
+	Emitter    *core.Emitter
+	Registers  *core.RegisterAllocator
+	Symbols    *core.SymbolTable
+	Loops      *core.LoopTable
+	CatchTable *core.CatchStack
 
 	ExprCompiler    *ExprCompiler
 	LiteralCompiler *LiteralCompiler
@@ -19,14 +21,14 @@ type FuncContext struct {
 // NewFuncContext initializes and returns a new instance of FuncContext, setting up all required components for compilation.
 func NewFuncContext() *FuncContext {
 	ctx := &FuncContext{
-		Emitter:    NewEmitter(),
-		Registers:  NewRegisterAllocator(),
+		Emitter:    core.NewEmitter(),
+		Registers:  core.NewRegisterAllocator(),
 		Symbols:    nil, // set later
 		Loops:      nil, // set later
-		CatchTable: NewCatchStack(),
+		CatchTable: core.NewCatchStack(),
 	}
-	ctx.Symbols = NewSymbolTable(ctx.Registers)
-	ctx.Loops = NewLoopTable(ctx.Registers)
+	ctx.Symbols = core.NewSymbolTable(ctx.Registers)
+	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
 	ctx.ExprCompiler = NewExprCompiler(ctx)
 	ctx.LiteralCompiler = NewLiteralCompiler(ctx)

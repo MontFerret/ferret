@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"errors"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	goruntime "runtime"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal"
@@ -37,7 +38,7 @@ func New(setters ...Option) *Compiler {
 
 func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	if query == "" {
-		return nil, internal.ErrEmptyQuery
+		return nil, core.ErrEmptyQuery
 	}
 
 	defer func() {

@@ -1,4 +1,4 @@
-package internal
+package core
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime"

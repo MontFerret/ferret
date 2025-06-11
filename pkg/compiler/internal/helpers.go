@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/vm"
 	"github.com/antlr4-go/antlr/v4"
 	"strings"
@@ -11,7 +12,7 @@ import (
 )
 
 func loadConstant(ctx *FuncContext, value runtime.Value) vm.Operand {
-	reg := ctx.Registers.Allocate(Temp)
+	reg := ctx.Registers.Allocate(core.Temp)
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
 	return reg
 }
