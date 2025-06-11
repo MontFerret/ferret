@@ -75,7 +75,7 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	program = &vm.Program{}
 	program.Bytecode = l.Emitter.Bytecode()
 	program.Constants = l.Symbols.Constants()
-	program.CatchTable = l.CatchTable
+	program.CatchTable = l.CatchTable.All()
 	program.Registers = l.Registers.Size()
 	program.Params = l.Symbols.Params()
 

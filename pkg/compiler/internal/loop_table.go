@@ -7,61 +7,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-type LoopType int
-
-const (
-	NormalLoop LoopType = iota
-	PassThroughLoop
-	TemporalLoop
-)
-
-type LoopKind int
-
-const (
-	ForLoop LoopKind = iota
-	WhileLoop
-	DoWhileLoop
-)
-
-type CollectorType int
-
-const (
-	CollectorTypeCounter CollectorType = iota
-	CollectorTypeKey
-	CollectorTypeKeyCounter
-	CollectorTypeKeyGroup
-)
-
-type Loop struct {
-	Type       LoopType
-	Kind       LoopKind
-	Distinct   bool
-	Allocate   bool
-	Jump       int
-	JumpOffset int
-
-	Src      vm.Operand
-	Iterator vm.Operand
-
-	ValueName string
-	Value     vm.Operand
-	KeyName   string
-	Key       vm.Operand
-
-	Result    vm.Operand
-	ResultPos int
-}
-
-func (l *Loop) BindKeyVar(name string, st *SymbolTable) {
-	l.KeyName = name
-	l.Key = st.DeclareLocal(name)
-}
-
-func (l *Loop) BindValueVar(name string, st *SymbolTable) {
-	l.ValueName = name
-	l.Value = st.DeclareLocal(name)
-}
-
 type LoopTable struct {
 	stack     []*Loop
 	registers *RegisterAllocator

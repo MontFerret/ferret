@@ -516,6 +516,7 @@ loop:
 		}
 	}
 
+	// TODO: Change. Add 'returnReg' to the closure.
 	return vm.registers[NoopOperand], nil
 }
 

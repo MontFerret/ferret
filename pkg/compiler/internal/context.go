@@ -1,22 +1,39 @@
 package internal
 
-import "github.com/MontFerret/ferret/pkg/vm"
-
+// FuncContext encapsulates the context and state required for compiling and managing functions during code processing.
 type FuncContext struct {
 	Emitter    *Emitter
 	Registers  *RegisterAllocator
 	Symbols    *SymbolTable
 	Loops      *LoopTable
-	CatchTable []vm.Catch
+	CatchTable *CatchStack
+
+	ExprCompiler    *ExprCompiler
+	LiteralCompiler *LiteralCompiler
+	StmtCompiler    *StmtCompiler
+	LoopCompiler    *LoopCompiler
+	CollectCompiler *CollectCompiler
+	WaitCompiler    *WaitCompiler
 }
 
+// NewFuncContext initializes and returns a new instance of FuncContext, setting up all required components for compilation.
 func NewFuncContext() *FuncContext {
-	registers := NewRegisterAllocator()
-	return &FuncContext{
+	ctx := &FuncContext{
 		Emitter:    NewEmitter(),
-		Registers:  registers,
-		Symbols:    NewSymbolTable(registers),
-		Loops:      NewLoopTable(registers),
-		CatchTable: make([]vm.Catch, 0),
+		Registers:  NewRegisterAllocator(),
+		Symbols:    nil, // set later
+		Loops:      nil, // set later
+		CatchTable: NewCatchStack(),
 	}
+	ctx.Symbols = NewSymbolTable(ctx.Registers)
+	ctx.Loops = NewLoopTable(ctx.Registers)
+
+	ctx.ExprCompiler = NewExprCompiler(ctx)
+	ctx.LiteralCompiler = NewLiteralCompiler(ctx)
+	ctx.StmtCompiler = NewStmtCompiler(ctx)
+	ctx.LoopCompiler = NewLoopCompiler(ctx)
+	ctx.CollectCompiler = NewCollectCompiler(ctx)
+	ctx.WaitCompiler = NewWaitCompiler(ctx)
+
+	return ctx
 }

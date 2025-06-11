@@ -23,27 +23,6 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
-// EmitJump emits a jump opcode.
-func (e *Emitter) EmitJump(op vm.Opcode, pos int) int {
-	e.EmitA(op, vm.Operand(pos))
-
-	return len(e.instructions) - 1
-}
-
-// EmitJumpAB emits a jump opcode with a state and an argument.
-func (e *Emitter) EmitJumpAB(op vm.Opcode, state, cond vm.Operand, pos int) int {
-	e.EmitABC(op, state, cond, vm.Operand(pos))
-
-	return len(e.instructions) - 1
-}
-
-// EmitJumpc emits a conditional jump opcode.
-func (e *Emitter) EmitJumpc(op vm.Opcode, pos int, reg vm.Operand) int {
-	e.EmitAB(op, vm.Operand(pos), reg)
-
-	return len(e.instructions) - 1
-}
-
 // PatchSwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
 func (e *Emitter) PatchSwapAB(pos int, op vm.Opcode, dst, src1 vm.Operand) {
 	e.instructions[pos] = vm.Instruction{

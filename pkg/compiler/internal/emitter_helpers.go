@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
@@ -51,14 +50,38 @@ func (e *Emitter) EmitClose(reg vm.Operand) {
 	e.EmitA(vm.OpClose, reg)
 }
 
-func (e *Emitter) EmitLoadConst(dst vm.Operand, val runtime.Value, symbols *SymbolTable) {
-	e.EmitAB(vm.OpLoadConst, dst, symbols.AddConstant(val))
+func (e *Emitter) EmitLoadConst(dst vm.Operand, constant vm.Operand) {
+	e.EmitAB(vm.OpLoadConst, dst, constant)
+}
+
+func (e *Emitter) EmitLoadGlobal(dst, constant vm.Operand) {
+	e.EmitAB(vm.OpLoadGlobal, dst, constant)
+}
+
+func (e *Emitter) EmitLoadParam(constant vm.Operand) {
+	e.EmitA(vm.OpLoadParam, constant)
+}
+
+func (e *Emitter) EmitBoolean(dst vm.Operand, value bool) {
+	if value {
+		e.EmitAB(vm.OpLoadBool, dst, 1)
+	} else {
+		e.EmitAB(vm.OpLoadBool, dst, 0)
+	}
 }
 
 // ─── Data Structures ──────────────────────────────────────────────────────
 
+func (e *Emitter) EmitEmptyList(dst vm.Operand) {
+	e.EmitA(vm.OpList, dst)
+}
+
 func (e *Emitter) EmitList(dst vm.Operand, seq RegisterSequence) {
 	e.EmitAs(vm.OpList, dst, seq)
+}
+
+func (e *Emitter) EmitEmptyMap(dst vm.Operand) {
+	e.EmitA(vm.OpMap, dst)
 }
 
 func (e *Emitter) EmitMap(dst vm.Operand, seq RegisterSequence) {
@@ -128,6 +151,34 @@ func (e *Emitter) EmitLte(dst, a, b vm.Operand) {
 }
 
 // ─── Control Flow ────────────────────────────────────────────────────────
+
+func (e *Emitter) EmitJump(pos int) int {
+	e.EmitA(vm.OpJump, vm.Operand(pos))
+
+	return len(e.instructions) - 1
+}
+
+// EmitJumpAB emits a jump opcode with a state and an argument.
+func (e *Emitter) EmitJumpAB(op vm.Opcode, state, cond vm.Operand, pos int) int {
+	e.EmitABC(op, state, cond, vm.Operand(pos))
+
+	return len(e.instructions) - 1
+}
+
+// EmitJumpc emits a conditional jump opcode.
+func (e *Emitter) EmitJumpc(op vm.Opcode, pos int, reg vm.Operand) int {
+	e.EmitAB(op, vm.Operand(pos), reg)
+
+	return len(e.instructions) - 1
+}
+
+func (e *Emitter) EmitJumpIfFalse(cond vm.Operand, jumpTarget int) int {
+	return e.EmitJumpIf(cond, false, jumpTarget)
+}
+
+func (e *Emitter) EmitJumpIfTrue(cond vm.Operand, jumpTarget int) int {
+	return e.EmitJumpIf(cond, true, jumpTarget)
+}
 
 func (e *Emitter) EmitJumpIf(cond vm.Operand, isTrue bool, jumpTarget int) int {
 	if isTrue {

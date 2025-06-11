@@ -1,26 +1,20 @@
 package internal
 
 import (
-	"regexp"
-	"strconv"
-	"strings"
-
 	"github.com/MontFerret/ferret/pkg/parser/fql"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
-
-	"github.com/antlr4-go/antlr/v4"
 )
 
 type Visitor struct {
 	*fql.BaseFqlParserVisitor
+	ctx *FuncContext
+
 	Err        error
 	Src        string
 	Emitter    *Emitter
 	Registers  *RegisterAllocator
 	Symbols    *SymbolTable
 	Loops      *LoopTable
-	CatchTable []vm.Catch
+	CatchTable *CatchStack
 }
 
 const (
@@ -28,25 +22,19 @@ const (
 	undefinedVariable    = -1
 	ignorePseudoVariable = "_"
 	pseudoVariable       = "CURRENT"
-	forScope             = "for"
-)
-
-// Runtime functions
-const (
-	runtimeTypename = "TYPENAME"
-	runtimeLength   = "LENGTH"
-	runtimeWait     = "WAIT"
 )
 
 func NewVisitor(src string) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
+	v.ctx = NewFuncContext()
+
 	v.Src = src
-	v.Registers = NewRegisterAllocator()
-	v.Symbols = NewSymbolTable(v.Registers)
-	v.Loops = NewLoopTable(v.Registers)
-	v.Emitter = NewEmitter()
-	v.CatchTable = make([]vm.Catch, 0)
+	v.Registers = v.ctx.Registers
+	v.Symbols = v.ctx.Symbols
+	v.Loops = v.ctx.Loops
+	v.Emitter = v.ctx.Emitter
+	v.CatchTable = v.ctx.CatchTable
 
 	return v
 }
@@ -62,1689 +50,495 @@ func (v *Visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
 }
 
 func (v *Visitor) VisitBody(ctx *fql.BodyContext) interface{} {
-	for _, statement := range ctx.AllBodyStatement() {
-		statement.Accept(v)
-	}
-
-	ctx.BodyExpression().Accept(v)
+	v.ctx.StmtCompiler.Compile(ctx)
 
 	return nil
-}
-
-func (v *Visitor) VisitBodyStatement(ctx *fql.BodyStatementContext) interface{} {
-	if c := ctx.VariableDeclaration(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.WaitForExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitBodyExpression(ctx *fql.BodyExpressionContext) interface{} {
-	if c := ctx.ForExpression(); c != nil {
-		out, ok := c.Accept(v).(vm.Operand)
-
-		if ok && out != vm.NoopOperand {
-			v.Emitter.EmitAB(vm.OpMove, vm.NoopOperand, out)
-		}
-
-		v.Emitter.Emit(vm.OpReturn)
-
-		return out
-	} else if c := ctx.ReturnExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
 }
 
 func (v *Visitor) VisitHead(_ *fql.HeadContext) interface{} {
 	return nil
 }
 
-func (v *Visitor) VisitWaitForExpression(ctx *fql.WaitForExpressionContext) interface{} {
-	if ctx.Event() != nil {
-		return v.visitWaitForEventExpression(ctx)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) visitWaitForEventExpression(ctx *fql.WaitForExpressionContext) interface{} {
-	v.Symbols.EnterScope()
-
-	srcReg := ctx.WaitForEventSource().Accept(v).(vm.Operand)
-	eventReg := ctx.WaitForEventName().Accept(v).(vm.Operand)
-
-	var optsReg vm.Operand
-
-	if opts := ctx.OptionsClause(); opts != nil {
-		optsReg = opts.Accept(v).(vm.Operand)
-	}
-
-	var timeoutReg vm.Operand
-
-	if timeout := ctx.TimeoutClause(); timeout != nil {
-		timeoutReg = timeout.Accept(v).(vm.Operand)
-	}
-
-	streamReg := v.Registers.Allocate(Temp)
-
-	// We move the source object to the stream register in order to re-use it in OpStream
-	v.Emitter.EmitAB(vm.OpMove, streamReg, srcReg)
-	v.Emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
-	v.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
-
-	var valReg vm.Operand
-
-	// Now we start iterating over the stream
-	jumpToNext := v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, streamReg)
-
-	if filter := ctx.FilterClause(); filter != nil {
-		valReg = v.Symbols.DeclareLocal(pseudoVariable)
-		v.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
-
-		filter.Expression().Accept(v)
-
-		v.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpToNext, valReg)
-
-		// TODO: Do we need to use timeout here too? We can really get stuck in the loop if no event satisfies the filter
-	}
-
-	// Clean up the stream
-	v.Emitter.EmitA(vm.OpClose, streamReg)
-
-	v.Symbols.ExitScope()
-
-	return nil
-}
-
-func (v *Visitor) VisitWaitForEventName(ctx *fql.WaitForEventNameContext) interface{} {
-	if c := ctx.StringLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Param(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.MemberExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitWaitForEventSource(ctx *fql.WaitForEventSourceContext) interface{} {
-	if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.MemberExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitTimeoutClauseContext(ctx *fql.TimeoutClauseContext) interface{} {
-	if c := ctx.IntegerLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Param(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.MemberExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.FunctionCall(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitOptionsClause(ctx *fql.OptionsClauseContext) interface{} {
-	if c := ctx.ObjectLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitForExpression(ctx *fql.ForExpressionContext) interface{} {
-	v.Symbols.EnterScope()
-
-	var distinct bool
-	var returnRuleCtx antlr.RuleContext
-	returnCtx := ctx.ForExpressionReturn()
-
-	if c := returnCtx.ReturnExpression(); c != nil {
-		returnRuleCtx = c
-		distinct = c.Distinct() != nil
-	} else if c := returnCtx.ForExpression(); c != nil {
-		returnRuleCtx = c
-	}
-
-	loop := v.Loops.NewLoop(v.loopType(ctx), v.loopKind(ctx), distinct)
-
-	if loop.Kind == ForLoop {
-		loop.Src = ctx.ForExpressionSource().Accept(v).(vm.Operand)
-
-		if val := ctx.GetValueVariable(); val != nil {
-			if txt := val.GetText(); txt != "" && txt != ignorePseudoVariable {
-				loop.BindValueVar(txt, v.Symbols)
-			}
-		}
-
-		if ctr := ctx.GetCounterVariable(); ctr != nil {
-			if txt := ctr.GetText(); txt != "" && txt != ignorePseudoVariable {
-				loop.BindKeyVar(txt, v.Symbols)
-			}
-		}
-	} else {
-		//srcExpr := ctx.Expression()
-		//
-		//// Create initial value for the loop counter
-		//v.Emitter.EmitA(runtime.OpWhileLoopPrep, counterReg)
-		//beforeExp := v.Emitter.Size()
-		//// Loop data source to iterate over
-		//cond := srcExpr.Accept(v).(runtime.Operand)
-		//jumpOffset = v.Emitter.Size() - beforeExp
-		//
-		//// jumpPlaceholder is a placeholder for the exit jump position
-		//loop.Jump = v.Emitter.EmitJumpAB(runtime.OpWhileLoopNext, counterReg, cond, jumpPlaceholder)
-		//
-		//counterVar := ctx.GetCounterVariable().GetText()
-		//
-		//// declare counter variable
-		//valReg := v.Symbols.DefineVariable(counterVar)
-		//v.Emitter.EmitAB(runtime.OpWhileLoopValue, valReg, counterReg)
-	}
-
-	v.emitLoopBegin(loop)
-
-	// body
-	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
-		for _, b := range body {
-			b.Accept(v)
-		}
-	}
-
-	loop = v.Loops.Current()
-
-	// RETURN
-	if loop.Type != PassThroughLoop {
-		c := returnRuleCtx.(*fql.ReturnExpressionContext)
-		expReg := c.Expression().Accept(v).(vm.Operand)
-
-		v.Emitter.EmitAB(vm.OpPush, loop.Result, expReg)
-	} else if returnRuleCtx != nil {
-		returnRuleCtx.Accept(v)
-	}
-
-	res := v.emitLoopEnd(loop)
-
-	v.Loops.Pop()
-	v.Symbols.ExitScope()
-
-	return res
-}
-
-func (v *Visitor) VisitForExpressionSource(ctx *fql.ForExpressionSourceContext) interface{} {
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.MemberExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Param(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.RangeOperator(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.ArrayLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.ObjectLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitForExpressionBody(ctx *fql.ForExpressionBodyContext) interface{} {
-	if c := ctx.ForExpressionClause(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.ForExpressionStatement(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitForExpressionClause(ctx *fql.ForExpressionClauseContext) interface{} {
-	if c := ctx.LimitClause(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.FilterClause(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.SortClause(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.CollectClause(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitFilterClause(ctx *fql.FilterClauseContext) interface{} {
-	src1 := ctx.Expression().Accept(v).(vm.Operand)
-	v.Emitter.EmitJumpc(vm.OpJumpIfFalse, v.Loops.Current().Jump, src1)
-
-	return nil
-}
-
-func (v *Visitor) VisitLimitClause(ctx *fql.LimitClauseContext) interface{} {
-	clauses := ctx.AllLimitClauseValue()
-
-	if len(clauses) == 1 {
-		return v.visitLimit(clauses[0].Accept(v).(vm.Operand))
-	} else {
-		v.visitOffset(clauses[0].Accept(v).(vm.Operand))
-		v.visitLimit(clauses[1].Accept(v).(vm.Operand))
-	}
-
-	return nil
-}
-
-func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
-	// TODO: Undefine original loop variables
-	loop := v.Loops.Current()
-
-	// We collect the aggregation keys
-	// And wrap each loop element by a KeyValuePair
-	// Where a key is either a single value or a list of values
-	// These KeyValuePairs are then added to the dataset
-	var kvKeyReg, kvValReg vm.Operand
-	var groupSelectors []fql.ICollectSelectorContext
-	var isGrouping bool
-	grouping := ctx.CollectGrouping()
-	counter := ctx.CollectCounter()
-	aggregator := ctx.CollectAggregator()
-
-	isCollecting := grouping != nil || counter != nil
-
-	if isCollecting {
-		if grouping != nil {
-			isGrouping = true
-			groupSelectors = grouping.AllCollectSelector()
-			kvKeyReg = v.emitCollectGroupKeySelectors(groupSelectors)
-		}
-
-		kvValReg = v.Registers.Allocate(Temp)
-		v.emitIterValue(loop, kvValReg)
-
-		var projectionVariableName string
-		collectorType := CollectorTypeKey
-
-		// If we have a collect group variable, we need to project it
-		if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
-			// Projection can be either a default projection (identifier) or a custom projection (selector expression)
-			if identifier := groupVar.Identifier(); identifier != nil {
-				projectionVariableName = v.emitCollectDefaultGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
-			} else if selector := groupVar.CollectSelector(); selector != nil {
-				projectionVariableName = v.emitCollectCustomGroupProjection(loop, kvValReg, selector)
-			}
-
-			collectorType = CollectorTypeKeyGroup
-		} else if counter != nil {
-			projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, counter)
-
-			if isGrouping {
-				collectorType = CollectorTypeKeyCounter
-			} else {
-				collectorType = CollectorTypeCounter
-			}
-		}
-
-		// If we use aggregators, we need to collect group items by key
-		if aggregator != nil && collectorType != CollectorTypeKeyGroup {
-			// We need to patch the loop result to be a collector
-			collectorType = CollectorTypeKeyGroup
-		}
-
-		// We replace DataSet initialization with Collector initialization
-		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(collectorType))
-		v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
-		v.emitIterJumpOrClose(loop)
-
-		// Replace the source with the collector
-		v.emitPatchLoop(loop)
-
-		// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-		if projectionVariableName != "" {
-			// Now we need to expand group variables from the dataset
-			v.emitIterKey(loop, kvValReg)
-			v.emitIterValue(loop, v.Symbols.DeclareLocal(projectionVariableName))
-		} else {
-			v.emitIterKey(loop, kvKeyReg)
-			v.emitIterValue(loop, kvValReg)
-		}
-	}
-
-	// Aggregation loop
-	if aggregator != nil {
-		v.emitCollectAggregator(aggregator, loop, isCollecting)
-	}
-
-	// TODO: Reuse the Registers
-	v.Registers.Free(loop.Value)
-	v.Registers.Free(loop.Key)
-	loop.Value = vm.NoopOperand
-	loop.Key = vm.NoopOperand
-
-	if isCollecting && isGrouping {
-		// Now we are defining new variables for the group selectors
-		v.emitCollectGroupKeySelectorVariables(groupSelectors, kvKeyReg, kvValReg, aggregator != nil)
-	}
-
-	return nil
-}
-
-func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentLoop *Loop, isCollected bool) {
-	var accums []vm.Operand
-	var loop *Loop
-	selectors := c.AllCollectAggregateSelector()
-
-	// If data is collected, we need to allocate a temporary accumulators to store aggregation results
-	if isCollected {
-		// First of all, we allocate registers for accumulators
-		accums = make([]vm.Operand, len(selectors))
-
-		// We need to allocate a register for each accumulator
-		for i := 0; i < len(selectors); i++ {
-			reg := v.Registers.Allocate(Temp)
-			accums[i] = reg
-			// TODO: Select persistent List type, we do not know how many items we will have
-			v.Emitter.EmitA(vm.OpList, reg)
-		}
-
-		loop = v.Loops.NewLoop(TemporalLoop, ForLoop, false)
-
-		// Now we iterate over the grouped items
-		v.emitIterValue(parentLoop, loop.Iterator)
-		// We just re-use the same register
-		v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Iterator)
-		// jumpPlaceholder is a placeholder for the exit aggrIterJump position
-		loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
-		loop.ValueName = parentLoop.ValueName
-	} else {
-		loop = parentLoop
-		// Otherwise, we create a custom collector for aggregators
-		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(CollectorTypeKeyGroup))
-	}
-
-	// Store upper scope for aggregators
-	//mainScope := v.Symbols.Scope()
-	// Nested scope for aggregators
-	v.Symbols.EnterScope()
-
-	aggrIterVal := v.Symbols.DeclareLocal(loop.ValueName)
-	v.Emitter.EmitAB(vm.OpIterValue, aggrIterVal, loop.Iterator)
-
-	// Now we add value selectors to the accumulators
-	for i := 0; i < len(selectors); i++ {
-		selector := selectors[i]
-		fcx := selector.FunctionCallExpression()
-		args := fcx.FunctionCall().ArgumentList().AllExpression()
-
-		if len(args) == 0 {
-			// TODO: Better error handling
-			panic("No arguments provided for the function call in the aggregate selector")
-		}
-
-		if len(args) > 1 {
-			// TODO: Better error handling
-			panic("Too many arguments")
-		}
-
-		resultReg := args[0].Accept(v).(vm.Operand)
-
-		if isCollected {
-			v.Emitter.EmitAB(vm.OpPush, accums[i], resultReg)
-		} else {
-			aggrKeyName := selector.Identifier().GetText()
-			aggrKeyReg := v.loadConstant(runtime.String(aggrKeyName))
-			v.Emitter.EmitABC(vm.OpPushKV, loop.Result, aggrKeyReg, resultReg)
-			v.Registers.Free(aggrKeyReg)
-		}
-
-		v.Registers.Free(resultReg)
-	}
-
-	// Now we can iterate over the grouped items
-	v.emitIterJumpOrClose(loop)
-
-	// Now we can iterate over the selectors and execute the aggregation functions by passing the accumulators
-	// And define variables for each accumulator result
-	if isCollected {
-		for i, selector := range selectors {
-			fcx := selector.FunctionCallExpression()
-			// We won't make any checks here, as we already did it before
-			selectorVarName := selector.Identifier().GetText()
-
-			// We execute the function call with the accumulator as an argument
-			accum := accums[i]
-			result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, RegisterSequence{accum})
-
-			// We define the variable for the selector result in the upper scope
-			// Since this temporary scope is only for aggregators and will be closed after the aggregation
-			varReg := v.Symbols.DeclareLocal(selectorVarName)
-			v.Emitter.EmitAB(vm.OpMove, varReg, result)
-			v.Registers.Free(result)
-		}
-
-		v.Loops.Pop()
-		// Now close the aggregators scope
-		v.Symbols.ExitScope()
-	} else {
-		// Now close the aggregators scope
-		v.Symbols.ExitScope()
-
-		parentLoop.ValueName = ""
-		parentLoop.KeyName = ""
-
-		// Since we we in the middle of the loop, we need to patch the loop result
-		// Now we just create a range with 1 item to push the aggregated values to the dataset
-		// Replace source with sorted array
-		zero := v.loadConstant(runtime.Int(0))
-		one := v.loadConstant(runtime.Int(1))
-		aggregator := v.Registers.Allocate(Temp)
-		v.Emitter.EmitAB(vm.OpMove, aggregator, loop.Result)
-		v.Symbols.ExitScope()
-
-		v.Symbols.EnterScope()
-
-		// Create new for loop
-		v.Emitter.EmitABC(vm.OpRange, loop.Src, zero, one)
-		v.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
-
-		// In case of non-collected aggregators, we just iterate over the grouped items
-		// Retrieve the grouped values by key, execute aggregation funcs and assign variable names to the results
-		for _, selector := range selectors {
-			fcx := selector.FunctionCallExpression()
-			// We won't make any checks here, as we already did it before
-			selectorVarName := selector.Identifier().GetText()
-
-			// We execute the function call with the accumulator as an argument
-			key := v.loadConstant(runtime.String(selectorVarName))
-			value := v.Registers.Allocate(Temp)
-			v.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
-
-			result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, RegisterSequence{value})
-
-			// We define the variable for the selector result in the upper scope
-			// Since this temporary scope is only for aggregators and will be closed after the aggregation
-			varReg := v.Symbols.DeclareLocal(selectorVarName)
-			v.Emitter.EmitAB(vm.OpMove, varReg, result)
-			v.Registers.Free(result)
-			v.Registers.Free(value)
-			v.Registers.Free(key)
-		}
-
-		v.Registers.Free(aggregator)
-	}
-
-	// Free the registers for accumulators
-	for _, reg := range accums {
-		v.Registers.Free(reg)
-	}
-
-	// Free the register for the iterator value
-	v.Registers.Free(aggrIterVal)
-}
-
-func (v *Visitor) emitCollectGroupKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
-	if len(selectors) == 0 {
-		return vm.NoopOperand
-	}
-
-	var kvKeyReg vm.Operand
-
-	if len(selectors) > 1 {
-		// We create a sequence of Registers for the clauses
-		// To pack them into an array
-		selectorRegs := v.Registers.AllocateSequence(len(selectors))
-
-		for i, selector := range selectors {
-			reg := selector.Accept(v).(vm.Operand)
-			v.Emitter.EmitAB(vm.OpMove, selectorRegs[i], reg)
-			// Free the register after moving its value to the sequence register
-			v.Registers.Free(reg)
-		}
-
-		kvKeyReg = v.Registers.Allocate(Temp)
-		v.Emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
-		v.Registers.FreeSequence(selectorRegs)
-	} else {
-		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
-	}
-
-	return kvKeyReg
-}
-
-func (v *Visitor) emitCollectGroupKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvKeyReg, kvValReg vm.Operand, isAggregation bool) {
-	if len(selectors) > 1 {
-		variables := make([]vm.Operand, len(selectors))
-
-		for i, selector := range selectors {
-			name := selector.Identifier().GetText()
-
-			if variables[i] == vm.NoopOperand {
-				variables[i] = v.Symbols.DeclareLocal(name)
-			}
-
-			reg := kvValReg
-
-			if isAggregation {
-				reg = kvKeyReg
-			}
-
-			v.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, v.loadConstant(runtime.Int(i)))
-		}
-
-		// Free the register after moving its value to the variable
-		for _, reg := range variables {
-			v.Registers.Free(reg)
-		}
-	} else {
-		// Get the variable name
-		name := selectors[0].Identifier().GetText()
-		// Define a variable for each selector
-		varReg := v.Symbols.DeclareLocal(name)
-
-		reg := kvValReg
-
-		if isAggregation {
-			reg = kvKeyReg
-		}
-
-		// If we have a single selector, we can just move the value
-		v.Emitter.EmitAB(vm.OpMove, varReg, reg)
-	}
-}
-
-func (v *Visitor) emitCollectDefaultGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
-	if keeper == nil {
-		seq := v.Registers.AllocateSequence(2) // Key and Value for Map
-
-		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
-		// We will keep it for now for backward compatibility.
-		v.loadConstantTo(runtime.String(loop.ValueName), seq[0]) // Map key
-		v.Emitter.EmitAB(vm.OpMove, seq[1], kvValReg)            // Map value
-		v.Emitter.EmitAs(vm.OpMap, kvValReg, seq)
-
-		v.Registers.FreeSequence(seq)
-	} else {
-		variables := keeper.AllIdentifier()
-		seq := v.Registers.AllocateSequence(len(variables) * 2)
-
-		for i, j := 0, 0; i < len(variables); i, j = i+1, j+2 {
-			varName := variables[i].GetText()
-			v.loadConstantTo(runtime.String(varName), seq[j])
-
-			variable, _, found := v.Symbols.Resolve(varName)
-
-			if !found {
-				panic("variable not found: " + varName)
-			}
-
-			v.Emitter.EmitAB(vm.OpMove, seq[j+1], variable)
-		}
-
-		v.Emitter.EmitAs(vm.OpMap, kvValReg, seq)
-		v.Registers.FreeSequence(seq)
-	}
-
-	return identifier.GetText()
-}
-
-func (v *Visitor) emitCollectCustomGroupProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
-	selectorReg := selector.Expression().Accept(v).(vm.Operand)
-	v.Emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
-	v.Registers.Free(selectorReg)
-
-	return selector.Identifier().GetText()
-}
-
-func (v *Visitor) emitCollectCountProjection(_ *Loop, _ vm.Operand, selector fql.ICollectCounterContext) string {
-	return selector.Identifier().GetText()
-}
-
-func (v *Visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
-	if c := ctx.Expression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitSortClause(ctx *fql.SortClauseContext) interface{} {
-	loop := v.Loops.Current()
-
-	// We collect the sorting conditions (keys
-	// And wrap each loop element by a KeyValuePair
-	// Where a key is either a single value or a list of values
-	// These KeyValuePairs are then added to the dataset
-	kvKeyReg := v.Registers.Allocate(Temp)
-	clauses := ctx.AllSortClauseExpression()
-	var directions []runtime.SortDirection
-	isSortMany := len(clauses) > 1
-
-	if isSortMany {
-		clausesRegs := make([]vm.Operand, len(clauses))
-		directions = make([]runtime.SortDirection, len(clauses))
-		// We create a sequence of Registers for the clauses
-		// To pack them into an array
-		keyRegs := v.Registers.AllocateSequence(len(clauses))
-
-		for i, clause := range clauses {
-			clauseReg := clause.Accept(v).(vm.Operand)
-			v.Emitter.EmitAB(vm.OpMove, keyRegs[i], clauseReg)
-			clausesRegs[i] = keyRegs[i]
-			directions[i] = v.sortDirection(clause.SortDirection())
-			// TODO: Free Registers
-		}
-
-		arrReg := v.Registers.Allocate(Temp)
-		v.Emitter.EmitAs(vm.OpList, arrReg, keyRegs)
-		v.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free Registers
-	} else {
-		clausesReg := clauses[0].Accept(v).(vm.Operand)
-		v.Emitter.EmitAB(vm.OpMove, kvKeyReg, clausesReg)
-	}
-
-	var kvValReg vm.Operand
-
-	// In case the value is not used in the loop body, and only key is used
-	if loop.ValueName != "" {
-		kvValReg = loop.Value
-	} else {
-		// If so, we need to load it from the iterator
-		kvValReg = v.Registers.Allocate(Temp)
-		v.emitIterValue(loop, kvValReg)
-	}
-
-	if isSortMany {
-		encoded := runtime.EncodeSortDirections(directions)
-		count := len(clauses)
-
-		v.Emitter.PatchSwapAxy(loop.ResultPos, vm.OpDataSetMultiSorter, loop.Result, encoded, count)
-	} else {
-		dir := v.sortDirection(clauses[0].SortDirection())
-		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetSorter, loop.Result, int(dir))
-	}
-
-	v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
-	v.emitIterJumpOrClose(loop)
-
-	// Replace source with the Sorter
-	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
-
-	// Create a new loop
-	v.emitLoopBegin(loop)
-
-	return nil
-}
-
-func (v *Visitor) sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
-	if dir == nil {
-		return runtime.SortDirectionAsc
-	}
-
-	if strings.ToLower(dir.GetText()) == "desc" {
-		return runtime.SortDirectionDesc
-	}
-
-	return runtime.SortDirectionAsc
-}
-
-func (v *Visitor) VisitSortClauseExpression(ctx *fql.SortClauseExpressionContext) interface{} {
-	return ctx.Expression().Accept(v).(vm.Operand)
-}
-
-func (v *Visitor) visitOffset(src1 vm.Operand) interface{} {
-	state := v.Registers.Allocate(State)
-	v.Emitter.EmitABx(vm.OpIterSkip, state, src1, v.Loops.Current().Jump)
-
-	return state
-}
-
-func (v *Visitor) visitLimit(src1 vm.Operand) interface{} {
-	state := v.Registers.Allocate(State)
-	v.Emitter.EmitABx(vm.OpIterLimit, state, src1, v.Loops.Current().Jump)
-
-	return state
-}
-
-func (v *Visitor) VisitLimitClauseValue(ctx *fql.LimitClauseValueContext) interface{} {
-	if c := ctx.IntegerLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Param(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.MemberExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
-	if c := ctx.VariableDeclaration(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitFunctionCallExpression(ctx *fql.FunctionCallExpressionContext) interface{} {
-	return v.visitFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext), ctx.ErrorOperator() != nil)
-}
-
-func (v *Visitor) VisitFunctionCall(ctx *fql.FunctionCallContext) interface{} {
-	return v.visitFunctionCall(ctx, false)
-}
-
-func (v *Visitor) VisitMemberExpression(ctx *fql.MemberExpressionContext) interface{} {
-	mes := ctx.MemberExpressionSource().(*fql.MemberExpressionSourceContext)
-	segments := ctx.AllMemberExpressionPath()
-
-	var mesOut interface{}
-
-	if c := mes.Variable(); c != nil {
-		mesOut = c.Accept(v)
-	} else if c := mes.Param(); c != nil {
-		mesOut = c.Accept(v)
-	} else if c := mes.ObjectLiteral(); c != nil {
-		mesOut = c.Accept(v)
-	} else if c := mes.ArrayLiteral(); c != nil {
-		mesOut = c.Accept(v)
-	} else if c := mes.FunctionCall(); c != nil {
-		// FOO()?.bar
-		segment := segments[0].(*fql.MemberExpressionPathContext)
-		mesOut = v.visitFunctionCall(c.(*fql.FunctionCallContext), segment.ErrorOperator() != nil)
-	}
-
-	var dst vm.Operand
-	src1 := mesOut.(vm.Operand)
-
-	for _, segment := range segments {
-		var out2 interface{}
-		p := segment.(*fql.MemberExpressionPathContext)
-
-		if c := p.PropertyName(); c != nil {
-			out2 = c.Accept(v)
-		} else if c := p.ComputedPropertyName(); c != nil {
-			out2 = c.Accept(v)
-		}
-
-		src2 := out2.(vm.Operand)
-		dst = v.Registers.Allocate(Temp)
-
-		if p.ErrorOperator() != nil {
-			v.Emitter.EmitABC(vm.OpLoadPropertyOptional, dst, src1, src2)
-		} else {
-			v.Emitter.EmitABC(vm.OpLoadProperty, dst, src1, src2)
-		}
-
-		src1 = dst
-	}
-
-	return dst
-}
-
-func (v *Visitor) VisitRangeOperator(ctx *fql.RangeOperatorContext) interface{} {
-	dst := v.Registers.Allocate(Temp)
-	start := ctx.GetLeft().Accept(v).(vm.Operand)
-	end := ctx.GetRight().Accept(v).(vm.Operand)
-
-	v.Emitter.EmitABC(vm.OpRange, dst, start, end)
-
-	return dst
-}
-
-func (v *Visitor) VisitRangeOperand(ctx *fql.RangeOperandContext) interface{} {
-	if c := ctx.IntegerLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	}
-
-	if c := ctx.Param(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitParam(ctx *fql.ParamContext) interface{} {
-	name := ctx.Identifier().GetText()
-	reg := v.Registers.Allocate(Temp)
-	v.Emitter.EmitAB(vm.OpLoadParam, reg, v.Symbols.BindParam(name))
-
-	return reg
-}
-
-func (v *Visitor) VisitVariableDeclaration(ctx *fql.VariableDeclarationContext) interface{} {
-	name := ignorePseudoVariable
-
-	if id := ctx.Identifier(); id != nil {
-		name = id.GetText()
-	} else if reserved := ctx.SafeReservedWord(); reserved != nil {
-		name = reserved.GetText()
-	}
-
-	src := ctx.Expression().Accept(v).(vm.Operand)
-
-	if name != ignorePseudoVariable {
-		var dest vm.Operand
-
-		if src.IsConstant() {
-			dest = v.Symbols.DeclareGlobal(name)
-			tmp := v.Registers.Allocate(Temp)
-			v.Emitter.EmitAB(vm.OpLoadConst, tmp, src)
-			v.Emitter.EmitAB(vm.OpStoreGlobal, dest, tmp)
-		} else if v.Symbols.Scope() == 0 {
-			dest = v.Symbols.DeclareGlobal(name)
-			v.Emitter.EmitAB(vm.OpStoreGlobal, dest, src)
-		} else {
-			dest = v.Symbols.DeclareLocal(name)
-			v.Emitter.EmitAB(vm.OpMove, dest, src)
-		}
-
-		return dest
-	}
-
-	return vm.NoopOperand
-}
-
-func (v *Visitor) VisitVariable(ctx *fql.VariableContext) interface{} {
-	// Just return the register / constant index
-	op, _, _ := v.Symbols.Resolve(ctx.GetText())
-
-	if op.IsRegister() {
-		return op
-	}
-
-	reg := v.Registers.Allocate(Temp)
-	v.Emitter.EmitAB(vm.OpLoadGlobal, reg, op)
-
-	return reg
-}
-
-func (v *Visitor) VisitArrayLiteral(ctx *fql.ArrayLiteralContext) interface{} {
-	// Allocate destination register for the array
-	destReg := v.Registers.Allocate(Temp)
-
-	if list := ctx.ArgumentList(); list != nil {
-		// Get all array element expressions
-		exps := list.(*fql.ArgumentListContext).AllExpression()
-		size := len(exps)
-
-		if size > 0 {
-			// Allocate seq for array elements
-			seq := v.Registers.AllocateSequence(size)
-
-			// Evaluate each element into seq Registers
-			for i, exp := range exps {
-				// Compile expression and move to seq register
-				srcReg := exp.Accept(v).(vm.Operand)
-
-				// TODO: Figure out how to remove OpMove and use Registers returned from each expression
-				v.Emitter.EmitAB(vm.OpMove, seq[i], srcReg)
-
-				// Free source register if temporary
-				if srcReg.IsRegister() {
-					//v.Registers.Free(srcReg)
-				}
-			}
-
-			// Initialize an array
-			v.Emitter.EmitAs(vm.OpList, destReg, seq)
-
-			// Free seq Registers
-			//v.Registers.FreeSequence(seq)
-
-			return destReg
-		}
-	}
-
-	// Empty array
-	v.Emitter.EmitA(vm.OpList, destReg)
-
-	return destReg
-}
-
-func (v *Visitor) VisitObjectLiteral(ctx *fql.ObjectLiteralContext) interface{} {
-	dst := v.Registers.Allocate(Temp)
-	assignments := ctx.AllPropertyAssignment()
-	size := len(assignments)
-
-	if size == 0 {
-		v.Emitter.EmitA(vm.OpMap, dst)
-
-		return dst
-	}
-
-	seq := v.Registers.AllocateSequence(len(assignments) * 2)
-
-	for i := 0; i < size; i++ {
-		var propOp vm.Operand
-		var valOp vm.Operand
-		pac := assignments[i].(*fql.PropertyAssignmentContext)
-
-		if prop, ok := pac.PropertyName().(*fql.PropertyNameContext); ok {
-			propOp = prop.Accept(v).(vm.Operand)
-			valOp = pac.Expression().Accept(v).(vm.Operand)
-		} else if comProp, ok := pac.ComputedPropertyName().(*fql.ComputedPropertyNameContext); ok {
-			propOp = comProp.Accept(v).(vm.Operand)
-			valOp = pac.Expression().Accept(v).(vm.Operand)
-		} else if variable := pac.Variable(); variable != nil {
-			propOp = v.loadConstant(runtime.NewString(variable.GetText()))
-			valOp = variable.Accept(v).(vm.Operand)
-		}
-
-		regIndex := i * 2
-
-		v.Emitter.EmitAB(vm.OpMove, seq[regIndex], propOp)
-		v.Emitter.EmitAB(vm.OpMove, seq[regIndex+1], valOp)
-
-		// Free source register if temporary
-		if propOp.IsRegister() {
-			//v.Registers.Free(propOp)
-		}
-	}
-
-	v.Emitter.EmitAs(vm.OpMap, dst, seq)
-
-	return dst
-}
-
-func (v *Visitor) VisitPropertyName(ctx *fql.PropertyNameContext) interface{} {
-	if str := ctx.StringLiteral(); str != nil {
-		return str.Accept(v)
-	}
-
-	var name string
-
-	if id := ctx.Identifier(); id != nil {
-		name = id.GetText()
-	} else if word := ctx.SafeReservedWord(); word != nil {
-		name = word.GetText()
-	} else if word := ctx.UnsafeReservedWord(); word != nil {
-		name = word.GetText()
-	} else {
-		panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-	}
-
-	return v.loadConstant(runtime.NewString(name))
-}
-
-func (v *Visitor) VisitComputedPropertyName(ctx *fql.ComputedPropertyNameContext) interface{} {
-	return ctx.Expression().Accept(v)
-}
-
-func (v *Visitor) VisitStringLiteral(ctx *fql.StringLiteralContext) interface{} {
-	var b strings.Builder
-
-	for _, child := range ctx.GetChildren() {
-		tree := child.(antlr.TerminalNode)
-		sym := tree.GetSymbol()
-		input := sym.GetInputStream()
-
-		if input == nil {
-			continue
-		}
-
-		size := input.Size()
-		// skip quotes
-		start := sym.GetStart() + 1
-		stop := sym.GetStop() - 1
-
-		if stop >= size {
-			stop = size - 1
-		}
-
-		if start < size && stop < size {
-			for i := start; i <= stop; i++ {
-				c := input.GetText(i, i)
-
-				switch c {
-				case "\\":
-					c2 := input.GetText(i, i+1)
-
-					switch c2 {
-					case "\\n":
-						b.WriteString("\n")
-					case "\\t":
-						b.WriteString("\t")
-					default:
-						b.WriteString(c2)
-					}
-
-					i++
-				default:
-					b.WriteString(c)
-				}
-			}
-		}
-	}
-
-	return v.loadConstant(runtime.NewString(b.String()))
-}
-
-func (v *Visitor) VisitIntegerLiteral(ctx *fql.IntegerLiteralContext) interface{} {
-	val, err := strconv.Atoi(ctx.GetText())
-
-	if err != nil {
-		panic(err)
-	}
-
-	reg := v.Registers.Allocate(Temp)
-	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(runtime.NewInt(val)))
-
-	return reg
-}
-
-func (v *Visitor) VisitFloatLiteral(ctx *fql.FloatLiteralContext) interface{} {
-	val, err := strconv.ParseFloat(ctx.GetText(), 64)
-
-	if err != nil {
-		panic(err)
-	}
-
-	reg := v.Registers.Allocate(Temp)
-	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(runtime.NewFloat(val)))
-
-	return reg
-}
-
-func (v *Visitor) VisitBooleanLiteral(ctx *fql.BooleanLiteralContext) interface{} {
-	reg := v.Registers.Allocate(Temp)
-
-	switch strings.ToLower(ctx.GetText()) {
-	case "true":
-		v.Emitter.EmitAB(vm.OpLoadBool, reg, 1)
-	case "false":
-		v.Emitter.EmitAB(vm.OpLoadBool, reg, 0)
-	default:
-		panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-	}
-
-	return reg
-}
-
-func (v *Visitor) VisitNoneLiteral(_ *fql.NoneLiteralContext) interface{} {
-	reg := v.Registers.Allocate(Temp)
-	v.Emitter.EmitA(vm.OpLoadNone, reg)
-
-	return reg
-}
-
-func (v *Visitor) VisitLiteral(ctx *fql.LiteralContext) interface{} {
-	if c := ctx.ArrayLiteral(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.ObjectLiteral(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.StringLiteral(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.IntegerLiteral(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.FloatLiteral(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.BooleanLiteral(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.NoneLiteral(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitReturnExpression(ctx *fql.ReturnExpressionContext) interface{} {
-	valReg := ctx.Expression().Accept(v).(vm.Operand)
-
-	if valReg.IsConstant() {
-		v.Emitter.EmitAB(vm.OpLoadGlobal, vm.NoopOperand, valReg)
-	} else {
-		v.Emitter.EmitAB(vm.OpMove, vm.NoopOperand, valReg)
-	}
-
-	v.Emitter.Emit(vm.OpReturn)
-
-	return vm.NoopOperand
-}
-
-func (v *Visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
-	if uo := ctx.UnaryOperator(); uo != nil {
-		src := ctx.GetRight().Accept(v).(vm.Operand)
-		dst := v.Registers.Allocate(Temp)
-
-		uoc := uo.(*fql.UnaryOperatorContext)
-		var op vm.Opcode
-
-		if uoc.Not() != nil {
-			op = vm.OpNot
-		} else if uoc.Minus() != nil {
-			op = vm.OpFlipNegative
-		} else if uoc.Plus() != nil {
-			op = vm.OpFlipPositive
-		} else {
-			panic(runtime.Error(ErrUnexpectedToken, uoc.GetText()))
-		}
-
-		// We do not overwrite the source register
-		v.Emitter.EmitAB(op, dst, src)
-
-		return dst
-	}
-
-	if op := ctx.LogicalAndOperator(); op != nil {
-		dst := v.Registers.Allocate(Temp)
-		// Execute left expression
-		left := ctx.GetLeft().Accept(v).(vm.Operand)
-		v.Emitter.EmitAB(vm.OpMove, dst, left)
-		// Test if left is false and jump to the end
-		end := v.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, dst)
-		// If left is true, execute right expression
-		right := ctx.GetRight().Accept(v).(vm.Operand)
-		// And move the result to the destination register
-		v.Emitter.EmitAB(vm.OpMove, dst, right)
-		v.Emitter.PatchJumpNext(end)
-
-		return dst
-	}
-
-	if op := ctx.LogicalOrOperator(); op != nil {
-		dst := v.Registers.Allocate(Temp)
-		// Execute left expression
-		left := ctx.GetLeft().Accept(v).(vm.Operand)
-		// Move the result to the destination register
-		v.Emitter.EmitAB(vm.OpMove, dst, left)
-		// Test if left is true and jump to the end
-		end := v.Emitter.EmitJumpc(vm.OpJumpIfTrue, jumpPlaceholder, dst)
-		// If left is false, execute right expression
-		right := ctx.GetRight().Accept(v).(vm.Operand)
-		// And move the result to the destination register
-		v.Emitter.EmitAB(vm.OpMove, dst, right)
-		v.Emitter.PatchJumpNext(end)
-
-		return dst
-	}
-
-	if op := ctx.GetTernaryOperator(); op != nil {
-		dst := v.Registers.Allocate(Temp)
-
-		// Compile condition and put result in dst
-		condReg := ctx.GetCondition().Accept(v).(vm.Operand)
-		v.Emitter.EmitAB(vm.OpMove, dst, condReg)
-
-		// If condition was temporary, free it
-		if condReg.IsRegister() {
-			//v.Registers.Free(condReg)
-		}
-
-		// Jump to 'false' branch if condition is false
-		otherwise := v.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpPlaceholder, dst)
-
-		// True branch
-		if onTrue := ctx.GetOnTrue(); onTrue != nil {
-			trueReg := onTrue.Accept(v).(vm.Operand)
-			v.Emitter.EmitAB(vm.OpMove, dst, trueReg)
-
-			// Free temporary register if needed
-			if trueReg.IsRegister() {
-				//v.Registers.Free(trueReg)
-			}
-		}
-
-		// Jump over false branch
-		end := v.Emitter.EmitJump(vm.OpJump, jumpPlaceholder)
-		v.Emitter.PatchJumpNext(otherwise)
-
-		// False branch
-		if onFalse := ctx.GetOnFalse(); onFalse != nil {
-			falseReg := onFalse.Accept(v).(vm.Operand)
-			v.Emitter.EmitAB(vm.OpMove, dst, falseReg)
-
-			// Free temporary register if needed
-			if falseReg.IsRegister() {
-				//v.Registers.Free(falseReg)
-			}
-		}
-
-		v.Emitter.PatchJumpNext(end)
-
-		return dst
-	}
-
-	if c := ctx.Predicate(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) VisitPredicate(ctx *fql.PredicateContext) interface{} {
-	if c := ctx.ExpressionAtom(); c != nil {
-		startCatch := v.Emitter.Size()
-		reg := c.Accept(v)
-
-		if c.ErrorOperator() != nil {
-			jump := -1
-			endCatch := v.Emitter.Size()
-
-			if c.ForExpression() != nil {
-				// We jump back to finalize the loop before exiting
-				jump = endCatch - 1
-			}
-
-			v.CatchTable = append(v.CatchTable, [3]int{startCatch, endCatch, jump})
-		}
-
-		return reg
-	}
-
-	var opcode vm.Opcode
-	dest := v.Registers.Allocate(Temp)
-	left := ctx.Predicate(0).Accept(v).(vm.Operand)
-	right := ctx.Predicate(1).Accept(v).(vm.Operand)
-
-	if op := ctx.EqualityOperator(); op != nil {
-		switch op.GetText() {
-		case "==":
-			opcode = vm.OpEq
-		case "!=":
-			opcode = vm.OpNeq
-		case ">":
-			opcode = vm.OpGt
-		case ">=":
-			opcode = vm.OpGte
-		case "<":
-			opcode = vm.OpLt
-		case "<=":
-			opcode = vm.OpLte
-		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
-		}
-	} else if op := ctx.ArrayOperator(); op != nil {
-		// TODO: Implement me
-		panic(runtime.Error(runtime.ErrNotImplemented, "array operator"))
-	} else if op := ctx.InOperator(); op != nil {
-		if op.Not() == nil {
-			opcode = vm.OpIn
-		} else {
-			opcode = vm.OpNotIn
-		}
-	} else if op := ctx.LikeOperator(); op != nil {
-		if op.(*fql.LikeOperatorContext).Not() == nil {
-			opcode = vm.OpLike
-		} else {
-			opcode = vm.OpNotLike
-		}
-	}
-
-	v.Emitter.EmitABC(opcode, dest, left, right)
-
-	return dest
-}
-
-func (v *Visitor) VisitExpressionAtom(ctx *fql.ExpressionAtomContext) interface{} {
-	var opcode vm.Opcode
-	var isSet bool
-
-	if op := ctx.MultiplicativeOperator(); op != nil {
-		isSet = true
-
-		switch op.GetText() {
-		case "*":
-			opcode = vm.OpMulti
-		case "/":
-			opcode = vm.OpDiv
-		case "%":
-			opcode = vm.OpMod
-		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
-		}
-	} else if op := ctx.AdditiveOperator(); op != nil {
-		isSet = true
-
-		switch op.GetText() {
-		case "+":
-			opcode = vm.OpAdd
-		case "-":
-			opcode = vm.OpSub
-		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
-		}
-
-	} else if op := ctx.RegexpOperator(); op != nil {
-		isSet = true
-
-		switch op.GetText() {
-		case "=~":
-			opcode = vm.OpRegexpPositive
-		case "!~":
-			opcode = vm.OpRegexpNegative
-		default:
-			panic(runtime.Error(ErrUnexpectedToken, op.GetText()))
-		}
-	}
-
-	if isSet {
-		regLeft := ctx.ExpressionAtom(0).Accept(v).(vm.Operand)
-		regRight := ctx.ExpressionAtom(1).Accept(v).(vm.Operand)
-		dst := v.Registers.Allocate(Temp)
-
-		if opcode == vm.OpRegexpPositive || opcode == vm.OpRegexpNegative {
-			if regRight.IsConstant() {
-				val := v.Symbols.Constant(regRight)
-
-				// Verify that the expression is a valid regular expression
-				regexp.MustCompile(val.String())
-			}
-		}
-
-		v.Emitter.EmitABC(opcode, dst, regLeft, regRight)
-
-		return dst
-	}
-
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.RangeOperator(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.Literal(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.Variable(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.MemberExpression(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.Param(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.ForExpression(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.WaitForExpression(); c != nil {
-		return c.Accept(v)
-	} else if c := ctx.Expression(); c != nil {
-		return c.Accept(v)
-	}
-
-	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (v *Visitor) visitFunctionCall(ctx *fql.FunctionCallContext, protected bool) interface{} {
-	var size int
-	var seq RegisterSequence
-
-	if list := ctx.ArgumentList(); list != nil {
-		// Get all array element expressions
-		exps := list.(*fql.ArgumentListContext).AllExpression()
-		size = len(exps)
-
-		if size > 0 {
-			// Allocate seq for function arguments
-			seq = v.Registers.AllocateSequence(size)
-
-			// Evaluate each element into seq Registers
-			for i, exp := range exps {
-				// Compile expression and move to seq register
-				srcReg := exp.Accept(v).(vm.Operand)
-
-				// TODO: Figure out how to remove OpMove and use Registers returned from each expression
-				v.Emitter.EmitAB(vm.OpMove, seq[i], srcReg)
-
-				// Free source register if temporary
-				if srcReg.IsRegister() {
-					//v.Registers.Free(srcReg)
-				}
-			}
-		}
-	}
-
-	return v.emitFunctionCall(ctx, protected, seq)
-}
-
-func (v *Visitor) emitFunctionCall(ctx fql.IFunctionCallContext, protected bool, seq RegisterSequence) vm.Operand {
-	name := v.functionName(ctx)
-
-	switch name {
-	case runtimeLength:
-		dst := v.Registers.Allocate(Temp)
-
-		if seq == nil || len(seq) != 1 {
-			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
-		}
-
-		v.Emitter.EmitAB(vm.OpLength, dst, seq[0])
-
-		return dst
-	case runtimeTypename:
-		dst := v.Registers.Allocate(Temp)
-
-		if seq == nil || len(seq) != 1 {
-			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
-		}
-
-		v.Emitter.EmitAB(vm.OpType, dst, seq[0])
-
-		return dst
-	case runtimeWait:
-		if len(seq) != 1 {
-			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeWait+": expected 1 argument"))
-		}
-
-		v.Emitter.EmitA(vm.OpSleep, seq[0])
-
-		return seq[0]
-	default:
-		nameAndDest := v.loadConstant(v.functionName(ctx))
-
-		if !protected {
-			v.Emitter.EmitAs(vm.OpCall, nameAndDest, seq)
-		} else {
-			v.Emitter.EmitAs(vm.OpProtectedCall, nameAndDest, seq)
-		}
-
-		return nameAndDest
-	}
-}
-
-func (v *Visitor) functionName(ctx fql.IFunctionCallContext) runtime.String {
-	var name string
-	funcNS := ctx.Namespace()
-
-	if funcNS != nil {
-		name += funcNS.GetText()
-	}
-
-	name += ctx.FunctionName().GetText()
-
-	return runtime.NewString(strings.ToUpper(name))
-}
-
-// emitIterValue emits an instruction to get the value from the iterator
-func (v *Visitor) emitLoopBegin(loop *Loop) {
-	if loop.Allocate {
-		v.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
-		loop.ResultPos = v.Emitter.Size() - 1
-	}
-
-	loop.Iterator = v.Registers.Allocate(State)
-
-	if loop.Kind == ForLoop {
-		v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
-		// jumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
-
-		if loop.Value != vm.NoopOperand {
-			v.Emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
-		}
-
-		if loop.Key != vm.NoopOperand {
-			v.Emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
-		}
-	} else {
-		//counterReg := v.Registers.Allocate(Storage)
-		// TODO: Set JumpOffset here
-	}
-}
-
-// emitIterValue emits an instruction to get the value from the iterator
-func (v *Visitor) emitIterValue(loop *Loop, reg vm.Operand) {
-	v.Emitter.EmitAB(vm.OpIterValue, reg, loop.Iterator)
-}
-
-// emitIterKey emits an instruction to get the key from the iterator
-func (v *Visitor) emitIterKey(loop *Loop, reg vm.Operand) {
-	v.Emitter.EmitAB(vm.OpIterKey, reg, loop.Iterator)
-}
-
-// emitIterJumpOrClose emits an instruction to jump to the end of the loop or close the iterator
-func (v *Visitor) emitIterJumpOrClose(loop *Loop) {
-	v.Emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
-	v.Emitter.EmitA(vm.OpClose, loop.Iterator)
-
-	if loop.Kind == ForLoop {
-		v.Emitter.PatchJump(loop.Jump)
-	} else {
-		v.Emitter.PatchJumpAB(loop.Jump)
-	}
-}
-
-// emitPatchLoop replaces the source of the loop with a modified dataset
-func (v *Visitor) emitPatchLoop(loop *Loop) {
-	// Replace source with sorted array
-	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
-
-	v.Symbols.ExitScope()
-	v.Symbols.EnterScope()
-
-	// Create new for loop
-	v.emitLoopBegin(loop)
-}
-
-func (v *Visitor) emitLoopEnd(loop *Loop) vm.Operand {
-	v.Emitter.EmitJump(vm.OpJump, loop.Jump-loop.JumpOffset)
-
-	// TODO: Do not allocate for pass-through Loops
-	dst := v.Registers.Allocate(Temp)
-
-	if loop.Allocate {
-		// TODO: Reuse the dsReg register
-		v.Emitter.EmitA(vm.OpClose, loop.Iterator)
-		v.Emitter.EmitAB(vm.OpMove, dst, loop.Result)
-
-		if loop.Kind == ForLoop {
-			v.Emitter.PatchJump(loop.Jump)
-		} else {
-			v.Emitter.PatchJumpAB(loop.Jump)
-		}
-	} else {
-		if loop.Kind == ForLoop {
-			v.Emitter.PatchJumpNext(loop.Jump)
-		} else {
-			v.Emitter.PatchJumpNextAB(loop.Jump)
-		}
-	}
-
-	return dst
-}
-
-func (v *Visitor) loopType(ctx *fql.ForExpressionContext) LoopType {
-	if c := ctx.ForExpressionReturn().ForExpression(); c == nil {
-		return NormalLoop
-	}
-
-	return PassThroughLoop
-}
-
-func (v *Visitor) loopKind(ctx *fql.ForExpressionContext) LoopKind {
-	if ctx.While() == nil {
-		return ForLoop
-	}
-
-	if ctx.Do() == nil {
-		return WhileLoop
-	}
-
-	return DoWhileLoop
-}
-
-func (v *Visitor) loadConstant(constant runtime.Value) vm.Operand {
-	reg := v.Registers.Allocate(Temp)
-	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(constant))
-	return reg
-}
-
-func (v *Visitor) loadConstantTo(constant runtime.Value, reg vm.Operand) {
-	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(constant))
-}
+//func (v *Visitor) VisitCollectClause(ctx *fql.CollectClauseContext) interface{} {
+//	// TODO: Undefine original loop variables
+//	loop := v.Loops.Current()
+//
+//	// We collect the aggregation keys
+//	// And wrap each loop element by a KeyValuePair
+//	// Where a key is either a single value or a list of values
+//	// These KeyValuePairs are then added to the dataset
+//	var kvKeyReg, kvValReg vm.Operand
+//	var groupSelectors []fql.ICollectSelectorContext
+//	var isGrouping bool
+//	grouping := ctx.CollectGrouping()
+//	counter := ctx.CollectCounter()
+//	aggregator := ctx.CollectAggregator()
+//
+//	isCollecting := grouping != nil || counter != nil
+//
+//	if isCollecting {
+//		if grouping != nil {
+//			isGrouping = true
+//			groupSelectors = grouping.AllCollectSelector()
+//			kvKeyReg = v.emitCollectGroupKeySelectors(groupSelectors)
+//		}
+//
+//		kvValReg = v.Registers.Allocate(Temp)
+//		v.emitIterValue(loop, kvValReg)
+//
+//		var projectionVariableName string
+//		collectorType := CollectorTypeKey
+//
+//		// If we have a collect group variable, we need to project it
+//		if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
+//			// Projection can be either a default projection (identifier) or a custom projection (selector expression)
+//			if identifier := groupVar.Identifier(); identifier != nil {
+//				projectionVariableName = v.emitCollectDefaultGroupProjection(loop, kvValReg, identifier, groupVar.CollectGroupVariableKeeper())
+//			} else if selector := groupVar.CollectSelector(); selector != nil {
+//				projectionVariableName = v.emitCollectCustomGroupProjection(loop, kvValReg, selector)
+//			}
+//
+//			collectorType = CollectorTypeKeyGroup
+//		} else if counter != nil {
+//			projectionVariableName = v.emitCollectCountProjection(loop, kvValReg, counter)
+//
+//			if isGrouping {
+//				collectorType = CollectorTypeKeyCounter
+//			} else {
+//				collectorType = CollectorTypeCounter
+//			}
+//		}
+//
+//		// If we use aggregators, we need to collect group items by key
+//		if aggregator != nil && collectorType != CollectorTypeKeyGroup {
+//			// We need to patch the loop result to be a collector
+//			collectorType = CollectorTypeKeyGroup
+//		}
+//
+//		// We replace DataSet initialization with Collector initialization
+//		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(collectorType))
+//		v.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
+//		v.emitIterJumpOrClose(loop)
+//
+//		// Replace the source with the collector
+//		v.emitPatchLoop(loop)
+//
+//		// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+//		if projectionVariableName != "" {
+//			// Now we need to expand group variables from the dataset
+//			v.emitIterKey(loop, kvValReg)
+//			v.emitIterValue(loop, v.Symbols.DeclareLocal(projectionVariableName))
+//		} else {
+//			v.emitIterKey(loop, kvKeyReg)
+//			v.emitIterValue(loop, kvValReg)
+//		}
+//	}
+//
+//	// Aggregation loop
+//	if aggregator != nil {
+//		v.emitCollectAggregator(aggregator, loop, isCollecting)
+//	}
+//
+//	// TODO: Reuse the Registers
+//	v.Registers.Free(loop.Value)
+//	v.Registers.Free(loop.Key)
+//	loop.Value = vm.NoopOperand
+//	loop.Key = vm.NoopOperand
+//
+//	if isCollecting && isGrouping {
+//		// Now we are defining new variables for the group selectors
+//		v.emitCollectGroupKeySelectorVariables(groupSelectors, kvKeyReg, kvValReg, aggregator != nil)
+//	}
+//
+//	return nil
+//}
+//
+//func (v *Visitor) emitCollectAggregator(c fql.ICollectAggregatorContext, parentLoop *Loop, isCollected bool) {
+//	var accums []vm.Operand
+//	var loop *Loop
+//	selectors := c.AllCollectAggregateSelector()
+//
+//	// If data is collected, we need to allocate a temporary accumulators to store aggregation results
+//	if isCollected {
+//		// First of all, we allocate registers for accumulators
+//		accums = make([]vm.Operand, len(selectors))
+//
+//		// We need to allocate a register for each accumulator
+//		for i := 0; i < len(selectors); i++ {
+//			reg := v.Registers.Allocate(Temp)
+//			accums[i] = reg
+//			// TODO: Select persistent List type, we do not know how many items we will have
+//			v.Emitter.EmitA(vm.OpList, reg)
+//		}
+//
+//		loop = v.Loops.NewLoop(TemporalLoop, ForLoop, false)
+//
+//		// Now we iterate over the grouped items
+//		v.emitIterValue(parentLoop, loop.Iterator)
+//		// We just re-use the same register
+//		v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Iterator)
+//		// jumpPlaceholder is a placeholder for the exit aggrIterJump position
+//		loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
+//		loop.ValueName = parentLoop.ValueName
+//	} else {
+//		loop = parentLoop
+//		// Otherwise, we create a custom collector for aggregators
+//		v.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetCollector, loop.Result, int(CollectorTypeKeyGroup))
+//	}
+//
+//	// Store upper scope for aggregators
+//	//mainScope := v.Symbols.Scope()
+//	// Nested scope for aggregators
+//	v.Symbols.EnterScope()
+//
+//	aggrIterVal := v.Symbols.DeclareLocal(loop.ValueName)
+//	v.Emitter.EmitAB(vm.OpIterValue, aggrIterVal, loop.Iterator)
+//
+//	// Now we add value selectors to the accumulators
+//	for i := 0; i < len(selectors); i++ {
+//		selector := selectors[i]
+//		fcx := selector.FunctionCallExpression()
+//		args := fcx.FunctionCall().ArgumentList().AllExpression()
+//
+//		if len(args) == 0 {
+//			// TODO: Better error handling
+//			panic("No arguments provided for the function call in the aggregate selector")
+//		}
+//
+//		if len(args) > 1 {
+//			// TODO: Better error handling
+//			panic("Too many arguments")
+//		}
+//
+//		resultReg := args[0].Accept(v).(vm.Operand)
+//
+//		if isCollected {
+//			v.Emitter.EmitAB(vm.OpPush, accums[i], resultReg)
+//		} else {
+//			aggrKeyName := selector.Identifier().GetText()
+//			aggrKeyReg := v.loadConstant(runtime.String(aggrKeyName))
+//			v.Emitter.EmitABC(vm.OpPushKV, loop.Result, aggrKeyReg, resultReg)
+//			v.Registers.Free(aggrKeyReg)
+//		}
+//
+//		v.Registers.Free(resultReg)
+//	}
+//
+//	// Now we can iterate over the grouped items
+//	v.emitIterJumpOrClose(loop)
+//
+//	// Now we can iterate over the selectors and execute the aggregation functions by passing the accumulators
+//	// And define variables for each accumulator result
+//	if isCollected {
+//		for i, selector := range selectors {
+//			fcx := selector.FunctionCallExpression()
+//			// We won't make any checks here, as we already did it before
+//			selectorVarName := selector.Identifier().GetText()
+//
+//			// We execute the function call with the accumulator as an argument
+//			accum := accums[i]
+//			result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, RegisterSequence{accum})
+//
+//			// We define the variable for the selector result in the upper scope
+//			// Since this temporary scope is only for aggregators and will be closed after the aggregation
+//			varReg := v.Symbols.DeclareLocal(selectorVarName)
+//			v.Emitter.EmitAB(vm.OpMove, varReg, result)
+//			v.Registers.Free(result)
+//		}
+//
+//		v.Loops.Pop()
+//		// Now close the aggregators scope
+//		v.Symbols.ExitScope()
+//	} else {
+//		// Now close the aggregators scope
+//		v.Symbols.ExitScope()
+//
+//		parentLoop.ValueName = ""
+//		parentLoop.KeyName = ""
+//
+//		// Since we we in the middle of the loop, we need to patch the loop result
+//		// Now we just create a range with 1 item to push the aggregated values to the dataset
+//		// Replace source with sorted array
+//		zero := v.loadConstant(runtime.Int(0))
+//		one := v.loadConstant(runtime.Int(1))
+//		aggregator := v.Registers.Allocate(Temp)
+//		v.Emitter.EmitAB(vm.OpMove, aggregator, loop.Result)
+//		v.Symbols.ExitScope()
+//
+//		v.Symbols.EnterScope()
+//
+//		// Create new for loop
+//		v.Emitter.EmitABC(vm.OpRange, loop.Src, zero, one)
+//		v.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+//
+//		// In case of non-collected aggregators, we just iterate over the grouped items
+//		// Retrieve the grouped values by key, execute aggregation funcs and assign variable names to the results
+//		for _, selector := range selectors {
+//			fcx := selector.FunctionCallExpression()
+//			// We won't make any checks here, as we already did it before
+//			selectorVarName := selector.Identifier().GetText()
+//
+//			// We execute the function call with the accumulator as an argument
+//			key := v.loadConstant(runtime.String(selectorVarName))
+//			value := v.Registers.Allocate(Temp)
+//			v.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
+//
+//			result := v.emitFunctionCall(fcx.FunctionCall(), fcx.ErrorOperator() != nil, RegisterSequence{value})
+//
+//			// We define the variable for the selector result in the upper scope
+//			// Since this temporary scope is only for aggregators and will be closed after the aggregation
+//			varReg := v.Symbols.DeclareLocal(selectorVarName)
+//			v.Emitter.EmitAB(vm.OpMove, varReg, result)
+//			v.Registers.Free(result)
+//			v.Registers.Free(value)
+//			v.Registers.Free(key)
+//		}
+//
+//		v.Registers.Free(aggregator)
+//	}
+//
+//	// Free the registers for accumulators
+//	for _, reg := range accums {
+//		v.Registers.Free(reg)
+//	}
+//
+//	// Free the register for the iterator value
+//	v.Registers.Free(aggrIterVal)
+//}
+//
+//func (v *Visitor) emitCollectGroupKeySelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
+//	if len(selectors) == 0 {
+//		return vm.NoopOperand
+//	}
+//
+//	var kvKeyReg vm.Operand
+//
+//	if len(selectors) > 1 {
+//		// We create a sequence of Registers for the clauses
+//		// To pack them into an array
+//		selectorRegs := v.Registers.AllocateSequence(len(selectors))
+//
+//		for i, selector := range selectors {
+//			reg := selector.Accept(v).(vm.Operand)
+//			v.Emitter.EmitAB(vm.OpMove, selectorRegs[i], reg)
+//			// Free the register after moving its value to the sequence register
+//			v.Registers.Free(reg)
+//		}
+//
+//		kvKeyReg = v.Registers.Allocate(Temp)
+//		v.Emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
+//		v.Registers.FreeSequence(selectorRegs)
+//	} else {
+//		kvKeyReg = selectors[0].Accept(v).(vm.Operand)
+//	}
+//
+//	return kvKeyReg
+//}
+//
+//func (v *Visitor) emitCollectGroupKeySelectorVariables(selectors []fql.ICollectSelectorContext, kvKeyReg, kvValReg vm.Operand, isAggregation bool) {
+//	if len(selectors) > 1 {
+//		variables := make([]vm.Operand, len(selectors))
+//
+//		for i, selector := range selectors {
+//			name := selector.Identifier().GetText()
+//
+//			if variables[i] == vm.NoopOperand {
+//				variables[i] = v.Symbols.DeclareLocal(name)
+//			}
+//
+//			reg := kvValReg
+//
+//			if isAggregation {
+//				reg = kvKeyReg
+//			}
+//
+//			v.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, v.loadConstant(runtime.Int(i)))
+//		}
+//
+//		// Free the register after moving its value to the variable
+//		for _, reg := range variables {
+//			v.Registers.Free(reg)
+//		}
+//	} else {
+//		// Get the variable name
+//		name := selectors[0].Identifier().GetText()
+//		// Define a variable for each selector
+//		varReg := v.Symbols.DeclareLocal(name)
+//
+//		reg := kvValReg
+//
+//		if isAggregation {
+//			reg = kvKeyReg
+//		}
+//
+//		// If we have a single selector, we can just move the value
+//		v.Emitter.EmitAB(vm.OpMove, varReg, reg)
+//	}
+//}
+//
+//func (v *Visitor) emitCollectDefaultGroupProjection(loop *Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+//	if keeper == nil {
+//		seq := v.Registers.AllocateSequence(2) // Key and Value for Map
+//
+//		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
+//		// We will keep it for now for backward compatibility.
+//		v.loadConstantTo(runtime.String(loop.ValueName), seq[0]) // Map key
+//		v.Emitter.EmitAB(vm.OpMove, seq[1], kvValReg)            // Map value
+//		v.Emitter.EmitAs(vm.OpMap, kvValReg, seq)
+//
+//		v.Registers.FreeSequence(seq)
+//	} else {
+//		variables := keeper.AllIdentifier()
+//		seq := v.Registers.AllocateSequence(len(variables) * 2)
+//
+//		for i, j := 0, 0; i < len(variables); i, j = i+1, j+2 {
+//			varName := variables[i].GetText()
+//			v.loadConstantTo(runtime.String(varName), seq[j])
+//
+//			variable, _, found := v.Symbols.Resolve(varName)
+//
+//			if !found {
+//				panic("variable not found: " + varName)
+//			}
+//
+//			v.Emitter.EmitAB(vm.OpMove, seq[j+1], variable)
+//		}
+//
+//		v.Emitter.EmitAs(vm.OpMap, kvValReg, seq)
+//		v.Registers.FreeSequence(seq)
+//	}
+//
+//	return identifier.GetText()
+//}
+//
+//func (v *Visitor) emitCollectCustomGroupProjection(_ *Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
+//	selectorReg := selector.Expression().Accept(v).(vm.Operand)
+//	v.Emitter.EmitAB(vm.OpMove, kvValReg, selectorReg)
+//	v.Registers.Free(selectorReg)
+//
+//	return selector.Identifier().GetText()
+//}
+//
+//func (v *Visitor) emitCollectCountProjection(_ *Loop, _ vm.Operand, selector fql.ICollectCounterContext) string {
+//	return selector.Identifier().GetText()
+//}
+//
+//func (v *Visitor) VisitCollectSelector(ctx *fql.CollectSelectorContext) interface{} {
+//	if c := ctx.Expression(); c != nil {
+//		return c.Accept(v)
+//	}
+//
+//	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+//}
+//
+//func (v *Visitor) VisitForExpressionStatement(ctx *fql.ForExpressionStatementContext) interface{} {
+//	if c := ctx.VariableDeclaration(); c != nil {
+//		return c.Accept(v)
+//	}
+//
+//	if c := ctx.FunctionCallExpression(); c != nil {
+//		return c.Accept(v)
+//	}
+//
+//	panic(runtime.Error(ErrUnexpectedToken, ctx.GetText()))
+//}
+//
+//func (v *Visitor) VisitExpression(ctx *fql.ExpressionContext) interface{} {
+//	return v.ctx.ExprCompiler.Compile(ctx)
+//}
+//
+//// emitIterValue emits an instruction to get the value from the iterator
+//func (v *Visitor) emitLoopBegin(loop *Loop) {
+//	if loop.Allocate {
+//		v.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+//		loop.ResultPos = v.Emitter.Size() - 1
+//	}
+//
+//	loop.Iterator = v.Registers.Allocate(State)
+//
+//	if loop.Kind == ForLoop {
+//		v.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
+//		// jumpPlaceholder is a placeholder for the exit jump position
+//		loop.Jump = v.Emitter.EmitJumpc(vm.OpIterNext, jumpPlaceholder, loop.Iterator)
+//
+//		if loop.Value != vm.NoopOperand {
+//			v.Emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
+//		}
+//
+//		if loop.Key != vm.NoopOperand {
+//			v.Emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
+//		}
+//	} else {
+//		//counterReg := v.Registers.Allocate(Storage)
+//		// TODO: Set JumpOffset here
+//	}
+//}
+//
+//// emitIterValue emits an instruction to get the value from the iterator
+//func (v *Visitor) emitIterValue(loop *Loop, reg vm.Operand) {
+//	v.Emitter.EmitAB(vm.OpIterValue, reg, loop.Iterator)
+//}
+//
+//// emitIterKey emits an instruction to get the key from the iterator
+//func (v *Visitor) emitIterKey(loop *Loop, reg vm.Operand) {
+//	v.Emitter.EmitAB(vm.OpIterKey, reg, loop.Iterator)
+//}
+//
+//// emitIterJumpOrClose emits an instruction to jump to the end of the loop or close the iterator
+//func (v *Visitor) emitIterJumpOrClose(loop *Loop) {
+//	v.Emitter.EmitJump(loop.Jump - loop.JumpOffset)
+//	v.Emitter.EmitA(vm.OpClose, loop.Iterator)
+//
+//	if loop.Kind == ForLoop {
+//		v.Emitter.PatchJump(loop.Jump)
+//	} else {
+//		v.Emitter.PatchJumpAB(loop.Jump)
+//	}
+//}
+//
+//// emitPatchLoop replaces the source of the loop with a modified dataset
+//func (v *Visitor) emitPatchLoop(loop *Loop) {
+//	// Replace source with sorted array
+//	v.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
+//
+//	v.Symbols.ExitScope()
+//	v.Symbols.EnterScope()
+//
+//	// Create new for loop
+//	v.emitLoopBegin(loop)
+//}
+//
+//func (v *Visitor) emitLoopEnd(loop *Loop) vm.Operand {
+//	v.Emitter.EmitJump(loop.Jump - loop.JumpOffset)
+//
+//	// TODO: Do not allocate for pass-through Loops
+//	dst := v.Registers.Allocate(Temp)
+//
+//	if loop.Allocate {
+//		// TODO: Reuse the dsReg register
+//		v.Emitter.EmitA(vm.OpClose, loop.Iterator)
+//		v.Emitter.EmitAB(vm.OpMove, dst, loop.Result)
+//
+//		if loop.Kind == ForLoop {
+//			v.Emitter.PatchJump(loop.Jump)
+//		} else {
+//			v.Emitter.PatchJumpAB(loop.Jump)
+//		}
+//	} else {
+//		if loop.Kind == ForLoop {
+//			v.Emitter.PatchJumpNext(loop.Jump)
+//		} else {
+//			v.Emitter.PatchJumpNextAB(loop.Jump)
+//		}
+//	}
+//
+//	return dst
+//}
+//
+//func (v *Visitor) loadConstant(constant runtime.Value) vm.Operand {
+//	return loadConstant(v.ctx, constant)
+//}
+//
+//func (v *Visitor) loadConstantTo(constant runtime.Value, reg vm.Operand) {
+//	v.Emitter.EmitAB(vm.OpLoadConst, reg, v.Symbols.AddConstant(constant))
+//}

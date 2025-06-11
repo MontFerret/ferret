@@ -1,12 +1,32 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/antlr4-go/antlr/v4"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/pkg/errors"
 )
+
+func loadConstant(ctx *FuncContext, value runtime.Value) vm.Operand {
+	reg := ctx.Registers.Allocate(Temp)
+	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
+	return reg
+}
+
+func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
+	if dir == nil {
+		return runtime.SortDirectionAsc
+	}
+
+	if strings.ToLower(dir.GetText()) == "desc" {
+		return runtime.SortDirectionDesc
+	}
+
+	return runtime.SortDirectionAsc
+}
 
 func copyFromNamespace(fns *runtime.Functions, namespace string) error {
 	// In the name of the function "A::B::C", the namespace is "A::B",
