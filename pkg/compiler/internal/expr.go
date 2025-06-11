@@ -31,11 +31,11 @@ func (ec *ExprCompiler) Compile(ctx fql.IExpressionContext) vm.Operand {
 	}
 
 	if c := ctx.LogicalAndOperator(); c != nil {
-		return ec.compileLogicalAnd(ctx.Predicate())
+		return ec.compileLogicalAnd(ctx)
 	}
 
 	if c := ctx.LogicalOrOperator(); c != nil {
-		return ec.compileLogicalOr(ctx.Predicate())
+		return ec.compileLogicalOr(ctx)
 	}
 
 	if c := ctx.GetTernaryOperator(); c != nil {
@@ -73,11 +73,11 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 }
 
 // TODO: Free temporary registers if needed
-func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IPredicateContext) vm.Operand {
+func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand {
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	// Execute left expression
-	left := ec.compilePredicate(ctx.GetLeft())
+	left := ec.Compile(ctx.GetLeft())
 
 	// Execute left expression
 	ec.ctx.Emitter.EmitMove(dst, left)
@@ -86,7 +86,7 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IPredicateContext) vm.Operand 
 	end := ec.ctx.Emitter.EmitJumpIfFalse(dst, core.JumpPlaceholder)
 
 	// If left is true, execute right expression
-	right := ec.compilePredicate(ctx.GetRight())
+	right := ec.Compile(ctx.GetRight())
 
 	// And move the result to the destination register
 	ec.ctx.Emitter.EmitMove(dst, right)
@@ -97,11 +97,11 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IPredicateContext) vm.Operand 
 }
 
 // TODO: Free temporary registers if needed
-func (ec *ExprCompiler) compileLogicalOr(ctx fql.IPredicateContext) vm.Operand {
+func (ec *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	// Execute left expression
-	left := ec.compilePredicate(ctx.GetLeft())
+	left := ec.Compile(ctx.GetLeft())
 
 	// Execute left expression
 	ec.ctx.Emitter.EmitMove(dst, left)
@@ -110,7 +110,7 @@ func (ec *ExprCompiler) compileLogicalOr(ctx fql.IPredicateContext) vm.Operand {
 	end := ec.ctx.Emitter.EmitJumpIfTrue(dst, core.JumpPlaceholder)
 
 	// If left is false, execute right expression
-	right := ec.compilePredicate(ctx.GetRight())
+	right := ec.Compile(ctx.GetRight())
 
 	// And move the result to the destination register
 	ec.ctx.Emitter.EmitMove(dst, right)
@@ -181,7 +181,7 @@ func (ec *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 	right := ec.compilePredicate(ctx.Predicate(1))
 
 	if op := ctx.EqualityOperator(); op != nil {
-		switch ctx.GetText() {
+		switch op.GetText() {
 		case "==":
 			opcode = vm.OpEq
 		case "!=":
@@ -433,6 +433,11 @@ func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protec
 
 func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.RegisterSequence {
 	var seq core.RegisterSequence
+
+	if ctx == nil {
+		return seq
+	}
+
 	// Get all array element expressions
 	exps := ctx.AllExpression()
 	size := len(exps)

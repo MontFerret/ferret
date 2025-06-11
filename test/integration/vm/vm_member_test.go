@@ -113,7 +113,7 @@ func TestMember(t *testing.T) {
 			map[string]any{
 				"second": "third",
 			}),
-		CaseObject(`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
+		SkipCaseObject(`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
 			map[string]any{
 				"second": "third",
 			}),

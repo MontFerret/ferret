@@ -12,8 +12,8 @@ func TestFunctionCall(t *testing.T) {
 		Case("RETURN TYPENAME(1.1)", "float"),
 		Case("WAIT(10) RETURN 1", 1),
 		Case("RETURN LENGTH([1,2,3])", 3),
-		SkipCase("RETURN CONCAT('a', 'b', 'c')", "abc"),
-		SkipCase("RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))", "abcde", "Nested calls"),
+		Case("RETURN CONCAT('a', 'b', 'c')", "abc"),
+		Case("RETURN CONCAT(CONCAT('a', 'b'), 'c', CONCAT('d', 'e'))", "abcde", "Nested calls"),
 		SkipCaseArray(`
 		LET arr = []
 		LET a = 1
@@ -21,7 +21,7 @@ func TestFunctionCall(t *testing.T) {
 		RETURN res
 		`,
 			[]any{1}, "Append to array"),
-		SkipCase("LET duration = 10 WAIT(duration) RETURN 1", 1),
+		Case("LET duration = 10 WAIT(duration) RETURN 1", 1),
 		CaseNil("RETURN (FALSE OR T::FAIL())?"),
 		CaseNil("RETURN T::FAIL()?"),
 		CaseArray(`FOR i IN [1, 2, 3, 4]

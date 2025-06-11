@@ -20,8 +20,8 @@ func TestTernaryOperator(t *testing.T) {
 		Case("LET foo = FALSE RETURN foo ? TRUE : FALSE", false),
 		CaseArray("FOR i IN [1, 2, 3, 4, 5, 6] RETURN i < 3 ? i * 3 : i * 2", []any{3, 6, 6, 8, 10, 12}),
 		CaseArray(`FOR i IN [NONE, 2, 3, 4, 5, 6] RETURN i ? : i`, []any{nil, 2, 3, 4, 5, 6}),
-		Case(`RETURN 0 && true ? "1" : "some"`, "some"),
-		Case(`RETURN length([]) > 0 && true ? "1" : "some"`, "some"),
+		Case(`RETURN 0 && true ? "1" : "some"`, "some", "Should return 'some' when first operand is 0"),
+		Case(`RETURN length([]) > 0 && true ? "1" : "some"`, "some", "Should return 'some' when first operand is an empty array"),
 	})
 
 	Convey("Should compile ternary operator with default values", t, func() {
