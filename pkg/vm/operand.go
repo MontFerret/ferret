@@ -7,11 +7,11 @@ type Operand int
 // NoopOperand is a reserved operand for no operation and final results.
 const NoopOperand = Operand(0)
 
-func NewConstantOperand(idx int) Operand {
+func NewConstant(idx int) Operand {
 	return Operand(-idx - 1)
 }
 
-func NewRegisterOperand(idx int) Operand {
+func NewRegister(idx int) Operand {
 	return Operand(idx)
 }
 

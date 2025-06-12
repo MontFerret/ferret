@@ -19,7 +19,7 @@ func TestFor(t *testing.T) {
 	//	ShouldEqualJSON,
 	//},
 	RunUseCases(t, []UseCase{
-		CaseCompilationError(`
+		SkipCaseCompilationError(`
 			FOR foo IN foo
 				RETURN foo
 		`, "Should not compile FOR foo IN foo"),

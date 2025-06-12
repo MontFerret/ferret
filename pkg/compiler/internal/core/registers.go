@@ -59,13 +59,13 @@ func (ra *RegisterAllocator) Allocate(typ RegisterType) vm.Operand {
 }
 
 func (ra *RegisterAllocator) Free(reg vm.Operand) {
-	info, ok := ra.all[reg]
-	if !ok || !info.allocated {
-		return // double-free or unknown
-	}
-
-	info.allocated = false
-	ra.freelist[info.typ] = append(ra.freelist[info.typ], reg)
+	//info, ok := ra.all[reg]
+	//if !ok || !info.allocated {
+	//	return // double-free or unknown
+	//}
+	//
+	//info.allocated = false
+	//ra.freelist[info.typ] = append(ra.freelist[info.typ], reg)
 }
 
 func (ra *RegisterAllocator) AllocateSequence(count int) RegisterSequence {

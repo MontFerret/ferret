@@ -132,7 +132,7 @@ func (st *SymbolTable) Resolve(name string) (vm.Operand, SymbolKind, bool) {
 	for i := len(st.locals) - 1; i >= 0; i-- {
 		v := st.locals[i]
 		if v.Name == name {
-			return vm.NewRegisterOperand(int(v.Register)), v.Kind, true
+			return vm.NewRegister(int(v.Register)), v.Kind, true
 		}
 	}
 

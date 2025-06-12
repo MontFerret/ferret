@@ -249,9 +249,9 @@ func (op Opcode) String() string {
 
 	// Stream Operations
 	case OpStream:
-		return "STREAM"
+		return "STRM"
 	case OpStreamIter:
-		return "STRITER"
+		return "STRMITER"
 
 	// Iterator Operations
 	case OpIter:

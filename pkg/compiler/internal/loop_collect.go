@@ -42,7 +42,7 @@ func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 		}
 
 		kvValReg = cc.ctx.Registers.Allocate(core.Temp)
-		loop.EmitValue(kvKeyReg, cc.ctx.Emitter)
+		loop.EmitValue(kvValReg, cc.ctx.Emitter)
 
 		var projectionVariableName string
 		collectorType := core.CollectorTypeKey
@@ -78,30 +78,34 @@ func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 		cc.ctx.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
 		loop.EmitFinalization(cc.ctx.Emitter)
 
-		// Replace the source with the collector
-		cc.ctx.LoopCompiler.PatchLoop(loop)
+		cc.ctx.Emitter.EmitMove(loop.Src, loop.Result)
 
-		// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-		if projectionVariableName != "" {
-			// Now we need to expand group variables from the dataset
-			loop.EmitKey(kvValReg, cc.ctx.Emitter)
-			loop.EmitValue(cc.ctx.Symbols.DeclareLocal(projectionVariableName), cc.ctx.Emitter)
-		} else {
-			loop.EmitKey(kvKeyReg, cc.ctx.Emitter)
-			loop.EmitValue(kvValReg, cc.ctx.Emitter)
-		}
+		cc.ctx.Registers.Free(loop.Value)
+		cc.ctx.Registers.Free(loop.Key)
+		loop.Value = kvValReg
+		loop.Key = vm.NoopOperand
+		cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+
+		println(projectionVariableName)
+
+		//// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+		//if projectionVariableName != "" {
+		//	// Now we need to expand group variables from the dataset
+		//	loop.DeclareValueVar(projectionVariableName, cc.ctx.Symbols)
+		//	cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+		//	loop.EmitKey(kvValReg, cc.ctx.Emitter)
+		//	//loop.EmitValue(cc.ctx.Symbols.DeclareLocal(projectionVariableName), cc.ctx.Emitter)
+		//} else {
+		//
+		//	loop.EmitKey(kvKeyReg, cc.ctx.Emitter)
+		//	loop.EmitValue(kvValReg, cc.ctx.Emitter)
+		//}
 	}
 
 	// Aggregation loop
 	if aggregator != nil {
 		cc.compileAggregator(aggregator, loop, isCollecting)
 	}
-
-	// TODO: Reuse the Registers
-	cc.ctx.Registers.Free(loop.Value)
-	cc.ctx.Registers.Free(loop.Key)
-	loop.Value = vm.NoopOperand
-	loop.Key = vm.NoopOperand
 
 	if isCollecting && isGrouping {
 		// Now we are defining new variables for the group selectors

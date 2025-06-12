@@ -455,6 +455,8 @@ func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.R
 			srcReg := ec.Compile(exp)
 
 			// TODO: Figure out how to remove OpMove and use Registers returned from each expression
+			// The reason we move is that the argument list must be a contiguous sequence of registers
+			// Otherwise, we cannot initialize neither a list nor an object literal with arguments
 			ec.ctx.Emitter.EmitMove(seq[i], srcReg)
 
 			// Free source register if temporary

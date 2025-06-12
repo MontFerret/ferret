@@ -286,18 +286,6 @@ func (lc *LoopCompiler) EmitLoopBegin(loop *core.Loop) {
 	}
 }
 
-// PatchLoop replaces the source of the loop with a modified dataset
-func (lc *LoopCompiler) PatchLoop(loop *core.Loop) {
-	// Replace source with sorted array
-	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
-
-	lc.ctx.Symbols.ExitScope()
-	lc.ctx.Symbols.EnterScope()
-
-	// Create new for loop
-	lc.EmitLoopBegin(loop)
-}
-
 func (lc *LoopCompiler) EmitLoopEnd(loop *core.Loop) vm.Operand {
 	lc.ctx.Emitter.EmitJump(loop.Jump - loop.JumpOffset)
 

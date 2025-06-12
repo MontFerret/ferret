@@ -30,7 +30,7 @@ func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
 
 	if hash > 0 || isNone {
 		if idx, ok := cp.index[hash]; ok {
-			return vm.NewConstantOperand(idx)
+			return vm.NewConstant(idx)
 		}
 	}
 
@@ -41,7 +41,7 @@ func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
 		cp.index[hash] = idx
 	}
 
-	return vm.NewConstantOperand(idx)
+	return vm.NewConstant(idx)
 }
 
 func (cp *ConstantPool) Get(addr vm.Operand) runtime.Value {

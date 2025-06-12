@@ -23,14 +23,15 @@ type (
 	}
 )
 
-func (program *Program) Disassemble() string {
+func (program *Program) String() string {
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 
-	for offset := 0; offset < len(program.Bytecode); {
-		instruction := program.Bytecode[offset]
-		program.disassembleInstruction(w, instruction, offset)
-		offset++
+	var counter int
+
+	for _, inst := range program.Bytecode {
+		counter++
+		program.writeInstruction(w, counter, inst)
 		w.Write([]byte("\n"))
 	}
 
@@ -39,33 +40,10 @@ func (program *Program) Disassemble() string {
 	return buf.String()
 }
 
-func (program *Program) disassembleInstruction(out io.Writer, inst Instruction, offset int) {
-	opcode := inst.Opcode
-	out.Write([]byte(fmt.Sprintf("%d: [%d] ", offset, opcode)))
-	dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
-
-	switch opcode {
-	case OpMove:
-		out.Write([]byte(fmt.Sprintf("MOVE %s %s", dst, src1)))
-	case OpLoadNone:
-		out.Write([]byte(fmt.Sprintf("LOADN %s", dst)))
-	case OpLoadBool:
-		out.Write([]byte(fmt.Sprintf("LOADB %s %d", dst, src1)))
-	case OpLoadConst:
-		out.Write([]byte(fmt.Sprintf("LOADC %s %s", dst, src1)))
-	case OpLoadGlobal:
-		out.Write([]byte(fmt.Sprintf("LOADG %s %s", dst, src1)))
-	case OpStoreGlobal:
-		out.Write([]byte(fmt.Sprintf("STOREG %s %s", dst, src1)))
-	case OpCall:
-		if src1 == 0 {
-			out.Write([]byte(fmt.Sprintf("CALL %s", dst)))
-		} else {
-			out.Write([]byte(fmt.Sprintf("CALL %s %s %s", dst, src1, src2)))
-		}
-	case OpReturn:
-		out.Write([]byte(fmt.Sprintf("RET")))
-	default:
-		return
+func (program *Program) writeInstruction(w io.Writer, pos int, inst Instruction) {
+	if inst.Opcode != OpReturn {
+		w.Write([]byte(fmt.Sprintf("%d: %s", pos, inst)))
+	} else {
+		w.Write([]byte(fmt.Sprintf("%d: %s", pos, inst.Opcode)))
 	}
 }

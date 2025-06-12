@@ -72,20 +72,20 @@ func (e *Emitter) EmitBoolean(dst vm.Operand, value bool) {
 
 // ─── Data Structures ──────────────────────────────────────────────────────
 
-func (e *Emitter) EmitEmptyList(dst vm.Operand) {
-	e.EmitA(vm.OpList, dst)
-}
-
 func (e *Emitter) EmitList(dst vm.Operand, seq RegisterSequence) {
-	e.EmitAs(vm.OpList, dst, seq)
-}
-
-func (e *Emitter) EmitEmptyMap(dst vm.Operand) {
-	e.EmitA(vm.OpMap, dst)
+	if len(seq) > 0 {
+		e.EmitAs(vm.OpList, dst, seq)
+	} else {
+		e.EmitA(vm.OpList, dst)
+	}
 }
 
 func (e *Emitter) EmitMap(dst vm.Operand, seq RegisterSequence) {
-	e.EmitAs(vm.OpMap, dst, seq)
+	if len(seq) > 0 {
+		e.EmitAs(vm.OpMap, dst, seq)
+	} else {
+		e.EmitA(vm.OpMap, dst)
+	}
 }
 
 func (e *Emitter) EmitRange(dst, start, end vm.Operand) {

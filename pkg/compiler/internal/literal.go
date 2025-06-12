@@ -136,83 +136,46 @@ func (lc *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Oper
 func (lc *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
 	// Allocate destination register for the array
 	destReg := lc.ctx.Registers.Allocate(core.Temp)
-
-	if list := ctx.ArgumentList(); list != nil {
-		// Get all array element expressions
-		exps := list.(fql.IArgumentListContext).AllExpression()
-		size := len(exps)
-
-		if size > 0 {
-			// Allocate seq for array elements
-			seq := lc.ctx.Registers.AllocateSequence(size)
-
-			// Evaluate each element into seq Registers
-			for i, exp := range exps {
-				// Compile expression and move to seq register
-				srcReg := lc.ctx.ExprCompiler.Compile(exp)
-
-				// TODO: Figure out how to remove OpMove and use Registers returned from each expression
-				lc.ctx.Emitter.EmitMove(seq[i], srcReg)
-
-				// Free source register if temporary
-				if srcReg.IsRegister() {
-					//lc.ctx.Registers.Free(srcReg)
-				}
-			}
-
-			// Initialize an array
-			lc.ctx.Emitter.EmitList(destReg, seq)
-
-			// Free seq Registers
-			//lc.ctx.Registers.FreeSequence(seq)
-
-			return destReg
-		}
-	}
-
-	// Empty array
-	lc.ctx.Emitter.EmitEmptyList(destReg)
+	seq := lc.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
+	lc.ctx.Emitter.EmitList(destReg, seq)
 
 	return destReg
 }
 
 func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
 	dst := lc.ctx.Registers.Allocate(core.Temp)
+	var seq core.RegisterSequence
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
-	if size == 0 {
-		lc.ctx.Emitter.EmitEmptyMap(dst)
+	if size > 0 {
+		seq = lc.ctx.Registers.AllocateSequence(len(assignments) * 2)
 
-		return dst
-	}
+		for i := 0; i < size; i++ {
+			var propOp vm.Operand
+			var valOp vm.Operand
+			pac := assignments[i]
 
-	seq := lc.ctx.Registers.AllocateSequence(len(assignments) * 2)
+			if prop := pac.PropertyName(); prop != nil {
+				propOp = lc.CompilePropertyName(prop)
+				valOp = lc.ctx.ExprCompiler.Compile(pac.Expression())
+			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
+				propOp = lc.CompileComputedPropertyName(comProp)
+				valOp = lc.ctx.ExprCompiler.Compile(pac.Expression())
+			} else if variable := pac.Variable(); variable != nil {
+				propOp = loadConstant(lc.ctx, runtime.NewString(variable.GetText()))
+				valOp = lc.ctx.ExprCompiler.CompileVariable(variable)
+			}
 
-	for i := 0; i < size; i++ {
-		var propOp vm.Operand
-		var valOp vm.Operand
-		pac := assignments[i]
+			regIndex := i * 2
 
-		if prop := pac.PropertyName(); prop != nil {
-			propOp = lc.CompilePropertyName(prop)
-			valOp = lc.ctx.ExprCompiler.Compile(pac.Expression())
-		} else if comProp := pac.ComputedPropertyName(); comProp != nil {
-			propOp = lc.CompileComputedPropertyName(comProp)
-			valOp = lc.ctx.ExprCompiler.Compile(pac.Expression())
-		} else if variable := pac.Variable(); variable != nil {
-			propOp = loadConstant(lc.ctx, runtime.NewString(variable.GetText()))
-			valOp = lc.ctx.ExprCompiler.CompileVariable(variable)
-		}
+			lc.ctx.Emitter.EmitMove(seq[regIndex], propOp)
+			lc.ctx.Emitter.EmitMove(seq[regIndex+1], valOp)
 
-		regIndex := i * 2
-
-		lc.ctx.Emitter.EmitMove(seq[regIndex], propOp)
-		lc.ctx.Emitter.EmitMove(seq[regIndex+1], valOp)
-
-		// Free source register if temporary
-		if propOp.IsRegister() {
-			//lc.ctx.Registers.Free(propOp)
+			// Free source register if temporary
+			if propOp.IsRegister() {
+				//lc.ctx.Registers.Free(propOp)
+			}
 		}
 	}
 
