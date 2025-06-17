@@ -1,8 +1,9 @@
 package bytecode_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 func TestMember(t *testing.T) {

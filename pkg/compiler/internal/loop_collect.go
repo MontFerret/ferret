@@ -84,22 +84,20 @@ func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 		cc.ctx.Registers.Free(loop.Key)
 		loop.Value = kvValReg
 		loop.Key = vm.NoopOperand
-		cc.ctx.LoopCompiler.EmitLoopBegin(loop)
 
-		println(projectionVariableName)
-
-		//// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-		//if projectionVariableName != "" {
-		//	// Now we need to expand group variables from the dataset
-		//	loop.DeclareValueVar(projectionVariableName, cc.ctx.Symbols)
-		//	cc.ctx.LoopCompiler.EmitLoopBegin(loop)
-		//	loop.EmitKey(kvValReg, cc.ctx.Emitter)
-		//	//loop.EmitValue(cc.ctx.Symbols.DeclareLocal(projectionVariableName), cc.ctx.Emitter)
-		//} else {
-		//
-		//	loop.EmitKey(kvKeyReg, cc.ctx.Emitter)
-		//	loop.EmitValue(kvValReg, cc.ctx.Emitter)
-		//}
+		// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+		if projectionVariableName != "" {
+			// Now we need to expand group variables from the dataset
+			loop.DeclareValueVar(projectionVariableName, cc.ctx.Symbols)
+			cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+			loop.EmitKey(kvValReg, cc.ctx.Emitter)
+			loop.EmitValue(cc.ctx.Symbols.DeclareLocal(projectionVariableName), cc.ctx.Emitter)
+		} else {
+			cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+			//
+			//loop.EmitKey(kvKeyReg, cc.ctx.Emitter)
+			//loop.EmitValue(kvValReg, cc.ctx.Emitter)
+		}
 	}
 
 	// Aggregation loop

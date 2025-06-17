@@ -1,8 +1,9 @@
 package bytecode_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
 	"github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 func CastToProgram(prog any) *vm.Program {

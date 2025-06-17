@@ -3,6 +3,7 @@ package base
 import (
 	"context"
 	j "encoding/json"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/vm"
 )

@@ -1,8 +1,9 @@
 package base
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"strings"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 type UseCase struct {

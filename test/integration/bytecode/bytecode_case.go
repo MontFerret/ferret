@@ -2,12 +2,14 @@ package bytecode_test
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/vm"
 	"github.com/MontFerret/ferret/test/integration/base"
-	"github.com/smartystreets/goconvey/convey"
-	"strings"
-	"testing"
 )
 
 func Case(expression string, expected *vm.Program, desc ...string) UseCase {

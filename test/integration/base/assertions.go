@@ -1,8 +1,8 @@
 package base
 
-import "fmt"
-
 import (
+	"fmt"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
