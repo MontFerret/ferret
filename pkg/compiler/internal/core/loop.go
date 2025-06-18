@@ -50,17 +50,29 @@ type Loop struct {
 }
 
 func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) {
-	if l.canBindVar(name) {
+	if l.canDeclareVar(name) {
 		l.KeyName = name
 		l.Key = st.DeclareLocal(name)
 	}
 }
 
 func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
-	if l.canBindVar(name) {
+	if l.canDeclareVar(name) {
 		l.ValueName = name
 		l.Value = st.DeclareLocal(name)
 	}
+}
+
+func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
+	if l.Iterator == vm.NoopOperand {
+		l.Iterator = alloc.Allocate(Temp)
+	}
+
+	emitter.EmitIter(l.Iterator, l.Src)
+}
+
+func (l *Loop) EmitNext(emitter *Emitter) {
+	l.Jump = emitter.EmitJumpc(vm.OpIterNext, JumpPlaceholder, l.Iterator)
 }
 
 func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
@@ -71,12 +83,28 @@ func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
 	emitter.EmitIterKey(dst, l.Iterator)
 }
 
+func (l *Loop) BindValueVar(emitter *Emitter) {
+	if l.canBindVar(l.Value) {
+		l.EmitValue(l.Value, emitter)
+	}
+}
+
+func (l *Loop) BindKeyVar(emitter *Emitter) {
+	if l.canBindVar(l.Key) {
+		l.EmitKey(l.Key, emitter)
+	}
+}
+
 func (l *Loop) EmitFinalization(emitter *Emitter) {
 	emitter.EmitJump(l.Jump - l.JumpOffset)
 	emitter.EmitA(vm.OpClose, l.Iterator)
 	emitter.PatchJump(l.Jump)
 }
 
-func (l *Loop) canBindVar(name string) bool {
+func (l *Loop) canDeclareVar(name string) bool {
 	return name != "" && name != IgnorePseudoVariable
+}
+
+func (l *Loop) canBindVar(op vm.Operand) bool {
+	return op != vm.NoopOperand
 }

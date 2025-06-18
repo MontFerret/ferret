@@ -6,22 +6,6 @@ import (
 	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
-// COLLECT vs. RETURN DISTINCT
-//
-// In order to make a result set unique, one can either use COLLECT or RETURN DISTINCT.
-//
-// FOR u IN users
-// RETURN DISTINCT u.age
-// FOR u IN users
-// COLLECT age = u.age
-// RETURN age
-// Behind the scenes, both variants create a CollectNode. However, they use different implementations of COLLECT that have different properties:
-//
-// RETURN DISTINCT maintains the order of results, but it is limited to a single value.
-//
-// COLLECT changes the order of results (sorted or undefined), but it supports multiple values and is more flexible than RETURN DISTINCT.
-//
-// Aside from COLLECTs sophisticated grouping and aggregation capabilities, it allows you to place a LIMIT operation before RETURN to potentially stop the COLLECT operation early.
 func TestCollect(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		SkipCaseCompilationError(`
