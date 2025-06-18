@@ -19,7 +19,7 @@ func NewCollectCompiler(ctx *CompilerContext) *CollectCompiler {
 
 func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	aggregator := ctx.CollectAggregator()
-	kvKeyReg, kvValReg, groupSelectors := cc.compileGrouping(ctx, aggregator != nil)
+	kvKeyReg, kvValReg, groupSelectors := cc.compileCollect(ctx, aggregator != nil)
 
 	// Aggregation loop
 	if aggregator != nil {
@@ -32,7 +32,7 @@ func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	}
 }
 
-func (cc *CollectCompiler) compileGrouping(ctx fql.ICollectClauseContext, aggregation bool) (vm.Operand, vm.Operand, []fql.ICollectSelectorContext) {
+func (cc *CollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggregation bool) (vm.Operand, vm.Operand, []fql.ICollectSelectorContext) {
 	var kvKeyReg, kvValReg vm.Operand
 	var groupSelectors []fql.ICollectSelectorContext
 	grouping := ctx.CollectGrouping()
@@ -45,8 +45,7 @@ func (cc *CollectCompiler) compileGrouping(ctx fql.ICollectClauseContext, aggreg
 	loop := cc.ctx.Loops.Current()
 
 	if grouping != nil {
-		groupSelectors = grouping.AllCollectSelector()
-		kvKeyReg = cc.compileGroupSelectors(groupSelectors)
+		kvKeyReg, groupSelectors = cc.compileGrouping(grouping)
 	}
 
 	kvValReg = cc.ctx.Registers.Allocate(core.Temp)
@@ -270,9 +269,11 @@ func (cc *CollectCompiler) compileAggregationFuncCall(selectors []fql.ICollectAg
 	}
 }
 
-func (cc *CollectCompiler) compileGroupSelectors(selectors []fql.ICollectSelectorContext) vm.Operand {
+func (cc *CollectCompiler) compileGrouping(ctx fql.ICollectGroupingContext) (vm.Operand, []fql.ICollectSelectorContext) {
+	selectors := ctx.AllCollectSelector()
+
 	if len(selectors) == 0 {
-		return vm.NoopOperand
+		return vm.NoopOperand, selectors
 	}
 
 	var kvKeyReg vm.Operand
@@ -296,7 +297,7 @@ func (cc *CollectCompiler) compileGroupSelectors(selectors []fql.ICollectSelecto
 		kvKeyReg = cc.ctx.ExprCompiler.Compile(selectors[0].Expression())
 	}
 
-	return kvKeyReg
+	return kvKeyReg, selectors
 }
 
 func (cc *CollectCompiler) compileGroupSelectorVariables(selectors []fql.ICollectSelectorContext, kvKeyReg, kvValReg vm.Operand, isAggregation bool) {
