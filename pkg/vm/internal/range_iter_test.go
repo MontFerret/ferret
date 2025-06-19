@@ -2,6 +2,7 @@ package internal_test
 
 import (
 	"context"
+	"github.com/MontFerret/ferret/pkg/vm/internal"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -12,8 +13,8 @@ import (
 func TestRangeIterator(t *testing.T) {
 	Convey("Zero value", t, func() {
 		ctx := context.Background()
-		r := NewRange(0, 0)
-		iter := NewRangeIterator(r)
+		r := internal.NewRange(0, 0)
+		iter := internal.NewRangeIterator(r)
 
 		hasNext, err := iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -32,8 +33,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Two values", t, func() {
 		ctx := context.Background()
-		r := NewRange(0, 1)
-		iter := NewRangeIterator(r)
+		r := internal.NewRange(0, 1)
+		iter := internal.NewRangeIterator(r)
 
 		hasNext, err := iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -58,8 +59,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Two values (2)", t, func() {
 		ctx := context.Background()
-		r := NewRange(1, 2)
-		iter := NewRangeIterator(r)
+		r := internal.NewRange(1, 2)
+		iter := internal.NewRangeIterator(r)
 
 		hasNext, err := iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -84,8 +85,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Multiple ascending values", t, func() {
 		ctx := context.Background()
-		r := NewRange(0, 10)
-		iter := NewRangeIterator(r)
+		r := internal.NewRange(0, 10)
+		iter := internal.NewRangeIterator(r)
 
 		actual := make([]runtime.Int, 0, 10)
 
@@ -104,8 +105,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Multiple descending values", t, func() {
 		ctx := context.Background()
-		r := NewRange(10, 0)
-		iter := NewRangeIterator(r)
+		r := internal.NewRange(10, 0)
+		iter := internal.NewRangeIterator(r)
 
 		actual := make([]runtime.Int, 0, 10)
 
@@ -126,8 +127,8 @@ func TestRangeIterator(t *testing.T) {
 func BenchmarkRangeIterator(b *testing.B) {
 	size := 100
 	ctx := context.Background()
-	r := NewRange(0, int64(size))
-	iter := NewRangeIterator(r)
+	r := internal.NewRange(0, int64(size))
+	iter := internal.NewRangeIterator(r)
 
 	b.ResetTimer()
 

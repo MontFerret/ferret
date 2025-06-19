@@ -74,15 +74,15 @@ func (cc *LoopCollectCompiler) compileGlobalAggregation(c fql.ICollectAggregator
 	cc.ctx.Symbols.ExitScope()
 
 	// Now we can iterate over the grouped items
-	zero := loadConstant(cc.ctx, runtime.Int(0))
-	one := loadConstant(cc.ctx, runtime.Int(1))
+	zero := cc.ctx.Registers.Allocate(core.Temp)
+	cc.ctx.Emitter.EmitA(vm.OpLoadZero, zero)
 	// We move the aggregator to a temporary register to access it later from the new loop
 	aggregator := cc.ctx.Registers.Allocate(core.Temp)
 	cc.ctx.Emitter.EmitAB(vm.OpMove, aggregator, parentLoop.Dst)
 
 	// CreateFor new loop with 1 iteration only
 	cc.ctx.Symbols.EnterScope()
-	cc.ctx.Emitter.EmitABC(vm.OpRange, parentLoop.Src, zero, one)
+	cc.ctx.Emitter.EmitABC(vm.OpRange, parentLoop.Src, zero, zero)
 	loop := cc.ctx.Loops.CreateFor(core.TemporalLoop, parentLoop.Src, parentLoop.Distinct)
 	loop.Dst = parentLoop.Dst
 	loop.Allocate = true
