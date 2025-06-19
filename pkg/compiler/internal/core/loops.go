@@ -18,28 +18,27 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 	}
 }
 
-func (lt *LoopTable) Create(loopType LoopType, kind LoopKind, distinct bool) *Loop {
+func (lt *LoopTable) CreateFor(loopType LoopType, src vm.Operand, distinct bool) *Loop {
 	parent := lt.Current()
 	allocate := parent == nil || parent.Type != PassThroughLoop
 	result := vm.NoopOperand
 
-	if allocate && loopType != TemporalLoop {
-		result = lt.registers.Allocate(Result)
-	} else if parent != nil {
-		result = parent.Result
+	if loopType != TemporalLoop {
+		if allocate {
+			result = lt.registers.Allocate(Result)
+		} else if parent != nil {
+			result = parent.Dst
+		}
 	}
 
-	loop := &Loop{
+	return &Loop{
 		Type:     loopType,
-		Kind:     kind,
+		Kind:     ForLoop,
 		Distinct: distinct,
-		Result:   result,
+		Src:      src,
+		Dst:      result,
 		Allocate: allocate,
 	}
-
-	lt.Push(loop)
-
-	return loop
 }
 
 func (lt *LoopTable) Push(loop *Loop) {
@@ -69,7 +68,7 @@ func (lt *LoopTable) Depth() int {
 func (lt *LoopTable) DebugView() string {
 	var out strings.Builder
 	for i, loop := range lt.stack {
-		fmt.Fprintf(&out, "Loop[%d]: Type=%v Kind=%v Result=R%d\n", i, loop.Type, loop.Kind, loop.Result)
+		fmt.Fprintf(&out, "Loop[%d]: Type=%v Kind=%v Dst=R%d\n", i, loop.Type, loop.Kind, loop.Dst)
 	}
 	return out.String()
 }

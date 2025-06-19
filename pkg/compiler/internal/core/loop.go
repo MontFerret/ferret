@@ -45,8 +45,8 @@ type Loop struct {
 	KeyName   string
 	Key       vm.Operand
 
-	Result    vm.Operand
-	ResultPos int
+	Dst    vm.Operand
+	DstPos int
 }
 
 func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) {
@@ -65,8 +65,8 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	if l.Allocate {
-		emitter.EmitAb(vm.OpDataSet, l.Result, l.Distinct)
-		l.ResultPos = emitter.Position()
+		emitter.EmitAb(vm.OpDataSet, l.Dst, l.Distinct)
+		l.DstPos = emitter.Position()
 	}
 
 	if l.Iterator == vm.NoopOperand {
@@ -78,12 +78,13 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	// JumpPlaceholder is a placeholder for the exit jump position
 	l.Jump = emitter.EmitJumpc(vm.OpIterNext, JumpPlaceholder, l.Iterator)
 
-	l.BindValueVar(emitter)
-	l.BindKeyVar(emitter)
-}
+	if l.canBindVar(l.Value) {
+		l.EmitValue(l.Value, emitter)
+	}
 
-func (l *Loop) EmitNext(emitter *Emitter) {
-	l.Jump = emitter.EmitJumpc(vm.OpIterNext, JumpPlaceholder, l.Iterator)
+	if l.canBindVar(l.Key) {
+		l.EmitKey(l.Key, emitter)
+	}
 }
 
 func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
@@ -92,18 +93,6 @@ func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
 
 func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
 	emitter.EmitIterKey(dst, l.Iterator)
-}
-
-func (l *Loop) BindValueVar(emitter *Emitter) {
-	if l.canBindVar(l.Value) {
-		l.EmitValue(l.Value, emitter)
-	}
-}
-
-func (l *Loop) BindKeyVar(emitter *Emitter) {
-	if l.canBindVar(l.Key) {
-		l.EmitKey(l.Key, emitter)
-	}
 }
 
 func (l *Loop) EmitFinalization(emitter *Emitter) {

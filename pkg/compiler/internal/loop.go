@@ -49,20 +49,17 @@ func (lc *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) ant
 		loopType = core.PassThroughLoop
 	}
 
-	loop := lc.ctx.Loops.Create(loopType, core.ForLoop, distinct)
+	src := lc.compileForExpressionSource(ctx.ForExpressionSource())
+	loop := lc.ctx.Loops.CreateFor(loopType, src, distinct)
+	lc.ctx.Loops.Push(loop)
 	lc.ctx.Symbols.EnterScope()
 
-	if loop.Kind == core.ForLoop {
-		loop.Src = lc.compileForExpressionSource(ctx.ForExpressionSource())
+	if val := ctx.GetValueVariable(); val != nil {
+		loop.DeclareValueVar(val.GetText(), lc.ctx.Symbols)
+	}
 
-		if val := ctx.GetValueVariable(); val != nil {
-			loop.DeclareValueVar(val.GetText(), lc.ctx.Symbols)
-		}
-
-		if ctr := ctx.GetCounterVariable(); ctr != nil {
-			loop.DeclareKeyVar(ctr.GetText(), lc.ctx.Symbols)
-		}
-	} else {
+	if ctr := ctx.GetCounterVariable(); ctr != nil {
+		loop.DeclareKeyVar(ctr.GetText(), lc.ctx.Symbols)
 	}
 
 	loop.EmitInitialization(lc.ctx.Registers, lc.ctx.Emitter)
@@ -78,7 +75,7 @@ func (lc *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 		c := ctx.(*fql.ReturnExpressionContext)
 		expReg := lc.ctx.ExprCompiler.Compile(c.Expression())
 
-		lc.ctx.Emitter.EmitAB(vm.OpPush, loop.Result, expReg)
+		lc.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, expReg)
 	} else if ctx != nil {
 		if c, ok := ctx.(*fql.ForExpressionContext); ok {
 			lc.Compile(c)
@@ -91,7 +88,7 @@ func (lc *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 
 	// TODO: Free operands
 
-	return loop.Result
+	return loop.Dst
 }
 
 func (lc *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceContext) vm.Operand {

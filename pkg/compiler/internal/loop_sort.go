@@ -69,7 +69,7 @@ func (lc *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExp
 		// TODO: Free registers after use
 	}
 
-	// Create array of sort keys
+	// CreateFor array of sort keys
 	arrReg := lc.ctx.Registers.Allocate(core.Temp)
 	lc.ctx.Emitter.EmitAs(vm.OpList, arrReg, keyRegs)
 	lc.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg)
@@ -111,11 +111,11 @@ func (lc *LoopSortCompiler) applySorter(loop *core.Loop, clauses []fql.ISortClau
 		// Multi-key sorting requires encoded directions and count
 		encoded := runtime.EncodeSortDirections(directions)
 		count := len(clauses)
-		lc.ctx.Emitter.PatchSwapAxy(loop.ResultPos, vm.OpDataSetMultiSorter, loop.Result, encoded, count)
+		lc.ctx.Emitter.PatchSwapAxy(loop.DstPos, vm.OpDataSetMultiSorter, loop.Dst, encoded, count)
 	} else {
 		// Single-key sorting only needs the direction
 		dir := sortDirection(clauses[0].SortDirection())
-		lc.ctx.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetSorter, loop.Result, int(dir))
+		lc.ctx.Emitter.PatchSwapAx(loop.DstPos, vm.OpDataSetSorter, loop.Dst, int(dir))
 	}
 }
 
@@ -126,13 +126,13 @@ func (lc *LoopSortCompiler) applySorter(loop *core.Loop, clauses []fql.ISortClau
 // 4. Reinitializing the loop for iteration over sorted data
 func (lc *LoopSortCompiler) finalizeSorting(loop *core.Loop, kvKeyReg, kvValReg vm.Operand) {
 	// Add the KeyValuePair to the dataset
-	lc.ctx.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
+	lc.ctx.Emitter.EmitABC(vm.OpPushKV, loop.Dst, kvKeyReg, kvValReg)
 
 	// Finalize the current loop iteration
 	loop.EmitFinalization(lc.ctx.Emitter)
 
 	// Replace the loop source with sorted results
-	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
+	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Dst)
 
 	// Reinitialize the loop to iterate over sorted data
 	loop.EmitInitialization(lc.ctx.Registers, lc.ctx.Emitter)
