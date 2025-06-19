@@ -9,15 +9,15 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-type CollectCompiler struct {
+type LoopCollectCompiler struct {
 	ctx *CompilerContext
 }
 
-func NewCollectCompiler(ctx *CompilerContext) *CollectCompiler {
-	return &CollectCompiler{ctx: ctx}
+func NewCollectCompiler(ctx *CompilerContext) *LoopCollectCompiler {
+	return &LoopCollectCompiler{ctx: ctx}
 }
 
-func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
+func (cc *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	aggregator := ctx.CollectAggregator()
 	kvKeyReg, kvValReg, groupSelectors := cc.compileCollect(ctx, aggregator != nil)
 
@@ -32,7 +32,7 @@ func (cc *CollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	}
 }
 
-func (cc *CollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggregation bool) (vm.Operand, vm.Operand, []fql.ICollectSelectorContext) {
+func (cc *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggregation bool) (vm.Operand, vm.Operand, []fql.ICollectSelectorContext) {
 	var kvKeyReg, kvValReg vm.Operand
 	var groupSelectors []fql.ICollectSelectorContext
 	grouping := ctx.CollectGrouping()
@@ -96,13 +96,15 @@ func (cc *CollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggrega
 	if projectionVariableName != "" {
 		// Now we need to expand group variables from the dataset
 		loop.DeclareValueVar(projectionVariableName, cc.ctx.Symbols)
+		loop.EmitInitialization(cc.ctx.Registers, cc.ctx.Emitter)
 
-		cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+		//cc.ctx.LoopCompiler.EmitLoopBegin(loop)
 
 		loop.EmitKey(kvValReg, cc.ctx.Emitter)
 		loop.BindValueVar(cc.ctx.Emitter)
 	} else {
-		cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+		//cc.ctx.LoopCompiler.EmitLoopBegin(loop)
+		loop.EmitInitialization(cc.ctx.Registers, cc.ctx.Emitter)
 
 		loop.EmitKey(kvKeyReg, cc.ctx.Emitter)
 		//loop.EmitValue(kvValReg, cc.ctx.Emitter)
@@ -111,7 +113,7 @@ func (cc *CollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggrega
 	return kvKeyReg, kvValReg, groupSelectors
 }
 
-func (cc *CollectCompiler) compileAggregation(c fql.ICollectAggregatorContext, isGrouped bool) {
+func (cc *LoopCollectCompiler) compileAggregation(c fql.ICollectAggregatorContext, isGrouped bool) {
 	if isGrouped {
 		cc.compileGroupedAggregation(c)
 	} else {
@@ -119,12 +121,12 @@ func (cc *CollectCompiler) compileAggregation(c fql.ICollectAggregatorContext, i
 	}
 }
 
-func (cc *CollectCompiler) compileGroupedAggregation(c fql.ICollectAggregatorContext) {
+func (cc *LoopCollectCompiler) compileGroupedAggregation(c fql.ICollectAggregatorContext) {
 	parentLoop := cc.ctx.Loops.Current()
 	// We need to allocate a temporary accumulators to store aggregation results
 	selectors := c.AllCollectAggregateSelector()
 	accums := cc.initAggrAccumulators(selectors)
-	loop := cc.ctx.Loops.NewLoop(core.TemporalLoop, core.ForLoop, false)
+	loop := cc.ctx.Loops.Create(core.TemporalLoop, core.ForLoop, false)
 	loop.Src = cc.ctx.Registers.Allocate(core.Temp)
 
 	// Now we iterate over the grouped items
@@ -163,7 +165,7 @@ func (cc *CollectCompiler) compileGroupedAggregation(c fql.ICollectAggregatorCon
 	// cc.ctx.Registers.Free(aggrIterVal)
 }
 
-func (cc *CollectCompiler) compileGlobalAggregation(c fql.ICollectAggregatorContext) {
+func (cc *LoopCollectCompiler) compileGlobalAggregation(c fql.ICollectAggregatorContext) {
 	parentLoop := cc.ctx.Loops.Current()
 	loop := parentLoop
 	// we create a custom collector for aggregators
@@ -171,9 +173,6 @@ func (cc *CollectCompiler) compileGlobalAggregation(c fql.ICollectAggregatorCont
 
 	// Nested scope for aggregators
 	cc.ctx.Symbols.EnterScope()
-	loop.DeclareValueVar(loop.ValueName, cc.ctx.Symbols)
-	loop.BindValueVar(cc.ctx.Emitter)
-
 	// Now we add value selectors to the accumulators
 	selectors := c.AllCollectAggregateSelector()
 	cc.collectAggregationFuncArgs(selectors, func(i int, resultReg vm.Operand) {
@@ -183,32 +182,26 @@ func (cc *CollectCompiler) compileGlobalAggregation(c fql.ICollectAggregatorCont
 		cc.ctx.Registers.Free(aggrKeyReg)
 	})
 
-	// Now we can iterate over the grouped items
 	loop.EmitFinalization(cc.ctx.Emitter)
-
-	// Now close the aggregators scope
 	cc.ctx.Symbols.ExitScope()
 
 	parentLoop.ValueName = ""
 	parentLoop.KeyName = ""
 
-	// Since we are in the middle of the loop, we need to patch the loop result
-	// Now we just create a range with 1 item to push the aggregated values to the dataset
-	// Replace source with sorted array
+	// Now we can iterate over the grouped items
 	zero := loadConstant(cc.ctx, runtime.Int(0))
 	one := loadConstant(cc.ctx, runtime.Int(1))
+	// We move the aggregator to a temporary register to access it later from the new loop
 	aggregator := cc.ctx.Registers.Allocate(core.Temp)
 	cc.ctx.Emitter.EmitAB(vm.OpMove, aggregator, loop.Result)
-	cc.ctx.Symbols.ExitScope()
 
+	// Create new loop with 1 iteration only
 	cc.ctx.Symbols.EnterScope()
-
-	// Create new for loop
 	cc.ctx.Emitter.EmitABC(vm.OpRange, loop.Src, zero, one)
 	cc.ctx.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
+	loop.EmitInitialization(cc.ctx.Registers, cc.ctx.Emitter)
 
-	// In case of non-collected aggregators, we just iterate over the grouped items
-	// Retrieve the grouped values by key, execute aggregation funcs and assign variable names to the results
+	// We just need to take the grouped values and call aggregation functions using them as args
 	var key vm.Operand
 	var value vm.Operand
 	cc.compileAggregationFuncCall(selectors, func(i int, selectorVarName string) core.RegisterSequence {
@@ -229,7 +222,7 @@ func (cc *CollectCompiler) compileGlobalAggregation(c fql.ICollectAggregatorCont
 	// cc.ctx.Registers.Free(aggrIterVal)
 }
 
-func (cc *CollectCompiler) collectAggregationFuncArgs(selectors []fql.ICollectAggregateSelectorContext, collector func(int, vm.Operand)) {
+func (cc *LoopCollectCompiler) collectAggregationFuncArgs(selectors []fql.ICollectAggregateSelectorContext, collector func(int, vm.Operand)) {
 	for i := 0; i < len(selectors); i++ {
 		selector := selectors[i]
 		fcx := selector.FunctionCallExpression()
@@ -251,7 +244,7 @@ func (cc *CollectCompiler) collectAggregationFuncArgs(selectors []fql.ICollectAg
 	}
 }
 
-func (cc *CollectCompiler) compileAggregationFuncCall(selectors []fql.ICollectAggregateSelectorContext, provider func(int, string) core.RegisterSequence, cleanup func(int)) {
+func (cc *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollectAggregateSelectorContext, provider func(int, string) core.RegisterSequence, cleanup func(int)) {
 	for i, selector := range selectors {
 		fcx := selector.FunctionCallExpression()
 		// We won't make any checks here, as we already did it before
@@ -269,7 +262,7 @@ func (cc *CollectCompiler) compileAggregationFuncCall(selectors []fql.ICollectAg
 	}
 }
 
-func (cc *CollectCompiler) compileGrouping(ctx fql.ICollectGroupingContext) (vm.Operand, []fql.ICollectSelectorContext) {
+func (cc *LoopCollectCompiler) compileGrouping(ctx fql.ICollectGroupingContext) (vm.Operand, []fql.ICollectSelectorContext) {
 	selectors := ctx.AllCollectSelector()
 
 	if len(selectors) == 0 {
@@ -300,7 +293,7 @@ func (cc *CollectCompiler) compileGrouping(ctx fql.ICollectGroupingContext) (vm.
 	return kvKeyReg, selectors
 }
 
-func (cc *CollectCompiler) compileGroupSelectorVariables(selectors []fql.ICollectSelectorContext, kvKeyReg, kvValReg vm.Operand, isAggregation bool) {
+func (cc *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICollectSelectorContext, kvKeyReg, kvValReg vm.Operand, isAggregation bool) {
 	if len(selectors) > 1 {
 		variables := make([]vm.Operand, len(selectors))
 
@@ -336,7 +329,7 @@ func (cc *CollectCompiler) compileGroupSelectorVariables(selectors []fql.ICollec
 	}
 }
 
-func (cc *CollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+func (cc *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kvValReg vm.Operand, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
 	if keeper == nil {
 		seq := cc.ctx.Registers.AllocateSequence(2) // Key and Value for Map
 
@@ -371,7 +364,7 @@ func (cc *CollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kvValR
 	return identifier.GetText()
 }
 
-func (cc *CollectCompiler) compileCustomGroupProjection(_ *core.Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
+func (cc *LoopCollectCompiler) compileCustomGroupProjection(_ *core.Loop, kvValReg vm.Operand, selector fql.ICollectSelectorContext) string {
 	selectorReg := cc.ctx.ExprCompiler.Compile(selector.Expression())
 	cc.ctx.Emitter.EmitMove(kvValReg, selectorReg)
 	cc.ctx.Registers.Free(selectorReg)
@@ -379,7 +372,7 @@ func (cc *CollectCompiler) compileCustomGroupProjection(_ *core.Loop, kvValReg v
 	return selector.Identifier().GetText()
 }
 
-func (cc *CollectCompiler) selectGroupKey(isAggregation bool, kvKeyReg, kvValReg vm.Operand) vm.Operand {
+func (cc *LoopCollectCompiler) selectGroupKey(isAggregation bool, kvKeyReg, kvValReg vm.Operand) vm.Operand {
 	if isAggregation {
 		return kvKeyReg
 	}
@@ -387,7 +380,7 @@ func (cc *CollectCompiler) selectGroupKey(isAggregation bool, kvKeyReg, kvValReg
 	return kvValReg
 }
 
-func (cc *CollectCompiler) initAggrAccumulators(selectors []fql.ICollectAggregateSelectorContext) []vm.Operand {
+func (cc *LoopCollectCompiler) initAggrAccumulators(selectors []fql.ICollectAggregateSelectorContext) []vm.Operand {
 	accums := make([]vm.Operand, len(selectors))
 
 	// First of all, we allocate registers for accumulators
@@ -405,7 +398,7 @@ func (cc *CollectCompiler) initAggrAccumulators(selectors []fql.ICollectAggregat
 	return accums
 }
 
-func (cc *CollectCompiler) emitPushToAggrAccumulators(accums []vm.Operand, selectors []fql.ICollectAggregateSelectorContext, loop *core.Loop) {
+func (cc *LoopCollectCompiler) emitPushToAggrAccumulators(accums []vm.Operand, selectors []fql.ICollectAggregateSelectorContext, loop *core.Loop) {
 	for i, selector := range selectors {
 		fcx := selector.FunctionCallExpression()
 		args := cc.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())

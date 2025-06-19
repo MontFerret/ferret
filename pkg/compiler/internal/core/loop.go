@@ -64,11 +64,22 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 }
 
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
+	if l.Allocate {
+		emitter.EmitAb(vm.OpDataSet, l.Result, l.Distinct)
+		l.ResultPos = emitter.Position()
+	}
+
 	if l.Iterator == vm.NoopOperand {
 		l.Iterator = alloc.Allocate(Temp)
 	}
 
 	emitter.EmitIter(l.Iterator, l.Src)
+
+	// JumpPlaceholder is a placeholder for the exit jump position
+	l.Jump = emitter.EmitJumpc(vm.OpIterNext, JumpPlaceholder, l.Iterator)
+
+	l.BindValueVar(emitter)
+	l.BindKeyVar(emitter)
 }
 
 func (l *Loop) EmitNext(emitter *Emitter) {

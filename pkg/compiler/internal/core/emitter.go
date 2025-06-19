@@ -23,6 +23,10 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
+func (e *Emitter) Position() int {
+	return len(e.instructions) - 1
+}
+
 // PatchSwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
 func (e *Emitter) PatchSwapAB(pos int, op vm.Opcode, dst, src1 vm.Operand) {
 	e.instructions[pos] = vm.Instruction{

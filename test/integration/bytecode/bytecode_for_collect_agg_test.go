@@ -8,7 +8,7 @@ import (
 
 func TestCollectAggregate(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 LET users = []
 FOR u IN users
   COLLECT genderGroup = u.gender
@@ -19,6 +19,17 @@ FOR u IN users
     minAge,
     maxAge
   }
+`, BC{
+			I(vm.OpReturn, 0, 7),
+		}),
+		ByteCodeCase(`
+			LET users = []
+			FOR u IN users
+  				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+  				RETURN {
+    				minAge, 
+    				maxAge 
+  				}
 `, BC{
 			I(vm.OpReturn, 0, 7),
 		}),

@@ -18,6 +18,23 @@ func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 }
 
 func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
+	returnRuleCtx := lc.compileInitialization(ctx)
+
+	// body
+	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+		for _, b := range body {
+			if c := b.ForExpressionStatement(); c != nil {
+				lc.compileForExpressionStatement(c)
+			} else if c := b.ForExpressionClause(); c != nil {
+				lc.compileForExpressionClause(c)
+			}
+		}
+	}
+
+	return lc.compileFinalization(returnRuleCtx)
+}
+
+func (lc *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antlr.RuleContext {
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
 	var loopType core.LoopType
@@ -32,12 +49,11 @@ func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 		loopType = core.PassThroughLoop
 	}
 
-	loop := lc.ctx.Loops.NewLoop(loopType, core.ForLoop, distinct)
+	loop := lc.ctx.Loops.Create(loopType, core.ForLoop, distinct)
 	lc.ctx.Symbols.EnterScope()
-	lc.ctx.Loops.Push(loop)
 
 	if loop.Kind == core.ForLoop {
-		loop.Src = lc.CompileForExpressionSource(ctx.ForExpressionSource())
+		loop.Src = lc.compileForExpressionSource(ctx.ForExpressionSource())
 
 		if val := ctx.GetValueVariable(); val != nil {
 			loop.DeclareValueVar(val.GetText(), lc.ctx.Symbols)
@@ -49,42 +65,36 @@ func (lc *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 	} else {
 	}
 
-	lc.EmitLoopBegin(loop)
+	loop.EmitInitialization(lc.ctx.Registers, lc.ctx.Emitter)
 
-	// body
-	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
-		for _, b := range body {
-			if c := b.ForExpressionStatement(); c != nil {
-				lc.CompileForExpressionStatement(c)
-			} else if c := b.ForExpressionClause(); c != nil {
-				lc.CompileForExpressionClause(c)
-			}
-		}
-	}
+	return returnRuleCtx
+}
 
-	loop = lc.ctx.Loops.Current()
+func (lc *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
+	loop := lc.ctx.Loops.Current()
 
 	// RETURN
 	if loop.Type != core.PassThroughLoop {
-		c := returnRuleCtx.(*fql.ReturnExpressionContext)
+		c := ctx.(*fql.ReturnExpressionContext)
 		expReg := lc.ctx.ExprCompiler.Compile(c.Expression())
 
 		lc.ctx.Emitter.EmitAB(vm.OpPush, loop.Result, expReg)
-	} else if returnRuleCtx != nil {
-		if c, ok := returnRuleCtx.(*fql.ForExpressionContext); ok {
+	} else if ctx != nil {
+		if c, ok := ctx.(*fql.ForExpressionContext); ok {
 			lc.Compile(c)
 		}
 	}
 
-	res := lc.EmitLoopEnd(loop)
-
+	loop.EmitFinalization(lc.ctx.Emitter)
 	lc.ctx.Symbols.ExitScope()
 	lc.ctx.Loops.Pop()
 
-	return res
+	// TODO: Free operands
+
+	return loop.Result
 }
 
-func (lc *LoopCompiler) CompileForExpressionSource(ctx fql.IForExpressionSourceContext) vm.Operand {
+func (lc *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceContext) vm.Operand {
 	if c := ctx.FunctionCallExpression(); c != nil {
 		return lc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
 	}
@@ -116,40 +126,40 @@ func (lc *LoopCompiler) CompileForExpressionSource(ctx fql.IForExpressionSourceC
 	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
-func (lc *LoopCompiler) CompileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
+func (lc *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionStatementContext) {
 	if c := ctx.VariableDeclaration(); c != nil {
 		_ = lc.ctx.StmtCompiler.CompileVariableDeclaration(c)
 	} else if c := ctx.FunctionCallExpression(); c != nil {
 		_ = lc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
-
-		// TODO: Free register if needed
 	}
+
+	// TODO: Free register if needed
 }
 
-func (lc *LoopCompiler) CompileForExpressionClause(ctx fql.IForExpressionClauseContext) {
+func (lc *LoopCompiler) compileForExpressionClause(ctx fql.IForExpressionClauseContext) {
 	if c := ctx.LimitClause(); c != nil {
-		lc.CompileLimitClause(c)
+		lc.compileLimitClause(c)
 	} else if c := ctx.FilterClause(); c != nil {
-		lc.CompileFilterClause(c)
+		lc.compileFilterClause(c)
 	} else if c := ctx.SortClause(); c != nil {
-		lc.CompileSortClause(c)
+		lc.compileSortClause(c)
 	} else if c := ctx.CollectClause(); c != nil {
-		lc.CompileCollectClause(c)
+		lc.compileCollectClause(c)
 	}
 }
 
-func (lc *LoopCompiler) CompileLimitClause(ctx fql.ILimitClauseContext) {
+func (lc *LoopCompiler) compileLimitClause(ctx fql.ILimitClauseContext) {
 	clauses := ctx.AllLimitClauseValue()
 
 	if len(clauses) == 1 {
-		lc.CompileLimit(lc.CompileLimitClauseValue(clauses[0]))
+		lc.compileLimit(lc.compileLimitClauseValue(clauses[0]))
 	} else {
-		lc.CompileOffset(lc.CompileLimitClauseValue(clauses[0]))
-		lc.CompileLimit(lc.CompileLimitClauseValue(clauses[1]))
+		lc.compileOffset(lc.compileLimitClauseValue(clauses[0]))
+		lc.compileLimit(lc.compileLimitClauseValue(clauses[1]))
 	}
 }
 
-func (lc *LoopCompiler) CompileLimitClauseValue(ctx fql.ILimitClauseValueContext) vm.Operand {
+func (lc *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext) vm.Operand {
 	if c := ctx.Param(); c != nil {
 		return lc.ctx.ExprCompiler.CompileParam(c)
 	}
@@ -174,153 +184,25 @@ func (lc *LoopCompiler) CompileLimitClauseValue(ctx fql.ILimitClauseValueContext
 
 }
 
-func (lc *LoopCompiler) CompileLimit(src vm.Operand) {
+func (lc *LoopCompiler) compileLimit(src vm.Operand) {
 	state := lc.ctx.Registers.Allocate(core.State)
 	lc.ctx.Emitter.EmitABx(vm.OpIterLimit, state, src, lc.ctx.Loops.Current().Jump)
 }
 
-func (lc *LoopCompiler) CompileOffset(src vm.Operand) {
+func (lc *LoopCompiler) compileOffset(src vm.Operand) {
 	state := lc.ctx.Registers.Allocate(core.State)
 	lc.ctx.Emitter.EmitABx(vm.OpIterSkip, state, src, lc.ctx.Loops.Current().Jump)
 }
 
-func (lc *LoopCompiler) CompileFilterClause(ctx fql.IFilterClauseContext) {
+func (lc *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	src := lc.ctx.ExprCompiler.Compile(ctx.Expression())
 	lc.ctx.Emitter.EmitJumpIfFalse(src, lc.ctx.Loops.Current().Jump)
 }
 
-func (lc *LoopCompiler) CompileSortClause(ctx fql.ISortClauseContext) {
-	loop := lc.ctx.Loops.Current()
-
-	// We collect the sorting conditions (keys
-	// And wrap each loop element by a KeyValuePair
-	// Where a key is either a single value or a list of values
-	// These KeyValuePairs are then added to the dataset
-	kvKeyReg := lc.ctx.Registers.Allocate(core.Temp)
-	clauses := ctx.AllSortClauseExpression()
-	var directions []runtime.SortDirection
-	isSortMany := len(clauses) > 1
-
-	if isSortMany {
-		clausesRegs := make([]vm.Operand, len(clauses))
-		directions = make([]runtime.SortDirection, len(clauses))
-		// We create a sequence of Registers for the clauses
-		// To pack them into an array
-		keyRegs := lc.ctx.Registers.AllocateSequence(len(clauses))
-
-		for i, clause := range clauses {
-			clauseReg := lc.ctx.ExprCompiler.Compile(clause.Expression())
-			lc.ctx.Emitter.EmitMove(keyRegs[i], clauseReg)
-			clausesRegs[i] = keyRegs[i]
-			directions[i] = sortDirection(clause.SortDirection())
-			// TODO: Free Registers
-		}
-
-		arrReg := lc.ctx.Registers.Allocate(core.Temp)
-		lc.ctx.Emitter.EmitAs(vm.OpList, arrReg, keyRegs)
-		lc.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg) // TODO: Free Registers
-	} else {
-		clausesReg := lc.ctx.ExprCompiler.Compile(clauses[0].Expression())
-		lc.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, clausesReg)
-	}
-
-	var kvValReg vm.Operand
-
-	// In case the value is not used in the loop body, and only key is used
-	if loop.ValueName != "" {
-		kvValReg = loop.Value
-	} else {
-		// If so, we need to load it from the iterator
-		kvValReg = lc.ctx.Registers.Allocate(core.Temp)
-		loop.EmitValue(kvKeyReg, lc.ctx.Emitter)
-	}
-
-	if isSortMany {
-		encoded := runtime.EncodeSortDirections(directions)
-		count := len(clauses)
-
-		lc.ctx.Emitter.PatchSwapAxy(loop.ResultPos, vm.OpDataSetMultiSorter, loop.Result, encoded, count)
-	} else {
-		dir := sortDirection(clauses[0].SortDirection())
-		lc.ctx.Emitter.PatchSwapAx(loop.ResultPos, vm.OpDataSetSorter, loop.Result, int(dir))
-	}
-
-	lc.ctx.Emitter.EmitABC(vm.OpPushKV, loop.Result, kvKeyReg, kvValReg)
-	loop.EmitFinalization(lc.ctx.Emitter)
-
-	// Replace source with the Sorter
-	lc.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, loop.Result)
-
-	// Create a new loop
-	lc.EmitLoopBegin(loop)
+func (lc *LoopCompiler) compileSortClause(ctx fql.ISortClauseContext) {
+	lc.ctx.LoopSortCompiler.Compile(ctx)
 }
 
-func (lc *LoopCompiler) CompileCollectClause(ctx fql.ICollectClauseContext) {
-	lc.ctx.CollectCompiler.Compile(ctx)
-}
-
-// EmitLoopBegin emits an instruction to get the value from the iterator
-func (lc *LoopCompiler) EmitLoopBegin(loop *core.Loop) {
-	if loop.Allocate {
-		lc.ctx.Emitter.EmitAb(vm.OpDataSet, loop.Result, loop.Distinct)
-		loop.ResultPos = lc.ctx.Emitter.Size() - 1
-	}
-
-	loop.Iterator = lc.ctx.Registers.Allocate(core.State)
-
-	if loop.Kind == core.ForLoop {
-		lc.ctx.Emitter.EmitAB(vm.OpIter, loop.Iterator, loop.Src)
-		// core.JumpPlaceholder is a placeholder for the exit jump position
-		loop.Jump = lc.ctx.Emitter.EmitJumpc(vm.OpIterNext, core.JumpPlaceholder, loop.Iterator)
-
-		if loop.Value != vm.NoopOperand {
-			lc.ctx.Emitter.EmitAB(vm.OpIterValue, loop.Value, loop.Iterator)
-		}
-
-		if loop.Key != vm.NoopOperand {
-			lc.ctx.Emitter.EmitAB(vm.OpIterKey, loop.Key, loop.Iterator)
-		}
-	} else {
-		//counterReg := lc.ctx.Registers.Allocate(Storage)
-		// TODO: Set JumpOffset here
-	}
-}
-
-func (lc *LoopCompiler) EmitLoopEnd(loop *core.Loop) vm.Operand {
-	lc.ctx.Emitter.EmitJump(loop.Jump - loop.JumpOffset)
-
-	// TODO: Do not allocate for pass-through Loops
-	dst := lc.ctx.Registers.Allocate(core.Temp)
-
-	if loop.Allocate {
-		// TODO: Reuse the dsReg register
-		lc.ctx.Emitter.EmitA(vm.OpClose, loop.Iterator)
-		lc.ctx.Emitter.EmitAB(vm.OpMove, dst, loop.Result)
-
-		if loop.Kind == core.ForLoop {
-			lc.ctx.Emitter.PatchJump(loop.Jump)
-		} else {
-			lc.ctx.Emitter.PatchJumpAB(loop.Jump)
-		}
-	} else {
-		if loop.Kind == core.ForLoop {
-			lc.ctx.Emitter.PatchJumpNext(loop.Jump)
-		} else {
-			lc.ctx.Emitter.PatchJumpNextAB(loop.Jump)
-		}
-	}
-
-	return dst
-}
-
-func (lc *LoopCompiler) loopKind(ctx *fql.ForExpressionContext) core.LoopKind {
-	if ctx.While() == nil {
-		return core.ForLoop
-	}
-
-	if ctx.Do() == nil {
-		return core.WhileLoop
-	}
-
-	return core.DoWhileLoop
+func (lc *LoopCompiler) compileCollectClause(ctx fql.ICollectClauseContext) {
+	lc.ctx.LoopCollectCompiler.Compile(ctx)
 }

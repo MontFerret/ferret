@@ -10,12 +10,13 @@ type CompilerContext struct {
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
 
-	ExprCompiler    *ExprCompiler
-	LiteralCompiler *LiteralCompiler
-	StmtCompiler    *StmtCompiler
-	LoopCompiler    *LoopCompiler
-	CollectCompiler *CollectCompiler
-	WaitCompiler    *WaitCompiler
+	ExprCompiler        *ExprCompiler
+	LiteralCompiler     *LiteralCompiler
+	StmtCompiler        *StmtCompiler
+	LoopCompiler        *LoopCompiler
+	LoopSortCompiler    *LoopSortCompiler
+	LoopCollectCompiler *LoopCollectCompiler
+	WaitCompiler        *WaitCompiler
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
@@ -34,7 +35,8 @@ func NewCompilerContext() *CompilerContext {
 	ctx.LiteralCompiler = NewLiteralCompiler(ctx)
 	ctx.StmtCompiler = NewStmtCompiler(ctx)
 	ctx.LoopCompiler = NewLoopCompiler(ctx)
-	ctx.CollectCompiler = NewCollectCompiler(ctx)
+	ctx.LoopSortCompiler = NewLoopSortCompiler(ctx)
+	ctx.LoopCollectCompiler = NewCollectCompiler(ctx)
 	ctx.WaitCompiler = NewWaitCompiler(ctx)
 
 	return ctx

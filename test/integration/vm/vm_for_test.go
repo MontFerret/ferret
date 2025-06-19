@@ -23,7 +23,10 @@ func TestFor(t *testing.T) {
 			FOR foo IN foo
 				RETURN foo
 		`, "Should not compile FOR foo IN foo"),
-		CaseArray("FOR i IN 1..5 RETURN i", []any{1, 2, 3, 4, 5}),
+		CaseArray(`
+FOR i IN 1..5
+	RETURN i
+`, []any{1, 2, 3, 4, 5}),
 		CaseArray(
 			`
 		FOR i IN 1..5

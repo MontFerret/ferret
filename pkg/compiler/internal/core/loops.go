@@ -2,9 +2,8 @@ package core
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/MontFerret/ferret/pkg/vm"
+	"strings"
 )
 
 type LoopTable struct {
@@ -17,6 +16,30 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 		stack:     make([]*Loop, 0),
 		registers: registers,
 	}
+}
+
+func (lt *LoopTable) Create(loopType LoopType, kind LoopKind, distinct bool) *Loop {
+	parent := lt.Current()
+	allocate := parent == nil || parent.Type != PassThroughLoop
+	result := vm.NoopOperand
+
+	if allocate && loopType != TemporalLoop {
+		result = lt.registers.Allocate(Result)
+	} else if parent != nil {
+		result = parent.Result
+	}
+
+	loop := &Loop{
+		Type:     loopType,
+		Kind:     kind,
+		Distinct: distinct,
+		Result:   result,
+		Allocate: allocate,
+	}
+
+	lt.Push(loop)
+
+	return loop
 }
 
 func (lt *LoopTable) Push(loop *Loop) {
@@ -41,26 +64,6 @@ func (lt *LoopTable) Current() *Loop {
 
 func (lt *LoopTable) Depth() int {
 	return len(lt.stack)
-}
-
-func (lt *LoopTable) NewLoop(loopType LoopType, kind LoopKind, distinct bool) *Loop {
-	parent := lt.Current()
-	allocate := parent == nil || parent.Type != PassThroughLoop
-	result := vm.NoopOperand
-
-	if allocate && loopType != TemporalLoop {
-		result = lt.registers.Allocate(Result)
-	} else if parent != nil {
-		result = parent.Result
-	}
-
-	return &Loop{
-		Type:     loopType,
-		Kind:     kind,
-		Distinct: distinct,
-		Result:   result,
-		Allocate: allocate,
-	}
 }
 
 func (lt *LoopTable) DebugView() string {
