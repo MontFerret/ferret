@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
@@ -97,6 +98,34 @@ func (c *KeyCounterCollector) Add(ctx context.Context, key, _ runtime.Value) err
 		kv.Value = sum
 	} else {
 		kv.Value = runtime.NewInt(1)
+	}
+
+	return nil
+}
+
+func (c *KeyCounterCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
+	k, err := Stringify(ctx, key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	v, ok := c.grouping[k]
+
+	if !ok {
+		return runtime.None, runtime.ErrNotFound
+	}
+
+	return v, nil
+}
+
+func (c *KeyCounterCollector) Close() error {
+	val := c.Value
+	c.Value = nil
+	c.grouping = nil
+
+	if closer := val.(io.Closer); closer != nil {
+		return closer.Close()
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
@@ -19,10 +20,6 @@ func NewKeyGroupCollector() Transformer {
 		},
 		grouping: make(map[string]runtime.List),
 	}
-}
-
-func (c *KeyGroupCollector) Get(_ context.Context, key runtime.Value) (runtime.Value, error) {
-	return c.grouping[key.String()], nil
 }
 
 func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
@@ -82,4 +79,32 @@ func (c *KeyGroupCollector) sort(ctx context.Context) error {
 
 		return comp
 	})
+}
+
+func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
+	k, err := Stringify(ctx, key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	v, ok := c.grouping[k]
+
+	if !ok {
+		return runtime.None, runtime.ErrNotFound
+	}
+
+	return v, nil
+}
+
+func (c *KeyGroupCollector) Close() error {
+	val := c.Value
+	c.Value = nil
+	c.grouping = nil
+
+	if closer := val.(io.Closer); closer != nil {
+		return closer.Close()
+	}
+
+	return nil
 }

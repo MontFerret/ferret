@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
@@ -66,4 +67,19 @@ func (s *MultiSorter) sort(ctx context.Context) error {
 
 		return 0
 	})
+}
+
+func (s *MultiSorter) Get(_ context.Context, _ runtime.Value) (runtime.Value, error) {
+	return runtime.None, runtime.ErrNotSupported
+}
+
+func (s *MultiSorter) Close() error {
+	val := s.Value
+	s.Value = nil
+
+	if closer := val.(io.Closer); closer != nil {
+		return closer.Close()
+	}
+
+	return nil
 }

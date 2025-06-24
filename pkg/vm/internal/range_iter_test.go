@@ -2,8 +2,9 @@ package internal_test
 
 import (
 	"context"
-	"github.com/MontFerret/ferret/pkg/vm/internal"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/vm/internal"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 

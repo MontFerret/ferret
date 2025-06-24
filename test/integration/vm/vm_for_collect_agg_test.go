@@ -96,7 +96,46 @@ FOR u IN users
 		`, []any{
 			map[string]any{"minAge": 25, "maxAge": 69},
 		}, "Should collect and aggregate values without grouping"),
-		SkipCaseArray(`
+		CaseArray(`
+LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT AGGREGATE ages = UNION(u.age, u.age)
+  				RETURN { ages } 
+`, []any{
+			map[string]any{"ages": []any{31, 25, 36, 69, 45, 31, 25, 36, 69, 45}},
+		}, "Should call aggregation functions with more than one argument"),
+		CaseArray(`
 LET users = [
 				{
 					active: true,
@@ -131,16 +170,15 @@ LET users = [
 			]
 FOR u IN users
   COLLECT genderGroup = u.gender
-   AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+   AGGREGATE ages = UNION(u.age, u.age)
 
   RETURN {
     genderGroup,
-    minAge,
-    maxAge
+    ages,
   }
 `, []any{
-			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
-			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
+			map[string]any{"genderGroup": "f", "ages": []any{25, 45, 25, 45}},
+			map[string]any{"genderGroup": "m", "ages": []any{31, 36, 69, 31, 36, 69}},
 		}, "Should collect and aggregate values by a single key"),
 	})
 }

@@ -192,7 +192,6 @@ loop:
 			start := int(src1)
 			end := int(src1) + size
 
-			// Iterate over registers starting from src1 and up to the src2
 			for i := start; i < end; i++ {
 				_ = arr.Add(ctx, reg[i])
 			}

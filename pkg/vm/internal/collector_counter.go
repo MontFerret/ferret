@@ -28,3 +28,11 @@ func (c *CounterCollector) Add(_ context.Context, _, _ runtime.Value) error {
 
 	return nil
 }
+
+func (c *CounterCollector) Get(_ context.Context, _ runtime.Value) (runtime.Value, error) {
+	return c.Value, nil
+}
+
+func (c *CounterCollector) Close() error {
+	return nil
+}
