@@ -180,5 +180,53 @@ FOR u IN users
 			map[string]any{"genderGroup": "f", "ages": []any{25, 45, 25, 45}},
 			map[string]any{"genderGroup": "m", "ages": []any{31, 36, 69, 31, 36, 69}},
 		}, "Should collect and aggregate values by a single key"),
+		CaseArray(`
+		LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT ageGroup = FLOOR(u.age / 5) * 5 
+  				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+  				RETURN {
+					ageGroup,
+    				minAge, 
+    				maxAge 
+  				}
+`, []any{
+			map[string]any{"ageGroup": 25, "maxAge": 25, "minAge": 25},
+			map[string]any{"ageGroup": 30, "maxAge": 31, "minAge": 31},
+			map[string]any{"ageGroup": 35, "maxAge": 36, "minAge": 36},
+			map[string]any{"ageGroup": 45, "maxAge": 45, "minAge": 45},
+			map[string]any{"ageGroup": 65, "maxAge": 69, "minAge": 69},
+		}, "Should aggregate values with calculated grouping"),
 	})
 }
