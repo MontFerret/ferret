@@ -49,14 +49,12 @@ func (c *LoopCollectCompiler) compileGroupedAggregation(ctx fql.ICollectAggregat
 func (c *LoopCollectCompiler) compileGlobalAggregation(ctx fql.ICollectAggregatorContext) {
 	parentLoop := c.ctx.Loops.Current()
 	// we create a custom collector for aggregators
-	c.ctx.Emitter.PatchSwapAx(parentLoop.Pos, vm.OpDataSetCollector, parentLoop.Dst, int(core.CollectorTypeKeyGroup))
-
+	dst := parentLoop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(core.CollectorTypeKeyGroup))
 	// Nested scope for aggregators
 	c.ctx.Symbols.EnterScope()
 	// Now we add value selectors to the collector
 	selectors := ctx.AllCollectAggregateSelector()
-	argsPkg := c.compileAggregationFuncArgs(selectors, parentLoop.Dst)
-
+	argsPkg := c.compileAggregationFuncArgs(selectors, dst)
 	parentLoop.EmitFinalization(c.ctx.Emitter)
 	c.ctx.Loops.Pop()
 	c.ctx.Symbols.ExitScope()
@@ -66,14 +64,18 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(ctx fql.ICollectAggregato
 	c.ctx.Emitter.EmitA(vm.OpLoadZero, zero)
 	// We move the aggregator to a temporary register to access it later from the new loop
 	aggregator := c.ctx.Registers.Allocate(core.Temp)
-	c.ctx.Emitter.EmitAB(vm.OpMove, aggregator, parentLoop.Dst)
+	c.ctx.Emitter.EmitAB(vm.OpMove, aggregator, dst)
+
+	if parentLoop.Dst != dst && !parentLoop.Allocate {
+		c.ctx.Registers.Free(dst)
+	}
 
 	// CreateFor new loop with 1 iteration only
 	c.ctx.Symbols.EnterScope()
 	c.ctx.Emitter.EmitABC(vm.OpRange, parentLoop.Src, zero, zero)
 	loop := c.ctx.Loops.CreateFor(core.TemporalLoop, parentLoop.Src, parentLoop.Distinct)
 	loop.Dst = parentLoop.Dst
-	loop.Allocate = true
+	loop.Allocate = parentLoop.Allocate
 	c.ctx.Loops.Push(loop)
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
