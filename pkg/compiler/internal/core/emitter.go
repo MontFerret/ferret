@@ -59,6 +59,37 @@ func (e *Emitter) PatchSwapAs(pos int, op vm.Opcode, dst vm.Operand, seq Registe
 	}
 }
 
+// PatchInsertAx inserts a new instruction at a specific position in the instructions slice, shifting elements to the right.
+// The inserted instruction includes an opcode and operands, where the third operand is set to a no-op by default.
+func (e *Emitter) PatchInsertAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
+	// Append a zero value to create space
+	e.instructions = append(e.instructions, vm.Instruction{})
+
+	// Shift elements to the right
+	copy(e.instructions[pos+1:], e.instructions[pos:])
+
+	// Insert the new value
+	e.instructions[pos] = vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+	}
+}
+
+// PatchInsertAxy inserts an instruction at the specified position in the instruction list, shifting existing elements to the right.
+func (e *Emitter) PatchInsertAxy(pos int, op vm.Opcode, dst vm.Operand, arg1, arg2 int) {
+	// Append a zero value to create space
+	e.instructions = append(e.instructions, vm.Instruction{})
+
+	// Shift elements to the right
+	copy(e.instructions[pos+1:], e.instructions[pos:])
+
+	// Insert the new value
+	e.instructions[pos] = vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(arg2)},
+	}
+}
+
 // PatchJump patches a jump opcode.
 func (e *Emitter) PatchJump(instr int) {
 	e.instructions[instr].Operands[0] = vm.Operand(len(e.instructions) - 1)
@@ -108,6 +139,11 @@ func (e *Emitter) EmitAb(op vm.Opcode, dest vm.Operand, arg bool) {
 // EmitAx emits an opcode with a destination register and a custom argument.
 func (e *Emitter) EmitAx(op vm.Opcode, dest vm.Operand, arg int) {
 	e.EmitABC(op, dest, vm.Operand(arg), 0)
+}
+
+// EmitAxy emits an instruction with the given opcode, destination operand, and two integer arguments converted to operands.
+func (e *Emitter) EmitAxy(op vm.Opcode, dest vm.Operand, arg1, agr2 int) {
+	e.EmitABC(op, dest, vm.Operand(arg1), vm.Operand(agr2))
 }
 
 // EmitAs emits an opcode with a destination register and a sequence of registers.

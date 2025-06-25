@@ -91,7 +91,7 @@ func (cc *LoopCollectCompiler) initializeCollector(grouping fql.ICollectGrouping
 
 func (cc *LoopCollectCompiler) finalizeCollector(loop *core.Loop, collectorType core.CollectorType, kv *core.KV) {
 	// We replace DataSet initialization with Collector initialization
-	cc.ctx.Emitter.PatchSwapAx(loop.DstPos, vm.OpDataSetCollector, loop.Dst, int(collectorType))
+	cc.ctx.Emitter.PatchSwapAx(loop.Pos, vm.OpDataSetCollector, loop.Dst, int(collectorType))
 	cc.ctx.Emitter.EmitABC(vm.OpPushKV, loop.Dst, kv.Key, kv.Value)
 	loop.EmitFinalization(cc.ctx.Emitter)
 

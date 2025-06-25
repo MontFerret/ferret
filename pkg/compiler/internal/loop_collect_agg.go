@@ -49,7 +49,7 @@ func (cc *LoopCollectCompiler) compileGroupedAggregation(c fql.ICollectAggregato
 func (cc *LoopCollectCompiler) compileGlobalAggregation(c fql.ICollectAggregatorContext) {
 	parentLoop := cc.ctx.Loops.Current()
 	// we create a custom collector for aggregators
-	cc.ctx.Emitter.PatchSwapAx(parentLoop.DstPos, vm.OpDataSetCollector, parentLoop.Dst, int(core.CollectorTypeKeyGroup))
+	cc.ctx.Emitter.PatchSwapAx(parentLoop.Pos, vm.OpDataSetCollector, parentLoop.Dst, int(core.CollectorTypeKeyGroup))
 
 	// Nested scope for aggregators
 	cc.ctx.Symbols.EnterScope()

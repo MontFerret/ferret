@@ -6,7 +6,7 @@ import (
 	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
-func TestCollect(t *testing.T) {
+func TestForCollect(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		SkipCaseCompilationError(`
 			LET users = [

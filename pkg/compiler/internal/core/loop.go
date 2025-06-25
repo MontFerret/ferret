@@ -30,10 +30,12 @@ const (
 )
 
 type Loop struct {
-	Type       LoopType
-	Kind       LoopKind
-	Distinct   bool
-	Allocate   bool
+	Type     LoopType
+	Kind     LoopKind
+	Distinct bool
+	Allocate bool
+
+	Pos        int
 	Jump       int
 	JumpOffset int
 
@@ -45,8 +47,7 @@ type Loop struct {
 	KeyName   string
 	Key       vm.Operand
 
-	Dst    vm.Operand
-	DstPos int
+	Dst vm.Operand
 }
 
 func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) {
@@ -66,8 +67,9 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	if l.Allocate {
 		emitter.EmitAb(vm.OpDataSet, l.Dst, l.Distinct)
-		l.DstPos = emitter.Position()
 	}
+
+	l.Pos = emitter.Position()
 
 	if l.Iterator == vm.NoopOperand {
 		l.Iterator = alloc.Allocate(Temp)
