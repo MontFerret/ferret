@@ -67,5 +67,23 @@ FOR n IN 0..1
 		SORT s
 		RETURN CONCAT(s, n)
 `, []any{"abc0", "bar0", "foo0", "qaz0", "abc1", "bar1", "foo1", "qaz1"}),
+		CaseArray(`
+LET strs = ["foo", "bar", "qaz", "abc"]
+
+FOR n IN 0..1
+	FOR m IN 0..1
+		FOR s IN strs
+			SORT s
+			RETURN CONCAT(s, n, m)
+`, []any{"abc00", "bar00", "foo00", "qaz00", "abc01", "bar01", "foo01", "qaz01", "abc10", "bar10", "foo10", "qaz10", "abc11", "bar11", "foo11", "qaz11"}),
+		CaseArray(`
+LET strs = ["foo", "bar", "qaz", "abc"]
+
+FOR n IN 0..1
+	FOR s IN strs
+		SORT s
+		FOR m IN 0..1
+			RETURN CONCAT(s, n, m)
+`, []any{"abc00", "abc01", "bar00", "bar01", "foo00", "foo01", "qaz00", "qaz01", "abc10", "abc11", "bar10", "bar11", "foo10", "foo11", "qaz10", "qaz11"}),
 	})
 }
