@@ -103,6 +103,32 @@ func (l *Loop) EmitFinalization(emitter *Emitter) {
 	emitter.PatchJump(l.Jump)
 }
 
+func (l *Loop) PatchDestinationAx(alloc *RegisterAllocator, emitter *Emitter, op vm.Opcode, arg int) vm.Operand {
+	if l.Allocate {
+		emitter.PatchSwapAx(l.Pos, op, l.Dst, arg)
+
+		return l.Dst
+	}
+
+	tmp := alloc.Allocate(Temp)
+	emitter.PatchInsertAx(l.Pos, op, tmp, arg)
+	l.Jump++
+	return tmp
+}
+
+func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, op vm.Opcode, arg1, arg2 int) vm.Operand {
+	if l.Allocate {
+		emitter.PatchSwapAxy(l.Pos, op, l.Dst, arg1, arg2)
+
+		return l.Dst
+	}
+
+	tmp := alloc.Allocate(Temp)
+	emitter.PatchInsertAxy(l.Pos, op, tmp, arg1, arg2)
+	l.Jump++
+	return tmp
+}
+
 func (l *Loop) canDeclareVar(name string) bool {
 	return name != "" && name != IgnorePseudoVariable
 }

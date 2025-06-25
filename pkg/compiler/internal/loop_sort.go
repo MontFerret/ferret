@@ -112,33 +112,13 @@ func (c *LoopSortCompiler) compileSorter(loop *core.Loop, clauses []fql.ISortCla
 		encoded := runtime.EncodeSortDirections(directions)
 		count := len(clauses)
 
-		if loop.Allocate {
-			c.ctx.Emitter.PatchSwapAxy(loop.Pos, vm.OpDataSetMultiSorter, loop.Dst, encoded, count)
-
-			return loop.Dst
-		}
-
-		dst := c.ctx.Registers.Allocate(core.Temp)
-		c.ctx.Emitter.PatchInsertAxy(loop.Pos, vm.OpDataSetMultiSorter, loop.Dst, encoded, count)
-		loop.Jump++
-
-		return dst
+		return loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetMultiSorter, encoded, count)
 	}
 
 	// Single-key sorting only needs the direction
 	dir := sortDirection(clauses[0].SortDirection())
 
-	if loop.Allocate {
-		c.ctx.Emitter.PatchSwapAx(loop.Pos, vm.OpDataSetSorter, loop.Dst, int(dir))
-
-		return loop.Dst
-	}
-
-	dst := c.ctx.Registers.Allocate(core.Temp)
-	c.ctx.Emitter.PatchInsertAx(loop.Pos, vm.OpDataSetSorter, dst, int(dir))
-	loop.Jump++
-
-	return dst
+	return loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetSorter, int(dir))
 }
 
 // finalizeSorting completes the sorting process by:

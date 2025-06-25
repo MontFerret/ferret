@@ -68,6 +68,30 @@ FOR n IN 0..1
 		RETURN CONCAT(s, n)
 `, []any{"abc0", "bar0", "foo0", "qaz0", "abc1", "bar1", "foo1", "qaz1"}),
 		CaseArray(`
+LET users = [
+	{
+		name: "Ron",
+		age: 31,
+		gender: "m"
+	},
+	{
+		name: "Angela",
+		age: 29,
+		gender: "f"
+	},
+	{
+		name: "Bob",
+		age: 36,
+		gender: "m"
+	}
+]
+
+FOR n IN 0..1
+	FOR u IN users
+		SORT u.gender, u.age
+		RETURN CONCAT(u.name, n)
+`, []any{"Angela0", "Ron0", "Bob0", "Angela1", "Ron1", "Bob1"}),
+		CaseArray(`
 LET strs = ["foo", "bar", "qaz", "abc"]
 
 FOR n IN 0..1
@@ -85,5 +109,81 @@ FOR n IN 0..1
 		FOR m IN 0..1
 			RETURN CONCAT(s, n, m)
 `, []any{"abc00", "abc01", "bar00", "bar01", "foo00", "foo01", "qaz00", "qaz01", "abc10", "abc11", "bar10", "bar11", "foo10", "foo11", "qaz10", "qaz11"}),
+		CaseArray(`
+LET users = [
+	{
+		active: true,
+		married: true,
+		age: 31,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: false,
+		age: 25,
+		gender: "f"
+	},
+	{
+		active: true,
+		married: false,
+		age: 36,
+		gender: "m"
+	},
+	{
+		active: false,
+		married: true,
+		age: 69,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: true,
+		age: 45,
+		gender: "f"
+	}
+]
+FOR n IN 0..1
+	FOR i IN users
+		COLLECT gender = i.gender
+		RETURN CONCAT(gender, n)
+`, []any{"f0", "m0", "f1", "m1"}),
+		CaseArray(`
+LET users = [
+	{
+		active: true,
+		married: true,
+		age: 31,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: false,
+		age: 25,
+		gender: "f"
+	},
+	{
+		active: true,
+		married: false,
+		age: 36,
+		gender: "m"
+	},
+	{
+		active: false,
+		married: true,
+		age: 69,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: true,
+		age: 45,
+		gender: "f"
+	}
+]
+FOR i IN users
+	COLLECT gender = i.gender
+	FOR n IN 0..1
+		RETURN CONCAT(gender, n)
+`, []any{"f0", "f1", "m0", "m1"}),
 	})
 }
