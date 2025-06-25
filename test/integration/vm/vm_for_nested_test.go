@@ -185,5 +185,287 @@ FOR i IN users
 	FOR n IN 0..1
 		RETURN CONCAT(gender, n)
 `, []any{"f0", "f1", "m0", "m1"}),
+		CaseArray(`
+LET users = [
+	{
+		active: true,
+		married: true,
+		age: 31,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: false,
+		age: 25,
+		gender: "f"
+	},
+	{
+		active: true,
+		married: false,
+		age: 36,
+		gender: "m"
+	},
+	{
+		active: false,
+		married: true,
+		age: 69,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: true,
+		age: 45,
+		gender: "f"
+	}
+]
+FOR n IN 0..1
+	FOR i IN users
+		COLLECT gender = i.gender INTO genders
+		RETURN {
+			gender: CONCAT(gender, n),
+			values: genders
+		}
+`, []any{map[string]any{
+			"gender": "f0",
+			"values": []map[string]any{
+				{
+					"i": map[string]any{
+						"active":  true,
+						"age":     25,
+						"gender":  "f",
+						"married": false,
+					},
+				},
+				{
+					"i": map[string]any{
+						"active":  true,
+						"age":     45,
+						"gender":  "f",
+						"married": true,
+					},
+				},
+			},
+		},
+			map[string]any{
+				"gender": "m0",
+				"values": []map[string]any{
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     31,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     36,
+							"gender":  "m",
+							"married": false,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  false,
+							"age":     69,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+				},
+			},
+			map[string]any{
+				"gender": "f1",
+				"values": []map[string]any{
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     25,
+							"gender":  "f",
+							"married": false,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     45,
+							"gender":  "f",
+							"married": true,
+						},
+					},
+				},
+			},
+			map[string]any{
+				"gender": "m1",
+				"values": []map[string]any{
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     31,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     36,
+							"gender":  "m",
+							"married": false,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  false,
+							"age":     69,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+				},
+			},
+		}),
+		CaseArray(`
+LET users = [
+	{
+		active: true,
+		married: true,
+		age: 31,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: false,
+		age: 25,
+		gender: "f"
+	},
+	{
+		active: true,
+		married: false,
+		age: 36,
+		gender: "m"
+	},
+	{
+		active: false,
+		married: true,
+		age: 69,
+		gender: "m"
+	},
+	{
+		active: true,
+		married: true,
+		age: 45,
+		gender: "f"
+	}
+]
+FOR i IN users
+	COLLECT gender = i.gender INTO genders
+	FOR n IN 0..1
+		RETURN {
+			gender: CONCAT(gender, n),
+			values: genders
+		}
+`, []any{map[string]any{
+			"gender": "f0",
+			"values": []map[string]any{
+				{
+					"i": map[string]any{
+						"active":  true,
+						"age":     25,
+						"gender":  "f",
+						"married": false,
+					},
+				},
+				{
+					"i": map[string]any{
+						"active":  true,
+						"age":     45,
+						"gender":  "f",
+						"married": true,
+					},
+				},
+			},
+		},
+			map[string]any{
+				"gender": "f1",
+				"values": []map[string]any{
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     25,
+							"gender":  "f",
+							"married": false,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     45,
+							"gender":  "f",
+							"married": true,
+						},
+					},
+				},
+			},
+			map[string]any{
+				"gender": "m0",
+				"values": []map[string]any{
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     31,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     36,
+							"gender":  "m",
+							"married": false,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  false,
+							"age":     69,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+				},
+			},
+			map[string]any{
+				"gender": "m1",
+				"values": []map[string]any{
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     31,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  true,
+							"age":     36,
+							"gender":  "m",
+							"married": false,
+						},
+					},
+					{
+						"i": map[string]any{
+							"active":  false,
+							"age":     69,
+							"gender":  "m",
+							"married": true,
+						},
+					},
+				},
+			},
+		}),
 	})
 }
