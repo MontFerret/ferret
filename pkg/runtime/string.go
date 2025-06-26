@@ -53,7 +53,7 @@ func ParseString(input interface{}) (String, error) {
 		return String(stringer.String()), nil
 	}
 
-	return EmptyString, Error(ErrInvalidType, "expected '"+TypeString+"'")
+	return EmptyString, Error(ErrInvalidType, fmt.Sprintf("expected %q", TypeString))
 }
 
 func MustParseString(input interface{}) String {
@@ -64,10 +64,6 @@ func MustParseString(input interface{}) String {
 	}
 
 	return res
-}
-
-func (s String) Type() string {
-	return TypeString
 }
 
 func (s String) MarshalJSON() ([]byte, error) {

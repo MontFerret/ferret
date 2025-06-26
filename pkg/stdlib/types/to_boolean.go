@@ -3,8 +3,9 @@ package types
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 )
 
 // TO_BOOL takes an input value of any type and converts it into the appropriate boolean value.
@@ -23,5 +24,5 @@ func ToBool(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	return internal.ToBoolean(args[0]), nil
+	return runtime.ToBoolean(args[0]), nil
 }

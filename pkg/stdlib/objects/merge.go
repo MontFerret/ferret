@@ -3,7 +3,7 @@ package objects
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -12,15 +12,16 @@ import (
 // MERGE merge the given objects into a single object.
 // @param {hashMap, repeated} objects - Objects to merge.
 // @return {hashMap} - hashMap created by merging.
-func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
+// TODO: REWRITE TO USE LIST & MAP instead
+func Merge(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
 		return core.None, err
 	}
 
-	var objs *internal.Array
+	var objs *runtime.Array
 
 	if len(args) == 1 {
-		arr, ok := args[0].(*internal.Array)
+		arr, ok := args[0].(*runtime.Array)
 
 		if ok {
 			objs = arr
@@ -28,44 +29,64 @@ func Merge(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if objs == nil {
-		objs = internal.NewArrayWith(args...)
+		objs = runtime.NewArrayWith(args...)
 	}
 
-	if err := validateArrayOf(types.Object, objs); err != nil {
+	if err := validateArrayOf(ctx, types.Object, objs); err != nil {
 		return core.None, err
 	}
 
-	return mergeArray(objs), nil
+	return mergeArray(ctx, objs)
 }
 
-func mergeArray(arr *internal.Array) *internal.Object {
-	merged, obj := internal.NewObject(), internal.NewObject()
+func mergeArray(ctx context.Context, arr *runtime.Array) (*runtime.Object, error) {
+	merged, obj := runtime.NewObject(), runtime.NewObject()
 
-	arr.ForEach(func(arrValue core.Value, arrIdx int) bool {
-		obj = arrValue.(*internal.Object)
-		obj.ForEach(func(objValue core.Value, objKey string) bool {
+	_ = arr.ForEach(ctx, func(c context.Context, arrValue core.Value, arrIdx core.Int) (core.Boolean, error) {
+		obj = arrValue.(*runtime.Object)
+
+		_ = obj.ForEach(c, func(_ context.Context, objValue, objKey core.Value) (core.Boolean, error) {
 			cloneable, ok := objValue.(core.Cloneable)
 
 			if ok {
-				objValue = cloneable.Clone()
+				clone, err := cloneable.Clone(c)
+
+				if err != nil {
+					return core.False, err
+				}
+
+				objValue = clone
 			}
 
-			merged.Set(core.NewString(objKey), objValue)
+			_ = merged.Set(c, objKey, objValue)
 
-			return true
+			return true, nil
 		})
-		return true
+
+		return true, nil
 	})
 
-	return merged
+	return merged, nil
 }
 
-func validateArrayOf(typ core.Type, arr *internal.Array) (err error) {
-	for idx := 0; idx < arr.Length(); idx++ {
-		if err != nil {
-			break
-		}
-		err = core.ValidateType(arr.Get(idx), typ)
+func validateArrayOf(ctx context.Context, typ core.Type, arr *runtime.Array) error {
+	size, err := arr.Length(ctx)
+
+	if err != nil {
+		return err
 	}
-	return
+
+	for idx := runtime.ZeroInt; idx < size; idx++ {
+		item, err := arr.Get(ctx, idx)
+
+		if err != nil {
+			return err
+		}
+
+		if err := core.ValidateType(item, typ); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

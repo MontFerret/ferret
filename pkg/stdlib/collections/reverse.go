@@ -48,6 +48,6 @@ func Reverse(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 
 		return result, nil
 	default:
-		return runtime.None, runtime.TypeError(args[0], runtime.TypeList, runtime.TypeString)
+		return runtime.None, runtime.TypeErrorOf(args[0], runtime.TypeList, runtime.TypeString)
 	}
 }

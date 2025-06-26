@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,7 +14,7 @@ import (
 
 func TestMedian(t *testing.T) {
 	Convey("Should return median value", t, func() {
-		out, err := math.Median(context.Background(), internal.NewArrayWith(
+		out, err := math.Median(context.Background(), runtime.NewArrayWith(
 			core.NewInt(1),
 			core.NewInt(2),
 			core.NewInt(3),
@@ -23,7 +23,7 @@ func TestMedian(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 2)
 
-		out, err = math.Average(context.Background(), internal.NewArrayWith(
+		out, err = math.Average(context.Background(), runtime.NewArrayWith(
 			core.NewInt(1),
 			core.NewInt(2),
 			core.NewInt(3),
@@ -33,7 +33,7 @@ func TestMedian(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 2.5)
 
-		out, err = math.Average(context.Background(), internal.NewArrayWith(
+		out, err = math.Average(context.Background(), runtime.NewArrayWith(
 			core.NewInt(2),
 			core.NewInt(1),
 			core.NewInt(4),
@@ -43,7 +43,7 @@ func TestMedian(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 2.5)
 
-		out, err = math.Average(context.Background(), internal.NewArrayWith(
+		out, err = math.Average(context.Background(), runtime.NewArrayWith(
 			core.None,
 			core.NewInt(-5),
 			core.False,

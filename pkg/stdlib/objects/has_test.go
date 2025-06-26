@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,8 +14,8 @@ import (
 
 func TestHas(t *testing.T) {
 	Convey("When key exists", t, func() {
-		obj := internal.NewObjectWith(
-			internal.NewObjectProperty("key", core.NewString("val")),
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("key", core.NewString("val")),
 		)
 
 		val, err := objects.Has(context.Background(), obj, core.NewString("key"))
@@ -27,8 +27,8 @@ func TestHas(t *testing.T) {
 	})
 
 	Convey("When key doesn't exists", t, func() {
-		obj := internal.NewObjectWith(
-			internal.NewObjectProperty("anyOtherKey", core.NewString("val")),
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("anyOtherKey", core.NewString("val")),
 		)
 
 		val, err := objects.Has(context.Background(), obj, core.NewString("key"))
@@ -40,7 +40,7 @@ func TestHas(t *testing.T) {
 	})
 
 	Convey("When there are no keys", t, func() {
-		obj := internal.NewObject()
+		obj := runtime.NewObject()
 
 		val, err := objects.Has(context.Background(), obj, core.NewString("key"))
 		valBool := val.(core.Boolean)
@@ -56,14 +56,14 @@ func TestHas(t *testing.T) {
 		So(err, ShouldBeError)
 		So(val, ShouldEqual, core.None)
 
-		val, err = objects.Has(context.Background(), internal.NewObject())
+		val, err = objects.Has(context.Background(), runtime.NewObject())
 
 		So(err, ShouldBeError)
 		So(val, ShouldEqual, core.None)
 	})
 
 	Convey("When keyName isn't string", t, func() {
-		obj := internal.NewObject()
+		obj := runtime.NewObject()
 		key := core.NewInt(1)
 
 		val, err := objects.Has(context.Background(), obj, key)

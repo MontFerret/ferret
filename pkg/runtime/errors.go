@@ -25,11 +25,13 @@ var (
 
 const typeErrorTemplate = "expected %s, but got %s"
 
-func TypeError(value Value, expected ...string) error {
-	actual := Reflect(value)
+func TypeErrorOf(value Value, expected ...Type) error {
+	return TypeError(Reflect(value), expected...)
+}
 
+func TypeError(actual Type, expected ...Type) error {
 	if len(expected) == 0 {
-		return Error(ErrInvalidType, actual)
+		return Error(ErrInvalidType, string(actual))
 	}
 
 	if len(expected) == 1 {
@@ -39,7 +41,7 @@ func TypeError(value Value, expected ...string) error {
 	strs := make([]string, len(expected))
 
 	for idx, t := range expected {
-		strs[idx] = t
+		strs[idx] = string(t)
 	}
 
 	expectedStr := strings.Join(strs, " or ")

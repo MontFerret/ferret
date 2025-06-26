@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -14,11 +16,11 @@ func IsNaN(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	val, err := core.CastFloat(args[0])
+	val, err := runtime.CastFloat(args[0])
 
 	if err != nil {
 		return core.False, nil
 	}
 
-	return core.IsNaN(val), nil
+	return runtime.IsNaN(val), nil
 }

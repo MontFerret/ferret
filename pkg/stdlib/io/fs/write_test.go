@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/io/fs"
@@ -20,8 +20,8 @@ func TestWrite(t *testing.T) {
 
 		path := core.NewString("path.txt")
 		data := core.NewBinary([]byte("3timeslazy"))
-		params := internal.NewObjectWith(
-			internal.NewObjectProperty("mode", core.NewString("w")),
+		params := runtime.NewObjectWith(
+			runtime.NewObjectProperty("mode", core.NewString("w")),
 		)
 		someInt := core.NewInt(0)
 
@@ -93,8 +93,8 @@ func TestWrite(t *testing.T) {
 					name := fmt.Sprintf("mode `%s`", mode)
 
 					Convey(name, func() {
-						params := internal.NewObjectWith(
-							internal.NewObjectProperty("mode", mode),
+						params := runtime.NewObjectWith(
+							runtime.NewObjectProperty("mode", mode),
 						)
 
 						none, err := fs.Write(context.Background(), path, data, params)
@@ -116,8 +116,8 @@ func TestWrite(t *testing.T) {
 				context.Background(),
 				core.NewString(file.Name()),
 				core.NewBinary([]byte("3timeslazy")),
-				internal.NewObjectWith(
-					internal.NewObjectProperty("mode", core.NewString("wx")),
+				runtime.NewObjectWith(
+					runtime.NewObjectProperty("mode", core.NewString("wx")),
 				),
 			)
 			So(none, ShouldResemble, core.None)
@@ -143,8 +143,8 @@ func TestWrite(t *testing.T) {
 
 			data := core.NewBinary([]byte("3timeslazy"))
 			fpath := core.NewString(file.Name())
-			params := internal.NewObjectWith(
-				internal.NewObjectProperty("mode", core.NewString("w")),
+			params := runtime.NewObjectWith(
+				runtime.NewObjectProperty("mode", core.NewString("w")),
 			)
 
 			for _ = range [2]struct{}{} {
@@ -167,8 +167,8 @@ func TestWrite(t *testing.T) {
 
 			data := core.NewBinary([]byte("3timeslazy"))
 			fpath := core.NewString(file.Name())
-			params := internal.NewObjectWith(
-				internal.NewObjectProperty("mode", core.NewString("a")),
+			params := runtime.NewObjectWith(
+				runtime.NewObjectProperty("mode", core.NewString("a")),
 			)
 
 			for i := range [2]struct{}{} {

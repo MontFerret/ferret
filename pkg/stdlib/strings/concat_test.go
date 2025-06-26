@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -59,7 +60,7 @@ func TestConcat(t *testing.T) {
 		Convey("Concat(['foo', 'bar']) should return 'foobar'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				internal.NewArrayWith(core.NewString("foo"), core.NewString("bar")),
+				runtime.NewArrayWith(core.NewString("foo"), core.NewString("bar")),
 			)
 
 			So(out, ShouldEqual, "foobar")
@@ -68,7 +69,7 @@ func TestConcat(t *testing.T) {
 		Convey("Concat([1,2,3]) should return '123'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				internal.NewArrayWith(
+				runtime.NewArrayWith(
 					core.NewInt(1),
 					core.NewInt(2),
 					core.NewInt(3),
@@ -108,7 +109,7 @@ func TestConcatWithSeparator(t *testing.T) {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
 				core.NewString(","),
-				internal.NewArrayWith(
+				runtime.NewArrayWith(
 					core.NewString("foo"),
 					core.NewString("bar"),
 					core.NewString("qaz"),
@@ -122,7 +123,7 @@ func TestConcatWithSeparator(t *testing.T) {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
 				core.NewString(","),
-				internal.NewArrayWith(
+				runtime.NewArrayWith(
 					core.NewString("foo"),
 					core.None,
 					core.NewString("qaz"),
@@ -136,7 +137,7 @@ func TestConcatWithSeparator(t *testing.T) {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
 				core.NewString(","),
-				internal.NewArrayWith(
+				runtime.NewArrayWith(
 					core.NewString("foo"),
 					core.None,
 					core.NewString("qaz"),

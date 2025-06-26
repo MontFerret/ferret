@@ -75,7 +75,7 @@ func ToRegexp(input runtime.Value) (*Regexp, error) {
 	case runtime.String:
 		return NewRegexp(r)
 	default:
-		return nil, runtime.TypeError(input, runtime.TypeString, "regexp")
+		return nil, runtime.TypeErrorOf(input, runtime.TypeString, "regexp")
 	}
 }
 

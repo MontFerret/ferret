@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -64,8 +64,8 @@ func TestFmt(t *testing.T) {
 			Expected: `{"key":"value"}`,
 			Format:   "{}",
 			Args: []core.Value{
-				internal.NewObjectWith(
-					internal.NewObjectProperty(
+				runtime.NewObjectWith(
+					runtime.NewObjectProperty(
 						"key", core.NewString("value"),
 					),
 				),
@@ -76,11 +76,11 @@ func TestFmt(t *testing.T) {
 			Expected: `{"key":"value","yek":"eulav"}`,
 			Format:   "{}",
 			Args: []core.Value{
-				internal.NewObjectWith(
-					internal.NewObjectProperty(
+				runtime.NewObjectWith(
+					runtime.NewObjectProperty(
 						"key", core.NewString("value"),
 					),
-					internal.NewObjectProperty(
+					runtime.NewObjectProperty(
 						"yek", core.NewString("eulav"),
 					),
 				),

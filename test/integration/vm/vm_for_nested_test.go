@@ -49,8 +49,216 @@ func TestForNested(t *testing.T) {
 			)
 
 			RETURN sub
-`, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
-		),
+`, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}}),
+		CaseArray(`
+			LET users = [
+				{
+					name: "John",
+					skills: ["JavaScript", "Python", "Go"]
+				},
+				{
+					name: "Jane",
+					skills: ["Java", "C++", "Python"]
+				},
+				{
+					name: "Bob",
+					skills: ["Go", "Rust"]
+				}
+			]
+			
+			LET targetSkills = ["JavaScript", "Python", "Go", "Java"]
+			
+			FOR u IN users
+				LET matchingSkills = (
+					FOR skill IN targetSkills
+						FILTER skill IN u.skills
+						RETURN skill
+				)
+				
+				RETURN {
+					name: u.name,
+					matchingSkills: matchingSkills,
+					matchCount: LENGTH(matchingSkills),
+					hasJavaScript: "JavaScript" IN u.skills,
+					hasPython: "Python" IN u.skills
+				}
+		`, []any{
+			map[string]any{
+				"name":           "John",
+				"matchingSkills": []any{"JavaScript", "Python", "Go"},
+				"matchCount":     3,
+				"hasJavaScript":  true,
+				"hasPython":      true,
+			},
+			map[string]any{
+				"name":           "Jane",
+				"matchingSkills": []any{"Python", "Java"},
+				"matchCount":     2,
+				"hasJavaScript":  false,
+				"hasPython":      true,
+			},
+			map[string]any{
+				"name":           "Bob",
+				"matchingSkills": []any{"Go"},
+				"matchCount":     1,
+				"hasJavaScript":  false,
+				"hasPython":      false,
+			},
+		}, "Should handle nested FOR loops with array operations"),
+		CaseArray(`
+			LET departments = ["IT", "Marketing", "HR"]
+			LET budgets = [1000000, 500000, 300000]
+			LET headcounts = [20, 10, 5]
+			
+			FOR i IN 0..2
+				LET dept = departments[i]
+				LET budget = budgets[i]
+				LET headcount = headcounts[i]
+				
+				FOR j IN 1..3
+					LET allocation = (
+						j == 1 ? 0.5 :
+						j == 2 ? 0.3 :
+						0.2
+					)
+					
+					LET category = (
+						j == 1 ? "Salaries" :
+						j == 2 ? "Equipment" :
+						"Miscellaneous"
+					)
+					
+					RETURN {
+						department: dept,
+						category: category,
+						allocation: allocation,
+						amount: budget * allocation,
+						headcount: headcount
+					}
+		`, []any{
+			map[string]any{
+				"allocation": 0.3,
+				"amount":     300000,
+				"category":   "Equipment",
+				"department": "IT",
+				"headcount":  20,
+			},
+			map[string]any{
+				"allocation": 0.3,
+				"amount":     300000,
+				"category":   "Equipment",
+				"department": "IT",
+				"headcount":  20,
+			},
+			map[string]any{
+				"allocation": 0.2,
+				"amount":     200000,
+				"category":   "Miscellaneous",
+				"department": "IT",
+				"headcount":  20,
+			},
+			map[string]any{
+				"allocation": 0.3,
+				"amount":     150000,
+				"category":   "Equipment",
+				"department": "Marketing",
+				"headcount":  10,
+			},
+			map[string]any{
+				"allocation": 0.3,
+				"amount":     150000,
+				"category":   "Equipment",
+				"department": "Marketing",
+				"headcount":  10,
+			},
+			map[string]any{
+				"allocation": 0.2,
+				"amount":     100000,
+				"category":   "Miscellaneous",
+				"department": "Marketing",
+				"headcount":  10,
+			},
+			map[string]any{
+				"allocation": 0.3,
+				"amount":     90000,
+				"category":   "Equipment",
+				"department": "HR",
+				"headcount":  5,
+			},
+			map[string]any{
+				"allocation": 0.3,
+				"amount":     90000,
+				"category":   "Equipment",
+				"department": "HR",
+				"headcount":  5,
+			},
+			map[string]any{
+				"allocation": 0.2,
+				"amount":     60000,
+				"category":   "Miscellaneous",
+				"department": "HR",
+				"headcount":  5,
+			},
+		}, "Should handle nested FOR loops with conditional logic"),
+		CaseArray(`
+			LET users = [
+				{
+					id: 1,
+					name: "John",
+					department: "IT",
+					projects: [
+						{ id: "p1", name: "Project A", status: "active" },
+						{ id: "p2", name: "Project B", status: "completed" }
+					]
+				},
+				{
+					id: 2,
+					name: "Jane",
+					department: "Marketing",
+					projects: [
+						{ id: "p3", name: "Project C", status: "active" },
+						{ id: "p4", name: "Project D", status: "active" }
+					]
+				},
+				{
+					id: 3,
+					name: "Bob",
+					department: "IT",
+					projects: [
+						{ id: "p5", name: "Project E", status: "pending" }
+					]
+				}
+			]
+			
+			FOR u IN users
+				LET activeProjects = (
+					FOR p IN u.projects
+						FILTER p.status == "active"
+						RETURN p
+				)
+				
+				FILTER LENGTH(activeProjects) > 0
+				
+				RETURN {
+					user: u.name,
+					department: u.department,
+					activeProjects: (
+						FOR p IN activeProjects
+							RETURN p.name
+					)
+				}
+		`, []any{
+			map[string]any{
+				"user":           "John",
+				"department":     "IT",
+				"activeProjects": []any{"Project A"},
+			},
+			map[string]any{
+				"user":           "Jane",
+				"department":     "Marketing",
+				"activeProjects": []any{"Project C", "Project D"},
+			},
+		}, "Should handle nested FOR loops with complex data transformation"),
 		CaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 			
@@ -651,5 +859,105 @@ func TestForNested(t *testing.T) {
 				"minAge":    25,
 			},
 		}),
+		CaseArray(`
+			LET departments = [
+				{ name: "IT", budget: 500000 },
+				{ name: "Marketing", budget: 300000 },
+				{ name: "Management", budget: 200000 }
+			]
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true,
+					salary: 75000,
+					department: "IT"
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false,
+					salary: 60000,
+					department: "Marketing"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false,
+					salary: 80000,
+					department: "IT"
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true,
+					salary: 95000,
+					department: "Management"
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true,
+					salary: 70000,
+					department: "Marketing"
+				}
+			]
+			FOR d IN departments
+				LET deptUsers = (
+					FOR u IN users
+						FILTER u.department == d.name
+						RETURN u
+				)
+				LET stats = (
+					FOR u IN deptUsers
+						COLLECT AGGREGATE 
+							avgAge = AVERAGE(u.age),
+							totalSalary = SUM(u.salary),
+							kount = LENGTH(u)
+						RETURN {
+							avgAge,
+							totalSalary,
+							count: kount
+						}
+				)
+				RETURN {
+					department: d.name,
+					budget: d.budget,
+					stats: stats[0]
+				}
+		`, []any{
+			map[string]any{
+				"department": "IT",
+				"budget":     500000,
+				"stats": map[string]any{
+					"avgAge":      33.5,
+					"totalSalary": 155000,
+					"count":       2,
+				},
+			},
+			map[string]any{
+				"department": "Marketing",
+				"budget":     300000,
+				"stats": map[string]any{
+					"avgAge":      35.0,
+					"totalSalary": 130000,
+					"count":       2,
+				},
+			},
+			map[string]any{
+				"department": "Management",
+				"budget":     200000,
+				"stats": map[string]any{
+					"avgAge":      69.0,
+					"totalSalary": 95000,
+					"count":       1,
+				},
+			},
+		}, "Should handle nested FOR loops with COLLECT AGGREGATE"),
 	})
 }

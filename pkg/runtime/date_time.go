@@ -58,10 +58,6 @@ func (dt DateTime) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(dt.Time, jettison.NoHTMLEscaping())
 }
 
-func (dt DateTime) Type() string {
-	return TypeDateTime
-}
-
 func (dt DateTime) String() string {
 	return dt.Time.String()
 }

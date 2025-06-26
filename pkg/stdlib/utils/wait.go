@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -16,7 +18,7 @@ func Wait(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, nil
 	}
 
-	arg := core.ToIntSafe(ctx, args[0])
+	arg := runtime.ToIntSafe(ctx, args[0])
 
 	timer := time.NewTimer(time.Millisecond * time.Duration(arg))
 	select {

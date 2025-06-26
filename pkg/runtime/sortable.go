@@ -34,7 +34,7 @@ func Sort(ctx context.Context, values Value, ascending Boolean) error {
 	case List:
 		return SortList(ctx, value, ascending)
 	default:
-		return TypeError(values, TypeList, TypeSortable)
+		return TypeErrorOf(values, TypeList, TypeSortable)
 	}
 }
 

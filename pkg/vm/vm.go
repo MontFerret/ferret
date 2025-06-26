@@ -327,7 +327,7 @@ loop:
 			} else if _, catch := tryCatch(vm.pc); catch {
 				reg[dst] = runtime.ZeroInt
 			} else {
-				return runtime.None, runtime.TypeError(reg[src1],
+				return runtime.None, runtime.TypeErrorOf(reg[src1],
 					runtime.TypeString,
 					runtime.TypeList,
 					runtime.TypeMap,
@@ -406,7 +406,7 @@ loop:
 					// Fall back to an empty iterator
 					reg[dst] = internal.NoopIter
 				} else {
-					return nil, runtime.TypeError(src, runtime.TypeIterable)
+					return nil, runtime.TypeErrorOf(src, runtime.TypeIterable)
 				}
 			}
 		case OpIterNext:
@@ -551,7 +551,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 	indexed, ok := src.(runtime.Indexed)
 
 	if !ok {
-		return nil, runtime.TypeError(src, runtime.TypeIndexed)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexed)
 	}
 
 	var idx runtime.Int
@@ -564,7 +564,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 		// Convert float to int, rounding down
 		idx = runtime.Int(v)
 	default:
-		err = runtime.TypeError(arg, runtime.TypeInt, runtime.TypeFloat)
+		err = runtime.TypeErrorOf(arg, runtime.TypeInt, runtime.TypeFloat)
 	}
 
 	if err != nil {
@@ -578,7 +578,7 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	keyed, ok := src.(runtime.Keyed)
 
 	if !ok {
-		return nil, runtime.TypeError(src, runtime.TypeKeyed)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyed)
 	}
 
 	out, err := keyed.Get(ctx, arg)
@@ -594,13 +594,13 @@ func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Obs
 	observable, ok := dst.(runtime.Observable)
 
 	if !ok {
-		return nil, "", nil, runtime.TypeError(dst, runtime.TypeObservable)
+		return nil, "", nil, runtime.TypeErrorOf(dst, runtime.TypeObservable)
 	}
 
 	eventNameStr, ok := eventName.(runtime.String)
 
 	if !ok {
-		return nil, "", nil, runtime.TypeError(eventName, runtime.TypeString)
+		return nil, "", nil, runtime.TypeErrorOf(eventName, runtime.TypeString)
 	}
 
 	var options runtime.Map
@@ -609,7 +609,7 @@ func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Obs
 		m, ok := opts.(runtime.Map)
 
 		if !ok {
-			return nil, "", nil, runtime.TypeError(opts, runtime.TypeMap)
+			return nil, "", nil, runtime.TypeErrorOf(opts, runtime.TypeMap)
 		}
 
 		options = m

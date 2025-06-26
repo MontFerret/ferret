@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -16,5 +18,5 @@ func ToDateTime(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	return core.ParseDateTime(args[0].String())
+	return runtime.ParseDateTime(args[0].String())
 }

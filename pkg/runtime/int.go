@@ -65,10 +65,6 @@ func MustParseInt(input interface{}) Int {
 	return res
 }
 
-func (i Int) Type() string {
-	return TypeInt
-}
-
 func (i Int) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(int64(i), jettison.NoHTMLEscaping())
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -13,26 +13,27 @@ import (
 // JOIN joins any number of path elements into a single path, separating them with slashes.
 // @param {String, repeated | String[]} elements - The path elements
 // @return {String} - Single path from the given elements.
-func Join(_ context.Context, args ...core.Value) (core.Value, error) {
+func Join(ctx context.Context, args ...core.Value) (core.Value, error) {
 	argsCount := len(args)
 
 	if argsCount == 0 {
 		return core.EmptyString, nil
 	}
 
-	var arr *internal.Array
+	var arr *runtime.Array
 
 	switch arg := args[0].(type) {
-	case *internal.Array:
+	case *runtime.Array:
 		arr = arg
 	default:
-		arr = internal.NewArrayWith(args...)
+		arr = runtime.NewArrayWith(args...)
 	}
 
-	elems := make([]string, arr.Length())
+	size, _ := arr.Length(ctx)
+	elems := make([]string, size)
 
-	for idx := 0; idx < arr.Length(); idx++ {
-		arrElem := arr.Get(idx)
+	for idx := runtime.ZeroInt; idx < size; idx++ {
+		arrElem, _ := arr.Get(ctx, idx)
 		err := core.ValidateType(arrElem, types.String)
 
 		if err != nil {

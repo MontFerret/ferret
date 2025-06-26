@@ -8,7 +8,7 @@ func AssertString(input Value) error {
 	_, ok := input.(String)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeString,
 		)
@@ -21,7 +21,7 @@ func AssertInt(input Value) error {
 	_, ok := input.(Int)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeInt,
 		)
@@ -34,7 +34,7 @@ func AssertFloat(input Value) error {
 	_, ok := input.(Float)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeFloat,
 		)
@@ -48,7 +48,7 @@ func AssertNumber(input Value) error {
 	case Int, Float:
 		return nil
 	default:
-		return TypeError(input, TypeInt, TypeFloat)
+		return TypeErrorOf(input, TypeInt, TypeFloat)
 	}
 }
 
@@ -56,9 +56,22 @@ func AssertBoolean(input Value) error {
 	_, ok := input.(Boolean)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeBoolean,
+		)
+	}
+
+	return nil
+}
+
+func AssertArray(input Value) error {
+	_, ok := input.(*Array)
+
+	if !ok {
+		return TypeErrorOf(
+			input,
+			TypeArray,
 		)
 	}
 
@@ -69,9 +82,9 @@ func AssertList(input Value) error {
 	_, ok := input.(List)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
-			"items",
+			TypeList,
 		)
 	}
 
@@ -88,11 +101,24 @@ func AssertItemsOf(ctx context.Context, input Iterable, assertion TypeAssertion)
 	})
 }
 
+func AssertObject(input Value) error {
+	_, ok := input.(*Object)
+
+	if !ok {
+		return TypeErrorOf(
+			input,
+			TypeObject,
+		)
+	}
+
+	return nil
+}
+
 func AssertMap(input Value) error {
 	_, ok := input.(Map)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeMap,
 		)
@@ -105,7 +131,7 @@ func AssertBinary(input Value) error {
 	_, ok := input.(*Binary)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeBinary,
 		)
@@ -118,7 +144,7 @@ func AssertDateTime(input Value) error {
 	_, ok := input.(DateTime)
 
 	if !ok {
-		return TypeError(
+		return TypeErrorOf(
 			input,
 			TypeDateTime,
 		)

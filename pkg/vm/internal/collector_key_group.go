@@ -91,7 +91,7 @@ func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime
 	v, ok := c.grouping[k]
 
 	if !ok {
-		return runtime.None, runtime.ErrNotFound
+		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", k)
 	}
 
 	return v, nil

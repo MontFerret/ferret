@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
@@ -14,7 +15,8 @@ import (
 // @param {String[]} keys - An array of strings, to be used as key names in the result.
 // @param {hashMap[]} values - An array of core.Value, to be used as key values.
 // @return {hashMap} - An object with the keys and values assembled.
-func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
+// TODO: REWRITE TO USE LIST & MAP instead
+func Zip(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -29,32 +31,35 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	keys := args[0].(*internal.Array)
-	vals := args[1].(*internal.Array)
+	keys := args[0].(*runtime.Array)
+	vals := args[1].(*runtime.Array)
 
-	if keys.Length() != vals.Length() {
+	keysSize, _ := keys.Length(ctx)
+	valsSize, _ := vals.Length(ctx)
+
+	if keysSize != valsSize {
 		return core.None, core.Error(
 			core.ErrInvalidArgument,
 			fmt.Sprintf("keys and values must have the same length. got keys: %d, values: %d",
-				keys.Length(), vals.Length(),
+				keysSize, valsSize,
 			),
 		)
 	}
 
-	err = validateArrayOf(types.String, keys)
+	err = validateArrayOf(ctx, types.String, keys)
 
 	if err != nil {
 		return core.None, err
 	}
 
-	zipped := internal.NewObject()
+	zipped := runtime.NewObject()
 
 	var k core.String
 	var val core.Value
 	var exists bool
 	keyExists := map[core.String]bool{}
 
-	keys.ForEach(func(key core.Value, idx int) bool {
+	_ = keys.ForEach(ctx, func(c context.Context, key core.Value, idx core.Int) (core.Boolean, error) {
 		k = key.(core.String)
 
 		// this is necessary to implement ArangoDB's behavior.
@@ -67,20 +72,22 @@ func Zip(_ context.Context, args ...core.Value) (core.Value, error) {
 		// -- result --
 		// > [{"a": 1,"b": 2}]
 		if _, exists = keyExists[k]; exists {
-			return true
+			return true, nil
 		}
+
 		keyExists[k] = true
 
-		val = vals.Get(idx)
+		val, _ = vals.Get(c, idx)
+
 		cloneable, ok := val.(core.Cloneable)
 
 		if ok {
-			val = cloneable.Clone()
+			val, _ = cloneable.Clone(c)
 		}
 
-		zipped.Set(k, val)
+		_ = zipped.Set(c, k, val)
 
-		return true
+		return true, nil
 	})
 
 	return zipped, nil

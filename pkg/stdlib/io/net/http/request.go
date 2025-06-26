@@ -6,17 +6,14 @@ import (
 	"io"
 	h "net/http"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type Params struct {
-	Method  core.String
-	URL     core.String
-	Headers *internal.Object
-	Body    core.Binary
+	Method  runtime.String
+	URL     runtime.String
+	Headers *runtime.Object
+	Body    runtime.Binary
 }
 
 // REQUEST makes a HTTP request.
@@ -26,25 +23,25 @@ type Params struct {
 // @param {Binary} params.body - Request data
 // @param {hashMap} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func REQUEST(ctx context.Context, args ...core.Value) (core.Value, error) {
+func REQUEST(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, "", args)
 }
 
-func execMethod(ctx context.Context, method core.String, args []core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return core.None, err
+func execMethod(ctx context.Context, method runtime.String, args []runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
 	}
 
-	params, err := core.CastMap(args[0])
+	params, err := runtime.CastMap(args[0])
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	p, err := newParamsFrom(params)
+	p, err := newParamsFrom(ctx, params)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	if method != "" {
@@ -54,72 +51,72 @@ func execMethod(ctx context.Context, method core.String, args []core.Value) (cor
 	return makeRequest(ctx, p)
 }
 
-func makeRequest(ctx context.Context, params Params) (core.Value, error) {
+func makeRequest(ctx context.Context, params Params) (runtime.Value, error) {
 	client := h.Client{}
 	req, err := h.NewRequest(params.Method.String(), params.URL.String(), bytes.NewBuffer(params.Body))
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	req.Header = h.Header{}
 
 	if params.Headers != nil {
-		params.Headers.ForEach(func(value core.Value, key string) bool {
-			req.Header.Set(key, value.String())
+		params.Headers.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+			req.Header.Set(key.String(), value.String())
 
-			return true
+			return true, nil
 		})
 	}
 
 	resp, err := client.Do(req.WithContext(ctx))
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	data, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	defer resp.Body.Close()
 
-	return core.NewBinary(data), nil
+	return runtime.NewBinary(data), nil
 }
 
-func newParamsFrom(obj *internal.Object) (Params, error) {
+func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 	p := Params{}
 
-	method, exists := obj.Get("method")
+	method, err := obj.Get(ctx, runtime.String("method"))
 
-	if exists {
-		p.Method = internal.ToString(method)
+	if err == nil {
+		p.Method = runtime.ToString(method)
 	}
 
-	url, exists := obj.Get("url")
+	url, err := obj.Get(ctx, runtime.String("url"))
 
-	if !exists {
-		return Params{}, core.Error(core.ErrMissedArgument, ".url")
+	if err != nil {
+		return Params{}, runtime.Error(runtime.ErrMissedArgument, ".url")
 	}
 
-	p.URL = core.NewString(url.String())
+	p.URL = runtime.String(url.String())
 
-	headers, exists := obj.Get("headers")
+	headers, err := obj.Get(ctx, runtime.String("headers"))
 
-	if exists {
-		if err := core.ValidateType(headers, types.Object); err != nil {
-			return Params{}, core.Error(err, ".headers")
+	if err == nil {
+		if err := runtime.ValidateType(headers, runtime.TypeObject, runtime.TypeMap); err != nil {
+			return Params{}, runtime.Error(err, ".headers")
 		}
 
-		p.Headers = headers.(*internal.Object)
+		p.Headers = headers.(*runtime.Object)
 	}
 
-	body, exists := obj.Get("body")
+	body, err := obj.Get(ctx, runtime.String("body"))
 
-	if exists {
-		bin, ok := body.(core.Binary)
+	if err == nil {
+		bin, ok := body.(runtime.Binary)
 
 		if ok {
 			p.Body = bin
@@ -127,16 +124,16 @@ func newParamsFrom(obj *internal.Object) (Params, error) {
 			j, err := body.MarshalJSON()
 
 			if err != nil {
-				return Params{}, core.Error(err, ".body")
+				return Params{}, runtime.Error(err, ".body")
 			}
 
-			p.Body = core.NewBinary(j)
+			p.Body = runtime.NewBinary(j)
 
 			if p.Headers == nil {
-				p.Headers = internal.NewObject()
+				p.Headers = runtime.NewObject()
 			}
 
-			p.Headers.Set("Content-Type", core.NewString("application/json"))
+			_ = p.Headers.Set(ctx, runtime.String("Content-Type"), runtime.String("application/json"))
 		}
 	}
 

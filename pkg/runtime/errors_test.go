@@ -11,14 +11,14 @@ import (
 
 func TestTypeError(t *testing.T) {
 	Convey("Should match", t, func() {
-		e := runtime.TypeError(runtime.True, runtime.TypeList)
+		e := runtime.TypeErrorOf(runtime.True, runtime.TypeList)
 		So(e, ShouldNotBeNil)
 
-		e = runtime.TypeError(runtime.True, runtime.TypeList, runtime.TypeString)
+		e = runtime.TypeErrorOf(runtime.True, runtime.TypeList, runtime.TypeString)
 		So(e, ShouldNotBeNil)
 
 		cause := errors.New("invalid type: expected foo or bar, but got boolean")
-		e = runtime.TypeError(runtime.True, "foo", "bar")
+		e = runtime.TypeErrorOf(runtime.True, "foo", "bar")
 		So(e.Error(), ShouldEqual, cause.Error())
 	})
 }

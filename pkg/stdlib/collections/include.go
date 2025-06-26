@@ -59,7 +59,7 @@ func Includes(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 			return runtime.False, err
 		}
 	default:
-		return runtime.None, runtime.TypeError(haystack,
+		return runtime.None, runtime.TypeErrorOf(haystack,
 			runtime.TypeString,
 			runtime.TypeList,
 			runtime.TypeMap,

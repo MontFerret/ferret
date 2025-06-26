@@ -3,7 +3,7 @@ package objects
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -13,7 +13,8 @@ import (
 // @param {hashMap} obj - Source object.
 // @param {String, repeated} keys - Keys that need to be kept.
 // @return {hashMap} - New hashMap with only given keys.
-func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
+// TODO: REWRITE TO USE LIST & MAP instead
+func KeepKeys(ctx context.Context, args ...core.Value) (core.Value, error) {
 	if err := core.ValidateArgs(args, 2, core.MaxArgs); err != nil {
 		return core.None, err
 	}
@@ -22,10 +23,10 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	var keys *internal.Array
+	var keys *runtime.Array
 
 	if len(args) == 2 {
-		arr, ok := args[1].(*internal.Array)
+		arr, ok := args[1].(*runtime.Array)
 
 		if ok {
 			keys = arr
@@ -33,34 +34,38 @@ func KeepKeys(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	if keys == nil {
-		keys = internal.NewArrayWith(args[1:]...)
+		keys = runtime.NewArrayWith(args[1:]...)
 	}
 
 	if err := validateArrayOf(types.String, keys); err != nil {
 		return core.None, err
 	}
 
-	obj := args[0].(*internal.Object)
-	resultObj := internal.NewObject()
+	obj := args[0].(*runtime.Object)
+	resultObj := runtime.NewObject()
 
 	var key core.String
-	var val core.Value
-	var exists core.Boolean
 
-	keys.ForEach(func(keyVal core.Value, idx int) bool {
+	_ = keys.ForEach(ctx, func(c context.Context, keyVal core.Value, idx core.Int) (core.Boolean, error) {
 		key = keyVal.(core.String)
 
-		if val, exists = obj.Get(key); exists {
+		if val, err := obj.Get(c, key); err == nil {
 			cloneable, ok := val.(core.Cloneable)
 
 			if ok {
-				val = cloneable.Clone()
+				v, err := cloneable.Clone(c)
+
+				if err != nil {
+					return core.False, err
+				}
+
+				val = v
 			}
 
-			resultObj.Set(key, val)
+			_ = resultObj.Set(c, key, val)
 		}
 
-		return true
+		return true, nil
 	})
 
 	return resultObj, nil

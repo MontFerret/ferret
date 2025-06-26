@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,7 +14,7 @@ import (
 
 func TestMax(t *testing.T) {
 	Convey("Should return the largest value", t, func() {
-		out, err := math.Max(context.Background(), internal.NewArrayWith(
+		out, err := math.Max(context.Background(), runtime.NewArrayWith(
 			core.NewInt(5),
 			core.NewInt(2),
 			core.NewInt(9),
@@ -24,7 +24,7 @@ func TestMax(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 9)
 
-		out, err = math.Max(context.Background(), internal.NewArrayWith(
+		out, err = math.Max(context.Background(), runtime.NewArrayWith(
 			core.NewInt(-3),
 			core.NewInt(-5),
 			core.NewInt(2),
@@ -33,7 +33,7 @@ func TestMax(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 2)
 
-		out, err = math.Max(context.Background(), internal.NewArrayWith(
+		out, err = math.Max(context.Background(), runtime.NewArrayWith(
 			core.None,
 			core.NewInt(-5),
 			core.False,
@@ -42,7 +42,7 @@ func TestMax(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, core.None)
 
-		out, err = math.Max(context.Background(), internal.NewArray(0))
+		out, err = math.Max(context.Background(), runtime.NewArray(0))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, core.None)

@@ -3,8 +3,9 @@ package types
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
 )
 
 // TO_FLOAT takes an input value of any type and convert it into a float value.
@@ -18,12 +19,12 @@ import (
 // An object / HTML node is converted to the number 0.
 // @param {Any} value - Input value of arbitrary type.
 // @return {Float} - A float value.
-func ToFloat(_ context.Context, args ...core.Value) (core.Value, error) {
+func ToFloat(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 1)
 
 	if err != nil {
 		return core.None, err
 	}
 
-	return internal.ToFloat(args[0]), nil
+	return runtime.ToFloat(ctx, args[0])
 }

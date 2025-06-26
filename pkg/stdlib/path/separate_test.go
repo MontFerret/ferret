@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
@@ -34,7 +35,7 @@ func TestSeparate(t *testing.T) {
 			core.NewString("http://site.com/logo.png"),
 		)
 
-		expected := internal.NewArrayWith(core.NewString("http://site.com/"), core.NewString("logo.png"))
+		expected := runtime.NewArrayWith(core.NewString("http://site.com/"), core.NewString("logo.png"))
 		So(out, ShouldResemble, expected)
 	})
 }

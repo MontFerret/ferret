@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -89,7 +90,7 @@ func TestContains(t *testing.T) {
 		Convey("Contains([1,2,3], 1) should return 'true'", func() {
 			out, _ := strings.Contains(
 				context.Background(),
-				internal.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
+				runtime.NewArrayWith(core.NewInt(1), core.NewInt(2), core.NewInt(3)),
 				core.NewInt(1),
 			)
 

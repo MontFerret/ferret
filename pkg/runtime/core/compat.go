@@ -4,24 +4,33 @@ import "github.com/MontFerret/ferret/pkg/runtime"
 
 // This file is used to provide backward compatibility for the Ferret runtime.
 type (
-	Value     = runtime.Value
-	Boolean   = runtime.Boolean
-	String    = runtime.String
-	Int       = runtime.Int
-	Float     = runtime.Float
-	Array     = runtime.Array
-	Object    = runtime.Object
-	DateTime  = runtime.DateTime
-	Binary    = runtime.Binary
-	Iterable  = runtime.Iterable
-	Iterator  = runtime.Iterator
-	List      = runtime.List
-	Map       = runtime.Map
-	Function  = runtime.Function
-	Namespace = runtime.Namespace
+	Type       = runtime.Type
+	Value      = runtime.Value
+	Boolean    = runtime.Boolean
+	String     = runtime.String
+	Int        = runtime.Int
+	Float      = runtime.Float
+	Array      = runtime.Array
+	Object     = runtime.Object
+	DateTime   = runtime.DateTime
+	Binary     = runtime.Binary
+	Iterable   = runtime.Iterable
+	Iterator   = runtime.Iterator
+	List       = runtime.List
+	Map        = runtime.Map
+	Keyed      = runtime.Keyed
+	Indexed    = runtime.Indexed
+	Cloneable  = runtime.Cloneable
+	Measurable = runtime.Measurable
+	Function   = runtime.Function
+	Namespace  = runtime.Namespace
+
+	PairValueType = runtime.PairValueType
 )
 
 var (
+	NewType = runtime.NewType
+
 	None               = runtime.None
 	EmptyString        = runtime.EmptyString
 	False              = runtime.False
@@ -38,7 +47,10 @@ var (
 	NewBinary          = runtime.NewBinary
 	NewBoolean         = runtime.NewBoolean
 
-	ForEach = runtime.ForEachIter
+	DefaultTimeLayout = runtime.DefaultTimeLayout
+	IsNaN             = runtime.IsNaN
+	IsInf             = runtime.IsInf
+	ForEach           = runtime.ForEachIter
 
 	NewFunctions        = runtime.NewFunctions
 	NewFunctionsFromMap = runtime.NewFunctionsFromMap
@@ -46,9 +58,14 @@ var (
 	Error               = runtime.Error
 	Errorf              = runtime.Errorf
 	ErrInvalidOperation = runtime.ErrInvalidOperation
+	ErrMissedArgument   = runtime.ErrMissedArgument
+	ErrNotUnique        = runtime.ErrNotUnique
+	ErrNotFound         = runtime.ErrNotFound
+	ErrInvalidArgument  = runtime.ErrInvalidArgument
 
+	ValidateType  = runtime.ValidateType
 	ValidateArgs  = runtime.ValidateArgs
-	TypeError     = runtime.TypeError
+	TypeError     = runtime.TypeErrorOf
 	CompareValues = runtime.CompareValues
 	Reflect       = runtime.Reflect
 
@@ -68,11 +85,3 @@ var (
 
 	MaxArgs = runtime.MaxArgs
 )
-
-func ValidateType(value Value, expectedType string) error {
-	if runtime.Reflect(value) != expectedType {
-		return runtime.TypeError(value, expectedType)
-	}
-
-	return nil
-}

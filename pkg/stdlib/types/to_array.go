@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/pkg/runtime"
+
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
@@ -20,5 +22,5 @@ func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	return core.ToList(ctx, args[0]), nil
+	return runtime.ToList(ctx, args[0]), nil
 }

@@ -3,7 +3,7 @@ package objects
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -12,7 +12,8 @@ import (
 // HAS returns the value stored by the given key.
 // @param {String} key - The key name string.
 // @return {Boolean} - True if the key exists else false.
-func Has(_ context.Context, args ...core.Value) (core.Value, error) {
+// TODO: REWRITE TO USE LIST & MAP instead
+func Has(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -31,10 +32,8 @@ func Has(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	obj := args[0].(*internal.Object)
+	obj := args[0].(*runtime.Object)
 	keyName := args[1].(core.String)
 
-	_, has := obj.Get(keyName)
-
-	return has, nil
+	return obj.ContainsKey(ctx, keyName)
 }

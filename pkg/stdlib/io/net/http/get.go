@@ -4,8 +4,6 @@ import (
 	"context"
 	h "net/http"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
@@ -30,7 +28,7 @@ func GET(ctx context.Context, args ...core.Value) (core.Value, error) {
 			Headers: nil,
 			Body:    nil,
 		})
-	case *internal.Object:
+	case *core.Object:
 		return execMethod(ctx, h.MethodGet, args)
 	default:
 		return core.None, core.TypeError(arg, types.String, types.Object)

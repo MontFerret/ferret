@@ -7,7 +7,7 @@ func CastBoolean(input Value) (Boolean, error) {
 		return boolean, nil
 	}
 
-	return False, TypeError(input, TypeBoolean)
+	return False, TypeErrorOf(input, TypeBoolean)
 }
 
 func SafeCastBoolean(input Value, fallback Boolean) Boolean {
@@ -27,7 +27,7 @@ func CastInt(input Value) (Int, error) {
 		return integer, nil
 	}
 
-	return ZeroInt, TypeError(input, TypeInt)
+	return ZeroInt, TypeErrorOf(input, TypeInt)
 }
 
 func SafeCastInt(input Value, fallback Int) Int {
@@ -47,7 +47,7 @@ func CastFloat(input Value) (Float, error) {
 		return float, nil
 	}
 
-	return ZeroFloat, TypeError(input, TypeFloat)
+	return ZeroFloat, TypeErrorOf(input, TypeFloat)
 }
 
 func SafeCastFloat(input Value, fallback Float) Float {
@@ -67,7 +67,7 @@ func CastString(input Value) (String, error) {
 		return str, nil
 	}
 
-	return EmptyString, TypeError(input, TypeString)
+	return EmptyString, TypeErrorOf(input, TypeString)
 }
 
 func SafeCastString(input Value, fallback String) String {
@@ -87,7 +87,7 @@ func CastDateTime(input Value) (DateTime, error) {
 		return dt, nil
 	}
 
-	return ZeroDateTime, TypeError(input, TypeDateTime)
+	return ZeroDateTime, TypeErrorOf(input, TypeDateTime)
 }
 
 func SafeCastDateTime(input Value, fallback DateTime) DateTime {
@@ -107,7 +107,7 @@ func CastList(input Value) (List, error) {
 		return arr, nil
 	}
 
-	return nil, TypeError(input, TypeList)
+	return nil, TypeErrorOf(input, TypeList)
 }
 
 func SafeCastList(input Value, fallback List) List {
@@ -127,7 +127,7 @@ func CastMap(input Value) (Map, error) {
 		return obj, nil
 	}
 
-	return nil, TypeError(input, TypeMap)
+	return nil, TypeErrorOf(input, TypeMap)
 }
 
 func SafeCastMap(input Value, fallback Map) Map {
@@ -147,7 +147,7 @@ func CastBinary(input Value) (Binary, error) {
 		return bin, nil
 	}
 
-	return nil, TypeError(input, TypeBinary)
+	return nil, TypeErrorOf(input, TypeBinary)
 }
 
 func SafeCastBinary(input Value, fallback Binary) Binary {
@@ -167,7 +167,7 @@ func CastComparable(input Value) (Comparable, error) {
 		return comp, nil
 	}
 
-	return nil, TypeError(input, TypeComparable)
+	return nil, TypeErrorOf(input, TypeComparable)
 }
 
 func CastCloneable(input Value) (Cloneable, error) {
@@ -177,5 +177,5 @@ func CastCloneable(input Value) (Cloneable, error) {
 		return cloneable, nil
 	}
 
-	return nil, TypeError(input, TypeCloneable)
+	return nil, TypeErrorOf(input, TypeCloneable)
 }

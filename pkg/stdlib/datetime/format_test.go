@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
@@ -18,7 +18,7 @@ func TestDateFormat(t *testing.T) {
 			Args: []core.Value{
 				core.NewString("string"),
 				core.NewInt(0),
-				internal.NewArray(0),
+				runtime.NewArray(0),
 			},
 			ShouldErr: true,
 		},

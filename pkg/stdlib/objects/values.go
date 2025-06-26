@@ -3,41 +3,43 @@ package objects
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // VALUES return the attribute values of the object as an array.
 // @param {hashMap} object - Target object.
 // @return {Any[]} - Values of document returned in any order.
-func Values(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+// TODO: REWRITE TO USE LIST & MAP instead
+func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Object)
+	err = runtime.ValidateType(args[0], types.Object)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	obj := args[0].(*internal.Object)
-	vals := internal.NewArray(0)
+	obj := args[0].(*runtime.Object)
+	vals := runtime.NewArray(0)
 
-	obj.ForEach(func(val core.Value, key string) bool {
-		cloneable, ok := val.(core.Cloneable)
+	_ = obj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+		val, err := runtime.CloneOrCopy(c, val)
 
-		if ok {
-			val = cloneable.Clone()
+		if err != nil {
+			return runtime.False, err
 		}
 
-		vals.Push(val)
+		if err := vals.Add(c, val); err != nil {
+			return runtime.False, err
+		}
 
-		return true
+		return true, nil
 	})
 
 	return vals, nil

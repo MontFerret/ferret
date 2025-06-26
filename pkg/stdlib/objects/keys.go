@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -14,7 +14,8 @@ import (
 // @param {hashMap} obj - The object whose keys you want to extract
 // @param {Boolean} [sort=False] - If sort is true, then the returned keys will be sorted.
 // @return {String[]} - arrayList that contains object keys.
-func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
+// TODO: REWRITE TO USE LIST & MAP instead
+func Keys(ctx context.Context, args ...core.Value) (core.Value, error) {
 	err := core.ValidateArgs(args, 1, 2)
 	if err != nil {
 		return core.None, err
@@ -25,7 +26,7 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 		return core.None, err
 	}
 
-	obj := args[0].(*internal.Object)
+	obj := args[0].(*runtime.Object)
 	needSort := false
 
 	if len(args) == 2 {
@@ -37,23 +38,29 @@ func Keys(_ context.Context, args ...core.Value) (core.Value, error) {
 		needSort = bool(args[1].(core.Boolean))
 	}
 
-	oKeys := make([]string, 0, obj.Length())
+	size, err := obj.Length(ctx)
 
-	obj.ForEach(func(value core.Value, key string) bool {
-		oKeys = append(oKeys, key)
+	if err != nil {
+		return core.None, err
+	}
 
-		return true
+	oKeys := make([]string, 0, size)
+
+	_ = obj.ForEach(ctx, func(c context.Context, value, key core.Value) (core.Boolean, error) {
+		oKeys = append(oKeys, key.String())
+
+		return true, nil
 	})
 
 	keys := sort.StringSlice(oKeys)
-	keysArray := internal.NewArray(len(keys))
+	keysArray := runtime.NewArray(len(keys))
 
 	if needSort {
 		keys.Sort()
 	}
 
 	for _, key := range keys {
-		keysArray.Push(core.NewString(key))
+		_ = keysArray.Add(ctx, core.NewString(key))
 	}
 
 	return keysArray, nil

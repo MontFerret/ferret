@@ -4,7 +4,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -28,7 +28,7 @@ func Separate(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	pattern, name := path.Split(args[0].String())
 
-	arr := internal.NewArrayWith(core.NewString(pattern), core.NewString(name))
+	arr := runtime.NewArrayWith(core.NewString(pattern), core.NewString(name))
 
 	return arr, nil
 }

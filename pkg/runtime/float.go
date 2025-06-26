@@ -54,7 +54,7 @@ func ParseFloat(input interface{}) (Float, error) {
 		}
 	}
 
-	return ZeroFloat, Error(ErrInvalidType, "expected "+"'"+TypeFloat+"'")
+	return ZeroFloat, Error(ErrInvalidType, fmt.Sprintf("expected %s", TypeFloat))
 }
 
 func MustParseFloat(input interface{}) Float {
@@ -73,10 +73,6 @@ func IsNaN(input Float) Boolean {
 
 func IsInf(input Float, sign Int) Boolean {
 	return NewBoolean(math.IsInf(float64(input), int(sign)))
-}
-
-func (f Float) Type() string {
-	return TypeFloat
 }
 
 func (f Float) MarshalJSON() ([]byte, error) {

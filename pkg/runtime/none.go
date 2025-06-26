@@ -10,10 +10,6 @@ var (
 	None = &none{}
 )
 
-func (n *none) Type() string {
-	return TypeNone
-}
-
 func (n *none) MarshalJSON() ([]byte, error) {
 	return []byte("null"), nil
 }

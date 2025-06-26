@@ -3,7 +3,7 @@ package datetime
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // DATE_DIFF returns the difference between two dates in given time unit.
@@ -12,41 +12,41 @@ import (
 // @param {String} unit - Time unit to return the difference in.
 // @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
 // @return {Int | Float} - Difference between date1 and date2.
-func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 3, 4); err != nil {
-		return core.None, err
+func DateDiff(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
+		return runtime.None, err
 	}
 
-	if err := core.AssertDateTime(args[0]); err != nil {
-		return core.None, err
+	if err := runtime.AssertDateTime(args[0]); err != nil {
+		return runtime.None, err
 	}
 
-	if err := core.AssertDateTime(args[1]); err != nil {
-		return core.None, err
+	if err := runtime.AssertDateTime(args[1]); err != nil {
+		return runtime.None, err
 	}
 
-	if err := core.AssertString(args[2]); err != nil {
-		return core.None, err
+	if err := runtime.AssertString(args[2]); err != nil {
+		return runtime.None, err
 	}
 
-	date1 := args[0].(core.DateTime)
-	date2 := args[1].(core.DateTime)
-	unit := args[2].(core.String)
-	isFloat := core.NewBoolean(false)
+	date1 := args[0].(runtime.DateTime)
+	date2 := args[1].(runtime.DateTime)
+	unit := args[2].(runtime.String)
+	isFloat := runtime.NewBoolean(false)
 
 	if len(args) == 4 {
-		if err := core.AssertBoolean(args[3]); err != nil {
-			return core.None, err
+		if err := runtime.AssertBoolean(args[3]); err != nil {
+			return runtime.None, err
 		}
 
-		isFloat = args[3].(core.Boolean)
+		isFloat = args[3].(runtime.Boolean)
 	}
 
 	if date1.Equal(date2.Time) {
 		if isFloat {
-			return core.NewFloat(0), nil
+			return runtime.NewFloat(0), nil
 		}
-		return core.NewInt(0), nil
+		return runtime.NewInt(0), nil
 	}
 
 	var nsecDiff int64
@@ -59,14 +59,14 @@ func DateDiff(_ context.Context, args ...core.Value) (core.Value, error) {
 
 	unitDiff, err := nsecToUnit(float64(nsecDiff), unit.String())
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	if !isFloat {
-		return core.NewInt(int(unitDiff)), nil
+		return runtime.NewInt(int(unitDiff)), nil
 	}
 
-	return core.NewFloat(unitDiff), nil
+	return runtime.NewFloat(unitDiff), nil
 }
 
 func nsecToUnit(nsec float64, unit string) (float64, error) {

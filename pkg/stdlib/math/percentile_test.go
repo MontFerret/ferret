@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
+	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,7 +16,7 @@ func TestPercentile(t *testing.T) {
 	Convey("Should return nth percentile value", t, func() {
 		out, err := math.Percentile(
 			context.Background(),
-			internal.NewArrayWith(
+			runtime.NewArrayWith(
 				core.NewInt(1),
 				core.NewInt(2),
 				core.NewInt(3),

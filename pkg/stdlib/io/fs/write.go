@@ -5,10 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/MontFerret/ferret/pkg/runtime/internal"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // WRITE writes the given data into the file.
@@ -19,22 +16,22 @@ import (
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes
 // * a - Append: will create a file if the specified file does not exist
 // * w - Write (Default): will create a file if the specified file does not exist
-func Write(_ context.Context, args ...core.Value) (core.Value, error) {
+func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := validateRequiredWriteArgs(args)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	fpath := internal.ToString(args[0])
-	data := internal.ToBinary(args[1])
+	fpath := runtime.ToString(args[0])
+	data := runtime.ToBinary(args[1])
 	params := defaultParams
 
 	if len(args) == 3 {
 		params, err = parseParams(args[2])
 
 		if err != nil {
-			return core.None, core.Error(
+			return runtime.None, runtime.Error(
 				err,
 				"parse `params` argument",
 			)
@@ -45,7 +42,7 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	file, err := os.OpenFile(string(fpath), params.ModeFlag, 0666)
 
 	if err != nil {
-		return core.None, core.Error(err, "open file")
+		return runtime.None, runtime.Error(err, "open file")
 	}
 
 	defer file.Close()
@@ -53,20 +50,20 @@ func Write(_ context.Context, args ...core.Value) (core.Value, error) {
 	_, err = file.Write(data)
 
 	if err != nil {
-		return core.None, core.Error(err, "write file")
+		return runtime.None, runtime.Error(err, "write file")
 	}
 
-	return core.None, nil
+	return runtime.None, nil
 }
 
-func validateRequiredWriteArgs(args []core.Value) error {
-	err := core.ValidateArgs(args, 2, 3)
+func validateRequiredWriteArgs(args []runtime.Value) error {
+	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
 		return err
 	}
 
-	err = core.ValidateType(args[0], types.String)
+	err = runtime.ValidateType(args[0], runtime.TypeString)
 
 	if err != nil {
 		return err
@@ -85,25 +82,25 @@ var defaultParams = parsedParams{
 	ModeFlag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
 }
 
-func parseParams(value core.Value) (parsedParams, error) {
-	err := core.ValidateType(value, types.Object)
+func parseParams(value runtime.Value) (parsedParams, error) {
+	err := runtime.ValidateType(value, runtime.TypeMap)
 
 	if err != nil {
 		return parsedParams{}, err
 	}
 
-	obj := value.(*internal.Object)
+	obj := value.(*runtime.Object)
 
 	params := defaultParams
 
-	modestr, exists := obj.Get(core.NewString("mode"))
+	modestr, err := obj.Get(context.Background(), runtime.NewString("mode"))
 
-	if exists {
+	if err == nil {
 		flag, err := parseWriteMode(modestr.String())
 
 		if err != nil {
-			return parsedParams{}, core.Error(
-				core.ErrInvalidArgument,
+			return parsedParams{}, runtime.Error(
+				runtime.ErrInvalidArgument,
 				"parse write mode",
 			)
 		}
@@ -119,8 +116,8 @@ func parseWriteMode(s string) (int, error) {
 	count := len(letters)
 
 	if count == 0 || count > 2 {
-		return -1, core.Errorf(
-			core.ErrInvalidArgument,
+		return -1, runtime.Errorf(
+			runtime.ErrInvalidArgument,
 			"must be from 1 to 2 mode letters, got `%d`", count,
 		)
 	}
@@ -134,8 +131,8 @@ func parseWriteMode(s string) (int, error) {
 	if count == 2 {
 		// since letter is sorted, `x` will always be the letters[1]
 		if letters[1] != 'x' {
-			return -1, core.Errorf(
-				core.ErrInvalidArgument,
+			return -1, runtime.Errorf(
+				runtime.ErrInvalidArgument,
 				"invalid mode `%s`", s,
 			)
 		}
@@ -149,8 +146,8 @@ func parseWriteMode(s string) (int, error) {
 	case 'w':
 		flag |= os.O_TRUNC
 	default:
-		return -1, core.Errorf(
-			core.ErrInvalidArgument,
+		return -1, runtime.Errorf(
+			runtime.ErrInvalidArgument,
 			"invalid mode `%s`", s,
 		)
 	}
