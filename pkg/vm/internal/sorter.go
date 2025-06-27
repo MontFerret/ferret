@@ -63,6 +63,10 @@ func (s *Sorter) Get(_ context.Context, _ runtime.Value) (runtime.Value, error) 
 	return runtime.None, runtime.ErrNotSupported
 }
 
+func (s *Sorter) Length(ctx context.Context) (runtime.Int, error) {
+	return s.Value.Length(ctx)
+}
+
 func (s *Sorter) Close() error {
 	val := s.Value
 	s.Value = nil

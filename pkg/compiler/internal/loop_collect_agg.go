@@ -119,6 +119,18 @@ func (c *LoopCollectCompiler) compileAggregationFuncArgs(selectors []fql.ICollec
 }
 
 func (c *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollectAggregateSelectorContext, accumulator vm.Operand, argsPkg []int) {
+	// Gets the number of records in the accumulator
+	cond := c.ctx.Registers.Allocate(core.Temp)
+	c.ctx.Emitter.EmitAB(vm.OpLength, cond, accumulator)
+	zero := loadConstant(c.ctx, runtime.ZeroInt)
+	// Check if the number equals to zero
+	c.ctx.Emitter.EmitEq(cond, cond, zero)
+	c.ctx.Registers.Free(zero)
+	// We skip the key retrieval and function call of there are no records in the accumulator
+	ifJump := c.ctx.Emitter.EmitJumpIfTrue(cond, core.JumpPlaceholder)
+
+	selectorVarRegs := make([]vm.Operand, len(selectors))
+
 	for i, selector := range selectors {
 		argsNum := argsPkg[i]
 
@@ -149,9 +161,20 @@ func (c *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollec
 		// Since this temporary scope is only for aggregators and will be closed after the aggregation
 		selectorVarName := selector.Identifier().GetText()
 		varReg := c.ctx.Symbols.DeclareLocal(selectorVarName)
+		selectorVarRegs[i] = varReg
 		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
 		c.ctx.Registers.Free(result)
 	}
+
+	elseJump := c.ctx.Emitter.EmitJump(core.JumpPlaceholder)
+	c.ctx.Emitter.PatchJumpNext(ifJump)
+
+	for _, varReg := range selectorVarRegs {
+		c.ctx.Emitter.EmitA(vm.OpLoadNone, varReg)
+	}
+
+	c.ctx.Emitter.PatchJumpNext(elseJump)
+	c.ctx.Registers.Free(cond)
 }
 
 func (c *LoopCollectCompiler) loadAggregationArgKey(selector int, arg int) vm.Operand {

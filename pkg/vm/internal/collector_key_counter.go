@@ -113,10 +113,14 @@ func (c *KeyCounterCollector) Get(ctx context.Context, key runtime.Value) (runti
 	v, ok := c.grouping[k]
 
 	if !ok {
-		return runtime.None, runtime.ErrNotFound
+		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", k)
 	}
 
 	return v, nil
+}
+
+func (c *KeyCounterCollector) Length(ctx context.Context) (runtime.Int, error) {
+	return c.Value.Length(ctx)
 }
 
 func (c *KeyCounterCollector) Close() error {

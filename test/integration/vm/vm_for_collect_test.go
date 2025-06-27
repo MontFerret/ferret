@@ -87,6 +87,14 @@ func TestForCollect(t *testing.T) {
 				RETURN {x, gender}
 		`, "Should not have access to variables defined before COLLECT"),
 		CaseArray(`
+			LET users = []
+			FOR i IN users
+				COLLECT gender = i.gender
+				RETURN gender
+		`,
+			[]any{},
+			"Should handle empty arrays gracefully"),
+		CaseArray(`
 LET users = [
 				{
 					active: true,

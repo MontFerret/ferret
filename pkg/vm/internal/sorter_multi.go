@@ -73,6 +73,10 @@ func (s *MultiSorter) Get(_ context.Context, _ runtime.Value) (runtime.Value, er
 	return runtime.None, runtime.ErrNotSupported
 }
 
+func (s *MultiSorter) Length(ctx context.Context) (runtime.Int, error) {
+	return s.Value.Length(ctx)
+}
+
 func (s *MultiSorter) Close() error {
 	val := s.Value
 	s.Value = nil

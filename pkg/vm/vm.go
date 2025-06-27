@@ -84,23 +84,6 @@ loop:
 			if runtime.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
-		case OpJumpIfEmpty:
-			val, ok := reg[src1].(runtime.Measurable)
-
-			if ok {
-				size, err := val.Length(ctx)
-
-				if err != nil {
-					return nil, err
-				}
-
-				if size == 0 {
-					vm.pc = int(dst)
-				}
-			} else {
-				// If the value is not measurable, we consider it empty
-				vm.pc = int(dst)
-			}
 		case OpAdd:
 			reg[dst] = internal.Add(ctx, reg[src1], reg[src2])
 		case OpSub:

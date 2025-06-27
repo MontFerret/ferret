@@ -97,6 +97,10 @@ func (c *KeyGroupCollector) Get(ctx context.Context, key runtime.Value) (runtime
 	return v, nil
 }
 
+func (c *KeyGroupCollector) Length(ctx context.Context) (runtime.Int, error) {
+	return c.Value.Length(ctx)
+}
+
 func (c *KeyGroupCollector) Close() error {
 	val := c.Value
 	c.Value = nil
