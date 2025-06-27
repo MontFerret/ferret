@@ -30,19 +30,13 @@ func Max(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, nil
 	}
 
-	var max float64
+	var res float64
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		err = runtime.AssertNumber(value)
-
-		if err != nil {
-			return false, nil
-		}
-
 		fv := toFloat(value)
 
-		if fv > max {
-			max = fv
+		if fv > res {
+			res = fv
 		}
 
 		return true, nil
@@ -52,5 +46,5 @@ func Max(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, nil
 	}
 
-	return runtime.NewFloat(max), nil
+	return runtime.NewFloat(res), nil
 }

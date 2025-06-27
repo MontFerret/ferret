@@ -100,6 +100,16 @@ func SafeCastDateTime(input Value, fallback DateTime) DateTime {
 	return fallback
 }
 
+func CastCollection(input Value) (Collection, error) {
+	arr, ok := input.(Collection)
+
+	if ok {
+		return arr, nil
+	}
+
+	return nil, TypeErrorOf(input, TypeCollection)
+}
+
 func CastList(input Value) (List, error) {
 	arr, ok := input.(List)
 

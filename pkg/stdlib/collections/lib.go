@@ -7,7 +7,8 @@ import (
 func RegisterLib(ns runtime.Namespace) error {
 	return ns.RegisterFunctions(
 		runtime.NewFunctionsFromMap(map[string]runtime.Function{
-			"INCLUDES": Includes,
-			"REVERSE":  Reverse,
+			"COUNT_DISTINCT": CountDistinct,
+			"INCLUDES":       Includes,
+			"REVERSE":        Reverse,
 		}))
 }

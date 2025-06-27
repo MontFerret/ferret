@@ -37,6 +37,7 @@ const (
 	TypeBinary   = Type("binary")
 
 	// Interfaces
+	TypeCollection = Type("collection")
 	TypeList       = Type("list")
 	TypeMap        = Type("map")
 	TypeIndexed    = Type("indexed")

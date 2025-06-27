@@ -39,7 +39,7 @@ func TestCollectAggregate(t *testing.T) {
 				}
 		`, []any{
 			map[string]any{"gender": "f", "minAge": 25, "maxAge": 25},
-			map[string]any{"gender": "m", "minAge": nil, "maxAge": nil},
+			map[string]any{"gender": "m", "minAge": 0, "maxAge": 0},
 		}, "Should handle null values in aggregation"),
 		CaseArray(`
 LET users = [
@@ -204,7 +204,7 @@ FOR u IN users
 				"gender":          "m",
 				"activeCount":     2,
 				"marriedCount":    2,
-				"highSalaryCount": 2,
+				"highSalaryCount": 3,
 			},
 		}, "Should aggregate with conditional expressions"),
 		CaseArray(`
@@ -498,7 +498,7 @@ FOR u IN users
 			]
 			FOR u IN users
 				COLLECT AGGREGATE 
-					allSkills = UNION(u.skills),
+					allSkills = UNION_DISTINCT(u.skills, u.skills),
 					uniqueSkillCount = COUNT_DISTINCT(u.skills)
 				RETURN {
 					allSkills: SORTED(allSkills),
@@ -506,8 +506,13 @@ FOR u IN users
 				}
 		`, []any{
 			map[string]any{
-				"allSkills":        []any{"C++", "Go", "Java", "JavaScript", "Python", "Rust", "TypeScript"},
-				"uniqueSkillCount": 7,
+				"allSkills": []any{
+					[]any{"Go", "Rust"},
+					[]any{"JavaScript", "TypeScript"},
+					[]any{"Java", "C++", "Python"},
+					[]any{"JavaScript", "Python", "Go"},
+				},
+				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
 	})

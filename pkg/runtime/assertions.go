@@ -65,6 +65,19 @@ func AssertBoolean(input Value) error {
 	return nil
 }
 
+func AssertCollection(input Value) error {
+	_, ok := input.(Collection)
+
+	if !ok {
+		return TypeErrorOf(
+			input,
+			TypeCollection,
+		)
+	}
+
+	return nil
+}
+
 func AssertArray(input Value) error {
 	_, ok := input.(*Array)
 
