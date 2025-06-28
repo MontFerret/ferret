@@ -55,6 +55,18 @@ func (lt *LoopTable) Pop() *Loop {
 	return top
 }
 
+func (lt *LoopTable) FindParent(pos int) *Loop {
+	for i := pos - 1; i >= 0; i-- {
+		loop := lt.stack[i]
+
+		if loop.Allocate {
+			return loop
+		}
+	}
+
+	return nil
+}
+
 func (lt *LoopTable) Current() *Loop {
 	if len(lt.stack) == 0 {
 		return nil

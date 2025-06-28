@@ -64,6 +64,19 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antl
 
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
+	if !loop.Allocate {
+		// If the current loop must push distinct items, we must patch the dest dataset
+		if loop.Distinct {
+			parent := c.ctx.Loops.FindParent(c.ctx.Loops.Depth())
+
+			if parent == nil {
+				panic("parent loop not found in loop table")
+			}
+
+			c.ctx.Emitter.Patchx(parent.Pos, 1)
+		}
+	}
+
 	return returnRuleCtx
 }
 
