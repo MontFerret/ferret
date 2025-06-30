@@ -3,7 +3,6 @@ package vm
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm/internal"
@@ -25,19 +24,9 @@ func New(program *Program) *VM {
 }
 
 func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (runtime.Value, error) {
-	tryCatch := func(pos int) (Catch, bool) {
-		for _, pair := range vm.program.CatchTable {
-			if pos >= pair[0] && pos <= pair[1] {
-				return pair, true
-			}
-		}
-
-		return Catch{}, false
-	}
-
 	env := newEnvironment(opts)
 
-	if err := vm.validateParams(env); err != nil {
+	if err := validateParams(env, vm.program); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +137,7 @@ loop:
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
-			} else if _, catch := tryCatch(vm.pc); catch {
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.False
 			} else {
 				return nil, err
@@ -159,7 +148,7 @@ loop:
 
 			if err == nil {
 				reg[dst] = !r.Match(reg[src1])
-			} else if _, catch := tryCatch(vm.pc); catch {
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.False
 			} else {
 				return nil, err
@@ -250,40 +239,13 @@ loop:
 			}
 
 		case OpCall, OpProtectedCall:
-			fnName := reg[dst].String()
-			fn := vm.env.GetFunction(fnName)
-
-			if fn == nil {
-				if op == OpProtectedCall {
-					reg[dst] = runtime.None
-					continue
-				} else {
-					return nil, runtime.Error(ErrFunctionNotFound, fnName)
-				}
-			}
-
-			var size int
-
-			if src1 > 0 {
-				size = src2.Register() - src1.Register() + 1
-			}
-
-			start := int(src1)
-			end := int(src1) + size
-			args := make([]runtime.Value, size)
-
-			// Iterate over registers starting from src1 and up to the src2
-			for i := start; i < end; i++ {
-				args[i-start] = reg[i]
-			}
-
-			out, err := fn(ctx, args...)
+			out, err := vm.call(ctx, dst, src1, src2)
 
 			if err == nil {
 				reg[dst] = out
 			} else if op == OpProtectedCall {
 				reg[dst] = runtime.None
-			} else if catch, ok := tryCatch(vm.pc); ok {
+			} else if catch, ok := vm.tryCatch(vm.pc); ok {
 				reg[dst] = runtime.None
 
 				if catch[2] > 0 {
@@ -292,6 +254,91 @@ loop:
 			} else {
 				return nil, err
 			}
+		case OpCall0, OpProtectedCall0:
+			out, err := vm.call0(ctx, dst)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpProtectedCall0 {
+				reg[dst] = runtime.None
+			} else if catch, ok := vm.tryCatch(vm.pc); ok {
+				reg[dst] = runtime.None
+
+				if catch[2] > 0 {
+					vm.pc = catch[2]
+				}
+			} else {
+				return nil, err
+			}
+
+		case OpCall1, OpProtectedCall1:
+			out, err := vm.call1(ctx, dst, src1)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpProtectedCall1 {
+				reg[dst] = runtime.None
+			} else if catch, ok := vm.tryCatch(vm.pc); ok {
+				reg[dst] = runtime.None
+
+				if catch[2] > 0 {
+					vm.pc = catch[2]
+				}
+			} else {
+				return nil, err
+			}
+
+		case OpCall2, OpProtectedCall2:
+			out, err := vm.call2(ctx, dst, src1, src2)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpProtectedCall2 {
+				reg[dst] = runtime.None
+			} else if catch, ok := vm.tryCatch(vm.pc); ok {
+				reg[dst] = runtime.None
+
+				if catch[2] > 0 {
+					vm.pc = catch[2]
+				}
+			} else {
+				return nil, err
+			}
+
+		case OpCall3, OpProtectedCall3:
+			out, err := vm.call3(ctx, dst, src1, src2)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpProtectedCall3 {
+				reg[dst] = runtime.None
+			} else if catch, ok := vm.tryCatch(vm.pc); ok {
+				reg[dst] = runtime.None
+
+				if catch[2] > 0 {
+					vm.pc = catch[2]
+				}
+			} else {
+				return nil, err
+			}
+
+		case OpCall4, OpProtectedCall4:
+			out, err := vm.call4(ctx, dst, src1, src2)
+
+			if err == nil {
+				reg[dst] = out
+			} else if op == OpProtectedCall4 {
+				reg[dst] = runtime.None
+			} else if catch, ok := vm.tryCatch(vm.pc); ok {
+				reg[dst] = runtime.None
+
+				if catch[2] > 0 {
+					vm.pc = catch[2]
+				}
+			} else {
+				return nil, err
+			}
+
 		case OpLength:
 			val, ok := reg[src1].(runtime.Measurable)
 
@@ -299,7 +346,7 @@ loop:
 				length, err := val.Length(ctx)
 
 				if err != nil {
-					if _, catch := tryCatch(vm.pc); catch {
+					if _, catch := vm.tryCatch(vm.pc); catch {
 						length = 0
 					} else {
 						return nil, err
@@ -307,7 +354,7 @@ loop:
 				}
 
 				reg[dst] = length
-			} else if _, catch := tryCatch(vm.pc); catch {
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.ZeroInt
 			} else {
 				return runtime.None, runtime.TypeErrorOf(reg[src1],
@@ -328,7 +375,7 @@ loop:
 				err := val.Close()
 
 				if err != nil {
-					if _, catch := tryCatch(vm.pc); !catch {
+					if _, catch := vm.tryCatch(vm.pc); !catch {
 						return nil, err
 					}
 				}
@@ -356,7 +403,7 @@ loop:
 			ds := reg[dst].(runtime.List)
 
 			if err := ds.Add(ctx, reg[src1]); err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
+				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				} else {
 					return nil, err
@@ -366,7 +413,7 @@ loop:
 			tr := reg[dst].(internal.Transformer)
 
 			if err := tr.Add(ctx, reg[src1], reg[src2]); err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
+				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				}
 
@@ -385,7 +432,7 @@ loop:
 
 				reg[dst] = internal.NewIterator(iterator)
 			default:
-				if _, catch := tryCatch(vm.pc); catch {
+				if _, catch := vm.tryCatch(vm.pc); catch {
 					// Fall back to an empty iterator
 					reg[dst] = internal.NoopIter
 				} else {
@@ -438,7 +485,7 @@ loop:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])
 
 			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
+				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				} else {
 					return nil, err
@@ -451,7 +498,7 @@ loop:
 			})
 
 			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
+				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				} else {
 					return nil, err
@@ -468,7 +515,7 @@ loop:
 				t, err := runtime.CastInt(reg[src1])
 
 				if err != nil {
-					if _, catch := tryCatch(vm.pc); catch {
+					if _, catch := vm.tryCatch(vm.pc); catch {
 						continue
 					} else {
 						return nil, err
@@ -483,7 +530,7 @@ loop:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 
 			if err != nil {
-				if _, catch := tryCatch(vm.pc); catch {
+				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				} else {
 					return nil, err
@@ -502,32 +549,109 @@ loop:
 	return vm.registers[NoopOperand], nil
 }
 
-func (vm *VM) validateParams(env *Environment) error {
-	if len(vm.program.Params) == 0 {
-		return nil
-	}
-
-	// There might be no errors.
-	// Thus, we allocate this slice lazily, on a first error.
-	var missedParams []string
-
-	for _, n := range vm.program.Params {
-		_, exists := env.params[n]
-
-		if !exists {
-			if missedParams == nil {
-				missedParams = make([]string, 0, len(vm.program.Params))
-			}
-
-			missedParams = append(missedParams, "@"+n)
+func (vm *VM) tryCatch(pos int) (Catch, bool) {
+	for _, pair := range vm.program.CatchTable {
+		if pos >= pair[0] && pos <= pair[1] {
+			return pair, true
 		}
 	}
 
-	if len(missedParams) > 0 {
-		return runtime.Error(ErrMissedParam, strings.Join(missedParams, ", "))
+	return Catch{}, false
+}
+
+func (vm *VM) call(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
+	fnName := vm.registers[dst].String()
+	fn, found := vm.env.functions.F().Get(fnName)
+
+	if !found {
+		return nil, runtime.Error(ErrFunctionNotFound, fnName)
 	}
 
-	return nil
+	var size int
+
+	if src1 > 0 {
+		size = src2.Register() - src1.Register() + 1
+	}
+
+	start := int(src1)
+	end := int(src1) + size
+	args := make([]runtime.Value, size)
+
+	// Iterate over registers starting from src1 and up to the src2
+	for i := start; i < end; i++ {
+		args[i-start] = vm.registers[i]
+	}
+
+	return fn(ctx, args...)
+}
+
+func (vm *VM) call0(ctx context.Context, dst Operand) (runtime.Value, error) {
+	fnName := vm.registers[dst].String()
+	fn, found := vm.env.functions.F0().Get(fnName)
+
+	if found {
+		return fn(ctx)
+	}
+
+	// Fall back to a variadic function call
+	return vm.call(ctx, dst, NoopOperand, NoopOperand)
+}
+
+func (vm *VM) call1(ctx context.Context, dst, src1 Operand) (runtime.Value, error) {
+	fnName := vm.registers[dst].String()
+	fn, found := vm.env.functions.F1().Get(fnName)
+
+	if found {
+		return fn(ctx, vm.registers[src1])
+	}
+
+	// Fall back to a variadic function call
+	return vm.call(ctx, dst, src1, src1)
+}
+
+func (vm *VM) call2(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
+	fnName := vm.registers[dst].String()
+	fn, found := vm.env.functions.F2().Get(fnName)
+
+	if found {
+		return fn(ctx, vm.registers[src1], vm.registers[src2])
+	}
+
+	// Fall back to a variadic function call
+	return vm.call(ctx, dst, src1, src2)
+}
+
+func (vm *VM) call3(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
+	fnName := vm.registers[dst].String()
+	fn, found := vm.env.functions.F3().Get(fnName)
+
+	if found {
+		arg1 := vm.registers[src1]
+		arg2 := vm.registers[src1+1]
+		arg3 := vm.registers[src1+2]
+
+		return fn(ctx, arg1, arg2, arg3)
+	}
+
+	// Fall back to a variadic function call
+	return vm.call(ctx, dst, src1, src2)
+}
+
+func (vm *VM) call4(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
+	fnName := vm.registers[dst].String()
+	fn, found := vm.env.functions.F4().Get(fnName)
+
+	if found {
+		arg1 := vm.registers[src1]
+		arg2 := vm.registers[src1+1]
+		arg3 := vm.registers[src1+2]
+		arg4 := vm.registers[src1+3]
+
+		return fn(ctx, arg1, arg2, arg3, arg4)
+	}
+
+	// Fall back to a variadic function call
+	return vm.call(ctx, dst, src1, src2)
 }
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {

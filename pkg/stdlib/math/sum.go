@@ -9,12 +9,8 @@ import (
 // SUM returns the sum of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sum of the values.
-func Sum(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
-		return runtime.None, err
-	}
-
-	arr, err := runtime.CastList(args[0])
+func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	arr, err := runtime.CastList(arg)
 
 	if err != nil {
 		return runtime.None, err

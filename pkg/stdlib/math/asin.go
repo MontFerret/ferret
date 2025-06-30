@@ -10,14 +10,10 @@ import (
 // ASIN returns the arcsine, in radians, of a given number.
 // @param {Int | Float} number - Input number.
 // @return {Float} - The arcsine, in radians, of a given number.
-func Asin(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+func Asin(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+	if err := runtime.AssertNumber(arg); err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.AssertNumber(args[0]); err != nil {
-		return runtime.None, err
-	}
-
-	return runtime.NewFloat(math.Asin(toFloat(args[0]))), nil
+	return runtime.NewFloat(math.Asin(toFloat(arg))), nil
 }

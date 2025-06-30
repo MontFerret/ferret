@@ -15,41 +15,43 @@ const (
 
 func RegisterLib(ns runtime.Namespace) error {
 	return ns.RegisterFunctions(
-		runtime.NewFunctionsFromMap(map[string]runtime.Function{
-			"ABS":                 Abs,
-			"ACOS":                Acos,
-			"ASIN":                Asin,
-			"ATAN":                Atan,
-			"ATAN2":               Atan2,
-			"AVERAGE":             Average,
-			"CEIL":                Ceil,
-			"COS":                 Cos,
-			"DEGREES":             Degrees,
-			"EXP":                 Exp,
-			"EXP2":                Exp2,
-			"FLOOR":               Floor,
-			"LOG":                 Log,
-			"LOG2":                Log2,
-			"LOG10":               Log10,
-			"MAX":                 Max,
-			"MEDIAN":              Median,
-			"MIN":                 Min,
-			"PERCENTILE":          Percentile,
-			"PI":                  Pi,
-			"POW":                 Pow,
-			"RADIANS":             Radians,
-			"RAND":                Rand,
-			"RANGE":               Range,
-			"ROUND":               Round,
-			"SIN":                 Sin,
-			"SQRT":                Sqrt,
-			"STDDEV_POPULATION":   StandardDeviationPopulation,
-			"STDDEV_SAMPLE":       StandardDeviationSample,
-			"SUM":                 Sum,
-			"TAN":                 Tan,
-			"VARIANCE_POPULATION": PopulationVariance,
-			"VARIANCE_SAMPLE":     SampleVariance,
-		}))
+		runtime.
+			NewFunctionsBuilder().
+			Set1("ABS", Abs).
+			Set1("ACOS", Acos).
+			Set1("ASIN", Asin).
+			Set1("ATAN", Atan).
+			Set2("ATAN2", Atan2).
+			Set1("AVERAGE", Average).
+			Set1("CEIL", Ceil).
+			Set1("COS", Cos).
+			Set1("DEGREES", Degrees).
+			Set1("EXP", Exp).
+			Set1("EXP2", Exp2).
+			Set1("FLOOR", Floor).
+			Set1("LOG", Log).
+			Set1("LOG2", Log2).
+			Set1("LOG10", Log10).
+			Set1("MAX", Max).
+			Set1("MEDIAN", Median).
+			Set1("MIN", Min).
+			Set("PERCENTILE", Percentile).
+			Set0("PI", Pi).
+			Set2("POW", Pow).
+			Set1("RADIANS", Radians).
+			Set("RAND", Rand).
+			Set("RANGE", Range).
+			Set1("ROUND", Round).
+			Set1("SIN", Sin).
+			Set1("SQRT", Sqrt).
+			Set1("STDDEV_POPULATION", StandardDeviationPopulation).
+			Set1("STDDEV_SAMPLE", StandardDeviationSample).
+			Set1("SUM", Sum).
+			Set1("TAN", Tan).
+			Set1("VARIANCE_POPULATION", PopulationVariance).
+			Set1("VARIANCE_SAMPLE", SampleVariance).
+			Build(),
+	)
 }
 
 func toFloat(arg runtime.Value) float64 {

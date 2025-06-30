@@ -35,7 +35,7 @@ func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
 	return runtime.SortDirectionAsc
 }
 
-func copyFromNamespace(fns *runtime.Functions, namespace string) error {
+func copyFromNamespace(fns runtime.Functions, namespace string) error {
 	// In the name of the function "A::B::C", the namespace is "A::B",
 	// not "A::B::".
 	//
@@ -53,15 +53,28 @@ func copyFromNamespace(fns *runtime.Functions, namespace string) error {
 
 		noprefix := strings.Replace(name, namespace, "", 1)
 
-		if _, exists := fns.Get(noprefix); exists {
+		if exists := fns.Has(noprefix); exists {
 			return errors.Errorf(
 				`collision occurred: "%s" already registered`,
 				noprefix,
 			)
 		}
 
-		fn, _ := fns.Get(name)
-		fns.Set(noprefix, fn)
+		if fn, exists := fns.F().Get(name); exists {
+			fns.F().Unset(name).Set(noprefix, fn)
+		} else if fn, exists := fns.F0().Get(name); exists {
+			fns.F0().Unset(name).Set(noprefix, fn)
+		} else if fn, exists := fns.F1().Get(name); exists {
+			fns.F1().Unset(name).Set(noprefix, fn)
+		} else if fn, exists := fns.F2().Get(name); exists {
+			fns.F2().Unset(name).Set(noprefix, fn)
+		} else if fn, exists := fns.F3().Get(name); exists {
+			fns.F3().Unset(name).Set(noprefix, fn)
+		} else if fn, exists := fns.F4().Get(name); exists {
+			fns.F4().Unset(name).Set(noprefix, fn)
+		} else {
+			return errors.Errorf(`function "%s" not found`, name)
+		}
 	}
 
 	return nil

@@ -73,6 +73,16 @@ const (
 	// Function Operations
 	OpCall
 	OpProtectedCall
+	OpCall0
+	OpProtectedCall0
+	OpCall1
+	OpProtectedCall1
+	OpCall2
+	OpProtectedCall2
+	OpCall3
+	OpProtectedCall3
+	OpCall4
+	OpProtectedCall4
 
 	// Collection Creation
 	OpList  // Create an array

@@ -20,21 +20,23 @@ func WithParam(name string, value interface{}) EnvironmentOption {
 	}
 }
 
-func WithFunctions(functions map[string]runtime.Function) EnvironmentOption {
+func WithFunctions(functions runtime.Functions) EnvironmentOption {
 	return func(env *Environment) {
-		if env.functions == nil {
-			env.functions = make(map[string]runtime.Function)
-		}
-
-		for name, function := range functions {
-			env.functions[name] = function
-		}
+		env.functions.SetAll(functions)
 	}
 }
 
 func WithFunction(name string, function runtime.Function) EnvironmentOption {
 	return func(env *Environment) {
-		env.functions[name] = function
+		env.functions.F().Set(name, function)
+	}
+}
+
+func WithFunctionSetter(setter func(fns runtime.Functions)) EnvironmentOption {
+	return func(env *Environment) {
+		if setter != nil {
+			setter(env.functions)
+		}
 	}
 }
 

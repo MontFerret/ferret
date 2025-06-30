@@ -16,7 +16,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	}
 
 	options := []vm.EnvironmentOption{
-		vm.WithFunctions(c.Functions().Unwrap()),
+		vm.WithFunctions(c.Functions()),
 	}
 	options = append(options, opts...)
 
@@ -25,7 +25,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 
 	b.ResetTimer()
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, err := instance.Run(ctx, opts)
 
 		if err != nil {

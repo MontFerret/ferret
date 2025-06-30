@@ -23,7 +23,7 @@ func TestForWhile(t *testing.T) {
 				FOR x IN 1..y
 					RETURN i * x
 		`, []any{0, 1, 2, 2, 4, 6, 3, 6, 9, 12, 4, 8, 12, 16, 20}),
-	}, vm.WithFunctions(map[string]runtime.Function{
+	}, vm.WithFunctions(runtime.NewFunctionsFromMap(map[string]runtime.Function{
 		"UNTIL": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			if untilCounter < int(runtime.ToIntSafe(ctx, args[0])) {
 				untilCounter++
@@ -37,5 +37,5 @@ func TestForWhile(t *testing.T) {
 			counter++
 			return runtime.NewInt(counter), nil
 		},
-	}))
+	})))
 }

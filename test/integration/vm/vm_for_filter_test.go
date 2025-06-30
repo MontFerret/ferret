@@ -272,7 +272,7 @@ LET users = [
 				COUNT_B()
 				RETURN i + x
 `, []any{5, 6, 5}),
-	}, vm.WithFunctions(map[string]runtime.Function{
+	}, vm.WithFunctions(runtime.NewFunctionsFromMap(map[string]runtime.Function{
 		"COUNT_A": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			counterA++
 
@@ -283,5 +283,5 @@ LET users = [
 
 			return runtime.None, nil
 		},
-	}))
+	})))
 }

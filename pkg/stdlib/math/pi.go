@@ -9,12 +9,6 @@ import (
 
 // PI returns Pi value.
 // @return {Float} - Pi value.
-func Pi(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 0, 0)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
+func Pi(_ context.Context) (runtime.Value, error) {
 	return runtime.NewFloat(math.Pi), nil
 }

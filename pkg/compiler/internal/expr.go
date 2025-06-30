@@ -421,17 +421,45 @@ func (ec *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pr
 
 		return seq[0]
 	default:
-		dest := ec.ctx.Registers.Allocate(core.Temp)
-		ec.ctx.Emitter.EmitLoadConst(dest, ec.ctx.Symbols.AddConstant(name))
-
-		if !protected {
-			ec.ctx.Emitter.EmitAs(vm.OpCall, dest, seq)
-		} else {
-			ec.ctx.Emitter.EmitAs(vm.OpProtectedCall, dest, seq)
-		}
-
-		return dest
+		return ec.compileUserFunctionCallWith(name, protected, seq)
 	}
+}
+
+func (ec *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
+	dest := ec.ctx.Registers.Allocate(core.Temp)
+	ec.ctx.Emitter.EmitLoadConst(dest, ec.ctx.Symbols.AddConstant(name))
+
+	var opcode vm.Opcode
+	var protectedOpcode vm.Opcode
+
+	switch len(seq) {
+	case 0:
+		opcode = vm.OpCall0
+		protectedOpcode = vm.OpProtectedCall0
+	case 1:
+		opcode = vm.OpCall1
+		protectedOpcode = vm.OpProtectedCall1
+	case 2:
+		opcode = vm.OpCall2
+		protectedOpcode = vm.OpProtectedCall2
+	case 3:
+		opcode = vm.OpCall3
+		protectedOpcode = vm.OpProtectedCall3
+	case 4:
+		opcode = vm.OpCall4
+		protectedOpcode = vm.OpProtectedCall4
+	default:
+		opcode = vm.OpCall
+		protectedOpcode = vm.OpProtectedCall
+	}
+
+	if !protected {
+		ec.ctx.Emitter.EmitAs(opcode, dest, seq)
+	} else {
+		ec.ctx.Emitter.EmitAs(protectedOpcode, dest, seq)
+	}
+
+	return dest
 }
 
 func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.RegisterSequence {

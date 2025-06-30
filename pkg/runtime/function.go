@@ -2,118 +2,68 @@ package runtime
 
 import (
 	"context"
-	"fmt"
 )
 
+// MaxArgs defines the maximum number of arguments that a function can accept.
 const MaxArgs = 65536
 
 type (
-	// Functions is a container for functions.
-	Functions map[string]Function
+	Functions interface {
+		Has(name string) bool
+		F() FunctionCollection[Function]
+		F0() FunctionCollection[Function0]
+		F1() FunctionCollection[Function1]
+		F2() FunctionCollection[Function2]
+		F3() FunctionCollection[Function3]
+		F4() FunctionCollection[Function4]
+		SetAll(otherFns Functions) Functions
+		Unset(name string) Functions
+		UnsetAll() Functions
+		Names() []string
+	}
 
-	// Function is a common interface for all functions of FQL.
+	FunctionsBuilder interface {
+		Set(name string, fn Function) FunctionsBuilder
+		Set0(name string, fn Function0) FunctionsBuilder
+		Set1(name string, fn Function1) FunctionsBuilder
+		Set2(name string, fn Function2) FunctionsBuilder
+		Set3(name string, fn Function3) FunctionsBuilder
+		Set4(name string, fn Function4) FunctionsBuilder
+		Build() Functions
+	}
+
+	FunctionConstraint interface {
+		Function | Function0 | Function1 | Function2 | Function3 | Function4
+	}
+
+	FunctionCollection[T FunctionConstraint] interface {
+		Has(name string) bool
+		Set(name string, fn T) FunctionCollection[T]
+		SetAll(otherFns FunctionCollection[T]) FunctionCollection[T]
+		Get(name string) (T, bool)
+		GetAll() map[string]T
+		Unset(name string) FunctionCollection[T]
+		UnsetAll() FunctionCollection[T]
+		Names() []string
+		Size() int
+	}
+
+	// Function is a common interface for functions with variable number of arguments.
+	// All functions receive a context and a slice of values, returning a value and an error.
 	Function = func(ctx context.Context, args ...Value) (Value, error)
+
+	// Function0 is a common interface for functions with no arguments.
+	Function0 = func(ctx context.Context) (Value, error)
+
+	// Function1 is a common interface for functions with a single argument.
+	Function1 = func(ctx context.Context, arg Value) (Value, error)
+
+	// Function2 is a common interface for functions with two arguments.
+	Function2 = func(ctx context.Context, arg1, arg2 Value) (Value, error)
+
+	// Function3 is a common interface for functions with three arguments.
+	Function3 = func(ctx context.Context, arg1, arg2, arg3 Value) (Value, error)
+
+	// Function4 is a common interface for functions with four arguments.
+	Function4 = func(ctx context.Context, arg1, arg2, arg3, arg4 Value) (Value, error)
 )
-
-func ErrorArg(err error, pos int) error {
-	return Errorf(
-		ErrInvalidArgumentType,
-		"expected argument %d to be: %s",
-		pos+1, err.Error(),
-	)
-}
-
-func ValidateArgs(args []Value, minimum, maximum int) error {
-	count := len(args)
-
-	if count < minimum || count > maximum {
-		return Error(
-			ErrInvalidArgumentNumber,
-			fmt.Sprintf(
-				"expected number of arguments %d-%d, but got %d",
-				minimum,
-				maximum,
-				len(args)))
-	}
-
-	return nil
-}
-
-func ValidateArgType(args []Value, pos int, assertion TypeAssertion) error {
-	if pos >= len(args) {
-		return nil
-	}
-
-	arg := args[pos]
-
-	err := assertion(arg)
-
-	if err == nil {
-		return nil
-	}
-
-	return ErrorArg(err, pos)
-}
-
-// NewFunctions returns new empty Functions.
-func NewFunctions() Functions {
-	return make(map[string]Function)
-}
-
-// NewFunctionsFromMap creates new Functions from map, where
-// key is the name of the function and value is the function.
-func NewFunctionsFromMap(funcs map[string]Function) Functions {
-	fns := NewFunctions()
-
-	for name, fn := range funcs {
-		fns.Set(name, fn)
-	}
-
-	return fns
-}
-
-// Has returns true if the function with the given name exists.
-func (fns Functions) Has(name string) bool {
-	_, exists := fns[name]
-	return exists
-}
-
-// Get returns the function with the given name. If the function
-// does not exist it returns nil, false.
-func (fns Functions) Get(name string) (Function, bool) {
-	fn, exists := fns[name]
-	return fn, exists
-}
-
-// MustGet returns the function with the given name. If the function
-// does not exist it panics.
-func (fns Functions) MustGet(name string) Function {
-	return fns[name]
-}
-
-// Set sets the function with the given name. If the function
-// with the such name already exists it will be overwritten.
-func (fns Functions) Set(name string, fn Function) {
-	fns[name] = fn
-}
-
-// Unset delete the function with the given name.
-func (fns Functions) Unset(name string) {
-	delete(fns, name)
-}
-
-// Names returns the names of the internal functions.
-func (fns Functions) Names() []string {
-	names := make([]string, 0, len(fns))
-
-	for name := range fns {
-		names = append(names, name)
-	}
-
-	return names
-}
-
-// Unwrap returns the internal map of functions.
-func (fns Functions) Unwrap() map[string]Function {
-	return fns
-}

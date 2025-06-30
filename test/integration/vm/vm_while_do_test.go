@@ -29,7 +29,7 @@ func TestForDoWhile(t *testing.T) {
 				FOR x IN 1..y
 					RETURN i * x
 		`, []any{0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 0, 2, 4, 6, 8, 0, 3, 6, 9, 12, 0, 4, 8, 12, 16}),
-	}, vm.WithFunctions(map[string]runtime.Function{
+	}, vm.WithFunctions(runtime.NewFunctionsFromMap(map[string]runtime.Function{
 		"COUNTER": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			counter++
 			return runtime.NewInt(counter), nil
@@ -38,5 +38,5 @@ func TestForDoWhile(t *testing.T) {
 			counter2++
 			return runtime.NewInt(counter), nil
 		},
-	}))
+	})))
 }

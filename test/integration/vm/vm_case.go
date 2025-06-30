@@ -123,7 +123,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}
 
 				options := []vm.EnvironmentOption{
-					vm.WithFunctions(c.Functions().Unwrap()),
+					vm.WithFunctions(c.Functions()),
 				}
 				options = append(options, opts...)
 
