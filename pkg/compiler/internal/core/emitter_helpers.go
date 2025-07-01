@@ -12,8 +12,8 @@ func (e *Emitter) EmitIter(dst, src vm.Operand) {
 	e.EmitAB(vm.OpIter, dst, src)
 }
 
-func (e *Emitter) EmitIterNext(jumpTarget int, iterator vm.Operand) int {
-	return e.EmitJumpc(vm.OpIterNext, jumpTarget, iterator)
+func (e *Emitter) EmitIterNext(iterator vm.Operand, label Label) {
+	e.EmitJumpc(vm.OpIterNext, iterator, label)
 }
 
 func (e *Emitter) EmitIterKey(dst, iterator vm.Operand) {
@@ -24,12 +24,16 @@ func (e *Emitter) EmitIterValue(dst, iterator vm.Operand) {
 	e.EmitAB(vm.OpIterValue, dst, iterator)
 }
 
-func (e *Emitter) EmitIterSkip(state, count vm.Operand, jump int) {
-	e.EmitABx(vm.OpIterSkip, state, count, jump)
+func (e *Emitter) EmitIterSkip(state, count vm.Operand, label Label) {
+	e.EmitABx(vm.OpIterSkip, state, count, jumpPlaceholder)
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 2, label)
 }
 
-func (e *Emitter) EmitIterLimit(state, count vm.Operand, jump int) {
-	e.EmitABx(vm.OpIterLimit, state, count, jump)
+func (e *Emitter) EmitIterLimit(state, count vm.Operand, jump Label) {
+	e.EmitABx(vm.OpIterLimit, state, count, jumpPlaceholder)
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 2, jump)
 }
 
 // ─── Value & Memory ──────────────────────────────────────────────────────
@@ -152,40 +156,41 @@ func (e *Emitter) EmitLte(dst, a, b vm.Operand) {
 
 // ─── Control Flow ────────────────────────────────────────────────────────
 
-func (e *Emitter) EmitJump(pos int) int {
-	e.EmitA(vm.OpJump, vm.Operand(pos))
-
-	return len(e.instructions) - 1
+func (e *Emitter) EmitJump(label Label) {
+	e.EmitA(vm.OpJump, vm.Operand(jumpPlaceholder))
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 0, label)
 }
 
 // EmitJumpAB emits a jump opcode with a state and an argument.
-func (e *Emitter) EmitJumpAB(op vm.Opcode, state, cond vm.Operand, pos int) int {
-	e.EmitABC(op, state, cond, vm.Operand(pos))
-
-	return len(e.instructions) - 1
+func (e *Emitter) EmitJumpAB(op vm.Opcode, state, cond vm.Operand, label Label) {
+	e.EmitABC(op, state, cond, vm.Operand(jumpPlaceholder))
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 2, label)
 }
 
 // EmitJumpc emits a conditional jump opcode.
-func (e *Emitter) EmitJumpc(op vm.Opcode, pos int, reg vm.Operand) int {
-	e.EmitAB(op, vm.Operand(pos), reg)
-
-	return len(e.instructions) - 1
+func (e *Emitter) EmitJumpc(op vm.Opcode, reg vm.Operand, label Label) {
+	e.EmitAB(op, vm.Operand(jumpPlaceholder), reg)
+	pos := len(e.instructions) - 1
+	e.addLabelRef(pos, 0, label)
 }
 
-func (e *Emitter) EmitJumpIfFalse(cond vm.Operand, jumpTarget int) int {
-	return e.EmitJumpIf(cond, false, jumpTarget)
+func (e *Emitter) EmitJumpIfFalse(cond vm.Operand, label Label) {
+	e.EmitJumpIf(cond, false, label)
 }
 
-func (e *Emitter) EmitJumpIfTrue(cond vm.Operand, jumpTarget int) int {
-	return e.EmitJumpIf(cond, true, jumpTarget)
+func (e *Emitter) EmitJumpIfTrue(cond vm.Operand, label Label) {
+	e.EmitJumpIf(cond, true, label)
 }
 
-func (e *Emitter) EmitJumpIf(cond vm.Operand, isTrue bool, jumpTarget int) int {
+func (e *Emitter) EmitJumpIf(cond vm.Operand, isTrue bool, label Label) {
 	if isTrue {
-		return e.EmitJumpc(vm.OpJumpIfTrue, jumpTarget, cond)
+		e.EmitJumpc(vm.OpJumpIfTrue, cond, label)
+		return
 	}
 
-	return e.EmitJumpc(vm.OpJumpIfFalse, jumpTarget, cond)
+	e.EmitJumpc(vm.OpJumpIfFalse, cond, label)
 }
 
 func (e *Emitter) EmitReturnValue(val vm.Operand) {

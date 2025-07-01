@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	JumpPlaceholder      = -1
+	jumpPlaceholder      = -1
 	UndefinedVariable    = -1
 	IgnorePseudoVariable = "_"
 	PseudoVariable       = "CURRENT"

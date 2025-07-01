@@ -65,7 +65,6 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	p.AddErrorListener(newErrorListener())
 
 	l := NewVisitor(query)
-
 	p.Visit(l)
 
 	if l.Err != nil {

@@ -1,11 +1,15 @@
 package core
 
 import (
+	"fmt"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 type Emitter struct {
 	instructions []vm.Instruction
+	labels       map[Label]labelDef
+	patches      map[Label][]labelRef
+	nextLabelID  Label
 }
 
 func NewEmitter() *Emitter {
@@ -23,103 +27,42 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
+func (e *Emitter) NewLabel() Label {
+	l := e.nextLabelID
+	e.nextLabelID++
+
+	return l
+}
+
+func (e *Emitter) MarkLabel(label Label) {
+	if e.labels == nil {
+		e.labels = make(map[Label]labelDef)
+	}
+
+	e.labels[label] = labelDef{addr: len(e.instructions)}
+
+	// Back-patch any prior references to this label
+	if refs, ok := e.patches[label]; ok {
+		for _, ref := range refs {
+			e.patchOperand(ref.pos, ref.field, len(e.instructions))
+		}
+
+		delete(e.patches, label)
+	}
+}
+
+func (e *Emitter) LabelPosition(label Label) (int, bool) {
+	def, ok := e.labels[label]
+
+	if !ok {
+		return -1, false
+	}
+
+	return def.addr, true
+}
+
 func (e *Emitter) Position() int {
 	return len(e.instructions) - 1
-}
-
-func (e *Emitter) Patchx(pos int, arg int) {
-	current := e.instructions[pos]
-	e.instructions[pos] = vm.Instruction{
-		Opcode: current.Opcode,
-		Operands: [3]vm.Operand{
-			current.Operands[0],
-			vm.Operand(arg),
-			current.Operands[2],
-		},
-	}
-}
-
-// PatchSwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
-func (e *Emitter) PatchSwapAB(pos int, op vm.Opcode, dst, src1 vm.Operand) {
-	e.instructions[pos] = vm.Instruction{
-		Opcode:   op,
-		Operands: [3]vm.Operand{dst, src1, vm.NoopOperand},
-	}
-}
-
-// PatchSwapAx modifies an existing instruction at the specified position with a new opcode, destination, and argument.
-func (e *Emitter) PatchSwapAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
-	e.instructions[pos] = vm.Instruction{
-		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
-	}
-}
-
-// PatchSwapAxy replaces an instruction at the specified position with a new one using the provided opcode and operands.
-func (e *Emitter) PatchSwapAxy(pos int, op vm.Opcode, dst vm.Operand, arg1, agr2 int) {
-	e.instructions[pos] = vm.Instruction{
-		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(agr2)},
-	}
-}
-
-// PatchSwapAs replaces an instruction at the specified position with a new instruction using the given opcode and operands.
-func (e *Emitter) PatchSwapAs(pos int, op vm.Opcode, dst vm.Operand, seq RegisterSequence) {
-	e.instructions[pos] = vm.Instruction{
-		Opcode:   op,
-		Operands: [3]vm.Operand{dst, seq[0], seq[len(seq)-1]},
-	}
-}
-
-// PatchInsertAx inserts a new instruction at a specific position in the instructions slice, shifting elements to the right.
-// The inserted instruction includes an opcode and operands, where the third operand is set to a no-op by default.
-func (e *Emitter) PatchInsertAx(pos int, op vm.Opcode, dst vm.Operand, arg int) {
-	// Append a zero value to create space
-	e.instructions = append(e.instructions, vm.Instruction{})
-
-	// Shift elements to the right
-	copy(e.instructions[pos+1:], e.instructions[pos:])
-
-	// Insert the new value
-	e.instructions[pos] = vm.Instruction{
-		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
-	}
-}
-
-// PatchInsertAxy inserts an instruction at the specified position in the instruction list, shifting existing elements to the right.
-func (e *Emitter) PatchInsertAxy(pos int, op vm.Opcode, dst vm.Operand, arg1, arg2 int) {
-	// Append a zero value to create space
-	e.instructions = append(e.instructions, vm.Instruction{})
-
-	// Shift elements to the right
-	copy(e.instructions[pos+1:], e.instructions[pos:])
-
-	// Insert the new value
-	e.instructions[pos] = vm.Instruction{
-		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(arg2)},
-	}
-}
-
-// PatchJump patches a jump opcode.
-func (e *Emitter) PatchJump(instr int) {
-	e.instructions[instr].Operands[0] = vm.Operand(len(e.instructions) - 1)
-}
-
-// PatchJumpAB patches a jump opcode with a new destination.
-func (e *Emitter) PatchJumpAB(inst int) {
-	e.instructions[inst].Operands[2] = vm.Operand(len(e.instructions) - 1)
-}
-
-// PatchJumpNextAB patches a jump instruction to jump over a current position.
-func (e *Emitter) PatchJumpNextAB(instr int) {
-	e.instructions[instr].Operands[2] = vm.Operand(len(e.instructions))
-}
-
-// PatchJumpNext patches a jump instruction to jump over a current position.
-func (e *Emitter) PatchJumpNext(instr int) {
-	e.instructions[instr].Operands[0] = vm.Operand(len(e.instructions))
 }
 
 // Emit emits an opcode with no arguments.
@@ -180,4 +123,138 @@ func (e *Emitter) EmitABC(op vm.Opcode, dest, src1, src2 vm.Operand) {
 		Opcode:   op,
 		Operands: [3]vm.Operand{dest, src1, src2},
 	})
+}
+
+// SwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
+func (e *Emitter) SwapAB(label Label, op vm.Opcode, dst, src1 vm.Operand) {
+	e.swapInstruction(label, vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, src1, vm.NoopOperand},
+	})
+}
+
+// SwapAx modifies an existing instruction at the specified position with a new opcode, destination, and argument.
+func (e *Emitter) SwapAx(label Label, op vm.Opcode, dst vm.Operand, arg int) {
+	e.swapInstruction(label, vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+	})
+}
+
+// SwapAxy replaces an instruction at the specified position with a new one using the provided opcode and operands.
+func (e *Emitter) SwapAxy(label Label, op vm.Opcode, dst vm.Operand, arg1, agr2 int) {
+	e.swapInstruction(label, vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(agr2)},
+	})
+}
+
+// SwapAs replaces an instruction at the specified position with a new instruction using the given opcode and operands.
+func (e *Emitter) SwapAs(label Label, op vm.Opcode, dst vm.Operand, seq RegisterSequence) {
+	e.swapInstruction(label, vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, seq[0], seq[len(seq)-1]},
+	})
+}
+
+// InsertAx inserts a new instruction at a specific position in the instructions slice, shifting elements to the right.
+// The inserted instruction includes an opcode and operands, where the third operand is set to a no-op by default.
+func (e *Emitter) InsertAx(label Label, op vm.Opcode, dst vm.Operand, arg int) {
+	e.insertInstruction(label, vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+	})
+}
+
+// InsertAxy inserts an instruction at the specified position in the instruction list, shifting existing elements to the right.
+func (e *Emitter) InsertAxy(label Label, op vm.Opcode, dst vm.Operand, arg1, arg2 int) {
+	e.insertInstruction(label, vm.Instruction{
+		Opcode:   op,
+		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(arg2)},
+	})
+}
+
+func (e *Emitter) Patchx(label Label, arg int) {
+	pos, ok := e.LabelPosition(label)
+
+	if !ok {
+		panic(fmt.Errorf("label not marked: %d", label))
+	}
+
+	current := e.instructions[pos]
+	e.instructions[pos] = vm.Instruction{
+		Opcode: current.Opcode,
+		Operands: [3]vm.Operand{
+			current.Operands[0],
+			vm.Operand(arg),
+			current.Operands[2],
+		},
+	}
+}
+
+// addLabelRef adds a reference to a label at a specific position and field in the instruction set.
+func (e *Emitter) addLabelRef(pos int, field int, label Label) {
+	if e.labels == nil {
+		e.labels = make(map[Label]labelDef)
+	}
+
+	if def, ok := e.labels[label]; ok {
+		// Already marked → patch immediately
+		e.patchOperand(pos, field, def.addr)
+		return
+	}
+
+	if e.patches == nil {
+		e.patches = make(map[Label][]labelRef)
+	}
+
+	e.patches[label] = append(e.patches[label], labelRef{pos: pos, field: field})
+}
+
+// patchOperand modifies the operand at the specified position and field in the instruction set.
+func (e *Emitter) patchOperand(pos int, field int, val int) {
+	ins := e.instructions[pos]
+	ins.Operands[field] = vm.Operand(val)
+	e.instructions[pos] = ins
+}
+
+// swapInstruction swaps the operands of an instruction at a given position.
+func (e *Emitter) swapInstruction(label Label, ins vm.Instruction) {
+	pos, ok := e.LabelPosition(label)
+
+	if !ok {
+		panic(fmt.Errorf("label not marked: %d", label))
+	}
+
+	e.instructions[pos] = ins
+}
+
+// swapInstruction swaps the operands of an instruction at a given position.
+func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
+	pos, ok := e.LabelPosition(label)
+
+	if !ok {
+		panic(fmt.Errorf("label not marked: %d", label))
+	}
+
+	// Insert instruction at position
+	e.instructions = append(e.instructions[:pos],
+		append([]vm.Instruction{ins}, e.instructions[pos:]...)...,
+	)
+
+	// Adjust all subsequent label addresses
+	for l, d := range e.labels {
+		if d.addr >= pos {
+			e.labels[l] = labelDef{addr: d.addr + 1}
+		}
+	}
+
+	// Adjust all patch positions as well
+	for l, refs := range e.patches {
+		for i, ref := range refs {
+			if ref.pos >= pos {
+				e.patches[l][i].pos++
+			}
+		}
+	}
 }

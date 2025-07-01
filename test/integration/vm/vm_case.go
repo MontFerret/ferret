@@ -76,6 +76,10 @@ func CaseItems(expression string, expected ...any) UseCase {
 	return NewCase(expression, expected, ShouldHaveSameItems)
 }
 
+func CaseFn(expression string, assertion func(actual any, expected ...any) string) UseCase {
+	return NewCase(expression, nil, assertion)
+}
+
 func SkipCaseItems(expression string, expected ...any) UseCase {
 	return Skip(CaseItems(expression, expected...))
 }

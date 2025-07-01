@@ -76,22 +76,18 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand {
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
-	// Execute left expression
 	left := ec.Compile(ctx.GetLeft())
-
-	// Execute left expression
 	ec.ctx.Emitter.EmitMove(dst, left)
 
-	// Test if left is false and jump to the end
-	end := ec.ctx.Emitter.EmitJumpIfFalse(dst, core.JumpPlaceholder)
+	end := ec.ctx.Emitter.NewLabel()
 
-	// If left is true, execute right expression
+	// If left is false, jump to end
+	ec.ctx.Emitter.EmitJumpIfFalse(dst, end)
+
 	right := ec.Compile(ctx.GetRight())
-
-	// And move the result to the destination register
 	ec.ctx.Emitter.EmitMove(dst, right)
 
-	ec.ctx.Emitter.PatchJumpNext(end)
+	ec.ctx.Emitter.MarkLabel(end)
 
 	return dst
 }
@@ -100,22 +96,18 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand
 func (ec *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
-	// Execute left expression
 	left := ec.Compile(ctx.GetLeft())
-
-	// Execute left expression
 	ec.ctx.Emitter.EmitMove(dst, left)
 
-	// Test if left is true and jump to the end
-	end := ec.ctx.Emitter.EmitJumpIfTrue(dst, core.JumpPlaceholder)
+	end := ec.ctx.Emitter.NewLabel()
 
-	// If left is false, execute right expression
+	// If left is true, jump to end
+	ec.ctx.Emitter.EmitJumpIfTrue(dst, end)
+
 	right := ec.Compile(ctx.GetRight())
-
-	// And move the result to the destination register
 	ec.ctx.Emitter.EmitMove(dst, right)
 
-	ec.ctx.Emitter.PatchJumpNext(end)
+	ec.ctx.Emitter.MarkLabel(end)
 
 	return dst
 }
@@ -128,8 +120,12 @@ func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 	condReg := ec.Compile(ctx.GetCondition())
 	ec.ctx.Emitter.EmitMove(dst, condReg)
 
-	// Jump to 'false' branch if condition is false
-	otherwise := ec.ctx.Emitter.EmitJumpIfFalse(dst, core.JumpPlaceholder)
+	// Define jump labels
+	elseLabel := ec.ctx.Emitter.NewLabel()
+	endLabel := ec.ctx.Emitter.NewLabel()
+
+	// End to 'false' branch if condition is false
+	ec.ctx.Emitter.EmitJumpIfFalse(dst, elseLabel)
 
 	// True branch
 	if onTrue := ctx.GetOnTrue(); onTrue != nil {
@@ -138,9 +134,10 @@ func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 		ec.ctx.Emitter.EmitMove(dst, trueReg)
 	}
 
-	// Jump over false branch
-	end := ec.ctx.Emitter.EmitJump(core.JumpPlaceholder)
-	ec.ctx.Emitter.PatchJumpNext(otherwise)
+	// End over false branch
+	ec.ctx.Emitter.EmitJump(endLabel)
+	// Mark label for 'else' branch
+	ec.ctx.Emitter.MarkLabel(elseLabel)
 
 	// False branch
 	if onFalse := ctx.GetOnFalse(); onFalse != nil {
@@ -149,7 +146,8 @@ func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 		ec.ctx.Emitter.EmitMove(dst, falseReg)
 	}
 
-	ec.ctx.Emitter.PatchJumpNext(end)
+	// End
+	ec.ctx.Emitter.MarkLabel(endLabel)
 
 	return dst
 }

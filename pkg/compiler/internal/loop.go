@@ -18,6 +18,14 @@ func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 }
 
 func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
+	if ctx.In() != nil {
+		return c.compileForIn(ctx)
+	}
+
+	return c.compileForWhile(ctx)
+}
+
+func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 	returnRuleCtx := c.compileInitialization(ctx)
 
 	// body
@@ -32,6 +40,10 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 	}
 
 	return c.compileFinalization(returnRuleCtx)
+}
+
+func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
+	return vm.NoopOperand
 }
 
 func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antlr.RuleContext {
@@ -73,7 +85,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antl
 				panic("parent loop not found in loop table")
 			}
 
-			c.ctx.Emitter.Patchx(parent.Pos, 1)
+			c.ctx.Emitter.Patchx(parent.Start, 1)
 		}
 	}
 
@@ -196,17 +208,18 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 
 func (c *LoopCompiler) compileLimit(src vm.Operand) {
 	state := c.ctx.Registers.Allocate(core.State)
-	c.ctx.Emitter.EmitABx(vm.OpIterLimit, state, src, c.ctx.Loops.Current().Jump)
+	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().End)
 }
 
 func (c *LoopCompiler) compileOffset(src vm.Operand) {
 	state := c.ctx.Registers.Allocate(core.State)
-	c.ctx.Emitter.EmitABx(vm.OpIterSkip, state, src, c.ctx.Loops.Current().Jump)
+	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().Jump)
 }
 
 func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
-	c.ctx.Emitter.EmitJumpIfFalse(src, c.ctx.Loops.Current().Jump)
+	label := c.ctx.Loops.Current().Jump
+	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
 
 func (c *LoopCompiler) compileSortClause(ctx fql.ISortClauseContext) {

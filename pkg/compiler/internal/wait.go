@@ -43,24 +43,27 @@ func (wc *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	wc.ctx.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
 
 	var valReg vm.Operand
+	start := wc.ctx.Emitter.NewLabel()
+	end := wc.ctx.Emitter.NewLabel()
 
+	wc.ctx.Emitter.MarkLabel(start)
 	// Now we start iterating over the stream
-	jumpToNext := wc.ctx.Emitter.EmitJumpc(vm.OpIterNext, core.JumpPlaceholder, streamReg)
+	wc.ctx.Emitter.EmitIterNext(streamReg, end)
 
 	if filter := ctx.FilterClause(); filter != nil {
 		valReg = wc.ctx.Symbols.DeclareLocal(core.PseudoVariable)
 		wc.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
 
-		wc.ctx.ExprCompiler.Compile(filter.Expression())
+		cond := wc.ctx.ExprCompiler.Compile(filter.Expression())
 
-		wc.ctx.Emitter.EmitJumpc(vm.OpJumpIfFalse, jumpToNext, valReg)
+		wc.ctx.Emitter.EmitJumpIfFalse(cond, start)
 
 		// TODO: Do we need to use timeout here too? We can really get stuck in the loop if no event satisfies the filter
 	}
 
+	wc.ctx.Emitter.MarkLabel(end)
 	// Clean up the stream
 	wc.ctx.Emitter.EmitA(vm.OpClose, streamReg)
-
 	wc.ctx.Symbols.ExitScope()
 
 	return vm.NoopOperand

@@ -126,8 +126,11 @@ func (c *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollec
 	// Check if the number equals to zero
 	c.ctx.Emitter.EmitEq(cond, cond, zero)
 	c.ctx.Registers.Free(zero)
+	elseLabel := c.ctx.Emitter.NewLabel()
+	endLabel := c.ctx.Emitter.NewLabel()
+
 	// We skip the key retrieval and function call of there are no records in the accumulator
-	ifJump := c.ctx.Emitter.EmitJumpIfTrue(cond, core.JumpPlaceholder)
+	c.ctx.Emitter.EmitJumpIfTrue(cond, elseLabel)
 
 	selectorVarRegs := make([]vm.Operand, len(selectors))
 
@@ -166,14 +169,14 @@ func (c *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollec
 		c.ctx.Registers.Free(result)
 	}
 
-	elseJump := c.ctx.Emitter.EmitJump(core.JumpPlaceholder)
-	c.ctx.Emitter.PatchJumpNext(ifJump)
+	c.ctx.Emitter.EmitJump(endLabel)
+	c.ctx.Emitter.MarkLabel(elseLabel)
 
 	for _, varReg := range selectorVarRegs {
 		c.ctx.Emitter.EmitA(vm.OpLoadNone, varReg)
 	}
 
-	c.ctx.Emitter.PatchJumpNext(elseJump)
+	c.ctx.Emitter.MarkLabel(endLabel)
 	c.ctx.Registers.Free(cond)
 }
 

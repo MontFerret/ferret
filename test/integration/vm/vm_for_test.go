@@ -63,9 +63,27 @@ FOR i IN 1..5
 			`FOR i IN ['foo', 'bar', 'qaz'] RETURN i`,
 			[]any{"foo", "bar", "qaz"},
 		),
-		CaseItems(
+		CaseFn(
 			`FOR i IN {a: 'bar', b: 'foo', c: 'qaz'} RETURN i`,
-			[]any{"bar", "foo", "qaz"},
+			func(actual any, expected ...any) string {
+				hashMap := make(map[string]bool)
+				expectedArr := []any{"bar", "foo", "qaz"}
+				actualArr := actual.([]any)
+
+				for _, v := range expectedArr {
+					hashMap[v.(string)] = false
+				}
+
+				for _, v := range actualArr {
+					if _, ok := hashMap[v.(string)]; !ok {
+						return "Unexpected value: " + v.(string)
+					}
+
+					hashMap[v.(string)] = true
+				}
+
+				return ""
+			},
 		),
 		CaseArray(
 			`FOR i, k IN {a: 'foo', b: 'bar', c: 'qaz'} RETURN k`,

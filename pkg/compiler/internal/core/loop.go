@@ -35,9 +35,9 @@ type Loop struct {
 	Distinct bool
 	Allocate bool
 
-	Pos        int
-	Jump       int
-	JumpOffset int
+	Start Label
+	Jump  Label
+	End   Label
 
 	Src      vm.Operand
 	Iterator vm.Operand
@@ -65,11 +65,12 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 }
 
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
+	l.Start = emitter.NewLabel()
+	emitter.MarkLabel(l.Start)
+
 	if l.Allocate {
 		emitter.EmitAb(vm.OpDataSet, l.Dst, l.Distinct)
 	}
-
-	l.Pos = emitter.Position()
 
 	if l.Iterator == vm.NoopOperand {
 		l.Iterator = alloc.Allocate(Temp)
@@ -77,8 +78,10 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 
 	emitter.EmitIter(l.Iterator, l.Src)
 
-	// JumpPlaceholder is a placeholder for the exit jump position
-	l.Jump = emitter.EmitJumpc(vm.OpIterNext, JumpPlaceholder, l.Iterator)
+	l.Jump = emitter.NewLabel()
+	l.End = emitter.NewLabel()
+	emitter.MarkLabel(l.Jump)
+	emitter.EmitJumpc(vm.OpIterNext, l.Iterator, l.End)
 
 	if l.canBindVar(l.Value) {
 		l.EmitValue(l.Value, emitter)
@@ -98,34 +101,32 @@ func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
 }
 
 func (l *Loop) EmitFinalization(emitter *Emitter) {
-	emitter.EmitJump(l.Jump - l.JumpOffset)
+	emitter.EmitJump(l.Jump)
+	emitter.MarkLabel(l.End)
 	emitter.EmitA(vm.OpClose, l.Iterator)
-	emitter.PatchJump(l.Jump)
 }
 
 func (l *Loop) PatchDestinationAx(alloc *RegisterAllocator, emitter *Emitter, op vm.Opcode, arg int) vm.Operand {
 	if l.Allocate {
-		emitter.PatchSwapAx(l.Pos, op, l.Dst, arg)
+		emitter.SwapAx(l.Start, op, l.Dst, arg)
 
 		return l.Dst
 	}
 
 	tmp := alloc.Allocate(Temp)
-	emitter.PatchInsertAx(l.Pos, op, tmp, arg)
-	l.Jump++
+	emitter.InsertAx(l.Start, op, tmp, arg)
 	return tmp
 }
 
 func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, op vm.Opcode, arg1, arg2 int) vm.Operand {
 	if l.Allocate {
-		emitter.PatchSwapAxy(l.Pos, op, l.Dst, arg1, arg2)
+		emitter.SwapAxy(l.Start, op, l.Dst, arg1, arg2)
 
 		return l.Dst
 	}
 
 	tmp := alloc.Allocate(Temp)
-	emitter.PatchInsertAxy(l.Pos, op, tmp, arg1, arg2)
-	l.Jump++
+	emitter.InsertAxy(l.Start, op, tmp, arg1, arg2)
 	return tmp
 }
 
