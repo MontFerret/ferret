@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MontFerret/ferret/test/integration/base"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -94,7 +96,7 @@ func TestVariables(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, &vm.Program{})
 
 		counter := -1
-		out, err := Run(p, vm.WithFunction("COUNTER", func(ctx gocontext.Context, args ...runtime.Value) (runtime.Value, error) {
+		out, err := base.Run(p, vm.WithFunction("COUNTER", func(ctx gocontext.Context, args ...runtime.Value) (runtime.Value, error) {
 			counter++
 
 			return runtime.NewInt(counter), nil
@@ -116,7 +118,7 @@ func TestVariables(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, &vm.Program{})
 
 		counter := -1
-		out, err := Run(p, vm.WithFunction("COUNTER", func(ctx gocontext.Context, args ...runtime.Value) (runtime.Value, error) {
+		out, err := base.Run(p, vm.WithFunction("COUNTER", func(ctx gocontext.Context, args ...runtime.Value) (runtime.Value, error) {
 			counter++
 
 			return runtime.NewInt(counter), nil

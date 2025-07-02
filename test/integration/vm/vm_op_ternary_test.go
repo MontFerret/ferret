@@ -3,6 +3,8 @@ package vm_test
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/test/integration/base"
+
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -42,7 +44,7 @@ func TestTernaryOperator(t *testing.T) {
 
 			So(err, ShouldBeNil)
 
-			out, err := Run(p)
+			out, err := base.Run(p)
 
 			So(err, ShouldBeNil)
 

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/test/integration/base"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -181,7 +183,7 @@ func TestMemberReservedWords(t *testing.T) {
 
 				So(err, ShouldBeNil)
 
-				out, err := Exec(prog, true, vm.WithFunctions(c.Functions()))
+				out, err := base.Exec(prog, true, vm.WithFunctions(c.Functions()))
 
 				So(err, ShouldBeNil)
 				So(out, ShouldEqual, expected.String())
