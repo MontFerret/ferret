@@ -162,9 +162,13 @@ func (ec *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 			jump := -1
 			endCatch := ec.ctx.Emitter.Size()
 
-			if c.ForExpression() != nil {
-				// We jump back to finalize the loop before exiting
-				jump = endCatch - 1
+			if fe := c.ForExpression(); fe != nil {
+				// Since FOR-IN loops depend on custom iterators,
+				// We need to handle cleanup before exiting the loop.
+				// TODO: Find a better way to handle this. The code assumes the knowledge of the internals of the FOR-IN loop.
+				if fe.In() != nil {
+					jump = endCatch - 1
+				}
 			}
 
 			ec.ctx.CatchTable.Push(startCatch, endCatch, jump)

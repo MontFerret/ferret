@@ -12,7 +12,7 @@ func TestForTernaryWhileExpression(t *testing.T) {
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i WHILE false RETURN i*2)
 		`, []any{}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i WHILE T::FAIL() RETURN i*2)?
 		`, []any{}),
