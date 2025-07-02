@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 

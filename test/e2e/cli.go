@@ -12,8 +12,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/logging"
-
 	"github.com/rs/zerolog"
 
 	"github.com/MontFerret/ferret"
@@ -217,7 +215,7 @@ var (
 
 	logLevel = flag.String(
 		"log-level",
-		logging.ErrorLevel.String(),
+		runtime.ErrorLevel.String(),
 		"log level",
 	)
 )

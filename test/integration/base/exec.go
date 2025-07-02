@@ -17,7 +17,9 @@ func Compile(expression string) (*vm.Program, error) {
 func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	instance := vm.New(p)
 
-	out, err := instance.Run(context.Background(), opts)
+	type Salt struct{}
+
+	out, err := instance.Run(context.WithValue(context.Background(), "test-salt", &Salt{}), opts)
 
 	if err != nil {
 		return nil, err

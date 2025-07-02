@@ -69,7 +69,7 @@ func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpr
 		// TODO: Free registers after use
 	}
 
-	// CreateFor array of sort keys
+	// NewForLoop array of sort keys
 	arrReg := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAs(vm.OpList, arrReg, keyRegs)
 	c.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg)

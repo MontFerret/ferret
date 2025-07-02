@@ -26,7 +26,7 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 }
 
 func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
-	returnRuleCtx := c.compileInitialization(ctx)
+	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
 
 	// body
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
@@ -43,10 +43,23 @@ func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 }
 
 func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
-	return vm.NoopOperand
+	returnRuleCtx := c.compileInitialization(ctx, core.ForWhileLoop)
+
+	// body
+	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+		for _, b := range body {
+			if ec := b.ForExpressionStatement(); ec != nil {
+				c.compileForExpressionStatement(ec)
+			} else if ec := b.ForExpressionClause(); ec != nil {
+				c.compileForExpressionClause(ec)
+			}
+		}
+	}
+
+	return c.compileFinalization(returnRuleCtx)
 }
 
-func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antlr.RuleContext {
+func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
 	var distinct bool
 	var returnRuleCtx antlr.RuleContext
 	var loopType core.LoopType
@@ -61,8 +74,16 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antl
 		loopType = core.PassThroughLoop
 	}
 
-	src := c.compileForExpressionSource(ctx.ForExpressionSource())
-	loop := c.ctx.Loops.CreateFor(loopType, src, distinct)
+	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
+
+	if kind == core.ForInLoop {
+		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
+	} else {
+		loop.SrcFn = func() vm.Operand {
+			return c.ctx.ExprCompiler.Compile(ctx.Expression())
+		}
+	}
+
 	c.ctx.Loops.Push(loop)
 	c.ctx.Symbols.EnterScope()
 
@@ -85,7 +106,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext) antl
 				panic("parent loop not found in loop table")
 			}
 
-			c.ctx.Emitter.Patchx(parent.Start, 1)
+			c.ctx.Emitter.Patchx(parent.StartLabel, 1)
 		}
 	}
 
@@ -203,22 +224,21 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 	}
 
 	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
-
 }
 
 func (c *LoopCompiler) compileLimit(src vm.Operand) {
 	state := c.ctx.Registers.Allocate(core.State)
-	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().End)
+	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().EndLabel)
 }
 
 func (c *LoopCompiler) compileOffset(src vm.Operand) {
 	state := c.ctx.Registers.Allocate(core.State)
-	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().Jump)
+	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().JumpLabel)
 }
 
 func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
-	label := c.ctx.Loops.Current().Jump
+	label := c.ctx.Loops.Current().JumpLabel
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
 

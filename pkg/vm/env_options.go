@@ -4,8 +4,6 @@ import (
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/logging"
 )
 
 func WithParams(params map[string]runtime.Value) EnvironmentOption {
@@ -46,7 +44,7 @@ func WithLog(writer io.Writer) EnvironmentOption {
 	}
 }
 
-func WithLogLevel(lvl logging.Level) EnvironmentOption {
+func WithLogLevel(lvl runtime.Level) EnvironmentOption {
 	return func(options *Environment) {
 		options.logging.Level = lvl
 	}

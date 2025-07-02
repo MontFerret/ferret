@@ -24,7 +24,8 @@ func (c *LoopCollectCompiler) compileGroupedAggregation(ctx fql.ICollectAggregat
 	accumulator := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAx(vm.OpDataSetCollector, accumulator, int(core.CollectorTypeKeyGroup))
 
-	loop := c.ctx.Loops.CreateFor(core.TemporalLoop, c.ctx.Registers.Allocate(core.Temp), false)
+	loop := c.ctx.Loops.NewForInLoop(core.TemporalLoop, false)
+	loop.Src = c.ctx.Registers.Allocate(core.Temp)
 
 	// Now we iterate over the grouped items
 	parentLoop.EmitValue(loop.Src, c.ctx.Emitter)
@@ -70,10 +71,11 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(ctx fql.ICollectAggregato
 		c.ctx.Registers.Free(dst)
 	}
 
-	// CreateFor new loop with 1 iteration only
+	// NewForLoop new loop with 1 iteration only
 	c.ctx.Symbols.EnterScope()
 	c.ctx.Emitter.EmitABC(vm.OpRange, parentLoop.Src, zero, zero)
-	loop := c.ctx.Loops.CreateFor(core.TemporalLoop, parentLoop.Src, parentLoop.Distinct)
+	loop := c.ctx.Loops.NewForInLoop(core.TemporalLoop, parentLoop.Distinct)
+	loop.Src = parentLoop.Src
 	loop.Dst = parentLoop.Dst
 	loop.Allocate = parentLoop.Allocate
 	c.ctx.Loops.Push(loop)

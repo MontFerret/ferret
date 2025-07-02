@@ -4,8 +4,6 @@ import (
 	"os"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/logging"
 )
 
 type (
@@ -14,7 +12,7 @@ type (
 	Environment struct {
 		functions runtime.Functions
 		params    map[string]runtime.Value
-		logging   logging.Options
+		logging   runtime.Options
 	}
 )
 
@@ -31,9 +29,9 @@ func newEnvironment(opts []EnvironmentOption) *Environment {
 	env := &Environment{
 		functions: runtime.NewFunctions(),
 		params:    make(map[string]runtime.Value),
-		logging: logging.Options{
+		logging: runtime.Options{
 			Writer: os.Stdout,
-			Level:  logging.ErrorLevel,
+			Level:  runtime.ErrorLevel,
 		},
 	}
 

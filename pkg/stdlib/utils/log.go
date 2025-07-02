@@ -3,18 +3,16 @@ package utils
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/logging"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // PRINT writes messages into the system log.
 // @param {Second, repeated} message - Print message.
-func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, core.MaxArgs)
+func Print(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, runtime.MaxArgs)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	messages := make([]interface{}, 0, len(args))
@@ -27,9 +25,8 @@ func Print(ctx context.Context, args ...core.Value) (core.Value, error) {
 		}
 	}
 
-	logger := logging.FromContext(ctx)
-
+	logger := runtime.FromContext(ctx)
 	logger.Print(messages...)
 
-	return core.None, nil
+	return runtime.None, nil
 }

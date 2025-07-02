@@ -19,7 +19,15 @@ func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 	}
 }
 
-func (lt *LoopTable) CreateFor(loopType LoopType, src vm.Operand, distinct bool) *Loop {
+func (lt *LoopTable) NewForInLoop(loopType LoopType, distinct bool) *Loop {
+	return lt.NewLoop(ForInLoop, loopType, distinct)
+}
+
+func (lt *LoopTable) NewForWhileLoop(loopType LoopType, distinct bool) *Loop {
+	return lt.NewLoop(ForWhileLoop, loopType, distinct)
+}
+
+func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *Loop {
 	parent := lt.Current()
 	allocate := parent == nil || parent.Type != PassThroughLoop
 	result := vm.NoopOperand
@@ -34,9 +42,8 @@ func (lt *LoopTable) CreateFor(loopType LoopType, src vm.Operand, distinct bool)
 
 	return &Loop{
 		Type:     loopType,
-		Kind:     ForLoop,
+		Kind:     kind,
 		Distinct: distinct,
-		Src:      src,
 		Dst:      result,
 		Allocate: allocate,
 	}
