@@ -3,8 +3,6 @@ package vm_test
 import (
 	"testing"
 
-	. "github.com/MontFerret/ferret/test/integration/base"
-
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 

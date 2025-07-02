@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestRange(t *testing.T) {

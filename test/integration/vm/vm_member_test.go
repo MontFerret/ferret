@@ -12,7 +12,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/parser"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	. "github.com/MontFerret/ferret/test/integration/base"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

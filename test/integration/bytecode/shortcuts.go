@@ -6,7 +6,7 @@ import (
 )
 
 type BC = []vm.Instruction
-type UseCase = base.UseCase
+type UseCase = base.TestCase
 
 var I = vm.NewInstruction
 var C = vm.NewConstant

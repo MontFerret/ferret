@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/MontFerret/ferret/test/integration/base"
-
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"

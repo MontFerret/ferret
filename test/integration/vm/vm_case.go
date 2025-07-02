@@ -5,11 +5,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/test/integration/base"
+
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/vm"
-	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
 func Case(expression string, expected any, desc ...string) UseCase {
@@ -45,7 +46,7 @@ func SkipCaseRuntimeErrorAs(expression string, expected error, desc ...string) U
 }
 
 func CaseCompilationError(expression string, desc ...string) UseCase {
-	return NewCase(expression, nil, ShouldBeCompilationError, desc...)
+	return NewCase(expression, nil, base.ShouldBeCompilationError, desc...)
 }
 
 func SkipCaseCompilationError(expression string, desc ...string) UseCase {
@@ -73,7 +74,7 @@ func SkipCaseArray(expression string, expected []any, desc ...string) UseCase {
 }
 
 func CaseItems(expression string, expected ...any) UseCase {
-	return NewCase(expression, expected, ShouldHaveSameItems)
+	return NewCase(expression, expected, base.ShouldHaveSameItems)
 }
 
 func CaseFn(expression string, assertion func(actual any, expected ...any) string) UseCase {
@@ -118,7 +119,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 			Convey(useCase.Expression, t, func() {
 				prog, err := c.Compile(useCase.Expression)
 
-				if !ArePtrsEqual(useCase.PreAssertion, ShouldBeCompilationError) {
+				if !base.ArePtrsEqual(useCase.PreAssertion, base.ShouldBeCompilationError) {
 					So(err, ShouldBeNil)
 				} else {
 					So(err, ShouldBeError)
@@ -132,10 +133,10 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				options = append(options, opts...)
 
 				expected := useCase.Expected
-				actual, err := Exec(prog, useCase.RawOutput, options...)
+				actual, err := base.Exec(prog, useCase.RawOutput, options...)
 
 				for _, assertion := range useCase.Assertions {
-					if ArePtrsEqual(assertion, ShouldBeError) {
+					if base.ArePtrsEqual(assertion, ShouldBeError) {
 						So(err, ShouldBeError)
 
 						if expected != nil {
@@ -149,13 +150,13 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 					So(err, ShouldBeNil)
 
-					if ArePtrsEqual(assertion, ShouldEqualJSON) {
+					if base.ArePtrsEqual(assertion, ShouldEqualJSON) {
 						expectedJ, err := j.Marshal(expected)
 						So(err, ShouldBeNil)
 						So(actual, ShouldEqualJSON, string(expectedJ))
-					} else if ArePtrsEqual(assertion, ShouldHaveSameItems) {
-						So(actual, ShouldHaveSameItems, expected)
-					} else if ArePtrsEqual(assertion, ShouldBeNil) {
+					} else if base.ArePtrsEqual(assertion, base.ShouldHaveSameItems) {
+						So(actual, base.ShouldHaveSameItems, expected)
+					} else if base.ArePtrsEqual(assertion, ShouldBeNil) {
 						So(actual, ShouldBeNil)
 					} else {
 						So(actual, assertion, expected)

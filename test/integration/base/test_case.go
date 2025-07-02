@@ -6,7 +6,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type UseCase struct {
+type TestCase struct {
 	Expression   string
 	Expected     any
 	PreAssertion Assertion
@@ -16,8 +16,8 @@ type UseCase struct {
 	RawOutput    bool
 }
 
-func NewCase(expression string, expected any, assertion Assertion, desc ...string) UseCase {
-	return UseCase{
+func NewCase(expression string, expected any, assertion Assertion, desc ...string) TestCase {
+	return TestCase{
 		Expression:  expression,
 		Expected:    expected,
 		Assertions:  []Assertion{assertion},
@@ -25,7 +25,7 @@ func NewCase(expression string, expected any, assertion Assertion, desc ...strin
 	}
 }
 
-func Skip(uc UseCase) UseCase {
+func Skip(uc TestCase) TestCase {
 	uc.Skip = true
 	return uc
 }

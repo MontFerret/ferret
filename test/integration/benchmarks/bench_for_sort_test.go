@@ -2,8 +2,6 @@ package benchmarks_test
 
 import (
 	"testing"
-
-	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
 func BenchmarkForSort(b *testing.B) {

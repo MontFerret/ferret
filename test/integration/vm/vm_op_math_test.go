@@ -2,8 +2,6 @@ package vm_test
 
 import (
 	"testing"
-
-	. "github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestMathOperators(t *testing.T) {
