@@ -91,15 +91,19 @@ func (c *LoopSortCompiler) compileSingleSortKey(clause fql.ISortClauseExpression
 // If the loop already has a value name, reuse it; otherwise, allocate a new register
 // and load the value from the iterator.
 func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) vm.Operand {
-	// If value is already used in the loop body, reuse the existing register
-	if loop.ValueName != "" {
-		return loop.Value
+	if loop.Kind == core.ForInLoop {
+		// If value is already used in the loop body, reuse the existing register
+		if loop.ValueName != "" {
+			return loop.Value
+		}
+
+		// Otherwise, allocate a new register and load the value from iterator
+		kvValReg := c.ctx.Registers.Allocate(core.Temp)
+		loop.EmitValue(kvValReg, c.ctx.Emitter)
+		return kvValReg
 	}
 
-	// Otherwise, allocate a new register and load the value from iterator
-	kvValReg := c.ctx.Registers.Allocate(core.Temp)
-	loop.EmitValue(kvValReg, c.ctx.Emitter)
-	return kvValReg
+	return loop.Key
 }
 
 // compileSorter configures a sorter for a loop based on provided sort clauses and directions.
@@ -138,6 +142,15 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 
 	if !loop.Allocate {
 		c.ctx.Registers.Free(sorter)
+	}
+
+	if loop.Kind != core.ForInLoop {
+		// We switched from a ForWhileLoop to a ForInLoop because the underlying data is Iterable now.
+		loop.Kind = core.ForInLoop
+		loop.ValueName = loop.KeyName
+		loop.Value = loop.Key
+		loop.Key = vm.NoopOperand
+		loop.KeyName = ""
 	}
 
 	// Reinitialize the loop to iterate over sorted data
