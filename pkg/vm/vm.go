@@ -541,6 +541,8 @@ loop:
 				return nil, err
 			}
 		case OpReturn:
+			reg[NoopOperand] = reg[dst]
+
 			break loop
 		}
 	}

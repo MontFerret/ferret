@@ -38,21 +38,18 @@ func (sc *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 	if c := ctx.ForExpression(); c != nil {
 		out := sc.ctx.LoopCompiler.Compile(c)
 
-		if out != vm.NoopOperand {
-			sc.ctx.Emitter.EmitAB(vm.OpMove, vm.NoopOperand, out)
-		}
-
-		sc.ctx.Emitter.Emit(vm.OpReturn)
+		sc.ctx.Emitter.EmitA(vm.OpReturn, out)
 	} else if c := ctx.ReturnExpression(); c != nil {
 		valReg := sc.ctx.ExprCompiler.Compile(c.Expression())
 
 		if valReg.IsConstant() {
-			sc.ctx.Emitter.EmitAB(vm.OpLoadGlobal, vm.NoopOperand, valReg)
-		} else {
-			sc.ctx.Emitter.EmitMove(vm.NoopOperand, valReg)
+			valC := valReg
+			valReg = sc.ctx.Registers.Allocate(core.Temp)
+
+			sc.ctx.Emitter.EmitAB(vm.OpLoadGlobal, valReg, valC)
 		}
 
-		sc.ctx.Emitter.Emit(vm.OpReturn)
+		sc.ctx.Emitter.EmitA(vm.OpReturn, valReg)
 	}
 }
 

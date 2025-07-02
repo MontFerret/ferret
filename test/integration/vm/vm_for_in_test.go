@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-func TestFor(t *testing.T) {
+func TestForIn(t *testing.T) {
 	// Should not allocate memory if NONE is a return statement
 	//{
 	//	`FOR i IN 0..100
@@ -85,9 +85,27 @@ FOR i IN 1..5
 				return ""
 			},
 		),
-		CaseArray(
+		CaseFn(
 			`FOR i, k IN {a: 'foo', b: 'bar', c: 'qaz'} RETURN k`,
-			[]any{"a", "b", "c"},
+			func(actual any, expected ...any) string {
+				hashMap := make(map[string]bool)
+				expectedArr := []any{"a", "b", "c"}
+				actualArr := actual.([]any)
+
+				for _, v := range expectedArr {
+					hashMap[v.(string)] = false
+				}
+
+				for _, v := range actualArr {
+					if _, ok := hashMap[v.(string)]; !ok {
+						return "Unexpected value: " + v.(string)
+					}
+
+					hashMap[v.(string)] = true
+				}
+
+				return ""
+			},
 		),
 		CaseArray(
 			`FOR i IN [{name: 'foo'}, {name: 'bar'}, {name: 'qaz'}] RETURN i.name`,

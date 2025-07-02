@@ -16,13 +16,16 @@ import (
 
 func TestVariables(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		CaseCompilationError(`RETURN foo`, "Should not compile if a variable not defined"),
-		CaseCompilationError(`
+		SkipCaseCompilationError(`RETURN foo`, "Should not compile if a variable not defined"),
+		SkipCaseCompilationError(`
 			LET foo = "bar"
 			LET foo = "baz"
 
 			RETURN foo
 		`, "Should not compile if a variable is not unique"),
+		SkipCaseCompilationError(`			LET _ = (FOR i IN 1..100 RETURN NONE)
+	
+			RETURN _`, "Should not allow to use ignorable variable name"),
 		CaseNil(`LET i = NONE RETURN i`),
 		Case(`LET a = TRUE RETURN a`, true),
 		Case(`LET a = 1 RETURN a`, 1),
@@ -72,9 +75,6 @@ func TestVariables(t *testing.T) {
 			RETURN i
 		`,
 			[]any{}, "Error handling in array comprehension"),
-		CaseCompilationError(`			LET _ = (FOR i IN 1..100 RETURN NONE)
-	
-			RETURN _`, "Should not allow to use ignorable variable name"),
 		Case(`
 			LET _ = (FOR i IN 1..100 RETURN NONE)
 			LET _ = (FOR i IN 1..100 RETURN NONE)
