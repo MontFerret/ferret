@@ -231,6 +231,26 @@ func (op Opcode) String() string {
 		return "CALL"
 	case OpProtectedCall:
 		return "PCALL"
+	case OpCall0:
+		return "CALL0"
+	case OpProtectedCall0:
+		return "PCALL0"
+	case OpCall1:
+		return "CALL1"
+	case OpProtectedCall1:
+		return "PCALL1"
+	case OpCall2:
+		return "CALL2"
+	case OpProtectedCall2:
+		return "PCALL2"
+	case OpCall3:
+		return "CALL3"
+	case OpProtectedCall3:
+		return "PCALL3"
+	case OpCall4:
+		return "CALL4"
+	case OpProtectedCall4:
+		return "PCALL4"
 
 	// Collection Creation
 	case OpList:

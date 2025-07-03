@@ -26,7 +26,7 @@ func New(program *Program) *VM {
 func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (runtime.Value, error) {
 	env := newEnvironment(opts)
 
-	if err := validateParams(env, vm.program); err != nil {
+	if err := validate(env, vm.program); err != nil {
 		return nil, err
 	}
 

@@ -1,7 +1,8 @@
-package bytecode_test
+package compiler_test
 
 import (
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/asm"
 	"strings"
 	"testing"
 
@@ -64,7 +65,12 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 
 				println("")
 				println("Actual:")
-				println(actual.String())
+				println(asm.Disassemble(actual))
+
+				if p, ok := useCase.Expected.(*vm.Program); ok {
+					println("Expected:")
+					println(asm.Disassemble(p))
+				}
 
 				convey.So(err, convey.ShouldBeNil)
 

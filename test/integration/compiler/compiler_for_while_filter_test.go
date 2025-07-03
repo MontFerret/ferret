@@ -1,4 +1,4 @@
-package bytecode_test
+package compiler_test
 
 import (
 	"testing"

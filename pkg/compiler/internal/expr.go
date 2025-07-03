@@ -74,40 +74,51 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 
 // TODO: Free temporary registers if needed
 func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand {
-	dst := ec.ctx.Registers.Allocate(core.Temp)
-
 	left := ec.Compile(ctx.GetLeft())
-	ec.ctx.Emitter.EmitMove(dst, left)
 
 	end := ec.ctx.Emitter.NewLabel()
+	rightDone := ec.ctx.Emitter.NewLabel()
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 
-	// If left is false, jump to end
-	ec.ctx.Emitter.EmitJumpIfFalse(dst, end)
+	// If left is falsy, jump to end and use left
+	ec.ctx.Emitter.EmitJumpIfFalse(left, end)
 
+	// Otherwise evaluate right and use it
 	right := ec.Compile(ctx.GetRight())
 	ec.ctx.Emitter.EmitMove(dst, right)
+	ec.ctx.Emitter.EmitJump(rightDone)
 
+	// Short-circuit: use left as result
 	ec.ctx.Emitter.MarkLabel(end)
+	ec.ctx.Emitter.EmitMove(dst, left)
+
+	ec.ctx.Emitter.MarkLabel(rightDone)
 
 	return dst
 }
 
 // TODO: Free temporary registers if needed
 func (ec *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
-	dst := ec.ctx.Registers.Allocate(core.Temp)
-
 	left := ec.Compile(ctx.GetLeft())
-	ec.ctx.Emitter.EmitMove(dst, left)
 
 	end := ec.ctx.Emitter.NewLabel()
+	rightDone := ec.ctx.Emitter.NewLabel()
+	dst := ec.ctx.Registers.Allocate(core.Temp)
 
-	// If left is true, jump to end
-	ec.ctx.Emitter.EmitJumpIfTrue(dst, end)
+	// If left is truthy, short-circuit and skip right
+	ec.ctx.Emitter.EmitJumpIfTrue(left, end)
 
+	// Otherwise evaluate right
 	right := ec.Compile(ctx.GetRight())
 	ec.ctx.Emitter.EmitMove(dst, right)
+	ec.ctx.Emitter.EmitJump(rightDone)
 
+	// Short-circuit: use left value
 	ec.ctx.Emitter.MarkLabel(end)
+	ec.ctx.Emitter.EmitMove(dst, left)
+
+	// Common exit
+	ec.ctx.Emitter.MarkLabel(rightDone)
 
 	return dst
 }
