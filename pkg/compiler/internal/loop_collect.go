@@ -53,6 +53,11 @@ func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggr
 
 	c.finalizeCollector(loop, collectorType, kv)
 
+	// If we are using a projection, we need to ensure the loop is set to ForInLoop
+	if loop.Kind != core.ForInLoop {
+		loop.Kind = core.ForInLoop
+	}
+
 	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
 	if projectionVarName != "" {
 		// Now we need to expand group variables from the dataset
@@ -84,7 +89,12 @@ func (c *LoopCollectCompiler) initializeCollector(grouping fql.ICollectGroupingC
 
 	// Setup value register and emit value from current loop
 	kv.Value = c.ctx.Registers.Allocate(core.Temp)
-	loop.EmitValue(kv.Value, c.ctx.Emitter)
+
+	if loop.Kind == core.ForInLoop {
+		loop.EmitValue(kv.Value, c.ctx.Emitter)
+	} else {
+		loop.EmitKey(kv.Value, c.ctx.Emitter)
+	}
 
 	return kv, groupSelectors
 }
@@ -222,8 +232,14 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kv 
 
 		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
 		// We will keep it for now for backward compatibility.
-		loadConstantTo(c.ctx, runtime.String(loop.ValueName), seq[0]) // Map key
-		c.ctx.Emitter.EmitAB(vm.OpMove, seq[1], kv.Value)             // Map value
+
+		if loop.Kind == core.ForInLoop {
+			loadConstantTo(c.ctx, runtime.String(loop.ValueName), seq[0]) // Map key
+		} else {
+			loadConstantTo(c.ctx, runtime.String(loop.KeyName), seq[0]) // Map key
+		}
+
+		c.ctx.Emitter.EmitAB(vm.OpMove, seq[1], kv.Value) // Map value
 		c.ctx.Emitter.EmitAs(vm.OpMap, kv.Value, seq)
 
 		c.ctx.Registers.FreeSequence(seq)
