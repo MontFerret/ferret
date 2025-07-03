@@ -1,0 +1,23 @@
+package bytecode_test
+
+import (
+	"github.com/MontFerret/ferret/pkg/vm"
+	"testing"
+)
+
+func TestForWhileDistinct(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		ByteCodeCase(`
+			LET departments = []
+			LET genders = []
+
+			FOR i WHILE UNTIL(LENGTH(departments))
+				FOR j WHILE UNTIL(LENGTH(genders))
+					LET dept = departments[i]
+					LET gender = genders[j]
+					RETURN DISTINCT { department: dept, gender }
+`, BC{
+			I(vm.OpReturn, 0, 7),
+		}),
+	})
+}

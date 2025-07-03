@@ -148,7 +148,6 @@ func (c *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollec
 			for y, reg := range args {
 				argKeyReg := c.loadAggregationArgKey(i, y)
 				c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, accumulator, argKeyReg)
-
 				c.ctx.Registers.Free(argKeyReg)
 			}
 		} else {
