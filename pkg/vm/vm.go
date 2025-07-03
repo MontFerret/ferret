@@ -461,25 +461,23 @@ loop:
 			iterator := reg[src1].(*internal.Iterator)
 			reg[dst] = iterator.Key()
 		case OpIterSkip:
-			state := runtime.ToIntSafe(ctx, reg[dst])
-			threshold := runtime.ToIntSafe(ctx, reg[src1])
-			jump := int(src2)
+			state := runtime.ToIntSafe(ctx, reg[src1])
+			threshold := runtime.ToIntSafe(ctx, reg[src2])
 
 			if state < threshold {
 				state++
-				reg[dst] = state
-				vm.pc = jump
+				reg[src1] = state
+				vm.pc = int(dst)
 			}
 		case OpIterLimit:
-			state := runtime.ToIntSafe(ctx, reg[dst])
-			threshold := runtime.ToIntSafe(ctx, reg[src1])
-			jump := int(src2)
+			state := runtime.ToIntSafe(ctx, reg[src1])
+			threshold := runtime.ToIntSafe(ctx, reg[src2])
 
 			if state < threshold {
 				state++
-				reg[dst] = state
+				reg[src1] = state
 			} else {
-				vm.pc = jump
+				vm.pc = int(dst)
 			}
 		case OpStream:
 			observable, eventName, options, err := vm.castSubscribeArgs(reg[dst], reg[src1], reg[src2])

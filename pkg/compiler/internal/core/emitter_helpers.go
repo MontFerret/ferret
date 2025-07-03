@@ -25,15 +25,23 @@ func (e *Emitter) EmitIterValue(dst, iterator vm.Operand) {
 }
 
 func (e *Emitter) EmitIterSkip(state, count vm.Operand, label Label) {
-	e.EmitABx(vm.OpIterSkip, state, count, jumpPlaceholder)
+	e.instructions = append(e.instructions, vm.Instruction{
+		Opcode:   vm.OpIterSkip,
+		Operands: [3]vm.Operand{jumpPlaceholder, state, count},
+	})
+
 	pos := len(e.instructions) - 1
-	e.addLabelRef(pos, 2, label)
+	e.addLabelRef(pos, 0, label)
 }
 
-func (e *Emitter) EmitIterLimit(state, count vm.Operand, jump Label) {
-	e.EmitABx(vm.OpIterLimit, state, count, jumpPlaceholder)
+func (e *Emitter) EmitIterLimit(state, count vm.Operand, label Label) {
+	e.instructions = append(e.instructions, vm.Instruction{
+		Opcode:   vm.OpIterLimit,
+		Operands: [3]vm.Operand{jumpPlaceholder, state, count},
+	})
+
 	pos := len(e.instructions) - 1
-	e.addLabelRef(pos, 2, jump)
+	e.addLabelRef(pos, 0, label)
 }
 
 // ─── Value & Memory ──────────────────────────────────────────────────────
