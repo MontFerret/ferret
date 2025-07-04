@@ -8,9 +8,9 @@ import (
 
 type Emitter struct {
 	instructions []vm.Instruction
-	labels       map[Label]labelDef
-	patches      map[Label][]labelRef
-	nextLabelID  Label
+	labels       map[labelID]Label
+	patches      map[labelID][]labelRef
+	nextLabelID  labelID
 }
 
 func NewEmitter() *Emitter {
@@ -28,32 +28,59 @@ func (e *Emitter) Size() int {
 	return len(e.instructions)
 }
 
-func (e *Emitter) NewLabel() Label {
+func (e *Emitter) Labels() map[int]string {
+	if e.labels == nil {
+		return nil
+	}
+
+	labels := make(map[int]string, len(e.labels))
+
+	for _, def := range e.labels {
+		labels[def.addr] = def.name
+	}
+
+	return labels
+}
+
+func (e *Emitter) NewLabel(name ...string) Label {
 	l := e.nextLabelID
 	e.nextLabelID++
 
-	return l
+	var labelName string
+
+	if len(name) > 0 {
+		labelName = name[0]
+	}
+
+	return Label{
+		id:   l,
+		name: labelName,
+	}
 }
 
 func (e *Emitter) MarkLabel(label Label) {
 	if e.labels == nil {
-		e.labels = make(map[Label]labelDef)
+		e.labels = make(map[labelID]Label)
 	}
 
-	e.labels[label] = labelDef{addr: len(e.instructions)}
+	e.labels[label.id] = Label{
+		id:   label.id,
+		name: label.name,
+		addr: len(e.instructions),
+	}
 
 	// Back-patch any prior references to this label
-	if refs, ok := e.patches[label]; ok {
+	if refs, ok := e.patches[label.id]; ok {
 		for _, ref := range refs {
 			e.patchOperand(ref.pos, ref.field, len(e.instructions))
 		}
 
-		delete(e.patches, label)
+		delete(e.patches, label.id)
 	}
 }
 
 func (e *Emitter) LabelPosition(label Label) (int, bool) {
-	def, ok := e.labels[label]
+	def, ok := e.labels[label.id]
 
 	if !ok {
 		return -1, false
@@ -196,20 +223,20 @@ func (e *Emitter) Patchx(label Label, arg int) {
 // addLabelRef adds a reference to a label at a specific position and field in the instruction set.
 func (e *Emitter) addLabelRef(pos int, field int, label Label) {
 	if e.labels == nil {
-		e.labels = make(map[Label]labelDef)
+		e.labels = make(map[labelID]Label)
 	}
 
-	if def, ok := e.labels[label]; ok {
+	if def, ok := e.labels[label.id]; ok {
 		// Already marked → patch immediately
 		e.patchOperand(pos, field, def.addr)
 		return
 	}
 
 	if e.patches == nil {
-		e.patches = make(map[Label][]labelRef)
+		e.patches = make(map[labelID][]labelRef)
 	}
 
-	e.patches[label] = append(e.patches[label], labelRef{pos: pos, field: field})
+	e.patches[label.id] = append(e.patches[label.id], labelRef{pos: pos, field: field})
 }
 
 // patchOperand modifies the operand at the specified position and field in the instruction set.
@@ -246,7 +273,11 @@ func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
 	// Adjust all subsequent label addresses
 	for l, d := range e.labels {
 		if d.addr >= pos {
-			e.labels[l] = labelDef{addr: d.addr + 1}
+			e.labels[l] = Label{
+				id:   d.id,
+				name: d.name,
+				addr: d.addr + 1,
+			}
 		}
 	}
 

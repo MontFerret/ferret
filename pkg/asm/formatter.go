@@ -15,16 +15,19 @@ func labelOrAddr(pos int, labels map[int]string) string {
 	return fmt.Sprintf("%d", pos)
 }
 
+// constantAsText formats a constant value as a string.
+func constantAsText(constant runtime.Value) string {
+	if runtime.IsNumber(constant) {
+		return fmt.Sprintf("%d", constant)
+	}
+
+	return fmt.Sprintf("%q", constant.String())
+}
+
 // constValue renders the constant at a given index from the program.
 func constValue(p *vm.Program, idx int) string {
 	if idx >= 0 && idx < len(p.Constants) {
-		constant := p.Constants[idx]
-
-		if runtime.IsNumber(constant) {
-			return fmt.Sprintf("%d", constant)
-		}
-
-		return fmt.Sprintf("%q", constant.String())
+		return constantAsText(p.Constants[idx])
 	}
 
 	return "<invalid>"
@@ -34,19 +37,32 @@ func constValue(p *vm.Program, idx int) string {
 func formatLocation(p *vm.Program, ip int) string {
 	if ip < len(p.Locations) {
 		loc := p.Locations[ip]
+
 		return fmt.Sprintf("; line %d col %d", loc.Line, loc.Column)
 	}
 
 	return ""
 }
 
-// formatParams generates comments mapping register indices to parameter names.
-func formatParams(p *vm.Program) []string {
-	lines := []string{}
+// formatParam generates comments mapping register indices to parameter names.
+func formatParam(name string) string {
+	return fmt.Sprintf(".param %s", name)
+}
 
-	for i, name := range p.Params {
-		lines = append(lines, fmt.Sprintf("; param R%d = %s", i, name))
+// formatFunction generates comments for the functions defined in the program.
+func formatFunction(name string, args int) string {
+	return fmt.Sprintf(".func %s %d", name, args)
+}
+
+// formatConstant generates a comment for a constant value in the program.
+func formatConstant(constant runtime.Value) string {
+	return fmt.Sprintf(".const %s", constantAsText(constant))
+}
+
+func formatOperand(op vm.Operand) string {
+	if op.IsRegister() {
+		return fmt.Sprintf("R%d", op.Register())
 	}
 
-	return lines
+	return fmt.Sprintf("C%d", op.Constant())
 }

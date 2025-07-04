@@ -66,9 +66,9 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 }
 
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
-	l.StartLabel = emitter.NewLabel()
-	l.JumpLabel = emitter.NewLabel()
-	l.EndLabel = emitter.NewLabel()
+	l.StartLabel = emitter.NewLabel("loop.start")
+	l.JumpLabel = emitter.NewLabel("loop.jump")
+	l.EndLabel = emitter.NewLabel("loop.end")
 
 	emitter.MarkLabel(l.StartLabel)
 

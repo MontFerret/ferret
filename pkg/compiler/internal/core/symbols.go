@@ -48,9 +48,10 @@ type SymbolTable struct {
 	registers *RegisterAllocator
 	constants *ConstantPool
 
-	params  map[string]string
-	globals map[string]vm.Operand
-	locals  []*Variable
+	params    map[string]string
+	functions map[string]int
+	globals   map[string]vm.Operand
+	locals    []*Variable
 
 	scope int
 }
@@ -116,6 +117,18 @@ func (st *SymbolTable) BindParam(name string) vm.Operand {
 	return st.constants.Add(runtime.NewString(name))
 }
 
+func (st *SymbolTable) BindFunction(name string, args int) {
+	if currArgs, exists := st.functions[name]; exists {
+		// we need to ensure that the number of arguments is not greater than the current one
+		// if it is not, we will not override the current one
+		if currArgs > args {
+			return
+		}
+	}
+
+	st.functions[name] = args
+}
+
 func (st *SymbolTable) Constants() []runtime.Value {
 	return st.constants.All()
 }
@@ -159,6 +172,17 @@ func (st *SymbolTable) Params() []string {
 		out = append(out, k)
 	}
 	return out
+}
+
+func (st *SymbolTable) Functions() map[string]int {
+	// Returns a copy of the functions map to avoid external modifications
+	funcs := make(map[string]int, len(st.functions))
+
+	for k, v := range st.functions {
+		funcs[k] = v
+	}
+
+	return funcs
 }
 
 func (st *SymbolTable) DebugView() []string {

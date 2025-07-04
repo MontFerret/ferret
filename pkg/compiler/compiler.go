@@ -77,6 +77,8 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	program.CatchTable = l.Ctx.CatchTable.All()
 	program.Registers = l.Ctx.Registers.Size()
 	program.Params = l.Ctx.Symbols.Params()
+	program.Functions = l.Ctx.Symbols.Functions()
+	program.Labels = l.Ctx.Emitter.Labels()
 
 	return program, err
 }

@@ -1,16 +1,16 @@
 package core
 
 type (
-	Label int
+	Label struct {
+		id   labelID
+		name string
+		addr int
+	}
+
+	labelID int
 
 	labelRef struct {
 		pos   int
 		field int
 	}
-
-	labelDef struct {
-		addr int
-	}
 )
-
-const InvalidLabel Label = -1

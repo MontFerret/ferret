@@ -76,23 +76,23 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand {
 	left := ec.Compile(ctx.GetLeft())
 
-	end := ec.ctx.Emitter.NewLabel()
-	rightDone := ec.ctx.Emitter.NewLabel()
+	skip := ec.ctx.Emitter.NewLabel("and.false")
+	done := ec.ctx.Emitter.NewLabel("and.done")
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
-	// If left is falsy, jump to end and use left
-	ec.ctx.Emitter.EmitJumpIfFalse(left, end)
+	// If left is falsy, jump to skip and use left
+	ec.ctx.Emitter.EmitJumpIfFalse(left, skip)
 
 	// Otherwise evaluate right and use it
 	right := ec.Compile(ctx.GetRight())
 	ec.ctx.Emitter.EmitMove(dst, right)
-	ec.ctx.Emitter.EmitJump(rightDone)
+	ec.ctx.Emitter.EmitJump(done)
 
 	// Short-circuit: use left as result
-	ec.ctx.Emitter.MarkLabel(end)
+	ec.ctx.Emitter.MarkLabel(skip)
 	ec.ctx.Emitter.EmitMove(dst, left)
 
-	ec.ctx.Emitter.MarkLabel(rightDone)
+	ec.ctx.Emitter.MarkLabel(done)
 
 	return dst
 }
@@ -101,24 +101,24 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand
 func (ec *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 	left := ec.Compile(ctx.GetLeft())
 
-	end := ec.ctx.Emitter.NewLabel()
-	rightDone := ec.ctx.Emitter.NewLabel()
+	next := ec.ctx.Emitter.NewLabel("or.false")
+	done := ec.ctx.Emitter.NewLabel("or.done")
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
 	// If left is truthy, short-circuit and skip right
-	ec.ctx.Emitter.EmitJumpIfTrue(left, end)
+	ec.ctx.Emitter.EmitJumpIfTrue(left, next)
 
 	// Otherwise evaluate right
 	right := ec.Compile(ctx.GetRight())
 	ec.ctx.Emitter.EmitMove(dst, right)
-	ec.ctx.Emitter.EmitJump(rightDone)
+	ec.ctx.Emitter.EmitJump(done)
 
 	// Short-circuit: use left value
-	ec.ctx.Emitter.MarkLabel(end)
+	ec.ctx.Emitter.MarkLabel(next)
 	ec.ctx.Emitter.EmitMove(dst, left)
 
 	// Common exit
-	ec.ctx.Emitter.MarkLabel(rightDone)
+	ec.ctx.Emitter.MarkLabel(done)
 
 	return dst
 }
@@ -441,6 +441,7 @@ func (ec *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pr
 func (ec *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
 	dest := ec.ctx.Registers.Allocate(core.Temp)
 	ec.ctx.Emitter.EmitLoadConst(dest, ec.ctx.Symbols.AddConstant(name))
+	ec.ctx.Symbols.BindFunction(name.String(), len(seq))
 
 	var opcode vm.Opcode
 	var protectedOpcode vm.Opcode

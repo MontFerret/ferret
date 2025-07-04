@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -46,33 +47,61 @@ func validateParams(env *Environment, program *Program) error {
 	return nil
 }
 
-// TODO: Implement this function.
 func validateFunctions(env *Environment, program *Program) error {
-	//if len(program.Locations) == 0 {
-	//	return nil
-	//}
-	//
-	//// There might be no errors.
-	//// Thus, we allocate this slice lazily, on a first error.
-	//var missedFunctions []string
-	//
-	//for _, loc := range program.Locations {
-	//	if loc.Function == "" {
-	//		continue
-	//	}
-	//
-	//	if _, exists := env.functions[loc.Function]; !exists {
-	//		if missedFunctions == nil {
-	//			missedFunctions = make([]string, 0, len(program.Locations))
-	//		}
-	//
-	//		missedFunctions = append(missedFunctions, loc.Function)
-	//	}
-	//}
-	//
-	//if len(missedFunctions) > 0 {
-	//	return runtime.Error(ErrFunctionNotFound, strings.Join(missedFunctions, ", "))
-	//}
-	//
+	if len(program.Functions) == 0 {
+		return nil
+	}
+
+	// There might be no errors.
+	// Thus, we allocate this slice lazily, on a first error.
+	var errors []string
+
+	for name, args := range program.Functions {
+		exists := env.functions.Has(name)
+
+		if !exists {
+			if errors == nil {
+				errors = make([]string, 0, len(program.Functions))
+			}
+
+			errors = append(errors, fmt.Sprintf("function `%s` not found", name))
+
+			continue
+		}
+
+		// Check if the number of arguments matches.
+		var matched bool
+
+		switch args {
+		case 4:
+			matched = env.functions.F4().Has(name)
+		case 3:
+			matched = env.functions.F3().Has(name)
+		case 2:
+			matched = env.functions.F2().Has(name)
+		case 1:
+			matched = env.functions.F1().Has(name)
+		case 0:
+			matched = env.functions.F0().Has(name)
+		default:
+			// Variable number of arguments.
+			matched = env.functions.F().Has(name)
+		}
+
+		// Check if the function is a variadic function.
+		if !matched && args > -1 {
+			matched = env.functions.F().Has(name)
+		}
+
+		if !matched {
+			// Tell the user that the function was not found with the specified number of arguments.
+			errors = append(errors, fmt.Sprintf("function `%s` not found with %d arguments", name, args))
+		}
+	}
+
+	if len(errors) > 0 {
+		return runtime.Error(ErrFunctionNotFound, strings.Join(errors, ", "))
+	}
+
 	return nil
 }

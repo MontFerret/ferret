@@ -9,33 +9,49 @@ import (
 )
 
 // Disassemble returns a human-readable disassembly of the given program.
-func Disassemble(p *vm.Program) string {
-	labels := collectLabels(p.Bytecode)
+func Disassemble(p *vm.Program, options ...DisassemblerOption) string {
+	newDisassemblerOptions(options...)
+
+	labels := collectLabels(p.Bytecode, p.Labels)
 
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
 	// Header: params
-	for _, line := range formatParams(p) {
-		fmt.Fprintln(w, line)
+	for _, name := range p.Params {
+		_, _ = fmt.Fprintln(w, formatParam(name))
+	}
+
+	// Header: functions
+	for name, args := range p.Functions {
+		_, _ = fmt.Fprintln(w, formatFunction(name, args))
+	}
+
+	// Header: constants
+	for _, constant := range p.Constants {
+		_, _ = fmt.Fprintln(w, formatConstant(constant))
+	}
+
+	if buf.Len() > 0 {
+		_, _ = fmt.Fprintln(w)
 	}
 
 	// Body: disassembly
 	for ip, instr := range p.Bytecode {
 		if label, ok := labels[ip]; ok {
-			fmt.Fprintf(w, "%s:\n", label)
+			_, _ = fmt.Fprintf(w, "%s:\n", label)
 		}
 
-		fmt.Fprintln(w, disasmLine(ip, instr, p, labels))
+		_, _ = fmt.Fprintf(w, "\t%s\n", disasmLine(ip, instr, p, labels))
 	}
 
-	w.Flush()
+	_ = w.Flush()
 
 	return buf.String()
 }
 
 // collectLabels identifies jump targets and assigns symbolic labels to them.
-func collectLabels(bytecode []vm.Instruction) map[int]string {
+func collectLabels(bytecode []vm.Instruction, names map[int]string) map[int]string {
 	labels := make(map[int]string)
 	counter := 0
 
@@ -43,7 +59,10 @@ func collectLabels(bytecode []vm.Instruction) map[int]string {
 		switch instr.Opcode {
 		case vm.OpJump, vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpIterNext, vm.OpIterSkip, vm.OpIterLimit:
 			target := int(instr.Operands[0])
-			if _, ok := labels[target]; !ok {
+			if name, ok := names[target]; ok && name != "" {
+				labels[target] = fmt.Sprintf("@%s", name)
+			} else if _,
+				ok := labels[target]; !ok {
 				labels[target] = fmt.Sprintf("@L%d", counter)
 				counter++
 			}
@@ -87,7 +106,7 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 		out = fmt.Sprintf("%d: %s R%d", ip, opcode, ops[0])
 
 	default:
-		out = fmt.Sprintf("%d: %s %v", ip, opcode, ops)
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
 	}
 
 	if loc := formatLocation(p, ip); loc != "" {
