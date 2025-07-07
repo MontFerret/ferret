@@ -95,3 +95,13 @@ func (f *functionCollection[T]) Names() []string {
 func (f *functionCollection[T]) Size() int {
 	return len(f.values)
 }
+
+func (f *functionCollection[T]) ForEach(fn func(T, string) error) error {
+	for name, value := range f.values {
+		if err := fn(value, name); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

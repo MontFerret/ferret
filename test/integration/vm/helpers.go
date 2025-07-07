@@ -25,6 +25,27 @@ func ForWhileHelpers() runtime.Functions {
 		}, func(ctx context.Context) int {
 			return 0
 		}),
+		"W_POP": func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			list, err := runtime.CastList(args[0])
+
+			if err != nil {
+				return runtime.False, err
+			}
+
+			size, _ := list.Length(ctx)
+
+			if size > 0 {
+				_, err := list.RemoveAt(ctx, 0)
+
+				if err != nil {
+					return runtime.False, err
+				}
+
+				return runtime.True, nil
+			}
+
+			return runtime.False, nil
+		},
 		"COUNTER": base.StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			state := base.GetFnState[int](ctx)
 			counter := state.Get()

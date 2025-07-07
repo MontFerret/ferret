@@ -137,8 +137,8 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	// Finalize the current loop iteration
 	loop.EmitFinalization(c.ctx.Emitter)
 
-	c.ctx.Symbols.ExitScope()
-	c.ctx.Symbols.EnterScope()
+	//c.ctx.Symbols.ExitScope()
+	//c.ctx.Symbols.EnterScope()
 
 	// Replace the loop source with sorted results
 	c.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, sorter)

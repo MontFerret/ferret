@@ -9,6 +9,16 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/testing"
 )
 
+func New() runtime.Namespace {
+	ns := runtime.NewRootNamespace()
+
+	if err := RegisterLib(ns); err != nil {
+		panic(err)
+	}
+
+	return ns
+}
+
 func RegisterLib(ns runtime.Namespace) error {
 	//if err := types.RegisterLib(ns); err != nil {
 	//	return err

@@ -6,30 +6,19 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 
-	"github.com/MontFerret/ferret/pkg/stdlib"
 	"github.com/MontFerret/ferret/pkg/vm"
 
 	"github.com/MontFerret/ferret/pkg/parser"
 )
 
-type Compiler struct {
-	*NamespaceContainer
-}
+type Compiler struct{}
 
 func New(setters ...Option) *Compiler {
 	c := &Compiler{}
-	c.NamespaceContainer = NewRootNamespace()
-
 	opts := &Options{}
 
 	for _, setter := range setters {
 		setter(opts)
-	}
-
-	if !opts.noStdlib {
-		if err := stdlib.RegisterLib(c.NamespaceContainer); err != nil {
-			panic(err)
-		}
 	}
 
 	return c

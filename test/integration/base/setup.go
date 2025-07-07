@@ -16,7 +16,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	}
 
 	options := []vm.EnvironmentOption{
-		vm.WithFunctions(c.Functions()),
+		vm.WithFunctions(Stdlib()),
 	}
 	options = append(options, opts...)
 

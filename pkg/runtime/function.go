@@ -22,16 +22,6 @@ type (
 		Names() []string
 	}
 
-	FunctionsBuilder interface {
-		Set(name string, fn Function) FunctionsBuilder
-		Set0(name string, fn Function0) FunctionsBuilder
-		Set1(name string, fn Function1) FunctionsBuilder
-		Set2(name string, fn Function2) FunctionsBuilder
-		Set3(name string, fn Function3) FunctionsBuilder
-		Set4(name string, fn Function4) FunctionsBuilder
-		Build() Functions
-	}
-
 	FunctionConstraint interface {
 		Function | Function0 | Function1 | Function2 | Function3 | Function4
 	}
@@ -46,6 +36,17 @@ type (
 		UnsetAll() FunctionCollection[T]
 		Names() []string
 		Size() int
+		ForEach(fn func(T, string) error) error
+	}
+
+	FunctionsBuilder interface {
+		Set(name string, fn Function) FunctionsBuilder
+		Set0(name string, fn Function0) FunctionsBuilder
+		Set1(name string, fn Function1) FunctionsBuilder
+		Set2(name string, fn Function2) FunctionsBuilder
+		Set3(name string, fn Function3) FunctionsBuilder
+		Set4(name string, fn Function4) FunctionsBuilder
+		Build() Functions
 	}
 
 	// Function is a common interface for functions with variable number of arguments.

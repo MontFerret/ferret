@@ -3,13 +3,5 @@ package compiler
 type (
 	Option func(opts *Options)
 
-	Options struct {
-		noStdlib bool
-	}
+	Options struct{}
 )
-
-func WithoutStdlib() Option {
-	return func(opts *Options) {
-		opts.noStdlib = true
-	}
-}

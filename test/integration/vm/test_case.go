@@ -98,6 +98,9 @@ func SkipCaseJSON(expression string, expected string, desc ...string) UseCase {
 }
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...vm.EnvironmentOption) {
+	// Register standard library functions
+	std := base.Stdlib()
+
 	for _, useCase := range useCases {
 		name := useCase.Description
 
@@ -123,9 +126,12 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 				defer func() {
 					if recovered := recover(); recovered != nil {
-						out := asm.Disassemble(prog, asm.WithDebug())
+						out, e := asm.Disassemble(prog, asm.WithDebug())
 
-						fmt.Println(out)
+						if e == nil {
+							fmt.Println(out)
+						}
+
 						t.Error(recovered)
 					}
 				}()
@@ -139,7 +145,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}
 
 				options := []vm.EnvironmentOption{
-					vm.WithFunctions(c.Functions()),
+					vm.WithFunctions(std),
 				}
 				options = append(options, opts...)
 
