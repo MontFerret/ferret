@@ -2,6 +2,7 @@ package asm
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )

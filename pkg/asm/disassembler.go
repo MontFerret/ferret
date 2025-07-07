@@ -55,14 +55,18 @@ func collectLabels(bytecode []vm.Instruction, names map[int]string) map[int]stri
 	labels := make(map[int]string)
 	counter := 0
 
+	// Iterate through the labels in the program to initialize the labels map
+	for target, name := range names {
+		labels[target] = fmt.Sprintf("@%s", name)
+	}
+
+	// Collect unmarked jump targets
 	for _, instr := range bytecode {
 		switch instr.Opcode {
 		case vm.OpJump, vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpIterNext, vm.OpIterSkip, vm.OpIterLimit:
 			target := int(instr.Operands[0])
-			if name, ok := names[target]; ok && name != "" {
-				labels[target] = fmt.Sprintf("@%s", name)
-			} else if _,
-				ok := labels[target]; !ok {
+
+			if name, ok := names[target]; !ok || name == "" {
 				labels[target] = fmt.Sprintf("@L%d", counter)
 				counter++
 			}

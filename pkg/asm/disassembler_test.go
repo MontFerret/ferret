@@ -1,9 +1,10 @@
 package asm
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
 	"reflect"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 func TestDisassemble(t *testing.T) {

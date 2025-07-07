@@ -118,6 +118,10 @@ func (st *SymbolTable) BindParam(name string) vm.Operand {
 }
 
 func (st *SymbolTable) BindFunction(name string, args int) {
+	if st.functions == nil {
+		st.functions = make(map[string]int)
+	}
+
 	if currArgs, exists := st.functions[name]; exists {
 		// we need to ensure that the number of arguments is not greater than the current one
 		// if it is not, we will not override the current one

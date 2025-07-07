@@ -1,8 +1,9 @@
 package vm_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 func TestForWhileDistinct(t *testing.T) {

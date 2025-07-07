@@ -2,9 +2,10 @@ package compiler_test
 
 import (
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/asm"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/asm"
 
 	"github.com/smartystreets/goconvey/convey"
 
