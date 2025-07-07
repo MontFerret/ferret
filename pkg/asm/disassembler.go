@@ -9,7 +9,11 @@ import (
 )
 
 // Disassemble returns a human-readable disassembly of the given program.
-func Disassemble(p *vm.Program, options ...DisassemblerOption) string {
+func Disassemble(p *vm.Program, options ...DisassemblerOption) (string, error) {
+	if p == nil {
+		return "", ErrInvalidProgram
+	}
+
 	newDisassemblerOptions(options...)
 
 	labels := collectLabels(p.Bytecode, p.Labels)
@@ -47,7 +51,7 @@ func Disassemble(p *vm.Program, options ...DisassemblerOption) string {
 
 	_ = w.Flush()
 
-	return buf.String()
+	return buf.String(), nil
 }
 
 // collectLabels identifies jump targets and assigns symbolic labels to them.
@@ -86,26 +90,37 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 	opcode := instr.Opcode
 
 	switch opcode {
+	// Op Jmp
 	case vm.OpJump:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels))
 
+	// Op Jmp R
 	case vm.OpJumpIfTrue, vm.OpJumpIfFalse, vm.OpIterNext:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]))
 
+	// Op Jmp R, R
 	case vm.OpIterSkip, vm.OpIterLimit:
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]), formatOperand(ops[2]))
 
+	// Op R
 	case vm.OpReturn:
-		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatArgument(ops[0]))
+		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
 
-	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpPush, vm.OpMove:
+	// Op R Arg
+	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatArgument(ops[1]))
 
+	// Op R C
 	case vm.OpLoadConst:
 		cIdx := ops[1].Constant()
 		comment := constValue(p, cIdx)
 		out = fmt.Sprintf("%d: %s %s %s ; %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), comment)
 
+	// Op R R
+	case vm.OpIter, vm.OpMove, vm.OpPush:
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
+
+	// Op R R R
 	default:
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))
 	}
