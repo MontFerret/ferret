@@ -137,6 +137,9 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	// Finalize the current loop iteration
 	loop.EmitFinalization(c.ctx.Emitter)
 
+	c.ctx.Symbols.ExitScope()
+	c.ctx.Symbols.EnterScope()
+
 	// Replace the loop source with sorted results
 	c.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, sorter)
 
@@ -147,10 +150,14 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	if loop.Kind != core.ForInLoop {
 		// We switched from a ForWhileLoop to a ForInLoop because the underlying data is Iterable now.
 		loop.Kind = core.ForInLoop
-		loop.ValueName = loop.KeyName
-		loop.Value = loop.Key
-		loop.Key = vm.NoopOperand
-		loop.KeyName = ""
+	}
+
+	if loop.KeyName != "" {
+		loop.DeclareValueVar(loop.KeyName, c.ctx.Symbols)
+	}
+
+	if loop.ValueName != "" {
+		loop.DeclareValueVar(loop.ValueName, c.ctx.Symbols)
 	}
 
 	// Reinitialize the loop to iterate over sorted data
