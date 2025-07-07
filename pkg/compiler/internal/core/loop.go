@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/MontFerret/ferret/pkg/vm"
+	"strconv"
 )
 
 type LoopType int
@@ -65,10 +66,11 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 	}
 }
 
-func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
-	l.StartLabel = emitter.NewLabel("loop.start")
-	l.JumpLabel = emitter.NewLabel("loop.jump")
-	l.EndLabel = emitter.NewLabel("loop.end")
+func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, depth int) {
+	name := strconv.Itoa(depth)
+	l.StartLabel = emitter.NewLabel("loop", name, "start")
+	l.JumpLabel = emitter.NewLabel("loop", name, "jump")
+	l.EndLabel = emitter.NewLabel("loop", name, "end")
 
 	emitter.MarkLabel(l.StartLabel)
 

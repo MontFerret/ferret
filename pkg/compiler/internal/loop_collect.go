@@ -1,12 +1,11 @@
 package internal
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 type LoopCollectCompiler struct {
@@ -62,11 +61,11 @@ func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggr
 	if projectionVarName != "" {
 		// Now we need to expand group variables from the dataset
 		loop.DeclareValueVar(projectionVarName, c.ctx.Symbols)
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 		loop.EmitKey(kv.Value, c.ctx.Emitter)
 	} else {
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 		loop.EmitKey(kv.Key, c.ctx.Emitter)
 	}
 

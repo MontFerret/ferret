@@ -154,5 +154,5 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	}
 
 	// Reinitialize the loop to iterate over sorted data
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 }

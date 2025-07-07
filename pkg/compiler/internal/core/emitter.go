@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/MontFerret/ferret/pkg/vm"
 )
@@ -49,7 +50,11 @@ func (e *Emitter) NewLabel(name ...string) Label {
 	var labelName string
 
 	if len(name) > 0 {
-		labelName = name[0]
+		if len(name) == 1 {
+			labelName = name[0]
+		} else {
+			labelName = strings.Join(name, ".")
+		}
 	}
 
 	return Label{

@@ -1,12 +1,11 @@
 package internal
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 type LoopCompiler struct {
@@ -95,7 +94,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols)
 	}
 
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	if !loop.Allocate {
 		// If the current loop must push distinct items, we must patch the dest dataset

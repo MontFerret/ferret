@@ -33,7 +33,7 @@ func (c *LoopCollectCompiler) compileGroupedAggregation(ctx fql.ICollectAggregat
 	// Nested scope for aggregators
 	c.ctx.Symbols.EnterScope()
 	loop.DeclareValueVar(parentLoop.ValueName, c.ctx.Symbols)
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	// Add value selectors to the accumulators
 	argsPkg := c.compileAggregationFuncArgs(selectors, accumulator)
@@ -79,7 +79,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(ctx fql.ICollectAggregato
 	loop.Dst = parentLoop.Dst
 	loop.Allocate = parentLoop.Allocate
 	c.ctx.Loops.Push(loop)
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	// We just need to take the grouped values and call aggregation functions using them as args
 	c.compileAggregationFuncCall(selectors, aggregator, argsPkg)

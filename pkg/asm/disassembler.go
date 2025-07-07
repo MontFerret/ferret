@@ -86,28 +86,25 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 	opcode := instr.Opcode
 
 	switch opcode {
-	case vm.OpLoadConst:
-		cIdx := ops[1].Constant()
-		comment := constValue(p, cIdx)
-		out = fmt.Sprintf("%d: %s R%d C%d ; %s", ip, opcode, ops[0], cIdx, comment)
-
-	case vm.OpMove:
-		out = fmt.Sprintf("%d: %s R%d R%d", ip, opcode, ops[0], ops[1])
-
-	case vm.OpAdd:
-		out = fmt.Sprintf("%d: %s R%d R%d R%d", ip, opcode, ops[0], ops[1], ops[2])
-
 	case vm.OpJump:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels))
 
 	case vm.OpJumpIfTrue, vm.OpJumpIfFalse, vm.OpIterNext:
-		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), ops[1])
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]))
 
 	case vm.OpIterSkip, vm.OpIterLimit:
-		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), ops[1], ops[2])
+		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]), formatOperand(ops[2]))
 
 	case vm.OpReturn:
-		out = fmt.Sprintf("%d: %s R%d", ip, opcode, ops[0])
+		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatArgument(ops[0]))
+
+	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpPush, vm.OpMove:
+		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatArgument(ops[1]))
+
+	case vm.OpLoadConst:
+		cIdx := ops[1].Constant()
+		comment := constValue(p, cIdx)
+		out = fmt.Sprintf("%d: %s %s %s ; %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), comment)
 
 	default:
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), formatOperand(ops[2]))

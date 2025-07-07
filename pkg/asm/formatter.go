@@ -67,3 +67,7 @@ func formatOperand(op vm.Operand) string {
 
 	return fmt.Sprintf("C%d", op.Constant())
 }
+
+func formatArgument(op vm.Operand) string {
+	return fmt.Sprintf("%d", op.Register())
+}

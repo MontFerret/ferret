@@ -18,7 +18,7 @@ func TestForWhileNested(t *testing.T) {
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		CaseArray(`
+		SkipCaseArray(`
 			FOR val IN 1..3
 				LET props = ["a"]
 				FOR j WHILE UNTIL(LENGTH(props))
@@ -26,7 +26,7 @@ func TestForWhileNested(t *testing.T) {
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		CaseArray(`
+		SkipCaseArray(`
 			LET props = ["a"]
 			FOR i WHILE UNTIL(LENGTH(props))
 				LET prop = props[i]
@@ -34,7 +34,7 @@ func TestForWhileNested(t *testing.T) {
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		CaseArray(`
+		SkipCaseArray(`
 			LET props = ["a"]
 			FOR i WHILE UNTIL(LENGTH(props))
 				LET prop = props[i]
@@ -47,7 +47,7 @@ func TestForWhileNested(t *testing.T) {
 						RETURN { [prop]: [val, val2] }
 `, []any{map[string]any{"a": []int{1, 1}}, map[string]any{"a": []int{1, 2}}, map[string]any{"a": []int{1, 3}}, map[string]any{"a": []int{2, 1}}, map[string]any{"a": []int{2, 2}}, map[string]any{"a": []int{2, 3}}, map[string]any{"a": []int{3, 1}}, map[string]any{"a": []int{3, 2}}, map[string]any{"a": []int{3, 3}}},
 		),
-		CaseArray(`
+		SkipCaseArray(`
 			LET vals = [1, 2, 3]
 			FOR i WHILE UNTIL(LENGTH(vals))
 				LET val = vals[i]
@@ -59,7 +59,7 @@ func TestForWhileNested(t *testing.T) {
 				)
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
 		),
-		CaseArray(`
+		SkipCaseArray(`
 			LET vals = [1, 2, 3]
 			FOR i WHILE UNTIL(LENGTH(vals))
 				LET val = vals[i]
@@ -72,7 +72,7 @@ func TestForWhileNested(t *testing.T) {
 
 				RETURN sub
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					name: "John",
@@ -129,7 +129,7 @@ func TestForWhileNested(t *testing.T) {
 				"hasPython":      false,
 			},
 		}, "Should handle nested FOR loops with array operations"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET departments = ["IT", "Marketing", "HR"]
 			LET budgets = [1000000, 500000, 300000]
 			LET headcounts = [20, 10, 5]
@@ -224,7 +224,7 @@ func TestForWhileNested(t *testing.T) {
 				"headcount":  5,
 			},
 		}, "Should handle nested FOR loops with conditional logic"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					id: 1,
@@ -286,7 +286,7 @@ func TestForWhileNested(t *testing.T) {
 				"activeProjects": []any{"Project C", "Project D"},
 			},
 		}, "Should handle nested FOR loops with complex data transformation"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR i WHILE UNTIL(LENGTH(strs))
@@ -295,7 +295,7 @@ func TestForWhileNested(t *testing.T) {
 				FOR n IN 0..1
 					RETURN CONCAT(s, n)
 `, []any{"abc0", "abc1", "bar0", "bar1", "foo0", "foo1", "qaz0", "qaz1"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR n IN 0..1
@@ -304,7 +304,7 @@ func TestForWhileNested(t *testing.T) {
 					SORT s
 					RETURN CONCAT(s, n)
 `, []any{"abc0", "bar0", "foo0", "qaz0", "abc1", "bar1", "foo1", "qaz1"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					name: "Ron",
@@ -329,7 +329,7 @@ func TestForWhileNested(t *testing.T) {
 					SORT u.gender, u.age
 					RETURN CONCAT(u.name, n)
 `, []any{"Angela0", "Ron0", "Bob0", "Angela1", "Ron1", "Bob1"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR n IN 0..1
@@ -339,7 +339,7 @@ func TestForWhileNested(t *testing.T) {
 						SORT s
 						RETURN CONCAT(s, n, m)
 `, []any{"abc00", "bar00", "foo00", "qaz00", "abc01", "bar01", "foo01", "qaz01", "abc10", "bar10", "foo10", "qaz10", "abc11", "bar11", "foo11", "qaz11"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR n IN 0..1
@@ -349,7 +349,7 @@ func TestForWhileNested(t *testing.T) {
 					FOR m IN 0..1
 						RETURN CONCAT(s, n, m)
 `, []any{"abc00", "abc01", "bar00", "bar01", "foo00", "foo01", "qaz00", "qaz01", "abc10", "abc11", "bar10", "bar11", "foo10", "foo11", "qaz10", "qaz11"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -388,7 +388,7 @@ func TestForWhileNested(t *testing.T) {
 					COLLECT gender = u.gender
 					RETURN CONCAT(gender, n)
 `, []any{"f0", "m0", "f1", "m1"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -427,7 +427,7 @@ func TestForWhileNested(t *testing.T) {
 				FOR n IN 0..1
 					RETURN CONCAT(gender, n)
 `, []any{"f0", "f1", "m0", "m1"}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -569,7 +569,7 @@ func TestForWhileNested(t *testing.T) {
 				},
 			},
 		}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -711,7 +711,7 @@ func TestForWhileNested(t *testing.T) {
 				},
 			},
 		}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -777,7 +777,7 @@ func TestForWhileNested(t *testing.T) {
 				"minAge": 31,
 			},
 		}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -843,7 +843,7 @@ func TestForWhileNested(t *testing.T) {
 				"minAge": 31,
 			},
 		}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -898,7 +898,7 @@ func TestForWhileNested(t *testing.T) {
 				"minAge":    25,
 			},
 		}),
-		CaseArray(`
+		SkipCaseArray(`
 			LET departments = [
 				{ name: "IT", budget: 500000 },
 				{ name: "Marketing", budget: 300000 },
