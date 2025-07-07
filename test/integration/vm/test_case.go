@@ -2,6 +2,8 @@ package vm_test
 
 import (
 	j "encoding/json"
+	"fmt"
+	"github.com/MontFerret/ferret/pkg/asm"
 	"strings"
 	"testing"
 
@@ -118,6 +120,15 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 			Convey(useCase.Expression, t, func() {
 				prog, err := c.Compile(useCase.Expression)
+
+				defer func() {
+					if recovered := recover(); recovered != nil {
+						out := asm.Disassemble(prog, asm.WithDebug())
+
+						fmt.Println(out)
+						t.Error(recovered)
+					}
+				}()
 
 				if !base.ArePtrsEqual(useCase.PreAssertion, base.ShouldBeCompilationError) {
 					So(err, ShouldBeNil)
