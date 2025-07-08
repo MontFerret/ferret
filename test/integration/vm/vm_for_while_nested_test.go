@@ -10,69 +10,80 @@ func TestForWhileNested(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseArray(`
 			LET props = ["a"]
-			FOR i WHILE UNTIL(LENGTH(props))
+			LET counter1 = [1]
+			FOR i WHILE W_POP(counter1)
 				LET prop = props[i]
 				LET vals = [1, 2, 3]
-				FOR j WHILE UNTIL(LENGTH(vals))
+				LET counter2 = [1, 2, 3]
+				FOR j WHILE W_POP(counter2)
 					LET val = vals[j]
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		SkipCaseArray(`
+		CaseArray(`
 			FOR val IN 1..3
 				LET props = ["a"]
-				FOR j WHILE UNTIL(LENGTH(props))
+				LET counter1 = [1]
+				FOR j WHILE W_POP(counter1)
 					LET prop = props[j]
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		SkipCaseArray(`
+		CaseArray(`
 			LET props = ["a"]
-			FOR i WHILE UNTIL(LENGTH(props))
+			LET counter1 = [1]
+			FOR i WHILE W_POP(counter1)
 				LET prop = props[i]
 				FOR val IN 1..3
 					RETURN {[prop]: val}
 `, []any{map[string]any{"a": 1}, map[string]any{"a": 2}, map[string]any{"a": 3}},
 		),
-		SkipCaseArray(`
+		CaseArray(`
 			LET props = ["a"]
-			FOR i WHILE UNTIL(LENGTH(props))
+			LET counter1 = [0]
+			FOR i WHILE W_POP(counter1)
 				LET prop = props[i]
 				LET vals = [1, 2, 3]
-				FOR j WHILE UNTIL(LENGTH(vals))
+				LET counter2 = [0,0,0]
+				FOR j WHILE W_POP(counter2)
 					LET val = vals[j]
 					LET vals2 = [1, 2, 3]
-					FOR k WHILE UNTIL(LENGTH(vals2))
+					LET counter3 = [0,0,0]
+					FOR k WHILE W_POP(counter3)
 						LET val2 = vals2[k]
 						RETURN { [prop]: [val, val2] }
 `, []any{map[string]any{"a": []int{1, 1}}, map[string]any{"a": []int{1, 2}}, map[string]any{"a": []int{1, 3}}, map[string]any{"a": []int{2, 1}}, map[string]any{"a": []int{2, 2}}, map[string]any{"a": []int{2, 3}}, map[string]any{"a": []int{3, 1}}, map[string]any{"a": []int{3, 2}}, map[string]any{"a": []int{3, 3}}},
 		),
-		SkipCaseArray(`
+		CaseArray(`
 			LET vals = [1, 2, 3]
-			FOR i WHILE UNTIL(LENGTH(vals))
+			LET counter1 = [0,0,0]
+			FOR i WHILE W_POP(counter1)
 				LET val = vals[i]
+				LET props = ["a", "b", "c"]
+				LET counter2 = [0,0,0]
 				RETURN (
-					LET props = ["a", "b", "c"]
-					FOR j WHILE UNTIL(LENGTH(props))
+					FOR j WHILE W_POP(counter2)
 						LET prop = props[j]
 						RETURN { [prop]: val }
 				)
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}},
 		),
-		SkipCaseArray(`
+		CaseArray(`
 			LET vals = [1, 2, 3]
-			FOR i WHILE UNTIL(LENGTH(vals))
+			LET counter1 = [0,0,0]
+			FOR i WHILE W_POP(counter1)
 				LET val = vals[i]
+				LET props = ["a", "b", "c"]
+				LET counter2 = [0,0,0]
 				LET sub = (
-					LET props = ["a", "b", "c"]
-					FOR j WHILE UNTIL(LENGTH(props))
+					FOR j WHILE W_POP(counter2)
 						LET prop = props[j]
 						RETURN { [prop]: val }
 				)
 
 				RETURN sub
 `, []any{[]any{map[string]any{"a": 1}, map[string]any{"b": 1}, map[string]any{"c": 1}}, []any{map[string]any{"a": 2}, map[string]any{"b": 2}, map[string]any{"c": 2}}, []any{map[string]any{"a": 3}, map[string]any{"b": 3}, map[string]any{"c": 3}}}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					name: "John",
@@ -89,11 +100,12 @@ func TestForWhileNested(t *testing.T) {
 			]
 
 			LET targetSkills = ["JavaScript", "Python", "Go", "Java"]
-
-			FOR i WHILE UNTIL(LENGTH(users))
+			LET counter1 = [0,0,0]
+			FOR i WHILE W_POP(counter1)
 				LET u = users[i]
+				LET counter2 = [0,0,0,0]
 				LET matchingSkills = (
-					FOR j WHILE UNTIL(LENGTH(targetSkills))
+					FOR j WHILE W_POP(counter2)
 						LET skill = targetSkills[j]
 						FILTER skill IN u.skills
 						RETURN skill
@@ -129,12 +141,13 @@ func TestForWhileNested(t *testing.T) {
 				"hasPython":      false,
 			},
 		}, "Should handle nested FOR loops with array operations"),
-		SkipCaseArray(`
+		CaseArray(`
 			LET departments = ["IT", "Marketing", "HR"]
 			LET budgets = [1000000, 500000, 300000]
 			LET headcounts = [20, 10, 5]
+			LET counter1 = [0, 0, 0]
 
-			FOR i IN 0..2
+			FOR i WHILE W_POP(counter1)
 				LET dept = departments[i]
 				LET budget = budgets[i]
 				LET headcount = headcounts[i]
@@ -224,7 +237,7 @@ func TestForWhileNested(t *testing.T) {
 				"headcount":  5,
 			},
 		}, "Should handle nested FOR loops with conditional logic"),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					id: 1,
@@ -253,11 +266,16 @@ func TestForWhileNested(t *testing.T) {
 					]
 				}
 			]
+			
+			LET end = LENGTH(users) - 1
+			LET counter1 = (FOR i IN 0..end RETURN i)
 
-			FOR i WHILE UNTIL(LENGTH(users))
+			FOR i IN 0..end
 				LET u = users[i]
+				LET end2 = LENGTH(u.projects) - 1
+				LET counter2 = (FOR i IN 0..end2 RETURN i)
 				LET activeProjects = (
-					FOR j WHILE UNTIL(LENGTH(u.projects))
+					FOR j IN 0..end2
 						LET p = u.projects[j]
 						FILTER p.status == "active"
 						RETURN p
@@ -265,11 +283,14 @@ func TestForWhileNested(t *testing.T) {
 
 				FILTER LENGTH(activeProjects) > 0
 
+				LET end3 = LENGTH(activeProjects) - 1
+				LET counter3 = (FOR i IN 0..end3 RETURN i)
+
 				RETURN {
 					user: u.name,
 					department: u.department,
 					activeProjects: (
-						FOR k WHILE UNTIL(LENGTH(activeProjects))
+						FOR k WHILE W_POP(counter3)
 							LET p = activeProjects[k]
 							RETURN p.name
 					)
@@ -286,25 +307,26 @@ func TestForWhileNested(t *testing.T) {
 				"activeProjects": []any{"Project C", "Project D"},
 			},
 		}, "Should handle nested FOR loops with complex data transformation"),
-		SkipCaseArray(`
+		CaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
-
-			FOR i WHILE UNTIL(LENGTH(strs))
+			FOR i IN 0..3
 				LET s = strs[i]
 				SORT s
+				LET s = strs[i]
 				FOR n IN 0..1
 					RETURN CONCAT(s, n)
 `, []any{"abc0", "abc1", "bar0", "bar1", "foo0", "foo1", "qaz0", "qaz1"}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR n IN 0..1
-				FOR i WHILE UNTIL(LENGTH(strs))
+				LET counter1 = [0,0,0,0]
+				FOR i WHILE W_POP(counter1)
+					SORT strs[i]
 					LET s = strs[i]
-					SORT s
 					RETURN CONCAT(s, n)
 `, []any{"abc0", "bar0", "foo0", "qaz0", "abc1", "bar1", "foo1", "qaz1"}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					name: "Ron",
@@ -324,7 +346,8 @@ func TestForWhileNested(t *testing.T) {
 			]
 
 			FOR n IN 0..1
-				FOR i WHILE UNTIL(LENGTH(users))
+				LET counter1 = [0,0,0]
+				FOR i WHILE W_POP(counter1)
 					LET u = users[i]
 					SORT u.gender, u.age
 					RETURN CONCAT(u.name, n)
@@ -334,7 +357,8 @@ func TestForWhileNested(t *testing.T) {
 
 			FOR n IN 0..1
 				FOR m IN 0..1
-					FOR i WHILE UNTIL(LENGTH(strs))
+					LET counter1 = [0,0,0,0]
+					FOR i WHILE W_POP(counter1)
 						LET s = strs[i]
 						SORT s
 						RETURN CONCAT(s, n, m)
@@ -343,7 +367,8 @@ func TestForWhileNested(t *testing.T) {
 			LET strs = ["foo", "bar", "qaz", "abc"]
 
 			FOR n IN 0..1
-				FOR i WHILE UNTIL(LENGTH(strs))
+				LET counter1 = [0,0,0,0]
+				FOR i WHILE W_POP(counter1)
 					LET s = strs[i]
 					SORT s
 					FOR m IN 0..1
@@ -383,7 +408,8 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 			FOR n IN 0..1
-				FOR i WHILE UNTIL(LENGTH(users))
+				LET counter1 = [0,0,0,0,0]
+				FOR i WHILE W_POP(counter1)
 					LET u = users[i]
 					COLLECT gender = u.gender
 					RETURN CONCAT(gender, n)
@@ -421,7 +447,8 @@ func TestForWhileNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			LET counter1 = [0,0,0,0,0]
+			FOR i WHILE W_POP(counter1)
 				LET u = users[i]
 				COLLECT gender = u.gender
 				FOR n IN 0..1
@@ -461,7 +488,8 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 			FOR n IN 0..1
-				FOR i WHILE UNTIL(LENGTH(users))
+				LET counter1 = [0,0,0,0,0]
+				FOR i WHILE W_POP(counter1)
 					LET u = users[i]
 					COLLECT gender = u.gender INTO genders
 					RETURN {
@@ -602,7 +630,8 @@ func TestForWhileNested(t *testing.T) {
 					gender: "f"
 				}
 			]
-			FOR i WHILE UNTIL(LENGTH(users))
+			LET counter1 = [0,0,0,0,0]
+			FOR i WHILE W_POP(counter1)
 				LET u = users[i]
 				COLLECT gender = u.gender INTO genders
 				FOR n IN 0..1
@@ -745,7 +774,8 @@ func TestForWhileNested(t *testing.T) {
 				}
 			]
 			FOR n IN 0..1
-				FOR i WHILE UNTIL(LENGTH(users))
+				LET counter1 = [0,0,0,0,0]
+				FOR i WHILE W_POP(counter1)
 				  LET u = users[i]
 				  COLLECT gender = u.gender
 					AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)

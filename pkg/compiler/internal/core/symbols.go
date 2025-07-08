@@ -84,6 +84,21 @@ func (st *SymbolTable) ExitScope() {
 	}
 }
 
+func (st *SymbolTable) LocalVariables() []Variable {
+	// collect all local variables in the current scope
+	locals := make([]Variable, 0)
+
+	for i := len(st.locals) - 1; i >= 0; i-- {
+		v := st.locals[i]
+
+		if v.Depth == st.scope {
+			locals = append(locals, *v)
+		}
+	}
+
+	return locals
+}
+
 func (st *SymbolTable) DeclareLocal(name string) vm.Operand {
 	return st.DeclareLocalTyped(name, TypeUnknown)
 }

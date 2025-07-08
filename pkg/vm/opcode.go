@@ -13,11 +13,14 @@ const (
 	OpMove // Move a value from register A to register B
 
 	// Loading Operations
-	OpLoadNone  // Set None value to a register
-	OpLoadBool  // Set a boolean value to a register
-	OpLoadZero  // Set a zero value to a register
-	OpLoadConst // Load a constant to a register or a global variable
-	OpLoadParam // Load a parameter to a register A
+	OpLoadNone   // Set None value to a register
+	OpLoadBool   // Set a boolean value to a register
+	OpLoadZero   // Set a zero value to a register
+	OpLoadConst  // Load a constant to a register or a global variable
+	OpLoadParam  // Load a parameter to a register A
+	OpLoadArray  // Create an array
+	OpLoadObject // Create an object
+	OpLoadRange  // Create a range
 
 	// Global Variable Operations
 	OpLoadGlobal  // Load a global variable to register A
@@ -83,11 +86,6 @@ const (
 	OpProtectedCall3
 	OpCall4
 	OpProtectedCall4
-
-	// Collection Creation
-	OpList  // Create an array
-	OpMap   // Create an object
-	OpRange // Create a range
 
 	// Dataset Operations
 	OpDataSet
@@ -157,6 +155,14 @@ func (op Opcode) String() string {
 		return "LOADPR"
 	case OpLoadPropertyOptional:
 		return "LOADPRO"
+
+		// Collection Creation
+	case OpLoadArray:
+		return "LOADARR"
+	case OpLoadObject:
+		return "LOADOBJ"
+	case OpLoadRange:
+		return "LOADRANGE"
 
 	// Arithmetic Operations
 	case OpAdd:
@@ -251,14 +257,6 @@ func (op Opcode) String() string {
 		return "CALL4"
 	case OpProtectedCall4:
 		return "PCALL4"
-
-	// Collection Creation
-	case OpList:
-		return "LIST"
-	case OpMap:
-		return "MAP"
-	case OpRange:
-		return "RANGE"
 
 	// Dataset Operations
 	case OpDataSet:

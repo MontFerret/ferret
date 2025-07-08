@@ -165,7 +165,7 @@ func (c *LoopCollectCompiler) compileGrouping(ctx fql.ICollectGroupingContext) (
 		}
 
 		kvKeyReg = c.ctx.Registers.Allocate(core.Temp)
-		c.ctx.Emitter.EmitAs(vm.OpList, kvKeyReg, selectorRegs)
+		c.ctx.Emitter.EmitAs(vm.OpLoadArray, kvKeyReg, selectorRegs)
 		c.ctx.Registers.FreeSequence(selectorRegs)
 	} else {
 		kvKeyReg = c.ctx.ExprCompiler.Compile(selectors[0].Expression())
@@ -239,7 +239,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kv 
 		}
 
 		c.ctx.Emitter.EmitAB(vm.OpMove, seq[1], kv.Value) // Map value
-		c.ctx.Emitter.EmitAs(vm.OpMap, kv.Value, seq)
+		c.ctx.Emitter.EmitAs(vm.OpLoadObject, kv.Value, seq)
 
 		c.ctx.Registers.FreeSequence(seq)
 	} else {
@@ -259,7 +259,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kv 
 			c.ctx.Emitter.EmitAB(vm.OpMove, seq[j+1], variable)
 		}
 
-		c.ctx.Emitter.EmitAs(vm.OpMap, kv.Value, seq)
+		c.ctx.Emitter.EmitAs(vm.OpLoadObject, kv.Value, seq)
 		c.ctx.Registers.FreeSequence(seq)
 	}
 

@@ -17,7 +17,6 @@ func NewVisitor(src string) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.Ctx = internal.NewCompilerContext()
-
 	v.Src = src
 
 	return v

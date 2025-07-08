@@ -73,7 +73,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(ctx fql.ICollectAggregato
 
 	// NewForLoop new loop with 1 iteration only
 	c.ctx.Symbols.EnterScope()
-	c.ctx.Emitter.EmitABC(vm.OpRange, parentLoop.Src, zero, zero)
+	c.ctx.Emitter.EmitABC(vm.OpLoadRange, parentLoop.Src, zero, zero)
 	loop := c.ctx.Loops.NewForInLoop(core.TemporalLoop, parentLoop.Distinct)
 	loop.Src = parentLoop.Src
 	loop.Dst = parentLoop.Dst

@@ -3,6 +3,7 @@ package vm_test
 import (
 	"context"
 	"fmt"
+	"github.com/MontFerret/ferret/pkg/stdlib"
 	"regexp"
 	"strconv"
 	"strings"
@@ -183,7 +184,7 @@ func TestMemberReservedWords(t *testing.T) {
 
 				So(err, ShouldBeNil)
 
-				out, err := base.Exec(prog, true, vm.WithFunctions(c.Functions()))
+				out, err := base.Exec(prog, true, vm.WithFunctions(stdlib.New().Functions()))
 
 				So(err, ShouldBeNil)
 				So(out, ShouldEqual, expected.String())

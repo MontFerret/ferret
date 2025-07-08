@@ -153,7 +153,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpList:
+		case OpLoadArray:
 			var size int
 
 			if src1 > 0 {
@@ -169,7 +169,7 @@ loop:
 			}
 
 			reg[dst] = arr
-		case OpMap:
+		case OpLoadObject:
 			obj := runtime.NewObject()
 			var args int
 
@@ -380,7 +380,7 @@ loop:
 					}
 				}
 			}
-		case OpRange:
+		case OpLoadRange:
 			res, err := internal.ToRange(ctx, reg[src1], reg[src2])
 
 			if err == nil {

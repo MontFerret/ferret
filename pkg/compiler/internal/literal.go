@@ -137,7 +137,7 @@ func (lc *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.
 	// Allocate destination register for the array
 	destReg := lc.ctx.Registers.Allocate(core.Temp)
 	seq := lc.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
-	lc.ctx.Emitter.EmitList(destReg, seq)
+	lc.ctx.Emitter.EmitArray(destReg, seq)
 
 	return destReg
 }
@@ -179,7 +179,7 @@ func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) v
 		}
 	}
 
-	lc.ctx.Emitter.EmitMap(dst, seq)
+	lc.ctx.Emitter.EmitObject(dst, seq)
 
 	return dst
 }

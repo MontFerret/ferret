@@ -15,7 +15,7 @@ func TestMember(t *testing.T) {
 			I(vm.OpMove, 4, C(3)),
 			I(vm.OpLoadConst, 5, C(4)),
 			I(vm.OpMove, 6, C(5)),
-			I(vm.OpList, 7, R(2), R(4), R(6)),
+			I(vm.OpLoadArray, 7, R(2), R(4), R(6)),
 			I(vm.OpMove, 0, 7),
 			I(vm.OpReturn, 0, 7),
 		}),

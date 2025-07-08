@@ -11,12 +11,20 @@ import (
 func TestForSort(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseArray(`
-LET strs = ["foo", "bar", "qaz", "abc"]
-
-FOR s IN strs
-	SORT s
-	RETURN s
+			LET strs = ["foo", "bar", "qaz", "abc"]
+			
+			FOR s IN strs
+				SORT s
+				RETURN s
 `, []any{"abc", "bar", "foo", "qaz"}, "Should sort strings"),
+		CaseArray(`
+			LET strs = ["foo", "bar", "qaz", "abc"]
+			FOR i IN 0..3
+				LET s = strs[i]
+				LEt s2 = CONCAT(s, "x")
+				SORT s
+				RETURN CONCAT(s, s2)
+`, []any{"abcabcx", "barbarx", "foofoox", "qazqazx"}, "Should keep scope of variables in FOR loop and sort strings"),
 		CaseArray(`
 LET users = [
 				{

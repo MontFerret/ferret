@@ -84,24 +84,24 @@ func (e *Emitter) EmitBoolean(dst vm.Operand, value bool) {
 
 // ─── Data Structures ──────────────────────────────────────────────────────
 
-func (e *Emitter) EmitList(dst vm.Operand, seq RegisterSequence) {
+func (e *Emitter) EmitArray(dst vm.Operand, seq RegisterSequence) {
 	if len(seq) > 0 {
-		e.EmitAs(vm.OpList, dst, seq)
+		e.EmitAs(vm.OpLoadArray, dst, seq)
 	} else {
-		e.EmitA(vm.OpList, dst)
+		e.EmitA(vm.OpLoadArray, dst)
 	}
 }
 
-func (e *Emitter) EmitMap(dst vm.Operand, seq RegisterSequence) {
+func (e *Emitter) EmitObject(dst vm.Operand, seq RegisterSequence) {
 	if len(seq) > 0 {
-		e.EmitAs(vm.OpMap, dst, seq)
+		e.EmitAs(vm.OpLoadObject, dst, seq)
 	} else {
-		e.EmitA(vm.OpMap, dst)
+		e.EmitA(vm.OpLoadObject, dst)
 	}
 }
 
 func (e *Emitter) EmitRange(dst, start, end vm.Operand) {
-	e.EmitABC(vm.OpRange, dst, start, end)
+	e.EmitABC(vm.OpLoadRange, dst, start, end)
 }
 
 func (e *Emitter) EmitLoadIndex(dst, arr, idx vm.Operand) {
