@@ -134,7 +134,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	// We need to pack the current scope before emitting the KeyValuePair
 	// In case the variables are used after SORT clause
 	// We need to restore them after the loop is reinitialized
-	scope := c.packScope(kv)
+	scope := c.storeScope(kv)
 
 	// Add the KeyValuePair to the dataset
 	c.ctx.Emitter.EmitABC(vm.OpPushKV, sorter, kv.Key, kv.Value)
@@ -164,37 +164,28 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	// Unpack the scope to restore local variables
-	c.unpackScope(loop, scope)
+	c.restoreScope(loop, scope)
 }
 
-// packScope collects all local variables in the current scope, packs them into an array, and assigns it to the provided KV.
-func (c *LoopSortCompiler) packScope(kv *core.KV) []core.Variable {
+// storeScope collects all local variables in the current scope, packs them into an array, and assigns it to the provided KV.
+func (c *LoopSortCompiler) storeScope(kv *core.KV) *core.ScopeProjection {
 	// No state to reset in this compiler
 	vars := c.ctx.Symbols.LocalVariables()
 
 	if len(vars) == 0 {
-		return []core.Variable{}
+		return nil
 	}
 
-	reg := c.ctx.Registers.Allocate(core.Temp)
-	args := c.ctx.Registers.AllocateSequence(len(vars))
+	sp := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, vars)
+	sp.EmitAsArray(kv.Value)
 
-	for i, v := range vars {
-		c.ctx.Emitter.EmitAB(vm.OpMove, args[i], v.Register)
-	}
-
-	c.ctx.Emitter.EmitArray(reg, args)
-	c.ctx.Emitter.EmitMove(kv.Value, reg)
-	c.ctx.Registers.Free(reg)
-	c.ctx.Registers.FreeSequence(args)
-
-	return vars
+	return sp
 }
 
-// unpackScope processes a loop's scope, declares key and value variables, and assigns them based on the scope array.
-func (c *LoopSortCompiler) unpackScope(loop *core.Loop, scope []core.Variable) {
+// restoreScope processes a loop's scope, declares key and value variables, and assigns them based on the scope array.
+func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjection) {
 	// scope is not packed
-	if len(scope) == 0 {
+	if scope == nil {
 		if loop.KeyName != "" {
 			loop.DeclareKeyVar(loop.KeyName, c.ctx.Symbols)
 		}
@@ -206,19 +197,18 @@ func (c *LoopSortCompiler) unpackScope(loop *core.Loop, scope []core.Variable) {
 		return
 	}
 
-	idx := c.ctx.Registers.Allocate(core.Temp)
 	value := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitIterValue(value, loop.Iterator)
+	scope.RestoreFromArray(value)
+	c.ctx.Registers.Free(value)
 
-	for i, v := range scope {
-		loadConstantTo(c.ctx, runtime.Int(i), idx)
-		variable := c.ctx.Symbols.DeclareLocal(v.Name)
-		c.ctx.Emitter.EmitABC(vm.OpLoadIndex, variable, value, idx)
+	if loop.KeyName != "" {
+		found, _ := c.ctx.Symbols.Lookup(loop.KeyName)
+		loop.Key = found.Register
+	}
 
-		if v.Name == loop.ValueName {
-			loop.Value = variable
-		} else if v.Name == loop.KeyName {
-			loop.Key = variable
-		}
+	if loop.ValueName != "" {
+		found, _ := c.ctx.Symbols.Lookup(loop.ValueName)
+		loop.Value = found.Register
 	}
 }

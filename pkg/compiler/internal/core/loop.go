@@ -1,8 +1,9 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
 	"strconv"
+
+	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 type LoopType int

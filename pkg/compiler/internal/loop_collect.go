@@ -1,11 +1,12 @@
 package internal
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/antlr4-go/antlr/v4"
 )
 
 type LoopCollectCompiler struct {
@@ -227,21 +228,9 @@ func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICol
 
 func (c *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kv *core.KV, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
 	if keeper == nil {
-		seq := c.ctx.Registers.AllocateSequence(2) // Key and Value for Map
-
-		// TODO: Review this. It's quite a questionable ArrangoDB feature of wrapping group items by a nested object
-		// We will keep it for now for backward compatibility.
-
-		if loop.Kind == core.ForInLoop {
-			loadConstantTo(c.ctx, runtime.String(loop.ValueName), seq[0]) // Map key
-		} else {
-			loadConstantTo(c.ctx, runtime.String(loop.KeyName), seq[0]) // Map key
-		}
-
-		c.ctx.Emitter.EmitAB(vm.OpMove, seq[1], kv.Value) // Map value
-		c.ctx.Emitter.EmitAs(vm.OpLoadObject, kv.Value, seq)
-
-		c.ctx.Registers.FreeSequence(seq)
+		variables := c.ctx.Symbols.LocalVariables()
+		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, variables)
+		scope.EmitAsObject(kv.Value)
 	} else {
 		variables := keeper.AllIdentifier()
 		seq := c.ctx.Registers.AllocateSequence(len(variables) * 2)

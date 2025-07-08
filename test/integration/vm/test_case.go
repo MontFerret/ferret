@@ -3,9 +3,10 @@ package vm_test
 import (
 	j "encoding/json"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/asm"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/asm"
 
 	"github.com/MontFerret/ferret/test/integration/base"
 

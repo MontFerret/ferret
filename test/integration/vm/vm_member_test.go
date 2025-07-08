@@ -3,11 +3,12 @@ package vm_test
 import (
 	"context"
 	"fmt"
-	"github.com/MontFerret/ferret/pkg/stdlib"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/MontFerret/ferret/pkg/stdlib"
 
 	"github.com/MontFerret/ferret/test/integration/base"
 
