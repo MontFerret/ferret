@@ -40,10 +40,8 @@ func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggr
 		return core.NewKV(vm.NoopOperand, vm.NoopOperand), nil
 	}
 
-	loop := c.ctx.Loops.Current()
-
 	kv, groupSelectors := c.initializeCollector(grouping)
-	projectionVarName, collectorType := c.initializeProjection(ctx, loop, kv, counter, grouping != nil)
+	projectionVarName, collectorType := c.initializeProjection(ctx, kv, counter, grouping != nil)
 
 	// If we use aggregators, we need to collect group items by key
 	if aggregation && collectorType != core.CollectorTypeKeyGroup {
@@ -51,6 +49,7 @@ func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggr
 		collectorType = core.CollectorTypeKeyGroup
 	}
 
+	loop := c.ctx.Loops.Current()
 	c.finalizeCollector(loop, collectorType, kv)
 
 	// If we are using a projection, we need to ensure the loop is set to ForInLoop
@@ -115,13 +114,13 @@ func (c *LoopCollectCompiler) finalizeCollector(loop *core.Loop, collectorType c
 
 // initializeProjection handles the projection setup for group variables and counters.
 // Returns the projection variable name and the appropriate collector type.
-func (c *LoopCollectCompiler) initializeProjection(ctx fql.ICollectClauseContext, loop *core.Loop, kv *core.KV, counter fql.ICollectCounterContext, hasGrouping bool) (string, core.CollectorType) {
+func (c *LoopCollectCompiler) initializeProjection(ctx fql.ICollectClauseContext, kv *core.KV, counter fql.ICollectCounterContext, hasGrouping bool) (string, core.CollectorType) {
 	projectionVariableName := ""
 	collectorType := core.CollectorTypeKey
 
 	// Handle group variable projection
 	if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
-		projectionVariableName = c.compileGroupVariableProjection(loop, kv, groupVar)
+		projectionVariableName = c.compileGroupVariableProjection(kv, groupVar)
 		collectorType = core.CollectorTypeKeyGroup
 		return projectionVariableName, collectorType
 	}
@@ -176,15 +175,15 @@ func (c *LoopCollectCompiler) compileGrouping(ctx fql.ICollectGroupingContext) (
 }
 
 // compileGroupVariableProjection processes group variable projections (both default and custom).
-func (c *LoopCollectCompiler) compileGroupVariableProjection(loop *core.Loop, kv *core.KV, groupVar fql.ICollectGroupVariableContext) string {
+func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupVar fql.ICollectGroupVariableContext) string {
 	// Handle default projection (identifier)
 	if identifier := groupVar.Identifier(); identifier != nil {
-		return c.compileDefaultGroupProjection(loop, kv, identifier, groupVar.CollectGroupVariableKeeper())
+		return c.compileDefaultGroupProjection(kv, identifier, groupVar.CollectGroupVariableKeeper())
 	}
 
 	// Handle custom projection (selector expression)
 	if selector := groupVar.CollectSelector(); selector != nil {
-		return c.compileCustomGroupProjection(loop, kv, selector)
+		return c.compileCustomGroupProjection(kv, selector)
 	}
 
 	return ""
@@ -226,7 +225,7 @@ func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICol
 	}
 }
 
-func (c *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kv *core.KV, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
 	if keeper == nil {
 		variables := c.ctx.Symbols.LocalVariables()
 		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, variables)
@@ -255,7 +254,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(loop *core.Loop, kv 
 	return identifier.GetText()
 }
 
-func (c *LoopCollectCompiler) compileCustomGroupProjection(_ *core.Loop, kv *core.KV, selector fql.ICollectSelectorContext) string {
+func (c *LoopCollectCompiler) compileCustomGroupProjection(kv *core.KV, selector fql.ICollectSelectorContext) string {
 	selectorReg := c.ctx.ExprCompiler.Compile(selector.Expression())
 	c.ctx.Emitter.EmitMove(kv.Value, selectorReg)
 	c.ctx.Registers.Free(selectorReg)

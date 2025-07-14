@@ -513,5 +513,60 @@ FOR u IN users
 				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
+		CaseArray(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR i IN 0..4
+			  LET u = users[i]
+			  COLLECT gender = u.gender
+				AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
+
+			  RETURN {
+				gender: gender,
+				minAge,
+				maxAge
+			  }
+`, []any{
+			map[string]any{
+				"gender": "f",
+				"maxAge": 45,
+				"minAge": 25,
+			},
+			map[string]any{
+				"gender": "m",
+				"maxAge": 69,
+				"minAge": 31,
+			},
+		}),
 	})
 }

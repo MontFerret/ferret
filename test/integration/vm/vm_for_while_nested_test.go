@@ -610,7 +610,7 @@ func TestForWhileNested(t *testing.T) {
 				},
 			},
 		}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -652,40 +652,45 @@ func TestForWhileNested(t *testing.T) {
 						gender: CONCAT(gender, n),
 						values: genders
 					}
-`, []any{map[string]any{
-			"gender": "f0",
-			"values": []map[string]any{
-				{
-					"i": map[string]any{
-						"active":  true,
-						"age":     25,
-						"gender":  "f",
-						"married": false,
-					},
-				},
-				{
-					"i": map[string]any{
-						"active":  true,
-						"age":     45,
-						"gender":  "f",
-						"married": true,
-					},
-				},
-			},
-		},
+`, []any{
 			map[string]any{
-				"gender": "f1",
-				"values": []map[string]any{
-					{
-						"i": map[string]any{
+				"gender": "f0",
+				"values": []any{
+					map[string]any{
+						"i": 1,
+						"u": map[string]any{
 							"active":  true,
 							"age":     25,
 							"gender":  "f",
 							"married": false,
 						},
 					},
-					{
-						"i": map[string]any{
+					map[string]any{
+						"i": 4,
+						"u": map[string]any{
+							"active":  true,
+							"age":     45,
+							"gender":  "f",
+							"married": true,
+						},
+					},
+				},
+			},
+			map[string]any{
+				"gender": "f1",
+				"values": []any{
+					map[string]any{
+						"i": 1,
+						"u": map[string]any{
+							"active":  true,
+							"age":     25,
+							"gender":  "f",
+							"married": false,
+						},
+					},
+					map[string]any{
+						"i": 4,
+						"u": map[string]any{
 							"active":  true,
 							"age":     45,
 							"gender":  "f",
@@ -696,25 +701,28 @@ func TestForWhileNested(t *testing.T) {
 			},
 			map[string]any{
 				"gender": "m0",
-				"values": []map[string]any{
-					{
-						"i": map[string]any{
+				"values": []any{
+					map[string]any{
+						"i": 0,
+						"u": map[string]any{
 							"active":  true,
 							"age":     31,
 							"gender":  "m",
 							"married": true,
 						},
 					},
-					{
-						"i": map[string]any{
+					map[string]any{
+						"i": 2,
+						"u": map[string]any{
 							"active":  true,
 							"age":     36,
 							"gender":  "m",
 							"married": false,
 						},
 					},
-					{
-						"i": map[string]any{
+					map[string]any{
+						"i": 3,
+						"u": map[string]any{
 							"active":  false,
 							"age":     69,
 							"gender":  "m",
@@ -725,25 +733,28 @@ func TestForWhileNested(t *testing.T) {
 			},
 			map[string]any{
 				"gender": "m1",
-				"values": []map[string]any{
-					{
-						"i": map[string]any{
+				"values": []any{
+					map[string]any{
+						"i": 0,
+						"u": map[string]any{
 							"active":  true,
 							"age":     31,
 							"gender":  "m",
 							"married": true,
 						},
 					},
-					{
-						"i": map[string]any{
+					map[string]any{
+						"i": 2,
+						"u": map[string]any{
 							"active":  true,
 							"age":     36,
 							"gender":  "m",
 							"married": false,
 						},
 					},
-					{
-						"i": map[string]any{
+					map[string]any{
+						"i": 3,
+						"u": map[string]any{
 							"active":  false,
 							"age":     69,
 							"gender":  "m",
@@ -753,7 +764,7 @@ func TestForWhileNested(t *testing.T) {
 				},
 			},
 		}),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					active: true,
