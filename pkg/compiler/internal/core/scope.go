@@ -58,11 +58,7 @@ func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
 		sp.emitter.EmitAB(vm.OpMove, valReg, v.Register)
 	}
 
-	tmp := sp.registers.Allocate(Temp)
-	sp.emitter.EmitObject(tmp, pairs)
-	sp.emitter.EmitMove(dst, tmp)
-
-	sp.registers.Free(tmp)
+	sp.emitter.EmitObject(dst, pairs)
 	sp.registers.FreeSequence(pairs)
 }
 

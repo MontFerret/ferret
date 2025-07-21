@@ -6,7 +6,7 @@ import (
 
 func TestForCollect(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		Debug(CaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -42,7 +42,7 @@ func TestForCollect(t *testing.T) {
 			FOR i IN users
 				COLLECT gender = i.gender
 				RETURN CONCAT(gender, "0")
-`, []any{"f0", "m0"})),
+`, []any{"f0", "m0"}),
 		SkipCaseCompilationError(`
 			LET users = [
 				{
@@ -324,10 +324,10 @@ LET users = [
 				}
 			]
 			FOR i IN users
-				COLLECT gender = i.gender INTO genders
+				COLLECT gender = i.gender INTO values
 				RETURN {
 					gender,
-					values: genders
+					values
 				}
 `, []any{
 			map[string]any{

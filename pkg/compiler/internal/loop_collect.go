@@ -21,7 +21,7 @@ func NewCollectCompiler(ctx *CompilerContext) *LoopCollectCompiler {
 
 func (c *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	aggregator := ctx.CollectAggregator()
-	kv, groupSelectors := c.compileCollect(ctx, aggregator != nil)
+	collectorType, groupSelectors := c.compileCollect(ctx, aggregator != nil)
 
 	// Aggregation loop
 	if aggregator != nil {
@@ -30,20 +30,16 @@ func (c *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 
 	if len(groupSelectors) > 0 {
 		// Now we are defining new variables for the group selectors
-		c.compileGroupSelectorVariables(groupSelectors, kv, aggregator != nil)
+		c.compileGroupSelectorVariables(collectorType, groupSelectors, aggregator != nil)
 	}
 }
 
-func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggregation bool) (*core.KV, []fql.ICollectSelectorContext) {
+func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggregation bool) (core.CollectorType, []fql.ICollectSelectorContext) {
 	grouping := ctx.CollectGrouping()
 	counter := ctx.CollectCounter()
 
-	if grouping == nil && counter == nil && aggregation == false {
-		return core.NewKV(vm.NoopOperand, vm.NoopOperand), nil
-	}
-
 	// We gather keys and values for the collector.
-	kv, groupSelectors := c.initializeCollector(grouping)
+	kv, groupSelectors := c.initializeGrouping(grouping)
 	projectionVarName, collectorType := c.initializeProjection(ctx, kv, counter, grouping != nil)
 
 	// If we use aggregators, we need to collect group items by key
@@ -52,31 +48,40 @@ func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggr
 		collectorType = core.CollectorTypeKeyGroup
 	}
 
+	c.finalizeCollector(collectorType, kv)
 	loop := c.ctx.Loops.Current()
-	c.finalizeCollector(loop, collectorType, kv)
+
+	// We no longer need KV, so we free registers
+	c.ctx.Registers.Free(kv.Key)
+	c.ctx.Registers.Free(kv.Value)
 
 	// If we are using a projection, we need to ensure the loop is set to ForInLoop
 	if loop.Kind != core.ForInLoop {
 		loop.Kind = core.ForInLoop
 	}
 
+	if loop.Value == vm.NoopOperand {
+		loop.Value = c.ctx.Registers.Allocate(core.Temp)
+	}
+
+	if loop.Key == vm.NoopOperand {
+		loop.Key = c.ctx.Registers.Allocate(core.Temp)
+	}
+
 	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
 	if projectionVarName != "" {
 		// Now we need to expand group variables from the dataset
-		loop.DeclareValueVar(projectionVarName, c.ctx.Symbols)
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
-
-		loop.EmitValue(kv.Value, c.ctx.Emitter)
-	} else {
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
-		loop.EmitKey(kv.Key, c.ctx.Emitter)
+		loop.ValueName = projectionVarName
+		c.ctx.Symbols.AssignLocal(loop.ValueName, core.TypeUnknown, loop.Value)
 	}
 
-	return kv, groupSelectors
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
+
+	return collectorType, groupSelectors
 }
 
-// initializeKeyValue creates the KeyValue pair for collection, handling both grouping and value setup.
-func (c *LoopCollectCompiler) initializeCollector(grouping fql.ICollectGroupingContext) (*core.KV, []fql.ICollectSelectorContext) {
+// initializeGrouping creates the KeyValue pair for collection, handling both grouping and value setup.
+func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingContext) (*core.KV, []fql.ICollectSelectorContext) {
 	var groupSelectors []fql.ICollectSelectorContext
 
 	kv := core.NewKV(vm.NoopOperand, vm.NoopOperand)
@@ -84,18 +89,24 @@ func (c *LoopCollectCompiler) initializeCollector(grouping fql.ICollectGroupingC
 
 	// Handle grouping key if present
 	if grouping != nil {
-		keyReg, selectors := c.compileGroupKeys(grouping)
-		kv.Key = keyReg
-		groupSelectors = selectors
+		kv.Key, groupSelectors = c.compileGroupKeys(grouping)
 	}
 
 	// Setup value register and emit value from current loop
-	kv.Value = c.ctx.Registers.Allocate(core.Temp)
-
 	if loop.Kind == core.ForInLoop {
-		loop.EmitValue(kv.Value, c.ctx.Emitter)
+		if loop.Value != vm.NoopOperand {
+			kv.Value = loop.Value
+		} else {
+			kv.Value = c.ctx.Registers.Allocate(core.Temp)
+			loop.EmitValue(kv.Value, c.ctx.Emitter)
+		}
 	} else {
-		loop.EmitKey(kv.Value, c.ctx.Emitter)
+		if loop.Key != vm.NoopOperand {
+			kv.Value = loop.Key
+		} else {
+			kv.Value = c.ctx.Registers.Allocate(core.Temp)
+			loop.EmitKey(kv.Value, c.ctx.Emitter)
+		}
 	}
 
 	return kv, groupSelectors
@@ -179,7 +190,9 @@ func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupV
 	return ""
 }
 
-func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICollectSelectorContext, kv *core.KV, isAggregation bool) {
+func (c *LoopCollectCompiler) compileGroupSelectorVariables(collectorType core.CollectorType, selectors []fql.ICollectSelectorContext, isAggregation bool) {
+	loop := c.ctx.Loops.Current()
+
 	if len(selectors) > 1 {
 		variables := make([]vm.Operand, len(selectors))
 
@@ -190,11 +203,7 @@ func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICol
 				variables[i] = c.ctx.Symbols.DeclareLocal(name, core.TypeUnknown)
 			}
 
-			reg := kv.Value
-
-			if isAggregation {
-				reg = kv.Key
-			}
+			reg := c.selectGroupKey(collectorType, loop)
 
 			c.ctx.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, loadConstant(c.ctx, runtime.Int(i)))
 		}
@@ -206,12 +215,8 @@ func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICol
 	} else {
 		// Get the variable name
 		name := selectors[0].Identifier().GetText()
-		// Define a variable for each selector
-		varReg := c.ctx.Symbols.DeclareLocal(name, core.TypeUnknown)
-		reg := c.selectGroupKey(isAggregation, kv)
-
-		// If we have a single selector, we can just move the value
-		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, reg)
+		// If we have a single selector, we can just use the loops' register directly
+		c.ctx.Symbols.AssignLocal(name, core.TypeUnknown, c.selectGroupKey(collectorType, loop))
 	}
 }
 
@@ -252,24 +257,22 @@ func (c *LoopCollectCompiler) compileCustomGroupProjection(kv *core.KV, selector
 	return selector.Identifier().GetText()
 }
 
-func (c *LoopCollectCompiler) selectGroupKey(isAggregation bool, kv *core.KV) vm.Operand {
-	if isAggregation {
-		return kv.Key
+func (c *LoopCollectCompiler) selectGroupKey(collectorType core.CollectorType, loop *core.Loop) vm.Operand {
+	switch collectorType {
+	case core.CollectorTypeKeyGroup, core.CollectorTypeKeyCounter:
+		return loop.Key
+	default:
+		return loop.Value
 	}
-
-	return kv.Value
 }
 
-func (c *LoopCollectCompiler) finalizeCollector(loop *core.Loop, collectorType core.CollectorType, kv *core.KV) {
+func (c *LoopCollectCompiler) finalizeCollector(collectorType core.CollectorType, kv *core.KV) {
+	loop := c.ctx.Loops.Current()
 	// We replace DataSet initialization with Collector initialization
 	dst := loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
 	c.ctx.Emitter.EmitABC(vm.OpPushKV, dst, kv.Key, kv.Value)
 	loop.EmitFinalization(c.ctx.Emitter)
 
+	// Move the collector to the next loop source
 	c.ctx.Emitter.EmitMove(loop.Src, dst)
-
-	c.ctx.Registers.Free(loop.Value)
-	c.ctx.Registers.Free(loop.Key)
-	loop.Value = kv.Value
-	loop.Key = vm.NoopOperand
 }
