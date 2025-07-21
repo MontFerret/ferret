@@ -46,7 +46,7 @@ func (sc *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 			valC := valReg
 			valReg = sc.ctx.Registers.Allocate(core.Temp)
 
-			sc.ctx.Emitter.EmitAB(vm.OpLoadGlobal, valReg, valC)
+			sc.ctx.Emitter.EmitMove(valReg, valC)
 		}
 
 		sc.ctx.Emitter.EmitA(vm.OpReturn, valReg)
@@ -65,22 +65,19 @@ func (sc *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationC
 	src := sc.ctx.ExprCompiler.Compile(ctx.Expression())
 
 	if name != core.IgnorePseudoVariable {
-		var dest vm.Operand
-
 		if src.IsConstant() {
-			dest = sc.ctx.Symbols.DeclareGlobal(name)
-			tmp := sc.ctx.Registers.Allocate(core.Temp)
-			sc.ctx.Emitter.EmitAB(vm.OpLoadConst, tmp, src)
-			sc.ctx.Emitter.EmitAB(vm.OpStoreGlobal, dest, tmp)
+			dest := sc.ctx.Symbols.DeclareGlobal(name, core.TypeUnknown)
+			sc.ctx.Emitter.EmitAB(vm.OpLoadConst, dest, src)
+			sc.ctx.Registers.Free(src)
+
+			src = dest
 		} else if sc.ctx.Symbols.Scope() == 0 {
-			dest = sc.ctx.Symbols.DeclareGlobal(name)
-			sc.ctx.Emitter.EmitAB(vm.OpStoreGlobal, dest, src)
+			sc.ctx.Symbols.AssignGlobal(name, core.TypeUnknown, src)
 		} else {
-			dest = sc.ctx.Symbols.DeclareLocal(name)
-			sc.ctx.Emitter.EmitAB(vm.OpMove, dest, src)
+			sc.ctx.Symbols.AssignLocal(name, core.TypeUnknown, src)
 		}
 
-		return dest
+		return src
 	}
 
 	return vm.NoopOperand

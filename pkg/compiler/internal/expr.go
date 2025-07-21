@@ -377,7 +377,7 @@ func (ec *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	}
 
 	reg := ec.ctx.Registers.Allocate(core.Temp)
-	ec.ctx.Emitter.EmitLoadGlobal(reg, op)
+	ec.ctx.Emitter.EmitMove(reg, op)
 
 	return reg
 }

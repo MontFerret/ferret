@@ -63,7 +63,7 @@ func (c *LoopCollectCompiler) compileCollect(ctx fql.ICollectClauseContext, aggr
 		loop.DeclareValueVar(projectionVarName, c.ctx.Symbols)
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
-		loop.EmitKey(kv.Value, c.ctx.Emitter)
+		loop.EmitValue(kv.Value, c.ctx.Emitter)
 	} else {
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 		loop.EmitKey(kv.Key, c.ctx.Emitter)
@@ -197,7 +197,7 @@ func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICol
 			name := selector.Identifier().GetText()
 
 			if variables[i] == vm.NoopOperand {
-				variables[i] = c.ctx.Symbols.DeclareLocal(name)
+				variables[i] = c.ctx.Symbols.DeclareLocal(name, core.TypeUnknown)
 			}
 
 			reg := kv.Value
@@ -217,7 +217,7 @@ func (c *LoopCollectCompiler) compileGroupSelectorVariables(selectors []fql.ICol
 		// Get the variable name
 		name := selectors[0].Identifier().GetText()
 		// Define a variable for each selector
-		varReg := c.ctx.Symbols.DeclareLocal(name)
+		varReg := c.ctx.Symbols.DeclareLocal(name, core.TypeUnknown)
 		reg := c.selectGroupKey(isAggregation, kv)
 
 		// If we have a single selector, we can just move the value

@@ -14,6 +14,7 @@ type TestCase struct {
 	Description  string
 	Skip         bool
 	RawOutput    bool
+	DebugOutput  bool
 }
 
 func NewCase(expression string, expected any, assertion Assertion, desc ...string) TestCase {

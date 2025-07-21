@@ -51,7 +51,7 @@ func (wc *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	wc.ctx.Emitter.EmitIterNext(streamReg, end)
 
 	if filter := ctx.FilterClause(); filter != nil {
-		valReg = wc.ctx.Symbols.DeclareLocal(core.PseudoVariable)
+		valReg = wc.ctx.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
 		wc.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
 
 		cond := wc.ctx.ExprCompiler.Compile(filter.Expression())

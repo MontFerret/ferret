@@ -103,11 +103,11 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]), formatOperand(ops[2]))
 
 	// Op R
-	case vm.OpReturn:
+	case vm.OpLoadNone, vm.OpLoadZero, vm.OpCall0, vm.OpClose, vm.OpSleep, vm.OpReturn:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
 
 	// Op R Arg
-	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter:
+	case vm.OpLoadBool, vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatArgument(ops[1]))
 
 	// Op R C
@@ -117,7 +117,7 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 		out = fmt.Sprintf("%d: %s %s %s ; %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]), comment)
 
 	// Op R R
-	case vm.OpIter, vm.OpIterValue, vm.OpIterKey, vm.OpMove, vm.OpPush:
+	case vm.OpMove, vm.OpLength, vm.OpType, vm.OpCall1, vm.OpIter, vm.OpIterValue, vm.OpIterKey, vm.OpPush:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, formatOperand(ops[0]), formatOperand(ops[1]))
 
 	// Op R R R

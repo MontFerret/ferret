@@ -56,14 +56,14 @@ type Loop struct {
 func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) {
 	if l.canDeclareVar(name) {
 		l.KeyName = name
-		l.Key = st.DeclareLocal(name)
+		l.Key = st.DeclareLocal(name, TypeUnknown)
 	}
 }
 
 func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
 	if l.canDeclareVar(name) {
 		l.ValueName = name
-		l.Value = st.DeclareLocal(name)
+		l.Value = st.DeclareLocal(name, TypeUnknown)
 	}
 }
 

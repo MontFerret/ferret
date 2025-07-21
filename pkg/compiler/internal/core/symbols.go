@@ -99,31 +99,39 @@ func (st *SymbolTable) LocalVariables() []Variable {
 	return locals
 }
 
-func (st *SymbolTable) DeclareLocal(name string) vm.Operand {
-	return st.DeclareLocalTyped(name, TypeUnknown)
-}
-
-func (st *SymbolTable) DeclareLocalTyped(name string, typ ValueType) vm.Operand {
+func (st *SymbolTable) DeclareLocal(name string, typ ValueType) vm.Operand {
 	reg := st.registers.Allocate(Var)
 
-	st.locals = append(st.locals, &Variable{
-		Name:     name,
-		Kind:     SymbolVar,
-		Register: reg,
-		Depth:    st.scope,
-		Type:     typ,
-	})
+	st.AssignLocal(name, typ, reg)
 
 	return reg
 }
 
-func (st *SymbolTable) DeclareGlobal(name string) vm.Operand {
+func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) {
+	st.locals = append(st.locals, &Variable{
+		Name:     name,
+		Kind:     SymbolVar,
+		Register: op,
+		Depth:    st.scope,
+		Type:     typ,
+	})
+}
+
+func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) vm.Operand {
+	op := st.registers.Allocate(Var)
+
+	st.AssignGlobal(name, typ, op)
+
+	return op
+}
+
+func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op vm.Operand) vm.Operand {
 	if _, exists := st.globals[name]; exists {
 		panic(runtime.Error(ErrVariableNotUnique, name))
 	}
 
-	op := st.constants.Add(runtime.NewString(name))
 	st.globals[name] = op
+
 	return op
 }
 

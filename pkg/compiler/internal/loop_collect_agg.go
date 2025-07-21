@@ -164,7 +164,7 @@ func (c *LoopCollectCompiler) compileAggregationFuncCall(selectors []fql.ICollec
 		// We define the variable for the selector result in the upper scope
 		// Since this temporary scope is only for aggregators and will be closed after the aggregation
 		selectorVarName := selector.Identifier().GetText()
-		varReg := c.ctx.Symbols.DeclareLocal(selectorVarName)
+		varReg := c.ctx.Symbols.DeclareLocal(selectorVarName, core.TypeUnknown)
 		selectorVarRegs[i] = varReg
 		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
 		c.ctx.Registers.Free(result)

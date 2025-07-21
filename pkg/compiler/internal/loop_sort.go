@@ -146,6 +146,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	c.ctx.Symbols.EnterScope()
 
 	// Replace the loop source with sorted results
+	loop.Src = c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, sorter)
 
 	if !loop.Allocate {

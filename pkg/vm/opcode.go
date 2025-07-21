@@ -22,10 +22,6 @@ const (
 	OpLoadObject // Create an object
 	OpLoadRange  // Create a range
 
-	// Global Variable Operations
-	OpLoadGlobal  // Load a global variable to register A
-	OpStoreGlobal // Store a value from register A to a global variable
-
 	// Collection Access Operations
 	OpLoadIndex            // Load a value from a list to a register
 	OpLoadIndexOptional    // Load a value from a list to a register, if it exists
@@ -135,12 +131,6 @@ func (op Opcode) String() string {
 		return "LOADC"
 	case OpLoadParam:
 		return "LOADP"
-
-	// Global Variable Operations
-	case OpLoadGlobal:
-		return "LOADG"
-	case OpStoreGlobal:
-		return "STOREG"
 
 	// Collection Access Operations
 	case OpLoadIndex:

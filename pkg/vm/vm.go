@@ -11,7 +11,6 @@ import (
 type VM struct {
 	env       *Environment
 	program   *Program
-	globals   map[string]runtime.Value
 	registers []runtime.Value
 	pc        int
 }
@@ -32,8 +31,8 @@ func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (runtime.Value,
 
 	vm.env = env
 	vm.registers = make([]runtime.Value, vm.program.Registers)
-	vm.globals = make(map[string]runtime.Value)
 	vm.pc = 0
+
 	bytecode := vm.program.Bytecode
 	constants := vm.program.Constants
 	reg := vm.registers
@@ -56,10 +55,6 @@ loop:
 			reg[dst] = reg[src1]
 		case OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
-		case OpStoreGlobal:
-			vm.globals[constants[dst.Constant()].String()] = reg[src1]
-		case OpLoadGlobal:
-			reg[dst] = vm.globals[constants[src1.Constant()].String()]
 		case OpLoadParam:
 			name := constants[src1.Constant()]
 			reg[dst] = vm.env.params[name.String()]
@@ -545,7 +540,6 @@ loop:
 		}
 	}
 
-	// TODO: Change. Add 'returnReg' to the closure.
 	return vm.registers[NoopOperand], nil
 }
 

@@ -66,10 +66,6 @@ func (e *Emitter) EmitLoadConst(dst vm.Operand, constant vm.Operand) {
 	e.EmitAB(vm.OpLoadConst, dst, constant)
 }
 
-func (e *Emitter) EmitLoadGlobal(dst, constant vm.Operand) {
-	e.EmitAB(vm.OpLoadGlobal, dst, constant)
-}
-
 func (e *Emitter) EmitLoadParam(dst, constant vm.Operand) {
 	e.EmitAB(vm.OpLoadParam, dst, constant)
 }
@@ -199,14 +195,4 @@ func (e *Emitter) EmitJumpIf(cond vm.Operand, isTrue bool, label Label) {
 	}
 
 	e.EmitJumpc(vm.OpJumpIfFalse, cond, label)
-}
-
-func (e *Emitter) EmitReturnValue(val vm.Operand) {
-	if val.IsConstant() {
-		e.EmitAB(vm.OpLoadGlobal, vm.NoopOperand, val)
-	} else {
-		e.EmitAB(vm.OpMove, vm.NoopOperand, val)
-	}
-
-	e.Emit(vm.OpReturn)
 }

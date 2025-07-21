@@ -16,6 +16,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
+func Debug(useCase UseCase) UseCase {
+	useCase.DebugOutput = true
+
+	return useCase
+}
+
 func Case(expression string, expected any, desc ...string) UseCase {
 	return NewCase(expression, expected, ShouldEqual, desc...)
 }
@@ -98,6 +104,20 @@ func SkipCaseJSON(expression string, expected string, desc ...string) UseCase {
 	return Skip(CaseJSON(expression, expected, desc...))
 }
 
+func printDebugInfo(name string, uc UseCase, prog *vm.Program) {
+	fmt.Println("")
+	fmt.Println("VM Test:", name)
+	fmt.Println("Expression:", uc.Expression)
+	fmt.Println("")
+	fmt.Println("Bytecode:")
+
+	out, e := asm.Disassemble(prog, asm.WithDebug())
+
+	if e == nil {
+		fmt.Println(out)
+	}
+}
+
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...vm.EnvironmentOption) {
 	// Register standard library functions
 	std := base.Stdlib()
@@ -127,11 +147,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 				defer func() {
 					if recovered := recover(); recovered != nil {
-						out, e := asm.Disassemble(prog, asm.WithDebug())
-
-						if e == nil {
-							fmt.Println(out)
-						}
+						printDebugInfo(name, useCase, prog)
 
 						t.Error(recovered)
 					}
@@ -184,6 +200,10 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				// If no assertions are provided, we check the expected value directly
 				if len(useCase.Assertions) == 0 {
 					So(actual, ShouldEqual, expected)
+				}
+
+				if useCase.DebugOutput {
+					printDebugInfo(name, useCase, prog)
 				}
 			})
 		})
