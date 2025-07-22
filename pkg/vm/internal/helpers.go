@@ -94,6 +94,10 @@ func Sleep(ctx context.Context, duration runtime.Int) error {
 
 // Stringify converts a Value to a String. If the input is an Iterable, it concatenates
 func Stringify(ctx context.Context, input runtime.Value) (string, error) {
+	if input == nil {
+		return "", nil
+	}
+
 	switch val := input.(type) {
 	case runtime.Iterable:
 		var b bytes.Buffer

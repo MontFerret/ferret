@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -23,6 +24,12 @@ func loadConstantTo(ctx *CompilerContext, constant runtime.Value, reg vm.Operand
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(constant))
 }
 
+func loadIndex(ctx *CompilerContext, dst, arr vm.Operand, idx int) {
+	idxReg := loadConstant(ctx, runtime.NewInt(idx))
+	ctx.Emitter.EmitLoadIndex(dst, arr, idxReg)
+	ctx.Registers.Free(idxReg)
+}
+
 func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
 	if dir == nil {
 		return runtime.SortDirectionAsc
@@ -33,6 +40,19 @@ func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
 	}
 
 	return runtime.SortDirectionAsc
+}
+
+func getFunctionName(ctx fql.IFunctionCallContext) runtime.String {
+	var name string
+	funcNS := ctx.Namespace()
+
+	if funcNS != nil {
+		name += funcNS.GetText()
+	}
+
+	name += ctx.FunctionName().GetText()
+
+	return runtime.NewString(strings.ToUpper(name))
 }
 
 func copyFromNamespace(fns runtime.Functions, namespace string) error {

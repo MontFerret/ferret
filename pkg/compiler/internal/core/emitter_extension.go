@@ -62,6 +62,10 @@ func (e *Emitter) EmitClose(reg vm.Operand) {
 	e.EmitA(vm.OpClose, reg)
 }
 
+func (e *Emitter) EmitLoadNone(dst vm.Operand) {
+	e.EmitA(vm.OpLoadNone, dst)
+}
+
 func (e *Emitter) EmitLoadConst(dst vm.Operand, constant vm.Operand) {
 	e.EmitAB(vm.OpLoadConst, dst, constant)
 }

@@ -1,13 +1,11 @@
 package internal
 
 import (
-	"regexp"
-	"strings"
-
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
+	"regexp"
 )
 
 // Runtime functions
@@ -402,8 +400,12 @@ func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protec
 }
 
 func (ec *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) vm.Operand {
-	name := ec.functionName(ctx)
+	name := getFunctionName(ctx)
 
+	return ec.CompileFunctionCallByNameWith(name, protected, seq)
+}
+
+func (ec *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
 	switch name {
 	case runtimeLength:
 		dst := ec.ctx.Registers.Allocate(core.Temp)
@@ -535,17 +537,4 @@ func (ec *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) vm.Ope
 	}
 
 	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
-}
-
-func (ec *ExprCompiler) functionName(ctx fql.IFunctionCallContext) runtime.String {
-	var name string
-	funcNS := ctx.Namespace()
-
-	if funcNS != nil {
-		name += funcNS.GetText()
-	}
-
-	name += ctx.FunctionName().GetText()
-
-	return runtime.NewString(strings.ToUpper(name))
 }

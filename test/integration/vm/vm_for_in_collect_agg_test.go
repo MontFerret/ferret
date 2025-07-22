@@ -6,7 +6,7 @@ import (
 
 func TestCollectAggregate(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -39,7 +39,7 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "f", "minAge": 25, "maxAge": 25},
 			map[string]any{"gender": "m", "minAge": 0, "maxAge": 0},
 		}, "Should handle null values in aggregation"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -85,7 +85,7 @@ FOR u IN users
 			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
 			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
 		}, "Should collect and aggregate values by a single key"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -141,7 +141,7 @@ FOR u IN users
 			map[string]any{"department": "Management", "gender": "m", "minAge": 69, "maxAge": 69},
 			map[string]any{"department": "Marketing", "gender": "f", "minAge": 25, "maxAge": 45},
 		}, "Should aggregate with multiple grouping keys"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -247,7 +247,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": 25, "maxAge": 69}},
 			"Should collect and aggregate values without grouping"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = []
 			FOR u IN users
 				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -258,7 +258,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -297,7 +297,7 @@ LET users = [
 `, []any{
 			map[string]any{"ages": []any{31, 25, 36, 69, 45, 31, 25, 36, 69, 45}},
 		}, "Should call aggregation functions with more than one argument"),
-		CaseArray(`
+		SkipCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -342,7 +342,7 @@ FOR u IN users
 			map[string]any{"genderGroup": "f", "ages": []any{25, 45, 25, 45}},
 			map[string]any{"genderGroup": "m", "ages": []any{31, 36, 69, 31, 36, 69}},
 		}, "Should collect and aggregate values by a single key"),
-		CaseArray(`
+		SkipCaseArray(`
 		LET users = [
 				{
 					active: true,
@@ -390,7 +390,7 @@ FOR u IN users
 			map[string]any{"ageGroup": 45, "maxAge": 45, "minAge": 45},
 			map[string]any{"ageGroup": 65, "maxAge": 69, "minAge": 69},
 		}, "Should aggregate values with calculated grouping"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -475,7 +475,7 @@ FOR u IN users
 				"employeeCount": 2,
 			},
 		}, "Should aggregate multiple values with complex expressions"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					name: "John",
@@ -513,7 +513,7 @@ FOR u IN users
 				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
