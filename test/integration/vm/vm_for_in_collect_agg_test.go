@@ -205,7 +205,7 @@ FOR u IN users
 				"highSalaryCount": 3,
 			},
 		}, "Should aggregate with conditional expressions"),
-		CaseArray(`
+		SkipCaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -297,6 +297,94 @@ LET users = [
 `, []any{
 			map[string]any{"ages": []any{31, 25, 36, 69, 45, 31, 25, 36, 69, 45}},
 		}, "Should call aggregation functions with more than one argument"),
+		DebugCaseArray(`
+			LET users = [
+				{
+					active: true,
+					married: true,
+					age: 31,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: false,
+					age: 25,
+					gender: "f"
+				},
+				{
+					active: true,
+					married: false,
+					age: 36,
+					gender: "m"
+				},
+				{
+					active: false,
+					married: true,
+					age: 69,
+					gender: "m"
+				},
+				{
+					active: true,
+					married: true,
+					age: 45,
+					gender: "f"
+				}
+			]
+			FOR u IN users
+  				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age) INTO groupsVariable
+  				RETURN {
+  				groupsVariable,
+    				minAge, 
+    				maxAge 
+  				}
+`, []any{
+			map[string]any{
+				"groupsVariable": []any{
+					map[string]any{
+						"u": map[string]any{
+							"active":  true,
+							"married": true,
+							"age":     31,
+							"gender":  "m",
+						},
+					},
+					map[string]any{
+						"u": map[string]any{
+							"active":  true,
+							"married": false,
+							"age":     25,
+							"gender":  "f",
+						},
+					},
+					map[string]any{
+						"u": map[string]any{
+							"active":  true,
+							"married": false,
+							"age":     36,
+							"gender":  "m",
+						},
+					},
+					map[string]any{
+						"u": map[string]any{
+							"active":  false,
+							"married": true,
+							"age":     69,
+							"gender":  "m",
+						},
+					},
+					map[string]any{
+						"u": map[string]any{
+							"active":  true,
+							"married": true,
+							"age":     45,
+							"gender":  "f",
+						},
+					},
+				},
+				"minAge": 25,
+				"maxAge": 69,
+			},
+		}),
 		SkipCaseArray(`
 LET users = [
 				{

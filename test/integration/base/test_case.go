@@ -30,3 +30,9 @@ func Skip(uc TestCase) TestCase {
 	uc.Skip = true
 	return uc
 }
+
+func Debug(useCase TestCase) TestCase {
+	useCase.DebugOutput = true
+
+	return useCase
+}

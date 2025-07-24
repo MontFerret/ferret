@@ -22,15 +22,6 @@ const (
 	DoWhileLoop
 )
 
-type CollectorType int
-
-const (
-	CollectorTypeCounter CollectorType = iota
-	CollectorTypeKey
-	CollectorTypeKeyCounter
-	CollectorTypeKeyGroup
-)
-
 type Loop struct {
 	Kind     LoopKind
 	Type     LoopType

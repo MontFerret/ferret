@@ -170,18 +170,18 @@ func (s *BaseFqlParserListener) EnterCollectAggregateSelector(ctx *CollectAggreg
 // ExitCollectAggregateSelector is called when production collectAggregateSelector is exited.
 func (s *BaseFqlParserListener) ExitCollectAggregateSelector(ctx *CollectAggregateSelectorContext) {}
 
-// EnterCollectGroupVariable is called when production collectGroupVariable is entered.
-func (s *BaseFqlParserListener) EnterCollectGroupVariable(ctx *CollectGroupVariableContext) {}
+// EnterCollectGroupProjection is called when production collectGroupProjection is entered.
+func (s *BaseFqlParserListener) EnterCollectGroupProjection(ctx *CollectGroupProjectionContext) {}
 
-// ExitCollectGroupVariable is called when production collectGroupVariable is exited.
-func (s *BaseFqlParserListener) ExitCollectGroupVariable(ctx *CollectGroupVariableContext) {}
+// ExitCollectGroupProjection is called when production collectGroupProjection is exited.
+func (s *BaseFqlParserListener) ExitCollectGroupProjection(ctx *CollectGroupProjectionContext) {}
 
-// EnterCollectGroupVariableKeeper is called when production collectGroupVariableKeeper is entered.
-func (s *BaseFqlParserListener) EnterCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) {
+// EnterCollectGroupProjectionFilter is called when production collectGroupProjectionFilter is entered.
+func (s *BaseFqlParserListener) EnterCollectGroupProjectionFilter(ctx *CollectGroupProjectionFilterContext) {
 }
 
-// ExitCollectGroupVariableKeeper is called when production collectGroupVariableKeeper is exited.
-func (s *BaseFqlParserListener) ExitCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) {
+// ExitCollectGroupProjectionFilter is called when production collectGroupProjectionFilter is exited.
+func (s *BaseFqlParserListener) ExitCollectGroupProjectionFilter(ctx *CollectGroupProjectionFilterContext) {
 }
 
 // EnterCollectCounter is called when production collectCounter is entered.

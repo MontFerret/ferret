@@ -8,8 +8,8 @@ import (
 )
 
 // initializeGrouping creates the KeyValue pair for collection, handling both grouping and value setup.
-func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingContext) (*core.KV, []fql.ICollectSelectorContext) {
-	var groupSelectors []fql.ICollectSelectorContext
+func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingContext) (*core.KV, []*core.CollectSelector) {
+	var groupSelectors []*core.CollectSelector
 
 	kv := core.NewKV(vm.NoopOperand, vm.NoopOperand)
 	loop := c.ctx.Loops.Current()
@@ -40,18 +40,20 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 }
 
 // compileGroupKeys compiles the grouping keys from the CollectGroupingContext.
-func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) (vm.Operand, []fql.ICollectSelectorContext) {
+func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) (vm.Operand, []*core.CollectSelector) {
 	selectors := ctx.AllCollectSelector()
 
 	if len(selectors) == 0 {
-		return vm.NoopOperand, selectors
+		return vm.NoopOperand, nil
 	}
 
 	var kvKeyReg vm.Operand
+	var collectSelectors []*core.CollectSelector
 
 	if len(selectors) > 1 {
 		// We create a sequence of Registers for the clauses
 		// To pack them into an array
+		collectSelectors = make([]*core.CollectSelector, len(selectors))
 		selectorRegs := c.ctx.Registers.AllocateSequence(len(selectors))
 
 		for i, selector := range selectors {
@@ -59,32 +61,36 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 			c.ctx.Emitter.EmitAB(vm.OpMove, selectorRegs[i], reg)
 			// Free the register after moving its value to the sequence register
 			c.ctx.Registers.Free(reg)
+
+			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))
 		}
 
 		kvKeyReg = c.ctx.Registers.Allocate(core.Temp)
 		c.ctx.Emitter.EmitAs(vm.OpLoadArray, kvKeyReg, selectorRegs)
 		c.ctx.Registers.FreeSequence(selectorRegs)
 	} else {
-		kvKeyReg = c.ctx.ExprCompiler.Compile(selectors[0].Expression())
+		selector := selectors[0]
+		kvKeyReg = c.ctx.ExprCompiler.Compile(selector.Expression())
+		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))}
 	}
 
-	return kvKeyReg, selectors
+	return kvKeyReg, collectSelectors
 }
 
-func (c *LoopCollectCompiler) compileGrouping(collectorType core.CollectorType, selectors []fql.ICollectSelectorContext) {
+func (c *LoopCollectCompiler) compileGrouping(spec *core.CollectorSpec) {
 	loop := c.ctx.Loops.Current()
 
-	if len(selectors) > 1 {
-		variables := make([]vm.Operand, len(selectors))
+	if len(spec.GroupSelectors()) > 1 {
+		variables := make([]vm.Operand, len(spec.GroupSelectors()))
 
-		for i, selector := range selectors {
-			name := selector.Identifier().GetText()
+		for i, selector := range spec.GroupSelectors() {
+			name := selector.Name()
 
 			if variables[i] == vm.NoopOperand {
-				variables[i] = c.ctx.Symbols.DeclareLocal(name, core.TypeUnknown)
+				variables[i] = c.ctx.Symbols.DeclareLocal(name.String(), core.TypeUnknown)
 			}
 
-			reg := c.selectGroupKey(collectorType, loop)
+			reg := c.selectGroupKey(spec.Type(), loop)
 
 			c.ctx.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, loadConstant(c.ctx, runtime.Int(i)))
 		}
@@ -95,9 +101,9 @@ func (c *LoopCollectCompiler) compileGrouping(collectorType core.CollectorType, 
 		}
 	} else {
 		// Get the variable name
-		name := selectors[0].Identifier().GetText()
+		name := spec.GroupSelectors()[0].Name()
 		// If we have a single selector, we can just use the loops' register directly
-		c.ctx.Symbols.AssignLocal(name, core.TypeUnknown, c.selectGroupKey(collectorType, loop))
+		c.ctx.Symbols.AssignLocal(name.String(), core.TypeUnknown, c.selectGroupKey(spec.Type(), loop))
 	}
 }
 

@@ -5,6 +5,7 @@ import "github.com/pkg/errors"
 var (
 	ErrMissedParam      = errors.New("missed parameter")
 	ErrFunctionNotFound = errors.New("function not found")
+	ErrRuntimePanic     = errors.New("runtime panic")
 )
 
 type (

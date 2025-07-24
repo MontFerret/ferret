@@ -1,24 +1,17 @@
 package internal
 
 import (
+	"strconv"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"strconv"
 )
 
-type aggregateSelector struct {
-	Name          runtime.String
-	Register      vm.Operand
-	Args          int
-	FuncName      runtime.String
-	ProtectedCall bool
-}
-
-func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool) []*aggregateSelector {
+func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool) []*core.AggregateSelector {
 	selectors := ctx.AllCollectAggregateSelector()
-	var compiledSelectors []*aggregateSelector
+	var compiledSelectors []*core.AggregateSelector
 
 	// if we have grouping, we need to pack the selectors into the collector value
 	if withGrouping {
@@ -34,22 +27,22 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 	return compiledSelectors
 }
 
-func (c *LoopCollectCompiler) packGroupedValues(kv *core.KV, selectors []*aggregateSelector) {
+func (c *LoopCollectCompiler) packGroupedValues(kv *core.KV, selectors []*core.AggregateSelector) {
 	// We need to add the loop value to the array
 	seq := c.ctx.Registers.AllocateSequence(len(selectors) + 1)
 	c.ctx.Emitter.EmitMove(seq[0], kv.Value)
 
 	for i, selector := range selectors {
-		c.ctx.Emitter.EmitMove(seq[i+1], selector.Register)
-		c.ctx.Registers.Free(selector.Register)
+		c.ctx.Emitter.EmitMove(seq[i+1], selector.Register())
+		c.ctx.Registers.Free(selector.Register())
 	}
 
 	// Now we need to wrap the selectors into a single array with the loop value
 	c.ctx.Emitter.EmitArray(kv.Value, seq)
 }
 
-func (c *LoopCollectCompiler) compileGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext) []*aggregateSelector {
-	wrappedSelectors := make([]*aggregateSelector, 0, len(selectors))
+func (c *LoopCollectCompiler) compileGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext) []*core.AggregateSelector {
+	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
 
 	for i := 0; i < len(selectors); i++ {
 		selector := selectors[i]
@@ -79,20 +72,14 @@ func (c *LoopCollectCompiler) compileGroupedAggregationSelectors(selectors []fql
 		isProtected := fce.ErrorOperator() != nil
 
 		// Collect information about the selector to unpack it later
-		wrappedSelectors = append(wrappedSelectors, &aggregateSelector{
-			Name:          name,
-			Args:          len(args),
-			Register:      selectorArg,
-			FuncName:      funcName,
-			ProtectedCall: isProtected,
-		})
+		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, selectorArg))
 	}
 
 	return wrappedSelectors
 }
 
-func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst vm.Operand) []*aggregateSelector {
-	wrappedSelectors := make([]*aggregateSelector, 0, len(selectors))
+func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst vm.Operand) []*core.AggregateSelector {
+	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
 
 	for i := 0; i < len(selectors); i++ {
 		selector := selectors[i]
@@ -123,12 +110,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.
 		isProtected := fce.ErrorOperator() != nil
 
 		// Collect information about the selector to unpack it later
-		wrappedSelectors = append(wrappedSelectors, &aggregateSelector{
-			Name:          name,
-			Args:          len(args),
-			FuncName:      funcName,
-			ProtectedCall: isProtected,
-		})
+		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, vm.NoopOperand))
 
 		c.ctx.Registers.FreeSequence(args)
 	}
@@ -136,8 +118,8 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.
 	return wrappedSelectors
 }
 
-func (c *LoopCollectCompiler) unpackGroupedValues(selectors []*aggregateSelector, withGrouping bool) {
-	if !withGrouping {
+func (c *LoopCollectCompiler) unpackGroupedValues(spec *core.CollectorSpec) {
+	if !spec.HasGrouping() {
 		return
 	}
 
@@ -146,22 +128,22 @@ func (c *LoopCollectCompiler) unpackGroupedValues(selectors []*aggregateSelector
 
 	loadIndex(c.ctx, valReg, loop.Value, 0)
 
-	for i, selector := range selectors {
-		loadIndex(c.ctx, selector.Register, loop.Value, i+1)
+	for i, selector := range spec.AggregationSelectors() {
+		loadIndex(c.ctx, selector.Register(), loop.Value, i+1)
 	}
 
 	c.ctx.Registers.Free(valReg)
 }
 
-func (c *LoopCollectCompiler) compileAggregation(vars []*aggregateSelector, withGrouping bool) {
-	if withGrouping {
-		c.compileGroupedAggregation(vars)
+func (c *LoopCollectCompiler) compileAggregation(spec *core.CollectorSpec) {
+	if spec.HasGrouping() {
+		c.compileGroupedAggregation(spec)
 	} else {
-		c.compileGlobalAggregation(vars)
+		c.compileGlobalAggregation(spec)
 	}
 }
 
-func (c *LoopCollectCompiler) compileGroupedAggregation(selectors []*aggregateSelector) {
+func (c *LoopCollectCompiler) compileGroupedAggregation(spec *core.CollectorSpec) {
 	//parentLoop := c.ctx.Loops.Current()
 	//// We need to allocate a temporary accumulator to store aggregation results
 	//selectors := ctx.AllCollectAggregateSelector()
@@ -191,7 +173,7 @@ func (c *LoopCollectCompiler) compileGroupedAggregation(selectors []*aggregateSe
 	//c.ctx.Registers.Free(accumulator)
 }
 
-func (c *LoopCollectCompiler) compileGlobalAggregation(selectors []*aggregateSelector) {
+func (c *LoopCollectCompiler) compileGlobalAggregation(spec *core.CollectorSpec) {
 	// At this point, it's finalized.
 	prevLoop := c.ctx.Loops.Pop()
 	c.ctx.Registers.Free(prevLoop.Key)
@@ -217,12 +199,12 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(selectors []*aggregateSel
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	// We just need to take the grouped values and call aggregation functions using them as args
-	c.compileAggregationFuncCalls(selectors, prevLoop.Dst)
+	c.compileAggregationFuncCalls(spec.AggregationSelectors(), prevLoop.Dst)
 
 	c.ctx.Registers.Free(prevLoop.Dst)
 }
 
-func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*aggregateSelector, aggregator vm.Operand) {
+func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*core.AggregateSelector, aggregator vm.Operand) {
 	// Gets the number of records in the accumulator
 	cond := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAB(vm.OpLength, cond, aggregator)
@@ -242,27 +224,27 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*aggregate
 		var args core.RegisterSequence
 
 		// We need to unpack arguments
-		if selector.Args > 1 {
-			args = c.ctx.Registers.AllocateSequence(selector.Args)
+		if selector.Args() > 1 {
+			args = c.ctx.Registers.AllocateSequence(selector.Args())
 
 			for y, reg := range args {
-				argKeyReg := c.loadAggregationArgKey(selector.Name, y)
+				argKeyReg := c.loadAggregationArgKey(selector.Name(), y)
 				c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, argKeyReg)
 				c.ctx.Registers.Free(argKeyReg)
 			}
 		} else {
-			key := loadConstant(c.ctx, runtime.String(selector.Name))
+			key := loadConstant(c.ctx, selector.Name())
 			value := c.ctx.Registers.Allocate(core.Temp)
 			c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
 			args = core.RegisterSequence{value}
 			c.ctx.Registers.Free(key)
 		}
 
-		result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName, selector.ProtectedCall, args)
+		result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
 
 		// We define the variable for the selector result in the upper scope
 		// Since this temporary scope is only for aggregators and will be closed after the aggregation
-		selectorVarName := selector.Name
+		selectorVarName := selector.Name()
 		varReg := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
 		selectorVarRegs[i] = varReg
 		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
@@ -280,9 +262,9 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*aggregate
 	c.ctx.Registers.Free(cond)
 }
 
-func (c *LoopCollectCompiler) compileAggregationFuncCall(selector *aggregateSelector) {
-	varReg := c.ctx.Symbols.DeclareLocal(selector.Name.String(), core.TypeUnknown)
-	loadIndex(c.ctx, varReg, selector.Register, 1)
+func (c *LoopCollectCompiler) compileAggregationFuncCall(selector *core.AggregateSelector) {
+	varReg := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
+	loadIndex(c.ctx, varReg, selector.Register(), 1)
 }
 
 func (c *LoopCollectCompiler) loadAggregationArgKey(selector runtime.String, arg int) vm.Operand {

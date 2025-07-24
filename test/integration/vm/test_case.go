@@ -16,12 +16,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-func Debug(useCase UseCase) UseCase {
-	useCase.DebugOutput = true
-
-	return useCase
-}
-
 func Case(expression string, expected any, desc ...string) UseCase {
 	return NewCase(expression, expected, ShouldEqual, desc...)
 }
@@ -38,6 +32,10 @@ func SkipCaseNil(expression string, desc ...string) UseCase {
 	return Skip(CaseNil(expression, desc...))
 }
 
+func DebugCaseNil(expression string, desc ...string) UseCase {
+	return Debug(CaseNil(expression, desc...))
+}
+
 func CaseRuntimeError(expression string, desc ...string) UseCase {
 	return NewCase(expression, nil, ShouldBeError, desc...)
 }
@@ -48,6 +46,10 @@ func CaseRuntimeErrorAs(expression string, expected error, desc ...string) UseCa
 
 func SkipCaseRuntimeError(expression string, desc ...string) UseCase {
 	return Skip(CaseRuntimeError(expression, desc...))
+}
+
+func DebugCaseRuntimeError(expression string, desc ...string) UseCase {
+	return Debug(CaseRuntimeError(expression, desc...))
 }
 
 func SkipCaseRuntimeErrorAs(expression string, expected error, desc ...string) UseCase {
@@ -72,6 +74,10 @@ func SkipCaseObject(expression string, expected map[string]any, desc ...string) 
 	return Skip(CaseObject(expression, expected, desc...))
 }
 
+func DebugCaseObject(expression string, expected map[string]any, desc ...string) UseCase {
+	return Debug(CaseObject(expression, expected, desc...))
+}
+
 func CaseArray(expression string, expected []any, desc ...string) UseCase {
 	uc := NewCase(expression, expected, ShouldEqualJSON, desc...)
 	uc.RawOutput = true
@@ -82,6 +88,10 @@ func SkipCaseArray(expression string, expected []any, desc ...string) UseCase {
 	return Skip(CaseArray(expression, expected, desc...))
 }
 
+func DebugCaseArray(expression string, expected []any, desc ...string) UseCase {
+	return Debug(CaseArray(expression, expected, desc...))
+}
+
 func CaseItems(expression string, expected ...any) UseCase {
 	return NewCase(expression, expected, base.ShouldHaveSameItems)
 }
@@ -90,8 +100,20 @@ func CaseFn(expression string, assertion func(actual any, expected ...any) strin
 	return NewCase(expression, nil, assertion)
 }
 
+func SkipCaseFn(expression string, assertion func(actual any, expected ...any) string) UseCase {
+	return Skip(CaseFn(expression, assertion))
+}
+
+func DebugCaseFn(expression string, assertion func(actual any, expected ...any) string) UseCase {
+	return Debug(CaseFn(expression, assertion))
+}
+
 func SkipCaseItems(expression string, expected ...any) UseCase {
 	return Skip(CaseItems(expression, expected...))
+}
+
+func DebugCaseItems(expression string, expected ...any) UseCase {
+	return Debug(CaseItems(expression, expected...))
 }
 
 func CaseJSON(expression string, expected string, desc ...string) UseCase {
@@ -102,6 +124,10 @@ func CaseJSON(expression string, expected string, desc ...string) UseCase {
 
 func SkipCaseJSON(expression string, expected string, desc ...string) UseCase {
 	return Skip(CaseJSON(expression, expected, desc...))
+}
+
+func DebugCaseJSON(expression string, expected string, desc ...string) UseCase {
+	return Debug(CaseJSON(expression, expected, desc...))
 }
 
 func printDebugInfo(name string, uc UseCase, prog *vm.Program) {

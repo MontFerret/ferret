@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/parser/fql"
 
 	"github.com/antlr4-go/antlr/v4"
 

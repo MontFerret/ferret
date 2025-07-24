@@ -1,11 +1,12 @@
 package internal
 
 import (
+	"regexp"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"regexp"
 )
 
 // Runtime functions

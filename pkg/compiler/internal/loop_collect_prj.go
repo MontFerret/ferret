@@ -1,49 +1,54 @@
 package internal
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/antlr4-go/antlr/v4"
 )
 
 // initializeProjection handles the projection setup for group variables and counters.
 // Returns the projection variable name and the appropriate collector type.
-func (c *LoopCollectCompiler) initializeProjection(ctx fql.ICollectClauseContext, kv *core.KV, counter fql.ICollectCounterContext, hasGrouping bool) (string, core.CollectorType) {
-	projectionVariableName := ""
-	collectorType := core.CollectorTypeKey
-
+func (c *LoopCollectCompiler) initializeProjection(ctx fql.ICollectClauseContext, kv *core.KV, counter fql.ICollectCounterContext) *core.CollectorProjection {
 	// Handle group variable projection
-	if groupVar := ctx.CollectGroupVariable(); groupVar != nil {
-		projectionVariableName = c.compileGroupVariableProjection(kv, groupVar)
-		collectorType = core.CollectorTypeKeyGroup
-		return projectionVariableName, collectorType
+	if groupVar := ctx.CollectGroupProjection(); groupVar != nil {
+		varName := c.compileGroupVariableProjection(kv, groupVar)
+		return core.NewCollectorGroupProjection(varName)
 	}
 
 	// Handle counter projection
 	if counter != nil {
-		projectionVariableName = counter.Identifier().GetText()
-		collectorType = c.determineCounterCollectorType(hasGrouping)
+		varName := counter.Identifier().GetText()
+
+		return core.NewCollectorCountProjection(varName)
 	}
 
-	return projectionVariableName, collectorType
+	return nil
 }
 
-// determineCounterCollectorType returns the appropriate collector type for counter operations.
-func (c *LoopCollectCompiler) determineCounterCollectorType(hasGrouping bool) core.CollectorType {
-	if hasGrouping {
-		return core.CollectorTypeKeyCounter
-	}
+func (c *LoopCollectCompiler) finalizeProjection(spec *core.CollectorSpec) {
+	loop := c.ctx.Loops.Current()
+	varName := spec.Projection().VariableName()
 
-	return core.CollectorTypeCounter
+	if spec.HasGrouping() || !spec.HasAggregation() {
+		// Now we need to expand group variables from the dataset
+		loop.ValueName = varName
+		c.ctx.Symbols.AssignLocal(loop.ValueName, core.TypeUnknown, loop.Value)
+	} else {
+		key := loadConstant(c.ctx, runtime.String(varName))
+		val := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
+		c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, loop.Dst, key)
+		c.ctx.Registers.Free(key)
+	}
 }
 
 // compileGroupVariableProjection processes group variable projections (both default and custom).
-func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupVar fql.ICollectGroupVariableContext) string {
+func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupVar fql.ICollectGroupProjectionContext) string {
 	// Handle default projection (identifier)
 	if identifier := groupVar.Identifier(); identifier != nil {
-		return c.compileDefaultGroupProjection(kv, identifier, groupVar.CollectGroupVariableKeeper())
+		return c.compileDefaultGroupProjection(kv, identifier, groupVar.CollectGroupProjectionFilter())
 	}
 
 	// Handle custom projection (selector expression)
@@ -54,7 +59,7 @@ func (c *LoopCollectCompiler) compileGroupVariableProjection(kv *core.KV, groupV
 	return ""
 }
 
-func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier antlr.TerminalNode, keeper fql.ICollectGroupVariableKeeperContext) string {
+func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identifier antlr.TerminalNode, keeper fql.ICollectGroupProjectionFilterContext) string {
 	if keeper == nil {
 		variables := c.ctx.Symbols.LocalVariables()
 		scope := core.NewScopeProjection(c.ctx.Registers, c.ctx.Emitter, c.ctx.Symbols, variables)

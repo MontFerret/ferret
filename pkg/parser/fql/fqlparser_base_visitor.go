@@ -107,11 +107,11 @@ func (v *BaseFqlParserVisitor) VisitCollectAggregateSelector(ctx *CollectAggrega
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitCollectGroupVariable(ctx *CollectGroupVariableContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitCollectGroupProjection(ctx *CollectGroupProjectionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
-func (v *BaseFqlParserVisitor) VisitCollectGroupVariableKeeper(ctx *CollectGroupVariableKeeperContext) interface{} {
+func (v *BaseFqlParserVisitor) VisitCollectGroupProjectionFilter(ctx *CollectGroupProjectionFilterContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

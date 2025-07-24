@@ -82,11 +82,11 @@ type FqlParserListener interface {
 	// EnterCollectAggregateSelector is called when entering the collectAggregateSelector production.
 	EnterCollectAggregateSelector(c *CollectAggregateSelectorContext)
 
-	// EnterCollectGroupVariable is called when entering the collectGroupVariable production.
-	EnterCollectGroupVariable(c *CollectGroupVariableContext)
+	// EnterCollectGroupProjection is called when entering the collectGroupProjection production.
+	EnterCollectGroupProjection(c *CollectGroupProjectionContext)
 
-	// EnterCollectGroupVariableKeeper is called when entering the collectGroupVariableKeeper production.
-	EnterCollectGroupVariableKeeper(c *CollectGroupVariableKeeperContext)
+	// EnterCollectGroupProjectionFilter is called when entering the collectGroupProjectionFilter production.
+	EnterCollectGroupProjectionFilter(c *CollectGroupProjectionFilterContext)
 
 	// EnterCollectCounter is called when entering the collectCounter production.
 	EnterCollectCounter(c *CollectCounterContext)
@@ -301,11 +301,11 @@ type FqlParserListener interface {
 	// ExitCollectAggregateSelector is called when exiting the collectAggregateSelector production.
 	ExitCollectAggregateSelector(c *CollectAggregateSelectorContext)
 
-	// ExitCollectGroupVariable is called when exiting the collectGroupVariable production.
-	ExitCollectGroupVariable(c *CollectGroupVariableContext)
+	// ExitCollectGroupProjection is called when exiting the collectGroupProjection production.
+	ExitCollectGroupProjection(c *CollectGroupProjectionContext)
 
-	// ExitCollectGroupVariableKeeper is called when exiting the collectGroupVariableKeeper production.
-	ExitCollectGroupVariableKeeper(c *CollectGroupVariableKeeperContext)
+	// ExitCollectGroupProjectionFilter is called when exiting the collectGroupProjectionFilter production.
+	ExitCollectGroupProjectionFilter(c *CollectGroupProjectionFilterContext)
 
 	// ExitCollectCounter is called when exiting the collectCounter production.
 	ExitCollectCounter(c *CollectCounterContext)

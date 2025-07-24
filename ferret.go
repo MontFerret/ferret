@@ -22,7 +22,7 @@ func New(setters ...Option) *Instance {
 }
 
 func (i *Instance) Functions() runtime.Namespace {
-	return i.compiler
+	return nil
 }
 
 //func (i *Instance) Drivers() *drivers.Container {

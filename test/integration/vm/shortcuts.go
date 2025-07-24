@@ -8,3 +8,4 @@ type UseCase = base.TestCase
 
 var NewCase = base.NewCase
 var Skip = base.Skip
+var Debug = base.Debug

@@ -110,13 +110,12 @@ sortClauseExpression
     ;
 
 collectClause
-    : Collect collectCounter
-    | Collect collectAggregator
-    | Collect collectGrouping collectAggregator
-    | Collect collectGrouping collectGroupVariable
-    | Collect collectGrouping collectCounter
-    | Collect collectGrouping
+    : Collect collectGrouping collectCounter
+    | Collect collectGrouping collectAggregator? collectGroupProjection?
+    | Collect collectAggregator collectGroupProjection? // no grouping
+    | Collect collectCounter // pure COUNT
     ;
+
 
 collectSelector
     : Identifier Assign expression
@@ -134,12 +133,12 @@ collectAggregateSelector
     : Identifier Assign functionCallExpression
     ;
 
-collectGroupVariable
+collectGroupProjection
     : Into collectSelector
-    | Into Identifier (collectGroupVariableKeeper)?
+    | Into Identifier (collectGroupProjectionFilter)?
     ;
 
-collectGroupVariableKeeper
+collectGroupProjectionFilter
     : Keep Identifier (Comma Identifier)*
     ;
 

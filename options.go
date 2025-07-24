@@ -24,6 +24,6 @@ func NewOptions(setters []Option) *Options {
 
 func WithoutStdlib() Option {
 	return func(opts *Options) {
-		opts.compiler = append(opts.compiler, compiler.WithoutStdlib())
+		//opts.compiler = append(opts.compiler, compiler.WithoutStdlib())
 	}
 }
