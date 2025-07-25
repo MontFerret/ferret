@@ -93,7 +93,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.
 		}
 
 		if len(args) > 1 {
-			for y := 0; y < len(args); i++ {
+			for y := 0; y < len(args); y++ {
 				key := c.loadAggregationArgKey(name, y)
 				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
 				c.ctx.Registers.Free(key)

@@ -258,7 +258,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
-		SkipCaseArray(`
+		DebugCaseArray(`
 LET users = [
 				{
 					active: true,
@@ -297,7 +297,7 @@ LET users = [
 `, []any{
 			map[string]any{"ages": []any{31, 25, 36, 69, 45, 31, 25, 36, 69, 45}},
 		}, "Should call aggregation functions with more than one argument"),
-		DebugCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					active: true,
