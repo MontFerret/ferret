@@ -23,16 +23,16 @@ func (c *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 
 func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.CollectorSpec {
 	grouping := ctx.CollectGrouping()
+	projection := ctx.CollectGroupProjection()
 	counter := ctx.CollectCounter()
 	aggregation := ctx.CollectAggregator()
 
 	// We gather keys and values for the collector.
 	kv, groupSelectors := c.initializeGrouping(grouping)
-	projection := c.initializeProjection(ctx, kv, counter)
 
-	loop := c.ctx.Loops.Current()
-	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregation != nil, projection)
+	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregation != nil, projection != nil, counter != nil)
 	// We replace DataSet initialization with Collector initialization
+	loop := c.ctx.Loops.Current()
 	dst := loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
 
 	var aggregationSelectors []*core.AggregateSelector
@@ -42,15 +42,17 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 		aggregationSelectors = c.initializeAggregation(aggregation, dst, kv, len(groupSelectors) > 0)
 	}
 
-	scope := core.NewCollectorSpec(collectorType, projection, groupSelectors, aggregationSelectors)
+	groupProjection := c.initializeProjection(kv, projection, counter)
 
-	c.finalizeCollector(dst, kv, scope)
+	spec := core.NewCollectorSpec(collectorType, dst, groupProjection, groupSelectors, aggregationSelectors)
+
+	c.finalizeCollector(dst, kv, spec)
 
 	// We no longer need KV, so we free registers
 	c.ctx.Registers.Free(kv.Key)
 	c.ctx.Registers.Free(kv.Value)
 
-	return scope
+	return spec
 }
 
 func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spec *core.CollectorSpec) {
@@ -67,9 +69,6 @@ func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spe
 	}
 
 	loop.EmitFinalization(c.ctx.Emitter)
-
-	// Move the collector to the next loop source
-	c.ctx.Emitter.EmitMove(loop.Src, dst)
 }
 
 func (c *LoopCollectCompiler) compileLoop(spec *core.CollectorSpec) {
@@ -91,6 +90,8 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.CollectorSpec) {
 	doInit := spec.HasGrouping() || !spec.HasAggregation()
 
 	if doInit {
+		// Move the collector to the next loop source
+		c.ctx.Emitter.EmitMove(loop.Src, spec.Destination())
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 	}
 
@@ -99,12 +100,11 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.CollectorSpec) {
 		c.compileAggregation(spec)
 	}
 
-	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
-	if spec.HasProjection() {
-		c.finalizeProjection(spec)
-	}
-
 	if spec.HasGrouping() {
 		c.compileGrouping(spec)
+	}
+
+	if spec.HasProjection() && !spec.HasAggregation() {
+		c.finalizeProjection(spec, loop.Value)
 	}
 }

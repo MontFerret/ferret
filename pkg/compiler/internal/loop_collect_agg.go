@@ -199,12 +199,12 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(spec *core.CollectorSpec)
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	// We just need to take the grouped values and call aggregation functions using them as args
-	c.compileAggregationFuncCalls(spec.AggregationSelectors(), prevLoop.Dst)
+	c.compileAggregationFuncCalls(spec, prevLoop.Dst)
 
 	c.ctx.Registers.Free(prevLoop.Dst)
 }
 
-func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*core.AggregateSelector, aggregator vm.Operand) {
+func (c *LoopCollectCompiler) compileAggregationFuncCalls(spec *core.CollectorSpec, aggregator vm.Operand) {
 	// Gets the number of records in the accumulator
 	cond := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAB(vm.OpLength, cond, aggregator)
@@ -218,6 +218,7 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*core.Aggr
 	// We skip the key retrieval and function call of there are no records in the accumulator
 	c.ctx.Emitter.EmitJumpIfTrue(cond, elseLabel)
 
+	selectors := spec.AggregationSelectors()
 	selectorVarRegs := make([]vm.Operand, len(selectors))
 
 	for i, selector := range selectors {
@@ -251,11 +252,22 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(selectors []*core.Aggr
 		c.ctx.Registers.Free(result)
 	}
 
+	var projVar vm.Operand
+
+	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
+	if spec.HasProjection() {
+		projVar = c.finalizeProjection(spec, aggregator)
+	}
+
 	c.ctx.Emitter.EmitJump(endLabel)
 	c.ctx.Emitter.MarkLabel(elseLabel)
 
 	for _, varReg := range selectorVarRegs {
 		c.ctx.Emitter.EmitA(vm.OpLoadNone, varReg)
+	}
+
+	if projVar != vm.NoopOperand {
+		c.ctx.Emitter.EmitA(vm.OpLoadNone, projVar)
 	}
 
 	c.ctx.Emitter.MarkLabel(endLabel)

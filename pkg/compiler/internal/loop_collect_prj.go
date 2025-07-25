@@ -11,10 +11,11 @@ import (
 
 // initializeProjection handles the projection setup for group variables and counters.
 // Returns the projection variable name and the appropriate collector type.
-func (c *LoopCollectCompiler) initializeProjection(ctx fql.ICollectClauseContext, kv *core.KV, counter fql.ICollectCounterContext) *core.CollectorProjection {
+func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.ICollectGroupProjectionContext, counter fql.ICollectCounterContext) *core.CollectorProjection {
 	// Handle group variable projection
-	if groupVar := ctx.CollectGroupProjection(); groupVar != nil {
-		varName := c.compileGroupVariableProjection(kv, groupVar)
+	if projection != nil {
+		varName := c.compileGroupVariableProjection(kv, projection)
+
 		return core.NewCollectorGroupProjection(varName)
 	}
 
@@ -28,20 +29,24 @@ func (c *LoopCollectCompiler) initializeProjection(ctx fql.ICollectClauseContext
 	return nil
 }
 
-func (c *LoopCollectCompiler) finalizeProjection(spec *core.CollectorSpec) {
+func (c *LoopCollectCompiler) finalizeProjection(spec *core.CollectorSpec, aggregator vm.Operand) vm.Operand {
 	loop := c.ctx.Loops.Current()
 	varName := spec.Projection().VariableName()
 
 	if spec.HasGrouping() || !spec.HasAggregation() {
 		// Now we need to expand group variables from the dataset
 		loop.ValueName = varName
-		c.ctx.Symbols.AssignLocal(loop.ValueName, core.TypeUnknown, loop.Value)
-	} else {
-		key := loadConstant(c.ctx, runtime.String(varName))
-		val := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
-		c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, loop.Dst, key)
-		c.ctx.Registers.Free(key)
+		c.ctx.Symbols.AssignLocal(loop.ValueName, core.TypeUnknown, aggregator)
+
+		return loop.Value
 	}
+
+	key := loadConstant(c.ctx, runtime.String(varName))
+	val := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
+	c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, aggregator, key)
+	c.ctx.Registers.Free(key)
+
+	return val
 }
 
 // compileGroupVariableProjection processes group variable projections (both default and custom).

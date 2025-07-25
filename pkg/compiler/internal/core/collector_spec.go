@@ -1,10 +1,13 @@
 package core
 
+import "github.com/MontFerret/ferret/pkg/vm"
+
 type (
 	CollectorType int
 
 	CollectorSpec struct {
 		typ                  CollectorType
+		dst                  vm.Operand
 		projection           *CollectorProjection
 		groupSelectors       []*CollectSelector
 		aggregationSelectors []*AggregateSelector
@@ -18,20 +21,19 @@ const (
 	CollectorTypeKeyGroup
 )
 
-func NewCollectorSpec(type_ CollectorType, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregationSelectors []*AggregateSelector) *CollectorSpec {
+func NewCollectorSpec(type_ CollectorType, dst vm.Operand, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregationSelectors []*AggregateSelector) *CollectorSpec {
 	return &CollectorSpec{
 		typ:                  type_,
+		dst:                  dst,
 		projection:           projection,
 		groupSelectors:       groupSelectors,
 		aggregationSelectors: aggregationSelectors,
 	}
 }
 
-func DetermineCollectorType(withGrouping, withAggregation bool, projection *CollectorProjection) CollectorType {
-	withProjection := projection != nil
-
+func DetermineCollectorType(withGrouping, withAggregation, withProjection, withCounter bool) CollectorType {
 	if withGrouping {
-		if withProjection && projection.IsCounted() {
+		if withCounter {
 			return CollectorTypeKeyCounter
 		}
 
@@ -47,6 +49,10 @@ func DetermineCollectorType(withGrouping, withAggregation bool, projection *Coll
 
 func (c *CollectorSpec) Type() CollectorType {
 	return c.typ
+}
+
+func (c *CollectorSpec) Destination() vm.Operand {
+	return c.dst
 }
 
 func (c *CollectorSpec) Projection() *CollectorProjection {
