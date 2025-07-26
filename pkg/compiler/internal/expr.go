@@ -364,11 +364,12 @@ func (ec *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext
 }
 
 func (ec *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
+	name := ctx.Identifier().GetText()
 	// Just return the register / constant index
-	op, _, found := ec.ctx.Symbols.Resolve(ctx.GetText())
+	op, _, found := ec.ctx.Symbols.Resolve(name)
 
 	if !found {
-		panic(runtime.Error(core.ErrVariableNotFound, ctx.GetText()))
+		panic(runtime.Error(core.ErrVariableNotFound, name))
 	}
 
 	if op.IsRegister() {

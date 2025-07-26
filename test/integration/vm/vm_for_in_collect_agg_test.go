@@ -205,7 +205,7 @@ FOR u IN users
 				"highSalaryCount": 3,
 			},
 		}, "Should aggregate with conditional expressions"),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = [
 				{
 					active: true,
@@ -247,7 +247,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": 25, "maxAge": 69}},
 			"Should collect and aggregate values without grouping"),
-		SkipCaseArray(`
+		CaseArray(`
 			LET users = []
 			FOR u IN users
 				COLLECT AGGREGATE minAge = MIN(u.age), maxAge = MAX(u.age)
@@ -258,7 +258,7 @@ FOR u IN users
 		`,
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
-		DebugCaseArray(`
+		CaseArray(`
 LET users = [
 				{
 					active: true,
