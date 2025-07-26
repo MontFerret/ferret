@@ -116,8 +116,14 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 	doInit := spec.HasGrouping() || !spec.HasAggregation()
 
 	if doInit {
-		// Move the collector to the next loop source
-		c.ctx.Emitter.EmitMove(loop.Src, spec.Destination())
+		if loop.Allocate {
+			// Move the collector to the next loop source
+			c.ctx.Emitter.EmitMove(loop.Src, spec.Destination())
+		} else {
+			// We do not control the source of the loop, so we just set it to the destination
+			loop.Src = spec.Destination()
+		}
+
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 	}
 

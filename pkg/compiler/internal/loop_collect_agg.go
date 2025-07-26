@@ -177,7 +177,6 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	c.ctx.Registers.Free(prevLoop.Src)
 
 	// Create a new loop with 1 iteration only to process the aggregation
-	c.ctx.Symbols.EnterScope()
 	loop := c.ctx.Loops.NewLoop(core.ForInLoop, core.NormalLoop, prevLoop.Distinct)
 	c.ctx.Loops.Push(loop)
 
@@ -199,19 +198,16 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	// Initialize the loop
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
-	// Process the aggregation function calls using the values from the previous loop's collector
-	c.compileGlobalAggregationFuncCalls(spec, prevLoop.Dst)
-
-	// Free the previous loop's destination register
-	c.ctx.Registers.Free(prevLoop.Dst)
+	c.compileGlobalAggregationFuncCalls(spec)
 }
 
 // compileGlobalAggregationFuncCalls processes the aggregation function calls for the selectors.
 // It loads the arguments from the aggregator, calls the aggregation functions,
 // and assigns the results to local variables.
 // It also handles the case where there are no records in the aggregator by loading NONE values.
-func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Collector, aggregator vm.Operand) {
+func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Collector) {
 	// Gets the number of records in the accumulator
+	aggregator := spec.Destination()
 	cond := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAB(vm.OpLength, cond, aggregator)
 	zero := loadConstant(c.ctx, runtime.ZeroInt)
