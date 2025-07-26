@@ -16,14 +16,26 @@ const (
 	runtimeWait     = "WAIT"
 )
 
+// ExprCompiler handles the compilation of expressions in FQL queries.
+// It transforms expression operations from the AST into VM instructions.
 type ExprCompiler struct {
 	ctx *CompilerContext
 }
 
+// NewExprCompiler creates a new instance of ExprCompiler with the given compiler context.
 func NewExprCompiler(ctx *CompilerContext) *ExprCompiler {
 	return &ExprCompiler{ctx: ctx}
 }
 
+// Compile processes an expression from the FQL AST and delegates to the appropriate
+// compilation method based on the expression type (unary, logical, ternary, or predicate).
+// Parameters:
+//   - ctx: The expression context from the AST
+//
+// Returns:
+//   - An operand representing the compiled expression
+//
+// Panics if the expression type is not recognized.
 func (ec *ExprCompiler) Compile(ctx fql.IExpressionContext) vm.Operand {
 	if c := ctx.UnaryOperator(); c != nil {
 		return ec.compileUnary(c, ctx)
@@ -49,6 +61,17 @@ func (ec *ExprCompiler) Compile(ctx fql.IExpressionContext) vm.Operand {
 }
 
 // TODO: Free temporary registers if needed
+
+// compileUnary processes a unary operation (NOT, minus, plus) from the FQL AST.
+// It compiles the operand expression and applies the appropriate unary operation to it.
+// Parameters:
+//   - ctx: The unary operator context from the AST
+//   - parent: The parent expression context containing the operand
+//
+// Returns:
+//   - An operand representing the result of the unary operation
+//
+// Panics if the unary operator type is not recognized.
 func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IExpressionContext) vm.Operand {
 	src := ec.Compile(parent.GetRight())
 	dst := ec.ctx.Registers.Allocate(core.Temp)
@@ -72,6 +95,15 @@ func (ec *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.I
 }
 
 // TODO: Free temporary registers if needed
+
+// compileLogicalAnd processes a logical AND operation from the FQL AST.
+// It implements short-circuit evaluation: if the left operand is falsy, it returns that value
+// without evaluating the right operand. Otherwise, it evaluates and returns the right operand.
+// Parameters:
+//   - ctx: The expression context from the AST containing both operands
+//
+// Returns:
+//   - An operand representing the result of the logical AND operation
 func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand {
 	left := ec.Compile(ctx.GetLeft())
 
@@ -97,6 +129,15 @@ func (ec *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand
 }
 
 // TODO: Free temporary registers if needed
+
+// compileLogicalOr processes a logical OR operation from the FQL AST.
+// It implements short-circuit evaluation: if the left operand is truthy, it returns that value
+// without evaluating the right operand. Otherwise, it evaluates and returns the right operand.
+// Parameters:
+//   - ctx: The expression context from the AST containing both operands
+//
+// Returns:
+//   - An operand representing the result of the logical OR operation
 func (ec *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 	left := ec.Compile(ctx.GetLeft())
 
@@ -123,6 +164,14 @@ func (ec *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand 
 }
 
 // TODO: Free temporary registers if needed
+
+// compileTernary processes a ternary conditional operation (condition ? trueExpr : falseExpr) from the FQL AST.
+// It evaluates the condition and then either the true expression or the false expression based on the result.
+// Parameters:
+//   - ctx: The expression context from the AST containing the condition, true expression, and false expression
+//
+// Returns:
+//   - An operand representing the result of either the true or false expression
 func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 
@@ -163,6 +212,17 @@ func (ec *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 }
 
 // TODO: Free temporary registers if needed
+
+// compilePredicate processes a predicate expression from the FQL AST.
+// It handles both atomic expressions and comparison operations (equality, array operations, IN, LIKE).
+// For atomic expressions, it also handles error catching with the TRY operator.
+// Parameters:
+//   - ctx: The predicate context from the AST
+//
+// Returns:
+//   - An operand representing the result of the predicate expression
+//
+// Panics if the operator type is not recognized or not implemented.
 func (ec *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 	if c := ctx.ExpressionAtom(); c != nil {
 		startCatch := ec.ctx.Emitter.Size()
@@ -232,6 +292,18 @@ func (ec *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 }
 
 // TODO: Free temporary registers if needed
+
+// compileAtom processes an atomic expression from the FQL AST.
+// It handles various types of expressions including arithmetic operations (*, /, %, +, -),
+// regular expression operations (=~, !~), function calls, range operators, literals,
+// variables, member expressions, parameters, and nested expressions.
+// Parameters:
+//   - ctx: The expression atom context from the AST
+//
+// Returns:
+//   - An operand representing the result of the atomic expression
+//
+// Panics if the expression type is not recognized.
 func (ec *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 	var opcode vm.Opcode
 	var isSet bool
@@ -316,6 +388,15 @@ func (ec *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
 }
 
+// CompileMemberExpression processes a member expression (e.g., obj.prop, arr[idx]) from the FQL AST.
+// It handles property access for variables, parameters, object literals, array literals, and function calls.
+// It supports both dot notation (obj.prop) and bracket notation (obj["prop"] or arr[idx]),
+// as well as optional chaining with the ?. operator.
+// Parameters:
+//   - ctx: The member expression context from the AST
+//
+// Returns:
+//   - An operand representing the value of the accessed property
 func (ec *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext) vm.Operand {
 	mes := ctx.MemberExpressionSource()
 	segments := ctx.AllMemberExpressionPath()
@@ -363,6 +444,16 @@ func (ec *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext
 	return dst
 }
 
+// CompileVariable processes a variable reference from the FQL AST.
+// It resolves the variable name in the symbol table and returns the register or constant
+// containing its value. If the variable is not found, it panics with an error.
+// Parameters:
+//   - ctx: The variable context from the AST
+//
+// Returns:
+//   - An operand representing the variable's value
+//
+// Panics if the variable is not found in the symbol table.
 func (ec *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	name := ctx.Identifier().GetText()
 	// Just return the register / constant index
@@ -382,6 +473,14 @@ func (ec *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	return reg
 }
 
+// CompileParam processes a parameter reference (e.g., @paramName) from the FQL AST.
+// It binds the parameter name in the symbol table and emits instructions to load
+// the parameter value at runtime.
+// Parameters:
+//   - ctx: The parameter context from the AST
+//
+// Returns:
+//   - An operand representing the parameter's value
 func (ec *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
 	name := ctx.Identifier().GetText()
 	reg := ec.ctx.Registers.Allocate(core.Temp)
@@ -390,6 +489,13 @@ func (ec *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
 	return reg
 }
 
+// CompileFunctionCallExpression processes a function call expression from the FQL AST.
+// It handles both regular function calls and protected function calls (with TRY).
+// Parameters:
+//   - ctx: The function call expression context from the AST
+//
+// Returns:
+//   - An operand representing the function call result
 func (ec *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpressionContext) vm.Operand {
 	protected := ctx.ErrorOperator() != nil
 	call := ctx.FunctionCall()
@@ -397,16 +503,46 @@ func (ec *ExprCompiler) CompileFunctionCallExpression(ctx fql.IFunctionCallExpre
 	return ec.CompileFunctionCall(call, protected)
 }
 
+// CompileFunctionCall processes a function call from the FQL AST.
+// It compiles the function arguments and delegates to CompileFunctionCallWith.
+// Parameters:
+//   - ctx: The function call context from the AST
+//   - protected: Whether this is a protected call (with TRY)
+//
+// Returns:
+//   - An operand representing the function call result
 func (ec *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protected bool) vm.Operand {
 	return ec.CompileFunctionCallWith(ctx, protected, ec.CompileArgumentList(ctx.ArgumentList()))
 }
 
+// CompileFunctionCallWith processes a function call with pre-compiled arguments from the FQL AST.
+// It extracts the function name and delegates to CompileFunctionCallByNameWith.
+// Parameters:
+//   - ctx: The function call context from the AST
+//   - protected: Whether this is a protected call (with TRY)
+//   - seq: The pre-compiled function arguments as a sequence of registers
+//
+// Returns:
+//   - An operand representing the function call result
 func (ec *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) vm.Operand {
 	name := getFunctionName(ctx)
 
 	return ec.CompileFunctionCallByNameWith(name, protected, seq)
 }
 
+// CompileFunctionCallByNameWith processes a function call by name with pre-compiled arguments.
+// It handles both built-in runtime functions (TYPENAME, LENGTH, WAIT) and user-defined functions.
+// For built-in functions, it emits specialized instructions. For user-defined functions,
+// it delegates to compileUserFunctionCallWith.
+// Parameters:
+//   - name: The function name
+//   - protected: Whether this is a protected call (with TRY)
+//   - seq: The pre-compiled function arguments as a sequence of registers
+//
+// Returns:
+//   - An operand representing the function call result
+//
+// Panics if a built-in function is called with an incorrect number of arguments.
 func (ec *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
 	switch name {
 	case runtimeLength:
@@ -442,6 +578,17 @@ func (ec *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, prote
 	}
 }
 
+// compileUserFunctionCallWith processes a user-defined function call with pre-compiled arguments.
+// It loads the function name as a constant, binds the function in the symbol table,
+// and emits the appropriate call instruction based on the number of arguments and whether
+// the call is protected.
+// Parameters:
+//   - name: The function name
+//   - protected: Whether this is a protected call (with TRY)
+//   - seq: The pre-compiled function arguments as a sequence of registers
+//
+// Returns:
+//   - An operand representing the function call result
 func (ec *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
 	dest := ec.ctx.Registers.Allocate(core.Temp)
 	ec.ctx.Emitter.EmitLoadConst(dest, ec.ctx.Symbols.AddConstant(name))
@@ -480,6 +627,15 @@ func (ec *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protect
 	return dest
 }
 
+// CompileArgumentList processes a list of function arguments from the FQL AST.
+// It compiles each argument expression and moves the results into a contiguous sequence
+// of registers, which is required for function calls, array literals, and object literals.
+// Parameters:
+//   - ctx: The argument list context from the AST
+//
+// Returns:
+//   - A sequence of registers containing the compiled argument values,
+//     or an empty sequence if there are no arguments
 func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.RegisterSequence {
 	var seq core.RegisterSequence
 
@@ -515,6 +671,13 @@ func (ec *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.R
 	return seq
 }
 
+// CompileRangeOperator processes a range operator expression (e.g., 1..10) from the FQL AST.
+// It compiles the start and end operands and emits instructions to create a range.
+// Parameters:
+//   - ctx: The range operator context from the AST
+//
+// Returns:
+//   - An operand representing the compiled range
 func (ec *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.Operand {
 	dst := ec.ctx.Registers.Allocate(core.Temp)
 	start := ec.compileRangeOperand(ctx.GetLeft())
@@ -525,6 +688,15 @@ func (ec *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.O
 	return dst
 }
 
+// compileRangeOperand processes a range operand (start or end value) from the FQL AST.
+// It handles variables, parameters, and integer literals as valid range operands.
+// Parameters:
+//   - ctx: The range operand context from the AST
+//
+// Returns:
+//   - An operand representing the compiled range operand
+//
+// Panics if the operand type is not recognized.
 func (ec *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) vm.Operand {
 	if c := ctx.Variable(); c != nil {
 		return ec.CompileVariable(c)
