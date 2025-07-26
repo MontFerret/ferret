@@ -9,14 +9,8 @@ import (
 // REVERSE returns the reverse of a given string or array value.
 // @param {String | Any[]} value - The string or array to reverse.
 // @return {String | Any[]} - A reversed version of a given value.
-func Reverse(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	switch col := args[0].(type) {
+func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	switch col := arg.(type) {
 	case runtime.String:
 		runes := []rune(string(col))
 		size := len(runes)
@@ -48,6 +42,6 @@ func Reverse(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 
 		return result, nil
 	default:
-		return runtime.None, runtime.TypeErrorOf(args[0], runtime.TypeList, runtime.TypeString)
+		return runtime.None, runtime.TypeErrorOf(arg, runtime.TypeList, runtime.TypeString)
 	}
 }

@@ -94,9 +94,9 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 	return kvKeyReg, collectSelectors
 }
 
-// compileGrouping processes the group selectors and creates local variables for them.
+// finalizeGrouping processes the group selectors and creates local variables for them.
 // It handles both multiple selectors (as array elements) and single selectors differently.
-func (c *LoopCollectCompiler) compileGrouping(spec *core.CollectorSpec) {
+func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
 	if len(spec.GroupSelectors()) > 1 {

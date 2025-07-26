@@ -6,6 +6,38 @@ import (
 
 func TestCollectAggregate(t *testing.T) {
 	RunUseCases(t, []UseCase{
+		DebugCaseArray(`
+			LET users = [
+				{
+					active: true,
+					age: null,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: null,
+					gender: "m",
+					married: false
+				}
+			]
+			FOR u IN users
+				COLLECT gender = u.gender
+				AGGREGATE userCount = COUNT(u)
+				RETURN {
+					gender,
+					userCount,
+				}
+		`, []any{
+			map[string]any{"gender": "f", "userCount": 1},
+			map[string]any{"gender": "m", "userCount": 2},
+		}),
 		SkipCaseArray(`
 			LET users = [
 				{

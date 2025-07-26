@@ -14,3 +14,7 @@ type (
 		field int
 	}
 )
+
+func (l Label) String() string {
+	return l.name
+}

@@ -46,7 +46,7 @@ func (ra *RegisterAllocator) Allocate(typ RegisterType) vm.Operand {
 		return reg
 	}
 
-	// New register
+	// New value
 	reg := ra.next
 	ra.next++
 
@@ -59,13 +59,13 @@ func (ra *RegisterAllocator) Allocate(typ RegisterType) vm.Operand {
 }
 
 func (ra *RegisterAllocator) Free(reg vm.Operand) {
-	//info, ok := ra.all[reg]
+	//info, ok := ra.all[state]
 	//if !ok || !info.allocated {
 	//	return // double-free or unknown
 	//}
 	//
 	//info.allocated = false
-	//ra.freelist[info.typ] = append(ra.freelist[info.typ], reg)
+	//ra.freelist[info.typ] = append(ra.freelist[info.typ], state)
 }
 
 func (ra *RegisterAllocator) AllocateSequence(count int) RegisterSequence {

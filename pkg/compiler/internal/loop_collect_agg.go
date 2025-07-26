@@ -14,55 +14,35 @@ import (
 // For grouped aggregations, it compiles the selectors and packs them with the loop value.
 // For global aggregations, it pushes the selectors directly to the collector.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool) []*core.AggregateSelector {
+func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool) *core.CollectorAggregation {
+	loop := c.ctx.Loops.Current()
 	selectors := ctx.AllCollectAggregateSelector()
-	var compiledSelectors []*core.AggregateSelector
 
 	// If we have grouping, we need to pack the selectors into the collector value
 	if withGrouping {
+		// TODO: We need to figure out how to free the aggregator register later
+		aggregator := c.ctx.Registers.Allocate(core.State)
+		// We create a separate collector for aggregation in grouped mode
+		c.ctx.Emitter.InsertAx(loop.StartLabel, vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
+
 		// Compile selectors for grouped aggregation
-		compiledSelectors = c.compileGroupedAggregationSelectors(selectors)
+		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator)
 
-		// Pack the selectors into the collector value along with the loop value
-		c.packGroupedValues(kv, compiledSelectors)
-	} else {
-		// For global aggregation, we just push the selectors into the global collector
-		compiledSelectors = c.compileGlobalAggregationSelectors(selectors, dst)
+		return core.NewCollectorAggregation(aggregator, aggregateSelectors)
 	}
 
-	return compiledSelectors
+	// For global aggregation, we just push the selectors into the global collector
+	aggregateSelectors := c.initializeGlobalAggregationSelectors(selectors, dst)
+
+	return core.NewCollectorAggregation(dst, aggregateSelectors)
 }
 
-// packGroupedValues combines the loop value with aggregation selector values into a single array.
-// This is used for grouped aggregations to keep all values together for each group.
-// The first element of the array is the loop value, followed by the aggregation selector values.
-func (c *LoopCollectCompiler) packGroupedValues(kv *core.KV, selectors []*core.AggregateSelector) {
-	// Allocate a sequence of registers for the array elements
-	// We need one extra register for the loop value (hence +1)
-	seq := c.ctx.Registers.AllocateSequence(len(selectors) + 1)
-
-	// Move the loop value to the first position in the sequence
-	c.ctx.Emitter.EmitMove(seq[0], kv.Value)
-
-	// Move each selector value to its position in the sequence
-	for i, selector := range selectors {
-		c.ctx.Emitter.EmitMove(seq[i+1], selector.Register())
-		// Free the selector register as we no longer need it
-		c.ctx.Registers.Free(selector.Register())
-	}
-
-	// Create an array from the sequence and store it in the kv.Value register
-	// This replaces the original loop value with an array containing both
-	// the loop value and all selector values
-	c.ctx.Emitter.EmitArray(kv.Value, seq)
-}
-
-// compileGroupedAggregationSelectors processes aggregation selectors for grouped aggregations.
+// initializeGroupedAggregationSelectors processes aggregation selectors for grouped aggregations.
 // It compiles each selector's function call expression and arguments, and creates AggregateSelector objects.
 // For selectors with multiple arguments, it packs them into an array.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) compileGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext) []*core.AggregateSelector {
-	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
+func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst vm.Operand) []*core.AggregateSelector {
+	wrappedSelectors := make([]*core.AggregateSelector, len(selectors))
 
 	for i := 0; i < len(selectors); i++ {
 		selector := selectors[i]
@@ -78,16 +58,21 @@ func (c *LoopCollectCompiler) compileGroupedAggregationSelectors(selectors []fql
 			panic("No arguments provided for the function call in the aggregate selector")
 		}
 
-		var selectorArg vm.Operand
-
 		if len(args) > 1 {
-			// For multiple arguments, pack them into an array
-			selectorArg = c.ctx.Registers.Allocate(core.Temp)
-			c.ctx.Emitter.EmitArray(selectorArg, args)
-			c.ctx.Registers.FreeSequence(args)
+			// For multiple arguments, push each one with an indexed key
+			for y := 0; y < len(args); y++ {
+				// Create a key with format "name:index"
+				key := c.loadSelectorKey(kv.Key, name, y)
+				// Push the key-value pair to the collector
+				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
+				c.ctx.Registers.Free(key)
+			}
 		} else {
-			// For a single argument, use it directly
-			selectorArg = args[0]
+			// For a single argument, use the selector name as the key
+			key := c.loadSelectorKey(kv.Key, name, -1)
+			// Push the key-value pair to the collector
+			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
+			c.ctx.Registers.Free(key)
 		}
 
 		// Get the function name and check if it's a protected call (with TRY)
@@ -96,17 +81,20 @@ func (c *LoopCollectCompiler) compileGroupedAggregationSelectors(selectors []fql
 		isProtected := fce.ErrorOperator() != nil
 
 		// Create an AggregateSelector with all the information needed to process it later
-		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, selectorArg))
+		wrappedSelectors[i] = core.NewAggregateSelector(name, len(args), funcName, isProtected)
+
+		// Free the argument registers
+		c.ctx.Registers.FreeSequence(args)
 	}
 
 	return wrappedSelectors
 }
 
-// compileGlobalAggregationSelectors processes aggregation selectors for global (non-grouped) aggregations.
+// initializeGlobalAggregationSelectors processes aggregation selectors for global (non-grouped) aggregations.
 // It compiles each selector's function call expression and arguments, and pushes them directly to the collector.
 // For selectors with multiple arguments, it uses indexed keys to store each argument separately.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst vm.Operand) []*core.AggregateSelector {
+func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst vm.Operand) []*core.AggregateSelector {
 	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
 
 	for i := 0; i < len(selectors); i++ {
@@ -127,7 +115,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.
 			// For multiple arguments, push each one with an indexed key
 			for y := 0; y < len(args); y++ {
 				// Create a key with format "name:index"
-				key := c.loadAggregationArgKey(name, y)
+				key := c.loadGlobalSelectorKey(name, y)
 				// Push the key-value pair to the collector
 				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
 				c.ctx.Registers.Free(key)
@@ -147,7 +135,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.
 
 		// For global aggregation, we don't need to store the register in the selector
 		// as the values are already pushed to the collector
-		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, vm.NoopOperand))
+		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected))
 
 		// Free the argument registers
 		c.ctx.Registers.FreeSequence(args)
@@ -156,81 +144,32 @@ func (c *LoopCollectCompiler) compileGlobalAggregationSelectors(selectors []fql.
 	return wrappedSelectors
 }
 
-// unpackGroupedValues extracts values from the packed array created during grouped aggregation.
-// It loads the loop value from index 0 and each aggregation selector value from subsequent indices.
-// This is only needed for grouped aggregations, so it returns early if there's no grouping.
-func (c *LoopCollectCompiler) unpackGroupedValues(spec *core.CollectorSpec) {
-	// Skip if there's no grouping
-	if !spec.HasGrouping() {
-		return
-	}
-
-	loop := c.ctx.Loops.Current()
-	// Allocate a temporary register for the loop value
-	valReg := c.ctx.Registers.Allocate(core.Temp)
-
-	// Load the original loop value from index 0 of the array
-	loadIndex(c.ctx, valReg, loop.Value, 0)
-
-	// Load each aggregation selector value from its index in the array
-	for i, selector := range spec.AggregationSelectors() {
-		loadIndex(c.ctx, selector.Register(), loop.Value, i+1)
-	}
-
-	// Free the temporary register
-	c.ctx.Registers.Free(valReg)
-}
-
-// compileAggregation processes the aggregation operations based on the collector specification.
+// finalizeAggregation processes the aggregation operations based on the collector specification.
 // It delegates to either grouped or global aggregation compilation based on whether grouping is used.
-func (c *LoopCollectCompiler) compileAggregation(spec *core.CollectorSpec) {
+func (c *LoopCollectCompiler) finalizeAggregation(spec *core.Collector) {
 	if spec.HasGrouping() {
 		// For aggregations with grouping
-		c.compileGroupedAggregation(spec)
+		c.finalizeGroupedAggregation(spec)
 	} else {
 		// For global aggregations without grouping
-		c.compileGlobalAggregation(spec)
+		c.finalizeGlobalAggregation(spec)
 	}
 }
 
-// compileGroupedAggregation handles grouped aggregation operations.
+// finalizeGroupedAggregation handles grouped aggregation operations.
 // This function is currently commented out in the original code, likely because
 // the functionality is implemented differently or is being refactored.
 // The commented code shows the intended approach for handling grouped aggregations.
-func (c *LoopCollectCompiler) compileGroupedAggregation(spec *core.CollectorSpec) {
-	//parentLoop := c.ctx.Loops.Current()
-	//// We need to allocate a temporary accumulator to store aggregation results
-	//selectors := ctx.AllCollectAggregateSelector()
-	//accumulator := c.ctx.Registers.Allocate(core.Temp)
-	//c.ctx.Emitter.EmitAx(vm.OpDataSetCollector, accumulator, int(core.CollectorTypeKeyGroup))
-	//
-	//loop := c.ctx.Loops.NewForInLoop(core.TemporalLoop, false)
-	//loop.Src = c.ctx.Registers.Allocate(core.Temp)
-	//
-	//// Now we iterate over the grouped items
-	//parentLoop.EmitValue(loop.Src, c.ctx.Emitter)
-	//
-	//// Nested scope for aggregators
-	//c.ctx.Symbols.EnterScope()
-	//loop.DeclareValueVar(parentLoop.ValueName, c.ctx.Symbols)
-	//loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
-	//
-	//// Add value selectors to the accumulators
-	//argsPkg := c.compileGroupedAggregationSelectors(selectors, accumulator)
-	//
-	//loop.EmitFinalization(c.ctx.Emitter)
-	//c.ctx.Symbols.ExitScope()
-	//
-	//// Now we can iterate over the selectors and execute the aggregation functions by passing the accumulators
-	//// And define variables for each accumulator result
-	//c.compileAggregationFuncCalls(selectors, accumulator, argsPkg)
-	//c.ctx.Registers.Free(accumulator)
+func (c *LoopCollectCompiler) finalizeGroupedAggregation(spec *core.Collector) {
+	for i, selector := range spec.Aggregation().Selectors() {
+		c.compileGroupedAggregationFuncCall(selector, spec.Aggregation().State(), i)
+	}
 }
 
-// compileGlobalAggregation handles global (non-grouped) aggregation operations.
+// finalizeGlobalAggregation handles global (non-grouped) aggregation operations.
 // It creates a new loop with a single iteration to process the aggregation results.
 // This approach allows the aggregation to be processed in a consistent way with other operations.
-func (c *LoopCollectCompiler) compileGlobalAggregation(spec *core.CollectorSpec) {
+func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	// At this point, the previous loop is finalized, so we can pop it and free its registers
 	prevLoop := c.ctx.Loops.Pop()
 	c.ctx.Registers.Free(prevLoop.Key)
@@ -261,17 +200,17 @@ func (c *LoopCollectCompiler) compileGlobalAggregation(spec *core.CollectorSpec)
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
 
 	// Process the aggregation function calls using the values from the previous loop's collector
-	c.compileAggregationFuncCalls(spec, prevLoop.Dst)
+	c.compileGlobalAggregationFuncCalls(spec, prevLoop.Dst)
 
 	// Free the previous loop's destination register
 	c.ctx.Registers.Free(prevLoop.Dst)
 }
 
-// compileAggregationFuncCalls processes the aggregation function calls for the selectors.
+// compileGlobalAggregationFuncCalls processes the aggregation function calls for the selectors.
 // It loads the arguments from the aggregator, calls the aggregation functions,
 // and assigns the results to local variables.
 // It also handles the case where there are no records in the aggregator by loading NONE values.
-func (c *LoopCollectCompiler) compileAggregationFuncCalls(spec *core.CollectorSpec, aggregator vm.Operand) {
+func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Collector, aggregator vm.Operand) {
 	// Gets the number of records in the accumulator
 	cond := c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAB(vm.OpLength, cond, aggregator)
@@ -285,7 +224,7 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(spec *core.CollectorSp
 	// We skip the key retrieval and function call if there are no records in the accumulator
 	c.ctx.Emitter.EmitJumpIfTrue(cond, elseLabel)
 
-	selectors := spec.AggregationSelectors()
+	selectors := spec.Aggregation().Selectors()
 	selectorVarRegs := make([]vm.Operand, len(selectors))
 
 	// Process each aggregation selector
@@ -298,7 +237,7 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(spec *core.CollectorSp
 			args = c.ctx.Registers.AllocateSequence(selector.Args())
 
 			for y, reg := range args {
-				argKeyReg := c.loadAggregationArgKey(selector.Name(), y)
+				argKeyReg := c.loadGlobalSelectorKey(selector.Name(), y)
 				c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, argKeyReg)
 				c.ctx.Registers.Free(argKeyReg)
 			}
@@ -347,22 +286,60 @@ func (c *LoopCollectCompiler) compileAggregationFuncCalls(spec *core.CollectorSp
 	c.ctx.Registers.Free(cond)
 }
 
-// compileAggregationFuncCall processes a single aggregation function call.
-// It declares a local variable for the aggregation result and loads the value from the selector register.
-// This is used for grouped aggregations where the selector values are stored in registers.
-func (c *LoopCollectCompiler) compileAggregationFuncCall(selector *core.AggregateSelector) {
+func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int) {
+	loop := c.ctx.Loops.Current()
 	// Declare a local variable with the selector name
-	varReg := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
-	// Load the value from index 1 of the selector register (index 0 is the original value)
-	loadIndex(c.ctx, varReg, selector.Register(), 1)
+	valReg := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
+
+	var args core.RegisterSequence
+
+	// We need to unpack arguments from the aggregator
+	if selector.Args() > 1 {
+		// For multiple arguments, allocate a sequence and load each argument by its indexed key
+		args = c.ctx.Registers.AllocateSequence(selector.Args())
+
+		for y, reg := range args {
+			key := c.loadSelectorKey(loop.Key, selector.Name(), y)
+			c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, key)
+			c.ctx.Registers.Free(key)
+		}
+	} else {
+		// For a single argument, load it directly using the selector name as key
+		key := c.loadSelectorKey(loop.Key, selector.Name(), -1)
+		value := c.ctx.Registers.Allocate(core.Temp)
+		c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
+		args = core.RegisterSequence{value}
+		c.ctx.Registers.Free(key)
+	}
+
+	resArg := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
+
+	c.ctx.Emitter.EmitMove(valReg, resArg)
 }
 
-// loadAggregationArgKey creates a key for an aggregation argument by combining the selector name and argument index.
+// loadGlobalSelectorKey creates a key for an aggregation argument by combining the selector name and argument index.
 // This is used for global aggregations with multiple arguments to store each argument separately.
 // Returns a register containing the key as a string constant.
-func (c *LoopCollectCompiler) loadAggregationArgKey(selector runtime.String, arg int) vm.Operand {
+func (c *LoopCollectCompiler) loadGlobalSelectorKey(selector runtime.String, arg int) vm.Operand {
 	// Create a key with format "selectorName:argIndex"
 	argKey := selector.String() + ":" + strconv.Itoa(arg)
 	// Load the key as a string constant
 	return loadConstant(c.ctx, runtime.String(argKey))
+}
+
+func (c *LoopCollectCompiler) loadSelectorKey(key vm.Operand, selector runtime.String, arg int) vm.Operand {
+	selectorKey := c.ctx.Registers.Allocate(core.Temp)
+	selectorName := loadConstant(c.ctx, selector)
+
+	c.ctx.Emitter.EmitABC(vm.OpAdd, selectorKey, key, selectorName)
+
+	if arg >= 0 {
+		selectorIndex := loadConstant(c.ctx, runtime.String(strconv.Itoa(arg)))
+		c.ctx.Emitter.EmitABC(vm.OpAdd, selectorKey, selectorKey, selectorIndex)
+		c.ctx.Registers.Free(selectorIndex)
+	}
+
+	c.ctx.Registers.Free(selectorName)
+
+	return selectorKey
 }

@@ -5,10 +5,12 @@ import (
 )
 
 func RegisterLib(ns runtime.Namespace) error {
-	return ns.RegisterFunctions(
-		runtime.NewFunctionsFromMap(map[string]runtime.Function{
-			"COUNT_DISTINCT": CountDistinct,
-			"INCLUDES":       Includes,
-			"REVERSE":        Reverse,
-		}))
+	return ns.RegisterFunctions(runtime.
+		NewFunctionsBuilder().
+		Set1("COUNT_DISTINCT", CountDistinct).
+		Set1("COUNT", Count).
+		Set2("INCLUDES", Includes).
+		Set1("REVERSE", Reverse).
+		Build(),
+	)
 }

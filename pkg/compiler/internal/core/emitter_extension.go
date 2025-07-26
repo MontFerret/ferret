@@ -108,6 +108,10 @@ func (e *Emitter) EmitLoadIndex(dst, arr, idx vm.Operand) {
 	e.EmitABC(vm.OpLoadIndex, dst, arr, idx)
 }
 
+func (e *Emitter) EmitLoadKey(dst, obj, key vm.Operand) {
+	e.EmitABC(vm.OpLoadKey, dst, obj, key)
+}
+
 func (e *Emitter) EmitLoadProperty(dst, obj, prop vm.Operand) {
 	e.EmitABC(vm.OpLoadProperty, dst, obj, prop)
 }

@@ -37,7 +37,7 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 // finalizeProjection completes the projection setup by creating and assigning local variables.
 // It handles different behaviors based on whether grouping and aggregation are used.
 // Returns the register containing the projected value.
-func (c *LoopCollectCompiler) finalizeProjection(spec *core.CollectorSpec, aggregator vm.Operand) vm.Operand {
+func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregator vm.Operand) vm.Operand {
 	loop := c.ctx.Loops.Current()
 	varName := spec.Projection().VariableName()
 

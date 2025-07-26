@@ -26,38 +26,38 @@ func (c *LoopCollectCompiler) Compile(ctx fql.ICollectClauseContext) {
 	c.compileLoop(scope)
 }
 
-// compileCollector processes the COLLECT clause components and creates a CollectorSpec.
+// compileCollector processes the COLLECT clause components and creates a Collector.
 // This function handles the initialization of grouping, aggregation, and projection operations,
 // and sets up the appropriate collector type based on the COLLECT clause structure.
-func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.CollectorSpec {
+func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *core.Collector {
 	// Extract all components of the COLLECT clause
-	grouping := ctx.CollectGrouping()
-	projection := ctx.CollectGroupProjection()
-	counter := ctx.CollectCounter()
-	aggregation := ctx.CollectAggregator()
+	groupingCtx := ctx.CollectGrouping()
+	projectionCtx := ctx.CollectGroupProjection()
+	counterCtx := ctx.CollectCounter()
+	aggregationCtx := ctx.CollectAggregator()
 
 	// We gather keys and values for the collector.
-	kv, groupSelectors := c.initializeGrouping(grouping)
+	kv, groupSelectors := c.initializeGrouping(groupingCtx)
 
 	// Determine the collector type based on the presence of different COLLECT components
-	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregation != nil, projection != nil, counter != nil)
+	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregationCtx != nil, projectionCtx != nil, counterCtx != nil)
 
 	// We replace DataSet initialization with Collector initialization
 	loop := c.ctx.Loops.Current()
 	dst := loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
 
-	var aggregationSelectors []*core.AggregateSelector
+	var aggregation *core.CollectorAggregation
 
-	// Initialize aggregation if present in the COLLECT clause
-	if aggregation != nil {
-		aggregationSelectors = c.initializeAggregation(aggregation, dst, kv, len(groupSelectors) > 0)
+	// Initialize aggregationCtx if present in the COLLECT clause
+	if aggregationCtx != nil {
+		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0)
 	}
 
-	// Initialize projection for group variables or counters
-	groupProjection := c.initializeProjection(kv, projection, counter)
+	// Initialize projectionCtx for group variables or counters
+	projection := c.initializeProjection(kv, projectionCtx, counterCtx)
 
 	// Create the collector specification with all components
-	spec := core.NewCollectorSpec(collectorType, dst, groupProjection, groupSelectors, aggregationSelectors)
+	spec := core.NewCollector(collectorType, dst, projection, groupSelectors, aggregation)
 
 	// Finalize the collector setup
 	c.finalizeCollector(dst, kv, spec)
@@ -72,7 +72,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 // finalizeCollector completes the collector setup by pushing key-value pairs to the collector
 // and emitting finalization instructions for the current loop.
 // The behavior varies based on whether grouping and aggregation are used.
-func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spec *core.CollectorSpec) {
+func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
 	// If we do not use grouping but use aggregation, we do not need to push the key and value
@@ -93,7 +93,7 @@ func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spe
 // compileLoop processes the loop operations based on the collector specification.
 // It handles different combinations of grouping, aggregation, and projection operations,
 // ensuring that the appropriate VM instructions are generated for each case.
-func (c *LoopCollectCompiler) compileLoop(spec *core.CollectorSpec) {
+func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
 	// If we are using a projection, we need to ensure the loop is set to ForInLoop
@@ -123,17 +123,16 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.CollectorSpec) {
 
 	// Process aggregation if present
 	if spec.HasAggregation() {
-		c.unpackGroupedValues(spec)
-		c.compileAggregation(spec)
+		c.finalizeAggregation(spec)
 	}
 
 	// Process grouping if present
 	if spec.HasGrouping() {
-		c.compileGrouping(spec)
+		c.finalizeGrouping(spec)
 	}
 
 	// We finalize projection only if we have a projection and no aggregation
-	// Because if we have aggregation, we finalize it in the compileAggregation method.
+	// Because if we have aggregation, we finalize it in the finalizeAggregation method.
 	if spec.HasProjection() && !spec.HasAggregation() {
 		c.finalizeProjection(spec, loop.Value)
 	}

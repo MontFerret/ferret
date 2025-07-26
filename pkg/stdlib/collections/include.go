@@ -10,16 +10,11 @@ import (
 // @param {String | Any[] | hashMap | Iterable} haystack - The value container.
 // @param {Any} needle - The target value to assert.
 // @return {Boolean} - A boolean value that indicates whether a container contains a given value.
-func Includes(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 2)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
+func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	var err error
 	var result runtime.Boolean
-	haystack := args[0]
-	needle := args[1]
+	haystack := arg1
+	needle := arg2
 
 	switch v := haystack.(type) {
 	case runtime.String:
@@ -67,5 +62,5 @@ func Includes(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 		)
 	}
 
-	return result, nil
+	return result, err
 }

@@ -26,9 +26,14 @@ func loadConstantTo(ctx *CompilerContext, constant runtime.Value, reg vm.Operand
 }
 
 func loadIndex(ctx *CompilerContext, dst, arr vm.Operand, idx int) {
-	idxReg := loadConstant(ctx, runtime.NewInt(idx))
+	idxReg := loadConstant(ctx, runtime.Int(idx))
 	ctx.Emitter.EmitLoadIndex(dst, arr, idxReg)
 	ctx.Registers.Free(idxReg)
+}
+
+func loadKey(ctx *CompilerContext, dst, obj vm.Operand, key string) {
+	keyReg := loadConstant(ctx, runtime.String(key))
+	ctx.Emitter.EmitLoadKey(dst, obj, keyReg)
 }
 
 func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {

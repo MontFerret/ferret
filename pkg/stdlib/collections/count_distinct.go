@@ -8,12 +8,8 @@ import (
 )
 
 // COUNT_DISTINCT computes the number of distinct elements in the given collection and returns the count as an integer.
-func CountDistinct(ctx context.Context, args ...core.Value) (core.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
-		return runtime.None, err
-	}
-
-	collection, err := runtime.CastCollection(args[0])
+func CountDistinct(ctx context.Context, arg core.Value) (core.Value, error) {
+	collection, err := runtime.CastCollection(arg)
 
 	if err != nil {
 		return runtime.ZeroInt, err

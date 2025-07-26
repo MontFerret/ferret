@@ -103,17 +103,17 @@ func (e *Emitter) Emit(op vm.Opcode) {
 	e.EmitABC(op, 0, 0, 0)
 }
 
-// EmitA emits an opcode with a single destination register argument.
+// EmitA emits an opcode with a single destination value argument.
 func (e *Emitter) EmitA(op vm.Opcode, dest vm.Operand) {
 	e.EmitABC(op, dest, 0, 0)
 }
 
-// EmitAB emits an opcode with a destination register and a single source register argument.
+// EmitAB emits an opcode with a destination value and a single source value argument.
 func (e *Emitter) EmitAB(op vm.Opcode, dest, src1 vm.Operand) {
 	e.EmitABC(op, dest, src1, 0)
 }
 
-// EmitAb emits an opcode with a destination register and a boolean argument.
+// EmitAb emits an opcode with a destination value and a boolean argument.
 func (e *Emitter) EmitAb(op vm.Opcode, dest vm.Operand, arg bool) {
 	var src1 vm.Operand
 
@@ -124,7 +124,7 @@ func (e *Emitter) EmitAb(op vm.Opcode, dest vm.Operand, arg bool) {
 	e.EmitABC(op, dest, src1, 0)
 }
 
-// EmitAx emits an opcode with a destination register and a custom argument.
+// EmitAx emits an opcode with a destination value and a custom argument.
 func (e *Emitter) EmitAx(op vm.Opcode, dest vm.Operand, arg int) {
 	e.EmitABC(op, dest, vm.Operand(arg), 0)
 }
@@ -134,7 +134,7 @@ func (e *Emitter) EmitAxy(op vm.Opcode, dest vm.Operand, arg1, agr2 int) {
 	e.EmitABC(op, dest, vm.Operand(arg1), vm.Operand(agr2))
 }
 
-// EmitAs emits an opcode with a destination register and a sequence of registers.
+// EmitAs emits an opcode with a destination value and a sequence of registers.
 func (e *Emitter) EmitAs(op vm.Opcode, dest vm.Operand, seq RegisterSequence) {
 	if seq != nil {
 		src1 := seq[0]
@@ -145,12 +145,12 @@ func (e *Emitter) EmitAs(op vm.Opcode, dest vm.Operand, seq RegisterSequence) {
 	}
 }
 
-// EmitABx emits an opcode with a destination and source register and a custom argument.
+// EmitABx emits an opcode with a destination and source value and a custom argument.
 func (e *Emitter) EmitABx(op vm.Opcode, dest vm.Operand, src vm.Operand, arg int) {
 	e.EmitABC(op, dest, src, vm.Operand(arg))
 }
 
-// EmitABC emits an opcode with a destination register and two source register arguments.
+// EmitABC emits an opcode with a destination value and two source value arguments.
 func (e *Emitter) EmitABC(op vm.Opcode, dest, src1, src2 vm.Operand) {
 	e.instructions = append(e.instructions, vm.Instruction{
 		Opcode:   op,
@@ -267,7 +267,7 @@ func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
-		panic(fmt.Errorf("label not marked: %d", label))
+		panic(fmt.Errorf("label not marked: %s", label))
 	}
 
 	// Insert instruction at position
