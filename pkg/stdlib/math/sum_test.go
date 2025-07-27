@@ -33,4 +33,16 @@ func TestSum(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, -6)
 	})
+
+	Convey("Should ignore none number-values", t, func() {
+		out, err := math.Sum(context.Background(), runtime.NewArrayWith(
+			core.None,
+			core.NewInt(2),
+			core.True,
+			core.NewInt(2),
+		))
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, 4)
+	})
 }

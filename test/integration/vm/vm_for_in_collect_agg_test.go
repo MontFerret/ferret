@@ -8,6 +8,65 @@ func TestCollectAggregate(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		CaseArray(`
 			LET users = [
+				{ gender: "m", age: 31 },
+				{ gender: "f", age: 25 },
+				{ gender: "m", age: 45 }
+			]
+			FOR u IN users
+				COLLECT gender = u.gender
+				AGGREGATE minAge = MIN(u.age)  INTO grouped
+				RETURN {
+					gender,
+					minAge,
+					grouped
+				}
+		`, []any{
+			map[string]any{"gender": "f", "minAge": 25, "grouped": []map[string]any{{"u": map[string]any{"gender": "f", "age": 25}}}},
+			map[string]any{"gender": "m", "minAge": 31, "grouped": []map[string]any{{"u": map[string]any{"gender": "m", "age": 31}}, {"u": map[string]any{"gender": "m", "age": 45}}}},
+		}, "Should support COLLECT INTO + AGGREGATE"),
+		CaseArray(`
+			LET users = []
+			FOR u IN users
+				COLLECT gender = u.gender
+				AGGREGATE minAge = MIN(u.age)
+				RETURN {
+					gender,
+					minAge
+				}
+		`, []any{}, "Should return empty array for grouped aggregate on empty input"),
+
+		CaseArray(`
+			LET users = [
+				{ gender: "m", age: null },
+				{ gender: "m", age: 40 },
+				{ gender: "f", age: 20 },
+				{ gender: "f", age: null }
+			]
+			FOR u IN users
+				COLLECT gender = u.gender
+				AGGREGATE 
+					count = COUNT(u.age), 
+					sum = SUM(u.age), 
+					avg = AVERAGE(u.age)
+				RETURN {
+					gender, count, sum, avg
+				}
+		`, []any{
+			map[string]any{"gender": "f", "count": 2, "sum": 20, "avg": 20},
+			map[string]any{"gender": "m", "count": 2, "sum": 40, "avg": 40},
+		}, "Should skip nulls in COUNT, SUM, AVG"),
+		Case(`
+			LET users = [ { gender: "m", age: 30 }, { gender: "f", age: 40 } ]
+			LET result = (
+				FOR u IN users
+					COLLECT gender = u.gender
+					AGGREGATE total = COUNT(u)
+					RETURN { gender, total }
+			)
+			RETURN result[0].total
+		`, 1),
+		CaseArray(`
+			LET users = [
 				{
 					active: true,
 					age: null,

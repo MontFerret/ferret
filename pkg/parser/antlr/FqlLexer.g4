@@ -70,7 +70,6 @@ Use: 'USE';
 Into: 'INTO';
 Keep: 'KEEP';
 With: 'WITH';
-Count: 'COUNT';
 All: 'ALL';
 Any: 'ANY';
 Aggregate: 'AGGREGATE';

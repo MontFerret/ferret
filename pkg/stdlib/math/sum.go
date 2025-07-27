@@ -23,14 +23,14 @@ func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	if size == 0 {
-		return runtime.None, nil
+		return runtime.ZeroInt, nil
 	}
 
 	var sum float64
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if err = runtime.AssertNumber(value); err != nil {
-			return false, err
+		if !runtime.IsNumber(value) {
+			return true, nil
 		}
 
 		sum += toFloat(value)

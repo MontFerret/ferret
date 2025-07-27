@@ -40,11 +40,23 @@ func TestAverage(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, core.None)
+		So(out, ShouldEqual, runtime.Float(-5))
 
 		out, err = math.Average(context.Background(), runtime.NewArray(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, core.None)
+		So(out, ShouldEqual, runtime.Float(0))
+	})
+
+	Convey("Should ignore nulls and compute correct average", t, func() {
+		out, err := math.Average(context.Background(), runtime.NewArrayWith(
+			core.None,
+			core.NewInt(20),
+			core.NewInt(0),
+			core.None,
+		))
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, runtime.Float(10.0))
 	})
 }

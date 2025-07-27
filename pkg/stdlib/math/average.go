@@ -16,33 +16,29 @@ func Average(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	size, err := arr.Length(ctx)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	if size == 0 {
-		return runtime.None, nil
-	}
-
-	var sum float64
+	var (
+		sum   float64
+		count int
+	)
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		err = runtime.AssertNumber(value)
-
-		if err != nil {
-			return false, nil
+		if !runtime.IsNumber(value) {
+			return true, nil // skip non-numbers/nulls
 		}
 
 		sum += toFloat(value)
+		count++
 
 		return true, nil
 	})
 
 	if err != nil {
-		return runtime.None, nil
+		return runtime.None, err
 	}
 
-	return runtime.Float(sum / float64(size)), nil
+	if count == 0 {
+		return runtime.ZeroFloat, nil
+	}
+
+	return runtime.Float(sum / float64(count)), nil
 }

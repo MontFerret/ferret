@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
@@ -25,7 +27,14 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 	// Handle counter projection
 	if counter != nil {
 		// Extract the counter variable name from the context
-		varName := counter.Identifier().GetText()
+		// Extract the target variable (the second Identifier after INTO)
+		varName := counter.Identifier(1).GetText()
+
+		// Optional: validate that the first Identifier is actually "COUNT"
+		if strings.ToUpper(counter.Identifier(0).GetText()) != "COUNT" {
+			panic("counter identifier must be COUNT")
+		}
+
 		// Create a count projection with the variable name
 		return core.NewCollectorCountProjection(varName)
 	}

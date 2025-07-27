@@ -90,6 +90,52 @@ FOR i WHILE UNTIL(LENGTH(users))
 			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
 		}, "Should collect and aggregate values by a single key"),
 		CaseArray(`
+LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true
+				}
+			]
+FOR i WHILE UNTIL(LENGTH(users))
+  COLLECT genderGroup = users[i].gender
+   AGGREGATE minAge = MIN(users[i].age), maxAge = MAX(users[i].age)
+
+  RETURN {
+    genderGroup,
+    minAge,
+    maxAge
+  }
+`, []any{
+			map[string]any{"genderGroup": "f", "minAge": 25, "maxAge": 45},
+			map[string]any{"genderGroup": "m", "minAge": 31, "maxAge": 69},
+		}, "Should handle scoping properly"),
+		CaseArray(`
 			LET users = [
 				{
 					active: true,

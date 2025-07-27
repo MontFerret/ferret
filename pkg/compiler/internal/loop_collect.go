@@ -90,9 +90,7 @@ func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spe
 	loop.EmitFinalization(c.ctx.Emitter)
 }
 
-// compileLoop processes the loop operations based on the collector specification.
-// It handles different combinations of grouping, aggregation, and projection operations,
-// ensuring that the appropriate VM instructions are generated for each case.
+// compileLoop compiles a loop construct by configuring its kind, registers, initialization, and processing based on the specification.
 func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 
@@ -137,9 +135,10 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 		c.finalizeGrouping(spec)
 	}
 
-	// We finalize projection only if we have a projection and no aggregation
-	// Because if we have aggregation, we finalize it in the finalizeAggregation method.
-	if spec.HasProjection() && !spec.HasAggregation() {
-		c.finalizeProjection(spec, loop.Value)
+	// Process projection if present
+	if spec.HasProjection() {
+		if spec.HasGrouping() || !spec.HasAggregation() {
+			c.finalizeProjection(spec, loop.Value)
+		}
 	}
 }
