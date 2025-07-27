@@ -113,11 +113,13 @@ collectClause
   : Collect collectGrouping collectAggregator collectGroupProjection
   | Collect collectGrouping collectAggregator
   | Collect collectGrouping collectGroupProjection
+  | Collect collectGrouping collectCounter
   | Collect collectGrouping
   | Collect collectAggregator collectGroupProjection
   | Collect collectAggregator
   | Collect collectCounter
   ;
+
 
 collectSelector
     : Identifier Assign expression
