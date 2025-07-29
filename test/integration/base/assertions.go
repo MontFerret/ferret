@@ -3,8 +3,15 @@ package base
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/pkg/compiler"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type ExpectedError struct {
+	Message string
+	Kind    compiler.ErrorKind
+}
 
 func ArePtrsEqual(expected, actual any) bool {
 	if expected == nil || actual == nil {
@@ -30,10 +37,35 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 	return ""
 }
 
-func ShouldBeCompilationError(actual any, _ ...any) string {
-	// TODO: Expect a particular error message
+func ShouldBeCompilationError(actual any, expected ...any) string {
+	err, ok := actual.(*compiler.CompilationError)
 
-	So(actual, ShouldBeError)
+	if !ok {
+		return "expected a compilation error"
+	}
 
-	return ""
+	var msg string
+
+	switch ex := expected[0].(type) {
+	case *ExpectedError:
+		if ex.Kind != "" {
+			msg = ShouldEqual(err.Kind, ex.Kind)
+		}
+
+		if msg == "" {
+			msg = ShouldEqual(err.Message, ex.Message)
+		}
+
+		break
+	case string:
+		msg = ShouldEqual(err.Message, ex)
+	default:
+		msg = "expected a compilation error"
+	}
+
+	if msg != "" {
+		fmt.Println(err.Format())
+	}
+
+	return msg
 }

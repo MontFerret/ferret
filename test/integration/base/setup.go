@@ -4,12 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/file"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
-	prog, err := c.Compile(expression)
+	prog, err := c.Compile(file.NewSource("benchmark", expression))
 
 	if err != nil {
 		panic(err)

@@ -7,6 +7,7 @@ import (
 
 type BC = []vm.Instruction
 type UseCase = base.TestCase
+type E = base.ExpectedError
 
 var I = vm.NewInstruction
 var C = vm.NewConstant

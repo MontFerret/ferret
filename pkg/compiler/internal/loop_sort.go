@@ -188,10 +188,12 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 	// scope is not packed
 	if scope == nil {
 		if loop.KeyName != "" {
+			// TODO: Handle error if the key variable is not found
 			loop.DeclareKeyVar(loop.KeyName, c.ctx.Symbols)
 		}
 
 		if loop.ValueName != "" {
+			// TODO: Handle error if the key variable is not found
 			loop.DeclareValueVar(loop.ValueName, c.ctx.Symbols)
 		}
 

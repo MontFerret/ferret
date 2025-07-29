@@ -1,7 +1,7 @@
 package core
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -46,13 +46,13 @@ func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
 
 func (cp *ConstantPool) Get(addr vm.Operand) runtime.Value {
 	if !addr.IsConstant() {
-		panic(runtime.Error(ErrInvalidOperandType, strconv.Itoa(int(addr))))
+		panic(fmt.Errorf("invalid operand type used in the constant pool: %s", addr))
 	}
 
 	idx := addr.Constant()
 
 	if idx < 0 || idx >= len(cp.values) {
-		panic(runtime.Error(ErrConstantNotFound, strconv.Itoa(idx)))
+		panic(fmt.Errorf("invalid operand type used in the constant pool: %s", addr))
 	}
 
 	return cp.values[idx]

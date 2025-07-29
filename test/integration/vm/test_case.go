@@ -2,11 +2,10 @@ package vm_test
 
 import (
 	j "encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/asm"
+	"github.com/MontFerret/ferret/pkg/file"
 
 	"github.com/MontFerret/ferret/test/integration/base"
 
@@ -130,20 +129,6 @@ func DebugCaseJSON(expression string, expected string, desc ...string) UseCase {
 	return Debug(CaseJSON(expression, expected, desc...))
 }
 
-func printDebugInfo(name string, uc UseCase, prog *vm.Program) {
-	fmt.Println("")
-	fmt.Println("VM Test:", name)
-	fmt.Println("Expression:", uc.Expression)
-	fmt.Println("")
-	fmt.Println("Bytecode:")
-
-	out, e := asm.Disassemble(prog, asm.WithDebug())
-
-	if e == nil {
-		fmt.Println(out)
-	}
-}
-
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opts ...vm.EnvironmentOption) {
 	// Register standard library functions
 	std := base.Stdlib()
@@ -169,11 +154,11 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 			}
 
 			Convey(useCase.Expression, t, func() {
-				prog, err := c.Compile(useCase.Expression)
+				prog, err := c.Compile(file.NewSource(name, useCase.Expression))
 
 				defer func() {
 					if recovered := recover(); recovered != nil {
-						printDebugInfo(name, useCase, prog)
+						base.PrintDebugInfo(name, useCase, prog)
 
 						t.Error(recovered)
 					}
@@ -229,7 +214,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}
 
 				if useCase.DebugOutput {
-					printDebugInfo(name, useCase, prog)
+					base.PrintDebugInfo(name, useCase, prog)
 				}
 			})
 		})

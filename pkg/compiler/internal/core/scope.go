@@ -67,7 +67,7 @@ func (sp *ScopeProjection) RestoreFromArray(src vm.Operand) {
 
 	for i, v := range sp.values {
 		sp.emitter.EmitLoadConst(idx, sp.symbols.AddConstant(runtime.Int(i)))
-		variable := sp.symbols.DeclareLocal(v.Name, v.Type)
+		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadIndex, variable, src, idx)
 	}
 
@@ -79,7 +79,7 @@ func (sp *ScopeProjection) RestoreFromObject(src vm.Operand) {
 
 	for _, v := range sp.values {
 		sp.emitter.EmitLoadConst(key, sp.symbols.AddConstant(runtime.String(v.Name)))
-		variable := sp.symbols.DeclareLocal(v.Name, v.Type)
+		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadKey, variable, src, key)
 	}
 

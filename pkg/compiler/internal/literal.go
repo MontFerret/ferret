@@ -34,24 +34,26 @@ func NewLiteralCompiler(ctx *CompilerContext) *LiteralCompiler {
 //   - An operand representing the compiled literal value
 //
 // Panics if the literal type is not recognized.
-func (lc *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
-	if c := ctx.StringLiteral(); c != nil {
-		return lc.CompileStringLiteral(c)
-	} else if c := ctx.IntegerLiteral(); c != nil {
-		return lc.CompileIntegerLiteral(c)
-	} else if c := ctx.FloatLiteral(); c != nil {
-		return lc.CompileFloatLiteral(c)
-	} else if c := ctx.BooleanLiteral(); c != nil {
-		return lc.CompileBooleanLiteral(c)
-	} else if c := ctx.ArrayLiteral(); c != nil {
-		return lc.CompileArrayLiteral(c)
-	} else if c := ctx.ObjectLiteral(); c != nil {
-		return lc.CompileObjectLiteral(c)
-	} else if c := ctx.NoneLiteral(); c != nil {
-		return lc.CompileNoneLiteral(c)
+func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
+	if sl := ctx.StringLiteral(); sl != nil {
+		return c.CompileStringLiteral(sl)
+	} else if il := ctx.IntegerLiteral(); il != nil {
+		return c.CompileIntegerLiteral(il)
+	} else if fl := ctx.FloatLiteral(); fl != nil {
+		return c.CompileFloatLiteral(fl)
+	} else if bl := ctx.BooleanLiteral(); bl != nil {
+		return c.CompileBooleanLiteral(bl)
+	} else if al := ctx.ArrayLiteral(); al != nil {
+		return c.CompileArrayLiteral(al)
+	} else if ol := ctx.ObjectLiteral(); ol != nil {
+		return c.CompileObjectLiteral(ol)
+	} else if nl := ctx.NoneLiteral(); nl != nil {
+		return c.CompileNoneLiteral(nl)
 	}
 
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }
 
 // CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
@@ -61,7 +63,7 @@ func (lc *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
 //
 // Returns:
 //   - An operand representing the compiled string constant
-func (lc *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
 	var b strings.Builder
 
 	// Process each child node in the string literal
@@ -87,9 +89,9 @@ func (lc *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) v
 		if start < size && stop < size {
 			// Process each character in the string
 			for i := start; i <= stop; i++ {
-				c := input.GetText(i, i)
+				ch := input.GetText(i, i)
 
-				switch c {
+				switch ch {
 				case "\\":
 					// Handle escape sequences
 					c2 := input.GetText(i, i+1)
@@ -107,14 +109,14 @@ func (lc *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) v
 					i++
 				default:
 					// Add regular characters as-is
-					b.WriteString(c)
+					b.WriteString(ch)
 				}
 			}
 		}
 	}
 
 	// Create a runtime string and load it as a constant
-	return loadConstant(lc.ctx, runtime.NewString(b.String()))
+	return loadConstant(c.ctx, runtime.NewString(b.String()))
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
@@ -125,7 +127,7 @@ func (lc *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) v
 //   - An operand representing the compiled integer constant
 //
 // Panics if the integer value cannot be parsed.
-func (lc *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) vm.Operand {
 	// Parse the integer value from the text representation
 	val, err := strconv.Atoi(ctx.GetText())
 
@@ -134,7 +136,7 @@ func (lc *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext)
 	}
 
 	// Create a runtime integer and load it as a constant
-	return loadConstant(lc.ctx, runtime.NewInt(val))
+	return loadConstant(c.ctx, runtime.NewInt(val))
 }
 
 // CompileFloatLiteral processes a float literal from the FQL AST and converts it into a runtime float.
@@ -145,7 +147,7 @@ func (lc *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext)
 //   - An operand representing the compiled float constant
 //
 // Panics if the float value cannot be parsed.
-func (lc *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.Operand {
 	// Parse the float value from the text representation with 64-bit precision
 	val, err := strconv.ParseFloat(ctx.GetText(), 64)
 
@@ -154,7 +156,7 @@ func (lc *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.
 	}
 
 	// Create a runtime float and load it as a constant
-	return loadConstant(lc.ctx, runtime.NewFloat(val))
+	return loadConstant(c.ctx, runtime.NewFloat(val))
 }
 
 // CompileBooleanLiteral processes a boolean literal from the FQL AST and converts it into a runtime boolean.
@@ -165,18 +167,18 @@ func (lc *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.
 //   - An operand representing the compiled boolean value
 //
 // Panics if the text is neither "true" nor "false".
-func (lc *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) vm.Operand {
 	// Allocate a temporary register for the boolean value
-	reg := lc.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate(core.Temp)
 
 	// Convert the text to lowercase and determine the boolean value
 	switch strings.ToLower(ctx.GetText()) {
 	case "true":
-		lc.ctx.Emitter.EmitBoolean(reg, true)
+		c.ctx.Emitter.EmitBoolean(reg, true)
 	case "false":
-		lc.ctx.Emitter.EmitBoolean(reg, false)
+		c.ctx.Emitter.EmitBoolean(reg, false)
 	default:
-		panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+		c.ctx.Errors.UnexpectedToken(ctx)
 	}
 
 	return reg
@@ -188,11 +190,11 @@ func (lc *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext)
 //
 // Returns:
 //   - An operand representing the compiled none value
-func (lc *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Operand {
 	// Allocate a temporary register for the none value
-	reg := lc.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate(core.Temp)
 	// Emit instruction to load the none value into the register
-	lc.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
+	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
 
 	return reg
 }
@@ -204,13 +206,13 @@ func (lc *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Oper
 //
 // Returns:
 //   - An operand representing the compiled array
-func (lc *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
 	// Allocate destination register for the array
-	destReg := lc.ctx.Registers.Allocate(core.Temp)
+	destReg := c.ctx.Registers.Allocate(core.Temp)
 	// Compile the argument list (array elements) into a sequence of registers
-	seq := lc.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
+	seq := c.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
 	// Emit instruction to create an array from the sequence of registers
-	lc.ctx.Emitter.EmitArray(destReg, seq)
+	c.ctx.Emitter.EmitArray(destReg, seq)
 
 	return destReg
 }
@@ -222,9 +224,9 @@ func (lc *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.
 //
 // Returns:
 //   - An operand representing the compiled object
-func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
 	// Allocate destination register for the object
-	dst := lc.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate(core.Temp)
 	var seq core.RegisterSequence
 	// Get all property assignments from the object literal
 	assignments := ctx.AllPropertyAssignment()
@@ -233,7 +235,7 @@ func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) v
 	if size > 0 {
 		// Allocate a sequence of registers for property-value pairs
 		// We need two registers for each assignment (one for property name, one for value)
-		seq = lc.ctx.Registers.AllocateSequence(len(assignments) * 2)
+		seq = c.ctx.Registers.AllocateSequence(len(assignments) * 2)
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
@@ -244,35 +246,35 @@ func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) v
 			// Handle different types of property names
 			if prop := pac.PropertyName(); prop != nil {
 				// Regular property name (e.g., { name: value })
-				propOp = lc.CompilePropertyName(prop)
-				valOp = lc.ctx.ExprCompiler.Compile(pac.Expression())
+				propOp = c.CompilePropertyName(prop)
+				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
-				propOp = lc.CompileComputedPropertyName(comProp)
-				valOp = lc.ctx.ExprCompiler.Compile(pac.Expression())
+				propOp = c.CompileComputedPropertyName(comProp)
+				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
-				propOp = loadConstant(lc.ctx, runtime.NewString(variable.GetText()))
-				valOp = lc.ctx.ExprCompiler.CompileVariable(variable)
+				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
+				valOp = c.ctx.ExprCompiler.CompileVariable(variable)
 			}
 
 			// Calculate the index in the sequence for this property-value pair
 			regIndex := i * 2
 
 			// Move the property name and value to their respective registers in the sequence
-			lc.ctx.Emitter.EmitMove(seq[regIndex], propOp)
-			lc.ctx.Emitter.EmitMove(seq[regIndex+1], valOp)
+			c.ctx.Emitter.EmitMove(seq[regIndex], propOp)
+			c.ctx.Emitter.EmitMove(seq[regIndex+1], valOp)
 
 			// Free source register if temporary
 			// Note: This is commented out in the original code
 			if propOp.IsRegister() {
-				//lc.ctx.Registers.Free(propOp)
+				//c.ctx.Registers.Free(propOp)
 			}
 		}
 	}
 
 	// Emit instruction to create an object from the sequence of property-value pairs
-	lc.ctx.Emitter.EmitObject(dst, seq)
+	c.ctx.Emitter.EmitObject(dst, seq)
 
 	return dst
 }
@@ -287,10 +289,10 @@ func (lc *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) v
 //   - An operand representing the compiled property name as a string constant
 //
 // Panics if the property name type is not recognized.
-func (lc *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.Operand {
+func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.Operand {
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
-		return lc.CompileStringLiteral(str)
+		return c.CompileStringLiteral(str)
 	}
 
 	var name string
@@ -306,11 +308,13 @@ func (lc *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.
 		// Unsafe reserved word (e.g., { for: value })
 		name = word.GetText()
 	} else {
-		panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+		c.ctx.Errors.UnexpectedToken(ctx)
+
+		return vm.NoopOperand
 	}
 
 	// Create a runtime string from the property name and load it as a constant
-	return loadConstant(lc.ctx, runtime.NewString(name))
+	return loadConstant(c.ctx, runtime.NewString(name))
 }
 
 // CompileComputedPropertyName processes a computed property name from an object literal in the FQL AST.
@@ -320,7 +324,7 @@ func (lc *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.
 //
 // Returns:
 //   - An operand representing the compiled expression that will evaluate to the property name
-func (lc *LiteralCompiler) CompileComputedPropertyName(ctx fql.IComputedPropertyNameContext) vm.Operand {
+func (c *LiteralCompiler) CompileComputedPropertyName(ctx fql.IComputedPropertyNameContext) vm.Operand {
 	// Delegate to the expression compiler to compile the expression inside the brackets
-	return lc.ctx.ExprCompiler.Compile(ctx.Expression())
+	return c.ctx.ExprCompiler.Compile(ctx.Expression())
 }

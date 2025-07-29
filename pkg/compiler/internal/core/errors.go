@@ -1,16 +1,41 @@
 package core
 
-import "github.com/pkg/errors"
+import (
+	"github.com/MontFerret/ferret/pkg/file"
+)
 
 var (
-	ErrEmptyQuery         = errors.New("empty query")
-	ErrNotImplemented     = errors.New("not implemented")
-	ErrVariableNotFound   = errors.New("variable not found")
-	ErrVariableNotUnique  = errors.New("variable is already defined")
-	ErrInvalidToken       = errors.New("invalid token")
-	ErrUnexpectedToken    = errors.New("unexpected token")
-	ErrInvalidOperandType = errors.New("invalid operand type")
-	ErrConstantNotFound   = errors.New("constant not found")
-	ErrInvalidDataSource  = errors.New("invalid data source")
-	ErrUnknownOpcode      = errors.New("unknown opcode")
+	ErrNotImplemented    = "not implemented"
+	ErrInvalidToken      = "invalid token"
+	ErrConstantNotFound  = "constant not found"
+	ErrInvalidDataSource = "invalid data source"
+	ErrUnknownOpcode     = "unknown opcode"
 )
+
+func NewEmptyQueryErr(src *file.Source) *CompilationError {
+	return &CompilationError{
+		Message:  "Query is empty",
+		Source:   src,
+		Location: file.EmptyLocation(),
+		Kind:     SyntaxError,
+	}
+}
+
+func NewInternalErr(src *file.Source, msg string) *CompilationError {
+	return &CompilationError{
+		Message:  msg,
+		Source:   src,
+		Location: file.EmptyLocation(),
+		Kind:     InternalError,
+	}
+}
+
+func NewInternalErrWith(src *file.Source, msg string, cause error) *CompilationError {
+	return &CompilationError{
+		Message:  msg,
+		Source:   src,
+		Location: file.EmptyLocation(),
+		Kind:     InternalError,
+		Cause:    cause,
+	}
+}

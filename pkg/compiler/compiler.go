@@ -1,8 +1,9 @@
 package compiler
 
 import (
-	"errors"
 	goruntime "runtime"
+
+	"github.com/MontFerret/ferret/pkg/file"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 
@@ -24,40 +25,49 @@ func New(setters ...Option) *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
-	if query == "" {
-		return nil, core.ErrEmptyQuery
+func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
+	if src.Empty() {
+		return nil, core.NewEmptyQueryErr(src)
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			buf := make([]byte, 1024)
-			n := goruntime.Stack(buf, false)
-			stackTrace := string(buf[:n])
-
 			// find out exactly what the error was and set err
 			// Find out exactly what the error was and set err
 			switch x := r.(type) {
+			case *CompilationError:
+				err = x
+			case *AggregatedCompilationErrors:
+				err = x
 			case string:
-				err = errors.New(x + "\n" + stackTrace)
+				buf := make([]byte, 1024)
+				n := goruntime.Stack(buf, false)
+				stackTrace := string(buf[:n])
+				err = core.NewInternalErr(src, x+"\n"+stackTrace)
 			case error:
-				err = errors.New(x.Error() + "\n" + stackTrace)
+				buf := make([]byte, 1024)
+				n := goruntime.Stack(buf, false)
+				stackTrace := string(buf[:n])
+				err = core.NewInternalErrWith(src, "unknown panic\n"+stackTrace, x)
 			default:
-				err = errors.New("unknown panic\n" + stackTrace)
+				buf := make([]byte, 1024)
+				n := goruntime.Stack(buf, false)
+				stackTrace := string(buf[:n])
+				err = core.NewInternalErr(src, "unknown panic\n"+stackTrace)
 			}
 
 			program = nil
 		}
 	}()
 
-	p := parser.New(query)
+	p := parser.New(src.Content())
 	p.AddErrorListener(newErrorListener())
 
-	l := NewVisitor(query)
+	l := NewVisitor(src)
 	p.Visit(l)
 
-	if l.Err != nil {
-		return nil, l.Err
+	if l.Ctx.Errors.HasErrors() {
+		return nil, l.Ctx.Errors.Unwrap()
 	}
 
 	program = &vm.Program{}
@@ -72,8 +82,8 @@ func (c *Compiler) Compile(query string) (program *vm.Program, err error) {
 	return program, err
 }
 
-func (c *Compiler) MustCompile(query string) *vm.Program {
-	program, err := c.Compile(query)
+func (c *Compiler) MustCompile(src *file.Source) *vm.Program {
+	program, err := c.Compile(src)
 
 	if err != nil {
 		panic(err)

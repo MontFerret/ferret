@@ -24,14 +24,14 @@ func NewStmtCompiler(ctx *CompilerContext) *StmtCompiler {
 // and then compiles the body expression (FOR loops or RETURN statements).
 // Parameters:
 //   - ctx: The body context from the AST
-func (sc *StmtCompiler) Compile(ctx fql.IBodyContext) {
+func (c *StmtCompiler) Compile(ctx fql.IBodyContext) {
 	// Process all statements in the body
 	for _, statement := range ctx.AllBodyStatement() {
-		sc.CompileBodyStatement(statement)
+		c.CompileBodyStatement(statement)
 	}
 
 	// Process the final expression in the body
-	sc.CompileBodyExpression(ctx.BodyExpression())
+	c.CompileBodyExpression(ctx.BodyExpression())
 }
 
 // CompileBodyStatement processes a single statement in the body of an FQL query.
@@ -39,16 +39,16 @@ func (sc *StmtCompiler) Compile(ctx fql.IBodyContext) {
 // and delegates to the appropriate compilation method.
 // Parameters:
 //   - ctx: The body statement context from the AST
-func (sc *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
+func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 	// Handle variable declarations (e.g., LET x = 1)
-	if c := ctx.VariableDeclaration(); c != nil {
-		sc.CompileVariableDeclaration(c)
-	} else if c := ctx.FunctionCallExpression(); c != nil {
+	if vd := ctx.VariableDeclaration(); vd != nil {
+		c.CompileVariableDeclaration(vd)
+	} else if fce := ctx.FunctionCallExpression(); fce != nil {
 		// Handle function calls (e.g., WAIT(1000))
-		sc.CompileFunctionCall(c)
-	} else if c := ctx.WaitForExpression(); c != nil {
+		c.CompileFunctionCall(fce)
+	} else if wfe := ctx.WaitForExpression(); wfe != nil {
 		// Handle wait expressions (e.g., WAIT FOR x RETURN y)
-		sc.ctx.WaitCompiler.Compile(c)
+		c.ctx.WaitCompiler.Compile(wfe)
 	}
 }
 
@@ -57,31 +57,31 @@ func (sc *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 // operation of the query and determines what data is returned.
 // Parameters:
 //   - ctx: The body expression context from the AST
-func (sc *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
+func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
-	if c := ctx.ForExpression(); c != nil {
+	if fe := ctx.ForExpression(); fe != nil {
 		// Compile the FOR loop and get the destination register
-		out := sc.ctx.LoopCompiler.Compile(c)
+		out := c.ctx.LoopCompiler.Compile(fe)
 
 		// Emit a return instruction with the loop result
-		sc.ctx.Emitter.EmitA(vm.OpReturn, out)
-	} else if c := ctx.ReturnExpression(); c != nil {
+		c.ctx.Emitter.EmitA(vm.OpReturn, out)
+	} else if re := ctx.ReturnExpression(); re != nil {
 		// Handle RETURN expressions (e.g., RETURN x)
 		// Compile the expression to return
-		valReg := sc.ctx.ExprCompiler.Compile(c.Expression())
+		valReg := c.ctx.ExprCompiler.Compile(re.Expression())
 
 		// If the result is a constant, we need to move it to a temporary register
 		// because constants cannot be directly returned
 		if valReg.IsConstant() {
 			valC := valReg
-			valReg = sc.ctx.Registers.Allocate(core.Temp)
+			valReg = c.ctx.Registers.Allocate(core.Temp)
 
 			// Move the constant value to the temporary register
-			sc.ctx.Emitter.EmitMove(valReg, valC)
+			c.ctx.Emitter.EmitMove(valReg, valC)
 		}
 
 		// Emit a return instruction with the expression result
-		sc.ctx.Emitter.EmitA(vm.OpReturn, valReg)
+		c.ctx.Emitter.EmitA(vm.OpReturn, valReg)
 	}
 }
 
@@ -94,7 +94,7 @@ func (sc *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 // Returns:
 //   - An operand representing the register where the variable value is stored,
 //     or NoopOperand if the variable is ignored
-func (sc *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) vm.Operand {
+func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) vm.Operand {
 	// Start with the ignore pseudo-variable as the default name
 	name := core.IgnorePseudoVariable
 
@@ -106,24 +106,39 @@ func (sc *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationC
 	}
 
 	// Compile the expression that provides the variable's value
-	src := sc.ctx.ExprCompiler.Compile(ctx.Expression())
+	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
 
 	// If this is a real variable (not the ignore pseudo-variable)
 	if name != core.IgnorePseudoVariable {
 		// Handle constant values differently - they need to be loaded into a register
 		if src.IsConstant() {
 			// Declare a global variable and load the constant into it
-			dest := sc.ctx.Symbols.DeclareGlobal(name, core.TypeUnknown)
-			sc.ctx.Emitter.EmitAB(vm.OpLoadConst, dest, src)
-			sc.ctx.Registers.Free(src)
+			dest, ok := c.ctx.Symbols.DeclareGlobal(name, core.TypeUnknown)
+
+			if !ok {
+				c.ctx.Errors.VariableNotUnique(ctx, name)
+
+				return vm.NoopOperand
+			}
+
+			c.ctx.Emitter.EmitAB(vm.OpLoadConst, dest, src)
+			c.ctx.Registers.Free(src)
 
 			src = dest
-		} else if sc.ctx.Symbols.Scope() == 0 {
+		} else if c.ctx.Symbols.Scope() == 0 {
 			// If we're in the global scope, assign as a global variable
-			sc.ctx.Symbols.AssignGlobal(name, core.TypeUnknown, src)
+			if ok := c.ctx.Symbols.AssignGlobal(name, core.TypeUnknown, src); !ok {
+				c.ctx.Errors.VariableNotUnique(ctx, name)
+
+				return vm.NoopOperand
+			}
 		} else {
 			// Otherwise, assign as a local variable in the current scope
-			sc.ctx.Symbols.AssignLocal(name, core.TypeUnknown, src)
+			if ok := c.ctx.Symbols.AssignLocal(name, core.TypeUnknown, src); !ok {
+				c.ctx.Errors.VariableNotUnique(ctx, name)
+
+				return vm.NoopOperand
+			}
 		}
 
 		// Return the register containing the variable's value
@@ -142,7 +157,7 @@ func (sc *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationC
 //
 // Returns:
 //   - An operand representing the register where the function call result is stored
-func (sc *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) vm.Operand {
+func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) vm.Operand {
 	// Delegate to the expression compiler for function call compilation
-	return sc.ctx.ExprCompiler.CompileFunctionCallExpression(ctx)
+	return c.ctx.ExprCompiler.CompileFunctionCallExpression(ctx)
 }

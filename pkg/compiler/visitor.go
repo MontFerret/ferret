@@ -2,22 +2,19 @@ package compiler
 
 import (
 	"github.com/MontFerret/ferret/pkg/compiler/internal"
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 )
 
 type Visitor struct {
 	*fql.BaseFqlParserVisitor
-
 	Ctx *internal.CompilerContext
-	Err error
-	Src string
 }
 
-func NewVisitor(src string) *Visitor {
+func NewVisitor(src *file.Source) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
-	v.Ctx = internal.NewCompilerContext()
-	v.Src = src
+	v.Ctx = internal.NewCompilerContext(src)
 
 	return v
 }

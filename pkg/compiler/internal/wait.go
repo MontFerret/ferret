@@ -3,7 +3,6 @@ package internal
 import (
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
@@ -27,71 +26,71 @@ func NewWaitCompiler(ctx *CompilerContext) *WaitCompiler {
 //
 // Returns:
 //   - A no-op operand as the WAIT FOR expression doesn't produce a value directly
-func (wc *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
+func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	// Create a new scope for the WAIT FOR expression
-	wc.ctx.Symbols.EnterScope()
+	c.ctx.Symbols.EnterScope()
 
 	// Compile the event source and event name expressions
-	srcReg := wc.CompileWaitForEventSource(ctx.WaitForEventSource())
-	eventReg := wc.CompileWaitForEventName(ctx.WaitForEventName())
+	srcReg := c.CompileWaitForEventSource(ctx.WaitForEventSource())
+	eventReg := c.CompileWaitForEventName(ctx.WaitForEventName())
 
 	var optsReg vm.Operand
 
 	// Compile options clause if present
 	if opts := ctx.OptionsClause(); opts != nil {
-		optsReg = wc.CompileOptionsClause(opts)
+		optsReg = c.CompileOptionsClause(opts)
 	}
 
 	var timeoutReg vm.Operand
 
 	// Compile timeout clause if present
 	if timeout := ctx.TimeoutClause(); timeout != nil {
-		timeoutReg = wc.CompileTimeoutClauseContext(timeout)
+		timeoutReg = c.CompileTimeoutClauseContext(timeout)
 	}
 
 	// Allocate a register for the event stream
-	streamReg := wc.ctx.Registers.Allocate(core.Temp)
+	streamReg := c.ctx.Registers.Allocate(core.Temp)
 
 	// Move the source object to the stream register in order to re-use it in OpStream
-	wc.ctx.Emitter.EmitMove(streamReg, srcReg)
+	c.ctx.Emitter.EmitMove(streamReg, srcReg)
 	// Create a stream from the source, listening for the specified event
-	wc.ctx.Emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
+	c.ctx.Emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
 	// Set up iteration over the stream with optional timeout
-	wc.ctx.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
+	c.ctx.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
 
 	var valReg vm.Operand
 	// Create labels for the start and end of the iteration loop
-	start := wc.ctx.Emitter.NewLabel()
-	end := wc.ctx.Emitter.NewLabel()
+	start := c.ctx.Emitter.NewLabel()
+	end := c.ctx.Emitter.NewLabel()
 
 	// Mark the start of the iteration loop
-	wc.ctx.Emitter.MarkLabel(start)
+	c.ctx.Emitter.MarkLabel(start)
 	// Emit instruction to get the next event from the stream
 	// If no more events, jump to the end label
-	wc.ctx.Emitter.EmitIterNext(streamReg, end)
+	c.ctx.Emitter.EmitIterNext(streamReg, end)
 
 	// Handle filter clause if present
 	if filter := ctx.FilterClause(); filter != nil {
 		// Declare a local variable to hold the event value
-		valReg = wc.ctx.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
+		valReg, _ = c.ctx.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
 		// Load the current event value into the variable
-		wc.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
+		c.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
 
 		// Compile the filter expression
-		cond := wc.ctx.ExprCompiler.Compile(filter.Expression())
+		cond := c.ctx.ExprCompiler.Compile(filter.Expression())
 
 		// If the filter condition is false, jump back to the start to get the next event
-		wc.ctx.Emitter.EmitJumpIfFalse(cond, start)
+		c.ctx.Emitter.EmitJumpIfFalse(cond, start)
 
 		// TODO: Do we need to use timeout here too? We can really get stuck in the loop if no event satisfies the filter
 	}
 
 	// Mark the end of the iteration loop
-	wc.ctx.Emitter.MarkLabel(end)
+	c.ctx.Emitter.MarkLabel(end)
 	// Clean up the stream by closing it
-	wc.ctx.Emitter.EmitA(vm.OpClose, streamReg)
+	c.ctx.Emitter.EmitA(vm.OpClose, streamReg)
 	// Exit the scope created for the WAIT FOR expression
-	wc.ctx.Symbols.ExitScope()
+	c.ctx.Symbols.ExitScope()
 
 	// WAIT FOR doesn't produce a value directly
 	return vm.NoopOperand
@@ -107,34 +106,36 @@ func (wc *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 //   - An operand representing the compiled event name expression
 //
 // Panics if the event name expression type is not recognized.
-func (wc *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext) vm.Operand {
+func (c *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext) vm.Operand {
 	// Handle string literal event names (e.g., WAIT FOR doc ON "click")
-	if c := ctx.StringLiteral(); c != nil {
-		return wc.ctx.LiteralCompiler.CompileStringLiteral(c)
+	if sl := ctx.StringLiteral(); sl != nil {
+		return c.ctx.LiteralCompiler.CompileStringLiteral(sl)
 	}
 
 	// Handle variable event names (e.g., WAIT FOR doc ON eventName)
-	if c := ctx.Variable(); c != nil {
-		return wc.ctx.ExprCompiler.CompileVariable(c)
+	if v := ctx.Variable(); v != nil {
+		return c.ctx.ExprCompiler.CompileVariable(v)
 	}
 
 	// Handle parameter event names (e.g., WAIT FOR doc ON @eventParam)
-	if c := ctx.Param(); c != nil {
-		return wc.ctx.ExprCompiler.CompileParam(c)
+	if p := ctx.Param(); p != nil {
+		return c.ctx.ExprCompiler.CompileParam(p)
 	}
 
 	// Handle member expression event names (e.g., WAIT FOR doc ON events.click)
-	if c := ctx.MemberExpression(); c != nil {
-		return wc.ctx.ExprCompiler.CompileMemberExpression(c)
+	if me := ctx.MemberExpression(); me != nil {
+		return c.ctx.ExprCompiler.CompileMemberExpression(me)
 	}
 
 	// Handle function call expression event names (e.g., WAIT FOR doc ON getEventName())
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return wc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
+	if fce := ctx.FunctionCallExpression(); fce != nil {
+		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
 
 	// If none of the above, the event name expression is invalid
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }
 
 // CompileWaitForEventSource processes the event source expression in a WAIT FOR statement.
@@ -147,24 +148,26 @@ func (wc *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext
 //   - An operand representing the compiled event source expression
 //
 // Panics if the event source expression type is not recognized.
-func (wc *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceContext) vm.Operand {
+func (c *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceContext) vm.Operand {
 	// Handle variable event sources (e.g., WAIT FOR document ON "click")
-	if c := ctx.Variable(); c != nil {
-		return wc.ctx.ExprCompiler.CompileVariable(c)
+	if v := ctx.Variable(); v != nil {
+		return c.ctx.ExprCompiler.CompileVariable(v)
 	}
 
 	// Handle member expression event sources (e.g., WAIT FOR page.document ON "click")
-	if c := ctx.MemberExpression(); c != nil {
-		return wc.ctx.ExprCompiler.CompileMemberExpression(c)
+	if me := ctx.MemberExpression(); me != nil {
+		return c.ctx.ExprCompiler.CompileMemberExpression(me)
 	}
 
 	// Handle function call expression event sources (e.g., WAIT FOR getDocument() ON "click")
-	if c := ctx.FunctionCallExpression(); c != nil {
-		return wc.ctx.ExprCompiler.CompileFunctionCallExpression(c)
+	if fce := ctx.FunctionCallExpression(); fce != nil {
+		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
 
 	// If none of the above, the event source expression is invalid
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }
 
 // CompileOptionsClause processes the options clause in a WAIT FOR statement.
@@ -176,14 +179,16 @@ func (wc *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceCon
 //   - An operand representing the compiled options object
 //
 // Panics if the options expression is not an object literal.
-func (wc *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) vm.Operand {
+func (c *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) vm.Operand {
 	// Handle object literal options (e.g., WAIT FOR doc ON "click" OPTIONS { timeout: 5000 })
-	if c := ctx.ObjectLiteral(); c != nil {
-		return wc.ctx.LiteralCompiler.CompileObjectLiteral(c)
+	if ol := ctx.ObjectLiteral(); ol != nil {
+		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
 	}
 
 	// If not an object literal, the options expression is invalid
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }
 
 // CompileTimeoutClauseContext processes the timeout clause in a WAIT FOR statement.
@@ -196,32 +201,34 @@ func (wc *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) vm.O
 //   - An operand representing the compiled timeout expression
 //
 // Panics if the timeout expression type is not recognized.
-func (wc *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContext) vm.Operand {
+func (c *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContext) vm.Operand {
 	// Handle integer literal timeouts (e.g., WAIT FOR doc ON "click" TIMEOUT 5000)
-	if c := ctx.IntegerLiteral(); c != nil {
-		return wc.ctx.LiteralCompiler.CompileIntegerLiteral(c)
+	if il := ctx.IntegerLiteral(); il != nil {
+		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
 	}
 
 	// Handle variable timeouts (e.g., WAIT FOR doc ON "click" TIMEOUT timeout)
-	if c := ctx.Variable(); c != nil {
-		return wc.ctx.ExprCompiler.CompileVariable(c)
+	if v := ctx.Variable(); v != nil {
+		return c.ctx.ExprCompiler.CompileVariable(v)
 	}
 
 	// Handle parameter timeouts (e.g., WAIT FOR doc ON "click" TIMEOUT @timeout)
-	if c := ctx.Param(); c != nil {
-		return wc.ctx.ExprCompiler.CompileParam(c)
+	if p := ctx.Param(); p != nil {
+		return c.ctx.ExprCompiler.CompileParam(p)
 	}
 
 	// Handle member expression timeouts (e.g., WAIT FOR doc ON "click" TIMEOUT config.timeout)
-	if c := ctx.MemberExpression(); c != nil {
-		return wc.ctx.ExprCompiler.CompileMemberExpression(c)
+	if me := ctx.MemberExpression(); me != nil {
+		return c.ctx.ExprCompiler.CompileMemberExpression(me)
 	}
 
 	// Handle function call timeouts (e.g., WAIT FOR doc ON "click" TIMEOUT getTimeout())
-	if c := ctx.FunctionCall(); c != nil {
-		return wc.ctx.ExprCompiler.CompileFunctionCall(c, false)
+	if fc := ctx.FunctionCall(); fc != nil {
+		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
 	}
 
 	// If none of the above, the timeout expression is invalid
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }

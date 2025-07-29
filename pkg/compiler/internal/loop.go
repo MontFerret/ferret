@@ -5,7 +5,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
@@ -221,7 +220,9 @@ func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceCo
 	}
 
 	// If none of the above, the source expression is invalid
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.
@@ -305,7 +306,9 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 	}
 
 	// If none of the above, the limit value expression is invalid
-	panic(runtime.Error(core.ErrUnexpectedToken, ctx.GetText()))
+	c.ctx.Errors.UnexpectedToken(ctx)
+
+	return vm.NoopOperand
 }
 
 // compileLimit emits VM instructions to limit the number of iterations in a loop.

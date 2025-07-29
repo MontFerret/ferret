@@ -63,7 +63,8 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 	// For cases with aggregation but without grouping:
 	// Load the value from the aggregator using the projection variable name as key
 	key := loadConstant(c.ctx, runtime.String(varName))
-	val := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
+	// TODO: Handle error if the variable is not found
+	val, _ := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
 	c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, aggregator, key)
 	c.ctx.Registers.Free(key)
 

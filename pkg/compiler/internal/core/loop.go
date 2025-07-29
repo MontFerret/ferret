@@ -44,18 +44,34 @@ type Loop struct {
 	Dst vm.Operand
 }
 
-func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) {
+func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) bool {
 	if l.canDeclareVar(name) {
+		reg, ok := st.DeclareLocal(name, TypeUnknown)
+
+		if !ok {
+			return false
+		}
+
+		l.Key = reg
 		l.KeyName = name
-		l.Key = st.DeclareLocal(name, TypeUnknown)
 	}
+
+	return true
 }
 
-func (l *Loop) DeclareValueVar(name string, st *SymbolTable) {
+func (l *Loop) DeclareValueVar(name string, st *SymbolTable) bool {
 	if l.canDeclareVar(name) {
+		reg, ok := st.DeclareLocal(name, TypeUnknown)
+
+		if !ok {
+			return false
+		}
+
+		l.Value = reg
 		l.ValueName = name
-		l.Value = st.DeclareLocal(name, TypeUnknown)
 	}
+
+	return true
 }
 
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, depth int) {

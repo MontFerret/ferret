@@ -1,14 +1,19 @@
 package internal
 
-import "github.com/MontFerret/ferret/pkg/compiler/internal/core"
+import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/file"
+)
 
 // CompilerContext holds the context for the compilation process, including various compilers and allocators.
 type CompilerContext struct {
+	Source     *file.Source
 	Emitter    *core.Emitter
 	Registers  *core.RegisterAllocator
 	Symbols    *core.SymbolTable
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
+	Errors     *core.ErrorHandler
 
 	ExprCompiler        *ExprCompiler
 	LiteralCompiler     *LiteralCompiler
@@ -20,8 +25,10 @@ type CompilerContext struct {
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext() *CompilerContext {
+func NewCompilerContext(src *file.Source) *CompilerContext {
 	ctx := &CompilerContext{
+		Source:     src,
+		Errors:     core.NewErrorHandler(src, 10),
 		Emitter:    core.NewEmitter(),
 		Registers:  core.NewRegisterAllocator(),
 		Symbols:    nil, // set later

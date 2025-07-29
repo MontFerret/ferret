@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/file"
+
 	"github.com/MontFerret/ferret/pkg/asm"
 
 	"github.com/smartystreets/goconvey/convey"
@@ -26,6 +28,18 @@ func ByteCodeCase(expression string, expected []vm.Instruction, desc ...string) 
 	return NewCase(expression, &vm.Program{
 		Bytecode: expected,
 	}, ShouldEqualBytecode, desc...)
+}
+
+func ErrorCase(expression string, expected base.ExpectedError, desc ...string) UseCase {
+	uc := NewCase(expression, &expected, nil, desc...)
+	uc.PreAssertion = base.ShouldBeCompilationError
+	uc.Assertions = []convey.Assertion{
+		func(actual any, expected ...any) string {
+			return "expected compilation error"
+		},
+	}
+
+	return uc
 }
 
 func SkipByteCodeCase(expression string, expected []vm.Instruction, desc ...string) UseCase {
@@ -54,12 +68,12 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 			}
 
 			convey.Convey(useCase.Expression, t, func() {
-				actual, err := c.Compile(useCase.Expression)
+				actual, err := c.Compile(file.NewSource(name, useCase.Expression))
 
 				if !base.ArePtrsEqual(useCase.PreAssertion, base.ShouldBeCompilationError) {
 					convey.So(err, convey.ShouldBeNil)
 				} else {
-					convey.So(err, convey.ShouldBeError)
+					convey.So(err, base.ShouldBeCompilationError, useCase.Expected)
 
 					return
 				}

@@ -109,7 +109,9 @@ func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 
 			// Declare a local variable for the selector if not already done
 			if variables[i] == vm.NoopOperand {
-				variables[i] = c.ctx.Symbols.DeclareLocal(name.String(), core.TypeUnknown)
+				// TODO: Handle error if the variable already exists
+				reg, _ := c.ctx.Symbols.DeclareLocal(name.String(), core.TypeUnknown)
+				variables[i] = reg
 			}
 
 			// Get the appropriate register (key or value) based on collector type

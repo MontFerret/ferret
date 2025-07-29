@@ -99,15 +99,29 @@ func (st *SymbolTable) LocalVariables() []Variable {
 	return locals
 }
 
-func (st *SymbolTable) DeclareLocal(name string, typ ValueType) vm.Operand {
+func (st *SymbolTable) DeclareLocal(name string, typ ValueType) (vm.Operand, bool) {
 	reg := st.registers.Allocate(Var)
 
-	st.AssignLocal(name, typ, reg)
+	if ok := st.AssignLocal(name, typ, reg); !ok {
+		st.registers.Free(reg)
+		return vm.NoopOperand, false
+	}
 
-	return reg
+	return reg, true
 }
 
-func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) {
+func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) bool {
+	if name != IgnorePseudoVariable && name != PseudoVariable {
+		// Check if the variable already exists in the current scope
+		for i := len(st.locals) - 1; i >= 0; i-- {
+			v := st.locals[i]
+
+			if v.Name == name && v.Depth == st.scope {
+				return false
+			}
+		}
+	}
+
 	st.locals = append(st.locals, &Variable{
 		Name:     name,
 		Kind:     SymbolVar,
@@ -115,24 +129,30 @@ func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) {
 		Depth:    st.scope,
 		Type:     typ,
 	})
+
+	return true
 }
 
-func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) vm.Operand {
+func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) (vm.Operand, bool) {
 	op := st.registers.Allocate(Var)
 
-	st.AssignGlobal(name, typ, op)
+	if ok := st.AssignGlobal(name, typ, op); !ok {
+		st.registers.Free(op)
 
-	return op
+		return vm.NoopOperand, false
+	}
+
+	return op, true
 }
 
-func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op vm.Operand) vm.Operand {
+func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op vm.Operand) bool {
 	if _, exists := st.globals[name]; exists {
-		panic(runtime.Error(ErrVariableNotUnique, name))
+		return false
 	}
 
 	st.globals[name] = op
 
-	return op
+	return true
 }
 
 func (st *SymbolTable) BindParam(name string) vm.Operand {

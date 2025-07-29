@@ -4,6 +4,8 @@ import (
 	"context"
 	j "encoding/json"
 
+	"github.com/MontFerret/ferret/pkg/file"
+
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
@@ -11,7 +13,7 @@ import (
 func Compile(expression string) (*vm.Program, error) {
 	c := compiler.New()
 
-	return c.Compile(expression)
+	return c.Compile(file.NewSource("", expression))
 }
 
 func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {

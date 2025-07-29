@@ -251,7 +251,8 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 
 		// Declare a local variable for the aggregation result
 		selectorVarName := selector.Name()
-		varReg := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
+		// TODO: Handle error if the variable already exists
+		varReg, _ := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
 		selectorVarRegs[i] = varReg
 		// Move the function result to the variable
 		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
@@ -285,7 +286,8 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int) {
 	loop := c.ctx.Loops.Current()
 	// Declare a local variable with the selector name
-	valReg := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
+	// TODO: Handle error if the variable already exists
+	valReg, _ := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
 
 	var args core.RegisterSequence
 
