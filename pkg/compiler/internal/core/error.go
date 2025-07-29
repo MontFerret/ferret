@@ -10,12 +10,12 @@ type (
 	ErrorKind string
 
 	CompilationError struct {
-		Message  string
-		Kind     ErrorKind
-		Source   *file.Source
-		Location *file.Location
-		Hint     string
-		Cause    error
+		Message  string         `json:"message"`
+		Kind     ErrorKind      `json:"kind"`
+		Source   *file.Source   `json:"source"`
+		Location *file.Location `json:"location"`
+		Hint     string         `json:"hint"`
+		Cause    error          `json:"cause"`
 	}
 )
 

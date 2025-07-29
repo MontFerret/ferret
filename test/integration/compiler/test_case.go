@@ -42,6 +42,26 @@ func ErrorCase(expression string, expected base.ExpectedError, desc ...string) U
 	return uc
 }
 
+func SkipErrorCase(expression string, expected base.ExpectedError, desc ...string) UseCase {
+	return Skip(ErrorCase(expression, expected, desc...))
+}
+
+func MultiErrorCase(expression string, expected base.ExpectedMultiError, desc ...string) UseCase {
+	uc := NewCase(expression, &expected, nil, desc...)
+	uc.PreAssertion = base.ShouldBeCompilationError
+	uc.Assertions = []convey.Assertion{
+		func(actual any, expected ...any) string {
+			return "expected compilation error"
+		},
+	}
+
+	return uc
+}
+
+func SkipMultiErrorCase(expression string, expected base.ExpectedMultiError, desc ...string) UseCase {
+	return Skip(MultiErrorCase(expression, expected, desc...))
+}
+
 func SkipByteCodeCase(expression string, expected []vm.Instruction, desc ...string) UseCase {
 	return Skip(ByteCodeCase(expression, expected, desc...))
 }

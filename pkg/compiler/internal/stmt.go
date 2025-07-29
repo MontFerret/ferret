@@ -25,6 +25,10 @@ func NewStmtCompiler(ctx *CompilerContext) *StmtCompiler {
 // Parameters:
 //   - ctx: The body context from the AST
 func (c *StmtCompiler) Compile(ctx fql.IBodyContext) {
+	if ctx == nil {
+		return
+	}
+
 	// Process all statements in the body
 	for _, statement := range ctx.AllBodyStatement() {
 		c.CompileBodyStatement(statement)
@@ -40,6 +44,10 @@ func (c *StmtCompiler) Compile(ctx fql.IBodyContext) {
 // Parameters:
 //   - ctx: The body statement context from the AST
 func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
+	if ctx == nil {
+		return
+	}
+
 	// Handle variable declarations (e.g., LET x = 1)
 	if vd := ctx.VariableDeclaration(); vd != nil {
 		c.CompileVariableDeclaration(vd)
@@ -58,6 +66,10 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 // Parameters:
 //   - ctx: The body expression context from the AST
 func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
+	if ctx == nil {
+		return
+	}
+
 	// Handle FOR expressions (e.g., FOR x IN y RETURN z)
 	if fe := ctx.ForExpression(); fe != nil {
 		// Compile the FOR loop and get the destination register
@@ -95,6 +107,10 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 //   - An operand representing the register where the variable value is stored,
 //     or NoopOperand if the variable is ignored
 func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
 	// Start with the ignore pseudo-variable as the default name
 	name := core.IgnorePseudoVariable
 
@@ -158,6 +174,10 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 // Returns:
 //   - An operand representing the register where the function call result is stored
 func (c *StmtCompiler) CompileFunctionCall(ctx fql.IFunctionCallExpressionContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
 	// Delegate to the expression compiler for function call compilation
 	return c.ctx.ExprCompiler.CompileFunctionCallExpression(ctx)
 }

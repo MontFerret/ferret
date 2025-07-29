@@ -38,32 +38,31 @@ func (s *Source) Content() string {
 	return s.text
 }
 
-func (s *Source) Snippet(loc Location) (line string, caret string) {
-	if s.Empty() || loc.Line() <= 0 || loc.Line() > len(s.lines) {
-		return "", ""
+func (s *Source) Snippet(loc Location) []Snippet {
+	if s.Empty() {
+		return []Snippet{}
 	}
 
-	srcLine := s.lines[loc.Line()-1]
-	runes := []rune(srcLine)
-	column := loc.Column()
+	lineNum := loc.Line()
+	lines := s.lines
+	var result []Snippet
 
-	// Clamp column to within bounds (1-based)
-	if column < 1 {
-		column = 1
-	}
-	if column > len(runes)+1 {
-		column = len(runes) + 1
+	// Show previous line if it exists
+	if lineNum > 1 {
+		result = append(result, NewSnippet(lines, lineNum-1))
 	}
 
-	// Caret must align with visual column (accounting for tabs)
-	visualOffset := s.computeVisualOffset(srcLine, column)
+	result = append(result, NewSnippetWithCaret(lines, loc))
 
-	caretLine := strings.Repeat(" ", visualOffset) + "^"
+	// Show next line if it exists
+	if lineNum < len(lines) {
+		result = append(result, NewSnippet(lines, lineNum+1))
+	}
 
-	return srcLine, caretLine
+	return result
 }
 
-func (s *Source) computeVisualOffset(line string, column int) int {
+func computeVisualOffset(line string, column int) int {
 	runes := []rune(line)
 	offset := 0
 	tabWidth := 4

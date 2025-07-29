@@ -474,7 +474,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	op, _, found := c.ctx.Symbols.Resolve(name)
 
 	if !found {
-		c.ctx.Errors.VariableNotFound(ctx, name)
+		c.ctx.Errors.VariableNotFound(ctx.Identifier().GetSymbol(), name)
 
 		return vm.NoopOperand
 	}

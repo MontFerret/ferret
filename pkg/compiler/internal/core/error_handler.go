@@ -14,23 +14,6 @@ type ErrorHandler struct {
 	threshold int
 }
 
-func ParserLocation(ctx antlr.ParserRuleContext) *file.Location {
-	start := ctx.GetStart()
-	stop := ctx.GetStop()
-
-	// Defensive: avoid nil dereference
-	if start == nil || stop == nil {
-		return file.NewLocation(0, 0, 0, 0)
-	}
-
-	return file.NewLocation(
-		start.GetLine(),
-		start.GetColumn()+1,
-		start.GetStart(),
-		stop.GetStop(),
-	)
-}
-
 func NewErrorHandler(src *file.Source, threshold int) *ErrorHandler {
 	if threshold <= 0 {
 		threshold = 10
@@ -68,20 +51,23 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 		return
 	}
 
+	// If the number of errors exceeds the threshold, we stop adding new errors
+	if len(h.errors) > h.threshold {
+		return
+	}
+
 	if err.Source == nil {
 		err.Source = h.src
 	}
 
 	h.errors = append(h.errors, err)
 
-	if len(h.errors) >= h.threshold {
+	if len(h.errors) == h.threshold {
 		h.errors = append(h.errors, &CompilationError{
 			Message: "Too many errors",
 			Kind:    SemanticError,
 			Hint:    "Too many errors encountered during compilation.",
 		})
-
-		panic(h.Unwrap())
 	}
 }
 
@@ -89,7 +75,7 @@ func (h *ErrorHandler) UnexpectedToken(ctx antlr.ParserRuleContext) {
 	h.Add(&CompilationError{
 		Message:  fmt.Sprintf("Unexpected token '%s'", ctx.GetText()),
 		Source:   h.src,
-		Location: ParserLocation(ctx),
+		Location: LocationFromRuleContext(ctx),
 		Kind:     SyntaxError,
 	})
 }
@@ -99,16 +85,16 @@ func (h *ErrorHandler) VariableNotUnique(ctx antlr.ParserRuleContext, name strin
 	h.Add(&CompilationError{
 		Message:  fmt.Sprintf("Variable '%s' is already defined", name),
 		Source:   h.src,
-		Location: ParserLocation(ctx),
+		Location: LocationFromRuleContext(ctx),
 		Kind:     NameError,
 	})
 }
 
-func (h *ErrorHandler) VariableNotFound(ctx antlr.ParserRuleContext, name string) {
+func (h *ErrorHandler) VariableNotFound(ctx antlr.Token, name string) {
 	h.Add(&CompilationError{
 		Message:  fmt.Sprintf("Variable '%s' is not defined", name),
 		Source:   h.src,
-		Location: ParserLocation(ctx),
+		Location: LocationFromToken(ctx),
 		Kind:     NameError,
 	})
 }

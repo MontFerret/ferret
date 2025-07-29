@@ -25,10 +25,10 @@ type CompilerContext struct {
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *file.Source) *CompilerContext {
+func NewCompilerContext(src *file.Source, errors *core.ErrorHandler) *CompilerContext {
 	ctx := &CompilerContext{
 		Source:     src,
-		Errors:     core.NewErrorHandler(src, 10),
+		Errors:     errors,
 		Emitter:    core.NewEmitter(),
 		Registers:  core.NewRegisterAllocator(),
 		Symbols:    nil, // set later

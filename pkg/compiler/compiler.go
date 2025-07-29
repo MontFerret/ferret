@@ -30,40 +30,36 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 		return nil, core.NewEmptyQueryErr(src)
 	}
 
+	errorHandler := core.NewErrorHandler(src, 10)
+
 	defer func() {
 		if r := recover(); r != nil {
-			// find out exactly what the error was and set err
-			// Find out exactly what the error was and set err
+			var e *CompilationError
+
+			buf := make([]byte, 1024)
+			n := goruntime.Stack(buf, false)
+			stackTrace := string(buf[:n])
+
+			// Find out exactly what the error was and add the e
 			switch x := r.(type) {
-			case *CompilationError:
-				err = x
-			case *AggregatedCompilationErrors:
-				err = x
 			case string:
-				buf := make([]byte, 1024)
-				n := goruntime.Stack(buf, false)
-				stackTrace := string(buf[:n])
-				err = core.NewInternalErr(src, x+"\n"+stackTrace)
+				e = core.NewInternalErr(src, x+"\n"+stackTrace)
 			case error:
-				buf := make([]byte, 1024)
-				n := goruntime.Stack(buf, false)
-				stackTrace := string(buf[:n])
-				err = core.NewInternalErrWith(src, "unknown panic\n"+stackTrace, x)
+				e = core.NewInternalErrWith(src, "unknown panic\n"+stackTrace, x)
 			default:
-				buf := make([]byte, 1024)
-				n := goruntime.Stack(buf, false)
-				stackTrace := string(buf[:n])
-				err = core.NewInternalErr(src, "unknown panic\n"+stackTrace)
+				e = core.NewInternalErr(src, "unknown panic\n"+stackTrace)
 			}
 
+			errorHandler.Add(e)
+
 			program = nil
+			err = errorHandler.Unwrap()
 		}
 	}()
 
+	l := NewVisitor(src, errorHandler)
 	p := parser.New(src.Content())
-	p.AddErrorListener(newErrorListener())
-
-	l := NewVisitor(src)
+	p.AddErrorListener(newErrorListener(l.Ctx.Errors))
 	p.Visit(l)
 
 	if l.Ctx.Errors.HasErrors() {
