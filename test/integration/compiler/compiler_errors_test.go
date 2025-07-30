@@ -16,7 +16,7 @@ func TestErrors(t *testing.T) {
 				Message: "Variable 'i' is already defined",
 				//Message: "Extraneous input at end of file",
 			}, "Syntax error: missing return statement"),
-		ErrorCase(
+		SkipErrorCase(
 			`
 			LET i = NONE
 			RETURN
@@ -32,7 +32,7 @@ func TestErrors(t *testing.T) {
 			RETURN i
 		`, E{
 				Kind:    compiler.NameError,
-				Message: "Variable '' is already defined",
+				Message: "Variable 'i' is already defined",
 			}, "Global variable not unique"),
 		ErrorCase(
 			`

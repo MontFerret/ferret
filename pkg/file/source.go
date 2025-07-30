@@ -38,23 +38,44 @@ func (s *Source) Content() string {
 	return s.text
 }
 
-func (s *Source) Snippet(loc Location) []Snippet {
-	if s.Empty() {
-		return []Snippet{}
+func (s *Source) LocationAt(span Span) (line, column int) {
+	if s.Empty() || span.Start < 0 || span.End > len(s.text) {
+		return 0, 0
 	}
 
-	lineNum := loc.Line()
+	total := 0
+	offset := span.Start
+
+	for i, l := range s.lines {
+		lineLen := len(l) + 1 // +1 for newline
+
+		if total+lineLen > offset {
+			return i + 1, offset - total + 1
+		}
+
+		total += lineLen
+	}
+
+	return total, 1
+}
+
+func (s *Source) Snippet(span Span) []Snippet {
+	if s.Empty() {
+		return nil
+	}
+
+	lineNum, _ := s.LocationAt(span)
 	lines := s.lines
 	var result []Snippet
 
-	// Show previous line if it exists
+	// Show previous Line if it exists
 	if lineNum > 1 {
 		result = append(result, NewSnippet(lines, lineNum-1))
 	}
 
-	result = append(result, NewSnippetWithCaret(lines, loc))
+	result = append(result, NewSnippetWithCaret(lines, span, lineNum))
 
-	// Show next line if it exists
+	// Show next Line if it exists
 	if lineNum < len(lines) {
 		result = append(result, NewSnippet(lines, lineNum+1))
 	}

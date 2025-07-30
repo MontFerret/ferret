@@ -73,28 +73,28 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 
 func (h *ErrorHandler) UnexpectedToken(ctx antlr.ParserRuleContext) {
 	h.Add(&CompilationError{
-		Message:  fmt.Sprintf("Unexpected token '%s'", ctx.GetText()),
-		Source:   h.src,
-		Location: LocationFromRuleContext(ctx),
-		Kind:     SyntaxError,
+		Message: fmt.Sprintf("Unexpected token '%s'", ctx.GetText()),
+		Source:  h.src,
+		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromRuleContext(ctx), "Unexpected token")},
+		Kind:    SyntaxError,
 	})
 }
 
 func (h *ErrorHandler) VariableNotUnique(ctx antlr.ParserRuleContext, name string) {
 	// TODO: Add information where the variable was defined
 	h.Add(&CompilationError{
-		Message:  fmt.Sprintf("Variable '%s' is already defined", name),
-		Source:   h.src,
-		Location: LocationFromRuleContext(ctx),
-		Kind:     NameError,
+		Message: fmt.Sprintf("Variable '%s' is already defined", name),
+		Source:  h.src,
+		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
+		Kind:    NameError,
 	})
 }
 
-func (h *ErrorHandler) VariableNotFound(ctx antlr.Token, name string) {
+func (h *ErrorHandler) VariableNotFound(token antlr.Token, name string) {
 	h.Add(&CompilationError{
-		Message:  fmt.Sprintf("Variable '%s' is not defined", name),
-		Source:   h.src,
-		Location: LocationFromToken(ctx),
-		Kind:     NameError,
+		Message: fmt.Sprintf("Variable '%s' is not defined", name),
+		Source:  h.src,
+		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromToken(token), "")},
+		Kind:    NameError,
 	})
 }

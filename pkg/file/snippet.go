@@ -17,31 +17,26 @@ func NewSnippet(src []string, line int) Snippet {
 	}
 }
 
-func NewSnippetWithCaret(src []string, loc Location) Snippet {
-	if loc.line <= 0 || loc.line > len(src) {
+func NewSnippetWithCaret(lines []string, span Span, line int) Snippet {
+	if line <= 0 || line > len(lines) {
 		return Snippet{}
 	}
 
-	srcLine := src[loc.Line()-1]
-	runes := []rune(srcLine)
-	column := loc.Column()
+	srcLine := lines[line-1]
+	startCol := computeVisualOffset(srcLine, span.Start)
+	endCol := computeVisualOffset(srcLine, span.End)
 
-	// Clamp column to within bounds (1-based)
-	if column < 1 {
-		column = 1
+	caret := ""
+
+	if endCol <= startCol+1 {
+		caret = strings.Repeat(" ", startCol) + "^"
+	} else {
+		caret = strings.Repeat(" ", startCol) + strings.Repeat("~", endCol-startCol)
 	}
-
-	if column > len(runes)+1 {
-		column = len(runes) + 1
-	}
-
-	// Caret must align with visual column (accounting for tabs)
-	visualOffset := computeVisualOffset(srcLine, column)
-	caretLine := strings.Repeat("_", visualOffset) + "^"
 
 	return Snippet{
-		Line:  loc.line,
+		Line:  line,
 		Text:  srcLine,
-		Caret: caretLine,
+		Caret: caret,
 	}
 }

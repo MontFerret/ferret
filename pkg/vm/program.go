@@ -10,7 +10,6 @@ type (
 
 	Program struct {
 		Source     *file.Source
-		Locations  []file.Location
 		Bytecode   []Instruction
 		Constants  []runtime.Value
 		CatchTable []Catch

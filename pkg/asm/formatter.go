@@ -36,11 +36,11 @@ func constValue(p *vm.Program, idx int) string {
 
 // formatLocation returns a line/col comment if available for the given instruction.
 func formatLocation(p *vm.Program, ip int) string {
-	if ip < len(p.Locations) {
-		loc := p.Locations[ip]
-
-		return fmt.Sprintf("; line %d col %d", loc.Line, loc.Column)
-	}
+	//if ip < len(p.Locations) {
+	//	loc := p.Locations[ip]
+	//
+	//	return fmt.Sprintf("; line %d col %d", loc.Line, loc.Column)
+	//}
 
 	return ""
 }

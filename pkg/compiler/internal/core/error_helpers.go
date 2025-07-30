@@ -6,32 +6,21 @@ import (
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
-func LocationFromRuleContext(ctx antlr.ParserRuleContext) *file.Location {
+func SpanFromRuleContext(ctx antlr.ParserRuleContext) file.Span {
 	start := ctx.GetStart()
 	stop := ctx.GetStop()
 
-	// Defensive: avoid nil dereference
 	if start == nil || stop == nil {
-		return file.EmptyLocation()
+		return file.Span{Start: 0, End: 0}
 	}
 
-	return file.NewLocation(
-		start.GetLine(),
-		start.GetColumn()+1,
-		start.GetStart(),
-		stop.GetStop(),
-	)
+	return file.Span{Start: start.GetStart(), End: stop.GetStop() + 1}
 }
 
-func LocationFromToken(token antlr.Token) *file.Location {
-	if token == nil {
-		return file.EmptyLocation()
+func SpanFromToken(tok antlr.Token) file.Span {
+	if tok == nil {
+		return file.Span{Start: 0, End: 0}
 	}
 
-	return file.NewLocation(
-		token.GetLine(),
-		token.GetColumn()+1,
-		token.GetStart(),
-		token.GetStop(),
-	)
+	return file.Span{Start: tok.GetStart(), End: tok.GetStop() + 1}
 }

@@ -14,28 +14,25 @@ var (
 
 func NewEmptyQueryErr(src *file.Source) *CompilationError {
 	return &CompilationError{
-		Message:  "Query is empty",
-		Source:   src,
-		Location: file.EmptyLocation(),
-		Kind:     SyntaxError,
+		Message: "Query is empty",
+		Source:  src,
+		Kind:    SyntaxError,
 	}
 }
 
 func NewInternalErr(src *file.Source, msg string) *CompilationError {
 	return &CompilationError{
-		Message:  msg,
-		Source:   src,
-		Location: file.EmptyLocation(),
-		Kind:     InternalError,
+		Message: msg,
+		Source:  src,
+		Kind:    InternalError,
 	}
 }
 
 func NewInternalErrWith(src *file.Source, msg string, cause error) *CompilationError {
 	return &CompilationError{
-		Message:  msg,
-		Source:   src,
-		Location: file.EmptyLocation(),
-		Kind:     InternalError,
-		Cause:    cause,
+		Message: msg,
+		Source:  src,
+		Kind:    InternalError,
+		Cause:   cause,
 	}
 }
