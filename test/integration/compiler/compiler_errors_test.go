@@ -13,18 +13,28 @@ func TestErrors(t *testing.T) {
 			LET i = NONE
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Variable 'i' is already defined",
-				//Message: "Extraneous input at end of file",
+				Message: "Expected a RETURN or FOR clause at end of query",
+				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
 			}, "Syntax error: missing return statement"),
-		SkipErrorCase(
+		ErrorCase(
 			`
 			LET i = NONE
 			RETURN
 		`, E{
-				Kind: compiler.SyntaxError,
-				//Message: "Unexpected 'return' keyword",
-				//Hint:    "Did you mean to return a value?",
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after 'RETURN'",
+				Hint:    "Did you forget to provide a value after 'RETURN'?",
 			}, "Syntax error: missing return value"),
+		ErrorCase(
+			`
+			LET i = 
+			LET y = []
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "_FAIL_",
+				Hint:    "",
+			}, "Syntax error: missing variable assignment value"),
 		ErrorCase(
 			`
 			LET i = NONE

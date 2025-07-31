@@ -3,6 +3,8 @@ package compiler
 import (
 	goruntime "runtime"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/file"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
@@ -58,8 +60,11 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	}()
 
 	l := NewVisitor(src, errorHandler)
-	p := parser.New(src.Content())
-	p.AddErrorListener(newErrorListener(l.Ctx.Errors))
+	tokenHistory := parser.NewTokenHistory(10)
+	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
+		return parser.NewTrackingTokenStream(stream, tokenHistory)
+	})
+	p.AddErrorListener(newErrorListener(src, l.Ctx.Errors, tokenHistory))
 	p.Visit(l)
 
 	if l.Ctx.Errors.HasErrors() {

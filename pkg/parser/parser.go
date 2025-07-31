@@ -11,14 +11,20 @@ type Parser struct {
 	tree *fql.FqlParser
 }
 
-func New(query string) *Parser {
+func New(query string, tr ...TokenStreamTransformer) *Parser {
 	input := antlr.NewInputStream(query)
 	// converts tokens to upper case, so now it doesn't matter
 	// in which case the tokens were entered
 	upper := newCaseChangingStream(input, true)
 
 	lexer := fql.NewFqlLexer(upper)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	var stream antlr.TokenStream
+	stream = antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+
+	// Apply all transformations to the token stream
+	for _, transform := range tr {
+		stream = transform(stream)
+	}
 
 	p := fql.NewFqlParser(stream)
 	p.BuildParseTrees = true

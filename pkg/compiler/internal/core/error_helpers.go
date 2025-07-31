@@ -24,3 +24,32 @@ func SpanFromToken(tok antlr.Token) file.Span {
 
 	return file.Span{Start: tok.GetStart(), End: tok.GetStop() + 1}
 }
+
+func SpanFromTokenSafe(tok antlr.Token, src *file.Source) file.Span {
+	if tok == nil {
+		return file.Span{Start: 0, End: 1}
+	}
+
+	start := tok.GetStart()
+	end := tok.GetStop() + 1 // exclusive end
+
+	if start < 0 {
+		start = 0
+	}
+
+	if end <= start {
+		end = start + 1
+	}
+
+	// clamp to source length
+	maxLen := len(src.Content())
+
+	if end > maxLen {
+		end = maxLen
+	}
+	if start > maxLen {
+		start = maxLen - 1
+	}
+
+	return file.Span{Start: start, End: end}
+}
