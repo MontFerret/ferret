@@ -2,23 +2,19 @@ package parser
 
 import "github.com/antlr4-go/antlr/v4"
 
-type (
-	TokenNode struct {
-		Token antlr.Token
-		Prev  *TokenNode
-		Next  *TokenNode
-	}
-
-	TokenHistory struct {
-		head *TokenNode
-		tail *TokenNode
-		size int
-		cap  int
-	}
-)
+type TokenHistory struct {
+	head *TokenNode
+	tail *TokenNode
+	size int
+	cap  int
+}
 
 func NewTokenHistory(cap int) *TokenHistory {
 	return &TokenHistory{cap: cap}
+}
+
+func (h *TokenHistory) Size() int {
+	return h.size
 }
 
 func (h *TokenHistory) Add(token antlr.Token) {
@@ -26,11 +22,21 @@ func (h *TokenHistory) Add(token antlr.Token) {
 		return
 	}
 
-	node := &TokenNode{Token: token}
+	// Avoid adding the same token twice in a row (by position, not just text)
+	if h.head != nil {
+		last := h.head.token
+		if last.GetStart() == token.GetStart() &&
+			last.GetStop() == token.GetStop() &&
+			last.GetTokenType() == token.GetTokenType() {
+			return
+		}
+	}
+
+	node := &TokenNode{token: token}
 
 	if h.head != nil {
-		node.Next = h.head
-		h.head.Prev = node
+		node.next = h.head
+		h.head.prev = node
 	}
 
 	h.head = node
@@ -43,33 +49,32 @@ func (h *TokenHistory) Add(token antlr.Token) {
 
 	if h.size > h.cap {
 		// Remove oldest
-		h.tail = h.tail.Prev
+		h.tail = h.tail.prev
 
 		if h.tail != nil {
-			h.tail.Next = nil
+			h.tail.next = nil
 		}
 
 		h.size--
 	}
 }
 
-func (h *TokenHistory) LastN(n int) []antlr.Token {
-	result := make([]antlr.Token, 0, n)
-	curr := h.head
-
-	for curr != nil && n > 0 {
-		result = append(result, curr.Token)
-		curr = curr.Next
-		n--
-	}
-
-	return result
-}
-
-func (h *TokenHistory) Last() antlr.Token {
-	if h.tail == nil {
+func (h *TokenHistory) Last() *TokenNode {
+	if h.head == nil {
 		return nil
 	}
 
-	return h.tail.Token
+	return h.head
+}
+
+func (h *TokenHistory) Iterate(yield func(token antlr.Token) bool) {
+	curr := h.tail
+
+	for curr != nil {
+		if !yield(curr.token) {
+			break
+		}
+
+		curr = curr.prev
+	}
 }

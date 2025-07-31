@@ -23,12 +23,11 @@ func TestErrors(t *testing.T) {
 		`, E{
 				Kind:    compiler.SyntaxError,
 				Message: "Expected expression after 'RETURN'",
-				Hint:    "Did you forget to provide a value after 'RETURN'?",
+				Hint:    "Did you forget to provide a value to return?",
 			}, "Syntax error: missing return value"),
 		ErrorCase(
 			`
-			LET i = 
-			LET y = []
+			LET i =
 			RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,

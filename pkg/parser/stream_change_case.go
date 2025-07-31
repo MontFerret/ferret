@@ -14,7 +14,7 @@ type CaseChangingStream struct {
 }
 
 // newCaseChangingStream returns a new CaseChangingStream that forces
-// all tokens read from the underlying stream to be either upper case
+// all history read from the underlying stream to be either upper case
 // or lower case based on the upper argument.
 func newCaseChangingStream(in antlr.CharStream, upper bool) antlr.CharStream {
 	return &CaseChangingStream{in, upper}

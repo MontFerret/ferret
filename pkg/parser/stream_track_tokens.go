@@ -4,26 +4,19 @@ import "github.com/antlr4-go/antlr/v4"
 
 type TrackingTokenStream struct {
 	antlr.TokenStream
-	tokens *TokenHistory
+	history *TokenHistory
 }
 
 func NewTrackingTokenStream(stream antlr.TokenStream, history *TokenHistory) antlr.TokenStream {
 	return &TrackingTokenStream{
 		TokenStream: stream,
-		tokens:      history,
+		history:     history,
 	}
 }
 
-func (ts *TrackingTokenStream) Tokens() *TokenHistory {
-	return ts.tokens
-}
-
-func (ts *TrackingTokenStream) LT(i int) antlr.Token {
-	tok := ts.TokenStream.LT(i)
-
-	if i == 1 && tok != nil && tok.GetTokenType() != antlr.TokenEOF {
-		ts.tokens.Add(tok)
-	}
-
-	return tok
+func (s *TrackingTokenStream) Consume() {
+	// Get current token before advancing
+	tok := s.LT(1)
+	s.TokenStream.Consume()
+	s.history.Add(tok)
 }

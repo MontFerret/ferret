@@ -16,8 +16,8 @@ func New(query string, tr ...TokenStreamTransformer) *Parser {
 	// converts tokens to upper case, so now it doesn't matter
 	// in which case the tokens were entered
 	upper := newCaseChangingStream(input, true)
-
 	lexer := fql.NewFqlLexer(upper)
+
 	var stream antlr.TokenStream
 	stream = antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 

@@ -2,8 +2,9 @@ package compiler
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
+
+	"github.com/MontFerret/ferret/pkg/parser/fql"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -16,9 +17,9 @@ import (
 type (
 	errorListener struct {
 		*antlr.DiagnosticErrorListener
-		src        *file.Source
-		handler    *core.ErrorHandler
-		lastTokens *parser.TokenHistory
+		src     *file.Source
+		handler *core.ErrorHandler
+		history *parser.TokenHistory
 	}
 
 	errorPattern struct {
@@ -28,12 +29,12 @@ type (
 	}
 )
 
-func newErrorListener(src *file.Source, handler *core.ErrorHandler, lastTokens *parser.TokenHistory) antlr.ErrorListener {
+func newErrorListener(src *file.Source, handler *core.ErrorHandler, history *parser.TokenHistory) antlr.ErrorListener {
 	return &errorListener{
 		DiagnosticErrorListener: antlr.NewDiagnosticErrorListener(false),
 		src:                     src,
 		handler:                 handler,
-		lastTokens:              lastTokens,
+		history:                 history,
 	}
 }
 
@@ -66,11 +67,11 @@ func (d *errorListener) parseError(msg string, offending antlr.Token) *Compilati
 		},
 	}
 
-	for _, handler := range []func(*CompilationError, antlr.Token) bool{
+	for _, handler := range []func(*CompilationError) bool{
 		d.extraneousError,
 		d.noViableAltError,
 	} {
-		if handler(err, offending) {
+		if handler(err) {
 			break
 		}
 	}
@@ -78,12 +79,18 @@ func (d *errorListener) parseError(msg string, offending antlr.Token) *Compilati
 	return err
 }
 
-func (d *errorListener) extraneousError(err *CompilationError, offending antlr.Token) (matched bool) {
+func (d *errorListener) extraneousError(err *CompilationError) (matched bool) {
 	if !strings.Contains(err.Message, "extraneous input") {
 		return false
 	}
 
-	span := core.SpanFromTokenSafe(offending, d.src)
+	last := d.history.Last()
+
+	if last == nil {
+		return false
+	}
+
+	span := core.SpanFromTokenSafe(last.Token(), d.src)
 	err.Spans = []core.ErrorSpan{
 		core.NewMainErrorSpan(span, "query must end with a value"),
 	}
@@ -94,35 +101,73 @@ func (d *errorListener) extraneousError(err *CompilationError, offending antlr.T
 	return true
 }
 
-func (d *errorListener) noViableAltError(err *CompilationError, offending antlr.Token) bool {
-	recognizer := regexp.MustCompile("no viable alternative at input '(\\w+).+'")
-
-	matches := recognizer.FindAllStringSubmatch(err.Message, -1)
-
-	if len(matches) == 0 {
+func (d *errorListener) noViableAltError(err *CompilationError) bool {
+	if !strings.Contains(err.Message, "viable alternative at input") {
 		return false
 	}
 
-	last := d.lastTokens.Last()
-	keyword := matches[0][1]
-	start := file.SkipWhitespaceForward(d.src.Content(), last.GetStop()+1)
-	span := file.Span{
-		Start: start,
-		End:   start + len(keyword),
+	if d.history.Size() < 2 {
+		return false
 	}
 
-	switch strings.ToLower(keyword) {
-	case "return":
-		err.Message = fmt.Sprintf("Expected expression after '%s'", keyword)
-		err.Hint = fmt.Sprintf("Did you forget to provide a value after '%s'?", keyword)
+	// most recent (offending)
+	last := d.history.Last()
 
-		// Replace span with RETURN token’s span
+	// CASE: RETURN [missing value]
+	if isToken(last, "RETURN") && isKeyword(last.Token()) {
+		span := core.SpanFromTokenSafe(last.Token(), d.src)
+
+		err.Message = fmt.Sprintf("Expected expression after '%s'", last)
+		err.Hint = "Did you forget to provide a value to return?"
 		err.Spans = []core.ErrorSpan{
 			core.NewMainErrorSpan(span, "missing return value"),
 		}
-
 		return true
 	}
 
+	// CASE: LET x = [missing value]
+	//if strtoken(last.Token()) == "LET" && isIdentifier(tokens[n-2]) && t1.GetText() == "=" {
+	//	varName := tokens[n-2].GetText()
+	//	span := core.SpanFromTokenSafe(tokens[n-1], d.src)
+	//
+	//	err.Message = fmt.Sprintf("Expected expression after '=' for variable '%s'", varName)
+	//	err.Hint = "Did you forget to provide a value?"
+	//	err.Spans = []core.ErrorSpan{
+	//		core.NewMainErrorSpan(span, "missing value"),
+	//	}
+	//	return true
+	//}
+
 	return false
+}
+
+func isIdentifier(token antlr.Token) bool {
+	if token == nil {
+		return false
+	}
+
+	tt := token.GetTokenType()
+
+	return tt == fql.FqlLexerIdentifier || tt == fql.FqlLexerIgnoreIdentifier
+}
+
+func isKeyword(token antlr.Token) bool {
+	if token == nil {
+		return false
+	}
+
+	ttype := token.GetTokenType()
+
+	// 0 is usually invalid; <EOF> is -1
+	if ttype <= 0 || ttype >= len(fql.FqlLexerLexerStaticData.LiteralNames) {
+		return false
+	}
+
+	lit := fql.FqlLexerLexerStaticData.LiteralNames[ttype]
+
+	return strings.HasPrefix(lit, "'") && strings.HasSuffix(lit, "'")
+}
+
+func isToken(node *parser.TokenNode, expected string) bool {
+	return strings.ToUpper(node.String()) == expected
 }

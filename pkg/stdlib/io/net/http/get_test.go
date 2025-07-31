@@ -46,7 +46,7 @@ func TestGET(t *testing.T) {
 		httpmock.RegisterResponder("GET", url,
 			func(req *h.Request) (*h.Response, error) {
 				if req.Header.Get("X-Token") != "Ferret" {
-					return nil, errors.Errorf("Expected X-Token to be Ferret, but got %s", req.Header.Get("X-Token"))
+					return nil, errors.Errorf("Expected X-token to be Ferret, but got %s", req.Header.Get("X-Token"))
 				}
 
 				if req.Header.Get("X-From") != "localhost" {
@@ -61,7 +61,7 @@ func TestGET(t *testing.T) {
 		out, err := http.GET(ctx, runtime.NewObjectWith(
 			runtime.NewObjectProperty("url", core.NewString(url)),
 			runtime.NewObjectProperty("headers", runtime.NewObjectWith(
-				runtime.NewObjectProperty("X-Token", core.NewString("Ferret")),
+				runtime.NewObjectProperty("X-token", core.NewString("Ferret")),
 				runtime.NewObjectProperty("X-From", core.NewString("localhost")),
 			)),
 		))
