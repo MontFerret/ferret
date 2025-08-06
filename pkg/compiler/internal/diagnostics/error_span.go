@@ -1,4 +1,4 @@
-package core
+package diagnostics
 
 import "github.com/MontFerret/ferret/pkg/file"
 

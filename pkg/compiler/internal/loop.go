@@ -37,6 +37,11 @@ func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 	// Initialize the loop with ForInLoop type
 	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
 
+	// Probably, a syntax error happened and no return rule context was created.
+	if returnRuleCtx == nil {
+		return vm.NoopOperand
+	}
+
 	// Compile the loop body (statements and clauses)
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
 		for _, b := range body {
@@ -58,6 +63,11 @@ func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
 	// Initialize the loop with ForWhileLoop type
 	returnRuleCtx := c.compileInitialization(ctx, core.ForWhileLoop)
+
+	// Probably, a syntax error happened and no return rule context was created.
+	if returnRuleCtx == nil {
+		return vm.NoopOperand
+	}
 
 	// Compile the loop body (statements and clauses)
 	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
@@ -86,6 +96,10 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	var returnRuleCtx antlr.RuleContext
 	var loopType core.LoopType
 	returnCtx := ctx.ForExpressionReturn()
+
+	if returnCtx == nil {
+		return nil
+	}
 
 	// Determine the loop type and whether it should use distinct values
 	if re := returnCtx.ReturnExpression(); re != nil {

@@ -1,17 +1,19 @@
 package compiler
 
-import "github.com/MontFerret/ferret/pkg/compiler/internal/core"
+import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
+)
 
-type ErrorKind = core.ErrorKind
-type CompilationError = core.CompilationError
-type MultiCompilationError = core.MultiCompilationError
+type ErrorKind = diagnostics.ErrorKind
+type CompilationError = diagnostics.CompilationError
+type MultiCompilationError = diagnostics.MultiCompilationError
 
 var (
-	UnknownError     = core.UnknownError
-	SyntaxError      = core.SyntaxError
-	NameError        = core.NameError
-	TypeError        = core.TypeError
-	SemanticError    = core.SemanticError
-	UnsupportedError = core.UnsupportedError
-	InternalError    = core.InternalError
+	UnknownError     = diagnostics.UnknownError
+	SyntaxError      = diagnostics.SyntaxError
+	NameError        = diagnostics.NameError
+	TypeError        = diagnostics.TypeError
+	SemanticError    = diagnostics.SemanticError
+	UnsupportedError = diagnostics.UnsupportedError
+	InternalError    = diagnostics.InternalError
 )

@@ -1,13 +1,12 @@
 package compiler
 
 import (
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 	goruntime "runtime"
 
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/pkg/file"
-
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 
 	"github.com/MontFerret/ferret/pkg/vm"
 
@@ -29,10 +28,10 @@ func New(setters ...Option) *Compiler {
 
 func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	if src.Empty() {
-		return nil, core.NewEmptyQueryErr(src)
+		return nil, diagnostics.NewEmptyQueryErr(src)
 	}
 
-	errorHandler := core.NewErrorHandler(src, 10)
+	errorHandler := diagnostics.NewErrorHandler(src, 10)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -45,11 +44,11 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 			// Find out exactly what the error was and add the e
 			switch x := r.(type) {
 			case string:
-				e = core.NewInternalErr(src, x+"\n"+stackTrace)
+				e = diagnostics.NewInternalErr(src, x+"\n"+stackTrace)
 			case error:
-				e = core.NewInternalErrWith(src, "unknown panic\n"+stackTrace, x)
+				e = diagnostics.NewInternalErrWith(src, "unknown panic\n"+stackTrace, x)
 			default:
-				e = core.NewInternalErr(src, "unknown panic\n"+stackTrace)
+				e = diagnostics.NewInternalErr(src, "unknown panic\n"+stackTrace)
 			}
 
 			errorHandler.Add(e)
@@ -60,11 +59,11 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	}()
 
 	l := NewVisitor(src, errorHandler)
-	tokenHistory := parser.NewTokenHistory(10)
+	tokenHistory := diagnostics.NewTokenHistory(10)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
-		return parser.NewTrackingTokenStream(stream, tokenHistory)
+		return diagnostics.NewTrackingTokenStream(stream, tokenHistory)
 	})
-	p.AddErrorListener(newErrorListener(src, l.Ctx.Errors, tokenHistory))
+	p.AddErrorListener(diagnostics.NewErrorListener(src, l.Ctx.Errors, tokenHistory))
 	p.Visit(l)
 
 	if l.Ctx.Errors.HasErrors() {

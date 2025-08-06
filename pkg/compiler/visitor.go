@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"github.com/MontFerret/ferret/pkg/compiler/internal"
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 )
@@ -12,7 +12,7 @@ type Visitor struct {
 	Ctx *internal.CompilerContext
 }
 
-func NewVisitor(src *file.Source, errors *core.ErrorHandler) *Visitor {
+func NewVisitor(src *file.Source, errors *diagnostics.ErrorHandler) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.Ctx = internal.NewCompilerContext(src, errors)

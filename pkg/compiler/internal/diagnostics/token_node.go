@@ -1,4 +1,4 @@
-package parser
+package diagnostics
 
 import (
 	"github.com/antlr4-go/antlr/v4"
@@ -50,6 +50,14 @@ func (t *TokenNode) NextAt(n int) *TokenNode {
 	return node
 }
 
-func (t *TokenNode) String() string {
+func (t *TokenNode) GetText() string {
+	if t.token == nil {
+		return ""
+	}
+
 	return t.token.GetText()
+}
+
+func (t *TokenNode) String() string {
+	return t.GetText()
 }

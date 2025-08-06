@@ -397,7 +397,7 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		return c.Compile(e)
 	}
 
-	c.ctx.Errors.UnexpectedToken(ctx)
+	//c.ctx.Errors.UnexpectedToken(ctx)
 
 	return vm.NoopOperand
 }

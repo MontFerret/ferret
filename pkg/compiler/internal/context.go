@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -13,7 +14,7 @@ type CompilerContext struct {
 	Symbols    *core.SymbolTable
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
-	Errors     *core.ErrorHandler
+	Errors     *diagnostics.ErrorHandler
 
 	ExprCompiler        *ExprCompiler
 	LiteralCompiler     *LiteralCompiler
@@ -25,7 +26,7 @@ type CompilerContext struct {
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
-func NewCompilerContext(src *file.Source, errors *core.ErrorHandler) *CompilerContext {
+func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *CompilerContext {
 	ctx := &CompilerContext{
 		Source:     src,
 		Errors:     errors,

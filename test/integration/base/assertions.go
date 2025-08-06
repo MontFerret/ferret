@@ -2,6 +2,7 @@ package base
 
 import (
 	"fmt"
+	"github.com/smarty/assertions"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 
@@ -13,6 +14,7 @@ type (
 		Message string
 		Kind    compiler.ErrorKind
 		Hint    string
+		Format  string
 	}
 
 	ExpectedMultiError struct {
@@ -60,6 +62,15 @@ func assertExpectedError(actual *compiler.CompilationError, expected *ExpectedEr
 
 	if expected.Hint != "" && actual.Hint != expected.Hint {
 		return fmt.Sprintf("expected error hint '%s', got '%s'", expected.Hint, actual.Hint)
+	}
+
+	if expected.Format != "" {
+		actualFormat := actual.Format()
+		equalityRes := assertions.ShouldEqual(actualFormat, expected.Format)
+
+		if equalityRes != "" {
+			return equalityRes
+		}
 	}
 
 	return ""

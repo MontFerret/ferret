@@ -1,4 +1,4 @@
-package parser
+package diagnostics
 
 import "github.com/antlr4-go/antlr/v4"
 
@@ -25,6 +25,7 @@ func (h *TokenHistory) Add(token antlr.Token) {
 	// Avoid adding the same token twice in a row (by position, not just text)
 	if h.head != nil {
 		last := h.head.token
+
 		if last.GetStart() == token.GetStart() &&
 			last.GetStop() == token.GetStop() &&
 			last.GetTokenType() == token.GetTokenType() {
@@ -35,8 +36,8 @@ func (h *TokenHistory) Add(token antlr.Token) {
 	node := &TokenNode{token: token}
 
 	if h.head != nil {
-		node.next = h.head
-		h.head.prev = node
+		node.prev = h.head
+		h.head.next = node
 	}
 
 	h.head = node
@@ -49,7 +50,7 @@ func (h *TokenHistory) Add(token antlr.Token) {
 
 	if h.size > h.cap {
 		// Remove oldest
-		h.tail = h.tail.prev
+		h.tail = h.tail.next
 
 		if h.tail != nil {
 			h.tail.next = nil

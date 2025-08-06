@@ -1,0 +1,116 @@
+package diagnostics
+
+import (
+	"github.com/MontFerret/ferret/pkg/parser/fql"
+	"github.com/antlr4-go/antlr/v4"
+	"strings"
+
+	"github.com/MontFerret/ferret/pkg/file"
+)
+
+func SpanFromRuleContext(ctx antlr.ParserRuleContext) file.Span {
+	start := ctx.GetStart()
+	stop := ctx.GetStop()
+
+	if start == nil || stop == nil {
+		return file.Span{Start: 0, End: 0}
+	}
+
+	return file.Span{Start: start.GetStart(), End: stop.GetStop() + 1}
+}
+
+func SpanFromToken(tok antlr.Token) file.Span {
+	if tok == nil {
+		return file.Span{Start: 0, End: 0}
+	}
+
+	return file.Span{Start: tok.GetStart(), End: tok.GetStop() + 1}
+}
+
+func spanFromTokenSafe(tok antlr.Token, src *file.Source) file.Span {
+	if tok == nil {
+		return file.Span{Start: 0, End: 1}
+	}
+
+	start := tok.GetStart()
+	end := tok.GetStop() + 1 // exclusive end
+
+	if start < 0 {
+		start = 0
+	}
+
+	if end <= start {
+		end = start + 1
+	}
+
+	// clamp to source length
+	maxLen := len(src.Content())
+
+	if end > maxLen {
+		end = maxLen
+	}
+	if start > maxLen {
+		start = maxLen - 1
+	}
+
+	return file.Span{Start: start, End: end}
+}
+
+func stringify(token *TokenNode) string {
+	if token == nil {
+		return ""
+	}
+
+	return strings.ToUpper(strings.TrimSpace(token.GetText()))
+}
+
+func isIdentifier(node *TokenNode) bool {
+	if node == nil {
+		return false
+	}
+
+	token := node.Token()
+
+	if token == nil {
+		return false
+	}
+
+	tt := token.GetTokenType()
+
+	return tt == fql.FqlLexerIdentifier || tt == fql.FqlLexerIgnoreIdentifier
+}
+
+func isKeyword(node *TokenNode) bool {
+	if node == nil {
+		return false
+	}
+
+	token := node.Token()
+
+	if token == nil {
+		return false
+	}
+
+	ttype := token.GetTokenType()
+
+	// 0 is usually invalid; <EOF> is -1
+	if ttype <= 0 || ttype >= len(fql.FqlLexerLexerStaticData.LiteralNames) {
+		return false
+	}
+
+	lit := fql.FqlLexerLexerStaticData.LiteralNames[ttype]
+
+	return strings.HasPrefix(lit, "'") && strings.HasSuffix(lit, "'")
+}
+
+func is(node *TokenNode, expected string) bool {
+	if node == nil {
+		return false
+	}
+
+	if node.GetText() == "" {
+		return false
+	}
+
+	return strings.ToUpper(node.GetText()) == expected
+}
