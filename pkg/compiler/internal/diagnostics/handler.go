@@ -9,9 +9,10 @@ import (
 )
 
 type ErrorHandler struct {
-	src       *file.Source
-	errors    []*CompilationError
-	threshold int
+	src             *file.Source
+	errors          []*CompilationError
+	linesWithErrors map[int]bool
+	threshold       int
 }
 
 func NewErrorHandler(src *file.Source, threshold int) *ErrorHandler {
@@ -20,9 +21,10 @@ func NewErrorHandler(src *file.Source, threshold int) *ErrorHandler {
 	}
 
 	return &ErrorHandler{
-		src:       src,
-		errors:    make([]*CompilationError, 0),
-		threshold: threshold,
+		src:             src,
+		errors:          make([]*CompilationError, 0),
+		linesWithErrors: make(map[int]bool),
+		threshold:       threshold,
 	}
 }
 
@@ -60,6 +62,13 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 		err.Source = h.src
 	}
 
+	for _, span := range err.Spans {
+		if err.Source != nil {
+			line, _ := err.Source.LocationAt(span.Span)
+			h.linesWithErrors[line] = true
+		}
+	}
+
 	h.errors = append(h.errors, err)
 
 	if len(h.errors) == h.threshold {
@@ -69,6 +78,10 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 			Hint:    "Too many errors encountered during compilation.",
 		})
 	}
+}
+
+func (h *ErrorHandler) HasErrorOnLine(line int) bool {
+	return h.linesWithErrors[line]
 }
 
 func (h *ErrorHandler) VariableNotUnique(ctx antlr.ParserRuleContext, name string) {

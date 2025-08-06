@@ -67,8 +67,30 @@ func TestSyntaxErrors(t *testing.T) {
 				RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "--",
-				Hint:    "Use 'FOR x IN [iterable]' syntax.",
+				Message: "Expected loop variable before 'IN'",
+				Hint:    "FOR must declare a variable.",
 			}, "FOR without variable"),
+		ErrorCase(
+			`
+			LET users = []
+			FOR x IN users
+				COLLECT =
+				RETURN x
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected variable before '=' in COLLECT",
+				Hint:    "COLLECT must group by a variable.",
+			}, "COLLECT with no variable"),
+		ErrorCase(
+			`
+			LET users = []
+			FOR x IN users
+				COLLECT i =
+				RETURN x
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after '=' for variable 'i'",
+				Hint:    "Did you forget to provide a value?",
+			}, "COLLECT with no variable assignment"),
 	})
 }

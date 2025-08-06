@@ -107,3 +107,7 @@ func is(node *TokenNode, expected string) bool {
 
 	return strings.ToUpper(node.GetText()) == expected
 }
+
+func has(msg string, substr string) bool {
+	return strings.Contains(strings.ToLower(msg), strings.ToLower(substr))
+}

@@ -46,5 +46,23 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 		return true
 	}
 
+	if is(offending, "COLLECT") {
+		msg := err.Message
+
+		if has(msg, "COLLECT =") {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start = span.End
+			span.End = span.Start + 1
+
+			err.Message = "Expected variable before '=' in COLLECT"
+			err.Hint = "COLLECT must group by a variable."
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing variable"),
+			}
+
+			return true
+		}
+	}
+
 	return false
 }

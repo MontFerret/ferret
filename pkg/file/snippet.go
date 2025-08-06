@@ -23,8 +23,15 @@ func NewSnippetWithCaret(lines []string, span Span, line int) Snippet {
 	}
 
 	srcLine := lines[line-1]
-	startCol := computeVisualOffset(srcLine, span.Start)
-	endCol := computeVisualOffset(srcLine, span.End)
+	lineStartOffset := 0
+
+	// Compute actual start-of-line offset
+	for i := 0; i < line-1; i++ {
+		lineStartOffset += len(lines[i]) + 1 // +1 for \n
+	}
+
+	startCol := computeVisualOffset(srcLine, span.Start-lineStartOffset+1)
+	endCol := computeVisualOffset(srcLine, span.End-lineStartOffset+1)
 
 	caret := ""
 

@@ -38,7 +38,11 @@ func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interfac
 		offending = tok
 	}
 
-	d.handler.Add(d.parseError(msg, offending))
+	if err := d.parseError(msg, offending); err != nil {
+		if !d.handler.HasErrorOnLine(line) {
+			d.handler.Add(err)
+		}
+	}
 }
 
 func (d *ErrorListener) parseError(msg string, offending antlr.Token) *CompilationError {
@@ -55,8 +59,9 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *Compilati
 	}
 
 	for _, handler := range []func(*CompilationError) bool{
-		d.extraneousError,
-		d.noViableAltError,
+		d.extraneousInput,
+		d.noViableAlternative,
+		d.mismatchedInput,
 	} {
 		if handler(err) {
 			break
@@ -66,7 +71,7 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *Compilati
 	return err
 }
 
-func (d *ErrorListener) extraneousError(err *CompilationError) (matched bool) {
+func (d *ErrorListener) extraneousInput(err *CompilationError) (matched bool) {
 	if !strings.Contains(err.Message, "extraneous input") {
 		return false
 	}
@@ -88,8 +93,16 @@ func (d *ErrorListener) extraneousError(err *CompilationError) (matched bool) {
 	return true
 }
 
-func (d *ErrorListener) noViableAltError(err *CompilationError) bool {
+func (d *ErrorListener) noViableAlternative(err *CompilationError) bool {
 	if !strings.Contains(err.Message, "viable alternative at input") {
+		return false
+	}
+
+	return AnalyzeSyntaxError(d.src, err, d.history.Last())
+}
+
+func (d *ErrorListener) mismatchedInput(err *CompilationError) bool {
+	if !strings.Contains(err.Message, "mismatched input") {
 		return false
 	}
 
