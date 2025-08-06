@@ -93,9 +93,5 @@ func (d *ErrorListener) noViableAltError(err *CompilationError) bool {
 		return false
 	}
 
-	if d.history.Size() < 2 {
-		return false
-	}
-
 	return AnalyzeSyntaxError(d.src, err, d.history.Last())
 }

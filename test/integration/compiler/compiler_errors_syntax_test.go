@@ -46,11 +46,29 @@ func TestSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			`
 			FOR i IN 
-			RETURN i
+				RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "__FAIL__",
-				Hint:    "Did you forget to provide a value?",
+				Message: "Expected expression after 'IN'",
+				Hint:    "Each FOR loop must iterate over a collection or range.",
 			}, "Missing iterable in FOR"),
+		ErrorCase(
+			`
+			FOR i [1, 2, 3]
+				RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected 'IN' after loop variable",
+				Hint:    "Use 'FOR x IN [iterable]' syntax.",
+			}, "Missing IN in FOR"),
+		ErrorCase(
+			`
+			FOR IN [1, 2, 3]
+				RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "--",
+				Hint:    "Use 'FOR x IN [iterable]' syntax.",
+			}, "FOR without variable"),
 	})
 }

@@ -132,9 +132,6 @@ func (c *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext)
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
 
-	// If none of the above, the event name expression is invalid
-	c.ctx.Errors.UnexpectedToken(ctx)
-
 	return vm.NoopOperand
 }
 
@@ -164,9 +161,6 @@ func (c *WaitCompiler) CompileWaitForEventSource(ctx fql.IWaitForEventSourceCont
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
 
-	// If none of the above, the event source expression is invalid
-	c.ctx.Errors.UnexpectedToken(ctx)
-
 	return vm.NoopOperand
 }
 
@@ -184,9 +178,6 @@ func (c *WaitCompiler) CompileOptionsClause(ctx fql.IOptionsClauseContext) vm.Op
 	if ol := ctx.ObjectLiteral(); ol != nil {
 		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
 	}
-
-	// If not an object literal, the options expression is invalid
-	c.ctx.Errors.UnexpectedToken(ctx)
 
 	return vm.NoopOperand
 }
@@ -226,9 +217,6 @@ func (c *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContext
 	if fc := ctx.FunctionCall(); fc != nil {
 		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
 	}
-
-	// If none of the above, the timeout expression is invalid
-	c.ctx.Errors.UnexpectedToken(ctx)
 
 	return vm.NoopOperand
 }

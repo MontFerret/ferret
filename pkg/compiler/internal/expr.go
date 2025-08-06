@@ -57,8 +57,6 @@ func (c *ExprCompiler) Compile(ctx fql.IExpressionContext) vm.Operand {
 		return c.compilePredicate(p)
 	}
 
-	c.ctx.Errors.UnexpectedToken(ctx)
-
 	return vm.NoopOperand
 }
 
@@ -87,8 +85,6 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 	} else if ctx.Plus() != nil {
 		op = vm.OpFlipPositive
 	} else {
-		c.ctx.Errors.UnexpectedToken(ctx)
-
 		return vm.NoopOperand
 	}
 
@@ -271,8 +267,6 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		case "<=":
 			opcode = vm.OpLte
 		default:
-			c.ctx.Errors.UnexpectedToken(ctx)
-
 			return vm.NoopOperand
 		}
 	} else if op := ctx.ArrayOperator(); op != nil {
@@ -325,8 +319,6 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		case "%":
 			opcode = vm.OpMod
 		default:
-			c.ctx.Errors.UnexpectedToken(ctx)
-
 			return vm.NoopOperand
 		}
 	} else if op := ctx.AdditiveOperator(); op != nil {
@@ -338,8 +330,6 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		case "-":
 			opcode = vm.OpSub
 		default:
-			c.ctx.Errors.UnexpectedToken(ctx)
-
 			return vm.NoopOperand
 		}
 
@@ -352,8 +342,6 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		case "!~":
 			opcode = vm.OpRegexpNegative
 		default:
-			c.ctx.Errors.UnexpectedToken(ctx)
-
 			return vm.NoopOperand
 		}
 	}
@@ -725,8 +713,6 @@ func (c *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) vm.Oper
 	if il := ctx.IntegerLiteral(); il != nil {
 		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
 	}
-
-	c.ctx.Errors.UnexpectedToken(ctx)
 
 	return vm.NoopOperand
 }

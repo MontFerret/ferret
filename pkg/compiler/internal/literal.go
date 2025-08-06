@@ -51,8 +51,6 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
 		return c.CompileNoneLiteral(nl)
 	}
 
-	c.ctx.Errors.UnexpectedToken(ctx)
-
 	return vm.NoopOperand
 }
 
@@ -178,7 +176,8 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 	case "false":
 		c.ctx.Emitter.EmitBoolean(reg, false)
 	default:
-		c.ctx.Errors.UnexpectedToken(ctx)
+		c.ctx.Registers.Free(reg)
+		reg = vm.NoopOperand
 	}
 
 	return reg
@@ -308,8 +307,6 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.O
 		// Unsafe reserved word (e.g., { for: value })
 		name = word.GetText()
 	} else {
-		c.ctx.Errors.UnexpectedToken(ctx)
-
 		return vm.NoopOperand
 	}
 

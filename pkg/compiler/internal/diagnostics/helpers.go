@@ -1,9 +1,10 @@
 package diagnostics
 
 import (
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/antlr4-go/antlr/v4"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/file"
 )
@@ -54,14 +55,6 @@ func spanFromTokenSafe(tok antlr.Token, src *file.Source) file.Span {
 	}
 
 	return file.Span{Start: start, End: end}
-}
-
-func stringify(token *TokenNode) string {
-	if token == nil {
-		return ""
-	}
-
-	return strings.ToUpper(strings.TrimSpace(token.GetText()))
 }
 
 func isIdentifier(node *TokenNode) bool {

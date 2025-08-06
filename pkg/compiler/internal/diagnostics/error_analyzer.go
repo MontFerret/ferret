@@ -8,8 +8,9 @@ type SyntaxErrorMatcher func(src *file.Source, err *CompilationError, offending 
 
 func AnalyzeSyntaxError(src *file.Source, err *CompilationError, offending *TokenNode) bool {
 	matchers := []SyntaxErrorMatcher{
-		missingAssignmentValueMatcher,
-		missingReturnValueMatcher,
+		matchMissingAssignmentValue,
+		matchForLoopErrors,
+		matchMissingReturnValue,
 	}
 
 	for _, matcher := range matchers {

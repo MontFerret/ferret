@@ -233,9 +233,6 @@ func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceCo
 		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
 	}
 
-	// If none of the above, the source expression is invalid
-	c.ctx.Errors.UnexpectedToken(ctx)
-
 	return vm.NoopOperand
 }
 
@@ -318,9 +315,6 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 	if fce := ctx.FunctionCallExpression(); fce != nil {
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
-
-	// If none of the above, the limit value expression is invalid
-	c.ctx.Errors.UnexpectedToken(ctx)
 
 	return vm.NoopOperand
 }

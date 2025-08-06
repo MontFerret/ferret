@@ -71,15 +71,6 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 	}
 }
 
-func (h *ErrorHandler) UnexpectedToken(ctx antlr.ParserRuleContext) {
-	h.Add(&CompilationError{
-		Message: fmt.Sprintf("Unexpected token '%s'", ctx.GetText()),
-		Source:  h.src,
-		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromRuleContext(ctx), "Unexpected token")},
-		Kind:    SyntaxError,
-	})
-}
-
 func (h *ErrorHandler) VariableNotUnique(ctx antlr.ParserRuleContext, name string) {
 	// TODO: Add information where the variable was defined
 	h.Add(&CompilationError{
@@ -96,5 +87,23 @@ func (h *ErrorHandler) VariableNotFound(token antlr.Token, name string) {
 		Source:  h.src,
 		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromToken(token), "")},
 		Kind:    NameError,
+	})
+}
+
+func (h *ErrorHandler) MissingReturnValue(ctx antlr.ParserRuleContext) {
+	//span := spanFromTokenSafe(offending.Token(), src)
+	//err.Message = fmt.Sprintf("Expected expression after '%s'", offending)
+	//err.Hint = "Did you forget to provide a value to return?"
+	//err.Spans = []ErrorSpan{
+	//	NewMainErrorSpan(span, "missing return value"),
+	//}
+
+	h.Add(&CompilationError{
+		Message: fmt.Sprintf("Expected expression after '%s'", ctx.GetText()),
+		Hint:    "Did you forget to provide a value to return?",
+		Source:  h.src,
+		Spans: []ErrorSpan{
+			NewMainErrorSpan(SpanFromRuleContext(ctx), "missing return value")},
+		Kind: SyntaxError,
 	})
 }

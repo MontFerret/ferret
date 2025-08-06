@@ -1,8 +1,9 @@
 package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 	goruntime "runtime"
+
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 
 	"github.com/antlr4-go/antlr/v4"
 

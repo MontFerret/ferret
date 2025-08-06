@@ -2,13 +2,13 @@ package diagnostics
 
 import (
 	"fmt"
+
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
-func missingAssignmentValueMatcher(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchMissingAssignmentValue(src *file.Source, err *CompilationError, offending *TokenNode) bool {
 	prev := offending.Prev()
 
-	// CASE: LET x = [missing value]
 	if is(offending, "LET") || is(prev, "=") {
 		span := spanFromTokenSafe(prev.Token(), src)
 		span.Start++
