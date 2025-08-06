@@ -2,6 +2,7 @@ package base
 
 import (
 	"fmt"
+
 	"github.com/smarty/assertions"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -110,7 +111,13 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 		err, ok := actual.(*compiler.CompilationError)
 
 		if !ok {
-			return "expected a compilation error"
+			err2, ok := actual.(*compiler.MultiCompilationError)
+
+			if !ok {
+				return "expected a compilation error"
+			}
+
+			err = err2.Errors[0]
 		}
 
 		msg = assertExpectedError(err, ex)

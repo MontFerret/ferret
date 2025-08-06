@@ -64,6 +64,9 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
 		return diagnostics.NewTrackingTokenStream(stream, tokenHistory)
 	})
+	// Remove all default error listeners
+	p.RemoveErrorListeners()
+	// Add custom error listener
 	p.AddErrorListener(diagnostics.NewErrorListener(src, l.Ctx.Errors, tokenHistory))
 	p.Visit(l)
 

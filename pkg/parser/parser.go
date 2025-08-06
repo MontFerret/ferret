@@ -40,6 +40,10 @@ func (p *Parser) AddErrorListener(listener antlr.ErrorListener) {
 	p.tree.AddErrorListener(listener)
 }
 
+func (p *Parser) RemoveErrorListeners() {
+	p.tree.RemoveErrorListeners()
+}
+
 func (p *Parser) Visit(visitor fql.FqlParserVisitor) interface{} {
 	return visitor.VisitProgram(p.tree.Program().(*fql.ProgramContext))
 }

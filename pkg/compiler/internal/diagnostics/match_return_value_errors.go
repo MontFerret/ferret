@@ -7,8 +7,22 @@ import (
 )
 
 func matchMissingReturnValue(src *file.Source, err *CompilationError, offending *TokenNode) bool {
-	if !is(offending, "RETURN") {
+	extraneous := isExtraneous(err.Message)
+
+	if !is(offending, "RETURN") && !extraneous {
 		return false
+	}
+
+	if extraneous {
+		span := spanFromTokenSafe(offending.Token(), src)
+		err.Spans = []ErrorSpan{
+			NewMainErrorSpan(span, "query must end with a value"),
+		}
+
+		err.Message = "Expected a RETURN or FOR clause at end of query"
+		err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
+
+		return true
 	}
 
 	span := spanFromTokenSafe(offending.Token(), src)

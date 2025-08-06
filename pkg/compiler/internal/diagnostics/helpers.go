@@ -1,10 +1,12 @@
 package diagnostics
 
 import (
+	"regexp"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/pkg/parser/fql"
 
 	"github.com/MontFerret/ferret/pkg/file"
 )
@@ -110,4 +112,35 @@ func is(node *TokenNode, expected string) bool {
 
 func has(msg string, substr string) bool {
 	return strings.Contains(strings.ToLower(msg), strings.ToLower(substr))
+}
+
+func isExtraneous(msg string) bool {
+	return has(msg, "extraneous input")
+}
+
+func parseExtraneousInput(msg string) string {
+	re := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting`)
+	match := re.FindStringSubmatch(msg)
+	return match[re.SubexpIndex("input")]
+}
+
+func parseExtraneousInputAll(msg string) (string, []string) {
+	rx := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting\s+\{(?P<expected>.+?)\}`)
+	matches := rx.FindStringSubmatch(msg)
+
+	if len(matches) != 3 {
+		return "", nil
+	}
+
+	input := strings.TrimSpace(matches[1])
+	expectedRaw := strings.TrimSpace(matches[2])
+	var expected []string
+
+	for _, part := range strings.Split(expectedRaw, ",") {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, "'")
+		expected = append(expected, part)
+	}
+
+	return input, expected
 }

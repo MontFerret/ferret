@@ -7,6 +7,10 @@ import (
 )
 
 func matchMissingAssignmentValue(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+	if isExtraneous(err.Message) {
+		return false
+	}
+
 	prev := offending.Prev()
 
 	if is(offending, "LET") || is(prev, "=") {

@@ -1,8 +1,6 @@
 package diagnostics
 
 import (
-	"strings"
-
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/pkg/file"
@@ -38,8 +36,8 @@ func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interfac
 		offending = tok
 	}
 
-	if err := d.parseError(msg, offending); err != nil {
-		if !d.handler.HasErrorOnLine(line) {
+	if !d.handler.HasErrorOnLine(line) {
+		if err := d.parseError(msg, offending); err != nil {
 			d.handler.Add(err)
 		}
 	}
@@ -58,53 +56,7 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *Compilati
 		},
 	}
 
-	for _, handler := range []func(*CompilationError) bool{
-		d.extraneousInput,
-		d.noViableAlternative,
-		d.mismatchedInput,
-	} {
-		if handler(err) {
-			break
-		}
-	}
+	AnalyzeSyntaxError(d.src, err, d.history.Last())
 
 	return err
-}
-
-func (d *ErrorListener) extraneousInput(err *CompilationError) (matched bool) {
-	if !strings.Contains(err.Message, "extraneous input") {
-		return false
-	}
-
-	last := d.history.Last()
-
-	if last == nil {
-		return false
-	}
-
-	span := spanFromTokenSafe(last.Token(), d.src)
-	err.Spans = []ErrorSpan{
-		NewMainErrorSpan(span, "query must end with a value"),
-	}
-
-	err.Message = "Expected a RETURN or FOR clause at end of query"
-	err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
-
-	return true
-}
-
-func (d *ErrorListener) noViableAlternative(err *CompilationError) bool {
-	if !strings.Contains(err.Message, "viable alternative at input") {
-		return false
-	}
-
-	return AnalyzeSyntaxError(d.src, err, d.history.Last())
-}
-
-func (d *ErrorListener) mismatchedInput(err *CompilationError) bool {
-	if !strings.Contains(err.Message, "mismatched input") {
-		return false
-	}
-
-	return AnalyzeSyntaxError(d.src, err, d.history.Last())
 }
