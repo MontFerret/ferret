@@ -114,33 +114,24 @@ func has(msg string, substr string) bool {
 	return strings.Contains(strings.ToLower(msg), strings.ToLower(substr))
 }
 
+func isNoAlternative(msg string) bool {
+	return has(msg, "no viable alternative at input")
+}
+
+func extractNoAlternativeInput(msg string) string {
+	re := regexp.MustCompile(`no viable alternative at input\s+(?P<input>.+)`)
+	match := re.FindStringSubmatch(msg)
+
+	return strings.Trim(match[re.SubexpIndex("input")], "'")
+}
+
 func isExtraneous(msg string) bool {
 	return has(msg, "extraneous input")
 }
 
-func parseExtraneousInput(msg string) string {
+func extractExtraneousInput(msg string) string {
 	re := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting`)
 	match := re.FindStringSubmatch(msg)
-	return match[re.SubexpIndex("input")]
-}
 
-func parseExtraneousInputAll(msg string) (string, []string) {
-	rx := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting\s+\{(?P<expected>.+?)\}`)
-	matches := rx.FindStringSubmatch(msg)
-
-	if len(matches) != 3 {
-		return "", nil
-	}
-
-	input := strings.TrimSpace(matches[1])
-	expectedRaw := strings.TrimSpace(matches[2])
-	var expected []string
-
-	for _, part := range strings.Split(expectedRaw, ",") {
-		part = strings.TrimSpace(part)
-		part = strings.Trim(part, "'")
-		expected = append(expected, part)
-	}
-
-	return input, expected
+	return strings.Trim(match[re.SubexpIndex("input")], "'")
 }

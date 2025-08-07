@@ -157,8 +157,30 @@ func TestSyntaxErrors(t *testing.T) {
 				RETURN x
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "---",
-				Hint:    "FILTER requires a boolean expression.",
+				Message: "Dangling comma in LIMIT clause",
+				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
 			}, "LIMIT unexpected comma 2"),
+		ErrorCase(
+			`
+			LET users = []
+			FOR x IN users
+				LIMIT ,
+				RETURN x
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Dangling comma in LIMIT clause",
+				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
+			}, "LIMIT unexpected comma 3"),
+		ErrorCase(
+			`
+			LET users = []
+			FOR x IN users
+				LIMIT,
+				RETURN x
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Dangling comma in LIMIT clause",
+				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
+			}, "LIMIT unexpected comma 4"),
 	})
 }

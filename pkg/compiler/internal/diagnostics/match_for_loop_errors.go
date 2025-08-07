@@ -1,6 +1,8 @@
 package diagnostics
 
 import (
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -93,9 +95,9 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 	}
 
 	if isExtraneous(err.Message) {
-		input := parseExtraneousInput(err.Message)
+		input := extractExtraneousInput(err.Message)
 
-		if input != "','" {
+		if input != "," {
 			return false
 		}
 
@@ -119,6 +121,48 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 			}
 
 			return true
+		}
+	}
+
+	if isNoAlternative(err.Message) {
+		if is(prev, ",") {
+			var steps int
+
+			// We walk back two tokens to find if the keyword is LIMIT.
+			for ; steps < 2 && !is(prev, "LIMIT"); steps++ {
+				prev = prev.Prev()
+			}
+
+			if is(prev, "LIMIT") {
+				span := spanFromTokenSafe(offending.Prev().Token(), src)
+				span.Start++
+				span.End++
+
+				err.Message = "Dangling comma in LIMIT clause"
+				err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
+				err.Spans = []ErrorSpan{
+					NewMainErrorSpan(span, "missing value"),
+				}
+
+				return true
+			}
+		} else if is(offending, "LIMIT") {
+			input := extractNoAlternativeInput(err.Message)
+			tokens := strings.Fields(input)
+
+			if len(tokens) > 0 && has(tokens[len(tokens)-1], ",") {
+				span := spanFromTokenSafe(offending.Token(), src)
+				span.Start = span.End
+				span.End = span.Start + 1
+
+				err.Message = "Dangling comma in LIMIT clause"
+				err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
+				err.Spans = []ErrorSpan{
+					NewMainErrorSpan(span, "missing value"),
+				}
+
+				return true
+			}
 		}
 	}
 

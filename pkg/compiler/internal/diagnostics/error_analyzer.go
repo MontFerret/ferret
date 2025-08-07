@@ -10,6 +10,7 @@ func AnalyzeSyntaxError(src *file.Source, err *CompilationError, offending *Toke
 	matchers := []SyntaxErrorMatcher{
 		matchMissingAssignmentValue,
 		matchForLoopErrors,
+		matchCommonErrors,
 		matchMissingReturnValue,
 	}
 
