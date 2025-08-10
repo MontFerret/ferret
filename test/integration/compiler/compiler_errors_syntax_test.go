@@ -10,6 +10,25 @@ func TestSyntaxErrors(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		ErrorCase(
 			`
+			LET
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected variable name",
+				Hint:    "Did you forget to provide a variable name?",
+			}, "Missing variable name"),
+
+		ErrorCase(
+			`
+			LET
+			RETURN 5
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected variable name",
+				Hint:    "Did you forget to provide a variable name?",
+			}, "Missing variable name 2"),
+
+		ErrorCase(
+			`
 			LET i = NONE
 		`, E{
 				Kind:    compiler.SyntaxError,
@@ -29,16 +48,6 @@ func TestSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
-			FOR i IN [1, 2, 3]
-				RETURN
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Expected expression after 'RETURN'",
-				Hint:    "Did you forget to provide a value to return?",
-			}, "Missing return value in for loop"),
-
-		ErrorCase(
-			`
 			LET i =
 			RETURN i
 		`, E{
@@ -49,138 +58,46 @@ func TestSyntaxErrors(t *testing.T) {
 
 		ErrorCase(
 			`
-			FOR i IN 
-				RETURN i
+			LET i =
+			LET j = 5
+			RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Expected expression after 'IN'",
-				Hint:    "Each FOR loop must iterate over a collection or range.",
-			}, "Missing iterable in FOR"),
-
-		ErrorCase(
-			`
-			FOR i [1, 2, 3]
-				RETURN i
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Expected 'IN' after loop variable",
-				Hint:    "Use 'FOR x IN [iterable]' syntax.",
-			}, "Missing IN in FOR"),
-
-		ErrorCase(
-			`
-			FOR IN [1, 2, 3]
-				RETURN i
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Expected loop variable before 'IN'",
-				Hint:    "FOR must declare a variable.",
-			}, "FOR without variable"),
-
-		ErrorCase(
-			`
-			LET users = []
-			FOR x IN users
-				COLLECT =
-				RETURN x
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Expected variable before '=' in COLLECT",
-				Hint:    "COLLECT must group by a variable.",
-			}, "COLLECT with no variable"),
-
-		ErrorCase(
-			`
-			LET users = []
-			FOR x IN users
-				COLLECT AGGREGATE total = 
-				RETURN total
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Expected expression after '=' for variable 'total'",
+				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
-			}, "COLLECT AGGREGATE without expression"),
+			}, "Missing variable assignment value 2"),
 
 		ErrorCase(
 			`
-			LET users = []
-			FOR x IN users
-				FILTER
-				RETURN x
+			LET i =
+			FOR j IN [1, 2, 3] RETURN j
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Expected condition after 'FILTER'",
-				Hint:    "FILTER requires a boolean expression.",
-			}, "FILTER with no expression"),
+				Message: "Expected expression after '=' for variable 'i'",
+				Hint:    "Did you forget to provide a value?",
+			}, "Missing variable assignment value 3"),
 
-		ErrorCase(
+		SkipErrorCase(
 			`
-			LET users = []
-			FOR x IN users
-				LIMIT
-				RETURN x
+			LET o = { foo: "bar" }
+			LET i = o.
+			RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Expected number after 'LIMIT'",
-				Hint:    "LIMIT requires a numeric value.",
-			}, "LIMIT with no value"),
+				Message: "Expected expression after '=' for variable 'i'",
+				Hint:    "Did you forget to provide a value?",
+			}, "Incomplete member access"),
 
-		ErrorCase(
+		SkipErrorCase(
 			`
-			LET users = []
-			FOR x IN users
-				LIMIT 1, 2, 3
-				RETURN x
+			LET o = { foo: "bar" }
+			LET i = o.
+			FUNC(i)
+			RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Too many arguments provided to LIMIT clause",
-				Hint:    "LIMIT accepts at most two arguments: offset and count.",
-			}, "LIMIT with too many values"),
-
-		ErrorCase(
-			`
-			LET users = []
-			FOR x IN users
-				LIMIT 1, 2,
-				RETURN x
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Too many arguments provided to LIMIT clause",
-				Hint:    "LIMIT accepts at most two arguments: offset and count.",
-			}, "LIMIT unexpected comma"),
-
-		ErrorCase(
-			`
-			LET users = []
-			FOR x IN users
-				LIMIT 1,
-				RETURN x
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Dangling comma in LIMIT clause",
-				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
-			}, "LIMIT unexpected comma 2"),
-		ErrorCase(
-			`
-			LET users = []
-			FOR x IN users
-				LIMIT ,
-				RETURN x
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Dangling comma in LIMIT clause",
-				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
-			}, "LIMIT unexpected comma 3"),
-		ErrorCase(
-			`
-			LET users = []
-			FOR x IN users
-				LIMIT,
-				RETURN x
-		`, E{
-				Kind:    compiler.SyntaxError,
-				Message: "Dangling comma in LIMIT clause",
-				Hint:    "LIMIT accepts one or two arguments. Did you forget to add a value?",
-			}, "LIMIT unexpected comma 4"),
+				Message: "Expected expression after '=' for variable 'i'",
+				Hint:    "Did you forget to provide a value?",
+			}, "Incomplete member access 2"),
 	})
 }

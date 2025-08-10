@@ -63,6 +63,48 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 			}
 
 			return true
+		} else if isNoAlternative(msg) {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start = span.End
+			span.End = span.Start + 1
+
+			err.Message = "Incomplete COLLECT clause"
+			err.Hint = "COLLECT must specify a grouping key, an AGGREGATE clause, or WITH COUNT."
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing grouping or aggregation"),
+			}
+
+			return true
+		}
+	}
+
+	if is(offending, "INTO") {
+		span := spanFromTokenSafe(offending.Token(), src)
+		span.Start = span.End + 1
+		span.End = span.Start + 1
+
+		err.Message = "Expected variable name after INTO"
+		err.Hint = "Provide a variable name to store grouped values, e.g. INTO groups."
+		err.Spans = []ErrorSpan{
+			NewMainErrorSpan(span, "missing variable name"),
+		}
+
+		return true
+	}
+
+	if is(offending, "AGGREGATE") {
+		if isNoAlternative(err.Message) {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start = span.End + 1
+			span.End = span.Start + 1
+
+			err.Message = "Expected variable assignment after AGGREGATE"
+			err.Hint = "Provide at least one variable assignment, e.g. AGGREGATE total = COUNT(x)."
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing variable assignment"),
+			}
+
+			return true
 		}
 	}
 
@@ -71,7 +113,7 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 		span.Start = span.End
 		span.End = span.Start + 1
 
-		err.Message = "Expected condition after 'FILTER'"
+		err.Message = "Incomplete FILTER clause"
 		err.Hint = "FILTER requires a boolean expression."
 		err.Spans = []ErrorSpan{
 			NewMainErrorSpan(span, "missing expression"),

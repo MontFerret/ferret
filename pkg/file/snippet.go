@@ -34,7 +34,6 @@ func NewSnippetWithCaret(lines []string, span Span, line int) Snippet {
 	endCol := computeVisualOffset(srcLine, span.End-lineStartOffset+1)
 
 	caret := ""
-
 	if endCol <= startCol+1 {
 		caret = strings.Repeat(" ", startCol) + "^"
 	} else {

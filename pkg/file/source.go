@@ -43,20 +43,36 @@ func (s *Source) LocationAt(span Span) (line, column int) {
 		return 0, 0
 	}
 
-	total := 0
 	offset := span.Start
+	total := 0
 
 	for i, l := range s.lines {
-		lineLen := len(l) + 1 // +1 for newline
+		lineLen := len(l) + 1 // +1 for '\n'
+		lineStart := total
+		lineEndWithNL := total + lineLen
 
-		if total+lineLen > offset {
+		// If offset is exactly at the start of this line (not the very first line),
+		// treat it as the end of the previous line.
+		if offset == lineStart && i > 0 {
+			prev := s.lines[i-1]
+			return i, len(prev) + 1
+		}
+
+		if lineEndWithNL > offset {
+			// Normal case: offset lives on this line
 			return i + 1, offset - total + 1
 		}
 
-		total += lineLen
+		total = lineEndWithNL
 	}
 
-	return total, 1
+	// If we somehow fell through, clamp to last line end
+	if len(s.lines) > 0 {
+		last := s.lines[len(s.lines)-1]
+		return len(s.lines), len(last) + 1
+	}
+
+	return 0, 0
 }
 
 func (s *Source) Snippet(span Span) []Snippet {

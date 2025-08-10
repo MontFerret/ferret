@@ -19,5 +19,9 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 		}
 	}
 
+	if isMismatched(err.Message) {
+
+	}
+
 	return false
 }

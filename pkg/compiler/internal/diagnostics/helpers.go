@@ -110,8 +110,24 @@ func is(node *TokenNode, expected string) bool {
 	return strings.ToUpper(node.GetText()) == expected
 }
 
+func anyIs(first, second *TokenNode, expected string) *TokenNode {
+	if is(first, expected) {
+		return first
+	}
+
+	if is(second, expected) {
+		return second
+	}
+
+	return nil
+}
+
 func has(msg string, substr string) bool {
 	return strings.Contains(strings.ToLower(msg), strings.ToLower(substr))
+}
+
+func isMismatched(msg string) bool {
+	return has(msg, "mismatched input")
 }
 
 func isNoAlternative(msg string) bool {

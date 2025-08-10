@@ -26,6 +26,8 @@ func matchMissingReturnValue(src *file.Source, err *CompilationError, offending 
 	}
 
 	span := spanFromTokenSafe(offending.Token(), src)
+	span.Start = span.End
+	span.End = span.Start + 1
 	err.Message = fmt.Sprintf("Expected expression after '%s'", offending)
 	err.Hint = "Did you forget to provide a value to return?"
 	err.Spans = []ErrorSpan{
