@@ -98,6 +98,14 @@ func isKeyword(node *TokenNode) bool {
 	return strings.HasPrefix(lit, "'") && strings.HasSuffix(lit, "'")
 }
 
+func isQuote(input string) bool {
+	if input == "\"" || input == "'" || input == "`" {
+		return true
+	}
+
+	return false
+}
+
 func is(node *TokenNode, expected string) bool {
 	if node == nil {
 		return false
@@ -134,11 +142,30 @@ func isNoAlternative(msg string) bool {
 	return has(msg, "no viable alternative at input")
 }
 
+func isMissing(msg string) bool {
+	return has(msg, "missing")
+}
+
+func isMissingToken(msg string, token string) bool {
+	return has(msg, "missing") && has(msg, token)
+}
+
 func extractNoAlternativeInput(msg string) string {
 	re := regexp.MustCompile(`no viable alternative at input\s+(?P<input>.+)`)
 	match := re.FindStringSubmatch(msg)
 
 	return strings.Trim(match[re.SubexpIndex("input")], "'")
+}
+
+func extractNoAlternativeInputs(msg string) []string {
+	re := regexp.MustCompile(`no viable alternative at input\s+(?P<input>.+)`)
+	match := re.FindStringSubmatch(msg)
+
+	input := match[re.SubexpIndex("input")]
+	input = strings.TrimPrefix(input, "'")
+	input = strings.TrimSuffix(input, "'")
+
+	return strings.Fields(input)
 }
 
 func isExtraneous(msg string) bool {
@@ -149,5 +176,9 @@ func extractExtraneousInput(msg string) string {
 	re := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting`)
 	match := re.FindStringSubmatch(msg)
 
-	return strings.Trim(match[re.SubexpIndex("input")], "'")
+	input := match[re.SubexpIndex("input")]
+	input = strings.TrimPrefix(input, "'")
+	input = strings.TrimSuffix(input, "'")
+
+	return input
 }
