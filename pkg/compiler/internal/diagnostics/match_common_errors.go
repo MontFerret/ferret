@@ -39,6 +39,36 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 			return true
 		}
 
+		// Ternary operator, incomplete expression
+		if is(offending.Prev(), "?") {
+			span := spanFromTokenSafe(offending.Prev().Token(), src)
+			span.Start++
+			span.End++
+
+			err.Message = "Expected expression after '?' in ternary operator"
+			err.Hint = "Provide an expression after the question mark to complete the ternary operation."
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing expression"),
+			}
+
+			return true
+		}
+
+		// Ternary operator, missing the right-hand expression
+		if is(offending.Prev(), ":") {
+			span := spanFromTokenSafe(offending.Prev().Token(), src)
+			span.Start++
+			span.End++
+
+			err.Message = "Expected expression after ':' in ternary operator"
+			err.Hint = "Provide an expression after the colon to complete the ternary operation."
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing expression"),
+			}
+
+			return true
+		}
+
 		input := extractNoAlternativeInputs(err.Message)
 		token := input[len(input)-1]
 

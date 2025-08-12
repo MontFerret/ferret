@@ -302,6 +302,42 @@ func TestSyntaxErrors(t *testing.T) {
 				Hint:    "Provide an expression after the logical operator, e.g. (a AND b).",
 			}, "Incomplete logical expression 4"),
 
+		ErrorCase(
+			`
+			LET a = 1
+			LET b = 2
+			LET i = b > 1 ? a :
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after ':' in ternary operator",
+				Hint:    "Provide an expression after the colon to complete the ternary operation.",
+			}, "Incomplete ternary expression"),
+
+		ErrorCase(
+			`
+			LET a = 1
+			LET b = 2
+			LET i = b > 1 ? 1 + 1 + 1 :
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after ':' in ternary operator",
+				Hint:    "Provide an expression after the colon to complete the ternary operation.",
+			}, "Incomplete ternary expression 2"),
+
+		ErrorCase(
+			`
+			LET a = 1
+			LET b = 2
+			LET i = b > 1 ?
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after '?' in ternary operator",
+				Hint:    "Provide an expression after the question mark to complete the ternary operation.",
+			}, "Incomplete ternary expression 3"),
+
 		SkipErrorCase(
 			`
 			LET i = NONE
