@@ -42,23 +42,41 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 		input := extractNoAlternativeInputs(err.Message)
 		token := input[len(input)-1]
 
-		if isQuote(token) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			inputRaw := extractNoAlternativeInput(err.Message)
-			spaces := strings.Count(inputRaw, " ") + 1
-			span.Start += spaces
-			span.End += spaces
+		isMissingClosingQuote := isQuote(token)
+		isMissingOpeningQuote := isKeyword(offending.Prev()) && isQuote(token[len(token)-1:]) && !isValidString(token)
+
+		if isMissingClosingQuote || isMissingOpeningQuote {
+			var span file.Span
+			var typeOfQuote string
+			var quote string
+
+			if isMissingClosingQuote {
+				quote = token
+				typeOfQuote = "closing"
+				span = spanFromTokenSafe(offending.Token(), src)
+				inputRaw := extractNoAlternativeInput(err.Message)
+				spaces := strings.Count(inputRaw, " ") + 1
+				span.Start += spaces
+				span.End += spaces
+			} else {
+				quote = token[len(token)-1:]
+				typeOfQuote = "opening"
+				span = spanFromTokenSafe(offending.Prev().Token(), src)
+				span.Start += 2
+				span.End += 2
+			}
+
 			err.Message = "Unclosed string literal"
 
-			if token == "'" {
-				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", token)
+			if quote == "'" {
+				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", quote)
 				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing closing \"%s\"", token)),
+					NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, quote)),
 				}
 			} else {
-				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", token)
+				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", quote)
 				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing closing '%s'", token)),
+					NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, quote)),
 				}
 			}
 
@@ -222,25 +240,42 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			return true
 		}
+	}
 
-		token := extractExtraneousInput(err.Message)
+	if isExtraneous(err.Message) || isMismatched(err.Message) {
+		var token string
+
+		if isExtraneous(err.Message) {
+			token = extractExtraneousInput(err.Message)
+		} else {
+			token = extractMismatchedInput(err.Message)
+		}
 
 		if isQuote(token) {
-			span := spanFromTokenSafe(offending.Token(), src)
+			var span file.Span
+			var typeOfQuote string
+
+			if isKeyword(offending) {
+				span = spanFromTokenSafe(offending.Token(), src)
+				typeOfQuote = "closing"
+			} else {
+				span = spanFromTokenSafe(offending.Prev().Token(), src)
+				typeOfQuote = "opening"
+			}
+
 			span.Start += 2
 			span.End += 2
-
 			err.Message = "Unclosed string literal"
 
 			if token == "'" {
 				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", token)
 				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing closing \"%s\"", token)),
+					NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, token)),
 				}
 			} else {
 				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", token)
 				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing closing '%s'", token)),
+					NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, token)),
 				}
 			}
 

@@ -106,6 +106,22 @@ func isQuote(input string) bool {
 	return false
 }
 
+func isValidString(input string) bool {
+	if input == "" {
+		return false
+	}
+
+	if isQuote(input) {
+		return true
+	}
+
+	if isQuote(input[0:1]) && isQuote(input[len(input)-1:]) {
+		return true
+	}
+
+	return false
+}
+
 func is(node *TokenNode, expected string) bool {
 	if node == nil {
 		return false
@@ -174,6 +190,17 @@ func isExtraneous(msg string) bool {
 
 func extractExtraneousInput(msg string) string {
 	re := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting`)
+	match := re.FindStringSubmatch(msg)
+
+	input := match[re.SubexpIndex("input")]
+	input = strings.TrimPrefix(input, "'")
+	input = strings.TrimSuffix(input, "'")
+
+	return input
+}
+
+func extractMismatchedInput(msg string) string {
+	re := regexp.MustCompile(`mismatched input\s+(?P<input>.+?)\s+expecting`)
 	match := re.FindStringSubmatch(msg)
 
 	input := match[re.SubexpIndex("input")]

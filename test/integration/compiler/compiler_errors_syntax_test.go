@@ -45,7 +45,37 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    compiler.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
-			}, "Incomplete string"),
+			}, "Incomplete string (closing quote missing)"),
+
+		ErrorCase(
+			`
+			LET i = "foo bar
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '\"' to close the string.",
+			}, "Incomplete multi-string (closing quote missing)"),
+
+		ErrorCase(
+			`
+			LET i = foo"
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '\"' to close the string.",
+			}, "Incomplete string (opening quote missing)"),
+
+		ErrorCase(
+			`
+			LET i = foo bar"
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '\"' to close the string.",
+			}, "Incomplete multi-string (opening quote missing)"),
 
 		ErrorCase(
 			`
@@ -55,7 +85,37 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    compiler.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
-			}, "Incomplete string 2"),
+			}, "Incomplete string (closing quote missing) 2"),
+
+		ErrorCase(
+			`
+			LET i = 'foo bar
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching \"'\" to close the string.",
+			}, "Incomplete multi-string (closing quote missing) 2"),
+
+		ErrorCase(
+			`
+			LET i = foo'
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching \"'\" to close the string.",
+			}, "Incomplete string (opening quote missing) 2"),
+
+		ErrorCase(
+			`
+			LET i = foo bar'
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching \"'\" to close the string.",
+			}, "Incomplete multi-string (opening quote missing) 2"),
 
 		ErrorCase(
 			"LET i = `foo "+
@@ -63,7 +123,31 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    compiler.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '`' to close the string.",
-			}, "Incomplete string 3"),
+			}, "Incomplete string (closing quote missing) 3"),
+
+		ErrorCase(
+			"LET i = `foo bar"+
+				"RETURN i", E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '`' to close the string.",
+			}, "Incomplete multi-string (closing quote missing) 3"),
+
+		ErrorCase(
+			"LET i = foo` "+
+				"RETURN i", E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '`' to close the string.",
+			}, "Incomplete string (opening quote missing) 3"),
+
+		ErrorCase(
+			"LET i = foo bar` "+
+				"RETURN i", E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '`' to close the string.",
+			}, "Incomplete multi-string (opening quote missing) 3"),
 
 		ErrorCase(
 			`
@@ -73,7 +157,37 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    compiler.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
-			}, "Incomplete string 4"),
+			}, "Incomplete string (closing quote missing) 4"),
+
+		ErrorCase(
+			`
+			LET i = { "foo bar: }
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '\"' to close the string.",
+			}, "Incomplete multi-string (closing quote missing) 4"),
+
+		ErrorCase(
+			`
+			LET i = { foo": }
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '\"' to close the string.",
+			}, "Incomplete string (opening quote missing) 4"),
+
+		SkipErrorCase(
+			`
+			LET i = { foo bar": }
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching '\"' to close the string",
+			}, "Incomplete multi-string (opening quote missing) 4"),
 
 		ErrorCase(
 			`
@@ -83,7 +197,27 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    compiler.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
-			}, "Incomplete string 5"),
+			}, "Incomplete string (closing quote missing) 5"),
+
+		ErrorCase(
+			`
+			LET i = { foo': }
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching \"'\" to close the string.",
+			}, "Incomplete string (opening quote missing) 5"),
+
+		SkipErrorCase(
+			`
+			LET i = { foo bar': }
+			RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching \"'\" to close the string.",
+			}, "Incomplete multi-string (opening quote missing) 5"),
 
 		ErrorCase(
 			"LET i = { 'foo: }"+
@@ -91,7 +225,15 @@ func TestSyntaxErrors(t *testing.T) {
 				Kind:    compiler.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
-			}, "Incomplete string 6"),
+			}, "Incomplete string (closing quote missing) 6"),
+
+		ErrorCase(
+			"LET i = { 'foo bar: }"+
+				"RETURN i", E{
+				Kind:    compiler.SyntaxError,
+				Message: "Unclosed string literal",
+				Hint:    "Add a matching \"'\" to close the string.",
+			}, "Incomplete multi-string (closing quote missing) 6"),
 
 		ErrorCase(
 			`
