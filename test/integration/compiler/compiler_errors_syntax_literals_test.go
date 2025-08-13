@@ -306,8 +306,19 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			RETURN v
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Expected end value before '..' in range expression",
-				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
-			}, "Incomplete array access"),
+				Message: "Unclosed computed property expression",
+				Hint:    "Add a closing ']' to complete the computed property expression.",
+			}, "Unclosed computed property expression"),
+
+		ErrorCase(
+			`
+			LET arr = [1, 2, 3]
+			LET v = arr[]
+			RETURN v
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression inside computed property brackets",
+				Hint:    "Provide a property key or index inside '[ ]', e.g. arr[0] or arr[\"key\"].",
+			}, "Invalid computed property expression"),
 	})
 }

@@ -68,10 +68,18 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 				span.End++
 			}
 
-			err.Message = "Unclosed array literal"
-			err.Hint = "Add a closing ']' to complete the array."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing ']'"),
+			if !isKeyword(offending.PrevAt(2)) {
+				err.Message = "Unclosed computed property expression"
+				err.Hint = "Add a closing ']' to complete the computed property expression."
+				err.Spans = []ErrorSpan{
+					NewMainErrorSpan(span, "missing ']'"),
+				}
+			} else {
+				err.Message = "Unclosed array literal"
+				err.Hint = "Add a closing ']' to complete the array."
+				err.Spans = []ErrorSpan{
+					NewMainErrorSpan(span, "missing ']'"),
+				}
 			}
 
 			return true
@@ -178,6 +186,20 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 				err.Spans = []ErrorSpan{
 					NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, token)),
 				}
+			}
+
+			return true
+		}
+
+		if is(offending, "[") && token == "]" {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.End++
+
+			val := offending.Prev().String()
+			err.Message = "Expected expression inside computed property brackets"
+			err.Hint = fmt.Sprintf("Provide a property key or index inside '[ ]', e.g. %s[0] or %s[\"key\"].", val, val)
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing expression"),
 			}
 
 			return true
