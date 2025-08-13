@@ -64,6 +64,18 @@ func TestForLoopSyntaxErrors(t *testing.T) {
 			`
 			LET users = []
 			FOR x IN users
+				FILTER x =
+				RETURN x
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Incomplete FILTER clause",
+				Hint:    "FILTER requires a boolean expression.",
+			}, "FILTER with no expression 2"),
+
+		ErrorCase(
+			`
+			LET users = []
+			FOR x IN users
 				LIMIT
 				RETURN x
 		`, E{
