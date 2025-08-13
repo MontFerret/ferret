@@ -58,7 +58,7 @@ const (
 	// Membership & Pattern Matching
 	OpIn
 	OpLike
-	OpRegexpPositive
+	OpRegexp
 
 	// Array Comparison Operations
 	OpAnyIn
@@ -223,7 +223,7 @@ func (op Opcode) String() string {
 		return "IN"
 	case OpLike:
 		return "LIKE"
-	case OpRegexpPositive:
+	case OpRegexp:
 		return "REGEX"
 
 	// Utility Operations

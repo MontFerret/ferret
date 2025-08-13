@@ -116,7 +116,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpRegexpPositive:
+		case OpRegexp:
 			// TODO: Add caching to avoid recompilation
 			r, err := internal.ToRegexp(reg[src2])
 

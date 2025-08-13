@@ -337,7 +337,7 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 
 	} else if op := ctx.RegexpOperator(); op != nil {
 		isSet = true
-		opcode = vm.OpRegexpPositive
+		opcode = vm.OpRegexp
 		isNegated = op.GetText() == "!~"
 		isRegexp = true
 	}
