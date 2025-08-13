@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/test/integration/base"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -87,10 +88,10 @@ func TestVariables(t *testing.T) {
 	SkipConvey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
 		c := compiler.New()
 
-		p, err := c.Compile(`
+		p, err := c.Compile(file.NewAnonymousSource(`
 			LET i = (FOR i WHILE COUNTER() < 5 RETURN i)
 			RETURN i
-		`)
+		`))
 
 		So(err, ShouldBeNil)
 		So(p, ShouldHaveSameTypeAs, &vm.Program{})
@@ -109,10 +110,10 @@ func TestVariables(t *testing.T) {
 	SkipConvey("Should compile LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)? RETURN length(i) == 0", t, func() {
 		c := compiler.New()
 
-		p, err := c.Compile(`
+		p, err := c.Compile(file.NewAnonymousSource(`
 			LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)?
 			RETURN length(i) == 0
-		`)
+		`))
 
 		So(err, ShouldBeNil)
 		So(p, ShouldHaveSameTypeAs, &vm.Program{})

@@ -3,6 +3,7 @@ package vm_test
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/test/integration/base"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -37,10 +38,10 @@ func TestTernaryOperator(t *testing.T) {
 		c := compiler.New()
 
 		for _, val := range vals {
-			p, err := c.Compile(fmt.Sprintf(`
+			p, err := c.Compile(file.NewAnonymousSource(fmt.Sprintf(`
 			FOR i IN [%s, 1, 2, 3]
 				RETURN i ? i * 2 : 'no value'
-		`, val))
+		`, val)))
 
 			So(err, ShouldBeNil)
 

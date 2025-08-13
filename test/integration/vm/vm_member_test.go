@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/stdlib"
 
 	"github.com/MontFerret/ferret/test/integration/base"
@@ -181,7 +182,7 @@ func TestMemberReservedWords(t *testing.T) {
 				expected.WriteString("}")
 
 				c := compiler.New()
-				prog, err := c.Compile(query.String())
+				prog, err := c.Compile(file.NewAnonymousSource(query.String()))
 
 				So(err, ShouldBeNil)
 

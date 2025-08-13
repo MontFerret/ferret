@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/vm"
 
 	gocontext "context"
@@ -31,10 +32,10 @@ func TestUnaryOperators(t *testing.T) {
 	Convey("RETURN { enabled: !val}", t, func() {
 		c := compiler.New()
 
-		p1 := c.MustCompile(`
+		p1 := c.MustCompile(file.NewAnonymousSource(`
 			LET val = ""
 			RETURN { enabled: !val }
-		`)
+		`))
 
 		v1, err := vm.New(p1).Run(gocontext.Background(), nil)
 
@@ -45,10 +46,10 @@ func TestUnaryOperators(t *testing.T) {
 
 		So(string(out1), ShouldEqual, `{"enabled":true}`)
 
-		p2 := c.MustCompile(`
+		p2 := c.MustCompile(file.NewAnonymousSource(`
 			LET val = ""
 			RETURN { enabled: !!val }
-		`)
+		`))
 
 		v2, err := vm.New(p2).Run(gocontext.Background(), nil)
 

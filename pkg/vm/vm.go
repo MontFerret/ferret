@@ -90,7 +90,7 @@ loop:
 			reg[dst] = runtime.Positive(reg[src1])
 		case OpFlipNegative:
 			reg[dst] = runtime.Negative(reg[src1])
-		case OpComp:
+		case OpCmp:
 			reg[dst] = runtime.Int(runtime.CompareValues(reg[src1], reg[src2]))
 		case OpNot:
 			reg[dst] = !runtime.ToBoolean(reg[src1])
@@ -108,21 +108,11 @@ loop:
 			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) <= 0)
 		case OpIn:
 			reg[dst] = internal.Contains(ctx, reg[src2], reg[src1])
-		case OpNotIn:
-			reg[dst] = !internal.Contains(ctx, reg[src2], reg[src1])
 		case OpLike:
 			res, err := internal.Like(reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
-			} else {
-				return nil, err
-			}
-		case OpNotLike:
-			res, err := internal.Like(reg[src1], reg[src2])
-
-			if err == nil {
-				reg[dst] = !res
 			} else {
 				return nil, err
 			}
@@ -132,17 +122,6 @@ loop:
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
-			} else if _, catch := vm.tryCatch(vm.pc); catch {
-				reg[dst] = runtime.False
-			} else {
-				return nil, err
-			}
-		case OpRegexpNegative:
-			// TODO: Add caching to avoid recompilation
-			r, err := internal.ToRegexp(reg[src2])
-
-			if err == nil {
-				reg[dst] = !r.Match(reg[src1])
 			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.False
 			} else {
@@ -232,7 +211,6 @@ loop:
 			} else {
 				return nil, err
 			}
-
 		case OpCall, OpProtectedCall:
 			out, err := vm.call(ctx, dst, src1, src2)
 

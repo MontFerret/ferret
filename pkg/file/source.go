@@ -18,6 +18,10 @@ func NewSource(name, text string) *Source {
 	}
 }
 
+func NewAnonymousSource(text string) *Source {
+	return NewSource("anonymous", text)
+}
+
 func (s *Source) Name() string {
 	if s == nil {
 		return ""

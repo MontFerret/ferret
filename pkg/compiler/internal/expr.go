@@ -248,6 +248,7 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 	}
 
 	var opcode vm.Opcode
+	var isNegated bool
 	dest := c.ctx.Registers.Allocate(core.Temp)
 	left := c.compilePredicate(ctx.Predicate(0))
 	right := c.compilePredicate(ctx.Predicate(1))
@@ -273,20 +274,19 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		// TODO: Implement me
 		panic(runtime.Error(runtime.ErrNotImplemented, "array operator"))
 	} else if op := ctx.InOperator(); op != nil {
-		if op.Not() == nil {
-			opcode = vm.OpIn
-		} else {
-			opcode = vm.OpNotIn
-		}
+		opcode = vm.OpIn
+		isNegated = op.Not() != nil
 	} else if op := ctx.LikeOperator(); op != nil {
-		if op.(*fql.LikeOperatorContext).Not() == nil {
-			opcode = vm.OpLike
-		} else {
-			opcode = vm.OpNotLike
-		}
+		opcode = vm.OpLike
+		isNegated = op.Not() != nil
 	}
 
 	c.ctx.Emitter.EmitABC(opcode, dest, left, right)
+
+	if isNegated {
+		// If the operator is negated, we need to invert the result
+		c.ctx.Emitter.EmitAB(vm.OpNot, dest, dest)
+	}
 
 	return dest
 }
@@ -307,6 +307,8 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 	var opcode vm.Opcode
 	var isSet bool
+	var isNegated bool
+	var isRegexp bool
 
 	if op := ctx.MultiplicativeOperator(); op != nil {
 		isSet = true
@@ -335,15 +337,9 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 
 	} else if op := ctx.RegexpOperator(); op != nil {
 		isSet = true
-
-		switch op.GetText() {
-		case "=~":
-			opcode = vm.OpRegexpPositive
-		case "!~":
-			opcode = vm.OpRegexpNegative
-		default:
-			return vm.NoopOperand
-		}
+		opcode = vm.OpRegexpPositive
+		isNegated = op.GetText() == "!~"
+		isRegexp = true
 	}
 
 	if isSet {
@@ -351,16 +347,24 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		regRight := c.compileAtom(ctx.ExpressionAtom(1))
 		dst := c.ctx.Registers.Allocate(core.Temp)
 
-		if opcode == vm.OpRegexpPositive || opcode == vm.OpRegexpNegative {
-			if regRight.IsConstant() {
-				val := c.ctx.Symbols.Constant(regRight)
+		c.ctx.Emitter.EmitABC(opcode, dst, regLeft, regRight)
 
-				// Verify that the expression is a valid regular expression
-				regexp.MustCompile(val.String())
-			}
+		if isNegated {
+			// If the operator is negated, we need to invert the result
+			c.ctx.Emitter.EmitAB(vm.OpNot, dst, dst)
 		}
 
-		c.ctx.Emitter.EmitABC(opcode, dst, regLeft, regRight)
+		if isRegexp {
+			if regRight.IsConstant() {
+				val := c.ctx.Symbols.Constant(regRight)
+				exp := val.String()
+
+				// Verify that the expression is a valid regular expression
+				if _, err := regexp.Compile(exp); err != nil {
+					c.ctx.Errors.InvalidRegexExpression(ctx, exp)
+				}
+			}
+		}
 
 		return dst
 	}

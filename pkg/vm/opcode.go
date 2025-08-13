@@ -46,7 +46,7 @@ const (
 	OpFlipNegative
 
 	// Comparison Operations
-	OpComp
+	OpCmp
 	OpNot
 	OpEq
 	OpNeq
@@ -57,11 +57,31 @@ const (
 
 	// Membership & Pattern Matching
 	OpIn
-	OpNotIn
 	OpLike
-	OpNotLike
 	OpRegexpPositive
-	OpRegexpNegative
+
+	// Array Comparison Operations
+	OpAnyIn
+	OpAnyEq
+	OpAnyNeq
+	OpAnyGt
+	OpAnyGte
+	OpAnyLt
+	OpAnyLte
+	OpNoneIn
+	OpNoneEq
+	OpNoneNeq
+	OpNoneGt
+	OpNoneGte
+	OpNoneLt
+	OpNoneLte
+	OpAllIn
+	OpAllEq
+	OpAllNeq
+	OpAllGt
+	OpAllGte
+	OpAllLt
+	OpAllLte
 
 	// Utility Operations
 	OpLength
@@ -181,7 +201,7 @@ func (op Opcode) String() string {
 		return "FLIP-"
 
 	// Comparison Operations
-	case OpComp:
+	case OpCmp:
 		return "COMP"
 	case OpNot:
 		return "NOT"
@@ -201,16 +221,10 @@ func (op Opcode) String() string {
 	// Membership & Pattern Matching
 	case OpIn:
 		return "IN"
-	case OpNotIn:
-		return "NOTIN"
 	case OpLike:
 		return "LIKE"
-	case OpNotLike:
-		return "NOTLIKE"
 	case OpRegexpPositive:
-		return "REGEX+"
-	case OpRegexpNegative:
-		return "REGEX-"
+		return "REGEX"
 
 	// Utility Operations
 	case OpLength:

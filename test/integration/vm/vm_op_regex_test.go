@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 
@@ -24,9 +25,9 @@ func TestRegexpOperator(t *testing.T) {
 	// TODO: Fix
 	SkipConvey("Should return an error during compilation when a regexp string invalid", t, func() {
 		_, err := compiler.New().
-			Compile(`
+			Compile(file.NewAnonymousSource(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
-		`)
+		`))
 
 		So(err, ShouldBeError)
 	})
@@ -43,9 +44,9 @@ func TestRegexpOperator(t *testing.T) {
 
 		for _, r := range right {
 			_, err := compiler.New().
-				Compile(fmt.Sprintf(`
+				Compile(file.NewAnonymousSource(fmt.Sprintf(`
 			RETURN "foo" !~ %s 
-		`, r))
+		`, r)))
 
 			So(err, ShouldBeError)
 		}

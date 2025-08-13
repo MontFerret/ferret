@@ -120,3 +120,14 @@ func (h *ErrorHandler) MissingReturnValue(ctx antlr.ParserRuleContext) {
 		Kind: SyntaxError,
 	})
 }
+
+func (h *ErrorHandler) InvalidRegexExpression(ctx antlr.ParserRuleContext, expression string) {
+	h.Add(&CompilationError{
+		Message: fmt.Sprintf("Invalid regular expression: %s", expression),
+		Hint:    "Check the syntax of the regular expression.",
+		Source:  h.src,
+		Spans: []ErrorSpan{
+			NewMainErrorSpan(SpanFromRuleContext(ctx), "invalid regex")},
+		Kind: SyntaxError,
+	})
+}
