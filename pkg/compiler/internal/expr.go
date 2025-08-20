@@ -258,7 +258,7 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		case "==":
 			opcode = vm.OpEq
 		case "!=":
-			opcode = vm.OpNeq
+			opcode = vm.OpNe
 		case ">":
 			opcode = vm.OpGt
 		case ">=":
@@ -290,7 +290,7 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		if eo := op.EqualityOperator(); eo != nil {
 			switch eo.GetText() {
 			case "!=":
-				pos += int(vm.OpAllNeq) - int(vm.OpAllEq)
+				pos += int(vm.OpAllNe) - int(vm.OpAllEq)
 			case ">":
 				pos += int(vm.OpAllGt) - int(vm.OpAllEq)
 			case ">=":

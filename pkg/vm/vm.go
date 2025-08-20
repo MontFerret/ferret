@@ -97,7 +97,7 @@ loop:
 			reg[dst] = !runtime.ToBoolean(reg[src1])
 		case OpEq:
 			reg[dst] = operators.Equals(ctx, reg[src1], reg[src2])
-		case OpNeq:
+		case OpNe:
 			reg[dst] = operators.NotEquals(ctx, reg[src1], reg[src2])
 		case OpGt:
 			reg[dst] = operators.GreaterThan(ctx, reg[src1], reg[src2])
@@ -128,7 +128,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpAllEq, OpAllNeq, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
+		case OpAllEq, OpAllNe, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(OpAllEq))
 			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
 
@@ -139,7 +139,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpAnyEq, OpAnyNeq, OpAnyGt, OpAnyGte, OpAnyLt, OpAnyLte, OpAnyIn:
+		case OpAnyEq, OpAnyNe, OpAnyGt, OpAnyGte, OpAnyLt, OpAnyLte, OpAnyIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(OpAnyEq))
 			res, err := operators.ArrayAny(ctx, cmp, reg[src1], reg[src2])
 
@@ -150,7 +150,7 @@ loop:
 			} else {
 				return nil, err
 			}
-		case OpNoneEq, OpNoneNeq, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn:
+		case OpNoneEq, OpNoneNe, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn:
 			cmp := operators.ComparatorFromByte(int(op) - int(OpNoneEq))
 			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
 

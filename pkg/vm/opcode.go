@@ -49,7 +49,7 @@ const (
 	OpCmp
 	OpNot
 	OpEq
-	OpNeq
+	OpNe
 	OpGt
 	OpLt
 	OpGte
@@ -62,21 +62,21 @@ const (
 
 	// Array Comparison Operations (do not swap order of EQ, GT, GTE, LT, LTE, IN. it must be equal to operators)
 	OpAnyEq
-	OpAnyNeq
+	OpAnyNe
 	OpAnyGt
 	OpAnyGte
 	OpAnyLt
 	OpAnyLte
 	OpAnyIn
 	OpNoneEq
-	OpNoneNeq
+	OpNoneNe
 	OpNoneGt
 	OpNoneGte
 	OpNoneLt
 	OpNoneLte
 	OpNoneIn
 	OpAllEq
-	OpAllNeq
+	OpAllNe
 	OpAllGt
 	OpAllGte
 	OpAllLt
@@ -196,9 +196,9 @@ func (op Opcode) String() string {
 	case OpNegate:
 		return "NEG"
 	case OpFlipPositive:
-		return "FLIP+"
+		return "FPP"
 	case OpFlipNegative:
-		return "FLIP-"
+		return "FPN"
 
 	// Comparison Operations
 	case OpCmp:
@@ -207,8 +207,8 @@ func (op Opcode) String() string {
 		return "NOT"
 	case OpEq:
 		return "EQ"
-	case OpNeq:
-		return "NEQ"
+	case OpNe:
+		return "NE"
 	case OpGt:
 		return "GT"
 	case OpLt:
@@ -226,41 +226,47 @@ func (op Opcode) String() string {
 	case OpRegexp:
 		return "REGEX"
 
-		// Array Comparison Operations
+	// Array Comparison Operations
 	case OpAnyEq:
 		return "ANYEQ"
+	case OpAnyNe:
+		return "ANYNE"
 	case OpAnyGt:
 		return "ANYGT"
 	case OpAnyGte:
-		return "ANYGTE"
+		return "ANYGE"
 	case OpAnyLt:
 		return "ANYLT"
 	case OpAnyLte:
-		return "ANYLTE"
+		return "ANYLE"
 	case OpAnyIn:
 		return "ANYIN"
 	case OpNoneEq:
 		return "NONEQ"
+	case OpNoneNe:
+		return "NONNE"
 	case OpNoneGt:
 		return "NONGT"
 	case OpNoneGte:
-		return "NONGTE"
+		return "NONGE"
 	case OpNoneLt:
 		return "NONLT"
 	case OpNoneLte:
-		return "NONLTE"
+		return "NONLE"
 	case OpNoneIn:
 		return "NONIN"
 	case OpAllEq:
 		return "ALLEQ"
+	case OpAllNe:
+		return "ALLNE"
 	case OpAllGt:
 		return "ALLGT"
 	case OpAllGte:
-		return "ALLGTE"
+		return "ALLGE"
 	case OpAllLt:
 		return "ALLLT"
 	case OpAllLte:
-		return "ALLLTE"
+		return "ALLLE"
 	case OpAllIn:
 		return "ALLIN"
 

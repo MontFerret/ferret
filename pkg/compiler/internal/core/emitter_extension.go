@@ -147,7 +147,7 @@ func (e *Emitter) EmitEq(dst, a, b vm.Operand) {
 }
 
 func (e *Emitter) EmitNeq(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpNeq, dst, a, b)
+	e.EmitABC(vm.OpNe, dst, a, b)
 }
 
 func (e *Emitter) EmitGt(dst, a, b vm.Operand) {
