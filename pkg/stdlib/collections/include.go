@@ -19,20 +19,14 @@ func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 	switch v := haystack.(type) {
 	case runtime.String:
 		result = v.Contains(runtime.NewString(needle.String()))
-
-		break
 	case runtime.List:
 		_, result, err = v.FindOne(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 			return runtime.CompareValues(needle, value) == 0, nil
 		})
-
-		break
 	case runtime.Map:
 		_, result, err = v.FindOne(ctx, func(c context.Context, value, _ runtime.Value) (runtime.Boolean, error) {
 			return runtime.CompareValues(needle, value) == 0, nil
 		})
-
-		break
 	case runtime.Iterable:
 		iter, err := v.Iterate(ctx)
 

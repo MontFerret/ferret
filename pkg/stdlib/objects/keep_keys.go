@@ -37,7 +37,7 @@ func KeepKeys(ctx context.Context, args ...core.Value) (core.Value, error) {
 		keys = runtime.NewArrayWith(args[1:]...)
 	}
 
-	if err := validateArrayOf(types.String, keys); err != nil {
+	if err := validateArrayOf(ctx, types.String, keys); err != nil {
 		return core.None, err
 	}
 

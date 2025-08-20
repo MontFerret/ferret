@@ -54,8 +54,6 @@ func ConcatWithSeparator(ctx context.Context, args ...runtime.Value) (runtime.Va
 		return runtime.EmptyString, err
 	}
 
-	separator := args[0]
-
 	separator, ok := args[0].(runtime.String)
 
 	if !ok {

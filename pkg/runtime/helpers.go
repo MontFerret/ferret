@@ -318,7 +318,7 @@ func ToBoolean(input Value) Boolean {
 	case Float:
 		return val != 0
 	case DateTime:
-		return val.IsZero() == false
+		return Boolean(!val.IsZero())
 	default:
 		return True
 	}

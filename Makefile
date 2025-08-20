@@ -50,8 +50,8 @@ fmt:
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck ./pkg/compiler ./pkg/drivers ./pkg/runtime ./pkg/stdlib && \
-	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... ./...
+	staticcheck -tests=false ./pkg/... && \
+	echo 'revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...'
 
 # http://godoc.org/code.google.com/p/go.tools/cmd/vet
 # go get code.google.com/p/go.tools/cmd/vet

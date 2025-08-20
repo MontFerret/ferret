@@ -211,7 +211,7 @@ func (e *Emitter) Patchx(label Label, arg int) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
-		panic(fmt.Errorf("label not marked: %d", label))
+		panic(fmt.Errorf("label not marked: %s", label))
 	}
 
 	current := e.instructions[pos]
@@ -256,7 +256,7 @@ func (e *Emitter) swapInstruction(label Label, ins vm.Instruction) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
-		panic(fmt.Errorf("label not marked: %d", label))
+		panic(fmt.Errorf("label not marked: %s", label))
 	}
 
 	e.instructions[pos] = ins

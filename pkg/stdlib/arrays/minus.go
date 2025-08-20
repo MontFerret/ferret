@@ -52,6 +52,10 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 			return true, nil
 		})
+
+		if err != nil {
+			return runtime.None, err
+		}
 	}
 
 	result := runtime.NewArray64(capacity)

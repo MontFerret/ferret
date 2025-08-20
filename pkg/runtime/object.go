@@ -112,8 +112,8 @@ func (t *Object) Compare(other Value) int64 {
 		tKey, otherKey = sortedT[i], sortedOther[i]
 
 		if tKey == otherKey {
-			tVal, _ = t.data[tKey]
-			otherVal, _ = otherObject.data[tKey]
+			tVal = t.data[tKey]
+			otherVal = otherObject.data[tKey]
 			res = CompareValues(tVal, otherVal)
 
 			continue
@@ -195,8 +195,7 @@ func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
 	var value Value
 
 	for key := range t.data {
-		value, _ = t.data[key]
-
+		value = t.data[key]
 		cloneable, ok := value.(Cloneable)
 
 		if ok {

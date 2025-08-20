@@ -700,9 +700,9 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 			c.ctx.Emitter.EmitMove(seq[i], srcReg)
 
 			// Free source register if temporary
-			if srcReg.IsRegister() {
-				//c.ctx.Registers.Free(srcReg)
-			}
+			//if srcReg.IsRegister() {
+			//	c.ctx.Registers.Free(srcReg)
+			//}
 		}
 	}
 

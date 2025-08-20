@@ -266,9 +266,9 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 
 			// Free source register if temporary
 			// Note: This is commented out in the original code
-			if propOp.IsRegister() {
-				//c.ctx.Registers.Free(propOp)
-			}
+			//if propOp.IsRegister() {
+			//	c.ctx.Registers.Free(propOp)
+			//}
 		}
 	}
 

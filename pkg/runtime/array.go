@@ -134,10 +134,7 @@ func (t *Array) CopyWithGrowth(cap Int) *Array {
 
 func (t *Array) copyInternal(cap Int) []Value {
 	c := make([]Value, 0, len(t.data)+int(cap))
-
-	for _, el := range t.data {
-		c = append(c, el)
-	}
+	c = append(c, t.data...)
 
 	return c
 }

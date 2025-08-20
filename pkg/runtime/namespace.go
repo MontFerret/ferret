@@ -1,11 +1,10 @@
 package runtime
 
 import (
-	"regexp"
 	"strings"
 )
 
-var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
+//var fnNameValidation = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9_]*(::[a-zA-Z]+[a-zA-Z0-9_]*)*$")
 
 const NamespaceSeparator = "::"
 const emptyNS = ""

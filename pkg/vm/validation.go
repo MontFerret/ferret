@@ -12,11 +12,7 @@ func validate(env *Environment, program *Program) error {
 		return err
 	}
 
-	if err := validateFunctions(env, program); err != nil {
-		return err
-	}
-
-	return nil
+	return validateFunctions(env, program)
 }
 
 func validateParams(env *Environment, program *Program) error {

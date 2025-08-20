@@ -43,7 +43,7 @@ func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 	}
 
 	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+	if body := ctx.AllForExpressionBody(); len(body) > 0 {
 		for _, b := range body {
 			if ec := b.ForExpressionStatement(); ec != nil {
 				c.compileForExpressionStatement(ec)
@@ -70,7 +70,7 @@ func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand
 	}
 
 	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); body != nil && len(body) > 0 {
+	if body := ctx.AllForExpressionBody(); len(body) > 0 {
 		for _, b := range body {
 			if ec := b.ForExpressionStatement(); ec != nil {
 				c.compileForExpressionStatement(ec)

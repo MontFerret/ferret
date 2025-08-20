@@ -2,7 +2,7 @@ package fs
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/values/types"
@@ -25,8 +25,7 @@ func Read(_ context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	path := args[0].String()
-
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 
 	if err != nil {
 		return core.None, core.Error(err, "read file")

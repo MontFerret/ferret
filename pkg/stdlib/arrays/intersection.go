@@ -49,6 +49,10 @@ func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Val
 
 			return true, nil
 		})
+
+		if err != nil {
+			return runtime.None, err
+		}
 	}
 
 	result := runtime.NewArray(capacity)
