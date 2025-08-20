@@ -270,15 +270,45 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		default:
 			return vm.NoopOperand
 		}
-	} else if op := ctx.ArrayOperator(); op != nil {
-		// TODO: Implement me
-		panic(runtime.Error(runtime.ErrNotImplemented, "array operator"))
 	} else if op := ctx.InOperator(); op != nil {
 		opcode = vm.OpIn
 		isNegated = op.Not() != nil
 	} else if op := ctx.LikeOperator(); op != nil {
 		opcode = vm.OpLike
 		isNegated = op.Not() != nil
+	} else if op := ctx.ArrayOperator(); op != nil {
+		var pos int
+
+		if op.All() != nil {
+			pos = int(vm.OpAllEq)
+		} else if op.Any() != nil {
+			pos = int(vm.OpAnyEq)
+		} else if op.None() != nil {
+			pos = int(vm.OpNoneEq)
+		}
+
+		if eo := op.EqualityOperator(); eo != nil {
+			switch eo.GetText() {
+			case "!=":
+				pos += int(vm.OpAllNeq) - int(vm.OpAllEq)
+			case ">":
+				pos += int(vm.OpAllGt) - int(vm.OpAllEq)
+			case ">=":
+				pos += int(vm.OpAllGte) - int(vm.OpAllEq)
+			case "<":
+				pos += int(vm.OpAllLt) - int(vm.OpAllEq)
+			case "<=":
+				pos += int(vm.OpAllLte) - int(vm.OpAllEq)
+			default:
+				break
+			}
+		} else if inOp := op.InOperator(); inOp != nil {
+			pos += int(vm.OpAllIn) - int(vm.OpAllEq)
+		} else {
+			return vm.NoopOperand
+		}
+
+		opcode = vm.Opcode(pos)
 	}
 
 	c.ctx.Emitter.EmitABC(opcode, dest, left, right)

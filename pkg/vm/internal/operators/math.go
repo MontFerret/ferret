@@ -1,42 +1,14 @@
-package internal
+package operators
 
 import (
 	"context"
-	"strings"
-
-	"github.com/gobwas/glob"
-	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm/internal/data"
 )
 
-func Contains(ctx context.Context, input runtime.Value, value runtime.Value) runtime.Boolean {
-	switch val := input.(type) {
-	case runtime.List:
-		idx, err := val.IndexOf(ctx, value)
-
-		if err != nil {
-			return runtime.False
-		}
-
-		return idx > -1
-	case runtime.Map:
-		containsValue, err := val.ContainsValue(ctx, value)
-
-		if err != nil {
-			return runtime.False
-		}
-
-		return containsValue
-	case runtime.String:
-		return runtime.Boolean(strings.Contains(val.String(), value.String()))
-	default:
-		return false
-	}
-}
-
 func Add(_ context.Context, inputL, inputR runtime.Value) runtime.Value {
-	left := runtime.ToNumberOrString(inputL)
+	left := ToNumberOrString(inputL)
 
 	switch leftVal := left.(type) {
 	case runtime.Int:
@@ -51,7 +23,7 @@ func Add(_ context.Context, inputL, inputR runtime.Value) runtime.Value {
 }
 
 func addLeftInt(integer runtime.Int, input runtime.Value) runtime.Value {
-	right := runtime.ToNumberOrString(input)
+	right := ToNumberOrString(input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -64,7 +36,7 @@ func addLeftInt(integer runtime.Int, input runtime.Value) runtime.Value {
 }
 
 func addLeftFloat(float runtime.Float, input runtime.Value) runtime.Value {
-	right := runtime.ToNumberOrString(input)
+	right := ToNumberOrString(input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -81,7 +53,7 @@ func addLeftString(str runtime.String, input runtime.Value) runtime.Value {
 }
 
 func Subtract(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
-	left := ToNumberOnly(ctx, inputL)
+	left := data.ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
 	case runtime.Int:
@@ -94,7 +66,7 @@ func Subtract(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
 }
 
 func subtractLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value) runtime.Value {
-	right := ToNumberOnly(ctx, input)
+	right := data.ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -107,7 +79,7 @@ func subtractLeftInt(ctx context.Context, integer runtime.Int, input runtime.Val
 }
 
 func subtractLeftFloat(ctx context.Context, float runtime.Float, input runtime.Value) runtime.Value {
-	right := ToNumberOnly(ctx, input)
+	right := data.ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -120,7 +92,7 @@ func subtractLeftFloat(ctx context.Context, float runtime.Float, input runtime.V
 }
 
 func Multiply(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
-	left := ToNumberOnly(ctx, inputL)
+	left := data.ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
 	case runtime.Int:
@@ -133,7 +105,7 @@ func Multiply(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
 }
 
 func multiplyLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value) runtime.Value {
-	right := ToNumberOnly(ctx, input)
+	right := data.ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -146,7 +118,7 @@ func multiplyLeftInt(ctx context.Context, integer runtime.Int, input runtime.Val
 }
 
 func multiplyLeftFloat(ctx context.Context, float runtime.Float, input runtime.Value) runtime.Value {
-	right := ToNumberOnly(ctx, input)
+	right := data.ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -159,7 +131,7 @@ func multiplyLeftFloat(ctx context.Context, float runtime.Float, input runtime.V
 }
 
 func Divide(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
-	left := ToNumberOnly(ctx, inputL)
+	left := data.ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
 	case runtime.Int:
@@ -172,7 +144,7 @@ func Divide(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
 }
 
 func divideLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value) runtime.Value {
-	right := ToNumberOnly(ctx, input)
+	right := data.ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -185,7 +157,7 @@ func divideLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value
 }
 
 func divideLeftFloat(ctx context.Context, float runtime.Float, input runtime.Value) runtime.Value {
-	right := ToNumberOnly(ctx, input)
+	right := data.ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
@@ -205,7 +177,7 @@ func Modulus(ctx context.Context, inputL, inputR runtime.Value) runtime.Value {
 }
 
 func Increment(ctx context.Context, input runtime.Value) runtime.Value {
-	left := ToNumberOnly(ctx, input)
+	left := data.ToNumberOnly(ctx, input)
 
 	switch value := left.(type) {
 	case runtime.Int:
@@ -218,7 +190,7 @@ func Increment(ctx context.Context, input runtime.Value) runtime.Value {
 }
 
 func Decrement(ctx context.Context, input runtime.Value) runtime.Value {
-	left := ToNumberOnly(ctx, input)
+	left := data.ToNumberOnly(ctx, input)
 
 	switch value := left.(type) {
 	case runtime.Int:
@@ -228,42 +200,4 @@ func Decrement(ctx context.Context, input runtime.Value) runtime.Value {
 	default:
 		return runtime.None
 	}
-}
-
-func ToRange(ctx context.Context, left, right runtime.Value) (runtime.Value, error) {
-	start, err := runtime.ToInt(ctx, left)
-
-	if err != nil {
-		return runtime.ZeroInt, err
-	}
-
-	end, err := runtime.ToInt(ctx, right)
-
-	if err != nil {
-		return runtime.ZeroInt, err
-	}
-
-	return NewRange(int64(start), int64(end)), nil
-}
-
-func Like(left, right runtime.Value) (runtime.Boolean, error) {
-	if err := runtime.AssertString(left); err != nil {
-		// TODO: Return the error? AQL just returns false
-		return runtime.False, nil
-	}
-
-	if err := runtime.AssertString(right); err != nil {
-		// TODO: Return the error? AQL just returns false
-		return runtime.False, nil
-	}
-
-	r, err := glob.Compile(right.String())
-
-	if err != nil {
-		return runtime.False, errors.Wrap(err, "invalid glob pattern")
-	}
-
-	result := r.Match(left.String())
-
-	return runtime.NewBoolean(result), nil
 }

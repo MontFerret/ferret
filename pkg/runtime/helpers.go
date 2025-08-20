@@ -581,52 +581,6 @@ func UnwrapStrings(values []String) []string {
 	return out
 }
 
-func Negate(input Value) Value {
-	switch val := input.(type) {
-	case Int:
-		return -val
-	case Float:
-		return -val
-	case Boolean:
-		return !val
-	default:
-		return None
-	}
-}
-
-func Negative(input Value) Value {
-	switch value := input.(type) {
-	case Int:
-		return -value
-	case Float:
-		return -value
-	default:
-		// TODO: Maybe we should return None?
-		return input
-	}
-}
-
-func Positive(input Value) Value {
-	switch value := input.(type) {
-	case Int:
-		return +value
-	case Float:
-		return +value
-	default:
-		// TODO: Maybe we should return None?
-		return input
-	}
-}
-
-func ToNumberOrString(input Value) Value {
-	switch value := input.(type) {
-	case Int, Float, String:
-		return value
-	default:
-		return ToString(value)
-	}
-}
-
 func CompareStrings(a, b String) Int {
 	return Int(strings.Compare(a.String(), b.String()))
 }

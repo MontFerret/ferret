@@ -1,4 +1,4 @@
-package internal
+package data
 
 type CollectorType int
 

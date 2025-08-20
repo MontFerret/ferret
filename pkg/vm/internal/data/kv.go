@@ -1,4 +1,4 @@
-package internal
+package data
 
 import (
 	"encoding/binary"

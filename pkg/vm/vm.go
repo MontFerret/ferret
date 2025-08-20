@@ -5,7 +5,8 @@ import (
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm/internal"
+	"github.com/MontFerret/ferret/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/pkg/vm/internal/operators"
 )
 
 type VM struct {
@@ -69,47 +70,47 @@ loop:
 				vm.pc = int(dst)
 			}
 		case OpAdd:
-			reg[dst] = internal.Add(ctx, reg[src1], reg[src2])
+			reg[dst] = operators.Add(ctx, reg[src1], reg[src2])
 		case OpSub:
-			reg[dst] = internal.Subtract(ctx, reg[src1], reg[src2])
+			reg[dst] = operators.Subtract(ctx, reg[src1], reg[src2])
 		case OpMulti:
-			reg[dst] = internal.Multiply(ctx, reg[src1], reg[src2])
+			reg[dst] = operators.Multiply(ctx, reg[src1], reg[src2])
 		case OpDiv:
-			reg[dst] = internal.Divide(ctx, reg[src1], reg[src2])
+			reg[dst] = operators.Divide(ctx, reg[src1], reg[src2])
 		case OpMod:
-			reg[dst] = internal.Modulus(ctx, reg[src1], reg[src2])
+			reg[dst] = operators.Modulus(ctx, reg[src1], reg[src2])
 		case OpIncr:
-			reg[dst] = internal.Increment(ctx, reg[dst])
+			reg[dst] = operators.Increment(ctx, reg[dst])
 		case OpDecr:
-			reg[dst] = internal.Decrement(ctx, reg[dst])
+			reg[dst] = operators.Decrement(ctx, reg[dst])
 		case OpCastBool:
 			reg[dst] = runtime.ToBoolean(reg[src1])
 		case OpNegate:
-			reg[dst] = runtime.Negate(reg[src1])
+			reg[dst] = operators.Negate(reg[src1])
 		case OpFlipPositive:
-			reg[dst] = runtime.Positive(reg[src1])
+			reg[dst] = operators.Positive(reg[src1])
 		case OpFlipNegative:
-			reg[dst] = runtime.Negative(reg[src1])
+			reg[dst] = operators.Negative(reg[src1])
 		case OpCmp:
-			reg[dst] = runtime.Int(runtime.CompareValues(reg[src1], reg[src2]))
+			reg[dst] = operators.Compare(ctx, reg[src1], reg[src2])
 		case OpNot:
 			reg[dst] = !runtime.ToBoolean(reg[src1])
 		case OpEq:
-			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) == 0)
+			reg[dst] = operators.Equals(ctx, reg[src1], reg[src2])
 		case OpNeq:
-			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) != 0)
+			reg[dst] = operators.NotEquals(ctx, reg[src1], reg[src2])
 		case OpGt:
-			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) > 0)
+			reg[dst] = operators.GreaterThan(ctx, reg[src1], reg[src2])
 		case OpLt:
-			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) < 0)
+			reg[dst] = operators.LessThan(ctx, reg[src1], reg[src2])
 		case OpGte:
-			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) >= 0)
+			reg[dst] = operators.GreaterThanOrEqual(ctx, reg[src1], reg[src2])
 		case OpLte:
-			reg[dst] = runtime.Boolean(runtime.CompareValues(reg[src1], reg[src2]) <= 0)
+			reg[dst] = operators.LessThanOrEqual(ctx, reg[src1], reg[src2])
 		case OpIn:
-			reg[dst] = internal.Contains(ctx, reg[src2], reg[src1])
+			reg[dst] = operators.Contains(ctx, reg[src2], reg[src1])
 		case OpLike:
-			res, err := internal.Like(reg[src1], reg[src2])
+			res, err := operators.Like(reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
@@ -118,10 +119,43 @@ loop:
 			}
 		case OpRegexp:
 			// TODO: Add caching to avoid recompilation
-			r, err := internal.ToRegexp(reg[src2])
+			r, err := data.ToRegexp(reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
+				reg[dst] = runtime.False
+			} else {
+				return nil, err
+			}
+		case OpAllEq, OpAllNeq, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
+			cmp := operators.ComparatorFromByte(int(op) - int(OpAllEq))
+			res, err := operators.ArrayAll(ctx, cmp, reg[src1], reg[src2])
+
+			if err == nil {
+				reg[dst] = res
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
+				reg[dst] = runtime.False
+			} else {
+				return nil, err
+			}
+		case OpAnyEq, OpAnyNeq, OpAnyGt, OpAnyGte, OpAnyLt, OpAnyLte, OpAnyIn:
+			cmp := operators.ComparatorFromByte(int(op) - int(OpAnyEq))
+			res, err := operators.ArrayAny(ctx, cmp, reg[src1], reg[src2])
+
+			if err == nil {
+				reg[dst] = res
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
+				reg[dst] = runtime.False
+			} else {
+				return nil, err
+			}
+		case OpNoneEq, OpNoneNeq, OpNoneGt, OpNoneGte, OpNoneLt, OpNoneLte, OpNoneIn:
+			cmp := operators.ComparatorFromByte(int(op) - int(OpNoneEq))
+			res, err := operators.ArrayNone(ctx, cmp, reg[src1], reg[src2])
+
+			if err == nil {
+				reg[dst] = res
 			} else if _, catch := vm.tryCatch(vm.pc); catch {
 				reg[dst] = runtime.False
 			} else {
@@ -354,7 +388,7 @@ loop:
 				}
 			}
 		case OpLoadRange:
-			res, err := internal.ToRange(ctx, reg[src1], reg[src2])
+			res, err := operators.ToRange(ctx, reg[src1], reg[src2])
 
 			if err == nil {
 				reg[dst] = res
@@ -362,16 +396,16 @@ loop:
 				return nil, err
 			}
 		case OpDataSet:
-			reg[dst] = internal.NewDataSet(src1 == 1)
+			reg[dst] = data.NewDataSet(src1 == 1)
 		case OpDataSetSorter:
-			reg[dst] = internal.NewSorter(runtime.SortDirection(src1))
+			reg[dst] = data.NewSorter(runtime.SortDirection(src1))
 		case OpDataSetMultiSorter:
 			encoded := src1.Register()
 			count := src2.Register()
 
-			reg[dst] = internal.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
+			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
 		case OpDataSetCollector:
-			reg[dst] = internal.NewCollector(internal.CollectorType(src1))
+			reg[dst] = data.NewCollector(data.CollectorType(src1))
 		case OpPush:
 			ds := reg[dst].(runtime.List)
 
@@ -383,7 +417,7 @@ loop:
 				}
 			}
 		case OpPushKV:
-			tr := reg[dst].(internal.Transformer)
+			tr := reg[dst].(data.Transformer)
 
 			if err := tr.Add(ctx, reg[src1], reg[src2]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
@@ -403,17 +437,17 @@ loop:
 					return nil, err
 				}
 
-				reg[dst] = internal.NewIterator(iterator)
+				reg[dst] = data.NewIterator(iterator)
 			default:
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					// Fall back to an empty iterator
-					reg[dst] = internal.NoopIter
+					reg[dst] = data.NoopIter
 				} else {
 					return nil, runtime.TypeErrorOf(src, runtime.TypeIterable)
 				}
 			}
 		case OpIterNext:
-			iterator := reg[src1].(*internal.Iterator)
+			iterator := reg[src1].(*data.Iterator)
 			hasNext, err := iterator.HasNext(ctx)
 
 			if err != nil {
@@ -428,10 +462,10 @@ loop:
 				vm.pc = int(dst)
 			}
 		case OpIterValue:
-			iterator := reg[src1].(*internal.Iterator)
+			iterator := reg[src1].(*data.Iterator)
 			reg[dst] = iterator.Value()
 		case OpIterKey:
-			iterator := reg[src1].(*internal.Iterator)
+			iterator := reg[src1].(*data.Iterator)
 			reg[dst] = iterator.Key()
 		case OpIterSkip:
 			state := runtime.ToIntSafe(ctx, reg[src1])
@@ -476,9 +510,9 @@ loop:
 				}
 			}
 
-			reg[dst] = internal.NewStreamValue(stream)
+			reg[dst] = data.NewStreamValue(stream)
 		case OpStreamIter:
-			stream := reg[src1].(*internal.StreamValue)
+			stream := reg[src1].(*data.StreamValue)
 
 			var timeout runtime.Int
 
@@ -508,13 +542,16 @@ loop:
 				}
 			}
 
-			if err := internal.Sleep(ctx, dur); err != nil {
+			if err := data.Sleep(ctx, dur); err != nil {
 				return nil, err
 			}
 		case OpReturn:
 			reg[NoopOperand] = reg[dst]
 
 			break loop
+		default:
+			// TODO: Return an error or ignore unknown opcodes?
+			continue
 		}
 	}
 

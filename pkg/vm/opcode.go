@@ -60,28 +60,28 @@ const (
 	OpLike
 	OpRegexp
 
-	// Array Comparison Operations
-	OpAnyIn
+	// Array Comparison Operations (do not swap order of EQ, GT, GTE, LT, LTE, IN. it must be equal to operators)
 	OpAnyEq
 	OpAnyNeq
 	OpAnyGt
 	OpAnyGte
 	OpAnyLt
 	OpAnyLte
-	OpNoneIn
+	OpAnyIn
 	OpNoneEq
 	OpNoneNeq
 	OpNoneGt
 	OpNoneGte
 	OpNoneLt
 	OpNoneLte
-	OpAllIn
+	OpNoneIn
 	OpAllEq
 	OpAllNeq
 	OpAllGt
 	OpAllGte
 	OpAllLt
 	OpAllLte
+	OpAllIn
 
 	// Utility Operations
 	OpLength
@@ -225,6 +225,44 @@ func (op Opcode) String() string {
 		return "LIKE"
 	case OpRegexp:
 		return "REGEX"
+
+		// Array Comparison Operations
+	case OpAnyEq:
+		return "ANYEQ"
+	case OpAnyGt:
+		return "ANYGT"
+	case OpAnyGte:
+		return "ANYGTE"
+	case OpAnyLt:
+		return "ANYLT"
+	case OpAnyLte:
+		return "ANYLTE"
+	case OpAnyIn:
+		return "ANYIN"
+	case OpNoneEq:
+		return "NONEQ"
+	case OpNoneGt:
+		return "NONGT"
+	case OpNoneGte:
+		return "NONGTE"
+	case OpNoneLt:
+		return "NONLT"
+	case OpNoneLte:
+		return "NONLTE"
+	case OpNoneIn:
+		return "NONIN"
+	case OpAllEq:
+		return "ALLEQ"
+	case OpAllGt:
+		return "ALLGT"
+	case OpAllGte:
+		return "ALLGTE"
+	case OpAllLt:
+		return "ALLLT"
+	case OpAllLte:
+		return "ALLLTE"
+	case OpAllIn:
+		return "ALLIN"
 
 	// Utility Operations
 	case OpLength:

@@ -1,10 +1,10 @@
-package internal_test
+package data_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/vm/internal"
+	"github.com/MontFerret/ferret/pkg/vm/internal/data"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
@@ -14,8 +14,8 @@ import (
 func TestRangeIterator(t *testing.T) {
 	Convey("Zero value", t, func() {
 		ctx := context.Background()
-		r := internal.NewRange(0, 0)
-		iter := internal.NewRangeIterator(r)
+		r := data.NewRange(0, 0)
+		iter := data.NewRangeIterator(r)
 
 		hasNext, err := iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -34,8 +34,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Two values", t, func() {
 		ctx := context.Background()
-		r := internal.NewRange(0, 1)
-		iter := internal.NewRangeIterator(r)
+		r := data.NewRange(0, 1)
+		iter := data.NewRangeIterator(r)
 
 		hasNext, err := iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -60,8 +60,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Two values (2)", t, func() {
 		ctx := context.Background()
-		r := internal.NewRange(1, 2)
-		iter := internal.NewRangeIterator(r)
+		r := data.NewRange(1, 2)
+		iter := data.NewRangeIterator(r)
 
 		hasNext, err := iter.HasNext(ctx)
 		So(err, ShouldBeNil)
@@ -86,8 +86,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Multiple ascending values", t, func() {
 		ctx := context.Background()
-		r := internal.NewRange(0, 10)
-		iter := internal.NewRangeIterator(r)
+		r := data.NewRange(0, 10)
+		iter := data.NewRangeIterator(r)
 
 		actual := make([]runtime.Int, 0, 10)
 
@@ -106,8 +106,8 @@ func TestRangeIterator(t *testing.T) {
 
 	Convey("Multiple descending values", t, func() {
 		ctx := context.Background()
-		r := internal.NewRange(10, 0)
-		iter := internal.NewRangeIterator(r)
+		r := data.NewRange(10, 0)
+		iter := data.NewRangeIterator(r)
 
 		actual := make([]runtime.Int, 0, 10)
 
@@ -128,8 +128,8 @@ func TestRangeIterator(t *testing.T) {
 func BenchmarkRangeIterator(b *testing.B) {
 	size := 100
 	ctx := context.Background()
-	r := internal.NewRange(0, int64(size))
-	iter := internal.NewRangeIterator(r)
+	r := data.NewRange(0, int64(size))
+	iter := data.NewRangeIterator(r)
 
 	b.ResetTimer()
 
