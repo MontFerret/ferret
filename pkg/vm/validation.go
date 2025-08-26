@@ -25,7 +25,7 @@ func validateParams(env *Environment, program *Program) error {
 	var missedParams []string
 
 	for _, n := range program.Params {
-		_, exists := env.params[n]
+		_, exists := env.Params[n]
 
 		if !exists {
 			if missedParams == nil {
@@ -53,7 +53,7 @@ func validateFunctions(env *Environment, program *Program) error {
 	var errors []string
 
 	for name, args := range program.Functions {
-		exists := env.functions.Has(name)
+		exists := env.Functions.Has(name)
 
 		if !exists {
 			if errors == nil {
@@ -70,23 +70,23 @@ func validateFunctions(env *Environment, program *Program) error {
 
 		switch args {
 		case 4:
-			matched = env.functions.F4().Has(name)
+			matched = env.Functions.F4().Has(name)
 		case 3:
-			matched = env.functions.F3().Has(name)
+			matched = env.Functions.F3().Has(name)
 		case 2:
-			matched = env.functions.F2().Has(name)
+			matched = env.Functions.F2().Has(name)
 		case 1:
-			matched = env.functions.F1().Has(name)
+			matched = env.Functions.F1().Has(name)
 		case 0:
-			matched = env.functions.F0().Has(name)
+			matched = env.Functions.F0().Has(name)
 		default:
 			// Variable number of arguments.
-			matched = env.functions.F().Has(name)
+			matched = env.Functions.F().Has(name)
 		}
 
 		// Check if the function is a variadic function.
 		if !matched && args > -1 {
-			matched = env.functions.F().Has(name)
+			matched = env.Functions.F().Has(name)
 		}
 
 		if !matched {

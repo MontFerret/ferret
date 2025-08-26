@@ -23,8 +23,10 @@ func New(program *Program) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, opts []EnvironmentOption) (runtime.Value, error) {
-	env := newEnvironment(opts)
+func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) {
+	if env == nil {
+		env = noopEnv
+	}
 
 	if err := validate(env, vm.program); err != nil {
 		return nil, err
@@ -58,7 +60,7 @@ loop:
 			reg[dst] = constants[src1.Constant()]
 		case OpLoadParam:
 			name := constants[src1.Constant()]
-			reg[dst] = vm.env.params[name.String()]
+			reg[dst] = vm.env.Params[name.String()]
 		case OpJump:
 			vm.pc = int(dst)
 		case OpJumpIfFalse:
@@ -570,7 +572,7 @@ func (vm *VM) tryCatch(pos int) (Catch, bool) {
 
 func (vm *VM) call(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
 	fnName := vm.registers[dst].String()
-	fn, found := vm.env.functions.F().Get(fnName)
+	fn, found := vm.env.Functions.F().Get(fnName)
 
 	if !found {
 		return nil, runtime.Error(ErrFunctionNotFound, fnName)
@@ -596,7 +598,7 @@ func (vm *VM) call(ctx context.Context, dst, src1, src2 Operand) (runtime.Value,
 
 func (vm *VM) call0(ctx context.Context, dst Operand) (runtime.Value, error) {
 	fnName := vm.registers[dst].String()
-	fn, found := vm.env.functions.F0().Get(fnName)
+	fn, found := vm.env.Functions.F0().Get(fnName)
 
 	if found {
 		return fn(ctx)
@@ -608,7 +610,7 @@ func (vm *VM) call0(ctx context.Context, dst Operand) (runtime.Value, error) {
 
 func (vm *VM) call1(ctx context.Context, dst, src1 Operand) (runtime.Value, error) {
 	fnName := vm.registers[dst].String()
-	fn, found := vm.env.functions.F1().Get(fnName)
+	fn, found := vm.env.Functions.F1().Get(fnName)
 
 	if found {
 		return fn(ctx, vm.registers[src1])
@@ -620,7 +622,7 @@ func (vm *VM) call1(ctx context.Context, dst, src1 Operand) (runtime.Value, erro
 
 func (vm *VM) call2(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
 	fnName := vm.registers[dst].String()
-	fn, found := vm.env.functions.F2().Get(fnName)
+	fn, found := vm.env.Functions.F2().Get(fnName)
 
 	if found {
 		return fn(ctx, vm.registers[src1], vm.registers[src2])
@@ -632,7 +634,7 @@ func (vm *VM) call2(ctx context.Context, dst, src1, src2 Operand) (runtime.Value
 
 func (vm *VM) call3(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
 	fnName := vm.registers[dst].String()
-	fn, found := vm.env.functions.F3().Get(fnName)
+	fn, found := vm.env.Functions.F3().Get(fnName)
 
 	if found {
 		arg1 := vm.registers[src1]
@@ -648,7 +650,7 @@ func (vm *VM) call3(ctx context.Context, dst, src1, src2 Operand) (runtime.Value
 
 func (vm *VM) call4(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
 	fnName := vm.registers[dst].String()
-	fn, found := vm.env.functions.F4().Get(fnName)
+	fn, found := vm.env.Functions.F4().Get(fnName)
 
 	if found {
 		arg1 := vm.registers[src1]

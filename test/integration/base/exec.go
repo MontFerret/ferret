@@ -18,10 +18,11 @@ func Compile(expression string) (*vm.Program, error) {
 
 func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	instance := vm.New(p)
+	env := vm.NewEnvironment(opts)
 
 	type Salt struct{}
 
-	out, err := instance.Run(context.WithValue(context.Background(), "test-salt", &Salt{}), opts)
+	out, err := instance.Run(context.WithValue(context.Background(), "test-salt", &Salt{}), env)
 
 	if err != nil {
 		return nil, err

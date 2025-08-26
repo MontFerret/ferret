@@ -8,50 +8,50 @@ import (
 
 func WithParams(params map[string]runtime.Value) EnvironmentOption {
 	return func(env *Environment) {
-		env.params = params
+		env.Params = params
 	}
 }
 
 func WithParam(name string, value interface{}) EnvironmentOption {
 	return func(options *Environment) {
-		options.params[name] = runtime.Parse(value)
+		options.Params[name] = runtime.Parse(value)
 	}
 }
 
 func WithFunctions(functions runtime.Functions) EnvironmentOption {
 	return func(env *Environment) {
-		env.functions.SetAll(functions)
+		env.Functions.SetAll(functions)
 	}
 }
 
 func WithFunction(name string, function runtime.Function) EnvironmentOption {
 	return func(env *Environment) {
-		env.functions.F().Set(name, function)
+		env.Functions.F().Set(name, function)
 	}
 }
 
 func WithFunctionSetter(setter func(fns runtime.Functions)) EnvironmentOption {
 	return func(env *Environment) {
 		if setter != nil {
-			setter(env.functions)
+			setter(env.Functions)
 		}
 	}
 }
 
 func WithLog(writer io.Writer) EnvironmentOption {
 	return func(options *Environment) {
-		options.logging.Writer = writer
+		options.Logging.Writer = writer
 	}
 }
 
-func WithLogLevel(lvl runtime.Level) EnvironmentOption {
+func WithLogLevel(lvl runtime.LogLevel) EnvironmentOption {
 	return func(options *Environment) {
-		options.logging.Level = lvl
+		options.Logging.Level = lvl
 	}
 }
 
 func WithLogFields(fields map[string]interface{}) EnvironmentOption {
 	return func(options *Environment) {
-		options.logging.Fields = fields
+		options.Logging.Fields = fields
 	}
 }

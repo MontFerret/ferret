@@ -8,17 +8,17 @@ import (
 )
 
 type (
-	Level int8
+	LogLevel int8
 
-	Options struct {
+	LogOptions struct {
 		Writer io.Writer
-		Level  Level
+		Level  LogLevel
 		Fields map[string]interface{}
 	}
 )
 
 const (
-	DebugLevel Level = iota
+	DebugLevel LogLevel = iota
 	InfoLevel
 	WarnLevel
 	ErrorLevel
@@ -27,34 +27,34 @@ const (
 	NoLevel
 	Disabled
 
-	TraceLevel Level = -1
+	TraceLevel LogLevel = -1
 )
 
-func ParseLevel(input string) (Level, error) {
+func ParseLogLevel(input string) (LogLevel, error) {
 	lvl, err := zerolog.ParseLevel(input)
 
 	if err != nil {
 		return NoLevel, err
 	}
 
-	return Level(lvl), nil
+	return LogLevel(lvl), nil
 }
 
-func MustParseLevel(input string) Level {
+func MustParseLogLevel(input string) LogLevel {
 	lvl, err := zerolog.ParseLevel(input)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return Level(lvl)
+	return LogLevel(lvl)
 }
 
-func (l Level) String() string {
+func (l LogLevel) String() string {
 	return zerolog.Level(l).String()
 }
 
-func WithContext(ctx context.Context, opts Options) context.Context {
+func LoggerWithContext(ctx context.Context, opts LogOptions) context.Context {
 	c := zerolog.New(opts.Writer).With().Timestamp()
 
 	for k, v := range opts.Fields {
@@ -66,7 +66,7 @@ func WithContext(ctx context.Context, opts Options) context.Context {
 	return logger.WithContext(ctx)
 }
 
-func FromContext(ctx context.Context) zerolog.Logger {
+func LoggerFromContext(ctx context.Context) zerolog.Logger {
 	found := zerolog.Ctx(ctx)
 
 	if found == nil {
@@ -76,6 +76,6 @@ func FromContext(ctx context.Context) zerolog.Logger {
 	return *found
 }
 
-func WithName(ctx zerolog.Context, name string) zerolog.Context {
+func LogWithName(ctx zerolog.Context, name string) zerolog.Context {
 	return ctx.Str("component", name)
 }

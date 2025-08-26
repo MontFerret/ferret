@@ -35,7 +35,15 @@ func (f *functionRegistry) Has(name string) bool {
 		f.F2().Has(name) ||
 		f.F3().Has(name) ||
 		f.F4().Has(name)
+}
 
+func (f *functionRegistry) Size() int {
+	return f.F().Size() +
+		f.F0().Size() +
+		f.F1().Size() +
+		f.F2().Size() +
+		f.F3().Size() +
+		f.F4().Size()
 }
 
 func (f *functionRegistry) F() FunctionCollection[Function] {

@@ -1,4 +1,4 @@
-package ferret
+package exec
 
 import (
 	"context"

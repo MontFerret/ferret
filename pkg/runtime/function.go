@@ -20,6 +20,7 @@ type (
 		Unset(name string) Functions
 		UnsetAll() Functions
 		Names() []string
+		Size() int
 	}
 
 	FunctionConstraint interface {

@@ -24,11 +24,12 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 
 	ctx := context.Background()
 	instance := vm.New(prog)
+	env := vm.NewEnvironment(opts)
 
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, err := instance.Run(ctx, opts)
+		_, err := instance.Run(ctx, env)
 
 		if err != nil {
 			panic(err)
