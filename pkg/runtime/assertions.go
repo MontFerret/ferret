@@ -165,3 +165,19 @@ func AssertDateTime(input Value) error {
 
 	return nil
 }
+
+func AssertMeasurable(input Value) error {
+	_, ok := input.(Measurable)
+
+	if !ok {
+		return TypeErrorOf(
+			input,
+			TypeString,
+			TypeArray,
+			TypeObject,
+			TypeBinary,
+		)
+	}
+
+	return nil
+}

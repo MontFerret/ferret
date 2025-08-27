@@ -19,16 +19,9 @@ var Empty = base.Assertion{
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		value := args[0]
 		
-		// Validate that the value is one of the supported types
-		if err := runtime.AssertString(value); err != nil {
-			if err := runtime.AssertList(value); err != nil {
-				if err := runtime.AssertMap(value); err != nil {
-					if err := runtime.AssertBinary(value); err != nil {
-						// If none of the supported types match, return the last error
-						return false, err
-					}
-				}
-			}
+		// Validate that the value implements Measurable interface
+		if err := runtime.AssertMeasurable(value); err != nil {
+			return false, err
 		}
 		
 		return runtime.IsEmpty(ctx, value)
