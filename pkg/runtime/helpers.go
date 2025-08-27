@@ -361,7 +361,12 @@ func ToFloat(ctx context.Context, input Value) (Float, error) {
 
 		res := ZeroFloat
 
-		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+		for {
+			hasNext, err := iterator.HasNext(ctx)
+			if !hasNext || err != nil {
+				break
+			}
+
 			val, _, err := iterator.Next(ctx)
 
 			if err != nil {
@@ -429,17 +434,22 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 
 		res := ZeroInt
 
-		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+		for {
+			hasNext, err := iterator.HasNext(ctx)
+			if !hasNext || err != nil {
+				break
+			}
+
 			item, _, err := iterator.Next(ctx)
 
 			if err != nil {
-				return ZeroInt, err
+				continue
 			}
 
 			i, err := ToInt(ctx, item)
 
 			if err != nil {
-				return ZeroInt, err
+				continue
 			}
 
 			res += i

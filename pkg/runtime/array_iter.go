@@ -19,7 +19,13 @@ func (iter *ArrayIterator) HasNext(_ context.Context) (bool, error) {
 }
 
 func (iter *ArrayIterator) Next(_ context.Context) (value Value, key Value, err error) {
+	if iter.pos >= iter.length {
+		return None, None, Error(ErrInvalidOperation, "no more elements")
+	}
+
+	value = iter.values.data[iter.pos]
+	key = NewInt(iter.pos)
 	iter.pos++
 
-	return iter.values.data[iter.pos-1], NewInt(iter.pos - 1), nil
+	return
 }
