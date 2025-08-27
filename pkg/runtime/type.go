@@ -94,8 +94,12 @@ func Reflect(input Value) Type {
 		return TypeString
 	case DateTime:
 		return TypeDateTime
+	case *Array:
+		return TypeArray
 	case List:
 		return TypeList
+	case *Object:
+		return TypeObject
 	case Map:
 		return TypeMap
 	case Binary:
