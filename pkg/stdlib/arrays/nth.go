@@ -29,5 +29,21 @@ func Nth(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
+	// Handle negative index - return None as per documentation
+	if idx < 0 {
+		return runtime.None, nil
+	}
+
+	size, err := list.Length(ctx)
+
+	if err != nil {
+		return runtime.None, err
+	}
+
+	// Handle index beyond upper bound - return None as per documentation
+	if idx >= size {
+		return runtime.None, nil
+	}
+
 	return list.Get(ctx, idx)
 }

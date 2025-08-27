@@ -17,7 +17,7 @@ func Last(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastList(args[0])
 
 	if err != nil {
-		return runtime.None, nil
+		return runtime.None, err
 	}
 
 	return list.Last(ctx)

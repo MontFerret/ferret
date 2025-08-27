@@ -45,7 +45,13 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 		if remove {
 			counter++
 
-			if limit == -1 || counter <= limit {
+			// If limit is 0, don't remove anything
+			if limit == 0 {
+				return true, nil
+			}
+
+			// If limit is negative or we haven't reached the limit, remove the item
+			if limit < 0 || counter <= limit {
 				return false, nil
 			}
 		}
