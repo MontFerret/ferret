@@ -30,6 +30,6 @@ func TestAsin(t *testing.T) {
 		out, err = math.Asin(context.Background(), runtime.NewInt(2))
 
 		So(err, ShouldBeNil)
-		So(runtime.IsNaN(out.(runtime.Float)), ShouldEqual, true)
+		So(runtime.IsNaN(out.(runtime.Float)).Unwrap(), ShouldBeTrue)
 	})
 }

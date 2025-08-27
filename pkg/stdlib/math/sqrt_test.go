@@ -21,5 +21,28 @@ func TestSqrt(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 1.4142135623730951)
+
+		out, err = math.Sqrt(context.Background(), runtime.NewInt(0))
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, 0)
+
+		// Test negative numbers
+		out, err = math.Sqrt(context.Background(), runtime.NewFloat(-4))
+
+		So(err, ShouldBeNil)
+		So(runtime.IsNaN(out.(runtime.Float)).Unwrap(), ShouldBeTrue)
+	})
+
+	Convey("Should return error when value is not numeric", t, func() {
+		out, err := math.Sqrt(context.Background(), runtime.NewString("invalid"))
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
+
+		out, err = math.Sqrt(context.Background(), runtime.None)
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
 	})
 }

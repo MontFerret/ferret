@@ -36,4 +36,21 @@ func TestAbs(t *testing.T) {
 			So(out, ShouldEqual, 5.1)
 		})
 	})
+
+	Convey("Should return error when value is not numeric", t, func() {
+		out, err := math.Abs(context.Background(), runtime.NewString("invalid"))
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
+
+		out, err = math.Abs(context.Background(), runtime.None)
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
+
+		out, err = math.Abs(context.Background(), runtime.True)
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
+	})
 }

@@ -26,5 +26,30 @@ func TestPow(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 1)
+
+		out, err = math.Pow(context.Background(), runtime.NewFloat(2.5), runtime.NewFloat(2))
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, 6.25)
+	})
+
+	Convey("Should return error for invalid arguments", t, func() {
+		// Non-numeric first argument
+		out, err := math.Pow(context.Background(), runtime.NewString("invalid"), runtime.NewInt(2))
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
+
+		// Non-numeric second argument
+		out, err = math.Pow(context.Background(), runtime.NewInt(2), runtime.NewString("invalid"))
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
+
+		// None values
+		out, err = math.Pow(context.Background(), runtime.None, runtime.NewInt(2))
+
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
 	})
 }

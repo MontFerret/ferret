@@ -22,14 +22,14 @@ func TestRound(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 3)
 
-		out, err = math.Ceil(context.Background(), runtime.NewFloat(-2.50))
+		out, err = math.Round(context.Background(), runtime.NewFloat(-2.50))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, -2)
+		So(out, ShouldEqual, -3)
 
-		out, err = math.Ceil(context.Background(), runtime.NewFloat(-2.49))
+		out, err = math.Round(context.Background(), runtime.NewFloat(-2.49))
 
 		So(err, ShouldBeNil)
-		So(out.Unwrap(), ShouldEqual, -2)
+		So(out, ShouldEqual, -2)
 	})
 }

@@ -39,7 +39,18 @@ func TestMax(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, runtime.None)
+		So(out, ShouldEqual, -5)
+
+		out, err = math.Max(context.Background(), runtime.NewArrayWith(
+			runtime.None,
+			runtime.NewInt(10),
+			runtime.False,
+			runtime.NewInt(5),
+			runtime.NewString("hello"),
+		))
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, 10)
 
 		out, err = math.Max(context.Background(), runtime.NewArray(0))
 

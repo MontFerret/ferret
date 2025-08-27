@@ -27,18 +27,28 @@ func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	var res float64
+	count := 0
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		if !runtime.IsNumber(value) {
+			return true, nil // Skip non-numeric values
+		}
+
 		fv := toFloat(value)
 
-		if fv > res {
+		if count == 0 || fv > res {
 			res = fv
 		}
+		count++
 
 		return true, nil
 	})
 
 	if err != nil {
+		return runtime.None, err
+	}
+
+	if count == 0 {
 		return runtime.None, nil
 	}
 
