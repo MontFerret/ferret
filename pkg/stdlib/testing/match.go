@@ -23,7 +23,7 @@ var Match = base.Assertion{
 		value := args[0]
 		regexp := args[1]
 
-		out, err := strings.RegexMatch(ctx, value, regexp)
+		out, err := strings.RegexTest(ctx, value, regexp)
 
 		if err != nil {
 			return false, err

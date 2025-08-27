@@ -18,10 +18,9 @@ var Array = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		if err := runtime.AssertList(args[0]); err != nil {
-			return false, err
-		}
-
-		return true, nil
+		// Check if the argument is an array/list type using CastList
+		// If casting succeeds, it's a list; if it fails, it's not
+		_, err := runtime.CastList(args[0])
+		return err == nil, nil
 	},
 }
