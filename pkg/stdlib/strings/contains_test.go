@@ -58,11 +58,11 @@ func TestContains(t *testing.T) {
 			out, _ := strings.Contains(
 				context.Background(),
 				core.NewString("foobar"),
-				core.NewString("bar"),
+				core.NewString("qaz"),
 				core.True,
 			)
 
-			So(out, ShouldEqual, 3)
+			So(out, ShouldEqual, -1)
 		})
 	})
 

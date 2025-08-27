@@ -16,16 +16,16 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.EmptyString, err
 	}
 
-	num, err := runtime.CastInt(args[1])
+	offsetArg, err := runtime.CastInt(args[1])
 
 	if err != nil {
 		return runtime.EmptyString, err
 	}
 
-	text := num.String()
+	text := args[0].String()
 	runes := []rune(text)
 	size := len(runes)
-	offset := int(args[1].(runtime.Int))
+	offset := int(offsetArg)
 	length := size
 
 	if len(args) > 2 {

@@ -31,7 +31,7 @@ func TestConcat(t *testing.T) {
 				core.NewString("qaz"),
 			)
 
-			So(out, ShouldEqual, "foobarqaz")
+			So(out.String(), ShouldEqual, "foobarqaz")
 		})
 	})
 
@@ -44,7 +44,7 @@ func TestConcat(t *testing.T) {
 				core.NewString("bar"),
 			)
 
-			So(out, ShouldEqual, "foobar")
+			So(out.String(), ShouldEqual, "foobar")
 		})
 		Convey("Concat('foo', 1, false) should return 'foo1false'", func() {
 			out, _ := strings.Concat(
@@ -54,7 +54,7 @@ func TestConcat(t *testing.T) {
 				core.False,
 			)
 
-			So(out, ShouldEqual, "foo1false")
+			So(out.String(), ShouldEqual, "foo1false")
 		})
 
 		Convey("Concat(['foo', 'bar']) should return 'foobar'", func() {
@@ -63,7 +63,7 @@ func TestConcat(t *testing.T) {
 				runtime.NewArrayWith(core.NewString("foo"), core.NewString("bar")),
 			)
 
-			So(out, ShouldEqual, "foobar")
+			So(out.String(), ShouldEqual, "foobar")
 		})
 
 		Convey("Concat([1,2,3]) should return '123'", func() {
@@ -76,7 +76,7 @@ func TestConcat(t *testing.T) {
 				),
 			)
 
-			So(out, ShouldEqual, "123")
+			So(out.String(), ShouldEqual, "123")
 		})
 	})
 }
@@ -100,7 +100,7 @@ func TestConcatWithSeparator(t *testing.T) {
 				core.NewString("qaz"),
 			)
 
-			So(out, ShouldEqual, "foo,bar,qaz")
+			So(out.String(), ShouldEqual, "foo,bar,qaz")
 		})
 	})
 
@@ -116,7 +116,7 @@ func TestConcatWithSeparator(t *testing.T) {
 				),
 			)
 
-			So(out, ShouldEqual, "foo,bar,qaz")
+			So(out.String(), ShouldEqual, "foo,bar,qaz")
 		})
 
 		Convey("ConcatWithSeparator(',' ['foo', None, 'qaz']) should return 'foo,qaz'", func() {
@@ -130,7 +130,7 @@ func TestConcatWithSeparator(t *testing.T) {
 				),
 			)
 
-			So(out, ShouldEqual, "foo,qaz")
+			So(out.String(), ShouldEqual, "foo,qaz")
 		})
 
 		Convey("ConcatWithSeparator(',' 'foo', None, 'qaz') should return 'foo,qaz'", func() {
@@ -144,7 +144,7 @@ func TestConcatWithSeparator(t *testing.T) {
 				),
 			)
 
-			So(out, ShouldEqual, "foo,qaz")
+			So(out.String(), ShouldEqual, "foo,qaz")
 		})
 	})
 }

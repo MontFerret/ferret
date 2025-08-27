@@ -33,7 +33,7 @@ func TestSubstring(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "bar")
+		So(out.String(), ShouldEqual, "bar")
 	})
 
 	Convey("Substring('foobar', 3, 2) should return 'ba'", t, func() {
@@ -45,7 +45,7 @@ func TestSubstring(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "ba")
+		So(out.String(), ShouldEqual, "ba")
 	})
 
 	Convey("Substring('foobar', 3, 5) should return 'bar'", t, func() {
@@ -57,7 +57,7 @@ func TestSubstring(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, "bar")
+		So(out.String(), ShouldEqual, "bar")
 	})
 }
 
@@ -82,7 +82,7 @@ func TestLeft(t *testing.T) {
 			core.NewInt(3),
 		)
 
-		So(out, ShouldEqual, "foo")
+		So(out.String(), ShouldEqual, "foo")
 	})
 
 	Convey("Left('foobar', 10) should return 'foobar'", t, func() {
@@ -92,7 +92,7 @@ func TestLeft(t *testing.T) {
 			core.NewInt(10),
 		)
 
-		So(out, ShouldEqual, "foobar")
+		So(out.String(), ShouldEqual, "foobar")
 	})
 }
 
@@ -117,7 +117,7 @@ func TestRight(t *testing.T) {
 			core.NewInt(3),
 		)
 
-		So(out, ShouldEqual, "bar")
+		So(out.String(), ShouldEqual, "bar")
 	})
 
 	Convey("Right('foobar', 10) should return 'foobar'", t, func() {
@@ -127,6 +127,6 @@ func TestRight(t *testing.T) {
 			core.NewInt(10),
 		)
 
-		So(out, ShouldEqual, "foobar")
+		So(out.String(), ShouldEqual, "foobar")
 	})
 }
