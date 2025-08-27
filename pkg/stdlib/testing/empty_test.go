@@ -63,7 +63,7 @@ func TestEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1,2,3]' to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to be empty").Error())
 			})
 		})
 
@@ -92,7 +92,7 @@ func TestEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [map] '{\"a\":1,\"b\":2,\"c\":3}' to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to be empty").Error())
 			})
 		})
 
@@ -171,7 +171,7 @@ func TestNotEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[]' not to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[]' not to be empty").Error())
 			})
 		})
 	})
@@ -200,7 +200,7 @@ func TestNotEmpty(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [map] '{}' not to be empty").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{}' not to be empty").Error())
 			})
 		})
 	})

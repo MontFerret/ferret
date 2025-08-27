@@ -46,7 +46,7 @@ func TestBinary(t *t.T) {
 				_, err := Binary(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [list] '[]' to be binary")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be binary")
 			})
 		})
 	})

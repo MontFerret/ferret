@@ -141,7 +141,7 @@ func AssertMap(input Value) error {
 }
 
 func AssertBinary(input Value) error {
-	_, ok := input.(*Binary)
+	_, ok := input.(Binary)
 
 	if !ok {
 		return TypeErrorOf(

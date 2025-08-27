@@ -46,7 +46,7 @@ func TestString(t *t.T) {
 				_, err := String(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [list] '[]' to be string")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be string")
 			})
 		})
 	})

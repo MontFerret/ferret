@@ -46,7 +46,7 @@ func TestObject(t *t.T) {
 				_, err := Object(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [list] '[]' to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be object")
 			})
 		})
 	})
@@ -89,7 +89,7 @@ func TestNotObject(t *t.T) {
 				_, err := NotObject(context.Background(), runtime.NewObject())
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [map] '{}' not to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [object] '{}' not to be object")
 			})
 		})
 
@@ -100,7 +100,7 @@ func TestNotObject(t *t.T) {
 				))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [map] '{\"key\":\"value\"}' not to be object")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [object] '{\"key\":\"value\"}' not to be object")
 			})
 		})
 	})

@@ -47,7 +47,7 @@ func TestDateTime(t *t.T) {
 				_, err := DateTime(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [list] '[]' to be datetime")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' to be datetime")
 			})
 		})
 	})
