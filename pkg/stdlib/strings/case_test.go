@@ -28,7 +28,7 @@ func TestLower(t *testing.T) {
 			core.NewString("FOOBAR"),
 		)
 
-		So(out, ShouldEqual, "foobar")
+		So(out.String(), ShouldEqual, "foobar")
 	})
 }
 
@@ -49,6 +49,6 @@ func TestUpper(t *testing.T) {
 			core.NewString("foobar"),
 		)
 
-		So(out, ShouldEqual, "FOOBAR")
+		So(out.String(), ShouldEqual, "FOOBAR")
 	})
 }

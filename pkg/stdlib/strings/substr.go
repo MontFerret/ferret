@@ -16,16 +16,16 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.EmptyString, err
 	}
 
-	num, err := runtime.CastInt(args[1])
+	offsetArg, err := runtime.CastInt(args[1])
 
 	if err != nil {
 		return runtime.EmptyString, err
 	}
 
-	text := num.String()
+	text := args[0].String()
 	runes := []rune(text)
 	size := len(runes)
-	offset := int(args[1].(runtime.Int))
+	offset := int(offsetArg)
 	length := size
 
 	if len(args) > 2 {
@@ -36,19 +36,24 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 		}
 	}
 
-	var substr []rune
-
-	if length == size {
-		substr = runes[offset:]
-	} else {
-		end := offset + length
-
-		if size > end {
-			substr = runes[offset:end]
-		} else {
-			substr = runes[offset:]
-		}
+	// Handle edge cases for bounds checking
+	if offset < 0 || offset >= size {
+		return runtime.NewString(""), nil
 	}
+
+	if length <= 0 {
+		return runtime.NewString(""), nil
+	}
+
+	var substr []rune
+	end := offset + length
+
+	// Ensure end doesn't exceed the string size
+	if end > size {
+		end = size
+	}
+
+	substr = runes[offset:end]
 
 	return runtime.NewStringFromRunes(substr), nil
 }

@@ -32,7 +32,7 @@ func TestLike(t *testing.T) {
 			core.NewString("ca_t"),
 		)
 
-		So(out, ShouldEqual, true)
+		So(out, ShouldEqual, core.True)
 	})
 
 	Convey("Should return true when matches with % pattern", t, func() {
@@ -42,7 +42,7 @@ func TestLike(t *testing.T) {
 			core.NewString("%bar%"),
 		)
 
-		So(out, ShouldEqual, true)
+		So(out, ShouldEqual, core.True)
 	})
 
 	Convey("Should return false when matches with no caseInsensitive parameter", t, func() {
@@ -52,7 +52,7 @@ func TestLike(t *testing.T) {
 			core.NewString("fOo%bAz"),
 		)
 
-		So(out, ShouldEqual, false)
+		So(out, ShouldEqual, core.False)
 	})
 
 	Convey("Should return true when matches with caseInsensitive parameter", t, func() {
@@ -63,6 +63,6 @@ func TestLike(t *testing.T) {
 			core.True,
 		)
 
-		So(out, ShouldEqual, true)
+		So(out, ShouldEqual, core.True)
 	})
 }

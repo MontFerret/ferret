@@ -97,7 +97,7 @@ func TestRegexTest(t *testing.T) {
 			core.NewString("the.*fox"),
 		)
 
-		So(out, ShouldEqual, true)
+		So(out, ShouldEqual, core.True)
 	})
 }
 
@@ -127,7 +127,7 @@ func TestRegexReplace(t *testing.T) {
 			core.NewString("jumped over"),
 		)
 
-		So(out, ShouldEqual, "jumped over")
+		So(out.String(), ShouldEqual, "jumped over")
 
 		out, _ = strings.RegexReplace(
 			context.Background(),
@@ -136,6 +136,6 @@ func TestRegexReplace(t *testing.T) {
 			core.NewString("i"),
 		)
 
-		So(out, ShouldEqual, "the quick briwn fix")
+		So(out.String(), ShouldEqual, "the quick briwn fix")
 	})
 }

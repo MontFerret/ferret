@@ -22,6 +22,47 @@ func TestJSONParse(t *testing.T) {
 		})
 	})
 
+	Convey("When invalid JSON", t, func() {
+		Convey("It should return an error", func() {
+			_, err := strings.JSONParse(
+				context.Background(),
+				runtime.NewString("invalid json"),
+			)
+
+			So(err, ShouldBeError)
+		})
+	})
+
+	Convey("Should parse null", t, func() {
+		out, err := strings.JSONParse(
+			context.Background(),
+			runtime.NewString("null"),
+		)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, runtime.None)
+	})
+
+	Convey("Should parse boolean", t, func() {
+		out, err := strings.JSONParse(
+			context.Background(),
+			runtime.NewString("true"),
+		)
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, runtime.True)
+	})
+
+	Convey("Should parse string", t, func() {
+		out, err := strings.JSONParse(
+			context.Background(),
+			runtime.NewString(`"hello"`),
+		)
+
+		So(err, ShouldBeNil)
+		So(out.String(), ShouldEqual, "hello")
+	})
+
 	//Convey("It should parse none", t, func() {
 	//	val := runtime.None
 	//
