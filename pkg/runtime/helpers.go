@@ -352,7 +352,7 @@ func ToFloat(ctx context.Context, input Value) (Float, error) {
 		}
 
 		return NewFloat(float64(dt.Unix())), nil
-	case *Array:
+	case List:
 		iterator, err := val.Iterate(ctx)
 
 		if err != nil {
@@ -425,7 +425,7 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 		}
 
 		return NewInt(int(dt.Unix())), nil
-	case *Array:
+	case List:
 		iterator, err := val.Iterate(ctx)
 
 		if err != nil {
