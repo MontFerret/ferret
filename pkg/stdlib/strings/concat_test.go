@@ -8,8 +8,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
 
@@ -26,9 +24,9 @@ func TestConcat(t *testing.T) {
 		Convey("Concat('foo', 'bar', 'qaz') should return 'foobarqaz'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				core.NewString("foo"),
-				core.NewString("bar"),
-				core.NewString("qaz"),
+				runtime.NewString("foo"),
+				runtime.NewString("bar"),
+				runtime.NewString("qaz"),
 			)
 
 			So(out.String(), ShouldEqual, "foobarqaz")
@@ -39,9 +37,9 @@ func TestConcat(t *testing.T) {
 		Convey("Concat('foo', None, 'bar') should return 'foobar'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				core.NewString("foo"),
-				core.None,
-				core.NewString("bar"),
+				runtime.NewString("foo"),
+				runtime.None,
+				runtime.NewString("bar"),
 			)
 
 			So(out.String(), ShouldEqual, "foobar")
@@ -49,9 +47,9 @@ func TestConcat(t *testing.T) {
 		Convey("Concat('foo', 1, false) should return 'foo1false'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				core.NewString("foo"),
-				core.NewInt(1),
-				core.False,
+				runtime.NewString("foo"),
+				runtime.NewInt(1),
+				runtime.False,
 			)
 
 			So(out.String(), ShouldEqual, "foo1false")
@@ -60,7 +58,7 @@ func TestConcat(t *testing.T) {
 		Convey("Concat(['foo', 'bar']) should return 'foobar'", func() {
 			out, _ := strings.Concat(
 				context.Background(),
-				runtime.NewArrayWith(core.NewString("foo"), core.NewString("bar")),
+				runtime.NewArrayWith(runtime.NewString("foo"), runtime.NewString("bar")),
 			)
 
 			So(out.String(), ShouldEqual, "foobar")
@@ -70,9 +68,9 @@ func TestConcat(t *testing.T) {
 			out, _ := strings.Concat(
 				context.Background(),
 				runtime.NewArrayWith(
-					core.NewInt(1),
-					core.NewInt(2),
-					core.NewInt(3),
+					runtime.NewInt(1),
+					runtime.NewInt(2),
+					runtime.NewInt(3),
 				),
 			)
 
@@ -94,10 +92,10 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' 'foo', 'bar', 'qaz') should return 'foo,bar,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				core.NewString(","),
-				core.NewString("foo"),
-				core.NewString("bar"),
-				core.NewString("qaz"),
+				runtime.NewString(","),
+				runtime.NewString("foo"),
+				runtime.NewString("bar"),
+				runtime.NewString("qaz"),
 			)
 
 			So(out.String(), ShouldEqual, "foo,bar,qaz")
@@ -108,11 +106,11 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' ['foo', 'bar', 'qaz']) should return 'foo,bar,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				core.NewString(","),
+				runtime.NewString(","),
 				runtime.NewArrayWith(
-					core.NewString("foo"),
-					core.NewString("bar"),
-					core.NewString("qaz"),
+					runtime.NewString("foo"),
+					runtime.NewString("bar"),
+					runtime.NewString("qaz"),
 				),
 			)
 
@@ -122,11 +120,11 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' ['foo', None, 'qaz']) should return 'foo,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				core.NewString(","),
+				runtime.NewString(","),
 				runtime.NewArrayWith(
-					core.NewString("foo"),
-					core.None,
-					core.NewString("qaz"),
+					runtime.NewString("foo"),
+					runtime.None,
+					runtime.NewString("qaz"),
 				),
 			)
 
@@ -136,11 +134,11 @@ func TestConcatWithSeparator(t *testing.T) {
 		Convey("ConcatWithSeparator(',' 'foo', None, 'qaz') should return 'foo,qaz'", func() {
 			out, _ := strings.ConcatWithSeparator(
 				context.Background(),
-				core.NewString(","),
+				runtime.NewString(","),
 				runtime.NewArrayWith(
-					core.NewString("foo"),
-					core.None,
-					core.NewString("qaz"),
+					runtime.NewString("foo"),
+					runtime.None,
+					runtime.NewString("qaz"),
 				),
 			)
 

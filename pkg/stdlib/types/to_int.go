@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // TO_INT takes an input value of any type and convert it into an integer value.
@@ -19,11 +17,11 @@ import (
 // An object / HTML node is converted to the number 0.
 // @param {Any} value - Input value of arbitrary type.
 // @return {Int} - An integer value.
-func ToInt(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func ToInt(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	return runtime.ToInt(ctx, args[0])

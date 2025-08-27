@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -19,7 +19,7 @@ func TestSplit(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Split(context.Background(), core.NewString("foo"))
+			_, err = strings.Split(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -28,8 +28,8 @@ func TestSplit(t *testing.T) {
 	Convey("Split('foo-bar-baz', '-' ) should return an array", t, func() {
 		out, err := strings.Split(
 			context.Background(),
-			core.NewString("foo-bar-baz"),
-			core.NewString("-"),
+			runtime.NewString("foo-bar-baz"),
+			runtime.NewString("-"),
 		)
 
 		So(err, ShouldBeNil)
@@ -40,9 +40,9 @@ func TestSplit(t *testing.T) {
 	Convey("Split('foo-bar-baz', '-', 2) should return an array", t, func() {
 		out, err := strings.Split(
 			context.Background(),
-			core.NewString("foo-bar-baz"),
-			core.NewString("-"),
-			core.NewInt(2),
+			runtime.NewString("foo-bar-baz"),
+			runtime.NewString("-"),
+			runtime.NewInt(2),
 		)
 
 		So(err, ShouldBeNil)

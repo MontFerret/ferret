@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
@@ -23,7 +23,7 @@ func TestClean(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Clean(context.Background(), core.NewInt(0))
+		_, err = path.Clean(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -31,7 +31,7 @@ func TestClean(t *testing.T) {
 	Convey("Clean('pkg//path//clean.go') should return 'pkg/path/clean.go'", t, func() {
 		out, _ := path.Clean(
 			context.Background(),
-			core.NewString("pkg//path//clean.go"),
+			runtime.NewString("pkg//path//clean.go"),
 		)
 
 		So(out, ShouldEqual, "pkg/path/clean.go")
@@ -40,7 +40,7 @@ func TestClean(t *testing.T) {
 	Convey("Clean('/cmd/main/../../..') should return '/'", t, func() {
 		out, _ := path.Clean(
 			context.Background(),
-			core.NewString("/cmd/main/../../.."),
+			runtime.NewString("/cmd/main/../../.."),
 		)
 
 		So(out, ShouldEqual, "/")

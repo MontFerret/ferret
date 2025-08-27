@@ -5,30 +5,27 @@ import (
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // SEPARATE separates the path into a directory and filename component.
 // @param {String} path - The path
 // @return {Any[]} - First item is a directory component, and second is a filename component.
-func Separate(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func Separate(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.String)
+	err = runtime.ValidateType(args[0], runtime.TypeString)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	pattern, name := path.Split(args[0].String())
 
-	arr := runtime.NewArrayWith(core.NewString(pattern), core.NewString(name))
+	arr := runtime.NewArrayWith(runtime.NewString(pattern), runtime.NewString(name))
 
 	return arr, nil
 }

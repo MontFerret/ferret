@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -15,36 +14,36 @@ import (
 func TestMin(t *testing.T) {
 	Convey("Should return the smallest value", t, func() {
 		out, err := math.Min(context.Background(), runtime.NewArrayWith(
-			core.NewInt(5),
-			core.NewInt(2),
-			core.NewInt(9),
-			core.NewInt(2),
+			runtime.NewInt(5),
+			runtime.NewInt(2),
+			runtime.NewInt(9),
+			runtime.NewInt(2),
 		))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 2)
 
 		out, err = math.Min(context.Background(), runtime.NewArrayWith(
-			core.NewInt(-3),
-			core.NewInt(-5),
-			core.NewInt(2),
+			runtime.NewInt(-3),
+			runtime.NewInt(-5),
+			runtime.NewInt(2),
 		))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, -5)
 
 		out, err = math.Min(context.Background(), runtime.NewArrayWith(
-			core.None,
-			core.NewInt(-5),
-			core.False,
+			runtime.None,
+			runtime.NewInt(-5),
+			runtime.False,
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, core.None)
+		So(out, ShouldEqual, runtime.None)
 
 		out, err = math.Min(context.Background(), runtime.NewArray(0))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, core.None)
+		So(out, ShouldEqual, runtime.None)
 	})
 }

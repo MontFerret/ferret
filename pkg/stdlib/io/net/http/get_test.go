@@ -9,8 +9,6 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	"github.com/pkg/errors"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -32,7 +30,7 @@ func TestGET(t *testing.T) {
 
 		ctx := context.Background()
 
-		out, err := http.GET(ctx, core.NewString(url))
+		out, err := http.GET(ctx, runtime.NewString(url))
 
 		So(err, ShouldBeNil)
 		//So(out.Type().ID(), ShouldEqual, types.Binary.ID())
@@ -59,10 +57,10 @@ func TestGET(t *testing.T) {
 		ctx := context.Background()
 
 		out, err := http.GET(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", core.NewString(url)),
+			runtime.NewObjectProperty("url", runtime.NewString(url)),
 			runtime.NewObjectProperty("headers", runtime.NewObjectWith(
-				runtime.NewObjectProperty("X-token", core.NewString("Ferret")),
-				runtime.NewObjectProperty("X-From", core.NewString("localhost")),
+				runtime.NewObjectProperty("X-token", runtime.NewString("Ferret")),
+				runtime.NewObjectProperty("X-From", runtime.NewString("localhost")),
 			)),
 		))
 

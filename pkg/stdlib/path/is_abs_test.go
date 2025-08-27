@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
@@ -23,7 +23,7 @@ func TestIsAbs(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.IsAbs(context.Background(), core.NewInt(0))
+		_, err = path.IsAbs(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -31,18 +31,18 @@ func TestIsAbs(t *testing.T) {
 	Convey("IsAbs('/ferret/bin/ferret') should return true", t, func() {
 		out, _ := path.IsAbs(
 			context.Background(),
-			core.NewString("/ferret/bin/ferret"),
+			runtime.NewString("/ferret/bin/ferret"),
 		)
 
-		So(out, ShouldEqual, core.True)
+		So(out, ShouldEqual, runtime.True)
 	})
 
 	Convey("IsAbs('..') should return false", t, func() {
 		out, _ := path.IsAbs(
 			context.Background(),
-			core.NewString(".."),
+			runtime.NewString(".."),
 		)
 
-		So(out, ShouldEqual, core.False)
+		So(out, ShouldEqual, runtime.False)
 	})
 }

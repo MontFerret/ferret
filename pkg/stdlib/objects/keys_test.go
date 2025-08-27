@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,9 +15,9 @@ import (
 func TestKeys(t *testing.T) {
 	Convey("Keys(obj, false) should return 'a', 'c', 'b' in any order", t, func() {
 		//obj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", core.NewInt(0)),
-		//	runtime.NewObjectProperty("b", core.NewInt(1)),
-		//	runtime.NewObjectProperty("c", core.NewInt(2)),
+		//	runtime.NewObjectProperty("a", runtime.NewInt(0)),
+		//	runtime.NewObjectProperty("b", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("c", runtime.NewInt(2)),
 		//)
 		//
 		//keys, err := objects.Keys(context.Background(), obj)
@@ -29,43 +28,43 @@ func TestKeys(t *testing.T) {
 		//So(keysArray.Length(), ShouldEqual, 3)
 		//
 		//for _, k := range []string{"b", "a", "c"} {
-		//	iof := keysArray.IndexOf(core.NewString(k))
+		//	iof := keysArray.IndexOf(runtime.NewString(k))
 		//	So(iof, ShouldNotEqual, -1)
 		//}
 	})
 
 	Convey("Keys(obj, false) should return ['a', 'b', 'c']", t, func() {
 		//obj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("b", core.NewInt(0)),
-		//	runtime.NewObjectProperty("a", core.NewInt(1)),
-		//	runtime.NewObjectProperty("c", core.NewInt(3)),
+		//	runtime.NewObjectProperty("b", runtime.NewInt(0)),
+		//	runtime.NewObjectProperty("a", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("c", runtime.NewInt(3)),
 		//)
 		//
-		//keys, err := objects.Keys(context.Background(), obj, core.NewBoolean(true))
+		//keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
 		//keysArray := keys.(*runtime.Array)
 		//
 		//So(err, ShouldEqual, nil)
 		//
 		//for idx, key := range []string{"a", "b", "c"} {
-		//	So(keysArray.Get(core.NewInt(idx)), ShouldEqual, core.NewString(key))
+		//	So(keysArray.Get(runtime.NewInt(idx)), ShouldEqual, runtime.NewString(key))
 		//}
 	})
 
 	Convey("When there are no keys", t, func() {
 		//obj := runtime.NewObject()
 		//
-		//keys, err := objects.Keys(context.Background(), obj, core.NewBoolean(true))
+		//keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
 		//keysArray := keys.(*runtime.Array)
 		//
 		//So(err, ShouldEqual, nil)
-		//So(keysArray.Length(), ShouldEqual, core.NewInt(0))
+		//So(keysArray.Length(), ShouldEqual, runtime.NewInt(0))
 		//So(int(keysArray.Length()), ShouldEqual, 0)
 		//
-		//keys, err = objects.Keys(context.Background(), obj, core.NewBoolean(false))
+		//keys, err = objects.Keys(context.Background(), obj, runtime.NewBoolean(false))
 		//keysArray = keys.(*runtime.Array)
 		//
 		//So(err, ShouldEqual, nil)
-		//So(keysArray.Length(), ShouldEqual, core.NewInt(0))
+		//So(keysArray.Length(), ShouldEqual, runtime.NewInt(0))
 		//So(int(keysArray.Length()), ShouldEqual, 0)
 	})
 
@@ -76,7 +75,7 @@ func TestKeys(t *testing.T) {
 	})
 
 	Convey("When first argument isn't object", t, func() {
-		notObj := core.NewInt(0)
+		notObj := runtime.NewInt(0)
 
 		_, err := objects.Keys(context.Background(), notObj)
 

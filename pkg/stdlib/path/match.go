@@ -4,31 +4,30 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // MATCH reports whether name matches the pattern.
 // @param {String} pattern - The pattern.
 // @param {String} name - The name.
 // @return {Boolean} - True if the name matches the pattern.
-func Match(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 2, 2)
+func Match(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {
-		return core.False, err
+		return runtime.False, err
 	}
 
-	err = core.ValidateType(args[0], types.String)
+	err = runtime.ValidateType(args[0], runtime.TypeString)
 
 	if err != nil {
-		return core.False, err
+		return runtime.False, err
 	}
 
-	err = core.ValidateType(args[1], types.String)
+	err = runtime.ValidateType(args[1], runtime.TypeString)
 
 	if err != nil {
-		return core.False, err
+		return runtime.False, err
 	}
 
 	pattern := args[0].String()
@@ -37,8 +36,8 @@ func Match(_ context.Context, args ...core.Value) (core.Value, error) {
 	matched, err := path.Match(pattern, name)
 
 	if err != nil {
-		return core.False, core.Error(err, "match")
+		return runtime.False, runtime.Error(err, "match")
 	}
 
-	return core.NewBoolean(matched), nil
+	return runtime.NewBoolean(matched), nil
 }

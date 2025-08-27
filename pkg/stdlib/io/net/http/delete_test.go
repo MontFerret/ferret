@@ -11,8 +11,6 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -68,8 +66,8 @@ func TestDELETE(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.DELETE(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", core.NewString(url)),
-			runtime.NewObjectProperty("body", core.NewBinary(b)),
+			runtime.NewObjectProperty("url", runtime.NewString(url)),
+			runtime.NewObjectProperty("body", runtime.NewBinary(b)),
 		))
 
 		So(err, ShouldBeNil)

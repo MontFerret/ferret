@@ -4,18 +4,15 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // MERGE merge the given objects into a single object.
 // @param {hashMap, repeated} objects - Objects to merge.
 // @return {hashMap} - hashMap created by merging.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Merge(ctx context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 1, core.MaxArgs); err != nil {
-		return core.None, err
+func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
+		return runtime.None, err
 	}
 
 	var objs *runtime.Array
@@ -32,8 +29,8 @@ func Merge(ctx context.Context, args ...core.Value) (core.Value, error) {
 		objs = runtime.NewArrayWith(args...)
 	}
 
-	if err := validateArrayOf(ctx, types.Object, objs); err != nil {
-		return core.None, err
+	if err := validateArrayOf(ctx, runtime.TypeObject, objs); err != nil {
+		return runtime.None, err
 	}
 
 	return mergeArray(ctx, objs)
@@ -42,17 +39,17 @@ func Merge(ctx context.Context, args ...core.Value) (core.Value, error) {
 func mergeArray(ctx context.Context, arr *runtime.Array) (*runtime.Object, error) {
 	merged, obj := runtime.NewObject(), runtime.NewObject()
 
-	_ = arr.ForEach(ctx, func(c context.Context, arrValue core.Value, arrIdx core.Int) (core.Boolean, error) {
+	_ = arr.ForEach(ctx, func(c context.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
 		obj = arrValue.(*runtime.Object)
 
-		_ = obj.ForEach(c, func(_ context.Context, objValue, objKey core.Value) (core.Boolean, error) {
-			cloneable, ok := objValue.(core.Cloneable)
+		_ = obj.ForEach(c, func(_ context.Context, objValue, objKey runtime.Value) (runtime.Boolean, error) {
+			cloneable, ok := objValue.(runtime.Cloneable)
 
 			if ok {
 				clone, err := cloneable.Clone(c)
 
 				if err != nil {
-					return core.False, err
+					return runtime.False, err
 				}
 
 				objValue = clone
@@ -69,7 +66,7 @@ func mergeArray(ctx context.Context, arr *runtime.Array) (*runtime.Object, error
 	return merged, nil
 }
 
-func validateArrayOf(ctx context.Context, typ core.Type, arr *runtime.Array) error {
+func validateArrayOf(ctx context.Context, typ runtime.Type, arr *runtime.Array) error {
 	size, err := arr.Length(ctx)
 
 	if err != nil {
@@ -83,7 +80,7 @@ func validateArrayOf(ctx context.Context, typ core.Type, arr *runtime.Array) err
 			return err
 		}
 
-		if err := core.ValidateType(item, typ); err != nil {
+		if err := runtime.ValidateType(item, typ); err != nil {
 			return err
 		}
 	}

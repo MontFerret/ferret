@@ -5,17 +5,15 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // WAIT pauses the execution for a given period.
 // @param {Int | Float} timeout - Number value which indicates for how long to stop an execution.
-func Wait(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func Wait(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, nil
+		return runtime.None, nil
 	}
 
 	arg := runtime.ToIntSafe(ctx, args[0])
@@ -24,9 +22,9 @@ func Wait(ctx context.Context, args ...core.Value) (core.Value, error) {
 	select {
 	case <-ctx.Done():
 		timer.Stop()
-		return core.None, ctx.Err()
+		return runtime.None, ctx.Err()
 	case <-timer.C:
 	}
 
-	return core.None, nil
+	return runtime.None, nil
 }

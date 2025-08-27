@@ -11,8 +11,6 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -68,8 +66,8 @@ func TestPOST(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		out, err := http.POST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", core.NewString(url)),
-			runtime.NewObjectProperty("body", core.NewBinary(b)),
+			runtime.NewObjectProperty("url", runtime.NewString(url)),
+			runtime.NewObjectProperty("body", runtime.NewBinary(b)),
 		))
 
 		So(err, ShouldBeNil)
@@ -111,12 +109,12 @@ func TestPOST(t *testing.T) {
 		ctx := context.Background()
 
 		j := runtime.NewObjectWith(
-			runtime.NewObjectProperty("first_name", core.NewString("Rob")),
-			runtime.NewObjectProperty("last_name", core.NewString("Pike")),
+			runtime.NewObjectProperty("first_name", runtime.NewString("Rob")),
+			runtime.NewObjectProperty("last_name", runtime.NewString("Pike")),
 		)
 
 		out, err := http.POST(ctx, runtime.NewObjectWith(
-			runtime.NewObjectProperty("url", core.NewString(url)),
+			runtime.NewObjectProperty("url", runtime.NewString(url)),
 			runtime.NewObjectProperty("body", j),
 		))
 

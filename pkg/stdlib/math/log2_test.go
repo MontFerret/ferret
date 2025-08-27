@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -13,19 +12,19 @@ import (
 
 func TestLog2(t *testing.T) {
 	Convey("Should return a value", t, func() {
-		out, err := math.Log2(context.Background(), core.NewFloat(1024))
+		out, err := math.Log2(context.Background(), runtime.NewFloat(1024))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 10)
 
-		out, err = math.Log2(context.Background(), core.NewFloat(8))
+		out, err = math.Log2(context.Background(), runtime.NewFloat(8))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 3)
 
-		out, err = math.Log2(context.Background(), core.NewFloat(0))
+		out, err = math.Log2(context.Background(), runtime.NewFloat(0))
 
 		So(err, ShouldBeNil)
-		So(core.IsInf(out.(core.Float), -1).Unwrap(), ShouldBeTrue)
+		So(runtime.IsInf(out.(runtime.Float), -1).Unwrap(), ShouldBeTrue)
 	})
 }

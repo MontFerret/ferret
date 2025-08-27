@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -15,28 +14,28 @@ import (
 func TestAverage(t *testing.T) {
 	Convey("Should return average value", t, func() {
 		out, err := math.Average(context.Background(), runtime.NewArrayWith(
-			core.NewInt(5),
-			core.NewInt(2),
-			core.NewInt(9),
-			core.NewInt(2),
+			runtime.NewInt(5),
+			runtime.NewInt(2),
+			runtime.NewInt(9),
+			runtime.NewInt(2),
 		))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 4.5)
 
 		out, err = math.Average(context.Background(), runtime.NewArrayWith(
-			core.NewInt(-3),
-			core.NewInt(-5),
-			core.NewInt(2),
+			runtime.NewInt(-3),
+			runtime.NewInt(-5),
+			runtime.NewInt(2),
 		))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, -2)
 
 		out, err = math.Average(context.Background(), runtime.NewArrayWith(
-			core.None,
-			core.NewInt(-5),
-			core.False,
+			runtime.None,
+			runtime.NewInt(-5),
+			runtime.False,
 		))
 
 		So(err, ShouldBeNil)
@@ -50,10 +49,10 @@ func TestAverage(t *testing.T) {
 
 	Convey("Should ignore nulls and compute correct average", t, func() {
 		out, err := math.Average(context.Background(), runtime.NewArrayWith(
-			core.None,
-			core.NewInt(20),
-			core.NewInt(0),
-			core.None,
+			runtime.None,
+			runtime.NewInt(20),
+			runtime.NewInt(0),
+			runtime.None,
 		))
 
 		So(err, ShouldBeNil)

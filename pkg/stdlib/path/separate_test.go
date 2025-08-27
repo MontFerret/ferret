@@ -8,8 +8,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
 
@@ -24,7 +22,7 @@ func TestSeparate(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Separate(context.Background(), core.NewInt(0))
+		_, err = path.Separate(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -32,10 +30,10 @@ func TestSeparate(t *testing.T) {
 	Convey("Separate('http://site.com/logo.png') should return ['http://site.com/', 'logo.png']", t, func() {
 		out, _ := path.Separate(
 			context.Background(),
-			core.NewString("http://site.com/logo.png"),
+			runtime.NewString("http://site.com/logo.png"),
 		)
 
-		expected := runtime.NewArrayWith(core.NewString("http://site.com/"), core.NewString("logo.png"))
+		expected := runtime.NewArrayWith(runtime.NewString("http://site.com/"), runtime.NewString("logo.png"))
 		So(out, ShouldResemble, expected)
 	})
 }

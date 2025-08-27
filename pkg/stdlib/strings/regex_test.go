@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -19,7 +19,7 @@ func TestRegexMatch(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.RegexMatch(context.Background(), core.NewString(""))
+			_, err = strings.RegexMatch(context.Background(), runtime.NewString(""))
 
 			So(err, ShouldBeError)
 		})
@@ -28,9 +28,9 @@ func TestRegexMatch(t *testing.T) {
 	Convey("Should match with case insensitive regexp", t, func() {
 		out, err := strings.RegexMatch(
 			context.Background(),
-			core.NewString("My-us3r_n4m3"),
-			core.NewString("[a-z0-9_-]{3,16}$"),
-			core.True,
+			runtime.NewString("My-us3r_n4m3"),
+			runtime.NewString("[a-z0-9_-]{3,16}$"),
+			runtime.True,
 		)
 
 		So(err, ShouldBeNil)
@@ -40,8 +40,8 @@ func TestRegexMatch(t *testing.T) {
 	Convey("Should match with case sensitive regexp", t, func() {
 		out, err := strings.RegexMatch(
 			context.Background(),
-			core.NewString("john@doe.com"),
-			core.NewString(`([a-z0-9_\.-]+)@([\da-z-]+)\.([a-z\.]{2,6})$`),
+			runtime.NewString("john@doe.com"),
+			runtime.NewString(`([a-z0-9_\.-]+)@([\da-z-]+)\.([a-z\.]{2,6})$`),
 		)
 
 		So(err, ShouldBeNil)
@@ -57,7 +57,7 @@ func TestRegexSplit(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.RegexSplit(context.Background(), core.NewString(""))
+			_, err = strings.RegexSplit(context.Background(), runtime.NewString(""))
 
 			So(err, ShouldBeError)
 		})
@@ -66,8 +66,8 @@ func TestRegexSplit(t *testing.T) {
 	Convey("Should split with regexp", t, func() {
 		out, err := strings.RegexSplit(
 			context.Background(),
-			core.NewString("This is a line.\n This is yet another line\r\n This again is a line.\r Mac line "),
-			core.NewString(`\.?(\n|\r)`),
+			runtime.NewString("This is a line.\n This is yet another line\r\n This again is a line.\r Mac line "),
+			runtime.NewString(`\.?(\n|\r)`),
 		)
 
 		So(err, ShouldBeNil)
@@ -83,7 +83,7 @@ func TestRegexTest(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.RegexTest(context.Background(), core.NewString(""))
+			_, err = strings.RegexTest(context.Background(), runtime.NewString(""))
 
 			So(err, ShouldBeError)
 
@@ -93,11 +93,11 @@ func TestRegexTest(t *testing.T) {
 	Convey("Should return true when matches", t, func() {
 		out, _ := strings.RegexTest(
 			context.Background(),
-			core.NewString("the quick brown fox"),
-			core.NewString("the.*fox"),
+			runtime.NewString("the quick brown fox"),
+			runtime.NewString("the.*fox"),
 		)
 
-		So(out, ShouldEqual, core.True)
+		So(out, ShouldEqual, runtime.True)
 	})
 }
 
@@ -109,11 +109,11 @@ func TestRegexReplace(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.RegexReplace(context.Background(), core.NewString(""))
+			_, err = strings.RegexReplace(context.Background(), runtime.NewString(""))
 
 			So(err, ShouldBeError)
 
-			_, err = strings.RegexReplace(context.Background(), core.NewString(""), core.NewString(""))
+			_, err = strings.RegexReplace(context.Background(), runtime.NewString(""), runtime.NewString(""))
 
 			So(err, ShouldBeError)
 		})
@@ -122,18 +122,18 @@ func TestRegexReplace(t *testing.T) {
 	Convey("Should replace with regexp", t, func() {
 		out, _ := strings.RegexReplace(
 			context.Background(),
-			core.NewString("the quick brown fox"),
-			core.NewString("the.*fox"),
-			core.NewString("jumped over"),
+			runtime.NewString("the quick brown fox"),
+			runtime.NewString("the.*fox"),
+			runtime.NewString("jumped over"),
 		)
 
 		So(out.String(), ShouldEqual, "jumped over")
 
 		out, _ = strings.RegexReplace(
 			context.Background(),
-			core.NewString("the quick brown fox"),
-			core.NewString("o"),
-			core.NewString("i"),
+			runtime.NewString("the quick brown fox"),
+			runtime.NewString("o"),
+			runtime.NewString("i"),
 		)
 
 		So(out.String(), ShouldEqual, "the quick briwn fix")

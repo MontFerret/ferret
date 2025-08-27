@@ -5,9 +5,6 @@ import (
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // KEYS returns string array of object's keys
@@ -15,38 +12,38 @@ import (
 // @param {Boolean} [sort=False] - If sort is true, then the returned keys will be sorted.
 // @return {String[]} - arrayList that contains object keys.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Keys(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 2)
+func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 2)
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
-	err = core.ValidateType(args[0], types.Object)
+	err = runtime.ValidateType(args[0], runtime.TypeObject)
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	obj := args[0].(*runtime.Object)
 	needSort := false
 
 	if len(args) == 2 {
-		err = core.ValidateType(args[1], types.Boolean)
+		err = runtime.ValidateType(args[1], runtime.TypeBoolean)
 		if err != nil {
-			return core.None, err
+			return runtime.None, err
 		}
 
-		needSort = bool(args[1].(core.Boolean))
+		needSort = bool(args[1].(runtime.Boolean))
 	}
 
 	size, err := obj.Length(ctx)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	oKeys := make([]string, 0, size)
 
-	_ = obj.ForEach(ctx, func(c context.Context, value, key core.Value) (core.Boolean, error) {
+	_ = obj.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
 		oKeys = append(oKeys, key.String())
 
 		return true, nil
@@ -60,7 +57,7 @@ func Keys(ctx context.Context, args ...core.Value) (core.Value, error) {
 	}
 
 	for _, key := range keys {
-		_ = keysArray.Add(ctx, core.NewString(key))
+		_ = keysArray.Add(ctx, runtime.NewString(key))
 	}
 
 	return keysArray, nil

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -20,8 +20,8 @@ func TestEncodedURIComponent(t *testing.T) {
 
 			_, err = strings.EncodeURIComponent(
 				context.Background(),
-				core.NewString("https://github.com/MontFerret/ferret"),
-				core.NewString("https://github.com/MontFerret/ferret"),
+				runtime.NewString("https://github.com/MontFerret/ferret"),
+				runtime.NewString("https://github.com/MontFerret/ferret"),
 			)
 
 			So(err, ShouldBeError)
@@ -32,7 +32,7 @@ func TestEncodedURIComponent(t *testing.T) {
 		Convey("EncodeURIComponent('https://github.com/MontFerret/ferret') should return encoded uri", func() {
 			out, _ := strings.EncodeURIComponent(
 				context.Background(),
-				core.NewString("https://github.com/MontFerret/ferret"),
+				runtime.NewString("https://github.com/MontFerret/ferret"),
 			)
 
 			So(out.String(), ShouldEqual, "https%3A%2F%2Fgithub.com%2FMontFerret%2Fferret")
@@ -51,7 +51,7 @@ func TestMd5(t *testing.T) {
 	})
 
 	Convey("Should return hash sum of a string", t, func() {
-		str := core.NewString("foobar")
+		str := runtime.NewString("foobar")
 		out, _ := strings.Md5(
 			context.Background(),
 			str,
@@ -72,7 +72,7 @@ func TestSha1(t *testing.T) {
 	})
 
 	Convey("Should return hash sum of a string", t, func() {
-		str := core.NewString("foobar")
+		str := runtime.NewString("foobar")
 		out, _ := strings.Sha1(
 			context.Background(),
 			str,
@@ -93,7 +93,7 @@ func TestSha512(t *testing.T) {
 	})
 
 	Convey("Should return hash sum of a string", t, func() {
-		str := core.NewString("foobar")
+		str := runtime.NewString("foobar")
 		out, _ := strings.Sha512(
 			context.Background(),
 			str,
@@ -116,7 +116,7 @@ func TestToBase64(t *testing.T) {
 	Convey("Should encode a given value", t, func() {
 		out, err := strings.ToBase64(
 			context.Background(),
-			core.NewString("foobar"),
+			runtime.NewString("foobar"),
 		)
 
 		So(err, ShouldBeNil)

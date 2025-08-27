@@ -4,7 +4,7 @@ import (
 	"context"
 	h "net/http"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // PUT makes a PUT HTTP request.
@@ -13,6 +13,6 @@ import (
 // @param {Any} params.body - Request data
 // @param {hashMap} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func PUT(ctx context.Context, args ...core.Value) (core.Value, error) {
+func PUT(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, h.MethodPut, args)
 }

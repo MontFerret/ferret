@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -25,7 +25,7 @@ func TestRandomToken(t *testing.T) {
 	Convey("When args are invalid", t, func() {
 		Convey("It should return an error", func() {
 			var err error
-			_, err = strings.RandomToken(context.Background(), core.NewString("foo"))
+			_, err = strings.RandomToken(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 
@@ -35,14 +35,14 @@ func TestRandomToken(t *testing.T) {
 	Convey("Should generate random string", t, func() {
 		str1, _ := strings.RandomToken(
 			context.Background(),
-			core.NewInt(8),
+			runtime.NewInt(8),
 		)
 
 		So(str1, ShouldHaveLength, 8)
 
 		str2, _ := strings.RandomToken(
 			context.Background(),
-			core.NewInt(8),
+			runtime.NewInt(8),
 		)
 
 		So(str2, ShouldHaveLength, 8)

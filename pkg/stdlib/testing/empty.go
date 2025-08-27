@@ -18,12 +18,12 @@ var Empty = base.Assertion{
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
 		value := args[0]
-		
+
 		// Validate that the value implements Measurable interface
 		if err := runtime.AssertMeasurable(value); err != nil {
 			return false, err
 		}
-		
+
 		return runtime.IsEmpty(ctx, value)
 	},
 }

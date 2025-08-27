@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -26,7 +25,7 @@ func TestFromBase64(t *testing.T) {
 			var err error
 			_, err = strings.FromBase64(
 				context.Background(),
-				core.NewString("foobar"),
+				runtime.NewString("foobar"),
 			)
 
 			So(err, ShouldBeError)
@@ -36,7 +35,7 @@ func TestFromBase64(t *testing.T) {
 	Convey("Should decode a given hash", t, func() {
 		out, err := strings.FromBase64(
 			context.Background(),
-			core.NewString("Zm9vYmFy"),
+			runtime.NewString("Zm9vYmFy"),
 		)
 
 		So(err, ShouldBeNil)
@@ -58,7 +57,7 @@ func TestDecodeURIComponent(t *testing.T) {
 		Convey("It should return an error", func() {
 			_, err := strings.DecodeURIComponent(
 				context.Background(),
-				core.NewString("invalid%uri%encoding%"),
+				runtime.NewString("invalid%uri%encoding%"),
 			)
 
 			So(err, ShouldBeError)
@@ -87,7 +86,7 @@ func TestDecodeURIComponent(t *testing.T) {
 			Convey(tC.Name, func() {
 				out, err := strings.DecodeURIComponent(
 					context.Background(),
-					core.NewString(tC.InURI),
+					runtime.NewString(tC.InURI),
 				)
 				So(err, ShouldBeNil)
 

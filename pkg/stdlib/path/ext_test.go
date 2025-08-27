@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/path"
 )
@@ -23,7 +23,7 @@ func TestExt(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Ext(context.Background(), core.NewInt(0))
+		_, err = path.Ext(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -31,7 +31,7 @@ func TestExt(t *testing.T) {
 	Convey("Ext('dir/main.go') should return '.go'", t, func() {
 		out, _ := path.Ext(
 			context.Background(),
-			core.NewString("dir/main.go"),
+			runtime.NewString("dir/main.go"),
 		)
 
 		So(out, ShouldEqual, ".go")
