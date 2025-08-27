@@ -41,11 +41,29 @@ func TestFromBase64(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, "Zm9vYmFy")
-		So(out, ShouldEqual, "foobar")
+		So(out.String(), ShouldEqual, "foobar")
 	})
 }
 
 func TestDecodeURIComponent(t *testing.T) {
+	Convey("When args are not passed", t, func() {
+		Convey("It should return an error", func() {
+			_, err := strings.DecodeURIComponent(context.Background())
+
+			So(err, ShouldBeError)
+		})
+	})
+
+	Convey("When invalid URI encoding", t, func() {
+		Convey("It should return an error", func() {
+			_, err := strings.DecodeURIComponent(
+				context.Background(),
+				core.NewString("invalid%uri%encoding%"),
+			)
+
+			So(err, ShouldBeError)
+		})
+	})
 
 	Convey("Decode", t, func() {
 		testCases := []struct {

@@ -35,7 +35,7 @@ func TestEncodedURIComponent(t *testing.T) {
 				core.NewString("https://github.com/MontFerret/ferret"),
 			)
 
-			So(out, ShouldEqual, "https%3A%2F%2Fgithub.com%2FMontFerret%2Fferret")
+			So(out.String(), ShouldEqual, "https%3A%2F%2Fgithub.com%2FMontFerret%2Fferret")
 		})
 	})
 }

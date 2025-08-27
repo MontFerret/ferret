@@ -36,19 +36,24 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 		}
 	}
 
-	var substr []rune
-
-	if length == size {
-		substr = runes[offset:]
-	} else {
-		end := offset + length
-
-		if size > end {
-			substr = runes[offset:end]
-		} else {
-			substr = runes[offset:]
-		}
+	// Handle edge cases for bounds checking
+	if offset < 0 || offset >= size {
+		return runtime.NewString(""), nil
 	}
+
+	if length <= 0 {
+		return runtime.NewString(""), nil
+	}
+
+	var substr []rune
+	end := offset + length
+
+	// Ensure end doesn't exceed the string size
+	if end > size {
+		end = size
+	}
+
+	substr = runes[offset:end]
 
 	return runtime.NewStringFromRunes(substr), nil
 }
