@@ -11,10 +11,12 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
 )
 
-// TestUnion returns the union of distinct values of all passed arrays.
+// TestUnion_Basic returns the union of distinct values of all passed arrays.
 // @param arrays {Any[], repeated} - List of arrays to combine.
 // @return {Any[]} - All array elements combined in a single array, without duplicates, in any order.
-func TestUnion(t *testing.T) {
+func TestUnion_Basic(t *testing.T) {
+	ctx := context.Background()
+
 	Convey("Should union all arrays", t, func() {
 		arr1 := runtime.NewArrayWith(
 			runtime.NewInt(1),
@@ -42,7 +44,7 @@ func TestUnion(t *testing.T) {
 		)
 
 		out, err := arrays.Union(
-			context.Background(),
+			ctx,
 			arr1,
 			arr2,
 			arr3,
@@ -50,5 +52,35 @@ func TestUnion(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, `[1,2,3,4,"a","b","c","d",[1,2],[3,4]]`)
+	})
+}
+
+func TestUnion_EdgeCases(t *testing.T) {
+	ctx := context.Background()
+
+	Convey("Should handle empty arrays", t, func() {
+		arr1 := runtime.NewArrayWith()
+		arr2 := runtime.NewArrayWith()
+		out, err := arrays.Union(ctx, arr1, arr2)
+		So(err, ShouldBeNil)
+		So(out.String(), ShouldEqual, "[]")
+	})
+}
+
+func TestUnion_ArgumentValidation(t *testing.T) {
+	ctx := context.Background()
+
+	Convey("Should reject too few arguments", t, func() {
+		arr := runtime.NewArrayWith(runtime.NewInt(1))
+		_, err := arrays.Union(ctx, arr)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("Should reject invalid argument types", t, func() {
+		nonArray := runtime.NewString("not an array")
+		arr := runtime.NewArrayWith(runtime.NewInt(1))
+
+		_, err := arrays.Union(ctx, nonArray, arr)
+		So(err, ShouldNotBeNil)
 	})
 }
