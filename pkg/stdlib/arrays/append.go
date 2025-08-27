@@ -40,7 +40,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	// We do not know for sure if the list is an array or custom List implementation.
 	// Hence, we must solely rely on the List interface.
-	switch v := arg.(type) {
+	switch v := list.(type) {
 	case *runtime.Array:
 		next = v.CopyWithGrowth(1)
 	case runtime.List:
