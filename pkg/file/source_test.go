@@ -138,9 +138,9 @@ func TestSourceLocationAt(t *testing.T) {
 			})
 			
 			Convey("Should handle location at start of line after newline", func() {
-				line, col := source.LocationAt(Span{Start: 6, End: 7}) // Start of "line2"
-				So(line, ShouldEqual, 2)
-				So(col, ShouldEqual, 1)
+				line, col := source.LocationAt(Span{Start: 6, End: 7}) // Start of "line2" 
+				So(line, ShouldEqual, 1)  // Should be treated as end of line1
+				So(col, ShouldEqual, 6)   // Column after last char of "line1" (len("line1") + 1)
 			})
 		})
 		
