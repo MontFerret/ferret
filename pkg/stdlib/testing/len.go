@@ -22,6 +22,11 @@ var Len = base.Assertion{
 		col := args[0]
 		size := args[1]
 
+		// Validate that the value implements Measurable interface
+		if err := runtime.AssertMeasurable(col); err != nil {
+			return false, err
+		}
+
 		out, err := runtime.Length(ctx, col)
 
 		if err != nil {

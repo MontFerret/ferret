@@ -18,10 +18,7 @@ var Binary = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		if err := runtime.AssertBinary(args[0]); err != nil {
-			return false, err
-		}
-
-		return true, nil
+		err := runtime.AssertBinary(args[0])
+		return err == nil, nil
 	},
 }

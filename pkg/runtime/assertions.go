@@ -141,7 +141,7 @@ func AssertMap(input Value) error {
 }
 
 func AssertBinary(input Value) error {
-	_, ok := input.(*Binary)
+	_, ok := input.(Binary)
 
 	if !ok {
 		return TypeErrorOf(
@@ -160,6 +160,22 @@ func AssertDateTime(input Value) error {
 		return TypeErrorOf(
 			input,
 			TypeDateTime,
+		)
+	}
+
+	return nil
+}
+
+func AssertMeasurable(input Value) error {
+	_, ok := input.(Measurable)
+
+	if !ok {
+		return TypeErrorOf(
+			input,
+			TypeString,
+			TypeArray,
+			TypeObject,
+			TypeBinary,
 		)
 	}
 
