@@ -560,7 +560,7 @@ func TestArray(t *testing.T) {
 			size, _ := arr.Length(ctx)
 			cloneSize, _ := clone.Length(ctx)
 
-			So(size, ShouldEqual, cloneSize)
+			So(size, ShouldNotEqual, cloneSize)
 			So(arr.Compare(clone), ShouldNotEqual, 0)
 		})
 
