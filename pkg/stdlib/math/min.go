@@ -27,9 +27,15 @@ func Min(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	var res float64
+	hasNumericValues := false
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		if !runtime.IsNumber(value) {
+			return runtime.False, nil // Non-numeric value found, return None
+		}
+
 		fv := toFloat(value)
+		hasNumericValues = true
 
 		if res > fv || idx == 0 {
 			res = fv
@@ -38,7 +44,7 @@ func Min(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return true, nil
 	})
 
-	if err != nil {
+	if err != nil || !hasNumericValues {
 		return runtime.None, nil
 	}
 

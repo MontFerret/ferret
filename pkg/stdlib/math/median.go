@@ -17,20 +17,37 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	sorted := arr.Copy().(runtime.List)
+	size, err := arr.Length(ctx)
 
-	//
-	//sorted, err := arr.CopyWithGrowth(ctx, 0)
-	//
-	//if err != nil {
-	//	return runtime.None, err
-	//}
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if size == 0 {
+		return runtime.None, nil
+	}
+
+	// Check if all values are numeric
+	hasNonNumeric := false
+	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		if !runtime.IsNumber(value) {
+			hasNonNumeric = true
+			return runtime.False, nil
+		}
+		return true, nil
+	})
+
+	if err != nil || hasNonNumeric {
+		return runtime.None, nil
+	}
+
+	sorted := arr.Copy().(runtime.List)
 
 	if err := runtime.SortDesc(ctx, sorted); err != nil {
 		return runtime.None, err
 	}
 
-	size, err := sorted.Length(ctx)
+	size, err = sorted.Length(ctx)
 
 	if err != nil {
 		return runtime.None, err
