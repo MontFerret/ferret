@@ -31,20 +31,24 @@ func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if !runtime.IsNumber(value) {
-			return runtime.False, nil // Non-numeric value found, return None
+			return true, nil // Skip non-numeric values
 		}
 
 		fv := toFloat(value)
-		hasNumericValues = true
 
-		if fv > res || idx == 0 {
+		if !hasNumericValues || fv > res {
 			res = fv
+			hasNumericValues = true
 		}
 
 		return true, nil
 	})
 
-	if err != nil || !hasNumericValues {
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if !hasNumericValues {
 		return runtime.None, nil
 	}
 

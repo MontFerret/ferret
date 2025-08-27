@@ -49,6 +49,17 @@ func TestMedian(t *testing.T) {
 		))
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, runtime.None)
+		So(out, ShouldEqual, -5)
+
+		out, err = math.Median(context.Background(), runtime.NewArrayWith(
+			runtime.None,
+			runtime.NewInt(1),
+			runtime.False,
+			runtime.NewInt(3),
+			runtime.NewString("hello"),
+		))
+
+		So(err, ShouldBeNil)
+		So(out, ShouldEqual, 2)
 	})
 }

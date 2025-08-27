@@ -27,21 +27,32 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.None, nil
 	}
 
-	// Check if all values are numeric
-	hasNonNumeric := false
+	// Filter numeric values into a new array
+	numericValues := runtime.NewArray(0)
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if !runtime.IsNumber(value) {
-			hasNonNumeric = true
-			return runtime.False, nil
+		if runtime.IsNumber(value) {
+			err := numericValues.Add(ctx, value)
+			if err != nil {
+				return false, err
+			}
 		}
 		return true, nil
 	})
 
-	if err != nil || hasNonNumeric {
+	if err != nil {
+		return runtime.None, err
+	}
+
+	numericSize, err := numericValues.Length(ctx)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if numericSize == 0 {
 		return runtime.None, nil
 	}
 
-	sorted := arr.Copy().(runtime.List)
+	sorted := numericValues.Copy().(runtime.List)
 
 	if err := runtime.SortDesc(ctx, sorted); err != nil {
 		return runtime.None, err
