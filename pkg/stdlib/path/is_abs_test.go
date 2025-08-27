@@ -45,4 +45,40 @@ func TestIsAbs(t *testing.T) {
 
 		So(out, ShouldEqual, runtime.False)
 	})
+
+	Convey("IsAbs('') should return false", t, func() {
+		out, _ := path.IsAbs(
+			context.Background(),
+			runtime.NewString(""),
+		)
+
+		So(out, ShouldEqual, runtime.False)
+	})
+
+	Convey("IsAbs('.') should return false", t, func() {
+		out, _ := path.IsAbs(
+			context.Background(),
+			runtime.NewString("."),
+		)
+
+		So(out, ShouldEqual, runtime.False)
+	})
+
+	Convey("IsAbs('./path') should return false", t, func() {
+		out, _ := path.IsAbs(
+			context.Background(),
+			runtime.NewString("./path"),
+		)
+
+		So(out, ShouldEqual, runtime.False)
+	})
+
+	Convey("IsAbs('/home/user') should return true", t, func() {
+		out, _ := path.IsAbs(
+			context.Background(),
+			runtime.NewString("/home/user"),
+		)
+
+		So(out, ShouldEqual, runtime.True)
+	})
 }

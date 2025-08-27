@@ -36,4 +36,44 @@ func TestSeparate(t *testing.T) {
 		expected := runtime.NewArrayWith(runtime.NewString("http://site.com/"), runtime.NewString("logo.png"))
 		So(out, ShouldResemble, expected)
 	})
+
+	Convey("Separate('/') should return ['/', '']", t, func() {
+		out, _ := path.Separate(
+			context.Background(),
+			runtime.NewString("/"),
+		)
+
+		expected := runtime.NewArrayWith(runtime.NewString("/"), runtime.NewString(""))
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Separate('file') should return ['', 'file']", t, func() {
+		out, _ := path.Separate(
+			context.Background(),
+			runtime.NewString("file"),
+		)
+
+		expected := runtime.NewArrayWith(runtime.NewString(""), runtime.NewString("file"))
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Separate('') should return ['', '']", t, func() {
+		out, _ := path.Separate(
+			context.Background(),
+			runtime.NewString(""),
+		)
+
+		expected := runtime.NewArrayWith(runtime.NewString(""), runtime.NewString(""))
+		So(out, ShouldResemble, expected)
+	})
+
+	Convey("Separate('/a/b/c') should return ['/a/b/', 'c']", t, func() {
+		out, _ := path.Separate(
+			context.Background(),
+			runtime.NewString("/a/b/c"),
+		)
+
+		expected := runtime.NewArrayWith(runtime.NewString("/a/b/"), runtime.NewString("c"))
+		So(out, ShouldResemble, expected)
+	})
 }

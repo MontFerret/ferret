@@ -34,7 +34,7 @@ func TestBase(t *testing.T) {
 			runtime.NewString(""),
 		)
 
-		So(out, ShouldEqual, ".")
+		So(out.Unwrap(), ShouldEqual, ".")
 	})
 
 	Convey("Base('.') should return '.'", t, func() {
@@ -43,7 +43,7 @@ func TestBase(t *testing.T) {
 			runtime.NewString("."),
 		)
 
-		So(out, ShouldEqual, ".")
+		So(out.Unwrap(), ShouldEqual, ".")
 	})
 
 	Convey("Base('pkg/path/base.go') should return 'base.go'", t, func() {
@@ -52,6 +52,33 @@ func TestBase(t *testing.T) {
 			runtime.NewString("pkg/path/base.go"),
 		)
 
-		So(out, ShouldEqual, "base.go")
+		So(out.Unwrap(), ShouldEqual, "base.go")
+	})
+
+	Convey("Base('/') should return '/'", t, func() {
+		out, _ := path.Base(
+			context.Background(),
+			runtime.NewString("/"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "/")
+	})
+
+	Convey("Base('/usr/bin/') should return 'bin'", t, func() {
+		out, _ := path.Base(
+			context.Background(),
+			runtime.NewString("/usr/bin/"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "bin")
+	})
+
+	Convey("Base('a/b/c') should return 'c'", t, func() {
+		out, _ := path.Base(
+			context.Background(),
+			runtime.NewString("a/b/c"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "c")
 	})
 }

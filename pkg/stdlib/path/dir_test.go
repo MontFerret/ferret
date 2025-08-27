@@ -34,6 +34,42 @@ func TestDir(t *testing.T) {
 			runtime.NewString("pkg/path/dir.go"),
 		)
 
-		So(out, ShouldEqual, "pkg/path")
+		So(out.Unwrap(), ShouldEqual, "pkg/path")
+	})
+
+	Convey("Dir('/') should return '/'", t, func() {
+		out, _ := path.Dir(
+			context.Background(),
+			runtime.NewString("/"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "/")
+	})
+
+	Convey("Dir('') should return '.'", t, func() {
+		out, _ := path.Dir(
+			context.Background(),
+			runtime.NewString(""),
+		)
+
+		So(out.Unwrap(), ShouldEqual, ".")
+	})
+
+	Convey("Dir('file') should return '.'", t, func() {
+		out, _ := path.Dir(
+			context.Background(),
+			runtime.NewString("file"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, ".")
+	})
+
+	Convey("Dir('/a/b/c') should return '/a/b'", t, func() {
+		out, _ := path.Dir(
+			context.Background(),
+			runtime.NewString("/a/b/c"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "/a/b")
 	})
 }

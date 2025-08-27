@@ -34,6 +34,51 @@ func TestExt(t *testing.T) {
 			runtime.NewString("dir/main.go"),
 		)
 
-		So(out, ShouldEqual, ".go")
+		So(out.Unwrap(), ShouldEqual, ".go")
+	})
+
+	Convey("Ext('') should return ''", t, func() {
+		out, _ := path.Ext(
+			context.Background(),
+			runtime.NewString(""),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "")
+	})
+
+	Convey("Ext('file') should return ''", t, func() {
+		out, _ := path.Ext(
+			context.Background(),
+			runtime.NewString("file"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, "")
+	})
+
+	Convey("Ext('.hidden') should return '.hidden'", t, func() {
+		out, _ := path.Ext(
+			context.Background(),
+			runtime.NewString(".hidden"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, ".hidden")
+	})
+
+	Convey("Ext('archive.tar.gz') should return '.gz'", t, func() {
+		out, _ := path.Ext(
+			context.Background(),
+			runtime.NewString("archive.tar.gz"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, ".gz")
+	})
+
+	Convey("Ext('/path/to/file.txt') should return '.txt'", t, func() {
+		out, _ := path.Ext(
+			context.Background(),
+			runtime.NewString("/path/to/file.txt"),
+		)
+
+		So(out.Unwrap(), ShouldEqual, ".txt")
 	})
 }

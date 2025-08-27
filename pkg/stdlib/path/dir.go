@@ -20,7 +20,7 @@ func Dir(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err = runtime.ValidateType(args[0], runtime.TypeString)
 
 	if err != nil {
-		return runtime.None, err
+		return runtime.EmptyString, err
 	}
 
 	pathText := args[0].String()
