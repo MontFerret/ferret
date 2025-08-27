@@ -27,7 +27,7 @@ func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	var res float64
-	hasNumericValues := false
+	count := 0
 
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if !runtime.IsNumber(value) {
@@ -36,10 +36,10 @@ func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 
 		fv := toFloat(value)
 
-		if !hasNumericValues || fv > res {
+		if count == 0 || fv > res {
 			res = fv
-			hasNumericValues = true
 		}
+		count++
 
 		return true, nil
 	})
@@ -48,7 +48,7 @@ func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if !hasNumericValues {
+	if count == 0 {
 		return runtime.None, nil
 	}
 
