@@ -19,7 +19,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler"
 	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 
 	"github.com/rs/zerolog"
 
@@ -184,7 +183,7 @@ func (p *Params) ToMap() (map[string]runtime.Value, error) {
 		pair := strings.SplitN(entry, ":", 2)
 
 		if len(pair) < 2 {
-			return nil, core.Error(core.ErrInvalidArgument, entry)
+			return nil, runtime.Error(runtime.ErrInvalidArgument, entry)
 		}
 
 		var value interface{}

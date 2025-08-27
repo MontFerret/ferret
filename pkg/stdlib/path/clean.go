@@ -4,27 +4,26 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // CLEAN returns the shortest path name equivalent to path.
 // @param {String} path - The path.
 // @return {String} - The shortest path name equivalent to path
-func Clean(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func Clean(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.EmptyString, err
+		return runtime.EmptyString, err
 	}
 
-	err = core.ValidateType(args[0], types.String)
+	err = runtime.ValidateType(args[0], runtime.TypeString)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	pathText := args[0].String()
 
-	return core.NewString(path.Clean(pathText)), nil
+	return runtime.NewString(path.Clean(pathText)), nil
 }

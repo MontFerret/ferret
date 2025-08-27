@@ -1,14 +1,14 @@
 package path
 
-import "github.com/MontFerret/ferret/pkg/runtime/core"
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // RegisterLib register `PATH` namespace functions.
 // @namespace PATH
-func RegisterLib(ns core.Namespace) error {
+func RegisterLib(ns runtime.Namespace) error {
 	return ns.
 		Namespace("PATH").
 		RegisterFunctions(
-			core.NewFunctionsFromMap(map[string]core.Function{
+			runtime.NewFunctionsFromMap(map[string]runtime.Function{
 				"BASE":     Base,
 				"CLEAN":    Clean,
 				"DIR":      Dir,

@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -13,17 +12,17 @@ import (
 
 func TestTan(t *testing.T) {
 	Convey("Should return tan value", t, func() {
-		out, err := math.Tan(context.Background(), core.NewFloat(10))
+		out, err := math.Tan(context.Background(), runtime.NewFloat(10))
 
 		So(err, ShouldBeNil)
 		So(out.Unwrap(), ShouldEqual, 0.6483608274590867)
 
-		out, err = math.Tan(context.Background(), core.NewInt(5))
+		out, err = math.Tan(context.Background(), runtime.NewInt(5))
 
 		So(err, ShouldBeNil)
 		So(out.Unwrap(), ShouldEqual, -3.3805150062465854)
 
-		out, err = math.Tan(context.Background(), core.NewInt(0))
+		out, err = math.Tan(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, 0)

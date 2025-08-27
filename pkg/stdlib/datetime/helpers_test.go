@@ -6,17 +6,17 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type testCase struct {
 	Name      string
-	Expected  core.Value
-	Args      []core.Value
+	Expected  runtime.Value
+	Args      []runtime.Value
 	ShouldErr bool
 }
 
-func (tc *testCase) Do(t *testing.T, fn core.Function) {
+func (tc *testCase) Do(t *testing.T, fn runtime.Function) {
 	//Convey(tc.Name, t, func() {
 	//	expected := tc.Expected
 	//
@@ -24,7 +24,7 @@ func (tc *testCase) Do(t *testing.T, fn core.Function) {
 	//
 	//	if tc.ShouldErr {
 	//		So(err, ShouldBeError)
-	//		expected = core.None
+	//		expected = runtime.None
 	//	} else {
 	//		So(err, ShouldBeNil)
 	//	}
@@ -34,7 +34,7 @@ func (tc *testCase) Do(t *testing.T, fn core.Function) {
 	//})
 }
 
-func mustDefaultLayoutDt(timeString string) core.DateTime {
+func mustDefaultLayoutDt(timeString string) runtime.DateTime {
 	dt, err := defaultLayoutDt(timeString)
 
 	if err != nil {
@@ -44,7 +44,7 @@ func mustDefaultLayoutDt(timeString string) core.DateTime {
 	return dt
 }
 
-func mustLayoutDt(layout, value string) core.DateTime {
+func mustLayoutDt(layout, value string) runtime.DateTime {
 	dt, err := layoutDt(layout, value)
 
 	if err != nil {
@@ -54,16 +54,16 @@ func mustLayoutDt(layout, value string) core.DateTime {
 	return dt
 }
 
-func defaultLayoutDt(timeString string) (core.DateTime, error) {
-	return layoutDt(core.DefaultTimeLayout, timeString)
+func defaultLayoutDt(timeString string) (runtime.DateTime, error) {
+	return layoutDt(runtime.DefaultTimeLayout, timeString)
 }
 
-func layoutDt(layout, value string) (core.DateTime, error) {
+func layoutDt(layout, value string) (runtime.DateTime, error) {
 	t, err := time.Parse(layout, value)
 
 	if err != nil {
-		return core.DateTime{}, err
+		return runtime.DateTime{}, err
 	}
 
-	return core.NewDateTime(t), nil
+	return runtime.NewDateTime(t), nil
 }

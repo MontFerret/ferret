@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // TO_BOOL takes an input value of any type and converts it into the appropriate boolean value.
@@ -17,11 +15,11 @@ import (
 // Objects / HtmlNodes / Binary are always converted to true
 // @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - The appropriate boolean value.
-func ToBool(_ context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func ToBool(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	return runtime.ToBoolean(args[0]), nil

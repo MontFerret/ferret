@@ -1,16 +1,16 @@
 package fs
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // RegisterLib register `FS` namespace functions.
 // @namespace FS
-func RegisterLib(ns core.Namespace) error {
+func RegisterLib(ns runtime.Namespace) error {
 	return ns.
 		Namespace("FS").
 		RegisterFunctions(
-			core.NewFunctionsFromMap(map[string]core.Function{
+			runtime.NewFunctionsFromMap(map[string]runtime.Function{
 				"READ":  Read,
 				"WRITE": Write,
 			}))

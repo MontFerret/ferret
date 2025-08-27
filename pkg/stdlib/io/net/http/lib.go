@@ -1,14 +1,16 @@
 package http
 
-import "github.com/MontFerret/ferret/pkg/runtime/core"
+import (
+	"github.com/MontFerret/ferret/pkg/runtime"
+)
 
 // RegisterLib register `HTTP` namespace functions.
 // @namespace HTTP
-func RegisterLib(ns core.Namespace) error {
+func RegisterLib(ns runtime.Namespace) error {
 	return ns.
 		Namespace("HTTP").
 		RegisterFunctions(
-			core.NewFunctionsFromMap(map[string]core.Function{
+			runtime.NewFunctionsFromMap(map[string]runtime.Function{
 				"GET":    GET,
 				"POST":   POST,
 				"PUT":    PUT,

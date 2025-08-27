@@ -12,48 +12,48 @@ func TestMerge(t *testing.T) {
 		//obj, err := objects.Merge(context.Background())
 		//
 		//So(err, ShouldBeError)
-		//So(obj.Compare(core.None), ShouldEqual, 0)
+		//So(obj.Compare(runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("When wrong type of arguments", t, func() {
-		//obj, err := objects.Merge(context.Background(), core.NewInt(0))
+		//obj, err := objects.Merge(context.Background(), runtime.NewInt(0))
 		//
 		//So(err, ShouldBeError)
-		//So(obj.Compare(core.None), ShouldEqual, 0)
+		//So(obj.Compare(runtime.None), ShouldEqual, 0)
 		//
-		//obj, err = objects.Merge(context.Background(), runtime.NewObject(), core.NewInt(0))
+		//obj, err = objects.Merge(context.Background(), runtime.NewObject(), runtime.NewInt(0))
 		//
 		//So(err, ShouldBeError)
-		//So(obj.Compare(core.None), ShouldEqual, 0)
+		//So(obj.Compare(runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("When too many arrays", t, func() {
 		//obj, err := objects.Merge(context.Background(), runtime.NewArray(0), runtime.NewArray(0))
 		//
 		//So(err, ShouldBeError)
-		//So(obj.Compare(core.None), ShouldEqual, 0)
+		//So(obj.Compare(runtime.None), ShouldEqual, 0)
 	})
 
 	Convey("Merged object should be independent of source objects", t, func() {
 		//obj1 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
 		//)
 		//obj2 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop3", core.NewInt(3)),
+		//	runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
 		//)
 		//
 		//result := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
-		//	runtime.NewObjectProperty("prop3", core.NewInt(3)),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+		//	runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
 		//)
 		//
 		//merged, err := objects.Merge(context.Background(), obj1, obj2)
 		//
 		//So(err, ShouldBeNil)
 		//
-		//obj1.Remove(core.NewString("prop1"))
+		//obj1.Remove(runtime.NewString("prop1"))
 		//
 		//So(merged.Compare(result), ShouldEqual, 0)
 	})
@@ -62,12 +62,12 @@ func TestMerge(t *testing.T) {
 func TestMergeObjects(t *testing.T) {
 	Convey("Merge single object", t, func() {
 		//obj1 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
 		//)
 		//result := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
 		//)
 		//
 		//merged, err := objects.Merge(context.Background(), obj1)
@@ -78,17 +78,17 @@ func TestMergeObjects(t *testing.T) {
 
 	Convey("Merge two objects", t, func() {
 		//obj1 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
 		//)
 		//obj2 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop3", core.NewInt(3)),
+		//	runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
 		//)
 		//
 		//result := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
-		//	runtime.NewObjectProperty("prop3", core.NewInt(3)),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
+		//	runtime.NewObjectProperty("prop3", runtime.NewInt(3)),
 		//)
 		//
 		//merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -99,15 +99,15 @@ func TestMergeObjects(t *testing.T) {
 
 	Convey("When keys are repeated", t, func() {
 		//obj1 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
 		//)
 		//obj2 := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(3)),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(3)),
 		//)
 		//result := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(3)),
-		//	runtime.NewObjectProperty("prop2", core.NewString("str")),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(3)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewString("str")),
 		//)
 		//
 		//merged, err := objects.Merge(context.Background(), obj1, obj2)
@@ -121,15 +121,15 @@ func TestMergeArray(t *testing.T) {
 	Convey("Merge array", t, func() {
 		//objArr := runtime.NewArrayWith(
 		//	runtime.NewObjectWith(
-		//		runtime.NewObjectProperty("prop1", core.NewInt(1)),
+		//		runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
 		//	),
 		//	runtime.NewObjectWith(
-		//		runtime.NewObjectProperty("prop2", core.NewInt(2)),
+		//		runtime.NewObjectProperty("prop2", runtime.NewInt(2)),
 		//	),
 		//)
 		//result := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("prop1", core.NewInt(1)),
-		//	runtime.NewObjectProperty("prop2", core.NewInt(2)),
+		//	runtime.NewObjectProperty("prop1", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("prop2", runtime.NewInt(2)),
 		//)
 		//
 		//merged, err := objects.Merge(context.Background(), objArr)
@@ -151,12 +151,12 @@ func TestMergeArray(t *testing.T) {
 	Convey("When there is not object element inside the array", t, func() {
 		//objArr := runtime.NewArrayWith(
 		//	runtime.NewObject(),
-		//	core.NewInt(0),
+		//	runtime.NewInt(0),
 		//)
 		//
 		//obj, err := objects.Merge(context.Background(), objArr)
 		//
 		//So(err, ShouldBeError)
-		//So(obj.Compare(core.None), ShouldEqual, 0)
+		//So(obj.Compare(runtime.None), ShouldEqual, 0)
 	})
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/io/fs"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -17,26 +17,26 @@ func TestRead(t *testing.T) {
 		Convey("No arguments passed", func() {
 			out, err := fs.Read(context.Background())
 
-			So(out, ShouldEqual, core.None)
+			So(out, ShouldEqual, runtime.None)
 			So(err, ShouldBeError)
 		})
 
 		Convey("Passed not a string", func() {
-			args := []core.Value{core.NewInt(0)}
+			args := []runtime.Value{runtime.NewInt(0)}
 			out, err := fs.Read(context.Background(), args...)
 
-			So(out, ShouldEqual, core.None)
+			So(out, ShouldEqual, runtime.None)
 			So(err, ShouldBeError)
 		})
 
 		Convey("Passed more that one argument", func() {
-			args := []core.Value{
-				core.NewString("filepath"),
-				core.NewInt(0),
+			args := []runtime.Value{
+				runtime.NewString("filepath"),
+				runtime.NewInt(0),
 			}
 			out, err := fs.Read(context.Background(), args...)
 
-			So(out, ShouldEqual, core.None)
+			So(out, ShouldEqual, runtime.None)
 			So(err, ShouldBeError)
 		})
 	})
@@ -50,7 +50,7 @@ func TestRead(t *testing.T) {
 		//	text := "s string"
 		//	file.WriteString(text)
 		//
-		//	fname := core.NewString(file.Name())
+		//	fname := runtime.NewString(file.Name())
 		//
 		//	out, err := fs.Read(context.Background(), fname)
 		//	So(err, ShouldBeNil)
@@ -60,10 +60,10 @@ func TestRead(t *testing.T) {
 		//})
 
 		Convey("File does not exist", func() {
-			fname := core.NewString("not_exist.file")
+			fname := runtime.NewString("not_exist.file")
 
 			out, err := fs.Read(context.Background(), fname)
-			So(out, ShouldEqual, core.None)
+			So(out, ShouldEqual, runtime.None)
 			So(err, ShouldBeError)
 		})
 	})

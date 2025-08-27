@@ -35,8 +35,8 @@ func TestMatch(t *t.T) {
 	Convey("When args are valid", t, func() {
 		Convey("When string matches pattern", func() {
 			Convey("It should not return an error", func() {
-				_, err := Match(context.Background(), 
-					runtime.NewString("hello world"), 
+				_, err := Match(context.Background(),
+					runtime.NewString("hello world"),
 					runtime.NewString("^hello"))
 
 				So(err, ShouldBeNil)
@@ -45,8 +45,8 @@ func TestMatch(t *t.T) {
 
 		Convey("When string matches complex pattern", func() {
 			Convey("It should not return an error", func() {
-				_, err := Match(context.Background(), 
-					runtime.NewString("abc123def"), 
+				_, err := Match(context.Background(),
+					runtime.NewString("abc123def"),
 					runtime.NewString("\\d+"))
 
 				So(err, ShouldBeNil)
@@ -55,8 +55,8 @@ func TestMatch(t *t.T) {
 
 		Convey("When string does not match pattern", func() {
 			Convey("It should return an error", func() {
-				_, err := Match(context.Background(), 
-					runtime.NewString("hello world"), 
+				_, err := Match(context.Background(),
+					runtime.NewString("hello world"),
 					runtime.NewString("^goodbye"))
 
 				So(err, ShouldBeError)
@@ -66,8 +66,8 @@ func TestMatch(t *t.T) {
 
 		Convey("When value is not string but matches", func() {
 			Convey("It should not return an error", func() {
-				_, err := Match(context.Background(), 
-					runtime.NewInt(123), 
+				_, err := Match(context.Background(),
+					runtime.NewInt(123),
 					runtime.NewString("\\d+"))
 
 				So(err, ShouldBeNil)
@@ -76,8 +76,8 @@ func TestMatch(t *t.T) {
 
 		Convey("When value is not string and does not match", func() {
 			Convey("It should return an error", func() {
-				_, err := Match(context.Background(), 
-					runtime.NewInt(123), 
+				_, err := Match(context.Background(),
+					runtime.NewInt(123),
 					runtime.NewString("^abc"))
 
 				So(err, ShouldBeError)
@@ -87,8 +87,8 @@ func TestMatch(t *t.T) {
 
 		Convey("When pattern is invalid", func() {
 			Convey("It should return an error", func() {
-				_, err := Match(context.Background(), 
-					runtime.NewString("test"), 
+				_, err := Match(context.Background(),
+					runtime.NewString("test"),
 					runtime.NewString("["))
 
 				So(err, ShouldBeError)
@@ -121,8 +121,8 @@ func TestNotMatch(t *t.T) {
 	Convey("When args are valid", t, func() {
 		Convey("When string does not match pattern", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotMatch(context.Background(), 
-					runtime.NewString("hello world"), 
+				_, err := NotMatch(context.Background(),
+					runtime.NewString("hello world"),
 					runtime.NewString("^goodbye"))
 
 				So(err, ShouldBeNil)
@@ -131,8 +131,8 @@ func TestNotMatch(t *t.T) {
 
 		Convey("When string matches pattern", func() {
 			Convey("It should return an error", func() {
-				_, err := NotMatch(context.Background(), 
-					runtime.NewString("hello world"), 
+				_, err := NotMatch(context.Background(),
+					runtime.NewString("hello world"),
 					runtime.NewString("^hello"))
 
 				So(err, ShouldBeError)
@@ -142,8 +142,8 @@ func TestNotMatch(t *t.T) {
 
 		Convey("When string matches complex pattern", func() {
 			Convey("It should return an error", func() {
-				_, err := NotMatch(context.Background(), 
-					runtime.NewString("abc123def"), 
+				_, err := NotMatch(context.Background(),
+					runtime.NewString("abc123def"),
 					runtime.NewString("\\d+"))
 
 				So(err, ShouldBeError)
@@ -153,8 +153,8 @@ func TestNotMatch(t *t.T) {
 
 		Convey("When value is not string but matches", func() {
 			Convey("It should return an error", func() {
-				_, err := NotMatch(context.Background(), 
-					runtime.NewInt(123), 
+				_, err := NotMatch(context.Background(),
+					runtime.NewInt(123),
 					runtime.NewString("\\d+"))
 
 				So(err, ShouldBeError)
@@ -164,8 +164,8 @@ func TestNotMatch(t *t.T) {
 
 		Convey("When value is not string and pattern does not match", func() {
 			Convey("It should not return an error", func() {
-				_, err := NotMatch(context.Background(), 
-					runtime.NewInt(123), 
+				_, err := NotMatch(context.Background(),
+					runtime.NewInt(123),
 					runtime.NewString("^abc"))
 
 				So(err, ShouldBeNil)
@@ -174,8 +174,8 @@ func TestNotMatch(t *t.T) {
 
 		Convey("When pattern is invalid", func() {
 			Convey("It should return an error", func() {
-				_, err := NotMatch(context.Background(), 
-					runtime.NewString("test"), 
+				_, err := NotMatch(context.Background(),
+					runtime.NewString("test"),
 					runtime.NewString("["))
 
 				So(err, ShouldBeError)

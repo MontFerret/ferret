@@ -2,12 +2,12 @@ package types
 
 import (
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
-func RegisterLib(ns core.Namespace) error {
+// TODO: Migrate to Func1 function types
+func RegisterLib(ns runtime.Namespace) error {
 	return ns.RegisterFunctions(
-		core.NewFunctionsFromMap(map[string]core.Function{
+		runtime.NewFunctionsFromMap(map[string]runtime.Function{
 			"TO_BOOL":          ToBool,
 			"TO_INT":           ToInt,
 			"TO_FLOAT":         ToFloat,
@@ -18,6 +18,7 @@ func RegisterLib(ns core.Namespace) error {
 			"IS_NONE":          IsNone,
 			"IS_BOOL":          IsBool,
 			"IS_INT":           IsInt,
+			"IS_LIST":          IsList,
 			"IS_FLOAT":         IsFloat,
 			"IS_STRING":        IsString,
 			"IS_DATETIME":      IsDateTime,
@@ -30,6 +31,6 @@ func RegisterLib(ns core.Namespace) error {
 		}))
 }
 
-func isTypeof(value core.Value, ctype core.Type) core.Value {
-	return core.NewBoolean(runtime.Reflect(value) == ctype)
+func isTypeof(value runtime.Value, ctype runtime.Type) runtime.Value {
+	return runtime.NewBoolean(runtime.Reflect(value) == ctype)
 }

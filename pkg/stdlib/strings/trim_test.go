@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -25,7 +25,7 @@ func TestLTrim(t *testing.T) {
 	Convey("LTrim('  foo bar  ') should return 'foo bar  '", t, func() {
 		out, _ := strings.LTrim(
 			context.Background(),
-			core.NewString("  foo bar  "),
+			runtime.NewString("  foo bar  "),
 		)
 
 		So(out.String(), ShouldEqual, "foo bar  ")
@@ -34,8 +34,8 @@ func TestLTrim(t *testing.T) {
 	Convey("LTrim('--==[foo-bar]==--', '-=[]') should return 'foo-bar]==--'", t, func() {
 		out, _ := strings.LTrim(
 			context.Background(),
-			core.NewString("--==[foo-bar]==--"),
-			core.NewString("-=[]"),
+			runtime.NewString("--==[foo-bar]==--"),
+			runtime.NewString("-=[]"),
 		)
 
 		So(out.String(), ShouldEqual, "foo-bar]==--")
@@ -56,7 +56,7 @@ func TestRTrim(t *testing.T) {
 	Convey("RTrim('  foo bar  ') should return '  foo bar'", t, func() {
 		out, _ := strings.RTrim(
 			context.Background(),
-			core.NewString("  foo bar  "),
+			runtime.NewString("  foo bar  "),
 		)
 
 		So(out.String(), ShouldEqual, "  foo bar")
@@ -65,8 +65,8 @@ func TestRTrim(t *testing.T) {
 	Convey("LTrim('--==[foo-bar]==--', '-=[]') should return '--==[foo-bar'", t, func() {
 		out, _ := strings.RTrim(
 			context.Background(),
-			core.NewString("--==[foo-bar]==--"),
-			core.NewString("-=[]"),
+			runtime.NewString("--==[foo-bar]==--"),
+			runtime.NewString("-=[]"),
 		)
 
 		So(out.String(), ShouldEqual, "--==[foo-bar")
@@ -87,7 +87,7 @@ func TestTrim(t *testing.T) {
 	Convey("Trim('  foo bar  ') should return 'foo bar'", t, func() {
 		out, _ := strings.Trim(
 			context.Background(),
-			core.NewString("  foo bar  "),
+			runtime.NewString("  foo bar  "),
 		)
 
 		So(out.String(), ShouldEqual, "foo bar")
@@ -96,8 +96,8 @@ func TestTrim(t *testing.T) {
 	Convey("Trim('--==[foo-bar]==--', '-=[]') should return 'foo-bar'", t, func() {
 		out, _ := strings.Trim(
 			context.Background(),
-			core.NewString("--==[foo-bar]==--"),
-			core.NewString("-=[]"),
+			runtime.NewString("--==[foo-bar]==--"),
+			runtime.NewString("-=[]"),
 		)
 
 		So(out.String(), ShouldEqual, "foo-bar")

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -19,7 +19,7 @@ func TestSubstitute(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Substitute(context.Background(), core.NewString("foo"))
+			_, err = strings.Substitute(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -28,9 +28,9 @@ func TestSubstitute(t *testing.T) {
 	Convey("Substitute('foo-bar-baz', 'a', 'o') should return 'foo-bor-boz'", t, func() {
 		out, err := strings.Substitute(
 			context.Background(),
-			core.NewString("foo-bar-baz"),
-			core.NewString("a"),
-			core.NewString("o"),
+			runtime.NewString("foo-bar-baz"),
+			runtime.NewString("a"),
+			runtime.NewString("o"),
 		)
 
 		So(err, ShouldBeNil)
@@ -40,10 +40,10 @@ func TestSubstitute(t *testing.T) {
 	Convey("Substitute('foo-bar-baz', 'a', 'o', 1) should return 'foo-bor-baz'", t, func() {
 		out, err := strings.Substitute(
 			context.Background(),
-			core.NewString("foo-bar-baz"),
-			core.NewString("a"),
-			core.NewString("o"),
-			core.NewInt(1),
+			runtime.NewString("foo-bar-baz"),
+			runtime.NewString("a"),
+			runtime.NewString("o"),
+			runtime.NewInt(1),
 		)
 
 		So(err, ShouldBeNil)

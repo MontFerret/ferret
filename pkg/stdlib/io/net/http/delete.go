@@ -4,7 +4,7 @@ import (
 	"context"
 	h "net/http"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // DELETE makes a DELETE request.
@@ -13,6 +13,6 @@ import (
 // @param {Binary} params.body - Request data
 // @param {hashMap} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func DELETE(ctx context.Context, args ...core.Value) (core.Value, error) {
+func DELETE(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, h.MethodDelete, args)
 }

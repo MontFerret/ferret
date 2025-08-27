@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // VALUES return the attribute values of the object as an array.
@@ -19,7 +17,7 @@ func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	err = runtime.ValidateType(args[0], types.Object)
+	err = runtime.ValidateType(args[0], runtime.TypeObject)
 
 	if err != nil {
 		return runtime.None, err

@@ -8,7 +8,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/objects"
 )
 
@@ -19,50 +18,50 @@ func TestKeepKeys(t *testing.T) {
 		obj, err := objects.KeepKeys(context.Background())
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, core.None)
+		So(obj, ShouldEqual, runtime.None)
 
 		// there are no keys
 		obj, err = objects.KeepKeys(context.Background(), runtime.NewObject())
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, core.None)
+		So(obj, ShouldEqual, runtime.None)
 	})
 
 	Convey("When first argument isn't object", t, func() {
-		obj, err := objects.KeepKeys(context.Background(), core.NewInt(0))
+		obj, err := objects.KeepKeys(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, core.None)
+		So(obj, ShouldEqual, runtime.None)
 	})
 
 	Convey("When wrong keys arguments", t, func() {
-		obj, err := objects.KeepKeys(context.Background(), runtime.NewObject(), core.NewInt(0))
+		obj, err := objects.KeepKeys(context.Background(), runtime.NewObject(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, core.None)
+		So(obj, ShouldEqual, runtime.None)
 
 		// looks like a valid case
 		// but there is another argument besides an array
-		obj, err = objects.KeepKeys(context.Background(), runtime.NewObject(), runtime.NewArray(0), core.NewInt(0))
+		obj, err = objects.KeepKeys(context.Background(), runtime.NewObject(), runtime.NewArray(0), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
-		So(obj, ShouldEqual, core.None)
+		So(obj, ShouldEqual, runtime.None)
 	})
 
 	Convey("Result object is independent of the source object", t, func() {
-		//arr := runtime.NewArrayWith(core.Int(0))
+		//arr := runtime.NewArrayWith(runtime.Int(0))
 		//obj := runtime.NewObjectWith(
 		//	runtime.NewObjectProperty("a", arr),
 		//)
 		//resultObj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", runtime.NewArrayWith(core.Int(0))),
+		//	runtime.NewObjectProperty("a", runtime.NewArrayWith(runtime.Int(0))),
 		//)
 		//
-		//afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, core.NewString("a"))
+		//afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
 		//
 		//So(err, ShouldBeNil)
 
-		//_ = arr.Add(nil, core.NewInt(1))
+		//_ = arr.Add(nil, runtime.NewInt(1))
 		//
 		//So(afterKeepKeys.Compare(resultObj), ShouldEqual, 0)
 	})
@@ -71,14 +70,14 @@ func TestKeepKeys(t *testing.T) {
 func TestKeepKeysStrings(t *testing.T) {
 	Convey("KeepKeys key 'a'", t, func() {
 		//obj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", core.NewInt(1)),
-		//	runtime.NewObjectProperty("b", core.NewString("string")),
+		//	runtime.NewObjectProperty("a", runtime.NewInt(1)),
+		//	runtime.NewObjectProperty("b", runtime.NewString("string")),
 		//)
 		//resultObj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", core.NewInt(1)),
+		//	runtime.NewObjectProperty("a", runtime.NewInt(1)),
 		//)
 		//
-		//afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, core.NewString("a"))
+		//afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
 
 		//So(err, ShouldEqual, nil)
 		//So(afterKeepKeys.Compare(resultObj), ShouldEqual, 0)
@@ -86,12 +85,12 @@ func TestKeepKeysStrings(t *testing.T) {
 
 	Convey("KeepKeys key doesn't exists", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 		resultObj := runtime.NewObject()
 
-		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, core.NewString("c"))
+		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("c"))
 
 		So(err, ShouldEqual, nil)
 		So(isEqualObjects(afterKeepKeys.(*runtime.Object), resultObj), ShouldEqual, true)
@@ -99,16 +98,16 @@ func TestKeepKeysStrings(t *testing.T) {
 
 	Convey("KeepKeys when there are more keys than object properties", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 		resultObj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj,
-			core.NewString("a"), core.NewString("b"), core.NewString("c"),
+			runtime.NewString("a"), runtime.NewString("b"), runtime.NewString("c"),
 		)
 
 		So(err, ShouldEqual, nil)
@@ -119,12 +118,12 @@ func TestKeepKeysStrings(t *testing.T) {
 func TestKeepKeysArray(t *testing.T) {
 	Convey("KeepKeys array", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
-		keys := runtime.NewArrayWith(core.NewString("a"))
+		keys := runtime.NewArrayWith(runtime.NewString("a"))
 		resultObj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
@@ -135,8 +134,8 @@ func TestKeepKeysArray(t *testing.T) {
 
 	Convey("KeepKeys empty array", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 		keys := runtime.NewArray(0)
 		resultObj := runtime.NewObject()
@@ -149,15 +148,15 @@ func TestKeepKeysArray(t *testing.T) {
 
 	Convey("KeepKeys when there are more keys than object properties", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 		keys := runtime.NewArrayWith(
-			core.NewString("a"), core.NewString("b"), core.NewString("c"),
+			runtime.NewString("a"), runtime.NewString("b"), runtime.NewString("c"),
 		)
 		resultObj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
@@ -168,24 +167,24 @@ func TestKeepKeysArray(t *testing.T) {
 
 	Convey("When there is not string key", t, func() {
 		obj := runtime.NewObjectWith(
-			runtime.NewObjectProperty("a", core.NewInt(1)),
-			runtime.NewObjectProperty("b", core.NewString("string")),
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
 		)
 		keys := runtime.NewArrayWith(
-			core.NewString("a"),
-			core.NewInt(0),
+			runtime.NewString("a"),
+			runtime.NewInt(0),
 		)
 
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, keys)
 
 		So(err, ShouldBeError)
-		So(afterKeepKeys, ShouldEqual, core.None)
+		So(afterKeepKeys, ShouldEqual, runtime.None)
 	})
 }
 
 func isEqualObjects(obj1 *runtime.Object, obj2 *runtime.Object) bool {
-	//var val1 core.Value
-	//var val2 core.Value
+	//var val1 runtime.Value
+	//var val2 runtime.Value
 	//
 	//for _, key := range obj1.Keys() {
 	//	val1, _ = obj1.Get(key)

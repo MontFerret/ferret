@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/strings"
 )
@@ -19,7 +19,7 @@ func TestSubstring(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Substring(context.Background(), core.NewString("foo"))
+			_, err = strings.Substring(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -28,8 +28,8 @@ func TestSubstring(t *testing.T) {
 	Convey("Substring('foobar', 3) should return 'bar'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
-			core.NewString("foobar"),
-			core.NewInt(3),
+			runtime.NewString("foobar"),
+			runtime.NewInt(3),
 		)
 
 		So(err, ShouldBeNil)
@@ -39,9 +39,9 @@ func TestSubstring(t *testing.T) {
 	Convey("Substring('foobar', 3, 2) should return 'ba'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
-			core.NewString("foobar"),
-			core.NewInt(3),
-			core.NewInt(2),
+			runtime.NewString("foobar"),
+			runtime.NewInt(3),
+			runtime.NewInt(2),
 		)
 
 		So(err, ShouldBeNil)
@@ -51,9 +51,9 @@ func TestSubstring(t *testing.T) {
 	Convey("Substring('foobar', 3, 5) should return 'bar'", t, func() {
 		out, err := strings.Substring(
 			context.Background(),
-			core.NewString("foobar"),
-			core.NewInt(3),
-			core.NewInt(5),
+			runtime.NewString("foobar"),
+			runtime.NewInt(3),
+			runtime.NewInt(5),
 		)
 
 		So(err, ShouldBeNil)
@@ -64,8 +64,8 @@ func TestSubstring(t *testing.T) {
 		Convey("Substring with negative offset", func() {
 			out, err := strings.Substring(
 				context.Background(),
-				core.NewString("foobar"),
-				core.NewInt(-1),
+				runtime.NewString("foobar"),
+				runtime.NewInt(-1),
 			)
 
 			So(err, ShouldBeNil)
@@ -75,8 +75,8 @@ func TestSubstring(t *testing.T) {
 		Convey("Substring with offset beyond string length", func() {
 			out, err := strings.Substring(
 				context.Background(),
-				core.NewString("foo"),
-				core.NewInt(10),
+				runtime.NewString("foo"),
+				runtime.NewInt(10),
 			)
 
 			So(err, ShouldBeNil)
@@ -86,9 +86,9 @@ func TestSubstring(t *testing.T) {
 		Convey("Substring with zero length", func() {
 			out, err := strings.Substring(
 				context.Background(),
-				core.NewString("foobar"),
-				core.NewInt(2),
-				core.NewInt(0),
+				runtime.NewString("foobar"),
+				runtime.NewInt(2),
+				runtime.NewInt(0),
 			)
 
 			So(err, ShouldBeNil)
@@ -105,7 +105,7 @@ func TestLeft(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Left(context.Background(), core.NewString("foo"))
+			_, err = strings.Left(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -114,8 +114,8 @@ func TestLeft(t *testing.T) {
 	Convey("Left('foobarfoobar', 3) should return 'foo'", t, func() {
 		out, _ := strings.Left(
 			context.Background(),
-			core.NewString("foobarfoobar"),
-			core.NewInt(3),
+			runtime.NewString("foobarfoobar"),
+			runtime.NewInt(3),
 		)
 
 		So(out.String(), ShouldEqual, "foo")
@@ -124,8 +124,8 @@ func TestLeft(t *testing.T) {
 	Convey("Left('foobar', 10) should return 'foobar'", t, func() {
 		out, _ := strings.Left(
 			context.Background(),
-			core.NewString("foobar"),
-			core.NewInt(10),
+			runtime.NewString("foobar"),
+			runtime.NewInt(10),
 		)
 
 		So(out.String(), ShouldEqual, "foobar")
@@ -140,7 +140,7 @@ func TestRight(t *testing.T) {
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Right(context.Background(), core.NewString("foo"))
+			_, err = strings.Right(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
@@ -149,8 +149,8 @@ func TestRight(t *testing.T) {
 	Convey("Right('foobarfoobar', 3) should return 'bar'", t, func() {
 		out, _ := strings.Right(
 			context.Background(),
-			core.NewString("foobarfoobar"),
-			core.NewInt(3),
+			runtime.NewString("foobarfoobar"),
+			runtime.NewInt(3),
 		)
 
 		So(out.String(), ShouldEqual, "bar")
@@ -159,8 +159,8 @@ func TestRight(t *testing.T) {
 	Convey("Right('foobar', 10) should return 'foobar'", t, func() {
 		out, _ := strings.Right(
 			context.Background(),
-			core.NewString("foobar"),
-			core.NewInt(10),
+			runtime.NewString("foobar"),
+			runtime.NewInt(10),
 		)
 
 		So(out.String(), ShouldEqual, "foobar")

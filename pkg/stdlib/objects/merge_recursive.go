@@ -4,24 +4,21 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
 )
 
 // MERGE_RECURSIVE recursively merge the given objects into a single object.
 // @param {Objects, repeated} objects - Objects to merge.
 // @return {hashMap} - hashMap created by merging.
 // TODO: REWRITE TO USE LIST & MAP instead
-func MergeRecursive(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, core.MaxArgs)
+func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, runtime.MaxArgs)
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	for _, arg := range args {
-		if err = core.ValidateType(arg, types.Object); err != nil {
-			return core.None, err
+		if err = runtime.ValidateType(arg, runtime.TypeObject); err != nil {
+			return runtime.None, err
 		}
 	}
 
@@ -40,7 +37,7 @@ func MergeRecursive(ctx context.Context, args ...core.Value) (core.Value, error)
 	return merged.Clone(ctx)
 }
 
-func merge(ctx context.Context, src, dst core.Value) (core.Value, error) {
+func merge(ctx context.Context, src, dst runtime.Value) (runtime.Value, error) {
 	if runtime.CompareValues(src, dst) != 0 {
 		return src, nil
 	}
@@ -60,21 +57,21 @@ func merge(ctx context.Context, src, dst core.Value) (core.Value, error) {
 	size, err := dstObj.Length(ctx)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	if size == 0 {
 		return src, nil
 	}
 
-	var srcVal core.Value
+	var srcVal runtime.Value
 
-	_ = dstObj.ForEach(ctx, func(c context.Context, val, key core.Value) (core.Boolean, error) {
+	_ = dstObj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		if srcVal, err = srcObj.Get(c, key); err == nil {
 			v, err := merge(ctx, srcVal, val)
 
 			if err != nil {
-				return core.False, err
+				return runtime.False, err
 			}
 
 			val = v

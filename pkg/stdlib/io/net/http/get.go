@@ -4,8 +4,7 @@ import (
 	"context"
 	h "net/http"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
-	"github.com/MontFerret/ferret/pkg/runtime/values/types"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // GET makes a GET request.
@@ -13,24 +12,24 @@ import (
 // @param {String} [param.url] - Target url or parameters.
 // @param {hashMap} [param.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func GET(ctx context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return core.None, err
+func GET(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
 	}
 
 	arg := args[0]
 
 	switch v := arg.(type) {
-	case core.String:
+	case runtime.String:
 		return makeRequest(ctx, Params{
 			Method:  "GET",
 			URL:     v,
 			Headers: nil,
 			Body:    nil,
 		})
-	case *core.Object:
+	case *runtime.Object:
 		return execMethod(ctx, h.MethodGet, args)
 	default:
-		return core.None, core.TypeError(arg, types.String, types.Object)
+		return runtime.None, runtime.TypeError(runtime.Reflect(arg), runtime.TypeString, runtime.TypeObject)
 	}
 }

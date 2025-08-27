@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 var daysCount = map[time.Month]int{
@@ -25,16 +25,16 @@ var daysCount = map[time.Month]int{
 // DATE_DAYS_IN_MONTH returns the number of days in the month of date.
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - Number of the days.
-func DateDaysInMonth(_ context.Context, args ...core.Value) (core.Value, error) {
-	if err := core.ValidateArgs(args, 1, 1); err != nil {
-		return core.None, err
+func DateDaysInMonth(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
+		return runtime.None, err
 	}
 
-	if err := core.AssertDateTime(args[0]); err != nil {
-		return core.None, err
+	if err := runtime.AssertDateTime(args[0]); err != nil {
+		return runtime.None, err
 	}
 
-	dt := args[0].(core.DateTime)
+	dt := args[0].(runtime.DateTime)
 	month := dt.Month()
 	count := daysCount[month]
 
@@ -42,5 +42,5 @@ func DateDaysInMonth(_ context.Context, args ...core.Value) (core.Value, error) 
 		count++
 	}
 
-	return core.NewInt(count), nil
+	return runtime.NewInt(count), nil
 }

@@ -104,6 +104,22 @@ func AssertList(input Value) error {
 	return nil
 }
 
+func AssertCollectionOf(ctx context.Context, input Value, assertion TypeAssertion) error {
+	coll, err := CastCollection(input)
+
+	if err != nil {
+		return err
+	}
+
+	return ForEach(ctx, coll, func(ctx context.Context, value, _ Value) (Boolean, error) {
+		if err := assertion(value); err != nil {
+			return false, err
+		}
+
+		return true, nil
+	})
+}
+
 func AssertItemsOf(ctx context.Context, input Iterable, assertion TypeAssertion) error {
 	return ForEach(ctx, input, func(ctx context.Context, value, _ Value) (Boolean, error) {
 		if err := assertion(value); err != nil {

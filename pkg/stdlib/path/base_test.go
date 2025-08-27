@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
+	"github.com/MontFerret/ferret/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -23,7 +23,7 @@ func TestBase(t *testing.T) {
 
 	Convey("Wrong argument", t, func() {
 		var err error
-		_, err = path.Base(context.Background(), core.NewInt(0))
+		_, err = path.Base(context.Background(), runtime.NewInt(0))
 
 		So(err, ShouldBeError)
 	})
@@ -31,7 +31,7 @@ func TestBase(t *testing.T) {
 	Convey("Base('') should return '.'", t, func() {
 		out, _ := path.Base(
 			context.Background(),
-			core.NewString(""),
+			runtime.NewString(""),
 		)
 
 		So(out, ShouldEqual, ".")
@@ -40,7 +40,7 @@ func TestBase(t *testing.T) {
 	Convey("Base('.') should return '.'", t, func() {
 		out, _ := path.Base(
 			context.Background(),
-			core.NewString("."),
+			runtime.NewString("."),
 		)
 
 		So(out, ShouldEqual, ".")
@@ -49,7 +49,7 @@ func TestBase(t *testing.T) {
 	Convey("Base('pkg/path/base.go') should return 'base.go'", t, func() {
 		out, _ := path.Base(
 			context.Background(),
-			core.NewString("pkg/path/base.go"),
+			runtime.NewString("pkg/path/base.go"),
 		)
 
 		So(out, ShouldEqual, "base.go")

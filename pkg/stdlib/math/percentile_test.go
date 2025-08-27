@@ -6,7 +6,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/stdlib/math"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -17,12 +16,12 @@ func TestPercentile(t *testing.T) {
 		out, err := math.Percentile(
 			context.Background(),
 			runtime.NewArrayWith(
-				core.NewInt(1),
-				core.NewInt(2),
-				core.NewInt(3),
-				core.NewInt(4),
+				runtime.NewInt(1),
+				runtime.NewInt(2),
+				runtime.NewInt(3),
+				runtime.NewInt(4),
 			),
-			core.NewInt(50),
+			runtime.NewInt(50),
 		)
 
 		So(err, ShouldBeNil)

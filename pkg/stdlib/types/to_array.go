@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 // TO_ARRAY takes an input value of any type and convert it into an array value.
@@ -15,11 +13,11 @@ import (
 // Objects / HTML nodes are converted to an array containing their attribute values as array elements.
 // @param {Any} input - Input value of arbitrary type.
 // @return {Any[]} - An array value.
-func ToArray(ctx context.Context, args ...core.Value) (core.Value, error) {
-	err := core.ValidateArgs(args, 1, 1)
+func ToArray(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
-		return core.None, err
+		return runtime.None, err
 	}
 
 	return runtime.ToList(ctx, args[0]), nil
