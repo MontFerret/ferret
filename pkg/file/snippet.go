@@ -9,6 +9,10 @@ type Snippet struct {
 }
 
 func NewSnippet(src []string, line int) Snippet {
+	if line <= 0 || line > len(src) {
+		return Snippet{Line: line}
+	}
+	
 	text := src[line-1]
 
 	return Snippet{

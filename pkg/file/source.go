@@ -55,11 +55,9 @@ func (s *Source) LocationAt(span Span) (line, column int) {
 		lineStart := total
 		lineEndWithNL := total + lineLen
 
-		// If offset is exactly at the start of this line (not the very first line),
-		// treat it as the end of the previous line.
-		if offset == lineStart && i > 0 {
-			prev := s.lines[i-1]
-			return i, len(prev) + 1
+		// If offset is exactly at the start of this line, it belongs to this line
+		if offset == lineStart {
+			return i + 1, 1
 		}
 
 		if lineEndWithNL > offset {
