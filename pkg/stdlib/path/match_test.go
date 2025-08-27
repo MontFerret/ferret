@@ -60,4 +60,40 @@ func TestMatch(t *testing.T) {
 
 		So(err, ShouldBeError)
 	})
+
+	Convey("Match('*.txt', 'file.txt') should return true", t, func() {
+		out, _ := path.Match(
+			context.Background(),
+			runtime.NewString("*.txt"), runtime.NewString("file.txt"),
+		)
+
+		So(out, ShouldEqual, runtime.True)
+	})
+
+	Convey("Match('*.txt', 'file.doc') should return false", t, func() {
+		out, _ := path.Match(
+			context.Background(),
+			runtime.NewString("*.txt"), runtime.NewString("file.doc"),
+		)
+
+		So(out, ShouldEqual, runtime.False)
+	})
+
+	Convey("Match('', '') should return true", t, func() {
+		out, _ := path.Match(
+			context.Background(),
+			runtime.NewString(""), runtime.NewString(""),
+		)
+
+		So(out, ShouldEqual, runtime.True)
+	})
+
+	Convey("Match('[abc]', 'b') should return true", t, func() {
+		out, _ := path.Match(
+			context.Background(),
+			runtime.NewString("[abc]"), runtime.NewString("b"),
+		)
+
+		So(out, ShouldEqual, runtime.True)
+	})
 }
