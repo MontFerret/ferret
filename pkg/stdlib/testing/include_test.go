@@ -56,7 +56,7 @@ func TestInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1,2,3]' to include [int] '4'").Error())
 			})
 		})
 
@@ -87,7 +87,7 @@ func TestInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [map] '{\"a\":1,\"b\":2,\"c\":3}' to include [int] '4'").Error())
 			})
 		})
 
@@ -165,7 +165,7 @@ func TestNotInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1,2,3]' not to include [int] '2'").Error())
 			})
 		})
 	})
@@ -200,7 +200,7 @@ func TestNotInclude(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [map] '{\"a\":1,\"b\":2,\"c\":3}' not to include [int] '2'").Error())
 			})
 		})
 	})

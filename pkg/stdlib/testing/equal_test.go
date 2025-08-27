@@ -94,7 +94,7 @@ func TestEqual(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1]' to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1]' to be equal to [list] '[1,2]'").Error())
 			})
 		})
 
@@ -206,7 +206,7 @@ func TestNotEqual(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2]' not to be equal to [array] '[1,2]'").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1,2]' not to be equal to [list] '[1,2]'").Error())
 			})
 		})
 	})

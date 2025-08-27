@@ -65,7 +65,7 @@ func TestLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' to has size 1").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1,2,3]' to has size 1").Error())
 			})
 		})
 
@@ -96,7 +96,7 @@ func TestLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' to has size 1").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [map] '{\"a\":1,\"b\":2,\"c\":3}' to has size 1").Error())
 			})
 		})
 
@@ -182,7 +182,7 @@ func TestNotLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [array] '[1,2,3]' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [list] '[1,2,3]' not to has size 3").Error())
 			})
 		})
 	})
@@ -217,7 +217,7 @@ func TestNotLen(t *t.T) {
 				)
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [object] '{\"a\":1,\"b\":2,\"c\":3}' not to has size 3").Error())
+				So(err.Error(), ShouldEqual, runtime.Error(base.ErrAssertion, "expected [map] '{\"a\":1,\"b\":2,\"c\":3}' not to has size 3").Error())
 			})
 		})
 	})
