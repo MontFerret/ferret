@@ -18,9 +18,7 @@ var String = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		// Check if the argument is a string type using CastString
-		// If casting succeeds, it's a string; if it fails, it's not
-		_, err := runtime.CastString(args[0])
+		err := runtime.AssertString(args[0])
 		return err == nil, nil
 	},
 }

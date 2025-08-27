@@ -18,9 +18,7 @@ var Int = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		// Check if the argument is an int type using CastInt  
-		// If casting succeeds, it's an int; if it fails, it's not
-		_, err := runtime.CastInt(args[0])
+		err := runtime.AssertInt(args[0])
 		return err == nil, nil
 	},
 }

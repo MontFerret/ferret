@@ -18,9 +18,7 @@ var Float = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		// Check if the argument is a float type using CastFloat
-		// If casting succeeds, it's a float; if it fails, it's not
-		_, err := runtime.CastFloat(args[0])
+		err := runtime.AssertFloat(args[0])
 		return err == nil, nil
 	},
 }

@@ -46,7 +46,7 @@ func TestArray(t *t.T) {
 				_, err := Array(context.Background(), runtime.NewObject())
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [map] '{}' to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [object] '{}' to be array")
 			})
 		})
 	})
@@ -87,7 +87,7 @@ func TestNotArray(t *t.T) {
 				_, err := NotArray(context.Background(), runtime.NewArray(0))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [list] '[]' not to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[]' not to be array")
 			})
 		})
 
@@ -96,7 +96,7 @@ func TestNotArray(t *t.T) {
 				_, err := NotArray(context.Background(), runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)))
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [list] '[1,2]' not to be array")
+				So(err.Error(), ShouldEqual, base.ErrAssertion.Error()+": expected [array] '[1,2]' not to be array")
 			})
 		})
 	})

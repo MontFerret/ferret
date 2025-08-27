@@ -18,9 +18,7 @@ var Object = base.Assertion{
 	MinArgs: 1,
 	MaxArgs: 2,
 	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
-		// Check if the argument is an object/map type using CastMap
-		// If casting succeeds, it's a map; if it fails, it's not
-		_, err := runtime.CastMap(args[0])
+		err := runtime.AssertMap(args[0])
 		return err == nil, nil
 	},
 }
