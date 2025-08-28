@@ -38,7 +38,8 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 }
 
 func merge(ctx context.Context, src, dst runtime.Value) (runtime.Value, error) {
-	if runtime.CompareValues(src, dst) != 0 {
+	// If both values are equal, no need to merge
+	if runtime.CompareValues(src, dst) == 0 {
 		return src, nil
 	}
 
