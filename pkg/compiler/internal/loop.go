@@ -229,11 +229,6 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 		}
 	}
 
-	// For STEP loops, emit the increment before jumping back
-	if loop.Kind == core.ForStepLoop {
-		loop.EmitStepIncrement(c.ctx.Emitter)
-	}
-
 	// Emit VM instructions for loop finalization
 	loop.EmitFinalization(c.ctx.Emitter)
 

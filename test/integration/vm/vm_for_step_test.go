@@ -20,5 +20,14 @@ func TestForStep(t *testing.T) {
 		
 		// STEP loop with complex expression
 		CaseArray("FOR i = 1 WHILE i <= 16 STEP i = i * 2 RETURN i", []any{1, 2, 4, 8, 16}),
+		
+		// STEP loop with different variable name
+		CaseArray("FOR count = 100 WHILE count >= 90 STEP count = count - 5 RETURN count", []any{100, 95, 90}),
+		
+		// STEP loop with mathematical operations in body
+		CaseArray(`FOR i = 1 WHILE i <= 3 STEP i = i + 1 RETURN i * 10`, []any{10, 20, 30}),
+		
+		// STEP loop with complex condition
+		CaseArray("FOR i = 0 WHILE (i * i) < 25 STEP i = i + 1 RETURN i", []any{0, 1, 2, 3, 4}),
 	})
 }

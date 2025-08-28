@@ -32,6 +32,7 @@ type Loop struct {
 	StartLabel Label
 	JumpLabel  Label
 	EndLabel   Label
+	ContinueLabel Label  // For STEP loops, where clauses jump to continue
 
 	Src      vm.Operand
 	SrcFn    func() vm.Operand
@@ -85,6 +86,11 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, de
 	l.StartLabel = emitter.NewLabel("loop", name, "start")
 	l.JumpLabel = emitter.NewLabel("loop", name, "jump")
 	l.EndLabel = emitter.NewLabel("loop", name, "end")
+	
+	// For STEP loops, we need a continue label where failed clauses can jump
+	if l.Kind == ForStepLoop {
+		l.ContinueLabel = emitter.NewLabel("loop", name, "continue")
+	}
 
 	emitter.MarkLabel(l.StartLabel)
 
@@ -199,8 +205,20 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 		emitter.EmitAB(vm.OpMove, l.Value, initValue)
 	}
 
-	// Mark the beginning of the loop condition check
+	// Jump to the initial condition check (skipping the increment)
+	emitter.EmitJump(l.ContinueLabel)
+
+	// Mark the jump target for loop iterations (increment + condition check)
 	emitter.MarkLabel(l.JumpLabel)
+
+	// Execute increment (this happens on every loop-back, but not on first iteration)
+	if l.Value != vm.NoopOperand {
+		incrementValue := l.StepIncrementFn()
+		emitter.EmitAB(vm.OpMove, l.Value, incrementValue)
+	}
+
+	// Mark the continue label (initial condition check point)
+	emitter.MarkLabel(l.ContinueLabel)
 
 	// Evaluate the condition
 	condition := l.StepConditionFn()
