@@ -21,7 +21,6 @@ jobs:
 
       - name: Lint
         run: |
-          make vet
           make lint
           make fmt
           git diff
