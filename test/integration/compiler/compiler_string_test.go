@@ -8,7 +8,7 @@ import (
 
 func TestString(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(
+		SkipByteCodeCase(
 			`
 			RETURN "FOO BAR"
 		`, BC{

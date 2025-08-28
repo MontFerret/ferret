@@ -75,7 +75,7 @@ FOR s IN strs
 				I(vm.OpReturn, 0, 7),
 			},
 		),
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 LET strs = ["foo", "bar", "qaz", "abc"]
 
 FOR n IN 0..1

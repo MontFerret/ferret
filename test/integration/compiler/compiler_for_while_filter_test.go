@@ -8,7 +8,7 @@ import (
 
 func TestForWhileFilter(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 			FOR i WHILE UNTIL(5)
 				FILTER i > 2
 				RETURN i

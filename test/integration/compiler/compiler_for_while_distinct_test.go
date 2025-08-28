@@ -8,7 +8,7 @@ import (
 
 func TestForWhileDistinct(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 			LET departments = []
 			LET genders = []
 

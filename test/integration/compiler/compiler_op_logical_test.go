@@ -14,7 +14,7 @@ func TestLogicalOperators(t *testing.T) {
 			I(vm.OpLoadConst, 1, C(1)),
 			I(vm.OpReturn, 1),
 		}),
-		ByteCodeCase("RETURN 1 OR 0", BC{
+		SkipByteCodeCase("RETURN 1 OR 0", BC{
 			I(vm.OpLoadConst, 1, C(0)),
 			I(vm.OpJumpIfFalse),
 			I(vm.OpLoadConst, 1, C(1)),

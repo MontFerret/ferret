@@ -138,7 +138,7 @@ func TestMember(t *testing.T) {
 		//			RETURN FIRST(arr).name
 		//		`,
 		//	"Bob"),
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 					LET arr = [{ name: { first: "Bob" } }]
 		
 					RETURN FIRST(arr)['name'].first

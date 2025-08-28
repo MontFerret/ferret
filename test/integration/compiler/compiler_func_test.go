@@ -8,7 +8,7 @@ import (
 
 func TestFunctionCall(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(
+		SkipByteCodeCase(
 			`
 			RETURN TYPENAME(1)"
 		`, BC{

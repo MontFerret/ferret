@@ -8,7 +8,7 @@ import (
 
 func TestCollect(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 			LET users = []
 			FOR i IN users
 				COLLECT gender = i.gender

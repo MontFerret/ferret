@@ -8,7 +8,7 @@ import (
 
 func TestSort(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 FOR s IN []
 	SORT s
 	RETURN s

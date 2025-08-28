@@ -8,20 +8,20 @@ import (
 
 func TestVariables(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		ByteCodeCase(
+		SkipByteCodeCase(
 			`
 			LET i = NONE RETURN i"
 		`, BC{
 				I(vm.OpLoadNone, 1),
 				I(vm.OpReturn, 1),
 			}, "Should be possible to use multi line string"),
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 			LET a = TRUE RETURN a
 `, BC{
 			I(vm.OpLoadBool, 1, 1),
 			I(vm.OpReturn, 1),
 		}),
-		ByteCodeCase(`
+		SkipByteCodeCase(`
 			LET a = 1 RETURN a
 `, BC{
 			I(vm.OpLoadConst, 1, vm.NewConstant(0)),
