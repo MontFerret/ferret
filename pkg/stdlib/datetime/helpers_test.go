@@ -1,10 +1,9 @@
 package datetime_test
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
@@ -17,21 +16,22 @@ type testCase struct {
 }
 
 func (tc *testCase) Do(t *testing.T, fn runtime.Function) {
-	//Convey(tc.Name, t, func() {
-	//	expected := tc.Expected
-	//
-	//	actual, err := fn(context.Background(), tc.Args...)
-	//
-	//	if tc.ShouldErr {
-	//		So(err, ShouldBeError)
-	//		expected = runtime.None
-	//	} else {
-	//		So(err, ShouldBeNil)
-	//	}
-	//
-	//	So(actual.Type().Equals(expected.Type()), ShouldBeTrue)
-	//	So(actual.Compare(expected), ShouldEqual, 0)
-	//})
+	t.Run(tc.Name, func(t *testing.T) {
+		actual, err := fn(context.Background(), tc.Args...)
+
+		if tc.ShouldErr {
+			if err == nil {
+				t.Errorf("expected error but got none")
+			}
+		} else {
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if actual.String() != tc.Expected.String() {
+				t.Errorf("expected %v but got %v", tc.Expected, actual)
+			}
+		}
+	})
 }
 
 func mustDefaultLayoutDt(timeString string) runtime.DateTime {
