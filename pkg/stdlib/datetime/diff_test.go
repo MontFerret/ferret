@@ -170,6 +170,29 @@ func TestDiff(t *testing.T) {
 		)
 	}
 
+	// Additional test cases to improve coverage
+	tcs = append(tcs,
+		&testCase{
+			Name:     "when dates are not equal with invalid unit",
+			Expected: runtime.None,
+			Args: []runtime.Value{
+				beginningEpoch,
+				runtime.NewDateTime(beginningEpoch.Add(time.Hour)),
+				runtime.NewString("invalid_unit"),
+			},
+			ShouldErr: true,
+		},
+		&testCase{
+			Name:     "when first date is after second date",
+			Expected: runtime.NewInt(1),
+			Args: []runtime.Value{
+				runtime.NewDateTime(beginningEpoch.Add(time.Hour)),
+				beginningEpoch,
+				runtime.NewString("hour"),
+			},
+		},
+	)
+
 	for _, tc := range tcs {
 		tc.Do(t, datetime.DateDiff)
 	}

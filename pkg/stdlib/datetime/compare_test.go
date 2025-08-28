@@ -98,6 +98,25 @@ func TestDateCompare(t *testing.T) {
 				runtime.NewString("days"),
 			},
 		},
+		&testCase{
+			Name:     "when dates don't match at any level",
+			Expected: expectedFalse,
+			Args: []runtime.Value{
+				mustLayoutDt("2006-01-02T15:04:05.000Z", "1999-02-01T15:04:05.123Z"),
+				mustLayoutDt("2006-01-02T15:04:05.000Z", "2000-03-15T16:05:06.456Z"),
+				runtime.NewString("year"),
+				runtime.NewString("millisecond"),
+			},
+		},
+		&testCase{
+			Name:     "when using default end unit",
+			Expected: expectedTrue,
+			Args: []runtime.Value{
+				runtime.NewCurrentDateTime(),
+				runtime.NewCurrentDateTime(),
+				runtime.NewString("year"),
+			},
+		},
 	}
 
 	for _, tc := range tcs {

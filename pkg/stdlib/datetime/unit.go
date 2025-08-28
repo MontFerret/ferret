@@ -57,9 +57,9 @@ func IsDatesEqual(tm1, tm2 time.Time, u Unit) bool {
 	case Day:
 		return tm1.Day() == tm2.Day()
 	case Week:
-		tm1Wk := tm1.Day() / 7
-		tm2Wk := tm2.Day() / 7
-		return tm1Wk == tm2Wk
+		_, tm1Week := tm1.ISOWeek()
+		_, tm2Week := tm2.ISOWeek()
+		return tm1Week == tm2Week
 	case Month:
 		return tm1.Month() == tm2.Month()
 	case Year:
