@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 type testCase struct {

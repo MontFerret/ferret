@@ -118,5 +118,3 @@ func TestHas(t *testing.T) {
 		So(bool(valBool), ShouldEqual, false)
 	})
 }
-
-

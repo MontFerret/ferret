@@ -56,8 +56,8 @@ func TestFunctionCall0(t *testing.T) {
 func TestBuiltinFunctions(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case("RETURN LENGTH([1,2,3])", 3),
-		Case("RETURN TYPENAME([1,2,3])", "list"),
-		Case("RETURN TYPENAME({ a: 1, b: 2 })", "map"),
+		Case("RETURN TYPENAME([1,2,3])", "array"),
+		Case("RETURN TYPENAME({ a: 1, b: 2 })", "object"),
 		Case("WAIT(10) RETURN 1", 1),
 	})
 }

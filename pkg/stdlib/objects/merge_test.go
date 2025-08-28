@@ -140,7 +140,7 @@ func TestMergeObjects(t *testing.T) {
 	Convey("Merge objects with complex values", t, func() {
 		arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
 		nestedObj := runtime.NewObjectWith(runtime.NewObjectProperty("nested", runtime.NewString("value")))
-		
+
 		obj1 := runtime.NewObjectWith(
 			runtime.NewObjectProperty("array", arr),
 		)
@@ -167,7 +167,7 @@ func TestMergeObjects(t *testing.T) {
 
 		// Verify independence - modify original array
 		arr.Add(context.Background(), runtime.NewInt(3))
-		
+
 		// Merged array should not be affected
 		mergedArrLength, _ := arrResult.Length(context.Background())
 		So(mergedArrLength, ShouldEqual, 2)
@@ -245,4 +245,3 @@ func TestMergeArray(t *testing.T) {
 		So(runtime.CompareValues(merged, obj), ShouldEqual, 0)
 	})
 }
-

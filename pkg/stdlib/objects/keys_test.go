@@ -32,7 +32,7 @@ func TestKeys(t *testing.T) {
 			keyStrings = append(keyStrings, val.String())
 			return true, nil
 		})
-		
+
 		for _, expectedKey := range []string{"a", "b", "c"} {
 			found := false
 			for _, actualKey := range keyStrings {
@@ -127,5 +127,3 @@ func TestKeys(t *testing.T) {
 		}
 	})
 }
-
-

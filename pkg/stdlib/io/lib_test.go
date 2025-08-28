@@ -12,15 +12,15 @@ import (
 func TestRegisterLib(t *testing.T) {
 	Convey("Should register IO namespace functions", t, func() {
 		ns := runtime.NewRootNamespace()
-		
+
 		err := io.RegisterLib(ns)
-		
+
 		So(err, ShouldBeNil)
-		
+
 		// Verify that functions were registered by checking registered function names
 		functions := ns.RegisteredFunctions()
 		So(len(functions), ShouldBeGreaterThan, 0)
-		
+
 		// Check that FS functions are registered
 		hasRead := false
 		hasWrite := false
@@ -29,7 +29,7 @@ func TestRegisterLib(t *testing.T) {
 		hasPut := false
 		hasDelete := false
 		hasDo := false
-		
+
 		for _, fn := range functions {
 			if fn == "IO::FS::READ" {
 				hasRead = true
@@ -53,7 +53,7 @@ func TestRegisterLib(t *testing.T) {
 				hasDo = true
 			}
 		}
-		
+
 		So(hasRead, ShouldBeTrue)
 		So(hasWrite, ShouldBeTrue)
 		So(hasGet, ShouldBeTrue)

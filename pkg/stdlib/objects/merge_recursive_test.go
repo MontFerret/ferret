@@ -99,13 +99,13 @@ func TestMergeRecursive(t *testing.T) {
 			nestedObj2 := runtime.NewObjectWith(
 				runtime.NewObjectProperty("y", runtime.NewInt(2)),
 			)
-			
+
 			obj1 := runtime.NewObjectWith(
 				runtime.NewObjectProperty("nested", nestedObj1),
 				runtime.NewObjectProperty("simple", runtime.NewString("value1")),
 			)
 			obj2 := runtime.NewObjectWith(
-				runtime.NewObjectProperty("nested", nestedObj2), // Should merge recursively
+				runtime.NewObjectProperty("nested", nestedObj2),                  // Should merge recursively
 				runtime.NewObjectProperty("simple", runtime.NewString("value2")), // Should overwrite
 			)
 
@@ -121,11 +121,11 @@ func TestMergeRecursive(t *testing.T) {
 			// Check nested object was merged recursively
 			nestedVal, _ := actualObj.Get(context.Background(), runtime.NewString("nested"))
 			nestedObj := nestedVal.(*runtime.Object)
-			
+
 			// Should have both x and y
 			xVal, _ := nestedObj.Get(context.Background(), runtime.NewString("x"))
 			So(runtime.CompareValues(xVal, runtime.NewInt(1)), ShouldEqual, 0)
-			
+
 			yVal, _ := nestedObj.Get(context.Background(), runtime.NewString("y"))
 			So(runtime.CompareValues(yVal, runtime.NewInt(2)), ShouldEqual, 0)
 		})
@@ -133,7 +133,7 @@ func TestMergeRecursive(t *testing.T) {
 		Convey("When there are nested arrays", func() {
 			arr1 := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
 			arr2 := runtime.NewArrayWith(runtime.NewInt(3), runtime.NewInt(4))
-			
+
 			obj1 := runtime.NewObjectWith(
 				runtime.NewObjectProperty("arr", arr1),
 			)
@@ -151,7 +151,7 @@ func TestMergeRecursive(t *testing.T) {
 			arrResult := arrVal.(*runtime.Array)
 			arrLength, _ := arrResult.Length(context.Background())
 			So(arrLength, ShouldEqual, 2)
-			
+
 			val0, _ := arrResult.Get(context.Background(), runtime.NewInt(0))
 			val1, _ := arrResult.Get(context.Background(), runtime.NewInt(1))
 			So(runtime.CompareValues(val0, runtime.NewInt(3)), ShouldEqual, 0)

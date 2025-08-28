@@ -128,7 +128,7 @@ func TestCollectAggregate(t *testing.T) {
 				}
 		`, []any{
 			map[string]any{"gender": "f", "minAge": 25, "maxAge": 25},
-			map[string]any{"gender": "m", "minAge": 0, "maxAge": 0},
+			map[string]any{"gender": "m", "minAge": nil, "maxAge": nil},
 		}, "Should handle null values in aggregation"),
 		CaseArray(`
 LET users = [

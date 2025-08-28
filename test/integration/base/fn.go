@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/runtime/core"
 )
 
 type (
@@ -33,7 +32,7 @@ func init() {
 }
 
 func StateFn[T any](fn runtime.Function, factory func(ctx context.Context) T) runtime.Function {
-	return func(ctx context.Context, args ...core.Value) (core.Value, error) {
+	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		_, exists := globalState[ctx]
 
 		if !exists {

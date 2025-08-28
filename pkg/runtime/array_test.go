@@ -800,7 +800,7 @@ func TestArray(t *testing.T) {
 				copyArr := copied.(*runtime.Array)
 
 				So(arr.Compare(copyArr), ShouldEqual, 0)
-				
+
 				isEmpty, _ := copyArr.IsEmpty(ctx)
 				So(isEmpty, ShouldEqual, runtime.True)
 			})
@@ -839,7 +839,7 @@ func TestArray(t *testing.T) {
 				)
 
 				err := arr.Remove(ctx, runtime.NewString("notfound"))
-				So(err, ShouldBeNil)  // Returns nil even when not found
+				So(err, ShouldBeNil) // Returns nil even when not found
 
 				length, _ := arr.Length(ctx)
 				So(length, ShouldEqual, runtime.NewInt(2))
@@ -849,7 +849,7 @@ func TestArray(t *testing.T) {
 				arr := runtime.NewArray(0)
 
 				err := arr.Remove(ctx, runtime.NewInt(1))
-				So(err, ShouldBeNil)  // Returns nil even when not found
+				So(err, ShouldBeNil) // Returns nil even when not found
 
 				length, _ := arr.Length(ctx)
 				So(length, ShouldEqual, runtime.NewInt(0))

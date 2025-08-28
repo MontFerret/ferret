@@ -35,7 +35,7 @@ func TestBinary(t *testing.T) {
 			Convey("Should create Binary from reader", func() {
 				data := "hello world"
 				reader := strings.NewReader(data)
-				
+
 				binary, err := runtime.NewBinaryFrom(reader)
 				So(err, ShouldBeNil)
 				So(binary, ShouldNotBeNil)
@@ -44,7 +44,7 @@ func TestBinary(t *testing.T) {
 
 			Convey("Should create empty Binary from empty reader", func() {
 				reader := strings.NewReader("")
-				
+
 				binary, err := runtime.NewBinaryFrom(reader)
 				So(err, ShouldBeNil)
 				So(binary, ShouldNotBeNil)
@@ -54,7 +54,7 @@ func TestBinary(t *testing.T) {
 			Convey("Should handle reader errors", func() {
 				// Use a buffer and close it to simulate an error
 				reader := &ErrorReader{}
-				
+
 				_, err := runtime.NewBinaryFrom(reader)
 				So(err, ShouldNotBeNil)
 			})
@@ -64,7 +64,7 @@ func TestBinary(t *testing.T) {
 			Convey("Should marshal to base64 encoded JSON string", func() {
 				data := []byte("hello")
 				binary := runtime.NewBinary(data)
-				
+
 				marshaled, err := binary.MarshalJSON()
 				So(err, ShouldBeNil)
 				So(string(marshaled), ShouldContainSubstring, "aGVsbG8=") // base64 for "hello"
@@ -72,7 +72,7 @@ func TestBinary(t *testing.T) {
 
 			Convey("Should marshal empty binary", func() {
 				binary := runtime.NewBinary([]byte{})
-				
+
 				marshaled, err := binary.MarshalJSON()
 				So(err, ShouldBeNil)
 				So(string(marshaled), ShouldNotBeEmpty)
@@ -83,7 +83,7 @@ func TestBinary(t *testing.T) {
 			Convey("Should return string representation", func() {
 				data := []byte("hello")
 				binary := runtime.NewBinary(data)
-				
+
 				str := binary.String()
 				So(str, ShouldNotBeEmpty)
 			})
@@ -94,7 +94,7 @@ func TestBinary(t *testing.T) {
 				data := []byte("hello")
 				binary1 := runtime.NewBinary(data)
 				binary2 := runtime.NewBinary(data)
-				
+
 				hash1 := binary1.Hash()
 				hash2 := binary2.Hash()
 				So(hash1, ShouldEqual, hash2)
@@ -103,7 +103,7 @@ func TestBinary(t *testing.T) {
 			Convey("Should calculate different hash for different data", func() {
 				binary1 := runtime.NewBinary([]byte("hello"))
 				binary2 := runtime.NewBinary([]byte("world"))
-				
+
 				hash1 := binary1.Hash()
 				hash2 := binary2.Hash()
 				So(hash1, ShouldNotEqual, hash2)
@@ -114,12 +114,12 @@ func TestBinary(t *testing.T) {
 			Convey("Should create independent copy", func() {
 				data := []byte("hello")
 				original := runtime.NewBinary(data)
-				
+
 				copied := original.Copy()
 				copyBinary := copied.(runtime.Binary)
-				
+
 				So(copyBinary.Unwrap(), ShouldResemble, original.Unwrap())
-				
+
 				// Modifying original data shouldn't affect copy since Copy should create new slice
 				originalBytes := original.Unwrap().([]byte)
 				if len(originalBytes) > 0 {
@@ -132,7 +132,7 @@ func TestBinary(t *testing.T) {
 			Convey("Should return correct length", func() {
 				data := []byte("hello")
 				binary := runtime.NewBinary(data)
-				
+
 				length, err := binary.Length(ctx)
 				So(err, ShouldBeNil)
 				So(length, ShouldEqual, runtime.NewInt(5))
@@ -140,7 +140,7 @@ func TestBinary(t *testing.T) {
 
 			Convey("Should return zero for empty binary", func() {
 				binary := runtime.NewBinary([]byte{})
-				
+
 				length, err := binary.Length(ctx)
 				So(err, ShouldBeNil)
 				So(length, ShouldEqual, runtime.NewInt(0))
@@ -152,7 +152,7 @@ func TestBinary(t *testing.T) {
 				data := []byte("hello")
 				binary1 := runtime.NewBinary(data)
 				binary2 := runtime.NewBinary(data)
-				
+
 				result := binary1.Compare(binary2)
 				So(result, ShouldEqual, 0)
 			})
@@ -160,14 +160,14 @@ func TestBinary(t *testing.T) {
 			Convey("Should return non-zero for different binaries", func() {
 				binary1 := runtime.NewBinary([]byte("hello"))
 				binary2 := runtime.NewBinary([]byte("world"))
-				
+
 				result := binary1.Compare(binary2)
 				So(result, ShouldNotEqual, 0)
 			})
 
 			Convey("Should handle comparison with non-binary types", func() {
 				binary := runtime.NewBinary([]byte("hello"))
-				
+
 				result := binary.Compare(runtime.NewString("hello"))
 				So(result, ShouldNotEqual, 0) // Different types
 			})

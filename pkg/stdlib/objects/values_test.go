@@ -224,7 +224,7 @@ func TestValues(t *testing.T) {
 		// Check that the returned array wasn't affected
 		returnedLength, _ := returnedArrayVal.Length(context.Background())
 		So(returnedLength, ShouldEqual, 1)
-		
+
 		val, _ := returnedArrayVal.Get(context.Background(), runtime.NewInt(0))
 		So(runtime.CompareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
 	})
@@ -252,7 +252,7 @@ func TestValues(t *testing.T) {
 		// Check that the returned object wasn't affected
 		returnedLength, _ := returnedObjectVal.Length(context.Background())
 		So(returnedLength, ShouldEqual, 1)
-		
+
 		hasNewKey, _ := returnedObjectVal.ContainsKey(context.Background(), runtime.NewString("new"))
 		So(hasNewKey, ShouldEqual, runtime.False)
 	})
@@ -284,7 +284,7 @@ func TestValues(t *testing.T) {
 
 		// Verify all values are present
 		foundNone := false
-		foundBool := false  
+		foundBool := false
 		foundEmptyString := false
 
 		actualArray.ForEach(context.Background(), func(ctx context.Context, val runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
@@ -369,5 +369,3 @@ func TestValues(t *testing.T) {
 		}
 	})
 }
-
-

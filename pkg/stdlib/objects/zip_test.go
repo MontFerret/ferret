@@ -166,7 +166,7 @@ func TestZip(t *testing.T) {
 			arrLength, _ := arr.Length(context.Background())
 			So(arrLength, ShouldEqual, 2)
 
-			// Check object value  
+			// Check object value
 			objVal, _ := actualObj.Get(context.Background(), runtime.NewString("obj"))
 			obj := objVal.(*runtime.Object)
 			nestedVal, _ := obj.Get(context.Background(), runtime.NewString("nested"))
@@ -247,4 +247,3 @@ func TestZip(t *testing.T) {
 		So(runtime.CompareValues(val2, runtime.None), ShouldEqual, 0)
 	})
 }
-

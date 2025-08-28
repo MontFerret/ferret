@@ -3,8 +3,9 @@ package datetime_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
 )
 
 // Test UnitFromString function which is exported

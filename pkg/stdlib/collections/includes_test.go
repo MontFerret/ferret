@@ -186,7 +186,7 @@ func TestIncludes(t *testing.T) {
 			runtime.NewObjectProperty("x", runtime.NewInt(1)),
 		)
 		arr := runtime.NewArrayWith(obj1, runtime.NewString("test"))
-		
+
 		result, err := collections.Includes(context.Background(), arr, obj2)
 
 		So(err, ShouldBeNil)
