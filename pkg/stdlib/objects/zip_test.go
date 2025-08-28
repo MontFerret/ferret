@@ -196,58 +196,55 @@ func TestZip(t *testing.T) {
 		val, _ := resultArrVal.Get(context.Background(), runtime.NewInt(0))
 		So(runtime.CompareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
 	})
-}
 
-func TestZipEdgeCases(t *testing.T) {
-	Convey("Edge cases for Zip function", t, func() {
-		Convey("When keys contain special characters", func() {
-			keys := runtime.NewArrayWith(
-				runtime.NewString("key with spaces"),
-				runtime.NewString("key_with_underscores"),
-				runtime.NewString("key-with-dashes"),
-			)
-			vals := runtime.NewArrayWith(
-				runtime.NewInt(1),
-				runtime.NewInt(2),
-				runtime.NewInt(3),
-			)
+	Convey("When keys contain special characters", t, func() {
+		keys := runtime.NewArrayWith(
+			runtime.NewString("key with spaces"),
+			runtime.NewString("key_with_underscores"),
+			runtime.NewString("key-with-dashes"),
+		)
+		vals := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(3),
+		)
 
-			actual, err := objects.Zip(context.Background(), keys, vals)
-			actualObj := actual.(*runtime.Object)
+		actual, err := objects.Zip(context.Background(), keys, vals)
+		actualObj := actual.(*runtime.Object)
 
-			So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
 
-			// Check all keys are present
-			val1, _ := actualObj.Get(context.Background(), runtime.NewString("key with spaces"))
-			So(runtime.CompareValues(val1, runtime.NewInt(1)), ShouldEqual, 0)
+		// Check all keys are present
+		val1, _ := actualObj.Get(context.Background(), runtime.NewString("key with spaces"))
+		So(runtime.CompareValues(val1, runtime.NewInt(1)), ShouldEqual, 0)
 
-			val2, _ := actualObj.Get(context.Background(), runtime.NewString("key_with_underscores"))
-			So(runtime.CompareValues(val2, runtime.NewInt(2)), ShouldEqual, 0)
+		val2, _ := actualObj.Get(context.Background(), runtime.NewString("key_with_underscores"))
+		So(runtime.CompareValues(val2, runtime.NewInt(2)), ShouldEqual, 0)
 
-			val3, _ := actualObj.Get(context.Background(), runtime.NewString("key-with-dashes"))
-			So(runtime.CompareValues(val3, runtime.NewInt(3)), ShouldEqual, 0)
-		})
+		val3, _ := actualObj.Get(context.Background(), runtime.NewString("key-with-dashes"))
+		So(runtime.CompareValues(val3, runtime.NewInt(3)), ShouldEqual, 0)
+	})
 
-		Convey("When values are all None", func() {
-			keys := runtime.NewArrayWith(
-				runtime.NewString("k1"),
-				runtime.NewString("k2"),
-			)
-			vals := runtime.NewArrayWith(
-				runtime.None,
-				runtime.None,
-			)
+	Convey("When values are all None", t, func() {
+		keys := runtime.NewArrayWith(
+			runtime.NewString("k1"),
+			runtime.NewString("k2"),
+		)
+		vals := runtime.NewArrayWith(
+			runtime.None,
+			runtime.None,
+		)
 
-			actual, err := objects.Zip(context.Background(), keys, vals)
-			actualObj := actual.(*runtime.Object)
+		actual, err := objects.Zip(context.Background(), keys, vals)
+		actualObj := actual.(*runtime.Object)
 
-			So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
 
-			val1, _ := actualObj.Get(context.Background(), runtime.NewString("k1"))
-			So(runtime.CompareValues(val1, runtime.None), ShouldEqual, 0)
+		val1, _ := actualObj.Get(context.Background(), runtime.NewString("k1"))
+		So(runtime.CompareValues(val1, runtime.None), ShouldEqual, 0)
 
-			val2, _ := actualObj.Get(context.Background(), runtime.NewString("k2"))
-			So(runtime.CompareValues(val2, runtime.None), ShouldEqual, 0)
-		})
+		val2, _ := actualObj.Get(context.Background(), runtime.NewString("k2"))
+		So(runtime.CompareValues(val2, runtime.None), ShouldEqual, 0)
 	})
 }
+

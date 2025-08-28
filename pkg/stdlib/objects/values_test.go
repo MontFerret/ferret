@@ -267,10 +267,77 @@ func TestValues(t *testing.T) {
 		actualLength, _ := actualArray.Length(context.Background())
 		So(actualLength, ShouldEqual, 0)
 	})
-}
 
-func TestValuesStress(t *testing.T) {
-	Convey("Stress", t, func() {
+	Convey("When object has nil values", t, func() {
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("none", runtime.None),
+			runtime.NewObjectProperty("bool", runtime.NewBoolean(false)),
+			runtime.NewObjectProperty("empty_string", runtime.NewString("")),
+		)
+
+		actual, err := objects.Values(context.Background(), obj)
+		actualArray := actual.(*runtime.Array)
+
+		So(err, ShouldBeNil)
+		actualLength, _ := actualArray.Length(context.Background())
+		So(actualLength, ShouldEqual, 3)
+
+		// Verify all values are present
+		foundNone := false
+		foundBool := false  
+		foundEmptyString := false
+
+		actualArray.ForEach(context.Background(), func(ctx context.Context, val runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			if runtime.CompareValues(val, runtime.None) == 0 {
+				foundNone = true
+			}
+			if runtime.CompareValues(val, runtime.NewBoolean(false)) == 0 {
+				foundBool = true
+			}
+			if runtime.CompareValues(val, runtime.NewString("")) == 0 {
+				foundEmptyString = true
+			}
+			return true, nil
+		})
+
+		So(foundNone, ShouldBeTrue)
+		So(foundBool, ShouldBeTrue)
+		So(foundEmptyString, ShouldBeTrue)
+	})
+
+	Convey("When object has deeply nested structures", t, func() {
+		deepObject := runtime.NewObjectWith(
+			runtime.NewObjectProperty("level1", runtime.NewObjectWith(
+				runtime.NewObjectProperty("level2", runtime.NewObjectWith(
+					runtime.NewObjectProperty("level3", runtime.NewString("deep")),
+				)),
+			)),
+		)
+
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("deep", deepObject),
+		)
+
+		actual, err := objects.Values(context.Background(), obj)
+		actualArray := actual.(*runtime.Array)
+
+		So(err, ShouldBeNil)
+		actualLength, _ := actualArray.Length(context.Background())
+		So(actualLength, ShouldEqual, 1)
+
+		// Get the deep object and verify it's independent
+		returnedDeep, _ := actualArray.Get(context.Background(), runtime.NewInt(0))
+		returnedDeepObj := returnedDeep.(*runtime.Object)
+
+		// Modify the original deep object
+		deepObject.Set(context.Background(), runtime.NewString("modified"), runtime.NewString("value"))
+
+		// Check that the returned object wasn't affected
+		hasModified, _ := returnedDeepObj.ContainsKey(context.Background(), runtime.NewString("modified"))
+		So(hasModified, ShouldEqual, runtime.False)
+	})
+
+	Convey("Stress test", t, func() {
 		for i := 0; i < 100; i++ {
 			obj1 := runtime.NewObjectWith(
 				runtime.NewObjectProperty("int0", runtime.NewInt(0)),
@@ -303,75 +370,4 @@ func TestValuesStress(t *testing.T) {
 	})
 }
 
-func TestValuesEdgeCases(t *testing.T) {
-	Convey("Edge cases for Values function", t, func() {
-		Convey("When object has nil values", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("none", runtime.None),
-				runtime.NewObjectProperty("bool", runtime.NewBoolean(false)),
-				runtime.NewObjectProperty("empty_string", runtime.NewString("")),
-			)
 
-			actual, err := objects.Values(context.Background(), obj)
-			actualArray := actual.(*runtime.Array)
-
-			So(err, ShouldBeNil)
-			actualLength, _ := actualArray.Length(context.Background())
-			So(actualLength, ShouldEqual, 3)
-
-			// Verify all values are present
-			foundNone := false
-			foundBool := false  
-			foundEmptyString := false
-
-			actualArray.ForEach(context.Background(), func(ctx context.Context, val runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-				if runtime.CompareValues(val, runtime.None) == 0 {
-					foundNone = true
-				}
-				if runtime.CompareValues(val, runtime.NewBoolean(false)) == 0 {
-					foundBool = true
-				}
-				if runtime.CompareValues(val, runtime.NewString("")) == 0 {
-					foundEmptyString = true
-				}
-				return true, nil
-			})
-
-			So(foundNone, ShouldBeTrue)
-			So(foundBool, ShouldBeTrue)
-			So(foundEmptyString, ShouldBeTrue)
-		})
-
-		Convey("When object has deeply nested structures", func() {
-			deepObject := runtime.NewObjectWith(
-				runtime.NewObjectProperty("level1", runtime.NewObjectWith(
-					runtime.NewObjectProperty("level2", runtime.NewObjectWith(
-						runtime.NewObjectProperty("level3", runtime.NewString("deep")),
-					)),
-				)),
-			)
-
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("deep", deepObject),
-			)
-
-			actual, err := objects.Values(context.Background(), obj)
-			actualArray := actual.(*runtime.Array)
-
-			So(err, ShouldBeNil)
-			actualLength, _ := actualArray.Length(context.Background())
-			So(actualLength, ShouldEqual, 1)
-
-			// Get the deep object and verify it's independent
-			returnedDeep, _ := actualArray.Get(context.Background(), runtime.NewInt(0))
-			returnedDeepObj := returnedDeep.(*runtime.Object)
-
-			// Modify the original deep object
-			deepObject.Set(context.Background(), runtime.NewString("modified"), runtime.NewString("value"))
-
-			// Check that the returned object wasn't affected
-			hasModified, _ := returnedDeepObj.ContainsKey(context.Background(), runtime.NewString("modified"))
-			So(hasModified, ShouldEqual, runtime.False)
-		})
-	})
-}

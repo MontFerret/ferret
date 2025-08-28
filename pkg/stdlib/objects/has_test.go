@@ -80,45 +80,43 @@ func TestHas(t *testing.T) {
 		So(err, ShouldBeError)
 		So(val, ShouldEqual, runtime.None)
 	})
-}
 
-func TestHasEdgeCases(t *testing.T) {
-	Convey("Edge cases for Has function", t, func() {
-		Convey("When key is empty string", func() {
-			obj := runtime.NewObjectWith(
-				runtime.NewObjectProperty("", runtime.NewString("empty")),
+	Convey("When key is empty string", t, func() {
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("", runtime.NewString("empty")),
+		)
+
+		val, err := objects.Has(context.Background(), obj, runtime.NewString(""))
+		valBool := val.(runtime.Boolean)
+
+		So(err, ShouldEqual, nil)
+		So(bool(valBool), ShouldEqual, true)
+	})
+
+	Convey("When object has many keys", t, func() {
+		properties := make([]*runtime.ObjectProperty, 100)
+		for i := 0; i < 100; i++ {
+			properties[i] = runtime.NewObjectProperty(
+				fmt.Sprintf("key%d", i),
+				runtime.NewInt(i),
 			)
+		}
+		obj := runtime.NewObjectWith(properties...)
 
-			val, err := objects.Has(context.Background(), obj, runtime.NewString(""))
-			valBool := val.(runtime.Boolean)
+		// Test existing key
+		val, err := objects.Has(context.Background(), obj, runtime.NewString("key50"))
+		valBool := val.(runtime.Boolean)
 
-			So(err, ShouldEqual, nil)
-			So(bool(valBool), ShouldEqual, true)
-		})
+		So(err, ShouldEqual, nil)
+		So(bool(valBool), ShouldEqual, true)
 
-		Convey("When object has many keys", func() {
-			properties := make([]*runtime.ObjectProperty, 100)
-			for i := 0; i < 100; i++ {
-				properties[i] = runtime.NewObjectProperty(
-					fmt.Sprintf("key%d", i),
-					runtime.NewInt(i),
-				)
-			}
-			obj := runtime.NewObjectWith(properties...)
+		// Test non-existing key
+		val, err = objects.Has(context.Background(), obj, runtime.NewString("key999"))
+		valBool = val.(runtime.Boolean)
 
-			// Test existing key
-			val, err := objects.Has(context.Background(), obj, runtime.NewString("key50"))
-			valBool := val.(runtime.Boolean)
-
-			So(err, ShouldEqual, nil)
-			So(bool(valBool), ShouldEqual, true)
-
-			// Test non-existing key
-			val, err = objects.Has(context.Background(), obj, runtime.NewString("key999"))
-			valBool = val.(runtime.Boolean)
-
-			So(err, ShouldEqual, nil)
-			So(bool(valBool), ShouldEqual, false)
-		})
+		So(err, ShouldEqual, nil)
+		So(bool(valBool), ShouldEqual, false)
 	})
 }
+
+
