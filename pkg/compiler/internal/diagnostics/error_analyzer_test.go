@@ -3,15 +3,16 @@ package diagnostics
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/file"
 )
 
 func TestAnalyzeSyntaxError(t *testing.T) {
 	Convey("AnalyzeSyntaxError", t, func() {
 		Convey("Should return boolean for basic syntax error", func() {
 			src := file.NewSource("test.fql", "LET x =")
-			
+
 			err := &CompilationError{
 				Kind:    SyntaxError,
 				Message: "mismatched input '<EOF>' expecting {IntegerLiteral, FloatLiteral, StringLiteral}",
@@ -41,7 +42,7 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 					message: "mismatched input 'invalid' expecting {IntegerLiteral, FloatLiteral}",
 				},
 				{
-					name:    "assignment error", 
+					name:    "assignment error",
 					message: "mismatched input '<EOF>' expecting expression",
 				},
 				{
@@ -68,7 +69,7 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 
 					offending := &TokenNode{}
 					result := AnalyzeSyntaxError(src, err, offending)
-					
+
 					// Should return a boolean value
 					So(result, ShouldBeIn, []bool{true, false})
 				})
@@ -77,7 +78,7 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 
 		Convey("Should return false when no matcher matches", func() {
 			src := file.NewSource("test.fql", "LET x = 1")
-			
+
 			err := &CompilationError{
 				Kind:    SyntaxError,
 				Message: "some unrecognized error message that won't match any patterns",

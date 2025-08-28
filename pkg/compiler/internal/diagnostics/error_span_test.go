@@ -3,8 +3,9 @@ package diagnostics
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/file"
 )
 
 func TestErrorSpan(t *testing.T) {

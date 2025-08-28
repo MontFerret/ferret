@@ -3,8 +3,9 @@ package diagnostics
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/file"
 )
 
 func TestMultiCompilationError(t *testing.T) {
@@ -89,7 +90,7 @@ func TestMultiCompilationError(t *testing.T) {
 				Convey("Should format correctly for "+tt.name, func() {
 					e := &MultiCompilationError{Errors: tt.errors}
 					formatted := e.Format()
-					
+
 					if tt.name == "no errors" {
 						So(formatted, ShouldEqual, tt.want)
 					} else {
@@ -110,7 +111,7 @@ func TestNewMultiCompilationError(t *testing.T) {
 		}
 
 		result := NewMultiCompilationError(errors)
-		
+
 		So(result, ShouldNotBeNil)
 
 		multi, ok := result.(*MultiCompilationError)

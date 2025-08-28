@@ -13,7 +13,7 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 		if len(input) == 0 {
 			return false
 		}
-		
+
 		token := input[len(input)-1]
 
 		isMissingClosingQuote := isQuote(token)

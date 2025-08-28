@@ -3,8 +3,9 @@ package diagnostics
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/pkg/file"
 )
 
 func TestCompilationError(t *testing.T) {
@@ -21,7 +22,7 @@ func TestCompilationError(t *testing.T) {
 
 		Convey("Format() should format error with all components", func() {
 			src := file.NewSource("test.fql", "LET x = 1")
-			
+
 			err := &CompilationError{
 				Kind:    SyntaxError,
 				Message: "test error message",
@@ -34,7 +35,7 @@ func TestCompilationError(t *testing.T) {
 
 			formatted := err.Format()
 			So(formatted, ShouldNotBeEmpty)
-			
+
 			// Should contain the error kind and message
 			So(formatted, ShouldContainSubstring, "SyntaxError")
 			So(formatted, ShouldContainSubstring, "test error message")
@@ -66,4 +67,3 @@ func TestErrorKind(t *testing.T) {
 		}
 	})
 }
-
