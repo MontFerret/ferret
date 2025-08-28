@@ -53,7 +53,7 @@ func (h *TokenHistory) Add(token antlr.Token) {
 		h.tail = h.tail.next
 
 		if h.tail != nil {
-			h.tail.next = nil
+			h.tail.prev = nil
 		}
 
 		h.size--
