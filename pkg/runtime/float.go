@@ -116,13 +116,13 @@ func (f Float) Compare(other Value) int64 {
 
 		return +1
 	case Int:
-		f := Float(otherVal)
+		otherFloat := Float(otherVal)
 
-		if f == f {
+		if f == otherFloat {
 			return 0
 		}
 
-		if f < f {
+		if f < otherFloat {
 			return -1
 		}
 

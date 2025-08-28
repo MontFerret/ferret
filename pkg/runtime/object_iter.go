@@ -28,10 +28,13 @@ func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
 }
 
 func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
+	if iter.pos >= len(iter.keys) {
+		return None, None, Error(ErrInvalidOperation, "no more elements")
+	}
+
+	key := iter.keys[iter.pos]
+	value := iter.data[key]
 	iter.pos++
 
-	value := iter.data[iter.keys[iter.pos-1]]
-	key := String(iter.keys[iter.pos-1])
-
-	return value, key, nil
+	return value, String(key), nil
 }
