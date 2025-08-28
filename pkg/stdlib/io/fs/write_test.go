@@ -186,5 +186,20 @@ func TestWrite(t *testing.T) {
 				So(readBytes, ShouldResemble, bytes.Repeat(data, i+1))
 			}
 		})
+
+		Convey("Write string data", func() {
+			file, delFile := tempFile()
+			defer delFile()
+
+			text := "test string data"
+			fpath := runtime.NewString(file.Name())
+
+			_, err := fs.Write(context.Background(), fpath, runtime.NewString(text))
+			So(err, ShouldBeNil)
+
+			read, err := fs.Read(context.Background(), fpath)
+			So(err, ShouldBeNil)
+			So(read.String(), ShouldEqual, text)
+		})
 	})
 }

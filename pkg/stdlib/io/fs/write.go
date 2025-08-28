@@ -83,7 +83,7 @@ var defaultParams = parsedParams{
 }
 
 func parseParams(value runtime.Value) (parsedParams, error) {
-	err := runtime.ValidateType(value, runtime.TypeMap)
+	err := runtime.ValidateType(value, runtime.TypeObject)
 
 	if err != nil {
 		return parsedParams{}, err
