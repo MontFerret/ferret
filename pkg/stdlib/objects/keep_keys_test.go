@@ -49,38 +49,38 @@ func TestKeepKeys(t *testing.T) {
 	})
 
 	Convey("Result object is independent of the source object", t, func() {
-		//arr := runtime.NewArrayWith(runtime.Int(0))
-		//obj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", arr),
-		//)
-		//resultObj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", runtime.NewArrayWith(runtime.Int(0))),
-		//)
-		//
-		//afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
-		//
-		//So(err, ShouldBeNil)
+		arr := runtime.NewArrayWith(runtime.Int(0))
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("a", arr),
+		)
 
-		//_ = arr.Add(nil, runtime.NewInt(1))
-		//
-		//So(afterKeepKeys.Compare(resultObj), ShouldEqual, 0)
+		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
+
+		So(err, ShouldBeNil)
+
+		arr.Add(context.Background(), runtime.NewInt(1))
+
+		resultObj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("a", runtime.NewArrayWith(runtime.Int(0))),
+		)
+		So(runtime.CompareValues(afterKeepKeys, resultObj), ShouldEqual, 0)
 	})
 }
 
 func TestKeepKeysStrings(t *testing.T) {
 	Convey("KeepKeys key 'a'", t, func() {
-		//obj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", runtime.NewInt(1)),
-		//	runtime.NewObjectProperty("b", runtime.NewString("string")),
-		//)
-		//resultObj := runtime.NewObjectWith(
-		//	runtime.NewObjectProperty("a", runtime.NewInt(1)),
-		//)
-		//
-		//afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
+		obj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+			runtime.NewObjectProperty("b", runtime.NewString("string")),
+		)
+		resultObj := runtime.NewObjectWith(
+			runtime.NewObjectProperty("a", runtime.NewInt(1)),
+		)
 
-		//So(err, ShouldEqual, nil)
-		//So(afterKeepKeys.Compare(resultObj), ShouldEqual, 0)
+		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
+
+		So(err, ShouldEqual, nil)
+		So(runtime.CompareValues(afterKeepKeys, resultObj), ShouldEqual, 0)
 	})
 
 	Convey("KeepKeys key doesn't exists", t, func() {
@@ -183,22 +183,6 @@ func TestKeepKeysArray(t *testing.T) {
 }
 
 func isEqualObjects(obj1 *runtime.Object, obj2 *runtime.Object) bool {
-	//var val1 runtime.Value
-	//var val2 runtime.Value
-	//
-	//for _, key := range obj1.Keys() {
-	//	val1, _ = obj1.Get(key)
-	//	val2, _ = obj2.Get(key)
-	//	if val1.Compare(val2) != 0 {
-	//		return false
-	//	}
-	//}
-	//for _, key := range obj2.Keys() {
-	//	val1, _ = obj1.Get(key)
-	//	val2, _ = obj2.Get(key)
-	//	if val2.Compare(val1) != 0 {
-	//		return false
-	//	}
-	//}
-	return true
+	// Use the built-in Compare method
+	return runtime.CompareValues(obj1, obj2) == 0
 }
