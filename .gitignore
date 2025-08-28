@@ -131,6 +131,7 @@ bin
 *.orig
 dist
 coverage.txt
+coverage.html
 
 # sometimes antlr generates stub
 **/.antlr
