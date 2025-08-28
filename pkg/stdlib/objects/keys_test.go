@@ -105,3 +105,30 @@ func TestKeys(t *testing.T) {
 	})
 
 }
+
+func TestKeysEdgeCases(t *testing.T) {
+	Convey("Edge cases for Keys function", t, func() {
+		Convey("When object has special character keys", func() {
+			obj := runtime.NewObjectWith(
+				runtime.NewObjectProperty("key with spaces", runtime.NewInt(1)),
+				runtime.NewObjectProperty("key_with_underscores", runtime.NewInt(2)),
+				runtime.NewObjectProperty("key-with-dashes", runtime.NewInt(3)),
+				runtime.NewObjectProperty("key.with.dots", runtime.NewInt(4)),
+			)
+
+			keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
+			keysArray := keys.(*runtime.Array)
+
+			So(err, ShouldEqual, nil)
+			actualLength, _ := keysArray.Length(context.Background())
+			So(actualLength, ShouldEqual, 4)
+
+			// Check sorted order
+			expectedKeys := []string{"key with spaces", "key-with-dashes", "key.with.dots", "key_with_underscores"}
+			for idx, expectedKey := range expectedKeys {
+				actualKey, _ := keysArray.Get(context.Background(), runtime.NewInt(idx))
+				So(actualKey.String(), ShouldEqual, expectedKey)
+			}
+		})
+	})
+}

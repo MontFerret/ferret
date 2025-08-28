@@ -219,3 +219,33 @@ func TestMergeArray(t *testing.T) {
 		So(runtime.CompareValues(obj, runtime.None), ShouldEqual, 0)
 	})
 }
+
+func TestMergeEdgeCases(t *testing.T) {
+	Convey("Edge cases for Merge functions", t, func() {
+		Convey("Merge with empty objects", func() {
+			obj1 := runtime.NewObject()
+			obj2 := runtime.NewObjectWith(
+				runtime.NewObjectProperty("key", runtime.NewString("value")),
+			)
+
+			merged, err := objects.Merge(context.Background(), obj1, obj2)
+			mergedObj := merged.(*runtime.Object)
+
+			So(err, ShouldBeNil)
+
+			val, _ := mergedObj.Get(context.Background(), runtime.NewString("key"))
+			So(runtime.CompareValues(val, runtime.NewString("value")), ShouldEqual, 0)
+		})
+
+		Convey("MergeRecursive with identical objects", func() {
+			obj := runtime.NewObjectWith(
+				runtime.NewObjectProperty("key", runtime.NewString("value")),
+			)
+
+			merged, err := objects.MergeRecursive(context.Background(), obj, obj)
+
+			So(err, ShouldBeNil)
+			So(runtime.CompareValues(merged, obj), ShouldEqual, 0)
+		})
+	})
+}
