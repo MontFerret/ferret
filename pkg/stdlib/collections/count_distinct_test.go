@@ -139,4 +139,26 @@ func TestCountDistinct(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(result, ShouldEqual, runtime.NewInt(3)) // None, 1, "test"
 	})
+
+	Convey("When counting distinct with large array", t, func() {
+		// Add more items to exercise the hash logic more thoroughly
+		arr := runtime.NewArrayWith(
+			runtime.NewInt(1),
+			runtime.NewInt(2),
+			runtime.NewInt(1),
+			runtime.NewInt(3),
+			runtime.NewInt(2),
+			runtime.NewString("1"),
+			runtime.NewString("2"),
+			runtime.NewString("1"),
+			runtime.NewBoolean(true),
+			runtime.NewBoolean(false),
+			runtime.NewBoolean(true),
+		)
+
+		result, err := collections.CountDistinct(context.Background(), arr)
+
+		So(err, ShouldBeNil)
+		So(result, ShouldEqual, runtime.NewInt(7)) // 1,2,3,"1","2",true,false
+	})
 }
