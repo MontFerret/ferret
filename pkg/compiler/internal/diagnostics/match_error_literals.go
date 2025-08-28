@@ -10,10 +10,14 @@ import (
 func matchLiteralErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) {
 		input := extractNoAlternativeInputs(err.Message)
+		if len(input) == 0 {
+			return false
+		}
+		
 		token := input[len(input)-1]
 
 		isMissingClosingQuote := isQuote(token)
-		isMissingOpeningQuote := isKeyword(offending.Prev()) && isQuote(token[len(token)-1:]) && !isValidString(token)
+		isMissingOpeningQuote := len(token) > 0 && isKeyword(offending.Prev()) && isQuote(token[len(token)-1:]) && !isValidString(token)
 
 		if isMissingClosingQuote || isMissingOpeningQuote {
 			var span file.Span
