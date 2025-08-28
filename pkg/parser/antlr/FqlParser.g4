@@ -46,14 +46,14 @@ returnExpression
 
 forExpression
     : For valueVariable=(Identifier | IgnoreIdentifier) (Comma counterVariable=Identifier)? In forExpressionSource
-     forExpressionBody*
-      forExpressionReturn
+        forExpressionBody*
+        forExpressionReturn
+    | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) Assign stepIncrement=expression
+        forExpressionBody*
+        forExpressionReturn
     | For counterVariable=(Identifier | IgnoreIdentifier) Do? While expression
-     forExpressionBody*
-      forExpressionReturn
-    | For stepVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable2=(Identifier | IgnoreIdentifier) Assign stepIncrement=expression
-     forExpressionBody*
-      forExpressionReturn
+        forExpressionBody*
+        forExpressionReturn
     ;
 
 forExpressionSource

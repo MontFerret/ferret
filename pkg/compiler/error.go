@@ -5,6 +5,7 @@ import (
 )
 
 type ErrorKind = diagnostics.ErrorKind
+type Formattable = diagnostics.Formattable
 type CompilationError = diagnostics.CompilationError
 type MultiCompilationError = diagnostics.MultiCompilationError
 

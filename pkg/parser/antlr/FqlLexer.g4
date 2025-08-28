@@ -32,8 +32,6 @@ Div: '/';
 Mod: '%';
 Plus: '+';
 Minus: '-';
-MinusMinus: '--';
-PlusPlus: '++';
 
 // Logical operators
 And: 'AND' | '&&';

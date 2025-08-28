@@ -29,10 +29,10 @@ type Loop struct {
 	Distinct bool
 	Allocate bool
 
-	StartLabel Label
-	JumpLabel  Label
-	EndLabel   Label
-	ContinueLabel Label  // For STEP loops, where clauses jump to continue
+	StartLabel    Label
+	JumpLabel     Label
+	EndLabel      Label
+	ContinueLabel Label // For STEP loops, where clauses jump to continue
 
 	Src      vm.Operand
 	SrcFn    func() vm.Operand
@@ -86,7 +86,7 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, de
 	l.StartLabel = emitter.NewLabel("loop", name, "start")
 	l.JumpLabel = emitter.NewLabel("loop", name, "jump")
 	l.EndLabel = emitter.NewLabel("loop", name, "end")
-	
+
 	// For STEP loops, we need a continue label where failed clauses can jump
 	if l.Kind == ForStepLoop {
 		l.ContinueLabel = emitter.NewLabel("loop", name, "continue")
@@ -201,6 +201,7 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 
 	// Initialize the loop variable
 	initValue := l.StepInitFn()
+
 	if l.Value != vm.NoopOperand {
 		emitter.EmitAB(vm.OpMove, l.Value, initValue)
 	}
@@ -225,7 +226,7 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 	emitter.EmitJumpIfFalse(condition, l.EndLabel)
 }
 
-func (l *Loop) EmitStepIncrement(emitter *Emitter) {
+func (l *Loop) emitStepIncrement(emitter *Emitter) {
 	if l.Kind == ForStepLoop && l.StepIncrementFn != nil {
 		// Execute the increment expression and assign it to the loop variable
 		incrementValue := l.StepIncrementFn()

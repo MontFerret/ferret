@@ -1,7 +1,11 @@
 package internal
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
@@ -174,16 +178,22 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	// Declare variables for the loop value and counter if specified
 	if val := ctx.GetValueVariable(); val != nil {
-		loop.DeclareValueVar(val.GetText(), c.ctx.Symbols)
+		varName := val.GetText()
+		loop.DeclareValueVar(varName, c.ctx.Symbols)
+
+		if loop.Kind == core.ForStepLoop {
+			stepVar := ctx.GetStepVariable()
+
+			if stepVar != nil && varName != stepVar.GetText() {
+				ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
+				ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
+				c.ctx.Errors.Add(ce)
+			}
+		}
 	}
 
 	if ctr := ctx.GetCounterVariable(); ctr != nil {
 		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols)
-	}
-
-	// For STEP loops, declare the step variable
-	if stepVar := ctx.GetStepVariable(); stepVar != nil {
-		loop.DeclareValueVar(stepVar.GetText(), c.ctx.Symbols)
 	}
 
 	// Emit VM instructions for loop initialization
