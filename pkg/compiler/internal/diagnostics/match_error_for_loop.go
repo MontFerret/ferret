@@ -190,6 +190,9 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 			}
 		} else if is(offending, "LIMIT") {
 			input := extractNoAlternativeInput(err.Message)
+			if input == "" {
+				return false
+			}
 			tokens := strings.Fields(input)
 
 			if len(tokens) > 0 && has(tokens[len(tokens)-1], ",") {

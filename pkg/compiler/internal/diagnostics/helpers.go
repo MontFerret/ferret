@@ -115,8 +115,10 @@ func isValidString(input string) bool {
 		return true
 	}
 
-	if isQuote(input[0:1]) && isQuote(input[len(input)-1:]) {
-		return true
+	if len(input) >= 2 {
+		first := input[0:1]
+		last := input[len(input)-1:]
+		return isQuote(first) && isQuote(last) && first == last
 	}
 
 	return false
@@ -170,12 +172,20 @@ func extractNoAlternativeInput(msg string) string {
 	re := regexp.MustCompile(`no viable alternative at input\s+(?P<input>.+)`)
 	match := re.FindStringSubmatch(msg)
 
+	if match == nil || len(match) <= re.SubexpIndex("input") {
+		return ""
+	}
+
 	return strings.Trim(match[re.SubexpIndex("input")], "'")
 }
 
 func extractNoAlternativeInputs(msg string) []string {
 	re := regexp.MustCompile(`no viable alternative at input\s+(?P<input>.+)`)
 	match := re.FindStringSubmatch(msg)
+
+	if match == nil || len(match) <= re.SubexpIndex("input") {
+		return []string{}
+	}
 
 	input := match[re.SubexpIndex("input")]
 	input = strings.TrimPrefix(input, "'")
@@ -192,6 +202,10 @@ func extractExtraneousInput(msg string) string {
 	re := regexp.MustCompile(`extraneous input\s+(?P<input>.+?)\s+expecting`)
 	match := re.FindStringSubmatch(msg)
 
+	if match == nil || len(match) <= re.SubexpIndex("input") {
+		return ""
+	}
+
 	input := match[re.SubexpIndex("input")]
 	input = strings.TrimPrefix(input, "'")
 	input = strings.TrimSuffix(input, "'")
@@ -202,6 +216,10 @@ func extractExtraneousInput(msg string) string {
 func extractMismatchedInput(msg string) string {
 	re := regexp.MustCompile(`mismatched input\s+(?P<input>.+?)\s+expecting`)
 	match := re.FindStringSubmatch(msg)
+
+	if match == nil || len(match) <= re.SubexpIndex("input") {
+		return ""
+	}
 
 	input := match[re.SubexpIndex("input")]
 	input = strings.TrimPrefix(input, "'")

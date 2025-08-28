@@ -17,7 +17,13 @@ func matchMissingAssignmentValue(src *file.Source, err *CompilationError, offend
 		span := spanFromTokenSafe(node.Token(), src)
 		span.Start++
 		span.End++
-		err.Message = fmt.Sprintf("Expected expression after '=' for variable '%s'", node.Prev())
+		
+		prevText := ""
+		if node.Prev() != nil {
+			prevText = node.Prev().GetText()
+		}
+		
+		err.Message = fmt.Sprintf("Expected expression after '=' for variable '%s'", prevText)
 		err.Hint = "Did you forget to provide a value?"
 		err.Spans = []ErrorSpan{
 			NewMainErrorSpan(span, "missing value"),
