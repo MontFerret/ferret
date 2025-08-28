@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 type testCase struct {
@@ -16,20 +17,14 @@ type testCase struct {
 }
 
 func (tc *testCase) Do(t *testing.T, fn runtime.Function) {
-	t.Run(tc.Name, func(t *testing.T) {
+	Convey(tc.Name, t, func() {
 		actual, err := fn(context.Background(), tc.Args...)
 
 		if tc.ShouldErr {
-			if err == nil {
-				t.Errorf("expected error but got none")
-			}
+			So(err, ShouldNotBeNil)
 		} else {
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if actual.String() != tc.Expected.String() {
-				t.Errorf("expected %v but got %v", tc.Expected, actual)
-			}
+			So(err, ShouldBeNil)
+			So(actual.String(), ShouldEqual, tc.Expected.String())
 		}
 	})
 }

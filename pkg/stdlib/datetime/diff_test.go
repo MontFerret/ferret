@@ -171,7 +171,7 @@ func TestDiff(t *testing.T) {
 	}
 
 	// Additional test cases to improve coverage
-	additionalTests := []*testCase{
+	tcs = append(tcs,
 		&testCase{
 			Name:     "when dates are not equal with invalid unit",
 			Expected: runtime.None,
@@ -191,9 +191,7 @@ func TestDiff(t *testing.T) {
 				runtime.NewString("hour"),
 			},
 		},
-	}
-
-	tcs = append(tcs, additionalTests...)
+	)
 
 	for _, tc := range tcs {
 		tc.Do(t, datetime.DateDiff)

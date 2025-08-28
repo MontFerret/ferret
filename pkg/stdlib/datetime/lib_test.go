@@ -5,17 +5,16 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRegisterLib(t *testing.T) {
-	t.Run("When registering functions", func(t *testing.T) {
+	Convey("When registering functions", t, func() {
 		ns := runtime.NewRootNamespace()
 		
 		err := datetime.RegisterLib(ns)
 		
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		So(err, ShouldBeNil)
 		
 		// Test that some key functions are registered by checking registered functions list
 		registeredFunctions := ns.RegisteredFunctions()
@@ -37,8 +36,6 @@ func TestRegisterLib(t *testing.T) {
 			}
 		}
 		
-		if foundFunctions < len(expectedFunctions) {
-			t.Errorf("not all expected functions were registered, found %d out of %d", foundFunctions, len(expectedFunctions))
-		}
+		So(foundFunctions, ShouldEqual, len(expectedFunctions))
 	})
 }

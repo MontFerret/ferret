@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 // Test UnitFromString function which is exported
@@ -43,13 +44,12 @@ func TestUnitFromString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		Convey(tt.name, t, func() {
 			_, err := datetime.UnitFromString(tt.input)
-			if tt.hasError && err == nil {
-				t.Error("expected error but got none")
-			}
-			if !tt.hasError && err != nil {
-				t.Errorf("unexpected error: %v", err)
+			if tt.hasError {
+				So(err, ShouldNotBeNil)
+			} else {
+				So(err, ShouldBeNil)
 			}
 		})
 	}
