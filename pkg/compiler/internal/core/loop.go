@@ -20,6 +20,7 @@ const (
 	ForInLoop LoopKind = iota
 	ForWhileLoop
 	DoWhileLoop
+	ForStepLoop
 )
 
 type Loop struct {
@@ -40,6 +41,11 @@ type Loop struct {
 	Value     vm.Operand
 	KeyName   string
 	Key       vm.Operand
+
+	// For STEP loops
+	StepInitFn      func() vm.Operand
+	StepConditionFn func() vm.Operand
+	StepIncrementFn func() vm.Operand
 
 	Dst vm.Operand
 }
@@ -88,6 +94,8 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, de
 
 	if l.Kind == ForInLoop {
 		l.emitForInLoopIteration(alloc, emitter)
+	} else if l.Kind == ForStepLoop {
+		l.emitForStepLoopIteration(alloc, emitter)
 	} else {
 		l.emitForWhileLoopIteration(alloc, emitter)
 	}
@@ -104,6 +112,9 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, de
 func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
 	if l.Kind == ForInLoop {
 		emitter.EmitIterValue(dst, l.Iterator)
+	} else if l.Kind == ForStepLoop {
+		// For STEP loops, the value is already in the destination register
+		// No additional emission needed as the variable is directly assigned
 	}
 }
 
@@ -175,6 +186,35 @@ func (l *Loop) emitForWhileLoopIteration(alloc *RegisterAllocator, emitter *Emit
 	l.Src = l.SrcFn()
 
 	emitter.EmitJumpIfFalse(l.Src, l.EndLabel)
+}
+
+func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
+	if l.StepInitFn == nil || l.StepConditionFn == nil || l.StepIncrementFn == nil {
+		panic("step functions must be defined for step loop")
+	}
+
+	// Initialize the loop variable
+	initValue := l.StepInitFn()
+	if l.Value != vm.NoopOperand {
+		emitter.EmitAB(vm.OpMove, l.Value, initValue)
+	}
+
+	// Mark the beginning of the loop condition check
+	emitter.MarkLabel(l.JumpLabel)
+
+	// Evaluate the condition
+	condition := l.StepConditionFn()
+	emitter.EmitJumpIfFalse(condition, l.EndLabel)
+}
+
+func (l *Loop) EmitStepIncrement(emitter *Emitter) {
+	if l.Kind == ForStepLoop && l.StepIncrementFn != nil {
+		// Execute the increment expression and assign it to the loop variable
+		incrementValue := l.StepIncrementFn()
+		if l.Value != vm.NoopOperand {
+			emitter.EmitAB(vm.OpMove, l.Value, incrementValue)
+		}
+	}
 }
 
 func (l *Loop) canDeclareVar(name string) bool {

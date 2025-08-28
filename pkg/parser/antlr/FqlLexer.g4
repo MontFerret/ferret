@@ -83,6 +83,7 @@ Not: 'NOT' | '!';
 In: 'IN';
 Do: 'DO';
 While: 'WHILE';
+Step: 'STEP';
 
 // Literals
 Param: '@';

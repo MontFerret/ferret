@@ -20,11 +20,16 @@ func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 }
 
 // Compile processes a FOR expression from the FQL AST and generates the appropriate VM instructions.
-// It determines whether to compile a FOR IN loop (iteration over a collection) or a FOR WHILE loop (while condition).
+// It determines whether to compile a FOR IN loop (iteration over a collection), a FOR WHILE loop (while condition),
+// or a FOR STEP loop (with init, condition, and increment expressions).
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 	if ctx.In() != nil {
 		return c.compileForIn(ctx)
+	}
+
+	if ctx.Step() != nil {
+		return c.compileForStep(ctx)
 	}
 
 	return c.compileForWhile(ctx)
@@ -84,11 +89,38 @@ func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand
 	return c.compileFinalization(returnRuleCtx)
 }
 
+// compileForStep processes a FOR STEP loop expression with init, condition, and increment expressions.
+// It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
+// Returns an operand representing the destination of the loop results.
+func (c *LoopCompiler) compileForStep(ctx fql.IForExpressionContext) vm.Operand {
+	// Initialize the loop with ForStepLoop type
+	returnRuleCtx := c.compileInitialization(ctx, core.ForStepLoop)
+
+	// Probably, a syntax error happened and no return rule context was created.
+	if returnRuleCtx == nil {
+		return vm.NoopOperand
+	}
+
+	// Compile the loop body (statements and clauses)
+	if body := ctx.AllForExpressionBody(); len(body) > 0 {
+		for _, b := range body {
+			if ec := b.ForExpressionStatement(); ec != nil {
+				c.compileForExpressionStatement(ec)
+			} else if ec := b.ForExpressionClause(); ec != nil {
+				c.compileForExpressionClause(ec)
+			}
+		}
+	}
+
+	// Finalize the loop and return the destination operand
+	return c.compileFinalization(returnRuleCtx)
+}
+
 // compileInitialization handles the setup of a loop, including determining its type,
 // compiling its source, declaring variables, and emitting initialization instructions.
 // Parameters:
 //   - ctx: The FOR expression context from the AST
-//   - kind: The kind of loop (ForInLoop or ForWhileLoop)
+//   - kind: The kind of loop (ForInLoop, ForWhileLoop, or ForStepLoop)
 //
 // Returns the rule context for the return expression or nested FOR expression.
 func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
@@ -118,10 +150,21 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	if kind == core.ForInLoop {
 		// For IN loops, compile the collection to iterate over
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
+	} else if kind == core.ForStepLoop {
+		// For STEP loops, set up functions to evaluate init, condition, and increment expressions
+		loop.StepInitFn = func() vm.Operand {
+			return c.ctx.ExprCompiler.Compile(ctx.GetStepInit())
+		}
+		loop.StepConditionFn = func() vm.Operand {
+			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
+		}
+		loop.StepIncrementFn = func() vm.Operand {
+			return c.ctx.ExprCompiler.Compile(ctx.GetStepIncrement())
+		}
 	} else {
 		// For WHILE loops, set up a function to evaluate the condition
 		loop.SrcFn = func() vm.Operand {
-			return c.ctx.ExprCompiler.Compile(ctx.Expression())
+			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
 		}
 	}
 
@@ -136,6 +179,11 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	if ctr := ctx.GetCounterVariable(); ctr != nil {
 		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols)
+	}
+
+	// For STEP loops, declare the step variable
+	if stepVar := ctx.GetStepVariable(); stepVar != nil {
+		loop.DeclareValueVar(stepVar.GetText(), c.ctx.Symbols)
 	}
 
 	// Emit VM instructions for loop initialization
@@ -179,6 +227,11 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 		if fe, ok := ctx.(*fql.ForExpressionContext); ok {
 			c.Compile(fe)
 		}
+	}
+
+	// For STEP loops, emit the increment before jumping back
+	if loop.Kind == core.ForStepLoop {
+		loop.EmitStepIncrement(c.ctx.Emitter)
 	}
 
 	// Emit VM instructions for loop finalization
