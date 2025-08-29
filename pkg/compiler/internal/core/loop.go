@@ -165,33 +165,60 @@ func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, o
 	return tmp
 }
 
-func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
+// Common helper methods for loop patterns
+
+// allocateLoopIterator allocates an iterator register for WHILE and STEP loops
+func (l *Loop) allocateLoopIterator(alloc *RegisterAllocator) {
 	if l.Iterator == vm.NoopOperand {
 		l.Iterator = alloc.Allocate(Temp)
 	}
+}
+
+// markJumpLabel marks the common jump label used by all loop types
+func (l *Loop) markJumpLabel(emitter *Emitter) {
+	emitter.MarkLabel(l.JumpLabel)
+}
+
+// emitConditionalJumpToEnd emits a conditional jump to the loop end label
+func (l *Loop) emitConditionalJumpToEnd(emitter *Emitter, condition vm.Operand) {
+	emitter.EmitJumpIfFalse(condition, l.EndLabel)
+}
+
+// initializeCounterState initializes counter state for WHILE loops
+func (l *Loop) initializeCounterState(emitter *Emitter) {
+	emitter.EmitA(vm.OpLoadZero, l.Iterator)
+	emitter.EmitA(vm.OpDecr, l.Iterator)
+}
+
+// incrementCounter increments the counter for WHILE loops
+func (l *Loop) incrementCounter(emitter *Emitter) {
+	emitter.EmitA(vm.OpIncr, l.Iterator)
+}
+
+func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
+	l.allocateLoopIterator(alloc)
 
 	emitter.EmitIter(l.Iterator, l.Src)
-	emitter.MarkLabel(l.JumpLabel)
+	l.markJumpLabel(emitter)
 	emitter.EmitJumpc(vm.OpIterNext, l.Iterator, l.EndLabel)
 }
 
 func (l *Loop) emitForWhileLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
 	l.Iterator = alloc.Allocate(Temp)
-	emitter.EmitA(vm.OpLoadZero, l.Iterator)
-	emitter.EmitA(vm.OpDecr, l.Iterator)
+	l.initializeCounterState(emitter)
 
 	// Placeholder for the loop condition
-	emitter.MarkLabel(l.JumpLabel)
+	l.markJumpLabel(emitter)
 
 	if l.SrcFn == nil {
 		panic("source function must be defined for while loop")
 	}
 
-	emitter.EmitA(vm.OpIncr, l.Iterator)
+	l.incrementCounter(emitter)
 
 	l.Src = l.SrcFn()
 
-	emitter.EmitJumpIfFalse(l.Src, l.EndLabel)
+	l.emitConditionalJumpToEnd(emitter, l.Src)
 }
 
 func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
@@ -209,7 +236,7 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 	emitter.EmitJump(l.ContinueLabel)
 
 	// Mark the jump target for loop iterations (increment + condition check)
-	emitter.MarkLabel(l.JumpLabel)
+	l.markJumpLabel(emitter)
 
 	// Execute increment (this happens on every loop-back, but not on first iteration)
 	if l.Value != vm.NoopOperand {
@@ -222,7 +249,7 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 
 	// Evaluate the condition
 	condition := l.StepConditionFn()
-	emitter.EmitJumpIfFalse(condition, l.EndLabel)
+	l.emitConditionalJumpToEnd(emitter, condition)
 }
 
 func (l *Loop) EmitStepIncrement(emitter *Emitter) {
