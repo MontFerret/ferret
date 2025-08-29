@@ -201,7 +201,7 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 	}
 
 	value := c.ctx.Registers.Allocate(core.Temp)
-	c.ctx.Emitter.EmitIterValue(value, loop.Iterator)
+	c.ctx.Emitter.EmitIterValue(value, loop.State)
 	scope.RestoreFromArray(value)
 	c.ctx.Registers.Free(value)
 

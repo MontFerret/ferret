@@ -29,12 +29,13 @@ type Loop struct {
 	Distinct bool
 	Allocate bool
 
-	StartLabel    Label
-	ContinueLabel Label
-	EndLabel      Label
+	StartLabel Label
+	CondLabel  Label
+	IncrLabel  Label
+	EndLabel   Label
 
-	Src      vm.Operand
-	Iterator vm.Operand
+	Src   vm.Operand
+	State vm.Operand
 
 	ValueName string
 	Value     vm.Operand
@@ -82,8 +83,12 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) bool {
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, depth int) {
 	name := strconv.Itoa(depth)
 	l.StartLabel = emitter.NewLabel("loop", name, "start")
-	l.ContinueLabel = emitter.NewLabel("loop", name, "cond")
+	l.CondLabel = emitter.NewLabel("loop", name, "cond")
 	l.EndLabel = emitter.NewLabel("loop", name, "end")
+
+	if l.Kind != ForInLoop {
+		l.IncrLabel = emitter.NewLabel("loop", name, "incr")
+	}
 
 	emitter.MarkLabel(l.StartLabel)
 
@@ -113,22 +118,27 @@ func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
 	// For WHILE/STEP loops, the value is already in the destination register
 	// No additional emission needed as the variable is directly assigned
 	if l.Kind == ForInLoop {
-		emitter.EmitIterValue(dst, l.Iterator)
+		emitter.EmitIterValue(dst, l.State)
 	}
 }
 
 func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
 	if l.Kind == ForInLoop {
-		emitter.EmitIterKey(dst, l.Iterator)
+		emitter.EmitIterKey(dst, l.State)
 	}
 }
 
 func (l *Loop) EmitFinalization(emitter *Emitter) {
-	emitter.EmitJump(l.ContinueLabel)
+	if l.Kind == ForInLoop {
+		emitter.EmitJump(l.CondLabel)
+	} else {
+		emitter.EmitJump(l.IncrLabel)
+	}
+
 	emitter.MarkLabel(l.EndLabel)
 
 	if l.Kind == ForInLoop {
-		emitter.EmitA(vm.OpClose, l.Iterator)
+		emitter.EmitA(vm.OpClose, l.State)
 	}
 }
 
@@ -157,35 +167,44 @@ func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, o
 }
 
 func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
-	if l.Iterator == vm.NoopOperand {
-		l.Iterator = alloc.Allocate(Temp)
+	if l.State == vm.NoopOperand {
+		l.State = alloc.Allocate(Temp)
 	}
 
-	emitter.EmitIter(l.Iterator, l.Src)
-	emitter.MarkLabel(l.ContinueLabel)
-	emitter.EmitJumpc(vm.OpIterNext, l.Iterator, l.EndLabel)
+	emitter.EmitIter(l.State, l.Src)
+	emitter.MarkLabel(l.CondLabel)
+	emitter.EmitJumpc(vm.OpIterNext, l.State, l.EndLabel)
 }
 
-func (l *Loop) emitForWhileLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
+func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
 	if l.ConditionFn == nil {
 		panic("condition function must be defined for while loop")
 	}
 
-	l.Iterator = alloc.Allocate(Temp)
-	emitter.EmitA(vm.OpLoadZero, l.Iterator)
-	emitter.EmitA(vm.OpDecr, l.Iterator)
+	if l.Value != vm.NoopOperand {
+		// Initialize the loop variable
+		emitter.EmitA(vm.OpLoadZero, l.Value)
+	}
+
+	// Jump to the initial condition check (skipping the increment)
+	emitter.EmitJump(l.CondLabel)
 
 	// Placeholder for the loop condition
-	emitter.MarkLabel(l.ContinueLabel)
+	emitter.MarkLabel(l.IncrLabel)
 
-	emitter.EmitA(vm.OpIncr, l.Iterator)
+	if l.Value != vm.NoopOperand {
+		emitter.EmitA(vm.OpIncr, l.Value)
+	}
 
-	l.Src = l.SrcFn()
+	// Mark the continue label (initial condition check point)
+	emitter.MarkLabel(l.CondLabel)
 
-	emitter.EmitJumpIfFalse(l.Src, l.EndLabel)
+	// Evaluate the condition
+	condition := l.ConditionFn()
+	emitter.EmitJumpIfFalse(condition, l.EndLabel)
 }
 
-func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
+func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
 	if l.InitFn == nil || l.ConditionFn == nil || l.IncrementFn == nil {
 		panic("step functions must be defined for step loop")
 	}
@@ -198,10 +217,10 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 	}
 
 	// Jump to the initial condition check (skipping the increment)
-	emitter.EmitJump(l.ContinueLabel)
+	emitter.EmitJump(l.IncrLabel)
 
 	// Mark the jump target for loop iterations (increment + condition check)
-	emitter.MarkLabel(l.JumpLabel)
+	emitter.MarkLabel(l.CondLabel)
 
 	// Execute increment (this happens on every loop-back, but not on first iteration)
 	if l.Value != vm.NoopOperand {
@@ -210,7 +229,7 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 	}
 
 	// Mark the continue label (initial condition check point)
-	emitter.MarkLabel(l.ContinueLabel)
+	emitter.MarkLabel(l.IncrLabel)
 
 	// Evaluate the condition
 	condition := l.ConditionFn()

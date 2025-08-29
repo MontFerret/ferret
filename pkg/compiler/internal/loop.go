@@ -394,7 +394,7 @@ func (c *LoopCompiler) compileOffset(src vm.Operand) {
 	// Allocate a state register for the offset operation
 	state := c.ctx.Registers.Allocate(core.State)
 	// Emit the iterator skip instruction with the loop's jump label
-	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().JumpLabel)
+	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().CondLabel)
 }
 
 // compileFilterClause processes a FILTER clause in a FOR loop.
@@ -404,7 +404,7 @@ func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	// Compile the filter expression (e.g., FILTER x > 5)
 	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
 	// Get the jump label for the current loop
-	label := c.ctx.Loops.Current().JumpLabel
+	label := c.ctx.Loops.Current().CondLabel
 	// Emit a jump instruction that skips to the next iteration if the filter condition is false
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
