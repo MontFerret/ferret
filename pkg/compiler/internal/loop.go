@@ -62,12 +62,13 @@ func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 	return c.compileFinalization(returnRuleCtx)
 }
 
-// compileForWhile processes a FOR WHILE loop expression with a condition (while loop).
+// compileLoop processes any loop expression (WHILE or STEP) with the specified loop kind.
 // It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
+// This unified method eliminates code duplication between WHILE and STEP loop compilation.
 // Returns an operand representing the destination of the loop results.
-func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
-	// Initialize the loop with ForWhileLoop type
-	returnRuleCtx := c.compileInitialization(ctx, core.ForWhileLoop)
+func (c *LoopCompiler) compileLoop(ctx fql.IForExpressionContext, kind core.LoopKind) vm.Operand {
+	// Initialize the loop with the specified loop type
+	returnRuleCtx := c.compileInitialization(ctx, kind)
 
 	// Probably, a syntax error happened and no return rule context was created.
 	if returnRuleCtx == nil {
@@ -89,31 +90,18 @@ func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand
 	return c.compileFinalization(returnRuleCtx)
 }
 
+// compileForWhile processes a FOR WHILE loop expression with a condition (while loop).
+// It delegates to the unified compileLoop method with ForWhileLoop kind.
+// Returns an operand representing the destination of the loop results.
+func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
+	return c.compileLoop(ctx, core.ForWhileLoop)
+}
+
 // compileForStep processes a FOR STEP loop expression with init, condition, and increment expressions.
-// It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
+// It delegates to the unified compileLoop method with ForStepLoop kind.
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) compileForStep(ctx fql.IForExpressionContext) vm.Operand {
-	// Initialize the loop with ForStepLoop type
-	returnRuleCtx := c.compileInitialization(ctx, core.ForStepLoop)
-
-	// Probably, a syntax error happened and no return rule context was created.
-	if returnRuleCtx == nil {
-		return vm.NoopOperand
-	}
-
-	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); len(body) > 0 {
-		for _, b := range body {
-			if ec := b.ForExpressionStatement(); ec != nil {
-				c.compileForExpressionStatement(ec)
-			} else if ec := b.ForExpressionClause(); ec != nil {
-				c.compileForExpressionClause(ec)
-			}
-		}
-	}
-
-	// Finalize the loop and return the destination operand
-	return c.compileFinalization(returnRuleCtx)
+	return c.compileLoop(ctx, core.ForStepLoop)
 }
 
 // compileInitialization handles the setup of a loop, including determining its type,
