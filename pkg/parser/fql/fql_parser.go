@@ -2592,14 +2592,14 @@ func (p *FqlParser) ForExpression() (localctx IForExpressionContext) {
 
 			var _lt = p.GetTokenStream().LT(1)
 
-			localctx.(*ForExpressionContext).counterVariable = _lt
+			localctx.(*ForExpressionContext).valueVariable = _lt
 
 			_la = p.GetTokenStream().LA(1)
 
 			if !(_la == FqlParserIdentifier || _la == FqlParserIgnoreIdentifier) {
 				var _ri = p.GetErrorHandler().RecoverInline(p)
 
-				localctx.(*ForExpressionContext).counterVariable = _ri
+				localctx.(*ForExpressionContext).valueVariable = _ri
 			} else {
 				p.GetErrorHandler().ReportMatch(p)
 				p.Consume()

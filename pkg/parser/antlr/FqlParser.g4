@@ -51,7 +51,7 @@ forExpression
     | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) Assign stepIncrement=expression
         forExpressionBody*
         forExpressionReturn
-    | For counterVariable=(Identifier | IgnoreIdentifier) Do? While expression
+    | For valueVariable=(Identifier | IgnoreIdentifier) Do? While expression
         forExpressionBody*
         forExpressionReturn
     ;

@@ -30,12 +30,10 @@ type Loop struct {
 	Allocate bool
 
 	StartLabel    Label
-	JumpLabel     Label
+	ContinueLabel Label
 	EndLabel      Label
-	ContinueLabel Label // For STEP loops, where clauses jump to continue
 
 	Src      vm.Operand
-	SrcFn    func() vm.Operand
 	Iterator vm.Operand
 
 	ValueName string
@@ -43,10 +41,10 @@ type Loop struct {
 	KeyName   string
 	Key       vm.Operand
 
-	// For STEP loops
-	StepInitFn      func() vm.Operand
-	StepConditionFn func() vm.Operand
-	StepIncrementFn func() vm.Operand
+	// For WHILE/STEP loops
+	InitFn      func() vm.Operand
+	ConditionFn func() vm.Operand
+	IncrementFn func() vm.Operand
 
 	Dst vm.Operand
 }
@@ -84,13 +82,8 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) bool {
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, depth int) {
 	name := strconv.Itoa(depth)
 	l.StartLabel = emitter.NewLabel("loop", name, "start")
-	l.JumpLabel = emitter.NewLabel("loop", name, "jump")
+	l.ContinueLabel = emitter.NewLabel("loop", name, "cond")
 	l.EndLabel = emitter.NewLabel("loop", name, "end")
-
-	// For STEP loops, we need a continue label where failed clauses can jump
-	if l.Kind == ForStepLoop {
-		l.ContinueLabel = emitter.NewLabel("loop", name, "continue")
-	}
 
 	emitter.MarkLabel(l.StartLabel)
 
@@ -98,11 +91,12 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, de
 		emitter.EmitAb(vm.OpDataSet, l.Dst, l.Distinct)
 	}
 
-	if l.Kind == ForInLoop {
+	switch l.Kind {
+	case ForInLoop:
 		l.emitForInLoopIteration(alloc, emitter)
-	} else if l.Kind == ForStepLoop {
+	case ForStepLoop:
 		l.emitForStepLoopIteration(alloc, emitter)
-	} else {
+	default:
 		l.emitForWhileLoopIteration(alloc, emitter)
 	}
 
@@ -116,24 +110,21 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, de
 }
 
 func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
+	// For WHILE/STEP loops, the value is already in the destination register
+	// No additional emission needed as the variable is directly assigned
 	if l.Kind == ForInLoop {
 		emitter.EmitIterValue(dst, l.Iterator)
-	} else if l.Kind == ForStepLoop {
-		// For STEP loops, the value is already in the destination register
-		// No additional emission needed as the variable is directly assigned
 	}
 }
 
 func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
 	if l.Kind == ForInLoop {
 		emitter.EmitIterKey(dst, l.Iterator)
-	} else {
-		emitter.EmitAB(vm.OpMove, dst, l.Iterator)
 	}
 }
 
 func (l *Loop) EmitFinalization(emitter *Emitter) {
-	emitter.EmitJump(l.JumpLabel)
+	emitter.EmitJump(l.ContinueLabel)
 	emitter.MarkLabel(l.EndLabel)
 
 	if l.Kind == ForInLoop {
@@ -171,21 +162,21 @@ func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter
 	}
 
 	emitter.EmitIter(l.Iterator, l.Src)
-	emitter.MarkLabel(l.JumpLabel)
+	emitter.MarkLabel(l.ContinueLabel)
 	emitter.EmitJumpc(vm.OpIterNext, l.Iterator, l.EndLabel)
 }
 
 func (l *Loop) emitForWhileLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
+	if l.ConditionFn == nil {
+		panic("condition function must be defined for while loop")
+	}
+
 	l.Iterator = alloc.Allocate(Temp)
 	emitter.EmitA(vm.OpLoadZero, l.Iterator)
 	emitter.EmitA(vm.OpDecr, l.Iterator)
 
 	// Placeholder for the loop condition
-	emitter.MarkLabel(l.JumpLabel)
-
-	if l.SrcFn == nil {
-		panic("source function must be defined for while loop")
-	}
+	emitter.MarkLabel(l.ContinueLabel)
 
 	emitter.EmitA(vm.OpIncr, l.Iterator)
 
@@ -195,12 +186,12 @@ func (l *Loop) emitForWhileLoopIteration(alloc *RegisterAllocator, emitter *Emit
 }
 
 func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
-	if l.StepInitFn == nil || l.StepConditionFn == nil || l.StepIncrementFn == nil {
+	if l.InitFn == nil || l.ConditionFn == nil || l.IncrementFn == nil {
 		panic("step functions must be defined for step loop")
 	}
 
 	// Initialize the loop variable
-	initValue := l.StepInitFn()
+	initValue := l.InitFn()
 
 	if l.Value != vm.NoopOperand {
 		emitter.EmitAB(vm.OpMove, l.Value, initValue)
@@ -214,7 +205,7 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 
 	// Execute increment (this happens on every loop-back, but not on first iteration)
 	if l.Value != vm.NoopOperand {
-		incrementValue := l.StepIncrementFn()
+		incrementValue := l.IncrementFn()
 		emitter.EmitAB(vm.OpMove, l.Value, incrementValue)
 	}
 
@@ -222,14 +213,15 @@ func (l *Loop) emitForStepLoopIteration(alloc *RegisterAllocator, emitter *Emitt
 	emitter.MarkLabel(l.ContinueLabel)
 
 	// Evaluate the condition
-	condition := l.StepConditionFn()
+	condition := l.ConditionFn()
 	emitter.EmitJumpIfFalse(condition, l.EndLabel)
 }
 
 func (l *Loop) emitStepIncrement(emitter *Emitter) {
-	if l.Kind == ForStepLoop && l.StepIncrementFn != nil {
+	if l.Kind == ForStepLoop && l.IncrementFn != nil {
 		// Execute the increment expression and assign it to the loop variable
-		incrementValue := l.StepIncrementFn()
+		incrementValue := l.IncrementFn()
+
 		if l.Value != vm.NoopOperand {
 			emitter.EmitAB(vm.OpMove, l.Value, incrementValue)
 		}

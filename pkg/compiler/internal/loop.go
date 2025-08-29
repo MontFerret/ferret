@@ -151,23 +151,25 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
 
 	// Set up the loop source based on the loop kind
-	if kind == core.ForInLoop {
+
+	switch kind {
+	case core.ForInLoop:
 		// For IN loops, compile the collection to iterate over
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
-	} else if kind == core.ForStepLoop {
+	case core.ForStepLoop:
 		// For STEP loops, set up functions to evaluate init, condition, and increment expressions
-		loop.StepInitFn = func() vm.Operand {
+		loop.InitFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepInit())
 		}
-		loop.StepConditionFn = func() vm.Operand {
+		loop.ConditionFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
 		}
-		loop.StepIncrementFn = func() vm.Operand {
+		loop.IncrementFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepIncrement())
 		}
-	} else {
+	default:
 		// For WHILE loops, set up a function to evaluate the condition
-		loop.SrcFn = func() vm.Operand {
+		loop.ConditionFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
 		}
 	}
