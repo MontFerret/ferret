@@ -23,7 +23,7 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 		// TODO: We need to figure out how to free the aggregator register later
 		aggregator := c.ctx.Registers.Allocate(core.State)
 		// We create a separate collector for aggregation in grouped mode
-		c.ctx.Emitter.InsertAx(loop.StartLabel, vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
+		c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
 
 		// Compile selectors for grouped aggregation
 		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator)
