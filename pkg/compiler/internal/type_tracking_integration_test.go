@@ -51,6 +51,8 @@ func TestTypeTrackingIntegration(t *testing.T) {
 		{"Boolean variable", `LET x = TRUE RETURN x`, "x", core.TypeBool},
 		{"Array variable", `LET x = [1, 2, 3] RETURN x`, "x", core.TypeList},
 		{"Object variable", `LET x = {name: "test"} RETURN x`, "x", core.TypeMap},
+		{"Function call variable", `LET x = TYPENAME(1) RETURN x`, "x", core.TypeUnknown},
+		{"Expression variable", `LET x = 1 + 2 RETURN x`, "x", core.TypeUnknown},
 	}
 
 	for _, tt := range tests {
