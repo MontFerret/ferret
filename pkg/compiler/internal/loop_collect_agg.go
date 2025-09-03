@@ -196,7 +196,7 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	}
 
 	// Initialize the loop
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
 	c.compileGlobalAggregationFuncCalls(spec)
 }

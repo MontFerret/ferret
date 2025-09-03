@@ -1,8 +1,6 @@
 package core
 
 import (
-	"strconv"
-
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
@@ -44,6 +42,7 @@ type Loop struct {
 
 	Dst vm.Operand
 
+	LabelBase  string
 	startLabel Label
 	condLabel  Label
 	incrLabel  Label
@@ -96,14 +95,14 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) bool {
 	return true
 }
 
-func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter, depth int) {
-	name := strconv.Itoa(depth)
+func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
+	name := l.LabelBase
 	l.startLabel = emitter.NewLabel("loop", name, "start")
 	l.condLabel = emitter.NewLabel("loop", name, "cond")
 	l.endLabel = emitter.NewLabel("loop", name, "end")
 
 	if l.Kind != ForInLoop {
-		l.incrLabel = emitter.NewLabel("loop", name, "incr")
+		l.incrLabel = emitter.NewLabel("loop", l.LabelBase, "incr")
 	}
 
 	emitter.MarkLabel(l.startLabel)
@@ -200,10 +199,9 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 	// Jump to the initial condition check (skipping the increment)
 	emitter.EmitJump(l.condLabel)
 
-	// Placeholder for the loop condition
-	emitter.MarkLabel(l.incrLabel)
-
 	if l.Value != vm.NoopOperand {
+		// Placeholder for the loop increment
+		emitter.MarkLabel(l.incrLabel)
 		emitter.EmitA(vm.OpIncr, l.Value)
 	}
 

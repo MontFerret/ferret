@@ -122,7 +122,7 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 			loop.Src = spec.Destination()
 		}
 
-		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 	}
 
 	// Process aggregation if present

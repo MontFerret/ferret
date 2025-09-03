@@ -79,9 +79,14 @@ func (e *Emitter) MarkLabel(label Label) {
 		for _, ref := range refs {
 			e.patchOperand(ref.pos, ref.field, len(e.instructions))
 		}
-
-		delete(e.patches, label.id)
 	}
+	//
+	//// Back-patch any prior references to this label (keep them for future retargeting)
+	//if refs, ok := e.patches[label.id]; ok {
+	//	for _, ref := range refs {
+	//		e.patchOperand(ref.pos, ref.field, len(e.instructions))
+	//	}
+	//}
 }
 
 func (e *Emitter) LabelPosition(label Label) (int, bool) {
@@ -241,7 +246,14 @@ func (e *Emitter) addLabelRef(pos int, field int, label Label) {
 		e.patches = make(map[labelID][]labelRef)
 	}
 
+	// Always remember the reference so we can retarget it later if needed
 	e.patches[label.id] = append(e.patches[label.id], labelRef{pos: pos, field: field})
+
+	//// If the label is already marked, patch now as well
+	//
+	//if def, ok := e.labels[label.id]; ok {
+	//	e.patchOperand(pos, field, def.addr)
+	//}
 }
 
 // patchOperand modifies the operand at the specified position and field in the instruction set.
@@ -276,13 +288,16 @@ func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
 	)
 
 	// Adjust all subsequent label addresses
+	moved := make(map[labelID]int, 4)
 	for l, d := range e.labels {
 		if d.addr >= pos {
+			newAddr := d.addr + 1
 			e.labels[l] = Label{
 				id:   d.id,
 				name: d.name,
-				addr: d.addr + 1,
+				addr: newAddr,
 			}
+			moved[l] = newAddr
 		}
 	}
 
@@ -291,6 +306,15 @@ func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
 		for i, ref := range refs {
 			if ref.pos >= pos {
 				e.patches[l][i].pos++
+			}
+		}
+	}
+
+	// Re-patch any references that target labels whose address has moved
+	for l, newAddr := range moved {
+		if refs, ok := e.patches[l]; ok {
+			for _, ref := range refs {
+				e.patchOperand(ref.pos, ref.field, newAddr)
 			}
 		}
 	}

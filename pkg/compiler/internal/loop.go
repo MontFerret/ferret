@@ -199,7 +199,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	// Emit VM instructions for loop initialization
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
 	// Handle distinct values if needed
 	if !loop.Allocate {
