@@ -491,6 +491,11 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 //
 // Panics if the variable is not found in the symbol table.
 func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
+	// Check if the context is valid (in case of parser errors)
+	if ctx.Identifier() == nil {
+		return vm.NoopOperand
+	}
+	
 	name := ctx.Identifier().GetText()
 	// Just return the register / constant index
 	op, _, found := c.ctx.Symbols.Resolve(name)
