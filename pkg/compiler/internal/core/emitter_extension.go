@@ -6,7 +6,7 @@ import (
 
 // Emitter Helpers - Common opcode shortcut methods
 
-// ─── Loop & Iterator ──────────────────────────────────────────────────────
+// ─── Loop & State ──────────────────────────────────────────────────────
 
 func (e *Emitter) EmitIter(dst, src vm.Operand) {
 	e.EmitAB(vm.OpIter, dst, src)

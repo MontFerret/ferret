@@ -2,6 +2,7 @@ package vm_test
 
 import (
 	j "encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -165,6 +166,12 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				}()
 
 				if !base.ArePtrsEqual(useCase.PreAssertion, base.ShouldBeCompilationError) {
+					if err != nil {
+						if fe, ok := err.(compiler.Formattable); ok {
+							fmt.Println(fe.Format())
+						}
+					}
+
 					So(err, ShouldBeNil)
 				} else {
 					So(err, ShouldBeError)

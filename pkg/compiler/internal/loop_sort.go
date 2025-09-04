@@ -146,6 +146,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	c.ctx.Symbols.EnterScope()
 
 	// Replace the loop source with sorted results
+	loop.LabelBase = c.ctx.Loops.NextBase()
 	loop.Src = c.ctx.Registers.Allocate(core.Temp)
 	c.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, sorter)
 
@@ -162,7 +163,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	loop.Key = vm.NoopOperand
 
 	// Reinitialize the loop to iterate over sorted data
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
 	// Unpack the scope to restore local variables
 	c.restoreScope(loop, scope)
@@ -201,7 +202,7 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 	}
 
 	value := c.ctx.Registers.Allocate(core.Temp)
-	c.ctx.Emitter.EmitIterValue(value, loop.Iterator)
+	c.ctx.Emitter.EmitIterValue(value, loop.State)
 	scope.RestoreFromArray(value)
 	c.ctx.Registers.Free(value)
 

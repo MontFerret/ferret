@@ -183,7 +183,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
-	// EndLabel to 'false' branch if condition is false
+	// endLabel to 'false' branch if condition is false
 	c.ctx.Emitter.EmitJumpIfFalse(dst, elseLabel)
 
 	// True branch
@@ -193,7 +193,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 		c.ctx.Emitter.EmitMove(dst, trueReg)
 	}
 
-	// EndLabel over false branch
+	// endLabel over false branch
 	c.ctx.Emitter.EmitJump(endLabel)
 	// Mark label for 'else' branch
 	c.ctx.Emitter.MarkLabel(elseLabel)
@@ -205,7 +205,7 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 		c.ctx.Emitter.EmitMove(dst, falseReg)
 	}
 
-	// EndLabel
+	// endLabel
 	c.ctx.Emitter.MarkLabel(endLabel)
 
 	return dst

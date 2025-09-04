@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/vm"
 )
@@ -10,12 +9,14 @@ import (
 type LoopTable struct {
 	stack     []*Loop
 	registers *RegisterAllocator
+	ordinals  map[int]int
 }
 
 func NewLoopTable(registers *RegisterAllocator) *LoopTable {
 	return &LoopTable{
 		stack:     make([]*Loop, 0),
 		registers: registers,
+		ordinals:  make(map[int]int),
 	}
 }
 
@@ -35,7 +36,7 @@ func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *L
 	if loopType != TemporalLoop {
 		if allocate {
 			result = lt.registers.Allocate(Result)
-		} else if parent != nil {
+		} else {
 			result = parent.Dst
 		}
 	}
@@ -51,6 +52,7 @@ func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *L
 
 func (lt *LoopTable) Push(loop *Loop) {
 	lt.stack = append(lt.stack, loop)
+	loop.LabelBase = lt.NextBase()
 }
 
 func (lt *LoopTable) Pop() *Loop {
@@ -85,10 +87,8 @@ func (lt *LoopTable) Depth() int {
 	return len(lt.stack)
 }
 
-func (lt *LoopTable) DebugView() string {
-	var out strings.Builder
-	for i, loop := range lt.stack {
-		fmt.Fprintf(&out, "Loop[%d]: Type=%v Kind=%v Dst=R%d\n", i, loop.Type, loop.Kind, loop.Dst)
-	}
-	return out.String()
+func (lt *LoopTable) NextBase() string {
+	depth := lt.Depth()
+	lt.ordinals[depth]++
+	return fmt.Sprintf("%d.%d", depth, lt.ordinals[depth])
 }

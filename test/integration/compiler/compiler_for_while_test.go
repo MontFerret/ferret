@@ -8,7 +8,7 @@ import (
 
 func TestForWhile(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		SkipByteCodeCase(`
+		ByteCodeCase(`
 			FOR i WHILE UNTIL(5)
 				RETURN i
 `, BC{

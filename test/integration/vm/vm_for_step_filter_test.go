@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestForStepWithClauses(t *testing.T) {
+func TestForStepFilter(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		// STEP loop with FILTER
 		CaseArray(`
@@ -12,21 +12,21 @@ func TestForStepWithClauses(t *testing.T) {
 			FILTER i % 2 == 0
 			RETURN i
 		`, []any{0, 2, 4, 6, 8}),
-		
+
 		// STEP loop with SORT
 		CaseArray(`
 			FOR i = 5 WHILE i > 0 STEP i = i - 1
 			SORT i DESC
 			RETURN i
 		`, []any{5, 4, 3, 2, 1}),
-		
+
 		// STEP loop with LIMIT
 		CaseArray(`
 			FOR i = 1 WHILE i <= 10 STEP i = i + 1
 			LIMIT 3
 			RETURN i
 		`, []any{1, 2, 3}),
-		
+
 		// STEP loop with complex expression and filter
 		CaseArray(`
 			FOR i = 1 WHILE i <= 5 STEP i = i + 1

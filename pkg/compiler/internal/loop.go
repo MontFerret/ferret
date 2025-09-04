@@ -1,7 +1,11 @@
 package internal
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
@@ -147,23 +151,25 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
 
 	// Set up the loop source based on the loop kind
-	if kind == core.ForInLoop {
+
+	switch kind {
+	case core.ForInLoop:
 		// For IN loops, compile the collection to iterate over
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
-	} else if kind == core.ForStepLoop {
+	case core.ForStepLoop:
 		// For STEP loops, set up functions to evaluate init, condition, and increment expressions
-		loop.StepInitFn = func() vm.Operand {
+		loop.InitFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepInit())
 		}
-		loop.StepConditionFn = func() vm.Operand {
+		loop.ConditionFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
 		}
-		loop.StepIncrementFn = func() vm.Operand {
+		loop.IncrementFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepIncrement())
 		}
-	} else {
+	default:
 		// For WHILE loops, set up a function to evaluate the condition
-		loop.SrcFn = func() vm.Operand {
+		loop.ConditionFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
 		}
 	}
@@ -174,20 +180,26 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	// Declare variables for the loop value and counter if specified
 	if val := ctx.GetValueVariable(); val != nil {
-		loop.DeclareValueVar(val.GetText(), c.ctx.Symbols)
+		varName := val.GetText()
+		loop.DeclareValueVar(varName, c.ctx.Symbols)
+
+		if loop.Kind == core.ForStepLoop {
+			stepVar := ctx.GetStepVariable()
+
+			if stepVar != nil && varName != stepVar.GetText() {
+				ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
+				ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
+				c.ctx.Errors.Add(ce)
+			}
+		}
 	}
 
 	if ctr := ctx.GetCounterVariable(); ctr != nil {
 		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols)
 	}
 
-	// For STEP loops, declare the step variable
-	if stepVar := ctx.GetStepVariable(); stepVar != nil {
-		loop.DeclareValueVar(stepVar.GetText(), c.ctx.Symbols)
-	}
-
 	// Emit VM instructions for loop initialization
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter, c.ctx.Loops.Depth())
+	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
 	// Handle distinct values if needed
 	if !loop.Allocate {
@@ -199,7 +211,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 				panic("parent loop not found in loop table")
 			}
 
-			c.ctx.Emitter.Patchx(parent.StartLabel, 1)
+			c.ctx.Emitter.Patchx(parent.StartLabel(), 1)
 		}
 	}
 
@@ -373,7 +385,7 @@ func (c *LoopCompiler) compileLimit(src vm.Operand) {
 	// Allocate a state register for the limit operation
 	state := c.ctx.Registers.Allocate(core.State)
 	// Emit the iterator limit instruction with the loop's end label
-	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().EndLabel)
+	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().BreakLabel())
 }
 
 // compileOffset emits VM instructions to skip a number of iterations at the start of a loop.
@@ -382,7 +394,7 @@ func (c *LoopCompiler) compileOffset(src vm.Operand) {
 	// Allocate a state register for the offset operation
 	state := c.ctx.Registers.Allocate(core.State)
 	// Emit the iterator skip instruction with the loop's jump label
-	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().JumpLabel)
+	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().ContinueLabel())
 }
 
 // compileFilterClause processes a FILTER clause in a FOR loop.
@@ -392,7 +404,7 @@ func (c *LoopCompiler) compileFilterClause(ctx fql.IFilterClauseContext) {
 	// Compile the filter expression (e.g., FILTER x > 5)
 	src := c.ctx.ExprCompiler.Compile(ctx.Expression())
 	// Get the jump label for the current loop
-	label := c.ctx.Loops.Current().JumpLabel
+	label := c.ctx.Loops.Current().ContinueLabel()
 	// Emit a jump instruction that skips to the next iteration if the filter condition is false
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }

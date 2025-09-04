@@ -103,7 +103,7 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 		out = fmt.Sprintf("%d: %s %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]), formatOperand(ops[2]))
 
 	// Op R
-	case vm.OpLoadNone, vm.OpLoadZero, vm.OpCall0, vm.OpClose, vm.OpSleep, vm.OpReturn:
+	case vm.OpLoadNone, vm.OpLoadZero, vm.OpCall0, vm.OpClose, vm.OpSleep, vm.OpIncr, vm.OpReturn:
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, formatOperand(ops[0]))
 
 	// Op R Arg

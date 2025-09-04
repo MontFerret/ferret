@@ -80,6 +80,15 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 	}
 }
 
+func (h *ErrorHandler) Create(kind ErrorKind, ctx antlr.ParserRuleContext, msg string) *CompilationError {
+	return &CompilationError{
+		Kind:    kind,
+		Source:  h.src,
+		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
+		Message: msg,
+	}
+}
+
 func (h *ErrorHandler) HasErrorOnLine(line int) bool {
 	return h.linesWithErrors[line]
 }
@@ -98,8 +107,9 @@ func (h *ErrorHandler) VariableNotFound(token antlr.Token, name string) {
 	h.Add(&CompilationError{
 		Message: fmt.Sprintf("Variable '%s' is not defined", name),
 		Source:  h.src,
-		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromToken(token), "")},
+		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromToken(token), "undefined variable")},
 		Kind:    NameError,
+		Hint:    "Did you forget to declare it?",
 	})
 }
 

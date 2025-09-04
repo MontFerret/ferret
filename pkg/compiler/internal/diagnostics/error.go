@@ -17,6 +17,10 @@ type (
 		Spans   []ErrorSpan  `json:"spans"`
 		Cause   error        `json:"cause"`
 	}
+
+	Formattable interface {
+		Format() string
+	}
 )
 
 const (
