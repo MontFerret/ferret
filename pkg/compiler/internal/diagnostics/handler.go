@@ -141,3 +141,14 @@ func (h *ErrorHandler) InvalidRegexExpression(ctx antlr.ParserRuleContext, expre
 		Kind: SyntaxError,
 	})
 }
+
+func (h *ErrorHandler) InvalidToken(token antlr.Token) {
+	h.Add(&CompilationError{
+		Message: fmt.Sprintf("Invalid token: %s", token),
+		Hint:    "Check the syntax of the literal.",
+		Source:  h.src,
+		Spans: []ErrorSpan{
+			NewMainErrorSpan(SpanFromToken(token), "invalid token")},
+		Kind: SyntaxError,
+	})
+}

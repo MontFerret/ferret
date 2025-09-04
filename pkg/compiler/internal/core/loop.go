@@ -38,15 +38,15 @@ type Loop struct {
 	// For WHILE/STEP loops
 	InitFn      func() vm.Operand
 	ConditionFn func() vm.Operand
-	IncrementFn func() vm.Operand
+	UpdateFn    func() vm.Operand
 
 	Dst vm.Operand
 
-	LabelBase  string
-	startLabel Label
-	condLabel  Label
-	incrLabel  Label
-	endLabel   Label
+	LabelBase     string
+	startLabel    Label
+	condLabel     Label
+	continueLabel Label
+	endLabel      Label
 }
 
 func (l *Loop) StartLabel() Label {
@@ -58,7 +58,7 @@ func (l *Loop) ContinueLabel() Label {
 		return l.condLabel
 	}
 
-	return l.incrLabel
+	return l.continueLabel
 }
 
 func (l *Loop) BreakLabel() Label {
@@ -102,7 +102,7 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	l.endLabel = emitter.NewLabel("loop", name, "end")
 
 	if l.Kind != ForInLoop {
-		l.incrLabel = emitter.NewLabel("loop", l.LabelBase, "incr")
+		l.continueLabel = emitter.NewLabel("loop", l.LabelBase, "continue")
 	}
 
 	emitter.MarkLabel(l.startLabel)
@@ -201,7 +201,7 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 
 	if l.Value != vm.NoopOperand {
 		// Placeholder for the loop increment
-		emitter.MarkLabel(l.incrLabel)
+		emitter.MarkLabel(l.continueLabel)
 		emitter.EmitA(vm.OpIncr, l.Value)
 	}
 
@@ -214,7 +214,7 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 }
 
 func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
-	if l.InitFn == nil || l.ConditionFn == nil || l.IncrementFn == nil {
+	if l.InitFn == nil || l.ConditionFn == nil || l.UpdateFn == nil {
 		panic("step functions must be defined for step loop")
 	}
 
@@ -229,12 +229,15 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	emitter.EmitJump(l.condLabel)
 
 	// Mark the jump target for loop iterations (increment + condition check)
-	emitter.MarkLabel(l.incrLabel)
+	emitter.MarkLabel(l.continueLabel)
 
 	// Execute increment (this happens on every loop-back, but not on first iteration)
 	if l.Value != vm.NoopOperand {
-		incrementValue := l.IncrementFn()
-		emitter.EmitAB(vm.OpMove, l.Value, incrementValue)
+		nextValue := l.UpdateFn()
+
+		if !nextValue.Equals(vm.NoopOperand) && !nextValue.Equals(l.Value) {
+			emitter.EmitAB(vm.OpMove, l.Value, nextValue)
+		}
 	}
 
 	// Mark the continue label (initial condition check point)

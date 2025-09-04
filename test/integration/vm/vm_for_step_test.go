@@ -9,7 +9,7 @@ func TestForStep(t *testing.T) {
 		// Basic STEP loop
 		CaseArray("FOR i = 0 WHILE i < 5 STEP i = i + 1 RETURN i", []any{0, 1, 2, 3, 4}),
 
-		CaseArray("FOR i = 0 WHILE i < 5 STEP i = i + 1 RETURN i", []any{0, 1, 2, 3, 4}),
+		CaseArray("FOR i = 0 WHILE i < 5 STEP i++ RETURN i", []any{0, 1, 2, 3, 4}),
 
 		// STEP loop with 0 results
 		CaseArray("FOR i = 1 WHILE i < 1 STEP i = i + 1 RETURN i", []any{}),
@@ -22,6 +22,8 @@ func TestForStep(t *testing.T) {
 
 		// STEP loop with decrement
 		CaseArray("FOR i = 10 WHILE i > 0 STEP i = i - 3 RETURN i", []any{10, 7, 4, 1}),
+
+		CaseArray("FOR i = 5 WHILE i > 0 STEP i-- RETURN i", []any{5, 4, 3, 2, 1}),
 
 		// Empty STEP loop (condition false from start)
 		CaseArray("FOR i = 10 WHILE i < 5 STEP i = i + 1 RETURN i", []any{}),

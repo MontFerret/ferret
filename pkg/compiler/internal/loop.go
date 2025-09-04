@@ -164,8 +164,22 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 		loop.ConditionFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
 		}
-		loop.IncrementFn = func() vm.Operand {
-			return c.ctx.ExprCompiler.Compile(ctx.GetStepIncrement())
+		loop.UpdateFn = func() vm.Operand {
+			if exp := ctx.GetStepUpdateExp(); exp != nil {
+				// If an increment expression is provided, use it
+				return c.ctx.ExprCompiler.Compile(exp)
+			}
+
+			variable, _, found := c.ctx.Symbols.Resolve(ctx.GetStepVariable().GetText())
+
+			if !found {
+				c.ctx.Errors.VariableNotFound(ctx.GetStepVariable(), ctx.GetStepVariable().GetText())
+				return vm.NoopOperand
+			}
+
+			inc := ctx.GetStepUpdate()
+
+			return c.ctx.ExprCompiler.CompileIncDec(inc, variable)
 		}
 	default:
 		// For WHILE loops, set up a function to evaluate the condition
