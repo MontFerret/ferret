@@ -226,10 +226,10 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	}
 
 	// Jump to the initial condition check (skipping the increment)
-	emitter.EmitJump(l.incrLabel)
+	emitter.EmitJump(l.condLabel)
 
 	// Mark the jump target for loop iterations (increment + condition check)
-	emitter.MarkLabel(l.condLabel)
+	emitter.MarkLabel(l.incrLabel)
 
 	// Execute increment (this happens on every loop-back, but not on first iteration)
 	if l.Value != vm.NoopOperand {
@@ -238,7 +238,7 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	}
 
 	// Mark the continue label (initial condition check point)
-	emitter.MarkLabel(l.incrLabel)
+	emitter.MarkLabel(l.condLabel)
 
 	// Evaluate the condition
 	condition := l.ConditionFn()
