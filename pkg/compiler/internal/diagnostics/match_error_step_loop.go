@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"strings"
+
 	"github.com/MontFerret/ferret/pkg/file"
 )
 

@@ -495,7 +495,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	if ctx.Identifier() == nil {
 		return vm.NoopOperand
 	}
-	
+
 	name := ctx.Identifier().GetText()
 	// Just return the register / constant index
 	op, _, found := c.ctx.Symbols.Resolve(name)
