@@ -70,8 +70,18 @@ func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
 // It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
-	// Initialize the loop with ForWhileLoop type
-	returnRuleCtx := c.compileInitialization(ctx, core.ForWhileLoop)
+	// Determine if this is a DO-WHILE or regular WHILE loop
+	var loopKind core.LoopKind
+	if ctx.Do() != nil {
+		// DO keyword is present, this is a DO-WHILE loop
+		loopKind = core.DoWhileLoop
+	} else {
+		// No DO keyword, this is a regular WHILE loop
+		loopKind = core.ForWhileLoop
+	}
+
+	// Initialize the loop with the determined kind
+	returnRuleCtx := c.compileInitialization(ctx, loopKind)
 
 	// Probably, a syntax error happened and no return rule context was created.
 	if returnRuleCtx == nil {

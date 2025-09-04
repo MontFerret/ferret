@@ -57,5 +57,16 @@ func ForWhileHelpers() runtime.Functions {
 		}, func(ctx context.Context) int {
 			return -1
 		}),
+		"COUNTER2": base.StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			state := base.GetFnState[int](ctx)
+			counter := state.Get()
+			counter++
+
+			state.Set(counter)
+
+			return runtime.Int(counter), nil
+		}, func(ctx context.Context) int {
+			return -1
+		}),
 	})
 }

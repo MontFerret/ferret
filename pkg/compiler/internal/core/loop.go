@@ -44,6 +44,7 @@ type Loop struct {
 
 	LabelBase     string
 	startLabel    Label
+	bodyLabel     Label
 	condLabel     Label
 	continueLabel Label
 	endLabel      Label
@@ -98,6 +99,7 @@ func (l *Loop) DeclareValueVar(name string, st *SymbolTable) bool {
 func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	name := l.LabelBase
 	l.startLabel = emitter.NewLabel("loop", name, "start")
+	l.bodyLabel = emitter.NewLabel("loop", name, "body")
 	l.condLabel = emitter.NewLabel("loop", name, "cond")
 	l.endLabel = emitter.NewLabel("loop", name, "end")
 
@@ -116,6 +118,10 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 		l.emitForInLoopIteration(alloc, emitter)
 	case ForStepLoop:
 		l.emitForStepLoopIteration(alloc, emitter)
+	case DoWhileLoop:
+		l.emitDoWhileLoopIteration(alloc, emitter)
+		// For DO-WHILE, mark where body starts (after the setup)
+		emitter.MarkLabel(l.bodyLabel)
 	default:
 		l.emitForWhileLoopIteration(alloc, emitter)
 	}
@@ -144,11 +150,33 @@ func (l *Loop) EmitKey(dst vm.Operand, emitter *Emitter) {
 }
 
 func (l *Loop) EmitFinalization(emitter *Emitter) {
-	emitter.EmitJump(l.ContinueLabel())
-	emitter.MarkLabel(l.endLabel)
+	if l.Kind == DoWhileLoop {
+		// For DO-WHILE: set up continue and condition logic here (after body)
+		emitter.EmitJump(l.ContinueLabel())
+		emitter.MarkLabel(l.continueLabel)
+		
+		if l.Value != vm.NoopOperand {
+			// Increment the counter after body execution
+			emitter.EmitA(vm.OpIncr, l.Value)
+		}
 
-	if l.Kind == ForInLoop {
-		emitter.EmitA(vm.OpClose, l.State)
+		// Mark the condition check label
+		emitter.MarkLabel(l.condLabel)
+
+		// Evaluate the condition
+		condition := l.ConditionFn()
+		// For DO-WHILE: if condition is true, jump back to body; if false, fall through to end
+		emitter.EmitJumpIfTrue(condition, l.bodyLabel)
+		
+		emitter.MarkLabel(l.endLabel)
+	} else {
+		// Regular finalization for other loop types
+		emitter.EmitJump(l.ContinueLabel())
+		emitter.MarkLabel(l.endLabel)
+
+		if l.Kind == ForInLoop {
+			emitter.EmitA(vm.OpClose, l.State)
+		}
 	}
 }
 
@@ -184,6 +212,19 @@ func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter
 	emitter.EmitIter(l.State, l.Src)
 	emitter.MarkLabel(l.condLabel)
 	emitter.EmitJumpc(vm.OpIterNext, l.State, l.endLabel)
+}
+
+func (l *Loop) emitDoWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
+	if l.ConditionFn == nil {
+		panic("condition function must be defined for do-while loop")
+	}
+
+	if l.Value != vm.NoopOperand {
+		// Initialize the loop variable
+		emitter.EmitA(vm.OpLoadZero, l.Value)
+	}
+
+	// For DO-WHILE: Just initialize - the continue/condition logic will be in finalization
 }
 
 func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {

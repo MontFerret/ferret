@@ -9,14 +9,14 @@ import (
 // TODO: Implement
 func TestForDoWhile(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		SkipCaseArray(`
+		CaseArray(`
 			FOR i DO WHILE false
 				RETURN i
 		`, []any{0}),
-		SkipCaseArray(`
+		CaseArray(`
 		FOR i DO WHILE COUNTER() < 10
 				RETURN i`, []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
-		SkipCaseArray(`
+		CaseArray(`
 			FOR i WHILE COUNTER2() < 5
 				LET y = i + 1
 				FOR x IN 1..y
