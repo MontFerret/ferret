@@ -1,33 +1,33 @@
 package ferret
 
 import (
-	"github.com/MontFerret/ferret/pkg/exec"
+	"github.com/MontFerret/ferret/pkg/engine"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-type Engine = exec.Engine
-type Option = exec.Option
+type Engine = engine.Engine
+type Option = engine.Option
 
-type Plan = exec.Plan
-type PlanOption = exec.PlanOption
+type Plan = engine.Plan
+type PlanOption = engine.PlanOption
 
-type Session = exec.Session
-type SessionOption = exec.SessionOption
+type Session = engine.Session
+type SessionOption = engine.SessionOption
 type Environment = vm.Environment
 
-type Result = exec.Result
+type Result = engine.Result
 
-var New = exec.New
+var New = engine.New
 var NewEnvironment = vm.NewEnvironment
 var ToValue = runtime.Parse
 
 // Engine helpers
-var IsScalar = exec.IsScalar
-var ForEach = exec.ForEach
-var Collect = exec.Collect
-var One = exec.One
-var JSONStream = exec.JSONStream
+var IsScalar = engine.IsScalar
+var ForEach = engine.ForEach
+var Collect = engine.Collect
+var One = engine.One
+var JSONStream = engine.JSONStream
 
 // Env options
 var WithParams = vm.WithParams

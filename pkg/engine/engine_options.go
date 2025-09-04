@@ -1,4 +1,4 @@
-package exec
+package engine
 
 import (
 	"github.com/MontFerret/ferret/pkg/compiler"
