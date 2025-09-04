@@ -48,7 +48,10 @@ forExpression
     : For valueVariable=(Identifier | IgnoreIdentifier) (Comma counterVariable=Identifier)? In forExpressionSource
         forExpressionBody*
         forExpressionReturn
-    | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) Assign stepIncrement=expression
+    | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) stepUpdate=(Increment | Decrement)
+        forExpressionBody*
+        forExpressionReturn
+    | For valueVariable=(Identifier | IgnoreIdentifier) Assign stepInit=expression While stepCondition=expression Step stepVariable=(Identifier | IgnoreIdentifier) Assign stepUpdateExp=expression
         forExpressionBody*
         forExpressionReturn
     | For valueVariable=(Identifier | IgnoreIdentifier) Do? While expression

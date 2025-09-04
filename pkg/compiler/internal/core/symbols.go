@@ -17,10 +17,10 @@ const (
 type SymbolKind int
 
 const (
-	SymbolVar SymbolKind = iota
-	SymbolConst
-	SymbolParam
+	SymbolConst SymbolKind = iota
 	SymbolGlobal
+	SymbolLocal
+	SymbolParam
 )
 
 type ValueType int
@@ -124,7 +124,7 @@ func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) bo
 
 	st.locals = append(st.locals, &Variable{
 		Name:     name,
-		Kind:     SymbolVar,
+		Kind:     SymbolLocal,
 		Register: op,
 		Depth:    st.scope,
 		Type:     typ,
@@ -200,7 +200,7 @@ func (st *SymbolTable) Resolve(name string) (vm.Operand, SymbolKind, bool) {
 		return reg, SymbolGlobal, true
 	}
 
-	return vm.NoopOperand, SymbolVar, false
+	return vm.NoopOperand, SymbolLocal, false
 }
 
 func (st *SymbolTable) Lookup(name string) (*Variable, bool) {

@@ -33,6 +33,10 @@ func (op Operand) Constant() int {
 	return int(idx)
 }
 
+func (op Operand) Equals(other Operand) bool {
+	return int(op) == int(other)
+}
+
 func (op Operand) String() string {
 	if op.IsRegister() {
 		return fmt.Sprintf("R%d", op.Register())

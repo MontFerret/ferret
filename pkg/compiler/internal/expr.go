@@ -3,6 +3,8 @@ package internal
 import (
 	"regexp"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -58,6 +60,26 @@ func (c *ExprCompiler) Compile(ctx fql.IExpressionContext) vm.Operand {
 	}
 
 	return vm.NoopOperand
+}
+
+func (c *ExprCompiler) CompileIncDec(token antlr.Token, target vm.Operand) vm.Operand {
+	if target.IsConstant() {
+		panic("cannot increment/decrement a constant")
+	}
+
+	operator := token.GetText()
+
+	if operator == "++" {
+		c.ctx.Emitter.EmitA(vm.OpIncr, target)
+	} else if operator == "--" {
+		c.ctx.Emitter.EmitA(vm.OpDecr, target)
+	} else {
+		c.ctx.Errors.InvalidToken(token)
+
+		return vm.NoopOperand
+	}
+
+	return target
 }
 
 // TODO: Free temporary registers if needed
