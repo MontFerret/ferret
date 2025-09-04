@@ -61,5 +61,54 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing expression after '=' in STEP"),
+
+		// Additional test cases for better coverage
+		ErrorCase(
+			`
+			FOR i = 0 WHILE i < 5 STEP j = j + 1 RETURN i
+		`, E{
+				Kind:    compiler.NameError,
+				Message: "Variable 'j' is not defined",
+			}, "Variable mismatch between FOR and STEP clauses"),
+
+		ErrorCase(
+			`
+			FOR i WHILE i < 5 STEP i = i + 1 RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Syntax error: missing '(' at 'i'",
+			}, "Missing initial assignment in FOR clause"),
+
+		ErrorCase(
+			`
+			FOR = 0 WHILE i < 5 STEP i = i + 1 RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected loop variable before 'IN'",
+			}, "Missing variable name in FOR clause"),
+
+		ErrorCase(
+			`
+			FOR i = 0 WHILE i < 5 i = i + 1 RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Syntax error: missing 'STEP' at 'i'",
+			}, "Missing STEP keyword"),
+
+		ErrorCase(
+			`
+			FOR i = WHILE i < 5 STEP i = i + 1 RETURN i
+		`, E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after '=' for variable 'i'",
+			}, "Missing initial value in FOR assignment"),
+
+		ErrorCase(
+			`
+			FOR i = 0 WHILE i < 5 STEP x = x + 1 RETURN i
+		`, E{
+				Kind:    compiler.NameError,
+				Message: "Variable 'x' is not defined",
+			}, "Different variable in STEP clause not defined"),
 	})
 }
