@@ -80,13 +80,6 @@ func (e *Emitter) MarkLabel(label Label) {
 			e.patchOperand(ref.pos, ref.field, len(e.instructions))
 		}
 	}
-	//
-	//// Back-patch any prior references to this label (keep them for future retargeting)
-	//if refs, ok := e.patches[label.id]; ok {
-	//	for _, ref := range refs {
-	//		e.patchOperand(ref.pos, ref.field, len(e.instructions))
-	//	}
-	//}
 }
 
 func (e *Emitter) LabelPosition(label Label) (int, bool) {
@@ -248,12 +241,6 @@ func (e *Emitter) addLabelRef(pos int, field int, label Label) {
 
 	// Always remember the reference so we can retarget it later if needed
 	e.patches[label.id] = append(e.patches[label.id], labelRef{pos: pos, field: field})
-
-	//// If the label is already marked, patch now as well
-	//
-	//if def, ok := e.labels[label.id]; ok {
-	//	e.patchOperand(pos, field, def.addr)
-	//}
 }
 
 // patchOperand modifies the operand at the specified position and field in the instruction set.

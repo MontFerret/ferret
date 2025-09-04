@@ -245,17 +245,6 @@ func (l *Loop) emitForStepLoopIteration(_ *RegisterAllocator, emitter *Emitter) 
 	emitter.EmitJumpIfFalse(condition, l.endLabel)
 }
 
-func (l *Loop) emitStepIncrement(emitter *Emitter) {
-	if l.Kind == ForStepLoop && l.IncrementFn != nil {
-		// Execute the increment expression and assign it to the loop variable
-		incrementValue := l.IncrementFn()
-
-		if l.Value != vm.NoopOperand {
-			emitter.EmitAB(vm.OpMove, l.Value, incrementValue)
-		}
-	}
-}
-
 func (l *Loop) canDeclareVar(name string) bool {
 	return name != "" && name != IgnorePseudoVariable
 }
