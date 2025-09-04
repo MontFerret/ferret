@@ -135,4 +135,4 @@ coverage.html
 
 # sometimes antlr generates stub
 **/.antlr
-gen
+genpkg/parser/fql.backup/
