@@ -164,8 +164,8 @@ waitForEventName
     : stringLiteral
     | variable
     | param
-    | functionCallExpression
     | memberExpression
+    | functionCall
     ;
 
 waitForEventSource
@@ -338,6 +338,8 @@ rangeOperand
     : integerLiteral
     | variable
     | param
+    | functionCallExpression
+    | memberExpression
     ;
 
 expression

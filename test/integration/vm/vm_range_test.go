@@ -28,8 +28,28 @@ func TestRange(t *testing.T) {
 			[]any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			"Should be able to use parameters in range",
 		),
-	}, vm.WithParams(map[string]runtime.Value{
-		"start": runtime.NewInt(1),
-		"end":   runtime.NewInt(10),
-	}))
+
+		CaseArray(`
+		LET start = @start
+		LET end = @end
+		LET items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+		RETURN start..LENGTH(items)
+		`,
+			[]any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			"Should be able to use function call in range",
+		),
+
+		CaseArray(`
+		LET obj = { start: @start, end: @end }
+		RETURN obj.start..obj.end
+		`,
+			[]any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			"Should be able to use a member expression in range",
+		),
+	},
+		vm.WithParams(map[string]runtime.Value{
+			"start": runtime.NewInt(1),
+			"end":   runtime.NewInt(10),
+		}),
+	)
 }

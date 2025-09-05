@@ -775,5 +775,13 @@ func (c *ExprCompiler) compileRangeOperand(ctx fql.IRangeOperandContext) vm.Oper
 		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
 	}
 
+	if me := ctx.MemberExpression(); me != nil {
+		return c.CompileMemberExpression(me)
+	}
+
+	if fc := ctx.FunctionCallExpression(); fc != nil {
+		return c.CompileFunctionCallExpression(fc)
+	}
+
 	return vm.NoopOperand
 }

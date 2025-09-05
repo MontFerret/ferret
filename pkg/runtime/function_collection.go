@@ -1,5 +1,7 @@
 package runtime
 
+import "strings"
+
 type functionCollection[T FunctionConstraint] struct {
 	values map[string]T
 }
@@ -32,7 +34,7 @@ func (f *functionCollection[T]) Has(name string) bool {
 }
 
 func (f *functionCollection[T]) Set(name string, fn T) FunctionCollection[T] {
-	f.values[name] = fn
+	f.values[strings.ToUpper(name)] = fn
 
 	return f
 
@@ -44,14 +46,14 @@ func (f *functionCollection[T]) SetAll(otherFns FunctionCollection[T]) FunctionC
 	}
 
 	for name, fn := range otherFns.GetAll() {
-		f.values[name] = fn
+		f.values[strings.ToUpper(name)] = fn
 	}
 
 	return f
 }
 
 func (f *functionCollection[T]) Get(name string) (T, bool) {
-	fn, exists := f.values[name]
+	fn, exists := f.values[strings.ToUpper(name)]
 
 	return fn, exists
 }
@@ -69,7 +71,7 @@ func (f *functionCollection[T]) GetAll() map[string]T {
 }
 
 func (f *functionCollection[T]) Unset(name string) FunctionCollection[T] {
-	delete(f.values, name)
+	delete(f.values, strings.ToUpper(name))
 
 	return f
 

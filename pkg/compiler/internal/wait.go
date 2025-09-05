@@ -128,8 +128,8 @@ func (c *WaitCompiler) CompileWaitForEventName(ctx fql.IWaitForEventNameContext)
 	}
 
 	// Handle function call expression event names (e.g., WAIT FOR doc ON getEventName())
-	if fce := ctx.FunctionCallExpression(); fce != nil {
-		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
+	if fce := ctx.FunctionCall(); fce != nil {
+		return c.ctx.ExprCompiler.CompileFunctionCall(fce, false)
 	}
 
 	return vm.NoopOperand
