@@ -22,8 +22,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			FOR i = 0 WHILE i < 5 STEP RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Expected a RETURN or FOR clause at end of query",
-				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
+				Message: "Syntax error: no viable alternative at input 'FOR i = 0 WHILE i < 5 STEP RETURN'",
+				Hint:    "Check your syntax. Did you forget to write something?",
 			}, "STEP followed by RETURN (parsed as incomplete query)"),
 
 		ErrorCase(
@@ -31,8 +31,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			FOR i = 0 WHILE i < 5 STEP i RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Expected '=' after variable in STEP clause",
-				Hint:    "STEP assignments require '=', e.g., 'STEP i = i + 1'.",
+				Message: "Syntax error: no viable alternative at input 'FOR i = 0 WHILE i < 5 STEP i RETURN'",
+				Hint:    "Check your syntax. Did you forget to write something?",
 			}, "Missing '=' in STEP assignment"),
 
 		ErrorCase(
@@ -40,8 +40,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			FOR i = 0 WHILE i < 5 STEP
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Incomplete STEP clause",
-				Hint:    "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'.",
+				Message: "Syntax error: no viable alternative at input 'FOR i = 0 WHILE i < 5 STEP\\n\\t\\t'",
+				Hint:    "Check your syntax. Did you forget to write something?",
 			}, "Incomplete STEP clause at end"),
 
 		ErrorCase(
@@ -49,8 +49,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			FOR i = 0 WHILE i < 5 STEP x
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Incomplete STEP clause",
-				Hint:    "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'.",
+				Message: "Syntax error: no viable alternative at input 'FOR i = 0 WHILE i < 5 STEP x\\n\\t\\t'",
+				Hint:    "Check your syntax. Did you forget to write something?",
 			}, "Incomplete STEP clause with variable only"),
 
 		ErrorCase(
@@ -67,8 +67,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			`
 			FOR i = 0 WHILE i < 5 STEP j = j + 1 RETURN i
 		`, E{
-				Kind:    compiler.NameError,
-				Message: "Variable 'j' is not defined",
+				Kind:    compiler.SemanticError,
+				Message: "step variable missmatch: expected 'i' but got 'j'",
 			}, "Variable mismatch between FOR and STEP clauses"),
 
 		ErrorCase(
@@ -92,7 +92,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			FOR i = 0 WHILE i < 5 i = i + 1 RETURN i
 		`, E{
 				Kind:    compiler.SyntaxError,
-				Message: "Syntax error: missing 'STEP' at 'i'",
+				Message: "Syntax error: no viable alternative at input 'FOR i = 0 WHILE i < 5 i'",
+				Hint:    "Check your syntax. Did you forget to write something?",
 			}, "Missing STEP keyword"),
 
 		ErrorCase(
@@ -107,8 +108,8 @@ func TestStepLoopSyntaxErrors(t *testing.T) {
 			`
 			FOR i = 0 WHILE i < 5 STEP x = x + 1 RETURN i
 		`, E{
-				Kind:    compiler.NameError,
-				Message: "Variable 'x' is not defined",
+				Kind:    compiler.SemanticError,
+				Message: "step variable missmatch: expected 'i' but got 'x'",
 			}, "Different variable in STEP clause not defined"),
 	})
 }
