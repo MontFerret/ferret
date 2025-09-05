@@ -16,9 +16,9 @@ type LoopKind int
 
 const (
 	ForInLoop LoopKind = iota
-	ForWhileLoop
-	DoWhileLoop
 	ForStepLoop
+	WhileLoop
+	DoWhileLoop
 )
 
 type Loop struct {
@@ -46,6 +46,7 @@ type Loop struct {
 	startLabel    Label
 	condLabel     Label
 	continueLabel Label
+	bodyLabel     Label
 	endLabel      Label
 }
 
@@ -99,11 +100,9 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	name := l.LabelBase
 	l.startLabel = emitter.NewLabel("loop", name, "start")
 	l.condLabel = emitter.NewLabel("loop", name, "cond")
+	l.continueLabel = emitter.NewLabel("loop", l.LabelBase, "continue")
+	l.bodyLabel = emitter.NewLabel("loop", name, "body")
 	l.endLabel = emitter.NewLabel("loop", name, "end")
-
-	if l.Kind != ForInLoop {
-		l.continueLabel = emitter.NewLabel("loop", l.LabelBase, "continue")
-	}
 
 	emitter.MarkLabel(l.startLabel)
 
@@ -116,8 +115,10 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 		l.emitForInLoopIteration(alloc, emitter)
 	case ForStepLoop:
 		l.emitForStepLoopIteration(alloc, emitter)
-	default:
+	case WhileLoop:
 		l.emitForWhileLoopIteration(alloc, emitter)
+	default:
+		l.emitForDoWhileLoopIteration(alloc, emitter)
 	}
 
 	if l.canBindVar(l.Value) {
@@ -127,6 +128,8 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	if l.canBindVar(l.Key) {
 		l.EmitKey(l.Key, emitter)
 	}
+
+	emitter.MarkLabel(l.bodyLabel)
 }
 
 func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
@@ -198,6 +201,33 @@ func (l *Loop) emitForWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter)
 
 	// Jump to the initial condition check (skipping the increment)
 	emitter.EmitJump(l.condLabel)
+
+	if l.Value != vm.NoopOperand {
+		// Placeholder for the loop increment
+		emitter.MarkLabel(l.continueLabel)
+		emitter.EmitA(vm.OpIncr, l.Value)
+	}
+
+	// Mark the continue label (initial condition check point)
+	emitter.MarkLabel(l.condLabel)
+
+	// Evaluate the condition
+	condition := l.ConditionFn()
+	emitter.EmitJumpIfFalse(condition, l.endLabel)
+}
+
+func (l *Loop) emitForDoWhileLoopIteration(_ *RegisterAllocator, emitter *Emitter) {
+	if l.ConditionFn == nil {
+		panic("condition function must be defined for while loop")
+	}
+
+	if l.Value != vm.NoopOperand {
+		// Initialize the loop variable
+		emitter.EmitA(vm.OpLoadZero, l.Value)
+	}
+
+	// Jump to the loop body first
+	emitter.EmitJump(l.bodyLabel)
 
 	if l.Value != vm.NoopOperand {
 		// Placeholder for the loop increment

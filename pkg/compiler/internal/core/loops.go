@@ -25,7 +25,7 @@ func (lt *LoopTable) NewForInLoop(loopType LoopType, distinct bool) *Loop {
 }
 
 func (lt *LoopTable) NewForWhileLoop(loopType LoopType, distinct bool) *Loop {
-	return lt.NewLoop(ForWhileLoop, loopType, distinct)
+	return lt.NewLoop(WhileLoop, loopType, distinct)
 }
 
 func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *Loop {

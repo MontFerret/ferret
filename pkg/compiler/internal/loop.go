@@ -28,77 +28,17 @@ func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 // or a FOR STEP loop (with init, condition, and increment expressions).
 // Returns an operand representing the destination of the loop results.
 func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
+	var returnRuleCtx antlr.RuleContext
+
 	if ctx.In() != nil {
-		return c.compileForIn(ctx)
+		returnRuleCtx = c.compileInitialization(ctx, core.ForInLoop)
+	} else if ctx.Step() != nil {
+		returnRuleCtx = c.compileInitialization(ctx, core.ForStepLoop)
+	} else if ctx.Do() == nil {
+		returnRuleCtx = c.compileInitialization(ctx, core.WhileLoop)
+	} else {
+		returnRuleCtx = c.compileInitialization(ctx, core.DoWhileLoop)
 	}
-
-	if ctx.Step() != nil {
-		return c.compileForStep(ctx)
-	}
-
-	return c.compileForWhile(ctx)
-}
-
-// compileForIn processes a FOR IN loop expression, which iterates over a collection.
-// It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
-// Returns an operand representing the destination of the loop results.
-func (c *LoopCompiler) compileForIn(ctx fql.IForExpressionContext) vm.Operand {
-	// Initialize the loop with ForInLoop type
-	returnRuleCtx := c.compileInitialization(ctx, core.ForInLoop)
-
-	// Probably, a syntax error happened and no return rule context was created.
-	if returnRuleCtx == nil {
-		return vm.NoopOperand
-	}
-
-	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); len(body) > 0 {
-		for _, b := range body {
-			if ec := b.ForExpressionStatement(); ec != nil {
-				c.compileForExpressionStatement(ec)
-			} else if ec := b.ForExpressionClause(); ec != nil {
-				c.compileForExpressionClause(ec)
-			}
-		}
-	}
-
-	// Finalize the loop and return the destination operand
-	return c.compileFinalization(returnRuleCtx)
-}
-
-// compileForWhile processes a FOR WHILE loop expression with a condition (while loop).
-// It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
-// Returns an operand representing the destination of the loop results.
-func (c *LoopCompiler) compileForWhile(ctx fql.IForExpressionContext) vm.Operand {
-	// Initialize the loop with ForWhileLoop type
-	returnRuleCtx := c.compileInitialization(ctx, core.ForWhileLoop)
-
-	// Probably, a syntax error happened and no return rule context was created.
-	if returnRuleCtx == nil {
-		return vm.NoopOperand
-	}
-
-	// Compile the loop body (statements and clauses)
-	if body := ctx.AllForExpressionBody(); len(body) > 0 {
-		for _, b := range body {
-			if ec := b.ForExpressionStatement(); ec != nil {
-				c.compileForExpressionStatement(ec)
-			} else if ec := b.ForExpressionClause(); ec != nil {
-				c.compileForExpressionClause(ec)
-			}
-		}
-	}
-
-	// Finalize the loop and return the destination operand
-	return c.compileFinalization(returnRuleCtx)
-}
-
-// compileForStep processes a FOR STEP loop expression with init, condition, and increment expressions.
-// It initializes the loop, compiles the body statements and clauses, and finalizes the loop.
-// Returns an operand representing the destination of the loop results.
-func (c *LoopCompiler) compileForStep(ctx fql.IForExpressionContext) vm.Operand {
-	// Initialize the loop with ForStepLoop type
-	returnRuleCtx := c.compileInitialization(ctx, core.ForStepLoop)
 
 	// Probably, a syntax error happened and no return rule context was created.
 	if returnRuleCtx == nil {
@@ -124,7 +64,7 @@ func (c *LoopCompiler) compileForStep(ctx fql.IForExpressionContext) vm.Operand 
 // compiling its source, declaring variables, and emitting initialization instructions.
 // Parameters:
 //   - ctx: The FOR expression context from the AST
-//   - kind: The kind of loop (ForInLoop, ForWhileLoop, or ForStepLoop)
+//   - kind: The kind of loop (ForInLoop, WhileLoop, or ForStepLoop)
 //
 // Returns the rule context for the return expression or nested FOR expression.
 func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind core.LoopKind) antlr.RuleContext {
@@ -151,7 +91,6 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
 
 	// Set up the loop source based on the loop kind
-
 	switch kind {
 	case core.ForInLoop:
 		// For IN loops, compile the collection to iterate over
@@ -182,7 +121,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 			return c.ctx.ExprCompiler.CompileIncDec(inc, variable)
 		}
 	default:
-		// For WHILE loops, set up a function to evaluate the condition
+		// For WHILE/DO-WHILE loops, set up a function to evaluate the condition
 		loop.ConditionFn = func() vm.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
 		}

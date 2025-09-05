@@ -155,7 +155,7 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 	}
 
 	if loop.Kind != core.ForInLoop {
-		// We switched from a ForWhileLoop to a ForInLoop because the underlying data is Iterable now.
+		// We switched from a WhileLoop to a ForInLoop because the underlying data is Iterable now.
 		loop.Kind = core.ForInLoop
 	}
 
