@@ -18,7 +18,7 @@ func TestRegisterLib(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Test that some key functions are registered by checking registered functions list
-		registeredFunctions := ns.RegisteredFunctions()
+		registeredFunctions := ns.Functions().Build().Names()
 
 		expectedFunctions := []string{
 			"NOW", "DATE", "DATE_COMPARE", "DATE_DAYOFWEEK", "DATE_YEAR",

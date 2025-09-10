@@ -2,20 +2,38 @@ package runtime
 
 import "strings"
 
-type functionCollection[T FunctionConstraint] struct {
-	values map[string]T
-}
+type (
+	// FunctionConstraint is a type constraint that includes all function types
+	FunctionConstraint interface {
+		Function | Function0 | Function1 | Function2 | Function3 | Function4
+	}
+
+	// FunctionCollection is an immutable collection of functions of a specific type (e.g., Function, Function0, etc.)
+	FunctionCollection[T FunctionConstraint] interface {
+		Has(name string) bool
+		Get(name string) (T, bool)
+		GetAll() map[string]T
+		Names() []string
+		Size() int
+		ForEach(fn func(T, string) error) error
+	}
+
+	defaultFunctionCollection[T FunctionConstraint] struct {
+		values map[string]T
+	}
+)
 
 // NewFunctionCollection creates a new function collection of the specified type
 func NewFunctionCollection[T FunctionConstraint]() FunctionCollection[T] {
-	return &functionCollection[T]{
+	return &defaultFunctionCollection[T]{
 		values: make(map[string]T),
 	}
 }
 
 // NewFunctionCollectionFromMap creates a new function collection from an existing map
+// It makes a copy of the provided map to ensure that the original map remains unmodified
 func NewFunctionCollectionFromMap[T FunctionConstraint](values map[string]T) FunctionCollection[T] {
-	fc := &functionCollection[T]{
+	fc := &defaultFunctionCollection[T]{
 		values: make(map[string]T, len(values)),
 	}
 
@@ -26,39 +44,20 @@ func NewFunctionCollectionFromMap[T FunctionConstraint](values map[string]T) Fun
 	return fc
 }
 
-func (f *functionCollection[T]) Has(name string) bool {
+func (f *defaultFunctionCollection[T]) Has(name string) bool {
 	_, exists := f.values[name]
 
 	return exists
 
 }
 
-func (f *functionCollection[T]) Set(name string, fn T) FunctionCollection[T] {
-	f.values[strings.ToUpper(name)] = fn
-
-	return f
-
-}
-
-func (f *functionCollection[T]) SetAll(otherFns FunctionCollection[T]) FunctionCollection[T] {
-	if otherFns == nil {
-		return f
-	}
-
-	for name, fn := range otherFns.GetAll() {
-		f.values[strings.ToUpper(name)] = fn
-	}
-
-	return f
-}
-
-func (f *functionCollection[T]) Get(name string) (T, bool) {
+func (f *defaultFunctionCollection[T]) Get(name string) (T, bool) {
 	fn, exists := f.values[strings.ToUpper(name)]
 
 	return fn, exists
 }
 
-func (f *functionCollection[T]) GetAll() map[string]T {
+func (f *defaultFunctionCollection[T]) GetAll() map[string]T {
 	// Return a copy to prevent external modification
 	result := make(map[string]T, len(f.values))
 
@@ -70,21 +69,7 @@ func (f *functionCollection[T]) GetAll() map[string]T {
 
 }
 
-func (f *functionCollection[T]) Unset(name string) FunctionCollection[T] {
-	delete(f.values, strings.ToUpper(name))
-
-	return f
-
-}
-
-func (f *functionCollection[T]) UnsetAll() FunctionCollection[T] {
-	f.values = make(map[string]T)
-
-	return f
-
-}
-
-func (f *functionCollection[T]) Names() []string {
+func (f *defaultFunctionCollection[T]) Names() []string {
 	names := make([]string, 0, len(f.values))
 
 	for name := range f.values {
@@ -94,11 +79,11 @@ func (f *functionCollection[T]) Names() []string {
 	return names
 }
 
-func (f *functionCollection[T]) Size() int {
+func (f *defaultFunctionCollection[T]) Size() int {
 	return len(f.values)
 }
 
-func (f *functionCollection[T]) ForEach(fn func(T, string) error) error {
+func (f *defaultFunctionCollection[T]) ForEach(fn func(T, string) error) error {
 	for name, value := range f.values {
 		if err := fn(value, name); err != nil {
 			return err

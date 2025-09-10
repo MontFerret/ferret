@@ -5,10 +5,9 @@ import (
 )
 
 func RegisterLib(ns runtime.Namespace) error {
-	return ns.RegisterFunctions(
-		runtime.NewFunctionsFromMap(map[string]runtime.Function{
-			"WAIT":  Wait,
-			"PRINT": Print,
-		}),
-	)
+	ns.Functions().
+		Set1("WAIT", Wait).
+		Set("PRINT", Print)
+
+	return nil
 }

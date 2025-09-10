@@ -9,7 +9,7 @@ import (
 )
 
 func TestAssertions(t *testing.T) {
-	Convey("Assertion Functions", t, func() {
+	Convey("Assertion Builder", t, func() {
 
 		Convey("AssertString", func() {
 			Convey("Should pass for String type", func() {

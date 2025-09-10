@@ -6,5 +6,5 @@ import (
 )
 
 func Stdlib() runtime.Functions {
-	return stdlib.New().Functions()
+	return stdlib.New()
 }

@@ -59,14 +59,14 @@ func getFunctionName(ctx fql.IFunctionCallContext) runtime.String {
 	return runtime.NewString(strings.ToUpper(name))
 }
 
-//func copyFromNamespace(fns runtime.Functions, namespace string) error {
+//func copyFromNamespace(fns runtime.Builder, namespace string) error {
 //	// In the name of the function "A::B::C", the namespace is "A::B",
 //	// not "A::B::".
 //	//
 //	// So add "::" at the end.
 //	namespace += "::"
 //
-//	// core.Functions cast every function name to upper case. Thus
+//	// core.Builder cast every function name to upper case. Thus
 //	// namespace also should be in upper case.
 //	namespace = strings.ToUpper(namespace)
 //

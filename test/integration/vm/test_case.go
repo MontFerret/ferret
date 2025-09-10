@@ -20,6 +20,10 @@ func Case(expression string, expected any, desc ...string) UseCase {
 	return NewCase(expression, expected, ShouldEqual, desc...)
 }
 
+func DebugCase(expression string, expected any, desc ...string) UseCase {
+	return Debug(Case(expression, expected, desc...))
+}
+
 func SkipCase(expression string, expected any, desc ...string) UseCase {
 	return Skip(Case(expression, expected, desc...))
 }

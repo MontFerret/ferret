@@ -15,14 +15,14 @@ import (
 	"github.com/MontFerret/ferret/pkg/stdlib/utils"
 )
 
-func New() runtime.Namespace {
+func New() runtime.Functions {
 	ns := runtime.NewRootNamespace()
 
 	if err := RegisterLib(ns); err != nil {
 		panic(err)
 	}
 
-	return ns
+	return ns.Functions().Build()
 }
 
 func RegisterLib(ns runtime.Namespace) error {

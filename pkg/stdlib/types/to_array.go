@@ -13,12 +13,6 @@ import (
 // Objects / HTML nodes are converted to an array containing their attribute values as array elements.
 // @param {Any} input - Input value of arbitrary type.
 // @return {Any[]} - An array value.
-func ToArray(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	return runtime.ToList(ctx, args[0]), nil
+func ToArray(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return runtime.ToList(ctx, arg), nil
 }

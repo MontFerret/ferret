@@ -18,22 +18,36 @@ func WithParam(name string, value interface{}) EnvironmentOption {
 	}
 }
 
-func WithFunctions(functions runtime.Functions) EnvironmentOption {
+func WithFunctions(funcs runtime.Functions) EnvironmentOption {
 	return func(env *Environment) {
-		env.Functions.SetAll(functions)
+		if funcs != nil {
+			env.Functions = runtime.NewFunctionsFrom(env.Functions, funcs)
+		}
 	}
 }
 
 func WithFunction(name string, function runtime.Function) EnvironmentOption {
 	return func(env *Environment) {
-		env.Functions.F().Set(name, function)
+		env.Functions = runtime.NewFunctionsBuilder().SetFrom(env.Functions).Set(name, function).Build()
 	}
 }
 
-func WithFunctionSetter(setter func(fns runtime.Functions)) EnvironmentOption {
+func WithNamespace(ns runtime.Namespace) EnvironmentOption {
+	return func(env *Environment) {
+		if ns != nil {
+			env.Functions = runtime.NewFunctionsFrom(env.Functions, ns.Functions().Build())
+		}
+	}
+}
+
+func WithFunctionsBuilder(setter func(fns runtime.FunctionsBuilder)) EnvironmentOption {
 	return func(env *Environment) {
 		if setter != nil {
-			setter(env.Functions)
+			builder := runtime.NewFunctionsBuilder()
+			setter(builder)
+			builder.SetFrom(env.Functions)
+
+			env.Functions = builder.Build()
 		}
 	}
 }

@@ -18,7 +18,7 @@ func TestRegisterLib(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Verify that functions were registered by checking registered function names
-		functions := ns.RegisteredFunctions()
+		functions := ns.Functions().Build().Names()
 		So(len(functions), ShouldBeGreaterThan, 0)
 
 		// Check that FS functions are registered

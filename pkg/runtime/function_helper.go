@@ -1,6 +1,9 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // ErrorArg creates an error for an invalid argument at the specified position.
 // The position is 0-based internally but reported as 1-based to users.
@@ -47,4 +50,14 @@ func ValidateArgType(args []Value, pos int, assertion TypeAssertion) error {
 	}
 
 	return ErrorArg(err, pos)
+}
+
+func makeFunctionName(namespace, name string) string {
+	name = strings.ToUpper(name)
+
+	if namespace == emptyNS {
+		return name
+	}
+
+	return namespace + NamespaceSeparator + name
 }

@@ -186,7 +186,7 @@ func TestMemberReservedWords(t *testing.T) {
 
 				So(err, ShouldBeNil)
 
-				out, err := base.Exec(prog, true, vm.WithFunctions(stdlib.New().Functions()))
+				out, err := base.Exec(prog, true, vm.WithFunctions(stdlib.New()))
 
 				So(err, ShouldBeNil)
 				So(out, ShouldEqual, expected.String())

@@ -4,31 +4,32 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-// TODO: Migrate to Func1 function types
 func RegisterLib(ns runtime.Namespace) error {
-	return ns.RegisterFunctions(
-		runtime.NewFunctionsFromMap(map[string]runtime.Function{
-			"TO_BOOL":          ToBool,
-			"TO_INT":           ToInt,
-			"TO_FLOAT":         ToFloat,
-			"TO_STRING":        ToString,
-			"TO_DATETIME":      ToDateTime,
-			"TO_ARRAY":         ToArray,
-			"TO_BINARY":        ToBinary,
-			"IS_NONE":          IsNone,
-			"IS_BOOL":          IsBool,
-			"IS_INT":           IsInt,
-			"IS_LIST":          IsList,
-			"IS_FLOAT":         IsFloat,
-			"IS_STRING":        IsString,
-			"IS_DATETIME":      IsDateTime,
-			"IS_ARRAY":         IsArray,
-			"IS_OBJECT":        IsObject,
-			"IS_HTML_ELEMENT":  IsHTMLElement,
-			"IS_HTML_DOCUMENT": IsHTMLDocument,
-			"IS_BINARY":        IsBinary,
-			"IS_NAN":           IsNaN,
-		}))
+	ns.Functions().
+		Set1("TO_BOOL", ToBool).
+		Set1("TO_INT", ToInt).
+		Set1("TO_FLOAT", ToFloat).
+		Set1("TO_STRING", ToString).
+		Set1("TO_DATETIME", ToDateTime).
+		Set1("TO_ARRAY", ToArray).
+		Set1("TO_BINARY", ToBinary).
+		Set1("TO_OBJECT", ToObject).
+		Set1("IS_NONE", IsNone).
+		Set1("IS_BOOL", IsBool).
+		Set1("IS_INT", IsInt).
+		Set1("IS_FLOAT", IsFloat).
+		Set1("IS_STRING", IsString).
+		Set1("IS_DATETIME", IsDateTime).
+		Set1("IS_LIST", IsList).
+		Set1("IS_ARRAY", IsArray).
+		Set1("IS_MAP", IsMap).
+		Set1("IS_OBJECT", IsObject).
+		Set1("IS_HTML_ELEMENT", IsHTMLElement).
+		Set1("IS_HTML_DOCUMENT", IsHTMLDocument).
+		Set1("IS_BINARY", IsBinary).
+		Set1("IS_NAN", IsNaN)
+
+	return nil
 }
 
 func isTypeof(value runtime.Value, ctype runtime.Type) runtime.Value {

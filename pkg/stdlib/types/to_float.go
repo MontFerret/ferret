@@ -17,12 +17,6 @@ import (
 // An object / HTML node is converted to the number 0.
 // @param {Any} value - Input value of arbitrary type.
 // @return {Float} - A float value.
-func ToFloat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	return runtime.ToFloat(ctx, args[0])
+func ToFloat(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return runtime.ToFloat(ctx, arg)
 }

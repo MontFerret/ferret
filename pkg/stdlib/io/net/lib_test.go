@@ -18,8 +18,8 @@ func TestRegisterLib(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Verify that functions were registered by checking registered function names
-		functions := ns.RegisteredFunctions()
-		So(len(functions), ShouldBeGreaterThan, 0)
+		functions := ns.Functions().Build()
+		So(len(functions.Names()), ShouldBeGreaterThan, 0)
 
 		// Check that HTTP functions are registered
 		hasGet := false
@@ -28,7 +28,7 @@ func TestRegisterLib(t *testing.T) {
 		hasDelete := false
 		hasDo := false
 
-		for _, fn := range functions {
+		for _, fn := range functions.Names() {
 			if fn == "NET::HTTP::GET" {
 				hasGet = true
 			}

@@ -25,7 +25,7 @@ func TestLib(t *testing.T) {
 			"REVERSE",
 		}
 
-		registeredFunctions := ns.RegisteredFunctions()
+		registeredFunctions := ns.Functions().Build().Names()
 
 		for _, funcName := range expectedFunctions {
 			found := false

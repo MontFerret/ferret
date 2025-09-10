@@ -9,7 +9,7 @@ import (
 )
 
 func TestCasting(t *testing.T) {
-	Convey("Casting Functions", t, func() {
+	Convey("Casting Builder", t, func() {
 
 		Convey("CastBoolean", func() {
 			Convey("Should cast Boolean to Boolean", func() {

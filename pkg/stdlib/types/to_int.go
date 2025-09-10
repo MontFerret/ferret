@@ -17,12 +17,6 @@ import (
 // An object / HTML node is converted to the number 0.
 // @param {Any} value - Input value of arbitrary type.
 // @return {Int} - An integer value.
-func ToInt(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 1, 1)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	return runtime.ToInt(ctx, args[0])
+func ToInt(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	return runtime.ToInt(ctx, arg)
 }
