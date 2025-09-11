@@ -3,6 +3,7 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	h "net/http"
 	"testing"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
@@ -46,11 +46,11 @@ func TestPUT(t *testing.T) {
 				}
 
 				if user.FirstName != "Rob" {
-					return nil, errors.Errorf("Expected FirstName to be Rob, but got %s", user.FirstName)
+					return nil, fmt.Errorf("Expected FirstName to be Rob, but got %s", user.FirstName)
 				}
 
 				if user.LastName != "Pike" {
-					return nil, errors.Errorf("Expected LastName to be Pike, but got %s", user.LastName)
+					return nil, fmt.Errorf("Expected LastName to be Pike, but got %s", user.LastName)
 				}
 
 				return httpmock.NewStringResponse(200, "OK"), nil

@@ -1,6 +1,6 @@
 package base
 
-import "github.com/pkg/errors"
+import "errors"
 
 var (
 	ErrAssertion = errors.New("assertion error")

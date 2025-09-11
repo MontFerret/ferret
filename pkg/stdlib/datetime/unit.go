@@ -1,10 +1,9 @@
 package datetime
 
 import (
+	"fmt"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // Unit specifies an unit of time (Millisecond, Second...).
@@ -109,5 +108,5 @@ func UnitFromString(s string) (Unit, error) {
 	case "f", "millisecond", "milliseconds":
 		return Millisecond, nil
 	}
-	return -1, errors.Errorf("no such unit '%s'", s)
+	return -1, fmt.Errorf("no such unit '%s'", s)
 }

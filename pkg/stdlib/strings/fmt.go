@@ -2,13 +2,14 @@ package strings
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // FMT formats the template using these arguments.
@@ -41,7 +42,7 @@ func format(template string, args []runtime.Value) (string, error) {
 	emptyBracketsCount := strings.Count(template, "{}")
 
 	if argsCount > emptyBracketsCount && emptyBracketsCount != 0 {
-		return "", errors.Errorf("there are arguments that have never been used")
+		return "", errors.New("there are arguments that have never been used")
 	}
 
 	var betweenBrackets string
@@ -60,7 +61,7 @@ func format(template string, args []runtime.Value) (string, error) {
 
 		if betweenBrackets == "" {
 			if argsCount <= lastArgIdx {
-				err = errors.Errorf("not enough arguments")
+				err = errors.New("not enough arguments")
 				return ""
 			}
 
@@ -70,12 +71,12 @@ func format(template string, args []runtime.Value) (string, error) {
 
 		n, err = strconv.Atoi(betweenBrackets)
 		if err != nil {
-			err = errors.Errorf("failed to parse int: %v", err)
+			err = fmt.Errorf("failed to parse int: %v", err)
 			return ""
 		}
 
 		if n >= argsCount {
-			err = errors.Errorf("invalid reference to argument `%d`", n)
+			err = fmt.Errorf("invalid reference to argument `%d`", n)
 			return ""
 		}
 

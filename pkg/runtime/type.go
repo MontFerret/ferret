@@ -1,9 +1,8 @@
 package runtime
 
 import (
+	"fmt"
 	"reflect"
-
-	"github.com/pkg/errors"
 )
 
 type Type string
@@ -162,7 +161,7 @@ func ValidateValueTypePairs(pairs ...PairValueType) error {
 		err = ValidateType(pair.Value, pair.Types...)
 
 		if err != nil {
-			return errors.Errorf("pair %d: %v", idx, err)
+			return fmt.Errorf("pair %d: %w", idx, err)
 		}
 	}
 

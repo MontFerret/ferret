@@ -1,11 +1,13 @@
 package runtime_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -27,7 +29,7 @@ func TestError(t *testing.T) {
 	Convey("Should match", t, func() {
 		msg := "test message"
 		cause := errors.New("cause")
-		e := errors.Errorf("%s: %s", cause.Error(), msg)
+		e := fmt.Errorf("%w: %s", cause, msg)
 
 		ce := runtime.Error(cause, msg)
 		So(ce, ShouldNotBeNil)

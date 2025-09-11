@@ -5,7 +5,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // DATE_COMPARE checks if two partial dates match.
@@ -55,7 +55,7 @@ func DateCompare(_ context.Context, args ...runtime.Value) (runtime.Value, error
 	}
 
 	if unitStart < unitEnd {
-		return runtime.None, errors.Errorf("start unit less that end unit")
+		return runtime.None, errors.New("start unit less that end unit")
 	}
 
 	for u := unitEnd; u <= unitStart; u++ {

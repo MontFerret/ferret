@@ -2,11 +2,11 @@ package http_test
 
 import (
 	"context"
+	"fmt"
 	h "net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
@@ -111,7 +111,7 @@ func TestREQUEST(t *testing.T) {
 		httpmock.RegisterResponder("POST", url,
 			func(req *h.Request) (*h.Response, error) {
 				if req.Header.Get("X-Token") != "test-token" {
-					return nil, errors.Errorf("Expected X-Token to be test-token, but got %s", req.Header.Get("X-Token"))
+					return nil, fmt.Errorf("Expected X-Token to be test-token, but got %s", req.Header.Get("X-Token"))
 				}
 				return httpmock.NewStringResponse(200, "Headers OK"), nil
 			})
@@ -137,7 +137,7 @@ func TestREQUEST(t *testing.T) {
 		httpmock.RegisterResponder("POST", url,
 			func(req *h.Request) (*h.Response, error) {
 				if req.Header.Get("Content-Type") != "application/json" {
-					return nil, errors.Errorf("Expected Content-Type to be application/json, but got %s", req.Header.Get("Content-Type"))
+					return nil, fmt.Errorf("Expected Content-Type to be application/json, but got %s", req.Header.Get("Content-Type"))
 				}
 				return httpmock.NewStringResponse(200, "JSON OK"), nil
 			})
