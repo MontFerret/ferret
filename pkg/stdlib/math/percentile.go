@@ -6,7 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // PERCENTILE returns the nth percentile of the values in a given array.

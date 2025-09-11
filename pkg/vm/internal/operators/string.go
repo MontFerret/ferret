@@ -1,8 +1,9 @@
 package operators
 
 import (
+	"fmt"
+
 	"github.com/gobwas/glob"
-	"github.com/pkg/errors"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
@@ -21,7 +22,7 @@ func Like(left, right runtime.Value) (runtime.Boolean, error) {
 	r, err := glob.Compile(right.String())
 
 	if err != nil {
-		return runtime.False, errors.Wrap(err, "invalid glob pattern")
+		return runtime.False, fmt.Errorf("invalid glob pattern: %w", err)
 	}
 
 	result := r.Match(left.String())

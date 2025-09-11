@@ -2,14 +2,13 @@ package http_test
 
 import (
 	"context"
+	"fmt"
 	h "net/http"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"github.com/jarcoal/httpmock"
-
-	"github.com/pkg/errors"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -44,11 +43,11 @@ func TestGET(t *testing.T) {
 		httpmock.RegisterResponder("GET", url,
 			func(req *h.Request) (*h.Response, error) {
 				if req.Header.Get("X-Token") != "Ferret" {
-					return nil, errors.Errorf("Expected X-token to be Ferret, but got %s", req.Header.Get("X-Token"))
+					return nil, fmt.Errorf("Expected X-token to be Ferret, but got %s", req.Header.Get("X-Token"))
 				}
 
 				if req.Header.Get("X-From") != "localhost" {
-					return nil, errors.Errorf("Expected X-From to be localhost, but got %s", req.Header.Get("X-From"))
+					return nil, fmt.Errorf("Expected X-From to be localhost, but got %s", req.Header.Get("X-From"))
 				}
 
 				return httpmock.NewStringResponse(200, "OK"), nil
