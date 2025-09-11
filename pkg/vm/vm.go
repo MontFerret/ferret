@@ -134,7 +134,11 @@ loop:
 			// TODO: Add caching to avoid recompilation
 			r, err := data.ToRegexp(reg[src2])
 
-			if err := vm.setOrTryCatch(dst, r.Match(reg[src1]), err); err != nil {
+			if err == nil {
+				reg[dst] = r.Match(reg[src1])
+			} else if _, catch := vm.tryCatch(vm.pc); catch {
+				reg[dst] = runtime.False
+			} else {
 				return nil, err
 			}
 		case OpAllEq, OpAllNe, OpAllGt, OpAllGte, OpAllLt, OpAllLte, OpAllIn:
