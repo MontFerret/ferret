@@ -177,3 +177,74 @@ func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Obs
 
 	return observable, eventNameStr, options, nil
 }
+
+func (vm *VM) setOrTryCatch(dst Operand, val runtime.Value, err error) error {
+	reg := vm.registers.Values
+
+	if err == nil {
+		reg[dst] = val
+
+		return nil
+	}
+
+	if _, catch := vm.tryCatch(vm.pc); catch {
+		reg[dst] = runtime.None
+
+		return nil
+	}
+
+	return err
+}
+
+func (vm *VM) setCallResult(op Opcode, dst Operand, out runtime.Value, err error) error {
+	reg := vm.registers.Values
+
+	if err == nil {
+		reg[dst] = out
+
+		return nil
+	}
+
+	if isProtectedCall(op) {
+		reg[dst] = runtime.None
+
+		return nil
+	}
+
+	if catch, ok := vm.tryCatch(vm.pc); ok {
+		reg[dst] = runtime.None
+
+		if catch[2] > 0 {
+			vm.pc = catch[2]
+		}
+
+		return nil
+	}
+
+	return err
+}
+
+func (vm *VM) setOrOptional(dst Operand, val runtime.Value, err error, optional bool) error {
+	if err == nil {
+		vm.registers.Values[dst] = val
+
+		return nil
+	}
+
+	if optional {
+		vm.registers.Values[dst] = runtime.None
+
+		return nil
+	}
+
+	return err
+}
+
+func isProtectedCall(op Opcode) bool {
+	switch op {
+	case OpProtectedCall, OpProtectedCall0, OpProtectedCall1, OpProtectedCall2, OpProtectedCall3, OpProtectedCall4:
+		return true
+	default:
+		return false
+	}
+}
