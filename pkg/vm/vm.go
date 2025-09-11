@@ -6,19 +6,23 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/pkg/vm/internal/mem"
 	"github.com/MontFerret/ferret/pkg/vm/internal/operators"
 )
 
 type VM struct {
+	registers *mem.RegisterFile
+	cache     *mem.Cache
 	env       *Environment
 	program   *Program
-	registers []runtime.Value
 	pc        int
 }
 
 func New(program *Program) *VM {
 	vm := new(VM)
 	vm.program = program
+	vm.registers = mem.NewRegisterFile(program.Registers)
+	vm.cache = mem.NewCache()
 
 	return vm
 }
@@ -32,14 +36,21 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (runtime.Value, error) 
 		return nil, err
 	}
 
+	if err := vm.warmup(env); err != nil {
+		return nil, err
+	}
+
+	if vm.registers.IsDirty() {
+		vm.registers.Reset()
+	}
+
+	vm.registers.MarkDirty()
 	vm.env = env
-	vm.registers = make([]runtime.Value, vm.program.Registers)
 	vm.pc = 0
 
 	bytecode := vm.program.Bytecode
 	constants := vm.program.Constants
-	reg := vm.registers
-
+	reg := vm.registers.Values
 loop:
 	for vm.pc < len(bytecode) {
 		inst := bytecode[vm.pc]
@@ -248,7 +259,7 @@ loop:
 				return nil, err
 			}
 		case OpCall, OpProtectedCall:
-			out, err := vm.call(ctx, dst, src1, src2)
+			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
 
 			if err == nil {
 				reg[dst] = out
@@ -264,7 +275,7 @@ loop:
 				return nil, err
 			}
 		case OpCall0, OpProtectedCall0:
-			out, err := vm.call0(ctx, dst)
+			out, err := vm.call0(ctx, vm.pc-1)
 
 			if err == nil {
 				reg[dst] = out
@@ -281,7 +292,7 @@ loop:
 			}
 
 		case OpCall1, OpProtectedCall1:
-			out, err := vm.call1(ctx, dst, src1)
+			out, err := vm.call1(ctx, vm.pc-1, src1)
 
 			if err == nil {
 				reg[dst] = out
@@ -298,7 +309,7 @@ loop:
 			}
 
 		case OpCall2, OpProtectedCall2:
-			out, err := vm.call2(ctx, dst, src1, src2)
+			out, err := vm.call2(ctx, vm.pc-1, src1, src2)
 
 			if err == nil {
 				reg[dst] = out
@@ -315,7 +326,7 @@ loop:
 			}
 
 		case OpCall3, OpProtectedCall3:
-			out, err := vm.call3(ctx, dst, src1, src2)
+			out, err := vm.call3(ctx, vm.pc-1, src1)
 
 			if err == nil {
 				reg[dst] = out
@@ -332,7 +343,7 @@ loop:
 			}
 
 		case OpCall4, OpProtectedCall4:
-			out, err := vm.call4(ctx, dst, src1, src2)
+			out, err := vm.call4(ctx, vm.pc-1, src1)
 
 			if err == nil {
 				reg[dst] = out
@@ -557,181 +568,5 @@ loop:
 		}
 	}
 
-	return vm.registers[NoopOperand], nil
-}
-
-func (vm *VM) tryCatch(pos int) (Catch, bool) {
-	for _, pair := range vm.program.CatchTable {
-		if pos >= pair[0] && pos <= pair[1] {
-			return pair, true
-		}
-	}
-
-	return Catch{}, false
-}
-
-func (vm *VM) call(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
-	fnName := vm.registers[dst].String()
-	fn, found := vm.env.Functions.F().Get(fnName)
-
-	if !found {
-		return nil, runtime.Error(ErrFunctionNotFound, fnName)
-	}
-
-	var size int
-
-	if src1 > 0 {
-		size = src2.Register() - src1.Register() + 1
-	}
-
-	start := int(src1)
-	end := int(src1) + size
-	args := make([]runtime.Value, size)
-
-	// Iterate over registers starting from src1 and up to the src2
-	for i := start; i < end; i++ {
-		args[i-start] = vm.registers[i]
-	}
-
-	return fn(ctx, args...)
-}
-
-func (vm *VM) call0(ctx context.Context, dst Operand) (runtime.Value, error) {
-	fnName := vm.registers[dst].String()
-	fn, found := vm.env.Functions.F0().Get(fnName)
-
-	if found {
-		return fn(ctx)
-	}
-
-	// Fall back to a variadic function call
-	return vm.call(ctx, dst, NoopOperand, NoopOperand)
-}
-
-func (vm *VM) call1(ctx context.Context, dst, src1 Operand) (runtime.Value, error) {
-	fnName := vm.registers[dst].String()
-	fn, found := vm.env.Functions.F1().Get(fnName)
-
-	if found {
-		return fn(ctx, vm.registers[src1])
-	}
-
-	// Fall back to a variadic function call
-	return vm.call(ctx, dst, src1, src1)
-}
-
-func (vm *VM) call2(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
-	fnName := vm.registers[dst].String()
-	fn, found := vm.env.Functions.F2().Get(fnName)
-
-	if found {
-		return fn(ctx, vm.registers[src1], vm.registers[src2])
-	}
-
-	// Fall back to a variadic function call
-	return vm.call(ctx, dst, src1, src2)
-}
-
-func (vm *VM) call3(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
-	fnName := vm.registers[dst].String()
-	fn, found := vm.env.Functions.F3().Get(fnName)
-
-	if found {
-		arg1 := vm.registers[src1]
-		arg2 := vm.registers[src1+1]
-		arg3 := vm.registers[src1+2]
-
-		return fn(ctx, arg1, arg2, arg3)
-	}
-
-	// Fall back to a variadic function call
-	return vm.call(ctx, dst, src1, src2)
-}
-
-func (vm *VM) call4(ctx context.Context, dst, src1, src2 Operand) (runtime.Value, error) {
-	fnName := vm.registers[dst].String()
-	fn, found := vm.env.Functions.F4().Get(fnName)
-
-	if found {
-		arg1 := vm.registers[src1]
-		arg2 := vm.registers[src1+1]
-		arg3 := vm.registers[src1+2]
-		arg4 := vm.registers[src1+3]
-
-		return fn(ctx, arg1, arg2, arg3, arg4)
-	}
-
-	// Fall back to a variadic function call
-	return vm.call(ctx, dst, src1, src2)
-}
-
-func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
-	indexed, ok := src.(runtime.Indexed)
-
-	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexed)
-	}
-
-	var idx runtime.Int
-	var err error
-
-	switch v := arg.(type) {
-	case runtime.Int:
-		idx = v
-	case runtime.Float:
-		// Convert float to int, rounding down
-		idx = runtime.Int(v)
-	default:
-		err = runtime.TypeErrorOf(arg, runtime.TypeInt, runtime.TypeFloat)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return indexed.Get(ctx, idx)
-}
-
-func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
-	keyed, ok := src.(runtime.Keyed)
-
-	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyed)
-	}
-
-	out, err := keyed.Get(ctx, arg)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
-}
-
-func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
-	observable, ok := dst.(runtime.Observable)
-
-	if !ok {
-		return nil, "", nil, runtime.TypeErrorOf(dst, runtime.TypeObservable)
-	}
-
-	eventNameStr, ok := eventName.(runtime.String)
-
-	if !ok {
-		return nil, "", nil, runtime.TypeErrorOf(eventName, runtime.TypeString)
-	}
-
-	var options runtime.Map
-
-	if opts != nil && opts != runtime.None {
-		m, ok := opts.(runtime.Map)
-
-		if !ok {
-			return nil, "", nil, runtime.TypeErrorOf(opts, runtime.TypeMap)
-		}
-
-		options = m
-	}
-
-	return observable, eventNameStr, options, nil
+	return reg[NoopOperand], nil
 }

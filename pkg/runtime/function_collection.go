@@ -25,9 +25,7 @@ type (
 
 // NewFunctionCollection creates a new function collection of the specified type
 func NewFunctionCollection[T FunctionConstraint]() FunctionCollection[T] {
-	return &defaultFunctionCollection[T]{
-		values: make(map[string]T),
-	}
+	return NewFunctionCollectionFromMap[T](nil)
 }
 
 // NewFunctionCollectionFromMap creates a new function collection from an existing map

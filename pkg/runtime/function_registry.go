@@ -5,24 +5,26 @@ type (
 	// It provides separate storage for functions with fixed argument counts (0-4) and
 	// functions with variable argument counts for optimal performance.
 	Functions interface {
+		Hash() uint64
 		Has(name string) bool
-		F() FunctionCollection[Function]
 		F0() FunctionCollection[Function0]
 		F1() FunctionCollection[Function1]
 		F2() FunctionCollection[Function2]
 		F3() FunctionCollection[Function3]
 		F4() FunctionCollection[Function4]
+		FV() FunctionCollection[Function]
 		Names() []string
 		Size() int
 	}
 
 	functionRegistry struct {
-		f  FunctionCollection[Function]  // Functions with variable number of arguments
-		f0 FunctionCollection[Function0] // Functions with no arguments
-		f1 FunctionCollection[Function1] // Functions with a single argument
-		f2 FunctionCollection[Function2] // Functions with two arguments
-		f3 FunctionCollection[Function3] // Functions with three arguments
-		f4 FunctionCollection[Function4] // Functions with four arguments
+		hash uint64
+		fv   FunctionCollection[Function]  // Functions with variable number of arguments
+		f0   FunctionCollection[Function0] // Functions with no arguments
+		f1   FunctionCollection[Function1] // Functions with a single argument
+		f2   FunctionCollection[Function2] // Functions with two arguments
+		f3   FunctionCollection[Function3] // Functions with three arguments
+		f4   FunctionCollection[Function4] // Functions with four arguments
 	}
 )
 
@@ -42,35 +44,75 @@ func NewFunctionsFrom(funcs ...Functions) Functions {
 }
 
 func NewFunctionsFromMap(funcs map[string]Function) Functions {
-	return &functionRegistry{
-		f: NewFunctionCollectionFromMap(funcs),
+	f := &functionRegistry{
+		fv: NewFunctionCollectionFromMap(funcs),
 	}
+
+	f.hash = functionsHash(f)
+
+	return f
+}
+
+func (f *functionRegistry) Hash() uint64 {
+	return f.hash
 }
 
 func (f *functionRegistry) Has(name string) bool {
-	return f.F().Has(name) ||
-		f.F0().Has(name) ||
-		f.F1().Has(name) ||
-		f.F2().Has(name) ||
-		f.F3().Has(name) ||
-		f.F4().Has(name)
+	if f.fv != nil && f.fv.Has(name) {
+		return true
+	}
+
+	if f.f0 != nil && f.f0.Has(name) {
+		return true
+	}
+
+	if f.f1 != nil && f.f1.Has(name) {
+		return true
+	}
+
+	if f.f2 != nil && f.f2.Has(name) {
+		return true
+	}
+
+	if f.f3 != nil && f.f3.Has(name) {
+		return true
+	}
+
+	if f.f4 != nil && f.f4.Has(name) {
+		return true
+	}
+
+	return false
 }
 
 func (f *functionRegistry) Size() int {
-	return f.F().Size() +
-		f.F0().Size() +
-		f.F1().Size() +
-		f.F2().Size() +
-		f.F3().Size() +
-		f.F4().Size()
-}
+	var size int
 
-func (f *functionRegistry) F() FunctionCollection[Function] {
-	if f.f == nil {
-		f.f = NewFunctionCollection[Function]()
+	if f.f0 != nil {
+		size += f.f0.Size()
 	}
 
-	return f.f
+	if f.f1 != nil {
+		size += f.f1.Size()
+	}
+
+	if f.f2 != nil {
+		size += f.f2.Size()
+	}
+
+	if f.f3 != nil {
+		size += f.f3.Size()
+	}
+
+	if f.f4 != nil {
+		size += f.f4.Size()
+	}
+
+	if f.fv != nil {
+		size += f.fv.Size()
+	}
+
+	return size
 }
 
 func (f *functionRegistry) F0() FunctionCollection[Function0] {
@@ -113,24 +155,41 @@ func (f *functionRegistry) F4() FunctionCollection[Function4] {
 	return f.f4
 }
 
+func (f *functionRegistry) FV() FunctionCollection[Function] {
+	if f.fv == nil {
+		f.fv = NewFunctionCollection[Function]()
+	}
+
+	return f.fv
+}
+
 func (f *functionRegistry) Names() []string {
 	// Pre-calculate capacity to avoid reallocations
-	capacity := f.F().Size() +
-		f.F0().Size() +
-		f.F1().Size() +
-		f.F2().Size() +
-		f.F3().Size() +
-		f.F4().Size()
+	names := make([]string, 0, f.Size())
 
-	names := make([]string, 0, capacity)
+	if f.f0 != nil {
+		names = append(names, f.f0.Names()...)
+	}
 
-	// Collect names from all function collections
-	names = append(names, f.f.Names()...)
-	names = append(names, f.f0.Names()...)
-	names = append(names, f.f1.Names()...)
-	names = append(names, f.f2.Names()...)
-	names = append(names, f.f3.Names()...)
-	names = append(names, f.f4.Names()...)
+	if f.f1 != nil {
+		names = append(names, f.f1.Names()...)
+	}
+
+	if f.f2 != nil {
+		names = append(names, f.f2.Names()...)
+	}
+
+	if f.f3 != nil {
+		names = append(names, f.f3.Names()...)
+	}
+
+	if f.f4 != nil {
+		names = append(names, f.f4.Names()...)
+	}
+
+	if f.fv != nil {
+		names = append(names, f.fv.Names()...)
+	}
 
 	return names
 }

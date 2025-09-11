@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"fmt"
+	"hash/fnv"
+	"sort"
 	"strings"
 )
 
@@ -60,4 +62,21 @@ func makeFunctionName(namespace, name string) string {
 	}
 
 	return namespace + NamespaceSeparator + name
+}
+
+func functionsHash(f *functionRegistry) uint64 {
+	if f == nil {
+		return 0
+	}
+
+	names := f.Names()
+	sort.Strings(names)
+
+	hasher := fnv.New64a()
+
+	for _, name := range names {
+		_, _ = hasher.Write([]byte(name))
+	}
+
+	return hasher.Sum64()
 }
