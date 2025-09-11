@@ -259,7 +259,7 @@ loop:
 				return nil, err
 			}
 		case OpCall, OpProtectedCall:
-			out, err := vm.call(ctx, vm.pc-1, src1, src2)
+			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
 
 			if err == nil {
 				reg[dst] = out

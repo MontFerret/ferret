@@ -16,7 +16,7 @@ func (vm *VM) tryCatch(pos int) (Catch, bool) {
 	return Catch{}, false
 }
 
-func (vm *VM) call(ctx context.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
+func (vm *VM) callv(ctx context.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 
