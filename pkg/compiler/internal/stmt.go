@@ -126,10 +126,37 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 
 	// If this is a real variable (not the ignore pseudo-variable)
 	if name != core.IgnorePseudoVariable {
+		// Determine the variable type
+		variableType := core.TypeUnknown
+		
+		// Try to detect type from the expression AST
+		if expr := ctx.Expression(); expr != nil {
+			if pred := expr.Predicate(); pred != nil {
+				if atom := pred.ExpressionAtom(); atom != nil {
+					if literal := atom.Literal(); literal != nil {
+						// This is a literal assignment, detect the type
+						if literal.StringLiteral() != nil {
+							variableType = core.TypeString
+						} else if literal.IntegerLiteral() != nil {
+							variableType = core.TypeInt
+						} else if literal.FloatLiteral() != nil {
+							variableType = core.TypeFloat
+						} else if literal.BooleanLiteral() != nil {
+							variableType = core.TypeBool
+						} else if literal.ArrayLiteral() != nil {
+							variableType = core.TypeList
+						} else if literal.ObjectLiteral() != nil {
+							variableType = core.TypeMap
+						}
+					}
+				}
+			}
+		}
+		
 		// Handle constant values differently - they need to be loaded into a register
 		if src.IsConstant() {
 			// Declare a global variable and load the constant into it
-			dest, ok := c.ctx.Symbols.DeclareGlobal(name, core.TypeUnknown)
+			dest, ok := c.ctx.Symbols.DeclareGlobal(name, variableType)
 
 			if !ok {
 				c.ctx.Errors.VariableNotUnique(ctx, name)
@@ -143,14 +170,14 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 			src = dest
 		} else if c.ctx.Symbols.Scope() == 0 {
 			// If we're in the global scope, assign as a global variable
-			if ok := c.ctx.Symbols.AssignGlobal(name, core.TypeUnknown, src); !ok {
+			if ok := c.ctx.Symbols.AssignGlobal(name, variableType, src); !ok {
 				c.ctx.Errors.VariableNotUnique(ctx, name)
 
 				return vm.NoopOperand
 			}
 		} else {
 			// Otherwise, assign as a local variable in the current scope
-			if ok := c.ctx.Symbols.AssignLocal(name, core.TypeUnknown, src); !ok {
+			if ok := c.ctx.Symbols.AssignLocal(name, variableType, src); !ok {
 				c.ctx.Errors.VariableNotUnique(ctx, name)
 
 				return vm.NoopOperand

@@ -50,7 +50,7 @@ type SymbolTable struct {
 
 	params    map[string]string
 	functions map[string]int
-	globals   map[string]vm.Operand
+	globals   map[string]*Variable
 	locals    []*Variable
 
 	scope int
@@ -61,7 +61,7 @@ func NewSymbolTable(registers *RegisterAllocator) *SymbolTable {
 		registers: registers,
 		constants: NewConstantPool(),
 		params:    make(map[string]string),
-		globals:   make(map[string]vm.Operand),
+		globals:   make(map[string]*Variable),
 		locals:    make([]*Variable, 0),
 	}
 }
@@ -150,7 +150,13 @@ func (st *SymbolTable) AssignGlobal(name string, typ ValueType, op vm.Operand) b
 		return false
 	}
 
-	st.globals[name] = op
+	st.globals[name] = &Variable{
+		Name:     name,
+		Kind:     SymbolGlobal,
+		Register: op,
+		Depth:    0,
+		Type:     typ,
+	}
 
 	return true
 }
@@ -196,8 +202,8 @@ func (st *SymbolTable) Resolve(name string) (vm.Operand, SymbolKind, bool) {
 		}
 	}
 
-	if reg, ok := st.globals[name]; ok {
-		return reg, SymbolGlobal, true
+	if variable, ok := st.globals[name]; ok {
+		return variable.Register, SymbolGlobal, true
 	}
 
 	return vm.NoopOperand, SymbolLocal, false
@@ -208,6 +214,10 @@ func (st *SymbolTable) Lookup(name string) (*Variable, bool) {
 		if st.locals[i].Name == name {
 			return st.locals[i], true
 		}
+	}
+
+	if variable, ok := st.globals[name]; ok {
+		return variable, true
 	}
 
 	return nil, false
@@ -232,6 +242,26 @@ func (st *SymbolTable) Functions() map[string]int {
 	return funcs
 }
 
+// RuntimeTypeToValueType converts a runtime type to compiler ValueType
+func RuntimeTypeToValueType(runtimeType runtime.Type) ValueType {
+	switch runtimeType {
+	case runtime.TypeInt:
+		return TypeInt
+	case runtime.TypeFloat:
+		return TypeFloat
+	case runtime.TypeString:
+		return TypeString
+	case runtime.TypeBoolean:
+		return TypeBool
+	case runtime.TypeArray, runtime.TypeList:
+		return TypeList
+	case runtime.TypeObject, runtime.TypeMap:
+		return TypeMap
+	default:
+		return TypeUnknown
+	}
+}
+
 func (st *SymbolTable) DebugView() []string {
 	var out []string
 
@@ -239,8 +269,8 @@ func (st *SymbolTable) DebugView() []string {
 		out = append(out, fmt.Sprintf("[local] %s -> R%d (%v)", v.Name, v.Register, v.Type))
 	}
 
-	for k, r := range st.globals {
-		out = append(out, fmt.Sprintf("[global] %s -> R%d", k, r))
+	for k, v := range st.globals {
+		out = append(out, fmt.Sprintf("[global] %s -> R%d (%v)", k, v.Register, v.Type))
 	}
 
 	for k, v := range st.params {
