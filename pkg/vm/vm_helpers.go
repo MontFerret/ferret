@@ -104,7 +104,7 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	}
 
 	// Fall back to a variadic function call
-	return cacheFn.FnV(ctx, arg1, arg2, arg3)
+	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
 }
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
