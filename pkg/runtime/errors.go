@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var (
@@ -50,11 +50,11 @@ func TypeError(actual Type, expected ...Type) error {
 }
 
 func Error(err error, msg string) error {
-	return errors.Errorf("%s: %s", err.Error(), msg)
+	return fmt.Errorf("%w: %s", err, msg)
 }
 
 func Errorf(err error, format string, args ...interface{}) error {
-	return errors.Errorf("%s: %s", err.Error(), fmt.Sprintf(format, args...))
+	return fmt.Errorf("%w: %s", err, fmt.Sprintf(format, args...))
 }
 
 func Errors(err ...error) error {
@@ -67,4 +67,21 @@ func Errors(err ...error) error {
 	}
 
 	return errors.New(message)
+}
+
+func Errorsf(msg string, err ...error) error {
+	if len(err) == 0 {
+		return errors.New(msg)
+	}
+
+	res := err[0]
+
+	for i := 1; i < len(err); i++ {
+		e := err[i]
+		if e != nil {
+			res = fmt.Errorf("%w: %s", e, msg)
+		}
+	}
+
+	return fmt.Errorf("%s: %w", msg, res)
 }

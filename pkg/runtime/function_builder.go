@@ -166,7 +166,7 @@ func (b *defaultFunctionBuilder) Set4(name string, fn Function4) FunctionsBuilde
 }
 
 func (b *defaultFunctionBuilder) SetFrom(other Functions) FunctionsBuilder {
-	_ = other.F().ForEach(func(fn Function, name string) error {
+	_ = other.FV().ForEach(func(fn Function, name string) error {
 		b.Set(name, fn)
 
 		return nil
@@ -254,7 +254,7 @@ func (b *defaultFunctionBuilder) Unset4(name string) FunctionsBuilder {
 }
 
 func (b *defaultFunctionBuilder) UnsetFrom(other Functions) FunctionsBuilder {
-	_ = other.F().ForEach(func(_ Function, name string) error {
+	_ = other.FV().ForEach(func(_ Function, name string) error {
 		b.Unset(name)
 
 		return nil
@@ -297,7 +297,7 @@ func (b *defaultFunctionBuilder) Build() Functions {
 	registry := &functionRegistry{}
 
 	if len(b.f) > 0 {
-		registry.f = NewFunctionCollectionFromMap(b.f)
+		registry.fv = NewFunctionCollectionFromMap(b.f)
 	}
 
 	if len(b.f0) > 0 {
@@ -319,6 +319,8 @@ func (b *defaultFunctionBuilder) Build() Functions {
 	if len(b.f4) > 0 {
 		registry.f4 = NewFunctionCollectionFromMap(b.f4)
 	}
+
+	registry.hash = functionsHash(registry)
 
 	return registry
 }

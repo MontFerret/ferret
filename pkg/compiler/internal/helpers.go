@@ -84,8 +84,8 @@ func getFunctionName(ctx fql.IFunctionCallContext) runtime.String {
 //			)
 //		}
 //
-//		if fn, exists := fns.F().Get(name); exists {
-//			fns.F().Unset(name).Set(noprefix, fn)
+//		if fn, exists := fns.FV().Get(name); exists {
+//			fns.FV().Unset(name).Set(noprefix, fn)
 //		} else if fn, exists := fns.F0().Get(name); exists {
 //			fns.F0().Unset(name).Set(noprefix, fn)
 //		} else if fn, exists := fns.F1().Get(name); exists {

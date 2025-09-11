@@ -10,7 +10,7 @@ import (
 
 func TestFunctionCall(t *testing.T) {
 	RunUseCases(t, []UseCase{
-		Case("RETURN TYPENAME(1)", "int"),
+		DebugCase("RETURN TYPENAME(1)", "int"),
 		Case("RETURN TYPENAME(1.1)", "float"),
 		Case("WAIT(10) RETURN 1", 1),
 		Case("RETURN LENGTH([1,2,3])", 3),
