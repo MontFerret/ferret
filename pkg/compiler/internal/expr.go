@@ -96,7 +96,7 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target vm.Operand) vm.Op
 // Panics if the unary operator type is not recognized.
 func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IExpressionContext) vm.Operand {
 	src := c.Compile(parent.GetRight())
-	dst := c.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate()
 
 	var op vm.Opcode
 
@@ -131,7 +131,7 @@ func (c *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand 
 
 	skip := c.ctx.Emitter.NewLabel("and.false")
 	done := c.ctx.Emitter.NewLabel("and.done")
-	dst := c.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate()
 
 	// If left is falsy, jump to skip and use left
 	c.ctx.Emitter.EmitJumpIfFalse(left, skip)
@@ -165,7 +165,7 @@ func (c *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 
 	next := c.ctx.Emitter.NewLabel("or.false")
 	done := c.ctx.Emitter.NewLabel("or.done")
-	dst := c.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate()
 
 	// If left is truthy, short-circuit and skip right
 	c.ctx.Emitter.EmitJumpIfTrue(left, next)
@@ -195,7 +195,7 @@ func (c *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 // Returns:
 //   - An operand representing the result of either the true or false expression
 func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
-	dst := c.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate()
 
 	// Compile condition and put result in dst
 	condReg := c.Compile(ctx.GetCondition())
@@ -271,7 +271,7 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 
 	var opcode vm.Opcode
 	var isNegated bool
-	dest := c.ctx.Registers.Allocate(core.Temp)
+	dest := c.ctx.Registers.Allocate()
 	left := c.compilePredicate(ctx.Predicate(0))
 	right := c.compilePredicate(ctx.Predicate(1))
 
@@ -397,7 +397,7 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 	if isSet {
 		regLeft := c.compileAtom(ctx.ExpressionAtom(0))
 		regRight := c.compileAtom(ctx.ExpressionAtom(1))
-		dst := c.ctx.Registers.Allocate(core.Temp)
+		dst := c.ctx.Registers.Allocate()
 
 		c.ctx.Emitter.EmitABC(opcode, dst, regLeft, regRight)
 
@@ -487,7 +487,7 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 			src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
 		}
 
-		dst = c.ctx.Registers.Allocate(core.Temp)
+		dst = c.ctx.Registers.Allocate()
 
 		// TODO: Replace with EmitLoadKey
 		if p.ErrorOperator() != nil {
@@ -532,7 +532,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 		return op
 	}
 
-	reg := c.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitMove(reg, op)
 
 	return reg
@@ -548,7 +548,7 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 //   - An operand representing the parameter's value
 func (c *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
 	name := ctx.Identifier().GetText()
-	reg := c.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadParam(reg, c.ctx.Symbols.BindParam(name))
 
 	return reg
@@ -611,7 +611,7 @@ func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pro
 func (c *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
 	switch name {
 	case runtimeLength:
-		dst := c.ctx.Registers.Allocate(core.Temp)
+		dst := c.ctx.Registers.Allocate()
 
 		if seq == nil || len(seq) != 1 {
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeLength+": expected 1 argument"))
@@ -621,7 +621,7 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protec
 
 		return dst
 	case runtimeTypename:
-		dst := c.ctx.Registers.Allocate(core.Temp)
+		dst := c.ctx.Registers.Allocate()
 
 		if seq == nil || len(seq) != 1 {
 			panic(runtime.Error(runtime.ErrInvalidArgument, runtimeTypename+": expected 1 argument"))
@@ -655,7 +655,7 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protec
 // Returns:
 //   - An operand representing the function call result
 func (c *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protected bool, seq core.RegisterSequence) vm.Operand {
-	dest := c.ctx.Registers.Allocate(core.Temp)
+	dest := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadConst(dest, c.ctx.Symbols.AddConstant(name))
 	c.ctx.Symbols.BindFunction(name.String(), len(seq))
 
@@ -744,7 +744,7 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 // Returns:
 //   - An operand representing the compiled range
 func (c *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.Operand {
-	dst := c.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate()
 	start := c.compileRangeOperand(ctx.GetLeft())
 	end := c.compileRangeOperand(ctx.GetRight())
 

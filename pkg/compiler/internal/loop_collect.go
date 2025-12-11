@@ -62,10 +62,6 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 	// Finalize the collector setup
 	c.finalizeCollector(dst, kv, spec)
 
-	// We no longer need KV, so we free registers
-	c.ctx.Registers.Free(kv.Key)
-	c.ctx.Registers.Free(kv.Value)
-
 	return spec
 }
 
@@ -83,7 +79,6 @@ func (c *LoopCollectCompiler) finalizeCollector(dst vm.Operand, kv *core.KV, spe
 		// For projection without grouping but with aggregation, use the projection variable name as the key
 		key := loadConstant(c.ctx, runtime.String(spec.Projection().VariableName()))
 		c.ctx.Emitter.EmitPushKV(dst, key, kv.Value)
-		c.ctx.Registers.Free(key)
 	}
 
 	// Emit finalization instructions for the current loop
@@ -101,12 +96,12 @@ func (c *LoopCollectCompiler) compileLoop(spec *core.Collector) {
 
 	// Ensure loop value register is allocated
 	if loop.Value == vm.NoopOperand {
-		loop.Value = c.ctx.Registers.Allocate(core.Temp)
+		loop.Value = c.ctx.Registers.Allocate()
 	}
 
 	// Ensure loop key register is allocated
 	if loop.Key == vm.NoopOperand {
-		loop.Key = c.ctx.Registers.Allocate(core.Temp)
+		loop.Key = c.ctx.Registers.Allocate()
 	}
 
 	// Determine if we need to initialize the loop

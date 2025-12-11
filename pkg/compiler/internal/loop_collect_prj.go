@@ -66,7 +66,6 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 	// TODO: Handle error if the variable is not found
 	val, _ := c.ctx.Symbols.DeclareLocal(varName, core.TypeUnknown)
 	c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, aggregator, key)
-	c.ctx.Registers.Free(key)
 
 	return val
 }
@@ -128,8 +127,6 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 
 		// Create an object from the key-value pairs
 		c.ctx.Emitter.EmitAs(vm.OpLoadObject, kv.Value, seq)
-		// Free the sequence registers
-		c.ctx.Registers.FreeSequence(seq)
 	}
 
 	// Return the identifier text as the variable name
@@ -144,8 +141,6 @@ func (c *LoopCollectCompiler) compileCustomGroupProjection(kv *core.KV, selector
 	selectorReg := c.ctx.ExprCompiler.Compile(selector.Expression())
 	// Move the result to the value register
 	c.ctx.Emitter.EmitMove(kv.Value, selectorReg)
-	// Free the temporary register
-	c.ctx.Registers.Free(selectorReg)
 
 	// Return the selector identifier as the variable name
 	return selector.Identifier().GetText()

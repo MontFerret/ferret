@@ -167,7 +167,7 @@ func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.O
 // Panics if the text is neither "true" nor "false".
 func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) vm.Operand {
 	// Allocate a temporary register for the boolean value
-	reg := c.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate()
 
 	// Convert the text to lowercase and determine the boolean value
 	switch strings.ToLower(ctx.GetText()) {
@@ -176,7 +176,6 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 	case "false":
 		c.ctx.Emitter.EmitBoolean(reg, false)
 	default:
-		c.ctx.Registers.Free(reg)
 		reg = vm.NoopOperand
 	}
 
@@ -191,7 +190,7 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 //   - An operand representing the compiled none value
 func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Operand {
 	// Allocate a temporary register for the none value
-	reg := c.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate()
 	// Emit instruction to load the none value into the register
 	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
 
@@ -207,7 +206,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 //   - An operand representing the compiled array
 func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
 	// Allocate destination register for the array
-	destReg := c.ctx.Registers.Allocate(core.Temp)
+	destReg := c.ctx.Registers.Allocate()
 	// Compile the argument list (array elements) into a sequence of registers
 	seq := c.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
 	// Emit instruction to create an array from the sequence of registers
@@ -225,7 +224,7 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 //   - An operand representing the compiled object
 func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
 	// Allocate destination register for the object
-	dst := c.ctx.Registers.Allocate(core.Temp)
+	dst := c.ctx.Registers.Allocate()
 	var seq core.RegisterSequence
 	// Get all property assignments from the object literal
 	assignments := ctx.AllPropertyAssignment()

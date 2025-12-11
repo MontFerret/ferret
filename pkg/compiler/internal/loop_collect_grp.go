@@ -30,7 +30,7 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 			kv.Value = loop.Value
 		} else {
 			// Allocate new register and emit value instruction
-			kv.Value = c.ctx.Registers.Allocate(core.Temp)
+			kv.Value = c.ctx.Registers.Allocate()
 			loop.EmitValue(kv.Value, c.ctx.Emitter)
 		}
 	} else {
@@ -39,7 +39,7 @@ func (c *LoopCollectCompiler) initializeGrouping(grouping fql.ICollectGroupingCo
 			kv.Value = loop.Key
 		} else {
 			// Allocate new register and emit key instruction
-			kv.Value = c.ctx.Registers.Allocate(core.Temp)
+			kv.Value = c.ctx.Registers.Allocate()
 			loop.EmitKey(kv.Value, c.ctx.Emitter)
 		}
 	}
@@ -73,17 +73,14 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 		for i, selector := range selectors {
 			reg := c.ctx.ExprCompiler.Compile(selector.Expression())
 			c.ctx.Emitter.EmitAB(vm.OpMove, selectorRegs[i], reg)
-			// Free the register after moving its value to the sequence register
-			c.ctx.Registers.Free(reg)
 
 			// Create a CollectSelector for each selector with its identifier
 			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))
 		}
 
 		// Create an array from the sequence of registers
-		kvKeyReg = c.ctx.Registers.Allocate(core.Temp)
+		kvKeyReg = c.ctx.Registers.Allocate()
 		c.ctx.Emitter.EmitAs(vm.OpLoadArray, kvKeyReg, selectorRegs)
-		c.ctx.Registers.FreeSequence(selectorRegs)
 	} else {
 		// Handle single selector case - simpler, no need for array
 		selector := selectors[0]
@@ -119,11 +116,6 @@ func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 
 			// Load the value at index i from the array in reg into the variable
 			c.ctx.Emitter.EmitABC(vm.OpLoadIndex, variables[i], reg, loadConstant(c.ctx, runtime.Int(i)))
-		}
-
-		// Free the register after moving its value to the variable
-		for _, reg := range variables {
-			c.ctx.Registers.Free(reg)
 		}
 	} else {
 		// Handle single group selector - simpler case

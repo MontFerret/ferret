@@ -86,7 +86,7 @@ func (c *StmtCompiler) CompileBodyExpression(ctx fql.IBodyExpressionContext) {
 		// because constants cannot be directly returned
 		if valReg.IsConstant() {
 			valC := valReg
-			valReg = c.ctx.Registers.Allocate(core.Temp)
+			valReg = c.ctx.Registers.Allocate()
 
 			// Move the constant value to the temporary register
 			c.ctx.Emitter.EmitMove(valReg, valC)
@@ -138,7 +138,6 @@ func (c *StmtCompiler) CompileVariableDeclaration(ctx fql.IVariableDeclarationCo
 			}
 
 			c.ctx.Emitter.EmitAB(vm.OpLoadConst, dest, src)
-			c.ctx.Registers.Free(src)
 
 			src = dest
 		} else if c.ctx.Symbols.Scope() == 0 {

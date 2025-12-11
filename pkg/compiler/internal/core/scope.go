@@ -27,7 +27,7 @@ func NewScopeProjection(
 }
 
 func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
-	reg := sp.registers.Allocate(Temp)
+	reg := sp.registers.Allocate()
 	args := sp.registers.AllocateSequence(len(sp.values))
 
 	for i, v := range sp.values {
@@ -36,8 +36,6 @@ func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
 
 	sp.emitter.EmitArray(reg, args)
 	sp.emitter.EmitMove(dst, reg)
-	sp.registers.Free(reg)
-	sp.registers.FreeSequence(args)
 }
 
 func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
@@ -59,29 +57,24 @@ func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
 	}
 
 	sp.emitter.EmitObject(dst, pairs)
-	sp.registers.FreeSequence(pairs)
 }
 
 func (sp *ScopeProjection) RestoreFromArray(src vm.Operand) {
-	idx := sp.registers.Allocate(Temp)
+	idx := sp.registers.Allocate()
 
 	for i, v := range sp.values {
 		sp.emitter.EmitLoadConst(idx, sp.symbols.AddConstant(runtime.Int(i)))
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadIndex, variable, src, idx)
 	}
-
-	sp.registers.Free(idx)
 }
 
 func (sp *ScopeProjection) RestoreFromObject(src vm.Operand) {
-	key := sp.registers.Allocate(Temp)
+	key := sp.registers.Allocate()
 
 	for _, v := range sp.values {
 		sp.emitter.EmitLoadConst(key, sp.symbols.AddConstant(runtime.String(v.Name)))
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadKey, variable, src, key)
 	}
-
-	sp.registers.Free(key)
 }
