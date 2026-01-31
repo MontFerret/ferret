@@ -1,5 +1,57 @@
+// XPATH Examples
+// The XPATH function allows you to query elements using XPath expressions.
+// It returns an array of matched values.
+
 LET doc = DOCUMENT("https://www.google.ca", {
   driver: 'cdp'
 })
 
-RETURN XPATH(doc, "//meta/@charset") // ["UTF-8"]
+// Basic XPATH query - get charset from meta tag
+LET charset = XPATH(doc, "//meta/@charset")
+// Returns: ["UTF-8"]
+
+// Get page title
+LET title = XPATH(doc, "//title/text()")
+// Returns: ["Google"]
+
+// Get all link hrefs on the page
+LET links = XPATH(doc, "//a/@href")
+// Returns: ["https://...", "https://...", ...]
+
+// Get specific meta content by name attribute
+LET description = XPATH(doc, "//meta[@name='description']/@content")
+// Returns: ["Search the world's information..."]
+
+// Get Open Graph metadata (commonly used for social sharing)
+LET ogUrl = XPATH(doc, "//meta[@property='og:url']/@content")
+LET ogTitle = XPATH(doc, "//meta[@property='og:title']/@content")
+LET ogImage = XPATH(doc, "//meta[@property='og:image']/@content")
+
+// Get Twitter Card metadata
+LET twitterCard = XPATH(doc, "//meta[@name='twitter:card']/@content")
+LET twitterSite = XPATH(doc, "//meta[@name='twitter:site']/@content")
+
+// Get all images with alt text
+LET imagesWithAlt = XPATH(doc, "//img[@alt]/@alt")
+
+// Get text content from elements with specific class
+// Note: XPath 1.0 doesn't have native class matching, use contains()
+LET elementsWithClass = XPATH(doc, "//*[contains(@class, 'some-class')]/text()")
+
+// Get the first matching element (using position predicate)
+LET firstLink = XPATH(doc, "(//a/@href)[1]")
+
+// Get elements by ID
+LET elementById = XPATH(doc, "//*[@id='main']//text()")
+
+// Combine conditions with 'and'
+LET specificMeta = XPATH(doc, "//meta[@property='og:type' and @content='website']/@content")
+
+// Return an object with all collected metadata
+RETURN {
+    charset: charset,
+    title: title,
+    ogUrl: ogUrl,
+    ogTitle: ogTitle,
+    ogImage: ogImage
+}
