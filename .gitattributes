@@ -1,0 +1,41 @@
+# Auto detect text files and normalize line endings to LF
+* text=auto eol=lf
+
+# Go source files
+*.go text eol=lf
+
+# FQL query files
+*.fql text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Configuration
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+
+# Windows batch files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Makefiles
+Makefile text eol=lf
+
+# Ignore generated files in diff
+*_gen.go -diff linguist-generated=true
+
+# Mark vendored files as such
+vendor/** linguist-vendored
+
+# Images are binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
