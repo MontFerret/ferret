@@ -57,6 +57,28 @@ It is extremely portable, extensible, and fast.
 * Embeddable
 * Extensible
 
+## Installation
+
+### CLI
+
+Install the Ferret CLI using Go:
+
+```bash
+go install github.com/MontFerret/cli/ferret@latest
+```
+
+Make sure your `$GOPATH/bin` is in your `PATH`.
+
+### As a Library
+
+Add Ferret to your Go project:
+
+```bash
+go get github.com/MontFerret/ferret
+```
+
+## Documentation
+
 Documentation is available [at our website](https://www.montferret.dev/docs/introduction/).
 
 ### Different languages
