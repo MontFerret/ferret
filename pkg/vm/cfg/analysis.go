@@ -174,40 +174,46 @@ func (a *Analyzer) CalculateDominators() map[int]*BasicBlock {
 	}
 
 	// Find immediate dominator (closest dominator that is not the node itself)
+	// The immediate dominator of a block is the unique dominator that is dominated by all other dominators
 	immediateDominators := make(map[int]*BasicBlock)
+	blockMap := make(map[int]*BasicBlock)
+	for _, b := range a.cfg.Blocks {
+		blockMap[b.ID] = b
+	}
+
 	for _, block := range a.cfg.Blocks {
 		if block == a.cfg.Entry {
 			continue
 		}
 
-		// Find the dominator with the largest ID (closest to this block in dominator tree)
-		maxID := -1
-		for id := range dominators[block.ID] {
-			if id != block.ID && id > maxID {
-				// Additional check: this must dominate all other dominators
-				isDominatedByOthers := false
-				for otherID := range dominators[block.ID] {
-					if otherID != block.ID && otherID != id {
-						if !dominators[id][otherID] {
-							// This dominator is not dominated by another dominator of block
-							isDominatedByOthers = true
-							break
-						}
-					}
-				}
-				if !isDominatedByOthers {
-					maxID = id
-				}
+		// Find the immediate dominator by looking for the dominator that is not dominated by any other dominator
+		var idom *BasicBlock
+		for domID := range dominators[block.ID] {
+			if domID == block.ID {
+				continue
 			}
-		}
 
-		if maxID >= 0 {
-			for _, b := range a.cfg.Blocks {
-				if b.ID == maxID {
-					immediateDominators[block.ID] = b
+			// Check if this dominator is dominated by any other dominator of block
+			isDominatedByOther := false
+			for otherID := range dominators[block.ID] {
+				if otherID == block.ID || otherID == domID {
+					continue
+				}
+				// If otherID dominates domID, then domID is not the immediate dominator
+				if dominators[domID][otherID] {
+					isDominatedByOther = true
 					break
 				}
 			}
+
+			if !isDominatedByOther {
+				idom = blockMap[domID]
+				break
+			}
+		}
+
+		if idom != nil {
+			immediateDominators[block.ID] = idom
 		}
 	}
 
