@@ -91,6 +91,7 @@ func buildInterferenceGraph(cfg *ControlFlowGraph, liveness map[int]*LivenessInf
 // findCoalesceCandidates finds register pairs that can be coalesced
 func findCoalesceCandidates(cfg *ControlFlowGraph, interferenceGraph map[int]map[int]bool) map[int]int {
 	coalesceMap := make(map[int]int)
+	coalesced := make(map[int]bool) // Track which registers have been coalesced
 
 	// Look for move instructions between non-interfering registers
 	for _, block := range cfg.Blocks {
@@ -106,9 +107,10 @@ func findCoalesceCandidates(cfg *ControlFlowGraph, interferenceGraph map[int]map
 
 				// Check if they don't interfere and haven't been coalesced yet
 				if !interferenceGraph[dstReg][srcReg] &&
-					coalesceMap[dstReg] == 0 && coalesceMap[srcReg] == 0 {
+					!coalesced[dstReg] && !coalesced[srcReg] {
 					// Coalesce dst into src (replace all uses of dst with src)
 					coalesceMap[dstReg] = srcReg
+					coalesced[dstReg] = true
 				}
 			}
 		}

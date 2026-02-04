@@ -144,7 +144,8 @@ func updateConstantTracking(inst vm.Instruction, constants map[int]runtime.Value
 
 	case vm.OpLoadBool:
 		if dst.IsRegister() {
-			constants[dst.Register()] = runtime.Boolean(src1 == 1)
+			// OpLoadBool stores the boolean value directly in src1 operand
+			constants[dst.Register()] = runtime.Boolean(src1.Register() == 1)
 		}
 
 	case vm.OpLoadZero:
