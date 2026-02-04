@@ -1,5 +1,49 @@
+// XPath Examples - Querying HTML elements and attributes
+// 
+// XPATH(document, expression) returns an array of matching values
+//
+// For more XPath syntax, see: https://www.w3.org/TR/xpath/
+
 LET doc = DOCUMENT("https://www.google.ca", {
   driver: 'cdp'
 })
 
-RETURN XPATH(doc, "//meta/@charset") // ["UTF-8"]
+// Basic attribute query
+LET charset = XPATH(doc, "//meta/@charset")
+// Returns: ["UTF-8"]
+
+// Query meta tag content by name attribute
+LET description = XPATH(doc, "//meta[@name='description']/@content")
+// Returns: ["Search description..."]
+
+// Query Open Graph metadata (og:url, og:title, etc.)
+LET og_url = XPATH(doc, "//meta[@property='og:url']/@content")
+LET og_title = XPATH(doc, "//meta[@property='og:title']/@content")
+LET og_image = XPATH(doc, "//meta[@property='og:image']/@content")
+
+// Query Twitter Card metadata
+LET twitter_card = XPATH(doc, "//meta[@name='twitter:card']/@content")
+
+// Query canonical URL
+LET canonical = XPATH(doc, "//link[@rel='canonical']/@href")
+
+// Query all links on the page
+LET all_links = XPATH(doc, "//a/@href")
+
+// Query specific elements by class
+LET by_class = XPATH(doc, "//*[@class='my-class']")
+
+// Query elements by ID
+LET by_id = XPATH(doc, "//*[@id='main']")
+
+// Query text content of elements
+LET headings = XPATH(doc, "//h1/text()")
+
+RETURN {
+  charset: charset,
+  og_url: og_url,
+  og_title: og_title,
+  og_image: og_image,
+  canonical: canonical,
+  headings: headings
+}
