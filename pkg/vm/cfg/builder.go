@@ -92,6 +92,17 @@ func (b *Builder) identifyLeaders(bytecode []vm.Instruction) map[int]bool {
 				leaders[i+1] = true
 			}
 
+		case vm.OpIterNext:
+			// OpIterNext is like a conditional jump: when iterator is done, jumps to dst
+			target := int(inst.Operands[0])
+			if target >= 0 && target < len(bytecode) {
+				leaders[target] = true
+			}
+			// Instruction after OpIterNext is a leader (fall-through when iterator has more)
+			if i+1 < len(bytecode) {
+				leaders[i+1] = true
+			}
+
 		case vm.OpReturn:
 			// Instruction after return is a leader (if it exists, it's unreachable but still a block)
 			if i+1 < len(bytecode) {
@@ -177,6 +188,20 @@ func (b *Builder) createEdges(bytecode []vm.Instruction, blocks []*BasicBlock) {
 				block.AddSuccessor(targetBlock)
 			}
 			// 2. Fall-through to next instruction
+			if lastIdx+1 < len(bytecode) {
+				if nextBlock, ok := indexToBlock[lastIdx+1]; ok {
+					block.AddSuccessor(nextBlock)
+				}
+			}
+
+		case vm.OpIterNext:
+			// OpIterNext is like a conditional jump
+			// 1. Jump target (when iterator is done)
+			target := int(lastInst.Operands[0])
+			if targetBlock, ok := indexToBlock[target]; ok {
+				block.AddSuccessor(targetBlock)
+			}
+			// 2. Fall-through (when iterator has more elements)
 			if lastIdx+1 < len(bytecode) {
 				if nextBlock, ok := indexToBlock[lastIdx+1]; ok {
 					block.AddSuccessor(nextBlock)

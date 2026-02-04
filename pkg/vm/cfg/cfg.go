@@ -79,7 +79,7 @@ func (bb *BasicBlock) IsTerminator() bool {
 	}
 	lastInst := bb.Instructions[len(bb.Instructions)-1]
 	op := lastInst.Opcode
-	return op == vm.OpReturn || op == vm.OpJump || op == vm.OpJumpIfFalse || op == vm.OpJumpIfTrue
+	return op == vm.OpReturn || op == vm.OpJump || op == vm.OpJumpIfFalse || op == vm.OpJumpIfTrue || op == vm.OpIterNext
 }
 
 // String returns a string representation of the basic block
