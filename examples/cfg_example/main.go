@@ -72,6 +72,31 @@ func main() {
 	}
 	fmt.Println()
 
+	// Run optimization pipeline
+	fmt.Println("=== Optimization Pipeline ===")
+	pipeline := cfg.NewPipeline()
+	pipeline.Add(cfg.NewLivenessAnalysisPass())
+	pipeline.Add(cfg.NewLoopDetectionPass())
+	pipeline.Add(cfg.NewConstantFoldingPass())
+	pipeline.Add(cfg.NewRegisterCoalescingPass())
+
+	pipelineResult, err := pipeline.Run(program)
+	if err != nil {
+		log.Fatalf("Pipeline failed: %v", err)
+	}
+
+	fmt.Printf("Program modified: %v\n", pipelineResult.Modified)
+	fmt.Printf("Passes executed: %d\n", len(pipelineResult.PassResults))
+	
+	for passName, passResult := range pipelineResult.PassResults {
+		status := "✓"
+		if passResult.Modified {
+			status = "✓ (modified)"
+		}
+		fmt.Printf("  %s %s\n", status, passName)
+	}
+	fmt.Println()
+
 	// Generate DOT format for visualization
 	fmt.Println("=== Graphviz DOT Format ===")
 	fmt.Println(graph.ToDOT())

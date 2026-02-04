@@ -1,6 +1,6 @@
 # Control Flow Graph (CFG) Package
 
-The `cfg` package provides a control flow graph generator and analyzer for Ferret bytecode. It can be used for bytecode optimization, analysis, and visualization.
+The `cfg` package provides a control flow graph generator, analyzer, and optimization pipeline for Ferret bytecode. It can be used for bytecode optimization, analysis, and visualization.
 
 ## Overview
 
@@ -17,15 +17,27 @@ A Control Flow Graph (CFG) is a representation of all paths that might be traver
   - Instructions following control flow instructions
 - **Edge Creation**: Creates edges between blocks based on:
   - Unconditional jumps (OpJump)
-  - Conditional jumps (OpJumpIfFalse, OpJumpIfTrue)
+  - Conditional jumps (OpJumpIfFalse, OpJumpIfTrue, OpIterNext)
   - Fall-through execution
   - Return statements
 
 ### Analysis Capabilities
 - **Reachability Analysis**: Find reachable and unreachable blocks (dead code detection)
-- **Loop Detection**: Identify back edges that form loops
+- **Loop Detection**: Identify natural loops and back edges
 - **Dominator Analysis**: Calculate dominator trees for optimization opportunities
+- **Liveness Analysis**: Determine which registers are live at each program point
 - **Visualization**: Export to Graphviz DOT format
+
+### Optimization Pipeline
+The package includes a flexible pipeline system for running analysis and transformation passes:
+
+#### Analysis Passes (Read-Only)
+- **Liveness Analysis**: Computes which registers are live at each point
+- **Loop Detection**: Identifies natural loops and their structure
+
+#### Transform Passes (Modify Bytecode)
+- **Constant Folding/Propagation**: Evaluates constant expressions at compile time
+- **Register Coalescing**: Reduces register usage by merging non-interfering registers
 
 ## Usage
 
@@ -58,6 +70,37 @@ backEdges := analyzer.FindBackEdges()
 
 // Calculate dominators for optimization
 dominators := analyzer.CalculateDominators()
+```
+
+### Using the Optimization Pipeline
+
+```go
+// Create a pipeline with analysis and optimization passes
+pipeline := cfg.NewPipeline()
+
+// Add analysis passes
+pipeline.Add(cfg.NewLivenessAnalysisPass())
+pipeline.Add(cfg.NewLoopDetectionPass())
+
+// Add transformation passes
+pipeline.Add(cfg.NewConstantFoldingPass())
+pipeline.Add(cfg.NewRegisterCoalescingPass())
+
+// Run the pipeline
+result, err := pipeline.Run(program)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Check what was optimized
+if result.Modified {
+    fmt.Println("Program was optimized")
+}
+
+// Access pass-specific results
+for passName, passResult := range result.PassResults {
+    fmt.Printf("Pass %s: modified=%v\n", passName, passResult.Modified)
+}
 ```
 
 ### Visualization
