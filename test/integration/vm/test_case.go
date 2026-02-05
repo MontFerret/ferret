@@ -233,5 +233,5 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 }
 
 func RunUseCases(t *testing.T, useCases []UseCase, opts ...vm.EnvironmentOption) {
-	RunUseCasesWith(t, compiler.New(), useCases, opts...)
+	RunUseCasesWith(t, compiler.New(compiler.WithOptimizationLevel(compiler.O0)), useCases, opts...)
 }

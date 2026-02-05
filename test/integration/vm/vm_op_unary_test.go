@@ -30,7 +30,7 @@ func TestUnaryOperators(t *testing.T) {
 	})
 
 	Convey("RETURN { enabled: !val}", t, func() {
-		c := compiler.New()
+		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
 		p1 := c.MustCompile(file.NewAnonymousSource(`
 			LET val = ""

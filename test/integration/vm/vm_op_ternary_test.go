@@ -35,7 +35,7 @@ func TestTernaryOperator(t *testing.T) {
 			"FALSE",
 		}
 
-		c := compiler.New()
+		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
 		for _, val := range vals {
 			p, err := c.Compile(file.NewAnonymousSource(fmt.Sprintf(`

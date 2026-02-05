@@ -181,7 +181,7 @@ func TestMemberReservedWords(t *testing.T) {
 				expected.WriteString(strconv.Itoa(idx))
 				expected.WriteString("}")
 
-				c := compiler.New()
+				c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 				prog, err := c.Compile(file.NewAnonymousSource(query.String()))
 
 				So(err, ShouldBeNil)
