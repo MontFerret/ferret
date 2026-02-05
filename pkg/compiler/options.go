@@ -1,7 +1,17 @@
 package compiler
 
-type (
-	Option func(opts *Options)
+import "github.com/MontFerret/ferret/pkg/compiler/internal/optimization"
 
-	Options struct{}
+type (
+	Option func(opts *options)
+
+	options struct {
+		Level optimization.Level
+	}
 )
+
+func WithOptimizationLevel(level optimization.Level) Option {
+	return func(opts *options) {
+		opts.Level = level
+	}
+}
