@@ -1,13 +1,15 @@
 package optimization
 
 import (
+	"sort"
+
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 const RegisterCoalescingPassName = "register-coalescing"
 
 // RegisterCoalescingPass performs register coalescing to reduce register usage
-// by merging registers that don't interfere with each other
+// by renumbering registers based on liveness intervals
 type RegisterCoalescingPass struct{}
 
 // NewRegisterCoalescingPass creates a new register coalescing pass
@@ -22,6 +24,13 @@ func (p *RegisterCoalescingPass) Name() string {
 
 func (p *RegisterCoalescingPass) Requires() []string {
 	return []string{LivenessAnalysisPassName}
+}
+
+// liveInterval represents the live range of a register
+type liveInterval struct {
+	reg   int
+	start int
+	end   int
 }
 
 // Run executes register coalescing on the program
@@ -46,28 +55,217 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 	// Build interference graph
 	interferenceGraph := buildInterferenceGraph(ctx.CFG, liveness, ctx.Program.Registers)
 
-	// Find register pairs that can be coalesced (connected by moves and don't interfere)
+	// First, try move-based coalescing
 	coalesceMap := findCoalesceCandidates(ctx.Program, ctx.CFG, interferenceGraph)
 
-	if len(coalesceMap) == 0 {
-		return &PassResult{
-			Modified: false,
-			Metadata: map[string]interface{}{
-				"registers_coalesced": 0,
-			},
-		}, nil
-	}
+	// Apply move-based coalescing first
+	moveCoalesced := applyCoalescing(ctx.Program, coalesceMap)
 
-	// Apply register coalescing
-	modified := applyCoalescing(ctx.Program, coalesceMap)
+	// Then, perform register renumbering based on liveness intervals
+	renumberMap := computeRegisterRenumbering(ctx.CFG, liveness, ctx.Program.Registers)
+	renumbered := applyRenumbering(ctx.Program, renumberMap)
+
+	modified := moveCoalesced || renumbered
 
 	return &PassResult{
 		Modified: modified,
 		Metadata: map[string]interface{}{
 			"registers_coalesced": len(coalesceMap),
 			"coalesce_map":        coalesceMap,
+			"renumber_map":        renumberMap,
 		},
 	}, nil
+}
+
+// computeRegisterRenumbering computes a mapping from old registers to new registers
+// using a linear scan approach based on liveness intervals
+func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int) map[int]int {
+	// Build a flat list of instructions with their positions
+	intervals := computeLiveIntervals(cfg, liveness, numRegisters)
+
+	if len(intervals) == 0 {
+		return nil
+	}
+
+	// Sort intervals by start position
+	sort.Slice(intervals, func(i, j int) bool {
+		if intervals[i].start == intervals[j].start {
+			return intervals[i].reg < intervals[j].reg
+		}
+		return intervals[i].start < intervals[j].start
+	})
+
+	// Greedy register allocation: assign the lowest available register to each interval
+	renumberMap := make(map[int]int)
+
+	// active keeps track of which new registers are in use and when they become free
+	// maps new register -> end position of current interval using it
+	active := make(map[int]int)
+
+	for _, interval := range intervals {
+		// Skip R0 (reserved)
+		if interval.reg == 0 {
+			continue
+		}
+
+		// Expire old intervals: free registers whose intervals have ended
+		for newReg, endPos := range active {
+			if endPos < interval.start {
+				delete(active, newReg)
+			}
+		}
+
+		// Find the lowest available register (starting from 1, skip R0)
+		newReg := 1
+		for {
+			if _, inUse := active[newReg]; !inUse {
+				break
+			}
+			newReg++
+		}
+
+		// Assign this register
+		renumberMap[interval.reg] = newReg
+		active[newReg] = interval.end
+	}
+
+	// Remove identity mappings
+	for oldReg, newReg := range renumberMap {
+		if oldReg == newReg {
+			delete(renumberMap, oldReg)
+		}
+	}
+
+	return renumberMap
+}
+
+// computeLiveIntervals computes the live interval for each register
+func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int) []liveInterval {
+	// First, flatten all instructions with their global positions
+	type instrPos struct {
+		inst vm.Instruction
+		pos  int
+	}
+
+	var allInstructions []instrPos
+	pos := 0
+
+	for _, block := range cfg.Blocks {
+		for _, inst := range block.Instructions {
+			allInstructions = append(allInstructions, instrPos{inst: inst, pos: pos})
+			pos++
+		}
+	}
+
+	// For each register, find its definition and last use
+	regDef := make(map[int]int)  // register -> first definition position
+	regUse := make(map[int]int)  // register -> last use position
+
+	for _, ip := range allInstructions {
+		uses, defs := instructionUseDef(ip.inst)
+
+		for _, reg := range defs {
+			if _, exists := regDef[reg]; !exists {
+				regDef[reg] = ip.pos
+			}
+		}
+
+		for _, reg := range uses {
+			regUse[reg] = ip.pos
+		}
+
+		// Handle return instruction specially - the returned register is used at this position
+		if ip.inst.Opcode == vm.OpReturn {
+			if ip.inst.Operands[0].IsRegister() {
+				regUse[ip.inst.Operands[0].Register()] = ip.pos
+			}
+		}
+	}
+
+	// Build intervals
+	var intervals []liveInterval
+
+	for reg := 1; reg < numRegisters; reg++ {
+		start, hasDef := regDef[reg]
+		end, hasUse := regUse[reg]
+
+		if !hasDef && !hasUse {
+			continue
+		}
+
+		if !hasDef {
+			start = 0
+		}
+		if !hasUse {
+			end = start
+		}
+
+		// Ensure end >= start
+		if end < start {
+			end = start
+		}
+
+		intervals = append(intervals, liveInterval{
+			reg:   reg,
+			start: start,
+			end:   end,
+		})
+	}
+
+	return intervals
+}
+
+// applyRenumbering applies the register renumbering map to the program
+func applyRenumbering(program *vm.Program, renumberMap map[int]int) bool {
+	if len(renumberMap) == 0 {
+		return false
+	}
+
+	modified := false
+	unsafeRegs := collectRangeSensitiveRegs(program)
+
+	// Replace registers in all instructions
+	for i := range program.Bytecode {
+		inst := &program.Bytecode[i]
+		changed := false
+
+		for j := 0; j < 3; j++ {
+			op := inst.Operands[j]
+			if op.IsRegister() {
+				reg := op.Register()
+				if unsafeRegs[reg] {
+					continue
+				}
+				if newReg, ok := renumberMap[reg]; ok {
+					inst.Operands[j] = vm.NewRegister(newReg)
+					changed = true
+				}
+			}
+		}
+
+		if changed {
+			modified = true
+		}
+	}
+
+	// Update program's register count
+	if modified {
+		maxReg := 0
+		for i := range program.Bytecode {
+			inst := &program.Bytecode[i]
+			for j := 0; j < 3; j++ {
+				if inst.Operands[j].IsRegister() {
+					reg := inst.Operands[j].Register()
+					if reg > maxReg {
+						maxReg = reg
+					}
+				}
+			}
+		}
+		program.Registers = maxReg + 1
+	}
+
+	return modified
 }
 
 // buildInterferenceGraph creates an interference graph from liveness information
