@@ -16,8 +16,7 @@ type (
 
 	// PipelineResult contains the results of running a pipeline
 	PipelineResult struct {
-		PassResults map[string]*PassResult
-		Modified    bool
+		Modified bool
 	}
 )
 
@@ -43,8 +42,7 @@ func (p *Pipeline) Add(pass Pass) {
 // Run executes all passes in the pipeline
 func (p *Pipeline) Run(program *vm.Program) (*PipelineResult, error) {
 	result := &PipelineResult{
-		PassResults: make(map[string]*PassResult),
-		Modified:    false,
+		Modified: false,
 	}
 
 	// Build CFG once for all passes
@@ -55,26 +53,41 @@ func (p *Pipeline) Run(program *vm.Program) (*PipelineResult, error) {
 		return nil, fmt.Errorf("failed to build CFG: %w", err)
 	}
 
+	var modified bool
+	ctx := &PassContext{
+		Program:  program,
+		CFG:      cfg,
+		Metadata: make(map[string]any),
+	}
+
 	// Run each pass
-	for _, pass := range p.passes {
-		passResult, err := pass.Run(program, cfg)
-
-		if err != nil {
-			return nil, fmt.Errorf("pass %s failed: %w", pass.Name(), err)
-		}
-
-		result.PassResults[pass.Name()] = passResult
-
-		if passResult.Modified {
+	for i, pass := range p.passes {
+		// If previous pass modified the program, rebuild CFG
+		// We do this before running the pass to ensure it has the latest CFG
+		// And not after, to avoid unnecessary rebuilds
+		if modified {
 			result.Modified = true
 
 			// Rebuild CFG if program was modified
 			cfg, err = builder.Build()
 
 			if err != nil {
-				return nil, fmt.Errorf("failed to rebuild CFG after %s: %w", pass.Name(), err)
+				// Report which pass caused the failure
+				// by looking at the previous pass in the pipeline
+				name := p.passes[i-1].Name()
+				return nil, fmt.Errorf("%w after %s: %w", ErrCFGBuildFailed, name, err)
 			}
 		}
+
+		passResult, err := pass.Run(ctx)
+
+		if err != nil {
+			return nil, fmt.Errorf("%w -> %s: %w", ErrPassFailed, pass.Name(), err)
+		}
+
+		modified = passResult.Modified
+		// Store pass metadata in context for future passes to use
+		ctx.Metadata[pass.Name()] = passResult.Metadata
 	}
 
 	return result, nil

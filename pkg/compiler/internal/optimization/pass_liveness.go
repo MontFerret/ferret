@@ -35,9 +35,9 @@ func (p *LivenessAnalysisPass) Name() string {
 }
 
 // Run executes liveness analysis on the program
-func (p *LivenessAnalysisPass) Run(program *vm.Program, cfg *ControlFlowGraph) (*PassResult, error) {
-	liveness := computeLiveness(cfg, program.Registers)
-
+func (p *LivenessAnalysisPass) Run(c *PassContext) (*PassResult, error) {
+	liveness := computeLiveness(c.CFG, c.Program.Registers)
+	
 	return &PassResult{
 		Modified: false,
 		Metadata: map[string]interface{}{
