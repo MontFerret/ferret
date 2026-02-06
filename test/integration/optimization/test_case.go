@@ -1,6 +1,7 @@
 package optimization_test
 
 import (
+	j "encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -17,7 +18,9 @@ import (
 )
 
 func Case(expression string, expected *vm.Program, desc ...string) UseCase {
-	return NewCase(expression, expected, convey.ShouldEqual, desc...)
+	return UseCase{
+		TestCase: base.NewCase(expression, expected, ShouldEqualBytecode, desc...),
+	}
 }
 
 func SkipCase(expression string, expected *vm.Program, desc ...string) UseCase {
@@ -25,24 +28,57 @@ func SkipCase(expression string, expected *vm.Program, desc ...string) UseCase {
 }
 
 func ByteCodeCase(expression string, expected []vm.Instruction, desc ...string) UseCase {
-	return NewCase(expression, &vm.Program{
-		Bytecode: expected,
-	}, ShouldEqualBytecode, desc...)
+	return UseCase{
+		TestCase: base.NewCase(expression, &vm.Program{
+			Bytecode: expected,
+		}, ShouldEqualBytecode, desc...),
+	}
 }
 
 func SkipByteCodeCase(expression string, expected []vm.Instruction, desc ...string) UseCase {
 	return Skip(ByteCodeCase(expression, expected, desc...))
 }
 
-func AtMostRegistersCase(expression string, expected int, desc ...string) UseCase {
-	return NewCase(expression, expected, ShouldUseAtMostRegisters, desc...)
+func RegistersCase(expression string, num int, output any, desc ...string) UseCase {
+	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+		Run:       true,
+		Expected:  output,
+		Assertion: convey.ShouldEqual,
+	}, desc...)
 }
 
-func SkipAtMostRegistersCase(expression string, expected int, desc ...string) UseCase {
-	return Skip(AtMostRegistersCase(expression, expected, desc...))
+func SkipAtMostRegistersCase(expression string, num int, output any, desc ...string) UseCase {
+	return Skip(RegistersCase(expression, num, output, desc...))
+}
+
+func RegistersArrayCase(expression string, num int, output []any, desc ...string) UseCase {
+	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+		Run:       true,
+		Expected:  output,
+		Assertion: ShouldEqualJSONValue,
+	}, desc...)
+}
+
+func SkipRegistersArrayCase(expression string, num int, output []any, desc ...string) UseCase {
+	return Skip(RegistersArrayCase(expression, num, output, desc...))
+}
+
+func RegistersObjectCase(expression string, num int, output map[string]any, desc ...string) UseCase {
+	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+		Run:       true,
+		Expected:  output,
+		Assertion: ShouldEqualJSONValue,
+	}, desc...)
+}
+
+func SkipRegistersObjectCase(expression string, num int, output map[string]any, desc ...string) UseCase {
+	return Skip(RegistersObjectCase(expression, num, output, desc...))
 }
 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
+	// Register standard library functions
+	std := base.Stdlib()
+
 	for _, useCase := range useCases {
 		name := useCase.Description
 
@@ -87,6 +123,30 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 
 				for _, assertion := range useCase.Assertions {
 					convey.So(actual, assertion, useCase.Expected)
+				}
+
+				if useCase.Execution.Run {
+					options := []vm.EnvironmentOption{
+						vm.WithFunctions(std),
+					}
+
+					assertion := useCase.Execution.Assertion
+					expected := useCase.Execution.Expected
+					out, err := base.Exec(actual, useCase.RawOutput, options...)
+
+					convey.So(err, convey.ShouldBeNil)
+
+					if base.ArePtrsEqual(assertion, convey.ShouldEqualJSON) {
+						expectedJ, err := j.Marshal(expected)
+						convey.So(err, convey.ShouldBeNil)
+						convey.So(out, convey.ShouldEqualJSON, string(expectedJ))
+					} else if base.ArePtrsEqual(assertion, base.ShouldHaveSameItems) {
+						convey.So(out, base.ShouldHaveSameItems, expected)
+					} else if base.ArePtrsEqual(assertion, convey.ShouldBeNil) {
+						convey.So(out, convey.ShouldBeNil)
+					} else {
+						convey.So(out, assertion, expected)
+					}
 				}
 			})
 		})

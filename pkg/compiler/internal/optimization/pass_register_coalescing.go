@@ -492,7 +492,7 @@ func updateRegisterCount(program *vm.Program) bool {
 			}
 		}
 	}
-	newCount := maxReg
+	newCount := maxReg + 1
 	if newCount < 1 {
 		newCount = 1
 	}
