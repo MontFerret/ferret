@@ -163,9 +163,50 @@ loop:
 				return nil, err
 			}
 		case OpLoadArray:
-			reg[dst] = runtime.NewArray(int(src1))
+			if src2 != NoopOperand {
+				start := src1.Register()
+				end := src2.Register()
+
+				if end < start {
+					end = start
+				}
+
+				arr := runtime.NewArray(end - start + 1)
+
+				for i := start; i <= end; i++ {
+					_ = arr.Add(ctx, reg[i])
+				}
+
+				reg[dst] = arr
+			} else {
+				reg[dst] = runtime.NewArray(int(src1))
+			}
 		case OpLoadObject:
-			reg[dst] = runtime.NewObjectOf(int(src1))
+			if src2 != NoopOperand {
+				start := src1.Register()
+				end := src2.Register()
+
+				if end < start {
+					end = start
+				}
+
+				obj := runtime.NewObjectOf((end - start + 1) / 2)
+
+				for i := start; i <= end; i += 2 {
+					key := reg[i]
+					var val runtime.Value = runtime.None
+
+					if i+1 <= end {
+						val = reg[i+1]
+					}
+
+					_ = obj.Set(ctx, key, val)
+				}
+
+				reg[dst] = obj
+			} else {
+				reg[dst] = runtime.NewObjectOf(int(src1))
+			}
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
 			arg := reg[src2]

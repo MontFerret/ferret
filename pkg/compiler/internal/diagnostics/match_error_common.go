@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/MontFerret/ferret/pkg/file"
 )
@@ -69,6 +70,31 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 		}
 	}
 
+	if isMissing(err.Message) {
+		if is(offending.Prev(), "..") || is(offending, "..") || has(err.Message, "..") {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start += 2
+			span.End += 2
+
+			start := ""
+			if is(offending, "..") && offending.Prev() != nil {
+				start = offending.Prev().GetText()
+			} else if is(offending.Prev(), "..") && offending.Prev().Prev() != nil {
+				start = offending.Prev().Prev().GetText()
+			} else {
+				start = extractRangeStart(err.Message)
+			}
+
+			err.Message = "Expected end value after '..' in range expression"
+			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing value"),
+			}
+
+			return true
+		}
+	}
+
 	if isNoAlternative(err.Message) || isMissing(err.Message) {
 		if is(offending.Prev(), "(") {
 			var span file.Span
@@ -107,6 +133,46 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			return true
 		}
+
+		if is(offending.Prev(), "..") {
+			span := spanFromTokenSafe(offending.Prev().Token(), src)
+			span.Start += 2
+			span.End += 2
+
+			start := ""
+			if prevPrev := offending.Prev().Prev(); prevPrev != nil {
+				start = prevPrev.GetText()
+			}
+
+			err.Message = "Expected end value after '..' in range expression"
+			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing value"),
+			}
+
+			return true
+		}
+
+		if is(offending, "..") || has(err.Message, "..") {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start += 2
+			span.End += 2
+
+			start := ""
+			if is(offending, "..") && offending.Prev() != nil {
+				start = offending.Prev().GetText()
+			} else {
+				start = extractRangeStart(err.Message)
+			}
+
+			err.Message = "Expected end value after '..' in range expression"
+			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
+			err.Spans = []ErrorSpan{
+				NewMainErrorSpan(span, "missing value"),
+			}
+
+			return true
+		}
 	}
 
 	if isExtraneous(err.Message) {
@@ -141,4 +207,24 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 	}
 
 	return false
+}
+
+var rangeStartRe = regexp.MustCompile(`([A-Za-z0-9_]+)\\.\\.`)
+
+func extractRangeStart(msg string) string {
+	if msg == "" {
+		return ""
+	}
+
+	matches := rangeStartRe.FindAllStringSubmatch(msg, -1)
+	if len(matches) == 0 {
+		return ""
+	}
+
+	last := matches[len(matches)-1]
+	if len(last) < 2 {
+		return ""
+	}
+
+	return last[1]
 }

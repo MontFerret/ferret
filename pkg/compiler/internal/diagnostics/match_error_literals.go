@@ -7,6 +7,24 @@ import (
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
+func isComputedPropertyPrefix(node *TokenNode) bool {
+	if node == nil {
+		return false
+	}
+
+	// Common cases: identifiers or closing delimiters of an expression.
+	if isIdentifier(node) || is(node, "]") || is(node, ")") || is(node, "}") {
+		return true
+	}
+
+	// Literals (numbers/strings) are not keywords.
+	if !isKeyword(node) {
+		return true
+	}
+
+	return false
+}
+
 func matchLiteralErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) {
 		input := extractNoAlternativeInputs(err.Message)
@@ -93,6 +111,17 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 			span := spanFromTokenSafe(offending.Token(), src)
 			span.Start++
 			span.End++
+
+			if isComputedPropertyPrefix(offending.Prev()) {
+				val := offending.Prev().String()
+				err.Message = "Expected expression inside computed property brackets"
+				err.Hint = fmt.Sprintf("Provide a property key or index inside '[ ]', e.g. %s[0] or %s[\"key\"].", val, val)
+				err.Spans = []ErrorSpan{
+					NewMainErrorSpan(span, "missing expression"),
+				}
+
+				return true
+			}
 
 			err.Message = "Expected a valid list of values"
 			err.Hint = "Did you forget to provide a value?"

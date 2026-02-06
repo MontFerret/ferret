@@ -140,9 +140,11 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 			stepVar := ctx.GetStepVariable()
 
 			if stepVar != nil && varName != stepVar.GetText() {
-				ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
-				ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
-				c.ctx.Errors.Add(ce)
+				if _, _, found := c.ctx.Symbols.Resolve(stepVar.GetText()); found {
+					ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
+					ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
+					c.ctx.Errors.Add(ce)
+				}
 			}
 		}
 	}

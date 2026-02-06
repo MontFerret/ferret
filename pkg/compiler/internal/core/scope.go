@@ -27,18 +27,40 @@ func NewScopeProjection(
 }
 
 func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
-	sp.emitter.EmitArray(dst, len(sp.values))
+	buildDst := dst
+
+	if sp.usesRegister(dst) {
+		// Avoid overwriting a value we're about to project.
+		buildDst = sp.registers.Allocate()
+	}
+
+	sp.emitter.EmitArray(buildDst, len(sp.values))
 
 	for _, v := range sp.values {
-		sp.emitter.EmitArrayPush(dst, v.Register)
+		sp.emitter.EmitArrayPush(buildDst, v.Register)
+	}
+
+	if buildDst != dst {
+		sp.emitter.EmitMove(dst, buildDst)
 	}
 }
 
 func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
 	size := len(sp.values)
-	sp.emitter.EmitObject(dst, size)
+	buildDst := dst
+
+	if sp.usesRegister(dst) {
+		// Avoid overwriting a value we're about to project.
+		buildDst = sp.registers.Allocate()
+	}
+
+	sp.emitter.EmitObject(buildDst, size)
 
 	if size == 0 {
+		if buildDst != dst {
+			sp.emitter.EmitMove(dst, buildDst)
+		}
+
 		return
 	}
 
@@ -52,7 +74,11 @@ func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
 		sp.emitter.EmitAB(vm.OpMove, valReg, v.Register)
 
 		// Set the key-value pair in the object
-		sp.emitter.EmitObjectSet(dst, keyReg, valReg)
+		sp.emitter.EmitObjectSet(buildDst, keyReg, valReg)
+	}
+
+	if buildDst != dst {
+		sp.emitter.EmitMove(dst, buildDst)
 	}
 }
 
@@ -74,4 +100,14 @@ func (sp *ScopeProjection) RestoreFromObject(src vm.Operand) {
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadKey, variable, src, key)
 	}
+}
+
+func (sp *ScopeProjection) usesRegister(reg vm.Operand) bool {
+	for _, v := range sp.values {
+		if v.Register == reg {
+			return true
+		}
+	}
+
+	return false
 }
