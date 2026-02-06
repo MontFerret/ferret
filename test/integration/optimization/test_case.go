@@ -34,6 +34,14 @@ func SkipByteCodeCase(expression string, expected []vm.Instruction, desc ...stri
 	return Skip(ByteCodeCase(expression, expected, desc...))
 }
 
+func AtMostRegistersCase(expression string, expected int, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldUseAtMostRegisters, desc...)
+}
+
+func SkipAtMostRegistersCase(expression string, expected int, desc ...string) UseCase {
+	return Skip(AtMostRegistersCase(expression, expected, desc...))
+}
+
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 	for _, useCase := range useCases {
 		name := useCase.Description

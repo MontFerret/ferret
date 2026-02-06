@@ -4,7 +4,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
-const LivenessAnalysisPassName = "liveness-analysis"
+const (
+	LivenessAnalysisPassName = "liveness-analysis"
+	LivenessAnalysis         = "liveness"
+)
 
 // LivenessAnalysisPass performs liveness analysis to determine which registers
 // are live (potentially used) at each program point
@@ -36,8 +39,8 @@ func (p *LivenessAnalysisPass) Name() string {
 
 // Run executes liveness analysis on the program
 func (p *LivenessAnalysisPass) Run(c *PassContext) (*PassResult, error) {
-	liveness := computeLiveness(c.CFG, c.Program.Registers)
-	
+	liveness := computeLiveness(c.CFG)
+
 	return &PassResult{
 		Modified: false,
 		Metadata: map[string]interface{}{
@@ -47,7 +50,7 @@ func (p *LivenessAnalysisPass) Run(c *PassContext) (*PassResult, error) {
 }
 
 // computeLiveness performs dataflow analysis to compute liveness information
-func computeLiveness(cfg *ControlFlowGraph, numRegisters int) map[int]*LivenessInfo {
+func computeLiveness(cfg *ControlFlowGraph) map[int]*LivenessInfo {
 	info := make(map[int]*LivenessInfo)
 
 	// Initialize liveness info for each block
@@ -107,91 +110,167 @@ func computeLiveness(cfg *ControlFlowGraph, numRegisters int) map[int]*LivenessI
 	return info
 }
 
-// computeUseDefForInstruction updates Use and Def sets for an instruction
-func computeUseDefForInstruction(inst vm.Instruction, info *LivenessInfo) {
+// instructionUseDef returns registers used and defined by an instruction.
+// Only registers (non-constants) are included.
+func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
+	addUse := func(op vm.Operand) {
+		if op != vm.NoopOperand && op.IsRegister() {
+			uses = append(uses, op.Register())
+		}
+	}
+	addDef := func(op vm.Operand) {
+		if op != vm.NoopOperand && op.IsRegister() {
+			defs = append(defs, op.Register())
+		}
+	}
+
 	op := inst.Opcode
 	dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
-	// Determine which operands are used and which are defined
 	switch op {
-	case vm.OpMove, vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero:
-		// dst = src
-		if src1.IsRegister() && !info.Def[src1.Register()] {
-			info.Use[src1.Register()] = true
-		}
-		if dst.IsRegister() {
-			info.Def[dst.Register()] = true
-		}
+	// No-operand terminator.
+	case vm.OpReturn:
+		addUse(dst)
+		return
 
+	// Moves / loads.
+	case vm.OpMove:
+		addUse(src1)
+		addDef(dst)
+		return
+	case vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero:
+		addDef(dst)
+		return
+	case vm.OpLoadArray, vm.OpLoadObject, vm.OpLoadRange:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+
+	// Simple arithmetic, comparisons, access.
 	case vm.OpAdd, vm.OpSub, vm.OpMulti, vm.OpDiv, vm.OpMod,
+		vm.OpCmp,
 		vm.OpEq, vm.OpNe, vm.OpGt, vm.OpLt, vm.OpGte, vm.OpLte,
 		vm.OpAnyEq, vm.OpAnyNe, vm.OpAnyGt, vm.OpAnyGte, vm.OpAnyLt, vm.OpAnyLte,
+		vm.OpAnyIn,
 		vm.OpNoneEq, vm.OpNoneNe, vm.OpNoneGt, vm.OpNoneGte, vm.OpNoneLt, vm.OpNoneLte,
+		vm.OpNoneIn,
 		vm.OpAllEq, vm.OpAllNe, vm.OpAllGt, vm.OpAllGte, vm.OpAllLt, vm.OpAllLte,
-		vm.OpLoadIndex, vm.OpLoadIndexOptional, vm.OpLoadKey, vm.OpLoadKeyOptional:
-		// dst = src1 op src2
-		if src1.IsRegister() && !info.Def[src1.Register()] {
-			info.Use[src1.Register()] = true
-		}
-		if src2.IsRegister() && !info.Def[src2.Register()] {
-			info.Use[src2.Register()] = true
-		}
-		if dst.IsRegister() {
-			info.Def[dst.Register()] = true
-		}
+		vm.OpAllIn,
+		vm.OpIn, vm.OpLike, vm.OpRegexp,
+		vm.OpLoadIndex, vm.OpLoadIndexOptional, vm.OpLoadKey, vm.OpLoadKeyOptional,
+		vm.OpLoadProperty, vm.OpLoadPropertyOptional:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
 
-	case vm.OpIncr, vm.OpDecr, vm.OpNegate, vm.OpNot, vm.OpCastBool,
-		vm.OpFlipPositive, vm.OpFlipNegative, vm.OpLength, vm.OpType:
-		// dst = op dst (read and write same register)
-		if dst.IsRegister() {
-			if !info.Def[dst.Register()] {
-				info.Use[dst.Register()] = true
-			}
-			info.Def[dst.Register()] = true
-		}
+	// Unary ops.
+	case vm.OpIncr, vm.OpDecr:
+		addUse(dst)
+		addDef(dst)
+		return
+	case vm.OpCastBool, vm.OpNegate, vm.OpNot, vm.OpFlipPositive, vm.OpFlipNegative, vm.OpLength, vm.OpType:
+		addUse(src1)
+		addDef(dst)
+		return
 
+	// Control flow.
 	case vm.OpJumpIfFalse, vm.OpJumpIfTrue:
-		// Conditional jump uses src1
-		if src1.IsRegister() && !info.Def[src1.Register()] {
-			info.Use[src1.Register()] = true
-		}
+		addUse(src1)
+		return
+	case vm.OpJump:
+		return
 
-	case vm.OpReturn:
-		// Return uses dst
-		if dst.IsRegister() && !info.Def[dst.Register()] {
-			info.Use[dst.Register()] = true
-		}
-
+	// Dataset operations.
+	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpDataSetMultiSorter:
+		addDef(dst)
+		return
 	case vm.OpPush:
-		// Push uses both dst (collection) and src1 (value)
-		if dst.IsRegister() && !info.Def[dst.Register()] {
-			info.Use[dst.Register()] = true
-		}
-		if src1.IsRegister() && !info.Def[src1.Register()] {
-			info.Use[src1.Register()] = true
-		}
+		addUse(dst)
+		addUse(src1)
+		return
+	case vm.OpPushKV:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
+		return
 
-	case vm.OpIter, vm.OpIterValue, vm.OpIterKey:
-		// dst = iter(src1) or dst = iter.value()
-		if src1.IsRegister() && !info.Def[src1.Register()] {
-			info.Use[src1.Register()] = true
-		}
-		if dst.IsRegister() {
-			info.Def[dst.Register()] = true
-		}
-
+	// Iterators.
+	case vm.OpIter:
+		addUse(src1)
+		addDef(dst)
+		return
+	case vm.OpIterValue, vm.OpIterKey:
+		addUse(src1)
+		addDef(dst)
+		return
+	case vm.OpIterLimit, vm.OpIterSkip:
+		addUse(src1)
+		addUse(src2)
+		return
 	case vm.OpIterNext:
-		// Uses src1 (iterator), jumps to dst if done
-		if src1.IsRegister() && !info.Def[src1.Register()] {
-			info.Use[src1.Register()] = true
-		}
+		addUse(src1)
+		return
 
-	case vm.OpClose:
-		// Closes resource in dst
-		if dst.IsRegister() && !info.Def[dst.Register()] {
-			info.Use[dst.Register()] = true
+	// Calls.
+	case vm.OpCall, vm.OpProtectedCall:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+	case vm.OpCall0, vm.OpProtectedCall0:
+		addDef(dst)
+		return
+	case vm.OpCall1, vm.OpProtectedCall1:
+		addUse(src1)
+		addDef(dst)
+		return
+	case vm.OpCall2, vm.OpProtectedCall2:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+	case vm.OpCall3, vm.OpProtectedCall3, vm.OpCall4, vm.OpProtectedCall4:
+		addUse(src1)
+		addDef(dst)
+		return
+
+	// Stream.
+	case vm.OpStream:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+	case vm.OpStreamIter:
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
+
+	// Utility.
+	case vm.OpClose, vm.OpSleep:
+		addUse(dst)
+		return
+	}
+
+	return
+}
+
+// computeUseDefForInstruction updates Use and Def sets for an instruction
+func computeUseDefForInstruction(inst vm.Instruction, info *LivenessInfo) {
+	uses, defs := instructionUseDef(inst)
+
+	// Use-before-def within the block
+	for _, reg := range uses {
+		if !info.Def[reg] {
+			info.Use[reg] = true
 		}
-	default:
+	}
+
+	for _, reg := range defs {
+		info.Def[reg] = true
 	}
 }
 
