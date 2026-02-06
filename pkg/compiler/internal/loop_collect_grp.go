@@ -64,23 +64,18 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 
 	if len(selectors) > 1 {
 		// Handle multiple selectors by creating an array
-		// We create a sequence of Registers for the clauses
-		// To pack them into an array
 		collectSelectors = make([]*core.CollectSelector, len(selectors))
-		selectorRegs := c.ctx.Registers.AllocateSequence(len(selectors))
+		kvKeyReg = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitArray(kvKeyReg, len(selectors))
 
-		// Process each selector expression and store in sequence
+		// Process each selector expression and push into the array
 		for i, selector := range selectors {
 			reg := c.ctx.ExprCompiler.Compile(selector.Expression())
-			c.ctx.Emitter.EmitAB(vm.OpMove, selectorRegs[i], reg)
+			c.ctx.Emitter.EmitArrayPush(kvKeyReg, reg)
 
 			// Create a CollectSelector for each selector with its identifier
 			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))
 		}
-
-		// Create an array from the sequence of registers
-		kvKeyReg = c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitAs(vm.OpLoadArray, kvKeyReg, selectorRegs)
 	} else {
 		// Handle single selector case - simpler, no need for array
 		selector := selectors[0]

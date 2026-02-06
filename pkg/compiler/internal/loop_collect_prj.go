@@ -105,28 +105,52 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 	} else {
 		// If a filter is provided, project only the specified variables
 		variables := keeper.AllIdentifier()
-		// Allocate a sequence of registers for key-value pairs (hence *2)
-		seq := c.ctx.Registers.AllocateSequence(len(variables) * 2)
+		resolved := make([]vm.Operand, len(variables))
+		useTemp := false
 
-		// Process each variable in the filter
-		for i, j := 0, 0; i < len(variables); i, j = i+1, j+2 {
-			varName := variables[i].GetText()
-			// Load the variable name as a string constant to the key register
-			loadConstantTo(c.ctx, runtime.String(varName), seq[j])
-
+		for i, variable := range variables {
+			varName := variable.GetText()
 			// Resolve the variable from the symbol table
-			variable, _, found := c.ctx.Symbols.Resolve(varName)
+			reg, _, found := c.ctx.Symbols.Resolve(varName)
 
 			if !found {
+				// TODO: Handle error properly instead of panicking
 				panic("variable not found: " + varName)
 			}
 
-			// Move the variable value to the value register
-			c.ctx.Emitter.EmitAB(vm.OpMove, seq[j+1], variable)
+			resolved[i] = reg
+
+			if reg == kv.Value {
+				useTemp = true
+			}
 		}
 
-		// Create an object from the key-value pairs
-		c.ctx.Emitter.EmitAs(vm.OpLoadObject, kv.Value, seq)
+		buildDst := kv.Value
+
+		if useTemp {
+			buildDst = c.ctx.Registers.Allocate()
+		}
+
+		c.ctx.Emitter.EmitObject(buildDst, len(variables))
+
+		// Process each variable in the filter
+		for i, variable := range variables {
+			varName := variable.GetText()
+			// Load the variable name as a string constant to the key register
+			keyReg := c.ctx.Registers.Allocate()
+			loadConstantTo(c.ctx, runtime.String(varName), keyReg)
+
+			// Move the variable value to the value register
+			valReg := c.ctx.Registers.Allocate()
+			c.ctx.Emitter.EmitAB(vm.OpMove, valReg, resolved[i])
+
+			// Set the key-value pair in the object
+			c.ctx.Emitter.EmitObjectSet(buildDst, keyReg, valReg)
+		}
+
+		if buildDst != kv.Value {
+			c.ctx.Emitter.EmitMove(kv.Value, buildDst)
+		}
 	}
 
 	// Return the identifier text as the variable name

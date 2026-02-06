@@ -57,23 +57,14 @@ func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionCo
 // compileMultipleSortKeys handles compilation when there are multiple sort expressions.
 // It creates an array of compiled expressions for multi-key sorting.
 func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpressionContext, kvKeyReg vm.Operand, directions []runtime.SortDirection) (vm.Operand, []runtime.SortDirection) {
-	clausesRegs := make([]vm.Operand, len(clauses))
-	keyRegs := c.ctx.Registers.AllocateSequence(len(clauses))
+	c.ctx.Emitter.EmitArray(kvKeyReg, len(clauses))
 
 	// Compile each sort expression and store direction
 	for i, clause := range clauses {
 		clauseReg := c.ctx.ExprCompiler.Compile(clause.Expression())
-		c.ctx.Emitter.EmitMove(keyRegs[i], clauseReg)
-		clausesRegs[i] = keyRegs[i]
+		c.ctx.Emitter.EmitArrayPush(kvKeyReg, clauseReg)
 		directions[i] = sortDirection(clause.SortDirection())
-		// TODO: Free registers after use
 	}
-
-	// NewForLoop array of sort keys
-	arrReg := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitAs(vm.OpLoadArray, arrReg, keyRegs)
-	c.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg)
-	// TODO: Free registers after use
 
 	return kvKeyReg, directions
 }
