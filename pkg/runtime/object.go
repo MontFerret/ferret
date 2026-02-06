@@ -28,6 +28,10 @@ func NewObject() *Object {
 	return &Object{make(map[string]Value)}
 }
 
+func NewObjectOf(size int) *Object {
+	return &Object{make(map[string]Value, size)}
+}
+
 func NewObjectWith(props ...*ObjectProperty) *Object {
 	obj := &Object{make(map[string]Value)}
 
@@ -36,10 +40,6 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 	}
 
 	return obj
-}
-
-func NewObjectOf(props map[string]Value) *Object {
-	return &Object{props}
 }
 
 func (t *Object) Type() string {

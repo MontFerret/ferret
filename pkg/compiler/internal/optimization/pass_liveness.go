@@ -170,7 +170,6 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addDef(dst)
 		return
 	case vm.OpLoadObject:
-		addRangeUses(src1, src2)
 		addDef(dst)
 		return
 	case vm.OpLoadRange:
@@ -222,7 +221,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addUse(dst)
 		addUse(src1)
 		return
-	case vm.OpPushKV:
+	case vm.OpPushKV, vm.OpObjectSet:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)

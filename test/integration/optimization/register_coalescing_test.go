@@ -45,5 +45,15 @@ LET a = 10
 LET arr = [a, a + 1, a + 2, a + 3]
 RETURN arr
 `, 3, "Flat array literal with expression elems"),
+		AtMostRegistersCase(`
+LET x = 5
+LET obj = {
+  a: x,
+  b: x + 1,
+  c: (x + 1) * 2,
+  d: (x + 2) * 3
+}
+RETURN obj
+`, 5, "Flat object literal with expression elems"),
 	})
 }

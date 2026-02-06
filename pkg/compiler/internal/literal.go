@@ -6,7 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -241,15 +240,13 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
 	// Allocate destination register for the object
 	dst := c.ctx.Registers.Allocate()
-	var seq core.RegisterSequence
 	// Get all property assignments from the object literal
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
 	if size > 0 {
-		// Allocate a sequence of registers for property-value pairs
-		// We need two registers for each assignment (one for property name, one for value)
-		seq = c.ctx.Registers.AllocateSequence(len(assignments) * 2)
+		// Emit instruction to create an object with the specified number of properties
+		c.ctx.Emitter.EmitObject(dst, size)
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
@@ -272,23 +269,12 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 				valOp = c.ctx.ExprCompiler.CompileVariable(variable)
 			}
 
-			// Calculate the index in the sequence for this property-value pair
-			regIndex := i * 2
-
-			// Move the property name and value to their respective registers in the sequence
-			c.ctx.Emitter.EmitMove(seq[regIndex], propOp)
-			c.ctx.Emitter.EmitMove(seq[regIndex+1], valOp)
-
-			// Free source register if temporary
-			// Note: This is commented out in the original code
-			//if propOp.IsRegister() {
-			//	c.ctx.Registers.Free(propOp)
-			//}
+			c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 		}
+	} else {
+		// Emit instruction to create an empty object
+		c.ctx.Emitter.EmitObject(dst, 0)
 	}
-
-	// Emit instruction to create an object from the sequence of property-value pairs
-	c.ctx.Emitter.EmitObject(dst, seq)
 
 	return dst
 }

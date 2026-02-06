@@ -62,6 +62,10 @@ func (e *Emitter) EmitPushKV(dst, key, val vm.Operand) {
 	e.EmitABC(vm.OpPushKV, dst, key, val)
 }
 
+func (e *Emitter) EmitObjectSet(dst, key, val vm.Operand) {
+	e.EmitABC(vm.OpObjectSet, dst, key, val)
+}
+
 func (e *Emitter) EmitClose(reg vm.Operand) {
 	e.EmitA(vm.OpClose, reg)
 }
@@ -92,12 +96,8 @@ func (e *Emitter) EmitArray(dst vm.Operand, size int) {
 	e.EmitAB(vm.OpLoadArray, dst, vm.Operand(size))
 }
 
-func (e *Emitter) EmitObject(dst vm.Operand, seq RegisterSequence) {
-	if len(seq) > 0 {
-		e.EmitAs(vm.OpLoadObject, dst, seq)
-	} else {
-		e.EmitA(vm.OpLoadObject, dst)
-	}
+func (e *Emitter) EmitObject(dst vm.Operand, size int) {
+	e.EmitAB(vm.OpLoadObject, dst, vm.Operand(size))
 }
 
 func (e *Emitter) EmitRange(dst, start, end vm.Operand) {

@@ -35,24 +35,25 @@ func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
 }
 
 func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
-	if len(sp.values) == 0 {
-		sp.emitter.EmitA(vm.OpLoadObject, dst)
+	size := len(sp.values)
+	sp.emitter.EmitObject(dst, size)
+
+	if size == 0 {
 		return
 	}
 
-	pairs := sp.registers.AllocateSequence(len(sp.values) * 2)
-
-	for i, v := range sp.values {
+	for _, v := range sp.values {
 		// Key (field name)
-		keyReg := pairs[i*2]
+		keyReg := sp.registers.Allocate()
 		sp.emitter.EmitLoadConst(keyReg, sp.symbols.AddConstant(runtime.String(v.Name)))
 
 		// Value (actual variable value)
-		valReg := pairs[i*2+1]
+		valReg := sp.registers.Allocate()
 		sp.emitter.EmitAB(vm.OpMove, valReg, v.Register)
-	}
 
-	sp.emitter.EmitObject(dst, pairs)
+		// Set the key-value pair in the object
+		sp.emitter.EmitObjectSet(dst, keyReg, valReg)
+	}
 }
 
 func (sp *ScopeProjection) RestoreFromArray(src vm.Operand) {

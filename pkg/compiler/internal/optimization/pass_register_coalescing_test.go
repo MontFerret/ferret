@@ -73,7 +73,7 @@ func TestRegisterCoalescing_NoCoalesceForRangeSensitiveRegs(t *testing.T) {
 			vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
 			vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(2), vm.NewConstant(1)),
 			vm.NewInstruction(vm.OpMove, vm.NewRegister(3), vm.NewRegister(1)),
-			vm.NewInstruction(vm.OpLoadObject, vm.NewRegister(4), vm.NewRegister(1), vm.NewRegister(2)),
+			vm.NewInstruction(vm.OpCall, vm.NewRegister(4), vm.NewRegister(1), vm.NewRegister(2)),
 			vm.NewInstruction(vm.OpAdd, vm.NewRegister(5), vm.NewRegister(3), vm.NewRegister(1)),
 			vm.NewInstruction(vm.OpReturn, vm.NewRegister(5)),
 		},
@@ -85,7 +85,7 @@ func TestRegisterCoalescing_NoCoalesceForRangeSensitiveRegs(t *testing.T) {
 		vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)),
 		vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(2), vm.NewConstant(1)),
 		vm.NewInstruction(vm.OpMove, vm.NewRegister(3), vm.NewRegister(1)),
-		vm.NewInstruction(vm.OpLoadObject, vm.NewRegister(4), vm.NewRegister(1), vm.NewRegister(2)),
+		vm.NewInstruction(vm.OpCall, vm.NewRegister(4), vm.NewRegister(1), vm.NewRegister(2)),
 		vm.NewInstruction(vm.OpAdd, vm.NewRegister(3), vm.NewRegister(3), vm.NewRegister(1)),
 		vm.NewInstruction(vm.OpReturn, vm.NewRegister(3)),
 	}
