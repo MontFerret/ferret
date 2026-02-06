@@ -207,10 +207,26 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
 	// Allocate destination register for the array
 	destReg := c.ctx.Registers.Allocate()
-	// Compile the argument list (array elements) into a sequence of registers
-	seq := c.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
-	// Emit instruction to create an array from the sequence of registers
-	c.ctx.Emitter.EmitArray(destReg, seq)
+
+	args := ctx.ArgumentList()
+
+	if args != nil {
+		exps := args.AllExpression()
+
+		// Emit instruction to create an array with the specified size
+		c.ctx.Emitter.EmitArray(destReg, len(exps))
+
+		// Compile each expression in the array and push it to the array register
+		for _, exp := range exps {
+			// Compile expression
+			itemReg := c.ctx.ExprCompiler.Compile(exp)
+
+			c.ctx.Emitter.EmitArrayPush(destReg, itemReg)
+		}
+	} else {
+		// Emit instruction to create an empty array
+		c.ctx.Emitter.EmitArray(destReg, 0)
+	}
 
 	return destReg
 }

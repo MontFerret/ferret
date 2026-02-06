@@ -27,15 +27,11 @@ func NewScopeProjection(
 }
 
 func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
-	reg := sp.registers.Allocate()
-	args := sp.registers.AllocateSequence(len(sp.values))
+	sp.emitter.EmitArray(dst, len(sp.values))
 
-	for i, v := range sp.values {
-		sp.emitter.EmitAB(vm.OpMove, args[i], v.Register)
+	for _, v := range sp.values {
+		sp.emitter.EmitArrayPush(dst, v.Register)
 	}
-
-	sp.emitter.EmitArray(reg, args)
-	sp.emitter.EmitMove(dst, reg)
 }
 
 func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {

@@ -108,8 +108,9 @@ const (
 	OpDataSetCollector
 	OpDataSetSorter
 	OpDataSetMultiSorter
-	OpPush   // Adds a value to a dataset
-	OpPushKV // Adds a key-value pair to a dataset
+	OpPush      // Adds a value to a generic List
+	OpArrayPush // Adds a value to the built-in Array
+	OpPushKV    // Adds a key-value pair to a dataset
 
 	// Stream Operations
 	OpStream     // Subscribes to a stream
@@ -317,6 +318,8 @@ func (op Opcode) String() string {
 		return "DSETMS"
 	case OpPush:
 		return "PUSH"
+	case OpArrayPush:
+		return "PUSHA"
 	case OpPushKV:
 		return "PUSHKV"
 

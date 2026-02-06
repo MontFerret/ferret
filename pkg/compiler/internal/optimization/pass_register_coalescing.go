@@ -668,7 +668,7 @@ func collectRangeSensitiveRegs(program *vm.Program) map[int]bool {
 	for i := range program.Bytecode {
 		inst := program.Bytecode[i]
 		switch inst.Opcode {
-		case vm.OpLoadArray, vm.OpLoadObject:
+		case vm.OpLoadObject:
 			markRange(inst.Operands[1], inst.Operands[2])
 		case vm.OpCall, vm.OpProtectedCall:
 			markRange(inst.Operands[1], inst.Operands[2])

@@ -725,11 +725,6 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 			// The reason we move is that the argument list must be a contiguous sequence of registers
 			// Otherwise, we cannot compileInitialization neither a list nor an object literal with arguments
 			c.ctx.Emitter.EmitMove(seq[i], srcReg)
-
-			// Free source register if temporary
-			//if srcReg.IsRegister() {
-			//	c.ctx.Registers.Free(srcReg)
-			//}
 		}
 	}
 

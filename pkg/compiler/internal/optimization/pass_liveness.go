@@ -166,7 +166,10 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 	case vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero:
 		addDef(dst)
 		return
-	case vm.OpLoadArray, vm.OpLoadObject:
+	case vm.OpLoadArray:
+		addDef(dst)
+		return
+	case vm.OpLoadObject:
 		addRangeUses(src1, src2)
 		addDef(dst)
 		return
@@ -215,7 +218,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpDataSetMultiSorter:
 		addDef(dst)
 		return
-	case vm.OpPush:
+	case vm.OpPush, vm.OpArrayPush:
 		addUse(dst)
 		addUse(src1)
 		return

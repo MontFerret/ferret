@@ -163,21 +163,7 @@ loop:
 				return nil, err
 			}
 		case OpLoadArray:
-			var size int
-
-			if src1 > 0 {
-				size = src2.Register() - src1.Register() + 1
-			}
-
-			arr := runtime.NewArray(size)
-			start := int(src1)
-			end := int(src1) + size
-
-			for i := start; i < end; i++ {
-				_ = arr.Add(ctx, reg[i])
-			}
-
-			reg[dst] = arr
+			reg[dst] = runtime.NewArray(int(src1))
 		case OpLoadObject:
 			obj := runtime.NewObject()
 			var args int
@@ -347,6 +333,10 @@ loop:
 					return nil, err
 				}
 			}
+		case OpArrayPush:
+			ds := reg[dst].(*runtime.Array)
+
+			_ = ds.Add(ctx, reg[src1])
 		case OpPushKV:
 			tr := reg[dst].(data.Transformer)
 
