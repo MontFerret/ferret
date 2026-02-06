@@ -22,7 +22,7 @@ type Compiler struct {
 func New(setters ...Option) *Compiler {
 	c := &Compiler{
 		opts: &options{
-			Level: optimization.LevelFull,
+			Level: optimization.LevelBasic,
 		},
 	}
 

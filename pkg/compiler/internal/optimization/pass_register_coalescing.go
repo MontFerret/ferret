@@ -52,18 +52,26 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 		return nil, ErrMissingDependency
 	}
 
+	unsafeRegs := collectRangeSensitiveRegs(ctx.Program)
+
 	// Build interference graph
 	interferenceGraph := buildInterferenceGraph(ctx.CFG, liveness, ctx.Program.Registers)
 
 	// First, try move-based coalescing
-	coalesceMap := findCoalesceCandidates(ctx.Program, ctx.CFG, interferenceGraph)
+	coalesceMap := findCoalesceCandidates(ctx.Program, ctx.CFG, interferenceGraph, unsafeRegs)
 
 	// Apply move-based coalescing first
-	moveCoalesced := applyCoalescing(ctx.Program, coalesceMap)
+	moveCoalesced := applyCoalescing(ctx.Program, coalesceMap, unsafeRegs)
 
 	// Then, perform register renumbering based on liveness intervals
-	renumberMap := computeRegisterRenumbering(ctx.CFG, liveness, ctx.Program.Registers)
-	renumbered := applyRenumbering(ctx.Program, renumberMap)
+	var renumberMap map[int]int
+	var renumbered bool
+	if isLinearCFG(ctx.CFG) {
+		renumbered = applyLinearRenumbering(ctx.Program, unsafeRegs)
+	} else {
+		renumberMap = computeRegisterRenumbering(ctx.CFG, liveness, ctx.Program.Registers, unsafeRegs)
+		renumbered = applyRenumbering(ctx.Program, renumberMap, unsafeRegs)
+	}
 
 	modified := moveCoalesced || renumbered
 
@@ -77,10 +85,204 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 	}, nil
 }
 
+func isLinearCFG(cfg *ControlFlowGraph) bool {
+	if cfg.Entry == nil {
+		return true
+	}
+
+	blocks := cfg.Blocks
+	for i, block := range blocks {
+		if block == cfg.Exit {
+			continue
+		}
+
+		if len(block.Predecessors) > 1 || len(block.Successors) > 1 {
+			return false
+		}
+
+		if len(block.Successors) == 1 {
+			next := blocks[i+1]
+			if block.Successors[0] != next && block.Successors[0] != cfg.Exit {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func applyLinearRenumbering(program *vm.Program, unsafeRegs map[int]bool) bool {
+	if len(program.Bytecode) == 0 {
+		return updateRegisterCount(program)
+	}
+
+	liveAfter := computeLinearLiveAfter(program.Bytecode)
+	mapping := make(map[int]int)
+	inUse := make(map[int]bool)
+	modified := false
+
+	for reg := range unsafeRegs {
+		mapping[reg] = reg
+		inUse[reg] = true
+	}
+
+	allocate := func() int {
+		newReg := 1
+		for {
+			if unsafeRegs[newReg] {
+				newReg++
+				continue
+			}
+			if !inUse[newReg] {
+				return newReg
+			}
+			newReg++
+		}
+	}
+
+	for i := 0; i < len(program.Bytecode); i++ {
+		inst := &program.Bytecode[i]
+		uses, defs := instructionUseDef(*inst)
+		useSet := make(map[int]bool, len(uses))
+		usedSet := make(map[int]bool, len(uses)+len(defs))
+
+		for _, r := range uses {
+			useSet[r] = true
+			usedSet[r] = true
+		}
+		for _, r := range defs {
+			usedSet[r] = true
+		}
+
+		// Ensure mappings for used registers.
+		for _, reg := range uses {
+			if unsafeRegs[reg] {
+				continue
+			}
+			if _, ok := mapping[reg]; !ok {
+				newReg := allocate()
+				mapping[reg] = newReg
+				inUse[newReg] = true
+			}
+		}
+
+		liveAfterSet := liveAfter[i]
+
+		// Collect reuse candidates from source regs that die after this instruction.
+		reuseCandidates := make([]int, 0)
+		for _, reg := range uses {
+			if unsafeRegs[reg] {
+				continue
+			}
+			if !liveAfterSet[reg] {
+				if newReg, ok := mapping[reg]; ok {
+					reuseCandidates = append(reuseCandidates, newReg)
+				}
+			}
+		}
+		sort.Ints(reuseCandidates)
+
+		defRenames := make(map[int]int)
+		for _, reg := range defs {
+			if unsafeRegs[reg] {
+				continue
+			}
+			if useSet[reg] {
+				// In-place update: keep existing mapping.
+				continue
+			}
+
+			if len(reuseCandidates) > 0 {
+				defRenames[reg] = reuseCandidates[0]
+				reuseCandidates = reuseCandidates[1:]
+				continue
+			}
+
+			newReg := allocate()
+			defRenames[reg] = newReg
+			inUse[newReg] = true
+		}
+
+		// Rewrite operands.
+		for j := 0; j < 3; j++ {
+			op := inst.Operands[j]
+			if !op.IsRegister() {
+				continue
+			}
+			reg := op.Register()
+			if !usedSet[reg] || unsafeRegs[reg] {
+				continue
+			}
+
+			if newReg, ok := defRenames[reg]; ok {
+				if newReg != reg {
+					changed := inst.Operands[j]
+					inst.Operands[j] = vm.NewRegister(newReg)
+					modified = modified || changed != inst.Operands[j]
+				}
+				continue
+			}
+
+			if newReg, ok := mapping[reg]; ok {
+				if newReg != reg {
+					changed := inst.Operands[j]
+					inst.Operands[j] = vm.NewRegister(newReg)
+					modified = modified || changed != inst.Operands[j]
+				}
+			}
+		}
+
+		// Free mappings for regs not live after this instruction.
+		for reg, newReg := range mapping {
+			if unsafeRegs[reg] {
+				continue
+			}
+			if !liveAfterSet[reg] {
+				delete(mapping, reg)
+				inUse[newReg] = false
+			}
+		}
+
+		// Apply mappings for definitions that are live after this instruction.
+		for reg, newReg := range defRenames {
+			if !liveAfterSet[reg] {
+				inUse[newReg] = false
+				continue
+			}
+			mapping[reg] = newReg
+			inUse[newReg] = true
+		}
+	}
+
+	return updateRegisterCount(program) || modified
+}
+
+func computeLinearLiveAfter(instructions []vm.Instruction) []map[int]bool {
+	live := make(map[int]bool)
+	liveAfter := make([]map[int]bool, len(instructions))
+
+	for i := len(instructions) - 1; i >= 0; i-- {
+		snapshot := make(map[int]bool, len(live))
+		for reg := range live {
+			snapshot[reg] = true
+		}
+		liveAfter[i] = snapshot
+
+		uses, defs := instructionUseDef(instructions[i])
+		for _, reg := range defs {
+			delete(live, reg)
+		}
+		for _, reg := range uses {
+			live[reg] = true
+		}
+	}
+
+	return liveAfter
+}
+
 // computeRegisterRenumbering computes a mapping from old registers to new registers
 // using a linear scan approach based on liveness intervals
-func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int) map[int]int {
-	// Build a flat list of instructions with their positions
+func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int, unsafeRegs map[int]bool) map[int]int {
 	intervals := computeLiveIntervals(cfg, liveness, numRegisters)
 
 	if len(intervals) == 0 {
@@ -107,6 +309,10 @@ func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*Livenes
 		if interval.reg == 0 {
 			continue
 		}
+		// Avoid renumbering range-sensitive registers
+		if unsafeRegs[interval.reg] {
+			continue
+		}
 
 		// Expire old intervals: free registers whose intervals have ended
 		for newReg, endPos := range active {
@@ -118,6 +324,10 @@ func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*Livenes
 		// Find the lowest available register (starting from 1, skip R0)
 		newReg := 1
 		for {
+			if unsafeRegs[newReg] {
+				newReg++
+				continue
+			}
 			if _, inUse := active[newReg]; !inUse {
 				break
 			}
@@ -141,6 +351,8 @@ func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*Livenes
 
 // computeLiveIntervals computes the live interval for each register
 func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int) []liveInterval {
+	_ = liveness
+
 	// First, flatten all instructions with their global positions
 	type instrPos struct {
 		inst vm.Instruction
@@ -158,8 +370,8 @@ func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo,
 	}
 
 	// For each register, find its definition and last use
-	regDef := make(map[int]int)  // register -> first definition position
-	regUse := make(map[int]int)  // register -> last use position
+	regDef := make(map[int]int) // register -> first definition position
+	regUse := make(map[int]int) // register -> last use position
 
 	for _, ip := range allInstructions {
 		uses, defs := instructionUseDef(ip.inst)
@@ -216,56 +428,79 @@ func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo,
 }
 
 // applyRenumbering applies the register renumbering map to the program
-func applyRenumbering(program *vm.Program, renumberMap map[int]int) bool {
-	if len(renumberMap) == 0 {
-		return false
-	}
-
+func applyRenumbering(program *vm.Program, renumberMap map[int]int, unsafeRegs map[int]bool) bool {
 	modified := false
-	unsafeRegs := collectRangeSensitiveRegs(program)
 
-	// Replace registers in all instructions
-	for i := range program.Bytecode {
-		inst := &program.Bytecode[i]
-		changed := false
-
-		for j := 0; j < 3; j++ {
-			op := inst.Operands[j]
-			if op.IsRegister() {
-				reg := op.Register()
-				if unsafeRegs[reg] {
-					continue
-				}
-				if newReg, ok := renumberMap[reg]; ok {
-					inst.Operands[j] = vm.NewRegister(newReg)
-					changed = true
-				}
-			}
-		}
-
-		if changed {
-			modified = true
-		}
-	}
-
-	// Update program's register count
-	if modified {
-		maxReg := 0
+	if len(renumberMap) > 0 {
+		// Replace registers in all instructions
 		for i := range program.Bytecode {
 			inst := &program.Bytecode[i]
+			changed := false
+			uses, defs := instructionUseDef(*inst)
+			usedSet := make(map[int]bool, len(uses)+len(defs))
+
+			for _, r := range uses {
+				usedSet[r] = true
+			}
+
+			for _, r := range defs {
+				usedSet[r] = true
+			}
+
 			for j := 0; j < 3; j++ {
-				if inst.Operands[j].IsRegister() {
-					reg := inst.Operands[j].Register()
-					if reg > maxReg {
-						maxReg = reg
+				op := inst.Operands[j]
+				if op.IsRegister() {
+					reg := op.Register()
+					if !usedSet[reg] {
+						continue
+					}
+					if unsafeRegs[reg] {
+						continue
+					}
+					if newReg, ok := renumberMap[reg]; ok {
+						inst.Operands[j] = vm.NewRegister(newReg)
+						changed = true
 					}
 				}
 			}
+
+			if changed {
+				modified = true
+			}
 		}
-		program.Registers = maxReg + 1
+	}
+
+	if updateRegisterCount(program) {
+		modified = true
 	}
 
 	return modified
+}
+
+func updateRegisterCount(program *vm.Program) bool {
+	maxReg := 0
+	for i := range program.Bytecode {
+		uses, defs := instructionUseDef(program.Bytecode[i])
+		for _, reg := range uses {
+			if reg > maxReg {
+				maxReg = reg
+			}
+		}
+		for _, reg := range defs {
+			if reg > maxReg {
+				maxReg = reg
+			}
+		}
+	}
+	newCount := maxReg
+	if newCount < 1 {
+		newCount = 1
+	}
+	if program.Registers != newCount {
+		program.Registers = newCount
+		return true
+	}
+	return false
 }
 
 // buildInterferenceGraph creates an interference graph from liveness information
@@ -316,10 +551,9 @@ func buildInterferenceGraph(cfg *ControlFlowGraph, liveness map[int]*LivenessInf
 }
 
 // findCoalesceCandidates finds register pairs that can be coalesced
-func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interferenceGraph map[int]map[int]bool) map[int]int {
+func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interferenceGraph map[int]map[int]bool, unsafeRegs map[int]bool) map[int]int {
 	coalesceMap := make(map[int]int)
 	coalesced := make(map[int]bool) // Track which registers have been coalesced
-	unsafeRegs := collectRangeSensitiveRegs(program)
 
 	// Look for move instructions between non-interfering registers
 	for _, block := range cfg.Blocks {
@@ -353,13 +587,12 @@ func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interfer
 }
 
 // applyCoalescing applies the coalescing map to the program
-func applyCoalescing(program *vm.Program, coalesceMap map[int]int) bool {
+func applyCoalescing(program *vm.Program, coalesceMap map[int]int, unsafeRegs map[int]bool) bool {
 	if len(coalesceMap) == 0 {
 		return false
 	}
 
 	modified := false
-	unsafeRegs := collectRangeSensitiveRegs(program)
 
 	// Replace coalesced registers in all instructions
 	for i := range program.Bytecode {
@@ -405,9 +638,30 @@ func applyCoalescing(program *vm.Program, coalesceMap map[int]int) bool {
 func collectRangeSensitiveRegs(program *vm.Program) map[int]bool {
 	unsafeRegs := make(map[int]bool)
 
-	mark := func(op vm.Operand) {
-		if op.IsRegister() {
-			unsafeRegs[op.Register()] = true
+	markRange := func(start, end vm.Operand) {
+		if !start.IsRegister() || !end.IsRegister() {
+			return
+		}
+		startReg := start.Register()
+		endReg := end.Register()
+		if startReg <= 0 || endReg < startReg {
+			return
+		}
+		for r := startReg; r <= endReg; r++ {
+			unsafeRegs[r] = true
+		}
+	}
+
+	markFixedRange := func(start vm.Operand, count int) {
+		if !start.IsRegister() {
+			return
+		}
+		startReg := start.Register()
+		if startReg <= 0 || count <= 0 {
+			return
+		}
+		for r := startReg; r < startReg+count; r++ {
+			unsafeRegs[r] = true
 		}
 	}
 
@@ -415,13 +669,13 @@ func collectRangeSensitiveRegs(program *vm.Program) map[int]bool {
 		inst := program.Bytecode[i]
 		switch inst.Opcode {
 		case vm.OpLoadArray, vm.OpLoadObject:
-			mark(inst.Operands[1])
-			mark(inst.Operands[2])
+			markRange(inst.Operands[1], inst.Operands[2])
 		case vm.OpCall, vm.OpProtectedCall:
-			mark(inst.Operands[1])
-			mark(inst.Operands[2])
-		case vm.OpCall3, vm.OpProtectedCall3, vm.OpCall4, vm.OpProtectedCall4:
-			mark(inst.Operands[1])
+			markRange(inst.Operands[1], inst.Operands[2])
+		case vm.OpCall3, vm.OpProtectedCall3:
+			markFixedRange(inst.Operands[1], 3)
+		case vm.OpCall4, vm.OpProtectedCall4:
+			markFixedRange(inst.Operands[1], 4)
 		}
 	}
 

@@ -40,5 +40,10 @@ LET b = 2
 LET c = a + b
 RETURN c
 `, 3),
+		AtMostRegistersCase(`
+LET a = 10
+LET arr = [a, a + 1, a + 2, a + 3]
+RETURN arr
+`, 3, "Flat array literal with expression elems"),
 	})
 }

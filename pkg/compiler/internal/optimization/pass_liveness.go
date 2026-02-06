@@ -123,6 +123,31 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 			defs = append(defs, op.Register())
 		}
 	}
+	addRangeUses := func(start, end vm.Operand) {
+		if !start.IsRegister() || !end.IsRegister() {
+			return
+		}
+		startReg := start.Register()
+		endReg := end.Register()
+		if startReg <= 0 || endReg < startReg {
+			return
+		}
+		for r := startReg; r <= endReg; r++ {
+			uses = append(uses, r)
+		}
+	}
+	addFixedRangeUses := func(start vm.Operand, count int) {
+		if !start.IsRegister() {
+			return
+		}
+		startReg := start.Register()
+		if startReg <= 0 || count <= 0 {
+			return
+		}
+		for r := startReg; r < startReg+count; r++ {
+			uses = append(uses, r)
+		}
+	}
 
 	op := inst.Opcode
 	dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
@@ -141,7 +166,11 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 	case vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero:
 		addDef(dst)
 		return
-	case vm.OpLoadArray, vm.OpLoadObject, vm.OpLoadRange:
+	case vm.OpLoadArray, vm.OpLoadObject:
+		addRangeUses(src1, src2)
+		addDef(dst)
+		return
+	case vm.OpLoadRange:
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
@@ -208,6 +237,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 	case vm.OpIterLimit, vm.OpIterSkip:
 		addUse(src1)
 		addUse(src2)
+		addDef(src1)
 		return
 	case vm.OpIterNext:
 		addUse(src1)
@@ -215,8 +245,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 
 	// Calls.
 	case vm.OpCall, vm.OpProtectedCall:
-		addUse(src1)
-		addUse(src2)
+		addRangeUses(src1, src2)
 		addDef(dst)
 		return
 	case vm.OpCall0, vm.OpProtectedCall0:
@@ -231,8 +260,12 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addUse(src2)
 		addDef(dst)
 		return
-	case vm.OpCall3, vm.OpProtectedCall3, vm.OpCall4, vm.OpProtectedCall4:
-		addUse(src1)
+	case vm.OpCall3, vm.OpProtectedCall3:
+		addFixedRangeUses(src1, 3)
+		addDef(dst)
+		return
+	case vm.OpCall4, vm.OpProtectedCall4:
+		addFixedRangeUses(src1, 4)
 		addDef(dst)
 		return
 
@@ -250,7 +283,11 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		return
 
 	// Utility.
-	case vm.OpClose, vm.OpSleep:
+	case vm.OpClose:
+		addUse(dst)
+		addDef(dst)
+		return
+	case vm.OpSleep:
 		addUse(dst)
 		return
 	}
