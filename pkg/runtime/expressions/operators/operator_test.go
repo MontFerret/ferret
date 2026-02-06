@@ -7,7 +7,6 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime/core"
 	"github.com/MontFerret/ferret/pkg/runtime/expressions/operators"
 	"github.com/MontFerret/ferret/pkg/runtime/values"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1421,6 +1420,17 @@ func TestToNumberOnly(t *testing.T) {
 		Convey("[false] turns 0", func() {
 			arg := values.NewArrayWith(values.NewBoolean(false))
 			So(operators.ToNumberOnly(arg).Unwrap(), ShouldEqual, 0)
+		})
+	})
+}
+
+func TestToBoolean(t *testing.T) {
+	Convey("To Boolean", t, func() {
+		Convey("is true", func() {
+			So(operators.ToBoolean(values.NewBoolean(true), values.NewBoolean(true)), ShouldEqual, values.True)
+		})
+		Convey("is false", func() {
+			So(operators.ToBoolean(values.NewBoolean(false), values.NewBoolean(true)), ShouldEqual, values.False)
 		})
 	})
 }
