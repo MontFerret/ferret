@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForWhileSort(t *testing.T) {
@@ -234,6 +235,6 @@ func TestForWhileSort(t *testing.T) {
 			return runtime.None, nil
 		})
 
-		fns.SetFrom(ForWhileHelpers())
+		fns.SetFrom(base.ForWhileHelpers())
 	}))
 }

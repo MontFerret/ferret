@@ -140,9 +140,11 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 			stepVar := ctx.GetStepVariable()
 
 			if stepVar != nil && varName != stepVar.GetText() {
-				ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
-				ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
-				c.ctx.Errors.Add(ce)
+				if _, _, found := c.ctx.Symbols.Resolve(stepVar.GetText()); found {
+					ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
+					ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
+					c.ctx.Errors.Add(ce)
+				}
 			}
 		}
 	}
@@ -336,7 +338,7 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 // It allocates a state register and emits an iterator limit instruction with the loop's end label.
 func (c *LoopCompiler) compileLimit(src vm.Operand) {
 	// Allocate a state register for the limit operation
-	state := c.ctx.Registers.Allocate(core.State)
+	state := c.ctx.Registers.Allocate()
 	// Emit the iterator limit instruction with the loop's end label
 	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().BreakLabel())
 }
@@ -345,7 +347,7 @@ func (c *LoopCompiler) compileLimit(src vm.Operand) {
 // It allocates a state register and emits an iterator skip instruction with the loop's jump label.
 func (c *LoopCompiler) compileOffset(src vm.Operand) {
 	// Allocate a state register for the offset operation
-	state := c.ctx.Registers.Allocate(core.State)
+	state := c.ctx.Registers.Allocate()
 	// Emit the iterator skip instruction with the loop's jump label
 	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().ContinueLabel())
 }

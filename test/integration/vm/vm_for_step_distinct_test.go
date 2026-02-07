@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForStepDistinct(t *testing.T) {
@@ -393,5 +394,5 @@ func TestForStepDistinct(t *testing.T) {
 			[]any{"JavaScript", "Python"},
 			[]any{"C++", "Java"},
 		}, "Should handle DISTINCT with array comparison and sorting"),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

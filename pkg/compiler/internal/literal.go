@@ -6,7 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -167,7 +166,7 @@ func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.O
 // Panics if the text is neither "true" nor "false".
 func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) vm.Operand {
 	// Allocate a temporary register for the boolean value
-	reg := c.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate()
 
 	// Convert the text to lowercase and determine the boolean value
 	switch strings.ToLower(ctx.GetText()) {
@@ -176,7 +175,6 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 	case "false":
 		c.ctx.Emitter.EmitBoolean(reg, false)
 	default:
-		c.ctx.Registers.Free(reg)
 		reg = vm.NoopOperand
 	}
 
@@ -191,7 +189,7 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 //   - An operand representing the compiled none value
 func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Operand {
 	// Allocate a temporary register for the none value
-	reg := c.ctx.Registers.Allocate(core.Temp)
+	reg := c.ctx.Registers.Allocate()
 	// Emit instruction to load the none value into the register
 	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
 
@@ -207,11 +205,27 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 //   - An operand representing the compiled array
 func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
 	// Allocate destination register for the array
-	destReg := c.ctx.Registers.Allocate(core.Temp)
-	// Compile the argument list (array elements) into a sequence of registers
-	seq := c.ctx.ExprCompiler.CompileArgumentList(ctx.ArgumentList())
-	// Emit instruction to create an array from the sequence of registers
-	c.ctx.Emitter.EmitArray(destReg, seq)
+	destReg := c.ctx.Registers.Allocate()
+
+	args := ctx.ArgumentList()
+
+	if args != nil {
+		exps := args.AllExpression()
+
+		// Emit instruction to create an array with the specified size
+		c.ctx.Emitter.EmitArray(destReg, len(exps))
+
+		// Compile each expression in the array and push it to the array register
+		for _, exp := range exps {
+			// Compile expression
+			itemReg := c.ctx.ExprCompiler.Compile(exp)
+
+			c.ctx.Emitter.EmitArrayPush(destReg, itemReg)
+		}
+	} else {
+		// Emit instruction to create an empty array
+		c.ctx.Emitter.EmitArray(destReg, 0)
+	}
 
 	return destReg
 }
@@ -225,16 +239,14 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 //   - An operand representing the compiled object
 func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
 	// Allocate destination register for the object
-	dst := c.ctx.Registers.Allocate(core.Temp)
-	var seq core.RegisterSequence
+	dst := c.ctx.Registers.Allocate()
 	// Get all property assignments from the object literal
 	assignments := ctx.AllPropertyAssignment()
 	size := len(assignments)
 
 	if size > 0 {
-		// Allocate a sequence of registers for property-value pairs
-		// We need two registers for each assignment (one for property name, one for value)
-		seq = c.ctx.Registers.AllocateSequence(len(assignments) * 2)
+		// Emit instruction to create an object with the specified number of properties
+		c.ctx.Emitter.EmitObject(dst, size)
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
@@ -244,36 +256,27 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 
 			// Handle different types of property names
 			if prop := pac.PropertyName(); prop != nil {
-				// Regular property name (e.g., { name: value })
-				propOp = c.CompilePropertyName(prop)
+				// Regular property name (e.g., { name: value }).
+				// Evaluate value first to shorten the live range of the key register.
 				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
+				propOp = c.CompilePropertyName(prop)
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
 				propOp = c.CompileComputedPropertyName(comProp)
 				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
-				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
+				// Evaluate value first to shorten the live range of the key register.
 				valOp = c.ctx.ExprCompiler.CompileVariable(variable)
+				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
 			}
 
-			// Calculate the index in the sequence for this property-value pair
-			regIndex := i * 2
-
-			// Move the property name and value to their respective registers in the sequence
-			c.ctx.Emitter.EmitMove(seq[regIndex], propOp)
-			c.ctx.Emitter.EmitMove(seq[regIndex+1], valOp)
-
-			// Free source register if temporary
-			// Note: This is commented out in the original code
-			//if propOp.IsRegister() {
-			//	c.ctx.Registers.Free(propOp)
-			//}
+			c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 		}
+	} else {
+		// Emit instruction to create an empty object
+		c.ctx.Emitter.EmitObject(dst, 0)
 	}
-
-	// Emit instruction to create an object from the sequence of property-value pairs
-	c.ctx.Emitter.EmitObject(dst, seq)
 
 	return dst
 }

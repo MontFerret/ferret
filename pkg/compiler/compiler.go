@@ -4,6 +4,7 @@ import (
 	goruntime "runtime"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/optimization"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -14,14 +15,19 @@ import (
 	"github.com/MontFerret/ferret/pkg/parser"
 )
 
-type Compiler struct{}
+type Compiler struct {
+	opts *options
+}
 
 func New(setters ...Option) *Compiler {
-	c := &Compiler{}
-	opts := &Options{}
+	c := &Compiler{
+		opts: &options{
+			Level: optimization.LevelBasic,
+		},
+	}
 
 	for _, setter := range setters {
-		setter(opts)
+		setter(c.opts)
 	}
 
 	return c
@@ -82,6 +88,10 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	program.Params = l.Ctx.Symbols.Params()
 	program.Functions = l.Ctx.Symbols.Functions()
 	program.Labels = l.Ctx.Emitter.Labels()
+
+	if err := optimization.Run(program, c.opts.Level); err != nil {
+		return nil, err
+	}
 
 	return program, err
 }

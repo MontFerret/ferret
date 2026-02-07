@@ -36,3 +36,17 @@ func Debug(useCase TestCase) TestCase {
 
 	return useCase
 }
+
+func (tc TestCase) String() string {
+	if tc.Description != "" {
+		return strings.TrimSpace(tc.Description)
+	}
+
+	exp := strings.TrimSpace(tc.Expression)
+	exp = strings.Replace(exp, "\n", " ", -1)
+	exp = strings.Replace(exp, "\t", " ", -1)
+	// Replace multiple spaces with a single space
+	exp = strings.Join(strings.Fields(exp), " ")
+
+	return exp
+}

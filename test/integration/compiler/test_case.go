@@ -118,7 +118,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 }
 
 func RunUseCases(t *testing.T, useCases []UseCase) {
-	RunUseCasesWith(t, compiler.New(), useCases)
+	RunUseCasesWith(t, compiler.New(compiler.WithOptimizationLevel(compiler.O0)), useCases)
 }
 
 func Disassembly(instr []string, opcodes ...vm.Opcode) string {

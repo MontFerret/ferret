@@ -7,14 +7,13 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/vm"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 func loadConstant(ctx *CompilerContext, value runtime.Value) vm.Operand {
-	reg := ctx.Registers.Allocate(core.Temp)
+	reg := ctx.Registers.Allocate()
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
 	return reg
 }

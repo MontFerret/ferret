@@ -54,8 +54,16 @@ func (e *Emitter) EmitPush(dst, src vm.Operand) {
 	e.EmitAB(vm.OpPush, dst, src)
 }
 
+func (e *Emitter) EmitArrayPush(dst, src vm.Operand) {
+	e.EmitAB(vm.OpArrayPush, dst, src)
+}
+
 func (e *Emitter) EmitPushKV(dst, key, val vm.Operand) {
 	e.EmitABC(vm.OpPushKV, dst, key, val)
+}
+
+func (e *Emitter) EmitObjectSet(dst, key, val vm.Operand) {
+	e.EmitABC(vm.OpObjectSet, dst, key, val)
 }
 
 func (e *Emitter) EmitClose(reg vm.Operand) {
@@ -84,20 +92,12 @@ func (e *Emitter) EmitBoolean(dst vm.Operand, value bool) {
 
 // ─── Data Structures ──────────────────────────────────────────────────────
 
-func (e *Emitter) EmitArray(dst vm.Operand, seq RegisterSequence) {
-	if len(seq) > 0 {
-		e.EmitAs(vm.OpLoadArray, dst, seq)
-	} else {
-		e.EmitA(vm.OpLoadArray, dst)
-	}
+func (e *Emitter) EmitArray(dst vm.Operand, size int) {
+	e.EmitAB(vm.OpLoadArray, dst, vm.Operand(size))
 }
 
-func (e *Emitter) EmitObject(dst vm.Operand, seq RegisterSequence) {
-	if len(seq) > 0 {
-		e.EmitAs(vm.OpLoadObject, dst, seq)
-	} else {
-		e.EmitA(vm.OpLoadObject, dst)
-	}
+func (e *Emitter) EmitObject(dst vm.Operand, size int) {
+	e.EmitAB(vm.OpLoadObject, dst, vm.Operand(size))
 }
 
 func (e *Emitter) EmitRange(dst, start, end vm.Operand) {

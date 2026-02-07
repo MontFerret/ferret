@@ -78,8 +78,6 @@ func (st *SymbolTable) ExitScope() {
 	st.scope--
 
 	for len(st.locals) > 0 && st.locals[len(st.locals)-1].Depth > st.scope {
-		popped := st.locals[len(st.locals)-1]
-		st.registers.Free(popped.Register)
 		st.locals = st.locals[:len(st.locals)-1]
 	}
 }
@@ -100,10 +98,9 @@ func (st *SymbolTable) LocalVariables() []Variable {
 }
 
 func (st *SymbolTable) DeclareLocal(name string, typ ValueType) (vm.Operand, bool) {
-	reg := st.registers.Allocate(Var)
+	reg := st.registers.Allocate()
 
 	if ok := st.AssignLocal(name, typ, reg); !ok {
-		st.registers.Free(reg)
 		return vm.NoopOperand, false
 	}
 
@@ -134,11 +131,9 @@ func (st *SymbolTable) AssignLocal(name string, typ ValueType, op vm.Operand) bo
 }
 
 func (st *SymbolTable) DeclareGlobal(name string, typ ValueType) (vm.Operand, bool) {
-	op := st.registers.Allocate(Var)
+	op := st.registers.Allocate()
 
 	if ok := st.AssignGlobal(name, typ, op); !ok {
-		st.registers.Free(op)
-
 		return vm.NoopOperand, false
 	}
 

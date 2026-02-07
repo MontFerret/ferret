@@ -43,7 +43,7 @@ func (c *LoopSortCompiler) Compile(ctx fql.ISortClauseContext) {
 // compileSortKeys processes all sort expressions and returns the key register and directions.
 // For multiple expressions, it creates an array of keys; for single expression, uses the key directly.
 func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionContext) (vm.Operand, []runtime.SortDirection) {
-	kvKeyReg := c.ctx.Registers.Allocate(core.Temp)
+	kvKeyReg := c.ctx.Registers.Allocate()
 	directions := make([]runtime.SortDirection, len(clauses))
 	isSortMany := len(clauses) > 1
 
@@ -57,23 +57,14 @@ func (c *LoopSortCompiler) compileSortKeys(clauses []fql.ISortClauseExpressionCo
 // compileMultipleSortKeys handles compilation when there are multiple sort expressions.
 // It creates an array of compiled expressions for multi-key sorting.
 func (c *LoopSortCompiler) compileMultipleSortKeys(clauses []fql.ISortClauseExpressionContext, kvKeyReg vm.Operand, directions []runtime.SortDirection) (vm.Operand, []runtime.SortDirection) {
-	clausesRegs := make([]vm.Operand, len(clauses))
-	keyRegs := c.ctx.Registers.AllocateSequence(len(clauses))
+	c.ctx.Emitter.EmitArray(kvKeyReg, len(clauses))
 
 	// Compile each sort expression and store direction
 	for i, clause := range clauses {
 		clauseReg := c.ctx.ExprCompiler.Compile(clause.Expression())
-		c.ctx.Emitter.EmitMove(keyRegs[i], clauseReg)
-		clausesRegs[i] = keyRegs[i]
+		c.ctx.Emitter.EmitArrayPush(kvKeyReg, clauseReg)
 		directions[i] = sortDirection(clause.SortDirection())
-		// TODO: Free registers after use
 	}
-
-	// NewForLoop array of sort keys
-	arrReg := c.ctx.Registers.Allocate(core.Temp)
-	c.ctx.Emitter.EmitAs(vm.OpLoadArray, arrReg, keyRegs)
-	c.ctx.Emitter.EmitAB(vm.OpMove, kvKeyReg, arrReg)
-	// TODO: Free registers after use
 
 	return kvKeyReg, directions
 }
@@ -98,7 +89,7 @@ func (c *LoopSortCompiler) resolveValueRegister(loop *core.Loop) vm.Operand {
 		}
 
 		// Otherwise, allocate a new register and load the value from iterator
-		kvValReg := c.ctx.Registers.Allocate(core.Temp)
+		kvValReg := c.ctx.Registers.Allocate()
 		loop.EmitValue(kvValReg, c.ctx.Emitter)
 		return kvValReg
 	}
@@ -147,12 +138,8 @@ func (c *LoopSortCompiler) finalizeSorting(loop *core.Loop, kv *core.KV, sorter 
 
 	// Replace the loop source with sorted results
 	loop.LabelBase = c.ctx.Loops.NextBase()
-	loop.Src = c.ctx.Registers.Allocate(core.Temp)
+	loop.Src = c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitAB(vm.OpMove, loop.Src, sorter)
-
-	if !loop.Allocate {
-		c.ctx.Registers.Free(sorter)
-	}
 
 	if loop.Kind != core.ForInLoop {
 		// We switched from a WhileLoop to a ForInLoop because the underlying data is Iterable now.
@@ -201,10 +188,9 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 		return
 	}
 
-	value := c.ctx.Registers.Allocate(core.Temp)
+	value := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitIterValue(value, loop.State)
 	scope.RestoreFromArray(value)
-	c.ctx.Registers.Free(value)
 
 	if loop.KeyName != "" {
 		found, _ := c.ctx.Symbols.Lookup(loop.KeyName)

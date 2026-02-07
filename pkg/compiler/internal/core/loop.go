@@ -162,7 +162,7 @@ func (l *Loop) PatchDestinationAx(alloc *RegisterAllocator, emitter *Emitter, op
 		return l.Dst
 	}
 
-	tmp := alloc.Allocate(Temp)
+	tmp := alloc.Allocate()
 	emitter.InsertAx(l.startLabel, op, tmp, arg)
 	return tmp
 }
@@ -174,14 +174,14 @@ func (l *Loop) PatchDestinationAxy(alloc *RegisterAllocator, emitter *Emitter, o
 		return l.Dst
 	}
 
-	tmp := alloc.Allocate(Temp)
+	tmp := alloc.Allocate()
 	emitter.InsertAxy(l.startLabel, op, tmp, arg1, arg2)
 	return tmp
 }
 
 func (l *Loop) emitForInLoopIteration(alloc *RegisterAllocator, emitter *Emitter) {
 	if l.State == vm.NoopOperand {
-		l.State = alloc.Allocate(Temp)
+		l.State = alloc.Allocate()
 	}
 
 	emitter.EmitIter(l.State, l.Src)

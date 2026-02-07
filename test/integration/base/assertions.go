@@ -2,6 +2,7 @@ package base
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/smarty/assertions"
 
@@ -27,6 +28,12 @@ type (
 func ArePtrsEqual(expected, actual any) bool {
 	if expected == nil || actual == nil {
 		return false
+	}
+
+	v1 := reflect.ValueOf(expected)
+	v2 := reflect.ValueOf(actual)
+	if v1.Kind() == reflect.Func && v2.Kind() == reflect.Func {
+		return v1.Pointer() == v2.Pointer()
 	}
 
 	p1 := fmt.Sprintf("%v", expected)

@@ -27,61 +27,87 @@ func NewScopeProjection(
 }
 
 func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
-	reg := sp.registers.Allocate(Temp)
-	args := sp.registers.AllocateSequence(len(sp.values))
+	buildDst := dst
 
-	for i, v := range sp.values {
-		sp.emitter.EmitAB(vm.OpMove, args[i], v.Register)
+	if sp.usesRegister(dst) {
+		// Avoid overwriting a value we're about to project.
+		buildDst = sp.registers.Allocate()
 	}
 
-	sp.emitter.EmitArray(reg, args)
-	sp.emitter.EmitMove(dst, reg)
-	sp.registers.Free(reg)
-	sp.registers.FreeSequence(args)
+	sp.emitter.EmitArray(buildDst, len(sp.values))
+
+	for _, v := range sp.values {
+		sp.emitter.EmitArrayPush(buildDst, v.Register)
+	}
+
+	if buildDst != dst {
+		sp.emitter.EmitMove(dst, buildDst)
+	}
 }
 
 func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
-	if len(sp.values) == 0 {
-		sp.emitter.EmitA(vm.OpLoadObject, dst)
+	size := len(sp.values)
+	buildDst := dst
+
+	if sp.usesRegister(dst) {
+		// Avoid overwriting a value we're about to project.
+		buildDst = sp.registers.Allocate()
+	}
+
+	sp.emitter.EmitObject(buildDst, size)
+
+	if size == 0 {
+		if buildDst != dst {
+			sp.emitter.EmitMove(dst, buildDst)
+		}
+
 		return
 	}
 
-	pairs := sp.registers.AllocateSequence(len(sp.values) * 2)
-
-	for i, v := range sp.values {
+	for _, v := range sp.values {
 		// Key (field name)
-		keyReg := pairs[i*2]
+		keyReg := sp.registers.Allocate()
 		sp.emitter.EmitLoadConst(keyReg, sp.symbols.AddConstant(runtime.String(v.Name)))
 
 		// Value (actual variable value)
-		valReg := pairs[i*2+1]
+		valReg := sp.registers.Allocate()
 		sp.emitter.EmitAB(vm.OpMove, valReg, v.Register)
+
+		// Set the key-value pair in the object
+		sp.emitter.EmitObjectSet(buildDst, keyReg, valReg)
 	}
 
-	sp.emitter.EmitObject(dst, pairs)
-	sp.registers.FreeSequence(pairs)
+	if buildDst != dst {
+		sp.emitter.EmitMove(dst, buildDst)
+	}
 }
 
 func (sp *ScopeProjection) RestoreFromArray(src vm.Operand) {
-	idx := sp.registers.Allocate(Temp)
+	idx := sp.registers.Allocate()
 
 	for i, v := range sp.values {
 		sp.emitter.EmitLoadConst(idx, sp.symbols.AddConstant(runtime.Int(i)))
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadIndex, variable, src, idx)
 	}
-
-	sp.registers.Free(idx)
 }
 
 func (sp *ScopeProjection) RestoreFromObject(src vm.Operand) {
-	key := sp.registers.Allocate(Temp)
+	key := sp.registers.Allocate()
 
 	for _, v := range sp.values {
 		sp.emitter.EmitLoadConst(key, sp.symbols.AddConstant(runtime.String(v.Name)))
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
 		sp.emitter.EmitABC(vm.OpLoadKey, variable, src, key)
 	}
+}
 
-	sp.registers.Free(key)
+func (sp *ScopeProjection) usesRegister(reg vm.Operand) bool {
+	for _, v := range sp.values {
+		if v.Register == reg {
+			return true
+		}
+	}
+
+	return false
 }

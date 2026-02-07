@@ -24,7 +24,7 @@ func TestRegexpOperator(t *testing.T) {
 
 	// TODO: Fix
 	SkipConvey("Should return an error during compilation when a regexp string invalid", t, func() {
-		_, err := compiler.New().
+		_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
 			Compile(file.NewAnonymousSource(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
 		`))
@@ -43,7 +43,7 @@ func TestRegexpOperator(t *testing.T) {
 		}
 
 		for _, r := range right {
-			_, err := compiler.New().
+			_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
 				Compile(file.NewAnonymousSource(fmt.Sprintf(`
 			RETURN "foo" !~ %s 
 		`, r)))

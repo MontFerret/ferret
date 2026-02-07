@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForWhileFilter(t *testing.T) {
@@ -259,5 +260,5 @@ LET users = [
 				RETURN u
 `, []any{},
 			"Should compile query with multiple left side expression and with binary operator 2"),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

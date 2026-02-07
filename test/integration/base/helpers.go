@@ -1,17 +1,15 @@
-package vm_test
+package base
 
 import (
 	"context"
-
-	"github.com/MontFerret/ferret/test/integration/base"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 func ForWhileHelpers() runtime.Functions {
 	return runtime.NewFunctionsFromMap(map[string]runtime.Function{
-		"UNTIL": base.StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			state := base.GetFnState[int](ctx)
+		"UNTIL": StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			state := GetFnState[int](ctx)
 			untilCounter := state.Get()
 
 			if untilCounter < int(runtime.ToIntSafe(ctx, args[0])) {
@@ -46,8 +44,8 @@ func ForWhileHelpers() runtime.Functions {
 
 			return runtime.False, nil
 		},
-		"COUNTER": base.StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-			state := base.GetFnState[int](ctx)
+		"COUNTER": StateFn[int](func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+			state := GetFnState[int](ctx)
 			counter := state.Get()
 			counter++
 

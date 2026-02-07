@@ -148,6 +148,9 @@ func divideLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value
 
 	switch rightVal := right.(type) {
 	case runtime.Int:
+		if rightVal != 0 && integer%rightVal != 0 {
+			return runtime.Float(integer) / runtime.Float(rightVal)
+		}
 		return integer / rightVal
 	case runtime.Float:
 		return runtime.Float(integer) / rightVal

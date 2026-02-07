@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForDoWhile(t *testing.T) {
@@ -28,5 +29,5 @@ func TestForDoWhile(t *testing.T) {
 			4, 8, 12, 16, 20,
 			5, 10, 15, 20, 25, 30,
 			6, 12, 18, 24, 30, 36, 42}),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

@@ -20,8 +20,7 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 
 	// If we have grouping, we need to pack the selectors into the collector value
 	if withGrouping {
-		// TODO: We need to figure out how to free the aggregator register later
-		aggregator := c.ctx.Registers.Allocate(core.State)
+		aggregator := c.ctx.Registers.Allocate()
 		// We create a separate collector for aggregation in grouped mode
 		c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
 
@@ -65,14 +64,12 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 				key := c.loadSelectorKey(kv.Key, name, y)
 				// Push the key-value pair to the collector
 				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
-				c.ctx.Registers.Free(key)
 			}
 		} else {
 			// For a single argument, use the selector name as the key
 			key := c.loadSelectorKey(kv.Key, name, -1)
 			// Push the key-value pair to the collector
 			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
-			c.ctx.Registers.Free(key)
 		}
 
 		// Get the function name and check if it's a protected call (with TRY)
@@ -82,9 +79,6 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 
 		// Create an AggregateSelector with all the information needed to process it later
 		wrappedSelectors[i] = core.NewAggregateSelector(name, len(args), funcName, isProtected)
-
-		// Free the argument registers
-		c.ctx.Registers.FreeSequence(args)
 	}
 
 	return wrappedSelectors
@@ -118,14 +112,12 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 				key := c.loadGlobalSelectorKey(name, y)
 				// Push the key-value pair to the collector
 				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
-				c.ctx.Registers.Free(key)
 			}
 		} else {
 			// For a single argument, use the selector name as the key
 			key := loadConstant(c.ctx, name)
 			// Push the key-value pair to the collector
 			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
-			c.ctx.Registers.Free(key)
 		}
 
 		// Get the function name and check if it's a protected call (with TRY)
@@ -136,9 +128,6 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 		// For global aggregation, we don't need to store the register in the selector
 		// as the values are already pushed to the collector
 		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected))
-
-		// Free the argument registers
-		c.ctx.Registers.FreeSequence(args)
 	}
 
 	return wrappedSelectors
@@ -172,17 +161,14 @@ func (c *LoopCollectCompiler) finalizeGroupedAggregation(spec *core.Collector) {
 func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	// At this point, the previous loop is finalized, so we can pop it and free its registers
 	prevLoop := c.ctx.Loops.Pop()
-	c.ctx.Registers.Free(prevLoop.Key)
-	c.ctx.Registers.Free(prevLoop.Value)
-	c.ctx.Registers.Free(prevLoop.Src)
 
 	// Create a new loop with 1 iteration only to process the aggregation
 	loop := c.ctx.Loops.NewLoop(core.ForInLoop, core.NormalLoop, prevLoop.Distinct)
 	c.ctx.Loops.Push(loop)
 
 	// Set up the loop source to be a range from 0 to 0 (one iteration)
-	loop.Src = c.ctx.Registers.Allocate(core.Temp)
-	zero := c.ctx.Registers.Allocate(core.Temp)
+	loop.Src = c.ctx.Registers.Allocate()
+	zero := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitA(vm.OpLoadZero, zero)
 	c.ctx.Emitter.EmitABC(vm.OpLoadRange, loop.Src, zero, zero)
 
@@ -208,12 +194,11 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Collector) {
 	// Gets the number of records in the accumulator
 	aggregator := spec.Destination()
-	cond := c.ctx.Registers.Allocate(core.Temp)
+	cond := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitAB(vm.OpLength, cond, aggregator)
 	zero := loadConstant(c.ctx, runtime.ZeroInt)
 	// Check if the number equals to zero
 	c.ctx.Emitter.EmitEq(cond, cond, zero)
-	c.ctx.Registers.Free(zero)
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
@@ -235,15 +220,13 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 			for y, reg := range args {
 				argKeyReg := c.loadGlobalSelectorKey(selector.Name(), y)
 				c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, argKeyReg)
-				c.ctx.Registers.Free(argKeyReg)
 			}
 		} else {
 			// For a single argument, load it directly using the selector name as key
 			key := loadConstant(c.ctx, selector.Name())
-			value := c.ctx.Registers.Allocate(core.Temp)
+			value := c.ctx.Registers.Allocate()
 			c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
 			args = core.RegisterSequence{value}
-			c.ctx.Registers.Free(key)
 		}
 
 		// Call the aggregation function with the loaded arguments
@@ -256,7 +239,6 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 		selectorVarRegs[i] = varReg
 		// Move the function result to the variable
 		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
-		c.ctx.Registers.Free(result)
 	}
 
 	var projVar vm.Operand
@@ -280,7 +262,6 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	}
 
 	c.ctx.Emitter.MarkLabel(endLabel)
-	c.ctx.Registers.Free(cond)
 }
 
 func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int) {
@@ -299,15 +280,13 @@ func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.A
 		for y, reg := range args {
 			key := c.loadSelectorKey(loop.Key, selector.Name(), y)
 			c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, key)
-			c.ctx.Registers.Free(key)
 		}
 	} else {
 		// For a single argument, load it directly using the selector name as key
 		key := c.loadSelectorKey(loop.Key, selector.Name(), -1)
-		value := c.ctx.Registers.Allocate(core.Temp)
+		value := c.ctx.Registers.Allocate()
 		c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
 		args = core.RegisterSequence{value}
-		c.ctx.Registers.Free(key)
 	}
 
 	resArg := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
@@ -326,7 +305,7 @@ func (c *LoopCollectCompiler) loadGlobalSelectorKey(selector runtime.String, arg
 }
 
 func (c *LoopCollectCompiler) loadSelectorKey(key vm.Operand, selector runtime.String, arg int) vm.Operand {
-	selectorKey := c.ctx.Registers.Allocate(core.Temp)
+	selectorKey := c.ctx.Registers.Allocate()
 	selectorName := loadConstant(c.ctx, selector)
 
 	c.ctx.Emitter.EmitABC(vm.OpAdd, selectorKey, key, selectorName)
@@ -334,10 +313,7 @@ func (c *LoopCollectCompiler) loadSelectorKey(key vm.Operand, selector runtime.S
 	if arg >= 0 {
 		selectorIndex := loadConstant(c.ctx, runtime.String(strconv.Itoa(arg)))
 		c.ctx.Emitter.EmitABC(vm.OpAdd, selectorKey, selectorKey, selectorIndex)
-		c.ctx.Registers.Free(selectorIndex)
 	}
-
-	c.ctx.Registers.Free(selectorName)
 
 	return selectorKey
 }

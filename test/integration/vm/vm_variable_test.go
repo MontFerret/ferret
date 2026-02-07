@@ -86,7 +86,7 @@ func TestVariables(t *testing.T) {
 	})
 
 	SkipConvey("Should compile LET i = (FOR i WHILE COUNTER() < 5 RETURN i) RETURN i", t, func() {
-		c := compiler.New()
+		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
 		p, err := c.Compile(file.NewAnonymousSource(`
 			LET i = (FOR i WHILE COUNTER() < 5 RETURN i)
@@ -108,7 +108,7 @@ func TestVariables(t *testing.T) {
 	})
 
 	SkipConvey("Should compile LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)? RETURN length(i) == 0", t, func() {
-		c := compiler.New()
+		c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
 		p, err := c.Compile(file.NewAnonymousSource(`
 			LET i = (FOR i WHILE COUNTER() < 5 T::FAIL() RETURN i)?

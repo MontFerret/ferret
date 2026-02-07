@@ -35,7 +35,7 @@ func (lt *LoopTable) NewLoop(kind LoopKind, loopType LoopType, distinct bool) *L
 
 	if loopType != TemporalLoop {
 		if allocate {
-			result = lt.registers.Allocate(Result)
+			result = lt.registers.Allocate()
 		} else {
 			result = parent.Dst
 		}

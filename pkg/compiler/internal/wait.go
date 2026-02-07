@@ -49,7 +49,7 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	}
 
 	// Allocate a register for the event stream
-	streamReg := c.ctx.Registers.Allocate(core.Temp)
+	streamReg := c.ctx.Registers.Allocate()
 
 	// Move the source object to the stream register in order to re-use it in OpStream
 	c.ctx.Emitter.EmitMove(streamReg, srcReg)

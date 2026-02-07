@@ -163,40 +163,9 @@ loop:
 				return nil, err
 			}
 		case OpLoadArray:
-			var size int
-
-			if src1 > 0 {
-				size = src2.Register() - src1.Register() + 1
-			}
-
-			arr := runtime.NewArray(size)
-			start := int(src1)
-			end := int(src1) + size
-
-			for i := start; i < end; i++ {
-				_ = arr.Add(ctx, reg[i])
-			}
-
-			reg[dst] = arr
+			reg[dst] = runtime.NewArray(int(src1))
 		case OpLoadObject:
-			obj := runtime.NewObject()
-			var args int
-
-			if src1 > 0 {
-				args = src2.Register() - src1.Register() + 1
-			}
-
-			start := int(src1)
-			end := int(src1) + args
-
-			for i := start; i < end; i += 2 {
-				key := reg[i]
-				value := reg[i+1]
-
-				_ = obj.Set(ctx, runtime.ToString(key), value)
-			}
-
-			reg[dst] = obj
+			reg[dst] = runtime.NewObjectOf(int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
 			arg := reg[src2]
@@ -347,7 +316,12 @@ loop:
 					return nil, err
 				}
 			}
+		case OpArrayPush:
+			ds := reg[dst].(*runtime.Array)
+
+			_ = ds.Add(ctx, reg[src1])
 		case OpPushKV:
+			// TODO: Use runtime.Map/runtime.KeySetter instead
 			tr := reg[dst].(data.Transformer)
 
 			if err := tr.Add(ctx, reg[src1], reg[src2]); err != nil {
@@ -357,6 +331,12 @@ loop:
 
 				return nil, err
 			}
+		case OpObjectSet:
+			obj := reg[dst].(*runtime.Object)
+			key := runtime.ToString(reg[src1])
+			value := reg[src2]
+
+			_ = obj.Set(ctx, key, value)
 		case OpIter:
 			input := reg[src1]
 

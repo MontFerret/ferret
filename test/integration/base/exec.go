@@ -11,7 +11,7 @@ import (
 )
 
 func Compile(expression string) (*vm.Program, error) {
-	c := compiler.New()
+	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
 	return c.Compile(file.NewSource("", expression))
 }

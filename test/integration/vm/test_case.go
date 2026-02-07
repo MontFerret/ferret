@@ -3,7 +3,6 @@ package vm_test
 import (
 	j "encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/file"
@@ -139,16 +138,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 	std := base.Stdlib()
 
 	for _, useCase := range useCases {
-		name := useCase.Description
-
-		if useCase.Description == "" {
-			name = strings.TrimSpace(useCase.Expression)
-		}
-
-		name = strings.Replace(name, "\n", " ", -1)
-		name = strings.Replace(name, "\t", " ", -1)
-		// Replace multiple spaces with a single space
-		name = strings.Join(strings.Fields(name), " ")
+		name := useCase.String()
 		skip := useCase.Skip
 
 		t.Run("VM Test: "+name, func(t *testing.T) {
@@ -233,5 +223,17 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 }
 
 func RunUseCases(t *testing.T, useCases []UseCase, opts ...vm.EnvironmentOption) {
-	RunUseCasesWith(t, compiler.New(), useCases, opts...)
+	addSuffix := func(uc []UseCase, suffix string) []UseCase {
+		clone := make([]UseCase, len(uc))
+
+		for i := range uc {
+			clone[i] = uc[i]
+			clone[i].Description = fmt.Sprintf("%s - %s", uc[i].String(), suffix)
+		}
+
+		return clone
+	}
+
+	RunUseCasesWith(t, compiler.New(compiler.WithOptimizationLevel(compiler.O0)), addSuffix(useCases, "Opt O0"), opts...)
+	RunUseCasesWith(t, compiler.New(compiler.WithOptimizationLevel(compiler.O1)), addSuffix(useCases, "Opt O1"), opts...)
 }
