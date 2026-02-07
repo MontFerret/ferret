@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForStepNested(t *testing.T) {
@@ -1047,5 +1048,5 @@ func TestForStepNested(t *testing.T) {
 				},
 			},
 		}, "Should handle nested FOR loops with COLLECT AGGREGATE"),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

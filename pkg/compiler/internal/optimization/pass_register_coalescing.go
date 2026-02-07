@@ -54,11 +54,21 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 
 	unsafeRegs := collectRangeSensitiveRegs(ctx.Program)
 
+	// Fold trivial move chains into their defining instruction to shorten live ranges.
+	folded := foldMovesIntoDefs(ctx.Program, ctx.CFG, liveness, unsafeRegs)
+	if folded {
+		// Recompute liveness after rewriting registers to keep analyses consistent.
+		liveness = computeLiveness(ctx.CFG)
+	}
+
 	// Build interference graph
 	interferenceGraph := buildInterferenceGraph(ctx.CFG, liveness, ctx.Program.Registers)
 
+	// Count register definitions to keep move coalescing safe.
+	defCounts := countRegisterDefs(ctx.Program)
+
 	// First, try move-based coalescing
-	coalesceMap := findCoalesceCandidates(ctx.Program, ctx.CFG, interferenceGraph, unsafeRegs)
+	coalesceMap := findCoalesceCandidates(ctx.Program, ctx.CFG, interferenceGraph, unsafeRegs, defCounts)
 
 	// Apply move-based coalescing first
 	moveCoalesced := applyCoalescing(ctx.Program, coalesceMap, unsafeRegs)
@@ -69,11 +79,11 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 	if isLinearCFG(ctx.CFG) {
 		renumbered = applyLinearRenumbering(ctx.Program, unsafeRegs)
 	} else {
-		renumberMap = computeRegisterRenumbering(ctx.CFG, liveness, ctx.Program.Registers, unsafeRegs)
+		renumberMap = computeRegisterRenumbering(ctx.CFG, liveness, ctx.Program.Registers, unsafeRegs, interferenceGraph)
 		renumbered = applyRenumbering(ctx.Program, renumberMap, unsafeRegs)
 	}
 
-	modified := moveCoalesced || renumbered
+	modified := folded || moveCoalesced || renumbered
 
 	return &PassResult{
 		Modified: modified,
@@ -282,67 +292,63 @@ func computeLinearLiveAfter(instructions []vm.Instruction) []map[int]bool {
 
 // computeRegisterRenumbering computes a mapping from old registers to new registers
 // using a linear scan approach based on liveness intervals
-func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int, unsafeRegs map[int]bool) map[int]int {
+func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int, unsafeRegs map[int]bool, interferenceGraph map[int]map[int]bool) map[int]int {
 	intervals := computeLiveIntervals(cfg, liveness, numRegisters)
 
 	if len(intervals) == 0 {
 		return nil
 	}
 
-	// Sort intervals by start position
-	sort.Slice(intervals, func(i, j int) bool {
-		if intervals[i].start == intervals[j].start {
-			return intervals[i].reg < intervals[j].reg
-		}
-		return intervals[i].start < intervals[j].start
-	})
-
-	// Greedy register allocation: assign the lowest available register to each interval
+	// Greedy graph coloring based on interference graph.
 	renumberMap := make(map[int]int)
+	assigned := make(map[int]int)
 
-	// active keeps track of which new registers are in use and when they become free
-	// maps new register -> end position of current interval using it
-	active := make(map[int]int)
-
-	for _, interval := range intervals {
-		// Skip R0 (reserved)
-		if interval.reg == 0 {
-			continue
+	// Pre-assign unsafe registers to themselves.
+	for reg := range unsafeRegs {
+		if reg > 0 {
+			assigned[reg] = reg
 		}
-		// Avoid renumbering range-sensitive registers
-		if unsafeRegs[interval.reg] {
-			continue
-		}
-
-		// Expire old intervals: free registers whose intervals have ended
-		for newReg, endPos := range active {
-			if endPos < interval.start {
-				delete(active, newReg)
-			}
-		}
-
-		// Find the lowest available register (starting from 1, skip R0)
-		newReg := 1
-		for {
-			if unsafeRegs[newReg] {
-				newReg++
-				continue
-			}
-			if _, inUse := active[newReg]; !inUse {
-				break
-			}
-			newReg++
-		}
-
-		// Assign this register
-		renumberMap[interval.reg] = newReg
-		active[newReg] = interval.end
 	}
 
-	// Remove identity mappings
-	for oldReg, newReg := range renumberMap {
-		if oldReg == newReg {
-			delete(renumberMap, oldReg)
+	// Collect registers present in intervals.
+	regs := make([]int, 0, len(intervals))
+	for _, interval := range intervals {
+		if interval.reg == 0 || unsafeRegs[interval.reg] {
+			continue
+		}
+		regs = append(regs, interval.reg)
+	}
+
+	// Order by descending degree, then register number for stability.
+	sort.Slice(regs, func(i, j int) bool {
+		di := len(interferenceGraph[regs[i]])
+		dj := len(interferenceGraph[regs[j]])
+		if di == dj {
+			return regs[i] < regs[j]
+		}
+		return di > dj
+	})
+
+	for _, reg := range regs {
+		used := make(map[int]bool)
+		for neighbor := range interferenceGraph[reg] {
+			if color, ok := assigned[neighbor]; ok {
+				used[color] = true
+			}
+		}
+
+		color := 1
+		for {
+			if unsafeRegs[color] || used[color] {
+				color++
+				continue
+			}
+			break
+		}
+
+		assigned[reg] = color
+		if reg != color {
+			renumberMap[reg] = color
 		}
 	}
 
@@ -351,8 +357,6 @@ func computeRegisterRenumbering(cfg *ControlFlowGraph, liveness map[int]*Livenes
 
 // computeLiveIntervals computes the live interval for each register
 func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, numRegisters int) []liveInterval {
-	_ = liveness
-
 	// First, flatten all instructions with their global positions
 	type instrPos struct {
 		inst vm.Instruction
@@ -360,12 +364,10 @@ func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo,
 	}
 
 	var allInstructions []instrPos
-	pos := 0
 
 	for _, block := range cfg.Blocks {
-		for _, inst := range block.Instructions {
-			allInstructions = append(allInstructions, instrPos{inst: inst, pos: pos})
-			pos++
+		for i, inst := range block.Instructions {
+			allInstructions = append(allInstructions, instrPos{inst: inst, pos: block.Start + i})
 		}
 	}
 
@@ -390,6 +392,40 @@ func computeLiveIntervals(cfg *ControlFlowGraph, liveness map[int]*LivenessInfo,
 		if ip.inst.Opcode == vm.OpReturn {
 			if ip.inst.Operands[0].IsRegister() {
 				regUse[ip.inst.Operands[0].Register()] = ip.pos
+			}
+		}
+	}
+
+	// Extend intervals using block-level liveness to cover loop back-edges.
+	for _, block := range cfg.Blocks {
+		info := liveness[block.ID]
+		if info == nil {
+			continue
+		}
+
+		for reg := range info.LiveIn {
+			if reg == 0 {
+				continue
+			}
+			if start, ok := regDef[reg]; ok {
+				if block.Start < start {
+					regDef[reg] = block.Start
+				}
+			} else {
+				regDef[reg] = block.Start
+			}
+		}
+
+		for reg := range info.LiveOut {
+			if reg == 0 {
+				continue
+			}
+			if end, ok := regUse[reg]; ok {
+				if block.End > end {
+					regUse[reg] = block.End
+				}
+			} else {
+				regUse[reg] = block.End
 			}
 		}
 	}
@@ -526,6 +562,24 @@ func buildInterferenceGraph(cfg *ControlFlowGraph, liveness map[int]*LivenessInf
 			inst := block.Instructions[i]
 			uses, defs := instructionUseDef(inst)
 
+			// Registers used/defined in the same instruction interfere,
+			// except for moves where dst/src coalescing is desirable.
+			if inst.Opcode != vm.OpMove {
+				regs := make([]int, 0, len(uses)+len(defs))
+				regs = append(regs, uses...)
+				regs = append(regs, defs...)
+				for x := 0; x < len(regs); x++ {
+					for y := x + 1; y < len(regs); y++ {
+						rx, ry := regs[x], regs[y]
+						if rx == ry {
+							continue
+						}
+						graph[rx][ry] = true
+						graph[ry][rx] = true
+					}
+				}
+			}
+
 			// Add interferences: defs interfere with all currently-live regs.
 			for _, def := range defs {
 				for reg := range live {
@@ -551,7 +605,7 @@ func buildInterferenceGraph(cfg *ControlFlowGraph, liveness map[int]*LivenessInf
 }
 
 // findCoalesceCandidates finds register pairs that can be coalesced
-func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interferenceGraph map[int]map[int]bool, unsafeRegs map[int]bool) map[int]int {
+func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interferenceGraph map[int]map[int]bool, unsafeRegs map[int]bool, defCounts map[int]int) map[int]int {
 	coalesceMap := make(map[int]int)
 	coalesced := make(map[int]bool) // Track which registers have been coalesced
 
@@ -566,9 +620,19 @@ func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interfer
 				}
 
 				dstReg, srcReg := dst.Register(), src.Register()
+				if dstReg == srcReg {
+					continue
+				}
 
 				// Avoid coalescing registers that participate in range-based ops.
 				if unsafeRegs[dstReg] || unsafeRegs[srcReg] {
+					continue
+				}
+
+				// Only coalesce if dst is defined exactly once (this move).
+				// This avoids merging registers that carry different values
+				// across control-flow paths.
+				if defCounts[dstReg] != 1 {
 					continue
 				}
 
@@ -584,6 +648,139 @@ func findCoalesceCandidates(program *vm.Program, cfg *ControlFlowGraph, interfer
 	}
 
 	return coalesceMap
+}
+
+func countRegisterDefs(program *vm.Program) map[int]int {
+	defCounts := make(map[int]int)
+	for _, inst := range program.Bytecode {
+		_, defs := instructionUseDef(inst)
+		for _, reg := range defs {
+			defCounts[reg]++
+		}
+	}
+	return defCounts
+}
+
+func foldMovesIntoDefs(program *vm.Program, cfg *ControlFlowGraph, liveness map[int]*LivenessInfo, unsafeRegs map[int]bool) bool {
+	modified := false
+
+	copySet := func(src map[int]bool) map[int]bool {
+		if len(src) == 0 {
+			return map[int]bool{}
+		}
+		dst := make(map[int]bool, len(src))
+		for k := range src {
+			dst[k] = true
+		}
+		return dst
+	}
+
+	for _, block := range cfg.Blocks {
+		if len(block.Instructions) < 2 {
+			continue
+		}
+
+		info := liveness[block.ID]
+		if info == nil {
+			continue
+		}
+
+		insts := block.Instructions
+		live := copySet(info.LiveOut)
+		liveAfter := make([]map[int]bool, len(insts))
+
+		for i := len(insts) - 1; i >= 0; i-- {
+			liveAfter[i] = copySet(live)
+			uses, defs := instructionUseDef(insts[i])
+			for _, def := range defs {
+				delete(live, def)
+			}
+			for _, use := range uses {
+				live[use] = true
+			}
+		}
+
+		for i := 0; i < len(insts)-1; i++ {
+			inst := insts[i]
+			next := insts[i+1]
+
+			// Pattern A: <op tmp ...> ; MOVE dst tmp  ->  <op dst ...> ; MOVE dst dst
+			if next.Opcode == vm.OpMove {
+				dst, src := next.Operands[0], next.Operands[1]
+				if dst.IsRegister() && src.IsRegister() {
+					dstReg, srcReg := dst.Register(), src.Register()
+					if dstReg != srcReg && !unsafeRegs[dstReg] && !unsafeRegs[srcReg] {
+						if !liveAfter[i+1][srcReg] {
+							uses, defs := instructionUseDef(inst)
+							if len(defs) == 1 && defs[0] == srcReg &&
+								inst.Operands[0].IsRegister() && inst.Operands[0].Register() == srcReg {
+								usesDef := false
+								for _, use := range uses {
+									if use == srcReg {
+										usesDef = true
+										break
+									}
+								}
+								if !usesDef {
+									inst.Operands[0] = vm.NewRegister(dstReg)
+									next.Operands[1] = vm.NewRegister(dstReg)
+									insts[i] = inst
+									insts[i+1] = next
+									program.Bytecode[block.Start+i] = inst
+									program.Bytecode[block.Start+i+1] = next
+									modified = true
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Pattern B: LOADC tmp c ; OP dst ... tmp ... -> LOADC dst c ; OP dst ... dst ...
+			if inst.Opcode == vm.OpLoadConst {
+				dstLoad := inst.Operands[0]
+				if dstLoad.IsRegister() {
+					tmpReg := dstLoad.Register()
+					if !unsafeRegs[tmpReg] && !liveAfter[i+1][tmpReg] {
+						if next.Operands[0].IsRegister() {
+							dstReg := next.Operands[0].Register()
+							if dstReg != tmpReg && !unsafeRegs[dstReg] {
+								uses, defs := instructionUseDef(next)
+								if len(defs) == 1 && defs[0] == dstReg {
+									usesDst := false
+									usesTmp := false
+									for _, use := range uses {
+										if use == dstReg {
+											usesDst = true
+										}
+										if use == tmpReg {
+											usesTmp = true
+										}
+									}
+									if usesTmp && !usesDst {
+										inst.Operands[0] = vm.NewRegister(dstReg)
+										for j := 1; j < 3; j++ {
+											op := next.Operands[j]
+											if op.IsRegister() && op.Register() == tmpReg {
+												next.Operands[j] = vm.NewRegister(dstReg)
+											}
+										}
+										insts[i] = inst
+										insts[i+1] = next
+										program.Bytecode[block.Start+i] = inst
+										program.Bytecode[block.Start+i+1] = next
+										modified = true
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return modified
 }
 
 // applyCoalescing applies the coalescing map to the program

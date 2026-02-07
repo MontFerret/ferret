@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForWhileCollectAggregate(t *testing.T) {
@@ -572,5 +573,5 @@ FOR i WHILE UNTIL(LENGTH(users))
 				"uniqueSkillCount": 4,
 			},
 		}, "Should aggregate with array operations"),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

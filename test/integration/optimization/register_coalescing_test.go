@@ -111,5 +111,130 @@ FOR x IN [1,2,3,4,5]
 			map[string]any{"x": 4, "y": 8, "z": 12},
 			map[string]any{"x": 5, "y": 10, "z": 15},
 		}, "Register reuse across loop iterations"),
+		RegistersCase(`
+LET x = 1
+RETURN (x > 0) ? (x + 1) : (x - 1)
+`, 2, 2, "Simple ternary with arithmetic on both sides"),
+		RegistersCase(`
+LET a = 1
+LET b = 2
+RETURN (a == b)
+  ? ((a + b) * 2)
+  : ((a - b) / 2)
+`, 3, -0.5, "Equality + ternary nesting (diamond inside diamond)"),
+		RegistersCase(`
+LET x = 1
+LET y = 2
+RETURN (x > 0 AND y > 0) ? (x + y) : (x - y)
+`, 3, 3, "Boolean combos with short-circuit"),
+		RegistersCase(`
+LET x = 2
+RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
+  ? (x * x + 1)
+  : (x * x - 1)
+`, 5, 3, "Chained comparisons + math cascade"),
+		RegistersCase(`
+			LET departments = [
+				{ name: "IT", budget: 500000 },
+				{ name: "Marketing", budget: 300000 },
+				{ name: "Management", budget: 200000 }
+			]
+			LET users = [
+				{
+					active: true,
+					age: 31,
+					gender: "m",
+					married: true,
+					salary: 75000,
+					department: "IT"
+				},
+				{
+					active: true,
+					age: 25,
+					gender: "f",
+					married: false,
+					salary: 60000,
+					department: "Marketing"
+				},
+				{
+					active: true,
+					age: 36,
+					gender: "m",
+					married: false,
+					salary: 80000,
+					department: "IT"
+				},
+				{
+					active: false,
+					age: 69,
+					gender: "m",
+					married: true,
+					salary: 95000,
+					department: "Management"
+				},
+				{
+					active: true,
+					age: 45,
+					gender: "f",
+					married: true,
+					salary: 70000,
+					department: "Marketing"
+				}
+			]
+			FOR i WHILE UNTIL(LENGTH(departments))
+				LET d = departments[i]
+				LET deptUsers = (
+					FOR j = 0 WHILE j < LENGTH(users) STEP j = j + 1
+						LET u = users[j]
+						FILTER u.department == d.name
+						RETURN u
+				)
+				LET stats = (
+					FOR k = 0 WHILE k < LENGTH(deptUsers) STEP k = k + 1
+						LET u = deptUsers[k]
+						COLLECT AGGREGATE 
+							avgAge = AVERAGE(u.age),
+							totalSalary = SUM(u.salary),
+							kount = LENGTH(u)
+						RETURN {
+							avgAge,
+							totalSalary,
+							count: kount
+						}
+				)
+				RETURN {
+					department: d.name,
+					budget: d.budget,
+					stats: stats[0]
+				}
+		`, 13, []any{
+			map[string]any{
+				"department": "IT",
+				"budget":     500000.0,
+				"stats": map[string]any{
+					"avgAge":      33.5,
+					"totalSalary": 155000.0,
+					"count":       2.0,
+				},
+			},
+			map[string]any{
+				"department": "Marketing",
+				"budget":     300000.0,
+				"stats": map[string]any{
+					"avgAge":      35.0,
+					"totalSalary": 130000.0,
+					"count":       2.0,
+				},
+			},
+			map[string]any{
+				"department": "Management",
+				"budget":     200000.0,
+				"stats": map[string]any{
+					"avgAge":      69.0,
+					"totalSalary": 95000.0,
+					"count":       1.0,
+				},
+			},
+		}, "Should handle nested FOR loops with COLLECT AGGREGATE"),
 	})
 }

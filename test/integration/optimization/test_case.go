@@ -3,6 +3,7 @@ package optimization_test
 import (
 	j "encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -52,11 +53,13 @@ func SkipAtMostRegistersCase(expression string, num int, output any, desc ...str
 }
 
 func RegistersArrayCase(expression string, num int, output []any, desc ...string) UseCase {
-	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+	uc := NewCase(expression, num, ShouldUseEqRegisters, Execution{
 		Run:       true,
 		Expected:  output,
-		Assertion: ShouldEqualJSONValue,
+		Assertion: convey.ShouldEqualJSON,
 	}, desc...)
+	uc.RawOutput = true
+	return uc
 }
 
 func SkipRegistersArrayCase(expression string, num int, output []any, desc ...string) UseCase {
@@ -64,11 +67,13 @@ func SkipRegistersArrayCase(expression string, num int, output []any, desc ...st
 }
 
 func RegistersObjectCase(expression string, num int, output map[string]any, desc ...string) UseCase {
-	return NewCase(expression, num, ShouldUseEqRegisters, Execution{
+	uc := NewCase(expression, num, ShouldUseEqRegisters, Execution{
 		Run:       true,
 		Expected:  output,
-		Assertion: ShouldEqualJSONValue,
+		Assertion: convey.ShouldEqualJSON,
 	}, desc...)
+	uc.RawOutput = true
+	return uc
 }
 
 func SkipRegistersObjectCase(expression string, num int, output map[string]any, desc ...string) UseCase {
@@ -78,6 +83,12 @@ func SkipRegistersObjectCase(expression string, num int, output map[string]any, 
 func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 	// Register standard library functions
 	std := base.Stdlib()
+	sameAssertion := func(a, b convey.Assertion) bool {
+		if a == nil || b == nil {
+			return false
+		}
+		return reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer()
+	}
 
 	for _, useCase := range useCases {
 		name := useCase.Description
@@ -128,6 +139,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 				if useCase.Execution.Run {
 					options := []vm.EnvironmentOption{
 						vm.WithFunctions(std),
+						vm.WithFunctions(base.ForWhileHelpers()),
 					}
 
 					assertion := useCase.Execution.Assertion
@@ -136,7 +148,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase) {
 
 					convey.So(err, convey.ShouldBeNil)
 
-					if base.ArePtrsEqual(assertion, convey.ShouldEqualJSON) {
+					if base.ArePtrsEqual(assertion, convey.ShouldEqualJSON) || sameAssertion(assertion, convey.ShouldEqualJSON) {
 						expectedJ, err := j.Marshal(expected)
 						convey.So(err, convey.ShouldBeNil)
 						convey.So(out, convey.ShouldEqualJSON, string(expectedJ))

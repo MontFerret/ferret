@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForWhile(t *testing.T) {
@@ -16,5 +17,5 @@ func TestForWhile(t *testing.T) {
 				FOR x IN 1..y
 					RETURN i * x
 		`, []any{0, 1, 2, 2, 4, 6, 3, 6, 9, 12, 4, 8, 12, 16, 20}),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

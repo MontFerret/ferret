@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForTernaryStepExpression(t *testing.T) {
@@ -20,5 +21,5 @@ func TestForTernaryStepExpression(t *testing.T) {
 			LET foo = FALSE
 			RETURN foo ? TRUE : (FOR i WHILE COUNTER() < 10 RETURN i*2)`,
 			[]any{0, 2, 4, 6, 8, 10, 12, 14, 16, 18}),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

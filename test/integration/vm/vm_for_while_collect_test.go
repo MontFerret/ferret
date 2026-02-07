@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForWhileCollect(t *testing.T) {
@@ -956,5 +957,5 @@ LET users = [
 		`, []any{
 				0,
 			}, "Should return 0 when there are no items in the source"),
-	}, vm.WithFunctions(ForWhileHelpers()))
+	}, vm.WithFunctions(base.ForWhileHelpers()))
 }

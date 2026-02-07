@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 func TestForWhileLimit(t *testing.T) {
@@ -61,6 +62,6 @@ func TestForWhileLimit(t *testing.T) {
 			return runtime.NewInt(2), nil
 		})
 
-		fns.SetFrom(ForWhileHelpers())
+		fns.SetFrom(base.ForWhileHelpers())
 	}))
 }

@@ -1,8 +1,9 @@
 package optimization_test
 
 import (
-	"github.com/MontFerret/ferret/test/integration/base"
 	"github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/test/integration/base"
 )
 
 type (
