@@ -77,6 +77,8 @@ func (p *Pipeline) Run(program *vm.Program) (*PipelineResult, error) {
 				name := p.passes[i-1].Name()
 				return nil, fmt.Errorf("%w after %s: %w", ErrCFGBuildFailed, name, err)
 			}
+
+			ctx.CFG = cfg
 		}
 
 		passResult, err := pass.Run(ctx)
