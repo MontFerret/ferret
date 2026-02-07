@@ -230,6 +230,9 @@ func applyLinearRenumbering(program *vm.Program, unsafeRegs map[int]bool) bool {
 		// Rewrite operands.
 		for j := 0; j < 3; j++ {
 			op := inst.Operands[j]
+			if !operandIsRegister(inst.Opcode, j) {
+				continue
+			}
 			if !op.IsRegister() {
 				continue
 			}
@@ -499,6 +502,9 @@ func applyRenumbering(program *vm.Program, renumberMap map[int]int, unsafeRegs m
 
 			for j := 0; j < 3; j++ {
 				op := inst.Operands[j]
+				if !operandIsRegister(inst.Opcode, j) {
+					continue
+				}
 				if op.IsRegister() {
 					reg := op.Register()
 					if !usedSet[reg] {
@@ -823,6 +829,9 @@ func applyCoalescing(program *vm.Program, coalesceMap map[int]int, unsafeRegs ma
 		// Check and replace each operand
 		for j := 0; j < 3; j++ {
 			op := inst.Operands[j]
+			if !operandIsRegister(inst.Opcode, j) {
+				continue
+			}
 			if op.IsRegister() {
 				reg := op.Register()
 				if !usedSet[reg] {
@@ -844,6 +853,37 @@ func applyCoalescing(program *vm.Program, coalesceMap map[int]int, unsafeRegs ma
 	}
 
 	return modified
+}
+
+func operandIsRegister(op vm.Opcode, idx int) bool {
+	switch op {
+	case vm.OpJump:
+		return false
+	case vm.OpJumpIfFalse, vm.OpJumpIfTrue:
+		return idx == 1
+	case vm.OpIterNext:
+		return idx == 1
+	case vm.OpIterSkip, vm.OpIterLimit:
+		return idx == 1 || idx == 2
+	case vm.OpLoadNone, vm.OpLoadZero, vm.OpLoadBool, vm.OpLoadConst, vm.OpLoadParam:
+		return idx == 0
+	case vm.OpLoadArray, vm.OpLoadObject:
+		return idx == 0
+	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpDataSetMultiSorter:
+		return idx == 0
+	case vm.OpCall0, vm.OpProtectedCall0:
+		return idx == 0
+	case vm.OpCall1, vm.OpProtectedCall1:
+		return idx == 0 || idx == 1
+	case vm.OpCall2, vm.OpProtectedCall2:
+		return idx == 0 || idx == 1 || idx == 2
+	case vm.OpCall3, vm.OpProtectedCall3, vm.OpCall4, vm.OpProtectedCall4:
+		return idx == 0 || idx == 1
+	case vm.OpIncr, vm.OpDecr, vm.OpClose, vm.OpSleep, vm.OpReturn:
+		return idx == 0
+	default:
+		return true
+	}
 }
 
 func collectRangeSensitiveRegs(program *vm.Program) map[int]bool {

@@ -260,5 +260,11 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 			map[string]any{"gender": "f", "count": 2, "sum": 20, "avg": 20},
 			map[string]any{"gender": "m", "count": 2, "sum": 40, "avg": 40},
 		}, "Should skip nulls in COUNT, SUM, AVG"),
+		RegistersArrayCase(
+			`FOR i IN [ 1, 2, 3, 4, 1, 3 ]
+							RETURN DISTINCT i
+		`,
+			3, []any{1, 2, 3, 4},
+		),
 	})
 }
