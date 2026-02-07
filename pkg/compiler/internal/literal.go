@@ -256,17 +256,19 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 
 			// Handle different types of property names
 			if prop := pac.PropertyName(); prop != nil {
-				// Regular property name (e.g., { name: value })
-				propOp = c.CompilePropertyName(prop)
+				// Regular property name (e.g., { name: value }).
+				// Evaluate value first to shorten the live range of the key register.
 				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
+				propOp = c.CompilePropertyName(prop)
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
 				propOp = c.CompileComputedPropertyName(comProp)
 				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
-				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
+				// Evaluate value first to shorten the live range of the key register.
 				valOp = c.ctx.ExprCompiler.CompileVariable(variable)
+				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
 			}
 
 			c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
