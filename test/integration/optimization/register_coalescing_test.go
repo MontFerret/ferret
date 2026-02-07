@@ -100,6 +100,9 @@ RETURN arr`, 3, []any{
 			map[string]any{"a": 1},
 			map[string]any{"a": 1},
 		}, "Alias pitfall (same object ref in array)"),
+		RegistersCase(`
+RETURN FIRST([])?.foo
+`, 2, nil, "Optional chaining with FIRST on empty array"),
 		RegistersArrayCase(`
 FOR x IN [1,2,3,4,5]
   LET row = { x:x, y:x*2, z:x*3 }
@@ -236,5 +239,6 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 				},
 			},
 		}, "Should handle nested FOR loops with COLLECT AGGREGATE"),
+		RegistersCase(`RETURN FIRST([])?.foo`, 2, nil, "Optional chaining with array access and property access"),
 	})
 }

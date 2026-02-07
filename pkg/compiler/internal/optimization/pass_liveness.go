@@ -247,26 +247,32 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 
 	// Calls.
 	case vm.OpCall, vm.OpProtectedCall:
+		addUse(dst)
 		addRangeUses(src1, src2)
 		addDef(dst)
 		return
 	case vm.OpCall0, vm.OpProtectedCall0:
+		addUse(dst)
 		addDef(dst)
 		return
 	case vm.OpCall1, vm.OpProtectedCall1:
+		addUse(dst)
 		addUse(src1)
 		addDef(dst)
 		return
 	case vm.OpCall2, vm.OpProtectedCall2:
+		addUse(dst)
 		addUse(src1)
 		addUse(src2)
 		addDef(dst)
 		return
 	case vm.OpCall3, vm.OpProtectedCall3:
+		addUse(dst)
 		addFixedRangeUses(src1, 3)
 		addDef(dst)
 		return
 	case vm.OpCall4, vm.OpProtectedCall4:
+		addUse(dst)
 		addFixedRangeUses(src1, 4)
 		addDef(dst)
 		return
