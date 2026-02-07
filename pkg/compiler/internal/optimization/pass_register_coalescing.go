@@ -53,33 +53,47 @@ func (p *RegisterCoalescingPass) Run(ctx *PassContext) (*PassResult, error) {
 	}
 
 	unsafeRegs := collectRangeSensitiveRegs(ctx.Program)
+	cfg := ctx.CFG
 
 	// Fold trivial move chains into their defining instruction to shorten live ranges.
-	folded := foldMovesIntoDefs(ctx.Program, ctx.CFG, liveness, unsafeRegs)
+	folded := foldMovesIntoDefs(ctx.Program, cfg, liveness, unsafeRegs)
 	if folded {
 		// Recompute liveness after rewriting registers to keep analyses consistent.
-		liveness = computeLiveness(ctx.CFG)
+		liveness = computeLiveness(cfg)
 	}
 
 	// Build interference graph
-	interferenceGraph := buildInterferenceGraph(ctx.CFG, liveness, ctx.Program.Registers)
+	interferenceGraph := buildInterferenceGraph(cfg, liveness, ctx.Program.Registers)
 
 	// Count register definitions to keep move coalescing safe.
 	defCounts := countRegisterDefs(ctx.Program)
 
 	// First, try move-based coalescing
-	coalesceMap := findCoalesceCandidates(ctx.Program, ctx.CFG, interferenceGraph, unsafeRegs, defCounts)
+	coalesceMap := findCoalesceCandidates(ctx.Program, cfg, interferenceGraph, unsafeRegs, defCounts)
 
 	// Apply move-based coalescing first
 	moveCoalesced := applyCoalescing(ctx.Program, coalesceMap, unsafeRegs)
 
+	if moveCoalesced {
+		// Rebuild CFG and analyses after changing register assignments.
+		builder := NewBuilder(ctx.Program)
+		newCFG, err := builder.Build()
+		if err != nil {
+			return nil, ErrCFGBuildFailed
+		}
+		cfg = newCFG
+		liveness = computeLiveness(cfg)
+		unsafeRegs = collectRangeSensitiveRegs(ctx.Program)
+		interferenceGraph = buildInterferenceGraph(cfg, liveness, ctx.Program.Registers)
+	}
+
 	// Then, perform register renumbering based on liveness intervals
 	var renumberMap map[int]int
 	var renumbered bool
-	if isLinearCFG(ctx.CFG) {
+	if isLinearCFG(cfg) {
 		renumbered = applyLinearRenumbering(ctx.Program, unsafeRegs)
 	} else {
-		renumberMap = computeRegisterRenumbering(ctx.CFG, liveness, ctx.Program.Registers, unsafeRegs, interferenceGraph)
+		renumberMap = computeRegisterRenumbering(cfg, liveness, ctx.Program.Registers, unsafeRegs, interferenceGraph)
 		renumbered = applyRenumbering(ctx.Program, renumberMap, unsafeRegs)
 	}
 

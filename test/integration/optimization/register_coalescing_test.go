@@ -240,5 +240,25 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 			},
 		}, "Should handle nested FOR loops with COLLECT AGGREGATE"),
 		RegistersCase(`RETURN FIRST([])?.foo`, 2, nil, "Optional chaining with array access and property access"),
+		RegistersArrayCase(`
+			LET users = [
+				{ gender: "m", age: null },
+				{ gender: "m", age: 40 },
+				{ gender: "f", age: 20 },
+				{ gender: "f", age: null }
+			]
+			FOR u IN users
+				COLLECT gender = u.gender
+				AGGREGATE 
+					count = COUNT(u.age), 
+					sum = SUM(u.age), 
+					avg = AVERAGE(u.age)
+				RETURN {
+					gender, count, sum, avg
+				}
+		`, 9, []any{
+			map[string]any{"gender": "f", "count": 2, "sum": 20, "avg": 20},
+			map[string]any{"gender": "m", "count": 2, "sum": 40, "avg": 40},
+		}, "Should skip nulls in COUNT, SUM, AVG"),
 	})
 }
