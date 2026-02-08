@@ -57,16 +57,20 @@ func Errorf(err error, format string, args ...interface{}) error {
 	return fmt.Errorf("%w: %s", err, fmt.Sprintf(format, args...))
 }
 
-func Errors(err ...error) error {
-	message := ""
+func Errors(errs ...error) error {
+	if len(errs) == 0 {
+		return nil
+	}
 
-	for _, e := range err {
+	err := errs[0]
+
+	for _, e := range errs[1:] {
 		if e != nil {
-			message += ": " + e.Error()
+			err = fmt.Errorf("%w: %w", e, err)
 		}
 	}
 
-	return errors.New(message)
+	return err
 }
 
 func Errorsf(msg string, err ...error) error {
@@ -78,6 +82,7 @@ func Errorsf(msg string, err ...error) error {
 
 	for i := 1; i < len(err); i++ {
 		e := err[i]
+
 		if e != nil {
 			res = fmt.Errorf("%w: %s", e, msg)
 		}

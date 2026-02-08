@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	shareddiag "github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -51,10 +50,11 @@ func FormatError(out io.Writer, e *CompilationError, indent int) {
 }
 
 func renderErrorSpan(out io.Writer, prefix string, src *file.Source, s ErrorSpan) {
-	renderer := shareddiag.SpanRenderer{
+	renderer := SpanRenderer{
 		Prefix:             prefix,
 		CaretChar:          '^',
 		ShowTrailingGutter: false,
 	}
+
 	renderer.Render(out, src, s.Span, s.Label)
 }

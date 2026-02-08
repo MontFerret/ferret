@@ -1,6 +1,7 @@
 package ferret
 
 import (
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/engine"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -41,3 +42,10 @@ var WithLogFields = vm.WithLogFields
 
 // Runtime helpers
 var MustParseLogLevel = runtime.MustParseLogLevel
+
+// Diagnostic
+var FormatError = diagnostics.FormatError
+var NewMultiError = diagnostics.NewMultiError
+
+type MultiError = diagnostics.MultiError
+type Formattable = diagnostics.Formattable

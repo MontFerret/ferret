@@ -8,4 +8,6 @@ var (
 	ErrInsufficientRegisters = errors.New("insufficient registers")
 	ErrUnresolvedFunction    = errors.New("unresolved function")
 	ErrInvalidFunctionName   = errors.New("invalid function name")
+	ErrDivisionByZero        = errors.New("division by zero")
+	ErrModuloByZero          = errors.New("modulo by zero")
 )

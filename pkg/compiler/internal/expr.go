@@ -6,6 +6,8 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -333,12 +335,18 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 		opcode = vm.Opcode(pos)
 	}
 
-	c.ctx.Emitter.EmitABC(opcode, dest, left, right)
-
-	if isNegated {
-		// If the operator is negated, we need to invert the result
-		c.ctx.Emitter.EmitAB(vm.OpNot, dest, dest)
+	span := file.Span{Start: -1, End: -1}
+	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+		span = diagnostics.SpanFromRuleContext(prc)
 	}
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABC(opcode, dest, left, right)
+
+		if isNegated {
+			// If the operator is negated, we need to invert the result
+			c.ctx.Emitter.EmitAB(vm.OpNot, dest, dest)
+		}
+	})
 
 	return dest
 }
@@ -399,12 +407,18 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		regRight := c.compileAtom(ctx.ExpressionAtom(1))
 		dst := c.ctx.Registers.Allocate()
 
-		c.ctx.Emitter.EmitABC(opcode, dst, regLeft, regRight)
-
-		if isNegated {
-			// If the operator is negated, we need to invert the result
-			c.ctx.Emitter.EmitAB(vm.OpNot, dst, dst)
+		span := file.Span{Start: -1, End: -1}
+		if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+			span = diagnostics.SpanFromRuleContext(prc)
 		}
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitABC(opcode, dst, regLeft, regRight)
+
+			if isNegated {
+				// If the operator is negated, we need to invert the result
+				c.ctx.Emitter.EmitAB(vm.OpNot, dst, dst)
+			}
+		})
 
 		if isRegexp {
 			if regRight.IsConstant() {
@@ -489,12 +503,15 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 
 		dst = c.ctx.Registers.Allocate()
 
-		// TODO: Replace with EmitLoadKey
-		if p.ErrorOperator() != nil {
-			c.ctx.Emitter.EmitLoadPropertyOptional(dst, src1, src2)
-		} else {
-			c.ctx.Emitter.EmitLoadProperty(dst, src1, src2)
-		}
+		span := diagnostics.SpanFromRuleContext(p)
+		c.ctx.Emitter.WithSpan(span, func() {
+			// TODO: Replace with EmitLoadKey
+			if p.ErrorOperator() != nil {
+				c.ctx.Emitter.EmitLoadPropertyOptional(dst, src1, src2)
+			} else {
+				c.ctx.Emitter.EmitLoadProperty(dst, src1, src2)
+			}
+		})
 
 		src1 = dst
 	}
@@ -591,8 +608,17 @@ func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protect
 //   - An operand representing the function call result
 func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) vm.Operand {
 	name := getFunctionName(ctx)
+	span := file.Span{Start: -1, End: -1}
+	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+		span = diagnostics.SpanFromRuleContext(prc)
+	}
 
-	return c.CompileFunctionCallByNameWith(name, protected, seq)
+	var out vm.Operand
+	c.ctx.Emitter.WithSpan(span, func() {
+		out = c.CompileFunctionCallByNameWith(name, protected, seq)
+	})
+
+	return out
 }
 
 // CompileFunctionCallByNameWith processes a function call by name with pre-compiled arguments.
@@ -743,7 +769,13 @@ func (c *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.Op
 	start := c.compileRangeOperand(ctx.GetLeft())
 	end := c.compileRangeOperand(ctx.GetRight())
 
-	c.ctx.Emitter.EmitRange(dst, start, end)
+	span := file.Span{Start: -1, End: -1}
+	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+		span = diagnostics.SpanFromRuleContext(prc)
+	}
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitRange(dst, start, end)
+	})
 
 	return dst
 }

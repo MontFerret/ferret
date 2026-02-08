@@ -81,9 +81,11 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	}
 
 	program = &vm.Program{}
+	program.Source = src
 	program.Bytecode = l.Ctx.Emitter.Bytecode()
 	program.Constants = l.Ctx.Symbols.Constants()
 	program.CatchTable = l.Ctx.CatchTable.All()
+	program.DebugSpans = l.Ctx.Emitter.Spans()
 	program.Registers = l.Ctx.Registers.Size()
 	program.Params = l.Ctx.Symbols.Params()
 	program.Functions = l.Ctx.Symbols.Functions()

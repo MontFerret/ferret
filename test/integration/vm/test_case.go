@@ -182,8 +182,20 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				actual, err := base.Exec(prog, useCase.RawOutput, options...)
 
 				for _, assertion := range useCase.Assertions {
+					if base.ArePtrsEqual(assertion, ShouldBeRuntimeError) {
+						So(err, ShouldBeRuntimeError, expected)
+
+						return
+					}
+
 					if base.ArePtrsEqual(assertion, ShouldBeError) {
+						frmt, ok := err.(compiler.Formattable)
+
 						So(err, ShouldBeError)
+
+						if ok {
+							fmt.Println(frmt.Format())
+						}
 
 						if expected != nil {
 							So(err, ShouldBeError, expected)

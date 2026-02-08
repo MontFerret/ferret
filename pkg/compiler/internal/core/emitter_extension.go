@@ -25,7 +25,7 @@ func (e *Emitter) EmitIterValue(dst, iterator vm.Operand) {
 }
 
 func (e *Emitter) EmitIterSkip(state, count vm.Operand, label Label) {
-	e.instructions = append(e.instructions, vm.Instruction{
+	e.emitInstruction(vm.Instruction{
 		Opcode:   vm.OpIterSkip,
 		Operands: [3]vm.Operand{jumpPlaceholder, state, count},
 	})
@@ -35,7 +35,7 @@ func (e *Emitter) EmitIterSkip(state, count vm.Operand, label Label) {
 }
 
 func (e *Emitter) EmitIterLimit(state, count vm.Operand, label Label) {
-	e.instructions = append(e.instructions, vm.Instruction{
+	e.emitInstruction(vm.Instruction{
 		Opcode:   vm.OpIterLimit,
 		Operands: [3]vm.Operand{jumpPlaceholder, state, count},
 	})

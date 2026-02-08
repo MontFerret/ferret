@@ -1,0 +1,61 @@
+package vm_test
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/MontFerret/ferret/pkg/vm"
+)
+
+type ExpectedRuntimeError struct {
+	Message     string
+	Format      string
+	Contains    []string
+	NotContains []string
+}
+
+func ShouldBeRuntimeError(actual any, expected ...any) string {
+	err, ok := actual.(error)
+	if !ok || err == nil {
+		return "expected a runtime error"
+	}
+
+	var rtErr *vm.RuntimeError
+	if !errors.As(err, &rtErr) {
+		return "expected a VM runtime error"
+	}
+
+	if len(expected) == 0 || expected[0] == nil {
+		return "expected runtime error metadata"
+	}
+
+	ex, ok := expected[0].(*ExpectedRuntimeError)
+	if !ok || ex == nil {
+		return "expected runtime error metadata"
+	}
+
+	if ex.Message != "" && rtErr.Message != ex.Message {
+		return fmt.Sprintf("expected runtime error message '%s', got '%s'", ex.Message, rtErr.Message)
+	}
+
+	formatted := rtErr.Format()
+
+	if ex.Format != "" && formatted != ex.Format {
+		return fmt.Sprintf("unexpected runtime error format\nexpected:\n%s\nactual:\n%s", ex.Format, formatted)
+	}
+
+	for _, needle := range ex.Contains {
+		if !strings.Contains(formatted, needle) {
+			return fmt.Sprintf("expected formatted error to contain '%s'", needle)
+		}
+	}
+
+	for _, needle := range ex.NotContains {
+		if strings.Contains(formatted, needle) {
+			return fmt.Sprintf("expected formatted error to not contain '%s'", needle)
+		}
+	}
+
+	return ""
+}

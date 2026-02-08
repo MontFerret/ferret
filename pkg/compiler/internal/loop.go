@@ -8,6 +8,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
@@ -154,7 +155,17 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	// Emit VM instructions for loop initialization
-	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	span := file.Span{Start: -1, End: -1}
+	if srcCtx := ctx.ForExpressionSource(); srcCtx != nil {
+		if prc, ok := srcCtx.(antlr.ParserRuleContext); ok {
+			span = diagnostics.SpanFromRuleContext(prc)
+		}
+	} else if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+		span = diagnostics.SpanFromRuleContext(prc)
+	}
+	c.ctx.Emitter.WithSpan(span, func() {
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	})
 
 	// Handle distinct values if needed
 	if !loop.Allocate {
@@ -188,7 +199,17 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 		re := ctx.(*fql.ReturnExpressionContext)
 		expReg := c.ctx.ExprCompiler.Compile(re.Expression())
 
-		c.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, expReg)
+		span := file.Span{Start: -1, End: -1}
+		if exprCtx := re.Expression(); exprCtx != nil {
+			if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {
+				span = diagnostics.SpanFromRuleContext(prc)
+			}
+		} else {
+			span = diagnostics.SpanFromRuleContext(re)
+		}
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, expReg)
+		})
 	} else if ctx != nil {
 		// For pass-through loops, recursively compile the nested FOR expression
 		if fe, ok := ctx.(*fql.ForExpressionContext); ok {

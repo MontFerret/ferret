@@ -315,7 +315,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(ferret.FormatError(err))
 		os.Exit(1)
 	}
 }
@@ -405,7 +405,7 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 			logger.Debug().Errs("errors", errList).Msg("executed with errors")
 		}
 
-		return runtime.Errors(errList...)
+		return ferret.NewMultiError(errList...)
 	}
 
 	return nil
@@ -464,7 +464,14 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		frmt, ok := err.(ferret.Formattable)
+
+		if ok {
+			fmt.Println(frmt.Format())
+		} else {
+			fmt.Println(err)
+		}
+
 		os.Exit(1)
 	}
 
