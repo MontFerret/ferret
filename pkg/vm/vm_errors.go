@@ -80,7 +80,7 @@ func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value
 	if rv, ok := r.(runtime.Int); ok && rv == 0 {
 		return vm.newRuntimeError(
 			DivideByZero,
-			"division by zero",
+			"Division by zero",
 			"attempt to divide by zero",
 			"Ensure the denominator is non-zero before division",
 			"Add a conditional check before dividing",
@@ -95,7 +95,7 @@ func (vm *VM) checkModuloByZero(ctx context.Context, right runtime.Value) error 
 	if rv == 0 {
 		return vm.newRuntimeError(
 			ModuloByZero,
-			"modulo by zero",
+			"Modulo by zero",
 			"attempt to take modulo by zero",
 			"Ensure the divisor is non-zero before modulo",
 			"Add a conditional check before modulo",

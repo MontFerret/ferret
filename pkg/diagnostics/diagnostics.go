@@ -33,6 +33,33 @@ func (e *Diagnostics[E]) Add(err E) {
 	e.errors = append(e.errors, err)
 }
 
+func (e *Diagnostics[E]) Get(idx int) E {
+	if idx < 0 || idx >= len(e.errors) {
+		var zero E
+		return zero
+	}
+
+	return e.errors[idx]
+}
+
+func (e *Diagnostics[E]) First() E {
+	if len(e.errors) == 0 {
+		var zero E
+		return zero
+	}
+
+	return e.errors[0]
+}
+
+func (e *Diagnostics[E]) Last() E {
+	if len(e.errors) == 0 {
+		var zero E
+		return zero
+	}
+
+	return e.errors[len(e.errors)-1]
+}
+
 // Errors returns a slice of all errors currently stored in the Diagnostics instance.
 func (e *Diagnostics[E]) Errors() []E {
 	return e.errors
@@ -51,7 +78,7 @@ func (e *Diagnostics[E]) Error() string {
 // If there are no errors, it returns an empty string.
 func (e *Diagnostics[E]) Format() string {
 	if len(e.errors) == 0 {
-		return ""
+		return "No errors"
 	}
 
 	var b strings.Builder

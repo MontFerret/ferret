@@ -56,22 +56,6 @@ func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 	}
 }
 
-func FormatMessage(str string) string {
-	// Capitalize first letter and ensure it ends with a period.
-	if str == "" {
-		return ""
-	}
-
-	str = strings.TrimSpace(str)
-	str = strings.ToLower(str)
-
-	if len(str) > 0 {
-		str = strings.ToUpper(str[:1]) + str[1:]
-	}
-
-	return str
-}
-
 func renderErrorSpan(out io.Writer, prefix string, src *file.Source, s ErrorSpan) {
 	renderer := SpanRenderer{
 		Prefix:             prefix,

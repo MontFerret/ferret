@@ -43,6 +43,10 @@ func (h *ErrorHandler) Unwrap() error {
 		return nil
 	}
 
+	if h.errors.Size() == 1 {
+		return h.errors.First()
+	}
+
 	return h.errors
 }
 

@@ -7,13 +7,13 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 		RuntimeErrorCase(
 			"LET numerator = 10\nRETURN numerator / 0",
 			ExpectedRuntimeError{
-				Message: "division by zero",
+				Message: "Division by zero",
 				Contains: []string{
-					"error: division by zero",
+					"DivideByZero: Division by zero",
 					":2:8",
 					"attempt to divide by zero",
-					"= help: ensure the denominator is non-zero before division",
-					"= note: add a conditional check before dividing",
+					"Hint: Ensure the denominator is non-zero before division",
+					"Note: Add a conditional check before dividing",
 				},
 				NotContains: []string{"~"},
 			},

@@ -88,7 +88,7 @@ func TestMultiCompilationError(t *testing.T) {
 
 			for _, tt := range tests {
 				Convey("Should format correctly for "+tt.name, func() {
-					e := &Diagnostics[*Diagnostic]{errors: tt.errors}
+					e := NewDiagnosticsOf[*Diagnostic](tt.errors)
 					formatted := e.Format()
 
 					if tt.name == "no errors" {

@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/pkg/file"
@@ -14,9 +15,11 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 			src := file.NewSource("test.fql", "LET x =")
 
 			err := &CompilationError{
-				Kind:    SyntaxError,
-				Message: "mismatched input '<EOF>' expecting {IntegerLiteral, FloatLiteral, StringLiteral}",
-				Source:  src,
+				Diagnostic: &diagnostics.Diagnostic{
+					Kind:    SyntaxError,
+					Message: "mismatched input '<EOF>' expecting {IntegerLiteral, FloatLiteral, StringLiteral}",
+					Source:  src,
+				},
 			}
 
 			// Create a mock TokenNode
@@ -62,9 +65,11 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 			for _, tc := range testCases {
 				Convey("Should return boolean for "+tc.name, func() {
 					err := &CompilationError{
-						Kind:    SyntaxError,
-						Message: tc.message,
-						Source:  src,
+						Diagnostic: &diagnostics.Diagnostic{
+							Kind:    SyntaxError,
+							Message: tc.message,
+							Source:  src,
+						},
 					}
 
 					offending := &TokenNode{}
@@ -80,9 +85,11 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 			src := file.NewSource("test.fql", "LET x = 1")
 
 			err := &CompilationError{
-				Kind:    SyntaxError,
-				Message: "some unrecognized error message that won't match any patterns",
-				Source:  src,
+				Diagnostic: &diagnostics.Diagnostic{
+					Kind:    SyntaxError,
+					Message: "some unrecognized error message that won't match any patterns",
+					Source:  src,
+				},
 			}
 
 			offending := &TokenNode{}

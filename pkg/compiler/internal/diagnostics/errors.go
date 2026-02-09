@@ -45,5 +45,5 @@ func NewUnexpectedErrorWith(src *file.Source, message string, cause error) *Comp
 }
 
 func NewEmptyQueryError(src *file.Source) *CompilationError {
-	return NewError(src, SemanticError, "Empty query")
+	return NewError(src, SyntaxError, "Query is empty")
 }

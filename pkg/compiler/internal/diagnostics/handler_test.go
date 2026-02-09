@@ -1,6 +1,7 @@
 package diagnostics
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/MontFerret/ferret/pkg/diagnostics"
@@ -37,7 +38,7 @@ func TestErrorHandler_BasicOperations(t *testing.T) {
 		t.Error("New handler should not have errors")
 	}
 
-	if len(handler1.Errors()) != 0 {
+	if handler1.Errors().Size() != 0 {
 		t.Error("New handler should have empty errors slice")
 	}
 
@@ -79,18 +80,19 @@ func TestErrorHandler_AddSingleError(t *testing.T) {
 		t.Error("Handler should have errors after adding one")
 	}
 
-	errors := handler.Errors()
-	if len(errors) != 1 {
-		t.Errorf("Handler should have 1 error, got %d", len(errors))
+	errs := handler.Errors()
+	if errs.Size() != 1 {
+		t.Errorf("Handler should have 1 error, got %d", errs.Size())
 	}
 
-	if errors[0] != err {
+	if !errors.Is(err, errs.Get(0)) {
 		t.Error("Added error should be the same as retrieved error")
 	}
 
 	// Test Unwrap with single error
 	unwrapped := handler.Unwrap()
-	if unwrapped != err {
+
+	if !errors.Is(unwrapped, err) {
 		t.Error("Unwrap() should return the single error directly")
 	}
 }
@@ -116,8 +118,8 @@ func TestErrorHandler_AddMultipleErrors(t *testing.T) {
 	handler.Add(err1)
 	handler.Add(err2)
 
-	if len(handler.Errors()) != 2 {
-		t.Errorf("Handler should have 2 errors, got %d", len(handler.Errors()))
+	if handler.Errors().Size() != 2 {
+		t.Errorf("Handler should have 2 errors, got %d", handler.Errors().Size())
 	}
 
 	// Test Unwrap with multiple errors
@@ -186,13 +188,13 @@ func TestErrorHandler_ExceedThreshold(t *testing.T) {
 	handler.Add(err2)
 
 	// At exactly threshold, should trigger "too many errors" message
-	errors := handler.Errors()
-	if len(errors) != 3 { // 2 actual errors + 1 "too many" message
-		t.Errorf("Handler should have 3 errors (2 + 'too many' message), got %d", len(errors))
+	errs := handler.Errors()
+	if errs.Size() != 3 { // 2 actual errors + 1 "too many" message
+		t.Errorf("Handler should have 3 errors (2 + 'too many' message), got %d", errs.Size())
 	}
 
 	// Last error should be "Too many errors"
-	lastErr := errors[len(errors)-1]
+	lastErr := errs.Last()
 	if lastErr.Message != "Too many errors" {
 		t.Errorf("Last error should be 'Too many errors', got %q", lastErr.Message)
 	}
@@ -206,7 +208,7 @@ func TestErrorHandler_ExceedThreshold(t *testing.T) {
 	}
 	handler.Add(err3)
 
-	if len(handler.Errors()) != 3 {
-		t.Errorf("Handler should still have 3 errors, got %d", len(handler.Errors()))
+	if handler.Errors().Size() != 3 {
+		t.Errorf("Handler should still have 3 errors, got %d", handler.Errors().Size())
 	}
 }
