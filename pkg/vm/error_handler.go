@@ -76,6 +76,17 @@ func toRuntimeError(program *Program, pc int, err error) *RuntimeError {
 		message = "invalid function name"
 		label = "invalid function name"
 		hint = "Ensure the function name is valid and does not contain illegal characters"
+	default:
+		kind = UncaughtError
+		wrapped := errors.Unwrap(err)
+
+		if wrapped != nil {
+			message = diagnostics.FormatMessage(wrapped.Error())
+		} else {
+			message = "Error"
+		}
+
+		cause = err
 	}
 
 	return &RuntimeError{

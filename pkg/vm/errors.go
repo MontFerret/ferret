@@ -84,6 +84,7 @@ const (
 	ModuloByZero     diagnostics.Kind = "ModuloByZero"
 	AssertionFailed  diagnostics.Kind = "AssertionFailed"
 	UnresolvedSymbol diagnostics.Kind = "UnresolvedSymbol"
+	UncaughtError    diagnostics.Kind = "UncaughtError"
 )
 
 var (

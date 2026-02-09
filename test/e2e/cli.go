@@ -286,7 +286,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	engine := ferret.New()
+	engine, err := ferret.New()
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	//_ = engine.Drivers().Register(http.NewDriver())
 	//_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
 

@@ -11,7 +11,6 @@ type Engine = engine.Engine
 type Option = engine.Option
 
 type Plan = engine.Plan
-type PlanOption = engine.PlanOption
 
 type Session = engine.Session
 type SessionOption = engine.SessionOption

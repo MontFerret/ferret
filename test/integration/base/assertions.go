@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/smarty/assertions"
+
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
 

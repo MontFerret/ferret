@@ -3,19 +3,19 @@ package engine
 import "github.com/MontFerret/ferret/pkg/vm"
 
 type Plan struct {
-	prog    *vm.Program
-	options *planOptions
+	prog *vm.Program
+	env  *vm.Environment
 }
 
-func newPlan(prog *vm.Program, setters []PlanOption) *Plan {
+func newPlan(prog *vm.Program, env *vm.Environment) *Plan {
 	return &Plan{
-		prog:    prog,
-		options: newPlanOptions(setters),
+		prog: prog,
+		env:  env,
 	}
 }
 
 func (p *Plan) NewSession(setters ...SessionOption) *Session {
 	env := vm.NewEnvironment(setters)
 
-	return newSession(vm.New(p.prog), vm.MergeEnvironments(p.options.env, env))
+	return newSession(vm.New(p.prog), vm.MergeEnvironments(p.env, env))
 }

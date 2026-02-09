@@ -10,7 +10,7 @@ import (
 type (
 	LogLevel int8
 
-	LogOptions struct {
+	LogSettings struct {
 		Writer io.Writer
 		Level  LogLevel
 		Fields map[string]interface{}
@@ -54,7 +54,7 @@ func (l LogLevel) String() string {
 	return zerolog.Level(l).String()
 }
 
-func LoggerWithContext(ctx context.Context, opts LogOptions) context.Context {
+func LoggerWithContext(ctx context.Context, opts LogSettings) context.Context {
 	c := zerolog.New(opts.Writer).With().Timestamp()
 
 	for k, v := range opts.Fields {
