@@ -1,6 +1,24 @@
 package vm
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/MontFerret/ferret/pkg/diagnostics"
+)
+
+// RuntimeError represents a VM execution error with source context.
+type RuntimeError struct {
+	*diagnostics.Diagnostic
+}
+
+const (
+	ArityError       diagnostics.Kind = "ArityError"
+	NullDereferenced diagnostics.Kind = "NullDereference"
+	DivideByZero     diagnostics.Kind = "DivideByZero"
+	ModuloByZero     diagnostics.Kind = "ModuloByZero"
+	AssertionFailed  diagnostics.Kind = "AssertionFailed"
+	UnresolvedSymbol diagnostics.Kind = "UnresolvedSymbol"
+)
 
 var (
 	ErrMissedParam           = errors.New("missed parameter")

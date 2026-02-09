@@ -1,17 +1,19 @@
 package diagnostics
 
-import "errors"
-
-type Formattable interface {
-	Format() string
-}
-
-func FormatError2(err error) string {
-	if formattable, ok := err.(Formattable); ok {
-		return formattable.Format()
+type (
+	Formattable interface {
+		Format() string
 	}
 
-	if errors.Unwrap(err) != nil {
+	FormattableError interface {
+		error
+		Formattable
+	}
+)
+
+func Format(err error) string {
+	if formattable, ok := err.(Formattable); ok {
+		return formattable.Format()
 	}
 
 	return err.Error()

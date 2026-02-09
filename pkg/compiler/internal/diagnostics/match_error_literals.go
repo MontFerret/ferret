@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -62,13 +63,13 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			if quote == "'" {
 				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", quote)
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, quote)),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, quote)),
 				}
 			} else {
 				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", quote)
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, quote)),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, quote)),
 				}
 			}
 
@@ -93,14 +94,14 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 			if !isKeyword(offending.PrevAt(2)) {
 				err.Message = "Unclosed computed property expression"
 				err.Hint = "Add a closing ']' to complete the computed property expression."
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "missing ']'"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing ']'"),
 				}
 			} else {
 				err.Message = "Unclosed array literal"
 				err.Hint = "Add a closing ']' to complete the array."
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "missing ']'"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing ']'"),
 				}
 			}
 
@@ -116,8 +117,8 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 				val := offending.Prev().String()
 				err.Message = "Expected expression inside computed property brackets"
 				err.Hint = fmt.Sprintf("Provide a property key or index inside '[ ]', e.g. %s[0] or %s[\"key\"].", val, val)
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "missing expression"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing expression"),
 				}
 
 				return true
@@ -125,8 +126,8 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Expected a valid list of values"
 			err.Hint = "Did you forget to provide a value?"
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -147,8 +148,8 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Unclosed object literal"
 			err.Hint = "Add a closing '}' to complete the object."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing '}'"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing '}'"),
 			}
 
 			return true
@@ -161,8 +162,8 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Expected property name before ':'"
 			err.Hint = "Object properties must have a name before the colon, e.g. { property: 123 }."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing property name"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing property name"),
 			}
 
 			return true
@@ -176,8 +177,8 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Expected value after object property name"
 			err.Hint = fmt.Sprintf("Provide a value for the property, e.g. { %s: 123 }.", property)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -211,13 +212,13 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			if token == "'" {
 				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", token)
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, token)),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, token)),
 				}
 			} else {
 				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", token)
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, token)),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, token)),
 				}
 			}
 
@@ -231,8 +232,8 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 			val := offending.Prev().String()
 			err.Message = "Expected expression inside computed property brackets"
 			err.Hint = fmt.Sprintf("Provide a property key or index inside '[ ]', e.g. %s[0] or %s[\"key\"].", val, val)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing expression"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing expression"),
 			}
 
 			return true

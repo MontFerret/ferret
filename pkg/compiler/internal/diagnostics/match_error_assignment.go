@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -25,8 +26,8 @@ func matchMissingAssignmentValue(src *file.Source, err *CompilationError, offend
 
 		err.Message = fmt.Sprintf("Expected expression after '=' for variable '%s'", prevText)
 		err.Hint = "Did you forget to provide a value?"
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing value"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing value"),
 		}
 
 		return true
@@ -38,8 +39,8 @@ func matchMissingAssignmentValue(src *file.Source, err *CompilationError, offend
 		span.End = span.Start + 1
 		err.Message = "Expected variable name"
 		err.Hint = "Did you forget to provide a variable name?"
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing name"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing name"),
 		}
 
 		return true

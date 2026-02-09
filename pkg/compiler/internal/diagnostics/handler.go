@@ -5,6 +5,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
+
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -45,7 +47,7 @@ func (h *ErrorHandler) Unwrap() error {
 		return h.errors[0]
 	}
 
-	return NewMultiCompilationError(h.errors)
+	return NewCompilationErrorSet(h.errors)
 }
 
 func (h *ErrorHandler) Add(err *CompilationError) {
@@ -73,19 +75,23 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 
 	if len(h.errors) == h.threshold {
 		h.errors = append(h.errors, &CompilationError{
-			Message: "Too many errors",
-			Kind:    SemanticError,
-			Hint:    "Too many errors encountered during compilation.",
+			Diagnostic: &diagnostics.Diagnostic{
+				Message: "Too many errors",
+				Kind:    SemanticError,
+				Hint:    "Too many errors encountered during compilation.",
+			},
 		})
 	}
 }
 
-func (h *ErrorHandler) Create(kind ErrorKind, ctx antlr.ParserRuleContext, msg string) *CompilationError {
+func (h *ErrorHandler) Create(kind diagnostics.Kind, ctx antlr.ParserRuleContext, msg string) *CompilationError {
 	return &CompilationError{
-		Kind:    kind,
-		Source:  h.src,
-		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
-		Message: msg,
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    kind,
+			Source:  h.src,
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
+			Message: msg,
+		},
 	}
 }
 
@@ -96,59 +102,62 @@ func (h *ErrorHandler) HasErrorOnLine(line int) bool {
 func (h *ErrorHandler) VariableNotUnique(ctx antlr.ParserRuleContext, name string) {
 	// TODO: Add information where the variable was defined
 	h.Add(&CompilationError{
-		Message: fmt.Sprintf("Variable '%s' is already defined", name),
-		Source:  h.src,
-		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
-		Kind:    NameError,
+		Diagnostic: &diagnostics.Diagnostic{
+			Message: fmt.Sprintf("Variable '%s' is already defined", name),
+			Source:  h.src,
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanFromRuleContext(ctx), "")},
+			Kind:    NameError,
+		},
 	})
 }
 
 func (h *ErrorHandler) VariableNotFound(token antlr.Token, name string) {
 	h.Add(&CompilationError{
-		Message: fmt.Sprintf("Variable '%s' is not defined", name),
-		Source:  h.src,
-		Spans:   []ErrorSpan{NewMainErrorSpan(SpanFromToken(token), "undefined variable")},
-		Kind:    NameError,
-		Hint:    "Did you forget to declare it?",
+		Diagnostic: &diagnostics.Diagnostic{
+			Message: fmt.Sprintf("Variable '%s' is not defined", name),
+			Source:  h.src,
+			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(SpanFromToken(token), "undefined variable")},
+			Kind:    NameError,
+			Hint:    "Did you forget to declare it?",
+		},
 	})
 }
 
 func (h *ErrorHandler) MissingReturnValue(ctx antlr.ParserRuleContext) {
-	//span := spanFromTokenSafe(offending.Token(), src)
-	//err.Message = fmt.Sprintf("Expected expression after '%s'", offending)
-	//err.Hint = "Did you forget to provide a value to return?"
-	//err.Spans = []ErrorSpan{
-	//	NewMainErrorSpan(span, "missing return value"),
-	//}
-
 	h.Add(&CompilationError{
-		Message: fmt.Sprintf("Expected expression after '%s'", ctx.GetText()),
-		Hint:    "Did you forget to provide a value to return?",
-		Source:  h.src,
-		Spans: []ErrorSpan{
-			NewMainErrorSpan(SpanFromRuleContext(ctx), "missing return value")},
-		Kind: SyntaxError,
+		Diagnostic: &diagnostics.Diagnostic{
+			Message: fmt.Sprintf("Expected expression after '%s'", ctx.GetText()),
+			Hint:    "Did you forget to provide a value to return?",
+			Source:  h.src,
+			Spans: []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(SpanFromRuleContext(ctx), "missing return value")},
+			Kind: SyntaxError,
+		},
 	})
 }
 
 func (h *ErrorHandler) InvalidRegexExpression(ctx antlr.ParserRuleContext, expression string) {
 	h.Add(&CompilationError{
-		Message: fmt.Sprintf("Invalid regular expression: %s", expression),
-		Hint:    "Check the syntax of the regular expression.",
-		Source:  h.src,
-		Spans: []ErrorSpan{
-			NewMainErrorSpan(SpanFromRuleContext(ctx), "invalid regex")},
-		Kind: SyntaxError,
+		Diagnostic: &diagnostics.Diagnostic{
+			Message: fmt.Sprintf("Invalid regular expression: %s", expression),
+			Hint:    "Check the syntax of the regular expression.",
+			Source:  h.src,
+			Spans: []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(SpanFromRuleContext(ctx), "invalid regex")},
+			Kind: SyntaxError,
+		},
 	})
 }
 
 func (h *ErrorHandler) InvalidToken(token antlr.Token) {
 	h.Add(&CompilationError{
-		Message: fmt.Sprintf("Invalid token: %s", token),
-		Hint:    "Check the syntax of the literal.",
-		Source:  h.src,
-		Spans: []ErrorSpan{
-			NewMainErrorSpan(SpanFromToken(token), "invalid token")},
-		Kind: SyntaxError,
+		Diagnostic: &diagnostics.Diagnostic{
+			Message: fmt.Sprintf("Invalid token: %s", token),
+			Hint:    "Check the syntax of the literal.",
+			Source:  h.src,
+			Spans: []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(SpanFromToken(token), "invalid token")},
+			Kind: SyntaxError,
+		},
 	})
 }

@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"strings"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -15,8 +16,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 		span.End = span.Start + 1
 		err.Message = "Expected expression after 'IN'"
 		err.Hint = "Each FOR loop must iterate over a collection or range."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing value"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing value"),
 		}
 
 		return true
@@ -28,8 +29,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 		span.End = span.Start + 1
 		err.Message = "Expected 'IN' after loop variable"
 		err.Hint = "Use 'FOR x IN [iterable]' syntax."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing keyword"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing keyword"),
 		}
 
 		return true
@@ -41,8 +42,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 		span.End = span.Start + 1
 		err.Message = "Expected loop variable before 'IN'"
 		err.Hint = "FOR must declare a variable."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing variable"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing variable"),
 		}
 
 		return true
@@ -58,8 +59,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Expected variable before '=' in COLLECT"
 			err.Hint = "COLLECT must group by a variable."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing variable"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing variable"),
 			}
 
 			return true
@@ -70,8 +71,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Incomplete COLLECT clause"
 			err.Hint = "COLLECT must specify a grouping key, an AGGREGATE clause, or WITH COUNT."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing grouping or aggregation"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing grouping or aggregation"),
 			}
 
 			return true
@@ -85,8 +86,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 		err.Message = "Expected variable name after INTO"
 		err.Hint = "Provide a variable name to store grouped values, e.g. INTO groups."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing variable name"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing variable name"),
 		}
 
 		return true
@@ -100,8 +101,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Expected variable assignment after AGGREGATE"
 			err.Hint = "Provide at least one variable assignment, e.g. AGGREGATE total = COUNT(x)."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing variable assignment"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing variable assignment"),
 			}
 
 			return true
@@ -115,8 +116,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 		err.Message = "Incomplete FILTER clause"
 		err.Hint = "FILTER requires a boolean expression."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing expression"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing expression"),
 		}
 
 		return true
@@ -129,8 +130,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 		err.Message = "Expected number after 'LIMIT'"
 		err.Hint = "LIMIT requires a numeric value."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing expression"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing expression"),
 		}
 
 		return true
@@ -158,8 +159,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			err.Message = "Too many arguments provided to LIMIT clause"
 			err.Hint = "LIMIT accepts at most two arguments: offset and count."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "unexpected third argument"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "unexpected third argument"),
 			}
 
 			return true
@@ -182,8 +183,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 				err.Message = "Dangling comma in LIMIT clause"
 				err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "missing value"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing value"),
 				}
 
 				return true
@@ -202,8 +203,8 @@ func matchForLoopErrors(src *file.Source, err *CompilationError, offending *Toke
 
 				err.Message = "Dangling comma in LIMIT clause"
 				err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "missing value"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing value"),
 				}
 
 				return true

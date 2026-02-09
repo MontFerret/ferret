@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/runtime"
 
@@ -321,7 +322,7 @@ func main() {
 }
 
 func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, files []string) error {
-	errList := make([]error, 0, len(files))
+	errList := make([]diagnostics.FormattableError, 0, len(files))
 
 	for _, path := range files {
 		log := logger.With().Str("path", path).Logger()
@@ -332,7 +333,13 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to get path info")
 
-			errList = append(errList, err)
+			errList = append(errList, &diagnostics.Diagnostic{
+				Kind:    diagnostics.UnexpectedError,
+				Message: "failed to get path info",
+				Source:  file.NewSource("stdin", path),
+				Cause:   err,
+			})
+
 			continue
 		}
 
@@ -344,7 +351,13 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 			if err != nil {
 				log.Debug().Err(err).Msg("failed to retrieve list of files")
 
-				errList = append(errList, err)
+				errList = append(errList, &diagnostics.Diagnostic{
+					Kind:    diagnostics.UnexpectedError,
+					Message: "failed to retrieve list of files",
+					Source:  file.NewSource("stdin", path),
+					Cause:   err,
+				})
+
 				continue
 			}
 
@@ -362,7 +375,12 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 				if err := execFiles(ctx, engine, opts, dirFiles); err != nil {
 					log.Debug().Err(err).Msg("failed to execute files")
 
-					errList = append(errList, err)
+					errList = append(errList, &diagnostics.Diagnostic{
+						Kind:    diagnostics.UnexpectedError,
+						Message: "failed to execute files",
+						Source:  file.NewSource("stdin", path),
+						Cause:   err,
+					})
 				} else {
 					log.Debug().Int("size", len(fileInfos)).Err(err).Msg("successfully executed files")
 				}
@@ -380,7 +398,13 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to read content")
 
-			errList = append(errList, err)
+			errList = append(errList, &diagnostics.Diagnostic{
+				Kind:    diagnostics.UnexpectedError,
+				Message: "failed to read content",
+				Source:  file.NewSource("stdin", path),
+				Cause:   err,
+			})
+
 			continue
 		}
 
@@ -391,7 +415,21 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to execute file")
 
-			errList = append(errList, err)
+			derr, ok := err.(diagnostics.FormattableError)
+
+			if ok {
+				errList = append(errList, derr)
+			} else {
+				errList = append(errList, &diagnostics.Diagnostic{
+					Kind:    diagnostics.UnexpectedError,
+					Message: "failed to execute file",
+					Source:  src,
+					Cause:   err,
+				})
+			}
+
+			log.Debug().Err(derr).Msg("failed to execute file with diagnostics")
+
 			continue
 		}
 
@@ -400,12 +438,12 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 
 	if len(errList) > 0 {
 		if len(errList) == len(files) {
-			logger.Debug().Errs("errors", errList).Msg("failed to execute file(s)")
+			logger.Debug().Interface("errors", errList).Msg("failed to execute file(s)")
 		} else {
-			logger.Debug().Errs("errors", errList).Msg("executed with errors")
+			logger.Debug().Interface("errors", errList).Msg("executed with errors")
 		}
 
-		return ferret.NewMultiError(errList...)
+		return diagnostics.NewDiagnostics(errList)
 	}
 
 	return nil

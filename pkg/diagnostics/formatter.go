@@ -1,6 +1,7 @@
 package diagnostics
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -9,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
-func FormatError(out io.Writer, e *CompilationError, indent int) {
+func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 	prefix := strings.Repeat("  ", indent)
 
 	fmt.Fprintf(out, "%s%s: %s\n", prefix, e.Kind, e.Message)
@@ -39,10 +40,16 @@ func FormatError(out io.Writer, e *CompilationError, indent int) {
 		fmt.Fprintf(out, "%sHint: %s\n", prefix, e.Hint)
 	}
 
+	if e.Note != "" {
+		fmt.Fprintf(out, "%sNote: %s\n", prefix, e.Note)
+	}
+
 	if e.Cause != nil {
-		if nested, ok := e.Cause.(*CompilationError); ok {
+		var nested *Diagnostic
+
+		if errors.As(e.Cause, &nested) {
 			fmt.Fprintf(out, "%sCaused by:\n", prefix)
-			FormatError(out, nested, indent+1)
+			FormatDiagnostic(out, nested, indent+1)
 		} else {
 			fmt.Fprintf(out, "%sCaused by: %s\n", prefix, e.Cause.Error())
 		}

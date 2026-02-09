@@ -44,8 +44,7 @@ var WithLogFields = vm.WithLogFields
 var MustParseLogLevel = runtime.MustParseLogLevel
 
 // Diagnostic
-var FormatError = diagnostics.FormatError
-var NewMultiError = diagnostics.NewMultiError
+var FormatError = diagnostics.Format
 
-type MultiError = diagnostics.MultiError
 type Formattable = diagnostics.Formattable
+type FormattableError = diagnostics.FormattableError

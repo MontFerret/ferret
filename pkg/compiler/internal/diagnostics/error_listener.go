@@ -3,6 +3,8 @@ package diagnostics
 import (
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
+
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -47,12 +49,14 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *Compilati
 	span := spanFromTokenSafe(offending, d.src)
 
 	err := &CompilationError{
-		Source:  d.src,
-		Kind:    SyntaxError,
-		Message: "Syntax error: " + msg,
-		Hint:    "Check your syntax. Did you forget to write something?",
-		Spans: []ErrorSpan{
-			{Span: span, Main: true},
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Source:  d.src,
+			Message: "Syntax error: " + msg,
+			Hint:    "Check your syntax. Did you forget to write something?",
+			Spans: []diagnostics.ErrorSpan{
+				{Span: span, Main: true},
+			},
 		},
 	}
 

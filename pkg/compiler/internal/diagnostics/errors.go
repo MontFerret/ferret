@@ -1,10 +1,11 @@
 package diagnostics
 
 import (
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
-var (
+const (
 	ErrNotImplemented    = "not implemented"
 	ErrInvalidToken      = "invalid token"
 	ErrConstantNotFound  = "constant not found"
@@ -12,27 +13,37 @@ var (
 	ErrUnknownOpcode     = "unknown opcode"
 )
 
-func NewEmptyQueryErr(src *file.Source) *CompilationError {
+const (
+	SyntaxError   diagnostics.Kind = "SyntaxError"
+	NameError     diagnostics.Kind = "NameError"
+	SemanticError diagnostics.Kind = "SemanticError"
+)
+
+type CompilationError struct {
+	*diagnostics.Diagnostic
+}
+
+func NewError(src *file.Source, kind diagnostics.Kind, message string) *CompilationError {
 	return &CompilationError{
-		Message: "Query is empty",
-		Source:  src,
-		Kind:    SyntaxError,
+		Diagnostic: &diagnostics.Diagnostic{
+			Message: message,
+			Source:  src,
+			Kind:    kind,
+		},
 	}
 }
 
-func NewInternalErr(src *file.Source, msg string) *CompilationError {
-	return &CompilationError{
-		Message: msg,
-		Source:  src,
-		Kind:    InternalError,
-	}
+func NewUnexpectedError(src *file.Source, message string) *CompilationError {
+	return NewError(src, diagnostics.UnexpectedError, message)
 }
 
-func NewInternalErrWith(src *file.Source, msg string, cause error) *CompilationError {
-	return &CompilationError{
-		Message: msg,
-		Source:  src,
-		Kind:    InternalError,
-		Cause:   cause,
-	}
+func NewUnexpectedErrorWith(src *file.Source, message string, cause error) *CompilationError {
+	e := NewUnexpectedError(src, message)
+	e.Cause = cause
+
+	return e
+}
+
+func NewEmptyQueryError(src *file.Source) *CompilationError {
+	return NewError(src, SemanticError, "Empty query")
 }
