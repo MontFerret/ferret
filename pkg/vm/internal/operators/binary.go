@@ -36,12 +36,3 @@ func Positive(input runtime.Value) runtime.Value {
 		return runtime.None
 	}
 }
-
-func ToNumberOrString(input runtime.Value) runtime.Value {
-	switch value := input.(type) {
-	case runtime.Int, runtime.Float, runtime.String:
-		return value
-	default:
-		return runtime.ToString(value)
-	}
-}

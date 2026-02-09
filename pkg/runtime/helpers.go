@@ -475,6 +475,65 @@ func ToIntSafe(ctx context.Context, input Value) Int {
 	return ZeroInt
 }
 
+func ToNumberOnly(ctx context.Context, input Value) Value {
+	switch value := input.(type) {
+	case Int, Float:
+		return value
+	case String:
+		if strings.Contains(value.String(), ".") {
+			if val, err := ToFloat(ctx, value); err == nil {
+				return val
+			}
+
+			return ZeroFloat
+		}
+
+		if val, err := ToInt(ctx, value); err == nil {
+			return val
+		}
+
+		return ZeroFloat
+	case Iterable:
+		iterator, err := value.Iterate(ctx)
+
+		if err != nil {
+			return ZeroInt
+		}
+
+		i := ZeroInt
+		f := ZeroFloat
+
+		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
+			val, _, err := iterator.Next(ctx)
+
+			if err != nil {
+				continue
+			}
+
+			out := ToNumberOnly(ctx, val)
+
+			switch item := out.(type) {
+			case Int:
+				i += item
+			case Float:
+				f += item
+			}
+		}
+
+		if f == 0 {
+			return i
+		}
+
+		return Float(i) + f
+	default:
+		if val, err := ToFloat(ctx, value); err == nil {
+			return val
+		}
+
+		return ZeroInt
+	}
+}
+
 func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, error) {
 	result, err := ToInt(ctx, input)
 
@@ -487,6 +546,15 @@ func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, erro
 	}
 
 	return defaultValue, nil
+}
+
+func ToNumberOrString(input Value) Value {
+	switch value := input.(type) {
+	case Int, Float, String:
+		return value
+	default:
+		return ToString(value)
+	}
 }
 
 func ToStrings(ctx context.Context, input Collection) []String {

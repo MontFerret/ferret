@@ -95,25 +95,25 @@ loop:
 				vm.pc = int(dst)
 			}
 		case OpAdd:
-			reg[dst] = operators.Add(ctx, reg[src1], reg[src2])
+			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case OpSub:
-			reg[dst] = operators.Subtract(ctx, reg[src1], reg[src2])
+			reg[dst] = runtime.Subtract(ctx, reg[src1], reg[src2])
 		case OpMulti:
-			reg[dst] = operators.Multiply(ctx, reg[src1], reg[src2])
+			reg[dst] = runtime.Multiply(ctx, reg[src1], reg[src2])
 		case OpDiv:
 			if err := vm.checkDivisionByZero(ctx, reg[src1], reg[src2]); err != nil {
 				return nil, err
 			}
-			reg[dst] = operators.Divide(ctx, reg[src1], reg[src2])
+			reg[dst] = runtime.Divide(ctx, reg[src1], reg[src2])
 		case OpMod:
 			if err := vm.checkModuloByZero(ctx, reg[src2]); err != nil {
 				return nil, err
 			}
-			reg[dst] = operators.Modulus(ctx, reg[src1], reg[src2])
+			reg[dst] = runtime.Modulus(ctx, reg[src1], reg[src2])
 		case OpIncr:
-			reg[dst] = operators.Increment(ctx, reg[dst])
+			reg[dst] = runtime.Increment(ctx, reg[dst])
 		case OpDecr:
-			reg[dst] = operators.Decrement(ctx, reg[dst])
+			reg[dst] = runtime.Decrement(ctx, reg[dst])
 		case OpCastBool:
 			reg[dst] = runtime.ToBoolean(reg[src1])
 		case OpNegate:

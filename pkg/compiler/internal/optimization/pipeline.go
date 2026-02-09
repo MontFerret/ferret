@@ -101,15 +101,9 @@ func Run(program *vm.Program, level Level) error {
 	}
 
 	p := NewPipeline()
+	p.Add(NewConstantPropagationPass())
 	p.Add(NewLivenessAnalysisPass())
 	p.Add(NewRegisterCoalescingPass())
-
-	//	//if level == "O2" {
-	//	//	pm.Add(&ConstantPropagationPass{})
-	//	//	pm.Add(&DCEPass{})
-	//	//	pm.Add(&PeepholePass{})
-	//	//	pm.Add(&RegisterCoalescingPass{})
-	//	//}
 
 	_, err := p.Run(program)
 

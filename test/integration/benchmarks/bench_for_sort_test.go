@@ -4,12 +4,18 @@ import (
 	"testing"
 )
 
-func BenchmarkForSort(b *testing.B) {
-	RunBenchmark(b, `
+const sortQuery = `
 LET strs = ["foo", "bar", "qaz", "abc"]
 
 FOR s IN strs
-	SORT s
+	SORT s + "1"
 	RETURN s
-`)
+`
+
+func BenchmarkForSort_O0(b *testing.B) {
+	RunBenchmarkO0(b, sortQuery)
+}
+
+func BenchmarkForSort_O1(b *testing.B) {
+	RunBenchmarkO1(b, sortQuery)
 }

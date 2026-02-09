@@ -7,7 +7,6 @@ import (
 
 	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm/internal/data"
 )
 
 func (vm *VM) wrapRuntimeError(err error) error {
@@ -71,12 +70,12 @@ func (vm *VM) newRuntimeError(kind diagnostics.Kind, message, label, hint, note 
 }
 
 func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
-	l := data.ToNumberOnly(ctx, left)
+	l := runtime.ToNumberOnly(ctx, left)
 	if _, ok := l.(runtime.Int); !ok {
 		return nil
 	}
 
-	r := data.ToNumberOnly(ctx, right)
+	r := runtime.ToNumberOnly(ctx, right)
 	if rv, ok := r.(runtime.Int); ok && rv == 0 {
 		return vm.newRuntimeError(
 			DivideByZero,
