@@ -14,20 +14,20 @@ LET b = a + 1
 LET c = b * 2
 LET d = c - 3
 RETURN d
-`, 2, 19),
+`, 1, 19),
 		RegistersCase(`
 LET a = 10
 LET b = a + 1
 LET c = b * 2
 LET d = c - 3
 RETURN d
-`, 2, 19),
+`, 1, 19),
 		RegistersCase(`
 		LET a = 10
 		LET b = a
 		LET c = b + 1
 		RETURN c
-		`, 2, 11),
+		`, 1, 11),
 		RegistersCase(`
 		LET a = 1
 		LET b = a
@@ -39,12 +39,12 @@ RETURN d
 		LET b = 2
 		LET c = a + b
 		RETURN c
-		`, 2, 3),
+		`, 1, 3),
 		RegistersArrayCase(`
 		LET a = 10
 		LET arr = [a, a + 1, a + 2, a + 3]
 		RETURN arr
-		`, 3, []any{10, 11, 12, 13}, "Flat array literal with expression elems"),
+		`, 2, []any{10, 11, 12, 13}, "Flat array literal with expression elems"),
 		RegistersObjectCase(`
 		LET x = 5
 		LET obj = {
@@ -54,7 +54,7 @@ RETURN d
 		 d: (x + 2) * 3
 		}
 		RETURN obj
-		`, 4, map[string]any{
+		`, 3, map[string]any{
 			"a": 5,
 			"b": 6,
 			"c": 12,
@@ -82,12 +82,12 @@ RETURN d
 LET a = [10,20,30,40]
 LET i = 1
 LET out = [a[i], a[i+1], a[i+2]]
-RETURN out`, 4, []any{20, 30, 40}, "Computed index pattern"),
+RETURN out`, 3, []any{20, 30, 40}, "Computed index pattern"),
 		RegistersObjectCase(`
 LET k="price" 
 LET v=123
 LET obj = { [k]: v, ["qty"]:2, ["total"]: v*2 }
-RETURN obj`, 4, map[string]any{
+RETURN obj`, 3, map[string]any{
 			"price": 123,
 			"qty":   2,
 			"total": 246,
@@ -117,25 +117,25 @@ FOR x IN [1,2,3,4,5]
 		RegistersCase(`
 LET x = 1
 RETURN (x > 0) ? (x + 1) : (x - 1)
-`, 2, 2, "Simple ternary with arithmetic on both sides"),
+`, 1, 2, "Simple ternary with arithmetic on both sides"),
 		RegistersCase(`
 LET a = 1
 LET b = 2
 RETURN (a == b)
   ? ((a + b) * 2)
   : ((a - b) / 2)
-`, 3, -0.5, "Equality + ternary nesting (diamond inside diamond)"),
+`, 1, -0.5, "Equality + ternary nesting (diamond inside diamond)"),
 		RegistersCase(`
 LET x = 1
 LET y = 2
 RETURN (x > 0 AND y > 0) ? (x + y) : (x - y)
-`, 3, 3, "Boolean combos with short-circuit"),
+`, 1, 3, "Boolean combos with short-circuit"),
 		RegistersCase(`
 LET x = 2
 RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
   ? (x * x + 1)
   : (x * x - 1)
-`, 5, 3, "Chained comparisons + math cascade"),
+`, 1, 3, "Chained comparisons + math cascade"),
 		RegistersCase(`
 			LET departments = [
 				{ name: "IT", budget: 500000 },

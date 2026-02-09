@@ -38,7 +38,7 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 }
 
 func RunBenchmark(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	RunBenchmarkWithOptimization(b, expression, compiler.O0, opts...)
+	RunBenchmarkWithOptimization(b, expression, compiler.O1, opts...)
 }
 
 func RunBenchmarkWithOptimization(b *testing.B, expression string, level compiler.OptimizationLevel, opts ...vm.EnvironmentOption) {
