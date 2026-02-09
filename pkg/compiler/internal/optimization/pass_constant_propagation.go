@@ -3,7 +3,6 @@ package optimization
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -298,11 +297,11 @@ func foldUnary(op vm.Opcode, val runtime.Value, bg context.Context) (runtime.Val
 func foldBinary(op vm.Opcode, left, right runtime.Value, bg context.Context) (runtime.Value, bool) {
 	switch op {
 	case vm.OpAdd:
-		return add(left, right), true
+		return runtime.Add(bg, left, right), true
 	case vm.OpSub:
-		return subtract(bg, left, right), true
+		return runtime.Subtract(bg, left, right), true
 	case vm.OpMulti:
-		return multiply(bg, left, right), true
+		return runtime.Multiply(bg, left, right), true
 	case vm.OpDiv:
 		if li, ok := left.(runtime.Int); ok {
 			if ri, ok := right.(runtime.Int); ok && ri == 0 {
@@ -310,12 +309,12 @@ func foldBinary(op vm.Opcode, left, right runtime.Value, bg context.Context) (ru
 			}
 			_ = li
 		}
-		return divide(bg, left, right), true
+		return runtime.Divide(bg, left, right), true
 	case vm.OpMod:
 		if r, _ := runtime.ToInt(bg, right); r == 0 {
 			return nil, false
 		}
-		return modulus(bg, left, right), true
+		return runtime.Modulus(bg, left, right), true
 	case vm.OpCmp:
 		return compare(bg, left, right), true
 	case vm.OpEq:
@@ -412,170 +411,6 @@ func appendConst(program *vm.Program, constIndex map[string]int, val runtime.Val
 	return idx
 }
 
-func add(left, right runtime.Value) runtime.Value {
-	l := toNumberOrString(left)
-	switch lv := l.(type) {
-	case runtime.Int:
-		return addLeftInt(lv, right)
-	case runtime.Float:
-		return addLeftFloat(lv, right)
-	case runtime.String:
-		return runtime.String(lv.String() + right.String())
-	default:
-		return runtime.String(l.String() + right.String())
-	}
-}
-
-func addLeftInt(integer runtime.Int, input runtime.Value) runtime.Value {
-	right := toNumberOrString(input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return integer + rightVal
-	case runtime.Float:
-		return runtime.Float(integer) + rightVal
-	default:
-		return runtime.String(integer.String() + rightVal.String())
-	}
-}
-
-func addLeftFloat(float runtime.Float, input runtime.Value) runtime.Value {
-	right := toNumberOrString(input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return float + runtime.Float(rightVal)
-	case runtime.Float:
-		return float + rightVal
-	default:
-		return runtime.String(float.String() + rightVal.String())
-	}
-}
-
-func toNumberOrString(input runtime.Value) runtime.Value {
-	switch input.(type) {
-	case runtime.Int, runtime.Float, runtime.String:
-		return input
-	default:
-		return runtime.ToString(input)
-	}
-}
-
-func subtract(ctx context.Context, left, right runtime.Value) runtime.Value {
-	l := toNumberOnly(ctx, left)
-	switch lv := l.(type) {
-	case runtime.Int:
-		return subtractLeftInt(ctx, lv, right)
-	case runtime.Float:
-		return subtractLeftFloat(ctx, lv, right)
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func subtractLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value) runtime.Value {
-	right := toNumberOnly(ctx, input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return integer - rightVal
-	case runtime.Float:
-		return runtime.Float(integer) - rightVal
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func subtractLeftFloat(ctx context.Context, float runtime.Float, input runtime.Value) runtime.Value {
-	right := toNumberOnly(ctx, input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return float - runtime.Float(rightVal)
-	case runtime.Float:
-		return float - rightVal
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func multiply(ctx context.Context, left, right runtime.Value) runtime.Value {
-	l := toNumberOnly(ctx, left)
-	switch lv := l.(type) {
-	case runtime.Int:
-		return multiplyLeftInt(ctx, lv, right)
-	case runtime.Float:
-		return multiplyLeftFloat(ctx, lv, right)
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func multiplyLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value) runtime.Value {
-	right := toNumberOnly(ctx, input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return integer * rightVal
-	case runtime.Float:
-		return runtime.Float(integer) * rightVal
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func multiplyLeftFloat(ctx context.Context, float runtime.Float, input runtime.Value) runtime.Value {
-	right := toNumberOnly(ctx, input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return float * runtime.Float(rightVal)
-	case runtime.Float:
-		return float * rightVal
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func divide(ctx context.Context, left, right runtime.Value) runtime.Value {
-	l := toNumberOnly(ctx, left)
-	switch lv := l.(type) {
-	case runtime.Int:
-		return divideLeftInt(ctx, lv, right)
-	case runtime.Float:
-		return divideLeftFloat(ctx, lv, right)
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func divideLeftInt(ctx context.Context, integer runtime.Int, input runtime.Value) runtime.Value {
-	right := toNumberOnly(ctx, input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		if rightVal != 0 && integer%rightVal != 0 {
-			return runtime.Float(integer) / runtime.Float(rightVal)
-		}
-		return integer / rightVal
-	case runtime.Float:
-		return runtime.Float(integer) / rightVal
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func divideLeftFloat(ctx context.Context, float runtime.Float, input runtime.Value) runtime.Value {
-	right := toNumberOnly(ctx, input)
-	switch rightVal := right.(type) {
-	case runtime.Int:
-		return float / runtime.Float(rightVal)
-	case runtime.Float:
-		return float / rightVal
-	default:
-		return runtime.ZeroInt
-	}
-}
-
-func modulus(ctx context.Context, left, right runtime.Value) runtime.Value {
-	l, _ := runtime.ToInt(ctx, left)
-	r, _ := runtime.ToInt(ctx, right)
-	return l % r
-}
-
 func compare(_ context.Context, left, right runtime.Value) runtime.Int {
 	return runtime.Int(runtime.CompareValues(right, left))
 }
@@ -640,7 +475,7 @@ func positive(input runtime.Value) runtime.Value {
 }
 
 func increment(ctx context.Context, input runtime.Value) runtime.Value {
-	left := toNumberOnly(ctx, input)
+	left := runtime.ToNumberOnly(ctx, input)
 	switch value := left.(type) {
 	case runtime.Int:
 		return value + 1
@@ -652,7 +487,7 @@ func increment(ctx context.Context, input runtime.Value) runtime.Value {
 }
 
 func decrement(ctx context.Context, input runtime.Value) runtime.Value {
-	left := toNumberOnly(ctx, input)
+	left := runtime.ToNumberOnly(ctx, input)
 	switch value := left.(type) {
 	case runtime.Int:
 		return value - 1
@@ -660,28 +495,5 @@ func decrement(ctx context.Context, input runtime.Value) runtime.Value {
 		return value - 1
 	default:
 		return runtime.None
-	}
-}
-
-func toNumberOnly(ctx context.Context, input runtime.Value) runtime.Value {
-	switch value := input.(type) {
-	case runtime.Int, runtime.Float:
-		return value
-	case runtime.String:
-		if strings.Contains(value.String(), ".") {
-			if val, err := runtime.ToFloat(ctx, value); err == nil {
-				return val
-			}
-			return runtime.ZeroFloat
-		}
-		if val, err := runtime.ToInt(ctx, value); err == nil {
-			return val
-		}
-		return runtime.ZeroFloat
-	default:
-		if val, err := runtime.ToFloat(ctx, value); err == nil {
-			return val
-		}
-		return runtime.ZeroInt
 	}
 }
