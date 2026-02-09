@@ -303,11 +303,12 @@ func foldBinary(op vm.Opcode, left, right runtime.Value, bg context.Context) (ru
 	case vm.OpMulti:
 		return runtime.Multiply(bg, left, right), true
 	case vm.OpDiv:
-		if li, ok := left.(runtime.Int); ok {
-			if ri, ok := right.(runtime.Int); ok && ri == 0 {
+		lv := runtime.ToNumberOnly(bg, left)
+		if _, ok := lv.(runtime.Int); ok {
+			rv := runtime.ToNumberOnly(bg, right)
+			if ri, ok := rv.(runtime.Int); ok && ri == 0 {
 				return nil, false
 			}
-			_ = li
 		}
 		return runtime.Divide(bg, left, right), true
 	case vm.OpMod:

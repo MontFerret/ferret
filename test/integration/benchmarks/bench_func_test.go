@@ -36,7 +36,7 @@ func BenchmarkFunctionCall_O1(b *testing.B) {
 }
 
 func BenchmarkFunctionCall0_O0(b *testing.B) {
-	RunBenchmarkO0(b, funcCallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
+	RunBenchmarkO0(b, func0CallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
 		Set0("TEST", func(ctx context.Context) (runtime.Value, error) {
 			return runtime.String("test0"), nil
 		}).
@@ -44,7 +44,7 @@ func BenchmarkFunctionCall0_O0(b *testing.B) {
 }
 
 func BenchmarkFunctionCall0_O1(b *testing.B) {
-	RunBenchmarkO1(b, funcCallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
+	RunBenchmarkO1(b, func0CallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
 		Set0("TEST", func(ctx context.Context) (runtime.Value, error) {
 			return runtime.String("test0"), nil
 		}).
@@ -52,7 +52,7 @@ func BenchmarkFunctionCall0_O1(b *testing.B) {
 }
 
 func BenchmarkFunctionCall0Fallback_O0(b *testing.B) {
-	RunBenchmarkO0(b, funcCallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
+	RunBenchmarkO0(b, func0CallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
 		Set("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		}).
@@ -60,7 +60,7 @@ func BenchmarkFunctionCall0Fallback_O0(b *testing.B) {
 }
 
 func BenchmarkFunctionCall0Fallback_O1(b *testing.B) {
-	RunBenchmarkO1(b, funcCallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
+	RunBenchmarkO1(b, func0CallQuery, vm.WithFunctions(runtime.NewFunctionsBuilder().
 		Set("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.String("test"), nil
 		}).

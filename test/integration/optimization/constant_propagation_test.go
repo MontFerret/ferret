@@ -84,3 +84,12 @@ func TestConstantPropagation_DivideByZeroNotFolded(t *testing.T) {
 		t.Fatalf("expected divide by zero error, got nil")
 	}
 }
+
+func TestConstantPropagation_DivideByZeroStringNotFolded(t *testing.T) {
+	prog := compileOptimized(t, `RETURN 1 / "0"`)
+	assertHasOpcode(t, prog, vm.OpDiv)
+	_, err := base.Exec(prog, false, vm.WithFunctions(base.Stdlib()))
+	if err == nil {
+		t.Fatalf("expected divide by zero error, got nil")
+	}
+}
