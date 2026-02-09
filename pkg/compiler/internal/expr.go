@@ -609,8 +609,15 @@ func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protect
 func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) vm.Operand {
 	name := getFunctionName(ctx)
 	span := file.Span{Start: -1, End: -1}
-	if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-		span = diagnostics.SpanFromRuleContext(prc)
+	if ctx != nil {
+		if fn := ctx.FunctionName(); fn != nil {
+			span = diagnostics.SpanFromRuleContext(fn)
+			if ns := ctx.Namespace(); ns != nil && ns.GetStart() != nil {
+				span.Start = ns.GetStart().GetStart()
+			}
+		} else if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+			span = diagnostics.SpanFromRuleContext(prc)
+		}
 	}
 
 	var out vm.Operand

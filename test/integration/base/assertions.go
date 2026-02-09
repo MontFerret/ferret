@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/smarty/assertions"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -14,7 +15,7 @@ import (
 type (
 	ExpectedError struct {
 		Message string
-		Kind    compiler.ErrorKind
+		Kind    diagnostics.Kind
 		Hint    string
 		Format  string
 	}
@@ -84,17 +85,17 @@ func assertExpectedError(actual *compiler.CompilationError, expected *ExpectedEr
 	return ""
 }
 
-func assertExpectedErrors(actual *compiler.MultiCompilationError, expected *ExpectedMultiError) string {
+func assertExpectedErrors(actual *compiler.CompilationErrorSet, expected *ExpectedMultiError) string {
 	if actual == nil {
 		return "expected a multi compilation error"
 	}
 
-	if expected.Number > 0 && len(actual.Errors) != expected.Number {
-		return fmt.Sprintf("expected %d errors, got %d", expected.Number, len(actual.Errors))
+	if expected.Number > 0 && actual.Size() != expected.Number {
+		return fmt.Sprintf("expected %d errors, got %d", expected.Number, actual.Size())
 	}
 
 	if len(expected.Errors) > 0 {
-		for i, err := range actual.Errors {
+		for i, err := range actual.Errors() {
 			if i >= len(expected.Errors) {
 				break
 			}
@@ -118,13 +119,13 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 		err, ok := actual.(*compiler.CompilationError)
 
 		if !ok {
-			err2, ok := actual.(*compiler.MultiCompilationError)
+			err2, ok := actual.(*compiler.CompilationErrorSet)
 
 			if !ok {
 				return "expected a compilation error"
 			}
 
-			err = err2.Errors[0]
+			err = err2.Errors()[0]
 		}
 
 		msg = assertExpectedError(err, ex)
@@ -135,7 +136,7 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 
 		break
 	case *ExpectedMultiError:
-		err, ok := actual.(*compiler.MultiCompilationError)
+		err, ok := actual.(*compiler.CompilationErrorSet)
 
 		if !ok {
 			return "expected a multi compilation error"

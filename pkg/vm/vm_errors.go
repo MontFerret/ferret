@@ -27,7 +27,9 @@ func (vm *VM) wrapRuntimeError(err error) error {
 		errs := NewRuntimeErrorSet(5)
 
 		for _, wer := range wpErrorSet.Errors {
-			errs.Add(toRuntimeError(vm.program, wer.PC, wer.Err))
+			// warmup PCs are zero-based instruction indices (no pre-increment),
+			// while toRuntimeError expects a post-increment pc (see pc-1 usage)
+			errs.Add(toRuntimeError(vm.program, wer.PC+1, wer.Err))
 		}
 
 		return errs
@@ -55,7 +57,7 @@ func (vm *VM) runtimeErrorFromPanic(r any) error {
 	}
 }
 
-func (vm *VM) newRuntimeError(kind diagnostics.Kind, message, label, hint, note string, cause error) *RuntimeError {
+func (vm *VM) newRuntimeError(kind diagnostics.Kind, message, label, hint, note string) *RuntimeError {
 	return &RuntimeError{
 		Diagnostic: &diagnostics.Diagnostic{
 			Kind:    kind,
@@ -64,7 +66,6 @@ func (vm *VM) newRuntimeError(kind diagnostics.Kind, message, label, hint, note 
 			Note:    note,
 			Source:  vm.program.Source,
 			Spans:   []diagnostics.ErrorSpan{diagnostics.NewMainErrorSpan(spanAt(vm.program, vm.pc-1), label)},
-			Cause:   cause,
 		},
 	}
 }
@@ -83,7 +84,6 @@ func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value
 			"attempt to divide by zero",
 			"Ensure the denominator is non-zero before division",
 			"Add a conditional check before dividing",
-			ErrDivisionByZero,
 		)
 	}
 
@@ -99,7 +99,6 @@ func (vm *VM) checkModuloByZero(ctx context.Context, right runtime.Value) error 
 			"attempt to take modulo by zero",
 			"Ensure the divisor is non-zero before modulo",
 			"Add a conditional check before modulo",
-			ErrModuloByZero,
 		)
 	}
 

@@ -5,7 +5,7 @@ import (
 )
 
 type CompilationError = diagnostics.CompilationError
-type MultiCompilationError = diagnostics.CompilationErrorSet
+type CompilationErrorSet = diagnostics.CompilationErrorSet
 
 var (
 	SyntaxError = diagnostics.SyntaxError
