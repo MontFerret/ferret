@@ -196,7 +196,7 @@ loop:
 		case OpLoadKey, OpLoadKeyOptional:
 			src := reg[src1]
 			arg := reg[src2]
-			out, err := vm.loadKey(ctx, src, arg)
+			out, err := vm.loadKeyCached(ctx, vm.pc-1, src, arg)
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptional); err != nil {
 				return nil, err
@@ -211,11 +211,11 @@ loop:
 
 			switch getter := prop.(type) {
 			case runtime.String:
-				out, err = vm.loadKey(ctx, src, getter)
+				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, getter)
 			case runtime.Float, runtime.Int:
 				out, err = vm.loadIndex(ctx, src, getter)
 			default:
-				out, err = vm.loadKey(ctx, src, runtime.ToString(prop))
+				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, runtime.ToString(prop))
 			}
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptional); err != nil {

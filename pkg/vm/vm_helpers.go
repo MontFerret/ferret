@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm/internal/mem"
 )
 
 func (vm *VM) tryCatch(pos int) (Catch, bool) {
@@ -105,6 +106,56 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 
 	// Fall back to a variadic function call
 	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
+}
+
+func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
+	obj, ok := src.(*runtime.Object)
+	if !ok {
+		return vm.loadKey(ctx, src, arg)
+	}
+
+	var key string
+
+	switch v := arg.(type) {
+	case runtime.String:
+		key = string(v)
+	default:
+		key = runtime.ToString(v).String()
+	}
+
+	shapeID := obj.ShapeID()
+	if shapeID != 0 {
+		cache := vm.cache.LoadKeyICs[pc]
+		if cache != nil {
+			if slot, ok := cache.Lookup(shapeID, key); ok {
+				if val, ok := obj.SlotValue(slot); ok {
+					return val, nil
+				}
+
+				return nil, runtime.ErrNotFound
+			}
+		}
+
+		slot, ok := obj.LookupSlot(key)
+		if !ok {
+			return nil, runtime.ErrNotFound
+		}
+
+		val, ok := obj.SlotValue(slot)
+		if !ok {
+			return nil, runtime.ErrNotFound
+		}
+
+		if cache == nil {
+			cache = mem.NewLoadKeyCache()
+			vm.cache.LoadKeyICs[pc] = cache
+		}
+
+		cache.Add(shapeID, key, slot)
+		return val, nil
+	}
+
+	return vm.loadKey(ctx, src, arg)
 }
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
