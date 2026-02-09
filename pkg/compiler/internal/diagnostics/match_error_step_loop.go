@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -17,8 +18,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 		span.End = span.Start + 1
 		err.Message = "Expected expression after 'WHILE'"
 		err.Hint = "STEP loops require a condition after WHILE, e.g., 'FOR i = 0 WHILE i < 10 STEP i = i + 1'."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing condition"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing condition"),
 		}
 
 		return true
@@ -31,8 +32,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 		span.End = span.Start + 1
 		err.Message = "Expected variable assignment after 'STEP'"
 		err.Hint = "STEP requires a variable assignment, e.g., 'STEP i = i + 1'."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing assignment"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing assignment"),
 		}
 
 		return true
@@ -47,8 +48,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 			span.End = span.Start + 1
 			err.Message = "Expected variable assignment after 'STEP'"
 			err.Hint = "STEP requires a variable assignment, e.g., 'STEP i = i + 1'."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing assignment"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing assignment"),
 			}
 
 			return true
@@ -64,8 +65,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 			span.End = span.Start + 1
 			err.Message = "Incomplete STEP clause"
 			err.Hint = "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "incomplete assignment"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "incomplete assignment"),
 			}
 
 			return true
@@ -81,8 +82,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 			span.End = span.Start + 1
 			err.Message = "Expected variable assignment after 'STEP'"
 			err.Hint = "STEP requires a variable assignment, e.g., 'STEP i = i + 1'."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing assignment"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing assignment"),
 			}
 
 			return true
@@ -96,8 +97,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 		span.End = span.Start + 1
 		err.Message = "Expected '=' after variable in STEP clause"
 		err.Hint = "STEP assignments require '=', e.g., 'STEP i = i + 1'."
-		err.Spans = []ErrorSpan{
-			NewMainErrorSpan(span, "missing '='"),
+		err.Spans = []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(span, "missing '='"),
 		}
 
 		return true
@@ -125,8 +126,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 				span.Start = span.End
 				span.End = span.Start + 1
 				err.Message = "Syntax error: missing 'STEP' at '" + last + "'"
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "missing 'STEP'"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "missing 'STEP'"),
 				}
 
 				return true
@@ -149,8 +150,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 			if len(after) == 0 {
 				err.Message = "Incomplete STEP clause"
 				err.Hint = "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'."
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "incomplete assignment"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "incomplete assignment"),
 				}
 
 				return true
@@ -160,8 +161,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 			case "RETURN", "FILTER", "SORT", "LIMIT":
 				err.Message = "Expected a RETURN or FOR clause at end of query"
 				err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
-				err.Spans = []ErrorSpan{
-					NewMainErrorSpan(span, "unexpected clause"),
+				err.Spans = []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(span, "unexpected clause"),
 				}
 
 				return true
@@ -171,8 +172,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 				if len(after) == 1 {
 					err.Message = "Incomplete STEP clause"
 					err.Hint = "STEP requires a complete variable assignment, e.g., 'STEP i = i + 1'."
-					err.Spans = []ErrorSpan{
-						NewMainErrorSpan(span, "incomplete assignment"),
+					err.Spans = []diagnostics.ErrorSpan{
+						diagnostics.NewMainErrorSpan(span, "incomplete assignment"),
 					}
 
 					return true
@@ -181,8 +182,8 @@ func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *Tok
 				if after[1] != "=" {
 					err.Message = "Expected '=' after variable in STEP clause"
 					err.Hint = "STEP assignments require '=', e.g., 'STEP i = i + 1'."
-					err.Spans = []ErrorSpan{
-						NewMainErrorSpan(span, "missing '='"),
+					err.Spans = []diagnostics.ErrorSpan{
+						diagnostics.NewMainErrorSpan(span, "missing '='"),
 					}
 
 					return true

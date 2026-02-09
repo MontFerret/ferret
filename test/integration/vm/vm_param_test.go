@@ -3,14 +3,13 @@ package vm_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 func TestParam(t *testing.T) {
 	RunUseCases(t,
 		[]UseCase{
-			CaseRuntimeErrorAs(`RETURN @foo`, runtime.Error(vm.ErrMissedParam, "@foo")),
+			CaseRuntimeErrorStr(`RETURN @foo`, "Missing parameter"),
 			Case(`RETURN @str`, "bar", "Should return a value of a parameter"),
 			Case(`RETURN @int + @int`, 2, "Should return a sum of two parameters"),
 			Case(`RETURN @obj.str1 + @obj.str2`, "foobar", "Should return a concatenated string of two parameter properties"),

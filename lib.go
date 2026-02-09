@@ -1,6 +1,7 @@
 package ferret
 
 import (
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/engine"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -10,7 +11,6 @@ type Engine = engine.Engine
 type Option = engine.Option
 
 type Plan = engine.Plan
-type PlanOption = engine.PlanOption
 
 type Session = engine.Session
 type SessionOption = engine.SessionOption
@@ -41,3 +41,9 @@ var WithLogFields = vm.WithLogFields
 
 // Runtime helpers
 var MustParseLogLevel = runtime.MustParseLogLevel
+
+// Diagnostic
+var FormatError = diagnostics.Format
+
+type Formattable = diagnostics.Formattable
+type FormattableError = diagnostics.FormattableError

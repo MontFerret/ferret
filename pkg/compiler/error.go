@@ -4,17 +4,10 @@ import (
 	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
 )
 
-type ErrorKind = diagnostics.ErrorKind
-type Formattable = diagnostics.Formattable
 type CompilationError = diagnostics.CompilationError
-type MultiCompilationError = diagnostics.MultiCompilationError
+type CompilationErrorSet = diagnostics.CompilationErrorSet
 
 var (
-	UnknownError     = diagnostics.UnknownError
-	SyntaxError      = diagnostics.SyntaxError
-	NameError        = diagnostics.NameError
-	TypeError        = diagnostics.TypeError
-	SemanticError    = diagnostics.SemanticError
-	UnsupportedError = diagnostics.UnsupportedError
-	InternalError    = diagnostics.InternalError
+	SyntaxError = diagnostics.SyntaxError
+	NameError   = diagnostics.NameError
 )

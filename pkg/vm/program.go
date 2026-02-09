@@ -13,6 +13,7 @@ type (
 		Bytecode   []Instruction
 		Constants  []runtime.Value
 		CatchTable []Catch
+		DebugSpans []file.Span
 		Functions  map[string]int
 		Params     []string
 		Registers  int

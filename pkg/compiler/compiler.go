@@ -35,7 +35,7 @@ func New(setters ...Option) *Compiler {
 
 func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	if src.Empty() {
-		return nil, diagnostics.NewEmptyQueryErr(src)
+		return nil, diagnostics.NewEmptyQueryError(src)
 	}
 
 	errorHandler := diagnostics.NewErrorHandler(src, 10)
@@ -51,11 +51,11 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 			// Find out exactly what the error was and add the e
 			switch x := r.(type) {
 			case string:
-				e = diagnostics.NewInternalErr(src, x+"\n"+stackTrace)
+				e = diagnostics.NewUnexpectedError(src, x+"\n"+stackTrace)
 			case error:
-				e = diagnostics.NewInternalErrWith(src, "unknown panic\n"+stackTrace, x)
+				e = diagnostics.NewUnexpectedErrorWith(src, "unhandled panic\n"+stackTrace, x)
 			default:
-				e = diagnostics.NewInternalErr(src, "unknown panic\n"+stackTrace)
+				e = diagnostics.NewUnexpectedError(src, "unhandled panic\n"+stackTrace)
 			}
 
 			errorHandler.Add(e)
@@ -81,9 +81,11 @@ func (c *Compiler) Compile(src *file.Source) (program *vm.Program, err error) {
 	}
 
 	program = &vm.Program{}
+	program.Source = src
 	program.Bytecode = l.Ctx.Emitter.Bytecode()
 	program.Constants = l.Ctx.Symbols.Constants()
 	program.CatchTable = l.Ctx.CatchTable.All()
+	program.DebugSpans = l.Ctx.Emitter.Spans()
 	program.Registers = l.Ctx.Registers.Size()
 	program.Params = l.Ctx.Symbols.Params()
 	program.Functions = l.Ctx.Symbols.Functions()

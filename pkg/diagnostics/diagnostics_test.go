@@ -10,27 +10,27 @@ import (
 
 func TestMultiCompilationError(t *testing.T) {
 	Convey("MultiCompilationError", t, func() {
-		Convey("Error() should return correct message format", func() {
+		Convey("Diagnostic() should return correct message format", func() {
 			tests := []struct {
 				name   string
-				errors []*CompilationError
+				errors []*Diagnostic
 				want   string
 			}{
 				{
 					name:   "no errors",
-					errors: []*CompilationError{},
+					errors: []*Diagnostic{},
 					want:   "No errors",
 				},
 				{
 					name: "one error",
-					errors: []*CompilationError{
+					errors: []*Diagnostic{
 						{Message: "test error"},
 					},
 					want: "Found 1 errors",
 				},
 				{
 					name: "multiple errors",
-					errors: []*CompilationError{
+					errors: []*Diagnostic{
 						{Message: "error 1"},
 						{Message: "error 2"},
 					},
@@ -40,7 +40,7 @@ func TestMultiCompilationError(t *testing.T) {
 
 			for _, tt := range tests {
 				Convey("Should return correct message for "+tt.name, func() {
-					e := &MultiCompilationError{Errors: tt.errors}
+					e := &Diagnostics[*Diagnostic]{errors: tt.errors}
 					So(e.Error(), ShouldEqual, tt.want)
 				})
 			}
@@ -51,19 +51,19 @@ func TestMultiCompilationError(t *testing.T) {
 
 			tests := []struct {
 				name   string
-				errors []*CompilationError
+				errors []*Diagnostic
 				want   string
 			}{
 				{
 					name:   "no errors",
-					errors: []*CompilationError{},
+					errors: []*Diagnostic{},
 					want:   "No errors",
 				},
 				{
 					name: "single error",
-					errors: []*CompilationError{
+					errors: []*Diagnostic{
 						{
-							Kind:    SyntaxError,
+							Kind:    "SyntaxError",
 							Message: "test error",
 							Source:  src,
 						},
@@ -71,14 +71,14 @@ func TestMultiCompilationError(t *testing.T) {
 				},
 				{
 					name: "multiple errors",
-					errors: []*CompilationError{
+					errors: []*Diagnostic{
 						{
-							Kind:    SyntaxError,
+							Kind:    "SyntaxError",
 							Message: "error 1",
 							Source:  src,
 						},
 						{
-							Kind:    NameError,
+							Kind:    "NameError",
 							Message: "error 2",
 							Source:  src,
 						},
@@ -88,7 +88,7 @@ func TestMultiCompilationError(t *testing.T) {
 
 			for _, tt := range tests {
 				Convey("Should format correctly for "+tt.name, func() {
-					e := &MultiCompilationError{Errors: tt.errors}
+					e := NewDiagnosticsOf[*Diagnostic](tt.errors)
 					formatted := e.Format()
 
 					if tt.name == "no errors" {
@@ -105,18 +105,15 @@ func TestMultiCompilationError(t *testing.T) {
 
 func TestNewMultiCompilationError(t *testing.T) {
 	Convey("NewMultiCompilationError should create MultiCompilationError", t, func() {
-		errors := []*CompilationError{
+		errors := []*Diagnostic{
 			{Message: "test error 1"},
 			{Message: "test error 2"},
 		}
 
-		result := NewMultiCompilationError(errors)
+		result := NewDiagnosticsOf(errors)
 
 		So(result, ShouldNotBeNil)
-
-		multi, ok := result.(*MultiCompilationError)
-		So(ok, ShouldBeTrue)
-		So(len(multi.Errors), ShouldEqual, 2)
-		So(multi.Errors[0].Message, ShouldEqual, "test error 1")
+		So(len(result.errors), ShouldEqual, 2)
+		So(result.errors[0].Message, ShouldEqual, "test error 1")
 	})
 }

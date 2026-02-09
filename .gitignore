@@ -136,3 +136,5 @@ coverage.html
 # sometimes antlr generates stub
 **/.antlr
 gen
+tmp
+.tmp

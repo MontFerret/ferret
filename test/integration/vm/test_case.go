@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 
 	"github.com/MontFerret/ferret/test/integration/base"
@@ -44,7 +45,11 @@ func CaseRuntimeError(expression string, desc ...string) UseCase {
 }
 
 func CaseRuntimeErrorAs(expression string, expected error, desc ...string) UseCase {
-	return NewCase(expression, expected, ShouldBeError, desc...)
+	return NewCase(expression, expected, ShouldBeRuntimeError, desc...)
+}
+
+func CaseRuntimeErrorStr(expression string, expected string, desc ...string) UseCase {
+	return NewCase(expression, expected, ShouldBeRuntimeError, desc...)
 }
 
 func SkipCaseRuntimeError(expression string, desc ...string) UseCase {
@@ -161,7 +166,7 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 
 				if !base.ArePtrsEqual(useCase.PreAssertion, base.ShouldBeCompilationError) {
 					if err != nil {
-						if fe, ok := err.(compiler.Formattable); ok {
+						if fe, ok := err.(diagnostics.Formattable); ok {
 							fmt.Println(fe.Format())
 						}
 					}
@@ -182,8 +187,20 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 				actual, err := base.Exec(prog, useCase.RawOutput, options...)
 
 				for _, assertion := range useCase.Assertions {
+					if base.ArePtrsEqual(assertion, ShouldBeRuntimeError) {
+						So(err, ShouldBeRuntimeError, expected)
+
+						return
+					}
+
 					if base.ArePtrsEqual(assertion, ShouldBeError) {
+						frmt, ok := err.(diagnostics.Formattable)
+
 						So(err, ShouldBeError)
+
+						if ok {
+							fmt.Println(frmt.Format())
+						}
 
 						if expected != nil {
 							So(err, ShouldBeError, expected)

@@ -1,7 +1,11 @@
 package internal
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
@@ -51,12 +55,23 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	// Allocate a register for the event stream
 	streamReg := c.ctx.Registers.Allocate()
 
-	// Move the source object to the stream register in order to re-use it in OpStream
-	c.ctx.Emitter.EmitMove(streamReg, srcReg)
-	// Create a stream from the source, listening for the specified event
-	c.ctx.Emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
-	// Set up iteration over the stream with optional timeout
-	c.ctx.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
+	span := file.Span{Start: -1, End: -1}
+	if srcCtx := ctx.WaitForEventSource(); srcCtx != nil {
+		if prc, ok := srcCtx.(antlr.ParserRuleContext); ok {
+			span = diagnostics.SpanFromRuleContext(prc)
+		}
+	} else if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+		span = diagnostics.SpanFromRuleContext(prc)
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		// Move the source object to the stream register in order to re-use it in OpStream
+		c.ctx.Emitter.EmitMove(streamReg, srcReg)
+		// Create a stream from the source, listening for the specified event
+		c.ctx.Emitter.EmitABC(vm.OpStream, streamReg, eventReg, optsReg)
+		// Set up iteration over the stream with optional timeout
+		c.ctx.Emitter.EmitAB(vm.OpStreamIter, streamReg, timeoutReg)
+	})
 
 	var valReg vm.Operand
 	// Create labels for the start and end of the iteration loop
@@ -67,14 +82,18 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	c.ctx.Emitter.MarkLabel(start)
 	// Emit instruction to get the next event from the stream
 	// If no more events, jump to the end label
-	c.ctx.Emitter.EmitIterNext(streamReg, end)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitIterNext(streamReg, end)
+	})
 
 	// Handle filter clause if present
 	if filter := ctx.FilterClause(); filter != nil {
 		// Declare a local variable to hold the event value
 		valReg, _ = c.ctx.Symbols.DeclareLocal(core.PseudoVariable, core.TypeUnknown)
 		// Load the current event value into the variable
-		c.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
+		c.ctx.Emitter.WithSpan(span, func() {
+			c.ctx.Emitter.EmitAB(vm.OpIterValue, valReg, streamReg)
+		})
 
 		// Compile the filter expression
 		cond := c.ctx.ExprCompiler.Compile(filter.Expression())
@@ -88,7 +107,9 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) vm.Operand {
 	// Mark the end of the iteration loop
 	c.ctx.Emitter.MarkLabel(end)
 	// Clean up the stream by closing it
-	c.ctx.Emitter.EmitA(vm.OpClose, streamReg)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitA(vm.OpClose, streamReg)
+	})
 	// Exit the scope created for the WAIT FOR expression
 	c.ctx.Symbols.ExitScope()
 

@@ -5,16 +5,20 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
+
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
 func TestCompilationError(t *testing.T) {
 	Convey("CompilationError", t, func() {
-		Convey("Error() should return message", func() {
+		Convey("Diagnostic() should return message", func() {
 			err := &CompilationError{
-				Kind:    SyntaxError,
-				Message: "test error message",
-				Hint:    "test hint",
+				Diagnostic: &diagnostics.Diagnostic{
+					Kind:    SyntaxError,
+					Message: "test error message",
+					Hint:    "test hint",
+				},
 			}
 
 			So(err.Error(), ShouldEqual, "test error message")
@@ -24,12 +28,14 @@ func TestCompilationError(t *testing.T) {
 			src := file.NewSource("test.fql", "LET x = 1")
 
 			err := &CompilationError{
-				Kind:    SyntaxError,
-				Message: "test error message",
-				Hint:    "test hint",
-				Source:  src,
-				Spans: []ErrorSpan{
-					NewMainErrorSpan(file.Span{Start: 0, End: 5}, "test label"),
+				Diagnostic: &diagnostics.Diagnostic{
+					Kind:    SyntaxError,
+					Message: "test error message",
+					Hint:    "test hint",
+					Source:  src,
+					Spans: []diagnostics.ErrorSpan{
+						diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 5}, "test label"),
+					},
 				},
 			}
 
@@ -48,16 +54,16 @@ func TestErrorKind(t *testing.T) {
 	Convey("ErrorKind constants", t, func() {
 		tests := []struct {
 			name string
-			kind ErrorKind
+			kind diagnostics.Kind
 			want string
 		}{
-			{"UnknownError", UnknownError, ""},
+			{"UnknownError", diagnostics.Unknown, ""},
 			{"SyntaxError", SyntaxError, "SyntaxError"},
 			{"NameError", NameError, "NameError"},
-			{"TypeError", TypeError, "TypeError"},
+			{"TypeError", diagnostics.TypeError, "TypeError"},
 			{"SemanticError", SemanticError, "SemanticError"},
-			{"UnsupportedError", UnsupportedError, "UnsupportedError"},
-			{"InternalError", InternalError, "InternalError"},
+			{"Unsupported", diagnostics.Unsupported, "Unsupported"},
+			{"UnexpectedError", diagnostics.UnexpectedError, "UnexpectedError"},
 		}
 
 		for _, tt := range tests {

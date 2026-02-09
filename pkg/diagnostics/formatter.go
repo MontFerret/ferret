@@ -1,6 +1,7 @@
 package diagnostics
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -9,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
-func FormatError(out io.Writer, e *CompilationError, indent int) {
+func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 	prefix := strings.Repeat("  ", indent)
 
 	fmt.Fprintf(out, "%s%s: %s\n", prefix, e.Kind, e.Message)
@@ -39,10 +40,16 @@ func FormatError(out io.Writer, e *CompilationError, indent int) {
 		fmt.Fprintf(out, "%sHint: %s\n", prefix, e.Hint)
 	}
 
+	if e.Note != "" {
+		fmt.Fprintf(out, "%sNote: %s\n", prefix, e.Note)
+	}
+
 	if e.Cause != nil {
-		if nested, ok := e.Cause.(*CompilationError); ok {
+		var nested *Diagnostic
+
+		if errors.As(e.Cause, &nested) {
 			fmt.Fprintf(out, "%sCaused by:\n", prefix)
-			FormatError(out, nested, indent+1)
+			FormatDiagnostic(out, nested, indent+1)
 		} else {
 			fmt.Fprintf(out, "%sCaused by: %s\n", prefix, e.Cause.Error())
 		}
@@ -50,23 +57,11 @@ func FormatError(out io.Writer, e *CompilationError, indent int) {
 }
 
 func renderErrorSpan(out io.Writer, prefix string, src *file.Source, s ErrorSpan) {
-	line, col := src.LocationAt(s.Span)
-	fmt.Fprintf(out, "%s --> %s:%d:%d\n", prefix, src.Name(), line, col)
-
-	lines := src.Snippet(s.Span)
-
-	lineNoWidth := len(fmt.Sprintf("%d", lines[len(lines)-1].Line))
-	fmt.Fprintf(out, "%s%s\n", prefix, strings.Repeat(" ", lineNoWidth)+" |")
-
-	for _, sl := range lines {
-		fmt.Fprintf(out, "%s%*d | %s\n", prefix, lineNoWidth, sl.Line, sl.Text)
-
-		if sl.Caret != "" {
-			caretLine := sl.Caret
-			if s.Label != "" {
-				caretLine += " " + s.Label
-			}
-			fmt.Fprintf(out, "%s%s | %s\n", prefix, strings.Repeat(" ", lineNoWidth), caretLine)
-		}
+	renderer := SpanRenderer{
+		Prefix:             prefix,
+		CaretChar:          '^',
+		ShowTrailingGutter: false,
 	}
+
+	renderer.Render(out, src, s.Span, s.Label)
 }

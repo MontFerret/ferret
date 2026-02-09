@@ -12,7 +12,7 @@ func (vm *VM) warmup(env *Environment) error {
 		return nil
 	}
 
-	errors := make([]error, 0)
+	errors := &warmupErrorSet{}
 	constants := vm.program.Constants
 	functions := env.Functions
 	reg := map[Operand]runtime.Value{}
@@ -33,7 +33,7 @@ func (vm *VM) warmup(env *Environment) error {
 				functions.FV(),
 				func(f *mem.CachedFunction, fn runtime.Function) { f.FnV = fn },
 				vm.cache.Functions,
-				&errors,
+				errors,
 			)
 		case OpCall0, OpProtectedCall0:
 			resolveFnAndCache(
@@ -42,7 +42,7 @@ func (vm *VM) warmup(env *Environment) error {
 				functions.FV(),
 				func(f *mem.CachedFunction, fn runtime.Function0) { f.Fn0 = fn },
 				vm.cache.Functions,
-				&errors,
+				errors,
 			)
 		case OpCall1, OpProtectedCall1:
 			resolveFnAndCache(
@@ -51,7 +51,7 @@ func (vm *VM) warmup(env *Environment) error {
 				functions.FV(),
 				func(f *mem.CachedFunction, fn runtime.Function1) { f.Fn1 = fn },
 				vm.cache.Functions,
-				&errors,
+				errors,
 			)
 		case OpCall2, OpProtectedCall2:
 			resolveFnAndCache(
@@ -60,7 +60,7 @@ func (vm *VM) warmup(env *Environment) error {
 				functions.FV(),
 				func(f *mem.CachedFunction, fn runtime.Function2) { f.Fn2 = fn },
 				vm.cache.Functions,
-				&errors,
+				errors,
 			)
 		case OpCall3, OpProtectedCall3:
 			resolveFnAndCache(
@@ -69,7 +69,7 @@ func (vm *VM) warmup(env *Environment) error {
 				functions.FV(),
 				func(f *mem.CachedFunction, fn runtime.Function3) { f.Fn3 = fn },
 				vm.cache.Functions,
-				&errors,
+				errors,
 			)
 		case OpCall4, OpProtectedCall4:
 			resolveFnAndCache(
@@ -78,15 +78,15 @@ func (vm *VM) warmup(env *Environment) error {
 				functions.FV(),
 				func(f *mem.CachedFunction, fn runtime.Function4) { f.Fn4 = fn },
 				vm.cache.Functions,
-				&errors,
+				errors,
 			)
 		default:
 			continue
 		}
 	}
 
-	if len(errors) > 0 {
-		return runtime.Errorsf("failed to warm up the VM", errors...)
+	if errors.Size() > 0 {
+		return errors
 	}
 
 	vm.cache.FuncHash = env.Functions.Hash()
@@ -94,7 +94,7 @@ func (vm *VM) warmup(env *Environment) error {
 	return nil
 }
 
-func resolveFnName(reg map[Operand]runtime.Value, pc int, dst Operand) (string, error) {
+func resolveFnName(reg map[Operand]runtime.Value, dst Operand) (string, error) {
 	val, ok := reg[dst]
 
 	if ok {
@@ -105,7 +105,7 @@ func resolveFnName(reg map[Operand]runtime.Value, pc int, dst Operand) (string, 
 		}
 	}
 
-	return "", runtime.Errorf(ErrInvalidFunctionName, "at pc=%d, dst=R%d", pc, dst)
+	return "", ErrInvalidFunctionName
 }
 
 func resolveFn[T runtime.FunctionConstraint](
@@ -126,7 +126,7 @@ func resolveFn[T runtime.FunctionConstraint](
 		}
 	}
 
-	return nil, runtime.Error(ErrUnresolvedFunction, fnName)
+	return nil, ErrUnresolvedFunction
 }
 
 func resolveFnAndCache[T runtime.FunctionConstraint](
@@ -137,19 +137,19 @@ func resolveFnAndCache[T runtime.FunctionConstraint](
 	fallback runtime.FunctionCollection[runtime.Function],
 	assign func(*mem.CachedFunction, T),
 	funcs map[int]*mem.CachedFunction,
-	errList *[]error,
+	errList *warmupErrorSet,
 ) {
-	fnName, err := resolveFnName(reg, pc, dst)
+	fnName, err := resolveFnName(reg, dst)
 
 	if err != nil {
-		*errList = append(*errList, runtime.Errorf(ErrInvalidFunctionName, "at %d", pc))
+		errList.Add(err, pc, dst)
 		return
 	}
 
 	fn, err := resolveFn(get, fallback, assign, fnName)
 
 	if err != nil {
-		*errList = append(*errList, err)
+		errList.Add(err, pc, dst)
 		return
 	}
 

@@ -12,7 +12,7 @@ type (
 	Environment struct {
 		Functions runtime.Functions
 		Params    map[string]runtime.Value
-		Logging   runtime.LogOptions
+		Logging   runtime.LogSettings
 	}
 )
 
@@ -25,7 +25,7 @@ func NewDefaultEnvironment() *Environment {
 	return &Environment{
 		Functions: runtime.NewFunctions(),
 		Params:    make(map[string]runtime.Value),
-		Logging: runtime.LogOptions{
+		Logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,
 		},

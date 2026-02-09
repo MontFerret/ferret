@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MontFerret/ferret/pkg/file"
 	"github.com/MontFerret/ferret/pkg/vm"
 )
 
 type Emitter struct {
 	instructions []vm.Instruction
+	spans        []file.Span
+	currentSpan  file.Span
 	labels       map[labelID]Label
 	patches      map[labelID][]labelRef
 	nextLabelID  labelID
@@ -17,11 +20,35 @@ type Emitter struct {
 func NewEmitter() *Emitter {
 	return &Emitter{
 		instructions: make([]vm.Instruction, 0, 8),
+		currentSpan:  file.Span{Start: -1, End: -1},
 	}
 }
 
 func (e *Emitter) Bytecode() []vm.Instruction {
 	return e.instructions
+}
+
+func (e *Emitter) Spans() []file.Span {
+	if len(e.spans) == 0 {
+		return nil
+	}
+
+	out := make([]file.Span, len(e.spans))
+	copy(out, e.spans)
+
+	return out
+}
+
+// WithSpan sets a span for emitted instructions within fn.
+func (e *Emitter) WithSpan(span file.Span, fn func()) {
+	if fn == nil {
+		return
+	}
+
+	prev := e.currentSpan
+	e.currentSpan = span
+	fn()
+	e.currentSpan = prev
 }
 
 // Size returns the number of instructions currently stored in the Emitter.
@@ -150,10 +177,15 @@ func (e *Emitter) EmitABx(op vm.Opcode, dest vm.Operand, src vm.Operand, arg int
 
 // EmitABC emits an opcode with a destination value and two source value arguments.
 func (e *Emitter) EmitABC(op vm.Opcode, dest, src1, src2 vm.Operand) {
-	e.instructions = append(e.instructions, vm.Instruction{
+	e.emitInstruction(vm.Instruction{
 		Opcode:   op,
 		Operands: [3]vm.Operand{dest, src1, src2},
 	})
+}
+
+func (e *Emitter) emitInstruction(ins vm.Instruction) {
+	e.instructions = append(e.instructions, ins)
+	e.spans = append(e.spans, e.currentSpan)
 }
 
 // SwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
@@ -272,6 +304,9 @@ func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
 	// Insert instruction at position
 	e.instructions = append(e.instructions[:pos],
 		append([]vm.Instruction{ins}, e.instructions[pos:]...)...,
+	)
+	e.spans = append(e.spans[:pos],
+		append([]file.Span{e.currentSpan}, e.spans[pos:]...)...,
 	)
 
 	// Adjust all subsequent label addresses

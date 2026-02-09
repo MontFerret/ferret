@@ -1,8 +1,10 @@
 package diagnostics
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -36,7 +38,7 @@ func TestErrorHandler_BasicOperations(t *testing.T) {
 		t.Error("New handler should not have errors")
 	}
 
-	if len(handler1.Errors()) != 0 {
+	if handler1.Errors().Size() != 0 {
 		t.Error("New handler should have empty errors slice")
 	}
 
@@ -62,11 +64,13 @@ func TestErrorHandler_AddSingleError(t *testing.T) {
 	handler := NewErrorHandler(src, 10)
 
 	err := &CompilationError{
-		Kind:    SyntaxError,
-		Message: "test error",
-		Source:  src,
-		Spans: []ErrorSpan{
-			NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""),
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Message: "test error",
+			Source:  src,
+			Spans: []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""),
+			},
 		},
 	}
 
@@ -76,18 +80,19 @@ func TestErrorHandler_AddSingleError(t *testing.T) {
 		t.Error("Handler should have errors after adding one")
 	}
 
-	errors := handler.Errors()
-	if len(errors) != 1 {
-		t.Errorf("Handler should have 1 error, got %d", len(errors))
+	errs := handler.Errors()
+	if errs.Size() != 1 {
+		t.Errorf("Handler should have 1 error, got %d", errs.Size())
 	}
 
-	if errors[0] != err {
+	if !errors.Is(err, errs.Get(0)) {
 		t.Error("Added error should be the same as retrieved error")
 	}
 
 	// Test Unwrap with single error
 	unwrapped := handler.Unwrap()
-	if unwrapped != err {
+
+	if !errors.Is(unwrapped, err) {
 		t.Error("Unwrap() should return the single error directly")
 	}
 }
@@ -97,20 +102,24 @@ func TestErrorHandler_AddMultipleErrors(t *testing.T) {
 	handler := NewErrorHandler(src, 10)
 
 	err1 := &CompilationError{
-		Kind:    SyntaxError,
-		Message: "error 1",
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Message: "error 1",
+		},
 	}
 
 	err2 := &CompilationError{
-		Kind:    NameError,
-		Message: "error 2",
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    NameError,
+			Message: "error 2",
+		},
 	}
 
 	handler.Add(err1)
 	handler.Add(err2)
 
-	if len(handler.Errors()) != 2 {
-		t.Errorf("Handler should have 2 errors, got %d", len(handler.Errors()))
+	if handler.Errors().Size() != 2 {
+		t.Errorf("Handler should have 2 errors, got %d", handler.Errors().Size())
 	}
 
 	// Test Unwrap with multiple errors
@@ -119,13 +128,13 @@ func TestErrorHandler_AddMultipleErrors(t *testing.T) {
 		t.Fatal("Unwrap() should not return nil for multiple errors")
 	}
 
-	multiErr, ok := unwrapped.(*MultiCompilationError)
+	multiErr, ok := unwrapped.(*CompilationErrorSet)
 	if !ok {
-		t.Error("Unwrap() should return *MultiCompilationError for multiple errors")
+		t.Error("Unwrap() should return *CompilationErrorSet for multiple errors")
 	}
 
-	if len(multiErr.Errors) != 2 {
-		t.Errorf("MultiCompilationError should have 2 errors, got %d", len(multiErr.Errors))
+	if multiErr.Size() != 2 {
+		t.Errorf("CompilationErrorSet should have 2 errors, got %d", multiErr.Size())
 	}
 }
 
@@ -140,11 +149,13 @@ func TestErrorHandler_HasErrorOnLine(t *testing.T) {
 
 	// Add error with span that affects line 1
 	err := &CompilationError{
-		Kind:    SyntaxError,
-		Message: "test error",
-		Source:  src,
-		Spans: []ErrorSpan{
-			NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""), // Position 0-3 is on line 1
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Message: "test error",
+			Source:  src,
+			Spans: []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""), // Position 0-3 is on line 1
+			},
 		},
 	}
 
@@ -160,29 +171,44 @@ func TestErrorHandler_ExceedThreshold(t *testing.T) {
 	handler := NewErrorHandler(src, 2) // Low threshold for testing
 
 	// Add errors up to threshold
-	err1 := &CompilationError{Kind: SyntaxError, Message: "error 1"}
-	err2 := &CompilationError{Kind: SyntaxError, Message: "error 2"}
+	err1 := &CompilationError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Message: "error 1",
+		},
+	}
+	err2 := &CompilationError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Message: "error 2",
+		},
+	}
 
 	handler.Add(err1)
 	handler.Add(err2)
 
 	// At exactly threshold, should trigger "too many errors" message
-	errors := handler.Errors()
-	if len(errors) != 3 { // 2 actual errors + 1 "too many" message
-		t.Errorf("Handler should have 3 errors (2 + 'too many' message), got %d", len(errors))
+	errs := handler.Errors()
+	if errs.Size() != 3 { // 2 actual errors + 1 "too many" message
+		t.Errorf("Handler should have 3 errors (2 + 'too many' message), got %d", errs.Size())
 	}
 
 	// Last error should be "Too many errors"
-	lastErr := errors[len(errors)-1]
+	lastErr := errs.Last()
 	if lastErr.Message != "Too many errors" {
 		t.Errorf("Last error should be 'Too many errors', got %q", lastErr.Message)
 	}
 
 	// Adding more errors should be ignored (since len(errors) > threshold now)
-	err3 := &CompilationError{Kind: SyntaxError, Message: "ignored"}
+	err3 := &CompilationError{
+		Diagnostic: &diagnostics.Diagnostic{
+			Kind:    SyntaxError,
+			Message: "ignored",
+		},
+	}
 	handler.Add(err3)
 
-	if len(handler.Errors()) != 3 {
-		t.Errorf("Handler should still have 3 errors, got %d", len(handler.Errors()))
+	if handler.Errors().Size() != 3 {
+		t.Errorf("Handler should still have 3 errors, got %d", handler.Errors().Size())
 	}
 }

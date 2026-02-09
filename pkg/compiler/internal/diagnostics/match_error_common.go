@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/MontFerret/ferret/pkg/diagnostics"
 	"github.com/MontFerret/ferret/pkg/file"
 )
 
@@ -16,8 +17,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected expression after ','"
 			err.Hint = "Did you forget to provide a value?"
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -32,8 +33,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 			operator := offending.Prev().GetText()
 			err.Message = fmt.Sprintf("Expected right-hand expression after '%s'", operator)
 			err.Hint = fmt.Sprintf("Provide an expression after the logical operator, e.g. (a %s b).", operator)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing expression"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing expression"),
 			}
 
 			return true
@@ -47,8 +48,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected expression after '?' in ternary operator"
 			err.Hint = "Provide an expression after the question mark to complete the ternary operation."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing expression"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing expression"),
 			}
 
 			return true
@@ -62,8 +63,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected expression after ':' in ternary operator"
 			err.Hint = "Provide an expression after the colon to complete the ternary operation."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing expression"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing expression"),
 			}
 
 			return true
@@ -87,8 +88,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected end value after '..' in range expression"
 			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -111,8 +112,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Unclosed function call"
 			err.Hint = "Add a closing ')' to complete the function call."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing ')'"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing ')'"),
 			}
 
 			return true
@@ -127,8 +128,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Unclosed parenthesized expression"
 			err.Hint = "Add a closing ')' to complete the expression."
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing ')'"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing ')'"),
 			}
 
 			return true
@@ -146,8 +147,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected end value after '..' in range expression"
 			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -167,8 +168,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected end value after '..' in range expression"
 			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -183,8 +184,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 
 			err.Message = "Expected a valid list of arguments"
 			err.Hint = "Did you forget to provide a value?"
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -198,8 +199,8 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 			start := offending.Prev().GetText()
 			err.Message = "Expected end value after '..' in range expression"
 			err.Hint = fmt.Sprintf("Provide an end value to complete the range, e.g. %s..10.", start)
-			err.Spans = []ErrorSpan{
-				NewMainErrorSpan(span, "missing value"),
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
