@@ -30,7 +30,7 @@ func BenchmarkFunctionCall_O0(b *testing.B) {
 }
 
 func BenchmarkFunctionCall_O1(b *testing.B) {
-	RunBenchmarkO0(b, funcCallQuery, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	RunBenchmarkO1(b, funcCallQuery, vm.WithFunction("TEST", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.True, nil
 	}))
 }
