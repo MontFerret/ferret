@@ -443,7 +443,7 @@ func execFiles(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 			logger.Debug().Interface("errors", errList).Msg("executed with errors")
 		}
 
-		return diagnostics.NewDiagnostics(errList)
+		return diagnostics.NewDiagnosticsOf(errList)
 	}
 
 	return nil

@@ -8,8 +8,8 @@ type CompilationErrorSet struct {
 	*diagnostics.Diagnostics[*CompilationError]
 }
 
-func NewCompilationErrorSet(errors []*CompilationError) error {
+func NewCompilationErrorSet(size int) *CompilationErrorSet {
 	return &CompilationErrorSet{
-		Diagnostics: diagnostics.NewDiagnostics[*CompilationError](errors),
+		Diagnostics: diagnostics.NewDiagnostics[*CompilationError](size),
 	}
 }

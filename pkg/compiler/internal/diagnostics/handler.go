@@ -12,7 +12,7 @@ import (
 
 type ErrorHandler struct {
 	src             *file.Source
-	errors          []*CompilationError
+	errors          *CompilationErrorSet
 	linesWithErrors map[int]bool
 	threshold       int
 }
@@ -24,30 +24,26 @@ func NewErrorHandler(src *file.Source, threshold int) *ErrorHandler {
 
 	return &ErrorHandler{
 		src:             src,
-		errors:          make([]*CompilationError, 0),
+		errors:          NewCompilationErrorSet(5),
 		linesWithErrors: make(map[int]bool),
 		threshold:       threshold,
 	}
 }
 
-func (h *ErrorHandler) Errors() []*CompilationError {
+func (h *ErrorHandler) Errors() *CompilationErrorSet {
 	return h.errors
 }
 
 func (h *ErrorHandler) HasErrors() bool {
-	return len(h.errors) > 0
+	return h.errors.Size() > 0
 }
 
 func (h *ErrorHandler) Unwrap() error {
-	if len(h.errors) == 0 {
+	if h.errors.Size() == 0 {
 		return nil
 	}
 
-	if len(h.errors) == 1 {
-		return h.errors[0]
-	}
-
-	return NewCompilationErrorSet(h.errors)
+	return h.errors
 }
 
 func (h *ErrorHandler) Add(err *CompilationError) {
@@ -56,7 +52,7 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 	}
 
 	// If the number of errors exceeds the threshold, we stop adding new errors
-	if len(h.errors) > h.threshold {
+	if h.errors.Size() > h.threshold {
 		return
 	}
 
@@ -71,10 +67,10 @@ func (h *ErrorHandler) Add(err *CompilationError) {
 		}
 	}
 
-	h.errors = append(h.errors, err)
+	h.errors.Add(err)
 
-	if len(h.errors) == h.threshold {
-		h.errors = append(h.errors, &CompilationError{
+	if h.errors.Size() == h.threshold {
+		h.errors.Add(&CompilationError{
 			Diagnostic: &diagnostics.Diagnostic{
 				Message: "Too many errors",
 				Kind:    SemanticError,

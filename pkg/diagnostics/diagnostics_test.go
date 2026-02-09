@@ -110,7 +110,7 @@ func TestNewMultiCompilationError(t *testing.T) {
 			{Message: "test error 2"},
 		}
 
-		result := NewDiagnostics(errors)
+		result := NewDiagnosticsOf(errors)
 
 		So(result, ShouldNotBeNil)
 		So(len(result.errors), ShouldEqual, 2)
