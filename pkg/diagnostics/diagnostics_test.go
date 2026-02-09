@@ -40,7 +40,7 @@ func TestMultiCompilationError(t *testing.T) {
 
 			for _, tt := range tests {
 				Convey("Should return correct message for "+tt.name, func() {
-					e := &Diagnostics{errors: tt.errors}
+					e := &Diagnostics[*Diagnostic]{errors: tt.errors}
 					So(e.Error(), ShouldEqual, tt.want)
 				})
 			}
@@ -88,7 +88,7 @@ func TestMultiCompilationError(t *testing.T) {
 
 			for _, tt := range tests {
 				Convey("Should format correctly for "+tt.name, func() {
-					e := &Diagnostics{errors: tt.errors}
+					e := &Diagnostics[*Diagnostic]{errors: tt.errors}
 					formatted := e.Format()
 
 					if tt.name == "no errors" {
@@ -110,7 +110,7 @@ func TestNewMultiCompilationError(t *testing.T) {
 			{Message: "test error 2"},
 		}
 
-		result := NewDiagnostics(errors...)
+		result := NewDiagnostics(errors)
 
 		So(result, ShouldNotBeNil)
 		So(len(result.errors), ShouldEqual, 2)
