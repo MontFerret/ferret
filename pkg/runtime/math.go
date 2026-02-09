@@ -13,7 +13,7 @@ func Add(_ context.Context, inputL, inputR Value) Value {
 	case Float:
 		return AddLeftFloat(leftVal, inputR)
 	case String:
-		return AddLeftString(leftVal, inputR)
+		return addLeftString(leftVal, inputR)
 	default:
 		return String(leftVal.String() + inputR.String())
 	}
@@ -45,7 +45,7 @@ func AddLeftFloat(float Float, input Value) Value {
 	}
 }
 
-func AddLeftString(str String, input Value) Value {
+func addLeftString(str String, input Value) Value {
 	return String(str.String() + input.String())
 }
 
@@ -54,15 +54,15 @@ func Subtract(ctx context.Context, inputL, inputR Value) Value {
 
 	switch leftVal := left.(type) {
 	case Int:
-		return SubtractLeftInt(ctx, leftVal, inputR)
+		return subtractLeftInt(ctx, leftVal, inputR)
 	case Float:
-		return SubtractLeftFloat(ctx, leftVal, inputR)
+		return subtractLeftFloat(ctx, leftVal, inputR)
 	default:
 		return ZeroInt
 	}
 }
 
-func SubtractLeftInt(ctx context.Context, integer Int, input Value) Value {
+func subtractLeftInt(ctx context.Context, integer Int, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -75,7 +75,7 @@ func SubtractLeftInt(ctx context.Context, integer Int, input Value) Value {
 	}
 }
 
-func SubtractLeftFloat(ctx context.Context, float Float, input Value) Value {
+func subtractLeftFloat(ctx context.Context, float Float, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -93,15 +93,15 @@ func Multiply(ctx context.Context, inputL, inputR Value) Value {
 
 	switch leftVal := left.(type) {
 	case Int:
-		return MultiplyLeftInt(ctx, leftVal, inputR)
+		return multiplyLeftInt(ctx, leftVal, inputR)
 	case Float:
-		return MultiplyLeftFloat(ctx, leftVal, inputR)
+		return multiplyLeftFloat(ctx, leftVal, inputR)
 	default:
 		return ZeroInt
 	}
 }
 
-func MultiplyLeftInt(ctx context.Context, integer Int, input Value) Value {
+func multiplyLeftInt(ctx context.Context, integer Int, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -114,7 +114,7 @@ func MultiplyLeftInt(ctx context.Context, integer Int, input Value) Value {
 	}
 }
 
-func MultiplyLeftFloat(ctx context.Context, float Float, input Value) Value {
+func multiplyLeftFloat(ctx context.Context, float Float, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -132,15 +132,15 @@ func Divide(ctx context.Context, inputL, inputR Value) Value {
 
 	switch leftVal := left.(type) {
 	case Int:
-		return DivideLeftInt(ctx, leftVal, inputR)
+		return divideLeftInt(ctx, leftVal, inputR)
 	case Float:
-		return DivideLeftFloat(ctx, leftVal, inputR)
+		return divideLeftFloat(ctx, leftVal, inputR)
 	default:
 		return ZeroInt
 	}
 }
 
-func DivideLeftInt(ctx context.Context, integer Int, input Value) Value {
+func divideLeftInt(ctx context.Context, integer Int, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -156,7 +156,7 @@ func DivideLeftInt(ctx context.Context, integer Int, input Value) Value {
 	}
 }
 
-func DivideLeftFloat(ctx context.Context, float Float, input Value) Value {
+func divideLeftFloat(ctx context.Context, float Float, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
