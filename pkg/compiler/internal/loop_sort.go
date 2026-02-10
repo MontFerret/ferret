@@ -177,12 +177,12 @@ func (c *LoopSortCompiler) restoreScope(loop *core.Loop, scope *core.ScopeProjec
 	if scope == nil {
 		if loop.KeyName != "" {
 			// TODO: Handle error if the key variable is not found
-			loop.DeclareKeyVar(loop.KeyName, c.ctx.Symbols)
+			loop.DeclareKeyVar(loop.KeyName, c.ctx.Symbols, core.TypeUnknown)
 		}
 
 		if loop.ValueName != "" {
 			// TODO: Handle error if the key variable is not found
-			loop.DeclareValueVar(loop.ValueName, c.ctx.Symbols)
+			loop.DeclareValueVar(loop.ValueName, c.ctx.Symbols, core.TypeUnknown)
 		}
 
 		return

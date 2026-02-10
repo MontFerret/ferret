@@ -24,7 +24,7 @@ compile:
 	${DIR_E2E}/cli.go
 
 test:
-	go test ${DIR_PKG}/... && go test ${DIR_INTEG}/...
+	go test -race ${DIR_PKG}/... && go test -race ${DIR_INTEG}/...
 
 cover:
 	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \

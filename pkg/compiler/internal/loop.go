@@ -90,6 +90,9 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	// Create a new loop with the determined properties
 	loop := c.ctx.Loops.NewLoop(kind, loopType, distinct)
+	if loop.Dst.IsRegister() {
+		c.ctx.Types.Set(loop.Dst, core.TypeList)
+	}
 
 	// Set up the loop source based on the loop kind
 	switch kind {
@@ -133,9 +136,24 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	c.ctx.Symbols.EnterScope()
 
 	// Declare variables for the loop value and counter if specified
+	var valueType core.ValueType
+	var keyType core.ValueType
+
+	switch kind {
+	case core.ForInLoop:
+		valueType, keyType = c.inferForInTypes(ctx.ForExpressionSource(), loop.Src)
+	case core.ForStepLoop:
+		valueType = c.inferExpressionType(ctx.GetStepInit())
+	case core.WhileLoop, core.DoWhileLoop:
+		valueType = core.TypeInt
+	}
+
 	if val := ctx.GetValueVariable(); val != nil {
 		varName := val.GetText()
-		loop.DeclareValueVar(varName, c.ctx.Symbols)
+		loop.DeclareValueVar(varName, c.ctx.Symbols, valueType)
+		if loop.Value.IsRegister() {
+			c.ctx.Types.Set(loop.Value, valueType)
+		}
 
 		if loop.Kind == core.ForStepLoop {
 			stepVar := ctx.GetStepVariable()
@@ -151,7 +169,10 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	}
 
 	if ctr := ctx.GetCounterVariable(); ctr != nil {
-		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols)
+		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols, keyType)
+		if loop.Key.IsRegister() {
+			c.ctx.Types.Set(loop.Key, keyType)
+		}
 	}
 
 	// Emit VM instructions for loop initialization
@@ -397,4 +418,140 @@ func (c *LoopCompiler) compileSortClause(ctx fql.ISortClauseContext) {
 func (c *LoopCompiler) compileCollectClause(ctx fql.ICollectClauseContext) {
 	// Delegate to the specialized collect compiler
 	c.ctx.LoopCollectCompiler.Compile(ctx)
+}
+
+func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, src vm.Operand) (core.ValueType, core.ValueType) {
+	if srcCtx == nil {
+		return core.TypeUnknown, core.TypeUnknown
+	}
+
+	if srcCtx.RangeOperator() != nil {
+		return core.TypeInt, core.TypeInt
+	}
+
+	if al := srcCtx.ArrayLiteral(); al != nil {
+		return c.inferArrayLiteralElementType(al), core.TypeInt
+	}
+
+	if srcCtx.ObjectLiteral() != nil {
+		return core.TypeAny, core.TypeString
+	}
+
+	if v := srcCtx.Variable(); v != nil {
+		if op, _, ok := c.ctx.Symbols.Resolve(v.GetText()); ok {
+			return c.inferValueKeyFromCollection(operandType(c.ctx, op))
+		}
+	}
+
+	if srcCtx.Param() != nil || srcCtx.FunctionCallExpression() != nil {
+		return core.TypeAny, core.TypeAny
+	}
+
+	if srcCtx.MemberExpression() != nil {
+		return c.inferValueKeyFromCollection(operandType(c.ctx, src))
+	}
+
+	return c.inferValueKeyFromCollection(operandType(c.ctx, src))
+}
+
+func (c *LoopCompiler) inferValueKeyFromCollection(typ core.ValueType) (core.ValueType, core.ValueType) {
+	switch typ {
+	case core.TypeList:
+		return core.TypeAny, core.TypeInt
+	case core.TypeMap:
+		return core.TypeAny, core.TypeString
+	case core.TypeAny:
+		return core.TypeAny, core.TypeAny
+	default:
+		return core.TypeUnknown, core.TypeUnknown
+	}
+}
+
+func (c *LoopCompiler) inferArrayLiteralElementType(ctx fql.IArrayLiteralContext) core.ValueType {
+	if ctx == nil {
+		return core.TypeUnknown
+	}
+
+	args := ctx.ArgumentList()
+	if args == nil {
+		return core.TypeUnknown
+	}
+
+	exps := args.AllExpression()
+	if len(exps) == 0 {
+		return core.TypeUnknown
+	}
+
+	elemType := core.TypeUnknown
+
+	for _, exp := range exps {
+		typ := c.inferExpressionType(exp)
+		if typ == core.TypeUnknown {
+			return core.TypeAny
+		}
+		if elemType == core.TypeUnknown {
+			elemType = typ
+			continue
+		}
+		if elemType != typ {
+			return core.TypeAny
+		}
+	}
+
+	return elemType
+}
+
+func (c *LoopCompiler) inferExpressionType(ctx fql.IExpressionContext) core.ValueType {
+	if ctx == nil {
+		return core.TypeUnknown
+	}
+
+	if p := ctx.Predicate(); p != nil {
+		return c.inferPredicateType(p)
+	}
+
+	return core.TypeUnknown
+}
+
+func (c *LoopCompiler) inferPredicateType(ctx fql.IPredicateContext) core.ValueType {
+	if ctx == nil {
+		return core.TypeUnknown
+	}
+
+	if atom := ctx.ExpressionAtom(); atom != nil {
+		return c.inferExpressionAtomType(atom)
+	}
+
+	return core.TypeUnknown
+}
+
+func (c *LoopCompiler) inferExpressionAtomType(ctx fql.IExpressionAtomContext) core.ValueType {
+	if ctx == nil {
+		return core.TypeUnknown
+	}
+
+	if lit := ctx.Literal(); lit != nil {
+		return literalType(lit)
+	}
+
+	if v := ctx.Variable(); v != nil {
+		if op, _, ok := c.ctx.Symbols.Resolve(v.GetText()); ok {
+			return operandType(c.ctx, op)
+		}
+		return core.TypeUnknown
+	}
+
+	if ctx.Param() != nil || ctx.FunctionCallExpression() != nil {
+		return core.TypeAny
+	}
+
+	if ctx.RangeOperator() != nil {
+		return core.TypeList
+	}
+
+	if ctx.ForExpression() != nil {
+		return core.TypeList
+	}
+
+	return core.TypeUnknown
 }

@@ -66,9 +66,9 @@ func (l *Loop) BreakLabel() Label {
 	return l.endLabel
 }
 
-func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) bool {
+func (l *Loop) DeclareKeyVar(name string, st *SymbolTable, typ ValueType) bool {
 	if l.canDeclareVar(name) {
-		reg, ok := st.DeclareLocal(name, TypeUnknown)
+		reg, ok := st.DeclareLocal(name, typ)
 
 		if !ok {
 			return false
@@ -81,9 +81,9 @@ func (l *Loop) DeclareKeyVar(name string, st *SymbolTable) bool {
 	return true
 }
 
-func (l *Loop) DeclareValueVar(name string, st *SymbolTable) bool {
+func (l *Loop) DeclareValueVar(name string, st *SymbolTable, typ ValueType) bool {
 	if l.canDeclareVar(name) {
-		reg, ok := st.DeclareLocal(name, TypeUnknown)
+		reg, ok := st.DeclareLocal(name, typ)
 
 		if !ok {
 			return false

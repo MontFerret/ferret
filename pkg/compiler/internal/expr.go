@@ -567,6 +567,7 @@ func (c *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
 	name := ctx.Identifier().GetText()
 	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadParam(reg, c.ctx.Symbols.BindParam(name))
+	c.ctx.Types.Set(reg, core.TypeAny)
 
 	return reg
 }
@@ -722,6 +723,7 @@ func (c *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protecte
 		c.ctx.Emitter.EmitAs(protectedOpcode, dest, seq)
 	}
 
+	c.ctx.Types.Set(dest, core.TypeAny)
 	return dest
 }
 
@@ -758,6 +760,7 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 			// The reason we move is that the argument list must be a contiguous sequence of registers
 			// Otherwise, we cannot compileInitialization neither a list nor an object literal with arguments
 			c.ctx.Emitter.EmitMove(seq[i], srcReg)
+			c.ctx.Types.Set(seq[i], operandType(c.ctx, srcReg))
 		}
 	}
 
@@ -784,6 +787,7 @@ func (c *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.Op
 		c.ctx.Emitter.EmitRange(dst, start, end)
 	})
 
+	c.ctx.Types.Set(dst, core.TypeList)
 	return dst
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -178,6 +179,10 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 		reg = vm.NoopOperand
 	}
 
+	if reg.IsRegister() {
+		c.ctx.Types.Set(reg, core.TypeBool)
+	}
+
 	return reg
 }
 
@@ -192,6 +197,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 	reg := c.ctx.Registers.Allocate()
 	// Emit instruction to load the none value into the register
 	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
+	c.ctx.Types.Set(reg, core.TypeUnknown)
 
 	return reg
 }
@@ -227,6 +233,7 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 		c.ctx.Emitter.EmitArray(destReg, 0)
 	}
 
+	c.ctx.Types.Set(destReg, core.TypeList)
 	return destReg
 }
 
@@ -278,6 +285,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 		c.ctx.Emitter.EmitObject(dst, 0)
 	}
 
+	c.ctx.Types.Set(dst, core.TypeMap)
 	return dst
 }
 
