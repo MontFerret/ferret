@@ -24,7 +24,7 @@ compile:
 	${DIR_E2E}/cli.go
 
 test:
-	go test -race ${DIR_PKG}/... && go test -race ${DIR_INTEG}/...
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
 
 clean:
 	rm -rf ${DIR_BIN}/* && \
