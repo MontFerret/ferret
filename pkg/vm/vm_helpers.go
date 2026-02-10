@@ -125,9 +125,16 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 
 	shapeID := obj.ShapeID()
 	if shapeID != 0 {
+		if pc < 0 || pc >= len(vm.cache.LoadKeyICs) {
+			return vm.loadKey(ctx, src, arg)
+		}
+
 		cache := vm.cache.LoadKeyICs[pc]
 		if cache != nil {
 			if slot, ok := cache.Lookup(shapeID, key); ok {
+				if slot < 0 {
+					return nil, runtime.ErrNotFound
+				}
 				if val, ok := obj.SlotValue(slot); ok {
 					return val, nil
 				}
@@ -138,6 +145,12 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 
 		slot, ok := obj.LookupSlot(key)
 		if !ok {
+			if cache == nil {
+				cache = mem.NewLoadKeyCache()
+				vm.cache.LoadKeyICs[pc] = cache
+			}
+
+			cache.Add(shapeID, key, -1)
 			return nil, runtime.ErrNotFound
 		}
 

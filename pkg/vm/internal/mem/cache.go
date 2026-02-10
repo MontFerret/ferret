@@ -11,7 +11,7 @@ type (
 		FuncHash   uint64
 		Functions  map[int]*CachedFunction
 		Regexps    map[int]*regexp.Regexp
-		LoadKeyICs map[int]*LoadKeyCache
+		LoadKeyICs []*LoadKeyCache
 	}
 
 	CachedFunction struct {
@@ -82,10 +82,10 @@ func (c *LoadKeyCache) Add(shapeID uint64, key string, slot int) {
 	c.megamorphic = true
 }
 
-func NewCache() *Cache {
+func NewCache(bytecodeLen int) *Cache {
 	return &Cache{
 		Functions:  make(map[int]*CachedFunction),
 		Regexps:    make(map[int]*regexp.Regexp),
-		LoadKeyICs: make(map[int]*LoadKeyCache),
+		LoadKeyICs: make([]*LoadKeyCache, bytecodeLen),
 	}
 }

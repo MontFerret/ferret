@@ -22,7 +22,7 @@ func New(program *Program) *VM {
 	vm := new(VM)
 	vm.program = program
 	vm.registers = mem.NewRegisterFile(program.Registers)
-	vm.cache = mem.NewCache()
+	vm.cache = mem.NewCache(len(program.Bytecode))
 
 	return vm
 }
