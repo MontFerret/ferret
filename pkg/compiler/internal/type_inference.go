@@ -8,6 +8,10 @@ import (
 )
 
 func valueTypeFromRuntime(value runtime.Value) core.ValueType {
+	if value == runtime.None {
+		return core.TypeNone
+	}
+
 	switch value.(type) {
 	case runtime.Int:
 		return core.TypeInt
@@ -32,6 +36,8 @@ func literalType(ctx fql.ILiteralContext) core.ValueType {
 	}
 
 	switch {
+	case ctx.NoneLiteral() != nil:
+		return core.TypeNone
 	case ctx.StringLiteral() != nil:
 		return core.TypeString
 	case ctx.IntegerLiteral() != nil:

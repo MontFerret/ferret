@@ -197,7 +197,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 	reg := c.ctx.Registers.Allocate()
 	// Emit instruction to load the none value into the register
 	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
-	c.ctx.Types.Set(reg, core.TypeUnknown)
+	c.ctx.Types.Set(reg, core.TypeNone)
 
 	return reg
 }
