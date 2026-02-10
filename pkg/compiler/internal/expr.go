@@ -493,31 +493,62 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 
 	for _, segment := range segments {
 		var src2 vm.Operand
+		var constOperand bool
 		p := segment.(*fql.MemberExpressionPathContext)
+		srcType := operandType(c.ctx, src1)
 
 		if pn := p.PropertyName(); pn != nil {
-			src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
+			if (srcType == core.TypeArray || srcType == core.TypeObject) && pn != nil {
+				if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+					src2 = constOp
+					constOperand = true
+				} else {
+					src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
+				}
+			} else {
+				src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
+			}
 		} else if cpn := p.ComputedPropertyName(); cpn != nil {
-			src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
+			if srcType == core.TypeArray || srcType == core.TypeObject {
+				if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+					src2 = c.ctx.Symbols.AddConstant(val)
+					constOperand = true
+				} else {
+					src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
+				}
+			} else {
+				src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
+			}
 		}
 
 		dst = c.ctx.Registers.Allocate()
 
 		span := diagnostics.SpanFromRuleContext(p)
 		c.ctx.Emitter.WithSpan(span, func() {
-			srcType := operandType(c.ctx, src1)
 			optional := p.ErrorOperator() != nil
 			var op vm.Opcode
 
 			switch srcType {
 			case core.TypeArray:
-				if optional {
+				if constOperand {
+					if optional {
+						op = vm.OpLoadIndexOptionalConst
+					} else {
+						op = vm.OpLoadIndexConst
+					}
+				} else if optional {
 					op = vm.OpLoadIndexOptional
 				} else {
 					op = vm.OpLoadIndex
 				}
 			case core.TypeObject:
-				if optional {
+				if constOperand {
+					if optional {
+						op = vm.OpLoadKeyOptionalConst
+					} else {
+						op = vm.OpLoadKeyConst
+					}
+				} else if optional {
 					op = vm.OpLoadKeyOptional
 				} else {
 					op = vm.OpLoadKey

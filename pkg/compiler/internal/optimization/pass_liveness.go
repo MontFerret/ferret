@@ -189,7 +189,8 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		vm.OpAllEq, vm.OpAllNe, vm.OpAllGt, vm.OpAllGte, vm.OpAllLt, vm.OpAllLte,
 		vm.OpAllIn,
 		vm.OpIn, vm.OpLike, vm.OpRegexp,
-		vm.OpLoadIndex, vm.OpLoadIndexOptional, vm.OpLoadKey, vm.OpLoadKeyOptional,
+		vm.OpLoadIndex, vm.OpLoadIndexOptional, vm.OpLoadIndexConst, vm.OpLoadIndexOptionalConst,
+		vm.OpLoadKey, vm.OpLoadKeyOptional, vm.OpLoadKeyConst, vm.OpLoadKeyOptionalConst,
 		vm.OpLoadProperty, vm.OpLoadPropertyOptional:
 		addUse(src1)
 		addUse(src2)

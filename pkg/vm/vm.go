@@ -193,12 +193,30 @@ loop:
 				return nil, err
 			}
 
+		case OpLoadIndexConst, OpLoadIndexOptionalConst:
+			src := reg[src1]
+			arg := constants[src2.Constant()]
+			out, err := vm.loadIndex(ctx, src, arg)
+
+			if err := vm.setOrOptional(dst, out, err, op == OpLoadIndexOptionalConst); err != nil {
+				return nil, err
+			}
+
 		case OpLoadKey, OpLoadKeyOptional:
 			src := reg[src1]
 			arg := reg[src2]
 			out, err := vm.loadKeyCached(ctx, vm.pc-1, src, arg)
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptional); err != nil {
+				return nil, err
+			}
+
+		case OpLoadKeyConst, OpLoadKeyOptionalConst:
+			src := reg[src1]
+			arg := constants[src2.Constant()]
+			out, err := vm.loadKeyCached(ctx, vm.pc-1, src, arg)
+
+			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptionalConst); err != nil {
 				return nil, err
 			}
 

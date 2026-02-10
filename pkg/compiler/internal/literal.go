@@ -61,7 +61,7 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
 //
 // Returns:
 //   - An operand representing the compiled string constant
-func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
+func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 	var b strings.Builder
 
 	// Process each child node in the string literal
@@ -113,8 +113,19 @@ func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm
 		}
 	}
 
+	return runtime.NewString(b.String())
+}
+
+// CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
+// It handles escape sequences like \n and \t, and properly extracts the string content without quotes.
+// Parameters:
+//   - ctx: The string literal context from the AST
+//
+// Returns:
+//   - An operand representing the compiled string constant
+func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
 	// Create a runtime string and load it as a constant
-	return loadConstant(c.ctx, runtime.NewString(b.String()))
+	return loadConstant(c.ctx, parseStringLiteral(ctx))
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
@@ -302,7 +313,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.Operand {
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
-		return c.CompileStringLiteral(str)
+		return loadConstant(c.ctx, parseStringLiteral(str))
 	}
 
 	var name string
@@ -323,6 +334,38 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.O
 
 	// Create a runtime string from the property name and load it as a constant
 	return loadConstant(c.ctx, runtime.NewString(name))
+}
+
+// CompilePropertyNameConst compiles a property name into a constant operand without emitting instructions.
+// It returns (operand, true) when a constant can be produced, otherwise (NoopOperand, false).
+func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext) (vm.Operand, bool) {
+	if ctx == nil {
+		return vm.NoopOperand, false
+	}
+
+	// Handle string literal property names (e.g., { "property": value })
+	if str := ctx.StringLiteral(); str != nil {
+		value := parseStringLiteral(str)
+		return c.ctx.Symbols.AddConstant(value), true
+	}
+
+	var name string
+
+	// Handle different types of identifier property names
+	if id := ctx.Identifier(); id != nil {
+		// Regular identifier (e.g., { property: value })
+		name = id.GetText()
+	} else if word := ctx.SafeReservedWord(); word != nil {
+		// Safe reserved word (e.g., { return: value })
+		name = word.GetText()
+	} else if word := ctx.UnsafeReservedWord(); word != nil {
+		// Unsafe reserved word (e.g., { for: value })
+		name = word.GetText()
+	} else {
+		return vm.NoopOperand, false
+	}
+
+	return c.ctx.Symbols.AddConstant(runtime.NewString(name)), true
 }
 
 // CompileComputedPropertyName processes a computed property name from an object literal in the FQL AST.

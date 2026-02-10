@@ -1,6 +1,9 @@
 package internal
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -53,6 +56,80 @@ func literalType(ctx fql.ILiteralContext) core.ValueType {
 	default:
 		return core.TypeUnknown
 	}
+}
+
+func literalValue(ctx fql.ILiteralContext) (runtime.Value, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+
+	switch {
+	case ctx.NoneLiteral() != nil:
+		return runtime.None, true
+	case ctx.StringLiteral() != nil:
+		return parseStringLiteral(ctx.StringLiteral()), true
+	case ctx.IntegerLiteral() != nil:
+		val, err := strconv.Atoi(ctx.IntegerLiteral().GetText())
+		if err != nil {
+			return nil, false
+		}
+		return runtime.NewInt(val), true
+	case ctx.FloatLiteral() != nil:
+		val, err := strconv.ParseFloat(ctx.FloatLiteral().GetText(), 64)
+		if err != nil {
+			return nil, false
+		}
+		return runtime.NewFloat(val), true
+	case ctx.BooleanLiteral() != nil:
+		switch strings.ToLower(ctx.BooleanLiteral().GetText()) {
+		case "true":
+			return runtime.True, true
+		case "false":
+			return runtime.False, true
+		}
+	case ctx.ArrayLiteral() != nil:
+		return runtime.NewArray(0), true
+	case ctx.ObjectLiteral() != nil:
+		return runtime.NewObject(), true
+	}
+
+	return nil, false
+}
+
+func literalValueFromExpression(ctx fql.IExpressionContext) (runtime.Value, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+
+	if p := ctx.Predicate(); p != nil {
+		return literalValueFromPredicate(p)
+	}
+
+	return nil, false
+}
+
+func literalValueFromPredicate(ctx fql.IPredicateContext) (runtime.Value, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+
+	if atom := ctx.ExpressionAtom(); atom != nil {
+		return literalValueFromAtom(atom)
+	}
+
+	return nil, false
+}
+
+func literalValueFromAtom(ctx fql.IExpressionAtomContext) (runtime.Value, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+
+	if lit := ctx.Literal(); lit != nil {
+		return literalValue(lit)
+	}
+
+	return nil, false
 }
 
 func operandType(ctx *CompilerContext, op vm.Operand) core.ValueType {
