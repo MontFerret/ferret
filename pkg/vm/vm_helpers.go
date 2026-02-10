@@ -171,6 +171,69 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 	return vm.loadKey(ctx, src, arg)
 }
 
+func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
+	obj, ok := src.(*runtime.Object)
+	if !ok {
+		return vm.loadKey(ctx, src, arg)
+	}
+
+	shapeID := obj.ShapeID()
+	if shapeID != 0 {
+		if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
+			return vm.loadKey(ctx, src, arg)
+		}
+
+		cache := vm.cache.LoadKeyConstICs[pc]
+		if cache != nil {
+			if slot, ok := cache.Lookup(shapeID); ok {
+				if slot < 0 {
+					return nil, runtime.ErrNotFound
+				}
+				if val, ok := obj.SlotValue(slot); ok {
+					return val, nil
+				}
+
+				return nil, runtime.ErrNotFound
+			}
+		}
+
+		var key string
+
+		switch v := arg.(type) {
+		case runtime.String:
+			key = string(v)
+		default:
+			key = runtime.ToString(v).String()
+		}
+
+		slot, ok := obj.LookupSlot(key)
+		if !ok {
+			if cache == nil {
+				cache = mem.NewLoadKeyConstCache()
+				vm.cache.LoadKeyConstICs[pc] = cache
+			}
+
+			cache.Add(shapeID, -1)
+			return nil, runtime.ErrNotFound
+		}
+
+		val, ok := obj.SlotValue(slot)
+		if !ok {
+			return nil, runtime.ErrNotFound
+		}
+
+		if cache == nil {
+			cache = mem.NewLoadKeyConstCache()
+			vm.cache.LoadKeyConstICs[pc] = cache
+		}
+
+		cache.Add(shapeID, slot)
+		return val, nil
+	}
+
+	return vm.loadKey(ctx, src, arg)
+}
+
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
 	indexed, ok := src.(runtime.Indexed)
 

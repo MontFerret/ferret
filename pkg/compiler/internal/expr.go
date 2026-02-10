@@ -498,24 +498,16 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 		srcType := operandType(c.ctx, src1)
 
 		if pn := p.PropertyName(); pn != nil {
-			if (srcType == core.TypeArray || srcType == core.TypeObject) && pn != nil {
-				if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
-					src2 = constOp
-					constOperand = true
-				} else {
-					src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
-				}
+			if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+				src2 = constOp
+				constOperand = true
 			} else {
 				src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
 			}
 		} else if cpn := p.ComputedPropertyName(); cpn != nil {
-			if srcType == core.TypeArray || srcType == core.TypeObject {
-				if val, ok := literalValueFromExpression(cpn.Expression()); ok {
-					src2 = c.ctx.Symbols.AddConstant(val)
-					constOperand = true
-				} else {
-					src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
-				}
+			if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+				src2 = c.ctx.Symbols.AddConstant(val)
+				constOperand = true
 			} else {
 				src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
 			}
