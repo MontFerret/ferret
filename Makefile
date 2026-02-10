@@ -26,6 +26,11 @@ compile:
 test:
 	go test -race ${DIR_PKG}/... && go test -race ${DIR_INTEG}/...
 
+clean:
+	rm -rf ${DIR_BIN}/* && \
+	rm -rf coverage.txt && \
+	go clean -testcache
+
 cover:
 	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
 	curl -s https://codecov.io/bash | bash

@@ -37,6 +37,8 @@ type (
 	}
 
 	LoadKeyConstCache struct {
+		shapeID     uint64
+		slot        int
 		entries     [loadKeyICEntries]LoadKeyConstCacheEntry
 		size        uint8
 		megamorphic bool
@@ -95,12 +97,16 @@ func (c *LoadKeyCache) Add(shapeID uint64, key string, slot int) {
 }
 
 func NewLoadKeyConstCache() *LoadKeyConstCache {
-	return &LoadKeyConstCache{}
+	return &LoadKeyConstCache{slot: -1}
 }
 
 func (c *LoadKeyConstCache) Lookup(shapeID uint64) (int, bool) {
 	if c == nil || c.megamorphic {
 		return 0, false
+	}
+
+	if c.shapeID == shapeID {
+		return c.slot, true
 	}
 
 	for i := 0; i < int(c.size); i++ {
@@ -115,6 +121,17 @@ func (c *LoadKeyConstCache) Lookup(shapeID uint64) (int, bool) {
 
 func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 	if c == nil || c.megamorphic {
+		return
+	}
+
+	if c.shapeID == 0 {
+		c.shapeID = shapeID
+		c.slot = slot
+		return
+	}
+
+	if c.shapeID == shapeID {
+		c.slot = slot
 		return
 	}
 
