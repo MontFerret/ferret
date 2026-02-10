@@ -33,6 +33,8 @@ const (
 	OpLoadIndexOptionalConst
 	OpLoadKeyConst // Load a value from a built-in Object to a register using a constant key
 	OpLoadKeyOptionalConst
+	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
+	OpLoadPropertyOptionalConst
 
 	// Arithmetic Operations
 	OpAdd
@@ -175,6 +177,10 @@ func (op Opcode) String() string {
 		return "LOADKC"
 	case OpLoadKeyOptionalConst:
 		return "LOADKOC"
+	case OpLoadPropertyConst:
+		return "LOADPRC"
+	case OpLoadPropertyOptionalConst:
+		return "LOADPROC"
 	case OpLoadProperty:
 		return "LOADPR"
 	case OpLoadPropertyOptional:

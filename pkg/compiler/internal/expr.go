@@ -554,7 +554,13 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 					op = vm.OpLoadKey
 				}
 			default:
-				if optional {
+				if constOperand {
+					if optional {
+						op = vm.OpLoadPropertyOptionalConst
+					} else {
+						op = vm.OpLoadPropertyConst
+					}
+				} else if optional {
 					op = vm.OpLoadPropertyOptional
 				} else {
 					op = vm.OpLoadProperty

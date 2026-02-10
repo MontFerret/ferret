@@ -220,6 +220,26 @@ loop:
 				return nil, err
 			}
 
+		case OpLoadPropertyConst, OpLoadPropertyOptionalConst:
+			src := reg[src1]
+			prop := constants[src2.Constant()]
+
+			var out runtime.Value
+			var err error
+
+			switch getter := prop.(type) {
+			case runtime.String:
+				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, getter)
+			case runtime.Float, runtime.Int:
+				out, err = vm.loadIndex(ctx, src, getter)
+			default:
+				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, runtime.ToString(prop))
+			}
+
+			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptionalConst); err != nil {
+				return nil, err
+			}
+
 		case OpLoadProperty, OpLoadPropertyOptional:
 			src := reg[src1]
 			prop := reg[src2]
