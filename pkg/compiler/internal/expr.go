@@ -505,12 +505,32 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 
 		span := diagnostics.SpanFromRuleContext(p)
 		c.ctx.Emitter.WithSpan(span, func() {
-			// TODO: Replace with EmitLoadKey
-			if p.ErrorOperator() != nil {
-				c.ctx.Emitter.EmitLoadPropertyOptional(dst, src1, src2)
-			} else {
-				c.ctx.Emitter.EmitLoadProperty(dst, src1, src2)
+			srcType := operandType(c.ctx, src1)
+			optional := p.ErrorOperator() != nil
+			var op vm.Opcode
+
+			switch srcType {
+			case core.TypeArray:
+				if optional {
+					op = vm.OpLoadIndexOptional
+				} else {
+					op = vm.OpLoadIndex
+				}
+			case core.TypeObject:
+				if optional {
+					op = vm.OpLoadKeyOptional
+				} else {
+					op = vm.OpLoadKey
+				}
+			default:
+				if optional {
+					op = vm.OpLoadPropertyOptional
+				} else {
+					op = vm.OpLoadProperty
+				}
 			}
+
+			c.ctx.Emitter.EmitABC(op, dst, src1, src2)
 		})
 
 		src1 = dst
