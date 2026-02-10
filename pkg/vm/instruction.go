@@ -3,6 +3,9 @@ package vm
 type Instruction struct {
 	Opcode   Opcode
 	Operands [3]Operand
+
+	inlineShapeID uint64
+	inlineSlot    int
 }
 
 func NewInstruction(opcode Opcode, operands ...Operand) Instruction {

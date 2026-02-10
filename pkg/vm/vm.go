@@ -15,6 +15,7 @@ type VM struct {
 	cache     *mem.Cache
 	env       *Environment
 	program   *Program
+	bytecode  []Instruction
 	pc        int
 }
 
@@ -23,6 +24,8 @@ func New(program *Program) *VM {
 	vm.program = program
 	vm.registers = mem.NewRegisterFile(program.Registers)
 	vm.cache = mem.NewCache(len(program.Bytecode))
+	vm.bytecode = make([]Instruction, len(program.Bytecode))
+	copy(vm.bytecode, program.Bytecode)
 
 	return vm
 }
@@ -60,12 +63,12 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 	vm.env = env
 	vm.pc = 0
 
-	bytecode := vm.program.Bytecode
+	bytecode := vm.bytecode
 	constants := vm.program.Constants
 	reg := vm.registers.Values
 loop:
 	for vm.pc < len(bytecode) {
-		inst := bytecode[vm.pc]
+		inst := &bytecode[vm.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 		vm.pc++
@@ -214,7 +217,7 @@ loop:
 		case OpLoadKeyConst, OpLoadKeyOptionalConst:
 			src := reg[src1]
 			arg := constants[src2.Constant()]
-			out, err := vm.loadKeyConstCached(ctx, vm.pc-1, src, arg)
+			out, err := vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, arg)
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptionalConst); err != nil {
 				return nil, err
@@ -229,11 +232,11 @@ loop:
 
 			switch getter := prop.(type) {
 			case runtime.String:
-				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, src, getter)
+				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, getter)
 			case runtime.Float, runtime.Int:
 				out, err = vm.loadIndex(ctx, src, getter)
 			default:
-				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, src, runtime.ToString(prop))
+				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, runtime.ToString(prop))
 			}
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptionalConst); err != nil {

@@ -171,7 +171,7 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 	return vm.loadKey(ctx, src, arg)
 }
 
-func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
+func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*runtime.Object)
 	if !ok {
 		return vm.loadKey(ctx, src, arg)
@@ -179,6 +179,17 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, src, arg runtime.V
 
 	shapeID := obj.ShapeID()
 	if shapeID != 0 {
+		if inst != nil && inst.inlineShapeID == shapeID {
+			if inst.inlineSlot < 0 {
+				return nil, runtime.ErrNotFound
+			}
+			if val, ok := obj.SlotValue(inst.inlineSlot); ok {
+				return val, nil
+			}
+
+			return nil, runtime.ErrNotFound
+		}
+
 		if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
 			return vm.loadKey(ctx, src, arg)
 		}
@@ -186,6 +197,11 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, src, arg runtime.V
 		cache := vm.cache.LoadKeyConstICs[pc]
 		if cache != nil {
 			if slot, ok := cache.Lookup(shapeID); ok {
+				if inst != nil {
+					inst.inlineShapeID = shapeID
+					inst.inlineSlot = slot
+				}
+
 				if slot < 0 {
 					return nil, runtime.ErrNotFound
 				}
@@ -214,6 +230,10 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, src, arg runtime.V
 			}
 
 			cache.Add(shapeID, -1)
+			if inst != nil {
+				inst.inlineShapeID = shapeID
+				inst.inlineSlot = -1
+			}
 			return nil, runtime.ErrNotFound
 		}
 
@@ -228,6 +248,10 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, src, arg runtime.V
 		}
 
 		cache.Add(shapeID, slot)
+		if inst != nil {
+			inst.inlineShapeID = shapeID
+			inst.inlineSlot = slot
+		}
 		return val, nil
 	}
 
