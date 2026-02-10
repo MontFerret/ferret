@@ -456,9 +456,9 @@ func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, s
 
 func (c *LoopCompiler) inferValueKeyFromCollection(typ core.ValueType) (core.ValueType, core.ValueType) {
 	switch typ {
-	case core.TypeList:
+	case core.TypeList, core.TypeArray:
 		return core.TypeAny, core.TypeInt
-	case core.TypeMap:
+	case core.TypeMap, core.TypeObject:
 		return core.TypeAny, core.TypeString
 	case core.TypeAny:
 		return core.TypeAny, core.TypeAny

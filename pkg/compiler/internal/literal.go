@@ -233,7 +233,7 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 		c.ctx.Emitter.EmitArray(destReg, 0)
 	}
 
-	c.ctx.Types.Set(destReg, core.TypeList)
+	c.ctx.Types.Set(destReg, core.TypeArray)
 	return destReg
 }
 
@@ -285,7 +285,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 		c.ctx.Emitter.EmitObject(dst, 0)
 	}
 
-	c.ctx.Types.Set(dst, core.TypeMap)
+	c.ctx.Types.Set(dst, core.TypeObject)
 	return dst
 }
 

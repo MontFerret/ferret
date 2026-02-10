@@ -27,10 +27,13 @@ type ValueType int
 
 const (
 	TypeUnknown ValueType = iota
+	TypeNone
 	TypeInt
 	TypeFloat
 	TypeString
 	TypeBool
+	TypeArray
+	TypeObject
 	TypeList
 	TypeMap
 	TypeAny

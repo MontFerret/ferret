@@ -18,9 +18,9 @@ func valueTypeFromRuntime(value runtime.Value) core.ValueType {
 	case runtime.Boolean:
 		return core.TypeBool
 	case *runtime.Array:
-		return core.TypeList
+		return core.TypeArray
 	case *runtime.Object:
-		return core.TypeMap
+		return core.TypeObject
 	default:
 		return core.TypeUnknown
 	}
@@ -41,9 +41,9 @@ func literalType(ctx fql.ILiteralContext) core.ValueType {
 	case ctx.BooleanLiteral() != nil:
 		return core.TypeBool
 	case ctx.ArrayLiteral() != nil:
-		return core.TypeList
+		return core.TypeArray
 	case ctx.ObjectLiteral() != nil:
-		return core.TypeMap
+		return core.TypeObject
 	default:
 		return core.TypeUnknown
 	}
