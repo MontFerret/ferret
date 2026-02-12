@@ -279,6 +279,31 @@ LET values = [1, 2, 3, 4]
 RETURN values[* FILTER CURRENT > 2 RETURN CURRENT * 10]`, []any{30, 40}),
 		CaseArray(`
 LET users = [
+	{ name: "Ann", age: 20 },
+	{ name: "Bob", age: 30 }
+]
+RETURN users[* FILTER CURRENT.age > 20].name`, []any{"Bob"}),
+		CaseArray(`
+LET users = [
+	{ name: "Ann" },
+	{ name: "Bob" },
+	{ name: "Cat" }
+]
+RETURN users[* LIMIT 2].name`, []any{"Ann", "Bob"}),
+		CaseArray(`
+LET users = [
+	{ name: "Ann" },
+	{ name: "Bob" }
+]
+RETURN users[* RETURN { n: CURRENT.name }].n`, []any{"Ann", "Bob"}),
+		CaseArray(`
+LET groups = [
+	[{ name: "Ann", age: 20 }],
+	[{ name: "Bob", age: 30 }]
+]
+RETURN groups[** FILTER CURRENT.age > 20].name`, []any{"Bob"}),
+		CaseArray(`
+LET users = [
 						{ 
 							name: "john", 
 							age: 30,
