@@ -212,9 +212,35 @@ func TestMember(t *testing.T) {
 					[]any{5},
 				},
 			}),
+		CaseArray(`
+					LET arr = [[1, 2], 3, [4, 5], 6]
+
+					RETURN arr[**]
+				`,
+			[]any{1, 2, 3, 4, 5, 6}),
+		CaseArray(`
+					LET arr = [[[1], [2]], [[3]]]
+
+					RETURN arr[***]
+				`,
+			[]any{1, 2, 3}),
+		CaseArray(`
+					LET users = [
+						[{ name: "Ann" }, { name: "Ben" }],
+						[{ name: "Cat" }]
+					]
+
+					RETURN users[**].name
+				`,
+			[]any{"Ann", "Ben", "Cat"}),
+		CaseRuntimeError(`
+					LET value = 1
+
+					RETURN value[**]
+				`),
 		CaseNil(`
 					LET obj = { foo: None }
-	
+
 					RETURN obj.foo?.bar
 				`),
 	})

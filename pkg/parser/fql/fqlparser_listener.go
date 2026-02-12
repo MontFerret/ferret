@@ -175,6 +175,9 @@ type FqlParserListener interface {
 	// EnterArrayExpansion is called when entering the arrayExpansion production.
 	EnterArrayExpansion(c *ArrayExpansionContext)
 
+	// EnterArrayContraction is called when entering the arrayContraction production.
+	EnterArrayContraction(c *ArrayContractionContext)
+
 	// EnterSafeReservedWord is called when entering the safeReservedWord production.
 	EnterSafeReservedWord(c *SafeReservedWordContext)
 
@@ -396,6 +399,9 @@ type FqlParserListener interface {
 
 	// ExitArrayExpansion is called when exiting the arrayExpansion production.
 	ExitArrayExpansion(c *ArrayExpansionContext)
+
+	// ExitArrayContraction is called when exiting the arrayContraction production.
+	ExitArrayContraction(c *ArrayContractionContext)
 
 	// ExitSafeReservedWord is called when exiting the safeReservedWord production.
 	ExitSafeReservedWord(c *SafeReservedWordContext)

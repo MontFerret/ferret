@@ -131,6 +131,9 @@ const (
 	OpIterKey   // Returns the current key
 	OpIterLimit
 	OpIterSkip
+
+	// Array Operations
+	OpFlatten // Flattens nested arrays
 )
 
 func (op Opcode) String() string {
@@ -366,6 +369,8 @@ func (op Opcode) String() string {
 		return "ITLIMIT"
 	case OpIterSkip:
 		return "ITSKIP"
+	case OpFlatten:
+		return "FLATTEN"
 
 	default:
 		return "UNKNOWN"

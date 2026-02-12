@@ -346,6 +346,18 @@ loop:
 			}
 		case OpType:
 			reg[dst] = runtime.String(runtime.Reflect(reg[src1]))
+		case OpFlatten:
+			depth := src2.Register()
+
+			if depth < 1 {
+				depth = 1
+			}
+
+			res, err := operators.Flatten(ctx, reg[src1], depth)
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
 		case OpClose:
 			val, ok := reg[dst].(io.Closer)
 			reg[dst] = runtime.None

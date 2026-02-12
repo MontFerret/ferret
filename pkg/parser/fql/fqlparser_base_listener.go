@@ -358,6 +358,12 @@ func (s *BaseFqlParserListener) EnterArrayExpansion(ctx *ArrayExpansionContext) 
 // ExitArrayExpansion is called when production arrayExpansion is exited.
 func (s *BaseFqlParserListener) ExitArrayExpansion(ctx *ArrayExpansionContext) {}
 
+// EnterArrayContraction is called when production arrayContraction is entered.
+func (s *BaseFqlParserListener) EnterArrayContraction(ctx *ArrayContractionContext) {}
+
+// ExitArrayContraction is called when production arrayContraction is exited.
+func (s *BaseFqlParserListener) ExitArrayContraction(ctx *ArrayContractionContext) {}
+
 // EnterSafeReservedWord is called when production safeReservedWord is entered.
 func (s *BaseFqlParserListener) EnterSafeReservedWord(ctx *SafeReservedWordContext) {}
 

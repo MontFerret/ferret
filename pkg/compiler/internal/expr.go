@@ -518,6 +518,9 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 
 	for idx, segment := range segments {
 		p := segment.(*fql.MemberExpressionPathContext)
+		if contraction := p.ArrayContraction(); contraction != nil {
+			return c.compileArrayContraction(src, contraction, segments[idx+1:])
+		}
 		if expansion := p.ArrayExpansion(); expansion != nil {
 			return c.compileArrayExpansion(src, expansion, segments[idx+1:])
 		}
@@ -598,6 +601,50 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 }
 
 func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	span := diagnostics.SpanFromRuleContext(expansion)
+	return c.compileArrayIteration(src, span, tail)
+}
+
+func (c *ExprCompiler) compileArrayContraction(src vm.Operand, contraction fql.IArrayContractionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	depth := arrayContractionDepth(contraction)
+	if depth < 1 {
+		depth = 1
+	}
+
+	span := diagnostics.SpanFromRuleContext(contraction)
+
+	dst := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABx(vm.OpFlatten, dst, src, depth)
+	})
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeList)
+	}
+
+	if len(tail) == 0 {
+		return dst
+	}
+
+	return c.compileArrayIteration(dst, span, tail)
+}
+
+func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
+	if ctx == nil {
+		return 1
+	}
+
+	if c, ok := ctx.(*fql.ArrayContractionContext); ok {
+		count := len(c.AllMulti())
+		if count > 1 {
+			return count - 1
+		}
+	}
+
+	return 1
+}
+
+func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tail []fql.IMemberExpressionPathContext) vm.Operand {
 	loop := &core.Loop{
 		Kind:     core.ForInLoop,
 		Type:     core.NormalLoop,
@@ -615,7 +662,6 @@ func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArra
 		c.ctx.Types.Set(loop.Value, core.TypeAny)
 	}
 
-	span := diagnostics.SpanFromRuleContext(expansion)
 	c.ctx.Emitter.WithSpan(span, func() {
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 	})

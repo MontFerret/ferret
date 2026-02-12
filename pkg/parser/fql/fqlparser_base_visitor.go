@@ -231,6 +231,10 @@ func (v *BaseFqlParserVisitor) VisitArrayExpansion(ctx *ArrayExpansionContext) i
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitArrayContraction(ctx *ArrayContractionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
