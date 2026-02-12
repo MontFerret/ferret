@@ -364,6 +364,30 @@ func (s *BaseFqlParserListener) EnterArrayContraction(ctx *ArrayContractionConte
 // ExitArrayContraction is called when production arrayContraction is exited.
 func (s *BaseFqlParserListener) ExitArrayContraction(ctx *ArrayContractionContext) {}
 
+// EnterInlineExpression is called when production inlineExpression is entered.
+func (s *BaseFqlParserListener) EnterInlineExpression(ctx *InlineExpressionContext) {}
+
+// ExitInlineExpression is called when production inlineExpression is exited.
+func (s *BaseFqlParserListener) ExitInlineExpression(ctx *InlineExpressionContext) {}
+
+// EnterInlineFilter is called when production inlineFilter is entered.
+func (s *BaseFqlParserListener) EnterInlineFilter(ctx *InlineFilterContext) {}
+
+// ExitInlineFilter is called when production inlineFilter is exited.
+func (s *BaseFqlParserListener) ExitInlineFilter(ctx *InlineFilterContext) {}
+
+// EnterInlineLimit is called when production inlineLimit is entered.
+func (s *BaseFqlParserListener) EnterInlineLimit(ctx *InlineLimitContext) {}
+
+// ExitInlineLimit is called when production inlineLimit is exited.
+func (s *BaseFqlParserListener) ExitInlineLimit(ctx *InlineLimitContext) {}
+
+// EnterInlineReturn is called when production inlineReturn is entered.
+func (s *BaseFqlParserListener) EnterInlineReturn(ctx *InlineReturnContext) {}
+
+// ExitInlineReturn is called when production inlineReturn is exited.
+func (s *BaseFqlParserListener) ExitInlineReturn(ctx *InlineReturnContext) {}
+
 // EnterSafeReservedWord is called when production safeReservedWord is entered.
 func (s *BaseFqlParserListener) EnterSafeReservedWord(ctx *SafeReservedWordContext) {}
 

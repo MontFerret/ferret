@@ -508,6 +508,18 @@ func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSo
 		return c.CompileFunctionCall(fc, segment.ErrorOperator() != nil)
 	}
 
+	if fe := mes.ForExpression(); fe != nil {
+		return c.ctx.LoopCompiler.Compile(fe)
+	}
+
+	if wfe := mes.WaitForExpression(); wfe != nil {
+		return c.ctx.WaitCompiler.Compile(wfe)
+	}
+
+	if e := mes.Expression(); e != nil {
+		return c.Compile(e)
+	}
+
 	return vm.NoopOperand
 }
 
@@ -602,7 +614,8 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 
 func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
 	span := diagnostics.SpanFromRuleContext(expansion)
-	return c.compileArrayIteration(src, span, tail)
+	inline := expansion.InlineExpression()
+	return c.compileArrayIteration(src, span, tail, inline)
 }
 
 func (c *ExprCompiler) compileArrayContraction(src vm.Operand, contraction fql.IArrayContractionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
@@ -622,11 +635,13 @@ func (c *ExprCompiler) compileArrayContraction(src vm.Operand, contraction fql.I
 		c.ctx.Types.Set(dst, core.TypeList)
 	}
 
-	if len(tail) == 0 {
+	inline := contraction.InlineExpression()
+
+	if len(tail) == 0 && inline == nil {
 		return dst
 	}
 
-	return c.compileArrayIteration(dst, span, tail)
+	return c.compileArrayIteration(dst, span, tail, inline)
 }
 
 func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
@@ -634,17 +649,15 @@ func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
 		return 1
 	}
 
-	if c, ok := ctx.(*fql.ArrayContractionContext); ok {
-		count := len(c.AllMulti())
-		if count > 1 {
-			return count - 1
-		}
+	count := len(ctx.GetStars())
+	if count > 1 {
+		return count - 1
 	}
 
 	return 1
 }
 
-func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tail []fql.IMemberExpressionPathContext) vm.Operand {
+func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext) vm.Operand {
 	loop := &core.Loop{
 		Kind:     core.ForInLoop,
 		Type:     core.NormalLoop,
@@ -666,9 +679,20 @@ func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tai
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 	})
 
+	if inline != nil {
+		c.compileInlineFilter(inline)
+		c.compileInlineLimit(inline)
+	}
+
 	projection := loop.Value
+	if inline != nil {
+		if ret := inline.InlineReturn(); ret != nil {
+			projection = c.ctx.ExprCompiler.Compile(ret.Expression())
+		}
+	}
+
 	if len(tail) > 0 {
-		projection = c.compileMemberExpressionSegments(loop.Value, tail)
+		projection = c.compileMemberExpressionSegments(projection, tail)
 	}
 
 	c.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, projection)
@@ -684,6 +708,45 @@ func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tai
 	return loop.Dst
 }
 
+func (c *ExprCompiler) compileInlineFilter(inline fql.IInlineExpressionContext) {
+	if inline == nil {
+		return
+	}
+
+	filter := inline.InlineFilter()
+	if filter == nil {
+		return
+	}
+
+	src := c.ctx.ExprCompiler.Compile(filter.Expression())
+	label := c.ctx.Loops.Current().ContinueLabel()
+	c.ctx.Emitter.EmitJumpIfFalse(src, label)
+}
+
+func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
+	if inline == nil {
+		return
+	}
+
+	limit := inline.InlineLimit()
+	if limit == nil {
+		return
+	}
+
+	clauses := limit.AllLimitClauseValue()
+	if len(clauses) == 0 {
+		return
+	}
+
+	if len(clauses) == 1 {
+		c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+		return
+	}
+
+	c.ctx.LoopCompiler.compileOffset(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+	c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[1]))
+}
+
 // CompileVariable processes a variable reference from the FQL AST.
 // It resolves the variable name in the symbol table and returns the register or constant
 // containing its value. If the variable is not found, it panics with an error.
@@ -696,11 +759,14 @@ func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tai
 // Panics if the variable is not found in the symbol table.
 func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	// Check if the context is valid (in case of parser errors)
-	if ctx.Identifier() == nil {
+	var name string
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	} else {
 		return vm.NoopOperand
 	}
-
-	name := ctx.Identifier().GetText()
 	// Just return the register / constant index
 	op, _, found := c.ctx.Symbols.Resolve(name)
 
@@ -729,7 +795,14 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 // Returns:
 //   - An operand representing the parameter's value
 func (c *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
-	name := ctx.Identifier().GetText()
+	var name string
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	} else {
+		return vm.NoopOperand
+	}
 	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadParam(reg, c.ctx.Symbols.BindParam(name))
 	c.ctx.Types.Set(reg, core.TypeAny)

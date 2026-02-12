@@ -178,6 +178,18 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#arrayContraction.
 	VisitArrayContraction(ctx *ArrayContractionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#inlineExpression.
+	VisitInlineExpression(ctx *InlineExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineFilter.
+	VisitInlineFilter(ctx *InlineFilterContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineLimit.
+	VisitInlineLimit(ctx *InlineLimitContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineReturn.
+	VisitInlineReturn(ctx *InlineReturnContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#safeReservedWord.
 	VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{}
 

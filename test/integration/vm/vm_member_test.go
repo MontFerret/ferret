@@ -233,6 +233,92 @@ func TestMember(t *testing.T) {
 					RETURN users[**].name
 				`,
 			[]any{"Ann", "Ben", "Cat"}),
+		CaseArray(`
+LET users = [
+						{ 
+							name: "John", 
+							age: 30,
+							friends: [	
+								{ name: "Alice", age: 28 },
+							]
+						},
+						{
+							name: "Mary", 
+							age: 25,
+							friends: [
+								{ name: "Tom", age: 35 },
+								{ name: "Jane", age: 32 }
+							]
+						},
+						{ 
+							name: "Bob", 
+							age: 50,
+							friends: []
+						}
+					]
+
+					RETURN (
+					  FOR u IN users RETURN u.friends[*].name
+					)[**]
+				`,
+			[]any{"Alice", "Tom", "Jane"}),
+		CaseArray(`
+LET arr = [ [ 1, 2 ], 3, [ 4, 5 ], 6 ]
+RETURN arr[** FILTER CURRENT % 2 == 0]`, []any{2, 4, 6}),
+		CaseArray(`
+LET values = [1, 2, 3, 4]
+RETURN values[* LIMIT 2]`, []any{1, 2}),
+		CaseArray(`
+LET values = [1, 2, 3, 4]
+RETURN values[* LIMIT 1, 2]`, []any{2, 3}),
+		CaseArray(`
+LET values = [1, 2, 3]
+RETURN values[* RETURN CURRENT * 2]`, []any{2, 4, 6}),
+		CaseArray(`
+LET values = [1, 2, 3, 4]
+RETURN values[* FILTER CURRENT > 2 RETURN CURRENT * 10]`, []any{30, 40}),
+		CaseArray(`
+LET users = [
+						{ 
+							name: "john", 
+							age: 30,
+							friends: [	
+								{ name: "tina", age: 43 },
+								{ name: "tom", age: 35 },
+								{ name: "helga", age: 52 }
+							]
+						},
+						{
+							name: "sandra", 
+							age: 25,
+							friends: [
+								{ name: "elena", age: 48 },
+								{ name: "maria", age: 38 }
+							]
+						}
+					]
+
+			FOR u IN users
+				RETURN {
+					name: u.name,
+					friends: u.friends[* FILTER CONTAINS(CURRENT.name, "a") AND CURRENT.age > 40
+						LIMIT 2
+						RETURN CONCAT(CURRENT.name, " is ", CURRENT.age)
+					]
+				}
+				`,
+			[]any{map[string]any{
+				"name": "john",
+				"friends": []any{
+					"tina is 43",
+					"helga is 52",
+				}},
+				map[string]any{
+					"name": "sandra",
+					"friends": []any{
+						"elena is 48",
+					}},
+			}),
 		CaseRuntimeError(`
 					LET value = 1
 

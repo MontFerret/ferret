@@ -267,6 +267,7 @@ memberExpressionSource
     | arrayLiteral
     | objectLiteral
     | functionCall
+    | OpenParen (forExpression | waitForExpression | expression) CloseParen
     ;
 
 functionCallExpression
@@ -295,11 +296,29 @@ memberExpressionPath
     ;
 
 arrayExpansion
-    : OpenBracket Multi CloseBracket
+    : OpenBracket star=Multi inlineExpression? CloseBracket
     ;
 
 arrayContraction
-    : OpenBracket Multi Multi+ CloseBracket
+    : OpenBracket stars+=Multi stars+=Multi+ inlineExpression? CloseBracket
+    ;
+
+inlineExpression
+    : inlineFilter inlineLimit? inlineReturn?
+    | inlineLimit inlineReturn?
+    | inlineReturn
+    ;
+
+inlineFilter
+    : Filter expression
+    ;
+
+inlineLimit
+    : Limit limitClauseValue (Comma limitClauseValue)?
+    ;
+
+inlineReturn
+    : Return expression
     ;
 
 safeReservedWord

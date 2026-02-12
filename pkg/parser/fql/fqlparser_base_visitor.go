@@ -235,6 +235,22 @@ func (v *BaseFqlParserVisitor) VisitArrayContraction(ctx *ArrayContractionContex
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitInlineExpression(ctx *InlineExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineFilter(ctx *InlineFilterContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineLimit(ctx *InlineLimitContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineReturn(ctx *InlineReturnContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{} {
 	return v.VisitChildren(ctx)
 }

@@ -48,6 +48,8 @@ type Loop struct {
 	continueLabel Label
 	bodyLabel     Label
 	endLabel      Label
+
+	resetRegs []vm.Operand
 }
 
 func (l *Loop) StartLabel() Label {
@@ -132,6 +134,14 @@ func (l *Loop) EmitInitialization(alloc *RegisterAllocator, emitter *Emitter) {
 	emitter.MarkLabel(l.bodyLabel)
 }
 
+func (l *Loop) RegisterReset(reg vm.Operand) {
+	if reg == vm.NoopOperand {
+		return
+	}
+
+	l.resetRegs = append(l.resetRegs, reg)
+}
+
 func (l *Loop) EmitValue(dst vm.Operand, emitter *Emitter) {
 	// For WHILE/STEP loops, the value is already in the destination register
 	// No additional emission needed as the variable is directly assigned
@@ -152,6 +162,10 @@ func (l *Loop) EmitFinalization(emitter *Emitter) {
 
 	if l.Kind == ForInLoop {
 		emitter.EmitA(vm.OpClose, l.State)
+	}
+
+	for _, reg := range l.resetRegs {
+		emitter.EmitA(vm.OpLoadZero, reg)
 	}
 }
 
