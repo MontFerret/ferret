@@ -283,6 +283,18 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 				}
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
+				if val, ok := literalValueFromExpression(comProp.Expression()); ok {
+					switch val.(type) {
+					case *runtime.Array, *runtime.Object:
+						// Fall back to the generic computed path to preserve side effects.
+					default:
+						valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+						keyConst := c.ctx.Symbols.AddConstant(runtime.ToString(val))
+						c.ctx.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
+						continue
+					}
+				}
+
 				propOp := c.CompileComputedPropertyName(comProp)
 				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
 				c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
