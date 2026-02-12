@@ -1,7 +1,6 @@
 package datetime
 
 import (
-	"context"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // DATE_QUARTER returns which quarter date belongs to.
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - A quarter number.
-func DateQuarter(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateQuarter(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}

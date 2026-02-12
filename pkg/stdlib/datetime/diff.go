@@ -1,8 +1,6 @@
 package datetime
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -12,7 +10,7 @@ import (
 // @param {String} unit - Time unit to return the difference in.
 // @param {Boolean} [asFloat=False] - If true amount of unit will be as float.
 // @return {Int | Float} - Difference between date1 and date2.
-func DateDiff(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateDiff(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
 		return runtime.None, err
 	}

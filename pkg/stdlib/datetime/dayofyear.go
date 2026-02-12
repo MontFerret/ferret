@@ -1,8 +1,6 @@
 package datetime
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // The return value range from 1 to 365 (366 in a leap year).
 // @param {DateTime} date - Source DateTime.
 // @return {Int} - A day of year number.
-func DateDayOfYear(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateDayOfYear(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}

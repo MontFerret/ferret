@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -12,7 +11,7 @@ import (
 // @param {String} separator - The separator.
 // @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
 // @return {String[]} - arrayList of strings.
-func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Split(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
@@ -39,10 +38,10 @@ func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		strs = strings.SplitN(text, separator, limit)
 	}
 
-	arr := runtime.NewArray(len(strs))
+	arr := ctx.Alloc().Array(len(strs))
 
 	for _, str := range strs {
-		_ = arr.Add(ctx, runtime.NewString(str))
+		_ = arr.Append(ctx, runtime.NewString(str))
 	}
 
 	return arr, nil

@@ -1,8 +1,6 @@
 package types
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -15,6 +13,6 @@ import (
 // Objects / HtmlNodes / Binary are always converted to true
 // @param {Any} value - Input value of arbitrary type.
 // @return {Boolean} - The appropriate boolean value.
-func ToBool(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+func ToBool(_ runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.ToBoolean(arg), nil
 }

@@ -1,7 +1,6 @@
 package math
 
 import (
-	"context"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -11,7 +10,7 @@ import (
 // @param {Int | Float} base - The base value.
 // @param {Int | Float} exp - The exponent value.
 // @return {Float} - The exponentiated value.
-func Pow(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+func Pow(_ runtime.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	if err := runtime.AssertNumber(arg1); err != nil {
 		return runtime.None, err
 	}

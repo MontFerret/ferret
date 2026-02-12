@@ -1,16 +1,12 @@
 package objects
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // VALUES return the attribute values of the object as an array.
 // @param {hashMap} object - Target object.
 // @return {Any[]} - Values of document returned in any order.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Values(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -24,16 +20,16 @@ func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 
 	obj := args[0].(*runtime.Object)
-	vals := runtime.NewArray(0)
+	vals := ctx.Alloc().Array(0)
 
-	_ = obj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+	_ = obj.ForEach(ctx, func(c runtime.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		val, err := runtime.CloneOrCopy(c, val)
 
 		if err != nil {
 			return runtime.False, err
 		}
 
-		if err := vals.Add(c, val); err != nil {
+		if err := vals.Append(c, val); err != nil {
 			return runtime.False, err
 		}
 

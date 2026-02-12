@@ -1,17 +1,13 @@
 package arrays
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // SLICE returns a new sliced array.
 // @param {Any[]} array - Source array.
 // @param {Int} start - Start position of extraction.
 // @param {Int} [length] - Read indicating how many elements to extract.
 // @return {Any[]} - Sliced array.
-func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Slice(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
@@ -36,12 +32,12 @@ func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	// Handle negative start index - return empty array
 	if start < 0 {
-		return runtime.NewArray(0), nil
+		return ctx.Alloc().Array(0), nil
 	}
 
 	// Handle start index beyond array length - return empty array
 	if start >= size {
-		return runtime.NewArray(0), nil
+		return ctx.Alloc().Array(0), nil
 	}
 
 	var end runtime.Int
@@ -55,7 +51,7 @@ func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 		// Handle negative length - return empty array
 		if arg3 < 0 {
-			return runtime.NewArray(0), nil
+			return ctx.Alloc().Array(0), nil
 		}
 
 		end = start + arg3

@@ -1,8 +1,6 @@
 package objects
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // @param {String} key - The key name string.
 // @return {Boolean} - True if the key exists else false.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Has(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Has(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {

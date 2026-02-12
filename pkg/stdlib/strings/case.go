@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // LOWER converts strings to their lower-case counterparts. All other characters are returned unchanged.
 // @param {String} str - The source string.
 // @return {String} - THis string in lower case.
-func Lower(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Lower(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -25,7 +24,7 @@ func Lower(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // UPPER converts strings to their upper-case counterparts. All other characters are returned unchanged.
 // @param {String} str - The source string.
 // @return {String} - THis string in upper case.
-func Upper(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Upper(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

@@ -1,7 +1,6 @@
 package math
 
 import (
-	"context"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -14,7 +13,7 @@ import (
 // @param {Int} number - A number which must be between 0 (excluded) and 100 (included).
 // @param {String} [method="rank"] - "rank" or "interpolation".
 // @return {Float} - The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
-func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Percentile(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
@@ -98,7 +97,10 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 			return runtime.None, err
 		}
 
-		return mean(ctx, runtime.NewArrayWith(aVal, bVal))
+		values := ctx.Alloc().Array(2)
+		_ = values.Append(ctx, aVal)
+		_ = values.Append(ctx, bVal)
+		return mean(ctx, values)
 	default:
 		return runtime.NaN(), errors.New("input is outside of range")
 	}

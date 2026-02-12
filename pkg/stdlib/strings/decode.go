@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"encoding/base64"
 	"net/url"
 	"strconv"
@@ -12,7 +11,7 @@ import (
 // FROM_BASE64 returns the value of a base64 representation.
 // @param {String} str - The string to decode.
 // @return {String} - The decoded string.
-func FromBase64(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func FromBase64(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -32,7 +31,7 @@ func FromBase64(_ context.Context, args ...runtime.Value) (runtime.Value, error)
 // DECODE_URI_COMPONENT returns the decoded String of uri.
 // @param {String} uri - Uri to decode.
 // @return {String} - Decoded string.
-func DecodeURIComponent(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DecodeURIComponent(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

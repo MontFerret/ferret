@@ -1,7 +1,6 @@
 package path
 
 import (
-	"context"
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -11,7 +10,7 @@ import (
 // @param {String} pattern - The pattern.
 // @param {String} name - The name.
 // @return {Boolean} - True if the name matches the pattern.
-func Match(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Match(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {

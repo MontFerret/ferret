@@ -1,15 +1,13 @@
 package datetime
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // DATE_MINUTE returns the minute of date as a number.
 // @param {DateTime} date -Source DateTime.
 // @return {Int} - A minute number.
-func DateMinute(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateMinute(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}

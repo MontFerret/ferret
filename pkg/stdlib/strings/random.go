@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"math/rand"
 	"time"
 
@@ -22,7 +21,7 @@ var randSrc = rand.NewSource(time.Now().UnixNano())
 // RANDOM_TOKEN generates a pseudo-random token string with the specified length. The algorithm for token generation should be treated as opaque.
 // @param {Int} len - The desired string length for the token. It must be greater than 0 and at most 65536.
 // @return {String} - A generated token consisting of lowercase letters, uppercase letters and numbers.
-func RandomToken(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RandomToken(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.EmptyString, err
 	}

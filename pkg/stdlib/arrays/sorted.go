@@ -1,16 +1,12 @@
 package arrays
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // SORTED sorts all elements in the given list.
 // The function will use the default comparison order for FQL value types.
 // @param {Any[]} array - Target array.
 // @return {Any[]} - Sorted array.
-func Sorted(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Sorted(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}
@@ -28,7 +24,7 @@ func Sorted(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 
 	if size == 0 {
-		return runtime.EmptyArray(), nil
+		return ctx.Alloc().Array(0), nil
 	}
 
 	copied, _ := list.Copy(nil)

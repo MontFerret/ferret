@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"context"
 	"os"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // READ reads from a given file.
 // @param {String} path - Path to file to read from.
 // @return {Binary} - File content in binary format.
-func Read(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Read(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

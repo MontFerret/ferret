@@ -1,15 +1,13 @@
 package math
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // SUM returns the sum of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The sum of the values.
-func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+func Sum(ctx runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	arr, err := runtime.CastList(arg)
 
 	if err != nil {
@@ -28,7 +26,7 @@ func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 
 	var sum float64
 
-	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	err = arr.ForEach(ctx, func(c runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if !runtime.IsNumber(value) {
 			return true, nil
 		}

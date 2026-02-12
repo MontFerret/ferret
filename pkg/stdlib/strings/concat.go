@@ -1,15 +1,13 @@
 package strings
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // CONCAT concatenates one or more instances of String, or an arrayList.
 // @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - A string value.
-func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Concat(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.EmptyString, err
 	}
@@ -22,7 +20,7 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		argv, ok := args[0].(runtime.List)
 
 		if ok {
-			err := argv.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+			err := argv.ForEach(ctx, func(c runtime.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 				res = res.Concat(value)
 
 				return true, nil
@@ -47,7 +45,7 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {String} separator - The separator string.
 // @param {String, repeated | String[]} src - The source string / array.
 // @return {String} - Concatenated string.
-func ConcatWithSeparator(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func ConcatWithSeparator(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, runtime.MaxArgs)
 
 	if err != nil {
@@ -65,7 +63,7 @@ func ConcatWithSeparator(ctx context.Context, args ...runtime.Value) (runtime.Va
 	for idx, arg := range args[1:] {
 		switch argv := arg.(type) {
 		case runtime.List:
-			err = argv.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			err = argv.ForEach(ctx, func(c runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 				if value != runtime.None {
 					if idx > 0 {
 						res = res.Concat(separator)

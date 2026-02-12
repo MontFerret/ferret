@@ -1,12 +1,10 @@
 package math
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func variance(ctx context.Context, input runtime.List, sample runtime.Int) (runtime.Float, error) {
+func variance(ctx runtime.Context, input runtime.List, sample runtime.Int) (runtime.Float, error) {
 	size, err := input.Length(ctx)
 
 	if err != nil {
@@ -25,7 +23,7 @@ func variance(ctx context.Context, input runtime.List, sample runtime.Int) (runt
 
 	var variance runtime.Float
 
-	err = input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	err = input.ForEach(ctx, func(c runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if err = runtime.AssertNumber(value); err != nil {
 			return false, err
 		}

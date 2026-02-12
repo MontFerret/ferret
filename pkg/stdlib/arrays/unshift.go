@@ -1,17 +1,13 @@
 package arrays
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // UNSHIFT prepends value to a given array.
 // @param {Any[]} array - Target array.
 // @param {Any} value - Target value to prepend.
 // @param {Boolean} [unique=False] - Optional value indicating whether a value must be unique to be prepended. Default is false.
 // @return {Any[]} - New array with prepended value.
-func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Unshift(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
@@ -39,13 +35,13 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	result := runtime.NewArray64(size + 1)
+	result := ctx.Alloc().Array(int(size + 1))
 
 	if !uniq {
-		_ = result.Add(ctx, value)
+		_ = result.Append(ctx, value)
 
-		err = list.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			_ = result.Add(ctx, value)
+		err = list.ForEach(ctx, func(ctx runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			_ = result.Append(ctx, value)
 
 			return runtime.True, nil
 		})
@@ -57,11 +53,11 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return result, nil
 	}
 
-	_ = result.Add(ctx, value)
+	_ = result.Append(ctx, value)
 
-	err = list.ForEach(ctx, func(ctx context.Context, el runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	err = list.ForEach(ctx, func(ctx runtime.Context, el runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if runtime.CompareValues(nil, el, value) != 0 {
-			_ = result.Add(ctx, el)
+			_ = result.Append(ctx, el)
 		}
 
 		return true, nil

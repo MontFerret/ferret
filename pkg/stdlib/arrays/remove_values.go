@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // @param {Any[]} array - Source array.
 // @param {Any[]} values - Target values.
 // @return {Any[]} - A new array with removed all occurrences of values in a given array.
-func RemoveValues(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RemoveValues(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
 		return runtime.None, err
 	}
@@ -29,7 +27,7 @@ func RemoveValues(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 
 	lookupTable := make(map[uint64]bool)
 
-	err = vals.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	err = vals.ForEach(ctx, func(ctx runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		lookupTable[value.Hash()] = true
 
 		return true, nil
@@ -39,7 +37,7 @@ func RemoveValues(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 		return runtime.None, err
 	}
 
-	return arr.Find(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	return arr.Find(ctx, func(ctx runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		h := value.Hash()
 
 		_, exists := lookupTable[h]

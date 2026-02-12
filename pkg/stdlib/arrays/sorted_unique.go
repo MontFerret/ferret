@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -11,7 +9,7 @@ import (
 // Additionally, the values in the result array will be made unique
 // @param {Any[]} array - Target array.
 // @return {Any[]} - Sorted array.
-func SortedUnique(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func SortedUnique(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}

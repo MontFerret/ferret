@@ -1,7 +1,6 @@
 package path
 
 import (
-	"context"
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // CLEAN returns the shortest path name equivalent to path.
 // @param {String} path - The path.
 // @return {String} - The shortest path name equivalent to path
-func Clean(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Clean(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

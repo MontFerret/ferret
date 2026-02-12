@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"context"
 	"os"
 	"sort"
 
@@ -16,7 +15,7 @@ import (
 // * x - Exclusive: returns an error if the file exist. It can be combined with other modes
 // * a - Append: will create a file if the specified file does not exist
 // * w - Write (Default): will create a file if the specified file does not exist
-func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Write(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := validateRequiredWriteArgs(args)
 
 	if err != nil {
@@ -28,7 +27,7 @@ func Write(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 	params := defaultParams
 
 	if len(args) == 3 {
-		params, err = parseParams(args[2])
+		params, err = parseParams(ctx, args[2])
 
 		if err != nil {
 			return runtime.None, runtime.Error(
@@ -82,7 +81,7 @@ var defaultParams = parsedParams{
 	ModeFlag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
 }
 
-func parseParams(value runtime.Value) (parsedParams, error) {
+func parseParams(ctx runtime.Context, value runtime.Value) (parsedParams, error) {
 	err := runtime.ValidateType(value, runtime.TypeObject, runtime.TypeMap)
 
 	if err != nil {
@@ -93,7 +92,7 @@ func parseParams(value runtime.Value) (parsedParams, error) {
 
 	params := defaultParams
 
-	modestr, err := obj.Get(context.Background(), runtime.NewString("mode"))
+	modestr, err := obj.Get(ctx, runtime.NewString("mode"))
 
 	if err == nil {
 		flag, err := parseWriteMode(modestr.String())

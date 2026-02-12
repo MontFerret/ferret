@@ -1,7 +1,6 @@
 package path
 
 import (
-	"context"
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // JOIN joins any number of path elements into a single path, separating them with slashes.
 // @param {String, repeated | String[]} elements - The path elements
 // @return {String} - Single path from the given elements.
-func Join(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Join(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	argsCount := len(args)
 
 	if argsCount == 0 {
@@ -23,7 +22,10 @@ func Join(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	case *runtime.Array:
 		arr = arg
 	default:
-		arr = runtime.NewArrayWith(args...)
+		arr = ctx.Alloc().Array(len(args))
+		for _, value := range args {
+			_ = arr.Append(ctx, value)
+		}
 	}
 
 	size, _ := arr.Length(ctx)

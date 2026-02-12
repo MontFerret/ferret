@@ -1,8 +1,6 @@
 package strings
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -11,7 +9,7 @@ import (
 // @param {String} search - The string to seek.
 // @param {Boolean} [returnIndex=False] - Values which indicates whether to return the character position of the match is returned instead of a boolean.
 // @return {Boolean | Int} - A value indicating whether a specified substring occurs within a string.
-func Contains(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Contains(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.False, err
 	}

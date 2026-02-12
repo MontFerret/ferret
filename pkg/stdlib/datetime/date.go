@@ -1,7 +1,6 @@
 package datetime
 
 import (
-	"context"
 	"time"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -11,7 +10,7 @@ import (
 // @param {String} time - String representation of DateTime.
 // @param {String} [layout = "2006-01-02T15:04:05Z07:00"] - String layout.
 // @return {DateTime} - New DateTime object derived from timeString.
-func Date(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Date(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
 		return runtime.None, err
 	}

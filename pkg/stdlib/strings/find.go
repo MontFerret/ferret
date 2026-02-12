@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -13,7 +12,7 @@ import (
 // @param {Int} [start] - Limit the search to a subset of the text, beginning at start.
 // @param {Int} [end] - Limit the search to a subset of the text, ending at end
 // @return {Int} - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
-func FindFirst(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func FindFirst(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -59,7 +58,7 @@ func FindFirst(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // @param {Int} [start] - Limit the search to a subset of the text, beginning at start.
 // @param {Int} [end] - Limit the search to a subset of the text, ending at end
 // @return {Int} - The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
-func FindLast(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func FindLast(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {

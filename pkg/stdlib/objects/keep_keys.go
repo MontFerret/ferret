@@ -1,17 +1,13 @@
 package objects
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // KEEP_KEYS returns a new object with only given keys.
 // @param {hashMap} obj - Source object.
 // @param {String, repeated} keys - Keys that need to be kept.
 // @return {hashMap} - New hashMap with only given keys.
 // TODO: REWRITE TO USE LIST & MAP instead
-func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func KeepKeys(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
@@ -31,7 +27,10 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	}
 
 	if keys == nil {
-		keys = runtime.NewArrayWith(args[1:]...)
+		keys = ctx.Alloc().Array(len(args) - 1)
+		for _, value := range args[1:] {
+			_ = keys.Append(ctx, value)
+		}
 	}
 
 	if err := validateArrayOf(ctx, runtime.TypeString, keys); err != nil {
@@ -39,11 +38,11 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 	}
 
 	obj := args[0].(*runtime.Object)
-	resultObj := runtime.NewObject()
+	resultObj := ctx.Alloc().Object(0)
 
 	var key runtime.String
 
-	_ = keys.ForEach(ctx, func(c context.Context, keyVal runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	_ = keys.ForEach(ctx, func(c runtime.Context, keyVal runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		key = keyVal.(runtime.String)
 
 		if val, err := obj.Get(c, key); err == nil {

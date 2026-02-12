@@ -1,16 +1,12 @@
 package objects
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // MERGE merge the given objects into a single object.
 // @param {hashMap, repeated} objects - Objects to merge.
 // @return {hashMap} - hashMap created by merging.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Merge(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
@@ -26,7 +22,10 @@ func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 
 	if objs == nil {
-		objs = runtime.NewArrayWith(args...)
+		objs = ctx.Alloc().Array(len(args))
+		for _, value := range args {
+			_ = objs.Append(ctx, value)
+		}
 	}
 
 	if err := validateArrayOf(ctx, runtime.TypeObject, objs); err != nil {
@@ -36,13 +35,14 @@ func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return mergeArray(ctx, objs)
 }
 
-func mergeArray(ctx context.Context, arr *runtime.Array) (*runtime.Object, error) {
-	merged, obj := runtime.NewObject(), runtime.NewObject()
+func mergeArray(ctx runtime.Context, arr *runtime.Array) (*runtime.Object, error) {
+	merged := ctx.Alloc().Object(0)
+	obj := ctx.Alloc().Object(0)
 
-	_ = arr.ForEach(ctx, func(c context.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
+	_ = arr.ForEach(ctx, func(c runtime.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
 		obj = arrValue.(*runtime.Object)
 
-		_ = obj.ForEach(c, func(_ context.Context, objValue, objKey runtime.Value) (runtime.Boolean, error) {
+		_ = obj.ForEach(c, func(_ runtime.Context, objValue, objKey runtime.Value) (runtime.Boolean, error) {
 			cloneable, ok := objValue.(runtime.Cloneable)
 
 			if ok {
@@ -66,7 +66,7 @@ func mergeArray(ctx context.Context, arr *runtime.Array) (*runtime.Object, error
 	return merged, nil
 }
 
-func validateArrayOf(ctx context.Context, typ runtime.Type, arr *runtime.Array) error {
+func validateArrayOf(ctx runtime.Context, typ runtime.Type, arr *runtime.Array) error {
 	size, err := arr.Length(ctx)
 
 	if err != nil {

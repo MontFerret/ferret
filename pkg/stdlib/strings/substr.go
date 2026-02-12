@@ -1,8 +1,6 @@
 package strings
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -11,7 +9,7 @@ import (
 // @param {Int} offset - Start at offset, offsets start at position 0.
 // @param {Int} [length] - At most length characters, omit to get the substring from offset to the end of the string.
 // @return {String} - A substring of value.
-func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Substring(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.EmptyString, err
 	}
@@ -62,7 +60,7 @@ func Substring(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // @param {String} str - The source string.
 // @param {Int} length - The amount of characters to return.
 // @return {String} - The leftmost characters of the string value by index.
-func Left(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Left(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -90,7 +88,7 @@ func Left(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {String} str - The source string.
 // @param {Int} length - The amount of characters to return.
 // @return {String} - The rightmost characters of the string value.
-func Right(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Right(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {

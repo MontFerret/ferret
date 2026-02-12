@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha512"
@@ -14,7 +13,7 @@ import (
 // ENCODE_URI_COMPONENT returns the encoded String of uri.
 // @param {String} uri - Uri to encode.
 // @return {String} - Encoded string.
-func EncodeURIComponent(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func EncodeURIComponent(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -29,7 +28,7 @@ func EncodeURIComponent(_ context.Context, args ...runtime.Value) (runtime.Value
 // MD5 calculates the MD5 checksum for text and return it in a hexadecimal string representation.
 // @param {String} str - The string to do calculations against to.
 // @return {String} - MD5 checksum as hex string.
-func Md5(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Md5(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -45,7 +44,7 @@ func Md5(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // SHA1 calculates the SHA1 checksum for text and returns it in a hexadecimal string representation.
 // @param {String} str - The string to do calculations against to.
 // @return {String} - Sha1 checksum as hex string.
-func Sha1(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Sha1(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -61,7 +60,7 @@ func Sha1(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // SHA512 calculates the SHA512 checksum for text and returns it in a hexadecimal string representation.
 // @param {String} str - The string to do calculations against to.
 // @return {String} - SHA512 checksum as hex string.
-func Sha512(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Sha512(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -77,7 +76,7 @@ func Sha512(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // TO_BASE64 returns the base64 representation of value.
 // @param {String} str - The string to encode.
 // @return {String} - A base64 representation of the string.
-func ToBase64(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func ToBase64(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

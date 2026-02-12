@@ -1,8 +1,6 @@
 package datetime
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -26,7 +24,7 @@ var (
 // @param {Int} amount - Amount of units
 // @param {String} unit - Unit.
 // @return {DateTime} - Calculated date.
-func DateAdd(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateAdd(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	date, amount, unit, err := getArgs(args)
 	if err != nil {
 		return runtime.None, err
@@ -56,7 +54,7 @@ func DateAdd(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {Int} amount - amount of units
 // @param {String} unit - unit.
 // @return {DateTime} - calculated date.
-func DateSubtract(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateSubtract(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	date, amount, unit, err := getArgs(args)
 	if err != nil {
 		return runtime.None, err

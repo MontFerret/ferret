@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	h "net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -13,6 +12,6 @@ import (
 // @param {Any} params.body - Request data
 // @param {hashMap} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func PUT(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func PUT(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, h.MethodPut, args)
 }

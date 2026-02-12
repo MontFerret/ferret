@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -11,7 +10,7 @@ import (
 // @param {String} str - The string.
 // @param {String} chars - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
 // @return {String} - The string without chars on both sides.
-func Trim(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Trim(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -31,7 +30,7 @@ func Trim(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {String} str - The string.
 // @param {String} chars - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
 // @return {String} - The string without chars at the left-hand side.
-func LTrim(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func LTrim(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 2)
 
 	if err != nil {
@@ -52,7 +51,7 @@ func LTrim(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
 // @param {String} str - The string.
 // @param {String} chars - Overrides the characters that should be removed from the string. It defaults to \r\n \t.
 // @return {String} - The string without chars at the right-hand side.
-func RTrim(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RTrim(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 2)
 
 	if err != nil {

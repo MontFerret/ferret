@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // @param {Any[]} array - Source array.
 // @param {Int} position - Target element position.
 // @return {Any[]} - A new array without an element by a given position.
-func RemoveNth(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RemoveNth(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
 		return runtime.None, err
 	}

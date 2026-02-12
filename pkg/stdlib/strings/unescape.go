@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"html"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -14,7 +13,7 @@ import (
 // always true.
 // @param {String} uri - Uri to escape.
 // @return {String} - Escaped string.
-func UnescapeHTML(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func UnescapeHTML(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

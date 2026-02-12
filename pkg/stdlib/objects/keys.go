@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"context"
 	"sort"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -12,7 +11,7 @@ import (
 // @param {Boolean} [sort=False] - If sort is true, then the returned keys will be sorted.
 // @return {String[]} - arrayList that contains object keys.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Keys(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 2)
 	if err != nil {
 		return runtime.None, err
@@ -43,21 +42,21 @@ func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	oKeys := make([]string, 0, size)
 
-	_ = obj.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+	_ = obj.ForEach(ctx, func(c runtime.Context, value, key runtime.Value) (runtime.Boolean, error) {
 		oKeys = append(oKeys, key.String())
 
 		return true, nil
 	})
 
 	keys := sort.StringSlice(oKeys)
-	keysArray := runtime.NewArray(len(keys))
+	keysArray := ctx.Alloc().Array(len(keys))
 
 	if needSort {
 		keys.Sort()
 	}
 
 	for _, key := range keys {
-		_ = keysArray.Add(ctx, runtime.NewString(key))
+		_ = keysArray.Append(ctx, runtime.NewString(key))
 	}
 
 	return keysArray, nil

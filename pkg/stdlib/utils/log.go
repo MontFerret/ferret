@@ -1,14 +1,12 @@
 package utils
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // PRINT writes messages into the system log.
 // @param {Second, repeated} message - Print message.
-func Print(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Print(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, runtime.MaxArgs)
 
 	if err != nil {

@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"context"
 	"io"
 	h "net/http"
 
@@ -23,11 +22,11 @@ type Params struct {
 // @param {Binary} params.body - Request data
 // @param {hashMap} [params.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func REQUEST(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func REQUEST(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	return execMethod(ctx, "", args)
 }
 
-func execMethod(ctx context.Context, method runtime.String, args []runtime.Value) (runtime.Value, error) {
+func execMethod(ctx runtime.Context, method runtime.String, args []runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}
@@ -51,7 +50,7 @@ func execMethod(ctx context.Context, method runtime.String, args []runtime.Value
 	return makeRequest(ctx, p)
 }
 
-func makeRequest(ctx context.Context, params Params) (runtime.Value, error) {
+func makeRequest(ctx runtime.Context, params Params) (runtime.Value, error) {
 	client := h.Client{}
 	req, err := h.NewRequest(params.Method.String(), params.URL.String(), bytes.NewBuffer(params.Body))
 
@@ -62,7 +61,7 @@ func makeRequest(ctx context.Context, params Params) (runtime.Value, error) {
 	req.Header = h.Header{}
 
 	if params.Headers != nil {
-		params.Headers.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+		params.Headers.ForEach(ctx, func(c runtime.Context, value, key runtime.Value) (runtime.Boolean, error) {
 			req.Header.Set(key.String(), value.String())
 
 			return true, nil
@@ -86,7 +85,7 @@ func makeRequest(ctx context.Context, params Params) (runtime.Value, error) {
 	return runtime.NewBinary(data), nil
 }
 
-func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
+func newParamsFrom(ctx runtime.Context, obj runtime.Map) (Params, error) {
 	p := Params{}
 
 	method, err := obj.Get(ctx, runtime.String("method"))
@@ -130,7 +129,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 			p.Body = runtime.NewBinary(j)
 
 			if p.Headers == nil {
-				p.Headers = runtime.NewObject()
+				p.Headers = ctx.Alloc().Object(0)
 			}
 
 			_ = p.Headers.Set(ctx, runtime.String("Content-Type"), runtime.String("application/json"))

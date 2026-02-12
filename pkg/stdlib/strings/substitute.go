@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"strings"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -13,7 +12,7 @@ import (
 // @param {String} replace - The string representing a replace value
 // @param {Int} limit - The cap the number of replacements to this value.
 // @return {String} - Returns a string with replace substring.
-func Substitute(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Substitute(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {

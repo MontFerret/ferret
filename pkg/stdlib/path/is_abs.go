@@ -1,7 +1,6 @@
 package path
 
 import (
-	"context"
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // IS_ABS reports whether the path is absolute.
 // @param {String} path - The path.
 // @return {Boolean} - True if the path is absolute.
-func IsAbs(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func IsAbs(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

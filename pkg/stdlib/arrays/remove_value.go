@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -12,7 +10,7 @@ import (
 // @param {Any} value - Target value.
 // @param {Int} [limit] - A limit to the number of removals.
 // @return {Any[]} - A new array with removed all occurrences of value in a given array.
-func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RemoveValue(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
@@ -39,7 +37,7 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 
 	var counter runtime.Int
 
-	return arr.Find(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	return arr.Find(ctx, func(ctx runtime.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		remove := runtime.CompareValues(nil, item, value) == 0
 
 		if remove {

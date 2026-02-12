@@ -1,10 +1,6 @@
 package arrays
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // FLATTEN turns an array of arrays into a flat array.
 // All array elements in array will be expanded in the result array.
@@ -14,7 +10,7 @@ import (
 // @param {Any[]} arr - Target array.
 // @param {Int} [depth] - Depth level.
 // @return {Any[]} - Flat array.
-func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Flatten(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 2); err != nil {
 		return runtime.None, err
 	}
@@ -45,17 +41,17 @@ func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	}
 
 	var currentLevel runtime.Int
-	result := runtime.NewArray64(size * 2)
+	result := ctx.Alloc().Array(int(size * 2))
 	var unwrap func(input runtime.List) error
 
 	unwrap = func(input runtime.List) error {
 		currentLevel++
 
-		return input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		return input.ForEach(ctx, func(c runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 			valueArr, ok := value.(runtime.List)
 
 			if !ok || currentLevel > level {
-				_ = result.Add(c, value)
+				_ = result.Append(c, value)
 			} else {
 				if err := unwrap(valueArr); err != nil {
 					return false, err

@@ -1,7 +1,6 @@
 package testing
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -18,7 +17,7 @@ var Gte = base.Assertion{
 	},
 	MinArgs: 2,
 	MaxArgs: 3,
-	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
+	Fn: func(ctx runtime.Context, args []runtime.Value) (bool, error) {
 		return base.GreaterOrEqualOp.Compare(args)
 	},
 }

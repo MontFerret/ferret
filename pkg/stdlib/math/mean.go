@@ -1,12 +1,10 @@
 package math
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func mean(ctx context.Context, input runtime.List) (runtime.Float, error) {
+func mean(ctx runtime.Context, input runtime.List) (runtime.Float, error) {
 	size, err := input.Length(ctx)
 
 	if err != nil {
@@ -19,7 +17,7 @@ func mean(ctx context.Context, input runtime.List) (runtime.Float, error) {
 
 	var sum float64
 
-	err = input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	err = input.ForEach(ctx, func(c runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		err = runtime.AssertNumber(value)
 
 		if err != nil {

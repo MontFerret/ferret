@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"regexp"
 	"strings"
 
@@ -19,7 +18,7 @@ var (
 // @param {String} search - A search pattern that can contain the wildcard characters.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
-func Like(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Like(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {

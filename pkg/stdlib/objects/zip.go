@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -13,7 +12,7 @@ import (
 // @param {hashMap[]} values - An array of runtime.Value, to be used as key values.
 // @return {hashMap} - An object with the keys and values assembled.
 // TODO: REWRITE TO USE LIST & MAP instead
-func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Zip(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 2)
 
 	if err != nil {
@@ -49,14 +48,14 @@ func Zip(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	zipped := runtime.NewObject()
+	zipped := ctx.Alloc().Object(0)
 
 	var k runtime.String
 	var val runtime.Value
 	var exists bool
 	keyExists := map[runtime.String]bool{}
 
-	_ = keys.ForEach(ctx, func(c context.Context, key runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	_ = keys.ForEach(ctx, func(c runtime.Context, key runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		k = key.(runtime.String)
 
 		// this is necessary to implement ArangoDB's behavior.

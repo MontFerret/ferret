@@ -1,13 +1,12 @@
 package base
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-type AssertionFn func(ctx context.Context, args []runtime.Value) (bool, error)
+type AssertionFn func(ctx runtime.Context, args []runtime.Value) (bool, error)
 
 type MessageFn func(args []runtime.Value) string
 
@@ -27,7 +26,7 @@ func NewNegativeAssertion(assertion Assertion) runtime.Function {
 }
 
 func newInternal(assertion Assertion, connotation bool) runtime.Function {
-	return func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+	return func(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 		err := runtime.ValidateArgs(args, assertion.MinArgs, assertion.MaxArgs)
 
 		if err != nil {

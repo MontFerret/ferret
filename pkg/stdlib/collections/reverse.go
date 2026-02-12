@@ -1,15 +1,11 @@
 package collections
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // REVERSE returns the reverse of a given string or array value.
 // @param {String | Any[]} value - The string or array to reverse.
 // @return {String | Any[]} - A reversed version of a given value.
-func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+func Reverse(ctx runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	switch col := arg.(type) {
 	case runtime.String:
 		runes := []rune(string(col))
@@ -28,7 +24,7 @@ func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 			return runtime.None, err
 		}
 
-		result := runtime.NewArray(int(size))
+		result := ctx.Alloc().Array(int(size))
 
 		for i := size - 1; i >= 0; i-- {
 			item, err := col.Get(ctx, i)
@@ -37,7 +33,7 @@ func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 				return runtime.None, err
 			}
 
-			_ = result.Add(ctx, item)
+			_ = result.Append(ctx, item)
 		}
 
 		return result, nil

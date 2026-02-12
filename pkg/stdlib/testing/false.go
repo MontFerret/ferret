@@ -1,7 +1,6 @@
 package testing
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -18,7 +17,7 @@ var False = base.Assertion{
 	},
 	MinArgs: 1,
 	MaxArgs: 2,
-	Fn: func(ctx context.Context, args []runtime.Value) (bool, error) {
+	Fn: func(ctx runtime.Context, args []runtime.Value) (bool, error) {
 		return args[0] == runtime.False, nil
 	},
 }

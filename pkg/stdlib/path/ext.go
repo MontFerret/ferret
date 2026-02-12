@@ -1,7 +1,6 @@
 package path
 
 import (
-	"context"
 	"path"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // EXT returns the extension of the last component of path.
 // @param {String} path - The path.
 // @return {String} - The extension of the last component of path.
-func Ext(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Ext(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

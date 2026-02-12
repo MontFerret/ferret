@@ -1,8 +1,6 @@
 package datetime
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // @param {DateTime} date - Source DateTime object.
 // @param {String} format - String format.
 // @return {String} - Formatted date.
-func DateFormat(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateFormat(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
 		return runtime.None, err
 	}

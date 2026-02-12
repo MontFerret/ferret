@@ -1,8 +1,6 @@
 package datetime
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 
 	"errors"
@@ -14,7 +12,7 @@ import (
 // @param {String} unitRangeStart - Unit to start from.
 // @param {String} [unitRangeEnd="millisecond"] - Unit to end with. Error will be returned if unitRangeStart unit less that unitRangeEnd.
 // @return {Boolean} - True if the dates match, else false.
-func DateCompare(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func DateCompare(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 3, 4); err != nil {
 		return runtime.None, err
 	}

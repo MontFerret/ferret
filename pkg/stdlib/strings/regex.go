@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"regexp"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -12,7 +11,7 @@ import (
 // @param {String} expression - A regular expression to use for matching the text.
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @return {Any[]} - An array of strings containing the matches.
-func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RegexMatch(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
@@ -33,14 +32,14 @@ func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 
 	matches := reg.FindAllStringSubmatch(text, -1)
-	res := runtime.NewArray(10)
+	res := ctx.Alloc().Array(10)
 
 	if len(matches) == 0 {
 		return res, nil
 	}
 
 	for _, m := range matches[0] {
-		_ = res.Add(ctx, runtime.NewString(m))
+		_ = res.Append(ctx, runtime.NewString(m))
 	}
 
 	return res, nil
@@ -52,7 +51,7 @@ func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 // @param {Boolean} caseInsensitive - If set to true, the matching will be case-insensitive. The default is false.
 // @param {Int} limit - Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
 // @return {Any[]} - An array of strings splitted by the expression.
-func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RegexSplit(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
 
 	if err != nil {
@@ -78,14 +77,14 @@ func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 
 	matches := reg.Split(text, limit)
-	res := runtime.NewArray(10)
+	res := ctx.Alloc().Array(10)
 
 	if len(matches) == 0 {
 		return res, nil
 	}
 
 	for _, m := range matches {
-		_ = res.Add(ctx, runtime.NewString(m))
+		_ = res.Append(ctx, runtime.NewString(m))
 	}
 
 	return res, nil
@@ -96,7 +95,7 @@ func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 // @param {String} expression - A regular expression to use for splitting the text.
 // @param {Boolean} [caseInsensitive=False] - If set to true, the matching will be case-insensitive.
 // @return {Boolean} - Returns true if the pattern is contained in text, and false otherwise.
-func RegexTest(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RegexTest(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 3)
 
 	if err != nil {
@@ -129,7 +128,7 @@ func RegexTest(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // @param {String} replacement - The string to replace the search pattern with
 // @param {Boolean} [caseInsensitive=False] - If set to true, the matching will be case-insensitive.
 // @return {String} - Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
-func RegexReplace(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func RegexReplace(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 3, 4)
 
 	if err != nil {

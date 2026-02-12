@@ -1,8 +1,6 @@
 package collections
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // @param {String | Any[] | hashMap | Iterable} haystack - The value container.
 // @param {Any} needle - The target value to assert.
 // @return {Boolean} - A boolean value that indicates whether a container contains a given value.
-func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+func Includes(ctx runtime.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	var err error
 	var result runtime.Boolean
 	haystack := arg1
@@ -20,11 +18,11 @@ func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 	case runtime.String:
 		result = v.Contains(runtime.NewString(needle.String()))
 	case runtime.List:
-		_, result, err = v.FindOne(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+		_, result, err = v.FindOne(ctx, func(c runtime.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 			return runtime.CompareValues(nil, needle, value) == 0, nil
 		})
 	case runtime.Map:
-		_, result, err = v.FindOne(ctx, func(c context.Context, value, _ runtime.Value) (runtime.Boolean, error) {
+		_, result, err = v.FindOne(ctx, func(c runtime.Context, value, _ runtime.Value) (runtime.Boolean, error) {
 			return runtime.CompareValues(nil, needle, value) == 0, nil
 		})
 	case runtime.Iterable:
@@ -34,7 +32,7 @@ func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 			return runtime.False, err
 		}
 
-		err = runtime.ForEachIter(ctx, iter, func(c context.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
+		err = runtime.ForEachIter(ctx, iter, func(c runtime.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
 			if runtime.CompareValues(nil, needle, value) == 0 {
 				result = runtime.True
 

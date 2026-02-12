@@ -1,7 +1,6 @@
 package math
 
 import (
-	"context"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // MEDIAN returns the median of the values in array.
 // @param {Int[] | Float[]} array - arrayList of numbers.
 // @return {Float} - The median of the values in array.
-func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+func Median(ctx runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	arr, err := runtime.CastList(arg)
 
 	if err != nil {
@@ -28,10 +27,10 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	// Filter numeric values into a new array
-	numericValues := runtime.NewArray(0)
-	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+	numericValues := ctx.Alloc().Array(0)
+	err = arr.ForEach(ctx, func(c runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if runtime.IsNumber(value) {
-			err := numericValues.Add(ctx, value)
+			err := numericValues.Append(c, value)
 			if err != nil {
 				return false, err
 			}

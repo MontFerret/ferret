@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -12,7 +10,7 @@ import (
 // @param {Any[]} array - An array with elements of arbitrary type.
 // @param {Int} index - Position of desired element in array, positions start at 0.
 // @return {Any} - The array element at the given position.
-func Nth(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Nth(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 2); err != nil {
 		return runtime.None, err
 	}

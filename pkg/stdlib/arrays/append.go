@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -12,7 +10,7 @@ import (
 // @param {Any} item - Target value to add.
 // @param {Boolean} [unique=false] - If set to true, will add the item only if it's unique.
 // @return {Any[]} - New array.
-func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Append(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}

@@ -1,15 +1,11 @@
 package arrays
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // UNION_DISTINCT returns the union of all passed arrays with unique values.
 // @param {Any[], repeated} arrays - List of arrays to combine.
 // @return {Any[]} - All unique array elements combined in a single array, in any order.
-func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func UnionDistinct(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
@@ -33,7 +29,7 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 	}
 
 	hashTable := make(map[uint64]bool)
-	result := runtime.NewArray(capacity)
+	result := ctx.Alloc().Array(capacity)
 
 	for _, arg := range args {
 		currList, err := runtime.CastList(arg)
@@ -42,7 +38,7 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 			return runtime.None, err
 		}
 
-		err = currList.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		err = currList.ForEach(ctx, func(ctx runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 			h := value.Hash()
 
 			if _, exists := hashTable[h]; exists {
@@ -50,7 +46,7 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 			}
 
 			hashTable[h] = true
-			return true, result.Add(ctx, value)
+			return true, result.Append(ctx, value)
 		})
 
 		if err != nil {

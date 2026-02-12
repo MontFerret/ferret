@@ -1,13 +1,11 @@
 package collections
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
 // COUNT_DISTINCT computes the number of distinct elements in the given collection and returns the count as an integer.
-func CountDistinct(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+func CountDistinct(ctx runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	collection, err := runtime.CastCollection(arg)
 
 	if err != nil {
@@ -18,7 +16,7 @@ func CountDistinct(ctx context.Context, arg runtime.Value) (runtime.Value, error
 	hashmap := map[uint64]bool{}
 	var res runtime.Int
 
-	err = runtime.ForEach(ctx, collection, func(c context.Context, value, idx runtime.Value) (runtime.Boolean, error) {
+	err = runtime.ForEach(ctx, collection, func(c runtime.Context, value, idx runtime.Value) (runtime.Boolean, error) {
 		hash := value.Hash()
 
 		_, exists := hashmap[hash]

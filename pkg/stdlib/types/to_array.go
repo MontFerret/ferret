@@ -1,8 +1,6 @@
 package types
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -13,6 +11,6 @@ import (
 // Objects / HTML nodes are converted to an array containing their attribute values as array elements.
 // @param {Any} input - Input value of arbitrary type.
 // @return {Any[]} - An array value.
-func ToArray(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+func ToArray(ctx runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	return runtime.ToList(ctx, arg), nil
 }

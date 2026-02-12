@@ -1,15 +1,11 @@
 package arrays
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // UNION returns the union of all passed arrays.
 // @param {Any[], repeated} arrays - List of arrays to combine.
 // @return {Any[]} - All array elements combined in a single array, in any order.
-func Union(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Union(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
@@ -32,7 +28,7 @@ func Union(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		capacity = len(args) * 5
 	}
 
-	result := runtime.NewArray(capacity)
+	result := ctx.Alloc().Array(capacity)
 
 	for _, arg := range args {
 		currList, err := runtime.CastList(arg)
@@ -41,8 +37,8 @@ func Union(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.None, err
 		}
 
-		err = currList.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			return true, result.Add(ctx, value)
+		err = currList.ForEach(ctx, func(ctx runtime.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+			return true, result.Append(ctx, value)
 		})
 
 		if err != nil {

@@ -1,8 +1,6 @@
 package arrays
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -11,7 +9,7 @@ import (
 // @param {Any} value - The target value.
 // @param {Boolean} [position=False] - Boolean value which indicates whether to return item's position.
 // @return {Boolean | Int} - A value indicating whether an element is contained in array.
-func Position(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Position(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}

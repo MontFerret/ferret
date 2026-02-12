@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 // @param {String} template - template.
 // @param {Any, repeated} args - template arguments.
 // @return {String} - string formed by template using arguments.
-func Fmt(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Fmt(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}

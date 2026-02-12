@@ -1,7 +1,6 @@
 package math
 
 import (
-	"context"
 	"math"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,7 +9,7 @@ import (
 // STDDEV_POPULATION returns the population standard deviation of the values in a given array.
 // @param {Int[] | Float[]} numbers - arrayList of numbers.
 // @return {Float} - The population standard deviation.
-func StandardDeviationPopulation(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+func StandardDeviationPopulation(ctx runtime.Context, arg runtime.Value) (runtime.Value, error) {
 	arr, err := runtime.CastList(arg)
 
 	if err != nil {

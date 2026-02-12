@@ -1,16 +1,12 @@
 package objects
 
-import (
-	"context"
-
-	"github.com/MontFerret/ferret/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/pkg/runtime"
 
 // MERGE_RECURSIVE recursively merge the given objects into a single object.
 // @param {Objects, repeated} objects - Objects to merge.
 // @return {hashMap} - hashMap created by merging.
 // TODO: REWRITE TO USE LIST & MAP instead
-func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func MergeRecursive(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, runtime.MaxArgs)
 	if err != nil {
 		return runtime.None, err
@@ -22,7 +18,7 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 		}
 	}
 
-	merged := runtime.NewObject()
+	merged := ctx.Alloc().Object(0)
 
 	for _, arg := range args {
 		out, err := merge(ctx, merged, arg)
@@ -37,7 +33,7 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 	return merged.Clone(ctx)
 }
 
-func merge(ctx context.Context, src, dst runtime.Value) (runtime.Value, error) {
+func merge(ctx runtime.Context, src, dst runtime.Value) (runtime.Value, error) {
 	// If both values are equal, no need to merge
 	if runtime.CompareValues(nil, src, dst) == 0 {
 		return src, nil
@@ -67,7 +63,7 @@ func merge(ctx context.Context, src, dst runtime.Value) (runtime.Value, error) {
 
 	var srcVal runtime.Value
 
-	_ = dstObj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+	_ = dstObj.ForEach(ctx, func(c runtime.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		if srcVal, err = srcObj.Get(c, key); err == nil {
 			v, err := merge(ctx, srcVal, val)
 

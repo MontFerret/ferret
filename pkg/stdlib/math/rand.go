@@ -1,8 +1,6 @@
 package math
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -10,7 +8,7 @@ import (
 // @param {Int | Float} [max] - Upper limit.
 // @param {Int | Float} [min] - Lower limit.
 // @return {Float} - A number greater than 0 and less than 1.
-func Rand(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func Rand(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 0, 2); err != nil {
 		return runtime.None, err
 	}

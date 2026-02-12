@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/wI2L/jettison"
@@ -12,7 +11,7 @@ import (
 // JSON_PARSE returns a value described by the JSON-encoded input string.
 // @param {String} str - The string to parse as JSON.
 // @return {Any} - Parsed value.
-func JSONParse(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func JSONParse(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {
@@ -33,7 +32,7 @@ func JSONParse(_ context.Context, args ...runtime.Value) (runtime.Value, error) 
 // JSON_STRINGIFY returns a JSON string representation of the input value.
 // @param {Any} str - The input value to serialize.
 // @return {String} - JSON string.
-func JSONStringify(_ context.Context, args ...runtime.Value) (runtime.Value, error) {
+func JSONStringify(_ runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 1, 1)
 
 	if err != nil {

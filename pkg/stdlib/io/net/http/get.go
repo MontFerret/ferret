@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	h "net/http"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -12,7 +11,7 @@ import (
 // @param {String} [param.url] - Target url or parameters.
 // @param {hashMap} [param.headers] - HTTP headers
 // @return {Binary} - Response in binary format
-func GET(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+func GET(ctx runtime.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, 1); err != nil {
 		return runtime.None, err
 	}
