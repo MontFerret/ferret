@@ -324,7 +324,7 @@ arrayQuestionQuantifierValue
     ;
 
 arrayApply
-    : OpenBracket Param queryLiteral CloseBracket
+    : OpenBracket Tilde queryLiteral CloseBracket
     ;
 
 inlineExpression

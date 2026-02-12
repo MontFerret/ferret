@@ -52,8 +52,8 @@ func TestApplyQuery(t *testing.T) {
 	}
 
 	RunUseCases(t, []UseCase{
-		Case("RETURN @doc[@ css`.items`]", "ok", "Should apply query literal"),
-		RuntimeErrorCase("RETURN @val[@ css`x`]", ExpectedRuntimeError{
+		Case("RETURN @doc[~ css`.items`]", "ok", "Should apply query literal"),
+		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{
 			Message: "Invalid type",
 		}),
 	}, vm.WithParams(map[string]runtime.Value{

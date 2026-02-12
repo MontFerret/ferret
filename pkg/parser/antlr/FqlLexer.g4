@@ -11,6 +11,7 @@ Colon: ':';
 SemiColon: ';';
 Dot: '.';
 Comma: ',';
+Tilde: '~';
 OpenBracket: '[';
 CloseBracket: ']';
 OpenParen: '(';
