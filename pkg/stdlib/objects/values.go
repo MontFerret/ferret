@@ -3,7 +3,7 @@ package objects
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // VALUES return the attribute values of the object as an array.

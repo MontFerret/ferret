@@ -1,9 +1,9 @@
 package internal
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 // CompilerContext holds the context for the compilation process, including various compilers and allocators.

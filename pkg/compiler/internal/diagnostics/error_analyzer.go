@@ -1,7 +1,7 @@
 package diagnostics
 
 import (
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 type SyntaxErrorMatcher func(src *file.Source, err *CompilationError, offending *TokenNode) bool

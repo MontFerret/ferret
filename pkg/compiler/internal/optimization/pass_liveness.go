@@ -1,7 +1,7 @@
 package optimization
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const (

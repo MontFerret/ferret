@@ -6,9 +6,9 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/strings"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
 func TestRegexMatch(t *testing.T) {

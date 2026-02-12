@@ -3,8 +3,8 @@ package operators
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
 func ToRange(ctx context.Context, left, right runtime.Value) (runtime.Value, error) {

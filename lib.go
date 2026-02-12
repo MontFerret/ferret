@@ -1,10 +1,10 @@
 package ferret
 
 import (
-	"github.com/MontFerret/ferret/pkg/diagnostics"
-	"github.com/MontFerret/ferret/pkg/engine"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/engine"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type Engine = engine.Engine

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

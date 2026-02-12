@@ -1,10 +1,10 @@
 package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler/internal"
-	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
-	"github.com/MontFerret/ferret/pkg/file"
-	"github.com/MontFerret/ferret/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
 type Visitor struct {

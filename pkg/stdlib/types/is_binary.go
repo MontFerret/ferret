@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // IS_BINARY checks whether value is a binary value.

@@ -1,8 +1,8 @@
 package net
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/io/net/http"
 )
 
 // RegisterLib register `NET` namespace functions.

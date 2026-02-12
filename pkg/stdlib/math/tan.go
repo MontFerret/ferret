@@ -4,7 +4,7 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // TAN returns the tangent of a given number.

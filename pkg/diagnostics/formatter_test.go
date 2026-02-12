@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func TestFormatError_Basic(t *testing.T) {

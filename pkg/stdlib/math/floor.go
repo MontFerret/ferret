@@ -4,7 +4,7 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // FLOOR returns the greatest integer value less than or equal to a given value.

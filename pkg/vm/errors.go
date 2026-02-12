@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 
 // RuntimeError represents a VM execution error with source context.

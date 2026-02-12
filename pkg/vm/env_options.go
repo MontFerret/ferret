@@ -3,7 +3,7 @@ package vm
 import (
 	"io"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func WithParams(params map[string]runtime.Value) EnvironmentOption {

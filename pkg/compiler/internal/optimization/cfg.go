@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // BasicBlock represents a sequence of instructions with a single entry and exit point

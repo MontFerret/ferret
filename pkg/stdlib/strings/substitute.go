@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // SUBSTITUTE replaces search values in the string value.

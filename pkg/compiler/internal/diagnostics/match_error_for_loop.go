@@ -3,8 +3,8 @@ package diagnostics
 import (
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/diagnostics"
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func matchForLoopErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {

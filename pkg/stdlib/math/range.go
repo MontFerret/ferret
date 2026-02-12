@@ -3,7 +3,7 @@ package math
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // RANGE returns an array of numbers in the specified range, optionally with increments other than 1.

@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type LoopTable struct {

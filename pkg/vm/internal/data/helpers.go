@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func ToRegexp(input runtime.Value) (*Regexp, error) {

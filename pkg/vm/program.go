@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"github.com/MontFerret/ferret/pkg/file"
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type (

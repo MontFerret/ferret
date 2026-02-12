@@ -1,6 +1,6 @@
 package mem
 
-import "github.com/MontFerret/ferret/pkg/runtime"
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 type RegisterFile struct {
 	Values  []runtime.Value

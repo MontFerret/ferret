@@ -3,9 +3,9 @@ package vm
 import (
 	"errors"
 
-	"github.com/MontFerret/ferret/pkg/diagnostics"
-	"github.com/MontFerret/ferret/pkg/file"
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func toRuntimeError(program *Program, pc int, err error) *RuntimeError {

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
 )
 
 func TestDateMillisecond(t *testing.T) {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/collections"
-	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
 // INCLUDE asserts that haystack includes needle.

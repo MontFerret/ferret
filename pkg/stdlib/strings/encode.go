@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"net/url"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // ENCODE_URI_COMPONENT returns the encoded String of uri.

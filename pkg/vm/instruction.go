@@ -1,6 +1,6 @@
 package vm
 
-import "github.com/MontFerret/ferret/pkg/vm/internal/data"
+import "github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 
 type Instruction struct {
 	Opcode   Opcode

@@ -3,7 +3,7 @@ package data
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // CounterCollector is a Transformer implementation that tracks and increments a counter of processed values.

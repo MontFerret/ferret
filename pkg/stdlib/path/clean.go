@@ -4,7 +4,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // CLEAN returns the shortest path name equivalent to path.

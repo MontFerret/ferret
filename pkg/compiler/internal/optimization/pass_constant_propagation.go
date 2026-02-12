@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const ConstantPropagationPassName = "constant-propagation"

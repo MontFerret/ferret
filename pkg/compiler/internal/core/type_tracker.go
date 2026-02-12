@@ -1,6 +1,6 @@
 package core
 
-import "github.com/MontFerret/ferret/pkg/vm"
+import "github.com/MontFerret/ferret/v2/pkg/vm"
 
 type TypeTracker struct {
 	regs map[vm.Operand]ValueType

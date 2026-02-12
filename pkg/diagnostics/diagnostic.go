@@ -3,7 +3,7 @@ package diagnostics
 import (
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 // Diagnostic represents a structured diagnostic error with optional source context and spans.

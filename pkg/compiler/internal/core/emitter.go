@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/file"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type Emitter struct {

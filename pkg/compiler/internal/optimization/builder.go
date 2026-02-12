@@ -1,6 +1,6 @@
 package optimization
 
-import "github.com/MontFerret/ferret/pkg/vm"
+import "github.com/MontFerret/ferret/v2/pkg/vm"
 
 // Builder constructs a control flow graph from bytecode
 type Builder struct {

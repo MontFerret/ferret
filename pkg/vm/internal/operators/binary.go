@@ -1,6 +1,6 @@
 package operators
 
-import "github.com/MontFerret/ferret/pkg/runtime"
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 func Negate(input runtime.Value) runtime.Value {
 	switch val := input.(type) {

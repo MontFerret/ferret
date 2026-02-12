@@ -1,6 +1,6 @@
 package vm
 
-import "github.com/MontFerret/ferret/pkg/diagnostics"
+import "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 
 type RuntimeErrorSet = diagnostics.Diagnostics[*RuntimeError]
 

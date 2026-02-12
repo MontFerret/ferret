@@ -6,9 +6,9 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/stdlib/testing"
-	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
 func TestGte(t *t.T) {

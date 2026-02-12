@@ -4,7 +4,7 @@ import (
 	"context"
 	"math"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // ATAN returns the arctangent, in radians, of a given number.

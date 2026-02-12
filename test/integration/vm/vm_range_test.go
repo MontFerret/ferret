@@ -3,8 +3,8 @@ package vm_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestRange(t *testing.T) {

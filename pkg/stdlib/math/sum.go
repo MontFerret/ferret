@@ -3,7 +3,7 @@ package math
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // SUM returns the sum of the values in a given array.

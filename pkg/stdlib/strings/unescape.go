@@ -4,7 +4,7 @@ import (
 	"context"
 	"html"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // UNESCAPE_HTML unescapes entities like "&lt;" to become "<". It unescapes a

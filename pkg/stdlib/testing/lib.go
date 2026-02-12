@@ -1,8 +1,8 @@
 package testing
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
 // @namespace T

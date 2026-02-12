@@ -5,7 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // WRITE writes the given data into the file.

@@ -3,9 +3,9 @@ package testing
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
 // BINARY asserts that value is a binary type.

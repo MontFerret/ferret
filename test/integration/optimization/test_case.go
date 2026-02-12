@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 
-	"github.com/MontFerret/ferret/pkg/asm"
+	"github.com/MontFerret/ferret/v2/pkg/asm"
 
 	"github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/MontFerret/ferret/test/integration/base"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
 func Case(expression string, expected *vm.Program, desc ...string) UseCase {

@@ -8,13 +8,13 @@ import (
 	h "net/http"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	"github.com/jarcoal/httpmock"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/io/net/http"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/io/net/http"
 )
 
 func TestPOST(t *testing.T) {

@@ -1,8 +1,8 @@
 package compiler_test
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/MontFerret/ferret/test/integration/base"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
 type BC = []vm.Instruction

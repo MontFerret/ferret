@@ -3,7 +3,7 @@ package strings
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // CONTAINS returns a value indicating whether a specified substring occurs within a string.

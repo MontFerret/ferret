@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // DATE parses a formatted string and returns DateTime object it represents.

@@ -3,7 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // OUTERSECTION return the values that occur only once across all arrays specified.

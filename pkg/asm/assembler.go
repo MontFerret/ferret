@@ -1,6 +1,6 @@
 package asm
 
-import "github.com/MontFerret/ferret/pkg/vm"
+import "github.com/MontFerret/ferret/v2/pkg/vm"
 
 // TODO: Implement the assembler that converts FASM (Ferret Assembly) code into a Ferret VM program.
 func Assemble(fasm string) (*vm.Program, error) {

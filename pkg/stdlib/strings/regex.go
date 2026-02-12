@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // REGEX_MATCH returns the matches in the given string text, using the regex.

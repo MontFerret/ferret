@@ -6,10 +6,10 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/pkg/parser/fql"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // LiteralCompiler handles the compilation of literal values in FQL queries.

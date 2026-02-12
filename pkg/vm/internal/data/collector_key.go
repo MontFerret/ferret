@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // KeyCollector is a structure used to collect and group unique runtime values by their string keys.

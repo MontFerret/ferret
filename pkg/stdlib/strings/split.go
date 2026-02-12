@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // SPLIT splits the given string value into a list of strings, using the separator.

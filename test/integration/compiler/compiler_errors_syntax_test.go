@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 )
 
 func TestSyntaxErrors(t *testing.T) {

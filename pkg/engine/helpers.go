@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func IsScalar(result Result) bool {

@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/path"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/path"
 )
 
 func TestBase(t *testing.T) {

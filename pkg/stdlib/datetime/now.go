@@ -3,7 +3,7 @@ package datetime
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // NOW returns new DateTime object with Time equal to time.Now().

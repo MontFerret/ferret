@@ -3,7 +3,7 @@ package datetime
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // DATE_YEAR returns the year extracted from the given date.

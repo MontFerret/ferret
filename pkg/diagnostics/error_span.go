@@ -1,6 +1,6 @@
 package diagnostics
 
-import "github.com/MontFerret/ferret/pkg/file"
+import "github.com/MontFerret/ferret/v2/pkg/file"
 
 type ErrorSpan struct {
 	Span  file.Span

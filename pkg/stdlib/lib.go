@@ -1,18 +1,18 @@
 package stdlib
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/stdlib/arrays"
-	"github.com/MontFerret/ferret/pkg/stdlib/collections"
-	"github.com/MontFerret/ferret/pkg/stdlib/datetime"
-	"github.com/MontFerret/ferret/pkg/stdlib/io"
-	"github.com/MontFerret/ferret/pkg/stdlib/math"
-	"github.com/MontFerret/ferret/pkg/stdlib/objects"
-	"github.com/MontFerret/ferret/pkg/stdlib/path"
-	"github.com/MontFerret/ferret/pkg/stdlib/strings"
-	"github.com/MontFerret/ferret/pkg/stdlib/testing"
-	"github.com/MontFerret/ferret/pkg/stdlib/types"
-	"github.com/MontFerret/ferret/pkg/stdlib/utils"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/io"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/math"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/objects"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/path"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/types"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/utils"
 )
 
 func New() runtime.Functions {

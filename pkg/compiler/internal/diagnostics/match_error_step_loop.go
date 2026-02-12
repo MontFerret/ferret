@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/diagnostics"
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
 func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {

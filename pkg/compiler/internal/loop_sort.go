@@ -1,10 +1,10 @@
 package internal
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/pkg/parser/fql"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // LoopSortCompiler handles compilation of SORT clauses within loops.

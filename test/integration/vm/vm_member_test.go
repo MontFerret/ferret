@@ -8,15 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/file"
-	"github.com/MontFerret/ferret/pkg/stdlib"
+	"github.com/MontFerret/ferret/v2/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib"
 
-	"github.com/MontFerret/ferret/test/integration/base"
+	"github.com/MontFerret/ferret/v2/test/integration/base"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/parser"
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/parser"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

@@ -3,7 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // UNION_DISTINCT returns the union of all passed arrays with unique values.

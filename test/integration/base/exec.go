@@ -4,10 +4,10 @@ import (
 	"context"
 	j "encoding/json"
 
-	"github.com/MontFerret/ferret/pkg/file"
+	"github.com/MontFerret/ferret/v2/pkg/file"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func Compile(expression string) (*vm.Program, error) {

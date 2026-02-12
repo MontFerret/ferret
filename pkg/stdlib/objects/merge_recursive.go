@@ -3,7 +3,7 @@ package objects
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // MERGE_RECURSIVE recursively merge the given objects into a single object.

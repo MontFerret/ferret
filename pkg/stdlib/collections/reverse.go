@@ -3,7 +3,7 @@ package collections
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // REVERSE returns the reverse of a given string or array value.

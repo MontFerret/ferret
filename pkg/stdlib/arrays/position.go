@@ -3,7 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // POSITION returns a value indicating whether an element is contained in array. Optionally returns its position.

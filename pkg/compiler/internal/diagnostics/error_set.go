@@ -1,7 +1,7 @@
 package diagnostics
 
 import (
-	"github.com/MontFerret/ferret/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 
 type CompilationErrorSet struct {

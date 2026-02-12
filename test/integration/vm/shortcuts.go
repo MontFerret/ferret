@@ -1,7 +1,7 @@
 package vm_test
 
 import (
-	"github.com/MontFerret/ferret/test/integration/base"
+	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
 type UseCase = base.TestCase

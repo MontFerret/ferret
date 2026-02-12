@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func Contains(ctx context.Context, input runtime.Value, value runtime.Value) runtime.Boolean {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // ZIP returns an object assembled from the separate parameters keys and values.
