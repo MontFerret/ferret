@@ -40,7 +40,7 @@ func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 
 	for _, m := range matches[0] {
-		_ = res.Add(ctx, runtime.NewString(m))
+		_ = res.Append(ctx, runtime.NewString(m))
 	}
 
 	return res, nil
@@ -85,7 +85,7 @@ func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 	}
 
 	for _, m := range matches {
-		_ = res.Add(ctx, runtime.NewString(m))
+		_ = res.Append(ctx, runtime.NewString(m))
 	}
 
 	return res, nil

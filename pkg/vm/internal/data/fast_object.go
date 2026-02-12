@@ -378,7 +378,7 @@ func (t *FastObject) Values(_ context.Context) (runtime.List, error) {
 	return runtime.NewArrayOf(values), nil
 }
 
-func (t *FastObject) ForEach(ctx context.Context, predicate runtime.KeyedPredicate) error {
+func (t *FastObject) ForEach(ctx context.Context, predicate runtime.KeyReadablePredicate) error {
 	if t.dict != nil {
 		for key, val := range t.dict {
 			doContinue, err := predicate(ctx, val, runtime.String(key))
@@ -415,7 +415,7 @@ func (t *FastObject) ForEach(ctx context.Context, predicate runtime.KeyedPredica
 	return nil
 }
 
-func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyedPredicate) (runtime.List, error) {
+func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyReadablePredicate) (runtime.List, error) {
 	res := runtime.NewArray(t.len())
 
 	err := t.ForEach(ctx, func(c context.Context, value, key runtime.Value) (runtime.Boolean, error) {
@@ -426,7 +426,7 @@ func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyedPredicate)
 		}
 
 		if match {
-			if err := res.Add(c, value); err != nil {
+			if err := res.Append(c, value); err != nil {
 				return runtime.False, err
 			}
 		}
@@ -441,7 +441,7 @@ func (t *FastObject) Find(ctx context.Context, predicate runtime.KeyedPredicate)
 	return res, nil
 }
 
-func (t *FastObject) FindOne(ctx context.Context, predicate runtime.KeyedPredicate) (runtime.Value, runtime.Boolean, error) {
+func (t *FastObject) FindOne(ctx context.Context, predicate runtime.KeyReadablePredicate) (runtime.Value, runtime.Boolean, error) {
 	var out runtime.Value
 	var ok bool
 
@@ -488,6 +488,10 @@ func (t *FastObject) ContainsValue(_ context.Context, target runtime.Value) (run
 	return runtime.Boolean(found), nil
 }
 
+func (t *FastObject) Contains(ctx context.Context, target runtime.Value) (runtime.Boolean, error) {
+	return t.ContainsValue(ctx, target)
+}
+
 func (t *FastObject) Get(_ context.Context, key runtime.Value) (runtime.Value, error) {
 	val, ok := t.getSlot(key.String())
 
@@ -503,8 +507,43 @@ func (t *FastObject) Set(_ context.Context, key runtime.Value, value runtime.Val
 	return nil
 }
 
-func (t *FastObject) Remove(_ context.Context, key runtime.Value) error {
+func (t *FastObject) RemoveKey(_ context.Context, key runtime.Value) error {
 	t.removeString(key.String())
+	return nil
+}
+
+func (t *FastObject) Remove(_ context.Context, value runtime.Value) error {
+	if t.dict != nil {
+		for key, val := range t.dict {
+			if runtime.CompareValues(value, val) == 0 {
+				t.removeString(key)
+				break
+			}
+		}
+
+		return nil
+	}
+
+	if t.shape == nil {
+		return nil
+	}
+
+	for idx, key := range t.shape.names {
+		if idx >= len(t.slots) {
+			break
+		}
+
+		val := t.slots[idx]
+		if val == nil {
+			continue
+		}
+
+		if runtime.CompareValues(value, val) == 0 {
+			t.removeString(key)
+			break
+		}
+	}
+
 	return nil
 }
 

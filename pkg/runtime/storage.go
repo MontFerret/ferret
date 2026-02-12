@@ -14,15 +14,14 @@ type (
 	MapStorage interface {
 		Iterable
 		Measurable
-		Keyed
-
-		Set(ctx context.Context, key, value Value) error
+		KeyReadable
+		KeyWritable
 	}
 
 	ListStorage interface {
 		Iterable
 		Measurable
-		Indexed
+		IndexReadable
 		Sortable
 
 		Add(ctx context.Context, value Value) error

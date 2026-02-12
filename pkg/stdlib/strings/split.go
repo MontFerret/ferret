@@ -42,7 +42,7 @@ func Split(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	arr := runtime.NewArray(len(strs))
 
 	for _, str := range strs {
-		_ = arr.Add(ctx, runtime.NewString(str))
+		_ = arr.Append(ctx, runtime.NewString(str))
 	}
 
 	return arr, nil

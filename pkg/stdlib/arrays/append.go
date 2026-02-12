@@ -59,7 +59,7 @@ func Append(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		}
 	}
 
-	if err := next.Add(ctx, arg); err != nil {
+	if err := next.Append(ctx, arg); err != nil {
 		return runtime.None, err
 	}
 

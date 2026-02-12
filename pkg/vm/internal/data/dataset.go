@@ -26,7 +26,7 @@ func NewDataSet(distinct bool) runtime.List {
 	}
 }
 
-func (ds *DataSet) Add(ctx context.Context, item runtime.Value) error {
+func (ds *DataSet) Append(ctx context.Context, item runtime.Value) error {
 	can, err := ds.canAdd(ctx, item)
 
 	if err != nil {
@@ -34,7 +34,9 @@ func (ds *DataSet) Add(ctx context.Context, item runtime.Value) error {
 	}
 
 	if can {
-		_ = ds.values.Add(ctx, item)
+		if err := ds.values.Append(ctx, item); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -104,11 +106,11 @@ func (ds *DataSet) Swap(ctx context.Context, a, b runtime.Int) error {
 	return ds.values.Swap(ctx, a, b)
 }
 
-func (ds *DataSet) Find(ctx context.Context, predicate runtime.IndexedPredicate) (runtime.List, error) {
+func (ds *DataSet) Find(ctx context.Context, predicate runtime.IndexReadablePredicate) (runtime.List, error) {
 	return ds.values.Find(ctx, predicate)
 }
 
-func (ds *DataSet) FindOne(ctx context.Context, predicate runtime.IndexedPredicate) (runtime.Value, runtime.Boolean, error) {
+func (ds *DataSet) FindOne(ctx context.Context, predicate runtime.IndexReadablePredicate) (runtime.Value, runtime.Boolean, error) {
 	return ds.values.FindOne(ctx, predicate)
 }
 
@@ -128,8 +130,12 @@ func (ds *DataSet) Slice(ctx context.Context, start, end runtime.Int) (runtime.L
 	return ds.values.Slice(ctx, start, end)
 }
 
-func (ds *DataSet) ForEach(ctx context.Context, predicate runtime.IndexedPredicate) error {
+func (ds *DataSet) ForEach(ctx context.Context, predicate runtime.IndexReadablePredicate) error {
 	return ds.values.ForEach(ctx, predicate)
+}
+
+func (ds *DataSet) Contains(ctx context.Context, value runtime.Value) (runtime.Boolean, error) {
+	return ds.values.Contains(ctx, value)
 }
 
 func (ds *DataSet) canAdd(_ context.Context, value runtime.Value) (bool, error) {

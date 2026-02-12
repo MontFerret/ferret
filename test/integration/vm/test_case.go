@@ -196,8 +196,6 @@ func RunUseCasesWith(t *testing.T, c *compiler.Compiler, useCases []UseCase, opt
 					if base.ArePtrsEqual(assertion, ShouldBeError) {
 						frmt, ok := err.(diagnostics.Formattable)
 
-						So(err, ShouldBeError)
-
 						if ok {
 							fmt.Println(frmt.Format())
 						}

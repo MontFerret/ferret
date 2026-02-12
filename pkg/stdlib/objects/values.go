@@ -33,7 +33,7 @@ func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 			return runtime.False, err
 		}
 
-		if err := vals.Add(c, val); err != nil {
+		if err := vals.Append(c, val); err != nil {
 			return runtime.False, err
 		}
 

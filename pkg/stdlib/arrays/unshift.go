@@ -42,10 +42,10 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	result := runtime.NewArray64(size + 1)
 
 	if !uniq {
-		_ = result.Add(ctx, value)
+		_ = result.Append(ctx, value)
 
 		err = list.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			_ = result.Add(ctx, value)
+			_ = result.Append(ctx, value)
 
 			return runtime.True, nil
 		})
@@ -57,11 +57,11 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 		return result, nil
 	}
 
-	_ = result.Add(ctx, value)
+	_ = result.Append(ctx, value)
 
 	err = list.ForEach(ctx, func(ctx context.Context, el runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if runtime.CompareValues(el, value) != 0 {
-			_ = result.Add(ctx, el)
+			_ = result.Append(ctx, el)
 		}
 
 		return true, nil

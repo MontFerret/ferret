@@ -379,9 +379,9 @@ loop:
 		case OpDataSetCollector:
 			reg[dst] = data.NewCollector(data.CollectorType(src1))
 		case OpPush:
-			ds := reg[dst].(runtime.List)
+			ds := reg[dst].(runtime.Appendable)
 
-			if err := ds.Add(ctx, reg[src1]); err != nil {
+			if err := ds.Append(ctx, reg[src1]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				} else {
@@ -391,12 +391,11 @@ loop:
 		case OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
 
-			_ = ds.Add(ctx, reg[src1])
+			_ = ds.Append(ctx, reg[src1])
 		case OpPushKV:
-			// TODO: Use runtime.Map/runtime.KeySetter instead
-			tr := reg[dst].(data.Transformer)
+			tr := reg[dst].(runtime.KeyWritable)
 
-			if err := tr.Add(ctx, reg[src1], reg[src2]); err != nil {
+			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				}
@@ -413,7 +412,7 @@ loop:
 				break
 			}
 
-			_ = reg[dst].(runtime.Map).Set(ctx, key, value)
+			_ = reg[dst].(runtime.KeyWritable).Set(ctx, key, value)
 		case OpObjectSetConst:
 			objVal := reg[dst]
 			key := runtime.ToString(constants[src1.Constant()])
@@ -424,7 +423,7 @@ loop:
 				break
 			}
 
-			_ = objVal.(runtime.Map).Set(ctx, key, value)
+			_ = objVal.(runtime.KeyWritable).Set(ctx, key, value)
 		case OpIter:
 			input := reg[src1]
 

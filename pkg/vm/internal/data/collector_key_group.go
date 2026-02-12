@@ -40,7 +40,7 @@ func (c *KeyGroupCollector) Iterate(ctx context.Context) (runtime.Iterator, erro
 	return NewKVIterator(iter), nil
 }
 
-func (c *KeyGroupCollector) Add(ctx context.Context, key, value runtime.Value) error {
+func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) error {
 	k, err := Stringify(ctx, key)
 
 	if err != nil {
@@ -54,14 +54,14 @@ func (c *KeyGroupCollector) Add(ctx context.Context, key, value runtime.Value) e
 
 		c.grouping[k] = group
 
-		err = c.Value.Add(ctx, NewKV(key, group))
+		err = c.Value.Append(ctx, NewKV(key, group))
 
 		if err != nil {
 			return err
 		}
 	}
 
-	return group.Add(ctx, value)
+	return group.Append(ctx, value)
 }
 
 func (c *KeyGroupCollector) sort(ctx context.Context) error {

@@ -23,7 +23,7 @@ func (c *CounterCollector) Iterate(ctx context.Context) (runtime.Iterator, error
 	return runtime.NewArrayWith(c.Value).Iterate(ctx)
 }
 
-func (c *CounterCollector) Add(_ context.Context, _, _ runtime.Value) error {
+func (c *CounterCollector) Set(_ context.Context, _, _ runtime.Value) error {
 	c.Value++
 
 	return nil

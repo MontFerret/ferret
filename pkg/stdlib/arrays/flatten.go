@@ -55,7 +55,7 @@ func Flatten(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 			valueArr, ok := value.(runtime.List)
 
 			if !ok || currentLevel > level {
-				_ = result.Add(c, value)
+				_ = result.Append(c, value)
 			} else {
 				if err := unwrap(valueArr); err != nil {
 					return false, err

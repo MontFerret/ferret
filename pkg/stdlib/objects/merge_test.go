@@ -166,7 +166,7 @@ func TestMergeObjects(t *testing.T) {
 		So(runtime.CompareValues(nestedVal, runtime.NewString("value")), ShouldEqual, 0)
 
 		// Verify independence - modify original array
-		arr.Add(context.Background(), runtime.NewInt(3))
+		arr.Append(context.Background(), runtime.NewInt(3))
 
 		// Merged array should not be affected
 		mergedArrLength, _ := arrResult.Length(context.Background())

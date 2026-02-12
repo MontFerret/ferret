@@ -61,7 +61,7 @@ func Minus(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	result := runtime.NewArray64(capacity)
 
 	for _, item := range intersections {
-		_ = result.Add(ctx, item)
+		_ = result.Append(ctx, item)
 	}
 
 	return result, nil

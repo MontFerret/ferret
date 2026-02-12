@@ -233,7 +233,7 @@ func TestMergeRecursive(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// Modify original array
-			arr.Add(context.Background(), runtime.NewInt(3))
+			arr.Append(context.Background(), runtime.NewInt(3))
 
 			// Get result array and check it's unchanged
 			actualObj := actual.(*runtime.Object)

@@ -61,7 +61,7 @@ func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Val
 	for _, bucket := range intersections {
 		if len(bucket) == required {
 			// It's safe to ignore the error here because we know that it's runtime.Array
-			_ = result.Add(ctx, bucket[0])
+			_ = result.Append(ctx, bucket[0])
 		}
 	}
 

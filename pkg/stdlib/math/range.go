@@ -40,7 +40,7 @@ func Range(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	arr := runtime.NewArray(int(end))
 
 	for i := start; i <= end; i += step {
-		_ = arr.Add(ctx, runtime.NewFloat(i))
+		_ = arr.Append(ctx, runtime.NewFloat(i))
 	}
 
 	return arr, nil

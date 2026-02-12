@@ -219,7 +219,7 @@ func TestValues(t *testing.T) {
 		returnedArrayVal := returnedArr.(*runtime.Array)
 
 		// Modify the original array
-		arr.Add(context.Background(), runtime.NewInt(1))
+		arr.Append(context.Background(), runtime.NewInt(1))
 
 		// Check that the returned array wasn't affected
 		returnedLength, _ := returnedArrayVal.Length(context.Background())
