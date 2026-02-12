@@ -57,7 +57,7 @@ func Keys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	}
 
 	for _, key := range keys {
-		_ = keysArray.Add(ctx, runtime.NewString(key))
+		_ = keysArray.Append(ctx, runtime.NewString(key))
 	}
 
 	return keysArray, nil

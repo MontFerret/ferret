@@ -185,7 +185,7 @@ func TestZip(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Modify original array
-		arr.Add(context.Background(), runtime.NewInt(1))
+		arr.Append(context.Background(), runtime.NewInt(1))
 
 		// Check that the result wasn't affected
 		resultArr, _ := actualObj.Get(context.Background(), runtime.NewString("arr"))

@@ -18,7 +18,7 @@ func Contains(ctx context.Context, input runtime.Value, value runtime.Value) run
 
 		return idx > -1
 	case runtime.Map:
-		containsValue, err := val.ContainsValue(ctx, value)
+		containsValue, err := val.Contains(ctx, value)
 
 		if err != nil {
 			return runtime.False

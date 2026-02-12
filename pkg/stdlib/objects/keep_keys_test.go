@@ -58,7 +58,7 @@ func TestKeepKeys(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		arr.Add(context.Background(), runtime.NewInt(1))
+		arr.Append(context.Background(), runtime.NewInt(1))
 
 		resultObj := runtime.NewObjectWith(
 			runtime.NewObjectProperty("a", runtime.NewArrayWith(runtime.Int(0))),

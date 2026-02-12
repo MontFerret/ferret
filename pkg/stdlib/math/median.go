@@ -31,7 +31,7 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	numericValues := runtime.NewArray(0)
 	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
 		if runtime.IsNumber(value) {
-			err := numericValues.Add(ctx, value)
+			err := numericValues.Append(ctx, value)
 			if err != nil {
 				return false, err
 			}

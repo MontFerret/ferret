@@ -101,7 +101,7 @@ func Parse(input interface{}) Value {
 		arr := NewArray(len(value))
 
 		for _, el := range value {
-			_ = arr.Add(ctx, Parse(el))
+			_ = arr.Append(ctx, Parse(el))
 		}
 
 		return arr
@@ -140,7 +140,7 @@ func Parse(input interface{}) Value {
 
 			for i := 0; i < size; i++ {
 				curVal := v.Index(i)
-				_ = arr.Add(ctx, Parse(curVal.Interface()))
+				_ = arr.Append(ctx, Parse(curVal.Interface()))
 			}
 
 			return arr
@@ -257,7 +257,7 @@ func ToList(ctx context.Context, input Value) List {
 				return arr
 			}
 
-			_ = arr.Add(ctx, val)
+			_ = arr.Append(ctx, val)
 		}
 
 		return arr

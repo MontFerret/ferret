@@ -39,8 +39,8 @@ func (s *MultiSorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return NewKVIterator(iter), nil
 }
 
-func (s *MultiSorter) Add(ctx context.Context, key, value runtime.Value) error {
-	return s.Value.Add(ctx, NewKV(key, value))
+func (s *MultiSorter) Set(ctx context.Context, key, value runtime.Value) error {
+	return s.Value.Append(ctx, NewKV(key, value))
 }
 
 func (s *MultiSorter) sort(ctx context.Context) error {

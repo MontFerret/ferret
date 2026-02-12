@@ -37,7 +37,7 @@ func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 				return runtime.None, err
 			}
 
-			_ = result.Add(ctx, item)
+			_ = result.Append(ctx, item)
 		}
 
 		return result, nil

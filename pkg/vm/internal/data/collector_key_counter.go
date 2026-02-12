@@ -57,7 +57,7 @@ func (c *KeyCounterCollector) sort(ctx context.Context) error {
 	})
 }
 
-func (c *KeyCounterCollector) Add(ctx context.Context, key, _ runtime.Value) error {
+func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) error {
 	k, err := Stringify(ctx, key)
 
 	if err != nil {
@@ -78,7 +78,7 @@ func (c *KeyCounterCollector) Add(ctx context.Context, key, _ runtime.Value) err
 		idx = size
 		kv = NewKV(key, runtime.ZeroInt)
 
-		if err := c.Value.Add(ctx, kv); err != nil {
+		if err := c.Value.Append(ctx, kv); err != nil {
 			return err
 		}
 

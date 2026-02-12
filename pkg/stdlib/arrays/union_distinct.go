@@ -50,7 +50,7 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 			}
 
 			hashTable[h] = true
-			return true, result.Add(ctx, value)
+			return true, result.Append(ctx, value)
 		})
 
 		if err != nil {

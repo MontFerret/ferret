@@ -6,7 +6,8 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-// Box is a generic wrapper for any value type.
+// Box is a generic container that holds a single value of type T.
+// Useful for wrapping values that do not implement the Value interface, allowing them to be used in contexts where a Value is expected.
 type Box[T any] struct {
 	Value T
 }

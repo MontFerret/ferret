@@ -227,7 +227,7 @@ func (t *Array) Last(_ context.Context) (Value, error) {
 	return None, nil
 }
 
-func (t *Array) Find(ctx context.Context, predicate IndexedPredicate) (List, error) {
+func (t *Array) Find(ctx context.Context, predicate IndexReadablePredicate) (List, error) {
 	result := NewArray(len(t.data))
 	size := Int(len(t.data))
 
@@ -240,14 +240,14 @@ func (t *Array) Find(ctx context.Context, predicate IndexedPredicate) (List, err
 		}
 
 		if res {
-			_ = result.Add(ctx, val)
+			_ = result.Append(ctx, val)
 		}
 	}
 
 	return result, nil
 }
 
-func (t *Array) FindOne(ctx context.Context, predicate IndexedPredicate) (Value, Boolean, error) {
+func (t *Array) FindOne(ctx context.Context, predicate IndexReadablePredicate) (Value, Boolean, error) {
 	size := Int(len(t.data))
 
 	for idx := Int(0); idx < size; idx++ {
@@ -309,7 +309,7 @@ func (t *Array) SortWith(_ context.Context, comparator Comparator) error {
 	return nil
 }
 
-func (t *Array) ForEach(ctx context.Context, predicate IndexedPredicate) error {
+func (t *Array) ForEach(ctx context.Context, predicate IndexReadablePredicate) error {
 	size := Int(len(t.data))
 
 	for idx := Int(0); idx < size; idx++ {
@@ -328,7 +328,7 @@ func (t *Array) ForEach(ctx context.Context, predicate IndexedPredicate) error {
 	return nil
 }
 
-func (t *Array) Add(_ context.Context, value Value) error {
+func (t *Array) Append(_ context.Context, value Value) error {
 	t.data = append(t.data, value)
 
 	return nil

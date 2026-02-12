@@ -297,7 +297,7 @@ func (vm *VM) objectSetConstCached(inst *Instruction, obj *data.FastObject, key 
 }
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
-	indexed, ok := src.(runtime.Indexed)
+	indexed, ok := src.(runtime.IndexReadable)
 
 	if !ok {
 		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexed)
@@ -324,7 +324,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 }
 
 func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
-	keyed, ok := src.(runtime.Keyed)
+	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
 		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyed)

@@ -399,7 +399,7 @@ func TestObject(t *testing.T) {
 			cloned, _ := obj.Clone(ctx)
 			clone := cloned.(*Object)
 
-			obj.Remove(ctx, NewString("one"))
+			obj.RemoveKey(ctx, NewString("one"))
 
 			So(obj.Compare(clone), ShouldNotEqual, 0)
 		})
@@ -417,7 +417,7 @@ func TestObject(t *testing.T) {
 
 			nestedInObj, _ := obj.Get(ctx, NewString("arr"))
 			nestedInObjArr := nestedInObj.(*Array)
-			nestedInObjArr.Add(ctx, NewInt(2))
+			nestedInObjArr.Append(ctx, NewInt(2))
 
 			nestedInClone, _ := clone.Get(ctx, NewString("arr"))
 			nestedInCloneArr := nestedInClone.(*Array)

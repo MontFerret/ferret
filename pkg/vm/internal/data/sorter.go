@@ -40,8 +40,8 @@ func (s *Sorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return NewKVIterator(iter), nil
 }
 
-func (s *Sorter) Add(ctx context.Context, key, value runtime.Value) error {
-	return s.Value.Add(ctx, NewKV(key, value))
+func (s *Sorter) Set(ctx context.Context, key, value runtime.Value) error {
+	return s.Value.Append(ctx, NewKV(key, value))
 }
 
 func (s *Sorter) sort(ctx context.Context) error {

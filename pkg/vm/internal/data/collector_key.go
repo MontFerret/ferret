@@ -36,7 +36,7 @@ func (c *KeyCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return c.Value.Iterate(ctx)
 }
 
-func (c *KeyCollector) Add(ctx context.Context, key, _ runtime.Value) error {
+func (c *KeyCollector) Set(ctx context.Context, key, _ runtime.Value) error {
 	k, err := Stringify(ctx, key)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func (c *KeyCollector) Add(ctx context.Context, key, _ runtime.Value) error {
 	if !exists {
 		c.grouping[k] = runtime.None
 
-		return c.Value.Add(ctx, key)
+		return c.Value.Append(ctx, key)
 	}
 
 	return nil

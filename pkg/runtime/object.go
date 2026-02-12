@@ -42,10 +42,6 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 	return obj
 }
 
-func (t *Object) Type() string {
-	return "object"
-}
-
 func (t *Object) ObjectLike() {}
 
 func (t *Object) MarshalJSON() ([]byte, error) {
@@ -246,7 +242,7 @@ func (t *Object) Values(_ context.Context) (List, error) {
 	return NewArrayOf(keys), nil
 }
 
-func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
+func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) error {
 	for key, val := range t.data {
 		doContinue, err := predicate(ctx, val, String(key))
 
@@ -262,7 +258,7 @@ func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
 	return nil
 }
 
-func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, error) {
+func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (List, error) {
 	res := NewArray(len(t.data))
 
 	for key, val := range t.data {
@@ -273,14 +269,14 @@ func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, erro
 		}
 
 		if match {
-			res.Add(ctx, val)
+			_ = res.Append(ctx, val)
 		}
 	}
 
 	return res, nil
 }
 
-func (t *Object) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, Boolean, error) {
+func (t *Object) FindOne(ctx context.Context, predicate KeyReadablePredicate) (Value, Boolean, error) {
 	for key, val := range t.data {
 		res, err := predicate(ctx, val, String(key))
 
@@ -302,7 +298,7 @@ func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
 	return Boolean(exists), nil
 }
 
-func (t *Object) ContainsValue(_ context.Context, target Value) (Boolean, error) {
+func (t *Object) Contains(_ context.Context, target Value) (Boolean, error) {
 	for _, val := range t.data {
 		res := CompareValues(target, val)
 
@@ -324,7 +320,7 @@ func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 	return None, ErrNotFound
 }
 
-func (t *Object) Set(_ context.Context, key Value, value Value) error {
+func (t *Object) Set(_ context.Context, key, value Value) error {
 	if value == nil {
 		value = None
 	}
@@ -334,8 +330,19 @@ func (t *Object) Set(_ context.Context, key Value, value Value) error {
 	return nil
 }
 
-func (t *Object) Remove(_ context.Context, key Value) error {
+func (t *Object) RemoveKey(_ context.Context, key Value) error {
 	delete(t.data, key.String())
+
+	return nil
+}
+
+func (t *Object) Remove(_ context.Context, value Value) error {
+	for key, val := range t.data {
+		if CompareValues(value, val) == 0 {
+			delete(t.data, key)
+			break
+		}
+	}
 
 	return nil
 }

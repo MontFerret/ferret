@@ -42,7 +42,7 @@ func Union(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		}
 
 		err = currList.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			return true, result.Add(ctx, value)
+			return true, result.Append(ctx, value)
 		})
 
 		if err != nil {

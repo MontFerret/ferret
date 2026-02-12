@@ -24,7 +24,7 @@ func TestArrayIterator(t *testing.T) {
 	Convey("One value", t, func() {
 		ctx := context.Background()
 		arr := runtime.NewArray(1)
-		arr.Add(ctx, runtime.NewInt(1))
+		arr.Append(ctx, runtime.NewInt(1))
 		iter := runtime.NewArrayIterator(arr)
 
 		hasNext, err := iter.HasNext(ctx)
@@ -47,11 +47,11 @@ func TestArrayIterator(t *testing.T) {
 	Convey("Multiple values", t, func() {
 		ctx := context.Background()
 		arr := runtime.NewArray(5)
-		arr.Add(ctx, runtime.NewInt(1))
-		arr.Add(ctx, runtime.NewInt(2))
-		arr.Add(ctx, runtime.NewInt(3))
-		arr.Add(ctx, runtime.NewInt(4))
-		arr.Add(ctx, runtime.NewInt(5))
+		arr.Append(ctx, runtime.NewInt(1))
+		arr.Append(ctx, runtime.NewInt(2))
+		arr.Append(ctx, runtime.NewInt(3))
+		arr.Append(ctx, runtime.NewInt(4))
+		arr.Append(ctx, runtime.NewInt(5))
 		iter := runtime.NewArrayIterator(arr)
 
 		actual := make([]runtime.Int, 0, 5)
@@ -75,7 +75,7 @@ func BenchmarkArrayIterator(b *testing.B) {
 	ctx := context.Background()
 
 	for i := 0; i < size; i++ {
-		arr.Add(ctx, runtime.NewInt(i))
+		arr.Append(ctx, runtime.NewInt(i))
 	}
 
 	b.ResetTimer()
