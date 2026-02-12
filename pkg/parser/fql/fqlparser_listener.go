@@ -172,6 +172,9 @@ type FqlParserListener interface {
 	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
 	EnterMemberExpressionPath(c *MemberExpressionPathContext)
 
+	// EnterArrayExpansion is called when entering the arrayExpansion production.
+	EnterArrayExpansion(c *ArrayExpansionContext)
+
 	// EnterSafeReservedWord is called when entering the safeReservedWord production.
 	EnterSafeReservedWord(c *SafeReservedWordContext)
 
@@ -390,6 +393,9 @@ type FqlParserListener interface {
 
 	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
 	ExitMemberExpressionPath(c *MemberExpressionPathContext)
+
+	// ExitArrayExpansion is called when exiting the arrayExpansion production.
+	ExitArrayExpansion(c *ArrayExpansionContext)
 
 	// ExitSafeReservedWord is called when exiting the safeReservedWord production.
 	ExitSafeReservedWord(c *SafeReservedWordContext)

@@ -473,29 +473,58 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 	mes := ctx.MemberExpressionSource()
 	segments := ctx.AllMemberExpressionPath()
 
-	var src1 vm.Operand
-
-	if v := mes.Variable(); v != nil {
-		src1 = c.CompileVariable(v)
-	} else if p := mes.Param(); p != nil {
-		src1 = c.CompileParam(p)
-	} else if ol := mes.ObjectLiteral(); ol != nil {
-		src1 = c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
-	} else if al := mes.ArrayLiteral(); al != nil {
-		src1 = c.ctx.LiteralCompiler.CompileArrayLiteral(al)
-	} else if fc := mes.FunctionCall(); fc != nil {
-		// FOO()?.bar
-		segment := segments[0]
-		src1 = c.CompileFunctionCall(fc, segment.ErrorOperator() != nil)
+	if mes == nil || len(segments) == 0 {
+		return vm.NoopOperand
 	}
 
-	var dst vm.Operand
+	src := c.compileMemberExpressionSource(mes, segments)
+	if src == vm.NoopOperand {
+		return src
+	}
 
-	for _, segment := range segments {
+	return c.compileMemberExpressionSegments(src, segments)
+}
+
+func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSourceContext, segments []fql.IMemberExpressionPathContext) vm.Operand {
+	if v := mes.Variable(); v != nil {
+		return c.CompileVariable(v)
+	}
+
+	if p := mes.Param(); p != nil {
+		return c.CompileParam(p)
+	}
+
+	if ol := mes.ObjectLiteral(); ol != nil {
+		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
+	}
+
+	if al := mes.ArrayLiteral(); al != nil {
+		return c.ctx.LiteralCompiler.CompileArrayLiteral(al)
+	}
+
+	if fc := mes.FunctionCall(); fc != nil {
+		// FOO()?.bar
+		segment := segments[0]
+		return c.CompileFunctionCall(fc, segment.ErrorOperator() != nil)
+	}
+
+	return vm.NoopOperand
+}
+
+func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments []fql.IMemberExpressionPathContext) vm.Operand {
+	if len(segments) == 0 {
+		return src
+	}
+
+	for idx, segment := range segments {
+		p := segment.(*fql.MemberExpressionPathContext)
+		if expansion := p.ArrayExpansion(); expansion != nil {
+			return c.compileArrayExpansion(src, expansion, segments[idx+1:])
+		}
+
 		var src2 vm.Operand
 		var constOperand bool
-		p := segment.(*fql.MemberExpressionPathContext)
-		srcType := operandType(c.ctx, src1)
+		srcType := operandType(c.ctx, src)
 
 		if pn := p.PropertyName(); pn != nil {
 			if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
@@ -513,7 +542,7 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 			}
 		}
 
-		dst = c.ctx.Registers.Allocate()
+		dst := c.ctx.Registers.Allocate()
 
 		span := diagnostics.SpanFromRuleContext(p)
 		c.ctx.Emitter.WithSpan(span, func() {
@@ -559,13 +588,54 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 				}
 			}
 
-			c.ctx.Emitter.EmitABC(op, dst, src1, src2)
+			c.ctx.Emitter.EmitABC(op, dst, src, src2)
 		})
 
-		src1 = dst
+		src = dst
 	}
 
-	return dst
+	return src
+}
+
+func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	loop := &core.Loop{
+		Kind:     core.ForInLoop,
+		Type:     core.NormalLoop,
+		Distinct: false,
+		Allocate: true,
+		Dst:      c.ctx.Registers.Allocate(),
+		Src:      src,
+	}
+
+	c.ctx.Loops.Push(loop)
+	c.ctx.Symbols.EnterScope()
+
+	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Symbols, core.TypeAny)
+	if loop.Value.IsRegister() {
+		c.ctx.Types.Set(loop.Value, core.TypeAny)
+	}
+
+	span := diagnostics.SpanFromRuleContext(expansion)
+	c.ctx.Emitter.WithSpan(span, func() {
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	})
+
+	projection := loop.Value
+	if len(tail) > 0 {
+		projection = c.compileMemberExpressionSegments(loop.Value, tail)
+	}
+
+	c.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, projection)
+	loop.EmitFinalization(c.ctx.Emitter)
+
+	c.ctx.Symbols.ExitScope()
+	c.ctx.Loops.Pop()
+
+	if loop.Dst.IsRegister() {
+		c.ctx.Types.Set(loop.Dst, core.TypeList)
+	}
+
+	return loop.Dst
 }
 
 // CompileVariable processes a variable reference from the FQL AST.

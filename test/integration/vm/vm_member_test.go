@@ -149,6 +149,69 @@ func TestMember(t *testing.T) {
 					RETURN FIRST(arr)['name'].first
 				`,
 			"Bob"),
+		CaseArray(`
+					LET friends = [
+						{ name: "John", age: 30 },
+						{ name: "Mary", age: 25 },
+						{ name: "Bob", age: 50 },
+						{ name: "Alice", age: 28 },
+						{ name: "Tom", age: 35 },
+						{ name: "Jane", age: 32 }
+					]
+					LET users = [
+						{ 
+							name: "John", 
+							age: 30,
+							friends: [	
+								{ name: "Alice", age: 28 },
+							]
+						},
+						{
+							name: "Mary", 
+							age: 25,
+							friends: [
+								{ name: "Tom", age: 35 },
+								{ name: "Jane", age: 32 }
+							]
+						},
+						{ 
+							name: "Bob", 
+							age: 50,
+							friends: []
+						}
+					]
+
+					FOR user IN users
+						RETURN user.friends[*].name
+				`,
+			[]any{[]any{"Alice"}, []any{"Tom", "Jane"}, []any{}}),
+		CaseArray(`
+					LET users = [
+						{ name: "John", age: 30 },
+						{ name: "Mary", age: 25 },
+						{ name: "Bob", age: 50 }
+					]
+
+					RETURN users[*].name
+				`,
+			[]any{"John", "Mary", "Bob"}),
+		CaseArray(`
+					LET users = [
+						{ name: [ { num: [1, 2] }, { num: [4] } ] },
+						{ name: [ { num: [5] } ] }
+					]
+
+					RETURN users[*].name[*].num
+				`,
+			[]any{
+				[]any{
+					[]any{1, 2},
+					[]any{4},
+				},
+				[]any{
+					[]any{5},
+				},
+			}),
 		CaseNil(`
 					LET obj = { foo: None }
 	

@@ -290,6 +290,11 @@ argumentList
 memberExpressionPath
     : errorOperator? Dot propertyName
     | (errorOperator Dot)? computedPropertyName
+    | arrayExpansion
+    ;
+
+arrayExpansion
+    : OpenBracket Multi CloseBracket
     ;
 
 safeReservedWord

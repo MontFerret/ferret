@@ -352,6 +352,12 @@ func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionP
 // ExitMemberExpressionPath is called when production memberExpressionPath is exited.
 func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
 
+// EnterArrayExpansion is called when production arrayExpansion is entered.
+func (s *BaseFqlParserListener) EnterArrayExpansion(ctx *ArrayExpansionContext) {}
+
+// ExitArrayExpansion is called when production arrayExpansion is exited.
+func (s *BaseFqlParserListener) ExitArrayExpansion(ctx *ArrayExpansionContext) {}
+
 // EnterSafeReservedWord is called when production safeReservedWord is entered.
 func (s *BaseFqlParserListener) EnterSafeReservedWord(ctx *SafeReservedWordContext) {}
 
