@@ -37,13 +37,13 @@ type (
 
 	// KeyRemovable is an interface for removing elements by their key in a collection-like structure.
 	KeyRemovable interface {
-		// RemoveKey removes the value associated with the specified key from the collection or returns an error if the key is not found.
+		// RemoveKey removes the value associated with the specified key from the collection or returns an error if the operation fails.
 		RemoveKey(ctx context.Context, key Value) error
 	}
 
 	// ValueRemovable is an interface for removing elements by their value in a collection-like structure.
 	ValueRemovable interface {
-		// Remove method removes the first occurrence of the given value or returns an error if the value is not found.
+		// Remove method removes the first occurrence of the given value or returns an error if the operation fails.
 		Remove(ctx context.Context, value Value) error
 	}
 
