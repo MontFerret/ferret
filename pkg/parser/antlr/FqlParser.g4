@@ -427,7 +427,7 @@ expressionAtom
     ;
 
 queryLiteral
-    : Identifier stringLiteral
+    : Identifier stringLiteral (OpenParen expression CloseParen)?
     ;
 
 arrayOperator

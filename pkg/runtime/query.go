@@ -12,16 +12,18 @@ import (
 type Query struct {
 	Kind    String
 	Payload String
+	Params  Value
 }
 
 func NewQuery(kind, payload String) Query {
-	return Query{Kind: kind, Payload: payload}
+	return Query{Kind: kind, Payload: payload, Params: None}
 }
 
 func (q Query) MarshalJSON() ([]byte, error) {
-	return jettison.MarshalOpts(map[string]String{
+	return jettison.MarshalOpts(map[string]Value{
 		"kind":    q.Kind,
 		"payload": q.Payload,
+		"params":  q.Params,
 	}, jettison.NoHTMLEscaping())
 }
 
@@ -37,6 +39,7 @@ func (q Query) Unwrap() interface{} {
 	return map[string]interface{}{
 		"kind":    q.Kind.Unwrap(),
 		"payload": q.Payload.Unwrap(),
+		"params":  q.Params.Unwrap(),
 	}
 }
 
@@ -47,6 +50,8 @@ func (q Query) Hash() uint64 {
 	binary.LittleEndian.PutUint64(buf, q.Kind.Hash())
 	h.Write(buf)
 	binary.LittleEndian.PutUint64(buf, q.Payload.Hash())
+	h.Write(buf)
+	binary.LittleEndian.PutUint64(buf, q.Params.Hash())
 	h.Write(buf)
 	return h.Sum64()
 }

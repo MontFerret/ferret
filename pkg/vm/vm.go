@@ -308,6 +308,31 @@ loop:
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
+		case OpMakeQuery:
+			var base runtime.Value
+			if src1.IsConstant() {
+				base = constants[src1.Constant()]
+			} else {
+				base = reg[src1]
+			}
+
+			var params runtime.Value
+			if src2.IsConstant() {
+				params = constants[src2.Constant()]
+			} else {
+				params = reg[src2]
+			}
+
+			query, ok := base.(runtime.Query)
+			if !ok {
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(base, runtime.TypeQuery)); err != nil {
+					return nil, err
+				}
+				break
+			}
+
+			query.Params = params
+			reg[dst] = query
 
 		case OpCall, OpProtectedCall:
 			out, err := vm.callv(ctx, vm.pc-1, src1, src2)

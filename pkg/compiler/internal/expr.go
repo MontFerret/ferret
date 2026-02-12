@@ -779,9 +779,25 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) vm.Oper
 	query := runtime.Query{
 		Kind:    runtime.NewString(kind),
 		Payload: payload,
+		Params:  runtime.None,
 	}
 
-	return c.ctx.Symbols.AddConstant(query)
+	params := ctx.Expression()
+	if params == nil {
+		return c.ctx.Symbols.AddConstant(query)
+	}
+
+	base := c.ctx.Symbols.AddConstant(query)
+	paramsOp := c.Compile(params)
+	dst := c.ctx.Registers.Allocate()
+
+	c.ctx.Emitter.EmitABC(vm.OpMakeQuery, dst, base, paramsOp)
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeAny)
+	}
+
+	return dst
 }
 
 func (c *ExprCompiler) emitComparison(op vm.Opcode, left, right vm.Operand) vm.Operand {

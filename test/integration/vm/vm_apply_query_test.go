@@ -10,13 +10,13 @@ import (
 )
 
 type testQueryable struct {
-	last   runtime.Query
-	result runtime.Value
-	err    error
+	queries []runtime.Query
+	result  runtime.Value
+	err     error
 }
 
 func (t *testQueryable) ApplyQuery(_ context.Context, q runtime.Query) (runtime.Value, error) {
-	t.last = q
+	t.queries = append(t.queries, q)
 	if t.err != nil {
 		return runtime.None, t.err
 	}
@@ -53,6 +53,7 @@ func TestApplyQuery(t *testing.T) {
 
 	RunUseCases(t, []UseCase{
 		Case("RETURN @doc[~ css`.items`]", "ok", "Should apply query literal"),
+		Case("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", "ok", "Should apply query literal with params"),
 		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{
 			Message: "Invalid type",
 		}),
@@ -61,11 +62,27 @@ func TestApplyQuery(t *testing.T) {
 		"val": runtime.NewInt(1),
 	}))
 
-	if queryable.last.Kind != runtime.NewString("css") {
-		t.Fatalf("expected query kind %q, got %q", "css", queryable.last.Kind.String())
+	var hasCSS bool
+	var hasSQLParams bool
+
+	for _, q := range queryable.queries {
+		if q.Kind == runtime.NewString("css") && q.Payload == runtime.NewString(".items") {
+			hasCSS = true
+		}
+
+		if q.Kind == runtime.NewString("sql") {
+			params := runtime.ToMap(context.Background(), q.Params)
+			value, err := params.Get(context.Background(), runtime.NewString("c"))
+			if err == nil && value == runtime.NewString("laptops") {
+				hasSQLParams = true
+			}
+		}
 	}
 
-	if queryable.last.Payload != runtime.NewString(".items") {
-		t.Fatalf("expected query payload %q, got %q", ".items", queryable.last.Payload.String())
+	if !hasCSS {
+		t.Fatalf("expected query kind %q with payload %q", "css", ".items")
+	}
+	if !hasSQLParams {
+		t.Fatalf("expected query params to contain %q=%q", "c", "laptops")
 	}
 }

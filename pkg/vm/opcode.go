@@ -36,6 +36,7 @@ const (
 	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
 	OpLoadPropertyOptionalConst
 	OpApplyQuery // Apply a query to a value
+	OpMakeQuery  // Build a query from a base literal and params
 
 	// Arithmetic Operations
 	OpAdd
@@ -188,6 +189,8 @@ func (op Opcode) String() string {
 		return "LOADPROC"
 	case OpApplyQuery:
 		return "APPLYQ"
+	case OpMakeQuery:
+		return "MAKEQ"
 	case OpLoadProperty:
 		return "LOADPR"
 	case OpLoadPropertyOptional:
