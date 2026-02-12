@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/pkg/vm/internal/mem"
 )
 
@@ -109,7 +110,7 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 }
 
 func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
-	obj, ok := src.(*runtime.Object)
+	obj, ok := src.(*data.FastObject)
 	if !ok {
 		return vm.loadKey(ctx, src, arg)
 	}
@@ -172,7 +173,7 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 }
 
 func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction, src, arg runtime.Value) (runtime.Value, error) {
-	obj, ok := src.(*runtime.Object)
+	obj, ok := src.(*data.FastObject)
 	if !ok {
 		return vm.loadKey(ctx, src, arg)
 	}
@@ -256,6 +257,28 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction,
 	}
 
 	return vm.loadKey(ctx, src, arg)
+}
+
+func (vm *VM) objectSetConstCached(inst *Instruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
+	if obj == nil {
+		return
+	}
+
+	if inst != nil {
+		shape := obj.Shape()
+		if shape != nil && inst.inlineSetShape == shape {
+			if obj.SetSlotWithShape(inst.inlineSetNextShape, inst.inlineSlot, value) {
+				return
+			}
+		}
+	}
+
+	prev, next, slot, ok := obj.SetStringCached(string(key), value)
+	if ok && inst != nil {
+		inst.inlineSetShape = prev
+		inst.inlineSetNextShape = next
+		inst.inlineSlot = slot
+	}
 }
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {

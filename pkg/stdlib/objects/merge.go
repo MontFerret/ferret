@@ -36,11 +36,11 @@ func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	return mergeArray(ctx, objs)
 }
 
-func mergeArray(ctx context.Context, arr *runtime.Array) (*runtime.Object, error) {
-	merged, obj := runtime.NewObject(), runtime.NewObject()
+func mergeArray(ctx context.Context, arr *runtime.Array) (runtime.Map, error) {
+	merged, obj := runtime.Map(runtime.NewObject()), runtime.Map(runtime.NewObject())
 
 	_ = arr.ForEach(ctx, func(c context.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
-		obj = arrValue.(*runtime.Object)
+		obj = arrValue.(runtime.Map)
 
 		_ = obj.ForEach(c, func(_ context.Context, objValue, objKey runtime.Value) (runtime.Boolean, error) {
 			cloneable, ok := objValue.(runtime.Cloneable)

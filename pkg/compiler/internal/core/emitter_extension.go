@@ -66,6 +66,10 @@ func (e *Emitter) EmitObjectSet(dst, key, val vm.Operand) {
 	e.EmitABC(vm.OpObjectSet, dst, key, val)
 }
 
+func (e *Emitter) EmitObjectSetConst(dst, keyConst, val vm.Operand) {
+	e.EmitABC(vm.OpObjectSetConst, dst, keyConst, val)
+}
+
 func (e *Emitter) EmitClose(reg vm.Operand) {
 	e.EmitA(vm.OpClose, reg)
 }

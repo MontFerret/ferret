@@ -11,21 +11,34 @@ import (
 )
 
 type VM struct {
-	registers *mem.RegisterFile
-	cache     *mem.Cache
-	env       *Environment
-	program   *Program
-	bytecode  []Instruction
-	pc        int
+	registers               *mem.RegisterFile
+	cache                   *mem.Cache
+	env                     *Environment
+	program                 *Program
+	shapeCache              *data.ShapeCache
+	fastObjectDictThreshold int
+	bytecode                []Instruction
+	pc                      int
 }
 
 func New(program *Program) *VM {
+	return NewWithOptions(program)
+}
+
+func NewWithOptions(program *Program, opts ...VMOption) *VM {
+	cfg := defaultVMConfig()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	vm := new(VM)
 	vm.program = program
 	vm.registers = mem.NewRegisterFile(program.Registers)
 	vm.cache = mem.NewCache(len(program.Bytecode))
 	vm.bytecode = make([]Instruction, len(program.Bytecode))
 	copy(vm.bytecode, program.Bytecode)
+	vm.shapeCache = data.NewShapeCache(cfg.shapeCacheLimit)
+	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
 
 	return vm
 }
@@ -186,7 +199,7 @@ loop:
 		case OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case OpLoadObject:
-			reg[dst] = runtime.NewObjectOf(int(src1))
+			reg[dst] = data.NewFastObjectOf(vm.shapeCache, vm.fastObjectDictThreshold, int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
 			arg := reg[src2]
@@ -391,11 +404,27 @@ loop:
 				return nil, err
 			}
 		case OpObjectSet:
-			obj := reg[dst].(*runtime.Object)
+			obj, ok := reg[dst].(*data.FastObject)
 			key := runtime.ToString(reg[src1])
 			value := reg[src2]
 
-			_ = obj.Set(ctx, key, value)
+			if ok {
+				_ = obj.Set(ctx, key, value)
+				break
+			}
+
+			_ = reg[dst].(runtime.Map).Set(ctx, key, value)
+		case OpObjectSetConst:
+			objVal := reg[dst]
+			key := runtime.ToString(constants[src1.Constant()])
+			value := reg[src2]
+
+			if obj, ok := objVal.(*data.FastObject); ok {
+				vm.objectSetConstCached(inst, obj, key, value)
+				break
+			}
+
+			_ = objVal.(runtime.Map).Set(ctx, key, value)
 		case OpIter:
 			input := reg[src1]
 

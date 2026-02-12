@@ -222,7 +222,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addUse(dst)
 		addUse(src1)
 		return
-	case vm.OpPushKV, vm.OpObjectSet:
+	case vm.OpPushKV, vm.OpObjectSet, vm.OpObjectSetConst:
 		addUse(dst)
 		addUse(src1)
 		addUse(src2)

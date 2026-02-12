@@ -95,6 +95,8 @@ func Reflect(input Value) Type {
 		return TypeDateTime
 	case *Array:
 		return TypeArray
+	case ObjectLike:
+		return TypeObject
 	case List:
 		return TypeList
 	case *Object:

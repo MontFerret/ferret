@@ -268,28 +268,31 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
-			var propOp vm.Operand
-			var valOp vm.Operand
 			pac := assignments[i]
 
 			// Handle different types of property names
 			if prop := pac.PropertyName(); prop != nil {
 				// Regular property name (e.g., { name: value }).
 				// Evaluate value first to shorten the live range of the key register.
-				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
-				propOp = c.CompilePropertyName(prop)
+				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+				if constOp, ok := c.CompilePropertyNameConst(prop); ok {
+					c.ctx.Emitter.EmitObjectSetConst(dst, constOp, valOp)
+				} else {
+					propOp := c.CompilePropertyName(prop)
+					c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
+				}
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
-				propOp = c.CompileComputedPropertyName(comProp)
-				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
+				propOp := c.CompileComputedPropertyName(comProp)
+				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+				c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
 				// Evaluate value first to shorten the live range of the key register.
-				valOp = c.ctx.ExprCompiler.CompileVariable(variable)
-				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
+				valOp := c.ctx.ExprCompiler.CompileVariable(variable)
+				propOp := c.ctx.Symbols.AddConstant(runtime.NewString(variable.GetText()))
+				c.ctx.Emitter.EmitObjectSetConst(dst, propOp, valOp)
 			}
-
-			c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 		}
 	} else {
 		// Emit instruction to create an empty object

@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm/internal/data"
 )
 
 type (
@@ -13,6 +14,7 @@ type (
 		Regexps         map[int]*regexp.Regexp
 		LoadKeyICs      []*LoadKeyCache
 		LoadKeyConstICs []*LoadKeyConstCache
+		ShapeCache      *data.ShapeCache
 	}
 
 	CachedFunction struct {

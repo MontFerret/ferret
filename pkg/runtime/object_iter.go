@@ -5,44 +5,36 @@ import (
 )
 
 type ObjectIterator struct {
-	entries []objectIterEntry
-	slots   []Value
-	pos     int
-}
-
-type objectIterEntry struct {
-	key  string
-	slot int
+	keys []string
+	data map[string]Value
+	pos  int
 }
 
 func NewObjectIterator(obj *Object) Iterator {
-	entries := make([]objectIterEntry, 0, obj.size)
+	iter := &ObjectIterator{data: obj.data, keys: make([]string, len(obj.data))}
 
-	for idx, key := range obj.shape.names {
-		if obj.slots[idx] == nil {
-			continue
-		}
-		entries = append(entries, objectIterEntry{key: key, slot: idx})
+	i := 0
+
+	for key := range iter.data {
+		iter.keys[i] = key
+		i++
 	}
 
-	return &ObjectIterator{entries: entries, slots: obj.slots}
+	return iter
 }
 
 func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
-	return len(iter.entries) > iter.pos, nil
+	return len(iter.keys) > iter.pos, nil
 }
 
 func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
-	if iter.pos >= len(iter.entries) {
+	if iter.pos >= len(iter.keys) {
 		return None, None, Error(ErrInvalidOperation, "no more elements")
 	}
 
-	entry := iter.entries[iter.pos]
-	value := iter.slots[entry.slot]
-	if value == nil {
-		value = None
-	}
+	key := iter.keys[iter.pos]
+	value := iter.data[key]
 	iter.pos++
 
-	return value, String(entry.key), nil
+	return value, String(key), nil
 }

@@ -1,11 +1,16 @@
 package vm
 
+import "github.com/MontFerret/ferret/pkg/vm/internal/data"
+
 type Instruction struct {
 	Opcode   Opcode
 	Operands [3]Operand
 
 	inlineShapeID uint64
 	inlineSlot    int
+
+	inlineSetShape     *data.Shape
+	inlineSetNextShape *data.Shape
 }
 
 func NewInstruction(opcode Opcode, operands ...Operand) Instruction {

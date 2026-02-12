@@ -5,168 +5,51 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"sort"
-	"sync/atomic"
 
 	"github.com/wI2L/jettison"
 )
 
 type (
-	objectShape struct {
-		id          uint64
-		fields      map[string]int
-		names       []string
-		transitions map[string]*objectShape
-	}
-
 	ObjectProperty struct {
 		key   string
 		value Value
 	}
 
 	Object struct {
-		shape *objectShape
-		slots []Value
-		size  int
+		data map[string]Value
 	}
 )
-
-var (
-	shapeIDCounter   uint64
-	emptyObjectShape = newObjectShape(nil, nil)
-)
-
-func nextShapeID() uint64 {
-	return atomic.AddUint64(&shapeIDCounter, 1)
-}
-
-func newObjectShape(fields map[string]int, names []string) *objectShape {
-	if fields == nil {
-		fields = make(map[string]int)
-	}
-
-	if names == nil {
-		names = make([]string, 0)
-	}
-
-	return &objectShape{
-		id:          nextShapeID(),
-		fields:      fields,
-		names:       names,
-		transitions: make(map[string]*objectShape),
-	}
-}
-
-func (s *objectShape) transition(key string) *objectShape {
-	if next, ok := s.transitions[key]; ok {
-		return next
-	}
-
-	fields := make(map[string]int, len(s.fields)+1)
-	for k, v := range s.fields {
-		fields[k] = v
-	}
-
-	slot := len(s.names)
-	fields[key] = slot
-
-	names := make([]string, slot+1)
-	copy(names, s.names)
-	names[slot] = key
-
-	next := newObjectShape(fields, names)
-	s.transitions[key] = next
-
-	return next
-}
 
 func NewObjectProperty(name string, value Value) *ObjectProperty {
 	return &ObjectProperty{name, value}
 }
 
 func NewObject() *Object {
-	return &Object{shape: emptyObjectShape, slots: make([]Value, 0)}
+	return &Object{make(map[string]Value)}
 }
 
 func NewObjectOf(size int) *Object {
-	return &Object{shape: emptyObjectShape, slots: make([]Value, 0, size)}
+	return &Object{make(map[string]Value, size)}
 }
 
 func NewObjectWith(props ...*ObjectProperty) *Object {
-	obj := &Object{shape: emptyObjectShape, slots: make([]Value, 0, len(props))}
+	obj := &Object{make(map[string]Value)}
 
 	for _, prop := range props {
-		obj.setString(prop.key, prop.value)
+		obj.data[prop.key] = prop.value
 	}
 
 	return obj
-}
-
-func (t *Object) ShapeID() uint64 {
-	if t == nil || t.shape == nil {
-		return 0
-	}
-
-	return t.shape.id
-}
-
-func (t *Object) LookupSlot(key string) (int, bool) {
-	if t == nil || t.shape == nil {
-		return 0, false
-	}
-
-	idx, ok := t.shape.fields[key]
-	return idx, ok
-}
-
-func (t *Object) SlotValue(slot int) (Value, bool) {
-	if t == nil || slot < 0 || slot >= len(t.slots) {
-		return nil, false
-	}
-
-	val := t.slots[slot]
-	if val == nil {
-		return nil, false
-	}
-
-	return val, true
-}
-
-func (t *Object) setString(key string, value Value) {
-	if value == nil {
-		value = None
-	}
-
-	if idx, ok := t.shape.fields[key]; ok {
-		if t.slots[idx] == nil {
-			t.size++
-		}
-
-		t.slots[idx] = value
-		return
-	}
-
-	t.shape = t.shape.transition(key)
-	t.slots = append(t.slots, value)
-	t.size++
 }
 
 func (t *Object) Type() string {
 	return "object"
 }
 
+func (t *Object) ObjectLike() {}
+
 func (t *Object) MarshalJSON() ([]byte, error) {
-	obj := make(map[string]Value, t.size)
-
-	for idx, key := range t.shape.names {
-		val := t.slots[idx]
-		if val == nil {
-			continue
-		}
-
-		obj[key] = val
-	}
-
-	return jettison.MarshalOpts(obj, jettison.NoHTMLEscaping())
+	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }
 
 func (t *Object) String() string {
@@ -189,8 +72,8 @@ func (t *Object) Compare(other Value) int64 {
 		return CompareTypes(t, other)
 	}
 
-	size := t.size
-	otherSize := otherObject.size
+	size := len(t.data)
+	otherSize := len(otherObject.data)
 
 	if size == 0 && otherSize == 0 {
 		return 0
@@ -208,10 +91,8 @@ func (t *Object) Compare(other Value) int64 {
 
 	tKeys := make([]string, 0, size)
 
-	for idx, k := range t.shape.names {
-		if t.slots[idx] != nil {
-			tKeys = append(tKeys, k)
-		}
+	for k := range t.data {
+		tKeys = append(tKeys, k)
 	}
 
 	sortedT := sort.StringSlice(tKeys)
@@ -219,10 +100,8 @@ func (t *Object) Compare(other Value) int64 {
 
 	otherKeys := make([]string, 0, otherSize)
 
-	for idx, k := range otherObject.shape.names {
-		if otherObject.slots[idx] != nil {
-			otherKeys = append(otherKeys, k)
-		}
+	for k := range otherObject.data {
+		otherKeys = append(otherKeys, k)
 	}
 
 	sortedOther := sort.StringSlice(otherKeys)
@@ -231,12 +110,12 @@ func (t *Object) Compare(other Value) int64 {
 	var tVal, otherVal Value
 	var tKey, otherKey string
 
-	for i := 0; i < len(tKeys) && res == 0; i++ {
+	for i := 0; i < len(t.data) && res == 0; i++ {
 		tKey, otherKey = sortedT[i], sortedOther[i]
 
 		if tKey == otherKey {
-			tVal = t.slots[t.shape.fields[tKey]]
-			otherVal = otherObject.slots[otherObject.shape.fields[tKey]]
+			tVal = t.data[tKey]
+			otherVal = otherObject.data[tKey]
 			res = CompareValues(tVal, otherVal)
 
 			continue
@@ -255,14 +134,9 @@ func (t *Object) Compare(other Value) int64 {
 }
 
 func (t *Object) Unwrap() interface{} {
-	obj := make(map[string]interface{}, t.size)
+	obj := make(map[string]interface{})
 
-	for idx, key := range t.shape.names {
-		val := t.slots[idx]
-		if val == nil {
-			continue
-		}
-
+	for key, val := range t.data {
 		obj[key] = val.Unwrap()
 	}
 
@@ -275,12 +149,10 @@ func (t *Object) Hash() uint64 {
 	h.Write([]byte("object:"))
 	h.Write([]byte("{"))
 
-	keys := make([]string, 0, t.size)
+	keys := make([]string, 0, len(t.data))
 
-	for idx, key := range t.shape.names {
-		if t.slots[idx] != nil {
-			keys = append(keys, key)
-		}
+	for key := range t.data {
+		keys = append(keys, key)
 	}
 
 	// order does not really matter
@@ -292,7 +164,7 @@ func (t *Object) Hash() uint64 {
 		h.Write([]byte(key))
 		h.Write([]byte(":"))
 
-		el := t.slots[t.shape.fields[key]]
+		el := t.data[key]
 
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
@@ -310,59 +182,54 @@ func (t *Object) Hash() uint64 {
 }
 
 func (t *Object) Copy() Value {
-	slots := make([]Value, len(t.slots))
-	copy(slots, t.slots)
+	c := &Object{make(map[string]Value)}
 
-	return &Object{
-		shape: t.shape,
-		slots: slots,
-		size:  t.size,
+	for k, v := range t.data {
+		c.data[k] = v
 	}
+
+	return c
 }
 
 func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
-	slots := make([]Value, len(t.slots))
+	cloned := &Object{make(map[string]Value)}
 
-	for idx, value := range t.slots {
-		if value == nil {
-			continue
-		}
+	var value Value
 
+	for key := range t.data {
+		value = t.data[key]
 		cloneable, ok := value.(Cloneable)
+
 		if ok {
 			clone, err := cloneable.Clone(ctx)
+
 			if err != nil {
 				return nil, err
 			}
-			slots[idx] = clone
-			continue
+
+			value = clone
+		} else {
+			value = value.Copy()
 		}
 
-		slots[idx] = value.Copy()
+		cloned.data[key] = value
 	}
 
-	return &Object{
-		shape: t.shape,
-		slots: slots,
-		size:  t.size,
-	}, nil
+	return cloned, nil
 }
 
 func (t *Object) Length(_ context.Context) (Int, error) {
-	return Int(t.size), nil
+	return Int(len(t.data)), nil
 }
 
 func (t *Object) IsEmpty(_ context.Context) (Boolean, error) {
-	return t.size == 0, nil
+	return len(t.data) == 0, nil
 }
 
 func (t *Object) Keys(_ context.Context) (List, error) {
-	keys := make([]Value, 0, t.size)
+	keys := make([]Value, 0, len(t.data))
 
-	for idx, k := range t.shape.names {
-		if t.slots[idx] == nil {
-			continue
-		}
+	for k := range t.data {
 		keys = append(keys, NewString(k))
 	}
 
@@ -370,25 +237,17 @@ func (t *Object) Keys(_ context.Context) (List, error) {
 }
 
 func (t *Object) Values(_ context.Context) (List, error) {
-	values := make([]Value, 0, t.size)
+	keys := make([]Value, 0, len(t.data))
 
-	for _, v := range t.slots {
-		if v == nil {
-			continue
-		}
-		values = append(values, v)
+	for _, v := range t.data {
+		keys = append(keys, v)
 	}
 
-	return NewArrayOf(values), nil
+	return NewArrayOf(keys), nil
 }
 
 func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
-	for idx, key := range t.shape.names {
-		val := t.slots[idx]
-		if val == nil {
-			continue
-		}
-
+	for key, val := range t.data {
 		doContinue, err := predicate(ctx, val, String(key))
 
 		if err != nil {
@@ -404,14 +263,9 @@ func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
 }
 
 func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, error) {
-	res := NewArray(t.size)
+	res := NewArray(len(t.data))
 
-	for idx, key := range t.shape.names {
-		val := t.slots[idx]
-		if val == nil {
-			continue
-		}
-
+	for key, val := range t.data {
 		match, err := predicate(ctx, val, String(key))
 
 		if err != nil {
@@ -427,12 +281,7 @@ func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, erro
 }
 
 func (t *Object) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, Boolean, error) {
-	for idx, key := range t.shape.names {
-		val := t.slots[idx]
-		if val == nil {
-			continue
-		}
-
+	for key, val := range t.data {
 		res, err := predicate(ctx, val, String(key))
 
 		if err != nil {
@@ -448,20 +297,13 @@ func (t *Object) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, 
 }
 
 func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
-	idx, ok := t.shape.fields[key.String()]
-	if !ok {
-		return false, nil
-	}
+	_, exists := t.data[key.String()]
 
-	return Boolean(t.slots[idx] != nil), nil
+	return Boolean(exists), nil
 }
 
 func (t *Object) ContainsValue(_ context.Context, target Value) (Boolean, error) {
-	for _, val := range t.slots {
-		if val == nil {
-			continue
-		}
-
+	for _, val := range t.data {
 		res := CompareValues(target, val)
 
 		if res == 0 {
@@ -473,42 +315,33 @@ func (t *Object) ContainsValue(_ context.Context, target Value) (Boolean, error)
 }
 
 func (t *Object) Get(_ context.Context, key Value) (Value, error) {
-	idx, ok := t.shape.fields[key.String()]
-	if !ok {
-		return None, ErrNotFound
+	val, found := t.data[key.String()]
+
+	if found {
+		return val, nil
 	}
 
-	val := t.slots[idx]
-	if val == nil {
-		return None, ErrNotFound
-	}
-
-	return val, nil
+	return None, ErrNotFound
 }
 
 func (t *Object) Set(_ context.Context, key Value, value Value) error {
-	t.setString(key.String(), value)
+	if value == nil {
+		value = None
+	}
+
+	t.data[key.String()] = value
+
 	return nil
 }
 
 func (t *Object) Remove(_ context.Context, key Value) error {
-	idx, ok := t.shape.fields[key.String()]
-	if !ok {
-		return nil
-	}
-
-	if t.slots[idx] != nil {
-		t.slots[idx] = nil
-		t.size--
-	}
+	delete(t.data, key.String())
 
 	return nil
 }
 
 func (t *Object) Clear(_ context.Context) error {
-	t.shape = emptyObjectShape
-	t.slots = nil
-	t.size = 0
+	t.data = make(map[string]Value)
 
 	return nil
 }
