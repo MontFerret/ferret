@@ -1,0 +1,57 @@
+package compiler_test
+
+import (
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+)
+
+func TestSyntaxErrorsArrayOperators(t *testing.T) {
+	RunUseCases(t, []UseCase{
+		ErrorCase(
+			`RETURN doc[~]`,
+			E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected query literal after '~'",
+				Hint:    "Provide a query literal, e.g. doc[~ css`...`].",
+			},
+			"Missing query literal after '~'",
+		),
+		ErrorCase(
+			`RETURN doc[~ 'x']`,
+			E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected query literal after '~'",
+				Hint:    "Provide a query literal, e.g. doc[~ css`...`].",
+			},
+			"Missing query type before literal",
+		),
+		ErrorCase(
+			`RETURN doc[~ css]`,
+			E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected query string after 'css'",
+				Hint:    "Provide a query string, e.g. doc[~ css`...`].",
+			},
+			"Missing query string after type",
+		),
+		ErrorCase(
+			`RETURN [1, 2][* RETURN]`,
+			E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected expression after 'RETURN' in array operator",
+				Hint:    "Provide a projection expression, e.g. [* RETURN CURRENT].",
+			},
+			"Missing inline RETURN expression",
+		),
+		ErrorCase(
+			`RETURN [1, 2][? NONE]`,
+			E{
+				Kind:    compiler.SyntaxError,
+				Message: "Expected FILTER after quantifier in array filter",
+				Hint:    "Add a FILTER expression, e.g. [? NONE FILTER <expr>].",
+			},
+			"Missing FILTER after quantifier",
+		),
+	})
+}

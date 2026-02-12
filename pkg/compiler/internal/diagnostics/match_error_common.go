@@ -10,22 +10,8 @@ import (
 
 func matchCommonErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) {
-		if is(offending.Prev(), ",") {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
-			span.Start++
-			span.End++
-
-			err.Message = "Expected expression after ','"
-			err.Hint = "Did you forget to provide a value?"
-			err.Spans = []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(span, "missing value"),
-			}
-
-			return true
-		}
-
-		if is(offending.Prev(), "||") || is(offending.Prev(), "OR") ||
-			is(offending.Prev(), "&&") || is(offending.Prev(), "AND") {
+		prevLogical := isLogicalOperator(offending.Prev())
+		if prevLogical && !isExpressionStart(offending) {
 			span := spanFromTokenSafe(offending.Prev().Token(), src)
 			span.Start += 2
 			span.End += 2
@@ -35,6 +21,34 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 			err.Hint = fmt.Sprintf("Provide an expression after the logical operator, e.g. (a %s b).", operator)
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing expression"),
+			}
+
+			return true
+		}
+
+		if groupParen := findGroupingParen(offending, 8); groupParen != nil {
+			span := spanFromTokenSafe(offending.Token(), src)
+			span.Start++
+			span.End++
+
+			err.Message = "Unclosed parenthesized expression"
+			err.Hint = "Add a closing ')' to complete the expression."
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing ')'"),
+			}
+
+			return true
+		}
+
+		if is(offending.Prev(), ",") {
+			span := spanFromTokenSafe(offending.Prev().Token(), src)
+			span.Start++
+			span.End++
+
+			err.Message = "Expected expression after ','"
+			err.Hint = "Did you forget to provide a value?"
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing value"),
 			}
 
 			return true
@@ -208,6 +222,49 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 	}
 
 	return false
+}
+
+func findGroupingParen(node *TokenNode, max int) *TokenNode {
+	current := node
+
+	for i := 0; i < max && current != nil; i++ {
+		if is(current, "(") {
+			prev := current.Prev()
+			if isIdentifier(prev) {
+				return nil
+			}
+
+			return current
+		}
+
+		current = current.Prev()
+	}
+
+	return nil
+}
+
+func isLogicalOperator(node *TokenNode) bool {
+	if node == nil {
+		return false
+	}
+
+	return is(node, "||") || is(node, "OR") || is(node, "&&") || is(node, "AND")
+}
+
+func isExpressionStart(node *TokenNode) bool {
+	if node == nil {
+		return false
+	}
+
+	if isIdentifier(node) {
+		return true
+	}
+
+	if !isKeyword(node) {
+		return true
+	}
+
+	return is(node, "(") || is(node, "[") || is(node, "{") || is(node, "@") || is(node, "FOR") || is(node, "WAITFOR")
 }
 
 var rangeStartRe = regexp.MustCompile(`([A-Za-z0-9_]+)\\.\\.`)
