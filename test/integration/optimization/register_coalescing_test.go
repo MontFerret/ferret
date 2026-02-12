@@ -54,7 +54,7 @@ RETURN d
 		 d: (x + 2) * 3
 		}
 		RETURN obj
-		`, 3, map[string]any{
+		`, 2, map[string]any{
 			"a": 5,
 			"b": 6,
 			"c": 12,
@@ -64,7 +64,7 @@ RETURN d
 		LET base = 100
 		LET items = [ {a: base}, {a: 2 }, {a: 3} ]
 		RETURN items
-		`, 4, []any{
+		`, 3, []any{
 			map[string]any{"a": 100},
 			map[string]any{"a": 2},
 			map[string]any{"a": 3},
@@ -73,7 +73,7 @@ RETURN d
 		LET x = 10
 		LET doc = { meta:{ a: x }, data:[x, 3], sum:(x*2)+(x*3) }
 		RETURN doc
-		`, 4, map[string]any{
+		`, 3, map[string]any{
 			"meta": map[string]any{"a": 10},
 			"data": []any{10, 3},
 			"sum":  50,
@@ -95,7 +95,7 @@ RETURN obj`, 3, map[string]any{
 		RegistersArrayCase(`
 LET o = { a: 1 }
 LET arr = [o, o, o]
-RETURN arr`, 3, []any{
+RETURN arr`, 2, []any{
 			map[string]any{"a": 1},
 			map[string]any{"a": 1},
 			map[string]any{"a": 1},
@@ -107,7 +107,7 @@ RETURN FIRST([])?.foo
 FOR x IN [1,2,3,4,5]
   LET row = { x:x, y:x*2, z:x*3 }
   RETURN row
-`, 6, []any{
+`, 5, []any{
 			map[string]any{"x": 1, "y": 2, "z": 3},
 			map[string]any{"x": 2, "y": 4, "z": 6},
 			map[string]any{"x": 3, "y": 6, "z": 9},
@@ -210,7 +210,7 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 					budget: d.budget,
 					stats: stats[0]
 				}
-		`, 13, []any{
+		`, 12, []any{
 			map[string]any{
 				"department": "IT",
 				"budget":     500000.0,
@@ -256,7 +256,7 @@ RETURN ((x + 1) * (x + 2) == (x + 3) * (x + 4))
 				RETURN {
 					gender, count, sum, avg
 				}
-		`, 9, []any{
+		`, 8, []any{
 			map[string]any{"gender": "f", "count": 2, "sum": 20, "avg": 20},
 			map[string]any{"gender": "m", "count": 2, "sum": 40, "avg": 40},
 		}, "Should skip nulls in COUNT, SUM, AVG"),
