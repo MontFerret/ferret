@@ -1,10 +1,8 @@
 package runtime
 
-import (
-	"context"
-)
-
-func Add(_ context.Context, inputL, inputR Value) Value {
+// Add performs addition of two values.
+// It supports addition for integers, floats, and strings.
+func Add(_ Context, inputL, inputR Value) Value {
 	left := ToNumberOrString(inputL)
 
 	switch leftVal := left.(type) {
@@ -19,6 +17,7 @@ func Add(_ context.Context, inputL, inputR Value) Value {
 	}
 }
 
+// AddLeftInt performs addition when the left operand is an integer.
 func AddLeftInt(integer Int, input Value) Value {
 	right := ToNumberOrString(input)
 
@@ -32,6 +31,7 @@ func AddLeftInt(integer Int, input Value) Value {
 	}
 }
 
+// AddLeftFloat performs addition when the left operand is a float.
 func AddLeftFloat(float Float, input Value) Value {
 	right := ToNumberOrString(input)
 
@@ -49,7 +49,8 @@ func addLeftString(str String, input Value) Value {
 	return String(str.String() + input.String())
 }
 
-func Subtract(ctx context.Context, inputL, inputR Value) Value {
+// Subtract performs subtraction of two values.
+func Subtract(ctx Context, inputL, inputR Value) Value {
 	left := ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
@@ -62,7 +63,7 @@ func Subtract(ctx context.Context, inputL, inputR Value) Value {
 	}
 }
 
-func subtractLeftInt(ctx context.Context, integer Int, input Value) Value {
+func subtractLeftInt(ctx Context, integer Int, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -75,7 +76,7 @@ func subtractLeftInt(ctx context.Context, integer Int, input Value) Value {
 	}
 }
 
-func subtractLeftFloat(ctx context.Context, float Float, input Value) Value {
+func subtractLeftFloat(ctx Context, float Float, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -88,7 +89,8 @@ func subtractLeftFloat(ctx context.Context, float Float, input Value) Value {
 	}
 }
 
-func Multiply(ctx context.Context, inputL, inputR Value) Value {
+// Subtract performs subtraction of two values.
+func Multiply(ctx Context, inputL, inputR Value) Value {
 	left := ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
@@ -101,7 +103,7 @@ func Multiply(ctx context.Context, inputL, inputR Value) Value {
 	}
 }
 
-func multiplyLeftInt(ctx context.Context, integer Int, input Value) Value {
+func multiplyLeftInt(ctx Context, integer Int, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -114,7 +116,7 @@ func multiplyLeftInt(ctx context.Context, integer Int, input Value) Value {
 	}
 }
 
-func multiplyLeftFloat(ctx context.Context, float Float, input Value) Value {
+func multiplyLeftFloat(ctx Context, float Float, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -127,7 +129,8 @@ func multiplyLeftFloat(ctx context.Context, float Float, input Value) Value {
 	}
 }
 
-func Divide(ctx context.Context, inputL, inputR Value) Value {
+// Divide performs division of two values.
+func Divide(ctx Context, inputL, inputR Value) Value {
 	left := ToNumberOnly(ctx, inputL)
 
 	switch leftVal := left.(type) {
@@ -140,7 +143,7 @@ func Divide(ctx context.Context, inputL, inputR Value) Value {
 	}
 }
 
-func divideLeftInt(ctx context.Context, integer Int, input Value) Value {
+func divideLeftInt(ctx Context, integer Int, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -156,7 +159,7 @@ func divideLeftInt(ctx context.Context, integer Int, input Value) Value {
 	}
 }
 
-func divideLeftFloat(ctx context.Context, float Float, input Value) Value {
+func divideLeftFloat(ctx Context, float Float, input Value) Value {
 	right := ToNumberOnly(ctx, input)
 
 	switch rightVal := right.(type) {
@@ -169,14 +172,16 @@ func divideLeftFloat(ctx context.Context, float Float, input Value) Value {
 	}
 }
 
-func Modulus(ctx context.Context, inputL, inputR Value) Value {
+// Modulus performs modulus of two values.
+func Modulus(ctx Context, inputL, inputR Value) Value {
 	left, _ := ToInt(ctx, inputL)
 	right, _ := ToInt(ctx, inputR)
 
 	return left % right
 }
 
-func Increment(ctx context.Context, input Value) Value {
+// Increment performs increment of a value by 1.
+func Increment(ctx Context, input Value) Value {
 	left := ToNumberOnly(ctx, input)
 
 	switch value := left.(type) {
@@ -189,7 +194,8 @@ func Increment(ctx context.Context, input Value) Value {
 	}
 }
 
-func Decrement(ctx context.Context, input Value) Value {
+// Decrement performs decrement of a value by 1.
+func Decrement(ctx Context, input Value) Value {
 	left := ToNumberOnly(ctx, input)
 
 	switch value := left.(type) {

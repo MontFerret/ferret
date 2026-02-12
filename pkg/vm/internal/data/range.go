@@ -65,11 +65,11 @@ func (r *Range) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (r *Range) Copy() runtime.Value {
-	return NewRange(r.start, r.end)
+func (r *Range) Copy(runtime.Context) (runtime.Value, error) {
+	return NewRange(r.start, r.end), nil
 }
 
-func (r *Range) Iterate(_ context.Context) (runtime.Iterator, error) {
+func (r *Range) Iterate(ctx runtime.Context) (runtime.Iterator, error) {
 	return NewRangeIterator(r), nil
 }
 

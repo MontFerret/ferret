@@ -16,11 +16,11 @@ func NewKVIterator(source runtime.Iterator) runtime.Iterator {
 	}
 }
 
-func (iter *KVIterator) HasNext(ctx context.Context) (bool, error) {
+func (iter *KVIterator) HasNext(ctx runtime.Context) (bool, error) {
 	return iter.source.HasNext(ctx)
 }
 
-func (iter *KVIterator) Next(ctx context.Context) (runtime.Value, runtime.Value, error) {
+func (iter *KVIterator) Next(ctx runtime.Context) (runtime.Value, runtime.Value, error) {
 	value, key, err := iter.source.Next(ctx)
 
 	if err != nil {

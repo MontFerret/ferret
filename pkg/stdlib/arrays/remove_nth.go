@@ -27,7 +27,7 @@ func RemoveNth(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 		return runtime.None, err
 	}
 
-	next := list.Copy().(runtime.List)
+	next := list.Copy(nil).(runtime.List)
 
 	//if err != nil {
 	//	return runtime.None, err

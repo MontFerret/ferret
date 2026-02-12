@@ -11,20 +11,19 @@ type (
 
 	Environment struct {
 		Functions runtime.Functions
-		Params    map[string]runtime.Value
+		Params    map[string]any
 		Logging   runtime.LogSettings
+		Allocator runtime.Allocator
 	}
 )
 
 var noopEnv = &Environment{
 	Functions: runtime.NewFunctions(),
-	Params:    make(map[string]runtime.Value),
 }
 
 func NewDefaultEnvironment() *Environment {
 	return &Environment{
 		Functions: runtime.NewFunctions(),
-		Params:    make(map[string]runtime.Value),
 		Logging: runtime.LogSettings{
 			Writer: os.Stdout,
 			Level:  runtime.ErrorLevel,

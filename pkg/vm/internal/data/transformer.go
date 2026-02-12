@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -10,9 +9,8 @@ import (
 type Transformer interface {
 	runtime.Value
 	runtime.Iterable
-	runtime.Keyed
+	runtime.KeyReadable
+	runtime.KeyWritable
 	runtime.Measurable
 	io.Closer
-
-	Add(ctx context.Context, key, value runtime.Value) error
 }

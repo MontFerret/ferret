@@ -12,6 +12,5 @@ type Value interface {
 	String() string
 	Unwrap() interface{}
 	Hash() uint64
-	// TODO: Add context and return error. It needs to support values that rely on external storages.
-	Copy() Value
+	Copy(ctx Context) (Value, error)
 }

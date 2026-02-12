@@ -31,7 +31,7 @@ func Sorted(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.EmptyArray(), nil
 	}
 
-	copied := list.Copy()
+	copied, _ := list.Copy(nil)
 
 	//if err != nil {
 	//	return runtime.None, err

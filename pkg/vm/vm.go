@@ -13,7 +13,6 @@ import (
 type VM struct {
 	registers *mem.RegisterFile
 	cache     *mem.Cache
-	env       *Environment
 	program   *Program
 	pc        int
 }
@@ -27,7 +26,7 @@ func New(program *Program) *VM {
 	return vm
 }
 
-func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, err error) {
+func (vm *VM) Run(c context.Context, env *Environment) (result runtime.Value, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = vm.runtimeErrorFromPanic(r)
@@ -48,7 +47,9 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 		return nil, err
 	}
 
-	if err := vm.warmup(env); err != nil {
+	ctx := createContext(c, env)
+
+	if err := vm.warmup(ctx, env); err != nil {
 		return nil, err
 	}
 
@@ -57,9 +58,9 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 	}
 
 	vm.registers.MarkDirty()
-	vm.env = env
 	vm.pc = 0
 
+	alloc := ctx.Alloc()
 	bytecode := vm.program.Bytecode
 	constants := vm.program.Constants
 	reg := vm.registers.Values
@@ -83,7 +84,7 @@ loop:
 			reg[dst] = constants[src1.Constant()]
 		case OpLoadParam:
 			name := constants[src1.Constant()]
-			reg[dst] = vm.env.Params[name.String()]
+			reg[dst] = vm.cache.Params[name.String()]
 		case OpJump:
 			vm.pc = int(dst)
 		case OpJumpIfFalse:
@@ -181,9 +182,9 @@ loop:
 				return nil, err
 			}
 		case OpLoadArray:
-			reg[dst] = runtime.NewArray(int(src1))
+			reg[dst] = alloc.Array(int(src1))
 		case OpLoadObject:
-			reg[dst] = runtime.NewObjectOf(int(src1))
+			reg[dst] = alloc.Object(int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
 			arg := reg[src2]
@@ -323,11 +324,11 @@ loop:
 
 			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
 		case OpDataSetCollector:
-			reg[dst] = data.NewCollector(data.CollectorType(src1))
+			reg[dst] = data.NewCollector(data.CollectorType(src1), alloc)
 		case OpPush:
-			ds := reg[dst].(runtime.List)
+			ds := reg[dst].(runtime.IndexAppendable)
 
-			if err := ds.Add(ctx, reg[src1]); err != nil {
+			if err := ds.Append(ctx, reg[src1]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				} else {
@@ -337,12 +338,11 @@ loop:
 		case OpArrayPush:
 			ds := reg[dst].(*runtime.Array)
 
-			_ = ds.Add(ctx, reg[src1])
+			_ = ds.Append(ctx, reg[src1])
 		case OpPushKV:
-			// TODO: Use runtime.Map/runtime.KeySetter instead
-			tr := reg[dst].(data.Transformer)
+			tr := reg[dst].(runtime.KeyWritable)
 
-			if err := tr.Add(ctx, reg[src1], reg[src2]); err != nil {
+			if err := tr.Set(ctx, reg[src1], reg[src2]); err != nil {
 				if _, catch := vm.tryCatch(vm.pc); catch {
 					continue
 				}

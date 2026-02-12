@@ -99,11 +99,11 @@ func (f Float) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (f Float) Copy() Value {
-	return f
+func (f Float) Copy(Context) (Value, error) {
+	return f, nil
 }
 
-func (f Float) Compare(other Value) int64 {
+func (f Float) Compare(_ Context, other Value) int64 {
 	switch otherVal := other.(type) {
 	case Float:
 		if f == otherVal {

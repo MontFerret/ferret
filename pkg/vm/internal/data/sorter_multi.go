@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -9,19 +8,20 @@ import (
 
 type MultiSorter struct {
 	*runtime.Box[runtime.List]
+	alloc      runtime.Allocator
 	directions []runtime.SortDirection
 	sorted     bool
 }
 
-func NewMultiSorter(directions []runtime.SortDirection) Transformer {
+func NewMultiSorter(alloc runtime.Allocator, directions []runtime.SortDirection) Transformer {
 	return &MultiSorter{
-		Box:        &runtime.Box[runtime.List]{Value: runtime.NewArray(8)},
+		Box:        &runtime.Box[runtime.List]{Value: alloc.Array(8)},
 		directions: directions,
 		sorted:     false,
 	}
 }
 
-func (s *MultiSorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
+func (s *MultiSorter) Iterate(ctx runtime.Context) (runtime.Iterator, error) {
 	if !s.sorted {
 		if err := s.sort(ctx); err != nil {
 			return nil, err
@@ -39,12 +39,12 @@ func (s *MultiSorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return NewKVIterator(iter), nil
 }
 
-func (s *MultiSorter) Add(ctx context.Context, key, value runtime.Value) error {
-	return s.Value.Add(ctx, NewKV(key, value))
+func (s *MultiSorter) Set(ctx runtime.Context, key, value runtime.Value) error {
+	return s.Value.Append(ctx, NewKV(key, value))
 }
 
-func (s *MultiSorter) sort(ctx context.Context) error {
-	return runtime.SortListWith(ctx, s.Value, func(first, second runtime.Value) int64 {
+func (s *MultiSorter) sort(ctx runtime.Context) error {
+	return runtime.SortListWith(ctx, s.Value, func(ctx runtime.Context, first, second runtime.Value) int64 {
 		firstKV := first.(*KV)
 		secondKV := second.(*KV)
 
@@ -54,7 +54,7 @@ func (s *MultiSorter) sort(ctx context.Context) error {
 		for idx, direction := range s.directions {
 			firstKey, _ := firstKVKey.Get(ctx, runtime.NewInt(idx))
 			secondKey, _ := secondKVKey.Get(ctx, runtime.NewInt(idx))
-			comp := runtime.CompareValues(firstKey, secondKey)
+			comp := runtime.CompareValues(ctx, firstKey, secondKey)
 
 			if comp != 0 {
 				if direction == runtime.SortDirectionAsc {
@@ -69,11 +69,11 @@ func (s *MultiSorter) sort(ctx context.Context) error {
 	})
 }
 
-func (s *MultiSorter) Get(_ context.Context, _ runtime.Value) (runtime.Value, error) {
+func (s *MultiSorter) Get(_ runtime.Context, _ runtime.Value) (runtime.Value, error) {
 	return runtime.None, runtime.ErrNotSupported
 }
 
-func (s *MultiSorter) Length(ctx context.Context) (runtime.Int, error) {
+func (s *MultiSorter) Length(ctx runtime.Context) (runtime.Int, error) {
 	return s.Value.Length(ctx)
 }
 

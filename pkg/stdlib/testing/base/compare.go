@@ -46,18 +46,18 @@ func (op CompareOperator) Compare(args []runtime.Value) (bool, error) {
 
 	switch op {
 	case NotEqualOp:
-		result = runtime.CompareValues(actual, expected) != 0
+		result = runtime.CompareValues(nil, actual, expected) != 0
 	case EqualOp:
-		result = runtime.CompareValues(actual, expected) == 0
+		result = runtime.CompareValues(nil, actual, expected) == 0
 	case LessOp:
-		result = runtime.CompareValues(actual, expected) == -1
+		result = runtime.CompareValues(nil, actual, expected) == -1
 	case LessOrEqualOp:
-		c := runtime.CompareValues(actual, expected)
+		c := runtime.CompareValues(nil, actual, expected)
 		result = c == -1 || c == 0
 	case GreaterOp:
-		result = runtime.CompareValues(actual, expected) == 1
+		result = runtime.CompareValues(nil, actual, expected) == 1
 	default:
-		c := runtime.CompareValues(actual, expected)
+		c := runtime.CompareValues(nil, actual, expected)
 		result = c == 1 || c == 0
 	}
 

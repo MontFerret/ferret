@@ -6,11 +6,13 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-// Box is a generic wrapper for any value type.
+// Box is a wrapper for any value.
+// It is used to store data that does not implement the Value interface, but we want to treat it as a Value in the runtime.
 type Box[T any] struct {
 	Value T
 }
 
+// NewBox creates a new Box with the given value.
 func NewBox[T any](value T) *Box[T] {
 	return &Box[T]{
 		Value: value,
@@ -46,6 +48,6 @@ func (v *Box[T]) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (v *Box[T]) Copy() Value {
-	return &Box[T]{Value: v.Value}
+func (v *Box[T]) Copy(Context) (Value, error) {
+	return &Box[T]{Value: v.Value}, nil
 }

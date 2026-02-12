@@ -60,7 +60,7 @@ func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) 
 	_ = result.Add(ctx, value)
 
 	err = list.ForEach(ctx, func(ctx context.Context, el runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if runtime.CompareValues(el, value) != 0 {
+		if runtime.CompareValues(nil, el, value) != 0 {
 			_ = result.Add(ctx, el)
 		}
 

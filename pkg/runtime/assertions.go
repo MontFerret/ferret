@@ -1,7 +1,5 @@
 package runtime
 
-import "context"
-
 type TypeAssertion func(input Value) error
 
 func AssertString(input Value) error {
@@ -104,14 +102,14 @@ func AssertList(input Value) error {
 	return nil
 }
 
-func AssertCollectionOf(ctx context.Context, input Value, assertion TypeAssertion) error {
+func AssertCollectionOf(ctx Context, input Value, assertion TypeAssertion) error {
 	coll, err := CastCollection(input)
 
 	if err != nil {
 		return err
 	}
 
-	return ForEach(ctx, coll, func(ctx context.Context, value, _ Value) (Boolean, error) {
+	return ForEach(ctx, coll, func(ctx Context, value, _ Value) (Boolean, error) {
 		if err := assertion(value); err != nil {
 			return false, err
 		}
@@ -120,8 +118,8 @@ func AssertCollectionOf(ctx context.Context, input Value, assertion TypeAssertio
 	})
 }
 
-func AssertItemsOf(ctx context.Context, input Iterable, assertion TypeAssertion) error {
-	return ForEach(ctx, input, func(ctx context.Context, value, _ Value) (Boolean, error) {
+func AssertItemsOf(ctx Context, input Iterable, assertion TypeAssertion) error {
+	return ForEach(ctx, input, func(ctx Context, value, _ Value) (Boolean, error) {
 		if err := assertion(value); err != nil {
 			return false, err
 		}

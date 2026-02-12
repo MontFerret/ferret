@@ -89,11 +89,11 @@ func (i Int) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (i Int) Copy() Value {
-	return i
+func (i Int) Copy(Context) (Value, error) {
+	return i, nil
 }
 
-func (i Int) Compare(other Value) int64 {
+func (i Int) Compare(ctx Context, other Value) int64 {
 	switch otherVal := other.(type) {
 	case Int:
 		if i == otherVal {

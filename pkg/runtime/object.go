@@ -15,6 +15,8 @@ type (
 		value Value
 	}
 
+	// Object represents a JSON object.
+	// It is a collection of key-value pairs where keys are strings and values are of any type.
 	Object struct {
 		data map[string]Value
 	}
@@ -24,15 +26,11 @@ func NewObjectProperty(name string, value Value) *ObjectProperty {
 	return &ObjectProperty{name, value}
 }
 
-func NewObject() *Object {
-	return &Object{make(map[string]Value)}
-}
-
-func NewObjectOf(size int) *Object {
+func newObjectOf(size int) *Object {
 	return &Object{make(map[string]Value, size)}
 }
 
-func NewObjectWith(props ...*ObjectProperty) *Object {
+func newObjectWith(props ...*ObjectProperty) *Object {
 	obj := &Object{make(map[string]Value)}
 
 	for _, prop := range props {
@@ -40,10 +38,6 @@ func NewObjectWith(props ...*ObjectProperty) *Object {
 	}
 
 	return obj
-}
-
-func (t *Object) Type() string {
-	return "object"
 }
 
 func (t *Object) MarshalJSON() ([]byte, error) {
@@ -63,7 +57,7 @@ func (t *Object) String() string {
 // Compare compares the source object with other core.Value
 // The behavior of the Compare is similar
 // to the comparison of objects in ArangoDB
-func (t *Object) Compare(other Value) int64 {
+func (t *Object) Compare(ctx Context, other Value) int64 {
 	otherObject, ok := other.(*Object)
 
 	if !ok {
@@ -114,7 +108,7 @@ func (t *Object) Compare(other Value) int64 {
 		if tKey == otherKey {
 			tVal = t.data[tKey]
 			otherVal = otherObject.data[tKey]
-			res = CompareValues(tVal, otherVal)
+			res = CompareValues(ctx, tVal, otherVal)
 
 			continue
 		}
@@ -179,18 +173,18 @@ func (t *Object) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (t *Object) Copy() Value {
-	c := &Object{make(map[string]Value)}
+func (t *Object) Copy(ctx Context) (Value, error) {
+	c := ctx.Alloc().Object(len(t.data))
 
 	for k, v := range t.data {
 		c.data[k] = v
 	}
 
-	return c
+	return c, nil
 }
 
-func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
-	cloned := &Object{make(map[string]Value)}
+func (t *Object) Clone(ctx Context) (Cloneable, error) {
+	cloned := ctx.Alloc().Object(len(t.data))
 
 	var value Value
 
@@ -207,7 +201,7 @@ func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
 
 			value = clone
 		} else {
-			value = value.Copy()
+			value, _ = value.Copy(nil)
 		}
 
 		cloned.data[key] = value
@@ -216,7 +210,7 @@ func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
 	return cloned, nil
 }
 
-func (t *Object) Length(_ context.Context) (Int, error) {
+func (t *Object) Length(_ Context) (Int, error) {
 	return Int(len(t.data)), nil
 }
 
@@ -224,27 +218,27 @@ func (t *Object) IsEmpty(_ context.Context) (Boolean, error) {
 	return len(t.data) == 0, nil
 }
 
-func (t *Object) Keys(_ context.Context) (List, error) {
-	keys := make([]Value, 0, len(t.data))
+func (t *Object) Keys(ctx Context) (List, error) {
+	keys := ctx.Alloc().Array(len(t.data))
 
 	for k := range t.data {
-		keys = append(keys, NewString(k))
+		_ = keys.Append(ctx, NewString(k))
 	}
 
-	return NewArrayOf(keys), nil
+	return keys, nil
 }
 
-func (t *Object) Values(_ context.Context) (List, error) {
-	keys := make([]Value, 0, len(t.data))
+func (t *Object) Values(ctx Context) (List, error) {
+	keys := ctx.Alloc().Array(len(t.data))
 
 	for _, v := range t.data {
-		keys = append(keys, v)
+		_ = keys.Append(ctx, v)
 	}
 
-	return NewArrayOf(keys), nil
+	return keys, nil
 }
 
-func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
+func (t *Object) ForEach(ctx Context, predicate KeyReadablePredicate) error {
 	for key, val := range t.data {
 		doContinue, err := predicate(ctx, val, String(key))
 
@@ -260,8 +254,8 @@ func (t *Object) ForEach(ctx context.Context, predicate KeyedPredicate) error {
 	return nil
 }
 
-func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, error) {
-	res := NewArray(len(t.data))
+func (t *Object) Find(ctx Context, predicate KeyReadablePredicate) (List, error) {
+	res := ctx.Alloc().Array(len(t.data))
 
 	for key, val := range t.data {
 		match, err := predicate(ctx, val, String(key))
@@ -271,14 +265,14 @@ func (t *Object) Find(ctx context.Context, predicate KeyedPredicate) (List, erro
 		}
 
 		if match {
-			res.Add(ctx, val)
+			_ = res.Append(ctx, val)
 		}
 	}
 
 	return res, nil
 }
 
-func (t *Object) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, Boolean, error) {
+func (t *Object) FindOne(ctx Context, predicate KeyReadablePredicate) (Value, Boolean, error) {
 	for key, val := range t.data {
 		res, err := predicate(ctx, val, String(key))
 
@@ -294,15 +288,15 @@ func (t *Object) FindOne(ctx context.Context, predicate KeyedPredicate) (Value, 
 	return None, false, nil
 }
 
-func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
+func (t *Object) ContainsKey(_ Context, key Value) (Boolean, error) {
 	_, exists := t.data[key.String()]
 
 	return Boolean(exists), nil
 }
 
-func (t *Object) ContainsValue(_ context.Context, target Value) (Boolean, error) {
+func (t *Object) ContainsValue(_ Context, value Value) (Boolean, error) {
 	for _, val := range t.data {
-		res := CompareValues(target, val)
+		res := CompareValues(nil, value, val)
 
 		if res == 0 {
 			return true, nil
@@ -312,7 +306,7 @@ func (t *Object) ContainsValue(_ context.Context, target Value) (Boolean, error)
 	return false, nil
 }
 
-func (t *Object) Get(_ context.Context, key Value) (Value, error) {
+func (t *Object) Get(_ Context, key Value) (Value, error) {
 	val, found := t.data[key.String()]
 
 	if found {
@@ -322,7 +316,7 @@ func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 	return None, ErrNotFound
 }
 
-func (t *Object) Set(_ context.Context, key Value, value Value) error {
+func (t *Object) Set(_ Context, key, value Value) error {
 	if value == nil {
 		value = None
 	}
@@ -332,19 +326,31 @@ func (t *Object) Set(_ context.Context, key Value, value Value) error {
 	return nil
 }
 
-func (t *Object) Remove(_ context.Context, key Value) error {
+func (t *Object) RemoveValue(ctx Context, value Value) error {
+	for key, val := range t.data {
+		if CompareValues(ctx, value, val) == 0 {
+			delete(t.data, key)
+
+			break
+		}
+	}
+
+	return nil
+}
+
+func (t *Object) RemoveKey(_ Context, key Value) error {
 	delete(t.data, key.String())
 
 	return nil
 }
 
-func (t *Object) Clear(_ context.Context) error {
+func (t *Object) Clear(_ Context) error {
 	t.data = make(map[string]Value)
 
 	return nil
 }
 
-func (t *Object) Iterate(_ context.Context) (Iterator, error) {
+func (t *Object) Iterate(ctx Context) (Iterator, error) {
 	// TODO: implement channel based iterator
 	return NewObjectIterator(t), nil
 }

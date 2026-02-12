@@ -83,11 +83,11 @@ func (dt DateTime) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (dt DateTime) Copy() Value {
-	return NewDateTime(dt.Time)
+func (dt DateTime) Copy(_ Context) (Value, error) {
+	return NewDateTime(dt.Time), nil
 }
 
-func (dt DateTime) Compare(other Value) int64 {
+func (dt DateTime) Compare(ctx Context, other Value) int64 {
 	otherDt, ok := other.(DateTime)
 
 	if !ok {

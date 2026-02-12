@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"time"
 )
 
@@ -25,7 +24,7 @@ func NewIteratorWithTimeout(stream Stream, timeout time.Duration) Iterator {
 	}
 }
 
-func (s *StreamIterator) HasNext(ctx context.Context) (bool, error) {
+func (s *StreamIterator) HasNext(ctx Context) (bool, error) {
 	if !s.initialized {
 		s.channel = s.stream.Read(ctx)
 		s.initialized = true
@@ -55,7 +54,7 @@ func (s *StreamIterator) HasNext(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (s *StreamIterator) Next(_ context.Context) (value Value, key Value, err error) {
+func (s *StreamIterator) Next(_ Context) (value Value, key Value, err error) {
 	return s.message.Value(), None, s.message.Err()
 }
 

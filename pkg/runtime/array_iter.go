@@ -1,9 +1,5 @@
 package runtime
 
-import (
-	"context"
-)
-
 type ArrayIterator struct {
 	values *Array
 	length int
@@ -14,11 +10,11 @@ func NewArrayIterator(values *Array) Iterator {
 	return &ArrayIterator{values: values, length: len(values.data), pos: 0}
 }
 
-func (iter *ArrayIterator) HasNext(_ context.Context) (bool, error) {
+func (iter *ArrayIterator) HasNext(_ Context) (bool, error) {
 	return iter.length > iter.pos, nil
 }
 
-func (iter *ArrayIterator) Next(_ context.Context) (value Value, key Value, err error) {
+func (iter *ArrayIterator) Next(_ Context) (value Value, key Value, err error) {
 	if iter.pos >= iter.length {
 		return None, None, Error(ErrInvalidOperation, "no more elements")
 	}

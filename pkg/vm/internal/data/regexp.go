@@ -45,7 +45,7 @@ func (r *Regexp) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (r *Regexp) Copy() runtime.Value {
+func (r *Regexp) Copy(runtime.Context) (runtime.Value, error) {
 	copied, err := NewRegexp(runtime.String(r.String()))
 
 	// it should never happen
@@ -53,7 +53,7 @@ func (r *Regexp) Copy() runtime.Value {
 		panic(err)
 	}
 
-	return copied
+	return copied, nil
 }
 
 func (r *Regexp) Compare(_ context.Context, other runtime.Value) (int64, error) {

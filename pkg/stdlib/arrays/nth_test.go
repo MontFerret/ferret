@@ -26,7 +26,7 @@ func TestNth_Basic(t *testing.T) {
 		out, err := arrays.Nth(ctx, arr, runtime.NewInt(1))
 
 		So(err, ShouldBeNil)
-		So(out.(runtime.Comparable).Compare(runtime.NewInt(2)), ShouldEqual, 0)
+		So(out.(runtime.Comparable).Compare(runtime.NewInt(2), nil), ShouldEqual, 0)
 	})
 
 	Convey("Should return None when no value", t, func() {
@@ -85,11 +85,11 @@ func TestNth_EdgeCases(t *testing.T) {
 		)
 		out, err := arrays.Nth(ctx, arr, runtime.NewInt(0))
 		So(err, ShouldBeNil)
-		So(out.(runtime.Comparable).Compare(runtime.NewInt(10)), ShouldEqual, 0)
+		So(out.(runtime.Comparable).Compare(runtime.NewInt(10), nil), ShouldEqual, 0)
 
 		out, err = arrays.Nth(ctx, arr, runtime.NewInt(2))
 		So(err, ShouldBeNil)
-		So(out.(runtime.Comparable).Compare(runtime.NewInt(30)), ShouldEqual, 0)
+		So(out.(runtime.Comparable).Compare(runtime.NewInt(30), nil), ShouldEqual, 0)
 	})
 
 	Convey("Should handle index at boundary", t, func() {

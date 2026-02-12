@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"encoding/binary"
 	"encoding/json"
 	"hash/fnv"
@@ -17,7 +16,7 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-func IsNil(input interface{}) bool {
+func IsNil(input any) bool {
 	val := reflect.ValueOf(input)
 	kind := val.Kind()
 
@@ -74,7 +73,7 @@ func Random2(mid float64) float64 {
 	return Random(randMax, randMin)
 }
 
-func Parse(input interface{}) Value {
+func Parse(ctx Context, input any) Value {
 	switch value := input.(type) {
 	case bool:
 		return NewBoolean(value)
@@ -97,20 +96,18 @@ func Parse(input interface{}) Value {
 	case time.Time:
 		return NewDateTime(value)
 	case []interface{}:
-		ctx := context.Background()
-		arr := NewArray(len(value))
+		arr := ctx.Alloc().Array(len(value))
 
 		for _, el := range value {
-			_ = arr.Add(ctx, Parse(el))
+			_ = arr.Append(ctx, Parse(ctx, el))
 		}
 
 		return arr
 	case map[string]interface{}:
-		ctx := context.Background()
-		obj := NewObject()
+		obj := ctx.Alloc().Object(len(value))
 
 		for key, el := range value {
-			_ = obj.Set(ctx, NewString(key), Parse(el))
+			_ = obj.Set(ctx, NewString(key), Parse(ctx, el))
 		}
 
 		return obj
@@ -118,6 +115,8 @@ func Parse(input interface{}) Value {
 		return NewBinary(value)
 	case nil:
 		return None
+	case Value:
+		return value
 	default:
 		v := reflect.ValueOf(value)
 		t := reflect.TypeOf(value)
@@ -130,17 +129,16 @@ func Parse(input interface{}) Value {
 				return None
 			}
 
-			return Parse(el.Interface())
+			return Parse(ctx, el.Interface())
 		}
 
 		if kind == reflect.Slice || kind == reflect.Array {
 			size := v.Len()
-			arr := NewArray(size)
-			ctx := context.Background()
+			arr := ctx.Alloc().Array(size)
 
 			for i := 0; i < size; i++ {
 				curVal := v.Index(i)
-				_ = arr.Add(ctx, Parse(curVal.Interface()))
+				_ = arr.Append(ctx, Parse(ctx, curVal.Interface()))
 			}
 
 			return arr
@@ -148,29 +146,27 @@ func Parse(input interface{}) Value {
 
 		if kind == reflect.Map {
 			keys := v.MapKeys()
-			obj := NewObject()
-			ctx := context.Background()
+			obj := ctx.Alloc().Object(len(keys))
 
 			for _, k := range keys {
-				key := Parse(k.Interface())
+				key := Parse(ctx, k.Interface())
 				curVal := v.MapIndex(k)
 
-				_ = obj.Set(ctx, NewString(key.String()), Parse(curVal.Interface()))
+				_ = obj.Set(ctx, NewString(key.String()), Parse(ctx, curVal.Interface()))
 			}
 
 			return obj
 		}
 
 		if kind == reflect.Struct {
-			obj := NewObject()
 			size := t.NumField()
-			ctx := context.Background()
+			obj := ctx.Alloc().Object(size)
 
 			for i := 0; i < size; i++ {
 				field := t.Field(i)
 				fieldValue := v.Field(i)
 
-				_ = obj.Set(ctx, NewString(field.Name), Parse(fieldValue.Interface()))
+				_ = obj.Set(ctx, NewString(field.Name), Parse(ctx, fieldValue.Interface()))
 			}
 
 			return obj
@@ -180,7 +176,7 @@ func Parse(input interface{}) Value {
 	}
 }
 
-func Unmarshal(value json.RawMessage) (Value, error) {
+func Unmarshal(ctx Context, value json.RawMessage) (Value, error) {
 	var o interface{}
 
 	err := json.Unmarshal(value, &o)
@@ -189,7 +185,7 @@ func Unmarshal(value json.RawMessage) (Value, error) {
 		return None, err
 	}
 
-	return Parse(o), nil
+	return Parse(ctx, o), nil
 }
 
 func MustMarshal(value Value) json.RawMessage {
@@ -230,7 +226,7 @@ func IsNumber(input Value) Boolean {
 	}
 }
 
-func ToList(ctx context.Context, input Value) List {
+func ToList(ctx Context, input Value) List {
 	switch value := input.(type) {
 	case Boolean,
 		Int,
@@ -238,17 +234,32 @@ func ToList(ctx context.Context, input Value) List {
 		String,
 		DateTime:
 
-		return NewArrayWith(value)
+		arr := ctx.Alloc().Array(1)
+		_ = arr.Append(ctx, value)
+
+		return arr
 	case List:
-		return value.Copy().(List)
+		cp, err := value.Copy(ctx)
+
+		if err != nil {
+			return ctx.Alloc().Array(0)
+		}
+
+		list, ok := cp.(List)
+
+		if !ok {
+			return ctx.Alloc().Array(0)
+		}
+
+		return list
 	case Iterable:
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return NewArray(0)
+			return ctx.Alloc().Array(0)
 		}
 
-		arr := NewArray(10)
+		arr := ctx.Alloc().Array(10)
 
 		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
 			val, _, err := iterator.Next(ctx)
@@ -257,21 +268,22 @@ func ToList(ctx context.Context, input Value) List {
 				return arr
 			}
 
-			_ = arr.Add(ctx, val)
+			_ = arr.Append(ctx, val)
 		}
 
 		return arr
 	default:
-		return EmptyArray()
+		return ctx.Alloc().Array(0)
 	}
 }
 
-func ToMap(ctx context.Context, input Value) Map {
+func ToMap(ctx Context, input Value) Map {
 	switch value := input.(type) {
 	case Map:
 		return value
 	case *Array:
-		obj := NewObject()
+		size, _ := value.Length(ctx)
+		obj := ctx.Alloc().Object(int(size))
 
 		for i, v := range value.data {
 			_ = obj.Set(ctx, ToString(Int(i)), v)
@@ -282,10 +294,10 @@ func ToMap(ctx context.Context, input Value) Map {
 		iterator, err := value.Iterate(ctx)
 
 		if err != nil {
-			return NewObject()
+			return ctx.Alloc().Object(0)
 		}
 
-		obj := NewObject()
+		obj := ctx.Alloc().Object(10)
 
 		for hasNext, err := iterator.HasNext(ctx); hasNext && err == nil; {
 			val, key, err := iterator.Next(ctx)
@@ -299,7 +311,7 @@ func ToMap(ctx context.Context, input Value) Map {
 
 		return obj
 	default:
-		return NewObject()
+		return ctx.Alloc().Object(0)
 	}
 }
 
@@ -324,7 +336,7 @@ func ToBoolean(input Value) Boolean {
 	}
 }
 
-func ToFloat(ctx context.Context, input Value) (Float, error) {
+func ToFloat(ctx Context, input Value) (Float, error) {
 	switch val := input.(type) {
 	case Float:
 		return val, nil
@@ -397,7 +409,7 @@ func ToString(input Value) String {
 	}
 }
 
-func ToInt(ctx context.Context, input Value) (Int, error) {
+func ToInt(ctx Context, input Value) (Int, error) {
 	switch val := input.(type) {
 	case Int:
 		return val, nil
@@ -461,7 +473,7 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 	}
 }
 
-func ToIntSafe(ctx context.Context, input Value) Int {
+func ToIntSafe(ctx Context, input Value) Int {
 	result, err := ToInt(ctx, input)
 
 	if err != nil {
@@ -475,7 +487,7 @@ func ToIntSafe(ctx context.Context, input Value) Int {
 	return ZeroInt
 }
 
-func ToNumberOnly(ctx context.Context, input Value) Value {
+func ToNumberOnly(ctx Context, input Value) Value {
 	switch value := input.(type) {
 	case Int, Float:
 		return value
@@ -534,7 +546,7 @@ func ToNumberOnly(ctx context.Context, input Value) Value {
 	}
 }
 
-func ToIntDefault(ctx context.Context, input Value, defaultValue Int) (Int, error) {
+func ToIntDefault(ctx Context, input Value, defaultValue Int) (Int, error) {
 	result, err := ToInt(ctx, input)
 
 	if err != nil {
@@ -557,7 +569,7 @@ func ToNumberOrString(input Value) Value {
 	}
 }
 
-func ToStrings(ctx context.Context, input Collection) []String {
+func ToStrings(ctx Context, input Collection) []String {
 	size, err := input.Length(ctx)
 
 	if err != nil {

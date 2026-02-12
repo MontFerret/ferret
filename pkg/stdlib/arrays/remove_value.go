@@ -40,7 +40,7 @@ func RemoveValue(ctx context.Context, args ...runtime.Value) (runtime.Value, err
 	var counter runtime.Int
 
 	return arr.Find(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		remove := runtime.CompareValues(item, value) == 0
+		remove := runtime.CompareValues(nil, item, value) == 0
 
 		if remove {
 			counter++

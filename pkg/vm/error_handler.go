@@ -32,13 +32,13 @@ func toRuntimeError(program *Program, pc int, err error) *RuntimeError {
 		message = "Division by zero"
 		label = "attempt to divide by zero"
 		hint = "Ensure the denominator is non-zero before division"
-		note = "Add a conditional check before dividing"
+		note = "Append a conditional check before dividing"
 	case errors.Is(err, ErrModuloByZero):
 		kind = ModuloByZero
 		message = "Modulo by zero"
 		label = "attempt to take modulo by zero"
 		hint = "Ensure the divisor is non-zero before modulo"
-		note = "Add a conditional check before modulo"
+		note = "Append a conditional check before modulo"
 	case errors.Is(err, runtime.ErrInvalidType):
 		kind = diagnostics.TypeError
 		message = "Invalid type"
@@ -91,7 +91,7 @@ func toRuntimeError(program *Program, pc int, err error) *RuntimeError {
 		message = "Unresolved function"
 		label = "unresolved function"
 		hint = "Ensure the function is registered and accessible in the current context"
-		note = "Add the function to the registry if it's missing"
+		note = "Append the function to the registry if it's missing"
 	case errors.Is(err, ErrInvalidFunctionName):
 		message = "Invalid function name"
 		label = "invalid function name"

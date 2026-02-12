@@ -1,8 +1,6 @@
 package vm
 
 import (
-	"context"
-
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
@@ -16,7 +14,7 @@ func (vm *VM) tryCatch(pos int) (Catch, bool) {
 	return Catch{}, false
 }
 
-func (vm *VM) callv(ctx context.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
+func (vm *VM) callv(ctx runtime.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 
@@ -38,7 +36,7 @@ func (vm *VM) callv(ctx context.Context, pc int, src1, src2 Operand) (runtime.Va
 	return cacheFn.FnV(ctx, args...)
 }
 
-func (vm *VM) call0(ctx context.Context, pc int) (runtime.Value, error) {
+func (vm *VM) call0(ctx runtime.Context, pc int) (runtime.Value, error) {
 	cacheFn := vm.cache.Functions[pc]
 
 	if cacheFn.Fn0 != nil {
@@ -49,7 +47,7 @@ func (vm *VM) call0(ctx context.Context, pc int) (runtime.Value, error) {
 	return cacheFn.FnV(ctx)
 }
 
-func (vm *VM) call1(ctx context.Context, pc int, src1 Operand) (runtime.Value, error) {
+func (vm *VM) call1(ctx runtime.Context, pc int, src1 Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	arg := reg[src1]
 	cacheFn := vm.cache.Functions[pc]
@@ -62,7 +60,7 @@ func (vm *VM) call1(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg)
 }
 
-func (vm *VM) call2(ctx context.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
+func (vm *VM) call2(ctx runtime.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 	arg1 := reg[src1]
@@ -76,7 +74,7 @@ func (vm *VM) call2(ctx context.Context, pc int, src1, src2 Operand) (runtime.Va
 	return cacheFn.FnV(ctx, arg1, arg2)
 }
 
-func (vm *VM) call3(ctx context.Context, pc int, src1 Operand) (runtime.Value, error) {
+func (vm *VM) call3(ctx runtime.Context, pc int, src1 Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 	arg1 := reg[src1]
@@ -91,7 +89,7 @@ func (vm *VM) call3(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg1, arg2, arg3)
 }
 
-func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, error) {
+func (vm *VM) call4(ctx runtime.Context, pc int, src1 Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 	arg1 := reg[src1]
@@ -107,11 +105,11 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
 }
 
-func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
-	indexed, ok := src.(runtime.Indexed)
+func (vm *VM) loadIndex(ctx runtime.Context, src, arg runtime.Value) (runtime.Value, error) {
+	indexed, ok := src.(runtime.IndexReadable)
 
 	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexed)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexReadable)
 	}
 
 	var idx runtime.Int
@@ -134,11 +132,11 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 	return indexed.Get(ctx, idx)
 }
 
-func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {
-	keyed, ok := src.(runtime.Keyed)
+func (vm *VM) loadKey(ctx runtime.Context, src, arg runtime.Value) (runtime.Value, error) {
+	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyed)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyReadable)
 	}
 
 	out, err := keyed.Get(ctx, arg)

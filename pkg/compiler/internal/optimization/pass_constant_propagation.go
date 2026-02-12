@@ -413,31 +413,31 @@ func appendConst(program *vm.Program, constIndex map[string]int, val runtime.Val
 }
 
 func compare(_ context.Context, left, right runtime.Value) runtime.Int {
-	return runtime.Int(runtime.CompareValues(right, left))
+	return runtime.Int(runtime.CompareValues(nil, right, left))
 }
 
 func equals(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) == 0
+	return runtime.CompareValues(nil, left, right) == 0
 }
 
 func notEquals(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) != 0
+	return runtime.CompareValues(nil, left, right) != 0
 }
 
 func greaterThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) > 0
+	return runtime.CompareValues(nil, left, right) > 0
 }
 
 func greaterThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) >= 0
+	return runtime.CompareValues(nil, left, right) >= 0
 }
 
 func lessThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) < 0
+	return runtime.CompareValues(nil, left, right) < 0
 }
 
 func lessThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) <= 0
+	return runtime.CompareValues(nil, left, right) <= 0
 }
 
 func negate(input runtime.Value) runtime.Value {

@@ -62,7 +62,7 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 		return runtime.NaN(), errors.New("input is outside of range")
 	}
 
-	sorted := arr.Copy().(runtime.List)
+	sorted := arr.Copy(nil).(runtime.List)
 
 	//if err != nil {
 	//	return runtime.NaN(), err

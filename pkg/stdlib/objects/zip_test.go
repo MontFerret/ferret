@@ -17,7 +17,7 @@ func TestZip(t *testing.T) {
 			expected := runtime.None
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("When single argument", func() {
@@ -25,12 +25,12 @@ func TestZip(t *testing.T) {
 			expected := runtime.None
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 
 			actual, err = objects.Zip(context.Background(), runtime.NewInt(0))
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("When too many arguments", func() {
@@ -39,7 +39,7 @@ func TestZip(t *testing.T) {
 			expected := runtime.None
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("When there is not array argument", func() {
@@ -47,12 +47,12 @@ func TestZip(t *testing.T) {
 			expected := runtime.None
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 
 			actual, err = objects.Zip(context.Background(), runtime.NewInt(0), runtime.NewArray(0))
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("When there is not string element into keys array", func() {
@@ -63,7 +63,7 @@ func TestZip(t *testing.T) {
 			actual, err := objects.Zip(context.Background(), keys, vals)
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("When keys and values have different lengths", func() {
@@ -74,7 +74,7 @@ func TestZip(t *testing.T) {
 			actual, err := objects.Zip(context.Background(), keys, vals)
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 	})
 
@@ -87,7 +87,7 @@ func TestZip(t *testing.T) {
 			actual, err := objects.Zip(context.Background(), keys, vals)
 
 			So(err, ShouldBeNil)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("Zip single key-value pair", func() {
@@ -100,7 +100,7 @@ func TestZip(t *testing.T) {
 			actual, err := objects.Zip(context.Background(), keys, vals)
 
 			So(err, ShouldBeNil)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("Zip multiple key-value pairs", func() {
@@ -120,7 +120,7 @@ func TestZip(t *testing.T) {
 			actual, err := objects.Zip(context.Background(), keys, vals)
 
 			So(err, ShouldBeNil)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("Zip with duplicate keys - first value wins", func() {
@@ -142,7 +142,7 @@ func TestZip(t *testing.T) {
 			actual, err := objects.Zip(context.Background(), keys, vals)
 
 			So(err, ShouldBeNil)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("Zip with complex values", func() {
@@ -170,7 +170,7 @@ func TestZip(t *testing.T) {
 			objVal, _ := actualObj.Get(context.Background(), runtime.NewString("obj"))
 			obj := objVal.(*runtime.Object)
 			nestedVal, _ := obj.Get(context.Background(), runtime.NewString("nested"))
-			So(runtime.CompareValues(nestedVal, runtime.NewString("value")), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, nestedVal, runtime.NewString("value")), ShouldEqual, 0)
 		})
 	})
 
@@ -194,7 +194,7 @@ func TestZip(t *testing.T) {
 		So(resultLength, ShouldEqual, 1)
 
 		val, _ := resultArrVal.Get(context.Background(), runtime.NewInt(0))
-		So(runtime.CompareValues(val, runtime.NewInt(0)), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, val, runtime.NewInt(0)), ShouldEqual, 0)
 	})
 
 	Convey("When keys contain special characters", t, func() {
@@ -216,13 +216,13 @@ func TestZip(t *testing.T) {
 
 		// Check all keys are present
 		val1, _ := actualObj.Get(context.Background(), runtime.NewString("key with spaces"))
-		So(runtime.CompareValues(val1, runtime.NewInt(1)), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, val1, runtime.NewInt(1)), ShouldEqual, 0)
 
 		val2, _ := actualObj.Get(context.Background(), runtime.NewString("key_with_underscores"))
-		So(runtime.CompareValues(val2, runtime.NewInt(2)), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, val2, runtime.NewInt(2)), ShouldEqual, 0)
 
 		val3, _ := actualObj.Get(context.Background(), runtime.NewString("key-with-dashes"))
-		So(runtime.CompareValues(val3, runtime.NewInt(3)), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, val3, runtime.NewInt(3)), ShouldEqual, 0)
 	})
 
 	Convey("When values are all None", t, func() {
@@ -241,9 +241,9 @@ func TestZip(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		val1, _ := actualObj.Get(context.Background(), runtime.NewString("k1"))
-		So(runtime.CompareValues(val1, runtime.None), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, val1, runtime.None), ShouldEqual, 0)
 
 		val2, _ := actualObj.Get(context.Background(), runtime.NewString("k2"))
-		So(runtime.CompareValues(val2, runtime.None), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, val2, runtime.None), ShouldEqual, 0)
 	})
 }

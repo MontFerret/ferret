@@ -51,31 +51,31 @@ func (op Comparator) Predicate() ComparatorPredicate {
 }
 
 func Compare(_ context.Context, left, right runtime.Value) runtime.Int {
-	return runtime.Int(runtime.CompareValues(right, left))
+	return runtime.Int(runtime.CompareValues(nil, right, left))
 }
 
 func Equals(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) == 0
+	return runtime.CompareValues(nil, left, right) == 0
 }
 
 func NotEquals(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) != 0
+	return runtime.CompareValues(nil, left, right) != 0
 }
 
 func GreaterThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) > 0
+	return runtime.CompareValues(nil, left, right) > 0
 }
 
 func GreaterThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) >= 0
+	return runtime.CompareValues(nil, left, right) >= 0
 }
 
 func LessThan(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) < 0
+	return runtime.CompareValues(nil, left, right) < 0
 }
 
 func LessThanOrEqual(_ context.Context, left, right runtime.Value) runtime.Boolean {
-	return runtime.CompareValues(left, right) <= 0
+	return runtime.CompareValues(nil, left, right) <= 0
 }
 
 func In(ctx context.Context, left, right runtime.Value) runtime.Boolean {

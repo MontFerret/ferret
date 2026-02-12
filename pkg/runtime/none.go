@@ -26,11 +26,11 @@ func (n *none) Hash() uint64 {
 	return 0
 }
 
-func (n *none) Copy() Value {
-	return None
+func (n *none) Copy(Context) (Value, error) {
+	return None, nil
 }
 
-func (n *none) Clone(_ context.Context) (Cloneable, error) {
+func (n *none) Clone(_ Context) (Cloneable, error) {
 	return None, nil
 }
 

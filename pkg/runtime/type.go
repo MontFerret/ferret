@@ -24,30 +24,30 @@ func (t Type) String() string {
 }
 
 const (
-	// Actual types
-	TypeNone     = Type("none")
-	TypeBoolean  = Type("boolean")
-	TypeInt      = Type("int")
-	TypeFloat    = Type("float")
-	TypeString   = Type("string")
-	TypeDateTime = Type("date_time")
-	TypeArray    = Type("array")
-	TypeObject   = Type("object")
-	TypeBinary   = Type("binary")
+	// Concrete types
+	TypeNone     = Type("None")
+	TypeBoolean  = Type("Boolean")
+	TypeInt      = Type("Int")
+	TypeFloat    = Type("Float")
+	TypeString   = Type("String")
+	TypeDateTime = Type("DateTime")
+	TypeArray    = Type("Array")
+	TypeObject   = Type("Object")
+	TypeBinary   = Type("Binary")
 
 	// Interfaces
-	TypeCollection = Type("collection")
-	TypeList       = Type("list")
-	TypeMap        = Type("map")
-	TypeIndexed    = Type("indexed")
-	TypeKeyed      = Type("keyed")
-	TypeIterable   = Type("iterable")
-	TypeIterator   = Type("iterator")
-	TypeMeasurable = Type("measurable")
-	TypeComparable = Type("comparable")
-	TypeCloneable  = Type("cloneable")
-	TypeSortable   = Type("sortable")
-	TypeObservable = Type("observable")
+	TypeCollection    = Type("Collection")
+	TypeList          = Type("List")
+	TypeMap           = Type("Map")
+	TypeIndexReadable = Type("IndexReadable")
+	TypeKeyReadable   = Type("KeyReadable")
+	TypeIterable      = Type("Iterable")
+	TypeIterator      = Type("Iterator")
+	TypeMeasurable    = Type("Measurable")
+	TypeComparable    = Type("Comparable")
+	TypeCloneable     = Type("Cloneable")
+	TypeSortable      = Type("Sortable")
+	TypeObservable    = Type("Observable")
 )
 
 func typeRank(value Value) int64 {

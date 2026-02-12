@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"io"
 
 	"github.com/rs/zerolog"
@@ -15,6 +14,8 @@ type (
 		Level  LogLevel
 		Fields map[string]interface{}
 	}
+
+	Logger = zerolog.Logger
 )
 
 const (
@@ -29,6 +30,16 @@ const (
 
 	TraceLevel LogLevel = -1
 )
+
+func NewLogger(opts LogSettings) Logger {
+	c := zerolog.New(opts.Writer).With().Timestamp()
+
+	for k, v := range opts.Fields {
+		c = c.Interface(k, v)
+	}
+
+	return c.Logger().Level(zerolog.Level(opts.Level))
+}
 
 func ParseLogLevel(input string) (LogLevel, error) {
 	lvl, err := zerolog.ParseLevel(input)
@@ -52,30 +63,4 @@ func MustParseLogLevel(input string) LogLevel {
 
 func (l LogLevel) String() string {
 	return zerolog.Level(l).String()
-}
-
-func LoggerWithContext(ctx context.Context, opts LogSettings) context.Context {
-	c := zerolog.New(opts.Writer).With().Timestamp()
-
-	for k, v := range opts.Fields {
-		c = c.Interface(k, v)
-	}
-
-	logger := c.Logger().Level(zerolog.Level(opts.Level))
-
-	return logger.WithContext(ctx)
-}
-
-func LoggerFromContext(ctx context.Context) zerolog.Logger {
-	found := zerolog.Ctx(ctx)
-
-	if found == nil {
-		panic("logger is not set")
-	}
-
-	return *found
-}
-
-func LogWithName(ctx zerolog.Context, name string) zerolog.Context {
-	return ctx.Str("component", name)
 }

@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"io"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
@@ -19,11 +18,11 @@ func NewIterator(src runtime.Iterator) *Iterator {
 	return &Iterator{src, runtime.None, runtime.None}
 }
 
-func (it *Iterator) HasNext(ctx context.Context) (bool, error) {
+func (it *Iterator) HasNext(ctx runtime.Context) (bool, error) {
 	return it.src.HasNext(ctx)
 }
 
-func (it *Iterator) Next(ctx context.Context) error {
+func (it *Iterator) Next(ctx runtime.Context) error {
 	val, key, err := it.src.Next(ctx)
 
 	if err != nil {
@@ -68,6 +67,6 @@ func (it *Iterator) Hash() uint64 {
 	panic("not supported")
 }
 
-func (it *Iterator) Copy() runtime.Value {
+func (it *Iterator) Copy(runtime.Context) (runtime.Value, error) {
 	panic("not supported")
 }

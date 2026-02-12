@@ -86,11 +86,11 @@ func (t Boolean) Hash() uint64 {
 	}
 }
 
-func (t Boolean) Copy() Value {
-	return t
+func (t Boolean) Copy(_ Context) (Value, error) {
+	return t, nil
 }
 
-func (t Boolean) Compare(other Value) int64 {
+func (t Boolean) Compare(_ Context, other Value) int64 {
 	otherBool, ok := other.(Boolean)
 
 	if !ok {

@@ -33,6 +33,6 @@ var Len = base.Assertion{
 			return false, err
 		}
 
-		return runtime.CompareValues(out, size) == 0, nil
+		return runtime.CompareValues(nil, out, size) == 0, nil
 	},
 }

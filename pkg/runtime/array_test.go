@@ -578,7 +578,7 @@ func TestArray(t *testing.T) {
 		//	clone := arr.Clone().(*values.Array)
 		//
 		//	nestedInArr := arr.Get(values.runtime.NewInt(0)).(*values.Array)
-		//	nestedInArr.Add(ctx, values.runtime.NewInt(5))
+		//	nestedInArr.Append(ctx, values.runtime.NewInt(5))
 		//
 		//	nestedInClone := clone.Get(values.runtime.NewInt(0)).(*values.Array)
 		//
@@ -784,7 +784,7 @@ func TestArray(t *testing.T) {
 				So(arr.Compare(copyArr), ShouldEqual, 0)
 
 				// Modifying copy should not affect original
-				copyArr.Add(ctx, runtime.NewInt(42))
+				copyArr.Append(ctx, runtime.NewInt(42))
 
 				arrLength, _ := arr.Length(ctx)
 				copyLength, _ := copyArr.Length(ctx)

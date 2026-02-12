@@ -53,7 +53,7 @@ func TestLast_ArgumentValidation(t *testing.T) {
 			arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2))
 			out, err := arrays.Last(ctx, arr)
 			So(err, ShouldBeNil)
-			So(out.(runtime.Comparable).Compare(runtime.NewInt(2)), ShouldEqual, 0)
+			So(out.(runtime.Comparable).Compare(runtime.NewInt(2), nil), ShouldEqual, 0)
 		})
 	})
 }

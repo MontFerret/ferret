@@ -417,12 +417,12 @@ func TestObject(t *testing.T) {
 
 			nestedInObj, _ := obj.Get(ctx, NewString("arr"))
 			nestedInObjArr := nestedInObj.(*Array)
-			nestedInObjArr.Add(ctx, NewInt(2))
+			nestedInObjArr.Append(ctx, NewInt(2))
 
 			nestedInClone, _ := clone.Get(ctx, NewString("arr"))
 			nestedInCloneArr := nestedInClone.(*Array)
 
-			So(nestedInObjArr.Compare(nestedInCloneArr), ShouldNotEqual, 0)
+			So(nestedInObjArr.Compare(nil, nestedInCloneArr), ShouldNotEqual, 0)
 		})
 	})
 }

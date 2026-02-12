@@ -62,12 +62,12 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 			err.Message = "Unclosed string literal"
 
 			if quote == "'" {
-				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", quote)
+				err.Hint = fmt.Sprintf("Append a matching \"%s\" to close the string.", quote)
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, quote)),
 				}
 			} else {
-				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", quote)
+				err.Hint = fmt.Sprintf("Append a matching '%s' to close the string.", quote)
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, quote)),
 				}
@@ -93,13 +93,13 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 
 			if !isKeyword(offending.PrevAt(2)) {
 				err.Message = "Unclosed computed property expression"
-				err.Hint = "Add a closing ']' to complete the computed property expression."
+				err.Hint = "Append a closing ']' to complete the computed property expression."
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, "missing ']'"),
 				}
 			} else {
 				err.Message = "Unclosed array literal"
-				err.Hint = "Add a closing ']' to complete the array."
+				err.Hint = "Append a closing ']' to complete the array."
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, "missing ']'"),
 				}
@@ -147,7 +147,7 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 			}
 
 			err.Message = "Unclosed object literal"
-			err.Hint = "Add a closing '}' to complete the object."
+			err.Hint = "Append a closing '}' to complete the object."
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing '}'"),
 			}
@@ -211,12 +211,12 @@ func matchLiteralErrors(src *file.Source, err *CompilationError, offending *Toke
 			err.Message = "Unclosed string literal"
 
 			if token == "'" {
-				err.Hint = fmt.Sprintf("Add a matching \"%s\" to close the string.", token)
+				err.Hint = fmt.Sprintf("Append a matching \"%s\" to close the string.", token)
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s \"%s\"", typeOfQuote, token)),
 				}
 			} else {
-				err.Hint = fmt.Sprintf("Add a matching '%s' to close the string.", token)
+				err.Hint = fmt.Sprintf("Append a matching '%s' to close the string.", token)
 				err.Spans = []diagnostics.ErrorSpan{
 					diagnostics.NewMainErrorSpan(span, fmt.Sprintf("missing %s '%s'", typeOfQuote, token)),
 				}

@@ -22,7 +22,7 @@ func NewSorter(direction runtime.SortDirection) Transformer {
 	}
 }
 
-func (s *Sorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
+func (s *Sorter) Iterate(ctx runtime.Context) (runtime.Iterator, error) {
 	if !s.sorted {
 		if err := s.sort(ctx); err != nil {
 			return nil, err
@@ -40,8 +40,8 @@ func (s *Sorter) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return NewKVIterator(iter), nil
 }
 
-func (s *Sorter) Add(ctx context.Context, key, value runtime.Value) error {
-	return s.Value.Add(ctx, NewKV(key, value))
+func (s *Sorter) Set(ctx runtime.Context, key, value runtime.Value) error {
+	return s.Value.Append(ctx, NewKV(key, value))
 }
 
 func (s *Sorter) sort(ctx context.Context) error {
@@ -49,7 +49,7 @@ func (s *Sorter) sort(ctx context.Context) error {
 		firstKV := first.(*KV)
 		secondKV := second.(*KV)
 
-		comp := runtime.CompareValues(firstKV.Key, secondKV.Key)
+		comp := runtime.CompareValues(nil, firstKV.Key, secondKV.Key)
 
 		if s.direction == runtime.SortDirectionAsc {
 			return comp
@@ -59,11 +59,11 @@ func (s *Sorter) sort(ctx context.Context) error {
 	})
 }
 
-func (s *Sorter) Get(_ context.Context, _ runtime.Value) (runtime.Value, error) {
+func (s *Sorter) Get(ctx runtime.Context, key runtime.Value) (runtime.Value, error) {
 	return runtime.None, runtime.ErrNotSupported
 }
 
-func (s *Sorter) Length(ctx context.Context) (runtime.Int, error) {
+func (s *Sorter) Length(ctx runtime.Context) (runtime.Int, error) {
 	return s.Value.Length(ctx)
 }
 

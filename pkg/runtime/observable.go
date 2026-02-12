@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"io"
 )
 
@@ -24,12 +23,12 @@ type (
 	// Stream represents an event stream that produces target event objects.
 	Stream interface {
 		io.Closer
-		Read(ctx context.Context) <-chan Message
+		Read(ctx Context) <-chan Message
 	}
 
 	// Observable represents an interface of
 	// complex types that returns stream of events.
 	Observable interface {
-		Subscribe(ctx context.Context, subscription Subscription) (Stream, error)
+		Subscribe(ctx Context, subscription Subscription) (Stream, error)
 	}
 )

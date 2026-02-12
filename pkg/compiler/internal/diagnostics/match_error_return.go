@@ -45,7 +45,7 @@ func matchMissingReturnValue(src *file.Source, err *CompilationError, offending 
 		}
 
 		err.Message = "Expected a RETURN or FOR clause at end of query"
-		err.Hint = "All queries must return a value. Add a RETURN statement to complete the query."
+		err.Hint = "All queries must return a value. Append a RETURN statement to complete the query."
 
 		return true
 	}

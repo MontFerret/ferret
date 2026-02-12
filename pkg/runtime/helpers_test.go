@@ -87,8 +87,8 @@ func (t *CustomValue) Hash() uint64 {
 	return 0
 }
 
-func (t *CustomValue) Copy() runtime.Value {
-	return runtime.None
+func (t *CustomValue) Copy(runtime.Context) (runtime.Value, error) {
+	return runtime.None, nil
 }
 
 func TestHelpers(t *testing.T) {
@@ -372,7 +372,7 @@ func TestHelpers(t *testing.T) {
 					actual := runtime.ToList(context.Background(), pairs[0])
 					expected := pairs[1]
 
-					So(actual.Compare(expected), ShouldEqual, 0)
+					So(actual.Compare(nil, expected), ShouldEqual, 0)
 				}
 			})
 

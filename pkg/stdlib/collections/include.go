@@ -21,11 +21,11 @@ func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 		result = v.Contains(runtime.NewString(needle.String()))
 	case runtime.List:
 		_, result, err = v.FindOne(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-			return runtime.CompareValues(needle, value) == 0, nil
+			return runtime.CompareValues(nil, needle, value) == 0, nil
 		})
 	case runtime.Map:
 		_, result, err = v.FindOne(ctx, func(c context.Context, value, _ runtime.Value) (runtime.Boolean, error) {
-			return runtime.CompareValues(needle, value) == 0, nil
+			return runtime.CompareValues(nil, needle, value) == 0, nil
 		})
 	case runtime.Iterable:
 		iter, err := v.Iterate(ctx)
@@ -35,7 +35,7 @@ func Includes(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 		}
 
 		err = runtime.ForEachIter(ctx, iter, func(c context.Context, value runtime.Value, key runtime.Value) (runtime.Boolean, error) {
-			if runtime.CompareValues(needle, value) == 0 {
+			if runtime.CompareValues(nil, needle, value) == 0 {
 				result = runtime.True
 
 				return false, nil

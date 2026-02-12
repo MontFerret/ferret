@@ -11,6 +11,7 @@ type (
 		FuncHash  uint64
 		Functions map[int]*CachedFunction
 		Regexps   map[int]*regexp.Regexp
+		Params    map[string]runtime.Value
 	}
 
 	CachedFunction struct {

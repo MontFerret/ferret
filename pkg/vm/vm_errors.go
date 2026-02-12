@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -69,7 +68,7 @@ func (vm *VM) newRuntimeError(kind diagnostics.Kind, message, label, hint, note 
 	}
 }
 
-func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value) error {
+func (vm *VM) checkDivisionByZero(ctx runtime.Context, left, right runtime.Value) error {
 	l := runtime.ToNumberOnly(ctx, left)
 	if _, ok := l.(runtime.Int); !ok {
 		return nil
@@ -82,14 +81,14 @@ func (vm *VM) checkDivisionByZero(ctx context.Context, left, right runtime.Value
 			"Division by zero",
 			"attempt to divide by zero",
 			"Ensure the denominator is non-zero before division",
-			"Add a conditional check before dividing",
+			"Append a conditional check before dividing",
 		)
 	}
 
 	return nil
 }
 
-func (vm *VM) checkModuloByZero(ctx context.Context, right runtime.Value) error {
+func (vm *VM) checkModuloByZero(ctx runtime.Context, right runtime.Value) error {
 	rv, _ := runtime.ToInt(ctx, right)
 	if rv == 0 {
 		return vm.newRuntimeError(
@@ -97,7 +96,7 @@ func (vm *VM) checkModuloByZero(ctx context.Context, right runtime.Value) error 
 			"Modulo by zero",
 			"attempt to take modulo by zero",
 			"Ensure the divisor is non-zero before modulo",
-			"Add a conditional check before modulo",
+			"Append a conditional check before modulo",
 		)
 	}
 

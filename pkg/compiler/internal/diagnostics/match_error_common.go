@@ -111,7 +111,7 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 			}
 
 			err.Message = "Unclosed function call"
-			err.Hint = "Add a closing ')' to complete the function call."
+			err.Hint = "Append a closing ')' to complete the function call."
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing ')'"),
 			}
@@ -127,7 +127,7 @@ func matchCommonErrors(src *file.Source, err *CompilationError, offending *Token
 			span.End++
 
 			err.Message = "Unclosed parenthesized expression"
-			err.Hint = "Add a closing ')' to complete the expression."
+			err.Hint = "Append a closing ')' to complete the expression."
 			err.Spans = []diagnostics.ErrorSpan{
 				diagnostics.NewMainErrorSpan(span, "missing ')'"),
 			}

@@ -6,15 +6,25 @@ import (
 	"github.com/MontFerret/ferret/pkg/runtime"
 )
 
-func WithParams(params map[string]runtime.Value) EnvironmentOption {
+func WithParams(params map[string]any) EnvironmentOption {
 	return func(env *Environment) {
-		env.Params = params
+		if env.Params == nil {
+			env.Params = make(map[string]any)
+		}
+
+		for k, v := range params {
+			env.Params[k] = v
+		}
 	}
 }
 
 func WithParam(name string, value interface{}) EnvironmentOption {
-	return func(options *Environment) {
-		options.Params[name] = runtime.Parse(value)
+	return func(env *Environment) {
+		if env.Params == nil {
+			env.Params = make(map[string]any)
+		}
+
+		env.Params[name] = value
 	}
 }
 

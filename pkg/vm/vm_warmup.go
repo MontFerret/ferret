@@ -5,7 +5,33 @@ import (
 	"github.com/MontFerret/ferret/pkg/vm/internal/mem"
 )
 
-func (vm *VM) warmup(env *Environment) error {
+func (vm *VM) warmup(ctx runtime.Context, env *Environment) error {
+	if err := parseParams(ctx, vm, env); err != nil {
+		return err
+	}
+
+	if err := cacheFunctions(vm, env); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func parseParams(ctx runtime.Context, vm *VM, env *Environment) error {
+	if len(env.Params) == 0 {
+		return nil
+	}
+
+	vm.cache.Params = make(map[string]runtime.Value, len(env.Params))
+
+	for name, val := range env.Params {
+		vm.cache.Params[name] = runtime.Parse(ctx, val)
+	}
+
+	return nil
+}
+
+func cacheFunctions(vm *VM, env *Environment) error {
 	hash := env.Functions.Hash()
 
 	if vm.cache.FuncHash == hash || hash == 0 {

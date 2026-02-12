@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"hash/fnv"
 	"io"
 
@@ -49,19 +48,19 @@ func (b Binary) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (b Binary) Copy() Value {
+func (b Binary) Copy(_ Context) (Value, error) {
 	c := make([]byte, len(b))
 
 	copy(c, b)
 
-	return NewBinary(c)
+	return NewBinary(c), nil
 }
 
-func (b Binary) Length(_ context.Context) (Int, error) {
+func (b Binary) Length(_ Context) (Int, error) {
 	return Int(len(b)), nil
 }
 
-func (b Binary) Compare(other Value) int64 {
+func (b Binary) Compare(_ Context, other Value) int64 {
 	otherBin, ok := other.(Binary)
 
 	if !ok {

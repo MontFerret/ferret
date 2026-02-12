@@ -34,7 +34,7 @@ func TestBoolean(t *testing.T) {
 
 	Convey(".CompareValues", t, func() {
 		Convey("It should return 1 when compared to None", func() {
-			So(True.Compare(None), ShouldEqual, 1)
+			So(True.Compare(nil, None), ShouldEqual, 1)
 		})
 
 		Convey("It should return -1 for all non-boolean values", func() {
@@ -47,22 +47,22 @@ func TestBoolean(t *testing.T) {
 			}
 
 			for _, v := range vals {
-				So(True.Compare(v), ShouldEqual, -1)
-				So(False.Compare(v), ShouldEqual, -1)
+				So(True.Compare(nil, v), ShouldEqual, -1)
+				So(False.Compare(nil, v), ShouldEqual, -1)
 			}
 		})
 
 		Convey("It should return 0 when both are True or False", func() {
-			So(True.Compare(True), ShouldEqual, 0)
-			So(False.Compare(False), ShouldEqual, 0)
+			So(True.Compare(nil, True), ShouldEqual, 0)
+			So(False.Compare(nil, False), ShouldEqual, 0)
 		})
 
 		Convey("It should return 1 when other is false", func() {
-			So(True.Compare(False), ShouldEqual, 1)
+			So(True.Compare(nil, False), ShouldEqual, 1)
 		})
 
 		Convey("It should return -1 when other are true", func() {
-			So(False.Compare(True), ShouldEqual, -1)
+			So(False.Compare(nil, True), ShouldEqual, -1)
 		})
 	})
 

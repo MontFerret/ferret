@@ -1,42 +1,41 @@
 package runtime
 
 import (
-	"context"
 	"io"
 )
 
 type (
 	ValueStorage interface {
-		Set(ctx context.Context, value Value) error
-		Get(ctx context.Context) (Value, error)
+		Set(ctx Context, value Value) error
+		Get(ctx Context) (Value, error)
 	}
 
 	MapStorage interface {
 		Iterable
 		Measurable
-		Keyed
+		KeyReadable
 
-		Set(ctx context.Context, key, value Value) error
+		Set(ctx Context, key, value Value) error
 	}
 
 	ListStorage interface {
 		Iterable
 		Measurable
-		Indexed
+		IndexReadable
 		Sortable
 
-		Add(ctx context.Context, value Value) error
-		AddKV(ctx context.Context, key, value Value) error
+		Add(ctx Context, value Value) error
+		AddKV(ctx Context, key, value Value) error
 	}
 
 	StorageManager interface {
 		io.Closer
-		ValueStorage(ctx context.Context, name String) (ValueStorage, error)
-		ListStorage(ctx context.Context, name String) (ListStorage, error)
-		MapStorage(ctx context.Context, name String) (MapStorage, error)
+		ValueStorage(ctx Context, name String) (ValueStorage, error)
+		ListStorage(ctx Context, name String) (ListStorage, error)
+		MapStorage(ctx Context, name String) (MapStorage, error)
 	}
 
 	StateManagerFactory interface {
-		New(ctx context.Context) (StorageManager, error)
+		New(ctx Context) (StorageManager, error)
 	}
 )

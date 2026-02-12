@@ -63,7 +63,7 @@ func TestKeepKeys(t *testing.T) {
 		resultObj := runtime.NewObjectWith(
 			runtime.NewObjectProperty("a", runtime.NewArrayWith(runtime.Int(0))),
 		)
-		So(runtime.CompareValues(afterKeepKeys, resultObj), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, afterKeepKeys, resultObj), ShouldEqual, 0)
 	})
 }
 
@@ -80,7 +80,7 @@ func TestKeepKeysStrings(t *testing.T) {
 		afterKeepKeys, err := objects.KeepKeys(context.Background(), obj, runtime.NewString("a"))
 
 		So(err, ShouldEqual, nil)
-		So(runtime.CompareValues(afterKeepKeys, resultObj), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, afterKeepKeys, resultObj), ShouldEqual, 0)
 	})
 
 	Convey("KeepKeys key doesn't exists", t, func() {
@@ -184,5 +184,5 @@ func TestKeepKeysArray(t *testing.T) {
 
 func isEqualObjects(obj1 *runtime.Object, obj2 *runtime.Object) bool {
 	// Use the built-in Compare method
-	return runtime.CompareValues(obj1, obj2) == 0
+	return runtime.CompareValues(nil, obj1, obj2) == 0
 }

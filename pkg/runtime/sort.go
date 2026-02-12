@@ -1,16 +1,12 @@
 package runtime
 
-import (
-	"context"
-)
-
 type (
-	SortLess = func(ctx context.Context, a, b Int) (Boolean, error)
-	SortSwap = func(ctx context.Context, a, b Int) error
+	SortLess = func(ctx Context, a, b Int) (Boolean, error)
+	SortSwap = func(ctx Context, a, b Int) error
 )
 
 // sortInsertionSort sorts data[a:b] using insertion Sort.
-func sortInsertionSort(ctx context.Context, less SortLess, swap SortSwap, a, b Int) error {
+func sortInsertionSort(ctx Context, less SortLess, swap SortSwap, a, b Int) error {
 	for i := a + 1; i < b; i++ {
 		for j := i; j > a; j-- {
 			isLess, err := less(ctx, j, j-1)
@@ -32,7 +28,7 @@ func sortInsertionSort(ctx context.Context, less SortLess, swap SortSwap, a, b I
 	return nil
 }
 
-func sortSwapRange(ctx context.Context, swap SortSwap, a, b, n Int) error {
+func sortSwapRange(ctx Context, swap SortSwap, a, b, n Int) error {
 	for i := ZeroInt; i < n; i++ {
 		if err := swap(ctx, a+i, b+i); err != nil {
 			return err
@@ -42,7 +38,7 @@ func sortSwapRange(ctx context.Context, swap SortSwap, a, b, n Int) error {
 	return nil
 }
 
-func stableSort(ctx context.Context, less SortLess, swap SortSwap, n Int) error {
+func stableSort(ctx Context, less SortLess, swap SortSwap, n Int) error {
 	blockSize := Int(20) // must be > 0
 	a, b := ZeroInt, blockSize
 	for b <= n {
@@ -82,7 +78,7 @@ func stableSort(ctx context.Context, less SortLess, swap SortSwap, n Int) error 
 	return nil
 }
 
-func sortSymMerge(ctx context.Context, less SortLess, swap SortSwap, a, m, b Int) error {
+func sortSymMerge(ctx Context, less SortLess, swap SortSwap, a, m, b Int) error {
 	// Avoid unnecessary recursions of symMerge
 	// by direct insertion of data[a] into data[m:b]
 	// if data[a:m] only contains one element.
@@ -200,7 +196,7 @@ func sortSymMerge(ctx context.Context, less SortLess, swap SortSwap, a, m, b Int
 	return nil
 }
 
-func sortRotate(ctx context.Context, swap SortSwap, a, m, b Int) error {
+func sortRotate(ctx Context, swap SortSwap, a, m, b Int) error {
 	i := m - a
 	j := b - m
 

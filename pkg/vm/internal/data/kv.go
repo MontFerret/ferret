@@ -60,9 +60,9 @@ func (p *KV) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (p *KV) Copy() runtime.Value {
+func (p *KV) Copy(runtime.Context) (runtime.Value, error) {
 	return &KV{
 		Key:   p.Key,
 		Value: p.Value,
-	}
+	}, nil
 }

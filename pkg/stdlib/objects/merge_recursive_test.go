@@ -16,21 +16,21 @@ func TestMergeRecursive(t *testing.T) {
 			actual, err := objects.MergeRecursive(context.Background())
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, runtime.None), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, runtime.None), ShouldEqual, 0)
 		})
 
 		Convey("It should error when there is not object arguments", func() {
 			actual, err := objects.MergeRecursive(context.Background(), runtime.NewInt(0))
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, runtime.None), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, runtime.None), ShouldEqual, 0)
 
 			actual, err = objects.MergeRecursive(context.Background(),
 				runtime.NewInt(0), runtime.NewObject(),
 			)
 
 			So(err, ShouldBeError)
-			So(runtime.CompareValues(actual, runtime.None), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, runtime.None), ShouldEqual, 0)
 		})
 	})
 
@@ -45,7 +45,7 @@ func TestMergeRecursive(t *testing.T) {
 		actual, err := objects.MergeRecursive(context.Background(), obj)
 
 		So(err, ShouldBeNil)
-		So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+		So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 	})
 
 	Convey("Merge two objects", t, func() {
@@ -68,7 +68,7 @@ func TestMergeRecursive(t *testing.T) {
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
 
 			So(err, ShouldBeNil)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("When objects with the same key", func() {
@@ -89,7 +89,7 @@ func TestMergeRecursive(t *testing.T) {
 			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
 
 			So(err, ShouldBeNil)
-			So(runtime.CompareValues(actual, expected), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, actual, expected), ShouldEqual, 0)
 		})
 
 		Convey("Merge two objects with the same keys and nested objects", func() {
@@ -116,7 +116,7 @@ func TestMergeRecursive(t *testing.T) {
 
 			// Check simple property - should be overwritten by later value
 			simpleVal, _ := actualObj.Get(context.Background(), runtime.NewString("simple"))
-			So(runtime.CompareValues(simpleVal, runtime.NewString("value2")), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, simpleVal, runtime.NewString("value2")), ShouldEqual, 0)
 
 			// Check nested object was merged recursively
 			nestedVal, _ := actualObj.Get(context.Background(), runtime.NewString("nested"))
@@ -124,10 +124,10 @@ func TestMergeRecursive(t *testing.T) {
 
 			// Should have both x and y
 			xVal, _ := nestedObj.Get(context.Background(), runtime.NewString("x"))
-			So(runtime.CompareValues(xVal, runtime.NewInt(1)), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, xVal, runtime.NewInt(1)), ShouldEqual, 0)
 
 			yVal, _ := nestedObj.Get(context.Background(), runtime.NewString("y"))
-			So(runtime.CompareValues(yVal, runtime.NewInt(2)), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, yVal, runtime.NewInt(2)), ShouldEqual, 0)
 		})
 
 		Convey("When there are nested arrays", func() {
@@ -154,8 +154,8 @@ func TestMergeRecursive(t *testing.T) {
 
 			val0, _ := arrResult.Get(context.Background(), runtime.NewInt(0))
 			val1, _ := arrResult.Get(context.Background(), runtime.NewInt(1))
-			So(runtime.CompareValues(val0, runtime.NewInt(3)), ShouldEqual, 0)
-			So(runtime.CompareValues(val1, runtime.NewInt(4)), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, val0, runtime.NewInt(3)), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, val1, runtime.NewInt(4)), ShouldEqual, 0)
 		})
 
 		Convey("When there are nested objects (example from ArangoDB doc)", func() {
@@ -205,21 +205,21 @@ func TestMergeRecursive(t *testing.T) {
 
 			// Should have name from obj1
 			nameVal, _ := userObj.Get(context.Background(), runtime.NewString("name"))
-			So(runtime.CompareValues(nameVal, runtime.NewString("Jane")), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, nameVal, runtime.NewString("Jane")), ShouldEqual, 0)
 
 			// Should have age from obj2
 			ageVal, _ := userObj.Get(context.Background(), runtime.NewString("age"))
-			So(runtime.CompareValues(ageVal, runtime.NewInt(42)), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, ageVal, runtime.NewInt(42)), ShouldEqual, 0)
 
 			// Should have nested livesIn object with both city and state
 			livesInVal, _ := userObj.Get(context.Background(), runtime.NewString("livesIn"))
 			livesInObj := livesInVal.(*runtime.Object)
 
 			cityVal, _ := livesInObj.Get(context.Background(), runtime.NewString("city"))
-			So(runtime.CompareValues(cityVal, runtime.NewString("LA")), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, cityVal, runtime.NewString("LA")), ShouldEqual, 0)
 
 			stateVal, _ := livesInObj.Get(context.Background(), runtime.NewString("state"))
-			So(runtime.CompareValues(stateVal, runtime.NewString("CA")), ShouldEqual, 0)
+			So(runtime.CompareValues(nil, stateVal, runtime.NewString("CA")), ShouldEqual, 0)
 		})
 	})
 

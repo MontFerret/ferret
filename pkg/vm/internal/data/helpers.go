@@ -33,7 +33,7 @@ func Sleep(ctx context.Context, duration runtime.Int) error {
 }
 
 // Stringify converts a Value to a String. If the input is an Iterable, it concatenates
-func Stringify(ctx context.Context, input runtime.Value) (string, error) {
+func Stringify(ctx runtime.Context, input runtime.Value) (string, error) {
 	if input == nil {
 		return "", nil
 	}
@@ -44,7 +44,7 @@ func Stringify(ctx context.Context, input runtime.Value) (string, error) {
 
 		defer b.Reset()
 
-		err := runtime.ForEach(ctx, val, func(ctx context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+		err := runtime.ForEach(ctx, val, func(ctx runtime.Context, value, key runtime.Value) (runtime.Boolean, error) {
 			keyStr, err := Stringify(ctx, key)
 
 			if err != nil {

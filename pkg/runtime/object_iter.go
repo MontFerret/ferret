@@ -1,9 +1,5 @@
 package runtime
 
-import (
-	"context"
-)
-
 type ObjectIterator struct {
 	keys []string
 	data map[string]Value
@@ -23,11 +19,11 @@ func NewObjectIterator(obj *Object) Iterator {
 	return iter
 }
 
-func (iter *ObjectIterator) HasNext(_ context.Context) (bool, error) {
+func (iter *ObjectIterator) HasNext(_ Context) (bool, error) {
 	return len(iter.keys) > iter.pos, nil
 }
 
-func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
+func (iter *ObjectIterator) Next(_ Context) (Value, Value, error) {
 	if iter.pos >= len(iter.keys) {
 		return None, None, Error(ErrInvalidOperation, "no more elements")
 	}

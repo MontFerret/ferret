@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -87,11 +86,11 @@ func (s String) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (s String) Copy() Value {
-	return s
+func (s String) Copy(Context) (Value, error) {
+	return s, nil
 }
 
-func (s String) Compare(other Value) int64 {
+func (s String) Compare(ctx Context, other Value) int64 {
 	otherString, ok := other.(String)
 
 	if !ok {
@@ -101,7 +100,7 @@ func (s String) Compare(other Value) int64 {
 	return int64(strings.Compare(string(s), otherString.Unwrap().(string)))
 }
 
-func (s String) Length(_ context.Context) (Int, error) {
+func (s String) Length(_ Context) (Int, error) {
 	return Int(len([]rune(s))), nil
 }
 

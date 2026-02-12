@@ -1,5 +1,7 @@
 package data
 
+import "github.com/MontFerret/ferret/pkg/runtime"
+
 type CollectorType int
 
 const (
@@ -9,16 +11,16 @@ const (
 	CollectorTypeKeyGroup
 )
 
-func NewCollector(typ CollectorType) Transformer {
+func NewCollector(typ CollectorType, alloc runtime.Allocator) Transformer {
 	switch typ {
 	case CollectorTypeCounter:
-		return NewCounterCollector()
+		return NewCounterCollector(alloc)
 	case CollectorTypeKey:
-		return NewKeyCollector()
+		return NewKeyCollector(alloc)
 	case CollectorTypeKeyCounter:
-		return NewKeyCounterCollector()
+		return NewKeyCounterCollector(alloc)
 	case CollectorTypeKeyGroup:
-		return NewKeyGroupCollector()
+		return NewKeyGroupCollector(alloc)
 	default:
 		panic("unknown collector type")
 	}

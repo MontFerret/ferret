@@ -1,7 +1,6 @@
 package runtime_test
 
 import (
-	c "context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -35,7 +34,7 @@ func TestString(t *testing.T) {
 	Convey(".Length", t, func() {
 		Convey("Should return unicode length", func() {
 			str := runtime.NewString("Спутник")
-			size, err := str.Length(c.Background())
+			size, err := str.Length(nil)
 
 			So(err, ShouldBeNil)
 			So(size, ShouldEqual, 7)
