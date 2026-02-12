@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/pkg/asm"
 	"github.com/MontFerret/ferret/pkg/file"
 
 	"github.com/MontFerret/ferret/pkg/compiler"
@@ -25,6 +26,11 @@ func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opt
 	ctx := context.Background()
 	instance := vm.New(prog)
 	env := vm.NewEnvironment(opts)
+
+	println("Query:")
+	println(expression)
+	println("Bytecode:")
+	println(asm.Disassemble(prog))
 
 	b.ResetTimer()
 

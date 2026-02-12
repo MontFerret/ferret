@@ -11,18 +11,33 @@ import (
 )
 
 type VM struct {
-	registers *mem.RegisterFile
-	cache     *mem.Cache
-	env       *Environment
-	program   *Program
-	pc        int
+	registers               *mem.RegisterFile
+	cache                   *mem.Cache
+	env                     *Environment
+	program                 *Program
+	fastObjectDictThreshold int
+	bytecode                []Instruction
+	pc                      int
 }
 
 func New(program *Program) *VM {
+	return NewWithOptions(program)
+}
+
+func NewWithOptions(program *Program, opts ...VMOption) *VM {
+	cfg := defaultVMConfig()
+
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	vm := new(VM)
 	vm.program = program
 	vm.registers = mem.NewRegisterFile(program.Registers)
-	vm.cache = mem.NewCache()
+	vm.cache = mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit)
+	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
+	vm.bytecode = make([]Instruction, len(program.Bytecode))
+	copy(vm.bytecode, program.Bytecode)
 
 	return vm
 }
@@ -60,12 +75,13 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 	vm.env = env
 	vm.pc = 0
 
-	bytecode := vm.program.Bytecode
+	bytecode := vm.bytecode
 	constants := vm.program.Constants
 	reg := vm.registers.Values
+	shapeCache := vm.cache.ShapeCache
 loop:
 	for vm.pc < len(bytecode) {
-		inst := bytecode[vm.pc]
+		inst := &bytecode[vm.pc]
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 		vm.pc++
@@ -183,7 +199,7 @@ loop:
 		case OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case OpLoadObject:
-			reg[dst] = runtime.NewObjectOf(int(src1))
+			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
 			arg := reg[src2]
@@ -193,12 +209,50 @@ loop:
 				return nil, err
 			}
 
+		case OpLoadIndexConst, OpLoadIndexOptionalConst:
+			src := reg[src1]
+			arg := constants[src2.Constant()]
+			out, err := vm.loadIndex(ctx, src, arg)
+
+			if err := vm.setOrOptional(dst, out, err, op == OpLoadIndexOptionalConst); err != nil {
+				return nil, err
+			}
+
 		case OpLoadKey, OpLoadKeyOptional:
 			src := reg[src1]
 			arg := reg[src2]
-			out, err := vm.loadKey(ctx, src, arg)
+			out, err := vm.loadKeyCached(ctx, vm.pc-1, src, arg)
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptional); err != nil {
+				return nil, err
+			}
+
+		case OpLoadKeyConst, OpLoadKeyOptionalConst:
+			src := reg[src1]
+			arg := constants[src2.Constant()]
+			out, err := vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, arg)
+
+			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptionalConst); err != nil {
+				return nil, err
+			}
+
+		case OpLoadPropertyConst, OpLoadPropertyOptionalConst:
+			src := reg[src1]
+			prop := constants[src2.Constant()]
+
+			var out runtime.Value
+			var err error
+
+			switch getter := prop.(type) {
+			case runtime.String:
+				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, getter)
+			case runtime.Float, runtime.Int:
+				out, err = vm.loadIndex(ctx, src, getter)
+			default:
+				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, runtime.ToString(prop))
+			}
+
+			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptionalConst); err != nil {
 				return nil, err
 			}
 
@@ -211,11 +265,11 @@ loop:
 
 			switch getter := prop.(type) {
 			case runtime.String:
-				out, err = vm.loadKey(ctx, src, getter)
+				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, getter)
 			case runtime.Float, runtime.Int:
 				out, err = vm.loadIndex(ctx, src, getter)
 			default:
-				out, err = vm.loadKey(ctx, src, runtime.ToString(prop))
+				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, runtime.ToString(prop))
 			}
 
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptional); err != nil {
@@ -350,11 +404,27 @@ loop:
 				return nil, err
 			}
 		case OpObjectSet:
-			obj := reg[dst].(*runtime.Object)
+			obj, ok := reg[dst].(*data.FastObject)
 			key := runtime.ToString(reg[src1])
 			value := reg[src2]
 
-			_ = obj.Set(ctx, key, value)
+			if ok {
+				_ = obj.Set(ctx, key, value)
+				break
+			}
+
+			_ = reg[dst].(runtime.Map).Set(ctx, key, value)
+		case OpObjectSetConst:
+			objVal := reg[dst]
+			key := runtime.ToString(constants[src1.Constant()])
+			value := reg[src2]
+
+			if obj, ok := objVal.(*data.FastObject); ok {
+				vm.objectSetConstCached(inst, obj, key, value)
+				break
+			}
+
+			_ = objVal.(runtime.Map).Set(ctx, key, value)
 		case OpIter:
 			input := reg[src1]
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/pkg/parser/fql"
 	"github.com/MontFerret/ferret/pkg/runtime"
 	"github.com/MontFerret/ferret/pkg/vm"
@@ -60,7 +61,7 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
 //
 // Returns:
 //   - An operand representing the compiled string constant
-func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
+func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 	var b strings.Builder
 
 	// Process each child node in the string literal
@@ -112,8 +113,19 @@ func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm
 		}
 	}
 
+	return runtime.NewString(b.String())
+}
+
+// CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
+// It handles escape sequences like \n and \t, and properly extracts the string content without quotes.
+// Parameters:
+//   - ctx: The string literal context from the AST
+//
+// Returns:
+//   - An operand representing the compiled string constant
+func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
 	// Create a runtime string and load it as a constant
-	return loadConstant(c.ctx, runtime.NewString(b.String()))
+	return loadConstant(c.ctx, parseStringLiteral(ctx))
 }
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
@@ -178,6 +190,10 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 		reg = vm.NoopOperand
 	}
 
+	if reg.IsRegister() {
+		c.ctx.Types.Set(reg, core.TypeBool)
+	}
+
 	return reg
 }
 
@@ -192,6 +208,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 	reg := c.ctx.Registers.Allocate()
 	// Emit instruction to load the none value into the register
 	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
+	c.ctx.Types.Set(reg, core.TypeNone)
 
 	return reg
 }
@@ -227,6 +244,7 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 		c.ctx.Emitter.EmitArray(destReg, 0)
 	}
 
+	c.ctx.Types.Set(destReg, core.TypeArray)
 	return destReg
 }
 
@@ -250,34 +268,50 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 
 		// Process each property assignment
 		for i := 0; i < size; i++ {
-			var propOp vm.Operand
-			var valOp vm.Operand
 			pac := assignments[i]
 
 			// Handle different types of property names
 			if prop := pac.PropertyName(); prop != nil {
 				// Regular property name (e.g., { name: value }).
 				// Evaluate value first to shorten the live range of the key register.
-				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
-				propOp = c.CompilePropertyName(prop)
+				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+				if constOp, ok := c.CompilePropertyNameConst(prop); ok {
+					c.ctx.Emitter.EmitObjectSetConst(dst, constOp, valOp)
+				} else {
+					propOp := c.CompilePropertyName(prop)
+					c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
+				}
 			} else if comProp := pac.ComputedPropertyName(); comProp != nil {
 				// Computed property name (e.g., { [expr]: value })
-				propOp = c.CompileComputedPropertyName(comProp)
-				valOp = c.ctx.ExprCompiler.Compile(pac.Expression())
+				if val, ok := literalValueFromExpression(comProp.Expression()); ok {
+					switch val.(type) {
+					case *runtime.Array, *runtime.Object:
+						// Fall back to the generic computed path to preserve side effects.
+					default:
+						valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+						keyConst := c.ctx.Symbols.AddConstant(runtime.ToString(val))
+						c.ctx.Emitter.EmitObjectSetConst(dst, keyConst, valOp)
+						continue
+					}
+				}
+
+				propOp := c.CompileComputedPropertyName(comProp)
+				valOp := c.ctx.ExprCompiler.Compile(pac.Expression())
+				c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 			} else if variable := pac.Variable(); variable != nil {
 				// Shorthand property (e.g., { variable })
 				// Evaluate value first to shorten the live range of the key register.
-				valOp = c.ctx.ExprCompiler.CompileVariable(variable)
-				propOp = loadConstant(c.ctx, runtime.NewString(variable.GetText()))
+				valOp := c.ctx.ExprCompiler.CompileVariable(variable)
+				propOp := c.ctx.Symbols.AddConstant(runtime.NewString(variable.GetText()))
+				c.ctx.Emitter.EmitObjectSetConst(dst, propOp, valOp)
 			}
-
-			c.ctx.Emitter.EmitObjectSet(dst, propOp, valOp)
 		}
 	} else {
 		// Emit instruction to create an empty object
 		c.ctx.Emitter.EmitObject(dst, 0)
 	}
 
+	c.ctx.Types.Set(dst, core.TypeObject)
 	return dst
 }
 
@@ -294,7 +328,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.Operand {
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
-		return c.CompileStringLiteral(str)
+		return loadConstant(c.ctx, parseStringLiteral(str))
 	}
 
 	var name string
@@ -315,6 +349,38 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.O
 
 	// Create a runtime string from the property name and load it as a constant
 	return loadConstant(c.ctx, runtime.NewString(name))
+}
+
+// CompilePropertyNameConst compiles a property name into a constant operand without emitting instructions.
+// It returns (operand, true) when a constant can be produced, otherwise (NoopOperand, false).
+func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext) (vm.Operand, bool) {
+	if ctx == nil {
+		return vm.NoopOperand, false
+	}
+
+	// Handle string literal property names (e.g., { "property": value })
+	if str := ctx.StringLiteral(); str != nil {
+		value := parseStringLiteral(str)
+		return c.ctx.Symbols.AddConstant(value), true
+	}
+
+	var name string
+
+	// Handle different types of identifier property names
+	if id := ctx.Identifier(); id != nil {
+		// Regular identifier (e.g., { property: value })
+		name = id.GetText()
+	} else if word := ctx.SafeReservedWord(); word != nil {
+		// Safe reserved word (e.g., { return: value })
+		name = word.GetText()
+	} else if word := ctx.UnsafeReservedWord(); word != nil {
+		// Unsafe reserved word (e.g., { for: value })
+		name = word.GetText()
+	} else {
+		return vm.NoopOperand, false
+	}
+
+	return c.ctx.Symbols.AddConstant(runtime.NewString(name)), true
 }
 
 // CompileComputedPropertyName processes a computed property name from an object literal in the FQL AST.

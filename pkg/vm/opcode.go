@@ -23,12 +23,18 @@ const (
 	OpLoadRange  // Create a range
 
 	// Collection Access Operations
-	OpLoadIndex            // Load a value from a list to a register
-	OpLoadIndexOptional    // Load a value from a list to a register, if it exists
-	OpLoadKey              // Load a value from a map to a register
-	OpLoadKeyOptional      // Load a value from a map to a register, if it exists
-	OpLoadProperty         // Load a property from an object to a register
-	OpLoadPropertyOptional // Load a property from an object to a register, if it exists
+	OpLoadIndex            // Load a value from a built-in Array to a register
+	OpLoadIndexOptional    // Load a value from a built-in Array to a register, if it exists
+	OpLoadKey              // Load a value from a built-in Object to a register
+	OpLoadKeyOptional      // Load a value from a built-in Object to a register, if it exists
+	OpLoadProperty         // Load a property from a map or list to a register
+	OpLoadPropertyOptional // Load a property from a map or list to a register, if it exists
+	OpLoadIndexConst       // Load a value from a built-in Array to a register using a constant index
+	OpLoadIndexOptionalConst
+	OpLoadKeyConst // Load a value from a built-in Object to a register using a constant key
+	OpLoadKeyOptionalConst
+	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
+	OpLoadPropertyOptionalConst
 
 	// Arithmetic Operations
 	OpAdd
@@ -108,10 +114,11 @@ const (
 	OpDataSetCollector
 	OpDataSetSorter
 	OpDataSetMultiSorter
-	OpPush      // Adds a value to a generic List
-	OpPushKV    // Adds a key-value pair to a dataset
-	OpArrayPush // Adds a value to a built-in Array instance
-	OpObjectSet // Sets a property on a built-in Object instance
+	OpPush           // Adds a value to a generic List
+	OpPushKV         // Adds a key-value pair to a dataset
+	OpArrayPush      // Adds a value to a built-in Array instance
+	OpObjectSet      // Sets a property on a built-in Object instance
+	OpObjectSetConst // Sets a property on a built-in Object instance using a constant key
 
 	// Stream Operations
 	OpStream     // Subscribes to a stream
@@ -159,10 +166,22 @@ func (op Opcode) String() string {
 		return "LOADI"
 	case OpLoadIndexOptional:
 		return "LOADIO"
+	case OpLoadIndexConst:
+		return "LOADIC"
+	case OpLoadIndexOptionalConst:
+		return "LOADIOC"
 	case OpLoadKey:
 		return "LOADK"
 	case OpLoadKeyOptional:
 		return "LOADKO"
+	case OpLoadKeyConst:
+		return "LOADKC"
+	case OpLoadKeyOptionalConst:
+		return "LOADKOC"
+	case OpLoadPropertyConst:
+		return "LOADPRC"
+	case OpLoadPropertyOptionalConst:
+		return "LOADPROC"
 	case OpLoadProperty:
 		return "LOADPR"
 	case OpLoadPropertyOptional:
@@ -325,6 +344,8 @@ func (op Opcode) String() string {
 		return "PUSHKV"
 	case OpObjectSet:
 		return "OBJSET"
+	case OpObjectSetConst:
+		return "OBJSETC"
 
 	// Stream Operations
 	case OpStream:

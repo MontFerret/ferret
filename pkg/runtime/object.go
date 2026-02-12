@@ -46,6 +46,8 @@ func (t *Object) Type() string {
 	return "object"
 }
 
+func (t *Object) ObjectLike() {}
+
 func (t *Object) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(t.data, jettison.NoHTMLEscaping())
 }

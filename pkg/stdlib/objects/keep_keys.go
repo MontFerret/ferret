@@ -38,7 +38,7 @@ func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error)
 		return runtime.None, err
 	}
 
-	obj := args[0].(*runtime.Object)
+	obj := args[0].(runtime.Map)
 	resultObj := runtime.NewObject()
 
 	var key runtime.String

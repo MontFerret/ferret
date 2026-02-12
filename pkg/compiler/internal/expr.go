@@ -493,24 +493,73 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 
 	for _, segment := range segments {
 		var src2 vm.Operand
+		var constOperand bool
 		p := segment.(*fql.MemberExpressionPathContext)
+		srcType := operandType(c.ctx, src1)
 
 		if pn := p.PropertyName(); pn != nil {
-			src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
+			if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+				src2 = constOp
+				constOperand = true
+			} else {
+				src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
+			}
 		} else if cpn := p.ComputedPropertyName(); cpn != nil {
-			src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
+			if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+				src2 = c.ctx.Symbols.AddConstant(val)
+				constOperand = true
+			} else {
+				src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
+			}
 		}
 
 		dst = c.ctx.Registers.Allocate()
 
 		span := diagnostics.SpanFromRuleContext(p)
 		c.ctx.Emitter.WithSpan(span, func() {
-			// TODO: Replace with EmitLoadKey
-			if p.ErrorOperator() != nil {
-				c.ctx.Emitter.EmitLoadPropertyOptional(dst, src1, src2)
-			} else {
-				c.ctx.Emitter.EmitLoadProperty(dst, src1, src2)
+			optional := p.ErrorOperator() != nil
+			var op vm.Opcode
+
+			switch srcType {
+			case core.TypeArray:
+				if constOperand {
+					if optional {
+						op = vm.OpLoadIndexOptionalConst
+					} else {
+						op = vm.OpLoadIndexConst
+					}
+				} else if optional {
+					op = vm.OpLoadIndexOptional
+				} else {
+					op = vm.OpLoadIndex
+				}
+			case core.TypeObject:
+				if constOperand {
+					if optional {
+						op = vm.OpLoadKeyOptionalConst
+					} else {
+						op = vm.OpLoadKeyConst
+					}
+				} else if optional {
+					op = vm.OpLoadKeyOptional
+				} else {
+					op = vm.OpLoadKey
+				}
+			default:
+				if constOperand {
+					if optional {
+						op = vm.OpLoadPropertyOptionalConst
+					} else {
+						op = vm.OpLoadPropertyConst
+					}
+				} else if optional {
+					op = vm.OpLoadPropertyOptional
+				} else {
+					op = vm.OpLoadProperty
+				}
 			}
+
+			c.ctx.Emitter.EmitABC(op, dst, src1, src2)
 		})
 
 		src1 = dst
@@ -567,6 +616,7 @@ func (c *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
 	name := ctx.Identifier().GetText()
 	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadParam(reg, c.ctx.Symbols.BindParam(name))
+	c.ctx.Types.Set(reg, core.TypeAny)
 
 	return reg
 }
@@ -722,6 +772,7 @@ func (c *ExprCompiler) compileUserFunctionCallWith(name runtime.String, protecte
 		c.ctx.Emitter.EmitAs(protectedOpcode, dest, seq)
 	}
 
+	c.ctx.Types.Set(dest, core.TypeAny)
 	return dest
 }
 
@@ -758,6 +809,7 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 			// The reason we move is that the argument list must be a contiguous sequence of registers
 			// Otherwise, we cannot compileInitialization neither a list nor an object literal with arguments
 			c.ctx.Emitter.EmitMove(seq[i], srcReg)
+			c.ctx.Types.Set(seq[i], operandType(c.ctx, srcReg))
 		}
 	}
 
@@ -784,6 +836,7 @@ func (c *ExprCompiler) CompileRangeOperator(ctx fql.IRangeOperatorContext) vm.Op
 		c.ctx.Emitter.EmitRange(dst, start, end)
 	})
 
+	c.ctx.Types.Set(dst, core.TypeList)
 	return dst
 }
 

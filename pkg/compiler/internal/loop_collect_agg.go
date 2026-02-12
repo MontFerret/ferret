@@ -255,10 +255,12 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	// If there are no records in the aggregator, load NONE values for all variables
 	for _, varReg := range selectorVarRegs {
 		c.ctx.Emitter.EmitA(vm.OpLoadNone, varReg)
+		c.ctx.Types.Set(varReg, core.TypeNone)
 	}
 
 	if projVar != vm.NoopOperand {
 		c.ctx.Emitter.EmitA(vm.OpLoadNone, projVar)
+		c.ctx.Types.Set(projVar, core.TypeNone)
 	}
 
 	c.ctx.Emitter.MarkLabel(endLabel)

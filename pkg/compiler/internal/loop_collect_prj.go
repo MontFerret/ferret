@@ -136,16 +136,15 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 		// Process each variable in the filter
 		for i, variable := range variables {
 			varName := variable.GetText()
-			// Load the variable name as a string constant to the key register
-			keyReg := c.ctx.Registers.Allocate()
-			loadConstantTo(c.ctx, runtime.String(varName), keyReg)
+			// Store the variable name as a string constant
+			keyConst := c.ctx.Symbols.AddConstant(runtime.String(varName))
 
 			// Move the variable value to the value register
 			valReg := c.ctx.Registers.Allocate()
 			c.ctx.Emitter.EmitAB(vm.OpMove, valReg, resolved[i])
 
 			// Set the key-value pair in the object
-			c.ctx.Emitter.EmitObjectSet(buildDst, keyReg, valReg)
+			c.ctx.Emitter.EmitObjectSetConst(buildDst, keyConst, valReg)
 		}
 
 		if buildDst != kv.Value {

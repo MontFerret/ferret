@@ -15,11 +15,13 @@ import (
 func loadConstant(ctx *CompilerContext, value runtime.Value) vm.Operand {
 	reg := ctx.Registers.Allocate()
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
+	ctx.Types.Set(reg, valueTypeFromRuntime(value))
 	return reg
 }
 
 func loadConstantTo(ctx *CompilerContext, constant runtime.Value, reg vm.Operand) {
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(constant))
+	ctx.Types.Set(reg, valueTypeFromRuntime(constant))
 }
 
 //func loadIndex(ctx *CompilerContext, dst, arr vm.Operand, idx int) {

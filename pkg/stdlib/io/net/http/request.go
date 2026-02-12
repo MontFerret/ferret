@@ -12,7 +12,7 @@ import (
 type Params struct {
 	Method  runtime.String
 	URL     runtime.String
-	Headers *runtime.Object
+	Headers runtime.Map
 	Body    runtime.Binary
 }
 
@@ -110,7 +110,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 			return Params{}, runtime.Error(err, ".headers")
 		}
 
-		p.Headers = headers.(*runtime.Object)
+		p.Headers = headers.(runtime.Map)
 	}
 
 	body, err := obj.Get(ctx, runtime.String("body"))

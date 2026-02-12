@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/pkg/vm/internal/mem"
 )
 
 func (vm *VM) tryCatch(pos int) (Catch, bool) {
@@ -105,6 +107,193 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 
 	// Fall back to a variadic function call
 	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
+}
+
+func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
+	obj, ok := src.(*data.FastObject)
+
+	if !ok {
+		return vm.loadKey(ctx, src, arg)
+	}
+
+	var key string
+
+	switch v := arg.(type) {
+	case runtime.String:
+		key = string(v)
+	default:
+		key = runtime.ToString(v).String()
+	}
+
+	shapeID := obj.ShapeID()
+	if shapeID != 0 {
+		if pc < 0 || pc >= len(vm.cache.LoadKeyICs) {
+			return vm.loadKey(ctx, src, arg)
+		}
+
+		cache := vm.cache.LoadKeyICs[pc]
+		if cache != nil {
+			if slot, ok := cache.Lookup(shapeID, key); ok {
+				if slot < 0 {
+					return nil, runtime.ErrNotFound
+				}
+				if val, ok := obj.SlotValue(slot); ok {
+					return val, nil
+				}
+
+				return nil, runtime.ErrNotFound
+			}
+		}
+
+		slot, ok := obj.LookupSlot(key)
+
+		if !ok {
+			if cache == nil {
+				cache = mem.NewLoadKeyCache()
+				vm.cache.LoadKeyICs[pc] = cache
+			}
+
+			cache.Add(shapeID, key, -1)
+			return nil, runtime.ErrNotFound
+		}
+
+		val, ok := obj.SlotValue(slot)
+
+		if !ok {
+			return nil, runtime.ErrNotFound
+		}
+
+		if cache == nil {
+			cache = mem.NewLoadKeyCache()
+			vm.cache.LoadKeyICs[pc] = cache
+		}
+
+		cache.Add(shapeID, key, slot)
+
+		return val, nil
+	}
+
+	return vm.loadKey(ctx, src, arg)
+}
+
+func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction, src, arg runtime.Value) (runtime.Value, error) {
+	obj, ok := src.(*data.FastObject)
+
+	if !ok {
+		return vm.loadKey(ctx, src, arg)
+	}
+
+	shapeID := obj.ShapeID()
+
+	if shapeID != 0 {
+		if inst != nil && inst.inlineShapeID == shapeID {
+			if inst.inlineSlot < 0 {
+				return nil, runtime.ErrNotFound
+			}
+			if val, ok := obj.SlotValue(inst.inlineSlot); ok {
+				return val, nil
+			}
+
+			return nil, runtime.ErrNotFound
+		}
+
+		if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
+			return vm.loadKey(ctx, src, arg)
+		}
+
+		cache := vm.cache.LoadKeyConstICs[pc]
+
+		if cache != nil {
+			if slot, ok := cache.Lookup(shapeID); ok {
+				if inst != nil {
+					inst.inlineShapeID = shapeID
+					inst.inlineSlot = slot
+				}
+
+				if slot < 0 {
+					return nil, runtime.ErrNotFound
+				}
+				if val, ok := obj.SlotValue(slot); ok {
+					return val, nil
+				}
+
+				return nil, runtime.ErrNotFound
+			}
+		}
+
+		var key string
+
+		switch v := arg.(type) {
+		case runtime.String:
+			key = string(v)
+		default:
+			key = runtime.ToString(v).String()
+		}
+
+		slot, ok := obj.LookupSlot(key)
+
+		if !ok {
+			if cache == nil {
+				cache = mem.NewLoadKeyConstCache()
+				vm.cache.LoadKeyConstICs[pc] = cache
+			}
+
+			cache.Add(shapeID, -1)
+
+			if inst != nil {
+				inst.inlineShapeID = shapeID
+				inst.inlineSlot = -1
+			}
+
+			return nil, runtime.ErrNotFound
+		}
+
+		val, ok := obj.SlotValue(slot)
+
+		if !ok {
+			return nil, runtime.ErrNotFound
+		}
+
+		if cache == nil {
+			cache = mem.NewLoadKeyConstCache()
+			vm.cache.LoadKeyConstICs[pc] = cache
+		}
+
+		cache.Add(shapeID, slot)
+
+		if inst != nil {
+			inst.inlineShapeID = shapeID
+			inst.inlineSlot = slot
+		}
+
+		return val, nil
+	}
+
+	return vm.loadKey(ctx, src, arg)
+}
+
+func (vm *VM) objectSetConstCached(inst *Instruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
+	if obj == nil {
+		return
+	}
+
+	if inst != nil {
+		shape := obj.Shape()
+
+		if shape != nil && inst.inlineSetShape == shape {
+			if obj.SetSlotWithShape(inst.inlineSetNextShape, inst.inlineSlot, value) {
+				return
+			}
+		}
+	}
+
+	prev, next, slot, ok := obj.SetStringCached(string(key), value)
+
+	if ok && inst != nil {
+		inst.inlineSetShape = prev
+		inst.inlineSetNextShape = next
+		inst.inlineSlot = slot
+	}
 }
 
 func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Value, error) {

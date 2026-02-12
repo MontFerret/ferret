@@ -131,7 +131,7 @@ func AssertItemsOf(ctx context.Context, input Iterable, assertion TypeAssertion)
 }
 
 func AssertObject(input Value) error {
-	_, ok := input.(*Object)
+	_, ok := input.(ObjectLike)
 
 	if !ok {
 		return TypeErrorOf(

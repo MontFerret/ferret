@@ -22,7 +22,7 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 		}
 	}
 
-	merged := runtime.NewObject()
+	var merged runtime.Map = runtime.NewObject()
 
 	for _, arg := range args {
 		out, err := merge(ctx, merged, arg)
@@ -31,7 +31,7 @@ func MergeRecursive(ctx context.Context, args ...runtime.Value) (runtime.Value, 
 			return runtime.None, err
 		}
 
-		merged = out.(*runtime.Object)
+		merged = out.(runtime.Map)
 	}
 
 	return merged.Clone(ctx)
@@ -43,13 +43,13 @@ func merge(ctx context.Context, src, dst runtime.Value) (runtime.Value, error) {
 		return src, nil
 	}
 
-	srcObj, ok := src.(*runtime.Object)
+	srcObj, ok := src.(runtime.Map)
 
 	if !ok {
 		return dst, nil
 	}
 
-	dstObj, ok := dst.(*runtime.Object)
+	dstObj, ok := dst.(runtime.Map)
 
 	if !ok {
 		return src, nil

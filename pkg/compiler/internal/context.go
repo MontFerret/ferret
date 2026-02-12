@@ -12,6 +12,7 @@ type CompilerContext struct {
 	Emitter    *core.Emitter
 	Registers  *core.RegisterAllocator
 	Symbols    *core.SymbolTable
+	Types      *core.TypeTracker
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
 	Errors     *diagnostics.ErrorHandler
@@ -37,6 +38,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 		CatchTable: core.NewCatchStack(),
 	}
 	ctx.Symbols = core.NewSymbolTable(ctx.Registers)
+	ctx.Types = core.NewTypeTracker()
 	ctx.Loops = core.NewLoopTable(ctx.Registers)
 
 	ctx.ExprCompiler = NewExprCompiler(ctx)

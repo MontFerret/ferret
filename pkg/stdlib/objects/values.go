@@ -23,7 +23,7 @@ func Values(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	obj := args[0].(*runtime.Object)
+	obj := args[0].(runtime.Map)
 	vals := runtime.NewArray(0)
 
 	_ = obj.ForEach(ctx, func(c context.Context, val, key runtime.Value) (runtime.Boolean, error) {

@@ -24,7 +24,12 @@ compile:
 	${DIR_E2E}/cli.go
 
 test:
-	go test ${DIR_PKG}/... && go test ${DIR_INTEG}/...
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... && CGO_ENABLED=1 go test -race ${DIR_INTEG}/...
+
+clean:
+	rm -rf ${DIR_BIN}/* && \
+	rm -rf coverage.txt && \
+	go clean -testcache
 
 cover:
 	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \

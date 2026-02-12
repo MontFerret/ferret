@@ -89,7 +89,7 @@ func parseParams(value runtime.Value) (parsedParams, error) {
 		return parsedParams{}, err
 	}
 
-	obj := value.(*runtime.Object)
+	obj := value.(runtime.Map)
 
 	params := defaultParams
 
