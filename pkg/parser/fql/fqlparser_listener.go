@@ -187,6 +187,9 @@ type FqlParserListener interface {
 	// EnterArrayQuestionQuantifierValue is called when entering the arrayQuestionQuantifierValue production.
 	EnterArrayQuestionQuantifierValue(c *ArrayQuestionQuantifierValueContext)
 
+	// EnterArrayApply is called when entering the arrayApply production.
+	EnterArrayApply(c *ArrayApplyContext)
+
 	// EnterInlineExpression is called when entering the inlineExpression production.
 	EnterInlineExpression(c *InlineExpressionContext)
 
@@ -219,6 +222,9 @@ type FqlParserListener interface {
 
 	// EnterExpressionAtom is called when entering the expressionAtom production.
 	EnterExpressionAtom(c *ExpressionAtomContext)
+
+	// EnterQueryLiteral is called when entering the queryLiteral production.
+	EnterQueryLiteral(c *QueryLiteralContext)
 
 	// EnterArrayOperator is called when entering the arrayOperator production.
 	EnterArrayOperator(c *ArrayOperatorContext)
@@ -433,6 +439,9 @@ type FqlParserListener interface {
 	// ExitArrayQuestionQuantifierValue is called when exiting the arrayQuestionQuantifierValue production.
 	ExitArrayQuestionQuantifierValue(c *ArrayQuestionQuantifierValueContext)
 
+	// ExitArrayApply is called when exiting the arrayApply production.
+	ExitArrayApply(c *ArrayApplyContext)
+
 	// ExitInlineExpression is called when exiting the inlineExpression production.
 	ExitInlineExpression(c *InlineExpressionContext)
 
@@ -465,6 +474,9 @@ type FqlParserListener interface {
 
 	// ExitExpressionAtom is called when exiting the expressionAtom production.
 	ExitExpressionAtom(c *ExpressionAtomContext)
+
+	// ExitQueryLiteral is called when exiting the queryLiteral production.
+	ExitQueryLiteral(c *QueryLiteralContext)
 
 	// ExitArrayOperator is called when exiting the arrayOperator production.
 	ExitArrayOperator(c *ArrayOperatorContext)

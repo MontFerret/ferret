@@ -294,6 +294,7 @@ memberExpressionPath
     | arrayContraction
     | arrayExpansion
     | arrayQuestionMark
+    | arrayApply
     ;
 
 arrayExpansion
@@ -320,6 +321,10 @@ arrayQuestionQuantifier
 arrayQuestionQuantifierValue
     : integerLiteral
     | param
+    ;
+
+arrayApply
+    : OpenBracket Param queryLiteral CloseBracket
     ;
 
 inlineExpression
@@ -419,6 +424,10 @@ expressionAtom
     | memberExpression
     | param
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    ;
+
+queryLiteral
+    : Identifier stringLiteral
     ;
 
 arrayOperator

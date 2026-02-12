@@ -187,6 +187,9 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#arrayQuestionQuantifierValue.
 	VisitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#arrayApply.
+	VisitArrayApply(ctx *ArrayApplyContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#inlineExpression.
 	VisitInlineExpression(ctx *InlineExpressionContext) interface{}
 
@@ -219,6 +222,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#expressionAtom.
 	VisitExpressionAtom(ctx *ExpressionAtomContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#queryLiteral.
+	VisitQueryLiteral(ctx *QueryLiteralContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#arrayOperator.
 	VisitArrayOperator(ctx *ArrayOperatorContext) interface{}

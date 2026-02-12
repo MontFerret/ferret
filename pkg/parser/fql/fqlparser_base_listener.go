@@ -384,6 +384,12 @@ func (s *BaseFqlParserListener) EnterArrayQuestionQuantifierValue(ctx *ArrayQues
 func (s *BaseFqlParserListener) ExitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) {
 }
 
+// EnterArrayApply is called when production arrayApply is entered.
+func (s *BaseFqlParserListener) EnterArrayApply(ctx *ArrayApplyContext) {}
+
+// ExitArrayApply is called when production arrayApply is exited.
+func (s *BaseFqlParserListener) ExitArrayApply(ctx *ArrayApplyContext) {}
+
 // EnterInlineExpression is called when production inlineExpression is entered.
 func (s *BaseFqlParserListener) EnterInlineExpression(ctx *InlineExpressionContext) {}
 
@@ -449,6 +455,12 @@ func (s *BaseFqlParserListener) EnterExpressionAtom(ctx *ExpressionAtomContext) 
 
 // ExitExpressionAtom is called when production expressionAtom is exited.
 func (s *BaseFqlParserListener) ExitExpressionAtom(ctx *ExpressionAtomContext) {}
+
+// EnterQueryLiteral is called when production queryLiteral is entered.
+func (s *BaseFqlParserListener) EnterQueryLiteral(ctx *QueryLiteralContext) {}
+
+// ExitQueryLiteral is called when production queryLiteral is exited.
+func (s *BaseFqlParserListener) ExitQueryLiteral(ctx *QueryLiteralContext) {}
 
 // EnterArrayOperator is called when production arrayOperator is entered.
 func (s *BaseFqlParserListener) EnterArrayOperator(ctx *ArrayOperatorContext) {}

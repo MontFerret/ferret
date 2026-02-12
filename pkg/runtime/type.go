@@ -34,6 +34,7 @@ const (
 	TypeArray    = Type("array")
 	TypeObject   = Type("object")
 	TypeBinary   = Type("binary")
+	TypeQuery    = Type("query")
 
 	// Interfaces
 	TypeCollection = Type("collection")
@@ -48,6 +49,7 @@ const (
 	TypeCloneable  = Type("cloneable")
 	TypeSortable   = Type("sortable")
 	TypeObservable = Type("observable")
+	TypeQueryable  = Type("queryable")
 )
 
 func typeRank(value Value) int64 {
@@ -105,6 +107,8 @@ func Reflect(input Value) Type {
 		return TypeMap
 	case Binary:
 		return TypeBinary
+	case Query:
+		return TypeQuery
 	case Iterable:
 		return TypeIterable
 	case Iterator:
@@ -113,6 +117,8 @@ func Reflect(input Value) Type {
 		return TypeMeasurable
 	case Observable:
 		return TypeObservable
+	case Queryable:
+		return TypeQueryable
 	default:
 		t := reflect.TypeOf(input)
 

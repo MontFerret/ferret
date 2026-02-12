@@ -275,6 +275,39 @@ loop:
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptional); err != nil {
 				return nil, err
 			}
+		case OpApplyQuery:
+			src := reg[src1]
+			if src1.IsConstant() {
+				src = constants[src1.Constant()]
+			}
+
+			var arg runtime.Value
+			if src2.IsConstant() {
+				arg = constants[src2.Constant()]
+			} else {
+				arg = reg[src2]
+			}
+
+			query, ok := arg.(runtime.Query)
+			if !ok {
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery)); err != nil {
+					return nil, err
+				}
+				break
+			}
+
+			queryable, ok := src.(runtime.Queryable)
+			if !ok {
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable)); err != nil {
+					return nil, err
+				}
+				break
+			}
+
+			res, err := queryable.ApplyQuery(ctx, query)
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
 
 		case OpCall, OpProtectedCall:
 			out, err := vm.callv(ctx, vm.pc-1, src1, src2)

@@ -247,6 +247,10 @@ func (v *BaseFqlParserVisitor) VisitArrayQuestionQuantifierValue(ctx *ArrayQuest
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitArrayApply(ctx *ArrayApplyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitInlineExpression(ctx *InlineExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -288,6 +292,10 @@ func (v *BaseFqlParserVisitor) VisitPredicate(ctx *PredicateContext) interface{}
 }
 
 func (v *BaseFqlParserVisitor) VisitExpressionAtom(ctx *ExpressionAtomContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitQueryLiteral(ctx *QueryLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -539,6 +540,9 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 		if question := p.ArrayQuestionMark(); question != nil {
 			return c.compileArrayQuestionMark(src, question, segments[idx+1:])
 		}
+		if apply := p.ArrayApply(); apply != nil {
+			return c.compileArrayApply(src, apply, segments[idx+1:])
+		}
 
 		var src2 vm.Operand
 		var constOperand bool
@@ -732,6 +736,52 @@ func (c *ExprCompiler) compileArrayQuestionQuantifierValue(ctx fql.IArrayQuestio
 	}
 
 	return vm.NoopOperand
+}
+
+func (c *ExprCompiler) compileArrayApply(src vm.Operand, apply fql.IArrayApplyContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	if apply == nil {
+		return src
+	}
+
+	query := c.compileQueryLiteral(apply.QueryLiteral())
+	if query == vm.NoopOperand {
+		return vm.NoopOperand
+	}
+
+	dst := c.ctx.Registers.Allocate()
+	span := diagnostics.SpanFromRuleContext(apply)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABC(vm.OpApplyQuery, dst, src, query)
+	})
+
+	if len(tail) > 0 {
+		dst = c.compileMemberExpressionSegments(dst, tail)
+	}
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeAny)
+	}
+
+	return dst
+}
+
+func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
+	kind := ""
+	if ident := ctx.Identifier(); ident != nil {
+		kind = strings.ToLower(ident.GetText())
+	}
+
+	payload := parseStringLiteral(ctx.StringLiteral())
+	query := runtime.Query{
+		Kind:    runtime.NewString(kind),
+		Payload: payload,
+	}
+
+	return c.ctx.Symbols.AddConstant(query)
 }
 
 func (c *ExprCompiler) emitComparison(op vm.Opcode, left, right vm.Operand) vm.Operand {
