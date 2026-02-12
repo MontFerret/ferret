@@ -178,6 +178,15 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#arrayContraction.
 	VisitArrayContraction(ctx *ArrayContractionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#arrayQuestionMark.
+	VisitArrayQuestionMark(ctx *ArrayQuestionMarkContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayQuestionQuantifier.
+	VisitArrayQuestionQuantifier(ctx *ArrayQuestionQuantifierContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayQuestionQuantifierValue.
+	VisitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#inlineExpression.
 	VisitInlineExpression(ctx *InlineExpressionContext) interface{}
 

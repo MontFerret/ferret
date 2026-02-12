@@ -293,6 +293,7 @@ memberExpressionPath
     | (errorOperator Dot)? computedPropertyName
     | arrayContraction
     | arrayExpansion
+    | arrayQuestionMark
     ;
 
 arrayExpansion
@@ -301,6 +302,24 @@ arrayExpansion
 
 arrayContraction
     : OpenBracket stars+=Multi stars+=Multi+ inlineExpression? CloseBracket
+    ;
+
+arrayQuestionMark
+    : OpenBracket QuestionMark (Filter expression | arrayQuestionQuantifier Filter expression)? CloseBracket
+    ;
+
+arrayQuestionQuantifier
+    : Any
+    | All
+    | None
+    | At Least OpenParen arrayQuestionQuantifierValue CloseParen
+    | arrayQuestionQuantifierValue Range arrayQuestionQuantifierValue
+    | arrayQuestionQuantifierValue
+    ;
+
+arrayQuestionQuantifierValue
+    : integerLiteral
+    | param
     ;
 
 inlineExpression
@@ -335,6 +354,8 @@ safeReservedWord
     | With
     | All
     | Any
+    | At
+    | Least
     | Aggregate
     | Event
     | Timeout

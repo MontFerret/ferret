@@ -178,6 +178,15 @@ type FqlParserListener interface {
 	// EnterArrayContraction is called when entering the arrayContraction production.
 	EnterArrayContraction(c *ArrayContractionContext)
 
+	// EnterArrayQuestionMark is called when entering the arrayQuestionMark production.
+	EnterArrayQuestionMark(c *ArrayQuestionMarkContext)
+
+	// EnterArrayQuestionQuantifier is called when entering the arrayQuestionQuantifier production.
+	EnterArrayQuestionQuantifier(c *ArrayQuestionQuantifierContext)
+
+	// EnterArrayQuestionQuantifierValue is called when entering the arrayQuestionQuantifierValue production.
+	EnterArrayQuestionQuantifierValue(c *ArrayQuestionQuantifierValueContext)
+
 	// EnterInlineExpression is called when entering the inlineExpression production.
 	EnterInlineExpression(c *InlineExpressionContext)
 
@@ -414,6 +423,15 @@ type FqlParserListener interface {
 
 	// ExitArrayContraction is called when exiting the arrayContraction production.
 	ExitArrayContraction(c *ArrayContractionContext)
+
+	// ExitArrayQuestionMark is called when exiting the arrayQuestionMark production.
+	ExitArrayQuestionMark(c *ArrayQuestionMarkContext)
+
+	// ExitArrayQuestionQuantifier is called when exiting the arrayQuestionQuantifier production.
+	ExitArrayQuestionQuantifier(c *ArrayQuestionQuantifierContext)
+
+	// ExitArrayQuestionQuantifierValue is called when exiting the arrayQuestionQuantifierValue production.
+	ExitArrayQuestionQuantifierValue(c *ArrayQuestionQuantifierValueContext)
 
 	// ExitInlineExpression is called when exiting the inlineExpression production.
 	ExitInlineExpression(c *InlineExpressionContext)

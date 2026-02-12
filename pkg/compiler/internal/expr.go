@@ -536,6 +536,9 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 		if expansion := p.ArrayExpansion(); expansion != nil {
 			return c.compileArrayExpansion(src, expansion, segments[idx+1:])
 		}
+		if question := p.ArrayQuestionMark(); question != nil {
+			return c.compileArrayQuestionMark(src, question, segments[idx+1:])
+		}
 
 		var src2 vm.Operand
 		var constOperand bool
@@ -610,6 +613,155 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 	}
 
 	return src
+}
+
+func (c *ExprCompiler) compileArrayQuestionMark(src vm.Operand, question fql.IArrayQuestionMarkContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	span := diagnostics.SpanFromRuleContext(question)
+
+	loop := &core.Loop{
+		Kind:     core.ForInLoop,
+		Type:     core.NormalLoop,
+		Distinct: false,
+		Allocate: false,
+		Dst:      vm.NoopOperand,
+		Src:      src,
+	}
+
+	c.ctx.Loops.Push(loop)
+	c.ctx.Symbols.EnterScope()
+
+	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Symbols, core.TypeAny)
+	if loop.Value.IsRegister() {
+		c.ctx.Types.Set(loop.Value, core.TypeAny)
+	}
+
+	count := c.ctx.Registers.Allocate()
+	total := c.ctx.Registers.Allocate()
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitA(vm.OpLoadZero, count)
+		c.ctx.Emitter.EmitA(vm.OpLoadZero, total)
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	})
+
+	// Track total elements
+	c.ctx.Emitter.EmitA(vm.OpIncr, total)
+
+	// Apply optional filter
+	if filter := question.Expression(); filter != nil {
+		cond := c.ctx.ExprCompiler.Compile(filter)
+		label := c.ctx.Loops.Current().ContinueLabel()
+		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
+	}
+
+	// Count matches
+	c.ctx.Emitter.EmitA(vm.OpIncr, count)
+
+	loop.EmitFinalization(c.ctx.Emitter)
+
+	c.ctx.Symbols.ExitScope()
+	c.ctx.Loops.Pop()
+
+	result := c.compileArrayQuestionQuantifier(question, count, total)
+	if len(tail) > 0 {
+		result = c.compileMemberExpressionSegments(result, tail)
+	}
+
+	if result.IsRegister() {
+		c.ctx.Types.Set(result, core.TypeBool)
+	}
+
+	return result
+}
+
+func (c *ExprCompiler) compileArrayQuestionQuantifier(question fql.IArrayQuestionMarkContext, count, total vm.Operand) vm.Operand {
+	quant := question.ArrayQuestionQuantifier()
+	zero := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitA(vm.OpLoadZero, zero)
+
+	if quant == nil || quant.Any() != nil {
+		return c.emitComparison(vm.OpGt, count, zero)
+	}
+
+	if quant.None() != nil {
+		return c.emitComparison(vm.OpEq, count, zero)
+	}
+
+	if quant.All() != nil {
+		return c.emitComparison(vm.OpEq, count, total)
+	}
+
+	values := quant.AllArrayQuestionQuantifierValue()
+	if quant.At() != nil {
+		if len(values) == 0 {
+			return c.emitComparison(vm.OpGt, count, zero)
+		}
+
+		value := c.compileArrayQuestionQuantifierValue(values[0])
+		return c.emitComparison(vm.OpGte, count, value)
+	}
+
+	if quant.Range() != nil && len(values) >= 2 {
+		min := c.compileArrayQuestionQuantifierValue(values[0])
+		max := c.compileArrayQuestionQuantifierValue(values[1])
+
+		left := c.emitComparison(vm.OpGte, count, min)
+		right := c.emitComparison(vm.OpLte, count, max)
+		return c.emitBooleanAnd(left, right)
+	}
+
+	if len(values) > 0 {
+		value := c.compileArrayQuestionQuantifierValue(values[0])
+		return c.emitComparison(vm.OpEq, count, value)
+	}
+
+	return c.emitComparison(vm.OpGt, count, zero)
+}
+
+func (c *ExprCompiler) compileArrayQuestionQuantifierValue(ctx fql.IArrayQuestionQuantifierValueContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
+	if il := ctx.IntegerLiteral(); il != nil {
+		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
+	}
+
+	if pm := ctx.Param(); pm != nil {
+		return c.CompileParam(pm)
+	}
+
+	return vm.NoopOperand
+}
+
+func (c *ExprCompiler) emitComparison(op vm.Opcode, left, right vm.Operand) vm.Operand {
+	dst := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitABC(op, dst, left, right)
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeBool)
+	}
+	return dst
+}
+
+func (c *ExprCompiler) emitBooleanAnd(left, right vm.Operand) vm.Operand {
+	dst := c.ctx.Registers.Allocate()
+	skip := c.ctx.Emitter.NewLabel("and.false")
+	done := c.ctx.Emitter.NewLabel("and.done")
+
+	c.ctx.Emitter.EmitJumpIfFalse(left, skip)
+	c.ctx.Emitter.EmitJumpIfFalse(right, skip)
+	c.ctx.Emitter.EmitAb(vm.OpLoadBool, dst, true)
+	c.ctx.Emitter.EmitJump(done)
+
+	c.ctx.Emitter.MarkLabel(skip)
+	c.ctx.Emitter.EmitAb(vm.OpLoadBool, dst, false)
+	c.ctx.Emitter.MarkLabel(done)
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeBool)
+	}
+
+	return dst
 }
 
 func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {

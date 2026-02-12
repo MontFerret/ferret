@@ -235,6 +235,18 @@ func (v *BaseFqlParserVisitor) VisitArrayContraction(ctx *ArrayContractionContex
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitArrayQuestionMark(ctx *ArrayQuestionMarkContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayQuestionQuantifier(ctx *ArrayQuestionQuantifierContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitInlineExpression(ctx *InlineExpressionContext) interface{} {
 	return v.VisitChildren(ctx)
 }

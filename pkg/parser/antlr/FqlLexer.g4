@@ -65,6 +65,8 @@ None: 'NONE';
 Null: 'NULL';
 BooleanLiteral: 'TRUE' | 'true' | 'FALSE' | 'false';
 Use: 'USE';
+At: 'AT';
+Least: 'LEAST';
 
 // Group operators
 Into: 'INTO';
