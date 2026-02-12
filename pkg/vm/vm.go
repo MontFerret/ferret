@@ -15,7 +15,6 @@ type VM struct {
 	cache                   *mem.Cache
 	env                     *Environment
 	program                 *Program
-	shapeCache              *data.ShapeCache
 	fastObjectDictThreshold int
 	bytecode                []Instruction
 	pc                      int
@@ -27,6 +26,7 @@ func New(program *Program) *VM {
 
 func NewWithOptions(program *Program, opts ...VMOption) *VM {
 	cfg := defaultVMConfig()
+
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -34,11 +34,10 @@ func NewWithOptions(program *Program, opts ...VMOption) *VM {
 	vm := new(VM)
 	vm.program = program
 	vm.registers = mem.NewRegisterFile(program.Registers)
-	vm.cache = mem.NewCache(len(program.Bytecode))
+	vm.cache = mem.NewCache(len(program.Bytecode), cfg.shapeCacheLimit)
+	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
 	vm.bytecode = make([]Instruction, len(program.Bytecode))
 	copy(vm.bytecode, program.Bytecode)
-	vm.shapeCache = data.NewShapeCache(cfg.shapeCacheLimit)
-	vm.fastObjectDictThreshold = cfg.fastObjectDictThreshold
 
 	return vm
 }
@@ -79,6 +78,7 @@ func (vm *VM) Run(ctx context.Context, env *Environment) (result runtime.Value, 
 	bytecode := vm.bytecode
 	constants := vm.program.Constants
 	reg := vm.registers.Values
+	shapeCache := vm.cache.ShapeCache
 loop:
 	for vm.pc < len(bytecode) {
 		inst := &bytecode[vm.pc]
@@ -199,7 +199,7 @@ loop:
 		case OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(vm.shapeCache, vm.fastObjectDictThreshold, int(src1))
+			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
 			arg := reg[src2]

@@ -156,11 +156,12 @@ func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 	c.megamorphic = true
 }
 
-func NewCache(bytecodeLen int) *Cache {
+func NewCache(bytecodeLen, shapeCacheLimit int) *Cache {
 	return &Cache{
 		Functions:       make(map[int]*CachedFunction),
 		Regexps:         make(map[int]*regexp.Regexp),
 		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
 		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
+		ShapeCache:      data.NewShapeCache(shapeCacheLimit),
 	}
 }
