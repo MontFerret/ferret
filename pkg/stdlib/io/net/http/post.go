@@ -4,7 +4,7 @@ import (
 	"context"
 	h "net/http"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // POST makes a POST request.

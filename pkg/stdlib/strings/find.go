@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // FIND_FIRST returns the position of the first occurrence of the string search inside the string text. Positions start at 0.

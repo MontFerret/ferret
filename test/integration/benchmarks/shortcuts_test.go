@@ -3,9 +3,9 @@ package benchmarks_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/compiler"
-	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/MontFerret/ferret/test/integration/base"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
 func RunBenchmarkO0(b *testing.B, expression string, opts ...vm.EnvironmentOption) {

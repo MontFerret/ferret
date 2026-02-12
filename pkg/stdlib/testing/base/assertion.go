@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type AssertionFn func(ctx context.Context, args []runtime.Value) (bool, error)

@@ -3,8 +3,8 @@ package vm_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/vm"
-	"github.com/MontFerret/ferret/test/integration/base"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/integration/base"
 )
 
 func TestForStepNested(t *testing.T) {

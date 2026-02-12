@@ -3,7 +3,7 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // REMOVE_VALUES returns a new array with removed all occurrences of values in a given array.

@@ -3,7 +3,7 @@ package optimization
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestBuildCFG_EmptyProgram(t *testing.T) {

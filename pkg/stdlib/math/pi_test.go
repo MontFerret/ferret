@@ -7,7 +7,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/math"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/math"
 )
 
 func TestPi(t *testing.T) {

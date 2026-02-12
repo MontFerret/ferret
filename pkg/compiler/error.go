@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"github.com/MontFerret/ferret/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 )
 
 type CompilationError = diagnostics.CompilationError

@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // READ reads from a given file.

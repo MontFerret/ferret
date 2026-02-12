@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // TO_DATETIME takes an input value of any type and converts it into the appropriate date time value.

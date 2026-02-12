@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // RegisterLib register `FS` namespace functions.

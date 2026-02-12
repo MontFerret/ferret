@@ -3,7 +3,7 @@ package math
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func variance(ctx context.Context, input runtime.List, sample runtime.Int) (runtime.Float, error) {

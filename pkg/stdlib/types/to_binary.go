@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // ToBinary takes an input value of any type and converts it into a binary value.

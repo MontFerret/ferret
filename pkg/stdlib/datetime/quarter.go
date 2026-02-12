@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // DATE_QUARTER returns which quarter date belongs to.

@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
-	"github.com/MontFerret/ferret/pkg/vm/internal/data"
-	"github.com/MontFerret/ferret/pkg/vm/internal/mem"
-	"github.com/MontFerret/ferret/pkg/vm/internal/operators"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/operators"
 )
 
 type VM struct {

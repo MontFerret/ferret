@@ -1,6 +1,6 @@
 package compiler
 
-import "github.com/MontFerret/ferret/pkg/compiler/internal/optimization"
+import "github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 
 const (
 	// O0 represents no optimization level, where the compiler performs minimal or no optimizations.

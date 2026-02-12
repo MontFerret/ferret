@@ -4,7 +4,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // BASE returns the last component of the path or the path itself if it does not contain any directory separators.

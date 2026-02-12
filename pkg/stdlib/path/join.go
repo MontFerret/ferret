@@ -4,7 +4,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // JOIN joins any number of path elements into a single path, separating them with slashes.

@@ -3,10 +3,10 @@ package testing
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/strings"
-	"github.com/MontFerret/ferret/pkg/stdlib/testing/base"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing/base"
 )
 
 // MATCH asserts that value matches the regular expression.

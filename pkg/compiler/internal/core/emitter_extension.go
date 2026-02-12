@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Emitter Helpers - Common opcode shortcut methods

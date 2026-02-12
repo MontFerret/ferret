@@ -3,7 +3,7 @@ package strings
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // CONCAT concatenates one or more instances of String, or an arrayList.

@@ -6,10 +6,10 @@ package main
 //	"fmt"
 //	"os"
 //
-//	"github.com/MontFerret/ferret/pkg/compiler"
-//	"github.com/MontFerret/ferret/pkg/drivers"
-//	"github.com/MontFerret/ferret/pkg/drivers/cdp"
-//	"github.com/MontFerret/ferret/pkg/drivers/http"
+//	"github.com/MontFerret/ferret/v2/pkg/compiler"
+//	"github.com/MontFerret/ferret/v2/pkg/drivers"
+//	"github.com/MontFerret/ferret/v2/pkg/drivers/cdp"
+//	"github.com/MontFerret/ferret/v2/pkg/drivers/http"
 //)
 //
 //type Topic struct {

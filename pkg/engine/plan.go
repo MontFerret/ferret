@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/MontFerret/ferret/pkg/vm"
+import "github.com/MontFerret/ferret/v2/pkg/vm"
 
 type Plan struct {
 	prog *vm.Program

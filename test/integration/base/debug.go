@@ -3,8 +3,8 @@ package base
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/asm"
-	"github.com/MontFerret/ferret/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/asm"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func PrintDebugInfo(name string, uc TestCase, prog *vm.Program) {

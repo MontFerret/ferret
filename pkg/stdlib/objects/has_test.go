@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
-	"github.com/MontFerret/ferret/pkg/stdlib/objects"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/objects"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

@@ -1,4 +1,4 @@
-module github.com/MontFerret/ferret
+module github.com/MontFerret/ferret/v2
 
 go 1.23
 

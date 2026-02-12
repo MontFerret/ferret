@@ -3,7 +3,7 @@ package base
 import (
 	"fmt"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func FormatValue(val runtime.Value) string {

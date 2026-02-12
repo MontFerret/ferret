@@ -5,7 +5,7 @@ import (
 
 	"github.com/gobwas/glob"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func Like(left, right runtime.Value) (runtime.Boolean, error) {

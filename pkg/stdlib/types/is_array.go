@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // IS_ARRAY checks whether value is an array value.

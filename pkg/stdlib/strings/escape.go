@@ -4,7 +4,7 @@ import (
 	"context"
 	"html"
 
-	"github.com/MontFerret/ferret/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // ESCAPE_HTML escapes special characters like "<" to become "&lt;". It

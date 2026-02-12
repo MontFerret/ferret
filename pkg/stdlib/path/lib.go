@@ -1,6 +1,6 @@
 package path
 
-import "github.com/MontFerret/ferret/pkg/runtime"
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
 // RegisterLib register `PATH` namespace functions.
 // @namespace PATH
