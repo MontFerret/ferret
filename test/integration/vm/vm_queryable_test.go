@@ -211,7 +211,7 @@ func TestQueryable(t *testing.T) {
 
 	RunUseCases(t, []UseCase{
 		Case("RETURN @doc[~ css`.items`]", "ok", "Should apply query literal"),
-		DebugCase("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", "ok", "Should apply query literal with params"),
+		Case("RETURN @doc[~ sql`SELECT * FROM products`({ c: \"laptops\" })]", "ok", "Should apply query literal with params"),
 		Case("RETURN @doc[~ text]", "ok", "Should apply query literal with no string payload"),
 		RuntimeErrorCase("RETURN @val[~ css`x`]", ExpectedRuntimeError{Message: "Invalid type"}),
 	}, vm.WithParams(map[string]runtime.Value{
