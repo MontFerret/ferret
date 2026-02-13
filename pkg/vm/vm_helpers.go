@@ -372,6 +372,78 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	return out, nil
 }
 
+func (vm *VM) loadIndexAndSet(ctx context.Context, dst Operand, src, arg runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	out, err := vm.loadIndex(ctx, src, arg)
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadKeyAndSet(ctx context.Context, dst Operand, pc int, src, arg runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	out, err := vm.loadKeyCached(ctx, pc, src, arg)
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst Operand, pc int, inst *Instruction, src, arg runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadPropertyAndSet(ctx context.Context, dst Operand, pc int, src, prop runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	var out runtime.Value
+	var err error
+
+	switch getter := prop.(type) {
+	case runtime.String:
+		out, err = vm.loadKeyCached(ctx, pc, src, getter)
+	case runtime.Float, runtime.Int:
+		out, err = vm.loadIndex(ctx, src, getter)
+	default:
+		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
+	}
+
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst Operand, pc int, inst *Instruction, src, prop runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	var out runtime.Value
+	var err error
+
+	switch getter := prop.(type) {
+	case runtime.String:
+		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, getter)
+	case runtime.Float, runtime.Int:
+		out, err = vm.loadIndex(ctx, src, getter)
+	default:
+		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
+	}
+
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
 func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {
 	observable, ok := dst.(runtime.Observable)
 
