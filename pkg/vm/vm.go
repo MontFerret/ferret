@@ -277,11 +277,13 @@ loop:
 			}
 		case OpApplyQuery:
 			src := reg[src1]
+
 			if src1.IsConstant() {
 				src = constants[src1.Constant()]
 			}
 
 			var arg runtime.Value
+
 			if src2.IsConstant() {
 				arg = constants[src2.Constant()]
 			} else {
@@ -289,27 +291,34 @@ loop:
 			}
 
 			query, ok := arg.(runtime.Query)
+
 			if !ok {
 				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery)); err != nil {
 					return nil, err
 				}
+
 				break
 			}
 
 			queryable, ok := src.(runtime.Queryable)
+
 			if !ok {
 				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable)); err != nil {
 					return nil, err
 				}
+
 				break
 			}
 
-			res, err := queryable.ApplyQuery(ctx, query)
+			res, err := queryable.Query(ctx, query)
+
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
+
 		case OpMakeQuery:
 			var base runtime.Value
+
 			if src1.IsConstant() {
 				base = constants[src1.Constant()]
 			} else {
@@ -317,6 +326,7 @@ loop:
 			}
 
 			var params runtime.Value
+
 			if src2.IsConstant() {
 				params = constants[src2.Constant()]
 			} else {
@@ -324,10 +334,12 @@ loop:
 			}
 
 			query, ok := base.(runtime.Query)
+
 			if !ok {
 				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(base, runtime.TypeQuery)); err != nil {
 					return nil, err
 				}
+
 				break
 			}
 

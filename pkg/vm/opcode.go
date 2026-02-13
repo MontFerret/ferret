@@ -35,6 +35,8 @@ const (
 	OpLoadKeyOptionalConst
 	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
 	OpLoadPropertyOptionalConst
+
+	// Integrated Query Operations
 	OpApplyQuery // Apply a query to a value
 	OpMakeQuery  // Build a query from a base literal and params
 
@@ -67,6 +69,9 @@ const (
 	OpIn
 	OpLike
 	OpRegexp
+
+	// Array Operations
+	OpFlatten // Flattens nested arrays
 
 	// Array Comparison Operations (do not swap order of EQ, GT, GTE, LT, LTE, IN. it must be equal to operators)
 	OpAnyEq
@@ -133,9 +138,6 @@ const (
 	OpIterKey   // Returns the current key
 	OpIterLimit
 	OpIterSkip
-
-	// Array Operations
-	OpFlatten // Flattens nested arrays
 )
 
 func (op Opcode) String() string {

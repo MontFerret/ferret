@@ -8,12 +8,19 @@ import (
 	"github.com/wI2L/jettison"
 )
 
-// Query represents a query literal used by the operator index.
-type Query struct {
-	Kind    String
-	Payload String
-	Params  Value
-}
+type (
+	// Query represents a query literal used by the operator index.
+	Query struct {
+		Kind    String
+		Payload String
+		Params  Value
+	}
+
+	// Queryable allows values to handle operator index queries.
+	Queryable interface {
+		Query(ctx context.Context, q Query) (Value, error)
+	}
+)
 
 func NewQuery(kind, payload String) Query {
 	return Query{Kind: kind, Payload: payload, Params: None}
@@ -58,9 +65,4 @@ func (q Query) Hash() uint64 {
 
 func (q Query) Copy() Value {
 	return q
-}
-
-// Queryable allows values to handle operator index queries.
-type Queryable interface {
-	ApplyQuery(ctx context.Context, q Query) (Value, error)
 }

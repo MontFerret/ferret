@@ -15,7 +15,7 @@ type testQueryable struct {
 	err     error
 }
 
-func (t *testQueryable) ApplyQuery(_ context.Context, q runtime.Query) (runtime.Value, error) {
+func (t *testQueryable) Query(_ context.Context, q runtime.Query) (runtime.Value, error) {
 	t.queries = append(t.queries, q)
 	if t.err != nil {
 		return runtime.None, t.err
@@ -120,7 +120,7 @@ func (n *mockNode) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	return runtime.NewArrayWith(n).Iterate(ctx)
 }
 
-func (n *mockNode) ApplyQuery(_ context.Context, q runtime.Query) (runtime.Value, error) {
+func (n *mockNode) Query(_ context.Context, q runtime.Query) (runtime.Value, error) {
 	switch q.Kind.String() {
 	case "css":
 		switch q.Payload.String() {
@@ -144,7 +144,7 @@ type mockDBQueryable struct {
 	testQueryable
 }
 
-func (m *mockDBQueryable) ApplyQuery(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.Value, error) {
 	m.queries = append(m.queries, q)
 
 	if q.Kind.String() != "sql" {
@@ -178,7 +178,7 @@ type mockJSONQueryable struct {
 	testQueryable
 }
 
-func (m *mockJSONQueryable) ApplyQuery(ctx context.Context, q runtime.Query) (runtime.Value, error) {
+func (m *mockJSONQueryable) Query(ctx context.Context, q runtime.Query) (runtime.Value, error) {
 	m.queries = append(m.queries, q)
 
 	if q.Kind.String() != "jp" {
@@ -206,7 +206,7 @@ func (m *mockJSONQueryable) ApplyQuery(ctx context.Context, q runtime.Query) (ru
 	return orders, nil
 }
 
-func TestApplyQuery(t *testing.T) {
+func TestQueryable(t *testing.T) {
 	queryable := &testQueryable{result: runtime.NewString("ok")}
 
 	RunUseCases(t, []UseCase{

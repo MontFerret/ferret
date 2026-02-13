@@ -300,7 +300,7 @@ func (vm *VM) loadIndex(ctx context.Context, src, arg runtime.Value) (runtime.Va
 	indexed, ok := src.(runtime.IndexReadable)
 
 	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexed)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeIndexReadable)
 	}
 
 	var idx runtime.Int
@@ -327,7 +327,7 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	keyed, ok := src.(runtime.KeyReadable)
 
 	if !ok {
-		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyed)
+		return nil, runtime.TypeErrorOf(src, runtime.TypeKeyReadable)
 	}
 
 	out, err := keyed.Get(ctx, arg)
