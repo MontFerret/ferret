@@ -207,46 +207,47 @@ loop:
 			src := reg[src1]
 			optional := op == OpLoadIndexOptional
 			arg := reg[src2]
+
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadIndexConst, OpLoadIndexOptionalConst:
 			src := reg[src1]
 			optional := op == OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
+
 			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadKey, OpLoadKeyOptional:
 			src := reg[src1]
 			optional := op == OpLoadKeyOptional
 			arg := reg[src2]
+
 			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadKeyConst, OpLoadKeyOptionalConst:
 			src := reg[src1]
 			optional := op == OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
+
 			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadPropertyConst, OpLoadPropertyOptionalConst:
 			src := reg[src1]
 			optional := op == OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
+
 			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadProperty, OpLoadPropertyOptional:
 			src := reg[src1]
 			optional := op == OpLoadPropertyOptional
 			prop := reg[src2]
+
 			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
 				return nil, err
 			}
@@ -364,49 +365,42 @@ loop:
 			if err := vm.setOrTryCatch(dst, res, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall, OpProtectedCall:
 			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall0, OpProtectedCall0:
 			out, err := vm.call0(ctx, vm.pc-1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall1, OpProtectedCall1:
 			out, err := vm.call1(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall2, OpProtectedCall2:
 			out, err := vm.call2(ctx, vm.pc-1, src1, src2)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall3, OpProtectedCall3:
 			out, err := vm.call3(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall4, OpProtectedCall4:
 			out, err := vm.call4(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpExists:
 			val := reg[src1]
 			if val == runtime.None {
@@ -420,12 +414,15 @@ loop:
 				if err != nil {
 					if _, catch := vm.tryCatch(vm.pc); catch {
 						reg[dst] = runtime.False
+
 						continue
 					}
+
 					return nil, err
 				}
 
 				reg[dst] = runtime.NewBoolean(length != 0)
+
 				continue
 			}
 
