@@ -154,50 +154,53 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 		}
 	}
 
+	predExpr := predicate.Expression()
+	if predExpr == nil {
+		return vm.NoopOperand
+	}
+
 	timeoutReg := c.compileDurationClause(ctx.TimeoutClause())
 	everyReg := c.compileDurationClause(ctx.EveryClause())
 	backoff := c.compileBackoffClause(ctx.BackoffClause())
 
-	if predExpr := predicate.Expression(); predExpr != nil {
-		switch mode {
-		case waitForPredicateModeBool:
-			if truth, ok := literalTruthinessFromExpression(predExpr); ok {
-				if truth {
-					resultReg := c.ctx.Registers.Allocate()
-					c.ctx.Emitter.EmitBoolean(resultReg, true)
-					return resultReg
-				}
-				if timeoutReg != vm.NoopOperand {
-					c.ctx.Emitter.EmitA(vm.OpSleep, timeoutReg)
-					resultReg := c.ctx.Registers.Allocate()
-					c.ctx.Emitter.EmitBoolean(resultReg, false)
-					return resultReg
-				}
+	switch mode {
+	case waitForPredicateModeBool:
+		if truth, ok := literalTruthinessFromExpression(predExpr); ok {
+			if truth {
+				resultReg := c.ctx.Registers.Allocate()
+				c.ctx.Emitter.EmitBoolean(resultReg, true)
+				return resultReg
 			}
-		default:
-			if exists, ok := literalExistsFromExpression(predExpr); ok {
-				cond := exists
-				if mode == waitForPredicateModeNotExists {
-					cond = !exists
+			if timeoutReg != vm.NoopOperand {
+				c.ctx.Emitter.EmitA(vm.OpSleep, timeoutReg)
+				resultReg := c.ctx.Registers.Allocate()
+				c.ctx.Emitter.EmitBoolean(resultReg, false)
+				return resultReg
+			}
+		}
+	default:
+		if exists, ok := literalExistsFromExpression(predExpr); ok {
+			cond := exists
+			if mode == waitForPredicateModeNotExists {
+				cond = !exists
+			}
+			if cond {
+				if mode == waitForPredicateModeValue {
+					return c.ctx.ExprCompiler.Compile(predExpr)
 				}
-				if cond {
-					if mode == waitForPredicateModeValue {
-						return c.ctx.ExprCompiler.Compile(predExpr)
-					}
-					resultReg := c.ctx.Registers.Allocate()
-					c.ctx.Emitter.EmitBoolean(resultReg, true)
-					return resultReg
+				resultReg := c.ctx.Registers.Allocate()
+				c.ctx.Emitter.EmitBoolean(resultReg, true)
+				return resultReg
+			}
+			if timeoutReg != vm.NoopOperand {
+				c.ctx.Emitter.EmitA(vm.OpSleep, timeoutReg)
+				resultReg := c.ctx.Registers.Allocate()
+				if mode == waitForPredicateModeValue {
+					c.ctx.Emitter.EmitLoadNone(resultReg)
+				} else {
+					c.ctx.Emitter.EmitBoolean(resultReg, false)
 				}
-				if timeoutReg != vm.NoopOperand {
-					c.ctx.Emitter.EmitA(vm.OpSleep, timeoutReg)
-					resultReg := c.ctx.Registers.Allocate()
-					if mode == waitForPredicateModeValue {
-						c.ctx.Emitter.EmitLoadNone(resultReg)
-					} else {
-						c.ctx.Emitter.EmitBoolean(resultReg, false)
-					}
-					return resultReg
-				}
+				return resultReg
 			}
 		}
 	}
@@ -238,7 +241,7 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 
 	c.ctx.Emitter.MarkLabel(start)
 
-	valueReg := c.ctx.ExprCompiler.Compile(predicate.Expression())
+	valueReg := c.ctx.ExprCompiler.Compile(predExpr)
 
 	var condReg vm.Operand
 	switch mode {
