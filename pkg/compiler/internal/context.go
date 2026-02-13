@@ -16,6 +16,7 @@ type CompilerContext struct {
 	Loops      *core.LoopTable
 	CatchTable *core.CatchStack
 	Errors     *diagnostics.ErrorHandler
+	UseAliases map[string]string
 
 	ExprCompiler        *ExprCompiler
 	LiteralCompiler     *LiteralCompiler
@@ -36,6 +37,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 		Symbols:    nil, // set later
 		Loops:      nil, // set later
 		CatchTable: core.NewCatchStack(),
+		UseAliases: make(map[string]string),
 	}
 	ctx.Symbols = core.NewSymbolTable(ctx.Registers)
 	ctx.Types = core.NewTypeTracker()

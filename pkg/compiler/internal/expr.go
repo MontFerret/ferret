@@ -85,8 +85,6 @@ func (c *ExprCompiler) CompileIncDec(token antlr.Token, target vm.Operand) vm.Op
 	return target
 }
 
-// TODO: Free temporary registers if needed
-
 // compileUnary processes a unary operation (NOT, minus, plus) from the FQL AST.
 // It compiles the operand expression and applies the appropriate unary operation to it.
 // Parameters:
@@ -118,8 +116,6 @@ func (c *ExprCompiler) compileUnary(ctx fql.IUnaryOperatorContext, parent fql.IE
 
 	return dst
 }
-
-// TODO: Free temporary registers if needed
 
 // compileLogicalAnd processes a logical AND operation from the FQL AST.
 // It implements short-circuit evaluation: if the left operand is falsy, it returns that value
@@ -153,8 +149,6 @@ func (c *ExprCompiler) compileLogicalAnd(ctx fql.IExpressionContext) vm.Operand 
 	return dst
 }
 
-// TODO: Free temporary registers if needed
-
 // compileLogicalOr processes a logical OR operation from the FQL AST.
 // It implements short-circuit evaluation: if the left operand is truthy, it returns that value
 // without evaluating the right operand. Otherwise, it evaluates and returns the right operand.
@@ -187,8 +181,6 @@ func (c *ExprCompiler) compileLogicalOr(ctx fql.IExpressionContext) vm.Operand {
 
 	return dst
 }
-
-// TODO: Free temporary registers if needed
 
 // compileTernary processes a ternary conditional operation (condition ? trueExpr : falseExpr) from the FQL AST.
 // It evaluates the condition and then either the true expression or the false expression based on the result.
@@ -235,8 +227,6 @@ func (c *ExprCompiler) compileTernary(ctx fql.IExpressionContext) vm.Operand {
 
 	return dst
 }
-
-// TODO: Free temporary registers if needed
 
 // compilePredicate processes a predicate expression from the FQL AST.
 // It handles both atomic expressions and comparison operations (equality, array operations, IN, LIKE).
@@ -351,8 +341,6 @@ func (c *ExprCompiler) compilePredicate(ctx fql.IPredicateContext) vm.Operand {
 
 	return dest
 }
-
-// TODO: Free temporary registers if needed
 
 // compileAtom processes an atomic expression from the FQL AST.
 // It handles various types of expressions including arithmetic operations (*, /, %, +, -),
@@ -1218,17 +1206,19 @@ func (c *ExprCompiler) CompileFunctionCall(ctx fql.IFunctionCallContext, protect
 // It extracts the function name and delegates to CompileFunctionCallByNameWith.
 // Parameters:
 //   - ctx: The function call context from the AST
-//   - protected: Whether this is a protected call (with TRY)
+//   - protected: Whether this is a protected call
 //   - seq: The pre-compiled function arguments as a sequence of registers
 //
 // Returns:
 //   - An operand representing the function call result
 func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, protected bool, seq core.RegisterSequence) vm.Operand {
-	name := getFunctionName(ctx)
+	name := getFunctionName(ctx, c.ctx.UseAliases)
 	span := file.Span{Start: -1, End: -1}
+
 	if ctx != nil {
 		if fn := ctx.FunctionName(); fn != nil {
 			span = diagnostics.SpanFromRuleContext(fn)
+
 			if ns := ctx.Namespace(); ns != nil && ns.GetStart() != nil {
 				span.Start = ns.GetStart().GetStart()
 			}
@@ -1238,6 +1228,7 @@ func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pro
 	}
 
 	var out vm.Operand
+
 	c.ctx.Emitter.WithSpan(span, func() {
 		out = c.CompileFunctionCallByNameWith(name, protected, seq)
 	})
@@ -1299,7 +1290,7 @@ func (c *ExprCompiler) CompileFunctionCallByNameWith(name runtime.String, protec
 // the call is protected.
 // Parameters:
 //   - name: The function name
-//   - protected: Whether this is a protected call (with TRY)
+//   - protected: Whether this is a protected call
 //   - seq: The pre-compiled function arguments as a sequence of registers
 //
 // Returns:
@@ -1372,7 +1363,6 @@ func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.Re
 			// Compile expression and move to seq register
 			srcReg := c.Compile(exp)
 
-			// TODO: Figure out how to remove OpMove and use Registers returned from each expression
 			// The reason we move is that the argument list must be a contiguous sequence of registers
 			// Otherwise, we cannot compileInitialization neither a list nor an object literal with arguments
 			c.ctx.Emitter.EmitMove(seq[i], srcReg)

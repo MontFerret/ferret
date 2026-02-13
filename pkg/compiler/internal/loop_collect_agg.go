@@ -74,7 +74,7 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 
 		// Get the function name and check if it's a protected call (with TRY)
 		fce := selector.FunctionCallExpression()
-		funcName := getFunctionName(fce.FunctionCall())
+		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
 		isProtected := fce.ErrorOperator() != nil
 
 		// Create an AggregateSelector with all the information needed to process it later
@@ -122,7 +122,7 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 
 		// Get the function name and check if it's a protected call (with TRY)
 		fce := selector.FunctionCallExpression()
-		funcName := getFunctionName(fce.FunctionCall())
+		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
 		isProtected := fce.ErrorOperator() != nil
 
 		// For global aggregation, we don't need to store the register in the selector

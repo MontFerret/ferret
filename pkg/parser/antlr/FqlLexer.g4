@@ -66,6 +66,7 @@ None: 'NONE';
 Null: 'NULL';
 BooleanLiteral: 'TRUE' | 'true' | 'FALSE' | 'false';
 Use: 'USE';
+As: 'AS';
 At: 'AT';
 Least: 'LEAST';
 

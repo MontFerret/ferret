@@ -17,7 +17,7 @@ useExpression
     ;
 
 use
-    : Use namespaceIdentifier
+    : Use namespaceIdentifier As alias=Identifier
     ;
 
 body
@@ -348,6 +348,7 @@ inlineReturn
 safeReservedWord
     : And
     | Or
+    | As
     | Distinct
     | Filter
     | Sort
