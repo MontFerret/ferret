@@ -158,14 +158,64 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 	everyReg := c.compileDurationClause(ctx.EveryClause())
 	backoff := c.compileBackoffClause(ctx.BackoffClause())
 
+	if predExpr := predicate.Expression(); predExpr != nil {
+		switch mode {
+		case waitForPredicateModeBool:
+			if truth, ok := literalTruthinessFromExpression(predExpr); ok {
+				if truth {
+					resultReg := c.ctx.Registers.Allocate()
+					c.ctx.Emitter.EmitBoolean(resultReg, true)
+					return resultReg
+				}
+				if timeoutReg != vm.NoopOperand {
+					c.ctx.Emitter.EmitA(vm.OpSleep, timeoutReg)
+					resultReg := c.ctx.Registers.Allocate()
+					c.ctx.Emitter.EmitBoolean(resultReg, false)
+					return resultReg
+				}
+			}
+		default:
+			if exists, ok := literalExistsFromExpression(predExpr); ok {
+				cond := exists
+				if mode == waitForPredicateModeNotExists {
+					cond = !exists
+				}
+				if cond {
+					if mode == waitForPredicateModeValue {
+						return c.ctx.ExprCompiler.Compile(predExpr)
+					}
+					resultReg := c.ctx.Registers.Allocate()
+					c.ctx.Emitter.EmitBoolean(resultReg, true)
+					return resultReg
+				}
+				if timeoutReg != vm.NoopOperand {
+					c.ctx.Emitter.EmitA(vm.OpSleep, timeoutReg)
+					resultReg := c.ctx.Registers.Allocate()
+					if mode == waitForPredicateModeValue {
+						c.ctx.Emitter.EmitLoadNone(resultReg)
+					} else {
+						c.ctx.Emitter.EmitBoolean(resultReg, false)
+					}
+					return resultReg
+				}
+			}
+		}
+	}
+
 	baseEveryReg := c.ctx.Registers.Allocate()
-	intervalReg := c.ctx.Registers.Allocate()
 	if everyReg != vm.NoopOperand {
 		c.ctx.Emitter.EmitMove(baseEveryReg, everyReg)
 	} else {
 		c.ctx.Emitter.EmitLoadConst(baseEveryReg, c.ctx.Symbols.AddConstant(runtime.NewInt(waitForDefaultEveryMs)))
 	}
-	c.ctx.Emitter.EmitMove(intervalReg, baseEveryReg)
+
+	pollReg := baseEveryReg
+	var intervalReg vm.Operand
+	if backoff != waitForBackoffNone {
+		intervalReg = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitMove(intervalReg, baseEveryReg)
+		pollReg = intervalReg
+	}
 
 	resultReg := c.ctx.Registers.Allocate()
 	if mode == waitForPredicateModeValue {
@@ -216,8 +266,10 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 		c.ctx.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
 	}
 
-	c.emitWaitSleep(intervalReg, timeoutReg, elapsedReg)
-	c.emitBackoffUpdate(backoff, intervalReg, baseEveryReg)
+	c.emitWaitSleep(pollReg, timeoutReg, elapsedReg)
+	if backoff != waitForBackoffNone {
+		c.emitBackoffUpdate(backoff, intervalReg, baseEveryReg)
+	}
 	c.ctx.Emitter.EmitJump(start)
 
 	c.ctx.Emitter.MarkLabel(success)
@@ -522,4 +574,76 @@ func parseDurationLiteral(text string) (runtime.Value, error) {
 	}
 
 	return runtime.NewFloat(ms), nil
+}
+
+func literalFromExpression(ctx fql.IExpressionContext) fql.ILiteralContext {
+	if ctx == nil {
+		return nil
+	}
+
+	predicate := ctx.Predicate()
+	if predicate == nil {
+		return nil
+	}
+
+	atom := predicate.ExpressionAtom()
+	if atom == nil {
+		return nil
+	}
+
+	return atom.Literal()
+}
+
+func literalExistsFromExpression(ctx fql.IExpressionContext) (bool, bool) {
+	lit := literalFromExpression(ctx)
+	if lit == nil {
+		return false, false
+	}
+
+	switch {
+	case lit.NoneLiteral() != nil:
+		return false, true
+	case lit.StringLiteral() != nil:
+		str := parseStringLiteral(lit.StringLiteral())
+		return str.String() != "", true
+	case lit.ArrayLiteral() != nil:
+		arr := lit.ArrayLiteral()
+		return arr.ArgumentList() != nil, true
+	case lit.ObjectLiteral() != nil:
+		obj := lit.ObjectLiteral()
+		return len(obj.AllPropertyAssignment()) > 0, true
+	default:
+		return true, true
+	}
+}
+
+func literalTruthinessFromExpression(ctx fql.IExpressionContext) (bool, bool) {
+	lit := literalFromExpression(ctx)
+	if lit == nil {
+		return false, false
+	}
+
+	switch {
+	case lit.NoneLiteral() != nil:
+		return false, true
+	case lit.BooleanLiteral() != nil:
+		return strings.ToLower(lit.BooleanLiteral().GetText()) == "true", true
+	case lit.IntegerLiteral() != nil:
+		val, err := strconv.Atoi(lit.IntegerLiteral().GetText())
+		if err != nil {
+			return false, false
+		}
+		return val != 0, true
+	case lit.FloatLiteral() != nil:
+		val, err := strconv.ParseFloat(lit.FloatLiteral().GetText(), 64)
+		if err != nil {
+			return false, false
+		}
+		return val != 0, true
+	case lit.StringLiteral() != nil:
+		str := parseStringLiteral(lit.StringLiteral())
+		return str.String() != "", true
+	default:
+		return true, true
+	}
 }

@@ -4,6 +4,16 @@ parser grammar FqlParser;
 
 options { tokenVocab=FqlLexer; }
 
+@parser::members {
+	func (p *FqlParser) isWaitForPredicateStart() bool {
+		la1 := p.GetTokenStream().LA(1)
+		if la1 == FqlParserExists || la1 == FqlParserValue {
+			return true
+		}
+		return la1 == FqlParserNot && p.GetTokenStream().LA(2) == FqlParserExists
+	}
+}
+
 program
     : head* body
     ;
@@ -173,7 +183,7 @@ waitForPredicate
     : Exists expression
     | Not Exists expression
     | Value expression
-    | expression
+    | {!p.isWaitForPredicateStart()}? expression
     ;
 
 waitForEventName
@@ -402,6 +412,8 @@ safeReservedWord
     | Options
     | Every
     | Backoff
+    | Exists
+    | Value
     | Current
     | Step
     ;

@@ -13,7 +13,7 @@ func TestWaitforPredicate(t *testing.T) {
 			LET ok = WAITFOR FALSE TIMEOUT 50ms EVERY 10ms
 			RETURN ok
 		`, false, "Should return false on timeout"),
-		DebugCase(`
+		Case(`
 			LET start = NOW()
 			LET ok = WAITFOR EXISTS (DATE_DIFF(start, NOW(), "f") > 20 ? [1] : []) TIMEOUT 0.5s EVERY 10ms
 			RETURN ok
@@ -28,7 +28,7 @@ func TestWaitforPredicate(t *testing.T) {
 			LET token = WAITFOR VALUE (DATE_DIFF(start, NOW(), "f") > 20 ? "ok" : NONE) TIMEOUT 0.5s EVERY 10ms
 			RETURN token
 		`, "ok", "Should return value once it exists"),
-		CaseNil(`
+		DebugCaseNil(`
 			LET token = WAITFOR VALUE NONE TIMEOUT 20ms EVERY 5ms
 			RETURN token
 		`, "Should return NONE on timeout for VALUE"),
