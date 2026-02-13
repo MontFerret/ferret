@@ -907,22 +907,34 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) vm.Oper
 	if str := ctx.StringLiteral(); str != nil {
 		payload = parseStringLiteral(str)
 	}
-	query := runtime.Query{
-		Kind:    runtime.NewString(kind),
-		Payload: payload,
-		Params:  runtime.None,
-	}
+	dst := c.ctx.Registers.Allocate()
+	span := diagnostics.SpanFromRuleContext(ctx)
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArray(dst, 3)
+	})
+
+	kindReg := loadConstant(c.ctx, runtime.NewString(kind))
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(dst, kindReg)
+	})
+
+	payloadReg := loadConstant(c.ctx, payload)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(dst, payloadReg)
+	})
 
 	params := ctx.Expression()
+	var paramsReg vm.Operand
 	if params == nil {
-		return c.ctx.Symbols.AddConstant(query)
+		paramsReg = loadConstant(c.ctx, runtime.None)
+	} else {
+		paramsReg = c.Compile(params)
 	}
 
-	base := c.ctx.Symbols.AddConstant(query)
-	paramsOp := c.Compile(params)
-	dst := c.ctx.Registers.Allocate()
-
-	c.ctx.Emitter.EmitABC(vm.OpMakeQuery, dst, base, paramsOp)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(dst, paramsReg)
+	})
 
 	if dst.IsRegister() {
 		c.ctx.Types.Set(dst, core.TypeAny)
