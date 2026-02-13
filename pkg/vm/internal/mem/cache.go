@@ -1,8 +1,6 @@
 package mem
 
 import (
-	"regexp"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
@@ -11,7 +9,8 @@ type (
 	Cache struct {
 		FuncHash        uint64
 		Functions       map[int]*CachedFunction
-		Regexps         map[int]*regexp.Regexp
+		RegexpsWarmed   bool
+		Regexps         map[int]*CachedRegexp
 		LoadKeyICs      []*LoadKeyCache
 		LoadKeyConstICs []*LoadKeyConstCache
 		ShapeCache      *data.ShapeCache
@@ -24,6 +23,11 @@ type (
 		Fn3 runtime.Function3
 		Fn4 runtime.Function4
 		FnV runtime.Function
+	}
+
+	CachedRegexp struct {
+		Pattern string
+		Regexp  *data.Regexp
 	}
 
 	LoadKeyCache struct {
@@ -159,7 +163,7 @@ func (c *LoadKeyConstCache) Add(shapeID uint64, slot int) {
 func NewCache(bytecodeLen, shapeCacheLimit int) *Cache {
 	return &Cache{
 		Functions:       make(map[int]*CachedFunction),
-		Regexps:         make(map[int]*regexp.Regexp),
+		Regexps:         make(map[int]*CachedRegexp),
 		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
 		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
 		ShapeCache:      data.NewShapeCache(shapeCacheLimit),

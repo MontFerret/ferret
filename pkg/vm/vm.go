@@ -165,8 +165,7 @@ loop:
 				return nil, err
 			}
 		case OpRegexp:
-			// TODO: Add caching to avoid recompilation
-			r, err := data.ToRegexp(reg[src2])
+			r, err := vm.regexpCached(vm.pc-1, reg[src2])
 
 			if err == nil {
 				reg[dst] = r.Match(reg[src1])
