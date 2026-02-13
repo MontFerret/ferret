@@ -410,13 +410,18 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		})
 
 		if isRegexp {
-			if regRight.IsConstant() {
-				val := c.ctx.Symbols.Constant(regRight)
-				exp := val.String()
+			if rightCtx := ctx.ExpressionAtom(1); rightCtx != nil {
+				if lit := rightCtx.Literal(); lit != nil {
+					if sl := lit.StringLiteral(); sl != nil {
+						exp := parseStringLiteral(sl).String()
 
-				// Verify that the expression is a valid regular expression
-				if _, err := regexp.Compile(exp); err != nil {
-					c.ctx.Errors.InvalidRegexExpression(ctx, exp)
+						// Verify that the expression is a valid regular expression
+						if _, err := regexp.Compile(exp); err != nil {
+							c.ctx.Errors.InvalidRegexExpression(ctx, exp)
+						}
+					} else {
+						c.ctx.Errors.InvalidRegexExpression(ctx, lit.GetText())
+					}
 				}
 			}
 		}

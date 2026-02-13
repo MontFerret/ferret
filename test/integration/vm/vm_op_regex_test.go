@@ -30,8 +30,7 @@ func TestRegexpOperator(t *testing.T) {
 		return runtime.NewString("^b..$"), nil
 	}))
 
-	// TODO: Fix
-	SkipConvey("Should return an error during compilation when a regexp string invalid", t, func() {
+	Convey("Should return an error during compilation when a regexp string invalid", t, func() {
 		_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
 			Compile(file.NewAnonymousSource(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
@@ -40,8 +39,7 @@ func TestRegexpOperator(t *testing.T) {
 		So(err, ShouldBeError)
 	})
 
-	// TODO: Fix
-	SkipConvey("Should return an error during compilation when a regexp is not a string", t, func() {
+	Convey("Should return an error during compilation when a regexp is not a string", t, func() {
 		right := []string{
 			"[]",
 			"{}",
