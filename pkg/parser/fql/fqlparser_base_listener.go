@@ -352,6 +352,68 @@ func (s *BaseFqlParserListener) EnterMemberExpressionPath(ctx *MemberExpressionP
 // ExitMemberExpressionPath is called when production memberExpressionPath is exited.
 func (s *BaseFqlParserListener) ExitMemberExpressionPath(ctx *MemberExpressionPathContext) {}
 
+// EnterArrayExpansion is called when production arrayExpansion is entered.
+func (s *BaseFqlParserListener) EnterArrayExpansion(ctx *ArrayExpansionContext) {}
+
+// ExitArrayExpansion is called when production arrayExpansion is exited.
+func (s *BaseFqlParserListener) ExitArrayExpansion(ctx *ArrayExpansionContext) {}
+
+// EnterArrayContraction is called when production arrayContraction is entered.
+func (s *BaseFqlParserListener) EnterArrayContraction(ctx *ArrayContractionContext) {}
+
+// ExitArrayContraction is called when production arrayContraction is exited.
+func (s *BaseFqlParserListener) ExitArrayContraction(ctx *ArrayContractionContext) {}
+
+// EnterArrayQuestionMark is called when production arrayQuestionMark is entered.
+func (s *BaseFqlParserListener) EnterArrayQuestionMark(ctx *ArrayQuestionMarkContext) {}
+
+// ExitArrayQuestionMark is called when production arrayQuestionMark is exited.
+func (s *BaseFqlParserListener) ExitArrayQuestionMark(ctx *ArrayQuestionMarkContext) {}
+
+// EnterArrayQuestionQuantifier is called when production arrayQuestionQuantifier is entered.
+func (s *BaseFqlParserListener) EnterArrayQuestionQuantifier(ctx *ArrayQuestionQuantifierContext) {}
+
+// ExitArrayQuestionQuantifier is called when production arrayQuestionQuantifier is exited.
+func (s *BaseFqlParserListener) ExitArrayQuestionQuantifier(ctx *ArrayQuestionQuantifierContext) {}
+
+// EnterArrayQuestionQuantifierValue is called when production arrayQuestionQuantifierValue is entered.
+func (s *BaseFqlParserListener) EnterArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) {
+}
+
+// ExitArrayQuestionQuantifierValue is called when production arrayQuestionQuantifierValue is exited.
+func (s *BaseFqlParserListener) ExitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) {
+}
+
+// EnterArrayApply is called when production arrayApply is entered.
+func (s *BaseFqlParserListener) EnterArrayApply(ctx *ArrayApplyContext) {}
+
+// ExitArrayApply is called when production arrayApply is exited.
+func (s *BaseFqlParserListener) ExitArrayApply(ctx *ArrayApplyContext) {}
+
+// EnterInlineExpression is called when production inlineExpression is entered.
+func (s *BaseFqlParserListener) EnterInlineExpression(ctx *InlineExpressionContext) {}
+
+// ExitInlineExpression is called when production inlineExpression is exited.
+func (s *BaseFqlParserListener) ExitInlineExpression(ctx *InlineExpressionContext) {}
+
+// EnterInlineFilter is called when production inlineFilter is entered.
+func (s *BaseFqlParserListener) EnterInlineFilter(ctx *InlineFilterContext) {}
+
+// ExitInlineFilter is called when production inlineFilter is exited.
+func (s *BaseFqlParserListener) ExitInlineFilter(ctx *InlineFilterContext) {}
+
+// EnterInlineLimit is called when production inlineLimit is entered.
+func (s *BaseFqlParserListener) EnterInlineLimit(ctx *InlineLimitContext) {}
+
+// ExitInlineLimit is called when production inlineLimit is exited.
+func (s *BaseFqlParserListener) ExitInlineLimit(ctx *InlineLimitContext) {}
+
+// EnterInlineReturn is called when production inlineReturn is entered.
+func (s *BaseFqlParserListener) EnterInlineReturn(ctx *InlineReturnContext) {}
+
+// ExitInlineReturn is called when production inlineReturn is exited.
+func (s *BaseFqlParserListener) ExitInlineReturn(ctx *InlineReturnContext) {}
+
 // EnterSafeReservedWord is called when production safeReservedWord is entered.
 func (s *BaseFqlParserListener) EnterSafeReservedWord(ctx *SafeReservedWordContext) {}
 
@@ -393,6 +455,12 @@ func (s *BaseFqlParserListener) EnterExpressionAtom(ctx *ExpressionAtomContext) 
 
 // ExitExpressionAtom is called when production expressionAtom is exited.
 func (s *BaseFqlParserListener) ExitExpressionAtom(ctx *ExpressionAtomContext) {}
+
+// EnterQueryLiteral is called when production queryLiteral is entered.
+func (s *BaseFqlParserListener) EnterQueryLiteral(ctx *QueryLiteralContext) {}
+
+// ExitQueryLiteral is called when production queryLiteral is exited.
+func (s *BaseFqlParserListener) ExitQueryLiteral(ctx *QueryLiteralContext) {}
 
 // EnterArrayOperator is called when production arrayOperator is entered.
 func (s *BaseFqlParserListener) EnterArrayOperator(ctx *ArrayOperatorContext) {}

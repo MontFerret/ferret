@@ -36,6 +36,9 @@ const (
 	OpLoadPropertyConst // Load a property from a map or list to a register using a constant key
 	OpLoadPropertyOptionalConst
 
+	// Integrated Query Operations
+	OpApplyQuery // Apply a query to a value
+
 	// Arithmetic Operations
 	OpAdd
 	OpSub
@@ -65,6 +68,9 @@ const (
 	OpIn
 	OpLike
 	OpRegexp
+
+	// Array Operations
+	OpFlatten // Flattens nested arrays
 
 	// Array Comparison Operations (do not swap order of EQ, GT, GTE, LT, LTE, IN. it must be equal to operators)
 	OpAnyEq
@@ -182,6 +188,8 @@ func (op Opcode) String() string {
 		return "LOADPRC"
 	case OpLoadPropertyOptionalConst:
 		return "LOADPROC"
+	case OpApplyQuery:
+		return "APPLYQ"
 	case OpLoadProperty:
 		return "LOADPR"
 	case OpLoadPropertyOptional:
@@ -366,6 +374,8 @@ func (op Opcode) String() string {
 		return "ITLIMIT"
 	case OpIterSkip:
 		return "ITSKIP"
+	case OpFlatten:
+		return "FLATTEN"
 
 	default:
 		return "UNKNOWN"

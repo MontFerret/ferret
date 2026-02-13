@@ -151,7 +151,7 @@ func TestMember(t *testing.T) {
 			"Bob"),
 		CaseNil(`
 					LET obj = { foo: None }
-	
+
 					RETURN obj.foo?.bar
 				`),
 	})

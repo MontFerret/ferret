@@ -275,6 +275,120 @@ loop:
 			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptional); err != nil {
 				return nil, err
 			}
+		case OpApplyQuery:
+			src := reg[src1]
+
+			if src1.IsConstant() {
+				src = constants[src1.Constant()]
+			}
+
+			var arg runtime.Value
+
+			if src2.IsConstant() {
+				arg = constants[src2.Constant()]
+			} else {
+				arg = reg[src2]
+			}
+
+			var query runtime.Query
+
+			switch value := arg.(type) {
+			case runtime.Query:
+				query = value
+			case *runtime.Array:
+				length, err := value.Length(ctx)
+				if err != nil {
+					if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+						return nil, err
+					}
+
+					break
+				}
+
+				if length < 2 {
+					if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery)); err != nil {
+						return nil, err
+					}
+
+					break
+				}
+
+				kindVal, err := value.Get(ctx, runtime.NewInt(0))
+				if err != nil {
+					if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+						return nil, err
+					}
+
+					break
+				}
+
+				payloadVal, err := value.Get(ctx, runtime.NewInt(1))
+				if err != nil {
+					if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+						return nil, err
+					}
+
+					break
+				}
+
+				var paramsVal runtime.Value = runtime.None
+				if length > 2 {
+					paramsVal, err = value.Get(ctx, runtime.NewInt(2))
+					if err != nil {
+						if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+							return nil, err
+						}
+
+						break
+					}
+				}
+
+				kind, err := runtime.CastString(kindVal)
+				if err != nil {
+					if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(kindVal, runtime.TypeString)); err != nil {
+						return nil, err
+					}
+
+					break
+				}
+
+				payload := runtime.EmptyString
+				if payloadVal != runtime.None {
+					payload, err = runtime.CastString(payloadVal)
+					if err != nil {
+						if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(payloadVal, runtime.TypeString, runtime.TypeNone)); err != nil {
+							return nil, err
+						}
+
+						break
+					}
+				}
+
+				query = runtime.NewQuery(kind, payload)
+				query.Params = paramsVal
+			default:
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery, runtime.TypeArray)); err != nil {
+					return nil, err
+				}
+
+				break
+			}
+
+			queryable, ok := src.(runtime.Queryable)
+
+			if !ok {
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable)); err != nil {
+					return nil, err
+				}
+
+				break
+			}
+
+			res, err := queryable.Query(ctx, query)
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
 
 		case OpCall, OpProtectedCall:
 			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
@@ -346,6 +460,18 @@ loop:
 			}
 		case OpType:
 			reg[dst] = runtime.String(runtime.Reflect(reg[src1]))
+		case OpFlatten:
+			depth := src2.Register()
+
+			if depth < 1 {
+				depth = 1
+			}
+
+			res, err := operators.Flatten(ctx, reg[src1], depth)
+
+			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+				return nil, err
+			}
 		case OpClose:
 			val, ok := reg[dst].(io.Closer)
 			reg[dst] = runtime.None

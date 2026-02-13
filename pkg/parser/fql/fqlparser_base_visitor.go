@@ -227,6 +227,46 @@ func (v *BaseFqlParserVisitor) VisitMemberExpressionPath(ctx *MemberExpressionPa
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitArrayExpansion(ctx *ArrayExpansionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayContraction(ctx *ArrayContractionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayQuestionMark(ctx *ArrayQuestionMarkContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayQuestionQuantifier(ctx *ArrayQuestionQuantifierContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitArrayApply(ctx *ArrayApplyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineExpression(ctx *InlineExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineFilter(ctx *InlineFilterContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineLimit(ctx *InlineLimitContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitInlineReturn(ctx *InlineReturnContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -252,6 +292,10 @@ func (v *BaseFqlParserVisitor) VisitPredicate(ctx *PredicateContext) interface{}
 }
 
 func (v *BaseFqlParserVisitor) VisitExpressionAtom(ctx *ExpressionAtomContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitQueryLiteral(ctx *QueryLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

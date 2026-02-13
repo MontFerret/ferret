@@ -172,6 +172,36 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#memberExpressionPath.
 	VisitMemberExpressionPath(ctx *MemberExpressionPathContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#arrayExpansion.
+	VisitArrayExpansion(ctx *ArrayExpansionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayContraction.
+	VisitArrayContraction(ctx *ArrayContractionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayQuestionMark.
+	VisitArrayQuestionMark(ctx *ArrayQuestionMarkContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayQuestionQuantifier.
+	VisitArrayQuestionQuantifier(ctx *ArrayQuestionQuantifierContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayQuestionQuantifierValue.
+	VisitArrayQuestionQuantifierValue(ctx *ArrayQuestionQuantifierValueContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#arrayApply.
+	VisitArrayApply(ctx *ArrayApplyContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineExpression.
+	VisitInlineExpression(ctx *InlineExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineFilter.
+	VisitInlineFilter(ctx *InlineFilterContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineLimit.
+	VisitInlineLimit(ctx *InlineLimitContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#inlineReturn.
+	VisitInlineReturn(ctx *InlineReturnContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#safeReservedWord.
 	VisitSafeReservedWord(ctx *SafeReservedWordContext) interface{}
 
@@ -192,6 +222,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#expressionAtom.
 	VisitExpressionAtom(ctx *ExpressionAtomContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#queryLiteral.
+	VisitQueryLiteral(ctx *QueryLiteralContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#arrayOperator.
 	VisitArrayOperator(ctx *ArrayOperatorContext) interface{}

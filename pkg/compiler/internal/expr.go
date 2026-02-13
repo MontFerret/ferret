@@ -2,6 +2,7 @@ package internal
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -473,29 +474,89 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 	mes := ctx.MemberExpressionSource()
 	segments := ctx.AllMemberExpressionPath()
 
-	var src1 vm.Operand
-
-	if v := mes.Variable(); v != nil {
-		src1 = c.CompileVariable(v)
-	} else if p := mes.Param(); p != nil {
-		src1 = c.CompileParam(p)
-	} else if ol := mes.ObjectLiteral(); ol != nil {
-		src1 = c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
-	} else if al := mes.ArrayLiteral(); al != nil {
-		src1 = c.ctx.LiteralCompiler.CompileArrayLiteral(al)
-	} else if fc := mes.FunctionCall(); fc != nil {
-		// FOO()?.bar
-		segment := segments[0]
-		src1 = c.CompileFunctionCall(fc, segment.ErrorOperator() != nil)
+	if mes == nil || len(segments) == 0 {
+		return vm.NoopOperand
 	}
 
-	var dst vm.Operand
+	src := c.compileMemberExpressionSource(mes, segments)
+	if src == vm.NoopOperand {
+		return src
+	}
 
-	for _, segment := range segments {
+	return c.compileMemberExpressionSegments(src, segments)
+}
+
+func (c *ExprCompiler) compileMemberExpressionSource(mes fql.IMemberExpressionSourceContext, segments []fql.IMemberExpressionPathContext) vm.Operand {
+	if v := mes.Variable(); v != nil {
+		return c.CompileVariable(v)
+	}
+
+	if p := mes.Param(); p != nil {
+		return c.CompileParam(p)
+	}
+
+	if ol := mes.ObjectLiteral(); ol != nil {
+		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
+	}
+
+	if al := mes.ArrayLiteral(); al != nil {
+		return c.ctx.LiteralCompiler.CompileArrayLiteral(al)
+	}
+
+	if fc := mes.FunctionCall(); fc != nil {
+		// FOO()?.bar
+		segment := segments[0]
+		return c.CompileFunctionCall(fc, segment.ErrorOperator() != nil)
+	}
+
+	if fe := mes.ForExpression(); fe != nil {
+		return c.ctx.LoopCompiler.Compile(fe)
+	}
+
+	if wfe := mes.WaitForExpression(); wfe != nil {
+		return c.ctx.WaitCompiler.Compile(wfe)
+	}
+
+	if e := mes.Expression(); e != nil {
+		return c.Compile(e)
+	}
+
+	return vm.NoopOperand
+}
+
+func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments []fql.IMemberExpressionPathContext) vm.Operand {
+	if len(segments) == 0 {
+		return src
+	}
+
+	for idx, segment := range segments {
+		p := segment.(*fql.MemberExpressionPathContext)
+		if contraction := p.ArrayContraction(); contraction != nil {
+			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
+			result := c.compileArrayContraction(src, contraction, inlineTail)
+			if len(restTail) == 0 {
+				return result
+			}
+			return c.compileMemberExpressionSegments(result, restTail)
+		}
+		if expansion := p.ArrayExpansion(); expansion != nil {
+			return c.compileArrayExpansionChain(src, expansion, segments[idx+1:])
+		}
+		if question := p.ArrayQuestionMark(); question != nil {
+			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
+			result := c.compileArrayQuestionMark(src, question, inlineTail)
+			if len(restTail) == 0 {
+				return result
+			}
+			return c.compileMemberExpressionSegments(result, restTail)
+		}
+		if apply := p.ArrayApply(); apply != nil {
+			return c.compileArrayApply(src, apply, segments[idx+1:])
+		}
+
 		var src2 vm.Operand
 		var constOperand bool
-		p := segment.(*fql.MemberExpressionPathContext)
-		srcType := operandType(c.ctx, src1)
+		srcType := operandType(c.ctx, src)
 
 		if pn := p.PropertyName(); pn != nil {
 			if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
@@ -513,7 +574,7 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 			}
 		}
 
-		dst = c.ctx.Registers.Allocate()
+		dst := c.ctx.Registers.Allocate()
 
 		span := diagnostics.SpanFromRuleContext(p)
 		c.ctx.Emitter.WithSpan(span, func() {
@@ -559,13 +620,509 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 				}
 			}
 
-			c.ctx.Emitter.EmitABC(op, dst, src1, src2)
+			c.ctx.Emitter.EmitABC(op, dst, src, src2)
 		})
 
-		src1 = dst
+		src = dst
+	}
+
+	return src
+}
+
+func splitArrayOperatorTail(segments []fql.IMemberExpressionPathContext) ([]fql.IMemberExpressionPathContext, []fql.IMemberExpressionPathContext) {
+	if len(segments) > 0 {
+		p := segments[0].(*fql.MemberExpressionPathContext)
+		if p.ArrayContraction() != nil || p.ArrayExpansion() != nil || p.ArrayQuestionMark() != nil {
+			return nil, segments
+		}
+	}
+
+	return segments, nil
+}
+
+func (c *ExprCompiler) compileArrayExpansionChain(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	inline := expansion.InlineExpression()
+
+	if inline == nil {
+		if next, rest := nextArrayExpansion(tail); next != nil {
+			return c.compileArrayExpansionChain(src, next, rest)
+		}
+
+		return c.compileArrayExpansionChainWithFilters(src, expansion, tail, nil)
+	}
+
+	if !isFilterOnlyInline(inline) {
+		tail = dropIdentityExpansions(tail)
+		return c.compileArrayExpansionChainWithFilters(src, expansion, tail, nil)
+	}
+
+	extraFilters, rest := collectFilterOnlyTail(tail)
+	return c.compileArrayExpansionChainWithFilters(src, expansion, rest, extraFilters)
+}
+
+func (c *ExprCompiler) compileArrayExpansionWithFilters(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext, extraFilters []fql.IExpressionContext) vm.Operand {
+	span := diagnostics.SpanFromRuleContext(expansion)
+	inline := expansion.InlineExpression()
+	return c.compileArrayIteration(src, span, tail, inline, extraFilters)
+}
+
+func (c *ExprCompiler) compileArrayExpansionChainWithFilters(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext, extraFilters []fql.IExpressionContext) vm.Operand {
+	inlineTail, restTail := splitArrayOperatorTail(tail)
+	result := c.compileArrayExpansionWithFilters(src, expansion, inlineTail, extraFilters)
+	if len(restTail) == 0 {
+		return result
+	}
+
+	return c.compileMemberExpressionSegments(result, restTail)
+}
+
+func isFilterOnlyInline(inline fql.IInlineExpressionContext) bool {
+	if inline == nil {
+		return false
+	}
+
+	return inline.InlineFilter() != nil && inline.InlineLimit() == nil && inline.InlineReturn() == nil
+}
+
+func nextArrayExpansion(segments []fql.IMemberExpressionPathContext) (fql.IArrayExpansionContext, []fql.IMemberExpressionPathContext) {
+	if len(segments) == 0 {
+		return nil, segments
+	}
+
+	p := segments[0].(*fql.MemberExpressionPathContext)
+	if expansion := p.ArrayExpansion(); expansion != nil {
+		return expansion, segments[1:]
+	}
+
+	return nil, segments
+}
+
+func dropIdentityExpansions(segments []fql.IMemberExpressionPathContext) []fql.IMemberExpressionPathContext {
+	for len(segments) > 0 {
+		p := segments[0].(*fql.MemberExpressionPathContext)
+		expansion := p.ArrayExpansion()
+		if expansion == nil {
+			break
+		}
+
+		if expansion.InlineExpression() != nil {
+			break
+		}
+
+		segments = segments[1:]
+	}
+
+	return segments
+}
+
+func collectFilterOnlyTail(segments []fql.IMemberExpressionPathContext) ([]fql.IExpressionContext, []fql.IMemberExpressionPathContext) {
+	extraFilters := make([]fql.IExpressionContext, 0)
+	rest := segments
+
+	for len(rest) > 0 {
+		p := rest[0].(*fql.MemberExpressionPathContext)
+		expansion := p.ArrayExpansion()
+		if expansion == nil {
+			break
+		}
+
+		inline := expansion.InlineExpression()
+		if inline == nil {
+			rest = rest[1:]
+			continue
+		}
+
+		if !isFilterOnlyInline(inline) {
+			break
+		}
+
+		filter := inline.InlineFilter()
+		if filter != nil {
+			extraFilters = append(extraFilters, filter.Expression())
+		}
+
+		rest = rest[1:]
+	}
+
+	return extraFilters, rest
+}
+
+func (c *ExprCompiler) compileArrayQuestionMark(src vm.Operand, question fql.IArrayQuestionMarkContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	span := diagnostics.SpanFromRuleContext(question)
+
+	loop := &core.Loop{
+		Kind:     core.ForInLoop,
+		Type:     core.NormalLoop,
+		Distinct: false,
+		Allocate: false,
+		Dst:      vm.NoopOperand,
+		Src:      src,
+	}
+
+	c.ctx.Loops.Push(loop)
+	c.ctx.Symbols.EnterScope()
+
+	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Symbols, core.TypeAny)
+	if loop.Value.IsRegister() {
+		c.ctx.Types.Set(loop.Value, core.TypeAny)
+	}
+
+	count := c.ctx.Registers.Allocate()
+	total := c.ctx.Registers.Allocate()
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitA(vm.OpLoadZero, count)
+		c.ctx.Emitter.EmitA(vm.OpLoadZero, total)
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	})
+
+	// Track total elements
+	c.ctx.Emitter.EmitA(vm.OpIncr, total)
+
+	// Apply optional filter
+	if filter := question.Expression(); filter != nil {
+		cond := c.ctx.ExprCompiler.Compile(filter)
+		label := c.ctx.Loops.Current().ContinueLabel()
+		c.ctx.Emitter.EmitJumpIfFalse(cond, label)
+	}
+
+	// Count matches
+	c.ctx.Emitter.EmitA(vm.OpIncr, count)
+
+	loop.EmitFinalization(c.ctx.Emitter)
+
+	c.ctx.Symbols.ExitScope()
+	c.ctx.Loops.Pop()
+
+	result := c.compileArrayQuestionQuantifier(question, count, total)
+	if len(tail) > 0 {
+		result = c.compileMemberExpressionSegments(result, tail)
+	}
+
+	if result.IsRegister() {
+		c.ctx.Types.Set(result, core.TypeBool)
+	}
+
+	return result
+}
+
+func (c *ExprCompiler) compileArrayQuestionQuantifier(question fql.IArrayQuestionMarkContext, count, total vm.Operand) vm.Operand {
+	quant := question.ArrayQuestionQuantifier()
+	zero := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitA(vm.OpLoadZero, zero)
+
+	if quant == nil || quant.Any() != nil {
+		return c.emitComparison(vm.OpGt, count, zero)
+	}
+
+	if quant.None() != nil {
+		return c.emitComparison(vm.OpEq, count, zero)
+	}
+
+	if quant.All() != nil {
+		return c.emitComparison(vm.OpEq, count, total)
+	}
+
+	values := quant.AllArrayQuestionQuantifierValue()
+	if quant.At() != nil {
+		if len(values) == 0 {
+			return c.emitComparison(vm.OpGt, count, zero)
+		}
+
+		value := c.compileArrayQuestionQuantifierValue(values[0])
+		return c.emitComparison(vm.OpGte, count, value)
+	}
+
+	if quant.Range() != nil && len(values) >= 2 {
+		min := c.compileArrayQuestionQuantifierValue(values[0])
+		max := c.compileArrayQuestionQuantifierValue(values[1])
+
+		left := c.emitComparison(vm.OpGte, count, min)
+		right := c.emitComparison(vm.OpLte, count, max)
+		return c.emitBooleanAnd(left, right)
+	}
+
+	if len(values) > 0 {
+		value := c.compileArrayQuestionQuantifierValue(values[0])
+		return c.emitComparison(vm.OpEq, count, value)
+	}
+
+	return c.emitComparison(vm.OpGt, count, zero)
+}
+
+func (c *ExprCompiler) compileArrayQuestionQuantifierValue(ctx fql.IArrayQuestionQuantifierValueContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
+	if il := ctx.IntegerLiteral(); il != nil {
+		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
+	}
+
+	if pm := ctx.Param(); pm != nil {
+		return c.CompileParam(pm)
+	}
+
+	return vm.NoopOperand
+}
+
+func (c *ExprCompiler) compileArrayApply(src vm.Operand, apply fql.IArrayApplyContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	if apply == nil {
+		return src
+	}
+
+	query := c.compileQueryLiteral(apply.QueryLiteral())
+	if query == vm.NoopOperand {
+		return vm.NoopOperand
+	}
+
+	dst := c.ctx.Registers.Allocate()
+	span := diagnostics.SpanFromRuleContext(apply)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABC(vm.OpApplyQuery, dst, src, query)
+	})
+
+	if len(tail) > 0 {
+		dst = c.compileMemberExpressionSegments(dst, tail)
+	}
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeAny)
 	}
 
 	return dst
+}
+
+func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
+	kind := ""
+	if ident := ctx.Identifier(); ident != nil {
+		kind = strings.ToLower(ident.GetText())
+	}
+
+	payload := runtime.EmptyString
+	if str := ctx.StringLiteral(); str != nil {
+		payload = parseStringLiteral(str)
+	}
+	dst := c.ctx.Registers.Allocate()
+	span := diagnostics.SpanFromRuleContext(ctx)
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArray(dst, 3)
+	})
+
+	kindReg := loadConstant(c.ctx, runtime.NewString(kind))
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(dst, kindReg)
+	})
+
+	payloadReg := loadConstant(c.ctx, payload)
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(dst, payloadReg)
+	})
+
+	params := ctx.Expression()
+	var paramsReg vm.Operand
+	if params == nil {
+		paramsReg = loadConstant(c.ctx, runtime.None)
+	} else {
+		paramsReg = c.Compile(params)
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitArrayPush(dst, paramsReg)
+	})
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeAny)
+	}
+
+	return dst
+}
+
+func (c *ExprCompiler) emitComparison(op vm.Opcode, left, right vm.Operand) vm.Operand {
+	dst := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitABC(op, dst, left, right)
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeBool)
+	}
+	return dst
+}
+
+func (c *ExprCompiler) emitBooleanAnd(left, right vm.Operand) vm.Operand {
+	dst := c.ctx.Registers.Allocate()
+	skip := c.ctx.Emitter.NewLabel("and.false")
+	done := c.ctx.Emitter.NewLabel("and.done")
+
+	c.ctx.Emitter.EmitJumpIfFalse(left, skip)
+	c.ctx.Emitter.EmitJumpIfFalse(right, skip)
+	c.ctx.Emitter.EmitAb(vm.OpLoadBool, dst, true)
+	c.ctx.Emitter.EmitJump(done)
+
+	c.ctx.Emitter.MarkLabel(skip)
+	c.ctx.Emitter.EmitAb(vm.OpLoadBool, dst, false)
+	c.ctx.Emitter.MarkLabel(done)
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeBool)
+	}
+
+	return dst
+}
+
+func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	span := diagnostics.SpanFromRuleContext(expansion)
+	inline := expansion.InlineExpression()
+	return c.compileArrayIteration(src, span, tail, inline, nil)
+}
+
+func (c *ExprCompiler) compileArrayContraction(src vm.Operand, contraction fql.IArrayContractionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	depth := arrayContractionDepth(contraction)
+	if depth < 1 {
+		depth = 1
+	}
+
+	span := diagnostics.SpanFromRuleContext(contraction)
+
+	dst := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.WithSpan(span, func() {
+		c.ctx.Emitter.EmitABx(vm.OpFlatten, dst, src, depth)
+	})
+
+	if dst.IsRegister() {
+		c.ctx.Types.Set(dst, core.TypeList)
+	}
+
+	inline := contraction.InlineExpression()
+
+	if len(tail) == 0 && inline == nil {
+		return dst
+	}
+
+	return c.compileArrayIteration(dst, span, tail, inline, nil)
+}
+
+func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
+	if ctx == nil {
+		return 1
+	}
+
+	count := len(ctx.GetStars())
+	if count > 1 {
+		return count - 1
+	}
+
+	return 1
+}
+
+func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext, extraFilters []fql.IExpressionContext) vm.Operand {
+	loop := &core.Loop{
+		Kind:     core.ForInLoop,
+		Type:     core.NormalLoop,
+		Distinct: false,
+		Allocate: true,
+		Dst:      c.ctx.Registers.Allocate(),
+		Src:      src,
+	}
+
+	c.ctx.Loops.Push(loop)
+	c.ctx.Symbols.EnterScope()
+
+	loop.DeclareValueVar(core.PseudoVariable, c.ctx.Symbols, core.TypeAny)
+	if loop.Value.IsRegister() {
+		c.ctx.Types.Set(loop.Value, core.TypeAny)
+	}
+
+	c.ctx.Emitter.WithSpan(span, func() {
+		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
+	})
+
+	if inline != nil {
+		c.compileInlineFilter(inline)
+	}
+
+	for _, expr := range extraFilters {
+		c.compileInlineFilterExpr(expr)
+	}
+
+	if inline != nil {
+		c.compileInlineLimit(inline)
+	}
+
+	projection := loop.Value
+	if inline != nil {
+		if ret := inline.InlineReturn(); ret != nil {
+			projection = c.ctx.ExprCompiler.Compile(ret.Expression())
+		}
+	}
+
+	if len(tail) > 0 {
+		projection = c.compileMemberExpressionSegments(projection, tail)
+	}
+
+	c.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, projection)
+	loop.EmitFinalization(c.ctx.Emitter)
+
+	c.ctx.Symbols.ExitScope()
+	c.ctx.Loops.Pop()
+
+	if loop.Dst.IsRegister() {
+		c.ctx.Types.Set(loop.Dst, core.TypeList)
+	}
+
+	return loop.Dst
+}
+
+func (c *ExprCompiler) compileInlineFilter(inline fql.IInlineExpressionContext) {
+	if inline == nil {
+		return
+	}
+
+	filter := inline.InlineFilter()
+	if filter == nil {
+		return
+	}
+
+	src := c.ctx.ExprCompiler.Compile(filter.Expression())
+	label := c.ctx.Loops.Current().ContinueLabel()
+	c.ctx.Emitter.EmitJumpIfFalse(src, label)
+}
+
+func (c *ExprCompiler) compileInlineFilterExpr(expr fql.IExpressionContext) {
+	if expr == nil {
+		return
+	}
+
+	src := c.ctx.ExprCompiler.Compile(expr)
+	label := c.ctx.Loops.Current().ContinueLabel()
+	c.ctx.Emitter.EmitJumpIfFalse(src, label)
+}
+
+func (c *ExprCompiler) compileInlineLimit(inline fql.IInlineExpressionContext) {
+	if inline == nil {
+		return
+	}
+
+	limit := inline.InlineLimit()
+	if limit == nil {
+		return
+	}
+
+	clauses := limit.AllLimitClauseValue()
+	if len(clauses) == 0 {
+		return
+	}
+
+	if len(clauses) == 1 {
+		c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+		return
+	}
+
+	c.ctx.LoopCompiler.compileOffset(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[0]))
+	c.ctx.LoopCompiler.compileLimit(c.ctx.LoopCompiler.compileLimitClauseValue(clauses[1]))
 }
 
 // CompileVariable processes a variable reference from the FQL AST.
@@ -580,11 +1137,14 @@ func (c *ExprCompiler) CompileMemberExpression(ctx fql.IMemberExpressionContext)
 // Panics if the variable is not found in the symbol table.
 func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 	// Check if the context is valid (in case of parser errors)
-	if ctx.Identifier() == nil {
+	var name string
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	} else {
 		return vm.NoopOperand
 	}
-
-	name := ctx.Identifier().GetText()
 	// Just return the register / constant index
 	op, _, found := c.ctx.Symbols.Resolve(name)
 
@@ -613,7 +1173,14 @@ func (c *ExprCompiler) CompileVariable(ctx fql.IVariableContext) vm.Operand {
 // Returns:
 //   - An operand representing the parameter's value
 func (c *ExprCompiler) CompileParam(ctx fql.IParamContext) vm.Operand {
-	name := ctx.Identifier().GetText()
+	var name string
+	if id := ctx.Identifier(); id != nil {
+		name = id.GetText()
+	} else if srw := ctx.SafeReservedWord(); srw != nil {
+		name = srw.GetText()
+	} else {
+		return vm.NoopOperand
+	}
 	reg := c.ctx.Registers.Allocate()
 	c.ctx.Emitter.EmitLoadParam(reg, c.ctx.Symbols.BindParam(name))
 	c.ctx.Types.Set(reg, core.TypeAny)

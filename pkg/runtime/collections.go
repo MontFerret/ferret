@@ -12,7 +12,6 @@ type (
 
 	// KeyReadable is an interface for accessing elements by their key in a collection-like structure.
 	KeyReadable interface {
-
 		// Get retrieves the value associated with the given key or returns an error if the key is not found.
 		Get(ctx context.Context, key Value) (Value, error)
 	}

@@ -172,6 +172,36 @@ type FqlParserListener interface {
 	// EnterMemberExpressionPath is called when entering the memberExpressionPath production.
 	EnterMemberExpressionPath(c *MemberExpressionPathContext)
 
+	// EnterArrayExpansion is called when entering the arrayExpansion production.
+	EnterArrayExpansion(c *ArrayExpansionContext)
+
+	// EnterArrayContraction is called when entering the arrayContraction production.
+	EnterArrayContraction(c *ArrayContractionContext)
+
+	// EnterArrayQuestionMark is called when entering the arrayQuestionMark production.
+	EnterArrayQuestionMark(c *ArrayQuestionMarkContext)
+
+	// EnterArrayQuestionQuantifier is called when entering the arrayQuestionQuantifier production.
+	EnterArrayQuestionQuantifier(c *ArrayQuestionQuantifierContext)
+
+	// EnterArrayQuestionQuantifierValue is called when entering the arrayQuestionQuantifierValue production.
+	EnterArrayQuestionQuantifierValue(c *ArrayQuestionQuantifierValueContext)
+
+	// EnterArrayApply is called when entering the arrayApply production.
+	EnterArrayApply(c *ArrayApplyContext)
+
+	// EnterInlineExpression is called when entering the inlineExpression production.
+	EnterInlineExpression(c *InlineExpressionContext)
+
+	// EnterInlineFilter is called when entering the inlineFilter production.
+	EnterInlineFilter(c *InlineFilterContext)
+
+	// EnterInlineLimit is called when entering the inlineLimit production.
+	EnterInlineLimit(c *InlineLimitContext)
+
+	// EnterInlineReturn is called when entering the inlineReturn production.
+	EnterInlineReturn(c *InlineReturnContext)
+
 	// EnterSafeReservedWord is called when entering the safeReservedWord production.
 	EnterSafeReservedWord(c *SafeReservedWordContext)
 
@@ -192,6 +222,9 @@ type FqlParserListener interface {
 
 	// EnterExpressionAtom is called when entering the expressionAtom production.
 	EnterExpressionAtom(c *ExpressionAtomContext)
+
+	// EnterQueryLiteral is called when entering the queryLiteral production.
+	EnterQueryLiteral(c *QueryLiteralContext)
 
 	// EnterArrayOperator is called when entering the arrayOperator production.
 	EnterArrayOperator(c *ArrayOperatorContext)
@@ -391,6 +424,36 @@ type FqlParserListener interface {
 	// ExitMemberExpressionPath is called when exiting the memberExpressionPath production.
 	ExitMemberExpressionPath(c *MemberExpressionPathContext)
 
+	// ExitArrayExpansion is called when exiting the arrayExpansion production.
+	ExitArrayExpansion(c *ArrayExpansionContext)
+
+	// ExitArrayContraction is called when exiting the arrayContraction production.
+	ExitArrayContraction(c *ArrayContractionContext)
+
+	// ExitArrayQuestionMark is called when exiting the arrayQuestionMark production.
+	ExitArrayQuestionMark(c *ArrayQuestionMarkContext)
+
+	// ExitArrayQuestionQuantifier is called when exiting the arrayQuestionQuantifier production.
+	ExitArrayQuestionQuantifier(c *ArrayQuestionQuantifierContext)
+
+	// ExitArrayQuestionQuantifierValue is called when exiting the arrayQuestionQuantifierValue production.
+	ExitArrayQuestionQuantifierValue(c *ArrayQuestionQuantifierValueContext)
+
+	// ExitArrayApply is called when exiting the arrayApply production.
+	ExitArrayApply(c *ArrayApplyContext)
+
+	// ExitInlineExpression is called when exiting the inlineExpression production.
+	ExitInlineExpression(c *InlineExpressionContext)
+
+	// ExitInlineFilter is called when exiting the inlineFilter production.
+	ExitInlineFilter(c *InlineFilterContext)
+
+	// ExitInlineLimit is called when exiting the inlineLimit production.
+	ExitInlineLimit(c *InlineLimitContext)
+
+	// ExitInlineReturn is called when exiting the inlineReturn production.
+	ExitInlineReturn(c *InlineReturnContext)
+
 	// ExitSafeReservedWord is called when exiting the safeReservedWord production.
 	ExitSafeReservedWord(c *SafeReservedWordContext)
 
@@ -411,6 +474,9 @@ type FqlParserListener interface {
 
 	// ExitExpressionAtom is called when exiting the expressionAtom production.
 	ExitExpressionAtom(c *ExpressionAtomContext)
+
+	// ExitQueryLiteral is called when exiting the queryLiteral production.
+	ExitQueryLiteral(c *QueryLiteralContext)
 
 	// ExitArrayOperator is called when exiting the arrayOperator production.
 	ExitArrayOperator(c *ArrayOperatorContext)

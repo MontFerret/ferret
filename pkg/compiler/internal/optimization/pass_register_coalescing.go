@@ -869,6 +869,8 @@ func operandIsRegister(op vm.Opcode, idx int) bool {
 		return idx == 0
 	case vm.OpLoadArray, vm.OpLoadObject:
 		return idx == 0
+	case vm.OpFlatten:
+		return idx == 0 || idx == 1
 	case vm.OpDataSet, vm.OpDataSetCollector, vm.OpDataSetSorter, vm.OpDataSetMultiSorter:
 		return idx == 0
 	case vm.OpCall0, vm.OpProtectedCall0:

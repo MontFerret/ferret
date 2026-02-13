@@ -267,6 +267,7 @@ memberExpressionSource
     | arrayLiteral
     | objectLiteral
     | functionCall
+    | OpenParen (forExpression | waitForExpression | expression) CloseParen
     ;
 
 functionCallExpression
@@ -290,6 +291,58 @@ argumentList
 memberExpressionPath
     : errorOperator? Dot propertyName
     | (errorOperator Dot)? computedPropertyName
+    | arrayContraction
+    | arrayExpansion
+    | arrayQuestionMark
+    | arrayApply
+    ;
+
+arrayExpansion
+    : OpenBracket star=Multi inlineExpression? CloseBracket
+    ;
+
+arrayContraction
+    : OpenBracket stars+=Multi stars+=Multi+ inlineExpression? CloseBracket
+    ;
+
+arrayQuestionMark
+    : OpenBracket QuestionMark (Filter expression | arrayQuestionQuantifier Filter expression)? CloseBracket
+    ;
+
+arrayQuestionQuantifier
+    : Any
+    | All
+    | None
+    | At Least OpenParen arrayQuestionQuantifierValue CloseParen
+    | arrayQuestionQuantifierValue Range arrayQuestionQuantifierValue
+    | arrayQuestionQuantifierValue
+    ;
+
+arrayQuestionQuantifierValue
+    : integerLiteral
+    | param
+    ;
+
+arrayApply
+    : OpenBracket Tilde queryLiteral CloseBracket
+    ;
+
+inlineExpression
+    : inlineFilter inlineLimit? inlineReturn?
+    | inlineLimit inlineReturn?
+    | inlineReturn
+    ;
+
+inlineFilter
+    : Filter expression
+    ;
+
+inlineLimit
+    : Limit limitClauseValue (Comma limitClauseValue)?
+    ;
+
+inlineReturn
+    : Return expression
     ;
 
 safeReservedWord
@@ -306,6 +359,8 @@ safeReservedWord
     | With
     | All
     | Any
+    | At
+    | Least
     | Aggregate
     | Event
     | Timeout
@@ -369,6 +424,10 @@ expressionAtom
     | memberExpression
     | param
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
+    ;
+
+queryLiteral
+    : Identifier (stringLiteral (OpenParen expression CloseParen)?)?
     ;
 
 arrayOperator

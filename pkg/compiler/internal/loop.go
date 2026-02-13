@@ -381,6 +381,7 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 func (c *LoopCompiler) compileLimit(src vm.Operand) {
 	// Allocate a state register for the limit operation
 	state := c.ctx.Registers.Allocate()
+	c.ctx.Loops.Current().RegisterReset(state)
 	// Emit the iterator limit instruction with the loop's end label
 	c.ctx.Emitter.EmitIterLimit(state, src, c.ctx.Loops.Current().BreakLabel())
 }
@@ -390,6 +391,7 @@ func (c *LoopCompiler) compileLimit(src vm.Operand) {
 func (c *LoopCompiler) compileOffset(src vm.Operand) {
 	// Allocate a state register for the offset operation
 	state := c.ctx.Registers.Allocate()
+	c.ctx.Loops.Current().RegisterReset(state)
 	// Emit the iterator skip instruction with the loop's jump label
 	c.ctx.Emitter.EmitIterSkip(state, src, c.ctx.Loops.Current().ContinueLabel())
 }
