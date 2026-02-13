@@ -123,6 +123,18 @@ func (v *BaseFqlParserVisitor) VisitWaitForExpression(ctx *WaitForExpressionCont
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForPredicate(ctx *WaitForPredicateContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitWaitForEventName(ctx *WaitForEventNameContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -136,6 +148,22 @@ func (v *BaseFqlParserVisitor) VisitOptionsClause(ctx *OptionsClauseContext) int
 }
 
 func (v *BaseFqlParserVisitor) VisitTimeoutClause(ctx *TimeoutClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitEveryClause(ctx *EveryClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitBackoffClause(ctx *BackoffClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitBackoffStrategy(ctx *BackoffStrategyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -272,6 +300,10 @@ func (v *BaseFqlParserVisitor) VisitSafeReservedWord(ctx *SafeReservedWordContex
 }
 
 func (v *BaseFqlParserVisitor) VisitUnsafeReservedWord(ctx *UnsafeReservedWordContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitDurationLiteral(ctx *DurationLiteralContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

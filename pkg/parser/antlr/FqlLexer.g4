@@ -54,6 +54,11 @@ Return: 'RETURN';
 Waitfor: 'WAITFOR';
 Options: 'OPTIONS';
 Timeout: 'TIMEOUT';
+Every: 'EVERY';
+Backoff: 'BACKOFF';
+Exists: 'EXISTS';
+Value: 'VALUE';
+Throw: 'THROW';
 Distinct: 'DISTINCT';
 Filter: 'FILTER';
 Current: 'CURRENT';
@@ -94,6 +99,9 @@ Param: '@';
 Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
 IgnoreIdentifier: Underscore;
 StringLiteral: SQString | DQSring | BacktickString | TickString;
+DurationLiteral
+    : DecimalIntegerLiteral (Dot [0-9]+)? ExponentPart? DurationUnit
+    ;
 IntegerLiteral: [0-9]+;
 FloatLiteral
     : DecimalIntegerLiteral Dot [0-9]+ ExponentPart?
@@ -128,3 +136,10 @@ fragment SQString: '\'' ('\\'. | '\'\'' | ~('\'' | '\\'))* '\'';
 fragment BacktickString: '`' ('\\`' | ~'`')* '`';
 fragment TickString: '´' ('\\´' | ~'´')* '´';
 fragment NamespaceSeparator: '::';
+fragment DurationUnit
+    : 'MS'
+    | 'S'
+    | 'M'
+    | 'H'
+    | 'D'
+    ;

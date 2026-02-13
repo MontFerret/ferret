@@ -203,7 +203,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addUse(dst)
 		addDef(dst)
 		return
-	case vm.OpCastBool, vm.OpNegate, vm.OpNot, vm.OpFlipPositive, vm.OpFlipNegative, vm.OpLength, vm.OpType, vm.OpFlatten:
+	case vm.OpCastBool, vm.OpNegate, vm.OpNot, vm.OpFlipPositive, vm.OpFlipNegative, vm.OpLength, vm.OpType, vm.OpFlatten, vm.OpExists:
 		addUse(src1)
 		addDef(dst)
 		return

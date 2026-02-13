@@ -157,7 +157,23 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
+    : Waitfor waitForEventExpression waitForOrThrowClause?
+    | Waitfor waitForPredicateExpression waitForOrThrowClause?
+    ;
+
+waitForEventExpression
+    : Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
+    ;
+
+waitForPredicateExpression
+    : waitForPredicate (timeoutClause)? (everyClause)? (backoffClause)?
+    ;
+
+waitForPredicate
+    : Exists expression
+    | Not Exists expression
+    | Value expression
+    | expression
     ;
 
 waitForEventName
@@ -179,7 +195,25 @@ optionsClause
     ;
 
 timeoutClause
-    : Timeout (integerLiteral | variable | param | memberExpression | functionCall)
+    : Timeout (durationLiteral | integerLiteral | floatLiteral | variable | param | memberExpression | functionCall)
+    ;
+
+everyClause
+    : Every (durationLiteral | integerLiteral | floatLiteral | variable | param | memberExpression | functionCall)
+    ;
+
+backoffClause
+    : Backoff backoffStrategy
+    ;
+
+backoffStrategy
+    : Identifier
+    | stringLiteral
+    | None
+    ;
+
+waitForOrThrowClause
+    : Or Throw
     ;
 
 param
@@ -366,6 +400,8 @@ safeReservedWord
     | Event
     | Timeout
     | Options
+    | Every
+    | Backoff
     | Current
     | Step
     ;
@@ -384,6 +420,11 @@ unsafeReservedWord
     | Not
     | For
     | BooleanLiteral
+    | Throw
+    ;
+
+durationLiteral
+    : DurationLiteral
     ;
 
 rangeOperator
@@ -424,6 +465,7 @@ expressionAtom
     | variable
     | memberExpression
     | param
+    | waitForExpression
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
     ;
 

@@ -137,6 +137,9 @@ const (
 	OpIterKey   // Returns the current key
 	OpIterLimit
 	OpIterSkip
+
+	// Existence Operations
+	OpExists
 )
 
 func (op Opcode) String() string {
@@ -308,6 +311,8 @@ func (op Opcode) String() string {
 		return "CLOSE"
 	case OpSleep:
 		return "SLEEP"
+	case OpExists:
+		return "EXISTS"
 
 	// Function Operations
 	case OpCall:
