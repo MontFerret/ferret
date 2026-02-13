@@ -118,6 +118,8 @@ func Parse(input interface{}) Value {
 		return NewBinary(value)
 	case nil:
 		return None
+	case Value:
+		return value
 	default:
 		v := reflect.ValueOf(value)
 		t := reflect.TypeOf(value)

@@ -27,7 +27,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 			"Missing query type before literal",
 		),
 		ErrorCase(
-			`RETURN doc[~ css]`,
+			`LET doc = {} RETURN doc[~ css()]`,
 			E{
 				Kind:    compiler.SyntaxError,
 				Message: "Expected query string after 'css'",

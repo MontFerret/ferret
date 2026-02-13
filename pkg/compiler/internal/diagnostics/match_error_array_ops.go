@@ -41,7 +41,7 @@ func matchQueryOperatorErrors(src *file.Source, err *CompilationError, offending
 		return false
 	}
 
-	if isStringLiteral(offending) && hasPrevToken(offending, "~", 4) {
+	if isStringLiteral(offending) && hasPrevToken(offending, "~", 4) && !isMissingStringLiteral(err.Message) {
 		span := spanFromTokenSafe(offending.Token(), src)
 		err.Message = "Expected query type before query literal"
 		err.Hint = "Provide a type name before the query string, e.g. doc[~ css`...`]."
@@ -228,6 +228,10 @@ func isStringLiteral(node *TokenNode) bool {
 	}
 
 	return node.Token().GetTokenType() == fql.FqlLexerStringLiteral
+}
+
+func isMissingStringLiteral(msg string) bool {
+	return isMissing(msg) && has(msg, "stringliteral")
 }
 
 func hasMissingClosingBracket(msg string) bool {

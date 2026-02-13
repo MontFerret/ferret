@@ -532,13 +532,28 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 	for idx, segment := range segments {
 		p := segment.(*fql.MemberExpressionPathContext)
 		if contraction := p.ArrayContraction(); contraction != nil {
-			return c.compileArrayContraction(src, contraction, segments[idx+1:])
+			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
+			result := c.compileArrayContraction(src, contraction, inlineTail)
+			if len(restTail) == 0 {
+				return result
+			}
+			return c.compileMemberExpressionSegments(result, restTail)
 		}
 		if expansion := p.ArrayExpansion(); expansion != nil {
-			return c.compileArrayExpansion(src, expansion, segments[idx+1:])
+			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
+			result := c.compileArrayExpansion(src, expansion, inlineTail)
+			if len(restTail) == 0 {
+				return result
+			}
+			return c.compileMemberExpressionSegments(result, restTail)
 		}
 		if question := p.ArrayQuestionMark(); question != nil {
-			return c.compileArrayQuestionMark(src, question, segments[idx+1:])
+			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
+			result := c.compileArrayQuestionMark(src, question, inlineTail)
+			if len(restTail) == 0 {
+				return result
+			}
+			return c.compileMemberExpressionSegments(result, restTail)
 		}
 		if apply := p.ArrayApply(); apply != nil {
 			return c.compileArrayApply(src, apply, segments[idx+1:])
@@ -617,6 +632,17 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 	}
 
 	return src
+}
+
+func splitArrayOperatorTail(segments []fql.IMemberExpressionPathContext) ([]fql.IMemberExpressionPathContext, []fql.IMemberExpressionPathContext) {
+	if len(segments) > 0 {
+		p := segments[0].(*fql.MemberExpressionPathContext)
+		if p.ArrayContraction() != nil || p.ArrayExpansion() != nil || p.ArrayQuestionMark() != nil {
+			return nil, segments
+		}
+	}
+
+	return segments, nil
 }
 
 func (c *ExprCompiler) compileArrayQuestionMark(src vm.Operand, question fql.IArrayQuestionMarkContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
@@ -775,7 +801,10 @@ func (c *ExprCompiler) compileQueryLiteral(ctx fql.IQueryLiteralContext) vm.Oper
 		kind = strings.ToLower(ident.GetText())
 	}
 
-	payload := parseStringLiteral(ctx.StringLiteral())
+	payload := runtime.EmptyString
+	if str := ctx.StringLiteral(); str != nil {
+		payload = parseStringLiteral(str)
+	}
 	query := runtime.Query{
 		Kind:    runtime.NewString(kind),
 		Payload: payload,
