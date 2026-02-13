@@ -2,10 +2,13 @@ package vm
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
 func (vm *VM) warmup(env *Environment) error {
+	vm.warmupRegexps()
+
 	hash := env.Functions.Hash()
 
 	if vm.cache.FuncHash == hash || hash == 0 {
@@ -92,6 +95,48 @@ func (vm *VM) warmup(env *Environment) error {
 	vm.cache.FuncHash = env.Functions.Hash()
 
 	return nil
+}
+
+func (vm *VM) warmupRegexps() {
+	if vm.cache.RegexpsWarmed {
+		return
+	}
+
+	constants := vm.program.Constants
+	reg := map[Operand]runtime.Value{}
+
+	for pc, inst := range vm.program.Bytecode {
+		op := inst.Opcode
+		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
+
+		switch op {
+		case OpLoadConst:
+			reg[dst] = constants[src1.Constant()]
+		case OpMove:
+			if val, ok := reg[src1]; ok {
+				reg[dst] = val
+			} else {
+				delete(reg, dst)
+			}
+		case OpRegexp:
+			if val, ok := reg[src2]; ok {
+				r, err := data.ToRegexp(val)
+
+				if err == nil {
+					pattern := r.String()
+					if cached := vm.cache.Regexps[pc]; cached == nil || cached.Pattern != pattern {
+						vm.cache.Regexps[pc] = &mem.CachedRegexp{Pattern: pattern, Regexp: r}
+					}
+				}
+			}
+		}
+
+		if op != OpLoadConst && op != OpMove && dst.IsRegister() {
+			delete(reg, dst)
+		}
+	}
+
+	vm.cache.RegexpsWarmed = true
 }
 
 func resolveFnName(reg map[Operand]runtime.Value, dst Operand) (string, error) {

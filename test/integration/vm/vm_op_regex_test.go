@@ -18,12 +18,19 @@ func TestRegexpOperator(t *testing.T) {
 		Case(`RETURN "foo" =~ "^f[o].$" `, true),
 		Case(`RETURN "foo" !~ "[a-z]+bar$"`, true),
 		Case(`RETURN "foo" !~ T::REGEXP()`, true),
+		CaseArray(`FOR p IN ["^f..$", "^b..$"] RETURN "foo" =~ p`, []any{true, false}),
+		CaseArray(`FOR p IN [1, 2] RETURN "foo" =~ T::REGEXP_DYNAMIC(p)`, []any{true, false}),
 	}, vm.WithFunction("T::REGEXP", func(_ context.Context, _ ...runtime.Value) (value runtime.Value, e error) {
 		return runtime.NewString("[a-z]+bar$"), nil
+	}), vm.WithFunction("T::REGEXP_DYNAMIC", func(_ context.Context, args ...runtime.Value) (value runtime.Value, e error) {
+		if len(args) > 0 && args[0].String() == "1" {
+			return runtime.NewString("^f..$"), nil
+		}
+
+		return runtime.NewString("^b..$"), nil
 	}))
 
-	// TODO: Fix
-	SkipConvey("Should return an error during compilation when a regexp string invalid", t, func() {
+	Convey("Should return an error during compilation when a regexp string invalid", t, func() {
 		_, err := compiler.New(compiler.WithOptimizationLevel(compiler.O0)).
 			Compile(file.NewAnonymousSource(`
 			RETURN "foo" !~ "[ ]\K(?<!\d )(?=(?: ?\d){8})(?!(?: ?\d){9})\d[ \d]+\d" 
@@ -32,8 +39,7 @@ func TestRegexpOperator(t *testing.T) {
 		So(err, ShouldBeError)
 	})
 
-	// TODO: Fix
-	SkipConvey("Should return an error during compilation when a regexp is not a string", t, func() {
+	Convey("Should return an error during compilation when a regexp is not a string", t, func() {
 		right := []string{
 			"[]",
 			"{}",
