@@ -163,7 +163,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addUse(src1)
 		addDef(dst)
 		return
-	case vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero:
+	case vm.OpLoadConst, vm.OpLoadParam, vm.OpLoadNone, vm.OpLoadBool, vm.OpLoadZero, vm.OpRand:
 		addDef(dst)
 		return
 	case vm.OpLoadArray:

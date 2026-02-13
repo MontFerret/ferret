@@ -160,8 +160,16 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 	}
 
 	timeoutReg := c.compileDurationClause(ctx.TimeoutClause())
-	everyReg := c.compileDurationClause(ctx.EveryClause())
+	everyReg, capEveryReg := c.compileEveryClause(ctx.EveryClause())
 	backoff := c.compileBackoffClause(ctx.BackoffClause())
+	jitterReg, jitterLiteral, hasJitter := c.compileJitterClause(ctx.JitterClause())
+	if hasJitter {
+		if jitterLiteral != nil && *jitterLiteral == 0 {
+			hasJitter = false
+		} else if jitterLiteral == nil {
+			c.emitClampRange(jitterReg, loadConstant(c.ctx, runtime.NewFloat(0)), loadConstant(c.ctx, runtime.NewFloat(1)))
+		}
+	}
 
 	switch mode {
 	case waitForPredicateModeBool:
@@ -269,9 +277,23 @@ func (c *WaitCompiler) compilePredicate(ctx fql.IWaitForPredicateExpressionConte
 		c.ctx.Emitter.EmitJumpIfTrue(reachedReg, timeoutLabel)
 	}
 
-	c.emitWaitSleep(pollReg, timeoutReg, elapsedReg)
+	sleepIntervalReg := pollReg
+	if hasJitter || capEveryReg != vm.NoopOperand {
+		sleepIntervalReg = c.ctx.Registers.Allocate()
+		c.ctx.Emitter.EmitMove(sleepIntervalReg, pollReg)
+		if hasJitter {
+			c.emitApplyJitter(sleepIntervalReg, jitterReg)
+		}
+		if capEveryReg != vm.NoopOperand {
+			c.emitClampMax(sleepIntervalReg, capEveryReg)
+		}
+	}
+	c.emitWaitSleep(sleepIntervalReg, timeoutReg, elapsedReg)
 	if backoff != waitForBackoffNone {
 		c.emitBackoffUpdate(backoff, intervalReg, baseEveryReg)
+		if capEveryReg != vm.NoopOperand {
+			c.emitClampMax(intervalReg, capEveryReg)
+		}
 	}
 	c.ctx.Emitter.EmitJump(start)
 
@@ -363,6 +385,67 @@ func (c *WaitCompiler) emitBackoffUpdate(strategy waitForBackoff, intervalReg, b
 	}
 }
 
+func (c *WaitCompiler) emitClampMin(target, min vm.Operand) {
+	lessReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitLt(lessReg, target, min)
+
+	useMin := c.ctx.Emitter.NewLabel()
+	end := c.ctx.Emitter.NewLabel()
+
+	c.ctx.Emitter.EmitJumpIfTrue(lessReg, useMin)
+	c.ctx.Emitter.EmitJump(end)
+
+	c.ctx.Emitter.MarkLabel(useMin)
+	c.ctx.Emitter.EmitMove(target, min)
+	c.ctx.Emitter.MarkLabel(end)
+}
+
+func (c *WaitCompiler) emitClampMax(target, max vm.Operand) {
+	greaterReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitGt(greaterReg, target, max)
+
+	useMax := c.ctx.Emitter.NewLabel()
+	end := c.ctx.Emitter.NewLabel()
+
+	c.ctx.Emitter.EmitJumpIfTrue(greaterReg, useMax)
+	c.ctx.Emitter.EmitJump(end)
+
+	c.ctx.Emitter.MarkLabel(useMax)
+	c.ctx.Emitter.EmitMove(target, max)
+	c.ctx.Emitter.MarkLabel(end)
+}
+
+func (c *WaitCompiler) emitClampRange(target, min, max vm.Operand) {
+	c.emitClampMin(target, min)
+	c.emitClampMax(target, max)
+}
+
+func (c *WaitCompiler) emitApplyJitter(intervalReg, jitterReg vm.Operand) {
+	if intervalReg == vm.NoopOperand || jitterReg == vm.NoopOperand {
+		return
+	}
+
+	randReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitA(vm.OpRand, randReg)
+
+	twoReg := loadConstant(c.ctx, runtime.NewFloat(2))
+	oneReg := loadConstant(c.ctx, runtime.NewFloat(1))
+
+	twoJitterReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitABC(vm.OpMulti, twoJitterReg, jitterReg, twoReg)
+
+	randScaleReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitABC(vm.OpMulti, randScaleReg, randReg, twoJitterReg)
+
+	oneMinusReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitABC(vm.OpSub, oneMinusReg, oneReg, jitterReg)
+
+	multiplierReg := c.ctx.Registers.Allocate()
+	c.ctx.Emitter.EmitABC(vm.OpAdd, multiplierReg, oneMinusReg, randScaleReg)
+
+	c.ctx.Emitter.EmitABC(vm.OpMulti, intervalReg, intervalReg, multiplierReg)
+}
+
 func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) file.Span {
 	span := file.Span{Start: -1, End: -1}
 
@@ -438,6 +521,24 @@ func (c *WaitCompiler) CompileTimeoutClauseContext(ctx fql.ITimeoutClauseContext
 	return c.compileDurationClause(ctx)
 }
 
+func (c *WaitCompiler) compileEveryClause(ctx fql.IEveryClauseContext) (vm.Operand, vm.Operand) {
+	if ctx == nil {
+		return vm.NoopOperand, vm.NoopOperand
+	}
+
+	values := ctx.AllEveryClauseValue()
+	if len(values) == 0 {
+		return vm.NoopOperand, vm.NoopOperand
+	}
+
+	base := c.compileDurationClause(values[0])
+	if len(values) > 1 {
+		return base, c.compileDurationClause(values[1])
+	}
+
+	return base, vm.NoopOperand
+}
+
 func (c *WaitCompiler) compileDurationClause(ctx durationClause) vm.Operand {
 	if ctx == nil {
 		return vm.NoopOperand
@@ -457,6 +558,70 @@ func (c *WaitCompiler) compileDurationClause(ctx durationClause) vm.Operand {
 
 	if fl := ctx.FloatLiteral(); fl != nil {
 		return c.ctx.LiteralCompiler.CompileFloatLiteral(fl)
+	}
+
+	if v := ctx.Variable(); v != nil {
+		return c.ctx.ExprCompiler.CompileVariable(v)
+	}
+
+	if p := ctx.Param(); p != nil {
+		return c.ctx.ExprCompiler.CompileParam(p)
+	}
+
+	if me := ctx.MemberExpression(); me != nil {
+		return c.ctx.ExprCompiler.CompileMemberExpression(me)
+	}
+
+	if fc := ctx.FunctionCall(); fc != nil {
+		return c.ctx.ExprCompiler.CompileFunctionCall(fc, false)
+	}
+
+	return vm.NoopOperand
+}
+
+func (c *WaitCompiler) compileJitterClause(ctx fql.IJitterClauseContext) (vm.Operand, *float64, bool) {
+	if ctx == nil {
+		return vm.NoopOperand, nil, false
+	}
+
+	valueCtx := ctx.JitterClauseValue()
+	if valueCtx == nil {
+		return vm.NoopOperand, nil, false
+	}
+
+	var literal *float64
+	if fl := valueCtx.FloatLiteral(); fl != nil {
+		if val, err := strconv.ParseFloat(fl.GetText(), 64); err == nil {
+			literal = &val
+		}
+	} else if il := valueCtx.IntegerLiteral(); il != nil {
+		if val, err := strconv.ParseFloat(il.GetText(), 64); err == nil {
+			literal = &val
+		}
+	}
+
+	if literal != nil && (*literal < 0 || *literal > 1) {
+		if prc, ok := valueCtx.(antlr.ParserRuleContext); ok {
+			err := c.ctx.Errors.Create(diagnostics.SemanticError, prc, "JITTER must be between 0 and 1")
+			err.Hint = "Use a value between 0 and 1, e.g. JITTER 0.2."
+			c.ctx.Errors.Add(err)
+		}
+	}
+
+	return c.compileJitterClauseValue(valueCtx), literal, true
+}
+
+func (c *WaitCompiler) compileJitterClauseValue(ctx fql.IJitterClauseValueContext) vm.Operand {
+	if ctx == nil {
+		return vm.NoopOperand
+	}
+
+	if fl := ctx.FloatLiteral(); fl != nil {
+		return c.ctx.LiteralCompiler.CompileFloatLiteral(fl)
+	}
+
+	if il := ctx.IntegerLiteral(); il != nil {
+		return c.ctx.LiteralCompiler.CompileIntegerLiteral(il)
 	}
 
 	if v := ctx.Variable(); v != nil {

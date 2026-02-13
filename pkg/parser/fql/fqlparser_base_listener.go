@@ -246,11 +246,29 @@ func (s *BaseFqlParserListener) EnterEveryClause(ctx *EveryClauseContext) {}
 // ExitEveryClause is called when production everyClause is exited.
 func (s *BaseFqlParserListener) ExitEveryClause(ctx *EveryClauseContext) {}
 
+// EnterEveryClauseValue is called when production everyClauseValue is entered.
+func (s *BaseFqlParserListener) EnterEveryClauseValue(ctx *EveryClauseValueContext) {}
+
+// ExitEveryClauseValue is called when production everyClauseValue is exited.
+func (s *BaseFqlParserListener) ExitEveryClauseValue(ctx *EveryClauseValueContext) {}
+
 // EnterBackoffClause is called when production backoffClause is entered.
 func (s *BaseFqlParserListener) EnterBackoffClause(ctx *BackoffClauseContext) {}
 
 // ExitBackoffClause is called when production backoffClause is exited.
 func (s *BaseFqlParserListener) ExitBackoffClause(ctx *BackoffClauseContext) {}
+
+// EnterJitterClause is called when production jitterClause is entered.
+func (s *BaseFqlParserListener) EnterJitterClause(ctx *JitterClauseContext) {}
+
+// ExitJitterClause is called when production jitterClause is exited.
+func (s *BaseFqlParserListener) ExitJitterClause(ctx *JitterClauseContext) {}
+
+// EnterJitterClauseValue is called when production jitterClauseValue is entered.
+func (s *BaseFqlParserListener) EnterJitterClauseValue(ctx *JitterClauseValueContext) {}
+
+// ExitJitterClauseValue is called when production jitterClauseValue is exited.
+func (s *BaseFqlParserListener) ExitJitterClauseValue(ctx *JitterClauseValueContext) {}
 
 // EnterBackoffStrategy is called when production backoffStrategy is entered.
 func (s *BaseFqlParserListener) EnterBackoffStrategy(ctx *BackoffStrategyContext) {}

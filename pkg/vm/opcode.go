@@ -140,6 +140,9 @@ const (
 
 	// Existence Operations
 	OpExists
+
+	// Random Operations
+	OpRand
 )
 
 func (op Opcode) String() string {
@@ -313,6 +316,8 @@ func (op Opcode) String() string {
 		return "SLEEP"
 	case OpExists:
 		return "EXISTS"
+	case OpRand:
+		return "RAND"
 
 	// Function Operations
 	case OpCall:

@@ -10,9 +10,18 @@ func TestWaitforPredicate(t *testing.T) {
 			RETURN ok
 		`, true, "Should wait until predicate becomes true"),
 		Case(`
+			LET start = NOW()
+			LET ok = WAITFOR (DATE_DIFF(start, NOW(), "f") >= 30) TIMEOUT 0.5s EVERY 10ms, 30ms BACKOFF LINEAR JITTER 0.2
+			RETURN ok
+		`, true, "Should support EVERY cap with JITTER"),
+		Case(`
 			LET ok = WAITFOR FALSE TIMEOUT 50ms EVERY 10ms
 			RETURN ok
 		`, false, "Should return false on timeout"),
+		Case(`
+			LET ok = WAITFOR FALSE TIMEOUT 80ms EVERY 10ms, 10ms BACKOFF EXPONENTIAL JITTER 0.5
+			RETURN ok
+		`, false, "Should honor timeout with cap and jitter"),
 		Case(`
 			LET start = NOW()
 			LET ok = WAITFOR EXISTS (DATE_DIFF(start, NOW(), "f") > 20 ? [1] : []) TIMEOUT 0.5s EVERY 10ms

@@ -155,7 +155,19 @@ func (v *BaseFqlParserVisitor) VisitEveryClause(ctx *EveryClauseContext) interfa
 	return v.VisitChildren(ctx)
 }
 
+func (v *BaseFqlParserVisitor) VisitEveryClauseValue(ctx *EveryClauseValueContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BaseFqlParserVisitor) VisitBackoffClause(ctx *BackoffClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitJitterClause(ctx *JitterClauseContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseFqlParserVisitor) VisitJitterClauseValue(ctx *JitterClauseValueContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

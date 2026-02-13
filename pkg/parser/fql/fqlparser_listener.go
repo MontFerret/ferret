@@ -118,8 +118,17 @@ type FqlParserListener interface {
 	// EnterEveryClause is called when entering the everyClause production.
 	EnterEveryClause(c *EveryClauseContext)
 
+	// EnterEveryClauseValue is called when entering the everyClauseValue production.
+	EnterEveryClauseValue(c *EveryClauseValueContext)
+
 	// EnterBackoffClause is called when entering the backoffClause production.
 	EnterBackoffClause(c *BackoffClauseContext)
+
+	// EnterJitterClause is called when entering the jitterClause production.
+	EnterJitterClause(c *JitterClauseContext)
+
+	// EnterJitterClauseValue is called when entering the jitterClauseValue production.
+	EnterJitterClauseValue(c *JitterClauseValueContext)
 
 	// EnterBackoffStrategy is called when entering the backoffStrategy production.
 	EnterBackoffStrategy(c *BackoffStrategyContext)
@@ -394,8 +403,17 @@ type FqlParserListener interface {
 	// ExitEveryClause is called when exiting the everyClause production.
 	ExitEveryClause(c *EveryClauseContext)
 
+	// ExitEveryClauseValue is called when exiting the everyClauseValue production.
+	ExitEveryClauseValue(c *EveryClauseValueContext)
+
 	// ExitBackoffClause is called when exiting the backoffClause production.
 	ExitBackoffClause(c *BackoffClauseContext)
+
+	// ExitJitterClause is called when exiting the jitterClause production.
+	ExitJitterClause(c *JitterClauseContext)
+
+	// ExitJitterClauseValue is called when exiting the jitterClauseValue production.
+	ExitJitterClauseValue(c *JitterClauseValueContext)
 
 	// ExitBackoffStrategy is called when exiting the backoffStrategy production.
 	ExitBackoffStrategy(c *BackoffStrategyContext)

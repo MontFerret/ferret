@@ -865,7 +865,7 @@ func operandIsRegister(op vm.Opcode, idx int) bool {
 		return idx == 1
 	case vm.OpIterSkip, vm.OpIterLimit:
 		return idx == 1 || idx == 2
-	case vm.OpLoadNone, vm.OpLoadZero, vm.OpLoadBool, vm.OpLoadConst, vm.OpLoadParam:
+	case vm.OpLoadNone, vm.OpLoadZero, vm.OpLoadBool, vm.OpLoadConst, vm.OpLoadParam, vm.OpRand:
 		return idx == 0
 	case vm.OpLoadArray, vm.OpLoadObject:
 		return idx == 0

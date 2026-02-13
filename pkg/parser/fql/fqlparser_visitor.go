@@ -118,8 +118,17 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#everyClause.
 	VisitEveryClause(ctx *EveryClauseContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#everyClauseValue.
+	VisitEveryClauseValue(ctx *EveryClauseValueContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#backoffClause.
 	VisitBackoffClause(ctx *BackoffClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#jitterClause.
+	VisitJitterClause(ctx *JitterClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#jitterClauseValue.
+	VisitJitterClauseValue(ctx *JitterClauseValueContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#backoffStrategy.
 	VisitBackoffStrategy(ctx *BackoffStrategyContext) interface{}

@@ -56,6 +56,7 @@ Options: 'OPTIONS';
 Timeout: 'TIMEOUT';
 Every: 'EVERY';
 Backoff: 'BACKOFF';
+Jitter: 'JITTER';
 Exists: 'EXISTS';
 Value: 'VALUE';
 Throw: 'THROW';

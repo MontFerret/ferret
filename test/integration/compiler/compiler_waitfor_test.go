@@ -18,5 +18,12 @@ func TestWaitforCompilationErrors(t *testing.T) {
 			Message: "OR THROW is not supported",
 			Hint:    "Remove OR THROW and handle timeouts explicitly.",
 		}, "OR THROW should fail compilation"),
+		ErrorCase(`
+			LET ok = WAITFOR TRUE JITTER 1.5
+			RETURN ok
+		`, E{
+			Message: "JITTER must be between 0 and 1",
+			Hint:    "Use a value between 0 and 1, e.g. JITTER 0.2.",
+		}, "Out-of-range JITTER should fail compilation"),
 	})
 }

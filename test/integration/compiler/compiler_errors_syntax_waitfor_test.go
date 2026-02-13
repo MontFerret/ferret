@@ -56,5 +56,25 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 			Message: "Expected value after 'BACKOFF' in WAITFOR clause",
 			Hint:    "Provide a backoff strategy, e.g. BACKOFF LINEAR.",
 		}, "Missing WAITFOR BACKOFF strategy"),
+		ErrorCase(`
+			LET ok = WAITFOR TRUE JITTER
+			RETURN ok
+		`, E{
+			Kind:    compiler.SyntaxError,
+			Message: "Expected value after 'JITTER' in WAITFOR clause",
+			Hint:    "Provide a jitter value between 0 and 1, e.g. JITTER 0.2.",
+		}, "Missing WAITFOR JITTER value"),
+		ErrorCase(`
+			LET ok = WAITFOR TRUE EVERY 50ms,
+			RETURN ok
+		`, E{
+			Kind: compiler.SyntaxError,
+		}, "Missing WAITFOR EVERY cap value"),
+		ErrorCase(`
+			LET ok = WAITFOR TRUE EVERY 50ms 2s
+			RETURN ok
+		`, E{
+			Kind: compiler.SyntaxError,
+		}, "Missing comma in WAITFOR EVERY cap clause"),
 	})
 }

@@ -691,6 +691,8 @@ loop:
 			if err := data.Sleep(ctx, dur); err != nil {
 				return nil, err
 			}
+		case OpRand:
+			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		case OpReturn:
 			reg[NoopOperand] = reg[dst]
 

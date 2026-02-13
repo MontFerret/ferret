@@ -42,6 +42,8 @@ func matchWaitForErrors(src *file.Source, err *CompilationError, offending *Toke
 		err.Message = fmt.Sprintf("Expected value after '%s' in WAITFOR clause", clause)
 		if clause == "BACKOFF" {
 			err.Hint = "Provide a backoff strategy, e.g. BACKOFF LINEAR."
+		} else if clause == "JITTER" {
+			err.Hint = "Provide a jitter value between 0 and 1, e.g. JITTER 0.2."
 		} else {
 			err.Hint = fmt.Sprintf("Provide a duration, e.g. %s 100ms.", clause)
 		}
@@ -89,7 +91,7 @@ func waitForMissingClauseValue(offending *TokenNode) (string, *TokenNode) {
 		return "", nil
 	}
 
-	if is(offending, "TIMEOUT") || is(offending, "EVERY") || is(offending, "BACKOFF") {
+	if is(offending, "TIMEOUT") || is(offending, "EVERY") || is(offending, "BACKOFF") || is(offending, "JITTER") {
 		if hasWaitforBefore(offending) {
 			return strings.ToUpper(offending.GetText()), offending
 		}
@@ -97,7 +99,7 @@ func waitForMissingClauseValue(offending *TokenNode) (string, *TokenNode) {
 
 	prev := offending.Prev()
 	if prev != nil {
-		if is(prev, "TIMEOUT") || is(prev, "EVERY") || is(prev, "BACKOFF") {
+		if is(prev, "TIMEOUT") || is(prev, "EVERY") || is(prev, "BACKOFF") || is(prev, "JITTER") {
 			if hasWaitforBefore(prev) {
 				return strings.ToUpper(prev.GetText()), prev
 			}

@@ -176,7 +176,7 @@ waitForEventExpression
     ;
 
 waitForPredicateExpression
-    : waitForPredicate (timeoutClause)? (everyClause)? (backoffClause)?
+    : waitForPredicate (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
     ;
 
 waitForPredicate
@@ -209,11 +209,34 @@ timeoutClause
     ;
 
 everyClause
-    : Every (durationLiteral | integerLiteral | floatLiteral | variable | param | memberExpression | functionCall)
+    : Every everyClauseValue (Comma everyClauseValue)?
+    ;
+
+everyClauseValue
+    : durationLiteral
+    | integerLiteral
+    | floatLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
     ;
 
 backoffClause
     : Backoff backoffStrategy
+    ;
+
+jitterClause
+    : Jitter jitterClauseValue
+    ;
+
+jitterClauseValue
+    : floatLiteral
+    | integerLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
     ;
 
 backoffStrategy
@@ -412,6 +435,7 @@ safeReservedWord
     | Options
     | Every
     | Backoff
+    | Jitter
     | Exists
     | Value
     | Current
