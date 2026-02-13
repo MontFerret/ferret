@@ -245,8 +245,6 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 	c.ctx.Symbols.ExitScope()
 	c.ctx.Loops.Pop()
 
-	// TODO: Free operands
-
 	return loop.Dst
 }
 
@@ -304,8 +302,6 @@ func (c *LoopCompiler) compileForExpressionStatement(ctx fql.IForExpressionState
 		// Handle function calls (e.g., doSomething())
 		_ = c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
-
-	// TODO: Free register if needed
 }
 
 // compileForExpressionClause processes clauses within a FOR loop body.

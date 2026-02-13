@@ -354,6 +354,5 @@ func (t *Object) Clear(_ context.Context) error {
 }
 
 func (t *Object) Iterate(_ context.Context) (Iterator, error) {
-	// TODO: implement channel based iterator
 	return NewObjectIterator(t), nil
 }

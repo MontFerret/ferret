@@ -15,9 +15,13 @@ func TestUse(t *testing.T) {
 	})
 
 	RunUseCases(t, []UseCase{
-		SkipCase(`
-USE FOO
+		Case(`
+USE FOO AS F
 
-RETURN TEST_FN()`, true, "Should compile but return an error during execution because the object does not implement the interface"),
+RETURN F::TEST_FN()`, true, "Should compile and resolve alias to the namespaced function using the namespace alias"),
+		Case(`
+USE FOO::TEST_FN AS FN
+
+RETURN FN()`, true, "Should compile and resolve alias to the namespaced function using the function alias"),
 	}, vm.WithNamespace(ns))
 }

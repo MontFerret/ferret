@@ -16,24 +16,9 @@ func loadConstant(ctx *CompilerContext, value runtime.Value) vm.Operand {
 	reg := ctx.Registers.Allocate()
 	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(value))
 	ctx.Types.Set(reg, valueTypeFromRuntime(value))
+
 	return reg
 }
-
-func loadConstantTo(ctx *CompilerContext, constant runtime.Value, reg vm.Operand) {
-	ctx.Emitter.EmitLoadConst(reg, ctx.Symbols.AddConstant(constant))
-	ctx.Types.Set(reg, valueTypeFromRuntime(constant))
-}
-
-//func loadIndex(ctx *CompilerContext, dst, arr vm.Operand, idx int) {
-//	idxReg := loadConstant(ctx, runtime.Int(idx))
-//	ctx.Emitter.EmitLoadIndex(dst, arr, idxReg)
-//	ctx.Registers.Free(idxReg)
-//}
-//
-//func loadKey(ctx *CompilerContext, dst, obj vm.Operand, key string) {
-//	keyReg := loadConstant(ctx, runtime.String(key))
-//	ctx.Emitter.EmitLoadKey(dst, obj, keyReg)
-//}
 
 func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
 	if dir == nil {
@@ -47,60 +32,71 @@ func sortDirection(dir antlr.TerminalNode) runtime.SortDirection {
 	return runtime.SortDirectionAsc
 }
 
-func getFunctionName(ctx fql.IFunctionCallContext) runtime.String {
+func getFunctionName(ctx fql.IFunctionCallContext, aliases map[string]string) runtime.String {
 	var name string
 	funcNS := ctx.Namespace()
+	nsText := ""
 
 	if funcNS != nil {
-		name += funcNS.GetText()
+		nsText = funcNS.GetText()
 	}
 
-	name += ctx.FunctionName().GetText()
+	if nsText != "" {
+		ns := nsText
+
+		if len(aliases) > 0 {
+			ns = applyNamespaceAlias(ns, aliases)
+		}
+
+		name += ns
+		name += ctx.FunctionName().GetText()
+
+		return runtime.NewString(strings.ToUpper(name))
+	}
+
+	fn := ctx.FunctionName().GetText()
+
+	if len(aliases) > 0 {
+		if target, ok := aliases[strings.ToUpper(fn)]; ok && target != "" {
+			return runtime.NewString(strings.ToUpper(target))
+		}
+	}
+
+	name += fn
 
 	return runtime.NewString(strings.ToUpper(name))
 }
 
-//func copyFromNamespace(fns runtime.Builder, namespace string) error {
-//	// In the name of the function "A::B::C", the namespace is "A::B",
-//	// not "A::B::".
-//	//
-//	// So add "::" at the end.
-//	namespace += "::"
-//
-//	// core.Builder cast every function name to upper case. Thus
-//	// namespace also should be in upper case.
-//	namespace = strings.ToUpper(namespace)
-//
-//	for _, name := range fns.Names() {
-//		if !strings.HasPrefix(name, namespace) {
-//			continue
-//		}
-//
-//		noprefix := strings.Replace(name, namespace, "", 1)
-//
-//		if exists := fns.Has(noprefix); exists {
-//			return errors.Errorf(
-//				`collision occurred: "%s" already registered`,
-//				noprefix,
-//			)
-//		}
-//
-//		if fn, exists := fns.FV().Get(name); exists {
-//			fns.FV().Unset(name).Set(noprefix, fn)
-//		} else if fn, exists := fns.F0().Get(name); exists {
-//			fns.F0().Unset(name).Set(noprefix, fn)
-//		} else if fn, exists := fns.F1().Get(name); exists {
-//			fns.F1().Unset(name).Set(noprefix, fn)
-//		} else if fn, exists := fns.F2().Get(name); exists {
-//			fns.F2().Unset(name).Set(noprefix, fn)
-//		} else if fn, exists := fns.F3().Get(name); exists {
-//			fns.F3().Unset(name).Set(noprefix, fn)
-//		} else if fn, exists := fns.F4().Get(name); exists {
-//			fns.F4().Unset(name).Set(noprefix, fn)
-//		} else {
-//			return errors.Errorf(`function "%s" not found`, name)
-//		}
-//	}
-//
-//	return nil
-//}
+func applyNamespaceAlias(ns string, aliases map[string]string) string {
+	if ns == "" || len(aliases) == 0 {
+		return ns
+	}
+
+	upper := strings.ToUpper(ns)
+	trimmed := strings.TrimSuffix(upper, runtime.NamespaceSeparator)
+	if trimmed == "" {
+		return upper
+	}
+
+	parts := strings.Split(trimmed, runtime.NamespaceSeparator)
+	if len(parts) == 0 {
+		return upper
+	}
+
+	target, ok := aliases[parts[0]]
+	if !ok {
+		return upper
+	}
+
+	target = strings.TrimSuffix(strings.ToUpper(target), runtime.NamespaceSeparator)
+	if target == "" {
+		return upper
+	}
+
+	parts = parts[1:]
+	if len(parts) == 0 {
+		return target + runtime.NamespaceSeparator
+	}
+
+	return target + runtime.NamespaceSeparator + strings.Join(parts, runtime.NamespaceSeparator) + runtime.NamespaceSeparator
+}
