@@ -94,6 +94,15 @@ type FqlParserListener interface {
 	// EnterWaitForExpression is called when entering the waitForExpression production.
 	EnterWaitForExpression(c *WaitForExpressionContext)
 
+	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
+	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
+
+	// EnterWaitForPredicateExpression is called when entering the waitForPredicateExpression production.
+	EnterWaitForPredicateExpression(c *WaitForPredicateExpressionContext)
+
+	// EnterWaitForPredicate is called when entering the waitForPredicate production.
+	EnterWaitForPredicate(c *WaitForPredicateContext)
+
 	// EnterWaitForEventName is called when entering the waitForEventName production.
 	EnterWaitForEventName(c *WaitForEventNameContext)
 
@@ -105,6 +114,27 @@ type FqlParserListener interface {
 
 	// EnterTimeoutClause is called when entering the timeoutClause production.
 	EnterTimeoutClause(c *TimeoutClauseContext)
+
+	// EnterEveryClause is called when entering the everyClause production.
+	EnterEveryClause(c *EveryClauseContext)
+
+	// EnterEveryClauseValue is called when entering the everyClauseValue production.
+	EnterEveryClauseValue(c *EveryClauseValueContext)
+
+	// EnterBackoffClause is called when entering the backoffClause production.
+	EnterBackoffClause(c *BackoffClauseContext)
+
+	// EnterJitterClause is called when entering the jitterClause production.
+	EnterJitterClause(c *JitterClauseContext)
+
+	// EnterJitterClauseValue is called when entering the jitterClauseValue production.
+	EnterJitterClauseValue(c *JitterClauseValueContext)
+
+	// EnterBackoffStrategy is called when entering the backoffStrategy production.
+	EnterBackoffStrategy(c *BackoffStrategyContext)
+
+	// EnterWaitForOrThrowClause is called when entering the waitForOrThrowClause production.
+	EnterWaitForOrThrowClause(c *WaitForOrThrowClauseContext)
 
 	// EnterParam is called when entering the param production.
 	EnterParam(c *ParamContext)
@@ -207,6 +237,9 @@ type FqlParserListener interface {
 
 	// EnterUnsafeReservedWord is called when entering the unsafeReservedWord production.
 	EnterUnsafeReservedWord(c *UnsafeReservedWordContext)
+
+	// EnterDurationLiteral is called when entering the durationLiteral production.
+	EnterDurationLiteral(c *DurationLiteralContext)
 
 	// EnterRangeOperator is called when entering the rangeOperator production.
 	EnterRangeOperator(c *RangeOperatorContext)
@@ -346,6 +379,15 @@ type FqlParserListener interface {
 	// ExitWaitForExpression is called when exiting the waitForExpression production.
 	ExitWaitForExpression(c *WaitForExpressionContext)
 
+	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
+	ExitWaitForEventExpression(c *WaitForEventExpressionContext)
+
+	// ExitWaitForPredicateExpression is called when exiting the waitForPredicateExpression production.
+	ExitWaitForPredicateExpression(c *WaitForPredicateExpressionContext)
+
+	// ExitWaitForPredicate is called when exiting the waitForPredicate production.
+	ExitWaitForPredicate(c *WaitForPredicateContext)
+
 	// ExitWaitForEventName is called when exiting the waitForEventName production.
 	ExitWaitForEventName(c *WaitForEventNameContext)
 
@@ -357,6 +399,27 @@ type FqlParserListener interface {
 
 	// ExitTimeoutClause is called when exiting the timeoutClause production.
 	ExitTimeoutClause(c *TimeoutClauseContext)
+
+	// ExitEveryClause is called when exiting the everyClause production.
+	ExitEveryClause(c *EveryClauseContext)
+
+	// ExitEveryClauseValue is called when exiting the everyClauseValue production.
+	ExitEveryClauseValue(c *EveryClauseValueContext)
+
+	// ExitBackoffClause is called when exiting the backoffClause production.
+	ExitBackoffClause(c *BackoffClauseContext)
+
+	// ExitJitterClause is called when exiting the jitterClause production.
+	ExitJitterClause(c *JitterClauseContext)
+
+	// ExitJitterClauseValue is called when exiting the jitterClauseValue production.
+	ExitJitterClauseValue(c *JitterClauseValueContext)
+
+	// ExitBackoffStrategy is called when exiting the backoffStrategy production.
+	ExitBackoffStrategy(c *BackoffStrategyContext)
+
+	// ExitWaitForOrThrowClause is called when exiting the waitForOrThrowClause production.
+	ExitWaitForOrThrowClause(c *WaitForOrThrowClauseContext)
 
 	// ExitParam is called when exiting the param production.
 	ExitParam(c *ParamContext)
@@ -459,6 +522,9 @@ type FqlParserListener interface {
 
 	// ExitUnsafeReservedWord is called when exiting the unsafeReservedWord production.
 	ExitUnsafeReservedWord(c *UnsafeReservedWordContext)
+
+	// ExitDurationLiteral is called when exiting the durationLiteral production.
+	ExitDurationLiteral(c *DurationLiteralContext)
 
 	// ExitRangeOperator is called when exiting the rangeOperator production.
 	ExitRangeOperator(c *RangeOperatorContext)

@@ -431,6 +431,29 @@ loop:
 				return nil, err
 			}
 
+		case OpExists:
+			val := reg[src1]
+			if val == runtime.None {
+				reg[dst] = runtime.False
+				continue
+			}
+
+			if measurable, ok := val.(runtime.Measurable); ok {
+				length, err := measurable.Length(ctx)
+
+				if err != nil {
+					if _, catch := vm.tryCatch(vm.pc); catch {
+						reg[dst] = runtime.False
+						continue
+					}
+					return nil, err
+				}
+
+				reg[dst] = runtime.NewBoolean(length != 0)
+				continue
+			}
+
+			reg[dst] = runtime.True
 		case OpLength:
 			val, ok := reg[src1].(runtime.Measurable)
 
@@ -668,6 +691,8 @@ loop:
 			if err := data.Sleep(ctx, dur); err != nil {
 				return nil, err
 			}
+		case OpRand:
+			reg[dst] = runtime.NewFloat(runtime.RandomDefault())
 		case OpReturn:
 			reg[NoopOperand] = reg[dst]
 

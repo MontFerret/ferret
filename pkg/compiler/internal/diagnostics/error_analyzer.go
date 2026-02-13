@@ -11,6 +11,7 @@ func AnalyzeSyntaxError(src *file.Source, err *CompilationError, offending *Toke
 		matchArrayOperatorErrors,
 		matchStepLoopErrors,
 		matchLiteralErrors,
+		matchWaitForErrors,
 		matchMissingAssignmentValue,
 		matchForLoopErrors,
 		matchCommonErrors,

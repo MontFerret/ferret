@@ -4,6 +4,16 @@ parser grammar FqlParser;
 
 options { tokenVocab=FqlLexer; }
 
+@parser::members {
+	func (p *FqlParser) isWaitForPredicateStart() bool {
+		la1 := p.GetTokenStream().LA(1)
+		if la1 == FqlParserExists || la1 == FqlParserValue {
+			return true
+		}
+		return la1 == FqlParserNot && p.GetTokenStream().LA(2) == FqlParserExists
+	}
+}
+
 program
     : head* body
     ;
@@ -157,7 +167,23 @@ collectCounter
     ;
 
 waitForExpression
-    : Waitfor Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
+    : Waitfor waitForEventExpression waitForOrThrowClause?
+    | Waitfor waitForPredicateExpression waitForOrThrowClause?
+    ;
+
+waitForEventExpression
+    : Event waitForEventName In waitForEventSource (optionsClause)? (filterClause)? (timeoutClause)?
+    ;
+
+waitForPredicateExpression
+    : waitForPredicate (timeoutClause)? (everyClause)? (backoffClause)? (jitterClause)?
+    ;
+
+waitForPredicate
+    : Exists expression
+    | Not Exists expression
+    | Value expression
+    | {!p.isWaitForPredicateStart()}? expression
     ;
 
 waitForEventName
@@ -179,7 +205,48 @@ optionsClause
     ;
 
 timeoutClause
-    : Timeout (integerLiteral | variable | param | memberExpression | functionCall)
+    : Timeout (durationLiteral | integerLiteral | floatLiteral | variable | param | memberExpression | functionCall)
+    ;
+
+everyClause
+    : Every everyClauseValue (Comma everyClauseValue)?
+    ;
+
+everyClauseValue
+    : durationLiteral
+    | integerLiteral
+    | floatLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
+    ;
+
+backoffClause
+    : Backoff backoffStrategy
+    ;
+
+jitterClause
+    : Jitter jitterClauseValue
+    ;
+
+jitterClauseValue
+    : floatLiteral
+    | integerLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
+    ;
+
+backoffStrategy
+    : Identifier
+    | stringLiteral
+    | None
+    ;
+
+waitForOrThrowClause
+    : Or Throw
     ;
 
 param
@@ -366,6 +433,11 @@ safeReservedWord
     | Event
     | Timeout
     | Options
+    | Every
+    | Backoff
+    | Jitter
+    | Exists
+    | Value
     | Current
     | Step
     ;
@@ -384,6 +456,11 @@ unsafeReservedWord
     | Not
     | For
     | BooleanLiteral
+    | Throw
+    ;
+
+durationLiteral
+    : DurationLiteral
     ;
 
 rangeOperator
@@ -424,6 +501,7 @@ expressionAtom
     | variable
     | memberExpression
     | param
+    | waitForExpression
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
     ;
 

@@ -94,6 +94,15 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForExpression.
 	VisitWaitForExpression(ctx *WaitForExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#waitForEventExpression.
+	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForPredicateExpression.
+	VisitWaitForPredicateExpression(ctx *WaitForPredicateExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForPredicate.
+	VisitWaitForPredicate(ctx *WaitForPredicateContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#waitForEventName.
 	VisitWaitForEventName(ctx *WaitForEventNameContext) interface{}
 
@@ -105,6 +114,27 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#timeoutClause.
 	VisitTimeoutClause(ctx *TimeoutClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#everyClause.
+	VisitEveryClause(ctx *EveryClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#everyClauseValue.
+	VisitEveryClauseValue(ctx *EveryClauseValueContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#backoffClause.
+	VisitBackoffClause(ctx *BackoffClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#jitterClause.
+	VisitJitterClause(ctx *JitterClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#jitterClauseValue.
+	VisitJitterClauseValue(ctx *JitterClauseValueContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#backoffStrategy.
+	VisitBackoffStrategy(ctx *BackoffStrategyContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#waitForOrThrowClause.
+	VisitWaitForOrThrowClause(ctx *WaitForOrThrowClauseContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#param.
 	VisitParam(ctx *ParamContext) interface{}
@@ -207,6 +237,9 @@ type FqlParserVisitor interface {
 
 	// Visit a parse tree produced by FqlParser#unsafeReservedWord.
 	VisitUnsafeReservedWord(ctx *UnsafeReservedWordContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#durationLiteral.
+	VisitDurationLiteral(ctx *DurationLiteralContext) interface{}
 
 	// Visit a parse tree produced by FqlParser#rangeOperator.
 	VisitRangeOperator(ctx *RangeOperatorContext) interface{}
