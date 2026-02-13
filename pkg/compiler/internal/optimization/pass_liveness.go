@@ -209,7 +209,7 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		return
 
 	// Control flow.
-	case vm.OpJumpIfFalse, vm.OpJumpIfTrue:
+	case vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpJumpIfNone:
 		addUse(src1)
 		return
 	case vm.OpJump:

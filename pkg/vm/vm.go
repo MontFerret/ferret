@@ -110,6 +110,10 @@ loop:
 			if runtime.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
+		case OpJumpIfNone:
+			if reg[src1] == runtime.None {
+				vm.pc = int(dst)
+			}
 		case OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case OpSub:

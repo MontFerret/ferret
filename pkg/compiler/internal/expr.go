@@ -522,6 +522,10 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 		return src
 	}
 
+	if isSimpleMemberPathChain(segments) {
+		return c.compileSimpleMemberExpressionSegments(src, segments)
+	}
+
 	for idx, segment := range segments {
 		p := segment.(*fql.MemberExpressionPathContext)
 		if contraction := p.ArrayContraction(); contraction != nil {
@@ -547,77 +551,14 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 			return c.compileArrayApply(src, apply, segments[idx+1:])
 		}
 
-		var src2 vm.Operand
-		var constOperand bool
-		srcType := operandType(c.ctx, src)
-
-		if pn := p.PropertyName(); pn != nil {
-			if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
-				src2 = constOp
-				constOperand = true
-			} else {
-				src2 = c.ctx.LiteralCompiler.CompilePropertyName(pn)
-			}
-		} else if cpn := p.ComputedPropertyName(); cpn != nil {
-			if val, ok := literalValueFromExpression(cpn.Expression()); ok {
-				switch val.(type) {
-				case *runtime.Array, *runtime.Object:
-					// Keep array/object literals dynamic to preserve their stringified key value.
-					src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
-				default:
-					src2 = c.ctx.Symbols.AddConstant(val)
-					constOperand = true
-				}
-			} else {
-				src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
-			}
-		}
+		src2, constOperand := c.compileMemberPathOperand(p)
 
 		dst := c.ctx.Registers.Allocate()
 
 		span := diagnostics.SpanFromRuleContext(p)
 		c.ctx.Emitter.WithSpan(span, func() {
 			optional := p.ErrorOperator() != nil
-			var op vm.Opcode
-
-			switch srcType {
-			case core.TypeArray:
-				if constOperand {
-					if optional {
-						op = vm.OpLoadIndexOptionalConst
-					} else {
-						op = vm.OpLoadIndexConst
-					}
-				} else if optional {
-					op = vm.OpLoadIndexOptional
-				} else {
-					op = vm.OpLoadIndex
-				}
-			case core.TypeObject:
-				if constOperand {
-					if optional {
-						op = vm.OpLoadKeyOptionalConst
-					} else {
-						op = vm.OpLoadKeyConst
-					}
-				} else if optional {
-					op = vm.OpLoadKeyOptional
-				} else {
-					op = vm.OpLoadKey
-				}
-			default:
-				if constOperand {
-					if optional {
-						op = vm.OpLoadPropertyOptionalConst
-					} else {
-						op = vm.OpLoadPropertyConst
-					}
-				} else if optional {
-					op = vm.OpLoadPropertyOptional
-				} else {
-					op = vm.OpLoadProperty
-				}
-			}
+			op := memberLoadOpcode(operandType(c.ctx, src), constOperand, optional)
 
 			c.ctx.Emitter.EmitABC(op, dst, src, src2)
 		})
@@ -626,6 +567,133 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 	}
 
 	return src
+}
+
+func isSimpleMemberPathChain(segments []fql.IMemberExpressionPathContext) bool {
+	for _, segment := range segments {
+		p := segment.(*fql.MemberExpressionPathContext)
+		if p.PropertyName() == nil && p.ComputedPropertyName() == nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (c *ExprCompiler) compileSimpleMemberExpressionSegments(src vm.Operand, segments []fql.IMemberExpressionPathContext) vm.Operand {
+	result := src
+	stickyDst := false
+	hasJump := false
+	var endLabel core.Label
+
+	for _, segment := range segments {
+		p := segment.(*fql.MemberExpressionPathContext)
+		src2, constOperand := c.compileMemberPathOperand(p)
+		optional := p.ErrorOperator() != nil
+
+		dst := result
+		if !stickyDst || !dst.IsRegister() {
+			dst = c.ctx.Registers.Allocate()
+		}
+
+		span := diagnostics.SpanFromRuleContext(p)
+		c.ctx.Emitter.WithSpan(span, func() {
+			op := memberLoadOpcode(operandType(c.ctx, result), constOperand, optional)
+			c.ctx.Emitter.EmitABC(op, dst, result, src2)
+			if optional {
+				if !hasJump {
+					endLabel = c.ctx.Emitter.NewLabel("member", "optional", "end")
+					hasJump = true
+				}
+				c.ctx.Emitter.EmitJumpIfNone(dst, endLabel)
+			}
+		})
+
+		if optional {
+			stickyDst = true
+		}
+
+		result = dst
+	}
+
+	if hasJump {
+		c.ctx.Emitter.MarkLabel(endLabel)
+	}
+
+	return result
+}
+
+func (c *ExprCompiler) compileMemberPathOperand(p *fql.MemberExpressionPathContext) (vm.Operand, bool) {
+	if pn := p.PropertyName(); pn != nil {
+		if constOp, ok := c.ctx.LiteralCompiler.CompilePropertyNameConst(pn); ok {
+			return constOp, true
+		}
+
+		return c.ctx.LiteralCompiler.CompilePropertyName(pn), false
+	}
+
+	if cpn := p.ComputedPropertyName(); cpn != nil {
+		if val, ok := literalValueFromExpression(cpn.Expression()); ok {
+			switch val.(type) {
+			case *runtime.Array, *runtime.Object:
+				// Keep array/object literals dynamic to preserve their stringified key value.
+				return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+			default:
+				return c.ctx.Symbols.AddConstant(val), true
+			}
+		}
+
+		return c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn), false
+	}
+
+	return vm.NoopOperand, false
+}
+
+func memberLoadOpcode(srcType core.ValueType, constOperand, optional bool) vm.Opcode {
+	switch srcType {
+	case core.TypeArray:
+		if constOperand {
+			if optional {
+				return vm.OpLoadIndexOptionalConst
+			}
+
+			return vm.OpLoadIndexConst
+		}
+
+		if optional {
+			return vm.OpLoadIndexOptional
+		}
+
+		return vm.OpLoadIndex
+	case core.TypeObject:
+		if constOperand {
+			if optional {
+				return vm.OpLoadKeyOptionalConst
+			}
+
+			return vm.OpLoadKeyConst
+		}
+
+		if optional {
+			return vm.OpLoadKeyOptional
+		}
+
+		return vm.OpLoadKey
+	default:
+		if constOperand {
+			if optional {
+				return vm.OpLoadPropertyOptionalConst
+			}
+
+			return vm.OpLoadPropertyConst
+		}
+
+		if optional {
+			return vm.OpLoadPropertyOptional
+		}
+
+		return vm.OpLoadProperty
+	}
 }
 
 func splitArrayOperatorTail(segments []fql.IMemberExpressionPathContext) ([]fql.IMemberExpressionPathContext, []fql.IMemberExpressionPathContext) {

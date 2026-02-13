@@ -200,6 +200,10 @@ func (e *Emitter) EmitJumpIfTrue(cond vm.Operand, label Label) {
 	e.EmitJumpIf(cond, true, label)
 }
 
+func (e *Emitter) EmitJumpIfNone(cond vm.Operand, label Label) {
+	e.EmitJumpc(vm.OpJumpIfNone, cond, label)
+}
+
 func (e *Emitter) EmitJumpIf(cond vm.Operand, isTrue bool, label Label) {
 	if isTrue {
 		e.EmitJumpc(vm.OpJumpIfTrue, cond, label)

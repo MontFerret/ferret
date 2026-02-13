@@ -240,10 +240,12 @@ func TestOptionalChaining(t *testing.T) {
 		CaseNil(`RETURN FIRST([])?.foo`),
 		Case(
 			`
-						RETURN FIRST([{ foo: "bar" }])?.foo
-					`,
+							RETURN FIRST([{ foo: "bar" }])?.foo
+						`,
 			"bar",
 		),
+		CaseNil(`LET obj = NONE RETURN obj?.foo?.[ERROR()]`),
+		CaseRuntimeError(`LET obj = { foo: { bar: 1 } } RETURN obj?.foo?.[ERROR()]`),
 		Case(`LET obj = { '[1]': 42 } RETURN obj?.[[1]]`, 42),
 		Case(`LET obj = { '{"a":1}': 7 } RETURN obj?.[{a:1}]`, 7),
 		CaseNil("RETURN ERROR()?.foo"),
