@@ -560,8 +560,14 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 			}
 		} else if cpn := p.ComputedPropertyName(); cpn != nil {
 			if val, ok := literalValueFromExpression(cpn.Expression()); ok {
-				src2 = c.ctx.Symbols.AddConstant(val)
-				constOperand = true
+				switch val.(type) {
+				case *runtime.Array, *runtime.Object:
+					// Keep array/object literals dynamic to preserve their stringified key value.
+					src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
+				default:
+					src2 = c.ctx.Symbols.AddConstant(val)
+					constOperand = true
+				}
 			} else {
 				src2 = c.ctx.LiteralCompiler.CompileComputedPropertyName(cpn)
 			}

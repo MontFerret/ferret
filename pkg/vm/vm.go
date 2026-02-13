@@ -201,42 +201,67 @@ loop:
 			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
+			optional := op == OpLoadIndexOptional
+			if optional && src == runtime.None {
+				reg[dst] = runtime.None
+				break
+			}
 			arg := reg[src2]
 			out, err := vm.loadIndex(ctx, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadIndexOptional); err != nil {
+			if err := vm.setOrOptional(dst, out, err, optional); err != nil {
 				return nil, err
 			}
 
 		case OpLoadIndexConst, OpLoadIndexOptionalConst:
 			src := reg[src1]
+			optional := op == OpLoadIndexOptionalConst
+			if optional && src == runtime.None {
+				reg[dst] = runtime.None
+				break
+			}
 			arg := constants[src2.Constant()]
 			out, err := vm.loadIndex(ctx, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadIndexOptionalConst); err != nil {
+			if err := vm.setOrOptional(dst, out, err, optional); err != nil {
 				return nil, err
 			}
 
 		case OpLoadKey, OpLoadKeyOptional:
 			src := reg[src1]
+			optional := op == OpLoadKeyOptional
+			if optional && src == runtime.None {
+				reg[dst] = runtime.None
+				break
+			}
 			arg := reg[src2]
 			out, err := vm.loadKeyCached(ctx, vm.pc-1, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptional); err != nil {
+			if err := vm.setOrOptional(dst, out, err, optional); err != nil {
 				return nil, err
 			}
 
 		case OpLoadKeyConst, OpLoadKeyOptionalConst:
 			src := reg[src1]
+			optional := op == OpLoadKeyOptionalConst
+			if optional && src == runtime.None {
+				reg[dst] = runtime.None
+				break
+			}
 			arg := constants[src2.Constant()]
 			out, err := vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptionalConst); err != nil {
+			if err := vm.setOrOptional(dst, out, err, optional); err != nil {
 				return nil, err
 			}
 
 		case OpLoadPropertyConst, OpLoadPropertyOptionalConst:
 			src := reg[src1]
+			optional := op == OpLoadPropertyOptionalConst
+			if optional && src == runtime.None {
+				reg[dst] = runtime.None
+				break
+			}
 			prop := constants[src2.Constant()]
 
 			var out runtime.Value
@@ -251,12 +276,17 @@ loop:
 				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, runtime.ToString(prop))
 			}
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptionalConst); err != nil {
+			if err := vm.setOrOptional(dst, out, err, optional); err != nil {
 				return nil, err
 			}
 
 		case OpLoadProperty, OpLoadPropertyOptional:
 			src := reg[src1]
+			optional := op == OpLoadPropertyOptional
+			if optional && src == runtime.None {
+				reg[dst] = runtime.None
+				break
+			}
 			prop := reg[src2]
 
 			var out runtime.Value
@@ -271,7 +301,7 @@ loop:
 				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, runtime.ToString(prop))
 			}
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptional); err != nil {
+			if err := vm.setOrOptional(dst, out, err, optional); err != nil {
 				return nil, err
 			}
 		case OpApplyQuery:
