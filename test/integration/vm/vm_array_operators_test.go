@@ -68,6 +68,38 @@ func TestArrayOperators(t *testing.T) {
 				},
 			}),
 		CaseArray(`
+					LET users = [
+						{ name: "Ann", age: 20 },
+						{ name: "Bob", age: 45 },
+						{ name: "Cat", age: 50 }
+					]
+
+					RETURN users[*][* FILTER CURRENT.age > 40].age
+				`,
+			[]any{45, 50}),
+		CaseArray(`
+					LET users = [
+						{ name: "Ann", age: 20 },
+						{ name: "Bob", age: 35 },
+						{ name: "Cat", age: 45 },
+						{ name: "Dan", age: 55 }
+					]
+
+					RETURN users[* FILTER CURRENT.age > 20][* FILTER CURRENT.age < 50].name
+				`,
+			[]any{"Bob", "Cat"}),
+		CaseArray(`
+					LET users = [
+						{ name: "Ann", age: 20 },
+						{ name: "Bob", age: 35 },
+						{ name: "Cat", age: 45 },
+						{ name: "Dan", age: 55 }
+					]
+
+					RETURN users[* FILTER CURRENT.age > 30][*].name
+				`,
+			[]any{"Bob", "Cat", "Dan"}),
+		CaseArray(`
 					LET arr = [[1, 2], 3, [4, 5], 6]
 
 					RETURN arr[**]

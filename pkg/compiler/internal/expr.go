@@ -540,12 +540,7 @@ func (c *ExprCompiler) compileMemberExpressionSegments(src vm.Operand, segments 
 			return c.compileMemberExpressionSegments(result, restTail)
 		}
 		if expansion := p.ArrayExpansion(); expansion != nil {
-			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
-			result := c.compileArrayExpansion(src, expansion, inlineTail)
-			if len(restTail) == 0 {
-				return result
-			}
-			return c.compileMemberExpressionSegments(result, restTail)
+			return c.compileArrayExpansionChain(src, expansion, segments[idx+1:])
 		}
 		if question := p.ArrayQuestionMark(); question != nil {
 			inlineTail, restTail := splitArrayOperatorTail(segments[idx+1:])
@@ -643,6 +638,113 @@ func splitArrayOperatorTail(segments []fql.IMemberExpressionPathContext) ([]fql.
 	}
 
 	return segments, nil
+}
+
+func (c *ExprCompiler) compileArrayExpansionChain(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
+	inline := expansion.InlineExpression()
+
+	if inline == nil {
+		if next, rest := nextArrayExpansion(tail); next != nil {
+			return c.compileArrayExpansionChain(src, next, rest)
+		}
+
+		return c.compileArrayExpansionChainWithFilters(src, expansion, tail, nil)
+	}
+
+	if !isFilterOnlyInline(inline) {
+		tail = dropIdentityExpansions(tail)
+		return c.compileArrayExpansionChainWithFilters(src, expansion, tail, nil)
+	}
+
+	extraFilters, rest := collectFilterOnlyTail(tail)
+	return c.compileArrayExpansionChainWithFilters(src, expansion, rest, extraFilters)
+}
+
+func (c *ExprCompiler) compileArrayExpansionWithFilters(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext, extraFilters []fql.IExpressionContext) vm.Operand {
+	span := diagnostics.SpanFromRuleContext(expansion)
+	inline := expansion.InlineExpression()
+	return c.compileArrayIteration(src, span, tail, inline, extraFilters)
+}
+
+func (c *ExprCompiler) compileArrayExpansionChainWithFilters(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext, extraFilters []fql.IExpressionContext) vm.Operand {
+	inlineTail, restTail := splitArrayOperatorTail(tail)
+	result := c.compileArrayExpansionWithFilters(src, expansion, inlineTail, extraFilters)
+	if len(restTail) == 0 {
+		return result
+	}
+
+	return c.compileMemberExpressionSegments(result, restTail)
+}
+
+func isFilterOnlyInline(inline fql.IInlineExpressionContext) bool {
+	if inline == nil {
+		return false
+	}
+
+	return inline.InlineFilter() != nil && inline.InlineLimit() == nil && inline.InlineReturn() == nil
+}
+
+func nextArrayExpansion(segments []fql.IMemberExpressionPathContext) (fql.IArrayExpansionContext, []fql.IMemberExpressionPathContext) {
+	if len(segments) == 0 {
+		return nil, segments
+	}
+
+	p := segments[0].(*fql.MemberExpressionPathContext)
+	if expansion := p.ArrayExpansion(); expansion != nil {
+		return expansion, segments[1:]
+	}
+
+	return nil, segments
+}
+
+func dropIdentityExpansions(segments []fql.IMemberExpressionPathContext) []fql.IMemberExpressionPathContext {
+	for len(segments) > 0 {
+		p := segments[0].(*fql.MemberExpressionPathContext)
+		expansion := p.ArrayExpansion()
+		if expansion == nil {
+			break
+		}
+
+		if expansion.InlineExpression() != nil {
+			break
+		}
+
+		segments = segments[1:]
+	}
+
+	return segments
+}
+
+func collectFilterOnlyTail(segments []fql.IMemberExpressionPathContext) ([]fql.IExpressionContext, []fql.IMemberExpressionPathContext) {
+	extraFilters := make([]fql.IExpressionContext, 0)
+	rest := segments
+
+	for len(rest) > 0 {
+		p := rest[0].(*fql.MemberExpressionPathContext)
+		expansion := p.ArrayExpansion()
+		if expansion == nil {
+			break
+		}
+
+		inline := expansion.InlineExpression()
+		if inline == nil {
+			rest = rest[1:]
+			continue
+		}
+
+		if !isFilterOnlyInline(inline) {
+			break
+		}
+
+		filter := inline.InlineFilter()
+		if filter != nil {
+			extraFilters = append(extraFilters, filter.Expression())
+		}
+
+		rest = rest[1:]
+	}
+
+	return extraFilters, rest
 }
 
 func (c *ExprCompiler) compileArrayQuestionMark(src vm.Operand, question fql.IArrayQuestionMarkContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
@@ -862,7 +964,7 @@ func (c *ExprCompiler) emitBooleanAnd(left, right vm.Operand) vm.Operand {
 func (c *ExprCompiler) compileArrayExpansion(src vm.Operand, expansion fql.IArrayExpansionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
 	span := diagnostics.SpanFromRuleContext(expansion)
 	inline := expansion.InlineExpression()
-	return c.compileArrayIteration(src, span, tail, inline)
+	return c.compileArrayIteration(src, span, tail, inline, nil)
 }
 
 func (c *ExprCompiler) compileArrayContraction(src vm.Operand, contraction fql.IArrayContractionContext, tail []fql.IMemberExpressionPathContext) vm.Operand {
@@ -888,7 +990,7 @@ func (c *ExprCompiler) compileArrayContraction(src vm.Operand, contraction fql.I
 		return dst
 	}
 
-	return c.compileArrayIteration(dst, span, tail, inline)
+	return c.compileArrayIteration(dst, span, tail, inline, nil)
 }
 
 func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
@@ -904,7 +1006,7 @@ func arrayContractionDepth(ctx fql.IArrayContractionContext) int {
 	return 1
 }
 
-func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext) vm.Operand {
+func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tail []fql.IMemberExpressionPathContext, inline fql.IInlineExpressionContext, extraFilters []fql.IExpressionContext) vm.Operand {
 	loop := &core.Loop{
 		Kind:     core.ForInLoop,
 		Type:     core.NormalLoop,
@@ -928,6 +1030,13 @@ func (c *ExprCompiler) compileArrayIteration(src vm.Operand, span file.Span, tai
 
 	if inline != nil {
 		c.compileInlineFilter(inline)
+	}
+
+	for _, expr := range extraFilters {
+		c.compileInlineFilterExpr(expr)
+	}
+
+	if inline != nil {
 		c.compileInlineLimit(inline)
 	}
 
@@ -966,6 +1075,16 @@ func (c *ExprCompiler) compileInlineFilter(inline fql.IInlineExpressionContext) 
 	}
 
 	src := c.ctx.ExprCompiler.Compile(filter.Expression())
+	label := c.ctx.Loops.Current().ContinueLabel()
+	c.ctx.Emitter.EmitJumpIfFalse(src, label)
+}
+
+func (c *ExprCompiler) compileInlineFilterExpr(expr fql.IExpressionContext) {
+	if expr == nil {
+		return
+	}
+
+	src := c.ctx.ExprCompiler.Compile(expr)
 	label := c.ctx.Loops.Current().ContinueLabel()
 	c.ctx.Emitter.EmitJumpIfFalse(src, label)
 }
