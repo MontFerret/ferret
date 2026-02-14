@@ -60,13 +60,18 @@ func TestDispatch(t *testing.T) {
 			RETURN 1
 		`, 1, "Should dispatch as a statement"),
 		Case(`RETURN DISPATCH "click" IN @d`, "ok", "Should dispatch with default payload and options"),
+		Case(`LET event = "hover" RETURN DISPATCH event IN @d`, "ok", "Should dispatch with variable event name"),
+		Case(`RETURN DISPATCH @event_name IN @d`, "ok", "Should dispatch with param event name"),
 		Case(`RETURN DISPATCH "input" IN @d WITH "hello"`, "ok", "Should dispatch with payload"),
 		Case(`RETURN DISPATCH "select" IN @d WITH ["1", "2"] OPTIONS { selector: "#a", delay: 50 }`, "ok", "Should dispatch with options"),
 	}, vm.WithParams(map[string]runtime.Value{
-		"d": dispatcher,
+		"d":          dispatcher,
+		"event_name": runtime.NewString("submit"),
 	}))
 
 	var hasDefault bool
+	var hasVariableEvent bool
+	var hasParamEvent bool
 	var hasPayload bool
 	var hasOptions bool
 
@@ -75,6 +80,14 @@ func TestDispatch(t *testing.T) {
 		case runtime.NewString("click"):
 			if evt.Payload == runtime.None && evt.Options == runtime.None {
 				hasDefault = true
+			}
+		case runtime.NewString("hover"):
+			if evt.Payload == runtime.None && evt.Options == runtime.None {
+				hasVariableEvent = true
+			}
+		case runtime.NewString("submit"):
+			if evt.Payload == runtime.None && evt.Options == runtime.None {
+				hasParamEvent = true
 			}
 		case runtime.NewString("input"):
 			if evt.Payload == runtime.NewString("hello") && evt.Options == runtime.None {
@@ -99,6 +112,14 @@ func TestDispatch(t *testing.T) {
 
 	if !hasPayload {
 		t.Fatalf("expected payload dispatch event")
+	}
+
+	if !hasVariableEvent {
+		t.Fatalf("expected variable-name dispatch event")
+	}
+
+	if !hasParamEvent {
+		t.Fatalf("expected param-name dispatch event")
 	}
 
 	if !hasOptions {
