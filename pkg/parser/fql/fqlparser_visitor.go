@@ -94,6 +94,21 @@ type FqlParserVisitor interface {
 	// Visit a parse tree produced by FqlParser#waitForExpression.
 	VisitWaitForExpression(ctx *WaitForExpressionContext) interface{}
 
+	// Visit a parse tree produced by FqlParser#dispatchExpression.
+	VisitDispatchExpression(ctx *DispatchExpressionContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#dispatchEventName.
+	VisitDispatchEventName(ctx *DispatchEventNameContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#dispatchTarget.
+	VisitDispatchTarget(ctx *DispatchTargetContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#dispatchWithClause.
+	VisitDispatchWithClause(ctx *DispatchWithClauseContext) interface{}
+
+	// Visit a parse tree produced by FqlParser#dispatchOptionsClause.
+	VisitDispatchOptionsClause(ctx *DispatchOptionsClauseContext) interface{}
+
 	// Visit a parse tree produced by FqlParser#waitForEventExpression.
 	VisitWaitForEventExpression(ctx *WaitForEventExpressionContext) interface{}
 

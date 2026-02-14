@@ -57,6 +57,8 @@ func (c *StmtCompiler) CompileBodyStatement(ctx fql.IBodyStatementContext) {
 	} else if wfe := ctx.WaitForExpression(); wfe != nil {
 		// Handle wait expressions (e.g., WAIT FOR x RETURN y)
 		c.ctx.WaitCompiler.Compile(wfe)
+	} else if de := ctx.DispatchExpression(); de != nil {
+		c.ctx.DispatchCompiler.Compile(de)
 	}
 }
 

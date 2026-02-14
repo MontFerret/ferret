@@ -291,6 +291,12 @@ func instructionUseDef(inst vm.Instruction) (uses []int, defs []int) {
 		addUse(src2)
 		addDef(dst)
 		return
+	case vm.OpDispatch:
+		addUse(dst)
+		addUse(src1)
+		addUse(src2)
+		addDef(dst)
+		return
 
 	// Utility.
 	case vm.OpClose:

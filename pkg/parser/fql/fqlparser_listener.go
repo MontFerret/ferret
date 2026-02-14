@@ -94,6 +94,21 @@ type FqlParserListener interface {
 	// EnterWaitForExpression is called when entering the waitForExpression production.
 	EnterWaitForExpression(c *WaitForExpressionContext)
 
+	// EnterDispatchExpression is called when entering the dispatchExpression production.
+	EnterDispatchExpression(c *DispatchExpressionContext)
+
+	// EnterDispatchEventName is called when entering the dispatchEventName production.
+	EnterDispatchEventName(c *DispatchEventNameContext)
+
+	// EnterDispatchTarget is called when entering the dispatchTarget production.
+	EnterDispatchTarget(c *DispatchTargetContext)
+
+	// EnterDispatchWithClause is called when entering the dispatchWithClause production.
+	EnterDispatchWithClause(c *DispatchWithClauseContext)
+
+	// EnterDispatchOptionsClause is called when entering the dispatchOptionsClause production.
+	EnterDispatchOptionsClause(c *DispatchOptionsClauseContext)
+
 	// EnterWaitForEventExpression is called when entering the waitForEventExpression production.
 	EnterWaitForEventExpression(c *WaitForEventExpressionContext)
 
@@ -378,6 +393,21 @@ type FqlParserListener interface {
 
 	// ExitWaitForExpression is called when exiting the waitForExpression production.
 	ExitWaitForExpression(c *WaitForExpressionContext)
+
+	// ExitDispatchExpression is called when exiting the dispatchExpression production.
+	ExitDispatchExpression(c *DispatchExpressionContext)
+
+	// ExitDispatchEventName is called when exiting the dispatchEventName production.
+	ExitDispatchEventName(c *DispatchEventNameContext)
+
+	// ExitDispatchTarget is called when exiting the dispatchTarget production.
+	ExitDispatchTarget(c *DispatchTargetContext)
+
+	// ExitDispatchWithClause is called when exiting the dispatchWithClause production.
+	ExitDispatchWithClause(c *DispatchWithClauseContext)
+
+	// ExitDispatchOptionsClause is called when exiting the dispatchOptionsClause production.
+	ExitDispatchOptionsClause(c *DispatchOptionsClauseContext)
 
 	// ExitWaitForEventExpression is called when exiting the waitForEventExpression production.
 	ExitWaitForEventExpression(c *WaitForEventExpressionContext)

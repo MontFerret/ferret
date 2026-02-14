@@ -38,6 +38,7 @@ bodyStatement
     : variableDeclaration
     | functionCallExpression
     | waitForExpression
+    | dispatchExpression
     ;
 
 bodyExpression
@@ -169,6 +170,33 @@ collectCounter
 waitForExpression
     : Waitfor waitForEventExpression waitForOrThrowClause?
     | Waitfor waitForPredicateExpression waitForOrThrowClause?
+    ;
+
+dispatchExpression
+    : Dispatch dispatchEventName In dispatchTarget (dispatchWithClause)? (dispatchOptionsClause)?
+    ;
+
+dispatchEventName
+    : stringLiteral
+    | variable
+    | param
+    | memberExpression
+    | functionCall
+    ;
+
+dispatchTarget
+    : functionCallExpression
+    | variable
+    | param
+    | memberExpression
+    ;
+
+dispatchWithClause
+    : With expression
+    ;
+
+dispatchOptionsClause
+    : Options expression
     ;
 
 waitForEventExpression
@@ -444,6 +472,7 @@ safeReservedWord
 
 unsafeReservedWord
     : Return
+    | Dispatch
     | None
     | Null
     | Let
@@ -501,6 +530,7 @@ expressionAtom
     | variable
     | memberExpression
     | param
+    | dispatchExpression
     | waitForExpression
     | OpenParen (forExpression | waitForExpression | expression) CloseParen errorOperator?
     ;

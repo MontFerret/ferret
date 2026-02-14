@@ -540,6 +540,29 @@ loop:
 			}
 
 			reg[dst] = stream.Iterate(timeout)
+		case OpDispatch:
+			dispatcher, eventName, payload, options, err := vm.castDispatchArgs(ctx, reg[dst], reg[src1], reg[src2])
+
+			if err != nil {
+				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+					return nil, err
+				}
+				continue
+			}
+
+			out, err := dispatcher.Dispatch(ctx, runtime.DispatchEvent{
+				Name:    eventName,
+				Payload: payload,
+				Options: options,
+			})
+
+			if out == nil {
+				out = runtime.None
+			}
+
+			if err := vm.setOrTryCatch(dst, out, err); err != nil {
+				return nil, err
+			}
 		case OpSleep:
 			dur, err := runtime.ToInt(ctx, reg[dst])
 

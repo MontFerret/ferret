@@ -56,6 +56,7 @@ const (
 	TypeComparable     = Type("comparable")
 	TypeCloneable      = Type("cloneable")
 	TypeSortable       = Type("sortable")
+	TypeDispatcher     = Type("dispatcher")
 	TypeObservable     = Type("observable")
 	TypeQueryable      = Type("queryable")
 )
@@ -123,6 +124,8 @@ func Reflect(input Value) Type {
 		return TypeIterator
 	case Measurable:
 		return TypeMeasurable
+	case Dispatcher:
+		return TypeDispatcher
 	case Observable:
 		return TypeObservable
 	case Queryable:
