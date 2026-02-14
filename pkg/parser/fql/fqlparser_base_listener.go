@@ -196,6 +196,36 @@ func (s *BaseFqlParserListener) EnterWaitForExpression(ctx *WaitForExpressionCon
 // ExitWaitForExpression is called when production waitForExpression is exited.
 func (s *BaseFqlParserListener) ExitWaitForExpression(ctx *WaitForExpressionContext) {}
 
+// EnterDispatchExpression is called when production dispatchExpression is entered.
+func (s *BaseFqlParserListener) EnterDispatchExpression(ctx *DispatchExpressionContext) {}
+
+// ExitDispatchExpression is called when production dispatchExpression is exited.
+func (s *BaseFqlParserListener) ExitDispatchExpression(ctx *DispatchExpressionContext) {}
+
+// EnterDispatchEventName is called when production dispatchEventName is entered.
+func (s *BaseFqlParserListener) EnterDispatchEventName(ctx *DispatchEventNameContext) {}
+
+// ExitDispatchEventName is called when production dispatchEventName is exited.
+func (s *BaseFqlParserListener) ExitDispatchEventName(ctx *DispatchEventNameContext) {}
+
+// EnterDispatchTarget is called when production dispatchTarget is entered.
+func (s *BaseFqlParserListener) EnterDispatchTarget(ctx *DispatchTargetContext) {}
+
+// ExitDispatchTarget is called when production dispatchTarget is exited.
+func (s *BaseFqlParserListener) ExitDispatchTarget(ctx *DispatchTargetContext) {}
+
+// EnterDispatchWithClause is called when production dispatchWithClause is entered.
+func (s *BaseFqlParserListener) EnterDispatchWithClause(ctx *DispatchWithClauseContext) {}
+
+// ExitDispatchWithClause is called when production dispatchWithClause is exited.
+func (s *BaseFqlParserListener) ExitDispatchWithClause(ctx *DispatchWithClauseContext) {}
+
+// EnterDispatchOptionsClause is called when production dispatchOptionsClause is entered.
+func (s *BaseFqlParserListener) EnterDispatchOptionsClause(ctx *DispatchOptionsClauseContext) {}
+
+// ExitDispatchOptionsClause is called when production dispatchOptionsClause is exited.
+func (s *BaseFqlParserListener) ExitDispatchOptionsClause(ctx *DispatchOptionsClauseContext) {}
+
 // EnterWaitForEventExpression is called when production waitForEventExpression is entered.
 func (s *BaseFqlParserListener) EnterWaitForEventExpression(ctx *WaitForEventExpressionContext) {}
 

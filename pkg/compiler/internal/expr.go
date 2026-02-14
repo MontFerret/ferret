@@ -441,6 +441,8 @@ func (c *ExprCompiler) compileAtom(ctx fql.IExpressionAtomContext) vm.Operand {
 		return c.CompileMemberExpression(me)
 	} else if p := ctx.Param(); p != nil {
 		return c.CompileParam(p)
+	} else if de := ctx.DispatchExpression(); de != nil {
+		return c.ctx.DispatchCompiler.Compile(de)
 	} else if fe := ctx.ForExpression(); fe != nil {
 		return c.ctx.LoopCompiler.Compile(fe)
 	} else if wfe := ctx.WaitForExpression(); wfe != nil {

@@ -264,7 +264,7 @@ func isExpressionStart(node *TokenNode) bool {
 		return true
 	}
 
-	return is(node, "(") || is(node, "[") || is(node, "{") || is(node, "@") || is(node, "FOR") || is(node, "WAITFOR")
+	return is(node, "(") || is(node, "[") || is(node, "{") || is(node, "@") || is(node, "FOR") || is(node, "WAITFOR") || is(node, "DISPATCH")
 }
 
 var rangeStartRe = regexp.MustCompile(`([A-Za-z0-9_]+)\\.\\.`)

@@ -144,6 +144,9 @@ const (
 
 	// Random Operations
 	OpRand
+
+	// Dispatch Operations
+	OpDispatch
 )
 
 func (op Opcode) String() string {
@@ -321,6 +324,8 @@ func (op Opcode) String() string {
 		return "EXISTS"
 	case OpRand:
 		return "RAND"
+	case OpDispatch:
+		return "DSCH"
 
 	// Function Operations
 	case OpCall:

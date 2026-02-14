@@ -25,6 +25,7 @@ type CompilerContext struct {
 	LoopSortCompiler    *LoopSortCompiler
 	LoopCollectCompiler *LoopCollectCompiler
 	WaitCompiler        *WaitCompiler
+	DispatchCompiler    *DispatchCompiler
 }
 
 // NewCompilerContext initializes a new CompilerContext with default values.
@@ -50,6 +51,7 @@ func NewCompilerContext(src *file.Source, errors *diagnostics.ErrorHandler) *Com
 	ctx.LoopSortCompiler = NewLoopSortCompiler(ctx)
 	ctx.LoopCollectCompiler = NewCollectCompiler(ctx)
 	ctx.WaitCompiler = NewWaitCompiler(ctx)
+	ctx.DispatchCompiler = NewDispatchCompiler(ctx)
 
 	return ctx
 }

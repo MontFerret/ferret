@@ -590,6 +590,46 @@ func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Obs
 	return observable, eventNameStr, options, nil
 }
 
+func (vm *VM) castDispatchArgs(
+	ctx context.Context,
+	target, eventName, args runtime.Value,
+) (runtime.Dispatcher, runtime.String, runtime.Value, runtime.Value, error) {
+	dispatcher, ok := target.(runtime.Dispatcher)
+
+	if !ok {
+		return nil, "", nil, nil, runtime.TypeErrorOf(target, runtime.TypeDispatcher)
+	}
+
+	eventNameStr, err := runtime.CastString(eventName)
+
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	var payload runtime.Value = runtime.None
+	var options runtime.Value = runtime.None
+
+	if args == nil || args == runtime.None {
+		return dispatcher, eventNameStr, payload, options, nil
+	}
+
+	argMap, err := runtime.CastMap(args)
+
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	if val, err := argMap.Get(ctx, runtime.NewString("payload")); err == nil {
+		payload = val
+	}
+
+	if val, err := argMap.Get(ctx, runtime.NewString("options")); err == nil {
+		options = val
+	}
+
+	return dispatcher, eventNameStr, payload, options, nil
+}
+
 func (vm *VM) setOrTryCatch(dst Operand, val runtime.Value, err error) error {
 	reg := vm.registers.Values
 
