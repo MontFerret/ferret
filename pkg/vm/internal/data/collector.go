@@ -7,6 +7,7 @@ const (
 	CollectorTypeKey
 	CollectorTypeKeyCounter
 	CollectorTypeKeyGroup
+	CollectorTypeAggregate
 )
 
 func NewCollector(typ CollectorType) Transformer {
@@ -19,6 +20,8 @@ func NewCollector(typ CollectorType) Transformer {
 		return NewKeyCounterCollector()
 	case CollectorTypeKeyGroup:
 		return NewKeyGroupCollector()
+	case CollectorTypeAggregate:
+		panic("aggregate collector requires a plan")
 	default:
 		panic("unknown collector type")
 	}

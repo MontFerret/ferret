@@ -350,6 +350,44 @@ FOR u IN users
 			[]any{map[string]any{"minAge": nil, "maxAge": nil}},
 			"Should handle empty arrays gracefully"),
 		CaseArray(`
+			LET values = [1, "x", 3, null, 5]
+			FOR v IN values
+				COLLECT AGGREGATE
+					cnt = COUNT(v),
+					sum = SUM(v),
+					min = MIN(v),
+					max = MAX(v),
+					avg = AVERAGE(v)
+				RETURN {
+					cnt,
+					sum,
+					min,
+					max,
+					avg
+				}
+		`,
+			[]any{map[string]any{"cnt": 5, "sum": 9, "min": 1, "max": 5, "avg": 3}},
+			"Should handle mixed types in global aggregation"),
+		CaseArray(`
+			LET values = ["a", null, "b"]
+			FOR v IN values
+				COLLECT AGGREGATE
+					cnt = COUNT(v),
+					sum = SUM(v),
+					min = MIN(v),
+					max = MAX(v),
+					avg = AVERAGE(v)
+				RETURN {
+					cnt,
+					sum,
+					min,
+					max,
+					avg
+				}
+		`,
+			[]any{map[string]any{"cnt": 3, "sum": 0, "min": nil, "max": nil, "avg": 0}},
+			"Should handle non-numeric values in global aggregation"),
+		CaseArray(`
 LET users = [
 				{
 					active: true,

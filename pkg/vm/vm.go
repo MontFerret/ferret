@@ -388,7 +388,21 @@ loop:
 
 			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
 		case OpDataSetCollector:
-			reg[dst] = data.NewCollector(data.CollectorType(src1))
+			collectorType := data.CollectorType(src1)
+			if collectorType == data.CollectorTypeAggregate {
+				planIdx := int(src2)
+				if planIdx < 0 || planIdx >= len(constants) {
+					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
+				}
+				plan, ok := constants[planIdx].(*runtime.AggregatePlan)
+				if !ok || plan == nil {
+					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
+				}
+				reg[dst] = data.NewAggregateCollector(plan)
+				break
+			}
+
+			reg[dst] = data.NewCollector(collectorType)
 		case OpPush:
 			ds := reg[dst].(runtime.Appendable)
 

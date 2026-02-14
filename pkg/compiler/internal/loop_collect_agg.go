@@ -2,6 +2,7 @@ package internal
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -133,6 +134,71 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 	return wrappedSelectors
 }
 
+func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregatorContext) (*runtime.AggregatePlan, bool) {
+	selectors := ctx.AllCollectAggregateSelector()
+	if len(selectors) == 0 {
+		return nil, false
+	}
+
+	keys := make([]runtime.String, 0, len(selectors))
+	kinds := make([]runtime.AggregateKind, 0, len(selectors))
+
+	for _, selector := range selectors {
+		fce := selector.FunctionCallExpression()
+		if fce == nil || fce.FunctionCall() == nil {
+			return nil, false
+		}
+
+		if fce.ErrorOperator() != nil {
+			return nil, false
+		}
+
+		args := fce.FunctionCall().ArgumentList()
+		if args == nil {
+			return nil, false
+		}
+
+		exps := args.AllExpression()
+		if len(exps) != 1 {
+			return nil, false
+		}
+
+		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
+		kind, ok := aggregateKind(funcName)
+		if !ok {
+			return nil, false
+		}
+
+		keys = append(keys, runtime.String(selector.Identifier().GetText()))
+		kinds = append(kinds, kind)
+	}
+
+	return runtime.NewAggregatePlan(keys, kinds), true
+}
+
+func aggregateKind(name runtime.String) (runtime.AggregateKind, bool) {
+	fn := strings.ToUpper(name.String())
+	if strings.Contains(fn, runtime.NamespaceSeparator) {
+		parts := strings.Split(fn, runtime.NamespaceSeparator)
+		fn = parts[len(parts)-1]
+	}
+
+	switch fn {
+	case "COUNT":
+		return runtime.AggregateCount, true
+	case "SUM":
+		return runtime.AggregateSum, true
+	case "MIN":
+		return runtime.AggregateMin, true
+	case "MAX":
+		return runtime.AggregateMax, true
+	case "AVERAGE":
+		return runtime.AggregateAverage, true
+	default:
+		return 0, false
+	}
+}
+
 // finalizeAggregation processes the aggregation operations based on the collector specification.
 // It delegates to either grouped or global aggregation compilation based on whether grouping is used.
 func (c *LoopCollectCompiler) finalizeAggregation(spec *core.Collector) {
@@ -208,37 +274,48 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	selectors := spec.Aggregation().Selectors()
 	selectorVarRegs := make([]vm.Operand, len(selectors))
 
-	// Process each aggregation selector
-	for i, selector := range selectors {
-		var args core.RegisterSequence
+	if spec.Type() == core.CollectorTypeAggregate {
+		for i, selector := range selectors {
+			selectorVarName := selector.Name()
+			varReg, _ := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
+			selectorVarRegs[i] = varReg
 
-		// We need to unpack arguments from the aggregator
-		if selector.Args() > 1 {
-			// For multiple arguments, allocate a sequence and load each argument by its indexed key
-			args = c.ctx.Registers.AllocateSequence(selector.Args())
-
-			for y, reg := range args {
-				argKeyReg := c.loadGlobalSelectorKey(selector.Name(), y)
-				c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, argKeyReg)
-			}
-		} else {
-			// For a single argument, load it directly using the selector name as key
 			key := loadConstant(c.ctx, selector.Name())
-			value := c.ctx.Registers.Allocate()
-			c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
-			args = core.RegisterSequence{value}
+			c.ctx.Emitter.EmitABC(vm.OpLoadKey, varReg, aggregator, key)
 		}
+	} else {
+		// Process each aggregation selector
+		for i, selector := range selectors {
+			var args core.RegisterSequence
 
-		// Call the aggregation function with the loaded arguments
-		result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
+			// We need to unpack arguments from the aggregator
+			if selector.Args() > 1 {
+				// For multiple arguments, allocate a sequence and load each argument by its indexed key
+				args = c.ctx.Registers.AllocateSequence(selector.Args())
 
-		// Declare a local variable for the aggregation result
-		selectorVarName := selector.Name()
-		// TODO: Handle error if the variable already exists
-		varReg, _ := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
-		selectorVarRegs[i] = varReg
-		// Move the function result to the variable
-		c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
+				for y, reg := range args {
+					argKeyReg := c.loadGlobalSelectorKey(selector.Name(), y)
+					c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, argKeyReg)
+				}
+			} else {
+				// For a single argument, load it directly using the selector name as key
+				key := loadConstant(c.ctx, selector.Name())
+				value := c.ctx.Registers.Allocate()
+				c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
+				args = core.RegisterSequence{value}
+			}
+
+			// Call the aggregation function with the loaded arguments
+			result := c.ctx.ExprCompiler.CompileFunctionCallByNameWith(selector.FuncName(), selector.ProtectedCall(), args)
+
+			// Declare a local variable for the aggregation result
+			selectorVarName := selector.Name()
+			// TODO: Handle error if the variable already exists
+			varReg, _ := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
+			selectorVarRegs[i] = varReg
+			// Move the function result to the variable
+			c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
+		}
 	}
 
 	var projVar vm.Operand

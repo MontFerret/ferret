@@ -19,6 +19,7 @@ const (
 	CollectorTypeKey
 	CollectorTypeKeyCounter
 	CollectorTypeKeyGroup
+	CollectorTypeAggregate
 )
 
 func NewCollector(type_ CollectorType, dst vm.Operand, projection *CollectorProjection, groupSelectors []*CollectSelector, aggregation *CollectorAggregation) *Collector {

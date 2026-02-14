@@ -41,10 +41,26 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 
 	// Determine the collector type based on the presence of different COLLECT components
 	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregationCtx != nil, projectionCtx != nil, counterCtx != nil)
+	useAggregateCollector := false
+	aggregatePlanIndex := 0
+
+	if aggregationCtx != nil && len(groupSelectors) == 0 {
+		if plan, ok := c.buildGlobalAggregatePlan(aggregationCtx); ok {
+			collectorType = core.CollectorTypeAggregate
+			useAggregateCollector = true
+			aggregatePlanIndex = c.ctx.Symbols.AddConstant(plan).Constant()
+		}
+	}
 
 	// We replace DataSet initialization with Collector initialization
 	loop := c.ctx.Loops.Current()
-	dst := loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
+	var dst vm.Operand
+
+	if useAggregateCollector {
+		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType), aggregatePlanIndex)
+	} else {
+		dst = loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
+	}
 
 	var aggregation *core.CollectorAggregation
 
