@@ -110,6 +110,10 @@ loop:
 			if runtime.ToBoolean(reg[src1]) {
 				vm.pc = int(dst)
 			}
+		case OpJumpIfNone:
+			if reg[src1] == runtime.None {
+				vm.pc = int(dst)
+			}
 		case OpAdd:
 			reg[dst] = runtime.Add(ctx, reg[src1], reg[src2])
 		case OpSub:
@@ -201,236 +205,92 @@ loop:
 			reg[dst] = data.NewFastObjectOf(shapeCache, vm.fastObjectDictThreshold, int(src1))
 		case OpLoadIndex, OpLoadIndexOptional:
 			src := reg[src1]
+			optional := op == OpLoadIndexOptional
 			arg := reg[src2]
-			out, err := vm.loadIndex(ctx, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadIndexOptional); err != nil {
+			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadIndexConst, OpLoadIndexOptionalConst:
 			src := reg[src1]
+			optional := op == OpLoadIndexOptionalConst
 			arg := constants[src2.Constant()]
-			out, err := vm.loadIndex(ctx, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadIndexOptionalConst); err != nil {
+			if err := vm.loadIndexAndSet(ctx, dst, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadKey, OpLoadKeyOptional:
 			src := reg[src1]
+			optional := op == OpLoadKeyOptional
 			arg := reg[src2]
-			out, err := vm.loadKeyCached(ctx, vm.pc-1, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptional); err != nil {
+			if err := vm.loadKeyAndSet(ctx, dst, vm.pc-1, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadKeyConst, OpLoadKeyOptionalConst:
 			src := reg[src1]
+			optional := op == OpLoadKeyOptionalConst
 			arg := constants[src2.Constant()]
-			out, err := vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, arg)
 
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadKeyOptionalConst); err != nil {
+			if err := vm.loadKeyConstAndSet(ctx, dst, vm.pc-1, inst, src, arg, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadPropertyConst, OpLoadPropertyOptionalConst:
 			src := reg[src1]
+			optional := op == OpLoadPropertyOptionalConst
 			prop := constants[src2.Constant()]
 
-			var out runtime.Value
-			var err error
-
-			switch getter := prop.(type) {
-			case runtime.String:
-				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, getter)
-			case runtime.Float, runtime.Int:
-				out, err = vm.loadIndex(ctx, src, getter)
-			default:
-				out, err = vm.loadKeyConstCached(ctx, vm.pc-1, inst, src, runtime.ToString(prop))
-			}
-
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptionalConst); err != nil {
+			if err := vm.loadPropertyConstAndSet(ctx, dst, vm.pc-1, inst, src, prop, optional); err != nil {
 				return nil, err
 			}
-
 		case OpLoadProperty, OpLoadPropertyOptional:
 			src := reg[src1]
+			optional := op == OpLoadPropertyOptional
 			prop := reg[src2]
 
-			var out runtime.Value
-			var err error
-
-			switch getter := prop.(type) {
-			case runtime.String:
-				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, getter)
-			case runtime.Float, runtime.Int:
-				out, err = vm.loadIndex(ctx, src, getter)
-			default:
-				out, err = vm.loadKeyCached(ctx, vm.pc-1, src, runtime.ToString(prop))
-			}
-
-			if err := vm.setOrOptional(dst, out, err, op == OpLoadPropertyOptional); err != nil {
+			if err := vm.loadPropertyAndSet(ctx, dst, vm.pc-1, src, prop, optional); err != nil {
 				return nil, err
 			}
 		case OpApplyQuery:
-			src := reg[src1]
-
-			if src1.IsConstant() {
-				src = constants[src1.Constant()]
-			}
-
-			var arg runtime.Value
-
-			if src2.IsConstant() {
-				arg = constants[src2.Constant()]
-			} else {
-				arg = reg[src2]
-			}
-
-			var query runtime.Query
-
-			switch value := arg.(type) {
-			case runtime.Query:
-				query = value
-			case *runtime.Array:
-				length, err := value.Length(ctx)
-				if err != nil {
-					if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-						return nil, err
-					}
-
-					break
-				}
-
-				if length < 2 {
-					if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery)); err != nil {
-						return nil, err
-					}
-
-					break
-				}
-
-				kindVal, err := value.Get(ctx, runtime.NewInt(0))
-				if err != nil {
-					if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-						return nil, err
-					}
-
-					break
-				}
-
-				payloadVal, err := value.Get(ctx, runtime.NewInt(1))
-				if err != nil {
-					if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-						return nil, err
-					}
-
-					break
-				}
-
-				var paramsVal runtime.Value = runtime.None
-				if length > 2 {
-					paramsVal, err = value.Get(ctx, runtime.NewInt(2))
-					if err != nil {
-						if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
-							return nil, err
-						}
-
-						break
-					}
-				}
-
-				kind, err := runtime.CastString(kindVal)
-				if err != nil {
-					if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(kindVal, runtime.TypeString)); err != nil {
-						return nil, err
-					}
-
-					break
-				}
-
-				payload := runtime.EmptyString
-				if payloadVal != runtime.None {
-					payload, err = runtime.CastString(payloadVal)
-					if err != nil {
-						if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(payloadVal, runtime.TypeString, runtime.TypeNone)); err != nil {
-							return nil, err
-						}
-
-						break
-					}
-				}
-
-				query = runtime.NewQuery(kind, payload)
-				query.Params = paramsVal
-			default:
-				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery, runtime.TypeArray)); err != nil {
-					return nil, err
-				}
-
-				break
-			}
-
-			queryable, ok := src.(runtime.Queryable)
-
-			if !ok {
-				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable)); err != nil {
-					return nil, err
-				}
-
-				break
-			}
-
-			res, err := queryable.Query(ctx, query)
-
-			if err := vm.setOrTryCatch(dst, res, err); err != nil {
+			if err := vm.applyQuery(ctx, reg, src1, constants, src2, dst); err != nil {
 				return nil, err
 			}
-
 		case OpCall, OpProtectedCall:
 			out, err := vm.callv(ctx, vm.pc-1, src1, src2)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall0, OpProtectedCall0:
 			out, err := vm.call0(ctx, vm.pc-1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall1, OpProtectedCall1:
 			out, err := vm.call1(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall2, OpProtectedCall2:
 			out, err := vm.call2(ctx, vm.pc-1, src1, src2)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall3, OpProtectedCall3:
 			out, err := vm.call3(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpCall4, OpProtectedCall4:
 			out, err := vm.call4(ctx, vm.pc-1, src1)
 
 			if err := vm.setCallResult(op, dst, out, err); err != nil {
 				return nil, err
 			}
-
 		case OpExists:
 			val := reg[src1]
 			if val == runtime.None {
@@ -444,12 +304,15 @@ loop:
 				if err != nil {
 					if _, catch := vm.tryCatch(vm.pc); catch {
 						reg[dst] = runtime.False
+
 						continue
 					}
+
 					return nil, err
 				}
 
 				reg[dst] = runtime.NewBoolean(length != 0)
+
 				continue
 			}
 

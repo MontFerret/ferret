@@ -109,6 +109,124 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
 }
 
+func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 Operand, constants []runtime.Value, src2 Operand, dst Operand) error {
+	src := reg[src1]
+
+	if src1.IsConstant() {
+		src = constants[src1.Constant()]
+	}
+
+	var arg runtime.Value
+
+	if src2.IsConstant() {
+		arg = constants[src2.Constant()]
+	} else {
+		arg = reg[src2]
+	}
+
+	var query runtime.Query
+
+	switch value := arg.(type) {
+	case runtime.Query:
+		query = value
+	case *runtime.Array:
+		length, err := value.Length(ctx)
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		if length < 2 {
+			if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery)); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		kindVal, err := value.Get(ctx, runtime.NewInt(0))
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		payloadVal, err := value.Get(ctx, runtime.NewInt(1))
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		var paramsVal runtime.Value = runtime.None
+		if length > 2 {
+			paramsVal, err = value.Get(ctx, runtime.NewInt(2))
+			if err != nil {
+				if err := vm.setOrTryCatch(dst, runtime.None, err); err != nil {
+					return err
+				}
+
+				break
+			}
+		}
+
+		kind, err := runtime.CastString(kindVal)
+		if err != nil {
+			if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(kindVal, runtime.TypeString)); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		payload := runtime.EmptyString
+		if payloadVal != runtime.None {
+			payload, err = runtime.CastString(payloadVal)
+			if err != nil {
+				if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(payloadVal, runtime.TypeString, runtime.TypeNone)); err != nil {
+					return err
+				}
+
+				break
+			}
+		}
+
+		query = runtime.NewQuery(kind, payload)
+		query.Params = paramsVal
+	default:
+		if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(arg, runtime.TypeQuery, runtime.TypeArray)); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	queryable, ok := src.(runtime.Queryable)
+
+	if !ok {
+		if err := vm.setOrTryCatch(dst, runtime.None, runtime.TypeErrorOf(src, runtime.TypeQueryable)); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	res, err := queryable.Query(ctx, query)
+
+	if err := vm.setOrTryCatch(dst, res, err); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (vm *VM) regexpCached(pc int, value runtime.Value) (*data.Regexp, error) {
 	// We compare patterns to ensure that the cached regexp is the same as the one we're trying to use.
 	// This is necessary because the same compiled function can be used in different places with different regexps,
@@ -370,6 +488,78 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	}
 
 	return out, nil
+}
+
+func (vm *VM) loadIndexAndSet(ctx context.Context, dst Operand, src, arg runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	out, err := vm.loadIndex(ctx, src, arg)
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadKeyAndSet(ctx context.Context, dst Operand, pc int, src, arg runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	out, err := vm.loadKeyCached(ctx, pc, src, arg)
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst Operand, pc int, inst *Instruction, src, arg runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadPropertyAndSet(ctx context.Context, dst Operand, pc int, src, prop runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	var out runtime.Value
+	var err error
+
+	switch getter := prop.(type) {
+	case runtime.String:
+		out, err = vm.loadKeyCached(ctx, pc, src, getter)
+	case runtime.Float, runtime.Int:
+		out, err = vm.loadIndex(ctx, src, getter)
+	default:
+		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
+	}
+
+	return vm.setOrOptional(dst, out, err, optional)
+}
+
+func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst Operand, pc int, inst *Instruction, src, prop runtime.Value, optional bool) error {
+	if optional && src == runtime.None {
+		vm.registers.Values[dst] = runtime.None
+		return nil
+	}
+
+	var out runtime.Value
+	var err error
+
+	switch getter := prop.(type) {
+	case runtime.String:
+		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, getter)
+	case runtime.Float, runtime.Int:
+		out, err = vm.loadIndex(ctx, src, getter)
+	default:
+		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
+	}
+
+	return vm.setOrOptional(dst, out, err, optional)
 }
 
 func (vm *VM) castSubscribeArgs(dst, eventName, opts runtime.Value) (runtime.Observable, runtime.String, runtime.Map, error) {

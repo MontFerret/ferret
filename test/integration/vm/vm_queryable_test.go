@@ -147,6 +147,10 @@ type mockDBQueryable struct {
 func (m *mockDBQueryable) Query(ctx context.Context, q runtime.Query) (runtime.Value, error) {
 	m.queries = append(m.queries, q)
 
+	if q.Kind.String() == "nil" {
+		return runtime.None, nil
+	}
+
 	if q.Kind.String() != "sql" {
 		return runtime.NewArray(0), nil
 	}
@@ -303,6 +307,8 @@ func TestComplexQueries(t *testing.T) {
 			},
 			"Should support nested apply inside projections",
 		),
+		CaseNil("RETURN @doc[~ nil`foo`]?.foo", "Should return null for queryable that returns None"),
+		SkipCaseNil("RETURN @doc[~ nil`foo`]?.[*].name", "Should return null for queryable that returns None"),
 	}, vm.WithParams(map[string]runtime.Value{
 		"doc":  queryableDoc,
 		"db":   queryableDB,

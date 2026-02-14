@@ -111,6 +111,8 @@ func TestMember(t *testing.T) {
 		
 						RETURN obj.attributes['data-index']`,
 			1),
+		Case(`LET obj = { '[1]': 42 } RETURN obj[[1]]`, 42),
+		Case(`LET obj = { '{"a":1}': 7 } RETURN obj[{a:1}]`, 7),
 		CaseRuntimeError(`LET obj = NONE RETURN obj.foo`),
 		CaseNil(`LET obj = NONE RETURN obj?.foo`),
 		CaseObject(`RETURN {first: {second: "third"}}.first`,
@@ -199,17 +201,35 @@ func TestOptionalChaining(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		Case(
 			`
-					LET obj = { foo: { bar: "bar" } }
-		
-					RETURN obj.foo?.bar
-				`,
+						LET obj = { foo: { bar: "bar" } }
+			
+						RETURN obj.foo?.bar
+					`,
 			"bar",
 		),
+		Case(
+			`
+						LET obj = { prop1: { prop2: 1 } }
+
+						RETURN obj?.prop1?.prop2
+					`,
+			1,
+		),
+		CaseNil(`LET obj = NONE RETURN obj?.prop1?.prop2`),
+		Case(
+			`
+						LET obj = { "prop1": { "prop2": 1 } }
+
+						RETURN obj?.["prop1"]?.["prop2"]
+					`,
+			1,
+		),
+		CaseNil(`LET obj = NONE RETURN obj?.["prop1"]?.["prop2"]`),
 		CaseNil(`
-					LET obj = { foo: None }
-		
-					RETURN obj.foo?.bar?.[0]
-				`),
+						LET obj = { foo: None }
+			
+						RETURN obj.foo?.bar?.[0]
+					`),
 		Case(
 			`
 					LET obj = { foo: { bar: ["bar"] } }
@@ -220,10 +240,14 @@ func TestOptionalChaining(t *testing.T) {
 		CaseNil(`RETURN FIRST([])?.foo`),
 		Case(
 			`
-					RETURN FIRST([{ foo: "bar" }])?.foo
-				`,
+							RETURN FIRST([{ foo: "bar" }])?.foo
+						`,
 			"bar",
 		),
+		CaseNil(`LET obj = NONE RETURN obj?.foo?.[ERROR()]`),
+		CaseRuntimeError(`LET obj = { foo: { bar: 1 } } RETURN obj?.foo?.[ERROR()]`),
+		Case(`LET obj = { '[1]': 42 } RETURN obj?.[[1]]`, 42),
+		Case(`LET obj = { '{"a":1}': 7 } RETURN obj?.[{a:1}]`, 7),
 		CaseNil("RETURN ERROR()?.foo"),
 		SkipCaseNil(`LET res = (FOR i IN ERROR() RETURN i)? RETURN res`),
 

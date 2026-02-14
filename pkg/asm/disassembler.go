@@ -67,7 +67,7 @@ func collectLabels(bytecode []vm.Instruction, names map[int]string) map[int]stri
 	// Collect unmarked jump targets
 	for _, instr := range bytecode {
 		switch instr.Opcode {
-		case vm.OpJump, vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpIterNext, vm.OpIterSkip, vm.OpIterLimit:
+		case vm.OpJump, vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpJumpIfNone, vm.OpIterNext, vm.OpIterSkip, vm.OpIterLimit:
 			target := int(instr.Operands[0])
 
 			if name, ok := names[target]; !ok || name == "" {
@@ -95,7 +95,7 @@ func disasmLine(ip int, instr vm.Instruction, p *vm.Program, labels map[int]stri
 		out = fmt.Sprintf("%d: %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels))
 
 	// Op Jmp R
-	case vm.OpJumpIfTrue, vm.OpJumpIfFalse, vm.OpIterNext:
+	case vm.OpJumpIfTrue, vm.OpJumpIfFalse, vm.OpJumpIfNone, vm.OpIterNext:
 		out = fmt.Sprintf("%d: %s %s %s", ip, opcode, labelOrAddr(int(ops[0]), labels), formatOperand(ops[1]))
 
 	// Op Jmp R, R

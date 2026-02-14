@@ -859,7 +859,7 @@ func operandIsRegister(op vm.Opcode, idx int) bool {
 	switch op {
 	case vm.OpJump:
 		return false
-	case vm.OpJumpIfFalse, vm.OpJumpIfTrue:
+	case vm.OpJumpIfFalse, vm.OpJumpIfTrue, vm.OpJumpIfNone:
 		return idx == 1
 	case vm.OpIterNext:
 		return idx == 1
