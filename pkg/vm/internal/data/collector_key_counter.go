@@ -10,7 +10,11 @@ import (
 type KeyCounterCollector struct {
 	*runtime.Box[runtime.List]
 	grouping map[string]runtime.Int
-	sorted   bool
+	// Fast path for the common single-key case: keep first counter without a map.
+	singleKey   string
+	singleIndex runtime.Int
+	singleKV    *KV
+	sorted      bool
 }
 
 func NewKeyCounterCollector() Transformer {
@@ -18,7 +22,6 @@ func NewKeyCounterCollector() Transformer {
 		Box: &runtime.Box[runtime.List]{
 			Value: runtime.NewArray(8),
 		},
-		grouping: make(map[string]runtime.Int),
 	}
 }
 
@@ -58,13 +61,61 @@ func (c *KeyCounterCollector) sort(ctx context.Context) error {
 }
 
 func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) error {
-	k, err := Stringify(ctx, key)
+	var keyStr string
 
-	if err != nil {
-		return err
+	switch k := key.(type) {
+	case runtime.String:
+		keyStr = k.String()
+	default:
+		var err error
+		keyStr, err = Stringify(ctx, key)
+		if err != nil {
+			return err
+		}
 	}
 
-	idx, exists := c.grouping[k]
+	// Fast path: first key stays in singleKey/singleKV to avoid map allocation.
+	if c.grouping == nil && c.singleKey == "" {
+		kv := NewKV(key, runtime.ZeroInt)
+		if err := c.Value.Append(ctx, kv); err != nil {
+			return err
+		}
+
+		c.singleKey = keyStr
+		c.singleIndex = 0
+		c.singleKV = kv
+
+		if count, ok := kv.Value.(runtime.Int); ok {
+			kv.Value = count + 1
+		} else {
+			kv.Value = runtime.NewInt(1)
+		}
+
+		return nil
+	}
+
+	// Promote to map when a second distinct key appears.
+	if c.grouping == nil {
+		if keyStr == c.singleKey {
+			kv := c.singleKV
+			if count, ok := kv.Value.(runtime.Int); ok {
+				kv.Value = count + 1
+			} else {
+				kv.Value = runtime.NewInt(1)
+			}
+
+			return nil
+		}
+
+		c.grouping = map[string]runtime.Int{
+			c.singleKey: c.singleIndex,
+		}
+		c.singleKey = ""
+		c.singleIndex = 0
+		c.singleKV = nil
+	}
+
+	idx, exists := c.grouping[keyStr]
 
 	var kv *KV
 
@@ -82,7 +133,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 			return err
 		}
 
-		c.grouping[k] = idx
+		c.grouping[keyStr] = idx
 	} else {
 		value, err := c.Value.Get(ctx, idx)
 
@@ -94,8 +145,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 	}
 
 	if count, ok := kv.Value.(runtime.Int); ok {
-		sum := count + 1
-		kv.Value = sum
+		kv.Value = count + 1
 	} else {
 		kv.Value = runtime.NewInt(1)
 	}
@@ -104,16 +154,31 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 }
 
 func (c *KeyCounterCollector) Get(ctx context.Context, key runtime.Value) (runtime.Value, error) {
-	k, err := Stringify(ctx, key)
+	var keyStr string
 
-	if err != nil {
-		return nil, err
+	switch k := key.(type) {
+	case runtime.String:
+		keyStr = k.String()
+	default:
+		var err error
+		keyStr, err = Stringify(ctx, key)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	v, ok := c.grouping[k]
+	if c.grouping == nil {
+		if keyStr == c.singleKey {
+			return c.singleIndex, nil
+		}
+
+		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
+	}
+
+	v, ok := c.grouping[keyStr]
 
 	if !ok {
-		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", k)
+		return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", keyStr)
 	}
 
 	return v, nil
@@ -127,6 +192,9 @@ func (c *KeyCounterCollector) Close() error {
 	val := c.Value
 	c.Value = nil
 	c.grouping = nil
+	c.singleKey = ""
+	c.singleIndex = 0
+	c.singleKV = nil
 
 	if closer := val.(io.Closer); closer != nil {
 		return closer.Close()

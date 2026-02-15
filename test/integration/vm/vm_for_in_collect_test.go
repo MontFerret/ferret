@@ -382,6 +382,36 @@ LET users = [
 			},
 		}, "Should create default projection"),
 		CaseArray(`
+			LET users = [
+				{ name: "a", age: 10 },
+				{ name: "b", age: 20 }
+			]
+			FOR u IN users
+				COLLECT group = "only" INTO values
+				RETURN {
+					group,
+					values
+				}
+`, []any{
+			map[string]any{
+				"group": "only",
+				"values": []any{
+					map[string]any{
+						"u": map[string]any{
+							"name": "a",
+							"age":  10,
+						},
+					},
+					map[string]any{
+						"u": map[string]any{
+							"name": "b",
+							"age":  20,
+						},
+					},
+				},
+			},
+		}, "Should collect into a single group when key is constant"),
+		CaseArray(`
 			LET users = []
 			FOR i IN users
 				COLLECT gender = i.gender INTO genders

@@ -16,8 +16,10 @@ type aggregateState struct {
 }
 
 type AggregateCollector struct {
-	plan             *runtime.AggregatePlan
-	states           []aggregateState
+	plan   *runtime.AggregatePlan
+	states []aggregateState
+	// Fast path for single projection key (common for COLLECT ... INTO groups):
+	// avoid allocating and hashing into a map until a second distinct key appears.
 	singleGroupKey   string
 	singleGroupValue runtime.List
 	groups           map[string]runtime.List
@@ -105,12 +107,14 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 
 	c.hasData = true
 
+	// Fast path: first non-aggregate key is stored in the single-group slot.
 	if c.singleGroupKey == "" && len(c.groups) == 0 {
 		c.singleGroupKey = keyStr
 		c.singleGroupValue = runtime.NewArray(4)
 		return c.singleGroupValue.Append(ctx, value)
 	}
 
+	// If a second distinct key appears, promote to the groups map.
 	if c.singleGroupKey != "" {
 		if keyStr == c.singleGroupKey {
 			return c.singleGroupValue.Append(ctx, value)
