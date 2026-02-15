@@ -25,6 +25,26 @@ func TestCollectAggregate(t *testing.T) {
 			map[string]any{"gender": "m", "minAge": 31, "grouped": []map[string]any{{"u": map[string]any{"gender": "m", "age": 31}}, {"u": map[string]any{"gender": "m", "age": 45}}}},
 		}, "Should support COLLECT INTO + AGGREGATE"),
 		CaseArray(`
+			LET users = [
+				{ group: "a", age: 1 },
+				{ group: "a", age: "oops" },
+				{ group: "b", age: 2 },
+				{ group: "b", age: null }
+			]
+			FOR u IN users
+				COLLECT g = u.group
+				AGGREGATE
+					cnt = COUNT(u.age),
+					sum = SUM(u.age),
+					min = MIN(u.age),
+					max = MAX(u.age),
+					avg = AVERAGE(u.age)
+				RETURN { g, cnt, sum, min, max, avg }
+		`, []any{
+			map[string]any{"g": "a", "cnt": 2, "sum": 1, "min": 1, "max": 1, "avg": 1},
+			map[string]any{"g": "b", "cnt": 2, "sum": 2, "min": 2, "max": 2, "avg": 2},
+		}, "Should aggregate per group and skip non-numbers in numeric aggregates"),
+		CaseArray(`
 			LET users = []
 			FOR u IN users
 				COLLECT gender = u.gender

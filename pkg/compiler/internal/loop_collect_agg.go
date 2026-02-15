@@ -15,18 +15,41 @@ import (
 // For grouped aggregations, it compiles the selectors and packs them with the loop value.
 // For global aggregations, it pushes the selectors directly to the collector.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool) *core.CollectorAggregation {
+func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, grouping fql.ICollectGroupingContext, dst vm.Operand, kv *core.KV, withGrouping bool) *core.CollectorAggregation {
 	loop := c.ctx.Loops.Current()
 	selectors := ctx.AllCollectAggregateSelector()
 
 	// If we have grouping, we need to pack the selectors into the collector value
 	if withGrouping {
+		var (
+			fusedPlan *runtime.AggregatePlan
+			fused     bool
+		)
+
+		// Use grouped aggregate fusion only when it is likely to win.
+		if c.shouldFuseGroupedAggregation(grouping, selectors) {
+			if plan, ok := c.buildGroupedAggregatePlan(selectors); ok {
+				fusedPlan = plan
+				fused = true
+			}
+		}
+
 		aggregator := c.ctx.Registers.Allocate()
+
 		// We create a separate collector for aggregation in grouped mode
-		c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
+		if fused {
+			planIdx := c.ctx.Symbols.AddConstant(fusedPlan).Constant()
+			c.ctx.Emitter.InsertAxy(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeAggregateGroup), planIdx)
+		} else {
+			c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
+		}
 
 		// Compile selectors for grouped aggregation
-		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator)
+		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator, fused)
+
+		if fused {
+			return core.NewCollectorAggregationFused(aggregator, aggregateSelectors)
+		}
 
 		return core.NewCollectorAggregation(aggregator, aggregateSelectors)
 	}
@@ -41,7 +64,7 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 // It compiles each selector's function call expression and arguments, and creates AggregateSelector objects.
 // For selectors with multiple arguments, it packs them into an array.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst vm.Operand) []*core.AggregateSelector {
+func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst vm.Operand, fused bool) []*core.AggregateSelector {
 	wrappedSelectors := make([]*core.AggregateSelector, len(selectors))
 
 	for i := 0; i < len(selectors); i++ {
@@ -58,19 +81,28 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 			panic("No arguments provided for the function call in the aggregate selector")
 		}
 
-		if len(args) > 1 {
-			// For multiple arguments, push each one with an indexed key
-			for y := 0; y < len(args); y++ {
-				// Create a key with format "name:index"
-				key := c.loadSelectorKey(kv.Key, name, y)
-				// Push the key-value pair to the collector
-				c.ctx.Emitter.EmitPushKV(dst, key, args[y])
+		if fused {
+			if len(args) != 1 {
+				panic("aggregate fusion requires exactly one argument")
 			}
-		} else {
-			// For a single argument, use the selector name as the key
-			key := c.loadSelectorKey(kv.Key, name, -1)
-			// Push the key-value pair to the collector
+
+			key := c.loadGroupedAggregateKey(kv.Key, i)
 			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
+		} else {
+			if len(args) > 1 {
+				// For multiple arguments, push each one with an indexed key
+				for y := 0; y < len(args); y++ {
+					// Create a key with format "name:index"
+					key := c.loadSelectorKey(kv.Key, name, y)
+					// Push the key-value pair to the collector
+					c.ctx.Emitter.EmitPushKV(dst, key, args[y])
+				}
+			} else {
+				// For a single argument, use the selector name as the key
+				key := c.loadSelectorKey(kv.Key, name, -1)
+				// Push the key-value pair to the collector
+				c.ctx.Emitter.EmitPushKV(dst, key, args[0])
+			}
 		}
 
 		// Get the function name and check if it's a protected call (with TRY)
@@ -176,6 +208,112 @@ func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregato
 	return runtime.NewAggregatePlan(keys, kinds), true
 }
 
+func (c *LoopCollectCompiler) buildGroupedAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*runtime.AggregatePlan, bool) {
+	if len(selectors) == 0 {
+		return nil, false
+	}
+
+	keys := make([]runtime.String, 0, len(selectors))
+	kinds := make([]runtime.AggregateKind, 0, len(selectors))
+
+	for _, selector := range selectors {
+		fce := selector.FunctionCallExpression()
+		if fce == nil || fce.FunctionCall() == nil {
+			return nil, false
+		}
+
+		if fce.ErrorOperator() != nil {
+			return nil, false
+		}
+
+		args := fce.FunctionCall().ArgumentList()
+		if args == nil {
+			return nil, false
+		}
+
+		exps := args.AllExpression()
+		if len(exps) != 1 {
+			return nil, false
+		}
+
+		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
+		kind, ok := aggregateKind(funcName)
+		if !ok {
+			return nil, false
+		}
+
+		keys = append(keys, runtime.String(selector.Identifier().GetText()))
+		kinds = append(kinds, kind)
+	}
+
+	return runtime.NewAggregatePlan(keys, kinds), true
+}
+
+func (c *LoopCollectCompiler) shouldFuseGroupedAggregation(grouping fql.ICollectGroupingContext, selectors []fql.ICollectAggregateSelectorContext) bool {
+	// Heuristic:
+	// - only fuse when there are 3+ aggregates (to amortize setup cost)
+	// - only one group key (avoid complex composite/group-array keys)
+	// - only simple group expressions (identifier/param/simple member path/string literal)
+	if grouping == nil {
+		return false
+	}
+
+	if len(selectors) < 3 {
+		return false
+	}
+
+	groupSelectors := grouping.AllCollectSelector()
+	if len(groupSelectors) != 1 {
+		return false
+	}
+
+	return isSimpleGroupExpression(groupSelectors[0].Expression())
+}
+
+func isSimpleGroupExpression(expr fql.IExpressionContext) bool {
+	if expr == nil {
+		return false
+	}
+
+	predicate := expr.Predicate()
+	if predicate == nil {
+		return false
+	}
+
+	atom := predicate.ExpressionAtom()
+	if atom == nil {
+		return false
+	}
+
+	// Disallow operators and complex expression forms.
+	if atom.AdditiveOperator() != nil || atom.MultiplicativeOperator() != nil || atom.RegexpOperator() != nil {
+		return false
+	}
+
+	if atom.FunctionCallExpression() != nil || atom.RangeOperator() != nil || atom.DispatchExpression() != nil || atom.ForExpression() != nil || atom.WaitForExpression() != nil {
+		return false
+	}
+
+	if lit := atom.Literal(); lit != nil {
+		return lit.StringLiteral() != nil
+	}
+
+	if atom.Variable() != nil || atom.Param() != nil {
+		return true
+	}
+
+	if me := atom.MemberExpression(); me != nil {
+		source := me.MemberExpressionSource()
+		if source == nil || (source.Variable() == nil && source.Param() == nil) {
+			return false
+		}
+
+		return isSimpleMemberPathChain(me.AllMemberExpressionPath())
+	}
+
+	return false
+}
+
 func aggregateKind(name runtime.String) (runtime.AggregateKind, bool) {
 	fn := strings.ToUpper(name.String())
 	if strings.Contains(fn, runtime.NamespaceSeparator) {
@@ -217,7 +355,7 @@ func (c *LoopCollectCompiler) finalizeAggregation(spec *core.Collector) {
 // The commented code shows the intended approach for handling grouped aggregations.
 func (c *LoopCollectCompiler) finalizeGroupedAggregation(spec *core.Collector) {
 	for i, selector := range spec.Aggregation().Selectors() {
-		c.compileGroupedAggregationFuncCall(selector, spec.Aggregation().State(), i)
+		c.compileGroupedAggregationFuncCall(selector, spec.Aggregation().State(), i, spec.Aggregation().IsFused())
 	}
 }
 
@@ -343,11 +481,17 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	c.ctx.Emitter.MarkLabel(endLabel)
 }
 
-func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int) {
+func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int, fused bool) {
 	loop := c.ctx.Loops.Current()
 	// Declare a local variable with the selector name
 	// TODO: Handle error if the variable already exists
 	valReg, _ := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
+
+	if fused {
+		key := c.loadGroupedAggregateKey(loop.Key, idx)
+		c.ctx.Emitter.EmitABC(vm.OpLoadKey, valReg, aggregator, key)
+		return
+	}
 
 	var args core.RegisterSequence
 
@@ -395,4 +539,13 @@ func (c *LoopCollectCompiler) loadSelectorKey(key vm.Operand, selector runtime.S
 	}
 
 	return selectorKey
+}
+
+func (c *LoopCollectCompiler) loadGroupedAggregateKey(key vm.Operand, selectorIdx int) vm.Operand {
+	aggKey := c.ctx.Registers.Allocate()
+	// Grouped aggregate keys are encoded as "<group>::<selectorIdx>".
+	suffix := runtime.String(runtime.NamespaceSeparator + strconv.Itoa(selectorIdx))
+	c.ctx.Emitter.EmitABC(vm.OpAdd, aggKey, key, loadConstant(c.ctx, suffix))
+
+	return aggKey
 }

@@ -66,7 +66,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 
 	// Initialize aggregationCtx if present in the COLLECT clause
 	if aggregationCtx != nil {
-		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0)
+		aggregation = c.initializeAggregation(aggregationCtx, groupingCtx, dst, kv, len(groupSelectors) > 0)
 	}
 
 	// Initialize projectionCtx for group variables or counters

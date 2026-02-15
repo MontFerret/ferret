@@ -389,7 +389,7 @@ loop:
 			reg[dst] = data.NewMultiSorter(runtime.DecodeSortDirections(encoded, count))
 		case OpDataSetCollector:
 			collectorType := data.CollectorType(src1)
-			if collectorType == data.CollectorTypeAggregate {
+			if collectorType == data.CollectorTypeAggregate || collectorType == data.CollectorTypeAggregateGroup {
 				planIdx := int(src2)
 				if planIdx < 0 || planIdx >= len(constants) {
 					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
@@ -398,7 +398,11 @@ loop:
 				if !ok || plan == nil {
 					return nil, runtime.Errorf(runtime.ErrUnexpected, "invalid aggregate plan")
 				}
-				reg[dst] = data.NewAggregateCollector(plan)
+				if collectorType == data.CollectorTypeAggregate {
+					reg[dst] = data.NewAggregateCollector(plan)
+				} else {
+					reg[dst] = data.NewGroupedAggregateCollector(plan)
+				}
 				break
 			}
 

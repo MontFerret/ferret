@@ -9,6 +9,7 @@ type (
 	CollectorAggregation struct {
 		state    vm.Operand
 		selector []*AggregateSelector
+		fused    bool
 	}
 
 	AggregateSelector struct {
@@ -26,12 +27,24 @@ func NewCollectorAggregation(state vm.Operand, selector []*AggregateSelector) *C
 	}
 }
 
+func NewCollectorAggregationFused(state vm.Operand, selector []*AggregateSelector) *CollectorAggregation {
+	return &CollectorAggregation{
+		state:    state,
+		selector: selector,
+		fused:    true,
+	}
+}
+
 func (c *CollectorAggregation) State() vm.Operand {
 	return c.state
 }
 
 func (c *CollectorAggregation) Selectors() []*AggregateSelector {
 	return c.selector
+}
+
+func (c *CollectorAggregation) IsFused() bool {
+	return c.fused
 }
 
 func NewAggregateSelector(name runtime.String, args int, funcName runtime.String, protectedCall bool) *AggregateSelector {
