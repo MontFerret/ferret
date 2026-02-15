@@ -43,6 +43,8 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 	collectorType := core.DetermineCollectorType(len(groupSelectors) > 0, aggregationCtx != nil, projectionCtx != nil, counterCtx != nil)
 	useAggregateCollector := false
 	aggregatePlanIndex := 0
+	var groupedAggregatePlan *runtime.AggregatePlan
+	useGroupedAggregateCollector := false
 
 	if aggregationCtx != nil && len(groupSelectors) == 0 {
 		if plan, ok := c.buildGlobalAggregatePlan(aggregationCtx); ok {
@@ -52,12 +54,26 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 		}
 	}
 
+	if aggregationCtx != nil && groupingCtx != nil {
+		selectors := aggregationCtx.AllCollectAggregateSelector()
+		if c.shouldFuseGroupedAggregation(groupingCtx, selectors) {
+			if plan, ok := c.buildGroupedAggregatePlan(selectors); ok {
+				groupedAggregatePlan = plan
+				useGroupedAggregateCollector = true
+				collectorType = core.CollectorTypeAggregateGroup
+			}
+		}
+	}
+
 	// We replace DataSet initialization with Collector initialization
 	loop := c.ctx.Loops.Current()
 	var dst vm.Operand
 
 	if useAggregateCollector {
 		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType), aggregatePlanIndex)
+	} else if useGroupedAggregateCollector {
+		planIdx := c.ctx.Symbols.AddConstant(groupedAggregatePlan).Constant()
+		dst = loop.PatchDestinationAxy(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType), planIdx)
 	} else {
 		dst = loop.PatchDestinationAx(c.ctx.Registers, c.ctx.Emitter, vm.OpDataSetCollector, int(collectorType))
 	}
@@ -66,7 +82,7 @@ func (c *LoopCollectCompiler) compileCollector(ctx fql.ICollectClauseContext) *c
 
 	// Initialize aggregationCtx if present in the COLLECT clause
 	if aggregationCtx != nil {
-		aggregation = c.initializeAggregation(aggregationCtx, groupingCtx, dst, kv, len(groupSelectors) > 0)
+		aggregation = c.initializeAggregation(aggregationCtx, dst, kv, len(groupSelectors) > 0, groupedAggregatePlan)
 	}
 
 	// Initialize projectionCtx for group variables or counters

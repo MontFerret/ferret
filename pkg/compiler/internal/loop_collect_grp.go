@@ -125,7 +125,7 @@ func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 // Different collector types require different registers to be used as the group key.
 func (c *LoopCollectCompiler) selectGroupKey(collectorType core.CollectorType, loop *core.Loop) vm.Operand {
 	switch collectorType {
-	case core.CollectorTypeKeyGroup, core.CollectorTypeKeyCounter:
+	case core.CollectorTypeKeyGroup, core.CollectorTypeKeyCounter, core.CollectorTypeAggregateGroup:
 		// For key-based collectors, use the key register
 		return loop.Key
 	default:

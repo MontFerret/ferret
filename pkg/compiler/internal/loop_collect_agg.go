@@ -15,41 +15,25 @@ import (
 // For grouped aggregations, it compiles the selectors and packs them with the loop value.
 // For global aggregations, it pushes the selectors directly to the collector.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, grouping fql.ICollectGroupingContext, dst vm.Operand, kv *core.KV, withGrouping bool) *core.CollectorAggregation {
+func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool, groupedPlan *runtime.AggregatePlan) *core.CollectorAggregation {
 	loop := c.ctx.Loops.Current()
 	selectors := ctx.AllCollectAggregateSelector()
 
 	// If we have grouping, we need to pack the selectors into the collector value
 	if withGrouping {
-		var (
-			fusedPlan *runtime.AggregatePlan
-			fused     bool
-		)
-
-		// Use grouped aggregate fusion only when it is likely to win.
-		if c.shouldFuseGroupedAggregation(grouping, selectors) {
-			if plan, ok := c.buildGroupedAggregatePlan(selectors); ok {
-				fusedPlan = plan
-				fused = true
-			}
+		if groupedPlan != nil {
+			// Fused grouped aggregation writes directly into the primary collector.
+			aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, dst, true)
+			return core.NewCollectorAggregationFused(dst, aggregateSelectors)
 		}
 
 		aggregator := c.ctx.Registers.Allocate()
 
 		// We create a separate collector for aggregation in grouped mode
-		if fused {
-			planIdx := c.ctx.Symbols.AddConstant(fusedPlan).Constant()
-			c.ctx.Emitter.InsertAxy(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeAggregateGroup), planIdx)
-		} else {
-			c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
-		}
+		c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
 
 		// Compile selectors for grouped aggregation
-		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator, fused)
-
-		if fused {
-			return core.NewCollectorAggregationFused(aggregator, aggregateSelectors)
-		}
+		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator, false)
 
 		return core.NewCollectorAggregation(aggregator, aggregateSelectors)
 	}
@@ -354,8 +338,16 @@ func (c *LoopCollectCompiler) finalizeAggregation(spec *core.Collector) {
 // the functionality is implemented differently or is being refactored.
 // The commented code shows the intended approach for handling grouped aggregations.
 func (c *LoopCollectCompiler) finalizeGroupedAggregation(spec *core.Collector) {
+	loop := c.ctx.Loops.Current()
+	aggregator := spec.Aggregation().State()
+	if spec.Aggregation().IsFused() {
+		// In fused mode the collector register can be reused for the output dataset,
+		// so load aggregate values from the loop source instead.
+		aggregator = loop.Src
+	}
+
 	for i, selector := range spec.Aggregation().Selectors() {
-		c.compileGroupedAggregationFuncCall(selector, spec.Aggregation().State(), i, spec.Aggregation().IsFused())
+		c.compileGroupedAggregationFuncCall(selector, aggregator, i, spec.Aggregation().IsFused())
 	}
 }
 
@@ -543,9 +535,12 @@ func (c *LoopCollectCompiler) loadSelectorKey(key vm.Operand, selector runtime.S
 
 func (c *LoopCollectCompiler) loadGroupedAggregateKey(key vm.Operand, selectorIdx int) vm.Operand {
 	aggKey := c.ctx.Registers.Allocate()
-	// Grouped aggregate keys are encoded as "<group>::<selectorIdx>".
-	suffix := runtime.String(runtime.NamespaceSeparator + strconv.Itoa(selectorIdx))
-	c.ctx.Emitter.EmitABC(vm.OpAdd, aggKey, key, loadConstant(c.ctx, suffix))
+	// Use a tagged array key to avoid collisions with user-provided group keys.
+	// Format: [AggregateKeyMarker, <groupKey>, <selectorIdx>]
+	c.ctx.Emitter.EmitArray(aggKey, 3)
+	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, runtime.AggregateKeyMarker))
+	c.ctx.Emitter.EmitArrayPush(aggKey, key)
+	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, runtime.Int(selectorIdx)))
 
 	return aggKey
 }
