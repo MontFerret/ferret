@@ -4,6 +4,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
@@ -11,13 +14,15 @@ type visitor struct {
 	*fql.BaseFqlParserVisitor
 	opts *options
 	p    *printer
+	src  *file.Source
 }
 
-func newVisitor(out io.Writer, opts *options) *visitor {
+func newVisitor(src *file.Source, out io.Writer, opts *options) *visitor {
 	v := &visitor{
 		BaseFqlParserVisitor: new(fql.BaseFqlParserVisitor),
 		opts:                 opts,
 		p:                    newPrinter(out, opts),
+		src:                  src,
 	}
 
 	return v
@@ -25,6 +30,159 @@ func newVisitor(out io.Writer, opts *options) *visitor {
 
 func (v *visitor) Err() error {
 	return v.p.Err()
+}
+
+func (v *visitor) startIndex(ctx antlr.ParserRuleContext) int {
+	if ctx == nil {
+		return 0
+	}
+	if tok := ctx.GetStart(); tok != nil {
+		return tok.GetStart()
+	}
+	return 0
+}
+
+func (v *visitor) stopIndex(ctx antlr.ParserRuleContext) int {
+	if ctx == nil {
+		return 0
+	}
+	if tok := ctx.GetStop(); tok != nil {
+		return tok.GetStop()
+	}
+	return 0
+}
+
+func (v *visitor) sliceBetween(start, end int) string {
+	if v.src == nil {
+		return ""
+	}
+	text := v.src.Content()
+	if start < 0 {
+		start = 0
+	}
+	if end > len(text) {
+		end = len(text)
+	}
+	if end <= start {
+		return ""
+	}
+	return text[start:end]
+}
+
+func (v *visitor) emitTrivia(text string) {
+	if text == "" {
+		return
+	}
+
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			if !v.p.atLineStart {
+				v.p.space()
+			}
+			v.p.write(trimmed)
+		}
+		if i < len(lines)-1 {
+			v.p.newline()
+		}
+	}
+}
+
+func (v *visitor) emitBetween(prev, next antlr.ParserRuleContext) {
+	if prev == nil || next == nil {
+		return
+	}
+	start := v.stopIndex(prev) + 1
+	end := v.startIndex(next)
+	v.emitBetweenIndices(start, end)
+}
+
+func (v *visitor) emitBetweenIndices(start, end int) {
+	text := v.sliceBetween(start, end)
+	if text == "" {
+		v.p.newline()
+		return
+	}
+	if strings.TrimSpace(text) == "" && !strings.Contains(text, "\n") {
+		v.p.newline()
+		return
+	}
+
+	v.emitTrivia(text)
+	if !strings.Contains(text, "\n") {
+		v.p.newline()
+	}
+}
+
+func (v *visitor) emitLeading(next antlr.ParserRuleContext) {
+	if next == nil {
+		return
+	}
+	v.emitTrivia(v.sliceBetween(0, v.startIndex(next)))
+}
+
+func (v *visitor) emitTrailing(prev antlr.ParserRuleContext) {
+	if prev == nil {
+		return
+	}
+	start := v.stopIndex(prev) + 1
+	v.emitTrivia(v.sliceBetween(start, len(v.src.Content())))
+}
+
+func (v *visitor) bodyFirstElement(ctx *fql.BodyContext) antlr.ParserRuleContext {
+	if ctx == nil {
+		return nil
+	}
+	stmts := ctx.AllBodyStatement()
+	if len(stmts) > 0 {
+		return stmts[0].(antlr.ParserRuleContext)
+	}
+	if expr := ctx.BodyExpression(); expr != nil {
+		return expr.(antlr.ParserRuleContext)
+	}
+	return nil
+}
+
+func (v *visitor) bodyLastElement(ctx *fql.BodyContext) antlr.ParserRuleContext {
+	if ctx == nil {
+		return nil
+	}
+	if expr := ctx.BodyExpression(); expr != nil {
+		return expr.(antlr.ParserRuleContext)
+	}
+	stmts := ctx.AllBodyStatement()
+	if len(stmts) > 0 {
+		return stmts[len(stmts)-1].(antlr.ParserRuleContext)
+	}
+	return nil
+}
+
+func (v *visitor) forHeaderStopIndex(ctx *fql.ForExpressionContext) int {
+	if ctx == nil {
+		return 0
+	}
+	switch {
+	case ctx.In() != nil:
+		if src := ctx.ForExpressionSource(); src != nil {
+			return v.stopIndex(src.(antlr.ParserRuleContext))
+		}
+	case ctx.Step() != nil:
+		if expr := ctx.GetStepUpdateExp(); expr != nil {
+			return v.stopIndex(expr.(antlr.ParserRuleContext))
+		}
+		if tok := ctx.GetStepUpdate(); tok != nil {
+			return tok.GetStop()
+		}
+		if tok := ctx.GetStepVariable(); tok != nil {
+			return tok.GetStop()
+		}
+	case ctx.While() != nil:
+		if expr := ctx.Expression(0); expr != nil {
+			return v.stopIndex(expr.(antlr.ParserRuleContext))
+		}
+	}
+	return v.stopIndex(ctx)
 }
 
 func (v *visitor) VisitProgram(ctx *fql.ProgramContext) interface{} {
@@ -38,15 +196,34 @@ func (v *visitor) formatProgram(ctx *fql.ProgramContext) {
 	}
 
 	heads := ctx.AllHead()
+	var first antlr.ParserRuleContext
+	if len(heads) > 0 {
+		first = heads[0].(antlr.ParserRuleContext)
+	} else if body := ctx.Body(); body != nil {
+		first = v.bodyFirstElement(body.(*fql.BodyContext))
+	}
+	v.emitLeading(first)
+
 	for i, head := range heads {
-		v.formatHead(head.(*fql.HeadContext))
-		if i < len(heads)-1 || ctx.Body() != nil {
-			v.p.newline()
+		if i > 0 {
+			v.emitBetween(heads[i-1].(antlr.ParserRuleContext), head.(antlr.ParserRuleContext))
 		}
+		v.formatHead(head.(*fql.HeadContext))
 	}
 
 	if ctx.Body() != nil {
-		v.formatBody(ctx.Body().(*fql.BodyContext))
+		body := ctx.Body().(*fql.BodyContext)
+		if len(heads) > 0 {
+			v.emitBetween(heads[len(heads)-1].(antlr.ParserRuleContext), v.bodyFirstElement(body))
+		}
+		v.formatBody(body)
+		last := v.bodyLastElement(body)
+		if last == nil && len(heads) > 0 {
+			last = heads[len(heads)-1].(antlr.ParserRuleContext)
+		}
+		v.emitTrailing(last)
+	} else if len(heads) > 0 {
+		v.emitTrailing(heads[len(heads)-1].(antlr.ParserRuleContext))
 	}
 }
 
@@ -94,12 +271,17 @@ func (v *visitor) formatBody(ctx *fql.BodyContext) {
 	}
 
 	stmts := ctx.AllBodyStatement()
-	for _, stmt := range stmts {
+	for i, stmt := range stmts {
 		v.formatBodyStatement(stmt.(*fql.BodyStatementContext))
-		v.p.newline()
+		if i < len(stmts)-1 {
+			v.emitBetween(stmt.(antlr.ParserRuleContext), stmts[i+1].(antlr.ParserRuleContext))
+		}
 	}
 
 	if expr := ctx.BodyExpression(); expr != nil {
+		if len(stmts) > 0 {
+			v.emitBetween(stmts[len(stmts)-1].(antlr.ParserRuleContext), expr.(antlr.ParserRuleContext))
+		}
 		v.formatBodyExpression(expr.(*fql.BodyExpressionContext))
 	}
 }
@@ -234,13 +416,31 @@ func (v *visitor) formatForExpression(ctx *fql.ForExpressionContext) {
 		return
 	}
 
-	v.p.newline()
+	headerStop := v.forHeaderStopIndex(ctx)
+	var first antlr.ParserRuleContext
+	if len(bodies) > 0 {
+		first = bodies[0].(antlr.ParserRuleContext)
+	} else if ret != nil {
+		first = ret.(antlr.ParserRuleContext)
+	}
+
 	v.p.withIndent(func() {
-		for _, body := range bodies {
-			v.formatForExpressionBody(body.(*fql.ForExpressionBodyContext))
+		if first != nil {
+			v.emitBetweenIndices(headerStop+1, v.startIndex(first))
+		} else {
 			v.p.newline()
 		}
+
+		for i, body := range bodies {
+			v.formatForExpressionBody(body.(*fql.ForExpressionBodyContext))
+			if i < len(bodies)-1 {
+				v.emitBetween(body.(antlr.ParserRuleContext), bodies[i+1].(antlr.ParserRuleContext))
+			}
+		}
 		if ret != nil {
+			if len(bodies) > 0 {
+				v.emitBetween(bodies[len(bodies)-1].(antlr.ParserRuleContext), ret.(antlr.ParserRuleContext))
+			}
 			v.formatForExpressionReturn(ret.(*fql.ForExpressionReturnContext))
 		}
 	})

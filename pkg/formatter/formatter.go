@@ -65,7 +65,7 @@ func (fmt *Formatter) Format(out io.Writer, src *file.Source) error {
 	p.RemoveErrorListeners()
 	// Add custom error listener
 	p.AddErrorListener(parserd.NewErrorListener(src, errorHandler, tokenHistory))
-	l := newVisitor(out, fmt.opts)
+	l := newVisitor(src, out, fmt.opts)
 	p.Visit(l)
 
 	if errorHandler.HasErrors() {
