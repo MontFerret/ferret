@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchWaitForErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchWaitForErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if err == nil || offending == nil {
 		return false
 	}

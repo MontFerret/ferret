@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchMissingReturnValue(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchMissingReturnValue(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	// Prefer range-specific error when the parser trips on an incomplete range like "0.. RETURN".
 	if is(offending, "..") || is(offending.Prev(), "..") || has(err.Message, "..") {
 		span := spanFromTokenSafe(offending.Token(), src)

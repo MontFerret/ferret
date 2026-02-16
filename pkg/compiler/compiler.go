@@ -4,8 +4,9 @@ import (
 	goruntime "runtime"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -34,14 +35,14 @@ func New(setters ...Option) *Compiler {
 
 func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err error) {
 	if src.Empty() {
-		return nil, diagnostics.NewEmptyQueryError(src)
+		return nil, parserd.NewEmptyQueryError(src)
 	}
 
-	errorHandler := diagnostics.NewErrorHandler(src, 10)
+	errorHandler := parserd.NewErrorHandler(src, 10)
 
 	defer func() {
 		if r := recover(); r != nil {
-			var e *CompilationError
+			var e *diagnostics.Diagnostic
 
 			buf := make([]byte, 1024)
 			n := goruntime.Stack(buf, false)
@@ -65,14 +66,14 @@ func (c *Compiler) Compile(src *file.Source) (program *bytecode.Program, err err
 	}()
 
 	l := NewVisitor(src, errorHandler)
-	tokenHistory := diagnostics.NewTokenHistory(10)
+	tokenHistory := parserd.NewTokenHistory(10)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
-		return diagnostics.NewTrackingTokenStream(stream, tokenHistory)
+		return parserd.NewTrackingTokenStream(stream, tokenHistory)
 	})
 	// Remove all default error listeners
 	p.RemoveErrorListeners()
 	// Add custom error listener
-	p.AddErrorListener(diagnostics.NewErrorListener(src, l.Ctx.Errors, tokenHistory))
+	p.AddErrorListener(parserd.NewErrorListener(src, l.Ctx.Errors, tokenHistory))
 	p.Visit(l)
 
 	if l.Ctx.Errors.HasErrors() {

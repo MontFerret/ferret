@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
+	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -16,7 +16,7 @@ type Visitor struct {
 	Ctx *internal.CompilerContext
 }
 
-func NewVisitor(src *file.Source, errors *diagnostics.ErrorHandler) *Visitor {
+func NewVisitor(src *file.Source, errors *parser.ErrorHandler) *Visitor {
 	v := new(Visitor)
 	v.BaseFqlParserVisitor = new(fql.BaseFqlParserVisitor)
 	v.Ctx = internal.NewCompilerContext(src, errors)
@@ -69,7 +69,7 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 
 	if existing, ok := v.Ctx.UseAliases[alias]; ok {
 		if existing != namespace {
-			v.Ctx.Errors.Add(v.Ctx.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
+			v.Ctx.Errors.Add(v.Ctx.Errors.Create(parser.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
 		}
 
 		return nil

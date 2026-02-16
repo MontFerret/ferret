@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchStepLoopErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchStepLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	prev := offending.Prev()
 
 	// Handle "WHILE STEP" case - missing condition after WHILE

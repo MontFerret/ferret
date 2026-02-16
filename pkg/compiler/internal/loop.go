@@ -5,9 +5,9 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/file"
@@ -162,7 +162,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 			if stepVar != nil && varName != stepVar.GetText() {
 				if _, _, found := c.ctx.Symbols.Resolve(stepVar.GetText()); found {
-					ce := c.ctx.Errors.Create(diagnostics.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
+					ce := c.ctx.Errors.Create(parser.SemanticError, ctx, fmt.Sprintf("step variable missmatch: expected '%s' but got '%s'", varName, stepVar.GetText()))
 					ce.Hint = "Make sure the same variable is used in all parts of the STEP loop"
 					c.ctx.Errors.Add(ce)
 				}
@@ -183,10 +183,10 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	if srcCtx := ctx.ForExpressionSource(); srcCtx != nil {
 		if prc, ok := srcCtx.(antlr.ParserRuleContext); ok {
-			span = diagnostics.SpanFromRuleContext(prc)
+			span = parser.SpanFromRuleContext(prc)
 		}
 	} else if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-		span = diagnostics.SpanFromRuleContext(prc)
+		span = parser.SpanFromRuleContext(prc)
 	}
 
 	c.ctx.Emitter.WithSpan(span, func() {
@@ -229,10 +229,10 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Opera
 
 		if exprCtx := re.Expression(); exprCtx != nil {
 			if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {
-				span = diagnostics.SpanFromRuleContext(prc)
+				span = parser.SpanFromRuleContext(prc)
 			}
 		} else {
-			span = diagnostics.SpanFromRuleContext(re)
+			span = parser.SpanFromRuleContext(re)
 		}
 
 		c.ctx.Emitter.WithSpan(span, func() {

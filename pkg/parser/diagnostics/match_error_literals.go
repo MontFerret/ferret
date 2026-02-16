@@ -26,7 +26,7 @@ func isComputedPropertyPrefix(node *TokenNode) bool {
 	return false
 }
 
-func matchLiteralErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchLiteralErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) {
 		input := extractNoAlternativeInputs(err.Message)
 		if len(input) == 0 {

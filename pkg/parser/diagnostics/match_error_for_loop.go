@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchForLoopErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchForLoopErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	prev := offending.Prev()
 
 	if is(prev, "IN") {

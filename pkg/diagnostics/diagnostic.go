@@ -17,6 +17,23 @@ type Diagnostic struct {
 	Cause   error        `json:"cause"`
 }
 
+func NewUnexpectedError(src *file.Source, msg string) *Diagnostic {
+	return &Diagnostic{
+		Kind:    UnexpectedError,
+		Message: msg,
+		Source:  src,
+	}
+}
+
+func NewUnexpectedErrorWith(src *file.Source, msg string, cause error) *Diagnostic {
+	return &Diagnostic{
+		Kind:    UnexpectedError,
+		Message: msg,
+		Source:  src,
+		Cause:   cause,
+	}
+}
+
 // ErrorSpan represents a specific span in the source code related to a diagnostic.
 func (e *Diagnostic) String() string {
 	return e.Message

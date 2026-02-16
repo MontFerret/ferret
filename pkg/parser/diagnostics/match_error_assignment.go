@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchMissingAssignmentValue(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchMissingAssignmentValue(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isExtraneous(err.Message) {
 		return false
 	}
