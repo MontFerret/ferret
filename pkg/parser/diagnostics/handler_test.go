@@ -63,14 +63,12 @@ func TestErrorHandler_AddSingleError(t *testing.T) {
 	src := file.NewSource("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 10)
 
-	err := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Message: "test error",
-			Source:  src,
-			Spans: []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""),
-			},
+	err := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Message: "test error",
+		Source:  src,
+		Spans: []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""),
 		},
 	}
 
@@ -101,18 +99,14 @@ func TestErrorHandler_AddMultipleErrors(t *testing.T) {
 	src := file.NewSource("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 10)
 
-	err1 := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Message: "error 1",
-		},
+	err1 := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Message: "error 1",
 	}
 
-	err2 := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    NameError,
-			Message: "error 2",
-		},
+	err2 := &diagnostics.Diagnostic{
+		Kind:    NameError,
+		Message: "error 2",
 	}
 
 	handler.Add(err1)
@@ -128,7 +122,7 @@ func TestErrorHandler_AddMultipleErrors(t *testing.T) {
 		t.Fatal("Unwrap() should not return nil for multiple errors")
 	}
 
-	multiErr, ok := unwrapped.(*CompilationErrorSet)
+	multiErr, ok := unwrapped.(*diagnostics.Diagnostics[*diagnostics.Diagnostic])
 	if !ok {
 		t.Error("Unwrap() should return *CompilationErrorSet for multiple errors")
 	}
@@ -148,14 +142,12 @@ func TestErrorHandler_HasErrorOnLine(t *testing.T) {
 	}
 
 	// Add error with span that affects line 1
-	err := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Message: "test error",
-			Source:  src,
-			Spans: []diagnostics.ErrorSpan{
-				diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""), // Position 0-3 is on line 1
-			},
+	err := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Message: "test error",
+		Source:  src,
+		Spans: []diagnostics.ErrorSpan{
+			diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 3}, ""), // Position 0-3 is on line 1
 		},
 	}
 
@@ -171,17 +163,13 @@ func TestErrorHandler_ExceedThreshold(t *testing.T) {
 	handler := NewErrorHandler(src, 2) // Low threshold for testing
 
 	// Add errors up to threshold
-	err1 := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Message: "error 1",
-		},
+	err1 := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Message: "error 1",
 	}
-	err2 := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Message: "error 2",
-		},
+	err2 := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Message: "error 2",
 	}
 
 	handler.Add(err1)
@@ -200,11 +188,9 @@ func TestErrorHandler_ExceedThreshold(t *testing.T) {
 	}
 
 	// Adding more errors should be ignored (since len(errors) > threshold now)
-	err3 := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Message: "ignored",
-		},
+	err3 := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Message: "ignored",
 	}
 	handler.Add(err3)
 

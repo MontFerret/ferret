@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 func TestSyntaxErrors(t *testing.T) {
@@ -12,7 +12,7 @@ func TestSyntaxErrors(t *testing.T) {
 			`
 			LET
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected variable name",
 				Hint:    "Did you forget to provide a variable name?",
 			}, "Missing variable name"),
@@ -22,7 +22,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET
 			RETURN 5
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected variable name",
 				Hint:    "Did you forget to provide a variable name?",
 			}, "Missing variable name 2"),
@@ -32,7 +32,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET = 1
 			RETURN NONE
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected variable name",
 				Hint:    "Did you forget to provide a variable name?",
 			}, "Missing variable name 3"),
@@ -41,7 +41,7 @@ func TestSyntaxErrors(t *testing.T) {
 			`
 			LET i = NONE
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected a RETURN or FOR clause at end of query",
 				Hint:    "All queries must return a value. Add a RETURN statement to complete the query.",
 			}, "Missing return statement"),
@@ -51,7 +51,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = NONE
 			RETURN
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after 'RETURN'",
 				Hint:    "Did you forget to provide a value to return?",
 			}, "Missing return value"),
@@ -63,7 +63,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = (a ||
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected right-hand expression after '||'",
 				Hint:    "Provide an expression after the logical operator, e.g. (a || b).",
 			}, "Incomplete logical expression"),
@@ -75,7 +75,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = (a OR
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected right-hand expression after 'OR'",
 				Hint:    "Provide an expression after the logical operator, e.g. (a OR b).",
 			}, "Incomplete logical expression 2"),
@@ -87,7 +87,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = (a &&
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected right-hand expression after '&&'",
 				Hint:    "Provide an expression after the logical operator, e.g. (a && b).",
 			}, "Incomplete logical expression 3"),
@@ -99,7 +99,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = (a AND
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected right-hand expression after 'AND'",
 				Hint:    "Provide an expression after the logical operator, e.g. (a AND b).",
 			}, "Incomplete logical expression 4"),
@@ -111,7 +111,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = b > 1 ? a :
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after ':' in ternary operator",
 				Hint:    "Provide an expression after the colon to complete the ternary operation.",
 			}, "Incomplete ternary expression"),
@@ -123,7 +123,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = b > 1 ? 1 + 1 + 1 :
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after ':' in ternary operator",
 				Hint:    "Provide an expression after the colon to complete the ternary operation.",
 			}, "Incomplete ternary expression 2"),
@@ -135,7 +135,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = b > 1 ?
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '?' in ternary operator",
 				Hint:    "Provide an expression after the question mark to complete the ternary operation.",
 			}, "Incomplete ternary expression 3"),
@@ -145,7 +145,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = NONE
 			RETURN i,
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "--",
 				Hint:    "--",
 			}, "Dangling comma in return"),
@@ -157,7 +157,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i = (a AND b
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed parenthesized expression",
 				Hint:    "Add a closing ')' to complete the expression.",
 			}, "Unclosed grouping 2"),
@@ -167,7 +167,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i =
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing variable assignment value"),
@@ -178,7 +178,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET j = 5
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing variable assignment value 2"),
@@ -188,7 +188,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET i =
 			FOR j IN [1, 2, 3] RETURN j
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Missing variable assignment value 3"),
@@ -198,7 +198,7 @@ func TestSyntaxErrors(t *testing.T) {
 			FUNC(1,
 			RETURN NONE
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after ','",
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete function call"),
@@ -208,7 +208,7 @@ func TestSyntaxErrors(t *testing.T) {
 			FUNC(,)
 			RETURN NONE
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected a valid list of arguments",
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete function call 2"),
@@ -218,7 +218,7 @@ func TestSyntaxErrors(t *testing.T) {
 			FUNC(
 			RETURN NONE
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed function call",
 				Hint:    "Add a closing ')' to complete the function call.",
 			}, "Incomplete function call 3"),
@@ -228,7 +228,7 @@ func TestSyntaxErrors(t *testing.T) {
 			FUNC(1
 			RETURN NONE
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed function call",
 				Hint:    "Add a closing ')' to complete the function call.",
 			}, "Incomplete function call 4"),
@@ -238,7 +238,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET r = 0..
 			RETURN r
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected end value after '..' in range expression",
 				Hint:    "Provide an end value to complete the range, e.g. 0..10.",
 			}, "Incomplete range"),
@@ -248,7 +248,7 @@ func TestSyntaxErrors(t *testing.T) {
 			LET r = ..0
 			RETURN r
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected end value before '..' in range expression",
 				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
 			}, "Incomplete range 2"),

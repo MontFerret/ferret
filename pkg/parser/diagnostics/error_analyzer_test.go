@@ -15,12 +15,10 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 		Convey("Should return boolean for basic syntax error", func() {
 			src := file.NewSource("test.fql", "LET x =")
 
-			err := &CompilationError{
-				Diagnostic: &diagnostics.Diagnostic{
-					Kind:    SyntaxError,
-					Message: "mismatched input '<EOF>' expecting {IntegerLiteral, FloatLiteral, StringLiteral}",
-					Source:  src,
-				},
+			err := &diagnostics.Diagnostic{
+				Kind:    SyntaxError,
+				Message: "mismatched input '<EOF>' expecting {IntegerLiteral, FloatLiteral, StringLiteral}",
+				Source:  src,
 			}
 
 			// Create a mock TokenNode
@@ -65,12 +63,10 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 
 			for _, tc := range testCases {
 				Convey("Should return boolean for "+tc.name, func() {
-					err := &CompilationError{
-						Diagnostic: &diagnostics.Diagnostic{
-							Kind:    SyntaxError,
-							Message: tc.message,
-							Source:  src,
-						},
+					err := &diagnostics.Diagnostic{
+						Kind:    SyntaxError,
+						Message: tc.message,
+						Source:  src,
 					}
 
 					offending := &TokenNode{}
@@ -85,12 +81,10 @@ func TestAnalyzeSyntaxError(t *testing.T) {
 		Convey("Should return false when no matcher matches", func() {
 			src := file.NewSource("test.fql", "LET x = 1")
 
-			err := &CompilationError{
-				Diagnostic: &diagnostics.Diagnostic{
-					Kind:    SyntaxError,
-					Message: "some unrecognized error message that won't match any patterns",
-					Source:  src,
-				},
+			err := &diagnostics.Diagnostic{
+				Kind:    SyntaxError,
+				Message: "some unrecognized error message that won't match any patterns",
+				Source:  src,
 			}
 
 			offending := &TokenNode{}

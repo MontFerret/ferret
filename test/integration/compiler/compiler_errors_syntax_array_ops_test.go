@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 func TestSyntaxErrorsArrayOperators(t *testing.T) {
@@ -11,7 +11,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 		ErrorCase(
 			`RETURN doc[~]`,
 			E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected query literal after '~'",
 				Hint:    "Provide a query literal, e.g. doc[~ css`...`].",
 			},
@@ -20,7 +20,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 		ErrorCase(
 			`RETURN doc[~ 'x']`,
 			E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected query literal after '~'",
 				Hint:    "Provide a query literal, e.g. doc[~ css`...`].",
 			},
@@ -29,7 +29,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 		ErrorCase(
 			`LET doc = {} RETURN doc[~ css()]`,
 			E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected query string after 'css'",
 				Hint:    "Provide a query string, e.g. doc[~ css`...`].",
 			},
@@ -38,7 +38,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 		ErrorCase(
 			`RETURN [1, 2][* RETURN]`,
 			E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after 'RETURN' in array operator",
 				Hint:    "Provide a projection expression, e.g. [* RETURN CURRENT].",
 			},
@@ -47,7 +47,7 @@ func TestSyntaxErrorsArrayOperators(t *testing.T) {
 		ErrorCase(
 			`RETURN [1, 2][? NONE]`,
 			E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected FILTER after quantifier in array filter",
 				Hint:    "Add a FILTER expression, e.g. [? NONE FILTER <expr>].",
 			},

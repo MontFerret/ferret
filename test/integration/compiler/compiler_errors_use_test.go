@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 func TestUseErrors(t *testing.T) {
@@ -16,7 +16,7 @@ func TestUseErrors(t *testing.T) {
 			RETURN F::READ("file.txt")
 		`,
 			E{
-				Kind:    compiler.NameError,
+				Kind:    parserd.NameError,
 				Message: "USE alias 'F' is already defined",
 			},
 			"Duplicate USE alias"),

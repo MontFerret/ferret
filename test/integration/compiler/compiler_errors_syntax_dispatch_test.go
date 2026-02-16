@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 func TestSyntaxErrorsDispatch(t *testing.T) {
@@ -13,28 +13,28 @@ func TestSyntaxErrorsDispatch(t *testing.T) {
 			LET ok = DISPATCH IN obj
 			RETURN ok
 		`, E{
-			Kind: compiler.SyntaxError,
+			Kind: parserd.SyntaxError,
 		}, "Missing DISPATCH event name"),
 		ErrorCase(`
 			LET obj = NONE
 			LET ok = DISPATCH "click" IN
 			RETURN ok
 		`, E{
-			Kind: compiler.SyntaxError,
+			Kind: parserd.SyntaxError,
 		}, "Missing DISPATCH target"),
 		ErrorCase(`
 			LET obj = NONE
 			LET ok = DISPATCH "click" IN obj WITH
 			RETURN ok
 		`, E{
-			Kind: compiler.SyntaxError,
+			Kind: parserd.SyntaxError,
 		}, "Missing DISPATCH payload"),
 		ErrorCase(`
 			LET obj = NONE
 			LET ok = DISPATCH "click" IN obj OPTIONS
 			RETURN ok
 		`, E{
-			Kind: compiler.SyntaxError,
+			Kind: parserd.SyntaxError,
 		}, "Missing DISPATCH options"),
 	})
 }

@@ -90,11 +90,11 @@ func TestCollectAggregateGroupedFusionSupportsScalarLiteralKeys(t *testing.T) {
 	}
 }
 
-func firstCompilationError(err error) *compiler.CompilationError {
+func firstCompilationError(err error) *diagnostics.Diagnostic {
 	switch e := err.(type) {
-	case *compiler.CompilationError:
+	case *diagnostics.Diagnostic:
 		return e
-	case *compiler.CompilationErrorSet:
+	case *diagnostics.DiagnosticSet:
 		if e.Size() == 0 {
 			return nil
 		}

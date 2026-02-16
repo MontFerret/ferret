@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 func TestLiteralsSyntaxErrors(t *testing.T) {
@@ -13,7 +13,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = "foo
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (closing quote missing)"),
@@ -23,7 +23,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = "foo bar
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing)"),
@@ -33,7 +33,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = foo"
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (opening quote missing)"),
@@ -43,7 +43,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = foo bar"
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing)"),
@@ -53,7 +53,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = 'foo
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (closing quote missing) 2"),
@@ -63,7 +63,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = 'foo bar
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 2"),
@@ -73,7 +73,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = foo'
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (opening quote missing) 2"),
@@ -83,7 +83,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = foo bar'
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing) 2"),
@@ -91,7 +91,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			"LET i = `foo "+
 				"RETURN i", E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete string literal (closing quote missing) 3"),
@@ -99,7 +99,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			"LET i = `foo bar"+
 				"RETURN i", E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 3"),
@@ -107,7 +107,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			"LET i = foo` "+
 				"RETURN i", E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete string literal (opening quote missing) 3"),
@@ -115,7 +115,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			"LET i = foo bar` "+
 				"RETURN i", E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '`' to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing) 3"),
@@ -125,7 +125,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { "foo: }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (closing quote missing) 4"),
@@ -135,7 +135,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { "foo bar: }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 4"),
@@ -145,7 +145,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { foo": }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string.",
 			}, "Incomplete string literal (opening quote missing) 4"),
@@ -155,7 +155,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { foo bar": }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching '\"' to close the string",
 			}, "Incomplete multi-string literal  (opening quote missing) 4"),
@@ -165,7 +165,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { 'foo: }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (closing quote missing) 5"),
@@ -175,7 +175,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { foo': }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (opening quote missing) 5"),
@@ -185,7 +185,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { foo bar': }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (opening quote missing) 5"),
@@ -193,7 +193,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			"LET i = { 'foo: }"+
 				"RETURN i", E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete string literal (closing quote missing) 6"),
@@ -201,7 +201,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		ErrorCase(
 			"LET i = { 'foo bar: }"+
 				"RETURN i", E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed string literal",
 				Hint:    "Add a matching \"'\" to close the string.",
 			}, "Incomplete multi-string literal  (closing quote missing) 6"),
@@ -212,7 +212,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = o.
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete member access"),
@@ -224,7 +224,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			FUNC(i)
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression after '=' for variable 'i'",
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete member access 2"),
@@ -234,7 +234,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = [
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed array literal",
 				Hint:    "Add a closing ']' to complete the array.",
 			}, "Incomplete array literal"),
@@ -244,7 +244,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = [1
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed array literal",
 				Hint:    "Add a closing ']' to complete the array.",
 			}, "Incomplete array literal 2"),
@@ -254,7 +254,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = [,]
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected a valid list of values",
 				Hint:    "Did you forget to provide a value?",
 			}, "Incomplete array literal 3"),
@@ -264,7 +264,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = {
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed object literal",
 				Hint:    "Add a closing '}' to complete the object.",
 			}, "Incomplete object literal"),
@@ -274,7 +274,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { foo: }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected value after object property name",
 				Hint:    "Provide a value for the property, e.g. { foo: 123 }.",
 			}, "Incomplete object literal 2"),
@@ -284,7 +284,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { : }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected property name before ':'",
 				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
 			}, "Incomplete object literal 3"),
@@ -294,7 +294,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET i = { a 123 }
 			RETURN i
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected property name before ':'",
 				Hint:    "Object properties must have a name before the colon, e.g. { property: 123 }.",
 			}, "Incomplete object literal 4"),
@@ -305,7 +305,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET v = arr[1
 			RETURN v
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Unclosed computed property expression",
 				Hint:    "Add a closing ']' to complete the computed property expression.",
 			}, "Unclosed computed property expression"),
@@ -316,7 +316,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 			LET v = arr[]
 			RETURN v
 		`, E{
-				Kind:    compiler.SyntaxError,
+				Kind:    parserd.SyntaxError,
 				Message: "Expected expression inside computed property brackets",
 				Hint:    "Provide a property key or index inside '[ ]', e.g. arr[0] or arr[\"key\"].",
 			}, "Invalid computed property expression"),
