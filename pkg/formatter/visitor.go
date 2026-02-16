@@ -123,6 +123,17 @@ func (v *visitor) emitTrivia(text string, trimLeading bool, hasPrevLine bool) {
 	}
 }
 
+func (v *visitor) isInlineComment(text string) bool {
+	if text == "" || strings.Contains(text, "\n") {
+		return false
+	}
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return false
+	}
+	return strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "/*")
+}
+
 func (v *visitor) emitBetween(prev, next antlr.ParserRuleContext) {
 	if prev == nil || next == nil {
 		return
@@ -135,6 +146,14 @@ func (v *visitor) emitBetween(prev, next antlr.ParserRuleContext) {
 func (v *visitor) emitBetweenIndices(start, end int) {
 	text := v.sliceBetween(start, end)
 	if text == "" {
+		v.p.newline()
+		return
+	}
+	if v.isInlineComment(text) {
+		if !v.p.atLineStart {
+			v.p.space()
+		}
+		v.p.write(strings.TrimSpace(text))
 		v.p.newline()
 		return
 	}
@@ -162,7 +181,15 @@ func (v *visitor) emitTrailing(prev antlr.ParserRuleContext) {
 		return
 	}
 	start := v.stopIndex(prev) + 1
-	v.emitTrivia(v.sliceBetween(start, len(v.src.Content())), false, true)
+	text := v.sliceBetween(start, len(v.src.Content()))
+	if v.isInlineComment(text) {
+		if !v.p.atLineStart {
+			v.p.space()
+		}
+		v.p.write(strings.TrimSpace(text))
+		return
+	}
+	v.emitTrivia(text, false, true)
 }
 
 func (v *visitor) bodyFirstElement(ctx *fql.BodyContext) antlr.ParserRuleContext {
