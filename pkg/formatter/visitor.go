@@ -69,21 +69,55 @@ func (v *visitor) sliceBetween(start, end int) string {
 	return text[start:end]
 }
 
-func (v *visitor) emitTrivia(text string) {
+func (v *visitor) emitTrivia(text string, trimLeading bool, hasPrevLine bool) {
 	if text == "" {
 		return
 	}
 
 	lines := strings.Split(text, "\n")
-	for i, line := range lines {
+	emptyCount := 0
+	seenNonEmpty := false
+
+	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if trimmed != "" {
+			if seenNonEmpty {
+				if emptyCount >= 1 {
+					v.p.newline()
+				}
+				v.p.newline()
+			} else if hasPrevLine {
+				if emptyCount >= 2 {
+					v.p.newline()
+				}
+				v.p.newline()
+			} else if !trimLeading {
+				if emptyCount >= 2 {
+					v.p.newline()
+				}
+				if emptyCount >= 1 {
+					v.p.newline()
+				}
+			}
+			emptyCount = 0
+			seenNonEmpty = true
 			if !v.p.atLineStart {
 				v.p.space()
 			}
 			v.p.write(trimmed)
+			continue
 		}
-		if i < len(lines)-1 {
+		if trimLeading && !seenNonEmpty && !hasPrevLine {
+			continue
+		}
+		emptyCount++
+	}
+
+	if seenNonEmpty || hasPrevLine {
+		if emptyCount >= 2 {
+			v.p.newline()
+		}
+		if emptyCount >= 1 || (seenNonEmpty && emptyCount == 0) {
 			v.p.newline()
 		}
 	}
@@ -104,22 +138,23 @@ func (v *visitor) emitBetweenIndices(start, end int) {
 		v.p.newline()
 		return
 	}
-	if strings.TrimSpace(text) == "" && !strings.Contains(text, "\n") {
+	if strings.TrimSpace(text) == "" {
+		count := strings.Count(text, "\n")
+		if count >= 2 {
+			v.p.newline()
+		}
 		v.p.newline()
 		return
 	}
 
-	v.emitTrivia(text)
-	if !strings.Contains(text, "\n") {
-		v.p.newline()
-	}
+	v.emitTrivia(text, false, true)
 }
 
 func (v *visitor) emitLeading(next antlr.ParserRuleContext) {
 	if next == nil {
 		return
 	}
-	v.emitTrivia(v.sliceBetween(0, v.startIndex(next)))
+	v.emitTrivia(v.sliceBetween(0, v.startIndex(next)), true, false)
 }
 
 func (v *visitor) emitTrailing(prev antlr.ParserRuleContext) {
@@ -127,7 +162,7 @@ func (v *visitor) emitTrailing(prev antlr.ParserRuleContext) {
 		return
 	}
 	start := v.stopIndex(prev) + 1
-	v.emitTrivia(v.sliceBetween(start, len(v.src.Content())))
+	v.emitTrivia(v.sliceBetween(start, len(v.src.Content())), false, true)
 }
 
 func (v *visitor) bodyFirstElement(ctx *fql.BodyContext) antlr.ParserRuleContext {
