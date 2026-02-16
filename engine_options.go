@@ -1,4 +1,4 @@
-package engine
+package ferret
 
 import (
 	"io"
@@ -47,6 +47,24 @@ func newOptions(setters []Option) (*options, error) {
 	return opts, nil
 }
 
+// WithNamespace creates an Option that sets the functions from the provided runtime.Namespace to the options if not nil.
+func WithNamespace(ns runtime.Namespace) Option {
+	return func(opts *options) error {
+		if ns == nil {
+			return nil
+		}
+
+		if opts.functions == nil {
+			opts.functions = ns.Functions()
+		} else {
+			opts.functions.SetFrom(ns.Functions().Build())
+		}
+
+		return nil
+	}
+}
+
+// WithFunctions creates an Option that sets the provided runtime.Functions to the options if not nil.
 func WithFunctions(funcs runtime.Functions) Option {
 	return func(opts *options) error {
 		if funcs != nil {
@@ -57,6 +75,7 @@ func WithFunctions(funcs runtime.Functions) Option {
 	}
 }
 
+// WithFunction returns an Option that registers a runtime.Function with a given name in the options' function builder.
 func WithFunction(name string, function runtime.Function) Option {
 	return func(opts *options) error {
 		if name == "" {
@@ -73,24 +92,8 @@ func WithFunction(name string, function runtime.Function) Option {
 	}
 }
 
-func WithParam(name string, value any) Option {
-	return func(opts *options) error {
-		opts.params[name] = runtime.Parse(value)
-
-		return nil
-	}
-}
-
-func WithParams(params map[string]interface{}) Option {
-	return func(options *options) error {
-		for name, value := range params {
-			options.params[name] = runtime.Parse(value)
-		}
-
-		return nil
-	}
-}
-
+// WithLog sets the writer for logging output.
+// The writer can be any io.Writer, such as os.Stdout or a file.
 func WithLog(writer io.Writer) Option {
 	return func(opts *options) error {
 		opts.logging.Writer = writer
@@ -98,6 +101,8 @@ func WithLog(writer io.Writer) Option {
 	}
 }
 
+// WithLogLevel sets the logging level for the engine.
+// The logging level determines the severity of log messages that will be recorded.
 func WithLogLevel(lvl runtime.LogLevel) Option {
 	return func(opts *options) error {
 		opts.logging.Level = lvl
@@ -105,7 +110,9 @@ func WithLogLevel(lvl runtime.LogLevel) Option {
 	}
 }
 
-func WithLogFields(fields map[string]interface{}) Option {
+// WithLogFields sets the fields to be included in log entries.
+// These fields can provide additional context for debugging and monitoring purposes.
+func WithLogFields(fields map[string]any) Option {
 	return func(opts *options) error {
 		opts.logging.Fields = fields
 		return nil

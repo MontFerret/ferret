@@ -1,4 +1,4 @@
-package engine
+package ferret
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"

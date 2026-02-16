@@ -197,7 +197,7 @@ func (p *Params) ToMap() (map[string]runtime.Value, error) {
 			return nil, err
 		}
 
-		res[key] = ferret.ToValue(value)
+		res[key] = runtime.Parse(value)
 	}
 
 	return res, nil
@@ -286,7 +286,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	engine, err := ferret.New()
+	engine, err := ferret.New(
+		ferret.WithLog(console),
+		ferret.WithLogLevel(ferret.MustParseLogLevel(*logLevel)),
+	)
 
 	if err != nil {
 		fmt.Println(err)
@@ -296,10 +299,8 @@ func main() {
 	//_ = engine.Drivers().Register(http.NewDriver())
 	//_ = engine.Drivers().Register(cdp.NewDriver(cdp.WithAddress(*conn)))
 
-	opts := []ferret.SessionOption{
-		ferret.WithParams(p),
-		ferret.WithLog(console),
-		ferret.WithLogLevel(ferret.MustParseLogLevel(*logLevel)),
+	sessionOptions := []ferret.SessionOption{
+		ferret.WithSessionParams(p),
 	}
 
 	c := make(chan os.Signal, 1)
@@ -316,9 +317,9 @@ func main() {
 	}()
 
 	if query != "" {
-		err = runQuery(ctx, engine, opts, file.NewSource("stdin", query))
+		err = runQuery(ctx, engine, sessionOptions, file.NewSource("stdin", query))
 	} else {
-		err = execFiles(ctx, engine, opts, files)
+		err = execFiles(ctx, engine, sessionOptions, files)
 	}
 
 	if err != nil {
@@ -508,7 +509,7 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 	}
 
 	if err != nil {
-		frmt, ok := err.(ferret.Formattable)
+		frmt, ok := err.(diagnostics.Formattable)
 
 		if ok {
 			fmt.Println(frmt.Format())
