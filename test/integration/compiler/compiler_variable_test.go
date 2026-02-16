@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestVariables(t *testing.T) {
@@ -12,20 +12,20 @@ func TestVariables(t *testing.T) {
 			`
 			LET i = NONE RETURN i"
 		`, BC{
-				I(vm.OpLoadNone, 1),
-				I(vm.OpReturn, 1),
+				I(bytecode.OpLoadNone, 1),
+				I(bytecode.OpReturn, 1),
 			}, "Should be possible to use multi line string"),
 		SkipByteCodeCase(`
 			LET a = TRUE RETURN a
 `, BC{
-			I(vm.OpLoadBool, 1, 1),
-			I(vm.OpReturn, 1),
+			I(bytecode.OpLoadBool, 1, 1),
+			I(bytecode.OpReturn, 1),
 		}),
 		SkipByteCodeCase(`
 			LET a = 1 RETURN a
 `, BC{
-			I(vm.OpLoadConst, 1, vm.NewConstant(0)),
-			I(vm.OpReturn, 1),
+			I(bytecode.OpLoadConst, 1, bytecode.NewConstant(0)),
+			I(bytecode.OpReturn, 1),
 		}),
 	})
 }

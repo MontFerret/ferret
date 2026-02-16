@@ -1,10 +1,12 @@
-package runtime
+package bytecode
 
 import (
 	"encoding/binary"
 	"hash/fnv"
 
 	"github.com/wI2L/jettison"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type AggregateKind int
@@ -18,12 +20,12 @@ const (
 )
 
 type AggregatePlan struct {
-	keys  []String
+	keys  []runtime.String
 	kinds []AggregateKind
 	index map[string]int
 }
 
-func NewAggregatePlan(keys []String, kinds []AggregateKind) *AggregatePlan {
+func NewAggregatePlan(keys []runtime.String, kinds []AggregateKind) *AggregatePlan {
 	idx := make(map[string]int, len(keys))
 
 	for i, key := range keys {
@@ -37,7 +39,7 @@ func NewAggregatePlan(keys []String, kinds []AggregateKind) *AggregatePlan {
 	}
 }
 
-func (p *AggregatePlan) Keys() []String {
+func (p *AggregatePlan) Keys() []runtime.String {
 	return p.keys
 }
 
@@ -56,8 +58,8 @@ func (p *AggregatePlan) KindAt(idx int) AggregateKind {
 
 func (p *AggregatePlan) MarshalJSON() ([]byte, error) {
 	return jettison.MarshalOpts(struct {
-		Keys  []String        `json:"keys"`
-		Kinds []AggregateKind `json:"kinds"`
+		Keys  []runtime.String `json:"keys"`
+		Kinds []AggregateKind  `json:"kinds"`
 	}{
 		Keys:  p.keys,
 		Kinds: p.kinds,
@@ -93,8 +95,8 @@ func (p *AggregatePlan) Hash() uint64 {
 	return h.Sum64()
 }
 
-func (p *AggregatePlan) Copy() Value {
-	keys := make([]String, len(p.keys))
+func (p *AggregatePlan) Copy() runtime.Value {
+	keys := make([]runtime.String, len(p.keys))
 	copy(keys, p.keys)
 
 	kinds := make([]AggregateKind, len(p.kinds))

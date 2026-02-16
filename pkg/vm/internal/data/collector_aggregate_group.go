@@ -5,11 +5,12 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type GroupedAggregateCollector struct {
-	plan *runtime.AggregatePlan
+	plan *bytecode.AggregatePlan
 	*runtime.Box[runtime.List]
 	grouping map[string]*groupedAggregateEntry
 	// Fast path for the common single-key case: keep first group without a map.
@@ -25,7 +26,7 @@ type groupedAggregateEntry struct {
 	states []aggregateState
 }
 
-func NewGroupedAggregateCollector(plan *runtime.AggregatePlan) Transformer {
+func NewGroupedAggregateCollector(plan *bytecode.AggregatePlan) Transformer {
 	if plan == nil {
 		panic("aggregate plan is nil")
 	}
@@ -69,6 +70,7 @@ func (c *GroupedAggregateCollector) Set(ctx context.Context, key, value runtime.
 		}
 
 		c.update(&entry.states[idx], c.plan.KindAt(idx), value)
+
 		return nil
 	}
 
@@ -85,9 +87,11 @@ func (c *GroupedAggregateCollector) Get(ctx context.Context, key runtime.Value) 
 		return nil, err
 	} else if ok {
 		entry, ok, err := c.lookupEntry(ctx, groupKey)
+
 		if err != nil {
 			return nil, err
 		}
+
 		if !ok {
 			return runtime.None, runtime.Errorf(runtime.ErrNotFound, "collector key: %s", groupKey.String())
 		}
@@ -175,20 +179,20 @@ func (c *GroupedAggregateCollector) Close() error {
 	return nil
 }
 
-func (c *GroupedAggregateCollector) update(state *aggregateState, kind runtime.AggregateKind, value runtime.Value) {
+func (c *GroupedAggregateCollector) update(state *aggregateState, kind bytecode.AggregateKind, value runtime.Value) {
 	switch kind {
-	case runtime.AggregateCount:
+	case bytecode.AggregateCount:
 		state.count++
-	case runtime.AggregateSum:
+	case bytecode.AggregateSum:
 		if runtime.IsNumber(value) {
 			state.sum += toFloat(value)
 		}
-	case runtime.AggregateAverage:
+	case bytecode.AggregateAverage:
 		if runtime.IsNumber(value) {
 			state.sum += toFloat(value)
 			state.count++
 		}
-	case runtime.AggregateMin:
+	case bytecode.AggregateMin:
 		if runtime.IsNumber(value) {
 			v := toFloat(value)
 			if !state.hasNumber || v < state.min {
@@ -196,7 +200,7 @@ func (c *GroupedAggregateCollector) update(state *aggregateState, kind runtime.A
 			}
 			state.hasNumber = true
 		}
-	case runtime.AggregateMax:
+	case bytecode.AggregateMax:
 		if runtime.IsNumber(value) {
 			v := toFloat(value)
 			if !state.hasNumber || v > state.max {
@@ -207,26 +211,29 @@ func (c *GroupedAggregateCollector) update(state *aggregateState, kind runtime.A
 	}
 }
 
-func (c *GroupedAggregateCollector) valueFor(state aggregateState, kind runtime.AggregateKind) runtime.Value {
+func (c *GroupedAggregateCollector) valueFor(state aggregateState, kind bytecode.AggregateKind) runtime.Value {
 	switch kind {
-	case runtime.AggregateCount:
+	case bytecode.AggregateCount:
 		return state.count
-	case runtime.AggregateSum:
+	case bytecode.AggregateSum:
 		return runtime.NewFloat(state.sum)
-	case runtime.AggregateAverage:
+	case bytecode.AggregateAverage:
 		if state.count == 0 {
 			return runtime.ZeroFloat
 		}
+
 		return runtime.NewFloat(state.sum / float64(state.count))
-	case runtime.AggregateMin:
+	case bytecode.AggregateMin:
 		if !state.hasNumber {
 			return runtime.None
 		}
+
 		return runtime.NewFloat(state.min)
-	case runtime.AggregateMax:
+	case bytecode.AggregateMax:
 		if !state.hasNumber {
 			return runtime.None
 		}
+
 		return runtime.NewFloat(state.max)
 	default:
 		return runtime.None
@@ -301,11 +308,13 @@ func (c *GroupedAggregateCollector) entryFor(ctx context.Context, key runtime.Va
 
 func (c *GroupedAggregateCollector) lookupEntry(ctx context.Context, key runtime.Value) (*groupedAggregateEntry, bool, error) {
 	keyStr, err := c.keyString(ctx, key)
+
 	if err != nil {
 		return nil, false, err
 	}
 
 	entry, ok := c.lookupEntryByString(keyStr)
+
 	return entry, ok, nil
 }
 
@@ -319,6 +328,7 @@ func (c *GroupedAggregateCollector) lookupEntryByString(keyStr string) (*grouped
 	}
 
 	entry, ok := c.grouping[keyStr]
+
 	return entry, ok
 }
 
@@ -369,7 +379,7 @@ func (c *GroupedAggregateCollector) aggregateKey(ctx context.Context, key runtim
 		return nil, 0, false, err
 	}
 
-	if marker != runtime.AggregateKeyMarker {
+	if marker != bytecode.AggregateKeyMarker {
 		return nil, 0, false, nil
 	}
 

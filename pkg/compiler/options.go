@@ -7,10 +7,6 @@ const (
 	O0 = optimization.LevelNone
 	// O1 represents basic optimization level, providing a balance between performance and resource usage.
 	O1 = optimization.LevelBasic
-	// O2 represents full optimization level, aiming for optimal performance with moderate resource usage.
-	O2 = optimization.LevelFull
-	// O3 represents aggressive optimization level, prioritizing maximum performance, potentially at the cost of higher resource consumption.
-	O3 = optimization.LevelAggressive
 )
 
 type (

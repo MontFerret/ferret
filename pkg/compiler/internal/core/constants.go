@@ -3,8 +3,8 @@ package core
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // ConstantPool stores and deduplicates constants
@@ -20,7 +20,7 @@ func NewConstantPool() *ConstantPool {
 	}
 }
 
-func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
+func (cp *ConstantPool) Add(val runtime.Value) bytecode.Operand {
 	var hash uint64
 	isNone := val == runtime.None
 
@@ -30,7 +30,7 @@ func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
 
 	if hash > 0 || isNone {
 		if idx, ok := cp.index[hash]; ok {
-			return vm.NewConstant(idx)
+			return bytecode.NewConstant(idx)
 		}
 	}
 
@@ -41,10 +41,10 @@ func (cp *ConstantPool) Add(val runtime.Value) vm.Operand {
 		cp.index[hash] = idx
 	}
 
-	return vm.NewConstant(idx)
+	return bytecode.NewConstant(idx)
 }
 
-func (cp *ConstantPool) Get(addr vm.Operand) runtime.Value {
+func (cp *ConstantPool) Get(addr bytecode.Operand) runtime.Value {
 	if !addr.IsConstant() {
 		panic(fmt.Errorf("invalid operand type used in the constant pool: %s", addr))
 	}

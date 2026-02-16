@@ -5,11 +5,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // initializeProjection handles the projection setup for group variables and counters.
@@ -50,7 +51,7 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 // finalizeProjection completes the projection setup by creating and assigning local variables.
 // It handles different behaviors based on whether grouping and aggregation are used.
 // Returns the register containing the projected value.
-func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregator vm.Operand) vm.Operand {
+func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregator bytecode.Operand) bytecode.Operand {
 	loop := c.ctx.Loops.Current()
 	varName := spec.Projection().VariableName()
 
@@ -61,7 +62,7 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 		// Assign the aggregator value to the local variable with the projection name
 		if !c.assignLocalOrReport(spec.Projection().Context(), loop.ValueName, core.TypeUnknown, aggregator) {
 			if existing, _, found := c.ctx.Symbols.Resolve(loop.ValueName); found {
-				c.ctx.Emitter.EmitAB(vm.OpMove, existing, aggregator)
+				c.ctx.Emitter.EmitAB(bytecode.OpMove, existing, aggregator)
 			}
 		}
 
@@ -72,7 +73,7 @@ func (c *LoopCollectCompiler) finalizeProjection(spec *core.Collector, aggregato
 	// Load the value from the aggregator using the projection variable name as key
 	key := loadConstant(c.ctx, runtime.String(varName))
 	val := c.declareLocalOrReport(spec.Projection().Context(), varName, core.TypeUnknown)
-	c.ctx.Emitter.EmitABC(vm.OpLoadKey, val, aggregator, key)
+	c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, val, aggregator, key)
 
 	return val
 }
@@ -112,7 +113,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 	} else {
 		// If a filter is provided, project only the specified variables
 		variables := keeper.AllIdentifier()
-		resolved := make([]vm.Operand, len(variables))
+		resolved := make([]bytecode.Operand, len(variables))
 		useTemp := false
 
 		for i, variable := range variables {
@@ -123,7 +124,7 @@ func (c *LoopCollectCompiler) compileDefaultGroupProjection(kv *core.KV, identif
 			if !found {
 				c.ctx.Errors.VariableNotFound(variable.GetSymbol(), varName)
 				noneReg := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitA(vm.OpLoadNone, noneReg)
+				c.ctx.Emitter.EmitA(bytecode.OpLoadNone, noneReg)
 				c.ctx.Types.Set(noneReg, core.TypeNone)
 				resolved[i] = noneReg
 				continue

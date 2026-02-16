@@ -70,6 +70,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 	default:
 		var err error
 		keyStr, err = Stringify(ctx, key)
+
 		if err != nil {
 			return err
 		}
@@ -78,6 +79,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 	// Fast path: first key stays in singleKey/singleKV to avoid map allocation.
 	if c.grouping == nil && !c.hasSingleGroup {
 		kv := NewKV(key, runtime.ZeroInt)
+
 		if err := c.Value.Append(ctx, kv); err != nil {
 			return err
 		}
@@ -100,6 +102,7 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 	if c.grouping == nil {
 		if c.hasSingleGroup && keyStr == c.singleKey {
 			kv := c.singleKV
+
 			if count, ok := kv.Value.(runtime.Int); ok {
 				kv.Value = count + 1
 			} else {
@@ -110,9 +113,11 @@ func (c *KeyCounterCollector) Set(ctx context.Context, key, _ runtime.Value) err
 		}
 
 		c.grouping = map[string]runtime.Int{}
+
 		if c.hasSingleGroup {
 			c.grouping[c.singleKey] = c.singleIndex
 		}
+
 		c.hasSingleGroup = false
 		c.singleKey = ""
 		c.singleIndex = 0
@@ -166,6 +171,7 @@ func (c *KeyCounterCollector) Get(ctx context.Context, key runtime.Value) (runti
 	default:
 		var err error
 		keyStr, err = Stringify(ctx, key)
+
 		if err != nil {
 			return nil, err
 		}

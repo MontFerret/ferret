@@ -59,6 +59,7 @@ func (s *Source) LocationAt(span Span) (line, column int) {
 		// treat it as the end of the previous line only for zero-length spans.
 		if offset == lineStart && i > 0 && span.End <= offset {
 			prev := s.lines[i-1]
+
 			return i, len(prev) + 1
 		}
 
@@ -73,6 +74,7 @@ func (s *Source) LocationAt(span Span) (line, column int) {
 	// If we somehow fell through, clamp to last line end
 	if len(s.lines) > 0 {
 		last := s.lines[len(s.lines)-1]
+
 		return len(s.lines), len(last) + 1
 	}
 

@@ -1,8 +1,8 @@
 package core
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type ScopeProjection struct {
@@ -26,7 +26,7 @@ func NewScopeProjection(
 	}
 }
 
-func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
+func (sp *ScopeProjection) EmitAsArray(dst bytecode.Operand) {
 	buildDst := dst
 
 	if sp.usesRegister(dst) {
@@ -45,7 +45,7 @@ func (sp *ScopeProjection) EmitAsArray(dst vm.Operand) {
 	}
 }
 
-func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
+func (sp *ScopeProjection) EmitAsObject(dst bytecode.Operand) {
 	size := len(sp.values)
 	buildDst := dst
 
@@ -77,27 +77,27 @@ func (sp *ScopeProjection) EmitAsObject(dst vm.Operand) {
 	}
 }
 
-func (sp *ScopeProjection) RestoreFromArray(src vm.Operand) {
+func (sp *ScopeProjection) RestoreFromArray(src bytecode.Operand) {
 	idx := sp.registers.Allocate()
 
 	for i, v := range sp.values {
 		sp.emitter.EmitLoadConst(idx, sp.symbols.AddConstant(runtime.Int(i)))
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
-		sp.emitter.EmitABC(vm.OpLoadIndex, variable, src, idx)
+		sp.emitter.EmitABC(bytecode.OpLoadIndex, variable, src, idx)
 	}
 }
 
-func (sp *ScopeProjection) RestoreFromObject(src vm.Operand) {
+func (sp *ScopeProjection) RestoreFromObject(src bytecode.Operand) {
 	key := sp.registers.Allocate()
 
 	for _, v := range sp.values {
 		sp.emitter.EmitLoadConst(key, sp.symbols.AddConstant(runtime.String(v.Name)))
 		variable, _ := sp.symbols.DeclareLocal(v.Name, v.Type)
-		sp.emitter.EmitABC(vm.OpLoadKey, variable, src, key)
+		sp.emitter.EmitABC(bytecode.OpLoadKey, variable, src, key)
 	}
 }
 
-func (sp *ScopeProjection) usesRegister(reg vm.Operand) bool {
+func (sp *ScopeProjection) usesRegister(reg bytecode.Operand) bool {
 	for _, v := range sp.values {
 		if v.Register == reg {
 			return true

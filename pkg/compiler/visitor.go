@@ -71,6 +71,7 @@ func (v *Visitor) VisitHead(ctx *fql.HeadContext) interface{} {
 		if existing != namespace {
 			v.Ctx.Errors.Add(v.Ctx.Errors.Create(diagnostics.NameError, ctx, fmt.Sprintf("USE alias '%s' is already defined", alias)))
 		}
+
 		return nil
 	}
 

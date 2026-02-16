@@ -4,19 +4,20 @@ import (
 	"context"
 	j "encoding/json"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func Compile(expression string) (*vm.Program, error) {
+func Compile(expression string) (*bytecode.Program, error) {
 	c := compiler.New(compiler.WithOptimizationLevel(compiler.O0))
 
 	return c.Compile(file.NewSource("", expression))
 }
 
-func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
+func Run(p *bytecode.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	instance := vm.New(p)
 	env := vm.NewEnvironment(opts)
 
@@ -31,7 +32,7 @@ func Run(p *vm.Program, opts ...vm.EnvironmentOption) ([]byte, error) {
 	return out.MarshalJSON()
 }
 
-func Exec(p *vm.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {
+func Exec(p *bytecode.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {
 	out, err := Run(p, opts...)
 
 	if err != nil {

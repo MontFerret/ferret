@@ -1,13 +1,16 @@
 package engine
 
-import "github.com/MontFerret/ferret/v2/pkg/vm"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+)
 
 type Plan struct {
-	prog *vm.Program
+	prog *bytecode.Program
 	env  *vm.Environment
 }
 
-func newPlan(prog *vm.Program, env *vm.Environment) *Plan {
+func newPlan(prog *bytecode.Program, env *vm.Environment) *Plan {
 	return &Plan{
 		prog: prog,
 		env:  env,

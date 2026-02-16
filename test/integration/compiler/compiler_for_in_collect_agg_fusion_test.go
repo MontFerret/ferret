@@ -5,11 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestCollectAggregateRequiresAtLeastOneArgument(t *testing.T) {
@@ -106,9 +105,9 @@ func firstCompilationError(err error) *compiler.CompilationError {
 	}
 }
 
-func hasAggregatePlanConstant(program *vm.Program) bool {
+func hasAggregatePlanConstant(program *bytecode.Program) bool {
 	for _, constant := range program.Constants {
-		if _, ok := constant.(*runtime.AggregatePlan); ok {
+		if _, ok := constant.(*bytecode.AggregatePlan); ok {
 			return true
 		}
 	}
@@ -116,21 +115,21 @@ func hasAggregatePlanConstant(program *vm.Program) bool {
 	return false
 }
 
-func hasFunctionCallOpcode(program *vm.Program) bool {
+func hasFunctionCallOpcode(program *bytecode.Program) bool {
 	for _, instruction := range program.Bytecode {
 		switch instruction.Opcode {
-		case vm.OpCall,
-			vm.OpProtectedCall,
-			vm.OpCall0,
-			vm.OpProtectedCall0,
-			vm.OpCall1,
-			vm.OpProtectedCall1,
-			vm.OpCall2,
-			vm.OpProtectedCall2,
-			vm.OpCall3,
-			vm.OpProtectedCall3,
-			vm.OpCall4,
-			vm.OpProtectedCall4:
+		case bytecode.OpCall,
+			bytecode.OpProtectedCall,
+			bytecode.OpCall0,
+			bytecode.OpProtectedCall0,
+			bytecode.OpCall1,
+			bytecode.OpProtectedCall1,
+			bytecode.OpCall2,
+			bytecode.OpProtectedCall2,
+			bytecode.OpCall3,
+			bytecode.OpProtectedCall3,
+			bytecode.OpCall4,
+			bytecode.OpProtectedCall4:
 			return true
 		}
 	}

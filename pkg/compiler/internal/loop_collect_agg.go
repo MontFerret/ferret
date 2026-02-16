@@ -7,11 +7,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // initializeAggregation processes the aggregation selectors from the COLLECT clause.
@@ -19,7 +20,7 @@ import (
 // For grouped aggregations, it compiles the selectors and packs them with the loop value.
 // For global aggregations, it pushes the selectors directly to the collector.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst vm.Operand, kv *core.KV, withGrouping bool, groupedPlan *runtime.AggregatePlan) *core.CollectorAggregation {
+func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorContext, dst bytecode.Operand, kv *core.KV, withGrouping bool, groupedPlan *bytecode.AggregatePlan) *core.CollectorAggregation {
 	loop := c.ctx.Loops.Current()
 	selectors := ctx.AllCollectAggregateSelector()
 
@@ -34,7 +35,7 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 		aggregator := c.ctx.Registers.Allocate()
 
 		// We create a separate collector for aggregation in grouped mode
-		c.ctx.Emitter.InsertAx(loop.StartLabel(), vm.OpDataSetCollector, aggregator, int(core.CollectorTypeKeyGroup))
+		c.ctx.Emitter.InsertAx(loop.StartLabel(), bytecode.OpDataSetCollector, aggregator, int(bytecode.CollectorTypeKeyGroup))
 
 		// Compile selectors for grouped aggregation
 		aggregateSelectors := c.initializeGroupedAggregationSelectors(selectors, kv, aggregator, false)
@@ -61,6 +62,8 @@ func (c *LoopCollectCompiler) reportAggregateSemanticError(ctx antlr.ParserRuleC
 	c.ctx.Errors.Add(err)
 }
 
+// parseAggregateSelector validates and compiles one aggregate selector.
+// It returns a normalized selector representation shared by grouped/global initializers.
 func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggregateSelectorContext) (*core.CompiledAggregateSelector, bool) {
 	name := runtime.String(selector.Identifier().GetText())
 	fcx := selector.FunctionCallExpression()
@@ -96,6 +99,8 @@ func (c *LoopCollectCompiler) parseAggregateSelector(selector fql.ICollectAggreg
 	), true
 }
 
+// initializeAggregationSelectors encapsulates the common selector compilation flow.
+// The caller provides only the mode-specific emission strategy via emit callback.
 func (c *LoopCollectCompiler) initializeAggregationSelectors(
 	selectors []fql.ICollectAggregateSelectorContext,
 	emit func(int, *core.CompiledAggregateSelector) bool,
@@ -104,6 +109,7 @@ func (c *LoopCollectCompiler) initializeAggregationSelectors(
 
 	for i, selector := range selectors {
 		parsed, ok := c.parseAggregateSelector(selector)
+
 		if !ok {
 			return nil
 		}
@@ -121,7 +127,12 @@ func (c *LoopCollectCompiler) initializeAggregationSelectors(
 	return wrappedSelectors
 }
 
-func (c *LoopCollectCompiler) emitAggregateArgs(dst vm.Operand, args core.RegisterSequence, keyForArg func(argIndex int) vm.Operand) {
+// emitAggregateArgs emits selector arguments as collector key/value pairs.
+// keyForArg receives:
+//
+//	-1 for a single-argument selector
+//	>=0 for each argument index in multi-argument selectors.
+func (c *LoopCollectCompiler) emitAggregateArgs(dst bytecode.Operand, args core.RegisterSequence, keyForArg func(argIndex int) bytecode.Operand) {
 	if len(args) > 1 {
 		for i, arg := range args {
 			c.ctx.Emitter.EmitPushKV(dst, keyForArg(i), arg)
@@ -137,24 +148,28 @@ func (c *LoopCollectCompiler) emitAggregateArgs(dst vm.Operand, args core.Regist
 // It compiles each selector's function call expression and arguments, and creates AggregateSelector objects.
 // For selectors with multiple arguments, it packs them into an array.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst vm.Operand, fused bool) []*core.AggregateSelector {
+func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst bytecode.Operand, fused bool) []*core.AggregateSelector {
 	return c.initializeAggregationSelectors(selectors, func(i int, parsed *core.CompiledAggregateSelector) bool {
 		if fused {
+			// Fused grouped mode routes directly to the VM grouped aggregate collector,
+			// so each selector must map to exactly one argument.
 			if len(parsed.Args()) != 1 {
 				c.reportAggregateSemanticError(
 					parsed.Context(),
 					fmt.Sprintf("Aggregate '%s' requires exactly one argument in fused grouped mode", parsed.FuncName().String()),
 					"Use a single argument in each aggregate function call when grouped aggregation fusion is enabled.",
 				)
+
 				return false
 			}
 
 			key := c.loadGroupedAggregateKey(kv.Key, i)
 			c.ctx.Emitter.EmitPushKV(dst, key, parsed.Args()[0])
+
 			return true
 		}
 
-		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) vm.Operand {
+		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) bytecode.Operand {
 			return c.loadSelectorKey(kv.Key, parsed.Name(), argIndex)
 		})
 
@@ -166,34 +181,38 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 // It compiles each selector's function call expression and arguments, and pushes them directly to the collector.
 // For selectors with multiple arguments, it uses indexed keys to store each argument separately.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
-func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst vm.Operand) []*core.AggregateSelector {
+func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, dst bytecode.Operand) []*core.AggregateSelector {
 	return c.initializeAggregationSelectors(selectors, func(_ int, parsed *core.CompiledAggregateSelector) bool {
-		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) vm.Operand {
+		c.emitAggregateArgs(dst, parsed.Args(), func(argIndex int) bytecode.Operand {
 			if argIndex >= 0 {
+				// Multi-argument selectors are stored as <selectorName>:<argIndex>.
 				return c.loadGlobalSelectorKey(parsed.Name(), argIndex)
 			}
 
 			return loadConstant(c.ctx, parsed.Name())
 		})
+
 		return true
 	})
 }
 
-func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregatorContext) (*runtime.AggregatePlan, bool) {
+func (c *LoopCollectCompiler) buildGlobalAggregatePlan(ctx fql.ICollectAggregatorContext) (*bytecode.AggregatePlan, bool) {
 	return c.buildAggregatePlan(ctx.AllCollectAggregateSelector())
 }
 
-func (c *LoopCollectCompiler) buildGroupedAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*runtime.AggregatePlan, bool) {
+func (c *LoopCollectCompiler) buildGroupedAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*bytecode.AggregatePlan, bool) {
 	return c.buildAggregatePlan(selectors)
 }
 
-func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*runtime.AggregatePlan, bool) {
+// buildAggregatePlan recognizes selectors that can be handled by VM-native aggregate collectors.
+// It intentionally accepts only unprotected calls with exactly one argument.
+func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggregateSelectorContext) (*bytecode.AggregatePlan, bool) {
 	if len(selectors) == 0 {
 		return nil, false
 	}
 
 	keys := make([]runtime.String, 0, len(selectors))
-	kinds := make([]runtime.AggregateKind, 0, len(selectors))
+	kinds := make([]bytecode.AggregateKind, 0, len(selectors))
 
 	for _, selector := range selectors {
 		fce := selector.FunctionCallExpression()
@@ -217,6 +236,7 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 
 		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
 		kind, ok := aggregateKind(funcName)
+
 		if !ok {
 			return nil, false
 		}
@@ -225,7 +245,7 @@ func (c *LoopCollectCompiler) buildAggregatePlan(selectors []fql.ICollectAggrega
 		kinds = append(kinds, kind)
 	}
 
-	return runtime.NewAggregatePlan(keys, kinds), true
+	return bytecode.NewAggregatePlan(keys, kinds), true
 }
 
 func (c *LoopCollectCompiler) shouldFuseGroupedAggregation(grouping fql.ICollectGroupingContext, selectors []fql.ICollectAggregateSelectorContext) bool {
@@ -297,7 +317,7 @@ func isSimpleGroupExpression(expr fql.IExpressionContext) bool {
 	return false
 }
 
-func aggregateKind(name runtime.String) (runtime.AggregateKind, bool) {
+func aggregateKind(name runtime.String) (bytecode.AggregateKind, bool) {
 	fn := strings.ToUpper(name.String())
 	if strings.Contains(fn, runtime.NamespaceSeparator) {
 		parts := strings.Split(fn, runtime.NamespaceSeparator)
@@ -306,15 +326,15 @@ func aggregateKind(name runtime.String) (runtime.AggregateKind, bool) {
 
 	switch fn {
 	case "COUNT":
-		return runtime.AggregateCount, true
+		return bytecode.AggregateCount, true
 	case "SUM":
-		return runtime.AggregateSum, true
+		return bytecode.AggregateSum, true
 	case "MIN":
-		return runtime.AggregateMin, true
+		return bytecode.AggregateMin, true
 	case "MAX":
-		return runtime.AggregateMax, true
+		return bytecode.AggregateMax, true
 	case "AVERAGE":
-		return runtime.AggregateAverage, true
+		return bytecode.AggregateAverage, true
 	default:
 		return 0, false
 	}
@@ -333,12 +353,12 @@ func (c *LoopCollectCompiler) finalizeAggregation(spec *core.Collector) {
 }
 
 // finalizeGroupedAggregation handles grouped aggregation operations.
-// This function is currently commented out in the original code, likely because
-// the functionality is implemented differently or is being refactored.
-// The commented code shows the intended approach for handling grouped aggregations.
+// In fused mode, aggregate values are loaded directly from the primary grouped collector.
+// In non-fused mode, selectors are evaluated from the auxiliary per-group collector.
 func (c *LoopCollectCompiler) finalizeGroupedAggregation(spec *core.Collector) {
 	loop := c.ctx.Loops.Current()
 	aggregator := spec.Aggregation().State()
+
 	if spec.Aggregation().IsFused() {
 		// In fused mode the collector register can be reused for the output dataset,
 		// so load aggregate values from the loop source instead.
@@ -364,8 +384,8 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	// Set up the loop source to be a range from 0 to 0 (one iteration)
 	loop.Src = c.ctx.Registers.Allocate()
 	zero := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitA(vm.OpLoadZero, zero)
-	c.ctx.Emitter.EmitABC(vm.OpLoadRange, loop.Src, zero, zero)
+	c.ctx.Emitter.EmitA(bytecode.OpLoadZero, zero)
+	c.ctx.Emitter.EmitABC(bytecode.OpLoadRange, loop.Src, zero, zero)
 
 	// Inherit allocation flag from previous loop
 	loop.Allocate = prevLoop.Allocate
@@ -379,6 +399,7 @@ func (c *LoopCollectCompiler) finalizeGlobalAggregation(spec *core.Collector) {
 	// Initialize the loop
 	loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 
+	// Evaluate aggregate outputs and projection locals inside the synthetic one-iteration loop.
 	c.compileGlobalAggregationFuncCalls(spec)
 }
 
@@ -390,10 +411,12 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	// Gets the number of records in the accumulator
 	aggregator := spec.Destination()
 	cond := c.ctx.Registers.Allocate()
-	c.ctx.Emitter.EmitAB(vm.OpLength, cond, aggregator)
+	c.ctx.Emitter.EmitAB(bytecode.OpLength, cond, aggregator)
+
 	zero := loadConstant(c.ctx, runtime.ZeroInt)
 	// Check if the number equals to zero
 	c.ctx.Emitter.EmitEq(cond, cond, zero)
+
 	elseLabel := c.ctx.Emitter.NewLabel()
 	endLabel := c.ctx.Emitter.NewLabel()
 
@@ -401,18 +424,20 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	c.ctx.Emitter.EmitJumpIfTrue(cond, elseLabel)
 
 	selectors := spec.Aggregation().Selectors()
-	selectorVarRegs := make([]vm.Operand, len(selectors))
+	selectorVarRegs := make([]bytecode.Operand, len(selectors))
 
-	if spec.Type() == core.CollectorTypeAggregate {
+	if spec.Type() == bytecode.CollectorTypeAggregate {
+		// Plan-backed aggregate collector already stores final values by selector name.
 		for i, selector := range selectors {
 			selectorVarName := selector.Name()
 			varReg := c.declareLocalOrReport(selector.Context(), selectorVarName.String(), core.TypeUnknown)
 			selectorVarRegs[i] = varReg
 
 			key := loadConstant(c.ctx, selector.Name())
-			c.ctx.Emitter.EmitABC(vm.OpLoadKey, varReg, aggregator, key)
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, varReg, aggregator, key)
 		}
 	} else {
+		// Generic collector path: reconstruct selector args and evaluate aggregate functions in bytecode.
 		// Process each aggregation selector
 		for i, selector := range selectors {
 			var args core.RegisterSequence
@@ -424,13 +449,13 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 
 				for y, reg := range args {
 					argKeyReg := c.loadGlobalSelectorKey(selector.Name(), y)
-					c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, argKeyReg)
+					c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, reg, aggregator, argKeyReg)
 				}
 			} else {
 				// For a single argument, load it directly using the selector name as key
 				key := loadConstant(c.ctx, selector.Name())
 				value := c.ctx.Registers.Allocate()
-				c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
+				c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, value, aggregator, key)
 				args = core.RegisterSequence{value}
 			}
 
@@ -441,12 +466,13 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 			selectorVarName := selector.Name()
 			varReg := c.declareLocalOrReport(selector.Context(), selectorVarName.String(), core.TypeUnknown)
 			selectorVarRegs[i] = varReg
+
 			// Move the function result to the variable
-			c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
+			c.ctx.Emitter.EmitAB(bytecode.OpMove, varReg, result)
 		}
 	}
 
-	var projVar vm.Operand
+	var projVar bytecode.Operand
 
 	// If the projection is used, we allocate a new register for the variable and put the iterator's value into it
 	if spec.HasProjection() {
@@ -459,26 +485,28 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 
 	// If there are no records in the aggregator, load NONE values for all variables
 	for _, varReg := range selectorVarRegs {
-		c.ctx.Emitter.EmitA(vm.OpLoadNone, varReg)
+		c.ctx.Emitter.EmitA(bytecode.OpLoadNone, varReg)
 		c.ctx.Types.Set(varReg, core.TypeNone)
 	}
 
-	if projVar != vm.NoopOperand {
-		c.ctx.Emitter.EmitA(vm.OpLoadNone, projVar)
+	if projVar != bytecode.NoopOperand {
+		c.ctx.Emitter.EmitA(bytecode.OpLoadNone, projVar)
 		c.ctx.Types.Set(projVar, core.TypeNone)
 	}
 
 	c.ctx.Emitter.MarkLabel(endLabel)
 }
 
-func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int, fused bool) {
+func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator bytecode.Operand, idx int, fused bool) {
 	loop := c.ctx.Loops.Current()
 	// Declare a local variable with the selector name
 	valReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
 
 	if fused {
+		// Fused grouped collector exposes aggregate values under tagged keys.
 		key := c.loadGroupedAggregateKey(loop.Key, idx)
-		c.ctx.Emitter.EmitABC(vm.OpLoadKey, valReg, aggregator, key)
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, valReg, aggregator, key)
+
 		return
 	}
 
@@ -491,13 +519,13 @@ func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.A
 
 		for y, reg := range args {
 			key := c.loadSelectorKey(loop.Key, selector.Name(), y)
-			c.ctx.Emitter.EmitABC(vm.OpLoadKey, reg, aggregator, key)
+			c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, reg, aggregator, key)
 		}
 	} else {
 		// For a single argument, load it directly using the selector name as key
 		key := c.loadSelectorKey(loop.Key, selector.Name(), -1)
 		value := c.ctx.Registers.Allocate()
-		c.ctx.Emitter.EmitABC(vm.OpLoadKey, value, aggregator, key)
+		c.ctx.Emitter.EmitABC(bytecode.OpLoadKey, value, aggregator, key)
 		args = core.RegisterSequence{value}
 	}
 
@@ -509,33 +537,33 @@ func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.A
 // loadGlobalSelectorKey creates a key for an aggregation argument by combining the selector name and argument index.
 // This is used for global aggregations with multiple arguments to store each argument separately.
 // Returns a register containing the key as a string constant.
-func (c *LoopCollectCompiler) loadGlobalSelectorKey(selector runtime.String, arg int) vm.Operand {
+func (c *LoopCollectCompiler) loadGlobalSelectorKey(selector runtime.String, arg int) bytecode.Operand {
 	// Create a key with format "selectorName:argIndex"
 	argKey := selector.String() + ":" + strconv.Itoa(arg)
 	// Load the key as a string constant
 	return loadConstant(c.ctx, runtime.String(argKey))
 }
 
-func (c *LoopCollectCompiler) loadSelectorKey(key vm.Operand, selector runtime.String, arg int) vm.Operand {
+func (c *LoopCollectCompiler) loadSelectorKey(key bytecode.Operand, selector runtime.String, arg int) bytecode.Operand {
 	selectorKey := c.ctx.Registers.Allocate()
 	selectorName := loadConstant(c.ctx, selector)
 
-	c.ctx.Emitter.EmitABC(vm.OpAdd, selectorKey, key, selectorName)
+	c.ctx.Emitter.EmitABC(bytecode.OpAdd, selectorKey, key, selectorName)
 
 	if arg >= 0 {
 		selectorIndex := loadConstant(c.ctx, runtime.String(strconv.Itoa(arg)))
-		c.ctx.Emitter.EmitABC(vm.OpAdd, selectorKey, selectorKey, selectorIndex)
+		c.ctx.Emitter.EmitABC(bytecode.OpAdd, selectorKey, selectorKey, selectorIndex)
 	}
 
 	return selectorKey
 }
 
-func (c *LoopCollectCompiler) loadGroupedAggregateKey(key vm.Operand, selectorIdx int) vm.Operand {
+func (c *LoopCollectCompiler) loadGroupedAggregateKey(key bytecode.Operand, selectorIdx int) bytecode.Operand {
 	aggKey := c.ctx.Registers.Allocate()
 	// Use a tagged array key to avoid collisions with user-provided group keys.
 	// Format: [AggregateKeyMarker, <groupKey>, <selectorIdx>]
 	c.ctx.Emitter.EmitArray(aggKey, 3)
-	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, runtime.AggregateKeyMarker))
+	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, bytecode.AggregateKeyMarker))
 	c.ctx.Emitter.EmitArrayPush(aggKey, key)
 	c.ctx.Emitter.EmitArrayPush(aggKey, loadConstant(c.ctx, runtime.Int(selectorIdx)))
 

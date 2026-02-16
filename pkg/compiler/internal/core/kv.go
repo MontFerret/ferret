@@ -1,12 +1,14 @@
 package core
 
-import "github.com/MontFerret/ferret/v2/pkg/vm"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+)
 
 type KV struct {
-	Key   vm.Operand
-	Value vm.Operand
+	Key   bytecode.Operand
+	Value bytecode.Operand
 }
 
-func NewKV(key vm.Operand, value vm.Operand) *KV {
+func NewKV(key bytecode.Operand, value bytecode.Operand) *KV {
 	return &KV{key, value}
 }

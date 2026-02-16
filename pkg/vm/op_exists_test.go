@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -11,71 +12,71 @@ import (
 func TestOpExists(t *testing.T) {
 	tests := []struct {
 		name     string
-		program  *vm.Program
+		program  *bytecode.Program
 		expected runtime.Boolean
 	}{
 		{
 			name: "none is false",
 			program: programWithOps(
-				vm.NewInstruction(vm.OpLoadNone, vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.False,
 		},
 		{
 			name: "empty string is false",
 			program: programWithConst(runtime.NewString(""),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.False,
 		},
 		{
 			name: "non-empty string is true",
 			program: programWithConst(runtime.NewString("ok"),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.True,
 		},
 		{
 			name: "empty array is false",
 			program: programWithConst(runtime.EmptyArray(),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.False,
 		},
 		{
 			name: "non-empty array is true",
 			program: programWithConst(runtime.NewArrayWith(runtime.NewInt(1)),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.True,
 		},
 		{
 			name: "empty object is false",
 			program: programWithConst(runtime.NewObject(),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.False,
 		},
 		{
 			name: "non-empty object is true",
 			program: programWithConst(runtime.NewObjectWith(runtime.NewObjectProperty("a", runtime.NewInt(1))),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.True,
 		},
 		{
 			name: "non-measurable value is true",
 			program: programWithConst(runtime.NewInt(42),
-				vm.NewInstruction(vm.OpExists, vm.NewRegister(2), vm.NewRegister(1)),
-				vm.NewInstruction(vm.OpReturn, vm.NewRegister(2)),
+				bytecode.NewInstruction(bytecode.OpExists, bytecode.NewRegister(2), bytecode.NewRegister(1)),
+				bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(2)),
 			),
 			expected: runtime.True,
 		},
@@ -100,19 +101,20 @@ func TestOpExists(t *testing.T) {
 	}
 }
 
-func programWithConst(value runtime.Value, ops ...vm.Instruction) *vm.Program {
-	bytecode := make([]vm.Instruction, 0, len(ops)+1)
-	bytecode = append(bytecode, vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(1), vm.NewConstant(0)))
-	bytecode = append(bytecode, ops...)
-	return &vm.Program{
-		Bytecode:  bytecode,
+func programWithConst(value runtime.Value, ops ...bytecode.Instruction) *bytecode.Program {
+	instructions := make([]bytecode.Instruction, 0, len(ops)+1)
+	instructions = append(instructions, bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(1), bytecode.NewConstant(0)))
+	instructions = append(instructions, ops...)
+
+	return &bytecode.Program{
+		Bytecode:  instructions,
 		Constants: []runtime.Value{value},
 		Registers: 3,
 	}
 }
 
-func programWithOps(ops ...vm.Instruction) *vm.Program {
-	return &vm.Program{
+func programWithOps(ops ...bytecode.Instruction) *bytecode.Program {
+	return &bytecode.Program{
 		Bytecode:  ops,
 		Registers: 3,
 	}

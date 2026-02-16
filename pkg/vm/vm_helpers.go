@@ -3,22 +3,23 @@ package vm
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
 )
 
-func (vm *VM) tryCatch(pos int) (Catch, bool) {
+func (vm *VM) tryCatch(pos int) (bytecode.Catch, bool) {
 	for _, pair := range vm.program.CatchTable {
 		if pos >= pair[0] && pos <= pair[1] {
 			return pair, true
 		}
 	}
 
-	return Catch{}, false
+	return bytecode.Catch{}, false
 }
 
-func (vm *VM) callv(ctx context.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
+func (vm *VM) callv(ctx context.Context, pc int, src1, src2 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 
@@ -51,7 +52,7 @@ func (vm *VM) call0(ctx context.Context, pc int) (runtime.Value, error) {
 	return cacheFn.FnV(ctx)
 }
 
-func (vm *VM) call1(ctx context.Context, pc int, src1 Operand) (runtime.Value, error) {
+func (vm *VM) call1(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	arg := reg[src1]
 	cacheFn := vm.cache.Functions[pc]
@@ -64,7 +65,7 @@ func (vm *VM) call1(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg)
 }
 
-func (vm *VM) call2(ctx context.Context, pc int, src1, src2 Operand) (runtime.Value, error) {
+func (vm *VM) call2(ctx context.Context, pc int, src1, src2 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 	arg1 := reg[src1]
@@ -78,7 +79,7 @@ func (vm *VM) call2(ctx context.Context, pc int, src1, src2 Operand) (runtime.Va
 	return cacheFn.FnV(ctx, arg1, arg2)
 }
 
-func (vm *VM) call3(ctx context.Context, pc int, src1 Operand) (runtime.Value, error) {
+func (vm *VM) call3(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 	arg1 := reg[src1]
@@ -93,7 +94,7 @@ func (vm *VM) call3(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg1, arg2, arg3)
 }
 
-func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, error) {
+func (vm *VM) call4(ctx context.Context, pc int, src1 bytecode.Operand) (runtime.Value, error) {
 	reg := vm.registers.Values
 	cacheFn := vm.cache.Functions[pc]
 	arg1 := reg[src1]
@@ -109,7 +110,7 @@ func (vm *VM) call4(ctx context.Context, pc int, src1 Operand) (runtime.Value, e
 	return cacheFn.FnV(ctx, arg1, arg2, arg3, arg4)
 }
 
-func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 Operand, constants []runtime.Value, src2 Operand, dst Operand) error {
+func (vm *VM) applyQuery(ctx context.Context, reg []runtime.Value, src1 bytecode.Operand, constants []runtime.Value, src2 bytecode.Operand, dst bytecode.Operand) error {
 	src := reg[src1]
 
 	if src1.IsConstant() {
@@ -305,6 +306,7 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 			}
 
 			cache.Add(shapeID, key, -1)
+
 			return nil, runtime.ErrNotFound
 		}
 
@@ -327,7 +329,7 @@ func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value)
 	return vm.loadKey(ctx, src, arg)
 }
 
-func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction, src, arg runtime.Value) (runtime.Value, error) {
+func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *data.ExecInstruction, src, arg runtime.Value) (runtime.Value, error) {
 	obj, ok := src.(*data.FastObject)
 
 	if !ok {
@@ -337,11 +339,11 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction,
 	shapeID := obj.ShapeID()
 
 	if shapeID != 0 {
-		if inst != nil && inst.inlineShapeID == shapeID {
-			if inst.inlineSlot < 0 {
+		if inst != nil && inst.InlineShapeID == shapeID {
+			if inst.InlineSlot < 0 {
 				return nil, runtime.ErrNotFound
 			}
-			if val, ok := obj.SlotValue(inst.inlineSlot); ok {
+			if val, ok := obj.SlotValue(inst.InlineSlot); ok {
 				return val, nil
 			}
 
@@ -357,8 +359,8 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction,
 		if cache != nil {
 			if slot, ok := cache.Lookup(shapeID); ok {
 				if inst != nil {
-					inst.inlineShapeID = shapeID
-					inst.inlineSlot = slot
+					inst.InlineShapeID = shapeID
+					inst.InlineSlot = slot
 				}
 
 				if slot < 0 {
@@ -392,8 +394,8 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction,
 			cache.Add(shapeID, -1)
 
 			if inst != nil {
-				inst.inlineShapeID = shapeID
-				inst.inlineSlot = -1
+				inst.InlineShapeID = shapeID
+				inst.InlineSlot = -1
 			}
 
 			return nil, runtime.ErrNotFound
@@ -413,8 +415,8 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction,
 		cache.Add(shapeID, slot)
 
 		if inst != nil {
-			inst.inlineShapeID = shapeID
-			inst.inlineSlot = slot
+			inst.InlineShapeID = shapeID
+			inst.InlineSlot = slot
 		}
 
 		return val, nil
@@ -423,7 +425,7 @@ func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *Instruction,
 	return vm.loadKey(ctx, src, arg)
 }
 
-func (vm *VM) objectSetConstCached(inst *Instruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
+func (vm *VM) objectSetConstCached(inst *data.ExecInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
 	if obj == nil {
 		return
 	}
@@ -431,8 +433,8 @@ func (vm *VM) objectSetConstCached(inst *Instruction, obj *data.FastObject, key 
 	if inst != nil {
 		shape := obj.Shape()
 
-		if shape != nil && inst.inlineSetShape == shape {
-			if obj.SetSlotWithShape(inst.inlineSetNextShape, inst.inlineSlot, value) {
+		if shape != nil && inst.InlineSetShape == shape {
+			if obj.SetSlotWithShape(inst.InlineSetNextShape, inst.InlineSlot, value) {
 				return
 			}
 		}
@@ -441,9 +443,9 @@ func (vm *VM) objectSetConstCached(inst *Instruction, obj *data.FastObject, key 
 	prev, next, slot, ok := obj.SetStringCached(string(key), value)
 
 	if ok && inst != nil {
-		inst.inlineSetShape = prev
-		inst.inlineSetNextShape = next
-		inst.inlineSlot = slot
+		inst.InlineSetShape = prev
+		inst.InlineSetNextShape = next
+		inst.InlineSlot = slot
 	}
 }
 
@@ -490,37 +492,40 @@ func (vm *VM) loadKey(ctx context.Context, src, arg runtime.Value) (runtime.Valu
 	return out, nil
 }
 
-func (vm *VM) loadIndexAndSet(ctx context.Context, dst Operand, src, arg runtime.Value, optional bool) error {
+func (vm *VM) loadIndexAndSet(ctx context.Context, dst bytecode.Operand, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
 		vm.registers.Values[dst] = runtime.None
 		return nil
 	}
 
 	out, err := vm.loadIndex(ctx, src, arg)
+
 	return vm.setOrOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyAndSet(ctx context.Context, dst Operand, pc int, src, arg runtime.Value, optional bool) error {
+func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
 		vm.registers.Values[dst] = runtime.None
 		return nil
 	}
 
 	out, err := vm.loadKeyCached(ctx, pc, src, arg)
+
 	return vm.setOrOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst Operand, pc int, inst *Instruction, src, arg runtime.Value, optional bool) error {
+func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, arg runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
 		vm.registers.Values[dst] = runtime.None
 		return nil
 	}
 
 	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
+
 	return vm.setOrOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyAndSet(ctx context.Context, dst Operand, pc int, src, prop runtime.Value, optional bool) error {
+func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc int, src, prop runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
 		vm.registers.Values[dst] = runtime.None
 		return nil
@@ -541,7 +546,7 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst Operand, pc int, src, 
 	return vm.setOrOptional(dst, out, err, optional)
 }
 
-func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst Operand, pc int, inst *Instruction, src, prop runtime.Value, optional bool) error {
+func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand, pc int, inst *data.ExecInstruction, src, prop runtime.Value, optional bool) error {
 	if optional && src == runtime.None {
 		vm.registers.Values[dst] = runtime.None
 		return nil
@@ -630,7 +635,7 @@ func (vm *VM) castDispatchArgs(
 	return dispatcher, eventNameStr, payload, options, nil
 }
 
-func (vm *VM) setOrTryCatch(dst Operand, val runtime.Value, err error) error {
+func (vm *VM) setOrTryCatch(dst bytecode.Operand, val runtime.Value, err error) error {
 	reg := vm.registers.Values
 
 	if err == nil {
@@ -648,7 +653,7 @@ func (vm *VM) setOrTryCatch(dst Operand, val runtime.Value, err error) error {
 	return err
 }
 
-func (vm *VM) setCallResult(op Opcode, dst Operand, out runtime.Value, err error) error {
+func (vm *VM) setCallResult(op bytecode.Opcode, dst bytecode.Operand, out runtime.Value, err error) error {
 	reg := vm.registers.Values
 
 	if err == nil {
@@ -676,7 +681,7 @@ func (vm *VM) setCallResult(op Opcode, dst Operand, out runtime.Value, err error
 	return err
 }
 
-func (vm *VM) setOrOptional(dst Operand, val runtime.Value, err error, optional bool) error {
+func (vm *VM) setOrOptional(dst bytecode.Operand, val runtime.Value, err error, optional bool) error {
 	if err == nil {
 		vm.registers.Values[dst] = val
 
@@ -692,9 +697,9 @@ func (vm *VM) setOrOptional(dst Operand, val runtime.Value, err error, optional 
 	return err
 }
 
-func isProtectedCall(op Opcode) bool {
+func isProtectedCall(op bytecode.Opcode) bool {
 	switch op {
-	case OpProtectedCall, OpProtectedCall0, OpProtectedCall1, OpProtectedCall2, OpProtectedCall3, OpProtectedCall4:
+	case bytecode.OpProtectedCall, bytecode.OpProtectedCall0, bytecode.OpProtectedCall1, bytecode.OpProtectedCall2, bytecode.OpProtectedCall3, bytecode.OpProtectedCall4:
 		return true
 	default:
 		return false

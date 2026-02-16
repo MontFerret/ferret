@@ -5,12 +5,13 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func (c *LoopCollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType) vm.Operand {
+func (c *LoopCollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType) bytecode.Operand {
 	reg, ok := c.ctx.Symbols.DeclareLocal(name, typ)
 	if ok {
 		return reg
@@ -23,10 +24,10 @@ func (c *LoopCollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, 
 		return existing
 	}
 
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
-func (c *LoopCollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType, op vm.Operand) bool {
+func (c *LoopCollectCompiler) assignLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType, op bytecode.Operand) bool {
 	if c.ctx.Symbols.AssignLocal(name, typ, op) {
 		return true
 	}

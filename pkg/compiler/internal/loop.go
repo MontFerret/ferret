@@ -5,12 +5,13 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // LoopCompiler handles the compilation of FOR loop expressions in FQL queries.
@@ -28,7 +29,7 @@ func NewLoopCompiler(ctx *CompilerContext) *LoopCompiler {
 // It determines whether to compile a FOR IN loop (iteration over a collection), a FOR WHILE loop (while condition),
 // or a FOR STEP loop (with init, condition, and increment expressions).
 // Returns an operand representing the destination of the loop results.
-func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
+func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) bytecode.Operand {
 	var returnRuleCtx antlr.RuleContext
 
 	if ctx.In() != nil {
@@ -43,7 +44,7 @@ func (c *LoopCompiler) Compile(ctx fql.IForExpressionContext) vm.Operand {
 
 	// Probably, a syntax error happened and no return rule context was created.
 	if returnRuleCtx == nil {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	// Compile the loop body (statements and clauses)
@@ -101,13 +102,13 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 		loop.Src = c.compileForExpressionSource(ctx.ForExpressionSource())
 	case core.ForStepLoop:
 		// For STEP loops, set up functions to evaluate init, condition, and increment expressions
-		loop.InitFn = func() vm.Operand {
+		loop.InitFn = func() bytecode.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepInit())
 		}
-		loop.ConditionFn = func() vm.Operand {
+		loop.ConditionFn = func() bytecode.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.GetStepCondition())
 		}
-		loop.UpdateFn = func() vm.Operand {
+		loop.UpdateFn = func() bytecode.Operand {
 			if exp := ctx.GetStepUpdateExp(); exp != nil {
 				// If an increment expression is provided, use it
 				return c.ctx.ExprCompiler.Compile(exp)
@@ -117,7 +118,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 			if !found {
 				c.ctx.Errors.VariableNotFound(ctx.GetStepVariable(), ctx.GetStepVariable().GetText())
-				return vm.NoopOperand
+				return bytecode.NoopOperand
 			}
 
 			inc := ctx.GetStepUpdate()
@@ -126,7 +127,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 		}
 	default:
 		// For WHILE/DO-WHILE loops, set up a function to evaluate the condition
-		loop.ConditionFn = func() vm.Operand {
+		loop.ConditionFn = func() bytecode.Operand {
 			return c.ctx.ExprCompiler.Compile(ctx.Expression(0))
 		}
 	}
@@ -151,6 +152,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	if val := ctx.GetValueVariable(); val != nil {
 		varName := val.GetText()
 		loop.DeclareValueVar(varName, c.ctx.Symbols, valueType)
+
 		if loop.Value.IsRegister() {
 			c.ctx.Types.Set(loop.Value, valueType)
 		}
@@ -170,6 +172,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	if ctr := ctx.GetCounterVariable(); ctr != nil {
 		loop.DeclareKeyVar(ctr.GetText(), c.ctx.Symbols, keyType)
+
 		if loop.Key.IsRegister() {
 			c.ctx.Types.Set(loop.Key, keyType)
 		}
@@ -177,6 +180,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 
 	// Emit VM instructions for loop initialization
 	span := file.Span{Start: -1, End: -1}
+
 	if srcCtx := ctx.ForExpressionSource(); srcCtx != nil {
 		if prc, ok := srcCtx.(antlr.ParserRuleContext); ok {
 			span = diagnostics.SpanFromRuleContext(prc)
@@ -184,6 +188,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 	} else if prc, ok := ctx.(antlr.ParserRuleContext); ok {
 		span = diagnostics.SpanFromRuleContext(prc)
 	}
+
 	c.ctx.Emitter.WithSpan(span, func() {
 		loop.EmitInitialization(c.ctx.Registers, c.ctx.Emitter)
 	})
@@ -211,7 +216,7 @@ func (c *LoopCompiler) compileInitialization(ctx fql.IForExpressionContext, kind
 //   - ctx: The rule context for the return expression or nested FOR expression
 //
 // Returns the destination operand containing the loop results.
-func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
+func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) bytecode.Operand {
 	loop := c.ctx.Loops.Current()
 
 	// Process the return expression based on the loop type
@@ -221,6 +226,7 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 		expReg := c.ctx.ExprCompiler.Compile(re.Expression())
 
 		span := file.Span{Start: -1, End: -1}
+
 		if exprCtx := re.Expression(); exprCtx != nil {
 			if prc, ok := exprCtx.(antlr.ParserRuleContext); ok {
 				span = diagnostics.SpanFromRuleContext(prc)
@@ -228,8 +234,9 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 		} else {
 			span = diagnostics.SpanFromRuleContext(re)
 		}
+
 		c.ctx.Emitter.WithSpan(span, func() {
-			c.ctx.Emitter.EmitAB(vm.OpPush, loop.Dst, expReg)
+			c.ctx.Emitter.EmitAB(bytecode.OpPush, loop.Dst, expReg)
 		})
 	} else if ctx != nil {
 		// For pass-through loops, recursively compile the nested FOR expression
@@ -252,7 +259,7 @@ func (c *LoopCompiler) compileFinalization(ctx antlr.RuleContext) vm.Operand {
 // It handles various types of expressions that can be used as the source collection,
 // such as function calls, member expressions, variables, parameters, range operators, and literals.
 // Returns an operand representing the compiled source expression.
-func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceContext) vm.Operand {
+func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceContext) bytecode.Operand {
 	// Handle function call expressions (e.g., FOR x IN getUsers())
 	if fce := ctx.FunctionCallExpression(); fce != nil {
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
@@ -288,7 +295,7 @@ func (c *LoopCompiler) compileForExpressionSource(ctx fql.IForExpressionSourceCo
 		return c.ctx.LiteralCompiler.CompileObjectLiteral(ol)
 	}
 
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
 // compileForExpressionStatement processes statements within a FOR loop body.
@@ -343,7 +350,7 @@ func (c *LoopCompiler) compileLimitClause(ctx fql.ILimitClauseContext) {
 // It handles various types of expressions that can be used as limit or offset values,
 // such as parameters, integer literals, variables, member expressions, and function calls.
 // Returns an operand representing the compiled limit/offset value.
-func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext) vm.Operand {
+func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext) bytecode.Operand {
 	// Handle parameters (e.g., LIMIT @limit)
 	if pm := ctx.Param(); pm != nil {
 		return c.ctx.ExprCompiler.CompileParam(pm)
@@ -369,12 +376,12 @@ func (c *LoopCompiler) compileLimitClauseValue(ctx fql.ILimitClauseValueContext)
 		return c.ctx.ExprCompiler.CompileFunctionCallExpression(fce)
 	}
 
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
 // compileLimit emits VM instructions to limit the number of iterations in a loop.
 // It allocates a state register and emits an iterator limit instruction with the loop's end label.
-func (c *LoopCompiler) compileLimit(src vm.Operand) {
+func (c *LoopCompiler) compileLimit(src bytecode.Operand) {
 	// Allocate a state register for the limit operation
 	state := c.ctx.Registers.Allocate()
 	c.ctx.Loops.Current().RegisterReset(state)
@@ -384,7 +391,7 @@ func (c *LoopCompiler) compileLimit(src vm.Operand) {
 
 // compileOffset emits VM instructions to skip a number of iterations at the start of a loop.
 // It allocates a state register and emits an iterator skip instruction with the loop's jump label.
-func (c *LoopCompiler) compileOffset(src vm.Operand) {
+func (c *LoopCompiler) compileOffset(src bytecode.Operand) {
 	// Allocate a state register for the offset operation
 	state := c.ctx.Registers.Allocate()
 	c.ctx.Loops.Current().RegisterReset(state)
@@ -418,7 +425,7 @@ func (c *LoopCompiler) compileCollectClause(ctx fql.ICollectClauseContext) {
 	c.ctx.LoopCollectCompiler.Compile(ctx)
 }
 
-func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, src vm.Operand) (core.ValueType, core.ValueType) {
+func (c *LoopCompiler) inferForInTypes(srcCtx fql.IForExpressionSourceContext, src bytecode.Operand) (core.ValueType, core.ValueType) {
 	if srcCtx == nil {
 		return core.TypeUnknown, core.TypeUnknown
 	}

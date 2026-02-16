@@ -52,6 +52,7 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 	default:
 		var err error
 		keyStr, err = Stringify(ctx, key)
+
 		if err != nil {
 			return err
 		}
@@ -78,9 +79,11 @@ func (c *KeyGroupCollector) Set(ctx context.Context, key, value runtime.Value) e
 		}
 
 		c.grouping = map[string]runtime.List{}
+
 		if c.hasSingleGroup {
 			c.grouping[c.singleKey] = c.singleGroup
 		}
+
 		c.hasSingleGroup = false
 		c.singleKey = ""
 		c.singleGroup = nil

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 // BasicBlock represents a sequence of instructions with a single entry and exit point
 type BasicBlock struct {
-	ID           int              // Unique identifier for the block
-	Start        int              // Index of first instruction in the bytecode
-	End          int              // Index of last instruction in the bytecode (inclusive)
-	Instructions []vm.Instruction // Instructions in this block
-	Successors   []*BasicBlock    // Blocks that may execute after this one
-	Predecessors []*BasicBlock    // Blocks that may execute before this one
+	ID           int                    // Unique identifier for the block
+	Start        int                    // Index of first instruction in the bytecode
+	End          int                    // Index of last instruction in the bytecode (inclusive)
+	Instructions []bytecode.Instruction // Instructions in this block
+	Successors   []*BasicBlock          // Blocks that may execute after this one
+	Predecessors []*BasicBlock          // Blocks that may execute before this one
 }
 
 // ControlFlowGraph represents the control flow structure of a bytecode program
@@ -30,14 +30,14 @@ func NewBasicBlock(id, start int) *BasicBlock {
 		ID:           id,
 		Start:        start,
 		End:          start,
-		Instructions: make([]vm.Instruction, 0),
+		Instructions: make([]bytecode.Instruction, 0),
 		Successors:   make([]*BasicBlock, 0),
 		Predecessors: make([]*BasicBlock, 0),
 	}
 }
 
 // AddInstruction adds an instruction to the basic block
-func (bb *BasicBlock) AddInstruction(inst vm.Instruction) {
+func (bb *BasicBlock) AddInstruction(inst bytecode.Instruction) {
 	bb.Instructions = append(bb.Instructions, inst)
 	bb.End = bb.Start + len(bb.Instructions) - 1
 }
@@ -47,6 +47,7 @@ func (bb *BasicBlock) AddSuccessor(succ *BasicBlock) {
 	if !bb.hasSuccessor(succ) {
 		bb.Successors = append(bb.Successors, succ)
 	}
+
 	if !succ.hasPredecessor(bb) {
 		succ.Predecessors = append(succ.Predecessors, bb)
 	}
@@ -59,6 +60,7 @@ func (bb *BasicBlock) hasSuccessor(block *BasicBlock) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -69,6 +71,7 @@ func (bb *BasicBlock) hasPredecessor(block *BasicBlock) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -77,35 +80,48 @@ func (bb *BasicBlock) IsTerminator() bool {
 	if len(bb.Instructions) == 0 {
 		return false
 	}
+
 	lastInst := bb.Instructions[len(bb.Instructions)-1]
 	op := lastInst.Opcode
-	return op == vm.OpReturn || op == vm.OpJump || op == vm.OpJumpIfFalse || op == vm.OpJumpIfTrue || op == vm.OpJumpIfNone || op == vm.OpIterNext
+
+	return op == bytecode.OpReturn || op == bytecode.OpJump || op == bytecode.OpJumpIfFalse || op == bytecode.OpJumpIfTrue || op == bytecode.OpJumpIfNone || op == bytecode.OpIterNext
 }
 
 // String returns a string representation of the basic block
 func (bb *BasicBlock) String() string {
 	var sb strings.Builder
+
 	sb.WriteString(fmt.Sprintf("Block %d [%d:%d]:\n", bb.ID, bb.Start, bb.End))
+
 	for i, inst := range bb.Instructions {
 		sb.WriteString(fmt.Sprintf("  %d: %s", bb.Start+i, inst.Opcode.String()))
+
 		if inst.Operands[0] != 0 || inst.Operands[1] != 0 || inst.Operands[2] != 0 {
 			sb.WriteString(fmt.Sprintf(" %d", inst.Operands[0]))
+
 			if inst.Operands[1] != 0 || inst.Operands[2] != 0 {
 				sb.WriteString(fmt.Sprintf(" %d", inst.Operands[1]))
+
 				if inst.Operands[2] != 0 {
 					sb.WriteString(fmt.Sprintf(" %d", inst.Operands[2]))
 				}
 			}
 		}
+
 		sb.WriteString("\n")
 	}
+
 	sb.WriteString("  Successors: ")
+
 	for i, succ := range bb.Successors {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
+
 		sb.WriteString(fmt.Sprintf("%d", succ.ID))
 	}
+
 	sb.WriteString("\n")
+
 	return sb.String()
 }

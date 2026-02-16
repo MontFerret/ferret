@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestCollectAggregate(t *testing.T) {
@@ -20,7 +20,7 @@ FOR u IN users
     maxAge
   }
 `, BC{
-			I(vm.OpReturn, 0, 7),
+			I(bytecode.OpReturn, 0, 7),
 		}),
 		SkipByteCodeCase(`
 			LET users = []
@@ -31,7 +31,7 @@ FOR u IN users
     				maxAge 
   				}
 `, BC{
-			I(vm.OpReturn, 0, 7),
+			I(bytecode.OpReturn, 0, 7),
 		}),
 	})
 }

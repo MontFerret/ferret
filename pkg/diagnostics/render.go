@@ -20,6 +20,7 @@ func (r SpanRenderer) Render(out io.Writer, src *file.Source, span file.Span, la
 	if out == nil || src == nil || src.Empty() {
 		return false
 	}
+
 	if span.Start < 0 || span.End <= span.Start || span.End > len(src.Content()) {
 		return false
 	}
@@ -49,9 +50,11 @@ func (r SpanRenderer) Render(out io.Writer, src *file.Source, span file.Span, la
 
 		if sl.Caret != "" {
 			caretLine := normalizeCaret(sl.Caret, caretChar)
+
 			if label != "" {
 				caretLine += " " + label
 			}
+
 			fmt.Fprintf(out, "%s%s | %s\n", r.Prefix, strings.Repeat(" ", lineNoWidth), caretLine)
 		}
 	}
@@ -74,8 +77,10 @@ func normalizeCaret(caret string, caretChar rune) string {
 	for _, r := range caret {
 		if r == ' ' {
 			b.WriteRune(' ')
+
 			continue
 		}
+
 		b.WriteRune(caretChar)
 	}
 

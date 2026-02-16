@@ -1,29 +1,20 @@
 package data
 
-type CollectorType int
+import "github.com/MontFerret/ferret/v2/pkg/bytecode"
 
-const (
-	CollectorTypeCounter CollectorType = iota
-	CollectorTypeKey
-	CollectorTypeKeyCounter
-	CollectorTypeKeyGroup
-	CollectorTypeAggregate
-	CollectorTypeAggregateGroup
-)
-
-func NewCollector(typ CollectorType) Transformer {
+func NewCollector(typ bytecode.CollectorType) Transformer {
 	switch typ {
-	case CollectorTypeCounter:
+	case bytecode.CollectorTypeCounter:
 		return NewCounterCollector()
-	case CollectorTypeKey:
+	case bytecode.CollectorTypeKey:
 		return NewKeyCollector()
-	case CollectorTypeKeyCounter:
+	case bytecode.CollectorTypeKeyCounter:
 		return NewKeyCounterCollector()
-	case CollectorTypeKeyGroup:
+	case bytecode.CollectorTypeKeyGroup:
 		return NewKeyGroupCollector()
-	case CollectorTypeAggregate:
+	case bytecode.CollectorTypeAggregate:
 		panic("aggregate collector requires a plan")
-	case CollectorTypeAggregateGroup:
+	case bytecode.CollectorTypeAggregateGroup:
 		panic("aggregate group collector requires a plan")
 	default:
 		panic("unknown collector type")

@@ -14,12 +14,16 @@ type (
 		protectedCall bool
 	}
 
+	// AggregateSelector stores the finalized aggregate metadata that is needed
+	// during the post-collection evaluation stage (arguments are already materialized in the collector).
 	AggregateSelector struct {
 		baseAggregateSelector
 		args int
 		ctx  antlr.ParserRuleContext
 	}
 
+	// CompiledAggregateSelector stores selector metadata together with compiled argument registers.
+	// It is a transient representation used while building collector input.
 	CompiledAggregateSelector struct {
 		baseAggregateSelector
 		args RegisterSequence

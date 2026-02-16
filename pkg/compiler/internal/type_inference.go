@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func valueTypeFromRuntime(value runtime.Value) core.ValueType {
@@ -132,7 +132,7 @@ func literalValueFromAtom(ctx fql.IExpressionAtomContext) (runtime.Value, bool) 
 	return nil, false
 }
 
-func operandType(ctx *CompilerContext, op vm.Operand) core.ValueType {
+func operandType(ctx *CompilerContext, op bytecode.Operand) core.ValueType {
 	if ctx == nil {
 		return core.TypeUnknown
 	}

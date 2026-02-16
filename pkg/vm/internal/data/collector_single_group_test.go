@@ -4,15 +4,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
 func TestAggregateCollectorAllowsEmptyStringGroupKey(t *testing.T) {
 	ctx := context.Background()
-	collector := data.NewAggregateCollector(runtime.NewAggregatePlan(
+	collector := data.NewAggregateCollector(bytecode.NewAggregatePlan(
 		[]runtime.String{runtime.NewString("cnt")},
-		[]runtime.AggregateKind{runtime.AggregateCount},
+		[]bytecode.AggregateKind{bytecode.AggregateCount},
 	))
 
 	if err := collector.Set(ctx, runtime.NewString("cnt"), runtime.NewInt(1)); err != nil {
@@ -69,9 +70,9 @@ func TestKeyGroupCollectorAllowsEmptyStringKey(t *testing.T) {
 
 func TestGroupedAggregateCollectorAllowsEmptyStringKey(t *testing.T) {
 	ctx := context.Background()
-	collector := data.NewGroupedAggregateCollector(runtime.NewAggregatePlan(
+	collector := data.NewGroupedAggregateCollector(bytecode.NewAggregatePlan(
 		[]runtime.String{runtime.NewString("cnt")},
-		[]runtime.AggregateKind{runtime.AggregateCount},
+		[]bytecode.AggregateKind{bytecode.AggregateCount},
 	))
 
 	if err := collector.Set(ctx, runtime.NewString(""), runtime.NewString("row1")); err != nil {
@@ -79,7 +80,7 @@ func TestGroupedAggregateCollectorAllowsEmptyStringKey(t *testing.T) {
 	}
 
 	aggKey := runtime.NewArray(3)
-	if err := aggKey.Append(ctx, runtime.AggregateKeyMarker); err != nil {
+	if err := aggKey.Append(ctx, bytecode.AggregateKeyMarker); err != nil {
 		t.Fatalf("build aggregate key marker: %v", err)
 	}
 

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 type Emitter struct {
-	instructions []vm.Instruction
+	instructions []bytecode.Instruction
 	spans        []file.Span
 	currentSpan  file.Span
 	labels       map[labelID]Label
@@ -19,12 +19,12 @@ type Emitter struct {
 
 func NewEmitter() *Emitter {
 	return &Emitter{
-		instructions: make([]vm.Instruction, 0, 8),
+		instructions: make([]bytecode.Instruction, 0, 8),
 		currentSpan:  file.Span{Start: -1, End: -1},
 	}
 }
 
-func (e *Emitter) Bytecode() []vm.Instruction {
+func (e *Emitter) Bytecode() []bytecode.Instruction {
 	return e.instructions
 }
 
@@ -124,23 +124,23 @@ func (e *Emitter) Position() int {
 }
 
 // Emit emits an opcode with no arguments.
-func (e *Emitter) Emit(op vm.Opcode) {
+func (e *Emitter) Emit(op bytecode.Opcode) {
 	e.EmitABC(op, 0, 0, 0)
 }
 
 // EmitA emits an opcode with a single destination value argument.
-func (e *Emitter) EmitA(op vm.Opcode, dest vm.Operand) {
+func (e *Emitter) EmitA(op bytecode.Opcode, dest bytecode.Operand) {
 	e.EmitABC(op, dest, 0, 0)
 }
 
 // EmitAB emits an opcode with a destination value and a single source value argument.
-func (e *Emitter) EmitAB(op vm.Opcode, dest, src1 vm.Operand) {
+func (e *Emitter) EmitAB(op bytecode.Opcode, dest, src1 bytecode.Operand) {
 	e.EmitABC(op, dest, src1, 0)
 }
 
 // EmitAb emits an opcode with a destination value and a boolean argument.
-func (e *Emitter) EmitAb(op vm.Opcode, dest vm.Operand, arg bool) {
-	var src1 vm.Operand
+func (e *Emitter) EmitAb(op bytecode.Opcode, dest bytecode.Operand, arg bool) {
+	var src1 bytecode.Operand
 
 	if arg {
 		src1 = 1
@@ -150,17 +150,17 @@ func (e *Emitter) EmitAb(op vm.Opcode, dest vm.Operand, arg bool) {
 }
 
 // EmitAx emits an opcode with a destination value and a custom argument.
-func (e *Emitter) EmitAx(op vm.Opcode, dest vm.Operand, arg int) {
-	e.EmitABC(op, dest, vm.Operand(arg), 0)
+func (e *Emitter) EmitAx(op bytecode.Opcode, dest bytecode.Operand, arg int) {
+	e.EmitABC(op, dest, bytecode.Operand(arg), 0)
 }
 
 // EmitAxy emits an instruction with the given opcode, destination operand, and two integer arguments converted to operands.
-func (e *Emitter) EmitAxy(op vm.Opcode, dest vm.Operand, arg1, agr2 int) {
-	e.EmitABC(op, dest, vm.Operand(arg1), vm.Operand(agr2))
+func (e *Emitter) EmitAxy(op bytecode.Opcode, dest bytecode.Operand, arg1, agr2 int) {
+	e.EmitABC(op, dest, bytecode.Operand(arg1), bytecode.Operand(agr2))
 }
 
 // EmitAs emits an opcode with a destination value and a sequence of registers.
-func (e *Emitter) EmitAs(op vm.Opcode, dest vm.Operand, seq RegisterSequence) {
+func (e *Emitter) EmitAs(op bytecode.Opcode, dest bytecode.Operand, seq RegisterSequence) {
 	if seq != nil {
 		src1 := seq[0]
 		src2 := seq[len(seq)-1]
@@ -171,69 +171,69 @@ func (e *Emitter) EmitAs(op vm.Opcode, dest vm.Operand, seq RegisterSequence) {
 }
 
 // EmitABx emits an opcode with a destination and source value and a custom argument.
-func (e *Emitter) EmitABx(op vm.Opcode, dest vm.Operand, src vm.Operand, arg int) {
-	e.EmitABC(op, dest, src, vm.Operand(arg))
+func (e *Emitter) EmitABx(op bytecode.Opcode, dest bytecode.Operand, src bytecode.Operand, arg int) {
+	e.EmitABC(op, dest, src, bytecode.Operand(arg))
 }
 
 // EmitABC emits an opcode with a destination value and two source value arguments.
-func (e *Emitter) EmitABC(op vm.Opcode, dest, src1, src2 vm.Operand) {
-	e.emitInstruction(vm.Instruction{
+func (e *Emitter) EmitABC(op bytecode.Opcode, dest, src1, src2 bytecode.Operand) {
+	e.emitInstruction(bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dest, src1, src2},
+		Operands: [3]bytecode.Operand{dest, src1, src2},
 	})
 }
 
-func (e *Emitter) emitInstruction(ins vm.Instruction) {
+func (e *Emitter) emitInstruction(ins bytecode.Instruction) {
 	e.instructions = append(e.instructions, ins)
 	e.spans = append(e.spans, e.currentSpan)
 }
 
 // SwapAB modifies an instruction at the given position to swap operands and update its operation and destination.
-func (e *Emitter) SwapAB(label Label, op vm.Opcode, dst, src1 vm.Operand) {
-	e.swapInstruction(label, vm.Instruction{
+func (e *Emitter) SwapAB(label Label, op bytecode.Opcode, dst, src1 bytecode.Operand) {
+	e.swapInstruction(label, bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, src1, vm.NoopOperand},
+		Operands: [3]bytecode.Operand{dst, src1, bytecode.NoopOperand},
 	})
 }
 
 // SwapAx modifies an existing instruction at the specified position with a new opcode, destination, and argument.
-func (e *Emitter) SwapAx(label Label, op vm.Opcode, dst vm.Operand, arg int) {
-	e.swapInstruction(label, vm.Instruction{
+func (e *Emitter) SwapAx(label Label, op bytecode.Opcode, dst bytecode.Operand, arg int) {
+	e.swapInstruction(label, bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+		Operands: [3]bytecode.Operand{dst, bytecode.Operand(arg), bytecode.NoopOperand},
 	})
 }
 
 // SwapAxy replaces an instruction at the specified position with a new one using the provided opcode and operands.
-func (e *Emitter) SwapAxy(label Label, op vm.Opcode, dst vm.Operand, arg1, agr2 int) {
-	e.swapInstruction(label, vm.Instruction{
+func (e *Emitter) SwapAxy(label Label, op bytecode.Opcode, dst bytecode.Operand, arg1, agr2 int) {
+	e.swapInstruction(label, bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(agr2)},
+		Operands: [3]bytecode.Operand{dst, bytecode.Operand(arg1), bytecode.Operand(agr2)},
 	})
 }
 
 // SwapAs replaces an instruction at the specified position with a new instruction using the given opcode and operands.
-func (e *Emitter) SwapAs(label Label, op vm.Opcode, dst vm.Operand, seq RegisterSequence) {
-	e.swapInstruction(label, vm.Instruction{
+func (e *Emitter) SwapAs(label Label, op bytecode.Opcode, dst bytecode.Operand, seq RegisterSequence) {
+	e.swapInstruction(label, bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, seq[0], seq[len(seq)-1]},
+		Operands: [3]bytecode.Operand{dst, seq[0], seq[len(seq)-1]},
 	})
 }
 
 // InsertAx inserts a new instruction at a specific position in the instructions slice, shifting elements to the right.
 // The inserted instruction includes an opcode and operands, where the third operand is set to a no-op by default.
-func (e *Emitter) InsertAx(label Label, op vm.Opcode, dst vm.Operand, arg int) {
-	e.insertInstruction(label, vm.Instruction{
+func (e *Emitter) InsertAx(label Label, op bytecode.Opcode, dst bytecode.Operand, arg int) {
+	e.insertInstruction(label, bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg), vm.NoopOperand},
+		Operands: [3]bytecode.Operand{dst, bytecode.Operand(arg), bytecode.NoopOperand},
 	})
 }
 
 // InsertAxy inserts an instruction at the specified position in the instruction list, shifting existing elements to the right.
-func (e *Emitter) InsertAxy(label Label, op vm.Opcode, dst vm.Operand, arg1, arg2 int) {
-	e.insertInstruction(label, vm.Instruction{
+func (e *Emitter) InsertAxy(label Label, op bytecode.Opcode, dst bytecode.Operand, arg1, arg2 int) {
+	e.insertInstruction(label, bytecode.Instruction{
 		Opcode:   op,
-		Operands: [3]vm.Operand{dst, vm.Operand(arg1), vm.Operand(arg2)},
+		Operands: [3]bytecode.Operand{dst, bytecode.Operand(arg1), bytecode.Operand(arg2)},
 	})
 }
 
@@ -245,11 +245,11 @@ func (e *Emitter) Patchx(label Label, arg int) {
 	}
 
 	current := e.instructions[pos]
-	e.instructions[pos] = vm.Instruction{
+	e.instructions[pos] = bytecode.Instruction{
 		Opcode: current.Opcode,
-		Operands: [3]vm.Operand{
+		Operands: [3]bytecode.Operand{
 			current.Operands[0],
-			vm.Operand(arg),
+			bytecode.Operand(arg),
 			current.Operands[2],
 		},
 	}
@@ -278,12 +278,12 @@ func (e *Emitter) addLabelRef(pos int, field int, label Label) {
 // patchOperand modifies the operand at the specified position and field in the instruction set.
 func (e *Emitter) patchOperand(pos int, field int, val int) {
 	ins := e.instructions[pos]
-	ins.Operands[field] = vm.Operand(val)
+	ins.Operands[field] = bytecode.Operand(val)
 	e.instructions[pos] = ins
 }
 
 // swapInstruction swaps the operands of an instruction at a given position.
-func (e *Emitter) swapInstruction(label Label, ins vm.Instruction) {
+func (e *Emitter) swapInstruction(label Label, ins bytecode.Instruction) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
@@ -294,7 +294,7 @@ func (e *Emitter) swapInstruction(label Label, ins vm.Instruction) {
 }
 
 // swapInstruction swaps the operands of an instruction at a given position.
-func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
+func (e *Emitter) insertInstruction(label Label, ins bytecode.Instruction) {
 	pos, ok := e.LabelPosition(label)
 
 	if !ok {
@@ -303,7 +303,7 @@ func (e *Emitter) insertInstruction(label Label, ins vm.Instruction) {
 
 	// Insert instruction at position
 	e.instructions = append(e.instructions[:pos],
-		append([]vm.Instruction{ins}, e.instructions[pos:]...)...,
+		append([]bytecode.Instruction{ins}, e.instructions[pos:]...)...,
 	)
 	e.spans = append(e.spans[:pos],
 		append([]file.Span{e.currentSpan}, e.spans[pos:]...)...,

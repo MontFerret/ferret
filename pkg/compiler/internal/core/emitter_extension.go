@@ -1,43 +1,43 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 // Emitter Helpers - Common opcode shortcut methods
 
 // ─── Loop & State ──────────────────────────────────────────────────────
 
-func (e *Emitter) EmitIter(dst, src vm.Operand) {
-	e.EmitAB(vm.OpIter, dst, src)
+func (e *Emitter) EmitIter(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpIter, dst, src)
 }
 
-func (e *Emitter) EmitIterNext(iterator vm.Operand, label Label) {
-	e.EmitJumpc(vm.OpIterNext, iterator, label)
+func (e *Emitter) EmitIterNext(iterator bytecode.Operand, label Label) {
+	e.EmitJumpc(bytecode.OpIterNext, iterator, label)
 }
 
-func (e *Emitter) EmitIterKey(dst, iterator vm.Operand) {
-	e.EmitAB(vm.OpIterKey, dst, iterator)
+func (e *Emitter) EmitIterKey(dst, iterator bytecode.Operand) {
+	e.EmitAB(bytecode.OpIterKey, dst, iterator)
 }
 
-func (e *Emitter) EmitIterValue(dst, iterator vm.Operand) {
-	e.EmitAB(vm.OpIterValue, dst, iterator)
+func (e *Emitter) EmitIterValue(dst, iterator bytecode.Operand) {
+	e.EmitAB(bytecode.OpIterValue, dst, iterator)
 }
 
-func (e *Emitter) EmitIterSkip(state, count vm.Operand, label Label) {
-	e.emitInstruction(vm.Instruction{
-		Opcode:   vm.OpIterSkip,
-		Operands: [3]vm.Operand{jumpPlaceholder, state, count},
+func (e *Emitter) EmitIterSkip(state, count bytecode.Operand, label Label) {
+	e.emitInstruction(bytecode.Instruction{
+		Opcode:   bytecode.OpIterSkip,
+		Operands: [3]bytecode.Operand{jumpPlaceholder, state, count},
 	})
 
 	pos := len(e.instructions) - 1
 	e.addLabelRef(pos, 0, label)
 }
 
-func (e *Emitter) EmitIterLimit(state, count vm.Operand, label Label) {
-	e.emitInstruction(vm.Instruction{
-		Opcode:   vm.OpIterLimit,
-		Operands: [3]vm.Operand{jumpPlaceholder, state, count},
+func (e *Emitter) EmitIterLimit(state, count bytecode.Operand, label Label) {
+	e.emitInstruction(bytecode.Instruction{
+		Opcode:   bytecode.OpIterLimit,
+		Operands: [3]bytecode.Operand{jumpPlaceholder, state, count},
 	})
 
 	pos := len(e.instructions) - 1
@@ -46,169 +46,169 @@ func (e *Emitter) EmitIterLimit(state, count vm.Operand, label Label) {
 
 // ─── Value & Memory ──────────────────────────────────────────────────────
 
-func (e *Emitter) EmitMove(dst, src vm.Operand) {
-	e.EmitAB(vm.OpMove, dst, src)
+func (e *Emitter) EmitMove(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpMove, dst, src)
 }
 
-func (e *Emitter) EmitPush(dst, src vm.Operand) {
-	e.EmitAB(vm.OpPush, dst, src)
+func (e *Emitter) EmitPush(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpPush, dst, src)
 }
 
-func (e *Emitter) EmitArrayPush(dst, src vm.Operand) {
-	e.EmitAB(vm.OpArrayPush, dst, src)
+func (e *Emitter) EmitArrayPush(dst, src bytecode.Operand) {
+	e.EmitAB(bytecode.OpArrayPush, dst, src)
 }
 
-func (e *Emitter) EmitPushKV(dst, key, val vm.Operand) {
-	e.EmitABC(vm.OpPushKV, dst, key, val)
+func (e *Emitter) EmitPushKV(dst, key, val bytecode.Operand) {
+	e.EmitABC(bytecode.OpPushKV, dst, key, val)
 }
 
-func (e *Emitter) EmitObjectSet(dst, key, val vm.Operand) {
-	e.EmitABC(vm.OpObjectSet, dst, key, val)
+func (e *Emitter) EmitObjectSet(dst, key, val bytecode.Operand) {
+	e.EmitABC(bytecode.OpObjectSet, dst, key, val)
 }
 
-func (e *Emitter) EmitObjectSetConst(dst, keyConst, val vm.Operand) {
-	e.EmitABC(vm.OpObjectSetConst, dst, keyConst, val)
+func (e *Emitter) EmitObjectSetConst(dst, keyConst, val bytecode.Operand) {
+	e.EmitABC(bytecode.OpObjectSetConst, dst, keyConst, val)
 }
 
-func (e *Emitter) EmitClose(reg vm.Operand) {
-	e.EmitA(vm.OpClose, reg)
+func (e *Emitter) EmitClose(reg bytecode.Operand) {
+	e.EmitA(bytecode.OpClose, reg)
 }
 
-func (e *Emitter) EmitLoadNone(dst vm.Operand) {
-	e.EmitA(vm.OpLoadNone, dst)
+func (e *Emitter) EmitLoadNone(dst bytecode.Operand) {
+	e.EmitA(bytecode.OpLoadNone, dst)
 }
 
-func (e *Emitter) EmitLoadConst(dst vm.Operand, constant vm.Operand) {
-	e.EmitAB(vm.OpLoadConst, dst, constant)
+func (e *Emitter) EmitLoadConst(dst bytecode.Operand, constant bytecode.Operand) {
+	e.EmitAB(bytecode.OpLoadConst, dst, constant)
 }
 
-func (e *Emitter) EmitLoadParam(dst, constant vm.Operand) {
-	e.EmitAB(vm.OpLoadParam, dst, constant)
+func (e *Emitter) EmitLoadParam(dst, constant bytecode.Operand) {
+	e.EmitAB(bytecode.OpLoadParam, dst, constant)
 }
 
-func (e *Emitter) EmitBoolean(dst vm.Operand, value bool) {
+func (e *Emitter) EmitBoolean(dst bytecode.Operand, value bool) {
 	if value {
-		e.EmitAB(vm.OpLoadBool, dst, 1)
+		e.EmitAB(bytecode.OpLoadBool, dst, 1)
 	} else {
-		e.EmitAB(vm.OpLoadBool, dst, 0)
+		e.EmitAB(bytecode.OpLoadBool, dst, 0)
 	}
 }
 
 // ─── Data Structures ──────────────────────────────────────────────────────
 
-func (e *Emitter) EmitArray(dst vm.Operand, size int) {
-	e.EmitAB(vm.OpLoadArray, dst, vm.Operand(size))
+func (e *Emitter) EmitArray(dst bytecode.Operand, size int) {
+	e.EmitAB(bytecode.OpLoadArray, dst, bytecode.Operand(size))
 }
 
-func (e *Emitter) EmitObject(dst vm.Operand, size int) {
-	e.EmitAB(vm.OpLoadObject, dst, vm.Operand(size))
+func (e *Emitter) EmitObject(dst bytecode.Operand, size int) {
+	e.EmitAB(bytecode.OpLoadObject, dst, bytecode.Operand(size))
 }
 
-func (e *Emitter) EmitRange(dst, start, end vm.Operand) {
-	e.EmitABC(vm.OpLoadRange, dst, start, end)
+func (e *Emitter) EmitRange(dst, start, end bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadRange, dst, start, end)
 }
 
-func (e *Emitter) EmitLoadIndex(dst, arr, idx vm.Operand) {
-	e.EmitABC(vm.OpLoadIndex, dst, arr, idx)
+func (e *Emitter) EmitLoadIndex(dst, arr, idx bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadIndex, dst, arr, idx)
 }
 
-func (e *Emitter) EmitLoadKey(dst, obj, key vm.Operand) {
-	e.EmitABC(vm.OpLoadKey, dst, obj, key)
+func (e *Emitter) EmitLoadKey(dst, obj, key bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadKey, dst, obj, key)
 }
 
-func (e *Emitter) EmitLoadProperty(dst, obj, prop vm.Operand) {
-	e.EmitABC(vm.OpLoadProperty, dst, obj, prop)
+func (e *Emitter) EmitLoadProperty(dst, obj, prop bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadProperty, dst, obj, prop)
 }
 
-func (e *Emitter) EmitLoadPropertyOptional(dst, obj, prop vm.Operand) {
-	e.EmitABC(vm.OpLoadPropertyOptional, dst, obj, prop)
+func (e *Emitter) EmitLoadPropertyOptional(dst, obj, prop bytecode.Operand) {
+	e.EmitABC(bytecode.OpLoadPropertyOptional, dst, obj, prop)
 }
 
 // ─── Arithmetic and Logical ──────────────────────────────────────────────
 
-func (e *Emitter) EmitAdd(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpAdd, dst, a, b)
+func (e *Emitter) EmitAdd(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpAdd, dst, a, b)
 }
 
-func (e *Emitter) EmitSub(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpSub, dst, a, b)
+func (e *Emitter) EmitSub(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpSub, dst, a, b)
 }
 
-func (e *Emitter) EmitMul(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpMulti, dst, a, b)
+func (e *Emitter) EmitMul(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpMulti, dst, a, b)
 }
 
-func (e *Emitter) EmitDiv(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpDiv, dst, a, b)
+func (e *Emitter) EmitDiv(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpDiv, dst, a, b)
 }
 
-func (e *Emitter) EmitMod(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpMod, dst, a, b)
+func (e *Emitter) EmitMod(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpMod, dst, a, b)
 }
 
-func (e *Emitter) EmitEq(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpEq, dst, a, b)
+func (e *Emitter) EmitEq(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpEq, dst, a, b)
 }
 
-func (e *Emitter) EmitNeq(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpNe, dst, a, b)
+func (e *Emitter) EmitNeq(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpNe, dst, a, b)
 }
 
-func (e *Emitter) EmitGt(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpGt, dst, a, b)
+func (e *Emitter) EmitGt(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpGt, dst, a, b)
 }
 
-func (e *Emitter) EmitLt(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpLt, dst, a, b)
+func (e *Emitter) EmitLt(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpLt, dst, a, b)
 }
 
-func (e *Emitter) EmitGte(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpGte, dst, a, b)
+func (e *Emitter) EmitGte(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpGte, dst, a, b)
 }
 
-func (e *Emitter) EmitLte(dst, a, b vm.Operand) {
-	e.EmitABC(vm.OpLte, dst, a, b)
+func (e *Emitter) EmitLte(dst, a, b bytecode.Operand) {
+	e.EmitABC(bytecode.OpLte, dst, a, b)
 }
 
 // ─── Control Flow ────────────────────────────────────────────────────────
 
 func (e *Emitter) EmitJump(label Label) {
-	e.EmitA(vm.OpJump, vm.Operand(jumpPlaceholder))
+	e.EmitA(bytecode.OpJump, bytecode.Operand(jumpPlaceholder))
 	pos := len(e.instructions) - 1
 	e.addLabelRef(pos, 0, label)
 }
 
 // EmitJumpAB emits a jump opcode with a state and an argument.
-func (e *Emitter) EmitJumpAB(op vm.Opcode, state, cond vm.Operand, label Label) {
-	e.EmitABC(op, state, cond, vm.Operand(jumpPlaceholder))
+func (e *Emitter) EmitJumpAB(op bytecode.Opcode, state, cond bytecode.Operand, label Label) {
+	e.EmitABC(op, state, cond, bytecode.Operand(jumpPlaceholder))
 	pos := len(e.instructions) - 1
 	e.addLabelRef(pos, 2, label)
 }
 
 // EmitJumpc emits a conditional jump opcode.
-func (e *Emitter) EmitJumpc(op vm.Opcode, reg vm.Operand, label Label) {
-	e.EmitAB(op, vm.Operand(jumpPlaceholder), reg)
+func (e *Emitter) EmitJumpc(op bytecode.Opcode, reg bytecode.Operand, label Label) {
+	e.EmitAB(op, bytecode.Operand(jumpPlaceholder), reg)
 	pos := len(e.instructions) - 1
 	e.addLabelRef(pos, 0, label)
 }
 
-func (e *Emitter) EmitJumpIfFalse(cond vm.Operand, label Label) {
+func (e *Emitter) EmitJumpIfFalse(cond bytecode.Operand, label Label) {
 	e.EmitJumpIf(cond, false, label)
 }
 
-func (e *Emitter) EmitJumpIfTrue(cond vm.Operand, label Label) {
+func (e *Emitter) EmitJumpIfTrue(cond bytecode.Operand, label Label) {
 	e.EmitJumpIf(cond, true, label)
 }
 
-func (e *Emitter) EmitJumpIfNone(cond vm.Operand, label Label) {
-	e.EmitJumpc(vm.OpJumpIfNone, cond, label)
+func (e *Emitter) EmitJumpIfNone(cond bytecode.Operand, label Label) {
+	e.EmitJumpc(bytecode.OpJumpIfNone, cond, label)
 }
 
-func (e *Emitter) EmitJumpIf(cond vm.Operand, isTrue bool, label Label) {
+func (e *Emitter) EmitJumpIf(cond bytecode.Operand, isTrue bool, label Label) {
 	if isTrue {
-		e.EmitJumpc(vm.OpJumpIfTrue, cond, label)
+		e.EmitJumpc(bytecode.OpJumpIfTrue, cond, label)
 		return
 	}
 
-	e.EmitJumpc(vm.OpJumpIfFalse, cond, label)
+	e.EmitJumpc(bytecode.OpJumpIfFalse, cond, label)
 }

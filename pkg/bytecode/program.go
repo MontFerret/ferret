@@ -1,4 +1,4 @@
-package vm
+package bytecode
 
 import (
 	"github.com/MontFerret/ferret/v2/pkg/file"

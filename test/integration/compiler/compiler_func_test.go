@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestFunctionCall(t *testing.T) {
@@ -12,10 +12,10 @@ func TestFunctionCall(t *testing.T) {
 			`
 			RETURN TYPENAME(1)"
 		`, BC{
-				I(vm.OpLoadConst, 2, vm.NewConstant(0)), // Load constant 1
-				I(vm.OpMove, 1, 2),                      // Argument list compilation
-				I(vm.OpType, 3, 1),                      // Call TYPENAME function
-				I(vm.OpReturn, 3),                       // Return the result
+				I(bytecode.OpLoadConst, 2, bytecode.NewConstant(0)), // Load constant 1
+				I(bytecode.OpMove, 1, 2),                            // Argument list compilation
+				I(bytecode.OpType, 3, 1),                            // Call TYPENAME function
+				I(bytecode.OpReturn, 3),                             // Return the result
 			}),
 	})
 }

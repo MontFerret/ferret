@@ -3,8 +3,8 @@ package asm
 import (
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // labelOrAddr returns a label name if one exists for the given address; otherwise just the number.
@@ -26,7 +26,7 @@ func constantAsText(constant runtime.Value) string {
 }
 
 // constValue renders the constant at a given index from the program.
-func constValue(p *vm.Program, idx int) string {
+func constValue(p *bytecode.Program, idx int) string {
 	if idx >= 0 && idx < len(p.Constants) {
 		return constantAsText(p.Constants[idx])
 	}
@@ -35,7 +35,7 @@ func constValue(p *vm.Program, idx int) string {
 }
 
 // formatLocation returns a line/col comment if available for the given instruction.
-func formatLocation(p *vm.Program, ip int) string {
+func formatLocation(p *bytecode.Program, ip int) string {
 	//if ip < len(p.Locations) {
 	//	loc := p.Locations[ip]
 	//
@@ -60,7 +60,7 @@ func formatConstant(constant runtime.Value) string {
 	return fmt.Sprintf(".const %s", constantAsText(constant))
 }
 
-func formatOperand(op vm.Operand) string {
+func formatOperand(op bytecode.Operand) string {
 	if op.IsRegister() {
 		return fmt.Sprintf("R%d", op.Register())
 	}
@@ -68,6 +68,6 @@ func formatOperand(op vm.Operand) string {
 	return fmt.Sprintf("C%d", op.Constant())
 }
 
-func formatArgument(op vm.Operand) string {
+func formatArgument(op bytecode.Operand) string {
 	return fmt.Sprintf("%d", op.Register())
 }

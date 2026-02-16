@@ -1,23 +1,23 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 type CollectorAggregation struct {
-	state    vm.Operand
+	state    bytecode.Operand
 	selector []*AggregateSelector
 	fused    bool
 }
 
-func NewCollectorAggregation(state vm.Operand, selector []*AggregateSelector) *CollectorAggregation {
+func NewCollectorAggregation(state bytecode.Operand, selector []*AggregateSelector) *CollectorAggregation {
 	return &CollectorAggregation{
 		state:    state,
 		selector: selector,
 	}
 }
 
-func NewCollectorAggregationFused(state vm.Operand, selector []*AggregateSelector) *CollectorAggregation {
+func NewCollectorAggregationFused(state bytecode.Operand, selector []*AggregateSelector) *CollectorAggregation {
 	return &CollectorAggregation{
 		state:    state,
 		selector: selector,
@@ -25,7 +25,7 @@ func NewCollectorAggregationFused(state vm.Operand, selector []*AggregateSelecto
 	}
 }
 
-func (c *CollectorAggregation) State() vm.Operand {
+func (c *CollectorAggregation) State() bytecode.Operand {
 	return c.state
 }
 

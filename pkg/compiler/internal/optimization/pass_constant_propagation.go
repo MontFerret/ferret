@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 const ConstantPropagationPassName = "constant-propagation"
@@ -32,6 +32,7 @@ func (p *ConstantPropagationPass) Run(ctx *PassContext) (*PassResult, error) {
 	if ctx == nil || ctx.Program == nil || ctx.CFG == nil {
 		return &PassResult{Modified: false}, nil
 	}
+
 	if len(ctx.Program.Bytecode) == 0 {
 		return &PassResult{Modified: false}, nil
 	}
@@ -54,14 +55,17 @@ func (p *ConstantPropagationPass) Run(ctx *PassContext) (*PassResult, error) {
 
 			inState := meetPreds(block, out)
 			prevIn := in[block.ID]
+
 			if !statesEqual(prevIn, inState) {
 				in[block.ID] = inState
 				changed = true
 			}
 
 			state := copyState(inState)
+
 			for i := 0; i < len(block.Instructions); i++ {
 				inst := block.Instructions[i]
+
 				if applyConstFolding(&inst, state, ctx.Program, constIndex, bg) {
 					block.Instructions[i] = inst
 					ctx.Program.Bytecode[block.Start+i] = inst
@@ -89,10 +93,13 @@ func copyState(in constState) constState {
 	if len(in) == 0 {
 		return constState{}
 	}
+
 	out := make(constState, len(in))
+
 	for k, v := range in {
 		out[k] = v
 	}
+
 	return out
 }
 
@@ -100,11 +107,13 @@ func statesEqual(a, b constState) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for k, v := range a {
 		if bv, ok := b[k]; !ok || !constEqual(v, bv) {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -114,13 +123,17 @@ func meetPreds(block *BasicBlock, out map[int]constState) constState {
 	}
 
 	var base constState
+
 	for _, pred := range block.Predecessors {
 		if pred == nil {
 			continue
 		}
+
 		base = out[pred.ID]
+
 		break
 	}
+
 	if len(base) == 0 {
 		return constState{}
 	}
@@ -128,14 +141,17 @@ func meetPreds(block *BasicBlock, out map[int]constState) constState {
 	result := make(constState, len(base))
 	for reg, val := range base {
 		keep := true
+
 		for _, pred := range block.Predecessors {
 			ps := out[pred.ID]
 			pv, ok := ps[reg]
+
 			if !ok || !constEqual(val, pv) {
 				keep = false
 				break
 			}
 		}
+
 		if keep {
 			result[reg] = val
 		}
@@ -144,60 +160,66 @@ func meetPreds(block *BasicBlock, out map[int]constState) constState {
 	return result
 }
 
-func applyConstFolding(inst *vm.Instruction, state constState, program *vm.Program, constIndex map[string]int, bg context.Context) bool {
+func applyConstFolding(inst *bytecode.Instruction, state constState, program *bytecode.Program, constIndex map[string]int, bg context.Context) bool {
 	modified := false
 	defs := defsOnly(*inst)
 	newConsts := make(map[int]runtime.Value)
 
 	switch inst.Opcode {
-	case vm.OpLoadConst:
+	case bytecode.OpLoadConst:
 		if inst.Operands[0].IsRegister() {
 			val := program.Constants[inst.Operands[1].Constant()]
+
 			if isSimpleConst(val) {
 				newConsts[inst.Operands[0].Register()] = val
 			}
 		}
-	case vm.OpLoadNone:
+	case bytecode.OpLoadNone:
 		if inst.Operands[0].IsRegister() {
 			newConsts[inst.Operands[0].Register()] = runtime.None
 		}
-	case vm.OpLoadZero:
+	case bytecode.OpLoadZero:
 		if inst.Operands[0].IsRegister() {
 			newConsts[inst.Operands[0].Register()] = runtime.ZeroInt
 		}
-	case vm.OpLoadBool:
+	case bytecode.OpLoadBool:
 		if inst.Operands[0].IsRegister() {
 			val := runtime.Boolean(inst.Operands[1] == 1)
 			newConsts[inst.Operands[0].Register()] = val
 		}
-	case vm.OpMove:
+	case bytecode.OpMove:
 		if inst.Operands[0].IsRegister() && inst.Operands[1].IsRegister() {
 			if val, ok := state[inst.Operands[1].Register()]; ok {
 				newConsts[inst.Operands[0].Register()] = val
 				modified = replaceWithConstLoad(inst, inst.Operands[0].Register(), val, program, constIndex) || modified
 			}
 		}
-	case vm.OpIncr, vm.OpDecr:
+	case bytecode.OpIncr, bytecode.OpDecr:
 		if inst.Operands[0].IsRegister() {
 			reg := inst.Operands[0].Register()
+
 			if val, ok := state[reg]; ok {
 				var out runtime.Value
-				if inst.Opcode == vm.OpIncr {
+
+				if inst.Opcode == bytecode.OpIncr {
 					out = increment(bg, val)
 				} else {
 					out = decrement(bg, val)
 				}
+
 				if isSimpleConst(out) {
 					newConsts[reg] = out
 					modified = replaceWithConstLoad(inst, reg, out, program, constIndex) || modified
 				}
 			}
 		}
-	case vm.OpCastBool, vm.OpNegate, vm.OpFlipPositive, vm.OpFlipNegative, vm.OpNot:
+	case bytecode.OpCastBool, bytecode.OpNegate, bytecode.OpFlipPositive, bytecode.OpFlipNegative, bytecode.OpNot:
 		if inst.Operands[0].IsRegister() && inst.Operands[1].IsRegister() {
 			src := inst.Operands[1].Register()
+
 			if val, ok := state[src]; ok {
 				out, ok := foldUnary(inst.Opcode, val, bg)
+
 				if ok && isSimpleConst(out) {
 					dst := inst.Operands[0].Register()
 					newConsts[dst] = out
@@ -205,13 +227,15 @@ func applyConstFolding(inst *vm.Instruction, state constState, program *vm.Progr
 				}
 			}
 		}
-	case vm.OpAdd, vm.OpSub, vm.OpMulti, vm.OpDiv, vm.OpMod,
-		vm.OpCmp, vm.OpEq, vm.OpNe, vm.OpGt, vm.OpLt, vm.OpGte, vm.OpLte:
+	case bytecode.OpAdd, bytecode.OpSub, bytecode.OpMulti, bytecode.OpDiv, bytecode.OpMod,
+		bytecode.OpCmp, bytecode.OpEq, bytecode.OpNe, bytecode.OpGt, bytecode.OpLt, bytecode.OpGte, bytecode.OpLte:
 		if inst.Operands[0].IsRegister() && inst.Operands[1].IsRegister() && inst.Operands[2].IsRegister() {
 			left, lok := state[inst.Operands[1].Register()]
 			right, rok := state[inst.Operands[2].Register()]
+
 			if lok && rok {
 				out, ok := foldBinary(inst.Opcode, left, right, bg)
+
 				if ok && isSimpleConst(out) {
 					dst := inst.Operands[0].Register()
 					newConsts[dst] = out
@@ -232,8 +256,9 @@ func applyConstFolding(inst *vm.Instruction, state constState, program *vm.Progr
 	return modified
 }
 
-func defsOnly(inst vm.Instruction) []int {
+func defsOnly(inst bytecode.Instruction) []int {
 	_, defs := instructionUseDef(inst)
+
 	return defs
 }
 
@@ -274,61 +299,65 @@ func constEqual(a, b runtime.Value) bool {
 			return av == bv
 		}
 	}
+
 	return false
 }
 
-func foldUnary(op vm.Opcode, val runtime.Value, bg context.Context) (runtime.Value, bool) {
+func foldUnary(op bytecode.Opcode, val runtime.Value, bg context.Context) (runtime.Value, bool) {
 	switch op {
-	case vm.OpCastBool:
+	case bytecode.OpCastBool:
 		return runtime.ToBoolean(val), true
-	case vm.OpNot:
+	case bytecode.OpNot:
 		return runtime.Boolean(!runtime.ToBoolean(val)), true
-	case vm.OpNegate:
+	case bytecode.OpNegate:
 		return negate(val), true
-	case vm.OpFlipPositive:
+	case bytecode.OpFlipPositive:
 		return positive(val), true
-	case vm.OpFlipNegative:
+	case bytecode.OpFlipNegative:
 		return negative(val), true
 	default:
 		return nil, false
 	}
 }
 
-func foldBinary(op vm.Opcode, left, right runtime.Value, bg context.Context) (runtime.Value, bool) {
+func foldBinary(op bytecode.Opcode, left, right runtime.Value, bg context.Context) (runtime.Value, bool) {
 	switch op {
-	case vm.OpAdd:
+	case bytecode.OpAdd:
 		return runtime.Add(bg, left, right), true
-	case vm.OpSub:
+	case bytecode.OpSub:
 		return runtime.Subtract(bg, left, right), true
-	case vm.OpMulti:
+	case bytecode.OpMulti:
 		return runtime.Multiply(bg, left, right), true
-	case vm.OpDiv:
+	case bytecode.OpDiv:
 		lv := runtime.ToNumberOnly(bg, left)
+
 		if _, ok := lv.(runtime.Int); ok {
 			rv := runtime.ToNumberOnly(bg, right)
 			if ri, ok := rv.(runtime.Int); ok && ri == 0 {
 				return nil, false
 			}
 		}
+
 		return runtime.Divide(bg, left, right), true
-	case vm.OpMod:
+	case bytecode.OpMod:
 		if r, _ := runtime.ToInt(bg, right); r == 0 {
 			return nil, false
 		}
+
 		return runtime.Modulus(bg, left, right), true
-	case vm.OpCmp:
+	case bytecode.OpCmp:
 		return compare(bg, left, right), true
-	case vm.OpEq:
+	case bytecode.OpEq:
 		return equals(bg, left, right), true
-	case vm.OpNe:
+	case bytecode.OpNe:
 		return notEquals(bg, left, right), true
-	case vm.OpGt:
+	case bytecode.OpGt:
 		return greaterThan(bg, left, right), true
-	case vm.OpLt:
+	case bytecode.OpLt:
 		return lessThan(bg, left, right), true
-	case vm.OpGte:
+	case bytecode.OpGte:
 		return greaterThanOrEqual(bg, left, right), true
-	case vm.OpLte:
+	case bytecode.OpLte:
 		return lessThanOrEqual(bg, left, right), true
 	default:
 		return nil, false
@@ -337,11 +366,13 @@ func foldBinary(op vm.Opcode, left, right runtime.Value, bg context.Context) (ru
 
 func buildConstIndex(constants []runtime.Value) map[string]int {
 	index := make(map[string]int, len(constants))
+
 	for i, val := range constants {
 		if key, ok := constKey(val); ok {
 			index[key] = i
 		}
 	}
+
 	return index
 }
 
@@ -366,49 +397,56 @@ func constKey(val runtime.Value) (string, bool) {
 	}
 }
 
-func replaceWithConstLoad(inst *vm.Instruction, dst int, val runtime.Value, program *vm.Program, constIndex map[string]int) bool {
+func replaceWithConstLoad(inst *bytecode.Instruction, dst int, val runtime.Value, program *bytecode.Program, constIndex map[string]int) bool {
 	newInst := buildConstLoad(dst, val, program, constIndex)
+
 	if inst.Opcode == newInst.Opcode && inst.Operands == newInst.Operands {
 		return false
 	}
+
 	*inst = newInst
+
 	return true
 }
 
-func buildConstLoad(dst int, val runtime.Value, program *vm.Program, constIndex map[string]int) vm.Instruction {
+func buildConstLoad(dst int, val runtime.Value, program *bytecode.Program, constIndex map[string]int) bytecode.Instruction {
 	if val == runtime.None {
-		return vm.NewInstruction(vm.OpLoadNone, vm.NewRegister(dst))
+		return bytecode.NewInstruction(bytecode.OpLoadNone, bytecode.NewRegister(dst))
 	}
+
 	switch v := val.(type) {
 	case runtime.Boolean:
 		if v {
-			return vm.NewInstruction(vm.OpLoadBool, vm.NewRegister(dst), vm.Operand(1))
+			return bytecode.NewInstruction(bytecode.OpLoadBool, bytecode.NewRegister(dst), bytecode.Operand(1))
 		}
-		return vm.NewInstruction(vm.OpLoadBool, vm.NewRegister(dst), vm.Operand(0))
+
+		return bytecode.NewInstruction(bytecode.OpLoadBool, bytecode.NewRegister(dst), bytecode.Operand(0))
 	case runtime.Int:
 		if v == 0 {
-			return vm.NewInstruction(vm.OpLoadZero, vm.NewRegister(dst))
+			return bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(dst))
 		}
 	}
 
 	key, ok := constKey(val)
 	if !ok {
-		return vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(dst), vm.NewConstant(appendConst(program, constIndex, val)))
+		return bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(dst), bytecode.NewConstant(appendConst(program, constIndex, val)))
 	}
 
 	if idx, ok := constIndex[key]; ok {
-		return vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(dst), vm.NewConstant(idx))
+		return bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(dst), bytecode.NewConstant(idx))
 	}
 
-	return vm.NewInstruction(vm.OpLoadConst, vm.NewRegister(dst), vm.NewConstant(appendConst(program, constIndex, val)))
+	return bytecode.NewInstruction(bytecode.OpLoadConst, bytecode.NewRegister(dst), bytecode.NewConstant(appendConst(program, constIndex, val)))
 }
 
-func appendConst(program *vm.Program, constIndex map[string]int, val runtime.Value) int {
+func appendConst(program *bytecode.Program, constIndex map[string]int, val runtime.Value) int {
 	idx := len(program.Constants)
 	program.Constants = append(program.Constants, val)
+
 	if key, ok := constKey(val); ok {
 		constIndex[key] = idx
 	}
+
 	return idx
 }
 

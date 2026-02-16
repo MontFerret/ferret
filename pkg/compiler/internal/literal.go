@@ -6,10 +6,11 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // LiteralCompiler handles the compilation of literal values in FQL queries.
@@ -34,7 +35,7 @@ func NewLiteralCompiler(ctx *CompilerContext) *LiteralCompiler {
 //   - An operand representing the compiled literal value
 //
 // Panics if the literal type is not recognized.
-func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
+func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) bytecode.Operand {
 	if sl := ctx.StringLiteral(); sl != nil {
 		return c.CompileStringLiteral(sl)
 	} else if il := ctx.IntegerLiteral(); il != nil {
@@ -51,7 +52,7 @@ func (c *LiteralCompiler) Compile(ctx fql.ILiteralContext) vm.Operand {
 		return c.CompileNoneLiteral(nl)
 	}
 
-	return vm.NoopOperand
+	return bytecode.NoopOperand
 }
 
 // CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
@@ -123,7 +124,7 @@ func parseStringLiteral(ctx fql.IStringLiteralContext) runtime.String {
 //
 // Returns:
 //   - An operand representing the compiled string constant
-func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) bytecode.Operand {
 	// Create a runtime string and load it as a constant
 	return loadConstant(c.ctx, parseStringLiteral(ctx))
 }
@@ -136,7 +137,7 @@ func (c *LiteralCompiler) CompileStringLiteral(ctx fql.IStringLiteralContext) vm
 //   - An operand representing the compiled integer constant
 //
 // Panics if the integer value cannot be parsed.
-func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) bytecode.Operand {
 	// Parse the integer value from the text representation
 	val, err := strconv.Atoi(ctx.GetText())
 
@@ -156,7 +157,7 @@ func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) 
 //   - An operand representing the compiled float constant
 //
 // Panics if the float value cannot be parsed.
-func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) bytecode.Operand {
 	// Parse the float value from the text representation with 64-bit precision
 	val, err := strconv.ParseFloat(ctx.GetText(), 64)
 
@@ -176,7 +177,7 @@ func (c *LiteralCompiler) CompileFloatLiteral(ctx fql.IFloatLiteralContext) vm.O
 //   - An operand representing the compiled boolean value
 //
 // Panics if the text is neither "true" nor "false".
-func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) bytecode.Operand {
 	// Allocate a temporary register for the boolean value
 	reg := c.ctx.Registers.Allocate()
 
@@ -187,7 +188,7 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 	case "false":
 		c.ctx.Emitter.EmitBoolean(reg, false)
 	default:
-		reg = vm.NoopOperand
+		reg = bytecode.NoopOperand
 	}
 
 	if reg.IsRegister() {
@@ -203,11 +204,11 @@ func (c *LiteralCompiler) CompileBooleanLiteral(ctx fql.IBooleanLiteralContext) 
 //
 // Returns:
 //   - An operand representing the compiled none value
-func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) bytecode.Operand {
 	// Allocate a temporary register for the none value
 	reg := c.ctx.Registers.Allocate()
 	// Emit instruction to load the none value into the register
-	c.ctx.Emitter.EmitA(vm.OpLoadNone, reg)
+	c.ctx.Emitter.EmitA(bytecode.OpLoadNone, reg)
 	c.ctx.Types.Set(reg, core.TypeNone)
 
 	return reg
@@ -220,7 +221,7 @@ func (c *LiteralCompiler) CompileNoneLiteral(_ fql.INoneLiteralContext) vm.Opera
 //
 // Returns:
 //   - An operand representing the compiled array
-func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) bytecode.Operand {
 	// Allocate destination register for the array
 	destReg := c.ctx.Registers.Allocate()
 
@@ -255,7 +256,7 @@ func (c *LiteralCompiler) CompileArrayLiteral(ctx fql.IArrayLiteralContext) vm.O
 //
 // Returns:
 //   - An operand representing the compiled object
-func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm.Operand {
+func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) bytecode.Operand {
 	// Allocate destination register for the object
 	dst := c.ctx.Registers.Allocate()
 	// Get all property assignments from the object literal
@@ -312,6 +313,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 	}
 
 	c.ctx.Types.Set(dst, core.TypeObject)
+
 	return dst
 }
 
@@ -325,7 +327,7 @@ func (c *LiteralCompiler) CompileObjectLiteral(ctx fql.IObjectLiteralContext) vm
 //   - An operand representing the compiled property name as a string constant
 //
 // Panics if the property name type is not recognized.
-func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.Operand {
+func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) bytecode.Operand {
 	// Handle string literal property names (e.g., { "property": value })
 	if str := ctx.StringLiteral(); str != nil {
 		return loadConstant(c.ctx, parseStringLiteral(str))
@@ -344,7 +346,7 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.O
 		// Unsafe reserved word (e.g., { for: value })
 		name = word.GetText()
 	} else {
-		return vm.NoopOperand
+		return bytecode.NoopOperand
 	}
 
 	// Create a runtime string from the property name and load it as a constant
@@ -353,9 +355,9 @@ func (c *LiteralCompiler) CompilePropertyName(ctx fql.IPropertyNameContext) vm.O
 
 // CompilePropertyNameConst compiles a property name into a constant operand without emitting instructions.
 // It returns (operand, true) when a constant can be produced, otherwise (NoopOperand, false).
-func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext) (vm.Operand, bool) {
+func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext) (bytecode.Operand, bool) {
 	if ctx == nil {
-		return vm.NoopOperand, false
+		return bytecode.NoopOperand, false
 	}
 
 	// Handle string literal property names (e.g., { "property": value })
@@ -377,7 +379,7 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 		// Unsafe reserved word (e.g., { for: value })
 		name = word.GetText()
 	} else {
-		return vm.NoopOperand, false
+		return bytecode.NoopOperand, false
 	}
 
 	return c.ctx.Symbols.AddConstant(runtime.NewString(name)), true
@@ -390,7 +392,7 @@ func (c *LiteralCompiler) CompilePropertyNameConst(ctx fql.IPropertyNameContext)
 //
 // Returns:
 //   - An operand representing the compiled expression that will evaluate to the property name
-func (c *LiteralCompiler) CompileComputedPropertyName(ctx fql.IComputedPropertyNameContext) vm.Operand {
+func (c *LiteralCompiler) CompileComputedPropertyName(ctx fql.IComputedPropertyNameContext) bytecode.Operand {
 	// Delegate to the expression compiler to compile the expression inside the brackets
 	return c.ctx.ExprCompiler.Compile(ctx.Expression())
 }

@@ -3,7 +3,7 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestForWhileFilter(t *testing.T) {
@@ -13,7 +13,7 @@ func TestForWhileFilter(t *testing.T) {
 				FILTER i > 2
 				RETURN i
 `, BC{
-			I(vm.OpReturn, 0, 7),
+			I(bytecode.OpReturn, 0, 7),
 		}),
 	})
 }

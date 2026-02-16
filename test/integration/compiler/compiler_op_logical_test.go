@@ -3,22 +3,22 @@ package compiler_test
 import (
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 func TestLogicalOperators(t *testing.T) {
 	RunUseCases(t, []UseCase{
 		SkipByteCodeCase("RETURN 1 AND 0", BC{
-			I(vm.OpLoadConst, 1, C(0)),
-			I(vm.OpJumpIfFalse),
-			I(vm.OpLoadConst, 1, C(1)),
-			I(vm.OpReturn, 1),
+			I(bytecode.OpLoadConst, 1, C(0)),
+			I(bytecode.OpJumpIfFalse),
+			I(bytecode.OpLoadConst, 1, C(1)),
+			I(bytecode.OpReturn, 1),
 		}),
 		SkipByteCodeCase("RETURN 1 OR 0", BC{
-			I(vm.OpLoadConst, 1, C(0)),
-			I(vm.OpJumpIfFalse),
-			I(vm.OpLoadConst, 1, C(1)),
-			I(vm.OpReturn, 1),
+			I(bytecode.OpLoadConst, 1, C(0)),
+			I(bytecode.OpJumpIfFalse),
+			I(bytecode.OpLoadConst, 1, C(1)),
+			I(bytecode.OpReturn, 1),
 		}),
 		//Case("RETURN 1 AND 1", 1),
 		//Case("RETURN 2 > 1 AND 1 > 0", true),

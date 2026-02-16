@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/test/integration/base"
 
@@ -94,7 +95,7 @@ func TestVariables(t *testing.T) {
 		`))
 
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &vm.Program{})
+		So(p, ShouldHaveSameTypeAs, &bytecode.Program{})
 
 		counter := -1
 		out, err := base.Run(p, vm.WithFunction("COUNTER", func(ctx gocontext.Context, args ...runtime.Value) (runtime.Value, error) {
@@ -116,7 +117,7 @@ func TestVariables(t *testing.T) {
 		`))
 
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, &vm.Program{})
+		So(p, ShouldHaveSameTypeAs, &bytecode.Program{})
 
 		counter := -1
 		out, err := base.Run(p, vm.WithFunction("COUNTER", func(ctx gocontext.Context, args ...runtime.Value) (runtime.Value, error) {

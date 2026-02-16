@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -16,7 +17,7 @@ type aggregateState struct {
 }
 
 type AggregateCollector struct {
-	plan   *runtime.AggregatePlan
+	plan   *bytecode.AggregatePlan
 	states []aggregateState
 	// Fast path for single projection key (common for COLLECT ... INTO groups):
 	// avoid allocating and hashing into a map until a second distinct key appears.
@@ -27,7 +28,7 @@ type AggregateCollector struct {
 	hasData          bool
 }
 
-func NewAggregateCollector(plan *runtime.AggregatePlan) Transformer {
+func NewAggregateCollector(plan *bytecode.AggregatePlan) Transformer {
 	if plan == nil {
 		panic("aggregate plan is nil")
 	}
@@ -40,11 +41,14 @@ func NewAggregateCollector(plan *runtime.AggregatePlan) Transformer {
 
 func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	size := 0
+
 	if c.hasData {
 		groupCount := len(c.groups)
+
 		if c.hasSingleGroup {
 			groupCount++
 		}
+
 		size = c.plan.Size() + groupCount
 	}
 
@@ -65,9 +69,11 @@ func (c *AggregateCollector) Iterate(ctx context.Context) (runtime.Iterator, err
 
 		if len(c.groups) > 0 {
 			keys := make([]string, 0, len(c.groups))
+
 			for key := range c.groups {
 				keys = append(keys, key)
 			}
+
 			sort.Strings(keys)
 
 			for _, key := range keys {
@@ -95,6 +101,7 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 	default:
 		var err error
 		keyStr, err = Stringify(ctx, key)
+
 		if err != nil {
 			return err
 		}
@@ -103,6 +110,7 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 	if idx, ok := c.plan.Index(keyStr); ok {
 		c.hasData = true
 		c.update(idx, value)
+
 		return nil
 	}
 
@@ -113,6 +121,7 @@ func (c *AggregateCollector) Set(ctx context.Context, key, value runtime.Value) 
 		c.singleGroupKey = keyStr
 		c.singleGroupValue = runtime.NewArray(4)
 		c.hasSingleGroup = true
+
 		return c.singleGroupValue.Append(ctx, value)
 	}
 
@@ -157,6 +166,7 @@ func (c *AggregateCollector) Get(ctx context.Context, key runtime.Value) (runtim
 	default:
 		var err error
 		keyStr, err = Stringify(ctx, key)
+
 		if err != nil {
 			return nil, err
 		}
@@ -183,6 +193,7 @@ func (c *AggregateCollector) Length(_ context.Context) (runtime.Int, error) {
 	}
 
 	groupCount := len(c.groups)
+
 	if c.hasSingleGroup {
 		groupCount++
 	}
@@ -247,31 +258,33 @@ func (c *AggregateCollector) update(idx int, value runtime.Value) {
 	state := &c.states[idx]
 
 	switch c.plan.KindAt(idx) {
-	case runtime.AggregateCount:
+	case bytecode.AggregateCount:
 		state.count++
-	case runtime.AggregateSum:
+	case bytecode.AggregateSum:
 		if runtime.IsNumber(value) {
 			state.sum += toFloat(value)
 		}
-	case runtime.AggregateAverage:
+	case bytecode.AggregateAverage:
 		if runtime.IsNumber(value) {
 			state.sum += toFloat(value)
 			state.count++
 		}
-	case runtime.AggregateMin:
+	case bytecode.AggregateMin:
 		if runtime.IsNumber(value) {
 			v := toFloat(value)
 			if !state.hasNumber || v < state.min {
 				state.min = v
 			}
+
 			state.hasNumber = true
 		}
-	case runtime.AggregateMax:
+	case bytecode.AggregateMax:
 		if runtime.IsNumber(value) {
 			v := toFloat(value)
 			if !state.hasNumber || v > state.max {
 				state.max = v
 			}
+
 			state.hasNumber = true
 		}
 	}
@@ -281,24 +294,27 @@ func (c *AggregateCollector) valueFor(idx int) runtime.Value {
 	state := c.states[idx]
 
 	switch c.plan.KindAt(idx) {
-	case runtime.AggregateCount:
+	case bytecode.AggregateCount:
 		return state.count
-	case runtime.AggregateSum:
+	case bytecode.AggregateSum:
 		return runtime.NewFloat(state.sum)
-	case runtime.AggregateAverage:
+	case bytecode.AggregateAverage:
 		if state.count == 0 {
 			return runtime.ZeroFloat
 		}
+
 		return runtime.NewFloat(state.sum / float64(state.count))
-	case runtime.AggregateMin:
+	case bytecode.AggregateMin:
 		if !state.hasNumber {
 			return runtime.None
 		}
+
 		return runtime.NewFloat(state.min)
-	case runtime.AggregateMax:
+	case bytecode.AggregateMax:
 		if !state.hasNumber {
 			return runtime.None
 		}
+
 		return runtime.NewFloat(state.max)
 	default:
 		return runtime.None

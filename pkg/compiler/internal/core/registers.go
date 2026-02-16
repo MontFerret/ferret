@@ -1,24 +1,24 @@
 package core
 
 import (
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
 type (
-	RegisterSequence []vm.Operand
+	RegisterSequence []bytecode.Operand
 
 	RegisterAllocator struct {
-		next vm.Operand
+		next bytecode.Operand
 	}
 )
 
 func NewRegisterAllocator() *RegisterAllocator {
 	return &RegisterAllocator{
-		next: vm.NoopOperand + 1,
+		next: bytecode.NoopOperand + 1,
 	}
 }
 
-func (ra *RegisterAllocator) Allocate() vm.Operand {
+func (ra *RegisterAllocator) Allocate() bytecode.Operand {
 	reg := ra.next
 	ra.next++
 
@@ -30,10 +30,10 @@ func (ra *RegisterAllocator) AllocateSequence(count int) RegisterSequence {
 	start := ra.next
 
 	for i := 0; i < count; i++ {
-		seq[i] = start + vm.Operand(i)
+		seq[i] = start + bytecode.Operand(i)
 	}
 
-	ra.next += vm.Operand(count)
+	ra.next += bytecode.Operand(count)
 	return seq
 }
 

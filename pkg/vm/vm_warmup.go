@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/mem"
@@ -18,18 +19,18 @@ func (vm *VM) warmup(env *Environment) error {
 	errors := &warmupErrorSet{}
 	constants := vm.program.Constants
 	functions := env.Functions
-	reg := map[Operand]runtime.Value{}
+	reg := map[bytecode.Operand]runtime.Value{}
 
 	for pc, inst := range vm.program.Bytecode {
 		op := inst.Opcode
 		dst, src1 := inst.Operands[0], inst.Operands[1]
 
 		switch op {
-		case OpLoadConst:
+		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
-		case OpMove:
+		case bytecode.OpMove:
 			reg[dst] = reg[src1]
-		case OpCall, OpProtectedCall:
+		case bytecode.OpCall, bytecode.OpProtectedCall:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.FV().Get,
@@ -38,7 +39,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case OpCall0, OpProtectedCall0:
+		case bytecode.OpCall0, bytecode.OpProtectedCall0:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.F0().Get,
@@ -47,7 +48,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case OpCall1, OpProtectedCall1:
+		case bytecode.OpCall1, bytecode.OpProtectedCall1:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.F1().Get,
@@ -56,7 +57,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case OpCall2, OpProtectedCall2:
+		case bytecode.OpCall2, bytecode.OpProtectedCall2:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.F2().Get,
@@ -65,7 +66,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case OpCall3, OpProtectedCall3:
+		case bytecode.OpCall3, bytecode.OpProtectedCall3:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.F3().Get,
@@ -74,7 +75,7 @@ func (vm *VM) warmup(env *Environment) error {
 				vm.cache.Functions,
 				errors,
 			)
-		case OpCall4, OpProtectedCall4:
+		case bytecode.OpCall4, bytecode.OpProtectedCall4:
 			resolveFnAndCache(
 				pc, dst, reg,
 				functions.F4().Get,
@@ -103,22 +104,22 @@ func (vm *VM) warmupRegexps() {
 	}
 
 	constants := vm.program.Constants
-	reg := map[Operand]runtime.Value{}
+	reg := map[bytecode.Operand]runtime.Value{}
 
 	for pc, inst := range vm.program.Bytecode {
 		op := inst.Opcode
 		dst, src1, src2 := inst.Operands[0], inst.Operands[1], inst.Operands[2]
 
 		switch op {
-		case OpLoadConst:
+		case bytecode.OpLoadConst:
 			reg[dst] = constants[src1.Constant()]
-		case OpMove:
+		case bytecode.OpMove:
 			if val, ok := reg[src1]; ok {
 				reg[dst] = val
 			} else {
 				delete(reg, dst)
 			}
-		case OpRegexp:
+		case bytecode.OpRegexp:
 			if val, ok := reg[src2]; ok {
 				r, err := data.ToRegexp(val)
 
@@ -131,7 +132,7 @@ func (vm *VM) warmupRegexps() {
 			}
 		}
 
-		if op != OpLoadConst && op != OpMove && dst.IsRegister() {
+		if op != bytecode.OpLoadConst && op != bytecode.OpMove && dst.IsRegister() {
 			delete(reg, dst)
 		}
 	}
@@ -139,7 +140,7 @@ func (vm *VM) warmupRegexps() {
 	vm.cache.RegexpsWarmed = true
 }
 
-func resolveFnName(reg map[Operand]runtime.Value, dst Operand) (string, error) {
+func resolveFnName(reg map[bytecode.Operand]runtime.Value, dst bytecode.Operand) (string, error) {
 	val, ok := reg[dst]
 
 	if ok {
@@ -176,8 +177,8 @@ func resolveFn[T runtime.FunctionConstraint](
 
 func resolveFnAndCache[T runtime.FunctionConstraint](
 	pc int,
-	dst Operand,
-	reg map[Operand]runtime.Value,
+	dst bytecode.Operand,
+	reg map[bytecode.Operand]runtime.Value,
 	get func(string) (T, bool),
 	fallback runtime.FunctionCollection[runtime.Function],
 	assign func(*mem.CachedFunction, T),

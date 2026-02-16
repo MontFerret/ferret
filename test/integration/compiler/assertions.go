@@ -5,11 +5,11 @@ import (
 
 	"github.com/smartystreets/goconvey/convey"
 
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 )
 
-func CastToProgram(prog any) *vm.Program {
-	if p, ok := prog.(*vm.Program); ok {
+func CastToProgram(prog any) *bytecode.Program {
+	if p, ok := prog.(*bytecode.Program); ok {
 		return p
 	}
 

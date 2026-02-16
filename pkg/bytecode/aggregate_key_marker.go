@@ -1,6 +1,10 @@
-package runtime
+package bytecode
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 const aggregateKeyMarkerString = "__agg_key__"
 
@@ -26,6 +30,6 @@ func (m *aggregateKeyMarker) Hash() uint64 {
 	return 0x9e3779b97f4a7c15
 }
 
-func (m *aggregateKeyMarker) Copy() Value {
+func (m *aggregateKeyMarker) Copy() runtime.Value {
 	return m
 }
