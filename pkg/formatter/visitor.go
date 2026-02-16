@@ -1212,9 +1212,9 @@ func (v *visitor) formatTemplateLiteralWith(p *printer, ctx fql.ITemplateLiteral
 			continue
 		}
 		if expr := el.Expression(); expr != nil {
-			p.write("${")
+			p.writeRaw("${")
 			v.formatExpressionWith(p, expr.(*fql.ExpressionContext))
-			p.write("}")
+			p.writeRaw("}")
 		}
 	}
 	p.write("`")
