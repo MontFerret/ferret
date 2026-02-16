@@ -169,6 +169,10 @@ func parseTemplateLiteralConst(ctx fql.ITemplateLiteralContext) (runtime.String,
 			continue
 		}
 		if expr := el.Expression(); expr != nil {
+			if val, ok := constStringFromExpression(expr); ok {
+				b.WriteString(val)
+				continue
+			}
 			return runtime.EmptyString, false
 		}
 		if chunk := el.TemplateChars(); chunk != nil {
@@ -193,6 +197,28 @@ func parseStringLiteralConst(ctx fql.IStringLiteralContext) (runtime.String, boo
 	}
 
 	return runtime.EmptyString, false
+}
+
+func constStringFromExpression(expr fql.IExpressionContext) (string, bool) {
+	if expr == nil {
+		return "", false
+	}
+
+	val, ok := literalValueFromExpression(expr)
+	if !ok {
+		return "", false
+	}
+
+	switch val.(type) {
+	case runtime.String, runtime.Int, runtime.Float, runtime.Boolean:
+		return val.String(), true
+	}
+
+	if val == runtime.None {
+		return "", true
+	}
+
+	return "", false
 }
 
 // CompileStringLiteral processes a string literal from the FQL AST and converts it into a runtime string.
@@ -243,6 +269,10 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 			continue
 		}
 		if expr := el.Expression(); expr != nil {
+			if val, ok := constStringFromExpression(expr); ok {
+				buf.WriteString(val)
+				continue
+			}
 			if buf.Len() > 0 {
 				parts = append(parts, part{literal: buf.String()})
 				buf.Reset()
