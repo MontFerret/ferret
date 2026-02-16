@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 )
 
-func matchArrayOperatorErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchArrayOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if offending == nil {
 		return false
 	}
@@ -32,7 +32,7 @@ func matchArrayOperatorErrors(src *file.Source, err *CompilationError, offending
 	return false
 }
 
-func matchQueryOperatorErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchQueryOperatorErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !(isMismatched(err.Message) || isMissing(err.Message) || isNoAlternative(err.Message)) {
 		return false
 	}
@@ -127,7 +127,7 @@ func matchQueryOperatorErrors(src *file.Source, err *CompilationError, offending
 	return false
 }
 
-func matchArrayInlineReturnErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchArrayInlineReturnErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !isArrayOperatorContext(offending) {
 		return false
 	}
@@ -164,7 +164,7 @@ func matchArrayInlineReturnErrors(src *file.Source, err *CompilationError, offen
 	return true
 }
 
-func matchArrayQuestionQuantifierErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchArrayQuestionQuantifierErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !(isMismatched(err.Message) || isMissing(err.Message) || isNoAlternative(err.Message)) {
 		return false
 	}
@@ -196,7 +196,7 @@ func matchArrayQuestionQuantifierErrors(src *file.Source, err *CompilationError,
 	return true
 }
 
-func matchArrayOperatorUnclosed(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchArrayOperatorUnclosed(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if !(isMismatched(err.Message) || isMissing(err.Message) || isNoAlternative(err.Message)) {
 		return false
 	}

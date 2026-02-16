@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/file"
 )
 
-func matchCommonErrors(src *file.Source, err *CompilationError, offending *TokenNode) bool {
+func matchCommonErrors(src *file.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isNoAlternative(err.Message) {
 		prevLogical := isLogicalOperator(offending.Prev())
 		if prevLogical && !isExpressionStart(offending) {

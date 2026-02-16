@@ -5,9 +5,13 @@ import (
 	"strings"
 )
 
-type Diagnostics[E FormattableError] struct {
-	errors []E
-}
+type (
+	Diagnostics[E FormattableError] struct {
+		errors []E
+	}
+
+	DiagnosticSet = Diagnostics[*Diagnostic]
+)
 
 // NewDiagnostics creates a new Diagnostics instance with a preallocated slice for storing errors of the specified size.
 func NewDiagnostics[E FormattableError](size int) *Diagnostics[E] {

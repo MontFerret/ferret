@@ -6,9 +6,8 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
-
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
+	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
 
 func (c *LoopCollectCompiler) declareLocalOrReport(ctx antlr.ParserRuleContext, name string, typ core.ValueType) bytecode.Operand {
@@ -42,9 +41,9 @@ func (c *LoopCollectCompiler) reportDuplicateLocal(ctx antlr.ParserRuleContext, 
 		return
 	}
 
-	c.ctx.Errors.Add(compilerdiagnostics.NewError(
+	c.ctx.Errors.Add(parser.NewError(
 		c.ctx.Source,
-		compilerdiagnostics.NameError,
+		parser.NameError,
 		fmt.Sprintf("Variable '%s' is already defined", name),
 	))
 }

@@ -3,10 +3,11 @@ package internal
 import (
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"

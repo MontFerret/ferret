@@ -13,12 +13,10 @@ import (
 func TestCompilationError(t *testing.T) {
 	Convey("CompilationError", t, func() {
 		Convey("Diagnostic() should return message", func() {
-			err := &CompilationError{
-				Diagnostic: &diagnostics.Diagnostic{
-					Kind:    SyntaxError,
-					Message: "test error message",
-					Hint:    "test hint",
-				},
+			err := &diagnostics.Diagnostic{
+				Kind:    SyntaxError,
+				Message: "test error message",
+				Hint:    "test hint",
 			}
 
 			So(err.Error(), ShouldEqual, "test error message")
@@ -27,15 +25,13 @@ func TestCompilationError(t *testing.T) {
 		Convey("Format() should format error with all components", func() {
 			src := file.NewSource("test.fql", "LET x = 1")
 
-			err := &CompilationError{
-				Diagnostic: &diagnostics.Diagnostic{
-					Kind:    SyntaxError,
-					Message: "test error message",
-					Hint:    "test hint",
-					Source:  src,
-					Spans: []diagnostics.ErrorSpan{
-						diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 5}, "test label"),
-					},
+			err := &diagnostics.Diagnostic{
+				Kind:    SyntaxError,
+				Message: "test error message",
+				Hint:    "test hint",
+				Source:  src,
+				Spans: []diagnostics.ErrorSpan{
+					diagnostics.NewMainErrorSpan(file.Span{Start: 0, End: 5}, "test label"),
 				},
 			}
 

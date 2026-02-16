@@ -7,10 +7,11 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/file"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -69,7 +70,7 @@ func (c *WaitCompiler) Compile(ctx fql.IWaitForExpressionContext) bytecode.Opera
 
 	if orThrow := ctx.WaitForOrThrowClause(); orThrow != nil {
 		if prc, ok := orThrow.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(diagnostics.SemanticError, prc, "OR THROW is not supported")
+			err := c.ctx.Errors.Create(parser.SemanticError, prc, "OR THROW is not supported")
 			err.Hint = "Remove OR THROW and handle timeouts explicitly."
 			c.ctx.Errors.Add(err)
 		}
@@ -478,14 +479,14 @@ func waitForSpan(source antlr.RuleContext, fallback antlr.RuleContext) file.Span
 
 	if source != nil {
 		if prc, ok := source.(antlr.ParserRuleContext); ok {
-			span = diagnostics.SpanFromRuleContext(prc)
+			span = parser.SpanFromRuleContext(prc)
 			return span
 		}
 	}
 
 	if fallback != nil {
 		if prc, ok := fallback.(antlr.ParserRuleContext); ok {
-			span = diagnostics.SpanFromRuleContext(prc)
+			span = parser.SpanFromRuleContext(prc)
 		}
 	}
 
@@ -631,7 +632,7 @@ func (c *WaitCompiler) compileJitterClause(ctx fql.IJitterClauseContext) (byteco
 
 	if literal != nil && (*literal < 0 || *literal > 1) {
 		if prc, ok := valueCtx.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(diagnostics.SemanticError, prc, "JITTER must be between 0 and 1")
+			err := c.ctx.Errors.Create(parser.SemanticError, prc, "JITTER must be between 0 and 1")
 			err.Hint = "Use a value between 0 and 1, e.g. JITTER 0.2."
 			c.ctx.Errors.Add(err)
 		}
@@ -705,7 +706,7 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitF
 		return waitForBackoffExponential
 	default:
 		if prc, ok := ctx.(antlr.ParserRuleContext); ok {
-			err := c.ctx.Errors.Create(diagnostics.SemanticError, prc, "Unknown BACKOFF strategy")
+			err := c.ctx.Errors.Create(parser.SemanticError, prc, "Unknown BACKOFF strategy")
 			err.Hint = "Use one of: NONE, LINEAR, EXPONENTIAL."
 			c.ctx.Errors.Add(err)
 		}

@@ -8,8 +8,6 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -57,7 +55,7 @@ func ShouldHaveSameItems(actual any, expected ...any) string {
 	return ""
 }
 
-func assertExpectedError(actual *compiler.CompilationError, expected *ExpectedError) string {
+func assertExpectedError(actual *diagnostics.Diagnostic, expected *ExpectedError) string {
 	if actual == nil {
 		return "expected a compilation error"
 	}
@@ -86,7 +84,7 @@ func assertExpectedError(actual *compiler.CompilationError, expected *ExpectedEr
 	return ""
 }
 
-func assertExpectedErrors(actual *compiler.CompilationErrorSet, expected *ExpectedMultiError) string {
+func assertExpectedErrors(actual *diagnostics.Diagnostics[*diagnostics.Diagnostic], expected *ExpectedMultiError) string {
 	if actual == nil {
 		return "expected a multi compilation error"
 	}
@@ -117,10 +115,10 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 
 	switch ex := expected[0].(type) {
 	case *ExpectedError:
-		err, ok := actual.(*compiler.CompilationError)
+		err, ok := actual.(*diagnostics.Diagnostic)
 
 		if !ok {
-			err2, ok := actual.(*compiler.CompilationErrorSet)
+			err2, ok := actual.(*diagnostics.DiagnosticSet)
 
 			if !ok {
 				return "expected a compilation error"
@@ -137,7 +135,7 @@ func ShouldBeCompilationError(actual any, expected ...any) string {
 
 		break
 	case *ExpectedMultiError:
-		err, ok := actual.(*compiler.CompilationErrorSet)
+		err, ok := actual.(*diagnostics.DiagnosticSet)
 
 		if !ok {
 			return "expected a multi compilation error"

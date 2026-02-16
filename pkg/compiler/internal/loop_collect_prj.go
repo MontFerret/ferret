@@ -8,7 +8,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
+	parser "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -34,7 +34,7 @@ func (c *LoopCollectCompiler) initializeProjection(kv *core.KV, projection fql.I
 
 		// Optional: validate that the first Identifier is actually "COUNT"
 		if strings.ToUpper(counter.Identifier(0).GetText()) != "COUNT" {
-			err := c.ctx.Errors.Create(compilerdiagnostics.SemanticError, counter, "Invalid count projection")
+			err := c.ctx.Errors.Create(parser.SemanticError, counter, "Invalid count projection")
 			err.Hint = "Use WITH COUNT INTO <variable>."
 			c.ctx.Errors.Add(err)
 			return nil

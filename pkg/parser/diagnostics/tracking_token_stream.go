@@ -1,6 +1,8 @@
 package diagnostics
 
-import "github.com/antlr4-go/antlr/v4"
+import (
+	"github.com/antlr4-go/antlr/v4"
+)
 
 type TrackingTokenStream struct {
 	antlr.TokenStream

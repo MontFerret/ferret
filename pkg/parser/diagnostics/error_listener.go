@@ -45,18 +45,16 @@ func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interfac
 	}
 }
 
-func (d *ErrorListener) parseError(msg string, offending antlr.Token) *CompilationError {
+func (d *ErrorListener) parseError(msg string, offending antlr.Token) *diagnostics.Diagnostic {
 	span := spanFromTokenSafe(offending, d.src)
 
-	err := &CompilationError{
-		Diagnostic: &diagnostics.Diagnostic{
-			Kind:    SyntaxError,
-			Source:  d.src,
-			Message: "Syntax error: " + msg,
-			Hint:    "Check your syntax. Did you forget to write something?",
-			Spans: []diagnostics.ErrorSpan{
-				{Span: span, Main: true},
-			},
+	err := &diagnostics.Diagnostic{
+		Kind:    SyntaxError,
+		Source:  d.src,
+		Message: "Syntax error: " + msg,
+		Hint:    "Check your syntax. Did you forget to write something?",
+		Spans: []diagnostics.ErrorSpan{
+			{Span: span, Main: true},
 		},
 	}
 

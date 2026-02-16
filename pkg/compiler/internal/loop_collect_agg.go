@@ -7,10 +7,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
-	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
+	parsing "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -50,12 +52,16 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 }
 
 func (c *LoopCollectCompiler) reportAggregateSemanticError(ctx antlr.ParserRuleContext, message, hint string) {
-	var err *compilerdiagnostics.CompilationError
+	var err *diagnostics.Diagnostic
 
 	if ctx != nil {
-		err = c.ctx.Errors.Create(compilerdiagnostics.SemanticError, ctx, message)
+		err = c.ctx.Errors.Create(parsing.SemanticError, ctx, message)
 	} else {
-		err = compilerdiagnostics.NewError(c.ctx.Source, compilerdiagnostics.SemanticError, message)
+		err = &diagnostics.Diagnostic{
+			Source:  c.ctx.Source,
+			Kind:    parsing.SemanticError,
+			Message: message,
+		}
 	}
 
 	err.Hint = hint
