@@ -690,7 +690,16 @@ func (c *WaitCompiler) compileBackoffClause(ctx fql.IBackoffClauseContext) waitF
 	case strategyCtx.Identifier() != nil:
 		strategy = strategyCtx.Identifier().GetText()
 	case strategyCtx.StringLiteral() != nil:
-		strategy = parseStringLiteral(strategyCtx.StringLiteral()).String()
+		if val, ok := parseStringLiteralConst(strategyCtx.StringLiteral()); ok {
+			strategy = val.String()
+		} else {
+			if prc, ok := ctx.(antlr.ParserRuleContext); ok {
+				err := c.ctx.Errors.Create(parser.SemanticError, prc, "BACKOFF strategy must be a constant string")
+				err.Hint = "Use one of: NONE, LINEAR, EXPONENTIAL."
+				c.ctx.Errors.Add(err)
+			}
+			return waitForBackoffNone
+		}
 	default:
 		return waitForBackoffNone
 	}
@@ -803,8 +812,10 @@ func literalExistsFromExpression(ctx fql.IExpressionContext) (bool, bool) {
 	case lit.NoneLiteral() != nil:
 		return false, true
 	case lit.StringLiteral() != nil:
-		str := parseStringLiteral(lit.StringLiteral())
-		return str.String() != "", true
+		if str, ok := parseStringLiteralConst(lit.StringLiteral()); ok {
+			return str.String() != "", true
+		}
+		return false, false
 	case lit.ArrayLiteral() != nil:
 		arr := lit.ArrayLiteral()
 		return arr.ArgumentList() != nil, true
@@ -840,8 +851,10 @@ func literalTruthinessFromExpression(ctx fql.IExpressionContext) (bool, bool) {
 		}
 		return val != 0, true
 	case lit.StringLiteral() != nil:
-		str := parseStringLiteral(lit.StringLiteral())
-		return str.String() != "", true
+		if str, ok := parseStringLiteralConst(lit.StringLiteral()); ok {
+			return str.String() != "", true
+		}
+		return false, false
 	default:
 		return true, true
 	}

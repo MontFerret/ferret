@@ -61,5 +61,26 @@ RETURN %s<!DOCTYPE html>
 			Hello world
 		</body>
 		</html>`, "Should be possible to use multi line string with nested strings using tick"),
+
+		Case(
+			`
+LET name = "World"
+RETURN `+"`"+`Hello ${name}!`+"`"+`
+		`, "Hello World!", "Should interpolate template literals"),
+
+		Case(
+			`
+RETURN `+"`"+`sum=${1 + 2}`+"`"+`
+		`, "sum=3", "Should interpolate expressions inside template literals"),
+
+		Case(
+			`
+RETURN `+"`"+`${1 + 2}`+"`"+`
+		`, "3", "Template literals should coerce expressions to strings"),
+
+		CaseObject(
+			`
+RETURN { `+"`"+`foo${1}`+"`"+`: 2 }
+		`, map[string]any{"foo1": 2}, "Template literals should work as property names"),
 	})
 }

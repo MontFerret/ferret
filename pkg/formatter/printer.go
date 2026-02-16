@@ -59,6 +59,40 @@ func (p *printer) write(s string) {
 	p.lastWasSpace = false
 }
 
+func (p *printer) writeRaw(s string) {
+	if p.err != nil || s == "" {
+		return
+	}
+
+	for _, r := range s {
+		if r == '\n' {
+			if p.forceSingleLine {
+				p.space()
+				continue
+			}
+			_, err := io.WriteString(p.out, "\n")
+			if err != nil {
+				p.err = err
+				return
+			}
+			p.atLineStart = true
+			p.lastWasSpace = false
+			continue
+		}
+
+		if p.atLineStart {
+			p.atLineStart = false
+		}
+
+		_, err := io.WriteString(p.out, string(r))
+		if err != nil {
+			p.err = err
+			return
+		}
+		p.lastWasSpace = r == ' '
+	}
+}
+
 func (p *printer) space() {
 	if p.err != nil || p.atLineStart || p.lastWasSpace {
 		return
