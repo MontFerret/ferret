@@ -1,10 +1,14 @@
 package internal
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
+	compilerdiagnostics "github.com/MontFerret/ferret/v2/pkg/compiler/internal/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -44,12 +48,25 @@ func (c *LoopCollectCompiler) initializeAggregation(ctx fql.ICollectAggregatorCo
 	return core.NewCollectorAggregation(dst, aggregateSelectors)
 }
 
+func (c *LoopCollectCompiler) reportAggregateSemanticError(ctx antlr.ParserRuleContext, message, hint string) {
+	var err *compilerdiagnostics.CompilationError
+
+	if ctx != nil {
+		err = c.ctx.Errors.Create(compilerdiagnostics.SemanticError, ctx, message)
+	} else {
+		err = compilerdiagnostics.NewError(c.ctx.Source, compilerdiagnostics.SemanticError, message)
+	}
+
+	err.Hint = hint
+	c.ctx.Errors.Add(err)
+}
+
 // initializeGroupedAggregationSelectors processes aggregation selectors for grouped aggregations.
 // It compiles each selector's function call expression and arguments, and creates AggregateSelector objects.
 // For selectors with multiple arguments, it packs them into an array.
 // Returns a slice of AggregateSelectors that describe the aggregation operations.
 func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []fql.ICollectAggregateSelectorContext, kv *core.KV, dst vm.Operand, fused bool) []*core.AggregateSelector {
-	wrappedSelectors := make([]*core.AggregateSelector, len(selectors))
+	wrappedSelectors := make([]*core.AggregateSelector, 0, len(selectors))
 
 	for i := 0; i < len(selectors); i++ {
 		selector := selectors[i]
@@ -57,17 +74,37 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 		name := runtime.String(selector.Identifier().GetText())
 		// Get the function call expression
 		fcx := selector.FunctionCallExpression()
+		if fcx == nil || fcx.FunctionCall() == nil {
+			c.reportAggregateSemanticError(
+				selector,
+				fmt.Sprintf("Invalid aggregate selector for '%s'", name.String()),
+				"Use a function call expression, e.g. AGGREGATE total = COUNT(x).",
+			)
+			return nil
+		}
+
+		funcName := getFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
+		isProtected := fcx.ErrorOperator() != nil
 		// Compile the function arguments
 		args := c.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())
 
 		if len(args) == 0 {
-			// TODO: Better error handling
-			panic("No arguments provided for the function call in the aggregate selector")
+			c.reportAggregateSemanticError(
+				selector,
+				fmt.Sprintf("Aggregate '%s' requires at least one argument", funcName.String()),
+				fmt.Sprintf("Provide at least one expression, e.g. %s(x).", funcName.String()),
+			)
+			return nil
 		}
 
 		if fused {
 			if len(args) != 1 {
-				panic("aggregate fusion requires exactly one argument")
+				c.reportAggregateSemanticError(
+					selector,
+					fmt.Sprintf("Aggregate '%s' requires exactly one argument in fused grouped mode", funcName.String()),
+					"Use a single argument in each aggregate function call when grouped aggregation fusion is enabled.",
+				)
+				return nil
 			}
 
 			key := c.loadGroupedAggregateKey(kv.Key, i)
@@ -89,13 +126,8 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 			}
 		}
 
-		// Get the function name and check if it's a protected call (with TRY)
-		fce := selector.FunctionCallExpression()
-		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
-		isProtected := fce.ErrorOperator() != nil
-
 		// Create an AggregateSelector with all the information needed to process it later
-		wrappedSelectors[i] = core.NewAggregateSelector(name, len(args), funcName, isProtected)
+		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected))
 	}
 
 	return wrappedSelectors
@@ -114,12 +146,27 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 		name := runtime.String(selector.Identifier().GetText())
 		// Get the function call expression
 		fcx := selector.FunctionCallExpression()
+		if fcx == nil || fcx.FunctionCall() == nil {
+			c.reportAggregateSemanticError(
+				selector,
+				fmt.Sprintf("Invalid aggregate selector for '%s'", name.String()),
+				"Use a function call expression, e.g. AGGREGATE total = COUNT(x).",
+			)
+			return nil
+		}
+
+		funcName := getFunctionName(fcx.FunctionCall(), c.ctx.UseAliases)
+		isProtected := fcx.ErrorOperator() != nil
 		// Compile the function arguments
 		args := c.ctx.ExprCompiler.CompileArgumentList(fcx.FunctionCall().ArgumentList())
 
 		if len(args) == 0 {
-			// TODO: Better error handling
-			panic("No arguments provided for the function call in the aggregate selector")
+			c.reportAggregateSemanticError(
+				selector,
+				fmt.Sprintf("Aggregate '%s' requires at least one argument", funcName.String()),
+				fmt.Sprintf("Provide at least one expression, e.g. %s(x).", funcName.String()),
+			)
+			return nil
 		}
 
 		if len(args) > 1 {
@@ -136,11 +183,6 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 			// Push the key-value pair to the collector
 			c.ctx.Emitter.EmitPushKV(dst, key, args[0])
 		}
-
-		// Get the function name and check if it's a protected call (with TRY)
-		fce := selector.FunctionCallExpression()
-		funcName := getFunctionName(fce.FunctionCall(), c.ctx.UseAliases)
-		isProtected := fce.ErrorOperator() != nil
 
 		// For global aggregation, we don't need to store the register in the selector
 		// as the values are already pushed to the collector
@@ -279,7 +321,11 @@ func isSimpleGroupExpression(expr fql.IExpressionContext) bool {
 	}
 
 	if lit := atom.Literal(); lit != nil {
-		return lit.StringLiteral() != nil
+		return lit.StringLiteral() != nil ||
+			lit.IntegerLiteral() != nil ||
+			lit.FloatLiteral() != nil ||
+			lit.BooleanLiteral() != nil ||
+			lit.NoneLiteral() != nil
 	}
 
 	if atom.Variable() != nil || atom.Param() != nil {
