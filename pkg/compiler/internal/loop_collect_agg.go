@@ -127,7 +127,7 @@ func (c *LoopCollectCompiler) initializeGroupedAggregationSelectors(selectors []
 		}
 
 		// Create an AggregateSelector with all the information needed to process it later
-		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected))
+		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, selector))
 	}
 
 	return wrappedSelectors
@@ -186,7 +186,7 @@ func (c *LoopCollectCompiler) initializeGlobalAggregationSelectors(selectors []f
 
 		// For global aggregation, we don't need to store the register in the selector
 		// as the values are already pushed to the collector
-		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected))
+		wrappedSelectors = append(wrappedSelectors, core.NewAggregateSelector(name, len(args), funcName, isProtected, selector))
 	}
 
 	return wrappedSelectors
@@ -453,7 +453,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 	if spec.Type() == core.CollectorTypeAggregate {
 		for i, selector := range selectors {
 			selectorVarName := selector.Name()
-			varReg, _ := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
+			varReg := c.declareLocalOrReport(selector.Context(), selectorVarName.String(), core.TypeUnknown)
 			selectorVarRegs[i] = varReg
 
 			key := loadConstant(c.ctx, selector.Name())
@@ -486,8 +486,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 
 			// Declare a local variable for the aggregation result
 			selectorVarName := selector.Name()
-			// TODO: Handle error if the variable already exists
-			varReg, _ := c.ctx.Symbols.DeclareLocal(selectorVarName.String(), core.TypeUnknown)
+			varReg := c.declareLocalOrReport(selector.Context(), selectorVarName.String(), core.TypeUnknown)
 			selectorVarRegs[i] = varReg
 			// Move the function result to the variable
 			c.ctx.Emitter.EmitAB(vm.OpMove, varReg, result)
@@ -522,8 +521,7 @@ func (c *LoopCollectCompiler) compileGlobalAggregationFuncCalls(spec *core.Colle
 func (c *LoopCollectCompiler) compileGroupedAggregationFuncCall(selector *core.AggregateSelector, aggregator vm.Operand, idx int, fused bool) {
 	loop := c.ctx.Loops.Current()
 	// Declare a local variable with the selector name
-	// TODO: Handle error if the variable already exists
-	valReg, _ := c.ctx.Symbols.DeclareLocal(selector.Name().String(), core.TypeUnknown)
+	valReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
 
 	if fused {
 		key := c.loadGroupedAggregateKey(loop.Key, idx)

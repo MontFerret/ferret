@@ -1,6 +1,8 @@
 package core
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -17,6 +19,7 @@ type (
 		args          int
 		funcName      runtime.String
 		protectedCall bool
+		ctx           antlr.ParserRuleContext
 	}
 )
 
@@ -47,12 +50,13 @@ func (c *CollectorAggregation) IsFused() bool {
 	return c.fused
 }
 
-func NewAggregateSelector(name runtime.String, args int, funcName runtime.String, protectedCall bool) *AggregateSelector {
+func NewAggregateSelector(name runtime.String, args int, funcName runtime.String, protectedCall bool, ctx antlr.ParserRuleContext) *AggregateSelector {
 	return &AggregateSelector{
 		name:          name,
 		args:          args,
 		funcName:      funcName,
 		protectedCall: protectedCall,
+		ctx:           ctx,
 	}
 }
 
@@ -70,4 +74,8 @@ func (s *AggregateSelector) FuncName() runtime.String {
 
 func (s *AggregateSelector) ProtectedCall() bool {
 	return s.protectedCall
+}
+
+func (s *AggregateSelector) Context() antlr.ParserRuleContext {
+	return s.ctx
 }

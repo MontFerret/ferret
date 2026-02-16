@@ -74,13 +74,13 @@ func (c *LoopCollectCompiler) compileGroupKeys(ctx fql.ICollectGroupingContext) 
 			c.ctx.Emitter.EmitArrayPush(kvKeyReg, reg)
 
 			// Create a CollectSelector for each selector with its identifier
-			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))
+			collectSelectors[i] = core.NewCollectSelector(runtime.String(selector.Identifier().GetText()), selector)
 		}
 	} else {
 		// Handle single selector case - simpler, no need for array
 		selector := selectors[0]
 		kvKeyReg = c.ctx.ExprCompiler.Compile(selector.Expression())
-		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(selector.Identifier().GetText()))}
+		collectSelectors = []*core.CollectSelector{core.NewCollectSelector(runtime.String(selector.Identifier().GetText()), selector)}
 	}
 
 	return kvKeyReg, collectSelectors
@@ -101,9 +101,7 @@ func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 
 			// Declare a local variable for the selector if not already done
 			if variables[i] == vm.NoopOperand {
-				// TODO: Handle error if the variable already exists
-				reg, _ := c.ctx.Symbols.DeclareLocal(name.String(), core.TypeUnknown)
-				variables[i] = reg
+				variables[i] = c.declareLocalOrReport(selector.Context(), name.String(), core.TypeUnknown)
 			}
 
 			// Get the appropriate register (key or value) based on collector type
@@ -116,8 +114,8 @@ func (c *LoopCollectCompiler) finalizeGrouping(spec *core.Collector) {
 		// Handle single group selector - simpler case
 		// Get the variable name
 		name := spec.GroupSelectors()[0].Name()
-		// If we have a single selector, we can just use the loops' register directly
-		c.ctx.Symbols.AssignLocal(name.String(), core.TypeUnknown, c.selectGroupKey(spec.Type(), loop))
+		// If we have a single selector, we can just use the loop register directly
+		c.assignLocalOrReport(spec.GroupSelectors()[0].Context(), name.String(), core.TypeUnknown, c.selectGroupKey(spec.Type(), loop))
 	}
 }
 
